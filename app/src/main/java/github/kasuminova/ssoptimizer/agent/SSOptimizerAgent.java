@@ -10,6 +10,12 @@ import github.kasuminova.ssoptimizer.loading.ParallelImagePreloadProcessor;
 import github.kasuminova.ssoptimizer.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.loading.TextureObjectBindProcessor;
+import github.kasuminova.ssoptimizer.input.ime.LinuxDisplayImeProcessor;
+import github.kasuminova.ssoptimizer.input.ime.LinuxEventImeProcessor;
+import github.kasuminova.ssoptimizer.input.ime.LinuxKeyboardImeProcessor;
+import github.kasuminova.ssoptimizer.input.ime.SettingsTextFieldFactoryProcessor;
+import github.kasuminova.ssoptimizer.input.ime.TextFieldImplementationProcessor;
+import github.kasuminova.ssoptimizer.input.ime.TooltipTextFieldFactoryProcessor;
 import github.kasuminova.ssoptimizer.render.engine.CombatStateProcessor;
 import github.kasuminova.ssoptimizer.render.engine.EngineContrailEngineProcessor;
 import github.kasuminova.ssoptimizer.render.engine.EngineDetailedSmokeProcessor;
@@ -78,6 +84,12 @@ public final class SSOptimizerAgent {
         registerIf(transformer, "textureloader", "com.fs.graphics.TextureLoader", new TextureLoaderPixelProcessor());
         registerIf(transformer, "textureobject", "com.fs.graphics.Object", new TextureObjectBindProcessor());
         registerIf(transformer, "loadingtext", "com.fs.starfarer.loading.LoadingUtils", new LoadingUtilsTextProcessor());
+        registerIf(transformer, "linuxdisplayime", "org.lwjgl.opengl.LinuxDisplay", new LinuxDisplayImeProcessor());
+        registerIf(transformer, "linuxeventime", "org.lwjgl.opengl.LinuxEvent", new LinuxEventImeProcessor());
+        registerIf(transformer, "linuxkeyboardime", "org.lwjgl.opengl.LinuxKeyboard", new LinuxKeyboardImeProcessor());
+        registerIf(transformer, "tooltiptextfieldime", "com.fs.starfarer.ui.impl.StandardTooltipV2Expandable", new TooltipTextFieldFactoryProcessor());
+        registerIf(transformer, "settingstextfieldime", "com.fs.starfarer.settings.StarfarerSettings$1", new SettingsTextFieldFactoryProcessor());
+        registerIf(transformer, "textfieldimplime", "com.fs.starfarer.ui.B", new TextFieldImplementationProcessor());
         registerCompositeIf(transformer,
             "com.fs.util.ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
             new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),

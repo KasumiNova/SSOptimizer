@@ -13,6 +13,11 @@ GAME_PID=""
 GAME_PGID=""
 LAST_LOG_SIZE=0
 FATAL_LOG_PATTERN="ClassFormatError|VerifyError|LinkageError|NoSuchMethodError|NoSuchFieldError|A fatal error has been detected by the Java Runtime Environment|SIGSEGV|core dumped|FATAL"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+IME_SMOKE_HELPER="$SCRIPT_DIR/ime_keyboard_smoke.py"
+IME_SMOKE_PID=""
+IME_SMOKE_LOG_FILE="$GAME_DIR/ssoptimizer-ime-smoke-input.log"
+IME_SMOKE_TRIGGER_PATTERN="${SSOPTIMIZER_SMOKE_INPUT_TRIGGER_PATTERN:-IME text field focused}"
 
 echo "=== SSOptimizer Game Launch Smoke Test ==="
 echo "Game dir: $GAME_DIR"
@@ -27,6 +32,7 @@ fi
 cleanup_game() {
     local pid="${GAME_PID:-}"
     local pgid="${GAME_PGID:-}"
+    local ime_pid="${IME_SMOKE_PID:-}"
 
     if [[ -n "$pgid" ]]; then
         kill -TERM -- "-$pgid" 2>/dev/null || true
@@ -44,7 +50,56 @@ cleanup_game() {
         wait "$pid" 2>/dev/null || true
     fi
 
+    if [[ -n "$ime_pid" ]]; then
+        kill -TERM "$ime_pid" 2>/dev/null || true
+        sleep 1
+        kill -KILL "$ime_pid" 2>/dev/null || true
+        wait "$ime_pid" 2>/dev/null || true
+        IME_SMOKE_PID=""
+    fi
+
     restore_settings_override
+}
+
+start_keyboard_smoke_macro() {
+    if [[ -n "${IME_SMOKE_PID:-}" ]]; then
+        return 0
+    fi
+
+    local sequence="${SSOPTIMIZER_SMOKE_INPUT_SEQUENCE:-}"
+    if [[ -z "$sequence" ]]; then
+        return 0
+    fi
+
+    if [[ ! -f "$IME_SMOKE_HELPER" ]]; then
+        echo "WARN: keyboard smoke helper not found at $IME_SMOKE_HELPER"
+        return 0
+    fi
+
+    local window_regex="${SSOPTIMIZER_SMOKE_INPUT_WINDOW_REGEX:-(?i)(starsector|starfarer)}"
+    local wait_timeout="${SSOPTIMIZER_SMOKE_INPUT_WAIT_TIMEOUT:-45}"
+    local focus_delay="${SSOPTIMIZER_SMOKE_INPUT_FOCUS_DELAY:-0.25}"
+    local action_delay="${SSOPTIMIZER_SMOKE_INPUT_ACTION_DELAY:-0.05}"
+
+    echo "Keyboard smoke macro: enabled"
+    echo "  window regex:  $window_regex"
+    echo "  sequence:      $sequence"
+    echo "  wait timeout:   ${wait_timeout}s"
+    if [[ -n "$IME_SMOKE_TRIGGER_PATTERN" ]]; then
+        echo "  trigger:       $IME_SMOKE_TRIGGER_PATTERN"
+    else
+        echo "  trigger:       <immediate>"
+    fi
+    echo "  output log:     $IME_SMOKE_LOG_FILE"
+
+    python3 "$IME_SMOKE_HELPER" \
+        --window-regex "$window_regex" \
+        --sequence "$sequence" \
+        --wait-timeout "$wait_timeout" \
+        --focus-delay "$focus_delay" \
+        --action-delay "$action_delay" \
+        > "$IME_SMOKE_LOG_FILE" 2>&1 &
+    IME_SMOKE_PID=$!
 }
 
 restore_settings_override() {
@@ -333,6 +388,12 @@ for ((elapsed = 0; elapsed < TIMEOUT_SEC; elapsed++)); do
     ACTIVE_PID=$(resolve_active_game_pid || true)
     print_progress "$((elapsed + 1))" "$ACTIVE_PID"
 
+    if [[ -n "${SSOPTIMIZER_SMOKE_INPUT_SEQUENCE:-}" && -z "${IME_SMOKE_PID:-}" ]]; then
+        if [[ -z "$IME_SMOKE_TRIGGER_PATTERN" ]] || grep -qF "$IME_SMOKE_TRIGGER_PATTERN" "$LOG_FILE" 2>/dev/null; then
+            start_keyboard_smoke_macro
+        fi
+    fi
+
     if ! has_live_game_process; then
         echo "Game process tree exited before timeout"
         break
@@ -437,6 +498,12 @@ if grep -q "\[SSOptimizer\] Sanitized" "$LOG_FILE"; then
     grep "\[SSOptimizer\] Sanitized" "$LOG_FILE"
 else
     echo "INFO: No classes needed sanitization (or not loaded yet)"
+fi
+
+if [[ -f "$IME_SMOKE_LOG_FILE" ]]; then
+    echo ""
+    echo "=== Keyboard Smoke Output ==="
+    cat "$IME_SMOKE_LOG_FILE"
 fi
 
 echo ""

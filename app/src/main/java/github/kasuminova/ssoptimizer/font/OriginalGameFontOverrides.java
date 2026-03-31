@@ -214,18 +214,18 @@ public final class OriginalGameFontOverrides {
         );
 
         register(specs, new FontOverrideSpec(
-            "graphics/fonts/victor10.fnt",
-            profile.victorPrimary(),
-            profile.victorFallback(),
-            2048,
-            2048
+                "graphics/fonts/victor10.fnt",
+                profile.victorPrimary(),
+                profile.victorFallback(),
+                2048,
+                2048
         ));
         register(specs, new FontOverrideSpec(
-            "graphics/fonts/victor14.fnt",
-            profile.victorPrimary(),
-            profile.victorFallback(),
-            2048,
-            2048
+                "graphics/fonts/victor14.fnt",
+                profile.victorPrimary(),
+                profile.victorFallback(),
+                2048,
+                2048
         ));
 
         return Collections.unmodifiableMap(specs);
@@ -251,21 +251,21 @@ public final class OriginalGameFontOverrides {
                     List.of("Maple UI Bold.ttf", "MapleUI-Bold.otf", "Maple UI.ttf", "MapleUI.otf"),
                     List.of("Maple UI.ttf", "MapleUI.otf"),
                     List.of("Maple UI Bold.ttf", "MapleUI-Bold.otf"),
-                List.of("victor-pixel.ttf"),
-                List.of("ZpixEX2_EX.ttf", "MiSans-Regular.ttf", "HarmonyOS_Sans_SC_Regular.ttf", "font.ttf"),
-                    List.of("MiSans-Regular.ttf", "HarmonyOS_Sans_SC_Regular.ttf", "font.ttf")
+                    List.of("victor-pixel.ttf"),
+                    List.of("ZpixEX2_EX.ttf", "MiSans-Medium.ttf", "font.ttf"),
+                    List.of("MiSans-Medium.ttf", "font.ttf")
             );
         }
 
         return new FontProfile(
                 "original-match",
-                List.of("lte50549.ttf", "MiSansInsigniaLT.ttf"),
-                List.of("lte50549.ttf", "MiSansInsigniaLT-Bold.ttf", "MiSansInsigniaLT_Bold.ttf", "MiSansInsigniaLT.ttf"),
-                List.of("orbitron-light.ttf", "MiSans_Orbitron-Light.ttf", "MiSans_Orbitron_Light.ttf"),
-                List.of("orbitron-bold.ttf", "MiSans_Orbitron-Bold.ttf"),
-            List.of("victor-pixel.ttf"),
-            List.of("ZpixEX2_EX.ttf", "MiSans-Regular.ttf", "HarmonyOS_Sans_SC_Regular.ttf", "font.ttf"),
-                List.of("MiSans-Regular.ttf", "HarmonyOS_Sans_SC_Regular.ttf", "font.ttf")
+                List.of("lte50549.ttf", "MiSans-Medium.ttf"),
+                List.of("lte50549.ttf", "MiSans-Medium.ttf"),
+                List.of("orbitron-light.ttf", "MiSans-Medium.ttf"),
+                List.of("orbitron-bold.ttf", "MiSans-Medium.ttf"),
+                List.of("victor-pixel.ttf"),
+                List.of("ZpixEX2_EX.ttf", "MiSans-Medium.ttf", "font.ttf"),
+                List.of("MiSans-Medium.ttf", "font.ttf")
         );
     }
 

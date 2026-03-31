@@ -139,6 +139,14 @@ class TtfBmFontGeneratorTest {
         );
     }
 
+        @Test
+        void encodesXAdvanceAgainstGlyphOriginForRuntimeLayoutQuirk() {
+                assertEquals(8, TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(8, 0));
+                assertEquals(6, TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(8, 2));
+                assertEquals(9, TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(8, -1));
+                assertEquals(0, TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(2, 5));
+        }
+
     @Test
     void parsesLegacyEncodedBmFontMetadataWithoutUtf8Failure() throws Exception {
         final Path tempFile = Files.createTempFile("ssoptimizer-font", ".fnt");

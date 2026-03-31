@@ -63,7 +63,7 @@ class OriginalGameFontOverridesTest {
         assertTrue(profile.insigniaPrimary().contains("Maple UI.ttf"));
         assertTrue(profile.insigniaBoldPrimary().contains("Maple UI Bold.ttf"));
         assertTrue(profile.orbitronBoldPrimary().contains("Maple UI Bold.ttf"));
-        assertTrue(profile.fallback().contains("MiSans-Regular.ttf"));
+        assertTrue(profile.fallback().contains("MiSans-Medium.ttf"));
     }
 
     @Test

@@ -41,7 +41,7 @@ public final class HybridWeaverTransformer implements ClassFileTransformer {
         try {
             byte[] result = processor.process(classfileBuffer);
             if (result != null) {
-                LOGGER.info("[SSOptimizer] Processed class: " + className);
+                LOGGER.debug("[SSOptimizer] Processed class: " + className);
             }
             return result;
         } catch (Throwable t) {

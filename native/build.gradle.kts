@@ -44,6 +44,9 @@ val hasLibpng = libpngLinkerArgs.isNotEmpty()
 val freetypeCompilerArgs = runPkgConfig("--cflags", "freetype2")
 val freetypeLinkerArgs = runPkgConfig("--libs", "freetype2")
 val hasFreetype = freetypeLinkerArgs.isNotEmpty()
+val x11CompilerArgs = runPkgConfig("--cflags", "x11")
+val x11LinkerArgs = runPkgConfig("--libs", "x11")
+val hasX11 = x11LinkerArgs.isNotEmpty()
 
 library {
     // 当前环境是 Linux，先锁定 x86_64，后续可扩展 machines.windows/macos
@@ -69,11 +72,15 @@ tasks.withType<CppCompile>().configureEach {
     )
     compilerArgs.addAll(libpngCompilerArgs)
     compilerArgs.addAll(freetypeCompilerArgs)
+    compilerArgs.addAll(x11CompilerArgs)
     if (hasLibpng) {
         compilerArgs.add("-DSSOPTIMIZER_HAVE_LIBPNG=1")
     }
     if (hasFreetype) {
         compilerArgs.add("-DSSOPTIMIZER_HAVE_FREETYPE=1")
+    }
+    if (hasX11) {
+        compilerArgs.add("-DSSOPTIMIZER_HAVE_X11=1")
     }
 }
 
@@ -81,4 +88,5 @@ tasks.withType<LinkSharedLibrary>().configureEach {
     linkerArgs.addAll(listOf("-lGL"))
     linkerArgs.addAll(libpngLinkerArgs)
     linkerArgs.addAll(freetypeLinkerArgs)
+    linkerArgs.addAll(x11LinkerArgs)
 }

@@ -56,7 +56,7 @@ public final class SanitizingTransformer implements ClassFileTransformer {
                 return null;
             }
 
-            LOGGER.info("[SSOptimizer] Sanitized illegal identifiers in " + className);
+            LOGGER.debug("[SSOptimizer] Sanitized illegal identifiers in " + className);
             return writer.toByteArray();
         } catch (Throwable t) {
             LOGGER.error("[SSOptimizer] Sanitizer failed for " + className, t);

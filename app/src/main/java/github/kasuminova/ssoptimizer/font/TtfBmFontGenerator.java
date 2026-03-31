@@ -878,6 +878,7 @@ final class TtfBmFontGenerator {
            .append('\n');
         for (GlyphPlacement placement : allGlyphs) {
             final GlyphRaster glyph = placement.glyph();
+                final int encodedXAdvance = encodedXAdvanceForRuntimeLayout(glyph.xAdvance(), glyph.xOffset());
             fnt.append("char id=")
                .append(glyph.codePoint())
                .append(" x=")
@@ -893,7 +894,7 @@ final class TtfBmFontGenerator {
                .append(" yoffset=")
                .append(glyph.yOffset())
                .append(" xadvance=")
-               .append(glyph.xAdvance())
+             .append(encodedXAdvance)
                .append(" page=")
                .append(placement.page())
                .append(" chnl=15\n");
@@ -916,6 +917,11 @@ final class TtfBmFontGenerator {
                         source.base()
                 )
         );
+    }
+
+    static int encodedXAdvanceForRuntimeLayout(final int logicalXAdvance,
+                                               final int xOffset) {
+        return Math.max(0, logicalXAdvance - xOffset);
     }
 
         private static FontRenderPolicy renderPolicyForSpec(final OriginalGameFontOverrides.FontOverrideSpec spec,
