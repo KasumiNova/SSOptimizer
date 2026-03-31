@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "github.kasuminova.ssoptimizer.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "accessor.ContrailGroupAccessor",
+    "accessor.ContrailSegmentAccessor",
+    "accessor.EngineSlotAccessor",
+    "accessor.GEngineOwnerAccessor",
+    "accessor.GEngineStateAccessor",
+    "accessor.GShipAccessor",
+    "render.GEngineRenderMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

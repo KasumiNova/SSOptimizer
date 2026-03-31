@@ -1,0 +1,383 @@
+--- com.fs.graphics.TextureLoader signatures ---
+public class com.fs.graphics.TextureLoader {
+  private java.util.HashMap ÔO0000;
+  private java.awt.image.ColorModel OO0000;
+  private java.awt.image.ColorModel Ø00000;
+  private java.nio.IntBuffer Ô00000;
+  private static org.apache.log4j.Logger ÓO0000;
+  com.fs.graphics.I new;
+  private static long ö00000;
+  public static java.util.Set<java.lang.String> null;
+  private int o00000;
+  private int while;
+  public static java.util.Map<java.lang.Class, java.lang.reflect.Method> float;
+  public static java.util.Map<java.lang.Class, java.lang.reflect.Method> Ö00000;
+  private java.awt.Color Ó00000;
+  private java.awt.Color õ00000;
+  private java.awt.Color interface;
+  private static java.nio.ByteBuffer oO0000;
+  private org.apache.log4j.Logger class;
+  static {};
+  public com.fs.graphics.TextureLoader();
+  public void super(java.lang.String, java.lang.String) throws java.io.IOException;
+  public void super(java.lang.String, java.awt.image.BufferedImage) throws java.io.IOException;
+  private int Ò00000();
+  public com.fs.graphics.Object super(java.lang.String) throws java.io.IOException;
+  public com.fs.graphics.Object Ò00000(java.lang.String, java.awt.image.BufferedImage) throws java.io.IOException;
+  public void super(com.fs.graphics.Object, java.lang.String) throws java.io.IOException;
+  public void super(com.fs.graphics.Object) throws java.io.IOException;
+  public com.fs.graphics.Object super(java.awt.image.BufferedImage, int, int, int, int) throws java.io.IOException;
+  public com.fs.graphics.Object super(com.fs.graphics.Object, java.lang.String, int, int, int, int, boolean) throws java.io.IOException;
+  public static void super(java.nio.ByteBuffer, java.lang.String);
+  private java.nio.ByteBuffer Ò00000(java.lang.String) throws java.io.IOException;
+  private int super(int);
+  private java.nio.ByteBuffer super(java.awt.image.BufferedImage, com.fs.graphics.Object);
+  private float super(float[], float);
+  private float Ò00000(float[], float);
+  private java.awt.image.BufferedImage String(java.lang.String) throws java.io.IOException;
+  public void super(com.fs.graphics.I);
+  public void Ó00000(java.lang.String);
+  public java.util.HashMap super();
+}
+
+--- com.fs.graphics.TextureLoader bytecode excerpt ---
+public class com.fs.graphics.TextureLoader {
+  private java.util.HashMap ÔO0000;
+
+  private java.awt.image.ColorModel OO0000;
+
+  private java.awt.image.ColorModel Ø00000;
+
+  private java.nio.IntBuffer Ô00000;
+
+  private static org.apache.log4j.Logger ÓO0000;
+
+  com.fs.graphics.I new;
+
+  private static long ö00000;
+
+  public static java.util.Set<java.lang.String> null;
+
+  private int o00000;
+
+  private int while;
+
+  public static java.util.Map<java.lang.Class, java.lang.reflect.Method> float;
+
+  public static java.util.Map<java.lang.Class, java.lang.reflect.Method> Ö00000;
+
+  private java.awt.Color Ó00000;
+
+  private java.awt.Color õ00000;
+
+  private java.awt.Color interface;
+
+  private static java.nio.ByteBuffer oO0000;
+
+  private org.apache.log4j.Logger class;
+
+  static {};
+    Code:
+       0: ldc           #1                  // class com/fs/graphics/TextureLoader
+       2: invokestatic  #39                 // Method org/apache/log4j/Logger.getLogger:(Ljava/lang/Class;)Lorg/apache/log4j/Logger;
+       5: putstatic     #45                 // Field ÓO0000:Lorg/apache/log4j/Logger;
+       8: lconst_0
+       9: putstatic     #47                 // Field ö00000:J
+      12: new           #49                 // class java/util/LinkedHashSet
+      15: dup
+      16: invokespecial #51                 // Method java/util/LinkedHashSet."<init>":()V
+      19: putstatic     #54                 // Field null:Ljava/util/Set;
+      22: new           #56                 // class java/util/LinkedHashMap
+      25: dup
+      26: invokespecial #58                 // Method java/util/LinkedHashMap."<init>":()V
+      29: putstatic     #59                 // Field float:Ljava/util/Map;
+      32: new           #56                 // class java/util/LinkedHashMap
+      35: dup
+      36: invokespecial #58                 // Method java/util/LinkedHashMap."<init>":()V
+      39: putstatic     #61                 // Field Ö00000:Ljava/util/Map;
+      42: aconst_null
+      43: putstatic     #63                 // Field oO0000:Ljava/nio/ByteBuffer;
+      46: return
+
+  public com.fs.graphics.TextureLoader();
+    Code:
+       0: aload_0
+       1: invokespecial #67                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #68                 // class java/util/HashMap
+       8: dup
+       9: invokespecial #70                 // Method java/util/HashMap."<init>":()V
+      12: putfield      #71                 // Field ÔO0000:Ljava/util/HashMap;
+      15: aload_0
+      16: iconst_1
+      17: invokestatic  #73                 // Method org/lwjgl/BufferUtils.createIntBuffer:(I)Ljava/nio/IntBuffer;
+      20: putfield      #79                 // Field Ô00000:Ljava/nio/IntBuffer;
+      23: aload_0
+      24: getstatic     #81                 // Field java/awt/Color.white:Ljava/awt/Color;
+      27: putfield      #86                 // Field Ó00000:Ljava/awt/Color;
+      30: aload_0
+      31: getstatic     #81                 // Field java/awt/Color.white:Ljava/awt/Color;
+      34: putfield      #88                 // Field õ00000:Ljava/awt/Color;
+      37: aload_0
+      38: getstatic     #81                 // Field java/awt/Color.white:Ljava/awt/Color;
+      41: putfield      #90                 // Field interface:Ljava/awt/Color;
+      44: aload_0
+      45: aload_0
+      46: invokevirtual #92                 // Method java/lang/Object.getClass:()Ljava/lang/Class;
+      49: invokestatic  #39                 // Method org/apache/log4j/Logger.getLogger:(Ljava/lang/Class;)Lorg/apache/log4j/Logger;
+      52: putfield      #96                 // Field class:Lorg/apache/log4j/Logger;
+      55: aload_0
+      56: new           #98                 // class java/awt/image/ComponentColorModel
+      59: dup
+      60: sipush        1000
+      63: invokestatic  #100                // Method java/awt/color/ColorSpace.getInstance:(I)Ljava/awt/color/ColorSpace;
+      66: iconst_4
+      67: newarray       int
+      69: dup
+      70: iconst_0
+      71: bipush        8
+      73: iastore
+      74: dup
+      75: iconst_1
+      76: bipush        8
+      78: iastore
+      79: dup
+      80: iconst_2
+      81: bipush        8
+      83: iastore
+      84: dup
+      85: iconst_3
+      86: bipush        8
+      88: iastore
+      89: iconst_1
+      90: iconst_0
+      91: iconst_3
+      92: iconst_0
+      93: invokespecial #106                // Method java/awt/image/ComponentColorModel."<init>":(Ljava/awt/color/ColorSpace;[IZZII)V
+      96: putfield      #109                // Field OO0000:Ljava/awt/image/ColorModel;
+      99: aload_0
+     100: new           #98                 // class java/awt/image/ComponentColorModel
+     103: dup
+     104: sipush        1000
+     107: invokestatic  #100                // Method java/awt/color/ColorSpace.getInstance:(I)Ljava/awt/color/ColorSpace;
+     110: iconst_4
+     111: newarray       int
+     113: dup
+     114: iconst_0
+     115: bipush        8
+     117: iastore
+     118: dup
+     119: iconst_1
+     120: bipush        8
+     122: iastore
+     123: dup
+     124: iconst_2
+     125: bipush        8
+     127: iastore
+     128: iconst_0
+     129: iconst_0
+     130: iconst_1
+     131: iconst_0
+     132: invokespecial #106                // Method java/awt/image/ComponentColorModel."<init>":(Ljava/awt/color/ColorSpace;[IZZII)V
+     135: putfield      #111                // Field Ø00000:Ljava/awt/image/ColorModel;
+     138: return
+
+  public void super(java.lang.String, java.lang.String) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #96                 // Field class:Lorg/apache/log4j/Logger;
+       4: new           #120                // class java/lang/StringBuilder
+       7: dup
+       8: ldc           #122                // String Loading [
+      10: invokespecial #124                // Method java/lang/StringBuilder."<init>":(Ljava/lang/String;)V
+      13: aload_2
+      14: invokevirtual #127                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      17: ldc           #131                // String ] as texture with id [
+      19: invokevirtual #127                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      22: aload_1
+      23: invokevirtual #127                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      26: ldc           #133                // String ]
+      28: invokevirtual #127                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      31: invokevirtual #135                // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+      34: invokevirtual #139                // Method org/apache/log4j/Logger.debug:(Ljava/lang/Object;)V
+      37: aload_0
+      38: aload_2
+      39: invokevirtual #143                // Method super:(Ljava/lang/String;)Lcom/fs/graphics/Object;
+      42: astore_3
+      43: aload_3
+      44: aload_1
+      45: invokevirtual #147                // Method com/fs/graphics/Object.Ò00000:(Ljava/lang/String;)V
+      48: aload_1
+      49: aload_3
+      50: invokestatic  #152                // Method com/fs/graphics/oOoO.o00000:(Ljava/lang/String;Lcom/fs/graphics/Object;)V
+      53: return
+
+  public void super(java.lang.String, java.awt.image.BufferedImage) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #96                 // Field class:Lorg/apache/log4j/Logger;
+       4: new           #120                // class java/lang/StringBuilder
+       7: dup
+       8: ldc           #164                // String Loading image as [
+      10: invokespecial #124                // Method java/lang/StringBuilder."<init>":(Ljava/lang/String;)V
+      13: aload_1
+      14: invokevirtual #127                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      17: ldc           #133                // String ]
+      19: invokevirtual #127                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      22: invokevirtual #135                // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+      25: invokevirtual #139                // Method org/apache/log4j/Logger.debug:(Ljava/lang/Object;)V
+      28: aload_0
+      29: aload_1
+      30: aload_2
+      31: invokevirtual #166                // Method Ò00000:(Ljava/lang/String;Ljava/awt/image/BufferedImage;)Lcom/fs/graphics/Object;
+      34: astore_3
+      35: aload_3
+      36: aload_1
+      37: invokevirtual #147                // Method com/fs/graphics/Object.Ò00000:(Ljava/lang/String;)V
+      40: aload_1
+      41: aload_3
+      42: invokestatic  #152                // Method com/fs/graphics/oOoO.o00000:(Ljava/lang/String;Lcom/fs/graphics/Object;)V
+      45: return
+
+  private int Ò00000();
+    Code:
+       0: aload_0
+       1: getfield      #79                 // Field Ô00000:Ljava/nio/IntBuffer;
+       4: invokestatic  #173                // Method org/lwjgl/opengl/GL11.glGenTextures:(Ljava/nio/IntBuffer;)V
+       7: aload_0
+       8: getfield      #79                 // Field Ô00000:Ljava/nio/IntBuffer;
+      11: iconst_0
+      12: invokevirtual #179                // Method java/nio/IntBuffer.get:(I)I
+      15: ireturn
+
+  public com.fs.graphics.Object super(java.lang.String) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #71                 // Field ÔO0000:Ljava/util/HashMap;
+       4: aload_1
+       5: invokevirtual #185                // Method java/util/HashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;
+       8: checkcast     #148                // class com/fs/graphics/Object
+      11: astore_2
+      12: aload_2
+      13: ifnull        18
+      16: aload_2
+      17: areturn
+      18: invokestatic  #188                // Method com/fs/graphics/oOoO.class:()Z
+      21: ifeq          54
+      24: new           #148                // class com/fs/graphics/Object
+      27: dup
+      28: sipush        3553
+      31: iconst_m1
+      32: aload_1
+      33: invokespecial #192                // Method com/fs/graphics/Object."<init>":(IILjava/lang/String;)V
+      36: astore_2
+      37: aload_2
+      38: iconst_1
+      39: invokevirtual #195                // Method com/fs/graphics/Object.o00000:(Z)V
+      42: aload_0
+      43: getfield      #71                 // Field ÔO0000:Ljava/util/HashMap;
+      46: aload_1
+      47: aload_2
+      48: invokevirtual #199                // Method java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      51: pop
+      52: aload_2
+      53: areturn
+      54: aload_0
+      55: aconst_null
+      56: aload_1
+      57: sipush        3553
+      60: sipush        6408
+      63: sipush        9729
+      66: sipush        9729
+      69: iconst_0
+      70: invokevirtual #203                // Method super:(Lcom/fs/graphics/Object;Ljava/lang/String;IIIIZ)Lcom/fs/graphics/Object;
+      73: astore_2
+      74: aload_0
+      75: getfield      #71                 // Field ÔO0000:Ljava/util/HashMap;
+      78: aload_1
+      79: aload_2
+      80: invokevirtual #199                // Method java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      83: pop
+      84: aload_2
+      85: areturn
+
+  public com.fs.graphics.Object Ò00000(java.lang.String, java.awt.image.BufferedImage) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #71                 // Field ÔO0000:Ljava/util/HashMap;
+       4: aload_1
+       5: invokevirtual #185                // Method java/util/HashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;
+       8: checkcast     #148                // class com/fs/graphics/Object
+      11: astore_3
+      12: aload_3
+      13: ifnull        18
+      16: aload_3
+      17: areturn
+      18: invokestatic  #188                // Method com/fs/graphics/oOoO.class:()Z
+      21: ifeq          54
+      24: new           #148                // class com/fs/graphics/Object
+      27: dup
+      28: sipush        3553
+      31: iconst_m1
+      32: aload_1
+      33: invokespecial #192                // Method com/fs/graphics/Object."<init>":(IILjava/lang/String;)V
+      36: astore_3
+      37: aload_3
+      38: iconst_1
+      39: invokevirtual #195                // Method com/fs/graphics/Object.o00000:(Z)V
+      42: aload_0
+      43: getfield      #71                 // Field ÔO0000:Ljava/util/HashMap;
+      46: aload_1
+      47: aload_3
+      48: invokevirtual #199                // Method java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      51: pop
+      52: aload_3
+      53: areturn
+      54: aload_0
+      55: aload_2
+      56: sipush        3553
+      59: sipush        6408
+      62: sipush        9729
+      65: sipush        9729
+      68: invokevirtual #208                // Method super:(Ljava/awt/image/BufferedImage;IIII)Lcom/fs/graphics/Object;
+      71: astore_3
+      72: aload_0
+      73: getfield      #71                 // Field ÔO0000:Ljava/util/HashMap;
+      76: aload_1
+      77: aload_3
+      78: invokevirtual #199                // Method java/util/HashMap.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+      81: pop
+      82: aload_3
+      83: areturn
+
+  public void super(com.fs.graphics.Object, java.lang.String) throws java.io.IOException;
+    Code:
+       0: invokestatic  #188                // Method com/fs/graphics/oOoO.class:()Z
+       3: ifeq          17
+       6: aload_1
+       7: iconst_1
+       8: invokevirtual #195                // Method com/fs/graphics/Object.o00000:(Z)V
+      11: aload_1
+      12: aload_2
+      13: invokevirtual #213                // Method com/fs/graphics/Object.o00000:(Ljava/lang/String;)V
+      16: return
+      17: aload_0
+      18: getfield      #96                 // Field class:Lorg/apache/log4j/Logger;
+      21: ldc           #216                // String Loading image %s into existing tex id %d
+      23: iconst_2
+      24: anewarray     #3                  // class java/lang/Object
+      27: dup
+      28: iconst_0
+      29: aload_2
+      30: aastore
+      31: dup
+      32: iconst_1
+      33: aload_1
+      34: invokevirtual #218                // Method com/fs/graphics/Object.ö00000:()I
+      37: invokestatic  #221                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+      40: aastore
+      41: invokestatic  #227                // Method java/lang/String.format:(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
+      44: invokevirtual #139                // Method org/apache/log4j/Logger.debug:(Ljava/lang/Object;)V
+      47: aload_0
+      48: aload_1
+      49: aload_2
