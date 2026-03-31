@@ -1,9 +1,9 @@
 package github.kasuminova.ssoptimizer;
 
 import com.fs.starfarer.api.BaseModPlugin;
-import github.kasuminova.ssoptimizer.loading.ImageIoConfigurator;
-import github.kasuminova.ssoptimizer.loading.LazyTextureManager;
-import github.kasuminova.ssoptimizer.logging.LogNoiseFilterConfigurator;
+import github.kasuminova.ssoptimizer.common.loading.ImageIoConfigurator;
+import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
+import github.kasuminova.ssoptimizer.common.logging.LogNoiseFilterConfigurator;
 import org.apache.log4j.Logger;
 
 public class SSOptimizerModPlugin extends BaseModPlugin {

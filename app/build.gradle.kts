@@ -138,7 +138,7 @@ tasks.named<Jar>("jar") {
 
     manifest {
         attributes(
-            "Premain-Class" to "github.kasuminova.ssoptimizer.agent.SSOptimizerAgent",
+            "Premain-Class" to "github.kasuminova.ssoptimizer.bootstrap.SSOptimizerAgent",
             "Can-Retransform-Classes" to "true",
             "Can-Redefine-Classes" to "true"
         )

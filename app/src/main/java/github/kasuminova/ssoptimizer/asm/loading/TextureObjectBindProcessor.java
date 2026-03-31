@@ -1,0 +1,126 @@
+package github.kasuminova.ssoptimizer.asm.loading;
+
+import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
+import org.objectweb.asm.*;
+
+public final class TextureObjectBindProcessor implements AsmClassProcessor {
+    public static final String TARGET_CLASS            = "com/fs/graphics/Object";
+    public static final String TARGET_METHOD           = "Ø00000";
+    public static final String TARGET_DESC             = "()V";
+    public static final String TARGET_ID_GETTER_METHOD = "ö00000";
+    public static final String TARGET_ID_GETTER_DESC   = "()I";
+    public static final String HELPER_OWNER            = "github/kasuminova/ssoptimizer/common/loading/LazyTextureManager";
+    public static final String HELPER_METHOD           = "bindTexture";
+    public static final String HELPER_DESC             = "(Lcom/fs/graphics/Object;I)V";
+    public static final String HELPER_ID_METHOD        = "getTextureId";
+    public static final String HELPER_ID_DESC          = "(Lcom/fs/graphics/Object;II)I";
+
+    private static final String TARGET_BIND_TARGET_FIELD = "ö00000";
+    private static final String TARGET_TEXTURE_ID_FIELD  = "ô00000";
+
+    @Override
+    public byte[] process(final byte[] classfileBuffer) {
+        final ClassReader reader = new ClassReader(classfileBuffer);
+        if (!TARGET_CLASS.equals(reader.getClassName())) {
+            return null;
+        }
+
+        final boolean[] modified = {false};
+        final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES) {
+            @Override
+            protected String getCommonSuperClass(final String type1, final String type2) {
+                return AsmCommonSuperClassResolver.resolve(type1, type2);
+            }
+        };
+
+        reader.accept(new ClassVisitor(Opcodes.ASM9, writer) {
+            @Override
+            public MethodVisitor visitMethod(final int access, final String name, final String desc,
+                                             final String sig, final String[] ex) {
+                final MethodVisitor delegate = super.visitMethod(access, name, desc, sig, ex);
+                if (TARGET_METHOD.equals(name) && TARGET_DESC.equals(desc)) {
+                    modified[0] = true;
+                    return new BindMethodReplacer(delegate);
+                }
+                if (TARGET_ID_GETTER_METHOD.equals(name) && TARGET_ID_GETTER_DESC.equals(desc)) {
+                    modified[0] = true;
+                    return new TextureIdMethodReplacer(delegate);
+                }
+                return delegate;
+            }
+        }, 0);
+
+        return modified[0] ? writer.toByteArray() : null;
+    }
+
+    static final class BindMethodReplacer extends MethodVisitor {
+        private final MethodVisitor target;
+
+        BindMethodReplacer(final MethodVisitor target) {
+            super(Opcodes.ASM9);
+            this.target = target;
+        }
+
+        @Override
+        public void visitCode() {
+            target.visitCode();
+            target.visitVarInsn(Opcodes.ALOAD, 0);
+            target.visitVarInsn(Opcodes.ALOAD, 0);
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, TARGET_BIND_TARGET_FIELD, "I");
+            target.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER, HELPER_METHOD, HELPER_DESC, false);
+            target.visitInsn(Opcodes.RETURN);
+        }
+
+        @Override
+        public void visitMaxs(final int maxStack, final int maxLocals) {
+            target.visitMaxs(0, 0);
+        }
+
+        @Override
+        public void visitEnd() {
+            target.visitEnd();
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
+            return target.visitAnnotation(descriptor, visible);
+        }
+    }
+
+    static final class TextureIdMethodReplacer extends MethodVisitor {
+        private final MethodVisitor target;
+
+        TextureIdMethodReplacer(final MethodVisitor target) {
+            super(Opcodes.ASM9);
+            this.target = target;
+        }
+
+        @Override
+        public void visitCode() {
+            target.visitCode();
+            target.visitVarInsn(Opcodes.ALOAD, 0);
+            target.visitVarInsn(Opcodes.ALOAD, 0);
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, TARGET_BIND_TARGET_FIELD, "I");
+            target.visitVarInsn(Opcodes.ALOAD, 0);
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, TARGET_TEXTURE_ID_FIELD, "I");
+            target.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER, HELPER_ID_METHOD, HELPER_ID_DESC, false);
+            target.visitInsn(Opcodes.IRETURN);
+        }
+
+        @Override
+        public void visitMaxs(final int maxStack, final int maxLocals) {
+            target.visitMaxs(0, 0);
+        }
+
+        @Override
+        public void visitEnd() {
+            target.visitEnd();
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
+            return target.visitAnnotation(descriptor, visible);
+        }
+    }
+}
