@@ -48,6 +48,10 @@
     "linux": [
       "-Djava.library.path=./native/linux",
       "-Dcom.fs.starfarer.settings.linux=true"
+    ],
+    "windows": [
+      "-Djava.library.path=./native/windows",
+      "-Dcom.fs.starfarer.settings.windows=true"
     ]
   },
   "classpath": [

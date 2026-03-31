@@ -3,6 +3,7 @@
 out/
 .idea/
 .vscode/
+.dev/
 *.iml
 *.log
 *.tmp

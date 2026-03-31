@@ -3,13 +3,16 @@
 ## Day 0 环境准备
 - 安装 JDK 25
 - 验证 `java -version`
-- 验证 `./gradlew -v`
+- 验证构建工具：
+  - Linux / macOS：`./gradlew -v`
+  - Windows：`gradlew.bat -v`
 - 配置 Starsector 本地路径与读权限
+- （可选）将开发参考文件放入 `.dev/` 目录（该目录不会被 git 跟踪）
 
 ## Day 1 运行验证
-- 执行 `./gradlew doctor`
-- 执行 `./gradlew :app:test`
-- 执行 `./gradlew :app:run`
+- 执行 `./gradlew doctor`（Windows：`gradlew.bat doctor`）
+- 执行 `./gradlew :app:test`（Windows：`gradlew.bat :app:test`）
+- 执行 `./gradlew :app:run`（Windows：`gradlew.bat :app:run`）
 - 记录验证结果与环境信息
 
 ## Day 2 Mapping 与注入演练

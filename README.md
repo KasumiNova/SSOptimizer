@@ -5,19 +5,20 @@
 ## 结构
 
 - `app`：Java 25 主模块（包名 `github.kasuminova.ssoptimizer`）
-- `native`：Gradle Native C++ 模块（`cpp-library`）
+- `native`：Gradle Native C++ 模块（`cpp-library`），含 FreeType JNI 字体栅格化实现
+- `tools`：烟测脚本、日志过滤工具
+- `docs/design`：设计文档与开发环境基线
+- `.dev/`：**仅本地** — 反编译 bytecode 笔记、逆向工程参考文本（已加入 `.gitignore`，不会提交到仓库）
 
-## 已配置能力
+## 技术栈
 
 - Java Toolchain: 25
 - C++ 编译: C++20（`-std=c++20 -O2 -fPIC`）
-- JNI 预留：`app:compileJava` 会将头文件输出到 `native/src/main/headers/generated`
-
-## 下一步建议
-
-1. 在 `app` 中定义 JNI 接口（`native` 方法）。
-2. 在 `native` 中实现 JNI 桥接，并输出 `.so`。
-3. 在运行时装载 native 库并做性能关键路径验证。
+- JNI：`app:compileJava` 自动将头文件输出到 `native/src/main/headers/generated`
+- Native 依赖：FreeType (`pkg-config freetype2`)、libpng、OpenGL
+- 构建：Gradle 9.x（`cpp-library` + `java-library`）
+- 压缩缓存：zstd-jni
+- Mixin：SpongePowered Mixin（通过 javaagent 桥接）
 
 ## 开发环境基线文档
 
@@ -139,4 +140,115 @@
 
 - `JAVA_TOOL_OPTIONS='-Dssoptimizer.texturecomposition.reportintervalmillis=2000 -Dssoptimizer.texturemanager.logintervalmillis=5000 -Dssoptimizer.runtimegl.logintervalmillis=5000' ./tools/smoke_test_game_launch.sh /path/to/Starsector 35 game`
 - `SSOPTIMIZER_SCREEN_SCALE_OVERRIDE=1.5 JAVA_TOOL_OPTIONS='-Dssoptimizer.textdiagnostics.enable=true -Dssoptimizer.textdiagnostics.logintervalmillis=2000' ./tools/smoke_test_game_launch.sh /path/to/Starsector 45 game`
+
+## Windows 使用指南
+
+### 环境准备
+
+1. **JDK 25**
+   - 从 [Adoptium](https://adoptium.net/) 或 [Azul Zulu](https://www.azul.com/downloads/) 下载 Windows x64 安装包。
+   - 安装后确认 `java -version` 输出 `25`。
+   - 确保 `JAVA_HOME` 指向 JDK 25 安装根目录。
+
+2. **Gradle**
+   - 本项目自带 Gradle Wrapper，无需全局安装。
+   - Windows 下使用 `gradlew.bat` 而非 `./gradlew`。
+
+3. **FreeType（仅 native 构建需要）**
+   - Native 模块使用 `pkg-config` 探测 FreeType。
+   - 推荐使用 [MSYS2](https://www.msys2.org/) 安装：
+     ```
+     pacman -S mingw-w64-x86_64-freetype2 mingw-w64-x86_64-pkg-config
+     ```
+   - 或使用 [vcpkg](https://vcpkg.io/)：
+     ```
+     vcpkg install freetype:x64-windows
+     ```
+   - 如果只做 Java 开发不碰 native，可跳过此步。
+
+4. **Starsector 游戏目录**
+   - 游戏路径中不应包含中文或特殊字符。
+   - 在 `gradle.properties` 中配置（或通过 `-P` 传参）：
+     ```properties
+     starsector.gameDir=D:/Games/Starsector
+     ```
+
+### 构建与安装
+
+```bat
+rem 编译 Java 模块
+gradlew.bat :app:compileJava
+
+rem 运行测试
+gradlew.bat :app:test
+
+rem 编译 native 模块（需要 FreeType + C++ 工具链）
+gradlew.bat :native:assemble
+
+rem 一键构建并安装到游戏目录
+gradlew.bat -Pstarsector.gameDir=D:\Games\Starsector installDevMod
+```
+
+### 运行游戏
+
+在 `launch-config.json` 中已提供 JVM 参数模板。Windows 用户需要在游戏启动脚本（例如 `starsector.bat` 或自定义启动器）中添加对应参数。
+
+Windows 特有的 JVM 参数（相对于 Linux）：
+```
+-Djava.library.path=./native/windows
+-Dcom.fs.starfarer.settings.windows=true
+```
+
+一个典型的 Windows 手动启动命令：
+```bat
+cd /d D:\Games\Starsector
+jre_windows\bin\java.exe ^
+  -javaagent:./mods/ssoptimizer/jars/SSOptimizer.jar ^
+  -Djava.library.path=./native/windows ^
+  -Xms4096m -Xmx4096m -Xss4m ^
+  -Dssoptimizer.font.ttf.enable=true ^
+  -classpath "janino.jar;commons-compiler.jar;starfarer.api.jar;starfarer_obf.jar;lwjgl.jar;lwjgl_util.jar;jinput.jar;json.jar;log4j-1.2.9.jar;fs.sound_obf.jar;fs.common_obf.jar;xstream-1.4.10.jar" ^
+  com.fs.starfarer.StarfarerLauncher
+```
+
+> **注意**：Windows classpath 使用 `;` 分隔而非 `:`。
+
+### 烟测
+
+当前 `tools/smoke_test_game_launch.sh` 是 Bash 脚本，Windows 上可通过以下方式运行：
+
+- **WSL**（推荐）：在 WSL 中直接运行，路径需转换为 Linux 格式。
+- **Git Bash**：大部分功能可用。
+- **PowerShell**：手动模拟核心步骤——启动游戏进程后检查 `starsector.log` 中的关键标记。
+
+WSL 示例：
+```bash
+# 假设游戏在 Windows D 盘
+./tools/smoke_test_game_launch.sh /mnt/d/Games/Starsector 45 game
+```
+
+### 常见问题
+
+| 问题 | 原因 | 解决 |
+|------|------|------|
+| `gradlew.bat` 提示 `JAVA_HOME is not set` | 未设置或指向旧版本 | 设置 `JAVA_HOME` 为 JDK 25 根目录 |
+| native 编译找不到 FreeType | pkg-config 不在 PATH 中 | MSYS2 环境下运行，或在系统 PATH 中加入 MSYS2 mingw64/bin |
+| `UnsatisfiedLinkError` native 库加载失败 | `.dll` 不存在或路径错误 | 确认 `installDevMod` 已成功，且 `-Djava.library.path` 指向正确位置 |
+| classpath 错误 | 用了 `:` 而不是 `;` | Windows 下 classpath 必须用 `;` 分隔 |
+| 游戏窗口闪退无日志 | OpenGL / 显卡驱动不兼容 | 更新显卡驱动，尝试 `-Dorg.lwjgl.opengl.Display.allowSoftwareOpenGL=true` |
+
+### `.dev` 目录
+
+开发过程中的逆向工程笔记（bytecode 反编译文本、方法签名记录等）存放在项目根目录的 `.dev/` 下。该目录已加入 `.gitignore`，不会提交到仓库。
+
+如果你拿到了这些参考文件，请手动放到 `.dev/`：
+```
+.dev/
+├── load_hotspot_bytecode.txt
+├── load_hotspot_reverse_engineering.txt
+├── load_L_worker_bytecode.txt
+├── load_textureloader_methods.txt
+├── load_textureloader_signatures_runtime.txt
+└── load_texture_object_methods.txt
+```
 
