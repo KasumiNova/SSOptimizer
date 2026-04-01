@@ -2,9 +2,7 @@ package github.kasuminova.ssoptimizer.common.input.ime;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class LinuxXimImeBackendTest {
     @Test
@@ -49,31 +47,91 @@ class LinuxXimImeBackendTest {
         boolean supported;
         boolean attached;
         boolean focused;
-        int lastSpotX;
-        int lastSpotY;
-        int lastSpotHeight;
-        long handle = 1L;
-        String lastError = "";
-        String commit;
+        int     lastSpotX;
+        int     lastSpotY;
+        int     lastSpotHeight;
+        long    handle    = 1L;
+        String  lastError = "";
+        String  commit;
         boolean handleKeyEventResult;
 
         private FakeBridge(boolean supported) {
             this.supported = supported;
         }
 
-        @Override public boolean nativeIsSupported() { return supported; }
-        @Override public String nativeLastErrorMessage() { return lastError; }
-        @Override public String nativeDebugSummary(long contextHandle) { return "requestedModifiers=@im=fcitx appliedModifiers=@im=fcitx"; }
-        @Override public long nativeCreateContext(long display, long window, int style) { attached = true; return handle; }
-        @Override public void nativeDestroyContext(long contextHandle) { attached = false; }
-        @Override public void nativeFocusIn(long contextHandle) { focused = true; }
-        @Override public void nativeFocusOut(long contextHandle) { focused = false; }
-        @Override public void nativeUpdateSpot(long contextHandle, int x, int y, int height) { lastSpotX = x; lastSpotY = y; lastSpotHeight = height; }
-        @Override public boolean nativeHandleKeyEvent(long contextHandle, long keyEventAddress, int eventType) { return handleKeyEventResult; }
-        @Override public String nativeLastKeyEventSummary(long contextHandle) { return "keycode=0 state=0x0 keysym=0x0 status=0 length=0 committed=\"\""; }
-        @Override public String nativePollCommittedText(long contextHandle) { String v = commit; commit = null; return v; }
-        @Override public String nativeCurrentPreeditText(long contextHandle) { return ""; }
-        @Override public boolean nativeIsComposing(long contextHandle) { return false; }
-        @Override public boolean nativeFilterXimProtocolEvent(long contextHandle, long eventAddress) { return false; }
+        @Override
+        public boolean nativeIsSupported() {
+            return supported;
+        }
+
+        @Override
+        public String nativeLastErrorMessage() {
+            return lastError;
+        }
+
+        @Override
+        public String nativeDebugSummary(long contextHandle) {
+            return "requestedModifiers=@im=fcitx appliedModifiers=@im=fcitx";
+        }
+
+        @Override
+        public long nativeCreateContext(long display, long window, int style) {
+            attached = true;
+            return handle;
+        }
+
+        @Override
+        public void nativeDestroyContext(long contextHandle) {
+            attached = false;
+        }
+
+        @Override
+        public void nativeFocusIn(long contextHandle) {
+            focused = true;
+        }
+
+        @Override
+        public void nativeFocusOut(long contextHandle) {
+            focused = false;
+        }
+
+        @Override
+        public void nativeUpdateSpot(long contextHandle, int x, int y, int height) {
+            lastSpotX = x;
+            lastSpotY = y;
+            lastSpotHeight = height;
+        }
+
+        @Override
+        public boolean nativeHandleKeyEvent(long contextHandle, long keyEventAddress, int eventType) {
+            return handleKeyEventResult;
+        }
+
+        @Override
+        public String nativeLastKeyEventSummary(long contextHandle) {
+            return "keycode=0 state=0x0 keysym=0x0 status=0 length=0 committed=\"\"";
+        }
+
+        @Override
+        public String nativePollCommittedText(long contextHandle) {
+            String v = commit;
+            commit = null;
+            return v;
+        }
+
+        @Override
+        public String nativeCurrentPreeditText(long contextHandle) {
+            return "";
+        }
+
+        @Override
+        public boolean nativeIsComposing(long contextHandle) {
+            return false;
+        }
+
+        @Override
+        public boolean nativeFilterXimProtocolEvent(long contextHandle, long eventAddress) {
+            return false;
+        }
     }
 }

@@ -12,8 +12,8 @@ import java.util.Locale;
  * 含后端选择、事件处理、焦点变化等诊断信息。
  */
 final class ImeDiagnostics {
-    private static final Logger LOGGER = Logger.getLogger(ImeDiagnostics.class);
-    private static final int MAX_TEXT_PREVIEW_LENGTH = 32;
+    private static final Logger LOGGER                  = Logger.getLogger(ImeDiagnostics.class);
+    private static final int    MAX_TEXT_PREVIEW_LENGTH = 32;
 
     private ImeDiagnostics() {
     }

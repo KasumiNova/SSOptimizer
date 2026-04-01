@@ -12,7 +12,7 @@ import java.security.ProtectionDomain;
  * 类名净化变换器，在类加载时将超长混淆标识符替换为可读的短名称。
  * <p>
  * 通过 {@link SanitizingRemapper} 对游戏引擎类中含有非法字符的方法名、字段名、
-invokedynamic 方法名等进行转义替换，使它们成为合法的 JVM 标识符。
+ * invokedynamic 方法名等进行转义替换，使它们成为合法的 JVM 标识符。
  * 跳过 JDK 内部类、ASM 自身和 SSOptimizer 自身的类。
  */
 public final class SanitizingTransformer implements ClassFileTransformer {

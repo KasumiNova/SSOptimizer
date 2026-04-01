@@ -36,7 +36,9 @@ public final class HybridWeaverTransformer implements ClassFileTransformer {
         processors.remove(normalizeClassName(className));
     }
 
-    /** 获取当前已注册的处理器数量。 */
+    /**
+     * 获取当前已注册的处理器数量。
+     */
     public int getProcessorCount() {
         return processors.size();
     }

@@ -8,8 +8,8 @@ import java.util.Locale;
  * 通过 {@code -Dssoptimizer.ime.*} JVM 参数控制 IME 的启用、后端选择和诊断日志。
  */
 public final class ImeProperties {
-    public static final String ENABLE_PROPERTY = "ssoptimizer.ime.enable";
-    public static final String BACKEND_PROPERTY = "ssoptimizer.ime.backend";
+    public static final String ENABLE_PROPERTY      = "ssoptimizer.ime.enable";
+    public static final String BACKEND_PROPERTY     = "ssoptimizer.ime.backend";
     public static final String DIAGNOSTICS_PROPERTY = "ssoptimizer.ime.diagnostics";
 
     private ImeProperties() {

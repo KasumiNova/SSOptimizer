@@ -83,7 +83,7 @@ public final class LazyTextureManager {
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final    ThreadLocal<Set<com.fs.graphics.Object>>              CONTEXT_RELOAD_GUARD                =
             ThreadLocal.withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<>()));
-        private static final    ThreadLocal<String>                                   CURRENT_BOUND_TEXTURE_PATH          =
+    private static final    ThreadLocal<String>                                   CURRENT_BOUND_TEXTURE_PATH          =
             ThreadLocal.withInitial(() -> "");
     private static final    AtomicBoolean                                         COMPOSITION_REPORT_HOOK_INSTALLED   = new AtomicBoolean(false);
     private static final    AtomicLong                                            TOTAL_EVICTED_TEXTURES              = new AtomicLong();

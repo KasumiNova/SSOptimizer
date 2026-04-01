@@ -16,18 +16,18 @@ import java.lang.reflect.Method;
 public final class LinuxDisplayImeHooks {
     private static final Logger LOGGER = Logger.getLogger(LinuxDisplayImeHooks.class);
 
-    private static final Method LINUX_DISPLAY_GET_DISPLAY = findMethod("org.lwjgl.opengl.LinuxDisplay", "getDisplay");
-    private static final Method LINUX_DISPLAY_GET_WINDOW = findMethod("org.lwjgl.opengl.LinuxDisplay", "getWindow");
-    private static final Method LINUX_EVENT_GET_TYPE = findMethod("org.lwjgl.opengl.LinuxEvent", "getType");
-    private static final Method LINUX_EVENT_GET_WINDOW = findMethod("org.lwjgl.opengl.LinuxEvent", "getWindow");
-    private static final Method LINUX_EVENT_GET_KEY_ADDRESS = findMethod("org.lwjgl.opengl.LinuxEvent", "getKeyAddress");
-    private static final Class<?> LINUX_EVENT_CLASS = findClass("org.lwjgl.opengl.LinuxEvent");
-    private static final Method LINUX_EVENT_COPY_FROM = LINUX_EVENT_CLASS != null
+    private static final Method         LINUX_DISPLAY_GET_DISPLAY   = findMethod("org.lwjgl.opengl.LinuxDisplay", "getDisplay");
+    private static final Method         LINUX_DISPLAY_GET_WINDOW    = findMethod("org.lwjgl.opengl.LinuxDisplay", "getWindow");
+    private static final Method         LINUX_EVENT_GET_TYPE        = findMethod("org.lwjgl.opengl.LinuxEvent", "getType");
+    private static final Method         LINUX_EVENT_GET_WINDOW      = findMethod("org.lwjgl.opengl.LinuxEvent", "getWindow");
+    private static final Method         LINUX_EVENT_GET_KEY_ADDRESS = findMethod("org.lwjgl.opengl.LinuxEvent", "getKeyAddress");
+    private static final Class<?>       LINUX_EVENT_CLASS           = findClass("org.lwjgl.opengl.LinuxEvent");
+    private static final Method         LINUX_EVENT_COPY_FROM       = LINUX_EVENT_CLASS != null
             ? findMethod("org.lwjgl.opengl.LinuxEvent", "copyFrom", LINUX_EVENT_CLASS)
             : null;
-    private static final Constructor<?> LINUX_EVENT_CONSTRUCTOR = findConstructor("org.lwjgl.opengl.LinuxEvent");
-    private static final int KEY_PRESS = findStaticInt("org.lwjgl.opengl.LinuxEvent", "KeyPress", 2);
-    private static final int KEY_RELEASE = findStaticInt("org.lwjgl.opengl.LinuxEvent", "KeyRelease", 3);
+    private static final Constructor<?> LINUX_EVENT_CONSTRUCTOR     = findConstructor("org.lwjgl.opengl.LinuxEvent");
+    private static final int            KEY_PRESS                   = findStaticInt("org.lwjgl.opengl.LinuxEvent", "KeyPress", 2);
+    private static final int            KEY_RELEASE                 = findStaticInt("org.lwjgl.opengl.LinuxEvent", "KeyRelease", 3);
 
     private static volatile Object blankLinuxEvent;
 

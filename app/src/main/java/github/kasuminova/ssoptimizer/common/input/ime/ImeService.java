@@ -21,14 +21,13 @@ import java.util.function.IntSupplier;
  * X11/Win32 窗口坐标，并计算缩放后的光标位置传给后端。
  */
 public final class ImeService {
-    private static final ImeService INSTANCE = new ImeService(ImeBackends.createDefault(), EffectiveScreenScale::current, () -> Display.getHeight());
-    private static final Method GET_CURRENT_FOCUSED_COMPONENT = findMethod("com.fs.starfarer.ui.O0Oo", "Ó00000");
+    private static final ImeService INSTANCE                      = new ImeService(ImeBackends.createDefault(), EffectiveScreenScale::current, () -> Display.getHeight());
+    private static final Method     GET_CURRENT_FOCUSED_COMPONENT = findMethod("com.fs.starfarer.ui.O0Oo", "Ó00000");
 
     private final CopyOnWriteArrayList<WeakReference<TextFieldAPI>> registeredFields = new CopyOnWriteArrayList<>();
-
-    private volatile ImeBackend backend;
-    private final DoubleSupplier windowScaleSupplier;
-    private final IntSupplier windowHeightSupplier;
+    private final    DoubleSupplier              windowScaleSupplier;
+    private final    IntSupplier                 windowHeightSupplier;
+    private volatile ImeBackend                  backend;
     private volatile WeakReference<TextFieldAPI> explicitlyFocusedField;
 
     public ImeService(final ImeBackend backend) {
@@ -45,6 +44,19 @@ public final class ImeService {
 
     public static ImeService getInstance() {
         return INSTANCE;
+    }
+
+    private static Method findMethod(final String className,
+                                     final String methodName,
+                                     final Class<?>... parameterTypes) {
+        try {
+            final Class<?> clazz = Class.forName(className);
+            final Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
+            method.setAccessible(true);
+            return method;
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     public ImeBackend backend() {
@@ -134,9 +146,9 @@ public final class ImeService {
         final int scaledHeight = Math.round(position.getHeight() * scale);
 
         return new ImeCaretRect(
-            scaledX,
-            scaledY,
-            scaledHeight
+                scaledX,
+                scaledY,
+                scaledHeight
         );
     }
 
@@ -205,19 +217,6 @@ public final class ImeService {
             // Best-effort reflection only.
         }
         return null;
-    }
-
-    private static Method findMethod(final String className,
-                                     final String methodName,
-                                     final Class<?>... parameterTypes) {
-        try {
-            final Class<?> clazz = Class.forName(className);
-            final Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
-            method.setAccessible(true);
-            return method;
-        } catch (Throwable t) {
-            return null;
-        }
     }
 
     private void cleanupStaleReferences() {

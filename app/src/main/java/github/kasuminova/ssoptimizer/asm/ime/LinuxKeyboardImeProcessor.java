@@ -1,11 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
 /**
  * ASM processor that prevents LWJGL's {@code LinuxKeyboard} from creating its

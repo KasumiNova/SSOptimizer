@@ -179,12 +179,6 @@ public final class SuperObjectRenderHelper {
         return snappedEnd;
     }
 
-    record SnappedGlyphQuad(float left,
-                            float top,
-                            float right,
-                            float bottom) {
-    }
-
     private static void fallbackRenderGlyphQuad(
             float x, float y,
             int glyphWidth, int glyphHeight, int bearingY,
@@ -250,4 +244,10 @@ public final class SuperObjectRenderHelper {
             float scale,
             int shadowCopies,
             float shadowScale);
+
+    record SnappedGlyphQuad(float left,
+                            float top,
+                            float right,
+                            float bottom) {
+    }
 }

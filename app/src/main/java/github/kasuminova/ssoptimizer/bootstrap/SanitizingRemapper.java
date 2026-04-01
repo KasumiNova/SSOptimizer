@@ -11,30 +11,40 @@ import org.objectweb.asm.commons.Remapper;
 public final class SanitizingRemapper extends Remapper {
     private boolean modified;
 
-    /** {@inheritDoc} 对方法名进行净化处理。 */
+    /**
+     * {@inheritDoc} 对方法名进行净化处理。
+     */
     @Override
     public String mapMethodName(String owner, String name, String descriptor) {
         return sanitize(name);
     }
 
-    /** {@inheritDoc} 对字段名进行净化处理。 */
+    /**
+     * {@inheritDoc} 对字段名进行净化处理。
+     */
     @Override
     public String mapFieldName(String owner, String name, String descriptor) {
         return sanitize(name);
     }
 
-    /** {@inheritDoc} 对 invokedynamic 方法名进行净化处理。 */
+    /**
+     * {@inheritDoc} 对 invokedynamic 方法名进行净化处理。
+     */
     @Override
     public String mapInvokeDynamicMethodName(String name, String descriptor) {
         return sanitize(name);
     }
 
-    /** 返回自上次 {@link #reset()} 以来是否有标识符被净化。 */
+    /**
+     * 返回自上次 {@link #reset()} 以来是否有标识符被净化。
+     */
     public boolean isModified() {
         return modified;
     }
 
-    /** 重置修改标记。 */
+    /**
+     * 重置修改标记。
+     */
     public void reset() {
         modified = false;
     }

@@ -12,9 +12,9 @@ import java.util.Locale;
  * export the expected JNI symbols, callers transparently fall back to Java2D.
  */
 public final class NativeFontRasterizer {
-    public static final String RASTERIZER_PROPERTY      = "ssoptimizer.font.rasterizer";
-    public static final String HINT_PROPERTY            = "ssoptimizer.font.hint";
-    public static final String FORCE_AUTOHINT_PROPERTY  = "ssoptimizer.font.forceautohint";
+    public static final String RASTERIZER_PROPERTY     = "ssoptimizer.font.rasterizer";
+    public static final String HINT_PROPERTY           = "ssoptimizer.font.hint";
+    public static final String FORCE_AUTOHINT_PROPERTY = "ssoptimizer.font.forceautohint";
 
     private static volatile boolean availabilityChecked = false;
     private static volatile boolean available           = false;

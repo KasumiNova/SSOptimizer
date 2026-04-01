@@ -1,11 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
 /**
  * Tooltip 文本框工厂的 ASM 处理器，在 {@code addTextField()} 返回后注册 IME 支持。
@@ -17,7 +13,7 @@ import org.objectweb.asm.Opcodes;
  */
 public final class TooltipTextFieldFactoryProcessor implements AsmClassProcessor {
     public static final String DEFAULT_TARGET_CLASS = "com/fs/starfarer/ui/impl/StandardTooltipV2Expandable";
-    public static final String HOOK_OWNER = "github/kasuminova/ssoptimizer/common/input/ime/TextFieldImeHooks";
+    public static final String HOOK_OWNER           = "github/kasuminova/ssoptimizer/common/input/ime/TextFieldImeHooks";
 
     private static final String TEXT_FIELD_DESC = "Lcom/fs/starfarer/api/ui/TextFieldAPI;";
 

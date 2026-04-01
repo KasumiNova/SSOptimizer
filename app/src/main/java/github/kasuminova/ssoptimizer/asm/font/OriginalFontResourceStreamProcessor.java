@@ -2,12 +2,7 @@ package github.kasuminova.ssoptimizer.asm.font;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;
 
 /**
@@ -15,7 +10,7 @@ import org.objectweb.asm.commons.AdviceAdapter;
  * resources can be served from generated in-memory BMFont artifacts.
  */
 public final class OriginalFontResourceStreamProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS =
+    public static final String TARGET_CLASS  =
             "com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO";
     public static final String TARGET_METHOD = "String";
     public static final String TARGET_DESC   = "(Ljava/lang/String;)Ljava/io/InputStream;";

@@ -2,11 +2,7 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -17,23 +13,23 @@ import java.util.concurrent.atomic.LongAdder;
  * cache using real runtime distributions instead of guesswork.
  */
 final class TextRenderDiagnostics {
-    static final String ENABLE_PROPERTY = "ssoptimizer.textdiagnostics.enable";
+    static final String ENABLE_PROPERTY       = "ssoptimizer.textdiagnostics.enable";
     static final String LOG_INTERVAL_PROPERTY = "ssoptimizer.textdiagnostics.logintervalmillis";
 
-    private static final Logger LOGGER = Logger.getLogger(TextRenderDiagnostics.class);
-    private static final long DEFAULT_LOG_INTERVAL_MILLIS = 5_000L;
-    private static final int TOP_SIGNATURE_LIMIT = 5;
+    private static final Logger LOGGER                      = Logger.getLogger(TextRenderDiagnostics.class);
+    private static final long   DEFAULT_LOG_INTERVAL_MILLIS = 5_000L;
+    private static final int    TOP_SIGNATURE_LIMIT         = 5;
 
-    private static final LongAdder TOTAL_GLYPH_QUADS = new LongAdder();
-    private static final LongAdder TOTAL_SHADOW_PASSES = new LongAdder();
-    private static final LongAdder NATIVE_GLYPH_QUADS = new LongAdder();
-    private static final LongAdder JAVA_GLYPH_QUADS = new LongAdder();
-    private static final LongAdder SCALED_GLYPH_QUADS = new LongAdder();
-    private static final LongAdder MICRO_GLYPH_QUADS = new LongAdder();
-    private static final LongAdder SCALE_MILLIS_SUM = new LongAdder();
-    private static final AtomicLong MAX_SHADOW_COPIES = new AtomicLong();
-    private static final AtomicLong NEXT_LOG_NANOS = new AtomicLong();
-    private static final ConcurrentHashMap<String, LongAdder> SIGNATURE_COUNTS = new ConcurrentHashMap<>();
+    private static final LongAdder                             TOTAL_GLYPH_QUADS   = new LongAdder();
+    private static final LongAdder                             TOTAL_SHADOW_PASSES = new LongAdder();
+    private static final LongAdder                             NATIVE_GLYPH_QUADS  = new LongAdder();
+    private static final LongAdder                             JAVA_GLYPH_QUADS    = new LongAdder();
+    private static final LongAdder                             SCALED_GLYPH_QUADS  = new LongAdder();
+    private static final LongAdder                             MICRO_GLYPH_QUADS   = new LongAdder();
+    private static final LongAdder                             SCALE_MILLIS_SUM    = new LongAdder();
+    private static final AtomicLong                            MAX_SHADOW_COPIES   = new AtomicLong();
+    private static final AtomicLong                            NEXT_LOG_NANOS      = new AtomicLong();
+    private static final ConcurrentHashMap<String, LongAdder>  SIGNATURE_COUNTS    = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, LongAdder> SCALE_BUCKET_COUNTS = new ConcurrentHashMap<>();
 
     private TextRenderDiagnostics() {
@@ -90,7 +86,7 @@ final class TextRenderDiagnostics {
         final double averageScale = SCALE_MILLIS_SUM.sum() / 1000.0 / totalGlyphs;
 
         return String.format(Locale.ROOT,
-            "[SSOptimizer] Text render summary: glyphQuads=%d native=%d java=%d shadowPasses=%d avgScale=%.3f scaledGlyphs=%d microGlyphs=%d maxShadowCopies=%d scaleBuckets=%s topGlyphSignatures=%s",
+                "[SSOptimizer] Text render summary: glyphQuads=%d native=%d java=%d shadowPasses=%d avgScale=%.3f scaledGlyphs=%d microGlyphs=%d maxShadowCopies=%d scaleBuckets=%s topGlyphSignatures=%s",
                 totalGlyphs,
                 nativeGlyphs,
                 javaGlyphs,
@@ -99,7 +95,7 @@ final class TextRenderDiagnostics {
                 scaledGlyphs,
                 microGlyphs,
                 MAX_SHADOW_COPIES.get(),
-            summarizeScaleBuckets(),
+                summarizeScaleBuckets(),
                 summarizeTopSignatures());
     }
 
@@ -165,7 +161,7 @@ final class TextRenderDiagnostics {
         return glyphWidth + "x" + glyphHeight
                 + "/b" + bearingY
                 + "/uv" + quantizeTexture(texWidth) + 'x' + quantizeTexture(texHeight)
-            + "/s" + TextScaleBuckets.bucketScaleMillis(scale)
+                + "/s" + TextScaleBuckets.bucketScaleMillis(scale)
                 + "/sh" + Math.max(0, shadowCopies);
     }
 
@@ -180,8 +176,8 @@ final class TextRenderDiagnostics {
 
         final List<Map.Entry<String, LongAdder>> sorted = new ArrayList<>(SIGNATURE_COUNTS.entrySet());
         sorted.sort(Comparator.<Map.Entry<String, LongAdder>>comparingLong(entry -> entry.getValue().sum())
-                .reversed()
-                .thenComparing(Map.Entry::getKey));
+                              .reversed()
+                              .thenComparing(Map.Entry::getKey));
 
         final List<String> top = new ArrayList<>(Math.min(TOP_SIGNATURE_LIMIT, sorted.size()));
         for (int i = 0; i < sorted.size() && i < TOP_SIGNATURE_LIMIT; i++) {
@@ -198,8 +194,8 @@ final class TextRenderDiagnostics {
 
         final List<Map.Entry<Integer, LongAdder>> sorted = new ArrayList<>(SCALE_BUCKET_COUNTS.entrySet());
         sorted.sort(Comparator.<Map.Entry<Integer, LongAdder>>comparingLong(entry -> entry.getValue().sum())
-                .reversed()
-                .thenComparingInt(Map.Entry::getKey));
+                              .reversed()
+                              .thenComparingInt(Map.Entry::getKey));
 
         final List<String> top = new ArrayList<>(Math.min(4, sorted.size()));
         for (int i = 0; i < sorted.size() && i < 4; i++) {

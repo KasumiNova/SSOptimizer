@@ -1,12 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
 /**
  * Rewrites {@code com.fs.graphics.super.Object.o00000(FFL...;FZ)V} so one glyph
@@ -14,21 +9,21 @@ import org.objectweb.asm.Opcodes;
  * {@code glTexCoord2f} + four {@code glVertex2f} Java calls.
  */
 public final class EngineSuperObjectProcessor implements AsmClassProcessor {
-    static final String TARGET_CLASS = "com/fs/graphics/super/Object";
-    static final String GLYPH_CLASS = "com/fs/graphics/super/oOOO";
-    static final String FONT_CLASS = "com/fs/graphics/super/return";
-    static final String ENTRY_METHOD = "Õ00000";
-    static final String ENTRY_DESC = "()V";
-    static final String HELPER_OWNER =
+    static final String TARGET_CLASS                 = "com/fs/graphics/super/Object";
+    static final String GLYPH_CLASS                  = "com/fs/graphics/super/oOOO";
+    static final String FONT_CLASS                   = "com/fs/graphics/super/return";
+    static final String ENTRY_METHOD                 = "Õ00000";
+    static final String ENTRY_DESC                   = "()V";
+    static final String HELPER_OWNER                 =
             "github/kasuminova/ssoptimizer/common/render/engine/SuperObjectRenderHelper";
-    static final String LAYOUT_HELPER_OWNER =
-        "github/kasuminova/ssoptimizer/common/render/engine/TextLayoutDiagnostics";
-    static final String FONT_SWAP_HELPER_OWNER =
-        "github/kasuminova/ssoptimizer/common/font/RuntimeScaledFontCache";
-    static final String TARGET_DESC = "(FFLcom/fs/graphics/super/oOOO;FZ)V";
-    static final String HELPER_DESC = "(FFIIIFFFFFIF)V";
-    static final String LAYOUT_HELPER_DESC = "(IIIIFFII)V";
-    static final String FONT_SWAP_HELPER_DESC = "(Ljava/lang/Object;F)Ljava/lang/Object;";
+    static final String LAYOUT_HELPER_OWNER          =
+            "github/kasuminova/ssoptimizer/common/render/engine/TextLayoutDiagnostics";
+    static final String FONT_SWAP_HELPER_OWNER       =
+            "github/kasuminova/ssoptimizer/common/font/RuntimeScaledFontCache";
+    static final String TARGET_DESC                  = "(FFLcom/fs/graphics/super/oOOO;FZ)V";
+    static final String HELPER_DESC                  = "(FFIIIFFFFFIF)V";
+    static final String LAYOUT_HELPER_DESC           = "(IIIIFFII)V";
+    static final String FONT_SWAP_HELPER_DESC        = "(Ljava/lang/Object;F)Ljava/lang/Object;";
     static final String FONT_SIZE_ADJUST_HELPER_DESC = "(Ljava/lang/Object;F)F";
 
     @Override
@@ -80,9 +75,18 @@ public final class EngineSuperObjectProcessor implements AsmClassProcessor {
             emitBody();
         }
 
-        @Override public void visitMaxs(int maxStack, int maxLocals) { target.visitMaxs(0, 0); }
-        @Override public void visitEnd() { target.visitEnd(); }
-        @Override public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        @Override
+        public void visitMaxs(int maxStack, int maxLocals) {
+            target.visitMaxs(0, 0);
+        }
+
+        @Override
+        public void visitEnd() {
+            target.visitEnd();
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
             return target.visitAnnotation(descriptor, visible);
         }
 
@@ -173,19 +177,19 @@ public final class EngineSuperObjectProcessor implements AsmClassProcessor {
                     FONT_SWAP_HELPER_DESC,
                     false);
             super.visitTypeInsn(Opcodes.CHECKCAST, FONT_CLASS);
-                super.visitInsn(Opcodes.DUP_X1);
+            super.visitInsn(Opcodes.DUP_X1);
             super.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "øÒ0000", "Lcom/fs/graphics/super/return;");
 
-                super.visitVarInsn(Opcodes.ALOAD, 0);
-                super.visitInsn(Opcodes.SWAP);
-                super.visitVarInsn(Opcodes.ALOAD, 0);
-                super.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "ø00000", "F");
-                super.visitMethodInsn(Opcodes.INVOKESTATIC,
+            super.visitVarInsn(Opcodes.ALOAD, 0);
+            super.visitInsn(Opcodes.SWAP);
+            super.visitVarInsn(Opcodes.ALOAD, 0);
+            super.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "ø00000", "F");
+            super.visitMethodInsn(Opcodes.INVOKESTATIC,
                     FONT_SWAP_HELPER_OWNER,
                     "adjustRequestedFontSize",
                     FONT_SIZE_ADJUST_HELPER_DESC,
                     false);
-                super.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "ø00000", "F");
+            super.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "ø00000", "F");
         }
     }
 }

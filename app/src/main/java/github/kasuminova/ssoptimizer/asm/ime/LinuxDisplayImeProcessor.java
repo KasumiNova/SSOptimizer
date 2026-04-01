@@ -1,11 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
 /**
  * LWJGL {@code LinuxDisplay} 的 IME 相关 ASM 处理器。
@@ -24,11 +20,11 @@ import org.objectweb.asm.Opcodes;
  */
 public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "org/lwjgl/opengl/LinuxDisplay";
-    public static final String HOOK_OWNER = "github/kasuminova/ssoptimizer/common/input/ime/LinuxDisplayImeHooks";
+    public static final String HOOK_OWNER   = "github/kasuminova/ssoptimizer/common/input/ime/LinuxDisplayImeHooks";
 
-    private static final String LINUX_EVENT_OWNER = "org/lwjgl/opengl/LinuxEvent";
+    private static final String LINUX_EVENT_OWNER  = "org/lwjgl/opengl/LinuxEvent";
     private static final String EVENT_BUFFER_FIELD = "event_buffer";
-    private static final String EVENT_BUFFER_DESC = "Lorg/lwjgl/opengl/LinuxEvent;";
+    private static final String EVENT_BUFFER_DESC  = "Lorg/lwjgl/opengl/LinuxEvent;";
 
     @Override
     public byte[] process(final byte[] classfileBuffer) {

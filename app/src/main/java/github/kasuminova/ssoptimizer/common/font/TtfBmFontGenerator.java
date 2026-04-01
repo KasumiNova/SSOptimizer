@@ -44,7 +44,8 @@ final class TtfBmFontGenerator {
     static GeneratedFontPack generate(final OriginalGameFontOverrides.FontOverrideSpec spec,
                                       final Path fontDir) throws IOException, FontFormatException {
         return loadOrGenerateCached(spec, spec.originalFontPath(), fontDir, 1.0f, () -> {
-            final SourceBmFont source = SourceBmFont.parse(OriginalGameFontOverrides.resolveOriginalFontFile(spec.originalFontPath()));
+            final SourceBmFont source = SourceBmFont
+                    .parse(OriginalGameFontOverrides.resolveOriginalFontFile(spec.originalFontPath()));
             final FontChain fonts = loadFontChain(spec, fontDir, source);
             final RasterizedGlyphs rasterized = rasterizeGlyphs(source, fonts);
             final FittedAtlas fitted = fitSinglePageAtlas(spec, spec.originalFontPath(), source, rasterized, 1.0f);
@@ -56,14 +57,14 @@ final class TtfBmFontGenerator {
                                             final Path fontDir,
                                             final String runtimeFontPath,
                                             final float scale) throws IOException, FontFormatException {
-        final SourceBmFont source = SourceBmFont.parse(OriginalGameFontOverrides.resolveOriginalFontFile(baseSpec.originalFontPath()));
+        final SourceBmFont source = SourceBmFont
+                .parse(OriginalGameFontOverrides.resolveOriginalFontFile(baseSpec.originalFontPath()));
         final OriginalGameFontOverrides.FontOverrideSpec runtimeSpec = runtimeSpecForScale(
                 baseSpec,
                 runtimeFontPath,
                 scale,
                 source.scaleWidth(),
-                source.scaleHeight()
-        );
+                source.scaleHeight());
         return loadOrGenerateCached(runtimeSpec, baseSpec.originalFontPath(), fontDir, scale, () -> {
             final SourceBmFont scaledSource = source.scaled(scale);
             final FontChain fonts = loadFontChain(runtimeSpec, fontDir, scaledSource);
@@ -73,24 +74,25 @@ final class TtfBmFontGenerator {
         });
     }
 
-    static OriginalGameFontOverrides.FontOverrideSpec runtimeSpecForScale(final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
-                                                                          final String runtimeFontPath,
-                                                                          final float scale) {
+    static OriginalGameFontOverrides.FontOverrideSpec runtimeSpecForScale(
+            final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
+            final String runtimeFontPath,
+            final float scale) {
         return runtimeSpecForScale(baseSpec, runtimeFontPath, scale, baseSpec.pageWidth(), baseSpec.pageHeight());
     }
 
-    static OriginalGameFontOverrides.FontOverrideSpec runtimeSpecForScale(final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
-                                                                          final String runtimeFontPath,
-                                                                          final float scale,
-                                                                          final int sourcePageWidth,
-                                                                          final int sourcePageHeight) {
+    static OriginalGameFontOverrides.FontOverrideSpec runtimeSpecForScale(
+            final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
+            final String runtimeFontPath,
+            final float scale,
+            final int sourcePageWidth,
+            final int sourcePageHeight) {
         return new OriginalGameFontOverrides.FontOverrideSpec(
                 runtimeFontPath,
                 baseSpec.primaryFontCandidates(),
                 baseSpec.fallbackFontCandidates(),
                 runtimePageDimension(preferredPageDimension(baseSpec.pageWidth(), sourcePageWidth), scale),
-                runtimePageDimension(preferredPageDimension(baseSpec.pageHeight(), sourcePageHeight), scale)
-        );
+                runtimePageDimension(preferredPageDimension(baseSpec.pageHeight(), sourcePageHeight), scale));
     }
 
     static int preferredPageDimension(final int configuredDimension,
@@ -109,8 +111,7 @@ final class TtfBmFontGenerator {
         final int step = runtimePageStep(normalizedBaseDimension);
         final long minimumRequiredDimension = Math.max(
                 normalizedBaseDimension,
-                Math.round(normalizedBaseDimension * scale)
-        );
+                Math.round(normalizedBaseDimension * scale));
         final long cappedRequiredDimension = Math.min(MAX_RUNTIME_PAGE_DIMENSION, minimumRequiredDimension);
         return Math.max(normalizedBaseDimension, roundUpToStep((int) cappedRequiredDimension, step));
     }
@@ -130,7 +131,8 @@ final class TtfBmFontGenerator {
     }
 
     static int readNominalFontSize(final String originalFontPath) throws IOException {
-        return Math.max(1, Math.abs(SourceBmFont.parse(OriginalGameFontOverrides.resolveOriginalFontFile(originalFontPath)).infoSize()));
+        return Math.max(1, Math.abs(
+                SourceBmFont.parse(OriginalGameFontOverrides.resolveOriginalFontFile(originalFontPath)).infoSize()));
     }
 
     private static GeneratedFontPack loadOrGenerateCached(final OriginalGameFontOverrides.FontOverrideSpec spec,
@@ -161,16 +163,14 @@ final class TtfBmFontGenerator {
             final Path path = spec.resolveCandidate(fontDir, candidate);
             if (Files.isRegularFile(path)) {
                 final Font calibrated = harmonizePrimaryAdvance(
-                calibrate(loadFont(path), requestedSize, source.lineHeight(), antiAlias, fractionalMetrics),
+                        calibrate(loadFont(path), requestedSize, source.lineHeight(), antiAlias, fractionalMetrics),
                         source,
-                antiAlias,
-                fractionalMetrics
-                );
+                        antiAlias,
+                        fractionalMetrics);
                 primary.add(new LoadedFont(
                         path.getFileName().toString(),
                         path,
-                        calibrated
-                ));
+                        calibrated));
                 break;
             }
         }
@@ -179,33 +179,38 @@ final class TtfBmFontGenerator {
         }
 
         final Font primaryFont = primary.getFirst().font();
-    final float primaryVisualHeight = measureVisualHeight(primaryFont, PRIMARY_VISUAL_SAMPLE, antiAlias, fractionalMetrics);
-    final float primaryAverageHeight = measureAverageHeight(primaryFont, PRIMARY_VISUAL_SAMPLE, antiAlias, fractionalMetrics);
-    final float primaryAverageAdvance = measureAverageAdvance(primaryFont, PRIMARY_ADVANCE_SAMPLE, antiAlias, fractionalMetrics);
+        final float primaryVisualHeight = measureVisualHeight(primaryFont, PRIMARY_VISUAL_SAMPLE, antiAlias,
+                fractionalMetrics);
+        final float primaryAverageHeight = measureAverageHeight(primaryFont, PRIMARY_VISUAL_SAMPLE, antiAlias,
+                fractionalMetrics);
+        final float primaryAverageAdvance = measureAverageAdvance(primaryFont, PRIMARY_ADVANCE_SAMPLE, antiAlias,
+                fractionalMetrics);
 
         final List<LoadedFont> fallback = new ArrayList<>();
         for (String candidate : spec.fallbackFontCandidates()) {
             final Path path = spec.resolveCandidate(fontDir, candidate);
             if (Files.isRegularFile(path)) {
-        final Font calibrated = calibrate(loadFont(path), requestedSize, source.lineHeight(), antiAlias, fractionalMetrics);
+                final Font calibrated = calibrate(loadFont(path), requestedSize, source.lineHeight(), antiAlias,
+                        fractionalMetrics);
                 fallback.add(new LoadedFont(
                         path.getFileName().toString(),
                         path,
-            harmonizeFallbackMetrics(calibrated, source, primaryVisualHeight, primaryAverageHeight, primaryAverageAdvance, antiAlias, fractionalMetrics)
-                ));
+                        harmonizeFallbackMetrics(calibrated, source, primaryVisualHeight, primaryAverageHeight,
+                                primaryAverageAdvance, antiAlias, fractionalMetrics)));
             }
         }
-    final Font dialogFont = calibrate(new Font(Font.DIALOG, Font.PLAIN, Math.round(requestedSize)), requestedSize, source.lineHeight(), antiAlias, fractionalMetrics);
+        final Font dialogFont = calibrate(new Font(Font.DIALOG, Font.PLAIN, Math.round(requestedSize)), requestedSize,
+                source.lineHeight(), antiAlias, fractionalMetrics);
         fallback.add(new LoadedFont(
                 "Dialog",
                 null,
-        harmonizeFallbackMetrics(dialogFont, source, primaryVisualHeight, primaryAverageHeight, primaryAverageAdvance, antiAlias, fractionalMetrics)
-        ));
+                harmonizeFallbackMetrics(dialogFont, source, primaryVisualHeight, primaryAverageHeight,
+                        primaryAverageAdvance, antiAlias, fractionalMetrics)));
 
         final List<LoadedFont> chain = new ArrayList<>(primary.size() + fallback.size());
         chain.addAll(primary);
         chain.addAll(fallback);
-    return new FontChain(chain, antiAlias, fractionalMetrics, renderPolicy.pixelFont());
+        return new FontChain(chain, antiAlias, fractionalMetrics, renderPolicy.pixelFont());
     }
 
     private static Font loadFont(final Path path) throws IOException, FontFormatException {
@@ -249,22 +254,27 @@ final class TtfBmFontGenerator {
 
         final float sourcePrimaryAdvance = source.averageAdvance(PRIMARY_ADVANCE_SAMPLE);
         final float sourceAverageAdvance = source.averageAdvance(FALLBACK_VISUAL_SAMPLE);
-        final float renderedAverageAdvance = measureAverageAdvance(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias, fractionalMetrics);
-        final float targetAverageAdvance = fallbackTargetMetric(primaryAverageAdvance, sourcePrimaryAdvance, sourceAverageAdvance);
+        final float renderedAverageAdvance = measureAverageAdvance(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
+                fractionalMetrics);
+        final float targetAverageAdvance = fallbackTargetMetric(primaryAverageAdvance, sourcePrimaryAdvance,
+                sourceAverageAdvance);
         if (targetAverageAdvance > 0f && renderedAverageAdvance > 0f) {
             scaleFactors.add(fallbackVisualScaleFactor(targetAverageAdvance, renderedAverageAdvance));
         }
 
         final float sourcePrimaryHeight = source.averageHeight(PRIMARY_VISUAL_SAMPLE);
         final float sourceAverageHeight = source.averageHeight(FALLBACK_VISUAL_SAMPLE);
-        final float renderedAverageHeight = measureAverageHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias, fractionalMetrics);
-        final float targetAverageHeight = fallbackTargetMetric(primaryAverageHeight, sourcePrimaryHeight, sourceAverageHeight);
+        final float renderedAverageHeight = measureAverageHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
+                fractionalMetrics);
+        final float targetAverageHeight = fallbackTargetMetric(primaryAverageHeight, sourcePrimaryHeight,
+                sourceAverageHeight);
         if (targetAverageHeight > 0f && renderedAverageHeight > 0f) {
             scaleFactors.add(fallbackVisualScaleFactor(targetAverageHeight, renderedAverageHeight));
         }
 
         if (scaleFactors.isEmpty() && primaryVisualHeight > 0f) {
-            final float fallbackVisualHeight = measureVisualHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias, fractionalMetrics);
+            final float fallbackVisualHeight = measureVisualHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
+                    fractionalMetrics);
             final float primaryVisualScale = fallbackVisualScaleFactor(primaryVisualHeight, fallbackVisualHeight);
             if (primaryVisualScale > 0f) {
                 scaleFactors.add(primaryVisualScale);
@@ -349,7 +359,8 @@ final class TtfBmFontGenerator {
             return calibrated;
         }
 
-        final float renderedAverageAdvance = measureAverageAdvance(calibrated, PRIMARY_ADVANCE_SAMPLE, antiAlias, fractionalMetrics);
+        final float renderedAverageAdvance = measureAverageAdvance(calibrated, PRIMARY_ADVANCE_SAMPLE, antiAlias,
+                fractionalMetrics);
         final float scaleFactor = primaryAdvanceScaleFactor(sourceAverageAdvance, renderedAverageAdvance);
         if (Math.abs(scaleFactor - 1.0f) < 0.02f) {
             return calibrated;
@@ -433,7 +444,8 @@ final class TtfBmFontGenerator {
         try (GlyphRasterizer rasterizer = createRasterizer()) {
             for (int codePoint : source.codePoints()) {
                 final SourceGlyphMetric sourceMetric = source.glyphMetrics().get(codePoint);
-                final GlyphRaster preserved = preserveSourceSpecialGlyph(codePoint, sourceMetric, placeholderMetadataFont);
+                final GlyphRaster preserved = preserveSourceSpecialGlyph(codePoint, sourceMetric,
+                        placeholderMetadataFont);
                 if (preserved != null) {
                     glyphs.add(preserved);
                     continue;
@@ -442,7 +454,8 @@ final class TtfBmFontGenerator {
                 final GlyphRaster rasterized = rasterizer.rasterizeGlyph(codePoint, source.base(), fonts);
                 glyphs.add(reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric));
             }
-            glyphs.sort(Comparator.comparingInt(GlyphRaster::sortHeight).reversed().thenComparingInt(GlyphRaster::codePoint));
+            glyphs.sort(Comparator.comparingInt(GlyphRaster::sortHeight).reversed()
+                                  .thenComparingInt(GlyphRaster::codePoint));
 
             return new RasterizedGlyphs(glyphs, rasterizer.backendName(), rasterizer.backendDetails(fonts));
         }
@@ -455,7 +468,8 @@ final class TtfBmFontGenerator {
             return null;
         }
 
-        final String sourceName = placeholderMetadataFont == null ? "source-placeholder" : placeholderMetadataFont.sourceName();
+        final String sourceName = placeholderMetadataFont == null ? "source-placeholder"
+                : placeholderMetadataFont.sourceName();
         final String faceName = placeholderMetadataFont == null ? "" : placeholderMetadataFont.faceName();
         return new GlyphRaster(
                 codePoint,
@@ -466,8 +480,7 @@ final class TtfBmFontGenerator {
                 sourceMetric.height(),
                 sourceMetric.xOffset(),
                 sourceMetric.yOffset(),
-                sourceMetric.xAdvance()
-        );
+                sourceMetric.xAdvance());
     }
 
     static boolean shouldPreserveSourceSpecialGlyph(final int width,
@@ -485,31 +498,30 @@ final class TtfBmFontGenerator {
         final GlyphRaster glyph = preserveSourceSpecialGlyph(
                 0,
                 new SourceGlyphMetric(width, height, xOffset, yOffset, xAdvance),
-                null
-        );
+                null);
         if (glyph == null) {
             return null;
         }
         return new int[]{glyph.width(), glyph.height(), glyph.xOffset(), glyph.yOffset(), glyph.xAdvance()};
     }
 
-        static int[] alignedGlyphMetrics(final int rasterWidth,
-                         final int rasterHeight,
-                         final int rasterXOffset,
-                         final int rasterYOffset,
-                         final int rasterXAdvance,
-                         final int sourceWidth,
-                         final int sourceHeight,
-                         final int sourceXOffset,
-                         final int sourceYOffset,
-                         final int sourceXAdvance) {
+    static int[] alignedGlyphMetrics(final int rasterWidth,
+                                     final int rasterHeight,
+                                     final int rasterXOffset,
+                                     final int rasterYOffset,
+                                     final int rasterXAdvance,
+                                     final int sourceWidth,
+                                     final int sourceHeight,
+                                     final int sourceXOffset,
+                                     final int sourceYOffset,
+                                     final int sourceXAdvance) {
         final BufferedImage image = rasterWidth > 0 && rasterHeight > 0
                 ? new BufferedImage(rasterWidth, rasterHeight, BufferedImage.TYPE_INT_ARGB)
                 : null;
         final GlyphRaster aligned = reconcileRasterizedGlyphToSourceMetrics(
-                new GlyphRaster(0, "test", "test", image, rasterWidth, rasterHeight, rasterXOffset, rasterYOffset, rasterXAdvance),
-                new SourceGlyphMetric(sourceWidth, sourceHeight, sourceXOffset, sourceYOffset, sourceXAdvance)
-        );
+                new GlyphRaster(0, "test", "test", image, rasterWidth, rasterHeight, rasterXOffset, rasterYOffset,
+                        rasterXAdvance),
+                new SourceGlyphMetric(sourceWidth, sourceHeight, sourceXOffset, sourceYOffset, sourceXAdvance));
         return new int[]{
                 aligned.width(),
                 aligned.height(),
@@ -541,8 +553,7 @@ final class TtfBmFontGenerator {
                 box.height(),
                 box.xOffset(),
                 box.yOffset(),
-                box.xAdvance()
-        );
+                box.xAdvance());
     }
 
     private static BufferedImage alignGlyphImageToSourceMetrics(final GlyphRaster rasterized,
@@ -606,8 +617,7 @@ final class TtfBmFontGenerator {
                 Math.max(0, bottom - top),
                 left,
                 top,
-                Math.max(sourceMetric.xAdvance(), right)
-        );
+                Math.max(sourceMetric.xAdvance(), right));
     }
 
     private static FittedAtlas fitSinglePageAtlas(final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
@@ -624,14 +634,14 @@ final class TtfBmFontGenerator {
                 baseSpec,
                 outputFontPath,
                 sourcePageWidth,
-                sourcePageHeight
-        );
+                sourcePageHeight);
         GlyphLayout currentLayout = layoutGlyphs(currentSpec, rasterized);
 
         while (currentLayout.pages().size() > 1
                 && (currentSpec.pageWidth() < MAX_RUNTIME_PAGE_DIMENSION
                 || currentSpec.pageHeight() < MAX_RUNTIME_PAGE_DIMENSION)) {
-            final FittedAtlas expanded = chooseExpandedAtlas(baseSpec, outputFontPath, currentSpec, rasterized, widthStep, heightStep);
+            final FittedAtlas expanded = chooseExpandedAtlas(baseSpec, outputFontPath, currentSpec, rasterized,
+                    widthStep, heightStep);
             if (expanded == null) {
                 break;
             }
@@ -642,17 +652,17 @@ final class TtfBmFontGenerator {
         return compactSinglePageAtlas(new FittedAtlas(currentSpec, currentLayout));
     }
 
-    static OriginalGameFontOverrides.FontOverrideSpec fitStartSpec(final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
-                                                                   final String outputFontPath,
-                                                                   final int sourcePageWidth,
-                                                                   final int sourcePageHeight) {
+    static OriginalGameFontOverrides.FontOverrideSpec fitStartSpec(
+            final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
+            final String outputFontPath,
+            final int sourcePageWidth,
+            final int sourcePageHeight) {
         return new OriginalGameFontOverrides.FontOverrideSpec(
                 outputFontPath,
                 baseSpec.primaryFontCandidates(),
                 baseSpec.fallbackFontCandidates(),
                 preferredPageDimension(baseSpec.pageWidth(), sourcePageWidth),
-                preferredPageDimension(baseSpec.pageHeight(), sourcePageHeight)
-        );
+                preferredPageDimension(baseSpec.pageHeight(), sourcePageHeight));
     }
 
     private static FittedAtlas compactSinglePageAtlas(final FittedAtlas atlas) {
@@ -672,8 +682,7 @@ final class TtfBmFontGenerator {
                 atlas.spec().primaryFontCandidates(),
                 atlas.spec().fallbackFontCandidates(),
                 compactWidth,
-                compactHeight
-        );
+                compactHeight);
         return new FittedAtlas(compactSpec, resizeLayout(atlas.layout(), compactWidth, compactHeight));
     }
 
@@ -760,8 +769,7 @@ final class TtfBmFontGenerator {
                 baseSpec.primaryFontCandidates(),
                 baseSpec.fallbackFontCandidates(),
                 pageWidth,
-                pageHeight
-        );
+                pageHeight);
         candidates.add(new FittedAtlas(expandedSpec, layoutGlyphs(expandedSpec, rasterized)));
     }
 
@@ -817,7 +825,8 @@ final class TtfBmFontGenerator {
             return null;
         }
 
-        final BufferedImage image = new BufferedImage(glyphBitmap.width(), glyphBitmap.height(), BufferedImage.TYPE_INT_ARGB);
+        final BufferedImage image = new BufferedImage(glyphBitmap.width(), glyphBitmap.height(),
+                BufferedImage.TYPE_INT_ARGB);
         image.setRGB(0, 0,
                 glyphBitmap.width(), glyphBitmap.height(),
                 glyphBitmap.argbPixels(), 0, glyphBitmap.width());
@@ -884,7 +893,7 @@ final class TtfBmFontGenerator {
            .append('\n');
         for (GlyphPlacement placement : allGlyphs) {
             final GlyphRaster glyph = placement.glyph();
-                final int encodedXAdvance = encodedXAdvanceForRuntimeLayout(glyph.xAdvance(), glyph.xOffset());
+            final int encodedXAdvance = encodedXAdvanceForRuntimeLayout(glyph.xAdvance(), glyph.xOffset());
             fnt.append("char id=")
                .append(glyph.codePoint())
                .append(" x=")
@@ -900,13 +909,14 @@ final class TtfBmFontGenerator {
                .append(" yoffset=")
                .append(glyph.yOffset())
                .append(" xadvance=")
-             .append(encodedXAdvance)
+               .append(encodedXAdvance)
                .append(" page=")
                .append(placement.page())
                .append(" chnl=15\n");
         }
 
-        resources.put(spec.normalizedOriginalFontPath(), fnt.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        resources.put(spec.normalizedOriginalFontPath(),
+                fnt.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         LOGGER.info("[SSOptimizer] Generated TTF-backed BMFont override for " + spec.originalFontPath()
                 + " with " + layout.pages().size() + " page(s) at " + Instant.now());
         return new GeneratedFontPack(
@@ -920,9 +930,7 @@ final class TtfBmFontGenerator {
                         layout.pages().size(),
                         source.infoSize(),
                         source.lineHeight(),
-                        source.base()
-                )
-        );
+                        source.base()));
     }
 
     static int encodedXAdvanceForRuntimeLayout(final int logicalXAdvance,
@@ -930,33 +938,33 @@ final class TtfBmFontGenerator {
         return Math.max(0, logicalXAdvance - xOffset);
     }
 
-        private static FontRenderPolicy renderPolicyForSpec(final OriginalGameFontOverrides.FontOverrideSpec spec,
-                                final SourceBmFont source) {
+    private static FontRenderPolicy renderPolicyForSpec(final OriginalGameFontOverrides.FontOverrideSpec spec,
+                                                        final SourceBmFont source) {
         final boolean pixelFont = isVictorManagedFontPath(spec.originalFontPath());
         return new FontRenderPolicy(
-            source.antiAlias() && !pixelFont,
-            !pixelFont,
-            pixelFont
-        );
-        }
+                source.antiAlias() && !pixelFont,
+                !pixelFont,
+                pixelFont);
+    }
 
-        private static boolean isVictorManagedFontPath(final String fontPath) {
+    private static boolean isVictorManagedFontPath(final String fontPath) {
         final String normalized = OriginalGameFontOverrides.normalize(fontPath).toLowerCase(Locale.ROOT);
         return normalized.startsWith("graphics/fonts/victor10")
-            || normalized.startsWith("graphics/fonts/victor14")
-            || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor10")
-            || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor14");
-        }
+                || normalized.startsWith("graphics/fonts/victor14")
+                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor10")
+                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor14");
+    }
 
-        private static void applyTextHints(final Graphics2D g,
-                           final boolean antiAlias,
-                           final boolean fractionalMetrics) {
+    private static void applyTextHints(final Graphics2D g,
+                                       final boolean antiAlias,
+                                       final boolean fractionalMetrics) {
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                 antiAlias ? RenderingHints.VALUE_TEXT_ANTIALIAS_ON : RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 antiAlias ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF);
         g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
-            fractionalMetrics ? RenderingHints.VALUE_FRACTIONALMETRICS_ON : RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+                fractionalMetrics ? RenderingHints.VALUE_FRACTIONALMETRICS_ON
+                        : RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         g.setBackground(new Color(0, 0, 0, 0));
@@ -1091,8 +1099,7 @@ final class TtfBmFontGenerator {
                             parseIntProperty(line, "height", 0),
                             parseIntProperty(line, "xoffset", 0),
                             parseIntProperty(line, "yoffset", 0),
-                            parseIntProperty(line, "xadvance", 0)
-                    ));
+                            parseIntProperty(line, "xadvance", 0)));
                 }
             }
 
@@ -1149,8 +1156,7 @@ final class TtfBmFontGenerator {
                     scalePositiveMetric(scaleWidth, scale),
                     scalePositiveMetric(scaleHeight, scale),
                     codePoints,
-                    Map.copyOf(scaledGlyphMetrics)
-            );
+                    Map.copyOf(scaledGlyphMetrics));
         }
 
         float averageAdvance(final String sample) {
@@ -1189,10 +1195,6 @@ final class TtfBmFontGenerator {
                                      int xOffset,
                                      int yOffset,
                                      int xAdvance) {
-        boolean isSpecialPlaceholder() {
-            return shouldPreserveSourceSpecialGlyph(width, height);
-        }
-
         private static int scaleMetric(final int value,
                                        final float scale) {
             if (!Float.isFinite(scale) || scale <= 0f) {
@@ -1207,14 +1209,17 @@ final class TtfBmFontGenerator {
             return sign * scaleMetric(Math.abs(value), scale);
         }
 
+        boolean isSpecialPlaceholder() {
+            return shouldPreserveSourceSpecialGlyph(width, height);
+        }
+
         SourceGlyphMetric scaled(final float scale) {
             return new SourceGlyphMetric(
                     scaleMetric(width, scale),
                     scaleMetric(height, scale),
                     scaleSignedMetric(xOffset, scale),
                     scaleSignedMetric(yOffset, scale),
-                    scaleMetric(xAdvance, scale)
-            );
+                    scaleMetric(xAdvance, scale));
         }
     }
 
@@ -1267,7 +1272,8 @@ final class TtfBmFontGenerator {
                     }
                 }
 
-                return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(), image, width, height, xOffset, yOffset, xAdvance);
+                return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(), image, width, height,
+                        xOffset, yOffset, xAdvance);
             } finally {
                 g.dispose();
             }
@@ -1312,8 +1318,7 @@ final class TtfBmFontGenerator {
                     bitmap.height(),
                     bitmap.xOffset(),
                     bitmap.yOffset(),
-                    bitmap.xAdvance()
-            );
+                    bitmap.xAdvance());
         }
 
         @Override

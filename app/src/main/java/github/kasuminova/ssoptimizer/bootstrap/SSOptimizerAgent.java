@@ -2,28 +2,12 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
+import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
-import github.kasuminova.ssoptimizer.common.logging.LogNoiseFilterConfigurator;
+import github.kasuminova.ssoptimizer.asm.loading.*;
+import github.kasuminova.ssoptimizer.asm.render.*;
 import github.kasuminova.ssoptimizer.common.loading.ImageIoConfigurator;
-import github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor;
-import github.kasuminova.ssoptimizer.asm.ime.LinuxDisplayImeProcessor;
-import github.kasuminova.ssoptimizer.asm.ime.LinuxEventImeProcessor;
-import github.kasuminova.ssoptimizer.asm.ime.LinuxKeyboardImeProcessor;
-import github.kasuminova.ssoptimizer.asm.ime.SettingsTextFieldFactoryProcessor;
-import github.kasuminova.ssoptimizer.asm.ime.TextFieldImplementationProcessor;
-import github.kasuminova.ssoptimizer.asm.ime.TooltipTextFieldFactoryProcessor;
-import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineContrailEngineProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineDetailedSmokeProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineGenericTextureParticleProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineSmoothParticleProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineSpriteProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineSuperObjectProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor;
+import github.kasuminova.ssoptimizer.common.logging.LogNoiseFilterConfigurator;
 import org.apache.log4j.Logger;
 
 import java.lang.instrument.Instrumentation;
@@ -42,10 +26,10 @@ import java.lang.reflect.Method;
  * </ul>
  */
 public final class SSOptimizerAgent {
-    private static final Logger LOGGER = Logger.getLogger(SSOptimizerAgent.class);
-    private static volatile Instrumentation instrumentation;
+    private static final    Logger                  LOGGER = Logger.getLogger(SSOptimizerAgent.class);
+    private static volatile Instrumentation         instrumentation;
     private static volatile HybridWeaverTransformer weaverTransformer;
-    private static volatile boolean mixinAvailable;
+    private static volatile boolean                 mixinAvailable;
 
     private SSOptimizerAgent() {
     }
@@ -118,9 +102,9 @@ public final class SSOptimizerAgent {
         registerIf(transformer, "settingstextfieldime", "com.fs.starfarer.settings.StarfarerSettings$1", new SettingsTextFieldFactoryProcessor());
         registerIf(transformer, "textfieldimplime", "com.fs.starfarer.ui.B", new TextFieldImplementationProcessor());
         registerCompositeIf(transformer,
-            "com.fs.util.ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
-            new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
-            new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()));
+                "com.fs.util.ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
+                new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
+                new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()));
     }
 
     private static void registerIf(HybridWeaverTransformer transformer,
@@ -149,21 +133,23 @@ public final class SSOptimizerAgent {
         transformer.registerProcessor(className, CompositeAsmClassProcessor.of(enabled.toArray(AsmClassProcessor[]::new)));
     }
 
-    private record ProcessorToggle(String key,
-                                   AsmClassProcessor processor) {
-    }
-
-    /** 获取 JVM 提供的 {@link Instrumentation} 实例。 */
+    /**
+     * 获取 JVM 提供的 {@link Instrumentation} 实例。
+     */
     public static Instrumentation getInstrumentation() {
         return instrumentation;
     }
 
-    /** 获取混合织入变换器实例。 */
+    /**
+     * 获取混合织入变换器实例。
+     */
     public static HybridWeaverTransformer getWeaverTransformer() {
         return weaverTransformer;
     }
 
-    /** 返回 Mixin 框架是否初始化成功。 */
+    /**
+     * 返回 Mixin 框架是否初始化成功。
+     */
     public static boolean isMixinAvailable() {
         return mixinAvailable;
     }
@@ -180,5 +166,9 @@ public final class SSOptimizerAgent {
         } catch (Throwable t) {
             throw new IllegalStateException("Failed to advance Mixin environment to DEFAULT phase", t);
         }
+    }
+
+    private record ProcessorToggle(String key,
+                                   AsmClassProcessor processor) {
     }
 }

@@ -145,12 +145,16 @@ final class BootstrapSearchInstaller {
         }
     }
 
-    /** 返回 Helper 类是否已在引导类加载器中可见。 */
+    /**
+     * 返回 Helper 类是否已在引导类加载器中可见。
+     */
     static boolean isHelperVisibilityReady() {
         return helperVisibilityReady;
     }
 
-    /** 测试用：强制标记为已安装状态。 */
+    /**
+     * 测试用：强制标记为已安装状态。
+     */
     static void forceInstalledForTest() {
         helperVisibilityReady = true;
     }

@@ -227,13 +227,13 @@ public final class RuntimeScaledFontCache {
 
         final int currentNominalSize = fontNominalSize(currentFont);
         final int baseScaleBucketMillis = OriginalGameFontOverrides.baseScaleBucketMillis(baseFontPath);
-    final float quantizedScale = targetScaleBucket(baseScaleBucketMillis, screenScale);
-    final int quantizedScaleBucketMillis = targetScaleBucketMillis(baseScaleBucketMillis, screenScale);
+        final float quantizedScale = targetScaleBucket(baseScaleBucketMillis, screenScale);
+        final int quantizedScaleBucketMillis = targetScaleBucketMillis(baseScaleBucketMillis, screenScale);
         final ScaleResolution resolution = resolveScaleResolution(
                 baseNominalSize,
                 currentNominalSize,
                 baseScaleBucketMillis,
-        screenScale
+                screenScale
         );
         return new FontSelection(baseFontPath, baseSpec, baseNominalSize, quantizedScale,
                 quantizedScaleBucketMillis,

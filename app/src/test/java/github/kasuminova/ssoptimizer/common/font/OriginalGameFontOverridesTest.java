@@ -42,19 +42,19 @@ class OriginalGameFontOverridesTest {
         assertEquals(activeProfile.fallback(), spec.fallbackFontCandidates());
     }
 
-        @Test
-        void mapsAllManagedOrbitronFontsToBoldPrimaryCandidates() {
+    @Test
+    void mapsAllManagedOrbitronFontsToBoldPrimaryCandidates() {
         final OriginalGameFontOverrides.FontProfile activeProfile = OriginalGameFontOverrides.resolveProfile(
-            OriginalGameFontOverrides.configuredProfileName()
+                OriginalGameFontOverrides.configuredProfileName()
         );
 
         assertEquals(activeProfile.orbitronBoldPrimary(),
-            OriginalGameFontOverrides.specForPath("graphics/fonts/orbitron10.fnt").primaryFontCandidates());
+                OriginalGameFontOverrides.specForPath("graphics/fonts/orbitron10.fnt").primaryFontCandidates());
         assertEquals(activeProfile.orbitronBoldPrimary(),
-            OriginalGameFontOverrides.specForPath("graphics/fonts/orbitron20aa.fnt").primaryFontCandidates());
+                OriginalGameFontOverrides.specForPath("graphics/fonts/orbitron20aa.fnt").primaryFontCandidates());
         assertEquals(activeProfile.orbitronBoldPrimary(),
-            OriginalGameFontOverrides.specForPath("graphics/fonts/orbitron24aabold.fnt").primaryFontCandidates());
-        }
+                OriginalGameFontOverrides.specForPath("graphics/fonts/orbitron24aabold.fnt").primaryFontCandidates());
+    }
 
     @Test
     void resolvesMapleUiVerificationProfile() {

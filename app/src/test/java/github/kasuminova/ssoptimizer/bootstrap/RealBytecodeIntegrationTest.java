@@ -18,7 +18,9 @@ class RealBytecodeIntegrationTest {
     private byte[] loadClassBytes(String internalName) {
         String resource = internalName + ".class";
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(resource)) {
-            if (is == null) return null;
+            if (is == null) {
+                return null;
+            }
             return is.readAllBytes();
         } catch (Exception e) {
             return null;
@@ -42,19 +44,21 @@ class RealBytecodeIntegrationTest {
     @Test
     void obfJarClassesSanitizeWithoutError() {
         String[] obfClasses = {
-            "com/fs/starfarer/combat/CombatState",
-            "com/fs/starfarer/F",
-            "com/fs/starfarer/loading/LoadingUtils",
+                "com/fs/starfarer/combat/CombatState",
+                "com/fs/starfarer/F",
+                "com/fs/starfarer/loading/LoadingUtils",
         };
         var transformer = new SanitizingTransformer();
 
         for (String cls : obfClasses) {
             byte[] original = loadClassBytes(cls);
-            if (original == null) continue;
+            if (original == null) {
+                continue;
+            }
 
             assertDoesNotThrow(
-                () -> transformer.transform(null, cls, null, null, original),
-                "Sanitizer should not throw for " + cls
+                    () -> transformer.transform(null, cls, null, null, original),
+                    "Sanitizer should not throw for " + cls
             );
         }
     }
@@ -190,28 +194,28 @@ class RealBytecodeIntegrationTest {
         assertTrue(helperCalls > 0, "Rewritten resource loader should call ResourceFileCache.exists");
 
         int listCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor.HELPER_OWNER,
-            "listFiles", "(Ljava/io/File;Ljava/io/FilenameFilter;)[Ljava/io/File;");
+                github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor.HELPER_OWNER,
+                "listFiles", "(Ljava/io/File;Ljava/io/FilenameFilter;)[Ljava/io/File;");
         assertTrue(listCalls > 0, "Rewritten resource loader should call ResourceFileCache.listFiles for filtered directory scans");
     }
 
-        @Test
-        void resourceLoaderRewritesRealOpenStreamBytecodeForOriginalFontOverrides() {
+    @Test
+    void resourceLoaderRewritesRealOpenStreamBytecodeForOriginalFontOverrides() {
         var processor = new github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor();
         byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.TARGET_CLASS);
         assumeTrue(original != null, "Resource loader class not on classpath");
 
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-            "Original font resource processor should handle real resource-loader bytecode");
+                "Original font resource processor should handle real resource-loader bytecode");
         assertNotNull(rewritten, "Processor should rewrite managed resource openStream for original font overrides");
 
         int helperCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.HELPER_OWNER,
-            github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.HELPER_METHOD,
-            github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.TARGET_DESC);
+                github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.HELPER_OWNER,
+                github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.HELPER_METHOD,
+                github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.TARGET_DESC);
         assertTrue(helperCalls > 0,
-            "Rewritten resource loader should consult OriginalGameFontOverrides.openStream before default resource lookup");
-        }
+                "Rewritten resource loader should consult OriginalGameFontOverrides.openStream before default resource lookup");
+    }
 
     @Test
     void deferredLoaderRewritesRealParallelWorkerLifecycle() {
@@ -230,8 +234,8 @@ class RealBytecodeIntegrationTest {
                 github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.HELPER_OWNER,
                 "stopWorkers", "()V");
         int decodeCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.DECODE_HELPER_OWNER,
-            "decode", github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.DECODE_HELPER_DESC);
+                github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.DECODE_HELPER_OWNER,
+                "decode", github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.DECODE_HELPER_DESC);
         assertTrue(startCalls > 0, "Rewritten deferred loader should call ParallelImagePreloadCoordinator.startWorkers");
         assertTrue(stopCalls > 0, "Rewritten deferred loader should call ParallelImagePreloadCoordinator.stopWorkers");
         assertTrue(decodeCalls > 0, "Rewritten deferred loader should call FastResourceImageDecoder.decode");
@@ -261,37 +265,37 @@ class RealBytecodeIntegrationTest {
         assumeTrue(original != null, "TextureLoader not on classpath");
 
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-            "TextureLoader pixel processor should handle real TextureLoader bytecode");
+                "TextureLoader pixel processor should handle real TextureLoader bytecode");
         assertNotNull(rewritten, "Processor should rewrite the BufferedImage pixel conversion method");
 
         int helperCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.HELPER_OWNER,
-            "convert", "(Ljava/awt/image/BufferedImage;)Lgithub/kasuminova/ssoptimizer/common/loading/TexturePixelConversionResult;");
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.HELPER_OWNER,
+                "convert", "(Ljava/awt/image/BufferedImage;)Lgithub/kasuminova/ssoptimizer/common/loading/TexturePixelConversionResult;");
         assertTrue(helperCalls > 0, "Rewritten TextureLoader should call TexturePixelConverter.convert");
 
         int dimensionCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.DIMENSION_HELPER_OWNER,
-            "textureDimension", "(I)I");
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.DIMENSION_HELPER_OWNER,
+                "textureDimension", "(I)I");
         assertTrue(dimensionCalls > 0, "Rewritten TextureLoader should call TextureDimensionSupport.textureDimension");
 
         int uploadCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.UPLOAD_HELPER_OWNER,
-            "glTexImage2D", "(IIIIIIIILjava/nio/ByteBuffer;)V");
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.UPLOAD_HELPER_OWNER,
+                "glTexImage2D", "(IIIIIIIILjava/nio/ByteBuffer;)V");
         int subUploadCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.UPLOAD_HELPER_OWNER,
-            "glTexSubImage2D", "(IIIIIIIILjava/nio/ByteBuffer;)V");
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.UPLOAD_HELPER_OWNER,
+                "glTexSubImage2D", "(IIIIIIIILjava/nio/ByteBuffer;)V");
         assertTrue(uploadCalls > 0 || subUploadCalls > 0,
-            "Rewritten TextureLoader should route texture uploads through TextureUploadHelper");
+                "Rewritten TextureLoader should route texture uploads through TextureUploadHelper");
 
         int decodeCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.IMAGE_READ_HELPER_OWNER,
-            "decode", github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.IMAGE_READ_HELPER_DESC);
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.IMAGE_READ_HELPER_OWNER,
+                "decode", github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.IMAGE_READ_HELPER_DESC);
         assertTrue(decodeCalls > 0, "Rewritten TextureLoader should call FastResourceImageDecoder.decode");
 
         int lazyLoadCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_OWNER,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_METHOD,
-            github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_DESC);
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_OWNER,
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_METHOD,
+                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_DESC);
         assertTrue(lazyLoadCalls > 0, "Rewritten TextureLoader should call LazyTextureManager.loadTexture for path loads");
     }
 
@@ -312,29 +316,29 @@ class RealBytecodeIntegrationTest {
         assertTrue(bindCalls > 0, "Rewritten texture object should route bind through LazyTextureManager.bindTexture");
 
         int getterCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_OWNER,
-            github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_ID_METHOD,
-            github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_ID_DESC);
+                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_OWNER,
+                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_ID_METHOD,
+                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_ID_DESC);
         assertTrue(getterCalls > 0, "Rewritten texture object should route texture id reads through LazyTextureManager.getTextureId");
     }
 
-        @Test
-        void launcherDirectStartRewritesRealLauncherConstructorBytecode() {
+    @Test
+    void launcherDirectStartRewritesRealLauncherConstructorBytecode() {
         var processor = new github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor();
         byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor.TARGET_CLASS);
         assumeTrue(original != null, "StarfarerLauncher not on classpath");
 
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-            "Launcher direct-start processor should handle real StarfarerLauncher bytecode");
+                "Launcher direct-start processor should handle real StarfarerLauncher bytecode");
         assertNotNull(rewritten, "Processor should rewrite the launcher constructor");
 
         int helperCalls = countHelperCalls(rewritten,
-            github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor.HELPER_OWNER,
-            github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor.HELPER_METHOD,
-            github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor.HELPER_DESC);
+                github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor.HELPER_OWNER,
+                github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor.HELPER_METHOD,
+                github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor.HELPER_DESC);
         assertTrue(helperCalls > 0,
-            "Rewritten launcher constructor should call LauncherDirectStarter.tryDirectStart");
-        }
+                "Rewritten launcher constructor should call LauncherDirectStarter.tryDirectStart");
+    }
 
     private int countHelperCalls(byte[] classBytes, String owner, String methodName, String methodDesc) {
         int[] count = {0};
@@ -363,13 +367,17 @@ class RealBytecodeIntegrationTest {
         reader.accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
-                if (isIllegalName(name)) illegal.add("method:" + name);
+                if (isIllegalName(name)) {
+                    illegal.add("method:" + name);
+                }
                 return null;
             }
 
             @Override
             public org.objectweb.asm.FieldVisitor visitField(int access, String name, String desc, String sig, Object value) {
-                if (isIllegalName(name)) illegal.add("field:" + name);
+                if (isIllegalName(name)) {
+                    illegal.add("field:" + name);
+                }
                 return null;
             }
         }, 0);
@@ -377,10 +385,14 @@ class RealBytecodeIntegrationTest {
     }
 
     private boolean isIllegalName(String name) {
-        if ("<init>".equals(name) || "<clinit>".equals(name)) return false;
+        if ("<init>".equals(name) || "<clinit>".equals(name)) {
+            return false;
+        }
         for (int i = 0, len = name.length(); i < len; i++) {
             char c = name.charAt(i);
-            if (c == '.' || c == ';' || c == '[' || c == '/') return true;
+            if (c == '.' || c == ';' || c == '[' || c == '/') {
+                return true;
+            }
         }
         return false;
     }

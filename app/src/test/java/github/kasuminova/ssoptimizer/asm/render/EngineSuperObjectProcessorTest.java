@@ -1,17 +1,9 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import org.junit.jupiter.api.Test;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class EngineSuperObjectProcessorTest {
     private byte[] createFakeSuperObjectClass() {
@@ -20,7 +12,7 @@ class EngineSuperObjectProcessorTest {
                 null, "java/lang/Object", null);
 
         FieldVisitor fontField = cw.visitField(Opcodes.ACC_PRIVATE, "øÒ0000",
-            "Lcom/fs/graphics/super/return;", null, null);
+                "Lcom/fs/graphics/super/return;", null, null);
         fontField.visitEnd();
         FieldVisitor requestedFontSize = cw.visitField(Opcodes.ACC_PRIVATE, "ø00000", "F", null, null);
         requestedFontSize.visitEnd();
@@ -39,7 +31,7 @@ class EngineSuperObjectProcessorTest {
         mv.visitEnd();
 
         MethodVisitor entry = cw.visitMethod(Opcodes.ACC_PUBLIC, EngineSuperObjectProcessor.ENTRY_METHOD,
-            EngineSuperObjectProcessor.ENTRY_DESC, null, null);
+                EngineSuperObjectProcessor.ENTRY_DESC, null, null);
         entry.visitCode();
         entry.visitInsn(Opcodes.RETURN);
         entry.visitMaxs(0, 1);
@@ -100,7 +92,7 @@ class EngineSuperObjectProcessorTest {
             }
         }, 0);
 
-    assertTrue(foundLayoutHelper[0], "super.Object glyph renderer should record phase-2 text layout diagnostics before quad emission");
+        assertTrue(foundLayoutHelper[0], "super.Object glyph renderer should record phase-2 text layout diagnostics before quad emission");
         assertTrue(foundHelper[0], "super.Object glyph renderer should delegate quad emission to SuperObjectRenderHelper");
         assertTrue(foundFontSwapHelper[0], "super.Object render entry should resolve a scale-aware runtime font before binding and layout");
         assertTrue(foundFontSizeAdjustHelper[0], "super.Object render entry should normalize requested font size after binding a higher-resolution font");

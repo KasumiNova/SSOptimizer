@@ -15,9 +15,9 @@ public final class LinuxXimImeBackend implements ImeBackend {
     private static final int DEFAULT_INPUT_STYLE = 0;
 
     private final LinuxXimNativeBridge bridge;
-    private final BooleanSupplier nativeLoadedSupplier;
+    private final BooleanSupplier      nativeLoadedSupplier;
 
-    private volatile long contextHandle;
+    private volatile long   contextHandle;
     private volatile String lastAttachFailureReason = "";
 
     public LinuxXimImeBackend() {
@@ -32,6 +32,18 @@ public final class LinuxXimImeBackend implements ImeBackend {
                        final BooleanSupplier nativeLoadedSupplier) {
         this.bridge = bridge;
         this.nativeLoadedSupplier = nativeLoadedSupplier;
+    }
+
+    private static String normalizeFailureReason(final String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "unknown";
+        }
+        return reason.trim();
+    }
+
+    private static boolean isLinux() {
+        final String osName = System.getProperty("os.name", "");
+        return osName.toLowerCase(Locale.ROOT).contains("linux");
     }
 
     @Override
@@ -52,9 +64,9 @@ public final class LinuxXimImeBackend implements ImeBackend {
             lastAttachFailureReason = "";
             final String nativeDebugSummary = normalizeFailureReason(bridge.nativeDebugSummary(contextHandle));
             ImeDiagnostics.logLifecycle("attached", this, contextHandle,
-                "display=0x" + Long.toHexString(display)
-                    + " window=0x" + Long.toHexString(window)
-                    + " native=" + nativeDebugSummary);
+                    "display=0x" + Long.toHexString(display)
+                            + " window=0x" + Long.toHexString(window)
+                            + " native=" + nativeDebugSummary);
         } else {
             lastAttachFailureReason = normalizeFailureReason(bridge.nativeLastErrorMessage());
             ImeDiagnostics.logLifecycle("attach-failed", this, 0L,
@@ -158,17 +170,5 @@ public final class LinuxXimImeBackend implements ImeBackend {
 
     String lastAttachFailureReason() {
         return lastAttachFailureReason;
-    }
-
-    private static String normalizeFailureReason(final String reason) {
-        if (reason == null || reason.isBlank()) {
-            return "unknown";
-        }
-        return reason.trim();
-    }
-
-    private static boolean isLinux() {
-        final String osName = System.getProperty("os.name", "");
-        return osName.toLowerCase(Locale.ROOT).contains("linux");
     }
 }
