@@ -6,10 +6,10 @@
     "accessor.ContrailGroupAccessor",
     "accessor.ContrailSegmentAccessor",
     "accessor.EngineSlotAccessor",
-    "accessor.GEngineOwnerAccessor",
-    "accessor.GEngineStateAccessor",
-    "accessor.GShipAccessor",
-    "render.GEngineRenderMixin"
+    "accessor.EngineOwnerAccessor",
+    "accessor.EngineStateAccessor",
+    "accessor.ShipAccessor",
+    "render.EngineRenderMixin"
   ],
   "client": [],
   "injectors": {

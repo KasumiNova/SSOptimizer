@@ -1,16 +1,18 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
- * Rewrites the original engine {@code ContrailEngine.new(float)} renderer to
+ * Rewrites the original engine {@code ContrailEngine.render(float)} renderer to
  * preserve per-group texture/blend semantics while replacing immediate-mode
  * segment emission with batched {@code glDrawArrays(GL_QUAD_STRIP)} via
  * {@link ContrailBatchHelper}.
  */
 public final class EngineContrailEngineProcessor implements AsmClassProcessor {
-    static final String TARGET_CLASS = "com/fs/starfarer/combat/entities/ContrailEngine";
+    static final String TARGET_CLASS = GameClassNames.CONTRAIL_ENGINE;
     static final String HELPER_OWNER =
             "github/kasuminova/ssoptimizer/common/render/engine/ContrailBatchHelper";
 
@@ -36,7 +38,7 @@ public final class EngineContrailEngineProcessor implements AsmClassProcessor {
             public MethodVisitor visitMethod(int access, String name, String desc,
                                              String sig, String[] ex) {
                 MethodVisitor delegate = super.visitMethod(access, name, desc, sig, ex);
-                if ("new".equals(name) && "(F)V".equals(desc)) {
+                if (GameMemberNames.ContrailEngine.RENDER.equals(name) && "(F)V".equals(desc)) {
                     modified[0] = true;
                     return new RenderReplacer(delegate);
                 }
@@ -85,9 +87,9 @@ public final class EngineContrailEngineProcessor implements AsmClassProcessor {
             target.visitIntInsn(Opcodes.SIPUSH, 3042);
             target.visitMethodInsn(Opcodes.INVOKESTATIC, GL11_OWNER, "glEnable", "(I)V", false);
 
-            // ContrailBatchHelper.renderContrails(this.Ò00000, alphaScale)
+            // ContrailBatchHelper.renderContrails(this.groups, alphaScale)
             target.visitVarInsn(Opcodes.ALOAD, 0);
-            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "Ò00000", "Ljava/util/Map;");
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.ContrailEngine.GROUPS, "Ljava/util/Map;");
             target.visitVarInsn(Opcodes.FLOAD, 1);
             target.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER,
                     "renderContrails", "(Ljava/lang/Object;F)V", false);

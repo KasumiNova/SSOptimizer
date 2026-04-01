@@ -60,7 +60,7 @@ public final class SettingsTextFieldFactoryProcessor implements AsmClassProcesso
                     public void visitInsn(final int opcode) {
                         if (opcode == Opcodes.ARETURN) {
                             super.visitInsn(Opcodes.DUP);
-                            super.visitMethodInsn(Opcodes.INVOKESTATIC, TooltipTextFieldFactoryProcessor.HOOK_OWNER,
+                            visitMethodInsn(Opcodes.INVOKESTATIC, TooltipTextFieldFactoryProcessor.HOOK_OWNER,
                                     "registerCreatedTextField", "(" + TEXT_FIELD_DESC + ")V", false);
                         }
                         super.visitInsn(opcode);

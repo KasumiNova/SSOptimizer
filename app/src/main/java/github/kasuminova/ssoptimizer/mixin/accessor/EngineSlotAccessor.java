@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.mixin.accessor;
 
-import com.fs.starfarer.combat.entities.G;
+import com.fs.starfarer.combat.entities.EngineGlowType;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.lwjgl.util.vector.Vector2f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
@@ -15,7 +16,7 @@ import java.awt.*;
  * 优化后的尾焰渲染管线需要直接读取这些属性来批量计算顶点数据。<br>
  * 注入效果：暴露 13 个 Invoker，覆盖位置计算、颜色获取、尺寸查询和状态判断。</p>
  */
-@Mixin(targets = "com.fs.starfarer.loading.specs.EngineSlot")
+@Mixin(targets = GameClassNames.ENGINE_SLOT_DOTTED)
 public interface EngineSlotAccessor {
     @Invoker(value = "isOmegaMode", remap = false)
     boolean ssoptimizer$isOmegaMode();
@@ -45,7 +46,7 @@ public interface EngineSlotAccessor {
     float ssoptimizer$getWidth();
 
     @Invoker(value = "getGlowType", remap = false)
-    G.o ssoptimizer$getGlowType();
+    EngineGlowType ssoptimizer$getGlowType();
 
     @Invoker(value = "getGlowAlternateColor", remap = false)
     Color ssoptimizer$getGlowAlternateColor();

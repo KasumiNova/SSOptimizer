@@ -1,5 +1,8 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
+import github.kasuminova.ssoptimizer.mapping.MappingDirection;
+import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
@@ -42,6 +45,14 @@ class MixinBridgeIntegrationTest {
             assertNotNull(input, "Missing class resource on test classpath: " + resourcePath);
             return input.readAllBytes();
         }
+    }
+
+    private static byte[] reobfuscate(byte[] namedClassBytes) {
+        BytecodeRemapper remapper = new BytecodeRemapper(
+                TinyV2MappingRepository.loadDefault(),
+                MappingDirection.NAMED_TO_OBFUSCATED
+        );
+        return remapper.remapClass(namedClassBytes).bytecode();
     }
 
     private static CompiledJaninoClass compileJaninoClass(String className, String source) throws Exception {
@@ -96,10 +107,10 @@ class MixinBridgeIntegrationTest {
     }
 
     @Test
-    void bridgeAppliesGOverwriteMixinToGameClass() throws Exception {
+    void bridgeAppliesEngineMixinToObfuscatedRuntimeClass() throws Exception {
         bootstrapMixin();
 
-        byte[] original = readClassBytes("com/fs/starfarer/combat/entities/G.class");
+        byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/combat/entities/Engine.class"));
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
                 "com/fs/starfarer/combat/entities/G",
@@ -111,28 +122,9 @@ class MixinBridgeIntegrationTest {
         assertNotNull(transformed);
 
         ClassReader reader = new ClassReader(transformed);
-        final boolean[] foundHelper = {false};
-        reader.accept(new ClassVisitor(Opcodes.ASM9) {
-            @Override
-            public MethodVisitor visitMethod(int access, String name, String descriptor,
-                                             String signature, String[] exceptions) {
-                if (!"o00000".equals(name) || !"(F)V".equals(descriptor)) {
-                    return null;
-                }
-                return new MethodVisitor(Opcodes.ASM9) {
-                    @Override
-                    public void visitMethodInsn(int opcode, String owner, String methodName,
-                                                String methodDescriptor, boolean isInterface) {
-                        if ("github/kasuminova/ssoptimizer/common/render/engine/GRenderHelper".equals(owner)
-                                && "renderEngines".equals(methodName)) {
-                            foundHelper[0] = true;
-                        }
-                    }
-                };
-            }
-        }, 0);
-
-        assertTrue(foundHelper[0], "Transformed G.o00000(F)V should delegate to GRenderHelper.renderEngines");
+        assertTrue(Arrays.asList(reader.getInterfaces())
+                 .contains("github/kasuminova/ssoptimizer/common/render/engine/EngineBridge"),
+            "Transformed Engine should implement EngineBridge after mixin application");
     }
 
     @Test

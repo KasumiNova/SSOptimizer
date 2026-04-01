@@ -41,4 +41,15 @@ class NameTranslatorTest {
     void translateMultipleChars() {
         assertEquals("if$dot$new$semi$", NameTranslator.translate("if.new;"));
     }
+
+    @Test
+    void translateMappedClassName() {
+        assertEquals("com/fs/graphics/TextureLoader", NameTranslator.translate("com/fs/graphics/TextureLoader"));
+    }
+
+    @Test
+    void translateMappedMemberName() {
+        assertEquals("cacheSize", NameTranslator.translate("a"));
+        assertEquals("reloadCache", NameTranslator.translate("b"));
+    }
 }

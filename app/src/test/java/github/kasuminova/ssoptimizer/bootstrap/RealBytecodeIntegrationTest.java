@@ -224,8 +224,8 @@ class RealBytecodeIntegrationTest {
         assumeTrue(original != null, "Deferred image loader class not on classpath");
 
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "Parallel preload processor should handle real com.fs.graphics.L bytecode");
-        assertNotNull(rewritten, "Processor should rewrite com.fs.graphics.L lifecycle methods");
+                "Parallel preload processor should handle real com.fs.graphics.ParallelImagePreloader bytecode");
+            assertNotNull(rewritten, "Processor should rewrite com.fs.graphics.ParallelImagePreloader lifecycle methods");
 
         int startCalls = countHelperCalls(rewritten,
                 github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.HELPER_OWNER,
@@ -306,7 +306,7 @@ class RealBytecodeIntegrationTest {
         assumeTrue(original != null, "Texture object not on classpath");
 
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "Texture object bind processor should handle real com.fs.graphics.Object bytecode");
+                "Texture object bind processor should handle real com.fs.graphics.TextureObject bytecode");
         assertNotNull(rewritten, "Processor should rewrite the texture-object bind method");
 
         int bindCalls = countHelperCalls(rewritten,

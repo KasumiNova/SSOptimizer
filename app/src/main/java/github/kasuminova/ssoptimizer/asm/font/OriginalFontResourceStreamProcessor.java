@@ -2,16 +2,21 @@ package github.kasuminova.ssoptimizer.asm.font;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;
 
 /**
- * Injects a fast path into the game's resource loader so managed original-font
- * resources can be served from generated in-memory BMFont artifacts.
+ * 原版字体资源流拦截处理器。
+ * <p>
+ * 注入目标：{@code com.fs.util.ResourceLoader}<br>
+ * 注入动机：需要在不改动上层字体调用逻辑的前提下，把原版字体资源请求转发到
+ * 运行时生成的 BMFont 产物；ASM 适合在资源流入口处做统一拦截。<br>
+ * 注入效果：方法入口先尝试通过 {@code OriginalGameFontOverrides.openStream()} 返回
+ * 自定义字体流，命中时直接返回，未命中则继续走原始资源加载逻辑。
  */
 public final class OriginalFontResourceStreamProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS  =
-            "com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO";
+    public static final String TARGET_CLASS  = GameClassNames.RESOURCE_LOADER;
     public static final String TARGET_METHOD = "String";
     public static final String TARGET_DESC   = "(Ljava/lang/String;)Ljava/io/InputStream;";
     public static final String HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/font/OriginalGameFontOverrides";

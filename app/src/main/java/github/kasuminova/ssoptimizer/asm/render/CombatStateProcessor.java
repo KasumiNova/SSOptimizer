@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.objectweb.asm.*;
 
 /**
@@ -15,7 +16,7 @@ import org.objectweb.asm.*;
  * 的条件调用，默认跳过 {@code glFinish} 以提升帧率。</p>
  */
 public final class CombatStateProcessor implements AsmClassProcessor {
-    private static final String TARGET_CLASS      = "com/fs/starfarer/combat/CombatState";
+    private static final String TARGET_CLASS      = GameClassNames.COMBAT_STATE;
     private static final String GL11_OWNER        = "org/lwjgl/opengl/GL11";
     private static final String FINISH_HOOK_OWNER = "github/kasuminova/ssoptimizer/common/render/CombatStateTraversalHook";
 

@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.mixin.accessor;
 
 import com.fs.starfarer.combat.systems.F;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
@@ -11,8 +12,8 @@ import org.spongepowered.asm.mixin.gen.Invoker;
  * 注入动机：获取舰船的舰船系统（ShipSystem）引用，用于判断引擎加速模式等渲染状态。<br>
  * 注入效果：暴露 1 个 Invoker。</p>
  */
-@Mixin(targets = "com.fs.starfarer.combat.entities.Ship")
-public interface GShipAccessor {
+@Mixin(targets = GameClassNames.SHIP_DOTTED)
+public interface ShipAccessor {
     @Invoker(value = "getSystem", remap = false)
     F ssoptimizer$getSystem();
 }

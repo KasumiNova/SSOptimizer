@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.common.font;
 
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
 
 import java.awt.*;
@@ -19,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * For supported original fonts, rendering can swap the active font instance to
  * a scale-bucket specific virtual BMFont resource generated on demand. The
- * game's own font loader (`com.fs.graphics.super.D`) is reused so runtime text
- * layout continues to consume ordinary `com.fs.graphics.super.return` objects.
+ * game's own font loader (`com.fs.graphics.font.BitmapFontManager`) is reused so runtime text
+ * layout continues to consume ordinary `com.fs.graphics.font.BitmapFont` objects.
  * <p>
  * This path keeps base override metrics at the original size, then swaps in a
  * higher-resolution runtime font when screen scale demands it. The original
@@ -332,7 +334,7 @@ public final class RuntimeScaledFontCache {
         if (getter != null) {
             return getter;
         }
-        getter = fontClass.getDeclaredMethod("Ô00000");
+        getter = fontClass.getDeclaredMethod(GameMemberNames.BitmapFont.GET_FONT_PATH);
         getter.setAccessible(true);
         fontPathGetter = getter;
         return getter;
@@ -343,7 +345,7 @@ public final class RuntimeScaledFontCache {
         if (getter != null) {
             return getter;
         }
-        getter = fontClass.getDeclaredMethod("class");
+        getter = fontClass.getDeclaredMethod(GameMemberNames.BitmapFont.GET_NOMINAL_FONT_SIZE);
         getter.setAccessible(true);
         fontNominalSizeGetter = getter;
         return getter;
@@ -354,8 +356,8 @@ public final class RuntimeScaledFontCache {
         if (method != null) {
             return method;
         }
-        final Class<?> managerClass = Class.forName("com.fs.graphics.super.D", false, loader);
-        method = managerClass.getDeclaredMethod("Ò00000", String.class);
+        final Class<?> managerClass = Class.forName(GameClassNames.BITMAP_FONT_MANAGER.replace('/', '.'), false, loader);
+        method = managerClass.getDeclaredMethod(GameMemberNames.BitmapFontManager.GET_FONT, String.class);
         method.setAccessible(true);
         fontLookupMethod = method;
         return method;
@@ -366,8 +368,8 @@ public final class RuntimeScaledFontCache {
         if (method != null) {
             return method;
         }
-        final Class<?> managerClass = Class.forName("com.fs.graphics.super.D", false, loader);
-        method = managerClass.getDeclaredMethod("super", String.class, String.class);
+        final Class<?> managerClass = Class.forName(GameClassNames.BITMAP_FONT_MANAGER.replace('/', '.'), false, loader);
+        method = findStaticStringPairMethod(managerClass);
         method.setAccessible(true);
         fontRegisterMethod = method;
         return method;
@@ -531,6 +533,23 @@ public final class RuntimeScaledFontCache {
 
     private static float currentScreenScale() {
         return EffectiveScreenScale.current();
+    }
+
+    private static Method findStaticStringPairMethod(final Class<?> owner) throws NoSuchMethodException {
+        for (Method candidate : owner.getDeclaredMethods()) {
+            if (candidate.getReturnType() != Void.TYPE) {
+                continue;
+            }
+            final Class<?>[] parameterTypes = candidate.getParameterTypes();
+            if (parameterTypes.length != 2) {
+                continue;
+            }
+            if (parameterTypes[0] != String.class || parameterTypes[1] != String.class) {
+                continue;
+            }
+            return candidate;
+        }
+        throw new NoSuchMethodException("No static (String, String) font register method found in " + owner.getName());
     }
 
     enum ScaleResolution {

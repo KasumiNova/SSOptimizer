@@ -1,11 +1,11 @@
-#include "github_kasuminova_ssoptimizer_common_render_engine_SuperObjectRenderHelper.h"
+#include "github_kasuminova_ssoptimizer_common_render_engine_BitmapFontRendererHelper.h"
 #include "ssoptimizer_render_common.h"
 
 using namespace ssoptimizer::render;
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_SuperObjectRenderHelper_nativeRenderGlyphQuad(
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_BitmapFontRendererHelper_nativeRenderGlyphQuad(
         JNIEnv*, jclass,
         jfloat x, jfloat y,
         jint glyphWidth, jint glyphHeight, jint bearingY,

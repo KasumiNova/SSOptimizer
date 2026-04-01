@@ -1,28 +1,34 @@
 package github.kasuminova.ssoptimizer.asm.loading;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
- * Upgrades the base game's deferred image loader from one worker thread to a
- * configurable worker group, while preserving the original queue/result maps.
+ * 并行图片预加载器的 ASM 处理器。
+ * <p>
+ * 注入目标：{@code com.fs.graphics.ParallelImagePreloader}<br>
+ * 注入动机：原版仅使用单线程处理图片预加载，启动阶段容易被大量 PNG/JPG 解码阻塞；
+ * 需要在不改动业务调用点的前提下，把原始静态队列和结果表切换为多 worker 协调器。<br>
+ * 注入效果：替换启动、关闭、入队、等待和解码等关键方法，实现并行预加载与结果缓存。
  */
 public final class ParallelImagePreloadProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS        = "com/fs/graphics/L";
+    public static final String TARGET_CLASS        = GameClassNames.PARALLEL_IMAGE_PRELOADER;
     public static final String HELPER_OWNER        = "github/kasuminova/ssoptimizer/common/loading/ParallelImagePreloadCoordinator";
     public static final String DECODE_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/loading/FastResourceImageDecoder";
     public static final String DECODE_HELPER_DESC  = "(Ljava/lang/String;Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;";
     public static final String QUEUE_HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/loading/ParallelImagePreloadQueueTracker";
 
-    private static final String START_METHOD         = "o00000";
-    private static final String IMAGE_DECODE_METHOD  = "o00000";
-    private static final String SHUTDOWN_METHOD      = "new";
-    private static final String AWAIT_BYTES_METHOD   = "new";
+    private static final String START_METHOD         = GameMemberNames.ParallelImagePreloader.START;
+    private static final String IMAGE_DECODE_METHOD  = GameMemberNames.ParallelImagePreloader.DECODE_IMAGE;
+    private static final String SHUTDOWN_METHOD      = GameMemberNames.ParallelImagePreloader.SHUTDOWN;
+    private static final String AWAIT_BYTES_METHOD   = GameMemberNames.ParallelImagePreloader.AWAIT_BYTES;
     private static final String AWAIT_BYTES_DESC     = "(Ljava/lang/String;)[B";
-    private static final String AWAIT_IMAGE_METHOD   = "class";
+    private static final String AWAIT_IMAGE_METHOD   = GameMemberNames.ParallelImagePreloader.AWAIT_IMAGE;
     private static final String AWAIT_IMAGE_DESC     = "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;";
-    private static final String ENQUEUE_IMAGE_METHOD = "Ö00000";
-    private static final String ENQUEUE_BYTES_METHOD = "Ó00000";
+    private static final String ENQUEUE_IMAGE_METHOD = GameMemberNames.ParallelImagePreloader.ENQUEUE_IMAGE;
+    private static final String ENQUEUE_BYTES_METHOD = GameMemberNames.ParallelImagePreloader.ENQUEUE_BYTES;
     private static final String ENQUEUE_DESC         = "(Ljava/lang/String;)V";
     private static final String NO_ARGS_VOID         = "()V";
     private static final String IMAGE_DECODE_DESC    = "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;";
@@ -30,12 +36,12 @@ public final class ParallelImagePreloadProcessor implements AsmClassProcessor {
     private static final String IMAGEIO_READ_DESC    = "(Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;";
     private static final String LIST_OWNER           = "java/util/List";
     private static final String MAP_OWNER            = "java/util/Map";
-    private static final String IMAGE_QUEUE_FIELD    = "class";
-    private static final String IMAGE_RESULT_FIELD   = "Ø00000";
-    private static final String IMAGE_SENTINEL_FIELD = "Ô00000";
-    private static final String BYTE_QUEUE_FIELD     = "õ00000";
-    private static final String BYTE_RESULT_FIELD    = "new";
-    private static final String BYTE_SENTINEL_FIELD  = "Ö00000";
+    private static final String IMAGE_QUEUE_FIELD    = GameMemberNames.ParallelImagePreloader.IMAGE_QUEUE;
+    private static final String IMAGE_RESULT_FIELD   = GameMemberNames.ParallelImagePreloader.IMAGE_RESULTS;
+    private static final String IMAGE_SENTINEL_FIELD = GameMemberNames.ParallelImagePreloader.IMAGE_SENTINEL;
+    private static final String BYTE_QUEUE_FIELD     = GameMemberNames.ParallelImagePreloader.BYTE_QUEUE;
+    private static final String BYTE_RESULT_FIELD    = GameMemberNames.ParallelImagePreloader.BYTE_RESULTS;
+    private static final String BYTE_SENTINEL_FIELD  = GameMemberNames.ParallelImagePreloader.BYTE_SENTINEL;
     private static final String IMAGE_SENTINEL_DESC  = "Ljava/awt/image/BufferedImage;";
     private static final String BYTE_SENTINEL_DESC   = "[B";
 
@@ -138,10 +144,10 @@ public final class ParallelImagePreloadProcessor implements AsmClassProcessor {
             target.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER, "stopWorkers", NO_ARGS_VOID, false);
             target.visitMethodInsn(Opcodes.INVOKESTATIC, QUEUE_HELPER_OWNER, "clearPending", NO_ARGS_VOID, false);
 
-            clearCollection("Ø00000", "Ljava/util/Map;", "java/util/Map");
-            clearCollection("new", "Ljava/util/Map;", "java/util/Map");
-            clearCollection("class", "Ljava/util/List;", "java/util/List");
-            clearCollection("õ00000", "Ljava/util/List;", "java/util/List");
+            clearCollection(IMAGE_RESULT_FIELD, "Ljava/util/Map;", "java/util/Map");
+            clearCollection(BYTE_RESULT_FIELD, "Ljava/util/Map;", "java/util/Map");
+            clearCollection(IMAGE_QUEUE_FIELD, "Ljava/util/List;", "java/util/List");
+            clearCollection(BYTE_QUEUE_FIELD, "Ljava/util/List;", "java/util/List");
 
             target.visitInsn(Opcodes.RETURN);
         }

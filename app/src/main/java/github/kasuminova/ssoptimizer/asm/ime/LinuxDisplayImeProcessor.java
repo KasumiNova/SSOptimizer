@@ -88,8 +88,8 @@ public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
         @Override
         public void visitInsn(final int opcode) {
             if (opcode == Opcodes.RETURN) {
-                super.visitVarInsn(Opcodes.ALOAD, 0);
-                super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, hookMethod, hookDesc, false);
+                visitVarInsn(Opcodes.ALOAD, 0);
+                visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, hookMethod, hookDesc, false);
             }
             super.visitInsn(opcode);
         }
@@ -103,9 +103,9 @@ public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
         @Override
         public void visitCode() {
             super.visitCode();
-            super.visitVarInsn(Opcodes.ALOAD, 0);
-            super.visitVarInsn(Opcodes.ILOAD, 1);
-            super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, "onFocusChanged", "(Ljava/lang/Object;Z)V", false);
+            visitVarInsn(Opcodes.ALOAD, 0);
+            visitVarInsn(Opcodes.ILOAD, 1);
+            visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, "onFocusChanged", "(Ljava/lang/Object;Z)V", false);
         }
     }
 
@@ -128,8 +128,8 @@ public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
                     && LINUX_EVENT_OWNER.equals(owner)
                     && "nextEvent".equals(name)
                     && "(J)V".equals(descriptor)) {
-                super.visitVarInsn(Opcodes.ALOAD, 0);
-                super.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, EVENT_BUFFER_FIELD, EVENT_BUFFER_DESC);
+                visitVarInsn(Opcodes.ALOAD, 0);
+                visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, EVENT_BUFFER_FIELD, EVENT_BUFFER_DESC);
                 super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, "onRawXEvent",
                         "(Ljava/lang/Object;)V", false);
             }
@@ -140,16 +140,16 @@ public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
                 // Stack: [... filterResult(int/boolean)]
                 // DUP the filter result so we can pass it to onXEvent while
                 // leaving the original on the stack for the IFNE branch.
-                super.visitInsn(Opcodes.DUP);
+                visitInsn(Opcodes.DUP);
                 // Stack: [... filterResult, filterResult]
-                super.visitVarInsn(Opcodes.ALOAD, 0);
+                visitVarInsn(Opcodes.ALOAD, 0);
                 // Stack: [... filterResult, filterResult, linuxDisplay]
-                super.visitInsn(Opcodes.SWAP);
+                visitInsn(Opcodes.SWAP);
                 // Stack: [... filterResult, linuxDisplay, filterResult]
-                super.visitVarInsn(Opcodes.ALOAD, 0);
-                super.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, EVENT_BUFFER_FIELD, EVENT_BUFFER_DESC);
+                visitVarInsn(Opcodes.ALOAD, 0);
+                visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, EVENT_BUFFER_FIELD, EVENT_BUFFER_DESC);
                 // Stack: [... filterResult, linuxDisplay, filterResult, linuxEvent]
-                super.visitInsn(Opcodes.SWAP);
+                visitInsn(Opcodes.SWAP);
                 // Stack: [... filterResult, linuxDisplay, linuxEvent, filterResult]
                 super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, "onXEvent",
                         "(Ljava/lang/Object;Ljava/lang/Object;Z)V", false);

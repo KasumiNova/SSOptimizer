@@ -43,7 +43,7 @@ class EngineSpriteProcessorTest {
         assertTrue(render.callsHelper,
                 "render should call SpriteRenderHelper.renderSprite");
         assertTrue(render.callsTextureBind,
-                "render should call texture bind (Ø00000 on Object)");
+            "render should call TextureObject.bind");
         assertFalse(render.callsGL11,
                 "render should not reference GL11 after rewrite");
     }
@@ -96,8 +96,8 @@ class EngineSpriteProcessorTest {
                                 && EngineSpriteProcessor.RENDER_DESC.equals(mDesc)) {
                             helper[0] = true;
                         }
-                        if ("com/fs/graphics/Object".equals(owner)
-                                && "\u00D800000".equals(mName)) {
+                        if ("com/fs/graphics/TextureObject".equals(owner)
+                            && "bind".equals(mName)) {
                             texBind[0] = true;
                         }
                         if ("org/lwjgl/opengl/GL11".equals(owner)) {

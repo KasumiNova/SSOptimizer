@@ -2,14 +2,20 @@ package github.kasuminova.ssoptimizer.asm.loading;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
- * Replaces LoadingUtils' hot InputStream-to-String routine with a bulk UTF-8 reader.
+ * LoadingUtils 文本读取路径的 ASM 替换处理器。
+ * <p>
+ * 注入目标：{@code com.fs.starfarer.loading.LoadingUtils#readText(InputStream)}<br>
+ * 注入动机：原版热点路径逐字符构建字符串，面对大量文本资源时 CPU 与分配开销较高。<br>
+ * 注入效果：直接改为调用批量 UTF-8 读取 helper，一次性完成资源文本读取。
  */
 public final class LoadingUtilsTextProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS  = "com/fs/starfarer/loading/LoadingUtils";
-    public static final String TARGET_METHOD = "super";
+    public static final String TARGET_CLASS  = GameClassNames.LOADING_UTILS;
+    public static final String TARGET_METHOD = GameMemberNames.LoadingUtils.READ_TEXT;
     public static final String TARGET_DESC   = "(Ljava/io/InputStream;)Ljava/lang/String;";
     public static final String HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/loading/LoadingTextResourceReader";
     public static final String HELPER_METHOD = "read";

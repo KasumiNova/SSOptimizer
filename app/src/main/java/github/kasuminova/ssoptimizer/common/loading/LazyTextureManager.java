@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,32 +75,32 @@ public final class LazyTextureManager {
             "graphics/warroom/"
     };
 
-    private static final    Map<com.fs.graphics.Object, ManagedTextureEntry>      MANAGED_TEXTURES                    =
+    private static final    Map<com.fs.graphics.TextureObject, ManagedTextureEntry>      MANAGED_TEXTURES                    =
             Collections.synchronizedMap(new WeakHashMap<>());
     // Texture ids are bound to the current OpenGL context. Launcher UI and the
     // actual game can create different contexts within the same JVM, so cached
     // texture objects need lazy in-place reload when the context generation changes.
-    private static final    Map<com.fs.graphics.Object, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              =
+    private static final    Map<com.fs.graphics.TextureObject, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              =
             Collections.synchronizedMap(new WeakHashMap<>());
-    private static final    ThreadLocal<Set<com.fs.graphics.Object>>              CONTEXT_RELOAD_GUARD                =
+    private static final    ThreadLocal<Set<com.fs.graphics.TextureObject>>              CONTEXT_RELOAD_GUARD                =
             ThreadLocal.withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<>()));
-    private static final    ThreadLocal<String>                                   CURRENT_BOUND_TEXTURE_PATH          =
+    private static final    ThreadLocal<String>                                          CURRENT_BOUND_TEXTURE_PATH          =
             ThreadLocal.withInitial(() -> "");
-    private static final    AtomicBoolean                                         COMPOSITION_REPORT_HOOK_INSTALLED   = new AtomicBoolean(false);
-    private static final    AtomicLong                                            TOTAL_EVICTED_TEXTURES              = new AtomicLong();
-    private static final    AtomicLong                                            PENDING_EVICTED_TEXTURES            = new AtomicLong();
-    private static final    Object                                                CONTEXT_GENERATION_LOCK             = new Object();
-    private static final    Method                                                EAGER_PATH_LOAD_METHOD              = resolveEagerLoadMethod();
-    private static final    Method                                                ORIGINAL_LAZY_MODE_METHOD           = resolveOriginalLazyModeMethod();
-    private static final    Method                                                RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
-    private static final    Method                                                RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
-    private static final    Field                                                 TEXTURE_ID_FIELD                    = resolveField(com.fs.graphics.Object.class, "ô00000");
-    private static final    Field                                                 SPECIAL_MIPMAP_SET_FIELD            = resolveField(TextureLoader.class, "null");
-    private static volatile long                                                  nextSweepNanos                      = 0L;
-    private static volatile long                                                  nextCompositionReportNanos          = 0L;
-    private static volatile long                                                  nextManagementLogNanos              = 0L;
-    private static volatile Object                                                lastOpenGlContextToken              = null;
-    private static volatile long                                                  currentOpenGlContextGeneration      = 0L;
+    private static final    AtomicBoolean                                                COMPOSITION_REPORT_HOOK_INSTALLED   = new AtomicBoolean(false);
+    private static final    AtomicLong                                                   TOTAL_EVICTED_TEXTURES              = new AtomicLong();
+    private static final    AtomicLong                                                   PENDING_EVICTED_TEXTURES            = new AtomicLong();
+    private static final    Object                                                       CONTEXT_GENERATION_LOCK             = new Object();
+    private static final    Method                                                       EAGER_PATH_LOAD_METHOD              = resolveEagerLoadMethod();
+    private static final    Method                                                       ORIGINAL_LAZY_MODE_METHOD           = resolveOriginalLazyModeMethod();
+    private static final    Method                                                       RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
+    private static final    Method                                                       RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
+    private static final    Field                                                        TEXTURE_ID_FIELD                    = resolveField(com.fs.graphics.TextureObject.class, "textureId");
+    private static final    Field                                                        SPECIAL_MIPMAP_SET_FIELD            = resolveField(TextureLoader.class, "null");
+    private static volatile long                                                         nextSweepNanos                      = 0L;
+    private static volatile long                                                         nextCompositionReportNanos          = 0L;
+    private static volatile long                                                         nextManagementLogNanos              = 0L;
+    private static volatile Object                                                       lastOpenGlContextToken              = null;
+    private static volatile long                                                         currentOpenGlContextGeneration      = 0L;
 
     private LazyTextureManager() {
     }
@@ -142,18 +143,18 @@ public final class LazyTextureManager {
         return target;
     }
 
-    public static com.fs.graphics.Object loadTexture(final TextureLoader loader,
-                                                     final HashMap textureCache,
-                                                     final String resourcePath) throws IOException {
-        final com.fs.graphics.Object cached = (com.fs.graphics.Object) textureCache.get(resourcePath);
+    public static com.fs.graphics.TextureObject loadTexture(final TextureLoader loader,
+                                                            final HashMap textureCache,
+                                                            final String resourcePath) throws IOException {
+        final com.fs.graphics.TextureObject cached = (com.fs.graphics.TextureObject) textureCache.get(resourcePath);
         if (cached != null) {
             ensureContextBoundTextureTracked(cached, resourcePath);
             return cached;
         }
 
         if (isOriginalLazyModeEnabled()) {
-            final com.fs.graphics.Object texture = new com.fs.graphics.Object(TARGET_2D, -1, resourcePath);
-            texture.o00000(true);
+            final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, resourcePath);
+            texture.setDeferredLoadingEnabled(true);
             textureCache.put(resourcePath, texture);
             return markTextureLoadedInCurrentContext(texture, resourcePath);
         }
@@ -181,19 +182,19 @@ public final class LazyTextureManager {
 
         final long now = System.nanoTime();
         if (!defer) {
-            final com.fs.graphics.Object texture = eagerLoad(loader, textureCache, resourcePath);
+            final com.fs.graphics.TextureObject texture = eagerLoad(loader, textureCache, resourcePath);
             MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(normalizedPath, source.sourceHash, metadata, now, true));
             return markTextureLoadedInCurrentContext(texture, resourcePath);
         }
 
-        final com.fs.graphics.Object texture = new com.fs.graphics.Object(TARGET_2D, -1, normalizedPath);
+        final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, normalizedPath);
         applyMetadata(texture, metadata);
         textureCache.put(resourcePath, texture);
         MANAGED_TEXTURES.put(texture, ManagedTextureEntry.pending(normalizedPath, source.sourceHash, metadata, now, true));
         return markTextureLoadedInCurrentContext(texture, resourcePath);
     }
 
-    public static void bindTexture(final com.fs.graphics.Object texture,
+    public static void bindTexture(final com.fs.graphics.TextureObject texture,
                                    final int target) {
         if (isContextReloadInProgress(texture)) {
             GL11.glBindTexture(target, Math.max(readTextureId(texture, -1), 0));
@@ -219,7 +220,7 @@ public final class LazyTextureManager {
         return isManagedFontTexture(CURRENT_BOUND_TEXTURE_PATH.get());
     }
 
-    public static int getTextureId(final com.fs.graphics.Object texture,
+    public static int getTextureId(final com.fs.graphics.TextureObject texture,
                                    final int target,
                                    final int currentTextureId) {
         if (texture == null) {
@@ -347,7 +348,7 @@ public final class LazyTextureManager {
         }
     }
 
-    private static void maybeSweepIdleTextures(final com.fs.graphics.Object currentTexture,
+    private static void maybeSweepIdleTextures(final com.fs.graphics.TextureObject currentTexture,
                                                final long now) {
         final long idleMillis = idleUnloadMillis();
         if (idleMillis <= 0L || MANAGED_TEXTURES.isEmpty()) {
@@ -363,8 +364,8 @@ public final class LazyTextureManager {
         final long idleNanos = idleMillis * 1_000_000L;
         int evicted = 0;
         synchronized (MANAGED_TEXTURES) {
-            for (Map.Entry<com.fs.graphics.Object, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
-                final com.fs.graphics.Object candidate = managedEntry.getKey();
+            for (Map.Entry<com.fs.graphics.TextureObject, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
+                final com.fs.graphics.TextureObject candidate = managedEntry.getKey();
                 if (candidate == null || candidate == currentTexture) {
                     continue;
                 }
@@ -397,7 +398,7 @@ public final class LazyTextureManager {
         }
     }
 
-    private static void uploadDeferredTexture(final com.fs.graphics.Object texture,
+    private static void uploadDeferredTexture(final com.fs.graphics.TextureObject texture,
                                               final int target,
                                               final ManagedTextureEntry entry) throws IOException {
         TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(entry.sourceHash);
@@ -464,19 +465,13 @@ public final class LazyTextureManager {
         }
     }
 
-    private static com.fs.graphics.Object eagerLoad(final TextureLoader loader,
-                                                    final HashMap textureCache,
-                                                    final String resourcePath) throws IOException {
+    private static com.fs.graphics.TextureObject eagerLoad(final TextureLoader loader,
+                                                           final HashMap textureCache,
+                                                           final String resourcePath) throws IOException {
         try {
-            final com.fs.graphics.Object texture = (com.fs.graphics.Object) EAGER_PATH_LOAD_METHOD.invoke(
+            final com.fs.graphics.TextureObject texture = (com.fs.graphics.TextureObject) EAGER_PATH_LOAD_METHOD.invoke(
                     loader,
-                    null,
-                    resourcePath,
-                    TARGET_2D,
-                    INTERNAL_FORMAT_RGBA,
-                    minFilterForResourcePath(resourcePath),
-                    magFilterForResourcePath(resourcePath),
-                    false
+                    resourcePath
             );
             textureCache.put(resourcePath, texture);
             return texture;
@@ -562,7 +557,7 @@ public final class LazyTextureManager {
         }
     }
 
-    private static int ensureTextureReady(final com.fs.graphics.Object texture,
+    private static int ensureTextureReady(final com.fs.graphics.TextureObject texture,
                                           final int target,
                                           final long now,
                                           final boolean restoreBinding) {
@@ -619,13 +614,13 @@ public final class LazyTextureManager {
         currentOpenGlContextGeneration = 0L;
     }
 
-    static void noteTextureLoadedForContext(final com.fs.graphics.Object texture,
+    static void noteTextureLoadedForContext(final com.fs.graphics.TextureObject texture,
                                             final String resourcePath,
                                             final long contextGeneration) {
         storeContextBoundTextureEntry(texture, resourcePath, contextGeneration, true);
     }
 
-    static boolean requiresContextReload(final com.fs.graphics.Object texture,
+    static boolean requiresContextReload(final com.fs.graphics.TextureObject texture,
                                          final long contextGeneration) {
         if (texture == null || contextGeneration <= 0L || isContextReloadInProgress(texture)) {
             return false;
@@ -636,14 +631,14 @@ public final class LazyTextureManager {
         }
     }
 
-    static long trackedContextGeneration(final com.fs.graphics.Object texture) {
+    static long trackedContextGeneration(final com.fs.graphics.TextureObject texture) {
         synchronized (CONTEXT_BOUND_TEXTURES) {
             final ContextBoundTextureEntry tracked = CONTEXT_BOUND_TEXTURES.get(texture);
             return tracked == null ? 0L : tracked.contextGeneration;
         }
     }
 
-    static <T> T withContextReloadGuard(final com.fs.graphics.Object texture,
+    static <T> T withContextReloadGuard(final com.fs.graphics.TextureObject texture,
                                         final Supplier<T> action) {
         final boolean added = enterContextReloadGuard(texture);
         try {
@@ -678,18 +673,18 @@ public final class LazyTextureManager {
                 result);
     }
 
-    private static void applyMetadata(final com.fs.graphics.Object texture,
+    private static void applyMetadata(final com.fs.graphics.TextureObject texture,
                                       final LazyTextureMetadata metadata) {
-        texture.Ò00000(metadata.imageWidth);
-        texture.o00000(metadata.imageHeight);
-        texture.Object(metadata.textureWidth);
-        texture.Ô00000(metadata.textureHeight);
-        texture.Object(metadata.averageColor);
-        texture.o00000(metadata.upperHalfColor);
-        texture.Ò00000(metadata.lowerHalfColor);
+        texture.setImageHeight(metadata.imageHeight);
+        texture.setImageWidth(metadata.imageWidth);
+        texture.setTextureWidth(metadata.textureWidth);
+        texture.setTextureHeight(metadata.textureHeight);
+        texture.setAverageColor(metadata.averageColor);
+        texture.setUpperHalfColor(metadata.upperHalfColor);
+        texture.setLowerHalfColor(metadata.lowerHalfColor);
     }
 
-    private static void setTextureId(final com.fs.graphics.Object texture,
+    private static void setTextureId(final com.fs.graphics.TextureObject texture,
                                      final int textureId) {
         final Field field = TEXTURE_ID_FIELD;
         if (field == null) {
@@ -702,7 +697,7 @@ public final class LazyTextureManager {
         }
     }
 
-    private static int readTextureId(final com.fs.graphics.Object texture,
+    private static int readTextureId(final com.fs.graphics.TextureObject texture,
                                      final int fallback) {
         final Field field = TEXTURE_ID_FIELD;
         if (field == null || texture == null) {
@@ -776,8 +771,8 @@ public final class LazyTextureManager {
         return Integer.MIN_VALUE;
     }
 
-    private static com.fs.graphics.Object markTextureLoadedInCurrentContext(final com.fs.graphics.Object texture,
-                                                                            final String resourcePath) {
+    private static com.fs.graphics.TextureObject markTextureLoadedInCurrentContext(final com.fs.graphics.TextureObject texture,
+                                                                                   final String resourcePath) {
         if (texture == null) {
             return null;
         }
@@ -785,12 +780,12 @@ public final class LazyTextureManager {
         return texture;
     }
 
-    private static void ensureContextBoundTextureTracked(final com.fs.graphics.Object texture,
+    private static void ensureContextBoundTextureTracked(final com.fs.graphics.TextureObject texture,
                                                          final String resourcePath) {
         storeContextBoundTextureEntry(texture, resourcePath, observeCurrentOpenGlContextGeneration(), false);
     }
 
-    private static void storeContextBoundTextureEntry(final com.fs.graphics.Object texture,
+    private static void storeContextBoundTextureEntry(final com.fs.graphics.TextureObject texture,
                                                       final String resourcePath,
                                                       final long contextGeneration,
                                                       final boolean replaceGeneration) {
@@ -818,17 +813,17 @@ public final class LazyTextureManager {
         }
     }
 
-    private static boolean isContextReloadInProgress(final com.fs.graphics.Object texture) {
+    private static boolean isContextReloadInProgress(final com.fs.graphics.TextureObject texture) {
         return texture != null && CONTEXT_RELOAD_GUARD.get().contains(texture);
     }
 
-    private static boolean enterContextReloadGuard(final com.fs.graphics.Object texture) {
+    private static boolean enterContextReloadGuard(final com.fs.graphics.TextureObject texture) {
         return texture != null && CONTEXT_RELOAD_GUARD.get().add(texture);
     }
 
-    private static void exitContextReloadGuard(final com.fs.graphics.Object texture,
+    private static void exitContextReloadGuard(final com.fs.graphics.TextureObject texture,
                                                final boolean added) {
-        final Set<com.fs.graphics.Object> guardedTextures = CONTEXT_RELOAD_GUARD.get();
+        final Set<com.fs.graphics.TextureObject> guardedTextures = CONTEXT_RELOAD_GUARD.get();
         if (added) {
             guardedTextures.remove(texture);
         }
@@ -837,7 +832,7 @@ public final class LazyTextureManager {
         }
     }
 
-    private static void reloadTextureForCurrentContext(final com.fs.graphics.Object texture,
+    private static void reloadTextureForCurrentContext(final com.fs.graphics.TextureObject texture,
                                                        final int target,
                                                        final ManagedTextureEntry entry,
                                                        final long now,
@@ -875,7 +870,7 @@ public final class LazyTextureManager {
         }
     }
 
-    private static void reloadTextureInPlace(final com.fs.graphics.Object texture,
+    private static void reloadTextureInPlace(final com.fs.graphics.TextureObject texture,
                                              final int target,
                                              final String resourcePath) throws IOException {
         final IntBuffer ids = BufferUtils.createIntBuffer(1);
@@ -930,11 +925,11 @@ public final class LazyTextureManager {
         return isVictorPixelFontTexture(resourcePath) || isSharpenedUiFontTexture(resourcePath);
     }
 
-    private static void noteCurrentBoundTexture(final com.fs.graphics.Object texture) {
+    private static void noteCurrentBoundTexture(final com.fs.graphics.TextureObject texture) {
         CURRENT_BOUND_TEXTURE_PATH.set(resolveTrackedResourcePath(texture));
     }
 
-    private static String resolveTrackedResourcePath(final com.fs.graphics.Object texture) {
+    private static String resolveTrackedResourcePath(final com.fs.graphics.TextureObject texture) {
         if (texture == null) {
             return "";
         }
@@ -1079,8 +1074,8 @@ public final class LazyTextureManager {
         final long now = System.nanoTime();
         final List<TextureCompositionReport.TextureEntry> snapshots = new ArrayList<>();
         synchronized (MANAGED_TEXTURES) {
-            for (Map.Entry<com.fs.graphics.Object, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
-                final com.fs.graphics.Object texture = managedEntry.getKey();
+            for (Map.Entry<com.fs.graphics.TextureObject, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
+                final com.fs.graphics.TextureObject texture = managedEntry.getKey();
                 final ManagedTextureEntry entry = managedEntry.getValue();
                 if (texture == null || entry == null) {
                     continue;
@@ -1182,16 +1177,7 @@ public final class LazyTextureManager {
 
     private static Method resolveEagerLoadMethod() {
         try {
-            final Method method = TextureLoader.class.getDeclaredMethod(
-                    "super",
-                    com.fs.graphics.Object.class,
-                    String.class,
-                    int.class,
-                    int.class,
-                    int.class,
-                    int.class,
-                    boolean.class
-            );
+            final Method method = TextureLoader.class.getDeclaredMethod("loadTexture", String.class);
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException e) {
@@ -1201,7 +1187,11 @@ public final class LazyTextureManager {
 
     private static Method resolveOriginalLazyModeMethod() {
         try {
-            final Method method = com.fs.graphics.oOoO.class.getDeclaredMethod("class");
+            final Method method = findDeclaredMethod(
+                    com.fs.graphics.oOoO.class,
+                    boolean.class,
+                    true
+            );
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException e) {
@@ -1213,7 +1203,7 @@ public final class LazyTextureManager {
     private static Method resolveResourceManagerFactoryMethod() {
         try {
             final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, TextureLoader.class.getClassLoader());
-            final Method method = resourceManagerClass.getDeclaredMethod("Ó00000");
+            final Method method = findDeclaredMethod(resourceManagerClass, resourceManagerClass, true);
             method.setAccessible(true);
             return method;
         } catch (ClassNotFoundException | NoSuchMethodException e) {
@@ -1225,7 +1215,7 @@ public final class LazyTextureManager {
     private static Method resolveResourceManagerOpenStreamMethod() {
         try {
             final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, TextureLoader.class.getClassLoader());
-            final Method method = resourceManagerClass.getDeclaredMethod("String", String.class);
+            final Method method = findDeclaredMethod(resourceManagerClass, InputStream.class, false, String.class);
             method.setAccessible(true);
             return method;
         } catch (ClassNotFoundException | NoSuchMethodException e) {
@@ -1244,6 +1234,25 @@ public final class LazyTextureManager {
             LOGGER.warn("[SSOptimizer] Deferred texture helper could not resolve field " + owner.getName() + '.' + name);
             return null;
         }
+    }
+
+    private static Method findDeclaredMethod(final Class<?> owner,
+                                             final Class<?> returnType,
+                                             final boolean requireStatic,
+                                             final Class<?>... parameterTypes) throws NoSuchMethodException {
+        for (Method candidate : owner.getDeclaredMethods()) {
+            if (candidate.getReturnType() != returnType) {
+                continue;
+            }
+            if (Modifier.isStatic(candidate.getModifiers()) != requireStatic) {
+                continue;
+            }
+            if (!Arrays.equals(candidate.getParameterTypes(), parameterTypes)) {
+                continue;
+            }
+            return candidate;
+        }
+        throw new NoSuchMethodException("No method matched signature in " + owner.getName());
     }
 
     private record SourceSnapshot(byte[] sourceBytes,

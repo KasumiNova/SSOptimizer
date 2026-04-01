@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
@@ -16,7 +18,7 @@ import org.objectweb.asm.*;
  * helper/native call that emits the buffered quad stream in immediate mode.
  */
 public final class EngineSmoothParticleProcessor implements AsmClassProcessor {
-    static final String TARGET_CLASS = "com/fs/graphics/particle/SmoothParticle";
+    static final String TARGET_CLASS = GameClassNames.SMOOTH_PARTICLE;
 
     // Helper for batched particle rendering
     static final String HELPER_OWNER =
@@ -25,17 +27,17 @@ public final class EngineSmoothParticleProcessor implements AsmClassProcessor {
     // Game class references
     private static final String PARTICLE_CLASS      = TARGET_CLASS;
     private static final String BASE_PARTICLE_CLASS = "com/fs/graphics/particle/BaseParticle";
-    private static final String TEXTURE_CLASS       = "com/fs/graphics/Object";
+    private static final String TEXTURE_CLASS       = GameClassNames.TEXTURE_OBJECT;
     private static final String TEXTURE_DESC        = "L" + TEXTURE_CLASS + ";";
     private static final String COLOR_CLASS         = "java/awt/Color";
     private static final String COLOR_DESC          = "L" + COLOR_CLASS + ";";
     private static final String GL11_OWNER          = "org/lwjgl/opengl/GL11";
 
-    private static final String BIND_METHOD = "\u00D800000";
+    private static final String BIND_METHOD = "bind";
 
-    // B.Ó00000(Color, float) — brightness-adjusts all RGBA components
-    private static final String COLOR_UTIL_CLASS    = "com/fs/graphics/util/B";
-    private static final String COLOR_ADJUST_METHOD = "\u00D300000";
+    // RenderStateUtils.adjustBrightness(Color, float) — brightness-adjusts all RGBA components
+    private static final String COLOR_UTIL_CLASS    = GameClassNames.RENDER_STATE_UTILS;
+    private static final String COLOR_ADJUST_METHOD = GameMemberNames.RenderStateUtils.ADJUST_BRIGHTNESS;
 
     @Override
     public byte[] process(byte[] classfileBuffer) {
@@ -204,7 +206,7 @@ public final class EngineSmoothParticleProcessor implements AsmClassProcessor {
 
             target.visitLabel(checkBrightnessMult);
 
-            // Color adjustedColor = B.Ó00000(this.color, getBrightness());
+            // Color adjustedColor = RenderStateUtils.adjustBrightness(this.color, getBrightness());
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitFieldInsn(Opcodes.GETFIELD, PARTICLE_CLASS, "color", COLOR_DESC);
             target.visitVarInsn(Opcodes.ALOAD, 0);

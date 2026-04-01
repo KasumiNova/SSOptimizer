@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
 
@@ -11,10 +12,10 @@ class EngineContrailEngineProcessorTest {
         cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, EngineContrailEngineProcessor.TARGET_CLASS,
                 null, "java/lang/Object", null);
 
-        FieldVisitor field = cw.visitField(Opcodes.ACC_PRIVATE, "Ò00000", "Ljava/util/Map;", null, null);
+        FieldVisitor field = cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.ContrailEngine.GROUPS, "Ljava/util/Map;", null, null);
         field.visitEnd();
 
-        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "new", "(F)V", null, null);
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, GameMemberNames.ContrailEngine.RENDER, "(F)V", null, null);
         mv.visitCode();
         mv.visitIntInsn(Opcodes.SIPUSH, 3553);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glEnable", "(I)V", false);
@@ -39,7 +40,7 @@ class EngineContrailEngineProcessorTest {
         reader.accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
-                if (!"new".equals(name) || !"(F)V".equals(desc)) {
+                if (!GameMemberNames.ContrailEngine.RENDER.equals(name) || !"(F)V".equals(desc)) {
                     return null;
                 }
 
@@ -60,7 +61,7 @@ class EngineContrailEngineProcessorTest {
             }
         }, 0);
 
-        assertTrue(foundHelper[0], "ContrailEngine.new(float) should delegate strip emission to ContrailBatchHelper");
-        assertFalse(foundDirectBegin[0], "ContrailEngine.new(float) should not keep direct immediate-mode glBegin calls");
+        assertTrue(foundHelper[0], "ContrailEngine.render(float) should delegate strip emission to ContrailBatchHelper");
+        assertFalse(foundDirectBegin[0], "ContrailEngine.render(float) should not keep direct immediate-mode glBegin calls");
     }
 }

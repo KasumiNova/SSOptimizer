@@ -82,22 +82,22 @@ public final class LinuxKeyboardImeProcessor implements AsmClassProcessor {
             if (opcode == Opcodes.INVOKESTATIC && TARGET_CLASS.equals(owner)) {
                 if ("openIM".equals(name) && "(J)J".equals(descriptor)) {
                     // Stack: [display(long)] -> pop display, push 0L
-                    super.visitInsn(Opcodes.POP2);
-                    super.visitInsn(Opcodes.LCONST_0);
+                    visitInsn(Opcodes.POP2);
+                    visitInsn(Opcodes.LCONST_0);
                     return;
                 }
                 if ("createIC".equals(name) && "(JJ)J".equals(descriptor)) {
                     // Stack: [xim(long), window(long)] -> pop both, push 0L
-                    super.visitInsn(Opcodes.POP2); // pop window
-                    super.visitInsn(Opcodes.POP2); // pop xim
-                    super.visitInsn(Opcodes.LCONST_0);
+                    visitInsn(Opcodes.POP2); // pop window
+                    visitInsn(Opcodes.POP2); // pop xim
+                    visitInsn(Opcodes.LCONST_0);
                     return;
                 }
                 if ("setupIMEventMask".equals(name) && "(JJJ)V".equals(descriptor)) {
                     // Stack: [display(long), window(long), xic(long)] -> pop all three
-                    super.visitInsn(Opcodes.POP2); // pop xic
-                    super.visitInsn(Opcodes.POP2); // pop window
-                    super.visitInsn(Opcodes.POP2); // pop display
+                    visitInsn(Opcodes.POP2); // pop xic
+                    visitInsn(Opcodes.POP2); // pop window
+                    visitInsn(Opcodes.POP2); // pop display
                     return;
                 }
             }
@@ -122,12 +122,12 @@ public final class LinuxKeyboardImeProcessor implements AsmClassProcessor {
             if (opcode == Opcodes.INVOKESTATIC && TARGET_CLASS.equals(owner)) {
                 if ("destroyIC".equals(name) && "(J)V".equals(descriptor)) {
                     // Stack: [xic(long)] -> pop
-                    super.visitInsn(Opcodes.POP2);
+                    visitInsn(Opcodes.POP2);
                     return;
                 }
                 if ("closeIM".equals(name) && "(J)V".equals(descriptor)) {
                     // Stack: [xim(long)] -> pop
-                    super.visitInsn(Opcodes.POP2);
+                    visitInsn(Opcodes.POP2);
                     return;
                 }
             }

@@ -1,12 +1,13 @@
 package github.kasuminova.ssoptimizer.common.render.engine;
 
 import com.fs.graphics.Sprite;
-import com.fs.graphics.util.B;
 import com.fs.starfarer.loading.specs.EngineSlot;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
-import github.kasuminova.ssoptimizer.mixin.accessor.GEngineOwnerAccessor;
-import github.kasuminova.ssoptimizer.mixin.accessor.GEngineStateAccessor;
-import github.kasuminova.ssoptimizer.mixin.accessor.GShipAccessor;
+import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
+import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
+import github.kasuminova.ssoptimizer.mixin.accessor.ShipAccessor;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
 
@@ -14,26 +15,25 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Optimized non-fighter renderer for the original engine-flame path in
- * {@code com.fs.starfarer.combat.entities.G.o00000(float)}.
+ * 引擎喷口批量渲染 helper。
  * <p>
- * The original bytecode spends a disproportionate amount of frame time in
- * repeated {@code glPushMatrix/glRotatef/glTranslatef/glScalef/glBegin} blocks.
- * This helper preserves the original math, but emits the heavy strip/core
- * geometry through a compact helper/native boundary.
+ * 用于替换原版 {@code com.fs.starfarer.combat.entities.Engine.render(float)} 中
+ * 大量重复的即时模式 GL 调用，统一走条带/核心批量绘制路径。
  */
-public final class GRenderHelper {
-    private static final float DEG_TO_RAD = 0.017453292519943295769f;
-    private static final float TEX_PAD    = 0.01f;
-    private static final float TEX_MIN    = 0.01f;
-    private static final float TEX_MAX    = 0.99f;
+public final class EngineRenderHelper {
+    private static final String                   RENDER_STATE_UTILS_CLASS = GameClassNames.RENDER_STATE_UTILS.replace('/', '.');
+    private static final java.lang.reflect.Method BLEND_COLORS_METHOD      = resolveBlendColorsMethod();
+    private static final float                    DEG_TO_RAD               = 0.017453292519943295769f;
+    private static final float                    TEX_PAD                  = 0.01f;
+    private static final float                    TEX_MIN                  = 0.01f;
+    private static final float                    TEX_MAX                  = 0.99f;
 
-    private GRenderHelper() {
+    private EngineRenderHelper() {
     }
 
     public static void renderEngines(Object engineObject, float alphaScale) {
-        GEngineBridge engine = (GEngineBridge) engineObject;
-        GEngineOwnerAccessor owner = (GEngineOwnerAccessor) engine.ssoptimizer$getOwner();
+        EngineBridge engine = (EngineBridge) engineObject;
+        EngineOwnerAccessor owner = (EngineOwnerAccessor) engine.ssoptimizer$getOwner();
 
         if (owner.ssoptimizer$isFighter()) {
             engine.ssoptimizer$renderFighter(alphaScale);
@@ -62,20 +62,20 @@ public final class GRenderHelper {
         }
     }
 
-    private static void renderSlot(GEngineBridge engine,
-                                   GEngineOwnerAccessor owner,
+    private static void renderSlot(EngineBridge engine,
+                                   EngineOwnerAccessor owner,
                                    EngineSlot slot,
                                    float alphaScale,
                                    boolean omegaMode,
                                    boolean withSpread,
                                    float angularRotation) {
         EngineSlotAccessor slotAccessor = (EngineSlotAccessor) slot;
-        GEngineStateAccessor state = (GEngineStateAccessor) engine.ssoptimizer$getState(slot);
+        EngineStateAccessor state = (EngineStateAccessor) engine.ssoptimizer$getState(slot);
 
         float flameLevel = state.ssoptimizer$getFlameLevel();
         float adjustedLevel = flameLevel;
 
-        if (slotAccessor.ssoptimizer$isSystemActivated() && engine.ssoptimizer$getOwner() instanceof GShipAccessor shipAccessor) {
+        if (slotAccessor.ssoptimizer$isSystemActivated() && engine.ssoptimizer$getOwner() instanceof ShipAccessor shipAccessor) {
             if (!engine.ssoptimizer$isSystemActivatedRenderingEnabled()) {
                 return;
             }
@@ -147,9 +147,9 @@ public final class GRenderHelper {
         float texSpan = stripLength == 0.0f ? 0.0f : innerLength / stripLength;
 
         if (isPrimaryGlowType(slotAccessor.ssoptimizer$getGlowType())) {
-            engine.ssoptimizer$getPrimaryGlowTexture().Ø00000();
+            engine.ssoptimizer$getPrimaryGlowTexture().bind();
         } else {
-            engine.ssoptimizer$getSecondaryGlowTexture().Ø00000();
+            engine.ssoptimizer$getSecondaryGlowTexture().bind();
         }
 
         int red = color.getRed();
@@ -163,7 +163,7 @@ public final class GRenderHelper {
                 innerLength, stripLength, stripWidth,
                 red, green, blue, colorAlphaScale);
 
-        engine.ssoptimizer$getFlameTexture().Ø00000();
+        engine.ssoptimizer$getFlameTexture().bind();
         int coreAlpha = clampColorComponent((int) (flameLevel * 50.0f * colorAlphaScale));
         renderEngineCorePass(position.x, position.y, angle,
                 state.ssoptimizer$getCoreRotation(), omegaMode ? angularRotation : 0.0f,
@@ -175,10 +175,10 @@ public final class GRenderHelper {
                 innerWidth, stripWidth, color, alphaScale);
     }
 
-    private static void renderGlowSprite(GEngineBridge engine,
-                                         GEngineOwnerAccessor owner,
+    private static void renderGlowSprite(EngineBridge engine,
+                                         EngineOwnerAccessor owner,
                                          EngineSlotAccessor slotAccessor,
-                                         GEngineStateAccessor state,
+                                         EngineStateAccessor state,
                                          Vector2f position,
                                          float angle,
                                          float primaryBrightness,
@@ -262,16 +262,36 @@ public final class GRenderHelper {
         GL11.glPopMatrix();
     }
 
-    private static Color shiftedColor(GEngineBridge engine, Color baseColor) {
+    private static Color shiftedColor(EngineBridge engine, Color baseColor) {
         if (baseColor == null) {
             return null;
         }
         if (!engine.ssoptimizer$getColorShifter().isShifted()) {
             return baseColor;
         }
-        return B.o00000(baseColor,
-                engine.ssoptimizer$getColorShifter().getCurrForBase(baseColor),
-                engine.ssoptimizer$getColorShiftFraction());
+        try {
+            return (Color) BLEND_COLORS_METHOD.invoke(null,
+                    baseColor,
+                    engine.ssoptimizer$getColorShifter().getCurrForBase(baseColor),
+                    engine.ssoptimizer$getColorShiftFraction());
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to invoke render-state color blend helper", e);
+        }
+    }
+
+    private static java.lang.reflect.Method resolveBlendColorsMethod() {
+        try {
+            final Class<?> helperClass = Class.forName(RENDER_STATE_UTILS_CLASS, false, EngineRenderHelper.class.getClassLoader());
+                final java.lang.reflect.Method method = helperClass.getDeclaredMethod(
+                    "blendColors",
+                    Color.class,
+                    Color.class,
+                    float.class);
+            method.setAccessible(true);
+            return method;
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to resolve render-state color blend helper", e);
+        }
     }
 
     private static boolean isPrimaryGlowType(Object glowType) {
@@ -367,14 +387,6 @@ public final class GRenderHelper {
         GL11.glEnd();
     }
 
-    private static void emitStripVertex(int red, int green, int blue, int alpha,
-                                        float texU, float texV,
-                                        float[] vertices, int offset) {
-        GL11.glColor4ub((byte) red, (byte) green, (byte) blue, (byte) alpha);
-        GL11.glTexCoord2f(texU, texV);
-        GL11.glVertex2f(vertices[offset], vertices[offset + 1]);
-    }
-
     static float[] computeStripVertices(float posX, float posY,
                                         float angle,
                                         float angularRotation,
@@ -386,8 +398,8 @@ public final class GRenderHelper {
                                         float stripWidth) {
         float passIndexF = passIndex;
         float rotation1 = passCount <= 1.0f
-                ? angularRotation
-                : ((passCount - passIndexF - 1.0f) / passCount) * angularRotation;
+            ? angularRotation
+            : ((passCount - passIndexF - 1.0f) / passCount) * angularRotation;
         float direction = (passIndex % 2 == 0) ? -1.0f : 1.0f;
         float phase = (passIndexF + 1.0f) / 2.0f;
         float halfPassCount = passCount / 2.0f;
@@ -399,17 +411,17 @@ public final class GRenderHelper {
 
         float[] vertices = new float[12];
         transformStripVertex(vertices, 0, 0.0f, -halfWidth,
-                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 2, 0.0f, halfWidth,
-                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 4, innerLength, -halfWidth,
-                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 6, innerLength, halfWidth,
-                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 8, stripLength, -halfWidth,
-                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 10, stripLength, halfWidth,
-                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         return vertices;
     }
 
@@ -422,13 +434,13 @@ public final class GRenderHelper {
         float[] vertices = new float[8];
         float halfWidth = stripWidth * 0.5f;
         transformCoreVertex(vertices, 0, 0.0f, -halfWidth,
-                posX, posY, angle, stateRotation, omegaRotation);
+            posX, posY, angle, stateRotation, omegaRotation);
         transformCoreVertex(vertices, 2, 0.0f, halfWidth,
-                posX, posY, angle, stateRotation, omegaRotation);
+            posX, posY, angle, stateRotation, omegaRotation);
         transformCoreVertex(vertices, 4, stripLength, -halfWidth,
-                posX, posY, angle, stateRotation, omegaRotation);
+            posX, posY, angle, stateRotation, omegaRotation);
         transformCoreVertex(vertices, 6, stripLength, halfWidth,
-                posX, posY, angle, stateRotation, omegaRotation);
+            posX, posY, angle, stateRotation, omegaRotation);
         return vertices;
     }
 
@@ -464,6 +476,14 @@ public final class GRenderHelper {
         vertices[offset + 1] = posY + rotated[1];
     }
 
+    private static void emitStripVertex(int red, int green, int blue, int alpha,
+                                        float texU, float texV,
+                                        float[] vertices, int offset) {
+        GL11.glColor4ub((byte) red, (byte) green, (byte) blue, (byte) alpha);
+        GL11.glTexCoord2f(texU, texV);
+        GL11.glVertex2f(vertices[offset], vertices[offset + 1]);
+    }
+
     private static float[] rotate(float x, float y, float angleDegrees) {
         if (angleDegrees == 0.0f) {
             return new float[]{x, y};
@@ -475,17 +495,11 @@ public final class GRenderHelper {
     }
 
     private static float clamp01(float value) {
-        if (value < 0.0f) {
-            return 0.0f;
-        }
-        return Math.min(value, 1.0f);
+        return Math.max(0.0f, Math.min(1.0f, value));
     }
 
     private static int clampColorComponent(int value) {
-        if (value < 0) {
-            return 0;
-        }
-        return Math.min(value, 255);
+        return Math.max(0, Math.min(255, value));
     }
 
     static native void nativeRenderEngineStripBatch(float posX, float posY,
@@ -500,7 +514,9 @@ public final class GRenderHelper {
                                                     float innerLength,
                                                     float stripLength,
                                                     float stripWidth,
-                                                    int red, int green, int blue,
+                                                    int red,
+                                                    int green,
+                                                    int blue,
                                                     float colorAlphaScale);
 
     static native void nativeRenderEngineCorePass(float posX, float posY,
@@ -509,6 +525,8 @@ public final class GRenderHelper {
                                                   float omegaRotation,
                                                   float stripLength,
                                                   float stripWidth,
-                                                  int red, int green, int blue,
+                                                  int red,
+                                                  int green,
+                                                  int blue,
                                                   int alpha);
 }

@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.asm.loading;
 
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
 
@@ -29,50 +30,50 @@ class ParallelImagePreloadProcessorTest {
         cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, ParallelImagePreloadProcessor.TARGET_CLASS,
                 null, "java/lang/Object", null);
 
-        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "Ø00000", "Ljava/util/Map;", null, null).visitEnd();
-        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "new", "Ljava/util/Map;", null, null).visitEnd();
-        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "class", "Ljava/util/List;", null, null).visitEnd();
-        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "õ00000", "Ljava/util/List;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.IMAGE_RESULTS, "Ljava/util/Map;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.BYTE_RESULTS, "Ljava/util/Map;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.IMAGE_QUEUE, "Ljava/util/List;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.BYTE_QUEUE, "Ljava/util/List;", null, null).visitEnd();
 
-        MethodVisitor start = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "o00000", "()V", null, null);
+        MethodVisitor start = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.START, "()V", null, null);
         start.visitCode();
         start.visitInsn(Opcodes.RETURN);
         start.visitMaxs(0, 0);
         start.visitEnd();
 
-        MethodVisitor stop = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "new", "()V", null, null);
+        MethodVisitor stop = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.SHUTDOWN, "()V", null, null);
         stop.visitCode();
         stop.visitInsn(Opcodes.RETURN);
         stop.visitMaxs(0, 0);
         stop.visitEnd();
 
-        MethodVisitor awaitBytes = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "new", "(Ljava/lang/String;)[B", null, null);
+        MethodVisitor awaitBytes = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.AWAIT_BYTES, "(Ljava/lang/String;)[B", null, null);
         awaitBytes.visitCode();
         awaitBytes.visitInsn(Opcodes.ACONST_NULL);
         awaitBytes.visitInsn(Opcodes.ARETURN);
         awaitBytes.visitMaxs(0, 1);
         awaitBytes.visitEnd();
 
-        MethodVisitor awaitImage = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "class", "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;", null, null);
+        MethodVisitor awaitImage = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.AWAIT_IMAGE, "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;", null, null);
         awaitImage.visitCode();
         awaitImage.visitInsn(Opcodes.ACONST_NULL);
         awaitImage.visitInsn(Opcodes.ARETURN);
         awaitImage.visitMaxs(0, 1);
         awaitImage.visitEnd();
 
-        MethodVisitor enqueueImage = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "Ö00000", "(Ljava/lang/String;)V", null, null);
+        MethodVisitor enqueueImage = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.ENQUEUE_IMAGE, "(Ljava/lang/String;)V", null, null);
         enqueueImage.visitCode();
         enqueueImage.visitInsn(Opcodes.RETURN);
         enqueueImage.visitMaxs(0, 1);
         enqueueImage.visitEnd();
 
-        MethodVisitor enqueueBytes = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "Ó00000", "(Ljava/lang/String;)V", null, null);
+        MethodVisitor enqueueBytes = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.ENQUEUE_BYTES, "(Ljava/lang/String;)V", null, null);
         enqueueBytes.visitCode();
         enqueueBytes.visitInsn(Opcodes.RETURN);
         enqueueBytes.visitMaxs(0, 1);
         enqueueBytes.visitEnd();
 
-        MethodVisitor decode = cw.visitMethod(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "o00000", "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;", null, new String[]{"java/io/IOException"});
+        MethodVisitor decode = cw.visitMethod(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, GameMemberNames.ParallelImagePreloader.DECODE_IMAGE, "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;", null, new String[]{"java/io/IOException"});
         decode.visitCode();
         decode.visitInsn(Opcodes.ACONST_NULL);
         decode.visitMethodInsn(Opcodes.INVOKESTATIC, "javax/imageio/ImageIO", "read", "(Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;", false);

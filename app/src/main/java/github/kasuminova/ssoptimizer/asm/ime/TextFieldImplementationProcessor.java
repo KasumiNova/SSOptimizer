@@ -64,22 +64,22 @@ public final class TextFieldImplementationProcessor implements AsmClassProcessor
                     public void visitInsn(final int opcode) {
                         if (opcode == Opcodes.RETURN) {
                             if ("<init>".equals(name)) {
-                                super.visitVarInsn(Opcodes.ALOAD, 0);
-                                super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                                visitVarInsn(Opcodes.ALOAD, 0);
+                                visitMethodInsn(Opcodes.INVOKESTATIC,
                                         TooltipTextFieldFactoryProcessor.HOOK_OWNER,
                                         "registerCreatedTextField",
                                         "(" + TEXT_FIELD_DESC + ")V",
                                         false);
                             } else if ("grabFocus".equals(name)) {
-                                super.visitVarInsn(Opcodes.ALOAD, 0);
-                                super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                                visitVarInsn(Opcodes.ALOAD, 0);
+                                visitMethodInsn(Opcodes.INVOKESTATIC,
                                         TooltipTextFieldFactoryProcessor.HOOK_OWNER,
                                         "onTextFieldFocusGained",
                                         FOCUS_LOST_DESC,
                                         false);
                             } else if ("releaseFocus".equals(name)) {
-                                super.visitVarInsn(Opcodes.ALOAD, 0);
-                                super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                                visitVarInsn(Opcodes.ALOAD, 0);
+                                visitMethodInsn(Opcodes.INVOKESTATIC,
                                         TooltipTextFieldFactoryProcessor.HOOK_OWNER,
                                         "onTextFieldFocusLost",
                                         FOCUS_LOST_DESC,

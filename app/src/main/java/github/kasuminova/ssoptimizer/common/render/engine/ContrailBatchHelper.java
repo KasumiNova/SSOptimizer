@@ -57,13 +57,13 @@ public final class ContrailBatchHelper {
                 return;
             }
 
-            com.fs.graphics.Object texture = groupFields.ssoptimizer$getTexture();
+            com.fs.graphics.TextureObject texture = groupFields.ssoptimizer$getTexture();
             if (texture == null) {
                 return;
             }
 
             applyBlendMode(groupFields.ssoptimizer$getBlendMode());
-            texture.Ø00000();
+            texture.bind();
 
             Color color = groupFields.ssoptimizer$getColor();
             if (color == null) {

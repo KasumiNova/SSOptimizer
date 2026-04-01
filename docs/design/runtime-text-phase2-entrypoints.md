@@ -8,7 +8,7 @@
 ### 1. 最终 quad 发射点
 - 类：`com.fs.graphics.super.Object`
 - 方法：`private void o00000(float, float, com.fs.graphics.super.oOOO, float, boolean)`
-- 现有接管：`EngineSuperObjectProcessor` 已将该方法改写到 `SuperObjectRenderHelper.renderGlyphQuad(...)`
+- 现有接管：`EngineBitmapFontRendererProcessor` 已将该方法改写到 `BitmapFontRendererHelper.renderGlyphQuad(...)`
 - 关键事实：这一层只剩 glyph 尺寸、bearing、UV、`scale`、shadow 参数，已经没有 codepoint / font identity。
 
 ### 2. 运行时主文字循环
@@ -48,7 +48,7 @@ $$
 
 这意味着：
 - **glyph identity（codepoint）在 `Object` 主循环与 `return` 查表层还存在**
-- **到了 `SuperObjectRenderHelper.renderGlyphQuad(...)` 已经丢失**
+- **到了 `BitmapFontRendererHelper.renderGlyphQuad(...)` 已经丢失**
 
 ## `com.fs.graphics.super.oOOO` 映射
 基于 `javap` 与调用关系，当前可高置信映射为：
@@ -101,7 +101,7 @@ $$
 - `Object` 主循环（同时拥有 codepoint、kerning、scale）
 - `return.oO0000(int)` / `return.o00000(int, int)` 周边（仍保留 glyph identity）
 
-`SuperObjectRenderHelper.renderGlyphQuad(...)` 更适合继续承担：
+`BitmapFontRendererHelper.renderGlyphQuad(...)` 更适合继续承担：
 - 热路径发射优化
 - runtime diagnostics
 - native quad emission

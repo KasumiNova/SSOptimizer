@@ -1,17 +1,21 @@
 package github.kasuminova.ssoptimizer.asm.loading;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.objectweb.asm.*;
 
 /**
- * Rewrites the base-game resource loader so repeated startup path probes reuse
- * cached file metadata and directory snapshots instead of re-entering the
- * filesystem for every {@code exists}/{@code isDirectory}/{@code lastModified}
- * and {@code listFiles} probe.
+ * 资源加载器文件访问优化处理器。
+ * <p>
+ * 注入目标：{@code com.fs.util.ResourceLoader}<br>
+ * 注入动机：原版启动时会对同一批路径反复执行 {@code exists}/{@code isDirectory}/
+ * {@code lastModified}/{@code listFiles} 等文件系统探测，造成大量冗余 I/O；
+ * 通过 ASM 把这些调用转发到缓存层，可以在不修改上层逻辑的前提下降低磁盘访问压力。<br>
+ * 注入效果：把 {@link java.io.File} 的多种查询调用替换为
+ * {@link github.kasuminova.ssoptimizer.common.loading.ResourceFileCache} 的缓存实现。
  */
 public final class ResourceLoaderFileAccessProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS =
-            "com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO";
+    public static final String TARGET_CLASS = GameClassNames.RESOURCE_LOADER;
     public static final String HELPER_OWNER =
             "github/kasuminova/ssoptimizer/common/loading/ResourceFileCache";
 

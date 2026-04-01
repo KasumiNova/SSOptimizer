@@ -81,9 +81,9 @@ class ImeServiceTest {
         ImeCaretRect rect = service.computeCurrentCaretRect();
 
         assertNotNull(rect);
-        assertEquals(Math.round((300f + 36f) * 1.5f), rect.x());
-        assertEquals(824 - Math.round((400f + 24f) * 1.5f), rect.y());
-        assertEquals(Math.round(24f * 1.5f), rect.height());
+        assertEquals(504, rect.x());
+        assertEquals(824 - 636, rect.y());
+        assertEquals(36, rect.height());
     }
 
     @Test

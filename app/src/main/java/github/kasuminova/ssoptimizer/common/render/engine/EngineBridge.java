@@ -2,8 +2,8 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 
 import com.fs.graphics.Sprite;
 import com.fs.graphics.util.Fader;
-import com.fs.starfarer.combat.entities.G;
-import com.fs.starfarer.combat.entities.ship.H;
+import com.fs.starfarer.combat.entities.EngineState;
+import com.fs.starfarer.combat.entities.ship.EngineOwner;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import com.fs.starfarer.util.ColorShifter;
 import com.fs.starfarer.util.ValueShifter;
@@ -12,10 +12,10 @@ import com.fs.starfarer.util.ValueShifter;
  * 引擎喷口对象桥接接口（Mixin Accessor）。
  * <p>
  * 通过 Mixin 注入到游戏引擎对象，暴露原本 private 的属性和方法，
- * 供 {@link TexturedStripRenderHelper} 批量渲染时读取引擎参数。
+ * 供 {@link TexturedStripRenderHelper} 和 {@link EngineRenderHelper} 批量渲染时读取引擎参数。
  */
-public interface GEngineBridge {
-    H.Oo ssoptimizer$getOwner();
+public interface EngineBridge {
+    EngineOwner ssoptimizer$getOwner();
 
     boolean ssoptimizer$isSystemActivatedRenderingEnabled();
 
@@ -35,15 +35,15 @@ public interface GEngineBridge {
 
     Fader ssoptimizer$getSecondaryFader();
 
-    com.fs.graphics.Object ssoptimizer$getPrimaryGlowTexture();
+    com.fs.graphics.TextureObject ssoptimizer$getPrimaryGlowTexture();
 
-    com.fs.graphics.Object ssoptimizer$getSecondaryGlowTexture();
+    com.fs.graphics.TextureObject ssoptimizer$getSecondaryGlowTexture();
 
-    com.fs.graphics.Object ssoptimizer$getFlameTexture();
+    com.fs.graphics.TextureObject ssoptimizer$getFlameTexture();
 
     Sprite ssoptimizer$getGlowSprite();
 
-    G.Oo ssoptimizer$getState(EngineSlot slot);
+    EngineState ssoptimizer$getState(EngineSlot slot);
 
     void ssoptimizer$renderFighter(float alphaScale);
 }

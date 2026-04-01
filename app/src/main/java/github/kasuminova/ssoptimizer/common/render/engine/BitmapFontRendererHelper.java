@@ -4,15 +4,14 @@ import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
 import org.lwjgl.opengl.GL11;
 
 /**
- * Emits one bitmap-font glyph quad (plus its shadow expansion passes) inside an
- * already-open {@code glBegin(GL_QUADS)} block.
+ * 在已打开的 {@code glBegin(GL_QUADS)} 块内输出单个 BitmapFont 字形 quad，
+ * 并在需要时附带阴影扩展 pass。
  * <p>
- * The ASM rewrite extracts all glyph metrics and texture coordinates once, then
- * forwards them here so the hot path becomes a single helper call instead of
- * eight Java GL11 calls per quad.
+ * ASM 改写会先把字形度量、纹理坐标和阴影参数一次性解包，再统一转发到本 helper，
+ * 从而把热路径里的多次 Java 侧 GL 调用折叠成一次 helper/native 调用。
  */
-public final class SuperObjectRenderHelper {
-    private SuperObjectRenderHelper() {
+public final class BitmapFontRendererHelper {
+    private BitmapFontRendererHelper() {
     }
 
     public static void renderGlyphQuad(

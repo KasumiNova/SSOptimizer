@@ -48,7 +48,7 @@ class LinuxEventImeProcessorTest {
         Object instance = clazz.getDeclaredConstructor().newInstance();
         Method filterEvent = clazz.getMethod("filterEvent", long.class);
         boolean result = (boolean) filterEvent.invoke(instance, 42L);
-        assertEquals(false, result, "filterEvent should always return false");
+        assertFalse(result, "filterEvent should always return false");
     }
 
     @Test

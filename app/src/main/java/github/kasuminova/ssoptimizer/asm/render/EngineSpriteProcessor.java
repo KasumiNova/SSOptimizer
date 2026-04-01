@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
@@ -14,19 +16,18 @@ public final class EngineSpriteProcessor implements AsmClassProcessor {
     static final         String HELPER_OWNER    =
             "github/kasuminova/ssoptimizer/common/render/engine/SpriteRenderHelper";
     static final         String RENDER_DESC     = "(FFFFFFFIIIIIIFFFF)V";
-    private static final String TARGET_CLASS    = "com/fs/graphics/Sprite";
+    private static final String TARGET_CLASS    = GameClassNames.SPRITE;
     // Game class references
-    private static final String SPRITE_CLASS    = "com/fs/graphics/Sprite";
-    private static final String TEXTURE_CLASS   = "com/fs/graphics/Object";
+    private static final String SPRITE_CLASS    = GameClassNames.SPRITE;
+    private static final String TEXTURE_CLASS   = GameClassNames.TEXTURE_OBJECT;
     private static final String TEXTURE_DESC    = "L" + TEXTURE_CLASS + ";";
     private static final String COLOR_CLASS     = "java/awt/Color";
     private static final String COLOR_DESC      = "L" + COLOR_CLASS + ";";
-    private static final String TEX_CLAMP_CLASS = "com/fs/graphics/util/B";
+    private static final String TEX_CLAMP_CLASS = GameClassNames.RENDER_STATE_UTILS;
 
-    // Obfuscated method names
-    private static final String BIND_METHOD   = "\u00D800000";       // texture bind
-    private static final String CLAMP_ENABLE  = "\u00D800000";      // B.Ø00000()
-    private static final String CLAMP_RESTORE = "new";             // B.new()
+    private static final String BIND_METHOD   = "bind";
+    private static final String CLAMP_ENABLE  = GameMemberNames.RenderStateUtils.ENABLE_TEXTURE_CLAMP;
+    private static final String CLAMP_RESTORE = GameMemberNames.RenderStateUtils.RESTORE_TEXTURE_CLAMP;
 
     @Override
     public byte[] process(byte[] classfileBuffer) {
@@ -126,13 +127,13 @@ public final class EngineSpriteProcessor implements AsmClassProcessor {
             target.visitJumpInsn(Opcodes.IFNULL, returnLabel);
 
             if (bindTexture) {
-                // --- Texture bind: this.texture.Ø00000(); ---
+                // --- Texture bind: this.texture.bind(); ---
                 target.visitVarInsn(Opcodes.ALOAD, 0);
                 target.visitFieldInsn(Opcodes.GETFIELD, SPRITE_CLASS, "texture", TEXTURE_DESC);
                 target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TEXTURE_CLASS, BIND_METHOD, "()V", false);
             }
 
-            // --- TexClamp enable: if (this.texClamp) B.Ø00000(); ---
+            // --- TexClamp enable: if (this.texClamp) RenderStateUtils.enableTextureClamp(); ---
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitFieldInsn(Opcodes.GETFIELD, SPRITE_CLASS, "texClamp", "Z");
             target.visitJumpInsn(Opcodes.IFEQ, skipClampEnable);
@@ -145,7 +146,7 @@ public final class EngineSpriteProcessor implements AsmClassProcessor {
             // --- Call SpriteRenderHelper.renderSprite(...) ---
             target.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER, "renderSprite", RENDER_DESC, false);
 
-            // --- TexClamp restore: if (this.texClamp) B.new(); ---
+            // --- TexClamp restore: if (this.texClamp) RenderStateUtils.restoreTextureClamp(); ---
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitFieldInsn(Opcodes.GETFIELD, SPRITE_CLASS, "texClamp", "Z");
             target.visitJumpInsn(Opcodes.IFEQ, returnLabel);

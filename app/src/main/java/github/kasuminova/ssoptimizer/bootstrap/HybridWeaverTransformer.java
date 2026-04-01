@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.mapping.MappingRepository;
+import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 import org.apache.log4j.Logger;
 
 import java.lang.instrument.ClassFileTransformer;
@@ -16,6 +18,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class HybridWeaverTransformer implements ClassFileTransformer {
     private static final Logger                         LOGGER     = Logger.getLogger(HybridWeaverTransformer.class);
     private final        Map<String, AsmClassProcessor> processors = new ConcurrentHashMap<>();
+    private final        MappingRepository              mappings;
+
+    /**
+     * 使用默认 Tiny v2 映射仓库创建混合织入变换器。
+     */
+    public HybridWeaverTransformer() {
+        this(TinyV2MappingRepository.loadDefault());
+    }
+
+    HybridWeaverTransformer(MappingRepository mappings) {
+        this.mappings = mappings;
+    }
 
     /**
      * 注册指定类名的 ASM 字节码处理器。
@@ -59,6 +73,14 @@ public final class HybridWeaverTransformer implements ClassFileTransformer {
         }
 
         AsmClassProcessor processor = processors.get(className);
+        if (processor == null) {
+            String translatedClassName = mappings.findClassByObfuscatedName(className)
+                                                 .map(github.kasuminova.ssoptimizer.mapping.MappingEntry::namedName)
+                                                 .orElse(null);
+            if (translatedClassName != null) {
+                processor = processors.get(translatedClassName);
+            }
+        }
         if (processor == null) {
             return null;
         }

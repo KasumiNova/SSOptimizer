@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.objectweb.asm.*;
 
 /**
@@ -16,19 +17,19 @@ import org.objectweb.asm.*;
  * postBatch flushes everything with one glDrawArrays.
  */
 public final class EngineGenericTextureParticleProcessor implements AsmClassProcessor {
-    static final String TARGET_CLASS = "com/fs/graphics/particle/GenericTextureParticle";
+    static final String TARGET_CLASS = GameClassNames.GENERIC_TEXTURE_PARTICLE;
 
     static final String HELPER_OWNER =
             "github/kasuminova/ssoptimizer/common/render/engine/ParticleBatchHelper";
 
     private static final String PARTICLE_CLASS = TARGET_CLASS;
-    private static final String TEXTURE_CLASS  = "com/fs/graphics/Object";
+    private static final String TEXTURE_CLASS  = GameClassNames.TEXTURE_OBJECT;
     private static final String TEXTURE_DESC   = "L" + TEXTURE_CLASS + ";";
     private static final String COLOR_CLASS    = "java/awt/Color";
     private static final String COLOR_DESC     = "L" + COLOR_CLASS + ";";
     private static final String GL11_OWNER     = "org/lwjgl/opengl/GL11";
 
-    private static final String BIND_METHOD = "\u00D800000";
+    private static final String BIND_METHOD = "bind";
     private static final String ADD_DESC    = "(IIIIIIFFFFFFFFFI)V";
 
     @Override

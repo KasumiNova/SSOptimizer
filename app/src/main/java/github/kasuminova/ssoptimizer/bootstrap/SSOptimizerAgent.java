@@ -8,10 +8,13 @@ import github.kasuminova.ssoptimizer.asm.loading.*;
 import github.kasuminova.ssoptimizer.asm.render.*;
 import github.kasuminova.ssoptimizer.common.loading.ImageIoConfigurator;
 import github.kasuminova.ssoptimizer.common.logging.LogNoiseFilterConfigurator;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.apache.log4j.Logger;
 
+import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * SSOptimizer 的 javaagent 入口类。
@@ -63,14 +66,38 @@ public final class SSOptimizerAgent {
             LOGGER.info("[SSOptimizer] Falling back to ASM-only mode");
         }
 
-        inst.addTransformer(new SanitizingTransformer(), true);
-        inst.addTransformer(new ReflectionSanitizingTransformer(), true);
-
-        weaverTransformer = new HybridWeaverTransformer();
-        registerEngineProcessors(weaverTransformer);
-        inst.addTransformer(weaverTransformer, true);
+        BootstrapPipeline pipeline = createBootstrapPipeline();
+        weaverTransformer = pipeline.weaverTransformer();
+        for (ClassFileTransformer transformer : pipeline.transformers()) {
+            inst.addTransformer(transformer, true);
+        }
 
         LOGGER.info("[SSOptimizer] Agent loaded — Engine + AI + loading repair phase active");
+    }
+
+    /**
+     * 构建启动阶段的变换器流水线。
+     * <p>
+     * 该流水线的固定顺序为：运行时重映射、类名净化、反射调用净化、混合织入。
+     * 测试通过该方法验证 remap 必须先于 ASM / Mixin patch 执行。
+     *
+     * @return 启动阶段变换器列表
+     */
+    static List<ClassFileTransformer> createBootstrapTransformers() {
+        return createBootstrapPipeline().transformers();
+    }
+
+    private static BootstrapPipeline createBootstrapPipeline() {
+        HybridWeaverTransformer weaver = new HybridWeaverTransformer();
+        registerEngineProcessors(weaver);
+
+        List<ClassFileTransformer> transformers = List.of(
+                new RuntimeRemapTransformer(),
+                new SanitizingTransformer(),
+                new ReflectionSanitizingTransformer(),
+                weaver
+        );
+        return new BootstrapPipeline(transformers, weaver);
     }
 
     /**
@@ -81,28 +108,28 @@ public final class SSOptimizerAgent {
      * @param transformer 目标混合织入变换器
      */
     static void registerEngineProcessors(HybridWeaverTransformer transformer) {
-        registerIf(transformer, "sprite", "com.fs.graphics.Sprite", new EngineSpriteProcessor());
-        registerIf(transformer, "superobject", "com.fs.graphics.super.Object", new EngineSuperObjectProcessor());
-        registerIf(transformer, "texturedstrip", "com.fs.starfarer.renderers.o0OO", new EngineTexturedStripRendererProcessor());
-        registerIf(transformer, "contrailengine", "com.fs.starfarer.combat.entities.ContrailEngine", new EngineContrailEngineProcessor());
-        registerIf(transformer, "aigridquery", "com.fs.starfarer.combat.o0OO.oOoO", new CollisionGridQueryProcessor());
-        transformer.registerProcessor("com.fs.starfarer.combat.CombatState", new CombatStateProcessor());
-        registerIf(transformer, "smoothparticle", "com.fs.graphics.particle.SmoothParticle", new EngineSmoothParticleProcessor());
-        registerIf(transformer, "detailedsmoke", "com.fs.starfarer.renderers.fx.DetailedSmokeParticle", new EngineDetailedSmokeProcessor());
-        registerIf(transformer, "generictextureparticle", "com.fs.graphics.particle.GenericTextureParticle", new EngineGenericTextureParticleProcessor());
-        registerIf(transformer, "launcherdirectstart", "com.fs.starfarer.StarfarerLauncher", new LauncherDirectStartProcessor());
-        registerIf(transformer, "parallelpreload", "com.fs.graphics.L", new ParallelImagePreloadProcessor());
-        registerIf(transformer, "textureloader", "com.fs.graphics.TextureLoader", new TextureLoaderPixelProcessor());
-        registerIf(transformer, "textureobject", "com.fs.graphics.Object", new TextureObjectBindProcessor());
-        registerIf(transformer, "loadingtext", "com.fs.starfarer.loading.LoadingUtils", new LoadingUtilsTextProcessor());
-        registerIf(transformer, "linuxdisplayime", "org.lwjgl.opengl.LinuxDisplay", new LinuxDisplayImeProcessor());
-        registerIf(transformer, "linuxeventime", "org.lwjgl.opengl.LinuxEvent", new LinuxEventImeProcessor());
-        registerIf(transformer, "linuxkeyboardime", "org.lwjgl.opengl.LinuxKeyboard", new LinuxKeyboardImeProcessor());
-        registerIf(transformer, "tooltiptextfieldime", "com.fs.starfarer.ui.impl.StandardTooltipV2Expandable", new TooltipTextFieldFactoryProcessor());
-        registerIf(transformer, "settingstextfieldime", "com.fs.starfarer.settings.StarfarerSettings$1", new SettingsTextFieldFactoryProcessor());
-        registerIf(transformer, "textfieldimplime", "com.fs.starfarer.ui.B", new TextFieldImplementationProcessor());
+        registerIf(transformer, "sprite", GameClassNames.SPRITE, new EngineSpriteProcessor());
+        registerIf(transformer, "bitmapfontrenderer", GameClassNames.BITMAP_FONT_RENDERER, new EngineBitmapFontRendererProcessor());
+        registerIf(transformer, "texturedstrip", GameClassNames.TEXTURED_STRIP_RENDERER, new EngineTexturedStripRendererProcessor());
+        registerIf(transformer, "contrailengine", GameClassNames.CONTRAIL_ENGINE, new EngineContrailEngineProcessor());
+        registerIf(transformer, "aigridquery", GameClassNames.COLLISION_GRID_QUERY, new CollisionGridQueryProcessor());
+        transformer.registerProcessor(GameClassNames.COMBAT_STATE, new CombatStateProcessor());
+        registerIf(transformer, "smoothparticle", GameClassNames.SMOOTH_PARTICLE, new EngineSmoothParticleProcessor());
+        registerIf(transformer, "detailedsmoke", GameClassNames.DETAILED_SMOKE_PARTICLE, new EngineDetailedSmokeProcessor());
+        registerIf(transformer, "generictextureparticle", GameClassNames.GENERIC_TEXTURE_PARTICLE, new EngineGenericTextureParticleProcessor());
+        registerIf(transformer, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
+        registerIf(transformer, "parallelpreload", GameClassNames.PARALLEL_IMAGE_PRELOADER, new ParallelImagePreloadProcessor());
+        registerIf(transformer, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
+        registerIf(transformer, "textureobject", GameClassNames.TEXTURE_OBJECT, new TextureObjectBindProcessor());
+        registerIf(transformer, "loadingtext", GameClassNames.LOADING_UTILS, new LoadingUtilsTextProcessor());
+        registerIf(transformer, "linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
+        registerIf(transformer, "linuxeventime", GameClassNames.LINUX_EVENT, new LinuxEventImeProcessor());
+        registerIf(transformer, "linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
+        registerIf(transformer, "tooltiptextfieldime", GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE, new TooltipTextFieldFactoryProcessor());
+        registerIf(transformer, "settingstextfieldime", GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER, new SettingsTextFieldFactoryProcessor());
+        registerIf(transformer, "textfieldimplime", GameClassNames.TEXT_FIELD_IMPL, new TextFieldImplementationProcessor());
         registerCompositeIf(transformer,
-                "com.fs.util.ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
+                GameClassNames.RESOURCE_LOADER,
                 new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
                 new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()));
     }
@@ -170,5 +197,9 @@ public final class SSOptimizerAgent {
 
     private record ProcessorToggle(String key,
                                    AsmClassProcessor processor) {
+    }
+
+    private record BootstrapPipeline(List<ClassFileTransformer> transformers,
+                                     HybridWeaverTransformer weaverTransformer) {
     }
 }

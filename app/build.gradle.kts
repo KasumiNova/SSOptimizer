@@ -25,9 +25,11 @@ application {
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.13.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(gradleTestKit())
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
     testImplementation("log4j:log4j:1.2.17")
 
+    implementation(project(":mapping"))
     implementation("org.ow2.asm:asm:9.9.1")
     implementation("org.ow2.asm:asm-commons:9.9.1")
     implementation("org.ow2.asm:asm-tree:9.9.1")
@@ -38,9 +40,25 @@ dependencies {
 
     val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
     if (starsectorGameDir != null) {
-        val gameDir = file(starsectorGameDir)
-        compileOnly(fileTree(gameDir) { include("*.jar") })
-        testImplementation(fileTree(gameDir) { include("*.jar") })
+        val namedGameClasspath = rootProject.files(rootProject.provider {
+            val dir = rootProject.layout.buildDirectory.dir("named-game-jars").get().asFile
+            dir.listFiles()
+                ?.filter { it.isFile && it.extension == "jar" }
+                ?: emptyList()
+        })
+        namedGameClasspath.builtBy(":mapping:remapGameClasspathToNamed")
+
+        compileOnly(namedGameClasspath)
+        testImplementation(namedGameClasspath)
+    }
+}
+
+if (providers.gradleProperty("starsector.gameDir").orNull != null) {
+    tasks.named<JavaCompile>("compileJava") {
+        dependsOn(":mapping:remapGameClasspathToNamed")
+    }
+    tasks.named<JavaCompile>("compileTestJava") {
+        dependsOn(":mapping:remapGameClasspathToNamed")
     }
 }
 

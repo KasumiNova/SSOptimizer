@@ -1,26 +1,32 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
- * Rewrites {@code com.fs.graphics.super.Object.o00000(FFL...;FZ)V} so one glyph
- * quad emission becomes a single helper/native call instead of four
- * {@code glTexCoord2f} + four {@code glVertex2f} Java calls.
+ * BitmapFontRenderer 文本绘制处理器。
+ * <p>
+ * 注入目标：{@code com.fs.graphics.font.BitmapFontRenderer}<br>
+ * 注入动机：原版逐字形渲染会产生大量 Java 侧 GL 调用，文本绘制路径在高 DPI 和大字号下开销明显；
+ * 通过 ASM 替换关键方法体，可把单个字形输出折叠为 helper/native 调用。<br>
+ * 注入效果：重写字形绘制与渲染入口，接入布局诊断、运行时字体缩放和批量渲染辅助逻辑。
  */
-public final class EngineSuperObjectProcessor implements AsmClassProcessor {
-    static final String TARGET_CLASS                 = "com/fs/graphics/super/Object";
-    static final String GLYPH_CLASS                  = "com/fs/graphics/super/oOOO";
-    static final String FONT_CLASS                   = "com/fs/graphics/super/return";
-    static final String ENTRY_METHOD                 = "Õ00000";
+public final class EngineBitmapFontRendererProcessor implements AsmClassProcessor {
+    static final String TARGET_CLASS                 = GameClassNames.BITMAP_FONT_RENDERER;
+    static final String GLYPH_CLASS                  = GameClassNames.BITMAP_GLYPH;
+    static final String FONT_CLASS                   = GameClassNames.BITMAP_FONT;
+    static final String FONT_DESC                    = "L" + FONT_CLASS + ";";
+    static final String ENTRY_METHOD                 = GameMemberNames.BitmapFontRenderer.RENDER;
     static final String ENTRY_DESC                   = "()V";
     static final String HELPER_OWNER                 =
-            "github/kasuminova/ssoptimizer/common/render/engine/SuperObjectRenderHelper";
+            "github/kasuminova/ssoptimizer/common/render/engine/BitmapFontRendererHelper";
     static final String LAYOUT_HELPER_OWNER          =
             "github/kasuminova/ssoptimizer/common/render/engine/TextLayoutDiagnostics";
     static final String FONT_SWAP_HELPER_OWNER       =
             "github/kasuminova/ssoptimizer/common/font/RuntimeScaledFontCache";
-    static final String TARGET_DESC                  = "(FFLcom/fs/graphics/super/oOOO;FZ)V";
+    static final String TARGET_DESC                  = "(FFL" + GLYPH_CLASS + ";FZ)V";
     static final String HELPER_DESC                  = "(FFIIIFFFFFIF)V";
     static final String LAYOUT_HELPER_DESC           = "(IIIIFFII)V";
     static final String FONT_SWAP_HELPER_DESC        = "(Ljava/lang/Object;F)Ljava/lang/Object;";
@@ -46,7 +52,7 @@ public final class EngineSuperObjectProcessor implements AsmClassProcessor {
             public MethodVisitor visitMethod(int access, String name, String desc,
                                              String sig, String[] ex) {
                 MethodVisitor delegate = super.visitMethod(access, name, desc, sig, ex);
-                if ("o00000".equals(name) && TARGET_DESC.equals(desc)) {
+                if (GameMemberNames.BitmapFontRenderer.DRAW_GLYPH.equals(name) && TARGET_DESC.equals(desc)) {
                     modified[0] = true;
                     return new RenderGlyphMethodReplacer(delegate);
                 }
@@ -92,30 +98,30 @@ public final class EngineSuperObjectProcessor implements AsmClassProcessor {
 
         private void emitBody() {
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "Ö00000", "()I", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_GLYPH_ID, "()I", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "if", "()I", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_X_OFFSET, "()I", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "void", "()I", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_X_ADVANCE, "()I", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
-            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "øÒ0000", "Lcom/fs/graphics/super/return;");
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.FONT, FONT_DESC);
             target.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "identityHashCode", "(Ljava/lang/Object;)I", false);
 
             target.visitVarInsn(Opcodes.FLOAD, 4);
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
-            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "ø00000", "F");
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.REQUESTED_FONT_SIZE, "F");
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
-            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "øÒ0000", "Lcom/fs/graphics/super/return;");
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, FONT_CLASS, "class", "()I", false);
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.FONT, FONT_DESC);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, FONT_CLASS, GameMemberNames.BitmapFont.GET_NOMINAL_FONT_SIZE, "()I", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
-            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "øÒ0000", "Lcom/fs/graphics/super/return;");
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, FONT_CLASS, "float", "()I", false);
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.FONT, FONT_DESC);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, FONT_CLASS, GameMemberNames.BitmapFont.GET_LINE_HEIGHT, "()I", false);
 
             target.visitMethodInsn(Opcodes.INVOKESTATIC, LAYOUT_HELPER_OWNER,
                     "recordGlyphLayout", LAYOUT_HELPER_DESC, false);
@@ -124,33 +130,33 @@ public final class EngineSuperObjectProcessor implements AsmClassProcessor {
             target.visitVarInsn(Opcodes.FLOAD, 2);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "ø00000", "()I", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_WIDTH, "()I", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "ÒO0000", "()I", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_HEIGHT, "()I", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "Ò00000", "()I", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_BEARING_Y, "()I", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "õ00000", "()F", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_TEX_X, "()F", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "do", "()F", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_TEX_Y, "()F", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "String", "()F", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_TEX_WIDTH, "()F", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, "ô00000", "()F", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GLYPH_CLASS, GameMemberNames.BitmapGlyph.GET_TEX_HEIGHT, "()F", false);
 
             target.visitVarInsn(Opcodes.FLOAD, 4);
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
-            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "oo0000", "I");
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.SHADOW_COPIES, "I");
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
-            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "oO0000", "F");
+            target.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.SHADOW_SCALE, "F");
 
             target.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER,
                     "renderGlyphQuad", HELPER_DESC, false);
@@ -166,30 +172,30 @@ public final class EngineSuperObjectProcessor implements AsmClassProcessor {
         @Override
         public void visitCode() {
             super.visitCode();
-            super.visitVarInsn(Opcodes.ALOAD, 0);
-            super.visitVarInsn(Opcodes.ALOAD, 0);
-            super.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "øÒ0000", "Lcom/fs/graphics/super/return;");
-            super.visitVarInsn(Opcodes.ALOAD, 0);
-            super.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "ø00000", "F");
-            super.visitMethodInsn(Opcodes.INVOKESTATIC,
+            visitVarInsn(Opcodes.ALOAD, 0);
+            visitVarInsn(Opcodes.ALOAD, 0);
+            visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.FONT, FONT_DESC);
+            visitVarInsn(Opcodes.ALOAD, 0);
+            visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.REQUESTED_FONT_SIZE, "F");
+            visitMethodInsn(Opcodes.INVOKESTATIC,
                     FONT_SWAP_HELPER_OWNER,
                     "resolveScaledFont",
                     FONT_SWAP_HELPER_DESC,
                     false);
-            super.visitTypeInsn(Opcodes.CHECKCAST, FONT_CLASS);
-            super.visitInsn(Opcodes.DUP_X1);
-            super.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "øÒ0000", "Lcom/fs/graphics/super/return;");
+            visitTypeInsn(Opcodes.CHECKCAST, FONT_CLASS);
+            visitInsn(Opcodes.DUP_X1);
+            visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.FONT, FONT_DESC);
 
-            super.visitVarInsn(Opcodes.ALOAD, 0);
-            super.visitInsn(Opcodes.SWAP);
-            super.visitVarInsn(Opcodes.ALOAD, 0);
-            super.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "ø00000", "F");
-            super.visitMethodInsn(Opcodes.INVOKESTATIC,
+            visitVarInsn(Opcodes.ALOAD, 0);
+            visitInsn(Opcodes.SWAP);
+            visitVarInsn(Opcodes.ALOAD, 0);
+            visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.REQUESTED_FONT_SIZE, "F");
+            visitMethodInsn(Opcodes.INVOKESTATIC,
                     FONT_SWAP_HELPER_OWNER,
                     "adjustRequestedFontSize",
                     FONT_SIZE_ADJUST_HELPER_DESC,
                     false);
-            super.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "ø00000", "F");
+            visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, GameMemberNames.BitmapFontRenderer.REQUESTED_FONT_SIZE, "F");
         }
     }
 }

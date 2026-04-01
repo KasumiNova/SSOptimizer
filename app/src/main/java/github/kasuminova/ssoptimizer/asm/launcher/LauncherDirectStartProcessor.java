@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.asm.launcher;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.objectweb.asm.*;
 
 /**
@@ -10,7 +11,7 @@ import org.objectweb.asm.*;
  * phase without competing with the launcher OpenGL context.
  */
 public final class LauncherDirectStartProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS  = "com/fs/starfarer/StarfarerLauncher";
+    public static final String TARGET_CLASS  = GameClassNames.STARFARER_LAUNCHER;
     public static final String TARGET_METHOD = "<init>";
     public static final String TARGET_DESC   = "(Z)V";
     public static final String HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/launcher/LauncherDirectStarter";

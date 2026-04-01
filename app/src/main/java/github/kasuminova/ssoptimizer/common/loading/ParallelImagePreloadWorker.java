@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
 
 import java.awt.image.BufferedImage;
@@ -38,17 +40,17 @@ public final class ParallelImagePreloadWorker implements Runnable {
 
             try {
                 ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                Class<?> deferredLoaderClass = Class.forName("com.fs.graphics.L", true, loader);
+                Class<?> deferredLoaderClass = Class.forName(GameClassNames.PARALLEL_IMAGE_PRELOADER.replace('/', '.'), true, loader);
 
                 cachedAccess = new LoaderAccess(
-                        field(deferredLoaderClass, "class"),
-                        field(deferredLoaderClass, "Ø00000"),
-                        field(deferredLoaderClass, "õ00000"),
-                        field(deferredLoaderClass, "new"),
-                        staticFieldValue(deferredLoaderClass, "Ô00000"),
-                        staticFieldValue(deferredLoaderClass, "Ö00000"),
-                        method(deferredLoaderClass, "o00000", BufferedImage.class, String.class),
-                        method(deferredLoaderClass, "Ô00000", byte[].class, String.class)
+                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.IMAGE_QUEUE),
+                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.IMAGE_RESULTS),
+                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.BYTE_QUEUE),
+                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.BYTE_RESULTS),
+                        staticFieldValue(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.IMAGE_SENTINEL),
+                        staticFieldValue(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.BYTE_SENTINEL),
+                        method(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.DECODE_IMAGE, BufferedImage.class, String.class),
+                        method(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.AWAIT_BYTES, byte[].class, String.class)
                 );
                 return cachedAccess;
             } catch (ReflectiveOperationException e) {

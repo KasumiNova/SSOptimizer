@@ -15,7 +15,7 @@ public final class TexturedStripRenderHelper {
     }
 
     public static void renderTexturedStrip(
-            com.fs.graphics.Object texture,
+            com.fs.graphics.TextureObject texture,
             float startX, float startY,
             float endX, float endY,
             float startWidth, float endWidth,
@@ -25,7 +25,7 @@ public final class TexturedStripRenderHelper {
             float endEdgeAlphaScale,
             boolean additive) {
         GL11.glEnable(GL11.GL_TEXTURE_2D);
-        texture.Ø00000();
+        texture.bind();
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, additive ? GL11.GL_ONE : GL11.GL_ONE_MINUS_SRC_ALPHA);
 

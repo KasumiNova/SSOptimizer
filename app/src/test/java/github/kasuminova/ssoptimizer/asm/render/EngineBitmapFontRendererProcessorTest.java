@@ -1,28 +1,29 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class EngineSuperObjectProcessorTest {
-    private byte[] createFakeSuperObjectClass() {
+class EngineBitmapFontRendererProcessorTest {
+    private byte[] createFakeBitmapFontRendererClass() {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-        cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, EngineSuperObjectProcessor.TARGET_CLASS,
+        cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, EngineBitmapFontRendererProcessor.TARGET_CLASS,
                 null, "java/lang/Object", null);
 
-        FieldVisitor fontField = cw.visitField(Opcodes.ACC_PRIVATE, "øÒ0000",
-                "Lcom/fs/graphics/super/return;", null, null);
+        FieldVisitor fontField = cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.BitmapFontRenderer.FONT,
+                "Lcom/fs/graphics/font/BitmapFont;", null, null);
         fontField.visitEnd();
-        FieldVisitor requestedFontSize = cw.visitField(Opcodes.ACC_PRIVATE, "ø00000", "F", null, null);
+        FieldVisitor requestedFontSize = cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.BitmapFontRenderer.REQUESTED_FONT_SIZE, "F", null, null);
         requestedFontSize.visitEnd();
-        FieldVisitor shadowCount = cw.visitField(Opcodes.ACC_PRIVATE, "oo0000", "I", null, null);
+        FieldVisitor shadowCount = cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.BitmapFontRenderer.SHADOW_COPIES, "I", null, null);
         shadowCount.visitEnd();
-        FieldVisitor shadowScale = cw.visitField(Opcodes.ACC_PRIVATE, "oO0000", "F", null, null);
+        FieldVisitor shadowScale = cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.BitmapFontRenderer.SHADOW_SCALE, "F", null, null);
         shadowScale.visitEnd();
 
-        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PRIVATE, "o00000",
-                EngineSuperObjectProcessor.TARGET_DESC, null, null);
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PRIVATE, GameMemberNames.BitmapFontRenderer.DRAW_GLYPH,
+                EngineBitmapFontRendererProcessor.TARGET_DESC, null, null);
         mv.visitCode();
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glTexCoord2f", "(FF)V", false);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glVertex2f", "(FF)V", false);
@@ -30,8 +31,8 @@ class EngineSuperObjectProcessorTest {
         mv.visitMaxs(0, 6);
         mv.visitEnd();
 
-        MethodVisitor entry = cw.visitMethod(Opcodes.ACC_PUBLIC, EngineSuperObjectProcessor.ENTRY_METHOD,
-                EngineSuperObjectProcessor.ENTRY_DESC, null, null);
+        MethodVisitor entry = cw.visitMethod(Opcodes.ACC_PUBLIC, EngineBitmapFontRendererProcessor.ENTRY_METHOD,
+                EngineBitmapFontRendererProcessor.ENTRY_DESC, null, null);
         entry.visitCode();
         entry.visitInsn(Opcodes.RETURN);
         entry.visitMaxs(0, 1);
@@ -43,7 +44,7 @@ class EngineSuperObjectProcessorTest {
 
     @Test
     void rewritesGlyphMethodToHelper() {
-        byte[] rewritten = new EngineSuperObjectProcessor().process(createFakeSuperObjectClass());
+        byte[] rewritten = new EngineBitmapFontRendererProcessor().process(createFakeBitmapFontRendererClass());
         assertNotNull(rewritten);
 
         ClassReader reader = new ClassReader(rewritten);
@@ -61,24 +62,24 @@ class EngineSuperObjectProcessorTest {
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String methodName,
                                                 String methodDesc, boolean itf) {
-                        if (owner.equals(EngineSuperObjectProcessor.HELPER_OWNER)
+                        if (owner.equals(EngineBitmapFontRendererProcessor.HELPER_OWNER)
                                 && "renderGlyphQuad".equals(methodName)
-                                && EngineSuperObjectProcessor.HELPER_DESC.equals(methodDesc)) {
+                                && EngineBitmapFontRendererProcessor.HELPER_DESC.equals(methodDesc)) {
                             foundHelper[0] = true;
                         }
-                        if (owner.equals(EngineSuperObjectProcessor.LAYOUT_HELPER_OWNER)
+                        if (owner.equals(EngineBitmapFontRendererProcessor.LAYOUT_HELPER_OWNER)
                                 && "recordGlyphLayout".equals(methodName)
-                                && EngineSuperObjectProcessor.LAYOUT_HELPER_DESC.equals(methodDesc)) {
+                                && EngineBitmapFontRendererProcessor.LAYOUT_HELPER_DESC.equals(methodDesc)) {
                             foundLayoutHelper[0] = true;
                         }
-                        if (owner.equals(EngineSuperObjectProcessor.FONT_SWAP_HELPER_OWNER)
+                        if (owner.equals(EngineBitmapFontRendererProcessor.FONT_SWAP_HELPER_OWNER)
                                 && "resolveScaledFont".equals(methodName)
-                                && EngineSuperObjectProcessor.FONT_SWAP_HELPER_DESC.equals(methodDesc)) {
+                                && EngineBitmapFontRendererProcessor.FONT_SWAP_HELPER_DESC.equals(methodDesc)) {
                             foundFontSwapHelper[0] = true;
                         }
-                        if (owner.equals(EngineSuperObjectProcessor.FONT_SWAP_HELPER_OWNER)
+                        if (owner.equals(EngineBitmapFontRendererProcessor.FONT_SWAP_HELPER_OWNER)
                                 && "adjustRequestedFontSize".equals(methodName)
-                                && EngineSuperObjectProcessor.FONT_SIZE_ADJUST_HELPER_DESC.equals(methodDesc)) {
+                                && EngineBitmapFontRendererProcessor.FONT_SIZE_ADJUST_HELPER_DESC.equals(methodDesc)) {
                             foundFontSizeAdjustHelper[0] = true;
                         }
                         if (owner.equals("org/lwjgl/opengl/GL11") && "glVertex2f".equals(methodName)) {
@@ -92,12 +93,12 @@ class EngineSuperObjectProcessorTest {
             }
         }, 0);
 
-        assertTrue(foundLayoutHelper[0], "super.Object glyph renderer should record phase-2 text layout diagnostics before quad emission");
-        assertTrue(foundHelper[0], "super.Object glyph renderer should delegate quad emission to SuperObjectRenderHelper");
-        assertTrue(foundFontSwapHelper[0], "super.Object render entry should resolve a scale-aware runtime font before binding and layout");
-        assertTrue(foundFontSizeAdjustHelper[0], "super.Object render entry should normalize requested font size after binding a higher-resolution font");
-        assertFalse(foundGlVertex[0], "super.Object glyph renderer should not keep direct glVertex2f calls");
-        assertFalse(foundGlTexCoord[0], "super.Object glyph renderer should not keep direct glTexCoord2f calls");
+        assertTrue(foundLayoutHelper[0], "BitmapFontRenderer glyph renderer should record phase-2 text layout diagnostics before quad emission");
+        assertTrue(foundHelper[0], "BitmapFontRenderer glyph renderer should delegate quad emission to BitmapFontRendererHelper");
+        assertTrue(foundFontSwapHelper[0], "BitmapFontRenderer render entry should resolve a scale-aware runtime font before binding and layout");
+        assertTrue(foundFontSizeAdjustHelper[0], "BitmapFontRenderer render entry should normalize requested font size after binding a higher-resolution font");
+        assertFalse(foundGlVertex[0], "BitmapFontRenderer glyph renderer should not keep direct glVertex2f calls");
+        assertFalse(foundGlTexCoord[0], "BitmapFontRenderer glyph renderer should not keep direct glTexCoord2f calls");
     }
 
     @Test
@@ -107,6 +108,6 @@ class EngineSuperObjectProcessorTest {
                 "com/example/Other", null, "java/lang/Object", null);
         cw.visitEnd();
 
-        assertNull(new EngineSuperObjectProcessor().process(cw.toByteArray()));
+        assertNull(new EngineBitmapFontRendererProcessor().process(cw.toByteArray()));
     }
 }

@@ -80,6 +80,14 @@ SSOptimizer/
 └── docs/design/   设计文档
 ```
 
+## 设计文档
+
+- [基础开发环境基线](docs/design/dev-environment-baseline-implementation.md)
+- [开发环境上手清单](docs/design/dev-environment-onboarding-checklist.md)
+- [映射与重映射工作流](docs/design/dev-environment-mapping-workflow.md)
+- [运行配置与启动档位](docs/design/dev-environment-run-profiles.md)
+- [故障排查指引](docs/design/dev-environment-troubleshooting.md)
+
 ## 许可证
 
 MIT License

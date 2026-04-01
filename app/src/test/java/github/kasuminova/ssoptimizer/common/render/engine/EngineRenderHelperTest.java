@@ -11,12 +11,12 @@ import java.io.InputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class GRenderHelperTest {
+class EngineRenderHelperTest {
     @Test
     void declaresBatchedStripNativeEntry() throws IOException {
         try (InputStream in = getClass().getClassLoader()
-                                        .getResourceAsStream("github/kasuminova/ssoptimizer/common/render/engine/GRenderHelper.class")) {
-            assertNotNull(in, "GRenderHelper bytecode should be available on the test classpath");
+                                        .getResourceAsStream("github/kasuminova/ssoptimizer/common/render/engine/EngineRenderHelper.class")) {
+            assertNotNull(in, "EngineRenderHelper bytecode should be available on the test classpath");
 
             boolean[] foundNative = {false};
             new ClassReader(in).accept(new ClassVisitor(Opcodes.ASM9) {
@@ -33,13 +33,13 @@ class GRenderHelperTest {
             }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
             assertTrue(foundNative[0],
-                    "GRenderHelper should keep the batched strip path as a native entry");
+                    "EngineRenderHelper should keep the batched strip path as a native entry");
         }
     }
 
     @Test
     void computeStripVerticesMatchesExpectedZeroRotationLayout() {
-        float[] vertices = GRenderHelper.computeStripVertices(
+        float[] vertices = EngineRenderHelper.computeStripVertices(
                 10.0f, 20.0f,
                 0.0f,
                 0.0f,
@@ -61,7 +61,7 @@ class GRenderHelperTest {
 
     @Test
     void computeCoreVerticesAppliesCoreScaleBeforeWorldTransform() {
-        float[] vertices = GRenderHelper.computeCoreVertices(
+        float[] vertices = EngineRenderHelper.computeCoreVertices(
                 5.0f, -2.0f,
                 0.0f,
                 0.0f,

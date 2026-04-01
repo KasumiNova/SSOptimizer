@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.loading;
 
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
 
@@ -28,10 +30,10 @@ class TextureLoaderPixelProcessorTest {
         cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, TextureLoaderPixelProcessor.TARGET_CLASS,
                 null, "java/lang/Object", null);
 
-        cw.visitField(Opcodes.ACC_PRIVATE, "interface", "Ljava/awt/Color;", null, null).visitEnd();
-        cw.visitField(Opcodes.ACC_PRIVATE, "õ00000", "Ljava/awt/Color;", null, null).visitEnd();
-        cw.visitField(Opcodes.ACC_PRIVATE, "Ó00000", "Ljava/awt/Color;", null, null).visitEnd();
-        cw.visitField(Opcodes.ACC_PRIVATE, "ÔO0000", "Ljava/util/HashMap;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.TextureLoader.UPPER_HALF_COLOR, "Ljava/awt/Color;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.TextureLoader.AVERAGE_COLOR, "Ljava/awt/Color;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.TextureLoader.LOWER_HALF_COLOR, "Ljava/awt/Color;", null, null).visitEnd();
+        cw.visitField(Opcodes.ACC_PRIVATE, GameMemberNames.TextureLoader.TEXTURE_CACHE, "Ljava/util/HashMap;", null, null).visitEnd();
 
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PRIVATE, TextureLoaderPixelProcessor.TARGET_METHOD,
                 TextureLoaderPixelProcessor.TARGET_DESC, null, null);
@@ -44,7 +46,7 @@ class TextureLoaderPixelProcessorTest {
         mv.visitMaxs(0, 3);
         mv.visitEnd();
 
-        MethodVisitor dimension = cw.visitMethod(Opcodes.ACC_PRIVATE, TextureLoaderPixelProcessor.TARGET_METHOD,
+        MethodVisitor dimension = cw.visitMethod(Opcodes.ACC_PRIVATE, TextureLoaderPixelProcessor.DIMENSION_METHOD,
                 "(I)I", null, null);
         dimension.visitCode();
         dimension.visitInsn(Opcodes.ICONST_2);
@@ -79,7 +81,7 @@ class TextureLoaderPixelProcessorTest {
         upload.visitMaxs(0, 1);
         upload.visitEnd();
 
-        MethodVisitor loadPath = cw.visitMethod(Opcodes.ACC_PUBLIC, TextureLoaderPixelProcessor.TARGET_METHOD,
+        MethodVisitor loadPath = cw.visitMethod(Opcodes.ACC_PUBLIC, TextureLoaderPixelProcessor.PUBLIC_LOAD_METHOD,
                 TextureLoaderPixelProcessor.PUBLIC_LOAD_DESC, null, new String[]{"java/io/IOException"});
         loadPath.visitCode();
         loadPath.visitInsn(Opcodes.ACONST_NULL);
@@ -114,16 +116,17 @@ class TextureLoaderPixelProcessorTest {
                                 && "convert".equals(methodName)) {
                             helper[0] = true;
                         }
-                        if (TextureLoaderPixelProcessor.TARGET_METHOD.equals(name)
-                                && "(I)I".equals(desc)
+                        if (TextureLoaderPixelProcessor.DIMENSION_METHOD.equals(name)
+                            && "(I)I".equals(desc)
                                 && TextureLoaderPixelProcessor.DIMENSION_HELPER_OWNER.equals(owner)
                                 && "textureDimension".equals(methodName)) {
                             dimensionHelper[0] = true;
                         }
                         if (TextureLoaderPixelProcessor.TARGET_METHOD.equals(name)
                                 && TextureLoaderPixelProcessor.TARGET_DESC.equals(desc)
-                                && "com/fs/graphics/Object".equals(owner)
-                                && ("Ô00000".equals(methodName) || "Object".equals(methodName))) {
+                                && GameClassNames.TEXTURE_OBJECT.equals(owner)
+                                && (GameMemberNames.TextureObject.SET_TEXTURE_HEIGHT.equals(methodName)
+                                    || GameMemberNames.TextureObject.SET_TEXTURE_WIDTH.equals(methodName))) {
                             textureSizeSetters[0] = true;
                         }
                         if (TextureLoaderPixelProcessor.TARGET_METHOD.equals(name)
@@ -141,7 +144,7 @@ class TextureLoaderPixelProcessorTest {
                                 && "glTexImage2D".equals(methodName)) {
                             uploadHelper[0] = true;
                         }
-                        if (TextureLoaderPixelProcessor.TARGET_METHOD.equals(name)
+                        if (TextureLoaderPixelProcessor.PUBLIC_LOAD_METHOD.equals(name)
                                 && TextureLoaderPixelProcessor.PUBLIC_LOAD_DESC.equals(desc)
                                 && TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_OWNER.equals(owner)
                                 && TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_METHOD.equals(methodName)) {

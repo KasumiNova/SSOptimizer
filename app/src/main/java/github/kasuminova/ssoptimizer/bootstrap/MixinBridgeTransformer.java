@@ -23,6 +23,7 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
     private static final Logger LOGGER = Logger.getLogger(MixinBridgeTransformer.class);
 
     private final IMixinTransformer transformer;
+    private final RuntimeRemapContext remapContext;
 
     /**
      * 构造桥接变换器，从 Mixin 服务中获取或创建变换器实例。
@@ -35,6 +36,7 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
             throw new IllegalStateException("Unexpected Mixin service: " + service.getClass().getName());
         }
         this.transformer = agentService.getOrCreateTransformer();
+        this.remapContext = RuntimeRemapContext.loadDefault();
     }
 
     /**
@@ -99,10 +101,15 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
         }
 
         try {
-            String dottedName = className.replace('/', '.');
-            byte[] result = transformer.transformClassBytes(dottedName, dottedName, classfileBuffer);
+            String namedInternalName = NameTranslator.translate(className);
+            String namedDottedName = namedInternalName.replace('/', '.');
+            byte[] namedBytes = remapContext.remap(className, classfileBuffer);
+            byte[] mixinInput = namedBytes != null ? namedBytes : classfileBuffer;
+            String mixinName = namedBytes != null ? namedDottedName : className.replace('/', '.');
+
+            byte[] result = transformer.transformClassBytes(mixinName, namedDottedName, mixinInput);
             if (result != null && result != classfileBuffer) {
-                LOGGER.info("[SSOptimizer] Mixin-applied class: " + className);
+                LOGGER.info("[SSOptimizer] Mixin-applied class: " + className + " -> " + namedDottedName);
             }
             return result;
         } catch (Throwable t) {

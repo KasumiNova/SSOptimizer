@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
-import com.fs.graphics.Object;
+import com.fs.graphics.TextureObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -204,7 +204,7 @@ class LazyTextureManagerTest {
 
     @Test
     void contextReloadTriggersWhenTextureWasLoadedInOlderGeneration() {
-        final Object texture = new Object(3553, 42, "graphics/fonts/orbitron24aa_0.png");
+        final TextureObject texture = new TextureObject(3553, 42, "graphics/fonts/orbitron24aa_0.png");
 
         LazyTextureManager.noteTextureLoadedForContext(texture, "graphics/fonts/orbitron24aa_0.png", 1L);
 
@@ -215,7 +215,7 @@ class LazyTextureManagerTest {
 
     @Test
     void getTextureIdBypassesContextReloadWhileReloadIsAlreadyInProgress() {
-        final Object texture = new Object(3553, 42, "graphics/fonts/orbitron24aa_0.png");
+        final TextureObject texture = new TextureObject(3553, 42, "graphics/fonts/orbitron24aa_0.png");
 
         final int id = LazyTextureManager.withContextReloadGuard(texture,
                 () -> LazyTextureManager.getTextureId(texture, 3553, 42));

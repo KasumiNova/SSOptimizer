@@ -61,7 +61,7 @@ public final class TooltipTextFieldFactoryProcessor implements AsmClassProcessor
                     public void visitInsn(final int opcode) {
                         if (opcode == Opcodes.ARETURN) {
                             super.visitInsn(Opcodes.DUP);
-                            super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER,
+                            visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER,
                                     "registerCreatedTextField", "(" + TEXT_FIELD_DESC + ")V", false);
                         }
                         super.visitInsn(opcode);

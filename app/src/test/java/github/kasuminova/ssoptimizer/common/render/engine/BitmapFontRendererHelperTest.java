@@ -4,22 +4,22 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SuperObjectRenderHelperTest {
+class BitmapFontRendererHelperTest {
     @Test
     void enablesVictorPixelSnappingOnlyForNonIntegralScale() {
-        assertTrue(SuperObjectRenderHelper.shouldUsePixelSnappedVictorPath(true, 1.5f));
-        assertTrue(SuperObjectRenderHelper.shouldUsePixelSnappedVictorPath(true, 1.25f));
-        assertFalse(SuperObjectRenderHelper.shouldUsePixelSnappedVictorPath(true, 1.0f));
-        assertFalse(SuperObjectRenderHelper.shouldUsePixelSnappedVictorPath(true, 2.0f));
-        assertFalse(SuperObjectRenderHelper.shouldUsePixelSnappedVictorPath(false, 1.5f));
-        assertTrue(SuperObjectRenderHelper.shouldUseOptimizedShadowPath(true, 1));
-        assertFalse(SuperObjectRenderHelper.shouldUseOptimizedShadowPath(true, 0));
-        assertFalse(SuperObjectRenderHelper.shouldUseOptimizedShadowPath(false, 2));
+        assertTrue(BitmapFontRendererHelper.shouldUsePixelSnappedVictorPath(true, 1.5f));
+        assertTrue(BitmapFontRendererHelper.shouldUsePixelSnappedVictorPath(true, 1.25f));
+        assertFalse(BitmapFontRendererHelper.shouldUsePixelSnappedVictorPath(true, 1.0f));
+        assertFalse(BitmapFontRendererHelper.shouldUsePixelSnappedVictorPath(true, 2.0f));
+        assertFalse(BitmapFontRendererHelper.shouldUsePixelSnappedVictorPath(false, 1.5f));
+        assertTrue(BitmapFontRendererHelper.shouldUseOptimizedShadowPath(true, 1));
+        assertFalse(BitmapFontRendererHelper.shouldUseOptimizedShadowPath(true, 0));
+        assertFalse(BitmapFontRendererHelper.shouldUseOptimizedShadowPath(false, 2));
     }
 
     @Test
     void snapsVictorGlyphQuadToDevicePixels() {
-        final SuperObjectRenderHelper.SnappedGlyphQuad quad = SuperObjectRenderHelper.snappedGlyphQuad(
+        final BitmapFontRendererHelper.SnappedGlyphQuad quad = BitmapFontRendererHelper.snappedGlyphQuad(
                 10.25f,
                 30.75f,
                 7,
@@ -36,7 +36,7 @@ class SuperObjectRenderHelperTest {
 
     @Test
     void snappedGlyphQuadPreservesVisibleExtentForTinyGlyphs() {
-        final SuperObjectRenderHelper.SnappedGlyphQuad quad = SuperObjectRenderHelper.snappedGlyphQuad(
+        final BitmapFontRendererHelper.SnappedGlyphQuad quad = BitmapFontRendererHelper.snappedGlyphQuad(
                 2.49f,
                 4.51f,
                 1,
@@ -53,7 +53,7 @@ class SuperObjectRenderHelperTest {
 
     @Test
     void translatedShadowQuadKeepsGlyphSizeWhileOnlyOffsettingPosition() {
-        final SuperObjectRenderHelper.SnappedGlyphQuad quad = SuperObjectRenderHelper.translatedGlyphQuad(
+        final BitmapFontRendererHelper.SnappedGlyphQuad quad = BitmapFontRendererHelper.translatedGlyphQuad(
                 10.0f,
                 30.0f,
                 8,

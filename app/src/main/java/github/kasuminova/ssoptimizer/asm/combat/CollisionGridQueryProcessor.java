@@ -1,19 +1,21 @@
 package github.kasuminova.ssoptimizer.asm.combat;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
  * 碰撞网格查询方法的 ASM 替换处理器。
  *
- * <p>注入目标：{@code com.fs.starfarer.combat.o0OO.oOoO.getCheckIterator()}<br>
+ * <p>注入目标：{@code com.fs.starfarer.combat.CollisionGridQuery.getCheckIterator()}<br>
  * 注入动机：原始实现存在冗余的迭代器分配和边界计算，在每帧大量 AI 碰撞查询时产生性能瓶颈；
  * Mixin 无法精确替换混淆类的单个方法体。<br>
  * 注入效果：用 {@link github.kasuminova.ssoptimizer.common.combat.ai.grid.CollisionGridQueryHelper}
  * 的纯静态方法替换整个方法体，减少对象分配和边界检查开销。</p>
  */
 public final class CollisionGridQueryProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS  = "com/fs/starfarer/combat/o0OO/oOoO";
+    public static final String TARGET_CLASS  = GameClassNames.COLLISION_GRID_QUERY;
     public static final String TARGET_METHOD = "getCheckIterator";
     public static final String TARGET_DESC   = "(Lorg/lwjgl/util/vector/Vector2f;FF)Ljava/util/Iterator;";
     public static final String HELPER_OWNER  =
@@ -22,12 +24,12 @@ public final class CollisionGridQueryProcessor implements AsmClassProcessor {
 
     private static final String VECTOR2F_CLASS = "org/lwjgl/util/vector/Vector2f";
 
-    private static final String FIELD_CELLS       = "class";
-    private static final String FIELD_GRID_WIDTH  = "\u00D300000";
-    private static final String FIELD_GRID_HEIGHT = "float";
-    private static final String FIELD_BASE_X      = "o00000";
-    private static final String FIELD_BASE_Y      = "\u00F500000";
-    private static final String FIELD_CELL_SIZE   = "new";
+    private static final String FIELD_CELLS       = GameMemberNames.CollisionGridQuery.CELLS;
+    private static final String FIELD_GRID_WIDTH  = GameMemberNames.CollisionGridQuery.GRID_WIDTH;
+    private static final String FIELD_GRID_HEIGHT = GameMemberNames.CollisionGridQuery.GRID_HEIGHT;
+    private static final String FIELD_BASE_X      = GameMemberNames.CollisionGridQuery.BASE_X;
+    private static final String FIELD_BASE_Y      = GameMemberNames.CollisionGridQuery.BASE_Y;
+    private static final String FIELD_CELL_SIZE   = GameMemberNames.CollisionGridQuery.CELL_SIZE;
 
     @Override
     public byte[] process(byte[] classfileBuffer) {

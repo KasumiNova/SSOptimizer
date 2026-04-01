@@ -13,7 +13,7 @@ class MixinBridgeTransformerTest {
     void skipsAgentAndPlatformClasses() {
         assertTrue(MixinBridgeTransformer.shouldSkipClass("java/lang/String"));
         assertTrue(MixinBridgeTransformer.shouldSkipClass("org/spongepowered/asm/mixin/MixinEnvironment"));
-        assertTrue(MixinBridgeTransformer.shouldSkipClass("github/kasuminova/ssoptimizer/mixin/render/GEngineRenderMixin"));
+        assertTrue(MixinBridgeTransformer.shouldSkipClass("github/kasuminova/ssoptimizer/mixin/render/EngineRenderMixin"));
         assertTrue(MixinBridgeTransformer.shouldSkipClass("thirdparty/mod/PlainModEntry"));
         assertFalse(MixinBridgeTransformer.shouldSkipClass("com/fs/starfarer/combat/entities/G"));
     }

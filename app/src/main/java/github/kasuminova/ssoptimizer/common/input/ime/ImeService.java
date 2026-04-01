@@ -4,6 +4,8 @@ import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.TextFieldAPI;
 import github.kasuminova.ssoptimizer.common.font.EffectiveScreenScale;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.lwjgl.opengl.Display;
 
 import java.lang.ref.WeakReference;
@@ -22,13 +24,15 @@ import java.util.function.IntSupplier;
  */
 public final class ImeService {
     private static final ImeService INSTANCE                      = new ImeService(ImeBackends.createDefault(), EffectiveScreenScale::current, () -> Display.getHeight());
-    private static final Method     GET_CURRENT_FOCUSED_COMPONENT = findMethod("com.fs.starfarer.ui.O0Oo", "Ó00000");
+    private static final Method     GET_CURRENT_FOCUSED_COMPONENT = findMethod(
+            GameClassNames.FOCUSED_COMPONENT_TRACKER.replace('/', '.'),
+            GameMemberNames.FocusedComponentTracker.GET_CURRENT_FOCUSED_COMPONENT);
 
-    private final CopyOnWriteArrayList<WeakReference<TextFieldAPI>> registeredFields = new CopyOnWriteArrayList<>();
-    private final    DoubleSupplier              windowScaleSupplier;
-    private final    IntSupplier                 windowHeightSupplier;
-    private volatile ImeBackend                  backend;
-    private volatile WeakReference<TextFieldAPI> explicitlyFocusedField;
+    private final    CopyOnWriteArrayList<WeakReference<TextFieldAPI>> registeredFields = new CopyOnWriteArrayList<>();
+    private final    DoubleSupplier                                    windowScaleSupplier;
+    private final    IntSupplier                                       windowHeightSupplier;
+    private volatile ImeBackend                                        backend;
+    private volatile WeakReference<TextFieldAPI>                       explicitlyFocusedField;
 
     public ImeService(final ImeBackend backend) {
         this(backend, EffectiveScreenScale::current, () -> Display.getHeight());

@@ -2,17 +2,25 @@ package github.kasuminova.ssoptimizer.asm.loading;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
- * Replaces TextureLoader's hot BufferedImage-to-ByteBuffer conversion with a
- * helper that bulk-reads ARGB rows instead of hammering Raster.getPixel().
+ * 纹理像素转换处理器。
+ * <p>
+ * 注入目标：{@code com.fs.graphics.TextureLoader}<br>
+ * 注入动机：原版把 {@link java.awt.image.BufferedImage} 转为上传缓冲区时频繁调用
+ * Raster API，CPU 开销较高；同时还需要接入延迟纹理加载和尺寸修正逻辑。<br>
+ * 注入效果：替换像素转换、路径加载、尺寸计算与部分上传调用，统一走优化 helper。
  */
 public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
-    public static final  String TARGET_CLASS             = "com/fs/graphics/TextureLoader";
-    public static final  String TARGET_METHOD            = "super";
-    public static final  String TARGET_DESC              = "(Ljava/awt/image/BufferedImage;Lcom/fs/graphics/Object;)Ljava/nio/ByteBuffer;";
-    public static final  String PUBLIC_LOAD_DESC         = "(Ljava/lang/String;)Lcom/fs/graphics/Object;";
+    public static final  String TARGET_CLASS             = GameClassNames.TEXTURE_LOADER;
+    public static final  String TARGET_METHOD            = GameMemberNames.TextureLoader.CONVERT_PIXELS;
+    public static final  String TARGET_DESC              = "(Ljava/awt/image/BufferedImage;L" + GameClassNames.TEXTURE_OBJECT + ";)Ljava/nio/ByteBuffer;";
+    public static final  String PUBLIC_LOAD_METHOD       = GameMemberNames.TextureLoader.LOAD_TEXTURE;
+    public static final  String PUBLIC_LOAD_DESC         = "(Ljava/lang/String;)L" + GameClassNames.TEXTURE_OBJECT + ";";
+    public static final  String DIMENSION_METHOD         = GameMemberNames.TextureLoader.TEXTURE_DIMENSION;
     public static final  String HELPER_OWNER             = "github/kasuminova/ssoptimizer/common/loading/TexturePixelConverter";
     public static final  String DIMENSION_HELPER_OWNER   = "github/kasuminova/ssoptimizer/common/loading/TextureDimensionSupport";
     public static final  String IMAGE_READ_HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/loading/FastResourceImageDecoder";
@@ -20,7 +28,7 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
     public static final  String UPLOAD_HELPER_OWNER      = "github/kasuminova/ssoptimizer/common/loading/TextureUploadHelper";
     public static final  String LAZY_LOAD_HELPER_OWNER   = "github/kasuminova/ssoptimizer/common/loading/LazyTextureManager";
     public static final  String LAZY_LOAD_HELPER_METHOD  = "loadTexture";
-    public static final  String LAZY_LOAD_HELPER_DESC    = "(Lcom/fs/graphics/TextureLoader;Ljava/util/HashMap;Ljava/lang/String;)Lcom/fs/graphics/Object;";
+    public static final  String LAZY_LOAD_HELPER_DESC    = "(L" + GameClassNames.TEXTURE_LOADER + ";Ljava/util/HashMap;Ljava/lang/String;)L" + GameClassNames.TEXTURE_OBJECT + ";";
     private static final String RESULT_OWNER             = "github/kasuminova/ssoptimizer/common/loading/TexturePixelConversionResult";
     private static final String DIMENSION_DESC           = "(I)I";
     private static final String IMAGE_READ_METHOD        = "String";
@@ -28,7 +36,7 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
     private static final String IMAGEIO_OWNER            = "javax/imageio/ImageIO";
     private static final String IMAGEIO_READ_DESC        = "(Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;";
     private static final String GL11_OWNER               = "org/lwjgl/opengl/GL11";
-    private static final String TEXTURE_CACHE_FIELD      = "ÔO0000";
+    private static final String TEXTURE_CACHE_FIELD      = GameMemberNames.TextureLoader.TEXTURE_CACHE;
     private static final String TEXTURE_CACHE_DESC       = "Ljava/util/HashMap;";
     private static final String GL_TEX_IMAGE_2D_DESC     = "(IIIIIIIILjava/nio/ByteBuffer;)V";
     private static final String GL_TEX_SUB_IMAGE_2D_DESC = "(IIIIIIIILjava/nio/ByteBuffer;)V";
@@ -57,11 +65,11 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
                     modified[0] = true;
                     return new MethodReplacer(delegate);
                 }
-                if (TARGET_METHOD.equals(name) && PUBLIC_LOAD_DESC.equals(desc)) {
+                if (PUBLIC_LOAD_METHOD.equals(name) && PUBLIC_LOAD_DESC.equals(desc)) {
                     modified[0] = true;
                     return new PathLoadMethodReplacer(delegate);
                 }
-                if (TARGET_METHOD.equals(name) && DIMENSION_DESC.equals(desc)) {
+                if (DIMENSION_METHOD.equals(name) && DIMENSION_DESC.equals(desc)) {
                     modified[0] = true;
                     return new DimensionMethodReplacer(delegate);
                 }
@@ -151,27 +159,27 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
             target.visitVarInsn(Opcodes.ALOAD, 2);
             target.visitVarInsn(Opcodes.ALOAD, 3);
             target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, RESULT_OWNER, "textureHeight", "()I", false);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "com/fs/graphics/Object", "Ô00000", "(I)V", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GameClassNames.TEXTURE_OBJECT, GameMemberNames.TextureObject.SET_TEXTURE_HEIGHT, "(I)V", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 2);
             target.visitVarInsn(Opcodes.ALOAD, 3);
             target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, RESULT_OWNER, "textureWidth", "()I", false);
-            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "com/fs/graphics/Object", "Object", "(I)V", false);
+            target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, GameClassNames.TEXTURE_OBJECT, GameMemberNames.TextureObject.SET_TEXTURE_WIDTH, "(I)V", false);
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitVarInsn(Opcodes.ALOAD, 3);
             target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, RESULT_OWNER, "upperHalfColor", "()Ljava/awt/Color;", false);
-            target.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "interface", "Ljava/awt/Color;");
+            target.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, GameMemberNames.TextureLoader.UPPER_HALF_COLOR, "Ljava/awt/Color;");
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitVarInsn(Opcodes.ALOAD, 3);
             target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, RESULT_OWNER, "averageColor", "()Ljava/awt/Color;", false);
-            target.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "õ00000", "Ljava/awt/Color;");
+            target.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, GameMemberNames.TextureLoader.AVERAGE_COLOR, "Ljava/awt/Color;");
 
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitVarInsn(Opcodes.ALOAD, 3);
             target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, RESULT_OWNER, "lowerHalfColor", "()Ljava/awt/Color;", false);
-            target.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, "Ó00000", "Ljava/awt/Color;");
+            target.visitFieldInsn(Opcodes.PUTFIELD, TARGET_CLASS, GameMemberNames.TextureLoader.LOWER_HALF_COLOR, "Ljava/awt/Color;");
 
             target.visitVarInsn(Opcodes.ALOAD, 3);
             target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, RESULT_OWNER, "buffer", "()Ljava/nio/ByteBuffer;", false);

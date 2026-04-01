@@ -60,7 +60,7 @@ class LinuxKeyboardImeProcessorTest {
         cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "com/example/Other", null, "java/lang/Object", null);
         cw.visitEnd();
         byte[] result = new LinuxKeyboardImeProcessor().process(cw.toByteArray());
-        assertTrue(result == null, "processor should return null for non-matching class");
+        assertNull(result, "processor should return null for non-matching class");
     }
 
     private byte[] createFakeLinuxKeyboardClass() {

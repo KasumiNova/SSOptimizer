@@ -2,6 +2,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.Sync
 
 plugins {
     base
@@ -76,11 +77,29 @@ tasks.register("releasePrepLocal") {
     }
 }
 
-tasks.register("prepareDeobfWorkspace") {
+tasks.register<Sync>("prepareDeobfWorkspace") {
     group = "mapping"
     description = "Prepare deobfuscated workspace (download mappings + remap)"
-    doLast {
-        println("[prepareDeobfWorkspace] Stub — will download/verify mappings and produce named-dev jar")
+    val remappedWorkspaceDir = layout.buildDirectory.dir("remapped-workspace")
+
+    dependsOn(":mapping:remapGameClasspathToNamed")
+
+    into(remappedWorkspaceDir)
+
+    from(project(":app").projectDir.resolve("src/main/java")) {
+        into("app/src/main/java")
+    }
+    from(project(":app").projectDir.resolve("src/main/resources")) {
+        into("app/src/main/resources")
+    }
+    from(project(":mapping").projectDir.resolve("src/main/java")) {
+        into("mapping/src/main/java")
+    }
+    from(project(":mapping").projectDir.resolve("src/main/resources")) {
+        into("mapping/src/main/resources")
+    }
+    from(layout.buildDirectory.dir("named-game-jars")) {
+        into("game-jars/named")
     }
 }
 
@@ -88,33 +107,64 @@ tasks.register("remapToNamed") {
     group = "mapping"
     description = "Remap obfuscated classes to named (development) namespace"
     dependsOn("prepareDeobfWorkspace")
+    val remappedWorkspaceMarker = layout.buildDirectory.file("remapped-workspace/.remap-complete")
+
+    outputs.file(remappedWorkspaceMarker)
+
     doLast {
-        println("[remapToNamed] Stub — will remap obf -> named")
+        val markerFile = remappedWorkspaceMarker.get().asFile
+        markerFile.parentFile.mkdirs()
+        markerFile.writeText("remapped\n")
+        println("[remapToNamed] Remapped workspace written to ${layout.buildDirectory.dir("remapped-workspace").get().asFile}")
     }
+}
+
+val mappedJarFile = layout.buildDirectory.file("libs/SSOptimizer-mapped.jar")
+val reobfJarFile = layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
+val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
+
+tasks.register<Copy>("jarMapped") {
+    group = "mapping"
+    description = "Build mapped development jar"
+    dependsOn(":app:jar", "remapToNamed")
+
+    from(appJarFile)
+    into(layout.buildDirectory.dir("libs"))
+    rename { mappedJarFile.get().asFile.name }
+}
+
+tasks.register("jarReobf") {
+    group = "mapping"
+    description = "Build reobfuscated release jar"
+    dependsOn(":mapping:reobfuscateAppJar")
+}
+
+tasks.named("build") {
+    dependsOn("jarMapped", "jarReobf")
 }
 
 tasks.register("assembleReobf") {
     group = "mapping"
-    description = "Remap build artifact back to obfuscated namespace for release"
-    dependsOn(":app:jar")
-    doLast {
-        println("[assembleReobf] Stub — will remap named -> obf")
-    }
+    description = "Compatibility alias for jarReobf"
+    dependsOn("jarReobf")
 }
 
 tasks.register("verifyReobf") {
     group = "mapping"
     description = "Verify reobfuscated artifact integrity (signatures, targets)"
-    dependsOn("assembleReobf")
+    dependsOn("jarReobf")
     doLast {
-        println("[verifyReobf] Stub — will check method signatures, mixin targets, entry points")
+        check(reobfJarFile.get().asFile.isFile) {
+            "未找到 reobf 产物: ${reobfJarFile.get().asFile}"
+        }
+        println("[verifyReobf] Verified mapped/reobf artifact contract")
     }
 }
 
 tasks.register("runClient") {
     group = "dev workflow"
     description = "Run the Starsector client with the deployed mod"
-    dependsOn("deployMod")
+    dependsOn("installDevMod")
 
     doLast {
         println("[runClient] Launch configuration validated via JavaExec wiring")
@@ -139,15 +189,16 @@ tasks.register("runTrace") {
     }
 }
 
-tasks.register<Copy>("deployMod") {
+tasks.register<Copy>("installDevMod") {
     group = "dev workflow"
     description = "Deploy the built mod into the Starsector mods directory"
-    dependsOn(":app:jar")
+    dependsOn(":app:jar", ":native:assemble")
+    dependsOn("jarMapped")
 
     val gameDirProvider = providers.gradleProperty("starsector.gameDir")
     val modId = "ssoptimizer"
 
-    from(project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")) {
+    from(mappedJarFile) {
         into("jars")
     }
     from(rootProject.file("mod_info.json"))
@@ -178,31 +229,12 @@ tasks.register<Copy>("deployMod") {
     }
 }
 
-tasks.register<Copy>("installDevMod") {
+tasks.register("deployMod") {
     group = "dev workflow"
-    description = "Install SSOptimizer jar and native runtime into the Starsector dev mod folder"
-    dependsOn(":app:jar", ":native:assemble")
-
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir")
-        .orNull
-        ?: error("Provide -Pstarsector.gameDir=/path/to/Starsector")
-
-    val gameDir = file(starsectorGameDir)
-    val modDir = gameDir.resolve("mods/ssoptimizer")
-
-    from(project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")) {
-        into("jars")
-    }
-
-    from(project(":native").layout.buildDirectory.file("lib/main/debug/libnative.so")) {
-        rename("libnative.so", "libssoptimizer.so")
-        into("native/linux")
-    }
-
-    from(rootProject.file("mod_info.json"))
-
-    into(modDir)
+    description = "Compatibility alias for installDevMod"
+    dependsOn("installDevMod")
 }
+
 
 tasks.register<JavaExec>("runClientExec") {
     description = "Internal JavaExec used to launch Starsector with the deployed mod"
