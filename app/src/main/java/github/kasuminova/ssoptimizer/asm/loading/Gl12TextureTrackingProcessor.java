@@ -5,6 +5,14 @@ import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;
 
+/**
+ * OpenGL 1.2 纹理资源追踪的 ASM 处理器。
+ *
+ * <p>注入目标：{@code org/lwjgl/opengl/GL12} 的 {@code glTexImage3D}<br>
+ * 注入动机：需要追踪 3D 纹理分配（如体积纹理 / 数组纹理）以统计显存占用；
+ * 与 {@link Gl11TextureTrackingProcessor} 同理，Mixin 无法 Hook LWJGL 的静态 native 方法。<br>
+ * 注入效果：在 3D 纹理创建后插入 {@code RuntimeGlResourceTracker} 的追踪回调。</p>
+ */
 public final class Gl12TextureTrackingProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS      = "org/lwjgl/opengl/GL12";
     static final        String TEX_IMAGE_3D_DESC = "(IIIIIIIIILjava/nio/ByteBuffer;)V";

@@ -19,6 +19,12 @@ import java.time.Instant;
 import java.util.*;
 import java.util.List;
 
+/**
+ * TrueType 字体位图生成器。
+ * <p>
+ * 将 TTF/OTF 字体文件栅格化为 Starsector 使用的 {@code .fnt + .png} 位图字体格式，
+ * 支持高 DPI 缩放和完整 CJK 字符集。
+ */
 final class TtfBmFontGenerator {
     private static final Logger LOGGER                     = Logger.getLogger(TtfBmFontGenerator.class);
     private static final String PRIMARY_VISUAL_SAMPLE      = "HNM0";

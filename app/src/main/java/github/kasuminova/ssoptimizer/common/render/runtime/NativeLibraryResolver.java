@@ -3,6 +3,11 @@ package github.kasuminova.ssoptimizer.common.render.runtime;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * 原生库路径解析器。
+ * <p>
+ * 按优先级查找原生库：系统属性指定路径 → mod 目录下的平台相关子目录。
+ */
 public final class NativeLibraryResolver {
     private NativeLibraryResolver() {
     }

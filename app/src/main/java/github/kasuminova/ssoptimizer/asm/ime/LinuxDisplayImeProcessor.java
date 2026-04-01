@@ -7,6 +7,21 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+/**
+ * LWJGL {@code LinuxDisplay} 的 IME 相关 ASM 处理器。
+ *
+ * <p>注入目标：{@code org/lwjgl/opengl/LinuxDisplay} 的多个方法<br>
+ * 注入动机：需要在 LWJGL 的事件循环中插入多个 IME Hook：
+ * <ul>
+ *   <li>{@code createKeyboard / destroyKeyboard}：键盘创建/销毁时通知 IME 服务</li>
+ *   <li>{@code setFocused}：捕获焦点变化以驱动 {@code focusIn/focusOut}</li>
+ *   <li>{@code processEvents}：在 {@code nextEvent()} 后注入 {@code onRawXEvent} 钩子
+ *       （用于拦截 XIM 协议 ClientMessage 等非键盘事件），以及在 {@code filterEvent()} 后
+ *       注入 {@code onXEvent} 钩子（传递过滤结果给 IME 处理）</li>
+ * </ul>
+ * Mixin 无法 Hook LWJGL 内部包级方法和精确控制方法内的插入位置。<br>
+ * 注入效果：所有 Hook 委托给 {@link github.kasuminova.ssoptimizer.common.input.ime.LinuxDisplayImeHooks}。</p>
+ */
 public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "org/lwjgl/opengl/LinuxDisplay";
     public static final String HOOK_OWNER = "github/kasuminova/ssoptimizer/common/input/ime/LinuxDisplayImeHooks";

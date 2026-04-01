@@ -4,6 +4,16 @@ import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
 import org.objectweb.asm.*;
 
+/**
+ * 纹理对象绑定方法的 ASM 替换处理器，支持延迟纹理加载（Lazy Texture）。
+ *
+ * <p>注入目标：{@code com.fs.graphics.Object} 的绑定方法 {@code Ø00000()} 和 ID 获取方法 {@code ö00000()}<br>
+ * 注入动机：游戏的纹理绑定逻辑不支持按需加载和贴图合并；
+ * 需要在绑定时插入 {@link github.kasuminova.ssoptimizer.common.loading.LazyTextureManager}
+ * 的代理调用以实现纹理延迟加载和合并纹理集。<br>
+ * 注入效果：替换绑定方法体为 {@code LazyTextureManager.bindTexture()}，
+ * 替换 ID 获取方法体为 {@code LazyTextureManager.getTextureId()}。</p>
+ */
 public final class TextureObjectBindProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS            = "com/fs/graphics/Object";
     public static final String TARGET_METHOD           = "Ø00000";

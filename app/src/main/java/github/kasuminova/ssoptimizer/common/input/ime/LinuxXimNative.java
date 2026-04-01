@@ -1,5 +1,11 @@
 package github.kasuminova.ssoptimizer.common.input.ime;
 
+/**
+ * Linux XIM 原生 JNI 方法定义与桥接实例工厂。
+ * <p>
+ * 封装所有 {@code native} 方法并提供统一的 {@link LinuxXimNativeBridge}
+ * 实例，供 {@link LinuxXimImeBackend} 调用。
+ */
 public final class LinuxXimNative {
     private static final LinuxXimNativeBridge BRIDGE = new LinuxXimNativeBridge() {
         @Override

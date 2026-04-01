@@ -1,3 +1,10 @@
+/**
+ * 原生 PNG 解码器（JNI 实现）。
+ *
+ * 对应 Java 类: NativePngDecoder
+ * 使用 libpng 解码 PNG 图片并将 RGBA 像素转换为 Java int[] ARGB 格式，
+ * 在多线程环境下安全调用，可显著提升资源加载速度。
+ */
 #include <cstring>
 #include <cstdint>
 #include <limits>
@@ -252,7 +259,7 @@ jobject benchmarkBridge(JNIEnv* env,
 } // namespace
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_loading_NativePngDecoder_nativeIsSupported(JNIEnv*, jclass) {
+Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_nativeIsSupported(JNIEnv*, jclass) {
 #if SSOPTIMIZER_NATIVE_LIBPNG_AVAILABLE
     return JNI_TRUE;
 #else
@@ -261,7 +268,7 @@ Java_github_kasuminova_ssoptimizer_loading_NativePngDecoder_nativeIsSupported(JN
 }
 
 extern "C" JNIEXPORT jobject JNICALL
-Java_github_kasuminova_ssoptimizer_loading_NativePngDecoder_decodePng0(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_decodePng0(JNIEnv* env,
                                                                        jclass,
                                                                        jbyteArray imageBytes) {
 #if SSOPTIMIZER_NATIVE_LIBPNG_AVAILABLE
@@ -294,7 +301,7 @@ Java_github_kasuminova_ssoptimizer_loading_NativePngDecoder_decodePng0(JNIEnv* e
 }
 
 extern "C" JNIEXPORT jobject JNICALL
-Java_github_kasuminova_ssoptimizer_loading_NativePngDecoder_benchmarkBridge0(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_benchmarkBridge0(JNIEnv* env,
                                                                              jclass,
                                                                              jbyteArray imageBytes,
                                                                              jint width,

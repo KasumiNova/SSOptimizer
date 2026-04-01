@@ -5,6 +5,14 @@ import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;
 
+/**
+ * OpenGL 1.1 纹理资源追踪的 ASM 处理器。
+ *
+ * <p>注入目标：{@code org/lwjgl/opengl/GL11} 的 {@code glTexImage2D / glDeleteTextures}<br>
+ * 注入动机：需要追踪所有 2D 纹理的分配和释放以统计显存占用；LWJGL 的 GL 类为 JNI
+ * 桥接类，Mixin 无法 Hook 静态 native 方法的调用点。<br>
+ * 注入效果：在纹理操作前后插入 {@code RuntimeGlResourceTracker} 的追踪回调。</p>
+ */
 public final class Gl11TextureTrackingProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS         = "org/lwjgl/opengl/GL11";
     static final        String TEX_IMAGE_2D_DESC    = "(IIIIIIIILjava/nio/ByteBuffer;)V";

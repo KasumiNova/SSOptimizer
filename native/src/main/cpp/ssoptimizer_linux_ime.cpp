@@ -1,4 +1,17 @@
-#include "github_kasuminova_ssoptimizer_input_ime_LinuxXimNative.h"
+/**
+ * Linux XIM 输入法原生实现（JNI 实现）。
+ *
+ * 对应 Java 类: LinuxXimNative
+ * 通过 X11 Input Method (XIM) 协议实现中文输入，
+ * 包含 XIC 创建/销毁、XFilterEvent 调度、Xutf8LookupString 查找、
+ * 光标位置更新等完整的 XIM 客户端实现。
+ *
+ * 内存管理策略：
+ * - ImeContext 通过 createContext 分配，destroyContext 释放
+ * - XIM/XIC 生命周期绑定在 ImeContext 上
+ * - FontSet 随 XIC 一起释放
+ */
+#include "github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative.h"
 
 #include <jni.h>
 
@@ -540,7 +553,7 @@ std::string contextDebugSummary(LinuxXimContext* context) {
 } // namespace
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeIsSupported(JNIEnv*, jclass) {
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeIsSupported(JNIEnv*, jclass) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
     ensureLocaleConfigured();
     if (!XSupportsLocale()) {
@@ -555,7 +568,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeIsSupported(JN
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeLastErrorMessage(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeLastErrorMessage(JNIEnv* env,
                                                                                    jclass) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
     return env->NewStringUTF(g_last_error.c_str());
@@ -565,7 +578,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeLastErrorMessa
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeDebugSummary(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeDebugSummary(JNIEnv* env,
                                                                                jclass,
                                                                                jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -579,7 +592,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeDebugSummary(J
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeCreateContext(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeCreateContext(JNIEnv*,
                                                                                 jclass,
                                                                                 jlong display,
                                                                                 jlong window,
@@ -596,7 +609,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeCreateContext(
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeDestroyContext(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeDestroyContext(JNIEnv*,
                                                                                  jclass,
                                                                                  jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -608,7 +621,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeDestroyContext
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeFocusIn(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeFocusIn(JNIEnv*,
                                                                           jclass,
                                                                           jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -622,7 +635,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeFocusIn(JNIEnv
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeFocusOut(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeFocusOut(JNIEnv*,
                                                                            jclass,
                                                                            jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -638,7 +651,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeFocusOut(JNIEn
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeUpdateSpot(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeUpdateSpot(JNIEnv*,
                                                                              jclass,
                                                                              jlong handle,
                                                                              jint x,
@@ -656,7 +669,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeUpdateSpot(JNI
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeHandleKeyEvent(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeHandleKeyEvent(JNIEnv*,
                                                                                  jclass,
                                                                                  jlong handle,
                                                                                  jlong keyEventAddress,
@@ -674,7 +687,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeHandleKeyEvent
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeLastKeyEventSummary(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeLastKeyEventSummary(JNIEnv* env,
                                                                                       jclass,
                                                                                       jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -690,7 +703,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeLastKeyEventSu
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativePollCommittedText(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativePollCommittedText(JNIEnv* env,
                                                                                     jclass,
                                                                                     jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -707,7 +720,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativePollCommittedT
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeCurrentPreeditText(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeCurrentPreeditText(JNIEnv* env,
                                                                                      jclass,
                                                                                      jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -723,7 +736,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeCurrentPreedit
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeIsComposing(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeIsComposing(JNIEnv*,
                                                                               jclass,
                                                                               jlong handle) {
 #if SSOPTIMIZER_NATIVE_X11_AVAILABLE
@@ -736,7 +749,7 @@ Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeIsComposing(JN
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_input_ime_LinuxXimNative_nativeFilterXimProtocolEvent(
+Java_github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative_nativeFilterXimProtocolEvent(
         JNIEnv*,
         jclass,
         jlong handle,

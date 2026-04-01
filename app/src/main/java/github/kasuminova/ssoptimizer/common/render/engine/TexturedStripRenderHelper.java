@@ -4,6 +4,12 @@ import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 
+/**
+ * 引擎图条渲染工具。
+ * <p>
+ * 将原版引擎逐元素的 immediate-mode GL 调用替换为批量 VertexArray，
+ * 显著减少 draw call 数量，提升战斗场景的渲染性能。
+ */
 public final class TexturedStripRenderHelper {
     private TexturedStripRenderHelper() {
     }

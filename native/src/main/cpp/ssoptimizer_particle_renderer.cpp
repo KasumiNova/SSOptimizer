@@ -1,11 +1,11 @@
-#include "github_kasuminova_ssoptimizer_render_engine_ParticleBatchHelper.h"
+#include "github_kasuminova_ssoptimizer_common_render_engine_ParticleBatchHelper.h"
 #include "ssoptimizer_render_common.h"
 
 using namespace ssoptimizer::render;
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_render_engine_ParticleBatchHelper_nativeRenderImmediateQuads(
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_ParticleBatchHelper_nativeRenderImmediateQuads(
         JNIEnv* env, jclass,
         jobject colorBuf,
         jobject vertexBuf,

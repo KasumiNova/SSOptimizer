@@ -5,6 +5,12 @@ import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
+/**
+ * Linux XIM 协议输入法后端实现。
+ * <p>
+ * 通过 JNI 调用原生代码创建 X11 Input Method / Input Context，
+ * 处理 {@code XFilterEvent} + {@code Xutf8LookupString} 的完整链路。
+ */
 public final class LinuxXimImeBackend implements ImeBackend {
     private static final int DEFAULT_INPUT_STYLE = 0;
 

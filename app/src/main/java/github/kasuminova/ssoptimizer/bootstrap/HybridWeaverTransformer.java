@@ -7,22 +7,45 @@ import java.security.ProtectionDomain;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 混合织入变换器，同时支持 ASM 和 Mixin 两种字节码注入方式。
+ * <p>
+ * 内部维护一个“类名 → 处理器”的注册表，在类加载时匹配并执行对应的
+ * {@link AsmClassProcessor}。类名统一使用 JVM 内部格式（{@code /} 分隔）。
+ */
 public final class HybridWeaverTransformer implements ClassFileTransformer {
     private static final Logger                         LOGGER     = Logger.getLogger(HybridWeaverTransformer.class);
     private final        Map<String, AsmClassProcessor> processors = new ConcurrentHashMap<>();
 
+    /**
+     * 注册指定类名的 ASM 字节码处理器。
+     *
+     * @param className 目标类名（点号或斜杠分隔均可，内部统一转换为斜杠格式）
+     * @param processor 处理器实例
+     */
     public void registerProcessor(String className, AsmClassProcessor processor) {
         processors.put(normalizeClassName(className), processor);
     }
 
+    /**
+     * 移除指定类名的处理器注册。
+     *
+     * @param className 目标类名
+     */
     public void removeProcessor(String className) {
         processors.remove(normalizeClassName(className));
     }
 
+    /** 获取当前已注册的处理器数量。 */
     public int getProcessorCount() {
         return processors.size();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 在类加载时检查是否有匹配的处理器，若有则执行字节码转换。
+     */
     @Override
     public byte[] transform(ClassLoader loader,
                             String className,

@@ -13,6 +13,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 
+/**
+ * 输入法服务中心。
+ * <p>
+ * 管理输入法后端的生命周期（attach/detach/focus），跟踪当前获得焦点的文本框，
+ * 并将输入法提交的文本写入游戏 UI 控件。同时负责将 OpenGL 坐标转换为
+ * X11/Win32 窗口坐标，并计算缩放后的光标位置传给后端。
+ */
 public final class ImeService {
     private static final ImeService INSTANCE = new ImeService(ImeBackends.createDefault(), EffectiveScreenScale::current, () -> Display.getHeight());
     private static final Method GET_CURRENT_FOCUSED_COMPONENT = findMethod("com.fs.starfarer.ui.O0Oo", "Ó00000");

@@ -5,6 +5,12 @@ import org.apache.log4j.Logger;
 
 import java.util.Locale;
 
+/**
+ * IME 诊断日志工具。
+ * <p>
+ * 集中管理输入法相关的结构化日志输出，
+ * 含后端选择、事件处理、焦点变化等诊断信息。
+ */
 final class ImeDiagnostics {
     private static final Logger LOGGER = Logger.getLogger(ImeDiagnostics.class);
     private static final int MAX_TEXT_PREVIEW_LENGTH = 32;

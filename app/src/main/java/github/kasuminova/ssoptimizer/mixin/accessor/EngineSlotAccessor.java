@@ -7,6 +7,14 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.awt.*;
 
+/**
+ * 引擎槽位（EngineSlot）的 Mixin Accessor / Invoker。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.loading.specs.EngineSlot}<br>
+ * 注入动机：引擎槽位定义了舰船引擎的几何参数（位置、角度、尺寸）和视觉属性（颜色、辉光），
+ * 优化后的尾焰渲染管线需要直接读取这些属性来批量计算顶点数据。<br>
+ * 注入效果：暴露 13 个 Invoker，覆盖位置计算、颜色获取、尺寸查询和状态判断。</p>
+ */
 @Mixin(targets = "com.fs.starfarer.loading.specs.EngineSlot")
 public interface EngineSlotAccessor {
     @Invoker(value = "isOmegaMode", remap = false)

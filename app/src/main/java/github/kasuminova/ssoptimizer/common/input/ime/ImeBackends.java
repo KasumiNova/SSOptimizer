@@ -2,6 +2,11 @@ package github.kasuminova.ssoptimizer.common.input.ime;
 
 import java.util.Locale;
 
+/**
+ * 输入法后端工厂。
+ * <p>
+ * 根据当前操作系统和 {@link ImeProperties} 配置选择合适的 {@link ImeBackend} 实现。
+ */
 public final class ImeBackends {
     private ImeBackends() {
     }

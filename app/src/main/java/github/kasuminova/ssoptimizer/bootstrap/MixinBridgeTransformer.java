@@ -10,6 +10,8 @@ import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 
 /**
+ * Mixin 框架桥接变换器，将 Mixin 的类变换桥接到 javaagent 的 {@link ClassFileTransformer}。
+ * <p>
  * Bridges Sponge Mixin's {@link IMixinTransformer} into the Java agent
  * instrumentation chain.
  * <p>
@@ -22,6 +24,11 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
 
     private final IMixinTransformer transformer;
 
+    /**
+     * 构造桥接变换器，从 Mixin 服务中获取或创建变换器实例。
+     *
+     * @throws IllegalStateException 若 Mixin 服务类型不是 {@link AgentMixinService}
+     */
     public MixinBridgeTransformer() {
         IMixinService service = MixinService.getService();
         if (!(service instanceof AgentMixinService agentService)) {
@@ -30,10 +37,27 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
         this.transformer = agentService.getOrCreateTransformer();
     }
 
+    /**
+     * 判断指定类名是否应跳过 Mixin 处理。
+     * <p>
+     * 跳过 JDK 内部类、ASM、Mixin 自身、SSOptimizer 自身，以及非游戏类。
+     *
+     * @param className JVM 内部格式的类名
+     * @return 是否跳过
+     */
     static boolean shouldSkipClass(String className) {
         return shouldSkipClass(null, className);
     }
 
+    /**
+     * 判断指定类加载器和类名是否应跳过 Mixin 处理。
+     * <p>
+     * 额外跳过 Janino 动态编译器加载的类。
+     *
+     * @param loader    类加载器，可能为 {@code null}
+     * @param className JVM 内部格式的类名
+     * @return 是否跳过
+     */
     static boolean shouldSkipClass(ClassLoader loader, String className) {
         if (isJaninoLoader(loader)) {
             return true;
@@ -59,6 +83,11 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 将类字节码路由到 Mixin 变换器，使其能够应用 Mixin 配置。
+     */
     @Override
     public byte[] transform(ClassLoader loader,
                             String className,

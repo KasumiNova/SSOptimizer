@@ -2,6 +2,11 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import java.util.Objects;
 
+/**
+ * 原生 PNG 解码结果。
+ * <p>
+ * 存储 C++ 解码器返回的 ARGB 像素数据和图像尺寸。
+ */
 public record NativeDecodedImage(int width, int height, int[] argbPixels) {
     public NativeDecodedImage {
         if (width <= 0) {

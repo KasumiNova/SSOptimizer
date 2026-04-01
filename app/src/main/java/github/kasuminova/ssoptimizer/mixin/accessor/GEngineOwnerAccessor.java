@@ -6,6 +6,14 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.List;
 
+/**
+ * 引擎所有者（Ship/Missile 的内部代理）的 Mixin Accessor。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.combat.entities.ship.H$Oo}<br>
+ * 注入动机：获取引擎所有者的引擎槽位列表、角速度、朝向等属性，
+ * 用于批量计算所有引擎的渲染顶点。<br>
+ * 注入效果：暴露 5 个 Invoker。</p>
+ */
 @Mixin(targets = "com.fs.starfarer.combat.entities.ship.H$Oo")
 public interface GEngineOwnerAccessor {
     @Invoker(value = "getEngineLocations", remap = false)

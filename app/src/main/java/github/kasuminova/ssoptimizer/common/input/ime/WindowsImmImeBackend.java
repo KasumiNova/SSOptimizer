@@ -1,5 +1,10 @@
 package github.kasuminova.ssoptimizer.common.input.ime;
 
+/**
+ * Windows IMM32 输入法后端（待实现）。
+ * <p>
+ * 预留接口，计划通过 Win32 IMM API 实现 Windows 平台中文输入支持。
+ */
 public final class WindowsImmImeBackend implements ImeBackend {
     @Override
     public boolean isAvailable() {

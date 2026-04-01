@@ -11,6 +11,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
+/**
+ * 引擎渲染实体（G / Engine）的 Mixin Accessor。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.combat.entities.G}<br>
+ * 注入动机：引擎渲染实体包含所有者引用、颜色偏移器、尺寸偏移器、辉光纹理等渲染所需的
+ * 完整状态，原始字段均为混淆名称。优化后的批量渲染管线需要直接访问这些数据。<br>
+ * 注入效果：暴露 16 个 Accessor 和 2 个 Invoker。</p>
+ */
 @Mixin(targets = "com.fs.starfarer.combat.entities.G")
 public interface GEngineAccessor {
     @Accessor(value = "Óo0000", remap = false)

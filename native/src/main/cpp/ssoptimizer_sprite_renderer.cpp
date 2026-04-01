@@ -1,11 +1,11 @@
-#include "github_kasuminova_ssoptimizer_render_engine_SpriteRenderHelper.h"
+#include "github_kasuminova_ssoptimizer_common_render_engine_SpriteRenderHelper.h"
 #include "ssoptimizer_render_common.h"
 
 using namespace ssoptimizer::render;
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_render_engine_SpriteRenderHelper_nativeRenderSprite(
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_SpriteRenderHelper_nativeRenderSprite(
         JNIEnv*, jclass,
         jfloat posX, jfloat posY,
         jfloat width, jfloat height,

@@ -8,6 +8,12 @@ import com.fs.starfarer.loading.specs.EngineSlot;
 import com.fs.starfarer.util.ColorShifter;
 import com.fs.starfarer.util.ValueShifter;
 
+/**
+ * 引擎喷口对象桥接接口（Mixin Accessor）。
+ * <p>
+ * 通过 Mixin 注入到游戏引擎对象，暴露原本 private 的属性和方法，
+ * 供 {@link TexturedStripRenderHelper} 批量渲染时读取引擎参数。
+ */
 public interface GEngineBridge {
     H.Oo ssoptimizer$getOwner();
 

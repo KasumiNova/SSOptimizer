@@ -1,3 +1,7 @@
+/**
+ * SSOptimizer 原生库入口。
+ * 提供库版本查询等基础 API。
+ */
 #include "ssoptimizer/optimizer.h"
 
 namespace ssoptimizer {

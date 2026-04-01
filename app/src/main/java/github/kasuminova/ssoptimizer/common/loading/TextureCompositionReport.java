@@ -5,6 +5,12 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+/**
+ * 贴图组合报告生成器。
+ * <p>
+ * 统计贴图引用的绑定频率、时序热度和分布，
+ * 输出 TSV 报告供用户分析贴图复用情况。
+ */
 final class TextureCompositionReport {
     private static final DateTimeFormatter TIMESTAMP_FORMAT          =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());

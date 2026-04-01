@@ -6,6 +6,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+/**
+ * Linux 平台 IME 钩子类（由 ASM 在运行时注入调用）。
+ * <p>
+ * 提供 {@code onXEvent} 和 {@code onRawXEvent} 两个静态钩子，分别处理键盘事件
+ * 和 XIM 协议消息（ClientMessage）。负责通过反射读取 LWJGL 的 LinuxDisplay/LinuxEvent
+ * 内部状态，并将事件转发到 {@link ImeService} 和 {@link ImeBackend}。
+ */
 public final class LinuxDisplayImeHooks {
     private static final Logger LOGGER = Logger.getLogger(LinuxDisplayImeHooks.class);
 

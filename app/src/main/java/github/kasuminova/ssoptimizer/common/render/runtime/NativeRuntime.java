@@ -4,6 +4,12 @@ import org.apache.log4j.Logger;
 
 import java.nio.file.Path;
 
+/**
+ * 原生运行时加载器。
+ * <p>
+ * 负责在 JVM 进程中加载 SSOptimizer 的 C++ 原生库（{@code libssoptimizer.so / ssoptimizer.dll}），
+ * 保证全局只加载一次，并提供加载状态查询。
+ */
 public final class NativeRuntime {
     private static final Logger LOGGER = Logger.getLogger(NativeRuntime.class);
 

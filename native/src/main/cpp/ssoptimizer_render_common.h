@@ -1,3 +1,8 @@
+/**
+ * 渲染器公共头文件。
+ *
+ * 提供 OpenGL 顶点结构体、颜色变换工具和 SIMD 优化的向量运算。
+ */
 #pragma once
 
 #include <cmath>

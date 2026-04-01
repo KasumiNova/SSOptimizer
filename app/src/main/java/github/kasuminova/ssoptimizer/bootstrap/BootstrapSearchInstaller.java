@@ -14,6 +14,13 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 
+/**
+ * 引导类搜索安装器，将必要的 Helper 类注入到引导类加载器的搜索路径中。
+ * <p>
+ * 由于 {@link ReflectionHelper} 等类需要在引导类加载器级别可见（被注入到游戏类的字节码会调用它们），
+ * 此类从 Agent jar 中提取相关类文件并通过 {@link Instrumentation#appendToBootstrapClassLoaderSearch}
+ * 加入引导类路径。
+ */
 final class BootstrapSearchInstaller {
     private static final Logger   LOGGER             = Logger.getLogger(BootstrapSearchInstaller.class);
     private static final String[] HELPER_ENTRY_NAMES = {
@@ -28,10 +35,21 @@ final class BootstrapSearchInstaller {
     private BootstrapSearchInstaller() {
     }
 
+    /**
+     * 使用默认锚点类安装引导 Helper。
+     *
+     * @param instrumentation JVM 提供的 {@link Instrumentation} 实例
+     */
     static void install(Instrumentation instrumentation) {
         install(instrumentation, SSOptimizerAgent.class);
     }
 
+    /**
+     * 从指定锚点类解析 Agent jar 并安装引导 Helper。
+     *
+     * @param instrumentation JVM 提供的 {@link Instrumentation} 实例
+     * @param anchorClass     用于定位 Agent jar 的锚点类
+     */
     static void install(Instrumentation instrumentation, Class<?> anchorClass) {
         if (instrumentation == null) {
             return;
@@ -54,6 +72,14 @@ final class BootstrapSearchInstaller {
         install(instrumentation, helperArchive);
     }
 
+    /**
+     * 将指定 jar 文件追加到引导类加载器搜索路径。
+     * <p>
+     * 幂等操作：同一路径不会重复追加。
+     *
+     * @param instrumentation JVM 提供的 {@link Instrumentation} 实例
+     * @param archive         要追加的 jar 文件路径
+     */
     static synchronized void install(Instrumentation instrumentation, Path archive) {
         if (instrumentation == null || archive == null) {
             return;
@@ -84,6 +110,12 @@ final class BootstrapSearchInstaller {
         }
     }
 
+    /**
+     * 从源 jar 中提取 Helper 类文件，创建临时 jar 归档。
+     *
+     * @param sourceArchive 源 Agent jar 路径
+     * @return 临时 Helper jar 路径；失败则返回 {@code null}
+     */
     static Path createBootstrapHelperArchive(Path sourceArchive) {
         if (sourceArchive == null) {
             return null;
@@ -113,10 +145,12 @@ final class BootstrapSearchInstaller {
         }
     }
 
+    /** 返回 Helper 类是否已在引导类加载器中可见。 */
     static boolean isHelperVisibilityReady() {
         return helperVisibilityReady;
     }
 
+    /** 测试用：强制标记为已安装状态。 */
     static void forceInstalledForTest() {
         helperVisibilityReady = true;
     }
@@ -135,6 +169,12 @@ final class BootstrapSearchInstaller {
         output.closeEntry();
     }
 
+    /**
+     * 从指定锚点类解析 Agent jar 文件路径。
+     *
+     * @param anchorClass 锚点类
+     * @return jar 文件的绝对路径；若无法解析则返回 {@code null}
+     */
     static Path resolveArchive(Class<?> anchorClass) {
         if (anchorClass == null) {
             return null;

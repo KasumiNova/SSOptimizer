@@ -3,6 +3,15 @@ package github.kasuminova.ssoptimizer.asm.render;
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import org.objectweb.asm.*;
 
+/**
+ * 引擎纹理条带渲染方法的 ASM 替换处理器。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.renderers.o0OO} 的纹理条带绘制方法 {@code o00000()}<br>
+ * 注入动机：原始的逐段绘制逻辑每次调用都会执行独立的 GL 状态切换和 draw call；
+ * 通过替换为 {@link github.kasuminova.ssoptimizer.common.render.engine.TexturedStripRenderHelper}
+ * 的优化实现，可以减少冗余的 GL 状态切换。Mixin 无法精确匹配混淆方法名。<br>
+ * 注入效果：整个方法体替换为 {@code TexturedStripRenderHelper.renderTexturedStrip()} 的委托调用。</p>
+ */
 public final class EngineTexturedStripRendererProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "com/fs/starfarer/renderers/o0OO";
     public static final String TARGET_DESC  = "(Lcom/fs/graphics/Object;FFFFFFLjava/awt/Color;FFFZ)V";

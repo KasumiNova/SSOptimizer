@@ -14,6 +14,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 贴图像素转换缓存。
+ * <p>
+ * 将解码后的 ARGB 像素数据经 Zstd 压缩缓存到磁盘，避免每次启动都重新解码和像素转换。
+ * 缓存文件经 MD5 hash 校验，源文件变更后自动失效。
+ */
 final class TextureConversionCache {
     static final String DISABLE_PROPERTY          = "ssoptimizer.disable.texturecache";
     static final String DIRECTORY_PROPERTY        = "ssoptimizer.texturecache.dir";

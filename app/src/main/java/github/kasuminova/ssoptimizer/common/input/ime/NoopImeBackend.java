@@ -1,5 +1,8 @@
 package github.kasuminova.ssoptimizer.common.input.ime;
 
+/**
+ * 空操作 IME 后端，在不支持输入法的平台或 IME 被禁用时使用。
+ */
 public final class NoopImeBackend implements ImeBackend {
     @Override
     public boolean isAvailable() {

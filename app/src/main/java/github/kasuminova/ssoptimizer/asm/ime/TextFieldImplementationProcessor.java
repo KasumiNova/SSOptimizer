@@ -7,6 +7,15 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+/**
+ * 文本框实现类的 ASM 处理器，在构造函数末尾注册 IME、在焦点丢失回调中通知 IME。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.ui.B}（文本框实现类）<br>
+ * 注入动机：文本框类为混淆名称，Mixin 虽可匹配但构造函数末尾注入和焦点回调的
+ * 精确插入点更适合 ASM 控制；需要在每次文本框创建时自动注册到 {@code ImeService}，
+ * 并在焦点丢失时通知 IME 服务。<br>
+ * 注入效果：构造函数末尾调用 {@code registerCreatedTextField}，焦点丢失处调用 {@code onTextFieldFocusLost}。</p>
+ */
 public final class TextFieldImplementationProcessor implements AsmClassProcessor {
     public static final String DEFAULT_TARGET_CLASS = "com/fs/starfarer/ui/B";
 

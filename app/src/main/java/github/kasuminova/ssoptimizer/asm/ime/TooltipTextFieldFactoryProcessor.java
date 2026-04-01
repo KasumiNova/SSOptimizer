@@ -7,6 +7,14 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+/**
+ * Tooltip 文本框工厂的 ASM 处理器，在 {@code addTextField()} 返回后注册 IME 支持。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.ui.impl.StandardTooltipV2Expandable.addTextField()}<br>
+ * 注入动机：Tooltip 界面的文本框通过此工厂方法创建，需要在创建后注册到 IME 服务；
+ * Mixin 无法精确匹配该工厂方法的返回点。<br>
+ * 注入效果：在方法每个 ARETURN 前插入 DUP + INVOKESTATIC 调用 {@code TextFieldImeHooks.registerCreatedTextField}。</p>
+ */
 public final class TooltipTextFieldFactoryProcessor implements AsmClassProcessor {
     public static final String DEFAULT_TARGET_CLASS = "com/fs/starfarer/ui/impl/StandardTooltipV2Expandable";
     public static final String HOOK_OWNER = "github/kasuminova/ssoptimizer/common/input/ime/TextFieldImeHooks";

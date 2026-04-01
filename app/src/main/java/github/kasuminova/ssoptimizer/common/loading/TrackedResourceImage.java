@@ -10,6 +10,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
+/**
+ * 带践踪的资源图片。
+ * <p>
+ * 继承 {@link BufferedImage}，额外记录源文件 MD5、像素转换缓存镜像，
+ * 并在 {@code flush()} 时自动释放关联的原生缓冲区。
+ */
 final class TrackedResourceImage extends BufferedImage {
     private static final ColorModel RGB_COLOR_MODEL  = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB).getColorModel();
     private static final ColorModel ARGB_COLOR_MODEL = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB).getColorModel();

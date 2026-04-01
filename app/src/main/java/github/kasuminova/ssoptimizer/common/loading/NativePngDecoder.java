@@ -5,6 +5,12 @@ import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import java.awt.image.*;
 import java.io.IOException;
 
+/**
+ * 原生 PNG 解码器。
+ * <p>
+ * 通过 JNI 调用 C++ 实现的 PNG 解码，可并行解码多张图片，显著提升资源加载速度。
+ * 通过 {@code -Dssoptimizer.disable.nativepngdecoder} 可禁用。
+ */
 public final class NativePngDecoder {
     private static final String DISABLE_PROPERTY = "ssoptimizer.disable.nativepngdecoder";
     private static final int[]  ARGB_MASKS       = {

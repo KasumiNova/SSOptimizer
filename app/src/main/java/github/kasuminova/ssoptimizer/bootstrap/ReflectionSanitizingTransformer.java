@@ -7,6 +7,9 @@ import java.security.ProtectionDomain;
 import java.util.Map;
 
 /**
+ * 反射调用净化变换器，拦截反射调用并重定向到 {@link ReflectionHelper}，
+ * 以便在查找前将混淆名称翻译为净化后的名称。
+ * <p>
  * Intercepts reflection calls (Class.getMethod, Class.getDeclaredMethod,
  * Class.getField, Class.getDeclaredField) and redirects them to
  * {@link ReflectionHelper} which translates obfuscated names before
@@ -29,6 +32,8 @@ public final class ReflectionSanitizingTransformer implements ClassFileTransform
     private static final String HELPER = "github/kasuminova/ssoptimizer/bootstrap/ReflectionHelper";
 
     /**
+     * Class 方法名 → [原始描述符, ReflectionHelper 中替代方法的描述符] 映射表。
+     * <p>
      * Maps Class method name → descriptor of the static replacement in ReflectionHelper.
      */
     private static final Map<String, String[]> REDIRECTS = Map.of(
@@ -75,6 +80,12 @@ public final class ReflectionSanitizingTransformer implements ClassFileTransform
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 遍历类中所有方法的字节码，将 {@code invokevirtual Class.getMethod/getField} 等
+     * 调用重写为 {@code invokestatic ReflectionHelper} 的对应方法。
+     */
     @Override
     public byte[] transform(ClassLoader loader,
                             String className,

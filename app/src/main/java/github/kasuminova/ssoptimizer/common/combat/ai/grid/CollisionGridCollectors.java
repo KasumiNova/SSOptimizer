@@ -6,6 +6,12 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 import java.util.*;
 
+/**
+ * 碰撞网格查询结果收集器。
+ * <p>
+ * 提供多种去重策略（有序/无序/小集合）的迭代器工厂方法，
+ * 用于从二维网格单元格中收集不重复的碰撞实体。
+ */
 final class CollisionGridCollectors {
     private CollisionGridCollectors() {
     }

@@ -1,4 +1,11 @@
-#include "github_kasuminova_ssoptimizer_font_NativeFontRasterizer.h"
+/**
+ * TrueType 字体栅格化器（JNI 实现）。
+ *
+ * 对应 Java 类: NativeFontRasterizer
+ * 使用 FreeType 库将 TTF/OTF 字形渲染为灰度位图，
+ * 支持 SDF 模式和子像素反锯齿。
+ */
+#include "github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -228,7 +235,7 @@ jobject rasterizeGlyph(JNIEnv* env,
 } // namespace
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_font_NativeFontRasterizer_nativeIsAvailable(JNIEnv*, jclass) {
+Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeIsAvailable(JNIEnv*, jclass) {
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE
     FT_Library library = nullptr;
     const FT_Error status = FT_Init_FreeType(&library);
@@ -243,7 +250,7 @@ Java_github_kasuminova_ssoptimizer_font_NativeFontRasterizer_nativeIsAvailable(J
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_github_kasuminova_ssoptimizer_font_NativeFontRasterizer_nativeCreateFace(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeCreateFace(JNIEnv* env,
                                                                               jclass,
                                                                               jstring fontPath,
                                                                               jfloat pixelSize,
@@ -291,7 +298,7 @@ Java_github_kasuminova_ssoptimizer_font_NativeFontRasterizer_nativeCreateFace(JN
 }
 
 extern "C" JNIEXPORT jobject JNICALL
-Java_github_kasuminova_ssoptimizer_font_NativeFontRasterizer_nativeRasterizeGlyph(JNIEnv* env,
+Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRasterizeGlyph(JNIEnv* env,
                                                                                   jclass,
                                                                                   jlong faceHandle,
                                                                                   jint codePoint,
@@ -309,7 +316,7 @@ Java_github_kasuminova_ssoptimizer_font_NativeFontRasterizer_nativeRasterizeGlyp
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_github_kasuminova_ssoptimizer_font_NativeFontRasterizer_nativeDestroyFace(JNIEnv*,
+Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeDestroyFace(JNIEnv*,
                                                                                jclass,
                                                                                jlong faceHandle) {
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE

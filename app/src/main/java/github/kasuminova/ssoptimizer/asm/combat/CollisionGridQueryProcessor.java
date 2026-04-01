@@ -3,6 +3,15 @@ package github.kasuminova.ssoptimizer.asm.combat;
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import org.objectweb.asm.*;
 
+/**
+ * 碰撞网格查询方法的 ASM 替换处理器。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.combat.o0OO.oOoO.getCheckIterator()}<br>
+ * 注入动机：原始实现存在冗余的迭代器分配和边界计算，在每帧大量 AI 碰撞查询时产生性能瓶颈；
+ * Mixin 无法精确替换混淆类的单个方法体。<br>
+ * 注入效果：用 {@link github.kasuminova.ssoptimizer.common.combat.ai.grid.CollisionGridQueryHelper}
+ * 的纯静态方法替换整个方法体，减少对象分配和边界检查开销。</p>
+ */
 public final class CollisionGridQueryProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS  = "com/fs/starfarer/combat/o0OO/oOoO";
     public static final String TARGET_METHOD = "getCheckIterator";

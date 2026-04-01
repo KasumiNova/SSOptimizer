@@ -4,6 +4,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * 碰撞网格查询工具类。
+ * <p>
+ * 将浮点坐标的矩形区域映射到网格单元格索引，
+ * 并调用 {@link CollisionGridCollectors} 收集区域内所有不重复的碰撞实体。
+ * 由 ASM 注入的 {@code CollisionGridQueryProcessor} 在运行时替换原版引擎的查询逻辑。
+ */
 public final class CollisionGridQueryHelper {
     private CollisionGridQueryHelper() {
     }

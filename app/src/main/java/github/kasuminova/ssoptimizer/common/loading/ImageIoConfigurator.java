@@ -5,6 +5,11 @@ import org.apache.log4j.Logger;
 import javax.imageio.ImageIO;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Java ImageIO 系统配置器。
+ * <p>
+ * 禁用 ImageIO 内置缓存以降低内存占用，仅在首次调用时生效。
+ */
 public final class ImageIoConfigurator {
     private static final Logger        LOGGER     = Logger.getLogger(ImageIoConfigurator.class);
     private static final AtomicBoolean CONFIGURED = new AtomicBoolean();

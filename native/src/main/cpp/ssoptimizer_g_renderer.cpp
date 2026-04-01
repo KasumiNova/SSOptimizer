@@ -1,11 +1,18 @@
-#include "github_kasuminova_ssoptimizer_render_engine_GRenderHelper.h"
+/**
+ * 引擎喇叭图条批量渲染器（JNI 实现）。
+ *
+ * 对应 Java 类: GRenderHelper
+ * 将原版 immediate-mode GL 调用替换为批量 Vertex Array 渲染，
+ * 减少 draw call 数量以提升引擎喇叭渲染性能。
+ */
+#include "github_kasuminova_ssoptimizer_common_render_engine_GRenderHelper.h"
 #include "ssoptimizer_render_common.h"
 
 using namespace ssoptimizer::render;
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_render_engine_GRenderHelper_nativeRenderEngineStripBatch(
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_GRenderHelper_nativeRenderEngineStripBatch(
         JNIEnv*, jclass,
         jfloat posX, jfloat posY,
         jfloat angle,
@@ -64,7 +71,7 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_render_engine_GRenderH
     }
 }
 
-JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_render_engine_GRenderHelper_nativeRenderEngineCorePass(
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_GRenderHelper_nativeRenderEngineCorePass(
         JNIEnv*, jclass,
         jfloat posX, jfloat posY,
         jfloat angle,

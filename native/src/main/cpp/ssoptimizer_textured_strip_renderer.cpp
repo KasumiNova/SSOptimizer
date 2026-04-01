@@ -1,11 +1,11 @@
-#include "github_kasuminova_ssoptimizer_render_engine_TexturedStripRenderHelper.h"
+#include "github_kasuminova_ssoptimizer_common_render_engine_TexturedStripRenderHelper.h"
 #include "ssoptimizer_render_common.h"
 
 using namespace ssoptimizer::render;
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_render_engine_TexturedStripRenderHelper_nativeRenderTexturedStrip(
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_TexturedStripRenderHelper_nativeRenderTexturedStrip(
     JNIEnv*, jclass,
     jfloat startX, jfloat startY,
     jfloat endX, jfloat endY,

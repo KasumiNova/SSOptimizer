@@ -14,6 +14,15 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
+/**
+ * 引擎实体（G / Engine）的渲染 Mixin，完整替换原始 {@code render()} 方法。
+ *
+ * <p>注入目标：{@code com.fs.starfarer.combat.entities.G}<br>
+ * 注入动机：原始引擎渲染逻辑为逐实体独立绘制，存在大量重复 OpenGL 状态切换和纹理绑定；
+ * 通过 {@code @Overwrite} 替换为批量化渲染路径 ({@link GRenderHelper})，显著减少 draw call。<br>
+ * 注入效果：实现 {@link GEngineBridge} 接口暴露 Shadow 字段，{@code render()} 委托给
+ * {@link GRenderHelper} 进行批量渲染。</p>
+ */
 @Mixin(targets = "com.fs.starfarer.combat.entities.G")
 public abstract class GEngineRenderMixin implements GEngineBridge {
     @Shadow(remap = false, aliases = "Óo0000")
