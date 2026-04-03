@@ -2,7 +2,6 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
 import github.kasuminova.ssoptimizer.mapping.MappingDirection;
-import github.kasuminova.ssoptimizer.mapping.MappingEntry;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 
 import java.util.Objects;
@@ -14,7 +13,6 @@ import java.util.Objects;
  * 可读命名，供 {@link RuntimeRemapTransformer} 在类加载早期使用。
  */
 public final class RuntimeRemapContext {
-    private final TinyV2MappingRepository repository;
     private final BytecodeRemapper        bytecodeRemapper;
 
     /**
@@ -23,7 +21,7 @@ public final class RuntimeRemapContext {
      * @param repository Tiny v2 映射仓库
      */
     public RuntimeRemapContext(TinyV2MappingRepository repository) {
-        this.repository = Objects.requireNonNull(repository, "repository");
+        Objects.requireNonNull(repository, "repository");
         this.bytecodeRemapper = new BytecodeRemapper(repository, MappingDirection.OBFUSCATED_TO_NAMED);
     }
 
@@ -49,6 +47,9 @@ public final class RuntimeRemapContext {
 
     /**
      * 重映射指定类字节码。
+        * <p>
+        * 即使类名本身在 named 侧保持不变，只要该类的字段或方法存在映射，这里也必须
+        * 尝试重映射，以确保运行时优先暴露 mapped 命名。
      *
      * @param className       JVM 内部类名
      * @param classfileBuffer 原始字节码
@@ -56,11 +57,6 @@ public final class RuntimeRemapContext {
      */
     public byte[] remap(String className, byte[] classfileBuffer) {
         if (className == null || classfileBuffer == null || isKnownSafe(className)) {
-            return null;
-        }
-
-        MappingEntry classEntry = repository.findClassByObfuscatedName(className).orElse(null);
-        if (classEntry == null) {
             return null;
         }
 

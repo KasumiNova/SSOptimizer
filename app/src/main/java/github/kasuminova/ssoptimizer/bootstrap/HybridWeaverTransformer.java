@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
+import github.kasuminova.ssoptimizer.mapping.MappingDirection;
 import github.kasuminova.ssoptimizer.mapping.MappingRepository;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 import org.apache.log4j.Logger;
@@ -19,6 +21,7 @@ public final class HybridWeaverTransformer implements ClassFileTransformer {
     private static final Logger                         LOGGER     = Logger.getLogger(HybridWeaverTransformer.class);
     private final        Map<String, AsmClassProcessor> processors = new ConcurrentHashMap<>();
     private final        MappingRepository              mappings;
+    private final        BytecodeRemapper               remapper;
 
     /**
      * 使用默认 Tiny v2 映射仓库创建混合织入变换器。
@@ -29,6 +32,7 @@ public final class HybridWeaverTransformer implements ClassFileTransformer {
 
     HybridWeaverTransformer(MappingRepository mappings) {
         this.mappings = mappings;
+        this.remapper = new BytecodeRemapper(mappings, MappingDirection.OBFUSCATED_TO_NAMED);
     }
 
     /**
@@ -86,11 +90,25 @@ public final class HybridWeaverTransformer implements ClassFileTransformer {
         }
 
         try {
-            byte[] result = processor.process(classfileBuffer);
+            byte[] processorInput = classfileBuffer;
+            boolean remapped = false;
+            try {
+                BytecodeRemapper.RemappedClass remappedClass = remapper.remapClass(classfileBuffer);
+                if (remappedClass.modified()) {
+                    processorInput = remappedClass.bytecode();
+                    remapped = true;
+                }
+            } catch (Throwable ignored) {
+                // 某些测试会传入最小化占位字节数组；此时不应阻断 processor 分发。
+            }
+
+            byte[] result = processor.process(processorInput);
             if (result != null) {
                 LOGGER.debug("[SSOptimizer] Processed class: " + className);
+                return result;
             }
-            return result;
+
+            return remapped ? processorInput : null;
         } catch (Throwable t) {
             LOGGER.error("[SSOptimizer] ASM processor failed for " + className, t);
             return null;

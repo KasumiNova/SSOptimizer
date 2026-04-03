@@ -73,6 +73,35 @@ class ImeServiceTest {
     }
 
     @Test
+    void windowFocusGainDoesNotActivateImeWithoutFocusedTextField() {
+        FakeImeBackend backend = new FakeImeBackend(List.of());
+        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+
+        service.onWindowFocusChanged(false);
+        service.onWindowFocusChanged(true);
+
+        assertEquals(0, backend.focusInCount);
+        assertEquals(1, backend.focusOutCount);
+        assertFalse(service.shouldCaptureImeInput());
+    }
+
+    @Test
+    void windowFocusGainReactivatesImeOnlyWhenTextFieldRemainsFocused() {
+        FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
+        FakeImeBackend backend = new FakeImeBackend(List.of());
+        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+
+        service.onFocusGained(focused);
+        service.onWindowFocusChanged(false);
+        service.onWindowFocusChanged(true);
+
+        assertEquals(2, backend.focusInCount);
+        assertEquals(1, backend.focusOutCount);
+        assertTrue(service.shouldCaptureImeInput());
+        assertNotNull(backend.lastSpot);
+    }
+
+    @Test
     void scalesCaretSpotByWindowScale() {
         FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
         ImeService service = new ImeService(new NoopImeBackend(), () -> 1.5d, () -> 824);

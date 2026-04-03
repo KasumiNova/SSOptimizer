@@ -122,6 +122,7 @@ tasks.register("remapToNamed") {
 val mappedJarFile = layout.buildDirectory.file("libs/SSOptimizer-mapped.jar")
 val reobfJarFile = layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
 val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
+val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/libnative.so")
 
 tasks.register<Copy>("jarMapped") {
     group = "mapping"
@@ -200,12 +201,19 @@ tasks.register<Copy>("installDevMod") {
 
     from(mappedJarFile) {
         into("jars")
+        rename { "SSOptimizer.jar" }
+    }
+    from(nativeLinuxLibraryFile) {
+        into("native/linux")
+        rename { System.mapLibraryName("ssoptimizer") }
     }
     from(rootProject.file("mod_info.json"))
 
     into(gameDirProvider.map { file(it).resolve("mods/$modId") })
 
     doLast {
+        val modDir = file(gameDirProvider.get()).resolve("mods/$modId")
+        modDir.resolve("jars/SSOptimizer-mapped.jar").delete()
         println("✓ Mod deployed to ${gameDirProvider.get()}/mods/$modId")
 
         val enabledModsFile = file(gameDirProvider.get()).resolve("mods/enabled_mods.json")

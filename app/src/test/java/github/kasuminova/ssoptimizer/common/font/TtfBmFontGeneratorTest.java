@@ -145,6 +145,28 @@ class TtfBmFontGeneratorTest {
         assertEquals(6, TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(8, 2));
         assertEquals(9, TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(8, -1));
         assertEquals(0, TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(2, 5));
+
+        assertEquals(8, TtfBmFontGenerator.decodedXAdvanceFromRuntimeLayout(8, 0));
+        assertEquals(8, TtfBmFontGenerator.decodedXAdvanceFromRuntimeLayout(6, 2));
+        assertEquals(8, TtfBmFontGenerator.decodedXAdvanceFromRuntimeLayout(9, -1));
+        assertEquals(0, TtfBmFontGenerator.decodedXAdvanceFromRuntimeLayout(0, -5));
+    }
+
+    @Test
+    void treatsAsciiBracesAsBlankSpaceGlyphs() {
+        assertTrue(TtfBmFontGenerator.shouldTreatAsSpaceGlyph('{'));
+        assertTrue(TtfBmFontGenerator.shouldTreatAsSpaceGlyph('}'));
+        assertFalse(TtfBmFontGenerator.shouldTreatAsSpaceGlyph('A'));
+
+        assertArrayEquals(
+                new int[]{0, 0, 0, 0, 7},
+                TtfBmFontGenerator.spaceEquivalentGlyphMetrics('{', 7)
+        );
+        assertArrayEquals(
+                new int[]{0, 0, 0, 0, 7},
+                TtfBmFontGenerator.spaceEquivalentGlyphMetrics('}', 7)
+        );
+        assertNull(TtfBmFontGenerator.spaceEquivalentGlyphMetrics('A', 7));
     }
 
     @Test
@@ -170,6 +192,37 @@ class TtfBmFontGeneratorTest {
             assertEquals(15, invokeInt(source, "base"));
             assertEquals(512, invokeInt(source, "scaleWidth"));
             assertEquals(512, invokeInt(source, "scaleHeight"));
+        } finally {
+            Files.deleteIfExists(tempFile);
+        }
+    }
+
+    @Test
+    void parsesEncodedGlyphAdvanceBackIntoLogicalAdvance() throws Exception {
+        final Path tempFile = Files.createTempFile("ssoptimizer-font-advance", ".fnt");
+        try {
+            final String content = "info face=\"test\" size=15 bold=0 italic=0 charset=\"\" unicode=1 smooth=1 aa=1\n"
+                    + "common lineHeight=19 base=15 scaleW=256 scaleH=256 pages=1 packed=0\n"
+                    + "page id=0 file=\"test_0.png\"\n"
+                    + "chars count=1\n"
+                    + "char id=65 x=1 y=2 width=3 height=4 xoffset=2 yoffset=1 xadvance=6 page=0 chnl=0\n";
+            Files.writeString(tempFile, content, Charset.forName("ISO-8859-1"));
+
+            final Class<?> sourceClass = Class.forName("github.kasuminova.ssoptimizer.common.font.TtfBmFontGenerator$SourceBmFont");
+            final Method parse = sourceClass.getDeclaredMethod("parse", Path.class);
+            parse.setAccessible(true);
+            final Object source = parse.invoke(null, tempFile);
+
+            final Method glyphMetricsMethod = sourceClass.getDeclaredMethod("glyphMetrics");
+            glyphMetricsMethod.setAccessible(true);
+            final Object rawGlyphMetrics = glyphMetricsMethod.invoke(source);
+            assertInstanceOf(java.util.Map.class, rawGlyphMetrics);
+            final Object metric = ((java.util.Map<?, ?>) rawGlyphMetrics).get(65);
+            assertNotNull(metric);
+
+            final Method xAdvanceMethod = metric.getClass().getDeclaredMethod("xAdvance");
+            xAdvanceMethod.setAccessible(true);
+            assertEquals(8, xAdvanceMethod.invoke(metric));
         } finally {
             Files.deleteIfExists(tempFile);
         }

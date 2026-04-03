@@ -9,6 +9,7 @@
     "accessor.EngineOwnerAccessor",
     "accessor.EngineStateAccessor",
     "accessor.ShipAccessor",
+    "loading.ParallelImagePreloaderMixin",
     "render.EngineRenderMixin"
   ],
   "client": [],

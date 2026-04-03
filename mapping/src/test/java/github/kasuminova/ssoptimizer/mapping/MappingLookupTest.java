@@ -39,6 +39,43 @@ class MappingLookupTest {
     }
 
     @Test
+    void renamedClassMethodCanBeResolvedByObfuscatedDescriptor() {
+        MappingEntry methodEntry = lookup.requireMethodByObfuscatedName(
+                "com/fs/graphics/super/D",
+                "Ò00000",
+                "(Ljava/lang/String;)Lcom/fs/graphics/super/return;");
+
+        assertEquals("getFont", methodEntry.namedName());
+        assertEquals("(Ljava/lang/String;)Lcom/fs/graphics/font/BitmapFont;", methodEntry.descriptor());
+    }
+
+    @Test
+    void privateParallelPreloaderByteLoaderCanBeResolvedByNamedName() {
+        MappingEntry methodEntry = lookup.requireMethodByNamedName(
+                "com/fs/graphics/ParallelImagePreloader",
+                "loadBytes",
+                "(Ljava/lang/String;)[B");
+
+        assertEquals("Ô00000", methodEntry.obfuscatedName());
+        assertEquals("(Ljava/lang/String;)[B", methodEntry.descriptor());
+    }
+
+    @Test
+    void textureObjectImageSetterMappingsMatchRuntimeTextureLoaderSemantics() {
+        MappingEntry widthSetter = lookup.requireMethodByNamedName(
+                "com/fs/graphics/TextureObject",
+                "setImageWidth",
+                "(I)V");
+        MappingEntry heightSetter = lookup.requireMethodByNamedName(
+                "com/fs/graphics/TextureObject",
+                "setImageHeight",
+                "(I)V");
+
+        assertEquals("Ò00000", widthSetter.obfuscatedName());
+        assertEquals("o00000", heightSetter.obfuscatedName());
+    }
+
+    @Test
     void missingMethodMappingReportsReadableError() {
         MappingLookup lookup = new MappingLookup(TinyV2MappingRepository.loadDefault());
 

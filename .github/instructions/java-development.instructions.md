@@ -9,9 +9,7 @@ applyTo: "app/src/main/java/**/*.java"
 
 1. **Mixin 优先**：`@Inject`、`@Redirect`、`@Accessor`、`@Overwrite` 能解决的必须用 Mixin。
 2. **ASM 兜底**：仅在以下场景使用 ASM：
-   - Mixin 无法注入的混淆目标（如 private 方法、特定字节码模式匹配）
-   - 需要在精确字节码位置插入逻辑（如在 `invokevirtual` 后立即注入）
-   - Hook native 方法的调用点
+   - 批量类修改注入（如重映射）
 3. 使用 ASM 时必须在 Processor 类注释中写明：**"为什么 Mixin 无法实现"**。
 
 ## ASM Processor 规范

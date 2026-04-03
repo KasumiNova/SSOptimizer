@@ -50,7 +50,7 @@ public final class ParallelImagePreloadWorker implements Runnable {
                         staticFieldValue(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.IMAGE_SENTINEL),
                         staticFieldValue(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.BYTE_SENTINEL),
                         method(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.DECODE_IMAGE, BufferedImage.class, String.class),
-                        method(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.AWAIT_BYTES, byte[].class, String.class)
+                        method(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.LOAD_BYTES, byte[].class, String.class)
                 );
                 return cachedAccess;
             } catch (ReflectiveOperationException e) {

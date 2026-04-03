@@ -62,6 +62,10 @@ public final class EngineRenderHelper {
         }
     }
 
+    static boolean requiresExactAlphaNativePath(float alphaScale) {
+        return alphaScale < 0.999f;
+    }
+
     private static void renderSlot(EngineBridge engine,
                                    EngineOwnerAccessor owner,
                                    EngineSlot slot,
@@ -156,19 +160,20 @@ public final class EngineRenderHelper {
         int green = color.getGreen();
         int blue = color.getBlue();
         float colorAlphaScale = (color.getAlpha() / 255.0f) * alphaScale * edgeAlpha;
+        boolean exactAlphaPath = requiresExactAlphaNativePath(alphaScale);
         int layerCount = omegaMode ? 2 : 1;
 
         renderEngineStripPasses(position.x, position.y, angle, angularRotation, spreadRotation,
                 passCount, layerCount, texU, texSpan, textureAdvance,
                 innerLength, stripLength, stripWidth,
-                red, green, blue, colorAlphaScale);
+            red, green, blue, colorAlphaScale, exactAlphaPath);
 
         engine.ssoptimizer$getFlameTexture().bind();
         int coreAlpha = clampColorComponent((int) (flameLevel * 50.0f * colorAlphaScale));
         renderEngineCorePass(position.x, position.y, angle,
                 state.ssoptimizer$getCoreRotation(), omegaMode ? angularRotation : 0.0f,
                 stripLength, stripWidth,
-                red, green, blue, coreAlpha);
+            red, green, blue, coreAlpha, exactAlphaPath);
 
         renderGlowSprite(engine, owner, slotAccessor, state, position, angle,
                 primaryBrightness, edgeAlpha, spread, maxSpread,
@@ -311,12 +316,13 @@ public final class EngineRenderHelper {
                                                 float stripLength,
                                                 float stripWidth,
                                                 int red, int green, int blue,
-                                                float colorAlphaScale) {
+                                                float colorAlphaScale,
+                                                boolean exactAlphaPath) {
         if (SpriteRenderHelper.isNativeLoaded()) {
             nativeRenderEngineStripBatch(posX, posY, angle, angularRotation, spreadRotation,
                     passCount, layerCount, texUStart, texSpan, textureAdvance,
                     innerLength, stripLength, stripWidth,
-                    red, green, blue, colorAlphaScale);
+                    red, green, blue, colorAlphaScale, exactAlphaPath);
             return;
         }
 
@@ -368,11 +374,12 @@ public final class EngineRenderHelper {
                                              float omegaRotation,
                                              float stripLength,
                                              float stripWidth,
-                                             int red, int green, int blue, int alpha) {
+                                             int red, int green, int blue, int alpha,
+                                             boolean exactAlphaPath) {
         if (SpriteRenderHelper.isNativeLoaded()) {
             nativeRenderEngineCorePass(posX, posY, angle, stateRotation, omegaRotation,
                     stripLength, stripWidth,
-                    red, green, blue, alpha);
+                    red, green, blue, alpha, exactAlphaPath);
             return;
         }
 
@@ -517,7 +524,8 @@ public final class EngineRenderHelper {
                                                     int red,
                                                     int green,
                                                     int blue,
-                                                    float colorAlphaScale);
+                                                    float colorAlphaScale,
+                                                    boolean exactAlphaPath);
 
     static native void nativeRenderEngineCorePass(float posX, float posY,
                                                   float angle,
@@ -528,5 +536,6 @@ public final class EngineRenderHelper {
                                                   int red,
                                                   int green,
                                                   int blue,
-                                                  int alpha);
+                                                  int alpha,
+                                                  boolean exactAlphaPath);
 }

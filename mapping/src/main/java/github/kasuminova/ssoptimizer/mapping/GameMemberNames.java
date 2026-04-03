@@ -12,6 +12,7 @@ public final class GameMemberNames {
     public static final class ParallelImagePreloader {
         public static final String START = method(GameClassNames.PARALLEL_IMAGE_PRELOADER, "start", "()V");
         public static final String DECODE_IMAGE = method(GameClassNames.PARALLEL_IMAGE_PRELOADER, "decodeImage", "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;");
+        public static final String LOAD_BYTES = method(GameClassNames.PARALLEL_IMAGE_PRELOADER, "loadBytes", "(Ljava/lang/String;)[B");
         public static final String SHUTDOWN = method(GameClassNames.PARALLEL_IMAGE_PRELOADER, "shutdown", "()V");
         public static final String AWAIT_BYTES = method(GameClassNames.PARALLEL_IMAGE_PRELOADER, "awaitBytes", "(Ljava/lang/String;)[B");
         public static final String AWAIT_IMAGE = method(GameClassNames.PARALLEL_IMAGE_PRELOADER, "awaitImage", "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;");

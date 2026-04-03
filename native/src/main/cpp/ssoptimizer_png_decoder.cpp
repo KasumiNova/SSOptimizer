@@ -22,7 +22,7 @@
 
 namespace {
 
-constexpr const char* DECODED_IMAGE_CLASS = "github/kasuminova/ssoptimizer/loading/NativeDecodedImage";
+constexpr const char* DECODED_IMAGE_CLASS = "github/kasuminova/ssoptimizer/common/loading/NativeDecodedImage";
 
 void throwJavaException(JNIEnv* env, const char* className, const std::string& message) {
     jclass exceptionClass = env->FindClass(className);
@@ -258,8 +258,19 @@ jobject benchmarkBridge(JNIEnv* env,
 
 } // namespace
 
+/**
+ * 对应 Java 方法：github.kasuminova.ssoptimizer.common.loading.NativePngDecoder#nativeIsSupported()
+ *
+ * @param env JNI 环境
+ * @param clazz Java 类对象（未使用）
+ * @return 原生 PNG 解码后端是否可用
+ *
+ * 内存管理：不分配需要调用方释放的原生资源。
+ */
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_nativeIsSupported(JNIEnv*, jclass) {
+Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_nativeIsSupported(JNIEnv* env, jclass clazz) {
+    (void) env;
+    (void) clazz;
 #if SSOPTIMIZER_NATIVE_LIBPNG_AVAILABLE
     return JNI_TRUE;
 #else
@@ -267,10 +278,21 @@ Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_nativeIsSuppo
 #endif
 }
 
+/**
+ * 对应 Java 方法：github.kasuminova.ssoptimizer.common.loading.NativePngDecoder#decodePng0(byte[])
+ *
+ * @param env JNI 环境
+ * @param clazz Java 类对象（未使用）
+ * @param imageBytes PNG 文件字节数组
+ * @return 解码后的 NativeDecodedImage；失败时返回 null，并由 JNI 抛出 Java 异常
+ *
+ * 内存管理：通过 JNI 获取的字节数组元素在返回前释放；返回对象由 JVM 管理。
+ */
 extern "C" JNIEXPORT jobject JNICALL
 Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_decodePng0(JNIEnv* env,
-                                                                       jclass,
+                                                                       jclass clazz,
                                                                        jbyteArray imageBytes) {
+    (void) clazz;
 #if SSOPTIMIZER_NATIVE_LIBPNG_AVAILABLE
     if (imageBytes == nullptr) {
         throwJavaException(env, "java/lang/NullPointerException", "imageBytes");
@@ -300,12 +322,25 @@ Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_decodePng0(JN
 #endif
 }
 
+/**
+ * 对应 Java 方法：github.kasuminova.ssoptimizer.common.loading.NativePngDecoder#benchmarkBridge0(byte[], int, int)
+ *
+ * @param env JNI 环境
+ * @param clazz Java 类对象（未使用）
+ * @param imageBytes PNG 文件字节数组
+ * @param width 目标宽度
+ * @param height 目标高度
+ * @return 供基准测试使用的 NativeDecodedImage；失败时返回 null，并由 JNI 抛出 Java 异常
+ *
+ * 内存管理：通过 JNI 获取的字节数组元素在返回前释放；返回对象由 JVM 管理。
+ */
 extern "C" JNIEXPORT jobject JNICALL
 Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_benchmarkBridge0(JNIEnv* env,
-                                                                             jclass,
+                                                                             jclass clazz,
                                                                              jbyteArray imageBytes,
                                                                              jint width,
                                                                              jint height) {
+    (void) clazz;
 #if SSOPTIMIZER_NATIVE_LIBPNG_AVAILABLE
     if (imageBytes == nullptr) {
         throwJavaException(env, "java/lang/NullPointerException", "imageBytes");

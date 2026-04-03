@@ -27,7 +27,8 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_E
         jfloat stripLength,
         jfloat stripWidth,
         jint red, jint green, jint blue,
-        jfloat colorAlphaScale) {
+        jfloat colorAlphaScale,
+        jboolean exactAlphaPath) {
     if (passCount <= 0 || layerCount <= 0) {
         return;
     }
@@ -65,7 +66,11 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_E
                 redByte, greenByte, blueByte, 0
             };
 
-            drawColoredTexturedArray(GL_QUAD_STRIP, vertices, texCoords, colors, 6, finalColor);
+            if (exactAlphaPath == JNI_TRUE) {
+                drawColoredTexturedImmediate(vertices, texCoords, colors, 6);
+            } else {
+                drawColoredTexturedArray(GL_QUAD_STRIP, vertices, texCoords, colors, 6, finalColor);
+            }
             texU += texUStep;
         }
     }
@@ -80,7 +85,8 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_E
         jfloat stripLength,
         jfloat stripWidth,
         jint red, jint green, jint blue,
-        jint alpha) {
+        jint alpha,
+        jboolean exactAlphaPath) {
     GLfloat vertices[8];
     computeCorePassVertices(posX, posY, angle, stateRotation, omegaRotation,
         stripLength, stripWidth, vertices);
@@ -91,9 +97,23 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_E
         1.0f - TEX_PAD, TEX_MIN,
         1.0f - TEX_PAD, TEX_MAX
     };
-
-    setCurrentColor(red, green, blue, static_cast<GLubyte>(alpha & 0xFF));
-    drawTexturedArray(GL_QUAD_STRIP, vertices, texCoords, 4);
+    const GLubyte alphaByte = static_cast<GLubyte>(alpha & 0xFF);
+    if (exactAlphaPath == JNI_TRUE) {
+        glBegin(GL_QUAD_STRIP);
+        glColor4ub(static_cast<GLubyte>(red & 0xFF), static_cast<GLubyte>(green & 0xFF), static_cast<GLubyte>(blue & 0xFF), alphaByte);
+        glTexCoord2f(TEX_PAD, TEX_MIN);
+        glVertex2f(vertices[0], vertices[1]);
+        glTexCoord2f(TEX_PAD, TEX_MAX);
+        glVertex2f(vertices[2], vertices[3]);
+        glTexCoord2f(1.0f - TEX_PAD, TEX_MIN);
+        glVertex2f(vertices[4], vertices[5]);
+        glTexCoord2f(1.0f - TEX_PAD, TEX_MAX);
+        glVertex2f(vertices[6], vertices[7]);
+        glEnd();
+    } else {
+        setCurrentColor(red, green, blue, alphaByte);
+        drawTexturedArray(GL_QUAD_STRIP, vertices, texCoords, 4);
+    }
 }
 
 } // extern "C"

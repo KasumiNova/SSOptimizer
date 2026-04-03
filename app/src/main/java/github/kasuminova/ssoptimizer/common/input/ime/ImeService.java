@@ -33,6 +33,7 @@ public final class ImeService {
     private final    IntSupplier                                       windowHeightSupplier;
     private volatile ImeBackend                                        backend;
     private volatile WeakReference<TextFieldAPI>                       explicitlyFocusedField;
+    private volatile boolean                                           windowFocused = true;
 
     public ImeService(final ImeBackend backend) {
         this(backend, EffectiveScreenScale::current, () -> Display.getHeight());
@@ -91,9 +92,11 @@ public final class ImeService {
         }
         register(textField);
         explicitlyFocusedField = new WeakReference<>(textField);
-        backend.focusIn();
+        if (windowFocused) {
+            backend.focusIn();
+        }
         final ImeCaretRect rect = computeCurrentCaretRect();
-        if (rect != null) {
+        if (windowFocused && rect != null) {
             backend.updateSpot(rect);
         }
         ImeDiagnostics.logTextFieldFocus("focused", textField, registeredFieldCount());
@@ -109,7 +112,7 @@ public final class ImeService {
         }
 
         final TextFieldAPI focused = currentFocusedField();
-        if (focused == null) {
+        if (focused == null || !windowFocused) {
             backend.focusOut();
             return;
         }
@@ -118,6 +121,29 @@ public final class ImeService {
         if (rect != null) {
             backend.updateSpot(rect);
         }
+    }
+
+    void onWindowFocusChanged(final boolean focused) {
+        windowFocused = focused;
+        if (!focused) {
+            backend.focusOut();
+            return;
+        }
+
+        final TextFieldAPI currentFocusedField = currentFocusedField();
+        if (currentFocusedField == null) {
+            return;
+        }
+
+        backend.focusIn();
+        final ImeCaretRect rect = computeCurrentCaretRect();
+        if (rect != null) {
+            backend.updateSpot(rect);
+        }
+    }
+
+    boolean shouldCaptureImeInput() {
+        return windowFocused && currentFocusedField() != null;
     }
 
     public ImeCaretRect computeCurrentCaretRect() {

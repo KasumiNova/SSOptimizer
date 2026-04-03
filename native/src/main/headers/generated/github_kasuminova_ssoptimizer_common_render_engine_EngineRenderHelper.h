@@ -18,18 +18,18 @@ extern "C" {
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_engine_EngineRenderHelper
  * Method:    nativeRenderEngineStripBatch
- * Signature: (FFFFFIIFFFFFFIIIF)V
+ * Signature: (FFFFFIIFFFFFFIIIFZ)V
  */
 JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_EngineRenderHelper_nativeRenderEngineStripBatch
-  (JNIEnv *, jclass, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jfloat);
+  (JNIEnv *, jclass, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jfloat, jboolean);
 
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_engine_EngineRenderHelper
  * Method:    nativeRenderEngineCorePass
- * Signature: (FFFFFFFIIII)V
+ * Signature: (FFFFFFFIIIIZ)V
  */
 JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_EngineRenderHelper_nativeRenderEngineCorePass
-  (JNIEnv *, jclass, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jboolean);
 
 #ifdef __cplusplus
 }

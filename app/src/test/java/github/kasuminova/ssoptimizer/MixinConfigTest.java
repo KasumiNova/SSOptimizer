@@ -16,6 +16,7 @@ class MixinConfigTest {
             assertTrue(content.contains("github.kasuminova.ssoptimizer.mixin"));
             assertTrue(content.contains("render.EngineRenderMixin"));
             assertTrue(content.contains("accessor.ContrailGroupAccessor"));
+            assertTrue(content.contains("loading.ParallelImagePreloaderMixin"));
         }
     }
 }

@@ -69,17 +69,8 @@ public final class LinuxDisplayImeHooks {
 
     public static void onFocusChanged(final Object linuxDisplay,
                                       final boolean gotFocus) {
-        final ImeBackend backend = ImeService.getInstance().backend();
-        if (backend == null) {
-            return;
-        }
-
         try {
-            if (gotFocus) {
-                backend.focusIn();
-            } else {
-                backend.focusOut();
-            }
+            ImeService.getInstance().onWindowFocusChanged(gotFocus);
         } catch (Throwable t) {
             LOGGER.debug("[SSOptimizer] Failed to update IME focus state: " + t.getMessage());
         }
@@ -95,6 +86,9 @@ public final class LinuxDisplayImeHooks {
         final ImeService service = ImeService.getInstance();
         final ImeBackend backend = service.backend();
         if (backend == null) {
+            return;
+        }
+        if (!service.shouldCaptureImeInput()) {
             return;
         }
 
@@ -150,6 +144,9 @@ public final class LinuxDisplayImeHooks {
         }
         final ImeBackend backend = ImeService.getInstance().backend();
         if (backend == null) {
+            return;
+        }
+        if (!ImeService.getInstance().shouldCaptureImeInput()) {
             return;
         }
         try {

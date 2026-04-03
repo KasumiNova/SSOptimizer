@@ -30,6 +30,15 @@ class BootstrapSearchInstallerTest {
         output.closeEntry();
     }
 
+    private static void copyResourceEntry(JarOutputStream output, String entryName) throws IOException {
+        output.putNextEntry(new JarEntry(entryName));
+        try (InputStream input = BootstrapSearchInstallerTest.class.getClassLoader().getResourceAsStream(entryName)) {
+            assertNotNull(input, "Missing resource: " + entryName);
+            input.transferTo(output);
+        }
+        output.closeEntry();
+    }
+
     @AfterEach
     void tearDown() {
         BootstrapSearchInstaller.resetForTest();
@@ -43,8 +52,9 @@ class BootstrapSearchInstallerTest {
     @Test
     void appendsJarToBootstrapSearch() throws IOException {
         Path jarPath = tempDir.resolve("ssoptimizer-agent-test.jar");
-        try (JarOutputStream ignored = new JarOutputStream(java.nio.file.Files.newOutputStream(jarPath))) {
+        try (JarOutputStream output = new JarOutputStream(java.nio.file.Files.newOutputStream(jarPath))) {
             // Empty jar is enough for appendToBootstrapClassLoaderSearch contract testing.
+            output.flush();
         }
 
         AtomicReference<String> appendedJarName = new AtomicReference<>();
@@ -81,6 +91,14 @@ class BootstrapSearchInstallerTest {
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(sourceJar))) {
             copyClassEntry(output, "github/kasuminova/ssoptimizer/bootstrap/ReflectionHelper.class");
             copyClassEntry(output, "github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class");
+            copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingEntry.class");
+            copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingEntry$Kind.class");
+            copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingLookupException.class");
+            copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingRepository.class");
+            copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/TinyV2MappingRepository.class");
+            copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/TinyV2MappingRepository$1.class");
+            copyClassEntry(output, "org/objectweb/asm/ClassReader.class");
+            copyResourceEntry(output, "mappings/ssoptimizer.tiny");
         }
 
         Path helperJar = BootstrapSearchInstaller.createBootstrapHelperArchive(sourceJar);
@@ -90,6 +108,9 @@ class BootstrapSearchInstallerTest {
         try (JarFile jarFile = new JarFile(helperJar.toFile())) {
             assertNotNull(jarFile.getJarEntry("github/kasuminova/ssoptimizer/bootstrap/ReflectionHelper.class"));
             assertNotNull(jarFile.getJarEntry("github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class"));
+            assertNotNull(jarFile.getJarEntry("github/kasuminova/ssoptimizer/mapping/TinyV2MappingRepository.class"));
+            assertNotNull(jarFile.getJarEntry("org/objectweb/asm/ClassReader.class"));
+            assertNotNull(jarFile.getJarEntry("mappings/ssoptimizer.tiny"));
         }
     }
 }

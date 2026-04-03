@@ -66,6 +66,24 @@ public final class BytecodeRemapper {
         private boolean modified;
 
         @Override
+        public String mapDesc(String descriptor) {
+            String mappedDescriptor = super.mapDesc(descriptor);
+            if (!descriptor.equals(mappedDescriptor)) {
+                modified = true;
+            }
+            return mappedDescriptor;
+        }
+
+        @Override
+        public String mapMethodDesc(String descriptor) {
+            String mappedDescriptor = super.mapMethodDesc(descriptor);
+            if (!descriptor.equals(mappedDescriptor)) {
+                modified = true;
+            }
+            return mappedDescriptor;
+        }
+
+        @Override
         public String map(String internalName) {
             MappingEntry classEntry = switch (direction) {
                 case OBFUSCATED_TO_NAMED -> repository.findClassByObfuscatedName(internalName).orElse(null);

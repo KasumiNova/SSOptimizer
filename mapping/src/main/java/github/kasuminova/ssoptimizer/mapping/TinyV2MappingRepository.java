@@ -59,7 +59,10 @@ public final class TinyV2MappingRepository implements MappingRepository {
                     fieldByNamedKey.put(fieldKey(entry.ownerNamedName(), entry.namedName()), entry);
                 }
                 case METHOD -> {
-                    methodByObfuscatedKey.put(methodKey(entry.ownerObfuscatedName(), entry.obfuscatedName(), entry.descriptor()), entry);
+                    methodByObfuscatedKey.put(methodKey(
+                            entry.ownerObfuscatedName(),
+                            entry.obfuscatedName(),
+                            toObfuscatedDescriptor(entry.descriptor())), entry);
                     methodByNamedKey.put(methodKey(entry.ownerNamedName(), entry.namedName(), toNamedDescriptor(entry.descriptor())), entry);
                 }
             }

@@ -27,6 +27,9 @@ import java.util.List;
  */
 final class TtfBmFontGenerator {
     private static final Logger LOGGER                     = Logger.getLogger(TtfBmFontGenerator.class);
+    private static final int    SPACE_CODE_POINT           = ' ';
+    private static final int    LEFT_BRACE_CODE_POINT      = '{';
+    private static final int    RIGHT_BRACE_CODE_POINT     = '}';
     private static final String PRIMARY_VISUAL_SAMPLE      = "HNM0";
     private static final String PRIMARY_ADVANCE_SAMPLE     = "HNM0UI";
     private static final String FALLBACK_VISUAL_SAMPLE     = "汉界测港";
@@ -441,10 +444,11 @@ final class TtfBmFontGenerator {
                                                     final FontChain fonts) {
         final List<GlyphRaster> glyphs = new ArrayList<>(source.codePoints().size());
         final LoadedFont placeholderMetadataFont = fonts.fonts().isEmpty() ? null : fonts.fonts().getFirst();
+        final SourceGlyphMetric spaceMetric = source.glyphMetrics().get(SPACE_CODE_POINT);
         try (GlyphRasterizer rasterizer = createRasterizer()) {
             for (int codePoint : source.codePoints()) {
                 final SourceGlyphMetric sourceMetric = source.glyphMetrics().get(codePoint);
-                final GlyphRaster preserved = preserveSourceSpecialGlyph(codePoint, sourceMetric,
+                final GlyphRaster preserved = preserveSourceSpecialGlyph(codePoint, sourceMetric, spaceMetric,
                         placeholderMetadataFont);
                 if (preserved != null) {
                     glyphs.add(preserved);
@@ -463,8 +467,10 @@ final class TtfBmFontGenerator {
 
     private static GlyphRaster preserveSourceSpecialGlyph(final int codePoint,
                                                           final SourceGlyphMetric sourceMetric,
+                                                          final SourceGlyphMetric spaceMetric,
                                                           final LoadedFont placeholderMetadataFont) {
-        if (sourceMetric == null || !sourceMetric.isSpecialPlaceholder()) {
+        final SourceGlyphMetric preservedMetric = preservedSourceMetric(codePoint, sourceMetric, spaceMetric);
+        if (preservedMetric == null) {
             return null;
         }
 
@@ -476,11 +482,34 @@ final class TtfBmFontGenerator {
                 sourceName,
                 faceName,
                 null,
-                sourceMetric.width(),
-                sourceMetric.height(),
-                sourceMetric.xOffset(),
-                sourceMetric.yOffset(),
-                sourceMetric.xAdvance());
+                preservedMetric.width(),
+                preservedMetric.height(),
+                preservedMetric.xOffset(),
+                preservedMetric.yOffset(),
+                preservedMetric.xAdvance());
+    }
+
+    private static SourceGlyphMetric preservedSourceMetric(final int codePoint,
+                                                           final SourceGlyphMetric sourceMetric,
+                                                           final SourceGlyphMetric spaceMetric) {
+        if (shouldTreatAsSpaceGlyph(codePoint)) {
+            return spaceEquivalentSourceMetric(spaceMetric);
+        }
+        if (sourceMetric == null || !sourceMetric.isSpecialPlaceholder()) {
+            return null;
+        }
+        return sourceMetric;
+    }
+
+    static boolean shouldTreatAsSpaceGlyph(final int codePoint) {
+        return codePoint == LEFT_BRACE_CODE_POINT || codePoint == RIGHT_BRACE_CODE_POINT;
+    }
+
+    private static SourceGlyphMetric spaceEquivalentSourceMetric(final SourceGlyphMetric spaceMetric) {
+        if (spaceMetric == null) {
+            return null;
+        }
+        return new SourceGlyphMetric(0, 0, 0, 0, spaceMetric.xAdvance());
     }
 
     static boolean shouldPreserveSourceSpecialGlyph(final int width,
@@ -498,11 +527,24 @@ final class TtfBmFontGenerator {
         final GlyphRaster glyph = preserveSourceSpecialGlyph(
                 0,
                 new SourceGlyphMetric(width, height, xOffset, yOffset, xAdvance),
+                null,
                 null);
         if (glyph == null) {
             return null;
         }
         return new int[]{glyph.width(), glyph.height(), glyph.xOffset(), glyph.yOffset(), glyph.xAdvance()};
+    }
+
+    static int[] spaceEquivalentGlyphMetrics(final int codePoint,
+                                             final int spaceXAdvance) {
+        final SourceGlyphMetric metric = preservedSourceMetric(
+                codePoint,
+                null,
+                new SourceGlyphMetric(0, 0, 0, 0, Math.max(0, spaceXAdvance)));
+        if (metric == null) {
+            return null;
+        }
+        return new int[]{metric.width(), metric.height(), metric.xOffset(), metric.yOffset(), metric.xAdvance()};
     }
 
     static int[] alignedGlyphMetrics(final int rasterWidth,
@@ -938,6 +980,11 @@ final class TtfBmFontGenerator {
         return Math.max(0, logicalXAdvance - xOffset);
     }
 
+    static int decodedXAdvanceFromRuntimeLayout(final int encodedXAdvance,
+                                                final int xOffset) {
+        return Math.max(0, encodedXAdvance + xOffset);
+    }
+
     private static FontRenderPolicy renderPolicyForSpec(final OriginalGameFontOverrides.FontOverrideSpec spec,
                                                         final SourceBmFont source) {
         final boolean pixelFont = isVictorManagedFontPath(spec.originalFontPath());
@@ -1093,13 +1140,14 @@ final class TtfBmFontGenerator {
                     scaleHeight = parseIntProperty(line, "scaleH", scaleHeight);
                 } else if (line.startsWith("char ")) {
                     final int codePoint = parseIntProperty(line, "id", 0);
+                    final int xOffset = parseIntProperty(line, "xoffset", 0);
                     codePoints.add(codePoint);
                     glyphMetrics.put(codePoint, new SourceGlyphMetric(
                             parseIntProperty(line, "width", 0),
                             parseIntProperty(line, "height", 0),
-                            parseIntProperty(line, "xoffset", 0),
+                            xOffset,
                             parseIntProperty(line, "yoffset", 0),
-                            parseIntProperty(line, "xadvance", 0)));
+                            decodedXAdvanceFromRuntimeLayout(parseIntProperty(line, "xadvance", 0), xOffset)));
                 }
             }
 

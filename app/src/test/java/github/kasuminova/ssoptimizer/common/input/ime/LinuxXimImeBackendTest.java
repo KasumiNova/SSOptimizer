@@ -43,10 +43,26 @@ class LinuxXimImeBackendTest {
         assertEquals(24, bridge.lastSpotHeight);
     }
 
+    @Test
+    void focusStateTracksNativeBridgeState() {
+        FakeBridge bridge = new FakeBridge(true);
+        LinuxXimImeBackend backend = new LinuxXimImeBackend(bridge);
+
+        backend.attach(11L, 22L);
+        backend.focusIn();
+        backend.focusOut();
+
+        assertFalse(bridge.focused);
+        assertEquals(1, bridge.focusInCount);
+        assertEquals(1, bridge.focusOutCount);
+    }
+
     private static final class FakeBridge implements LinuxXimNativeBridge {
         boolean supported;
         boolean attached;
         boolean focused;
+        int     focusInCount;
+        int     focusOutCount;
         int     lastSpotX;
         int     lastSpotY;
         int     lastSpotHeight;
@@ -88,11 +104,13 @@ class LinuxXimImeBackendTest {
         @Override
         public void nativeFocusIn(long contextHandle) {
             focused = true;
+            focusInCount++;
         }
 
         @Override
         public void nativeFocusOut(long contextHandle) {
             focused = false;
+            focusOutCount++;
         }
 
         @Override

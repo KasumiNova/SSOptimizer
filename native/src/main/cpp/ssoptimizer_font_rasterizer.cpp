@@ -25,7 +25,7 @@
 
 namespace {
 
-constexpr const char* NATIVE_GLYPH_BITMAP_CLASS = "github/kasuminova/ssoptimizer/font/NativeGlyphBitmap";
+constexpr const char* NATIVE_GLYPH_BITMAP_CLASS = "github/kasuminova/ssoptimizer/common/font/NativeGlyphBitmap";
 
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE
 struct NativeFaceHandle {
@@ -234,8 +234,19 @@ jobject rasterizeGlyph(JNIEnv* env,
 
 } // namespace
 
+/**
+ * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeIsAvailable()
+ *
+ * @param env JNI 环境
+ * @param clazz Java 类对象（未使用）
+ * @return FreeType 原生字体栅格化后端是否可用
+ *
+ * 内存管理：仅做可用性探测；若初始化 FreeType 成功会在返回前释放。
+ */
 extern "C" JNIEXPORT jboolean JNICALL
-Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeIsAvailable(JNIEnv*, jclass) {
+Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeIsAvailable(JNIEnv* env, jclass clazz) {
+    (void) env;
+    (void) clazz;
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE
     FT_Library library = nullptr;
     const FT_Error status = FT_Init_FreeType(&library);
@@ -249,15 +260,31 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeIsAvai
 #endif
 }
 
+/**
+ * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeCreateFace(String, float, int, boolean, boolean, boolean)
+ *
+ * @param env JNI 环境
+ * @param clazz Java 类对象（未使用）
+ * @param fontPath 字体文件路径
+ * @param pixelSize 目标像素字号
+ * @param hintMode Hinting 模式
+ * @param forceAutoHint 是否强制自动 hint
+ * @param antiAlias 是否启用抗锯齿
+ * @param embeddedBitmaps 是否允许使用内嵌位图
+ * @return NativeFaceHandle 指针编码后的 jlong；失败返回 0
+ *
+ * 内存管理：成功时由 Java 层后续调用 nativeDestroyFace 释放；失败路径在原生侧自行清理。
+ */
 extern "C" JNIEXPORT jlong JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeCreateFace(JNIEnv* env,
-                                                                              jclass,
+                                                                              jclass clazz,
                                                                               jstring fontPath,
                                                                               jfloat pixelSize,
                                                                               jint hintMode,
                                                                               jboolean forceAutoHint,
                                                                               jboolean antiAlias,
                                                                               jboolean embeddedBitmaps) {
+    (void) clazz;
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE
     if (fontPath == nullptr) {
         return 0L;
@@ -297,12 +324,25 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeCreate
 #endif
 }
 
+/**
+ * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeRasterizeGlyph(long, int, int)
+ *
+ * @param env JNI 环境
+ * @param clazz Java 类对象（未使用）
+ * @param faceHandle Java 层持有的字体句柄
+ * @param codePoint 要栅格化的 Unicode code point
+ * @param baseline 基线位置
+ * @return NativeGlyphBitmap；失败时返回 null
+ *
+ * 内存管理：返回对象由 JVM 管理；不转移底层 FreeType 句柄所有权。
+ */
 extern "C" JNIEXPORT jobject JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRasterizeGlyph(JNIEnv* env,
-                                                                                  jclass,
+                                                                                  jclass clazz,
                                                                                   jlong faceHandle,
                                                                                   jint codePoint,
                                                                                   jint baseline) {
+    (void) clazz;
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE
     auto* handle = reinterpret_cast<NativeFaceHandle*>(static_cast<std::uintptr_t>(faceHandle));
     return rasterizeGlyph(env, handle, codePoint, baseline);
@@ -315,10 +355,22 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRaster
 #endif
 }
 
+/**
+ * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeDestroyFace(long)
+ *
+ * @param env JNI 环境
+ * @param clazz Java 类对象（未使用）
+ * @param faceHandle Java 层持有的字体句柄
+ * @return 无返回值
+ *
+ * 内存管理：释放由 nativeCreateFace 分配的 NativeFaceHandle 及其关联 FreeType 资源。
+ */
 extern "C" JNIEXPORT void JNICALL
-Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeDestroyFace(JNIEnv*,
-                                                                               jclass,
+Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeDestroyFace(JNIEnv* env,
+                                                                               jclass clazz,
                                                                                jlong faceHandle) {
+    (void) env;
+    (void) clazz;
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE
     auto* handle = reinterpret_cast<NativeFaceHandle*>(static_cast<std::uintptr_t>(faceHandle));
     destroyFaceHandle(handle);

@@ -8,6 +8,7 @@ c com/fs/graphics/L com/fs/graphics/ParallelImagePreloader
 	f Ö00000 byteSentinel [B
 	m o00000 start ()V
 	m o00000 decodeImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
+	m Ô00000 loadBytes (Ljava/lang/String;)[B
 	m new shutdown ()V
 	m new awaitBytes (Ljava/lang/String;)[B
 	m class awaitImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
@@ -20,8 +21,8 @@ c com/fs/graphics/Object com/fs/graphics/TextureObject
 	m o00000 setDeferredLoadingEnabled (Z)V
 	m Ø00000 bind ()V
 	m ö00000 getTextureId ()I
-	m o00000 setImageWidth (I)V
-	m Ò00000 setImageHeight (I)V
+	m o00000 setImageHeight (I)V
+	m Ò00000 setImageWidth (I)V
 	m Ô00000 setTextureHeight (I)V
 	m Object setTextureWidth (I)V
 	m Object setAverageColor (Ljava/awt/Color;)V

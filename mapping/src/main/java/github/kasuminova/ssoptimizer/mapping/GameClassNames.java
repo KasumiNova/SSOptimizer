@@ -39,6 +39,7 @@ public final class GameClassNames {
     public static final String STARFARER_LAUNCHER                  = "com/fs/starfarer/StarfarerLauncher";
     public static final String FOCUSED_COMPONENT_TRACKER           = "com/fs/starfarer/ui/FocusedComponentTracker";
     public static final String PARALLEL_IMAGE_PRELOADER            = "com/fs/graphics/ParallelImagePreloader";
+    public static final String PARALLEL_IMAGE_PRELOADER_DOTTED     = "com.fs.graphics.ParallelImagePreloader";
     public static final String TEXTURE_LOADER                      = "com/fs/graphics/TextureLoader";
     public static final String TEXTURE_OBJECT                      = "com/fs/graphics/TextureObject";
     public static final String RENDER_STATE_UTILS                  = "com/fs/graphics/util/RenderStateUtils";

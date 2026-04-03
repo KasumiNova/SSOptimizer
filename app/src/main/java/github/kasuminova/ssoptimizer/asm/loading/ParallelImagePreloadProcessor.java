@@ -19,6 +19,7 @@ public final class ParallelImagePreloadProcessor implements AsmClassProcessor {
     public static final String DECODE_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/loading/FastResourceImageDecoder";
     public static final String DECODE_HELPER_DESC  = "(Ljava/lang/String;Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;";
     public static final String QUEUE_HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/loading/ParallelImagePreloadQueueTracker";
+    public static final String ORIGINAL_AWAIT_BYTES_METHOD = "ssoptimizer$awaitBytesOriginal";
 
     private static final String START_METHOD         = GameMemberNames.ParallelImagePreloader.START;
     private static final String IMAGE_DECODE_METHOD  = GameMemberNames.ParallelImagePreloader.DECODE_IMAGE;
@@ -74,7 +75,13 @@ public final class ParallelImagePreloadProcessor implements AsmClassProcessor {
                 }
                 if (AWAIT_BYTES_METHOD.equals(name) && AWAIT_BYTES_DESC.equals(desc)) {
                     modified[0] = true;
-                    return new AwaitBytesMethodReplacer(delegate);
+                    final MethodVisitor original = super.visitMethod(
+                            (access & ~(Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PRIVATE | Opcodes.ACC_SYNTHETIC,
+                            ORIGINAL_AWAIT_BYTES_METHOD,
+                            desc,
+                            signature,
+                            exceptions);
+                    return new AwaitBytesMethodReplacer(delegate, original);
                 }
                 if (AWAIT_IMAGE_METHOD.equals(name) && AWAIT_IMAGE_DESC.equals(desc)) {
                     modified[0] = true;
@@ -205,19 +212,44 @@ public final class ParallelImagePreloadProcessor implements AsmClassProcessor {
         protected abstract void emitBody();
     }
 
-    private static final class AwaitBytesMethodReplacer extends BodyReplacingMethodVisitor {
-        private AwaitBytesMethodReplacer(final MethodVisitor target) {
-            super(target);
+    private static final class AwaitBytesMethodReplacer extends MethodVisitor {
+        private final MethodVisitor target;
+        private final MethodVisitor original;
+
+        private AwaitBytesMethodReplacer(final MethodVisitor target,
+                                         final MethodVisitor original) {
+            super(Opcodes.ASM9, original);
+            this.target = target;
+            this.original = original;
         }
 
         @Override
-        protected void emitBody() {
+        public void visitCode() {
+            target.visitCode();
             target.visitFieldInsn(Opcodes.GETSTATIC, TARGET_CLASS, BYTE_RESULT_FIELD, "Ljava/util/Map;");
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitFieldInsn(Opcodes.GETSTATIC, TARGET_CLASS, BYTE_SENTINEL_FIELD, BYTE_SENTINEL_DESC);
             target.visitMethodInsn(Opcodes.INVOKESTATIC, QUEUE_HELPER_OWNER,
                     "awaitBytes", "(Ljava/util/Map;Ljava/lang/String;[B)[B", false);
             target.visitInsn(Opcodes.ARETURN);
+            original.visitCode();
+        }
+
+        @Override
+        public void visitMaxs(final int maxStack, final int maxLocals) {
+            target.visitMaxs(0, 0);
+            original.visitMaxs(maxStack, maxLocals);
+        }
+
+        @Override
+        public void visitEnd() {
+            target.visitEnd();
+            original.visitEnd();
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
+            return target.visitAnnotation(descriptor, visible);
         }
     }
 

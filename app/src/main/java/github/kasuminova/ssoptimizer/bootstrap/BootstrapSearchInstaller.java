@@ -25,7 +25,12 @@ final class BootstrapSearchInstaller {
     private static final Logger   LOGGER             = Logger.getLogger(BootstrapSearchInstaller.class);
     private static final String[] HELPER_ENTRY_NAMES = {
             "github/kasuminova/ssoptimizer/bootstrap/ReflectionHelper.class",
-            "github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class"
+        "github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class",
+        "mappings/ssoptimizer.tiny"
+    };
+    private static final String[] HELPER_ENTRY_PREFIXES = {
+        "github/kasuminova/ssoptimizer/mapping/",
+        "org/objectweb/asm/"
     };
 
     private static volatile JarFile appendedJar;
@@ -134,6 +139,9 @@ final class BootstrapSearchInstaller {
                 for (String entryName : HELPER_ENTRY_NAMES) {
                     copyRequiredEntry(sourceJar, output, entryName);
                 }
+                for (String prefix : HELPER_ENTRY_PREFIXES) {
+                    copyPrefixedEntries(sourceJar, output, prefix);
+                }
             } catch (IOException | RuntimeException exception) {
                 Files.deleteIfExists(helperArchive);
                 throw exception;
@@ -171,6 +179,27 @@ final class BootstrapSearchInstaller {
             input.transferTo(output);
         }
         output.closeEntry();
+    }
+
+    private static void copyPrefixedEntries(JarFile sourceJar,
+                                            JarOutputStream output,
+                                            String entryPrefix) throws IOException {
+        for (JarEntry sourceEntry : java.util.Collections.list(sourceJar.entries())) {
+            if (sourceEntry.isDirectory()) {
+                continue;
+            }
+            String entryName = sourceEntry.getName();
+            if (!entryName.startsWith(entryPrefix) || !entryName.endsWith(".class")) {
+                continue;
+            }
+
+            JarEntry targetEntry = new JarEntry(entryName);
+            output.putNextEntry(targetEntry);
+            try (InputStream input = sourceJar.getInputStream(sourceEntry)) {
+                input.transferTo(output);
+            }
+            output.closeEntry();
+        }
     }
 
     /**

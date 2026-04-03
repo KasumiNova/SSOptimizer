@@ -20,6 +20,7 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
     public static final  String TARGET_DESC              = "(Ljava/awt/image/BufferedImage;L" + GameClassNames.TEXTURE_OBJECT + ";)Ljava/nio/ByteBuffer;";
     public static final  String PUBLIC_LOAD_METHOD       = GameMemberNames.TextureLoader.LOAD_TEXTURE;
     public static final  String PUBLIC_LOAD_DESC         = "(Ljava/lang/String;)L" + GameClassNames.TEXTURE_OBJECT + ";";
+    public static final  String ORIGINAL_LOAD_METHOD     = "ssoptimizer$loadTextureEager";
     public static final  String DIMENSION_METHOD         = GameMemberNames.TextureLoader.TEXTURE_DIMENSION;
     public static final  String HELPER_OWNER             = "github/kasuminova/ssoptimizer/common/loading/TexturePixelConverter";
     public static final  String DIMENSION_HELPER_OWNER   = "github/kasuminova/ssoptimizer/common/loading/TextureDimensionSupport";
@@ -67,7 +68,13 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
                 }
                 if (PUBLIC_LOAD_METHOD.equals(name) && PUBLIC_LOAD_DESC.equals(desc)) {
                     modified[0] = true;
-                    return new PathLoadMethodReplacer(delegate);
+                    final MethodVisitor original = super.visitMethod(
+                            (access & ~(Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PRIVATE | Opcodes.ACC_SYNTHETIC,
+                            ORIGINAL_LOAD_METHOD,
+                            desc,
+                            sig,
+                            ex);
+                    return new PathLoadMethodReplacer(delegate, original);
                 }
                 if (DIMENSION_METHOD.equals(name) && DIMENSION_DESC.equals(desc)) {
                     modified[0] = true;
@@ -87,10 +94,13 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
 
     static final class PathLoadMethodReplacer extends MethodVisitor {
         private final MethodVisitor target;
+        private final MethodVisitor original;
 
-        PathLoadMethodReplacer(final MethodVisitor target) {
-            super(Opcodes.ASM9);
+        PathLoadMethodReplacer(final MethodVisitor target,
+                               final MethodVisitor original) {
+            super(Opcodes.ASM9, original);
             this.target = target;
+            this.original = original;
         }
 
         @Override
@@ -103,16 +113,19 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
             target.visitMethodInsn(Opcodes.INVOKESTATIC, LAZY_LOAD_HELPER_OWNER,
                     LAZY_LOAD_HELPER_METHOD, LAZY_LOAD_HELPER_DESC, false);
             target.visitInsn(Opcodes.ARETURN);
+            original.visitCode();
         }
 
         @Override
         public void visitMaxs(final int maxStack, final int maxLocals) {
             target.visitMaxs(0, 0);
+            original.visitMaxs(maxStack, maxLocals);
         }
 
         @Override
         public void visitEnd() {
             target.visitEnd();
+            original.visitEnd();
         }
 
         @Override

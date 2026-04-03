@@ -20,6 +20,7 @@ class TextureLoaderPixelProcessorTest {
         assertTrue(inspection.callsImageReadHelper, "TextureLoader image read should delegate to FastResourceImageDecoder");
         assertTrue(inspection.callsUploadHelper, "TextureLoader uploads should delegate to TextureUploadHelper");
         assertTrue(inspection.callsLazyLoadHelper, "TextureLoader path load should delegate to LazyTextureManager");
+        assertTrue(inspection.hasOriginalPathLoadMethod, "TextureLoader path load should preserve original eager implementation");
         assertFalse(inspection.callsRasterGetPixel, "Raster.getPixel should disappear after rewrite");
         assertFalse(inspection.callsImageIoRead, "ImageIO.read should disappear after rewrite");
         assertFalse(inspection.callsRawTexImage2D, "Raw GL11.glTexImage2D should disappear after rewrite");
@@ -103,10 +104,15 @@ class TextureLoaderPixelProcessorTest {
         boolean[] uploadHelper = {false};
         boolean[] rawTexImage2D = {false};
         boolean[] lazyLoadHelper = {false};
+        boolean[] originalPathLoadMethod = {false};
 
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
+                if (TextureLoaderPixelProcessor.ORIGINAL_LOAD_METHOD.equals(name)
+                        && TextureLoaderPixelProcessor.PUBLIC_LOAD_DESC.equals(desc)) {
+                    originalPathLoadMethod[0] = true;
+                }
                 return new MethodVisitor(Opcodes.ASM9) {
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String methodName, String methodDesc, boolean itf) {
@@ -161,7 +167,7 @@ class TextureLoaderPixelProcessorTest {
             }
         }, 0);
 
-        return new Inspection(helper[0], dimensionHelper[0], textureSizeSetters[0], rasterGetPixel[0], imageReadHelper[0], imageIoRead[0], uploadHelper[0], rawTexImage2D[0], lazyLoadHelper[0]);
+        return new Inspection(helper[0], dimensionHelper[0], textureSizeSetters[0], rasterGetPixel[0], imageReadHelper[0], imageIoRead[0], uploadHelper[0], rawTexImage2D[0], lazyLoadHelper[0], originalPathLoadMethod[0]);
     }
 
     private record Inspection(boolean callsHelper,
@@ -172,6 +178,7 @@ class TextureLoaderPixelProcessorTest {
                               boolean callsImageIoRead,
                               boolean callsUploadHelper,
                               boolean callsRawTexImage2D,
-                              boolean callsLazyLoadHelper) {
+                              boolean callsLazyLoadHelper,
+                              boolean hasOriginalPathLoadMethod) {
     }
 }

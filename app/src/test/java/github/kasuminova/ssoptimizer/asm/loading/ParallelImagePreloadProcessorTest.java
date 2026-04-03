@@ -19,6 +19,7 @@ class ParallelImagePreloadProcessorTest {
         assertTrue(inspection.callsDecodeHelper, "Deferred loader image decode should delegate to FastResourceImageDecoder");
         assertTrue(inspection.callsAwaitImageHelper, "Deferred image waits should delegate to the pending-path tracker");
         assertTrue(inspection.callsAwaitBytesHelper, "Deferred byte waits should delegate to the pending-path tracker");
+        assertTrue(inspection.hasOriginalAwaitBytesMethod, "Deferred byte waits should preserve the original byte loader implementation for worker threads");
         assertTrue(inspection.callsEnqueueImageHelper, "Deferred image queueing should delegate to the pending-path tracker");
         assertTrue(inspection.callsEnqueueBytesHelper, "Deferred byte queueing should delegate to the pending-path tracker");
         assertTrue(inspection.imageIoReadRemoved, "Deferred loader should no longer call ImageIO.read directly");
@@ -92,6 +93,7 @@ class ParallelImagePreloadProcessorTest {
         boolean[] queueClearHelper = {false};
         boolean[] awaitImageHelper = {false};
         boolean[] awaitBytesHelper = {false};
+        boolean[] originalAwaitBytesMethod = {false};
         boolean[] enqueueImageHelper = {false};
         boolean[] enqueueBytesHelper = {false};
         boolean[] imageIoRead = {false};
@@ -100,6 +102,10 @@ class ParallelImagePreloadProcessorTest {
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
+                if (ParallelImagePreloadProcessor.ORIGINAL_AWAIT_BYTES_METHOD.equals(name)
+                        && "(Ljava/lang/String;)[B".equals(desc)) {
+                    originalAwaitBytesMethod[0] = true;
+                }
                 return new MethodVisitor(Opcodes.ASM9) {
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String methodName, String methodDesc, boolean itf) {
@@ -153,6 +159,7 @@ class ParallelImagePreloadProcessorTest {
                 decodeHelper[0],
                 awaitImageHelper[0],
                 awaitBytesHelper[0],
+                originalAwaitBytesMethod[0],
                 enqueueImageHelper[0],
                 enqueueBytesHelper[0],
                 !imageIoRead[0],
@@ -166,6 +173,7 @@ class ParallelImagePreloadProcessorTest {
                               boolean callsDecodeHelper,
                               boolean callsAwaitImageHelper,
                               boolean callsAwaitBytesHelper,
+                              boolean hasOriginalAwaitBytesMethod,
                               boolean callsEnqueueImageHelper,
                               boolean callsEnqueueBytesHelper,
                               boolean imageIoReadRemoved,

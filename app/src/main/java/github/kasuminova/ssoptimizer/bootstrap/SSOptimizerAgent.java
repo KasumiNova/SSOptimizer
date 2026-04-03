@@ -52,6 +52,7 @@ public final class SSOptimizerAgent {
         LogNoiseFilterConfigurator.configure();
 
         BootstrapSearchInstaller.install(inst);
+        RemappedClasspathInstaller.install(inst);
 
         try {
             org.spongepowered.asm.launch.MixinBootstrap.init();
@@ -118,7 +119,6 @@ public final class SSOptimizerAgent {
         registerIf(transformer, "detailedsmoke", GameClassNames.DETAILED_SMOKE_PARTICLE, new EngineDetailedSmokeProcessor());
         registerIf(transformer, "generictextureparticle", GameClassNames.GENERIC_TEXTURE_PARTICLE, new EngineGenericTextureParticleProcessor());
         registerIf(transformer, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
-        registerIf(transformer, "parallelpreload", GameClassNames.PARALLEL_IMAGE_PRELOADER, new ParallelImagePreloadProcessor());
         registerIf(transformer, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
         registerIf(transformer, "textureobject", GameClassNames.TEXTURE_OBJECT, new TextureObjectBindProcessor());
         registerIf(transformer, "loadingtext", GameClassNames.LOADING_UTILS, new LoadingUtilsTextProcessor());

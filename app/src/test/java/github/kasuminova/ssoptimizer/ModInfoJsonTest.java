@@ -25,7 +25,8 @@ class ModInfoJsonTest {
                 () -> assertTrue(content.contains("\"version\""), "must have version field"),
                 () -> assertTrue(content.contains("\"gameVersion\""), "must have gameVersion field"),
                 () -> assertTrue(content.contains("\"jars\""), "must have jars field"),
-                () -> assertTrue(content.contains("\"modPlugin\""), "must have modPlugin field")
+                () -> assertTrue(content.contains("\"modPlugin\""), "must have modPlugin field"),
+                () -> assertTrue(content.contains("\"jars\": [\"jars/SSOptimizer.jar\"]"), "must point runtime jar to canonical SSOptimizer.jar")
         );
     }
 }

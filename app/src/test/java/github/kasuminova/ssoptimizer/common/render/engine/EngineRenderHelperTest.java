@@ -13,6 +13,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class EngineRenderHelperTest {
     @Test
+    void enablesExactAlphaNativePathForTranslucentEnginePasses() {
+        assertTrue(EngineRenderHelper.requiresExactAlphaNativePath(0.75f));
+        assertFalse(EngineRenderHelper.requiresExactAlphaNativePath(1.0f));
+    }
+
+    @Test
     void declaresBatchedStripNativeEntry() throws IOException {
         try (InputStream in = getClass().getClassLoader()
                                         .getResourceAsStream("github/kasuminova/ssoptimizer/common/render/engine/EngineRenderHelper.class")) {
@@ -24,7 +30,7 @@ class EngineRenderHelperTest {
                 public MethodVisitor visitMethod(int access, String name, String descriptor,
                                                  String signature, String[] exceptions) {
                     if ("nativeRenderEngineStripBatch".equals(name)
-                            && "(FFFFFIIFFFFFFIIIF)V".equals(descriptor)
+                            && "(FFFFFIIFFFFFFIIIFZ)V".equals(descriptor)
                             && (access & Opcodes.ACC_NATIVE) != 0) {
                         foundNative[0] = true;
                     }

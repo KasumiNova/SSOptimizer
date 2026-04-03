@@ -63,6 +63,7 @@ public final class LazyTextureManager {
     private static final boolean  DEFAULT_MINIMAL_STARTUP                     = true;
     private static final String   GRAPHICS_PREFIX                             = "graphics/";
     private static final String   FONTS_PREFIX                                = "graphics/fonts/";
+    private static final String   ORIGINAL_EAGER_LOAD_METHOD_NAME             = "ssoptimizer$loadTextureEager";
     private static final String   INSIGNIA_PREFIX                             = FONTS_PREFIX + "insignia";
     private static final String   ORBITRON_PREFIX                             = FONTS_PREFIX + "orbitron";
     private static final String   VICTOR_PREFIX                               = FONTS_PREFIX + "victor";
@@ -91,6 +92,7 @@ public final class LazyTextureManager {
     private static final    AtomicLong                                                   PENDING_EVICTED_TEXTURES            = new AtomicLong();
     private static final    Object                                                       CONTEXT_GENERATION_LOCK             = new Object();
     private static final    Method                                                       EAGER_PATH_LOAD_METHOD              = resolveEagerLoadMethod();
+    private static final    Method                                                       IN_PLACE_LOAD_METHOD                = resolveInPlaceLoadMethod();
     private static final    Method                                                       ORIGINAL_LAZY_MODE_METHOD           = resolveOriginalLazyModeMethod();
     private static final    Method                                                       RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
     private static final    Method                                                       RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
@@ -144,7 +146,7 @@ public final class LazyTextureManager {
     }
 
     public static com.fs.graphics.TextureObject loadTexture(final TextureLoader loader,
-                                                            final HashMap textureCache,
+                                                            final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                                             final String resourcePath) throws IOException {
         final com.fs.graphics.TextureObject cached = (com.fs.graphics.TextureObject) textureCache.get(resourcePath);
         if (cached != null) {
@@ -230,7 +232,6 @@ public final class LazyTextureManager {
             return currentTextureId;
         }
 
-        final ManagedTextureEntry entry = MANAGED_TEXTURES.get(texture);
         final long now = System.nanoTime();
         final int ensuredTextureId = ensureTextureReady(texture, target, now, true);
         maybeSweepIdleTextures(texture, now);
@@ -466,10 +467,15 @@ public final class LazyTextureManager {
     }
 
     private static com.fs.graphics.TextureObject eagerLoad(final TextureLoader loader,
-                                                           final HashMap textureCache,
+                                                           final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                                            final String resourcePath) throws IOException {
+        final Method eagerLoadMethod = EAGER_PATH_LOAD_METHOD;
+        if (eagerLoadMethod == null) {
+            throw new IOException("Unable to resolve TextureLoader eager load method for " + resourcePath);
+        }
+
         try {
-            final com.fs.graphics.TextureObject texture = (com.fs.graphics.TextureObject) EAGER_PATH_LOAD_METHOD.invoke(
+            final com.fs.graphics.TextureObject texture = (com.fs.graphics.TextureObject) eagerLoadMethod.invoke(
                     loader,
                     resourcePath
             );
@@ -873,12 +879,17 @@ public final class LazyTextureManager {
     private static void reloadTextureInPlace(final com.fs.graphics.TextureObject texture,
                                              final int target,
                                              final String resourcePath) throws IOException {
+        final Method inPlaceLoadMethod = IN_PLACE_LOAD_METHOD;
+        if (inPlaceLoadMethod == null) {
+            throw new IOException("Unable to resolve TextureLoader in-place load method for " + resourcePath);
+        }
+
         final IntBuffer ids = BufferUtils.createIntBuffer(1);
         GL11.glGenTextures(ids);
         setTextureId(texture, ids.get(0));
 
         try {
-            EAGER_PATH_LOAD_METHOD.invoke(
+            inPlaceLoadMethod.invoke(
                     new TextureLoader(),
                     texture,
                     resourcePath,
@@ -1177,11 +1188,40 @@ public final class LazyTextureManager {
 
     private static Method resolveEagerLoadMethod() {
         try {
-            final Method method = TextureLoader.class.getDeclaredMethod("loadTexture", String.class);
+            final Method method = TextureLoader.class.getDeclaredMethod(ORIGINAL_EAGER_LOAD_METHOD_NAME, String.class);
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException e) {
-            throw new IllegalStateException("Unable to resolve TextureLoader eager load method", e);
+            try {
+                final Method fallback = TextureLoader.class.getDeclaredMethod("loadTexture", String.class);
+                fallback.setAccessible(true);
+                LOGGER.warn("[SSOptimizer] Falling back to patched TextureLoader.loadTexture(String); eager alias missing", e);
+                return fallback;
+            } catch (NoSuchMethodException fallbackException) {
+                throw new IllegalStateException("Unable to resolve TextureLoader eager load method", fallbackException);
+            }
+        }
+    }
+
+    private static Method resolveInPlaceLoadMethod() {
+        try {
+            final Method method = findDeclaredMethod(
+                    TextureLoader.class,
+                    com.fs.graphics.TextureObject.class,
+                    false,
+                    com.fs.graphics.TextureObject.class,
+                    String.class,
+                    int.class,
+                    int.class,
+                    int.class,
+                    int.class,
+                    boolean.class
+            );
+            method.setAccessible(true);
+            return method;
+        } catch (NoSuchMethodException e) {
+            LOGGER.warn("[SSOptimizer] Could not resolve TextureLoader in-place load method", e);
+            return null;
         }
     }
 
