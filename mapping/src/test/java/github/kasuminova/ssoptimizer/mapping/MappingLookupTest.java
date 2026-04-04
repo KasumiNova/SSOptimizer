@@ -87,6 +87,42 @@ class MappingLookupTest {
         assertEquals("Ò00000", methodEntry.obfuscatedName());
     }
 
+        @Test
+        void saveProgressMappingsCanBeResolvedByNamedName() {
+        MappingEntry dialogClass = lookup.requireClassByNamedName("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog");
+        MappingEntry reportProgress = lookup.requireMethodByNamedName(
+            "com/fs/starfarer/campaign/save/CampaignSaveProgressDialog",
+            "reportProgress",
+            "(Ljava/lang/String;F)V");
+        MappingEntry streamField = lookup.requireFieldByNamedName(
+            "com/fs/starfarer/util/SaveProgressOutputStream",
+            "writtenBytes");
+
+        assertEquals("com/fs/starfarer/campaign/save/B", dialogClass.obfuscatedName());
+        assertEquals("o00000", reportProgress.obfuscatedName());
+        assertEquals("String", streamField.obfuscatedName());
+        }
+
+        @Test
+        void renderAndSettingsHelperMappingsRemainQueryable() {
+        MappingEntry beginOverlay = lookup.requireMethodByNamedName(
+            "com/fs/graphics/util/RenderStateUtils",
+            "beginScreenOverlay",
+            "(FFFFF)V");
+        MappingEntry endOverlay = lookup.requireMethodByNamedName(
+            "com/fs/graphics/util/RenderStateUtils",
+            "endScreenOverlay",
+            "()V");
+        MappingEntry getBoolean = lookup.requireMethodByNamedName(
+            "com/fs/starfarer/settings/StarfarerSettings",
+            "getBoolean",
+            "(Ljava/lang/String;)Z");
+
+        assertEquals("o00000", beginOverlay.obfuscatedName());
+        assertEquals("class", endOverlay.obfuscatedName());
+        assertEquals("Õ00000", getBoolean.obfuscatedName());
+        }
+
     @Test
     void missingMethodMappingReportsReadableError() {
         MappingLookup lookup = new MappingLookup(TinyV2MappingRepository.loadDefault());

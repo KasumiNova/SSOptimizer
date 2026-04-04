@@ -34,6 +34,7 @@ dependencies {
     implementation("org.ow2.asm:asm-commons:9.9.1")
     implementation("org.ow2.asm:asm-tree:9.9.1")
     implementation("it.unimi.dsi:fastutil:8.5.18")
+    implementation("org.jctools:jctools-core:4.0.5")
     implementation("net.fabricmc:sponge-mixin:0.15.4+mixin.0.8.7")
     implementation("com.github.luben:zstd-jni:1.5.7-3")
     compileOnly("log4j:log4j:1.2.17")
@@ -96,6 +97,7 @@ dependencies {
     "docsTestRuntimeOnly"("org.junit.platform:junit-platform-launcher:1.13.0")
 
     "jmhImplementation"("org.openjdk.jmh:jmh-core:1.37")
+    "jmhImplementation"("org.glassfish.jaxb:txw2:3.0.2")
     "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.37")
     "jmhRuntimeOnly"("log4j:log4j:1.2.17")
 }
@@ -123,9 +125,23 @@ tasks.register<JavaExec>("jmh") {
     val measurementTime = providers.gradleProperty("jmhMeasurementTime").orElse("300ms")
     val forks = providers.gradleProperty("jmhForks").orElse("1")
     val timeUnit = providers.gradleProperty("jmhTimeUnit").orElse("us")
+    val jmhCorpus = providers.gradleProperty("jmhCorpus").orNull
+    val jmhQueueCapacity = providers.gradleProperty("jmhQueueCapacity").orNull
+    val jmhBatchSize = providers.gradleProperty("jmhBatchSize").orNull
+    val jmhSaveCorpusDir = providers.gradleProperty("jmhSaveCorpusDir").orNull
     val nativeLibraryPath = providers.gradleProperty("jmhNativePath").orElse(
         layout.projectDirectory.file("../native/build/lib/main/debug/${System.mapLibraryName("native")}").asFile.absolutePath
     )
+    val extraArgs = mutableListOf<String>()
+    if (jmhCorpus != null) {
+        extraArgs += listOf("-p", "corpus=$jmhCorpus")
+    }
+    if (jmhQueueCapacity != null) {
+        extraArgs += listOf("-p", "queueCapacity=$jmhQueueCapacity")
+    }
+    if (jmhBatchSize != null) {
+        extraArgs += listOf("-p", "batchSize=$jmhBatchSize")
+    }
     args(
         includePattern.get(),
         "-wi", warmupIterations.get(),
@@ -135,7 +151,9 @@ tasks.register<JavaExec>("jmh") {
         "-r", measurementTime.get(),
         "-bm", "avgt",
         "-tu", timeUnit.get(),
-        "-jvmArgsAppend", "-Dssoptimizer.native.path=${nativeLibraryPath.get()}"
+        "-jvmArgsAppend", "-Dssoptimizer.native.path=${nativeLibraryPath.get()}",
+        *if (jmhSaveCorpusDir != null) arrayOf("-jvmArgsAppend", "-Dssoptimizer.saveCorpusDir=$jmhSaveCorpusDir") else emptyArray(),
+        *extraArgs.toTypedArray()
     )
 }
 

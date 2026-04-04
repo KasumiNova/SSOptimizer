@@ -45,7 +45,14 @@ public final class GameClassNames {
     public static final String SOUND_MANAGER                       = "sound/SoundManager";
     public static final String SOUND_MANAGER_DOTTED                = "sound.SoundManager";
     public static final String RENDER_STATE_UTILS                  = "com/fs/graphics/util/RenderStateUtils";
+    public static final String RENDER_STATE_UTILS_DOTTED           = "com.fs.graphics.util.RenderStateUtils";
     public static final String LOADING_UTILS                       = "com/fs/starfarer/loading/LoadingUtils";
+    public static final String STARFARER_SETTINGS                  = "com/fs/starfarer/settings/StarfarerSettings";
+    public static final String STARFARER_SETTINGS_DOTTED           = "com.fs.starfarer.settings.StarfarerSettings";
+    public static final String CAMPAIGN_SAVE_PROGRESS_DIALOG       = "com/fs/starfarer/campaign/save/CampaignSaveProgressDialog";
+    public static final String CAMPAIGN_SAVE_PROGRESS_DIALOG_DOTTED = "com.fs.starfarer.campaign.save.CampaignSaveProgressDialog";
+    public static final String SAVE_PROGRESS_OUTPUT_STREAM         = "com/fs/starfarer/util/SaveProgressOutputStream";
+    public static final String SAVE_PROGRESS_OUTPUT_STREAM_DOTTED  = "com.fs.starfarer.util.SaveProgressOutputStream";
     public static final String LINUX_DISPLAY                       = "org/lwjgl/opengl/LinuxDisplay";
     public static final String LINUX_EVENT                         = "org/lwjgl/opengl/LinuxEvent";
     public static final String LINUX_KEYBOARD                      = "org/lwjgl/opengl/LinuxKeyboard";

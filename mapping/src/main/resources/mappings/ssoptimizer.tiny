@@ -80,8 +80,17 @@ c com/fs/starfarer/ui/B com/fs/starfarer/ui/TextFieldImpl
 c com/fs/starfarer/ui/O0Oo com/fs/starfarer/ui/FocusedComponentTracker
 	m Ó00000 getCurrentFocusedComponent ()Lcom/fs/starfarer/ui/S;
 c com/fs/starfarer/settings/StarfarerSettings$1 com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory
+ c com/fs/starfarer/settings/StarfarerSettings com/fs/starfarer/settings/StarfarerSettings
+	m Õ00000 getBoolean (Ljava/lang/String;)Z
 c com/fs/starfarer/loading/LoadingUtils com/fs/starfarer/loading/LoadingUtils
 	m super readText (Ljava/io/InputStream;)Ljava/lang/String;
+ c com/fs/starfarer/campaign/save/B com/fs/starfarer/campaign/save/CampaignSaveProgressDialog
+	f Ø00000 saveLabel Ljava/lang/String;
+	m o00000 reportProgress (Ljava/lang/String;F)V
+	m o00000 reportProgress (F)V
+ c com/fs/starfarer/util/do com/fs/starfarer/util/SaveProgressOutputStream
+	f String writtenBytes J
+	m o00000 getWrittenBytes ()J
 c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
 	f Óo0000 owner Lcom/fs/starfarer/combat/entities/ship/EngineOwner;
 	f õ00000 systemActivatedRenderingEnabled Z
@@ -129,6 +138,8 @@ c com/fs/starfarer/StarfarerLauncher com/fs/starfarer/StarfarerLauncher
 c com/fs/graphics/util/B com/fs/graphics/util/RenderStateUtils
 	m Ø00000 enableTextureClamp ()V
 	m new restoreTextureClamp ()V
+	m o00000 beginScreenOverlay (FFFFF)V
+	m class endScreenOverlay ()V
 	m Ó00000 adjustBrightness (Ljava/awt/Color;F)Ljava/awt/Color;
 	m o00000 blendColors (Ljava/awt/Color;Ljava/awt/Color;F)Ljava/awt/Color;
 c com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/util/ResourceLoader

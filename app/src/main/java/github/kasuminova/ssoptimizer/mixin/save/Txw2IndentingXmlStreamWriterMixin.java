@@ -5,6 +5,9 @@ import github.kasuminova.ssoptimizer.mixin.accessor.Txw2DelegatingXmlStreamWrite
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -20,6 +23,14 @@ import javax.xml.stream.XMLStreamWriter;
  */
 @Mixin(targets = "com.sun.xml.txw2.output.IndentingXMLStreamWriter")
 public abstract class Txw2IndentingXmlStreamWriterMixin {
+    @Inject(method = "<init>", at = @At("RETURN"), remap = false)
+    private void ssoptimizer$optimizeDelegateWriter(final XMLStreamWriter writer,
+                                                    final CallbackInfo callbackInfo) {
+        ((Txw2DelegatingXmlStreamWriterAccessor) (Object) this).ssoptimizer$setWriter(
+                Txw2CompactXmlWriterHelper.optimizeWriter(writer)
+        );
+    }
+
     @Unique
     private XMLStreamWriter ssoptimizer$delegateWriter() {
         return ((Txw2DelegatingXmlStreamWriterAccessor) (Object) this).ssoptimizer$getWriter();

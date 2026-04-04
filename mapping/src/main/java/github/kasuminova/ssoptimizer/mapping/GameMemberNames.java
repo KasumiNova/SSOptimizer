@@ -160,6 +160,8 @@ public final class GameMemberNames {
     public static final class RenderStateUtils {
         public static final String ENABLE_TEXTURE_CLAMP = method(GameClassNames.RENDER_STATE_UTILS, "enableTextureClamp", "()V");
         public static final String RESTORE_TEXTURE_CLAMP = method(GameClassNames.RENDER_STATE_UTILS, "restoreTextureClamp", "()V");
+        public static final String BEGIN_SCREEN_OVERLAY = method(GameClassNames.RENDER_STATE_UTILS, "beginScreenOverlay", "(FFFFF)V");
+        public static final String END_SCREEN_OVERLAY = method(GameClassNames.RENDER_STATE_UTILS, "endScreenOverlay", "()V");
         public static final String ADJUST_BRIGHTNESS = method(
                 GameClassNames.RENDER_STATE_UTILS,
                 "adjustBrightness",
@@ -170,6 +172,41 @@ public final class GameMemberNames {
             "(Ljava/awt/Color;Ljava/awt/Color;F)Ljava/awt/Color;");
 
         private RenderStateUtils() {
+        }
+    }
+
+    public static final class StarfarerSettings {
+        public static final String GET_BOOLEAN = method(
+                GameClassNames.STARFARER_SETTINGS,
+                "getBoolean",
+                "(Ljava/lang/String;)Z");
+
+        private StarfarerSettings() {
+        }
+    }
+
+    public static final class CampaignSaveProgressDialog {
+        public static final String REPORT_PROGRESS_WITH_TEXT = method(
+                GameClassNames.CAMPAIGN_SAVE_PROGRESS_DIALOG,
+                "reportProgress",
+                "(Ljava/lang/String;F)V");
+        public static final String REPORT_PROGRESS = method(
+                GameClassNames.CAMPAIGN_SAVE_PROGRESS_DIALOG,
+                "reportProgress",
+                "(F)V");
+
+        private CampaignSaveProgressDialog() {
+        }
+    }
+
+    public static final class SaveProgressOutputStream {
+        public static final String WRITTEN_BYTES = field(GameClassNames.SAVE_PROGRESS_OUTPUT_STREAM, "writtenBytes");
+        public static final String GET_WRITTEN_BYTES = method(
+                GameClassNames.SAVE_PROGRESS_OUTPUT_STREAM,
+                "getWrittenBytes",
+                "()J");
+
+        private SaveProgressOutputStream() {
         }
     }
 

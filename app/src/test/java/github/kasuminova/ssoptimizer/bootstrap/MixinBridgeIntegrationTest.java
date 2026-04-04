@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MixinBridgeIntegrationTest {
     private static final String JANINO_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/loading/script/JaninoScriptCompilerCoordinator";
     private static final String SOUND_COORDINATOR_OWNER  = "github/kasuminova/ssoptimizer/common/loading/sound/ParallelSoundLoadCoordinator";
+    private static final String SAVE_OVERLAY_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/save/SaveProgressOverlayCoordinator";
     private static final String TXW2_ACCESSOR_INTERFACE = "github/kasuminova/ssoptimizer/mixin/accessor/Txw2DelegatingXmlStreamWriterAccessor";
     private static final String TXW2_COMPACT_WRITER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/Txw2CompactXmlWriterHelper";
     private static final String XSTREAM_FIELD_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldDictionaryLookupCache";
@@ -292,8 +293,48 @@ class MixinBridgeIntegrationTest {
         );
 
         assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, TXW2_COMPACT_WRITER_HELPER_OWNER, "optimizeWriter"));
         assertTrue(containsMethodInvocation(transformed, TXW2_COMPACT_WRITER_HELPER_OWNER, "writeStartElement"));
         assertTrue(containsMethodInvocation(transformed, TXW2_COMPACT_WRITER_HELPER_OWNER, "writeEndElement"));
+    }
+
+    @Test
+    void bridgeAppliesSaveDialogMixinToObfuscatedRuntimeClass() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog.class"));
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/fs/starfarer/campaign/save/B",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, SAVE_OVERLAY_COORDINATOR_OWNER, "attachSaveLabel"));
+        assertTrue(containsMethodInvocation(transformed, SAVE_OVERLAY_COORDINATOR_OWNER, "reportProgress"));
+        assertTrue(containsMethodInvocation(transformed, SAVE_OVERLAY_COORDINATOR_OWNER, "isReplayInProgress"));
+        assertTrue(containsMethodInvocation(transformed, SAVE_OVERLAY_COORDINATOR_OWNER, "hasActiveOpenGlContext"));
+    }
+
+    @Test
+    void bridgeAppliesSaveOutputStreamMixinToObfuscatedRuntimeClass() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/util/SaveProgressOutputStream.class"));
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/fs/starfarer/util/do",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, SAVE_OVERLAY_COORDINATOR_OWNER, "beginStreamPhase"));
+        assertTrue(containsMethodInvocation(transformed, SAVE_OVERLAY_COORDINATOR_OWNER, "onBytesWritten"));
+        assertTrue(containsMethodInvocation(transformed, SAVE_OVERLAY_COORDINATOR_OWNER, "complete"));
     }
 
     @Test

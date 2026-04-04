@@ -14,6 +14,8 @@
     "loading.ParallelImagePreloaderMixin",
     "loading.SoundManagerMixin",
     "render.EngineRenderMixin",
+    "save.CampaignSaveProgressDialogMixin",
+    "save.CampaignSaveProgressOutputStreamMixin",
     "save.Txw2IndentingXmlStreamWriterMixin",
     "save.XStreamFieldDictionaryMixin",
     "save.XStreamFieldsMixin",

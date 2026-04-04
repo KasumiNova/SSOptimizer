@@ -13,7 +13,43 @@ import javax.xml.stream.XMLStreamWriter;
  * 注：该辅助类只改变输出格式的人类可读性，不改变 XML 结构和标签顺序。
  */
 public final class Txw2CompactXmlWriterHelper {
+    /**
+     * 禁用 txw2 批量队列写入器的系统属性。
+     */
+    public static final String DISABLE_QUEUED_WRITER_PROPERTY = "ssoptimizer.disable.txw2.queuedwriter";
+
+    /**
+     * 自定义 txw2 批量队列事件容量的系统属性。
+     */
+    public static final String QUEUED_WRITER_QUEUE_CAPACITY_PROPERTY = "ssoptimizer.txw2.queuedwriter.queuecapacity";
+
+    /**
+     * 自定义 txw2 批量队列批大小的系统属性。
+     */
+    public static final String QUEUED_WRITER_BATCH_SIZE_PROPERTY = "ssoptimizer.txw2.queuedwriter.batchsize";
+
+    private static final int DEFAULT_QUEUE_CAPACITY = 16_384;
+    private static final int DEFAULT_BATCH_SIZE = 256;
+
     private Txw2CompactXmlWriterHelper() {
+    }
+
+    /**
+     * 按当前系统属性将底层写入器升级为批量队列写入器。
+     *
+     * @param writer 原始 XML 写入器
+     * @return 若启用则返回包装后的队列写入器；否则返回原始写入器
+     */
+    public static XMLStreamWriter optimizeWriter(final XMLStreamWriter writer) {
+        if (Boolean.getBoolean(DISABLE_QUEUED_WRITER_PROPERTY) || writer instanceof QueuedXmlStreamWriter) {
+            return writer;
+        }
+
+        return new QueuedXmlStreamWriter(
+                writer,
+                intProperty(QUEUED_WRITER_QUEUE_CAPACITY_PROPERTY, DEFAULT_QUEUE_CAPACITY, 256),
+                intProperty(QUEUED_WRITER_BATCH_SIZE_PROPERTY, DEFAULT_BATCH_SIZE, 16)
+        );
     }
 
     /**
@@ -145,4 +181,20 @@ public final class Txw2CompactXmlWriterHelper {
     public static void writeEndElement(final XMLStreamWriter writer) throws XMLStreamException {
         writer.writeEndElement();
     }
+
+    private static int intProperty(final String propertyName,
+                                   final int defaultValue,
+                                   final int minValue) {
+        final String raw = System.getProperty(propertyName);
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+
+        try {
+            return Math.max(minValue, Integer.parseInt(raw));
+        } catch (final NumberFormatException ignored) {
+            return defaultValue;
+        }
+    }
+
 }
