@@ -11,3 +11,5 @@ out/
 .DS_Store
 hs_err_pid*
 .github/superpower/
+bin/
+app/ssoptimizer-texture-composition.tsv

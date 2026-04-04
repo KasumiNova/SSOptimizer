@@ -177,21 +177,40 @@ import sys
 log_paths = [pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])]
 exception_name = sys.argv[3]
 relevant_token = "github.kasuminova.ssoptimizer."
-launcher_only_token = "github.kasuminova.ssoptimizer.launcher.LauncherDirectStarter"
+launcher_only_tokens = {
+    "github.kasuminova.ssoptimizer.launcher.LauncherDirectStarter",
+    "github.kasuminova.ssoptimizer.common.launcher.LauncherDirectStarter",
+}
+ignored_class_not_found_tokens = (
+    "org.magiclib.achievements.MagicAchievementManager",
+    "org.magiclib.Magic_modPlugin",
+)
 
 exception_pattern = re.compile(re.escape(exception_name))
 
+def is_launcher_only_line(line):
+    return any(token in line for token in launcher_only_tokens)
+
+def is_ignored_block(block_lines):
+    if exception_name != "ClassNotFoundException":
+        return False
+    joined = "\n".join(block_lines)
+    return all(token in joined for token in ignored_class_not_found_tokens)
+
 def is_relevant_block(block_lines):
+    if is_ignored_block(block_lines):
+        return False
+
     joined = "\n".join(block_lines)
     if relevant_token not in joined:
         return False
 
     for line in block_lines:
-        if relevant_token in line and launcher_only_token not in line:
+        if relevant_token in line and not is_launcher_only_line(line):
             return True
 
     first_line = block_lines[0] if block_lines else ""
-    return relevant_token in first_line and launcher_only_token not in first_line
+    return relevant_token in first_line and not is_launcher_only_line(first_line)
 
 for path in log_paths:
     if not path.exists():
@@ -228,19 +247,38 @@ import sys
 log_paths = [pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])]
 exception_name = sys.argv[3]
 relevant_token = "github.kasuminova.ssoptimizer."
-launcher_only_token = "github.kasuminova.ssoptimizer.launcher.LauncherDirectStarter"
+launcher_only_tokens = {
+    "github.kasuminova.ssoptimizer.launcher.LauncherDirectStarter",
+    "github.kasuminova.ssoptimizer.common.launcher.LauncherDirectStarter",
+}
+ignored_class_not_found_tokens = (
+    "org.magiclib.achievements.MagicAchievementManager",
+    "org.magiclib.Magic_modPlugin",
+)
 
 exception_pattern = re.compile(re.escape(exception_name))
 
+def is_launcher_only_line(line):
+    return any(token in line for token in launcher_only_tokens)
+
+def is_ignored_block(block_lines):
+    if exception_name != "ClassNotFoundException":
+        return False
+    joined = "\n".join(block_lines)
+    return all(token in joined for token in ignored_class_not_found_tokens)
+
 def is_relevant_block(block_lines):
+    if is_ignored_block(block_lines):
+        return False
+
     joined = "\n".join(block_lines)
     if relevant_token not in joined:
         return False
     for line in block_lines:
-        if relevant_token in line and launcher_only_token not in line:
+        if relevant_token in line and not is_launcher_only_line(line):
             return True
     first_line = block_lines[0] if block_lines else ""
-    return relevant_token in first_line and launcher_only_token not in first_line
+    return relevant_token in first_line and not is_launcher_only_line(first_line)
 
 for path in log_paths:
     if not path.exists():
