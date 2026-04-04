@@ -28,6 +28,12 @@ public abstract class XStreamReferenceByIdMarshallerMixin {
     @Unique
     private int ssoptimizer$nextReferenceId;
 
+    @Unique
+    private boolean ssoptimizer$idAliasInitialized;
+
+    @Unique
+    private String ssoptimizer$idAttributeAlias;
+
     /**
      * 为当前对象生成引用 key。
      *
@@ -64,5 +70,24 @@ public abstract class XStreamReferenceByIdMarshallerMixin {
     protected String createReference(final Path path,
                                      final Object item) {
         return item instanceof String string ? string : item.toString();
+    }
+
+    /**
+     * 在当前节点上写入有效引用 ID。
+     *
+     * @param item 当前对象对应的引用 key
+     * @author GitHub Copilot
+     * @reason 缓存 mapper 对系统属性 `id` 的别名解析结果，并在优化路径下直接写入字符串引用值，减少保存阶段的重复查表与分派成本。
+     */
+    @Overwrite(remap = false)
+    protected void fireValidReference(final Object item) {
+        if (!ssoptimizer$idAliasInitialized) {
+            ssoptimizer$idAttributeAlias = XStreamReferenceIdHelper.resolveIdAttributeAlias(this);
+            ssoptimizer$idAliasInitialized = true;
+        }
+        if (ssoptimizer$idAttributeAlias == null) {
+            return;
+        }
+        XStreamReferenceIdHelper.writeReferenceIdAttribute(this, ssoptimizer$idAttributeAlias, item);
     }
 }

@@ -300,6 +300,8 @@ class MixinBridgeIntegrationTest {
         assertNotNull(transformed);
         assertTrue(containsMethodInvocation(transformed, XSTREAM_REFERENCE_ID_HELPER_OWNER, "supportsOptimizedIds"));
         assertTrue(containsMethodInvocation(transformed, XSTREAM_REFERENCE_ID_HELPER_OWNER, "nextReferenceId"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_REFERENCE_ID_HELPER_OWNER, "resolveIdAttributeAlias"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_REFERENCE_ID_HELPER_OWNER, "writeReferenceIdAttribute"));
     }
 
     @Test

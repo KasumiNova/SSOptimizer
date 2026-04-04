@@ -1,5 +1,8 @@
 package github.kasuminova.ssoptimizer.common.save;
 
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import com.thoughtworks.xstream.mapper.Mapper;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
@@ -18,6 +21,9 @@ public final class XStreamReferenceIdHelper {
 
     private static final Class<?> SEQUENCE_GENERATOR_CLASS = resolveSequenceGeneratorClass();
     private static final VarHandle SEQUENCE_COUNTER_HANDLE = resolveSequenceCounterHandle();
+    private static final Class<?> TREE_MARSHALLER_CLASS = resolveTreeMarshallerClass();
+    private static final VarHandle TREE_MARSHALLER_MAPPER_HANDLE = resolveTreeMarshallerMapperHandle();
+    private static final VarHandle TREE_MARSHALLER_WRITER_HANDLE = resolveTreeMarshallerWriterHandle();
 
     private XStreamReferenceIdHelper() {
     }
@@ -58,6 +64,34 @@ public final class XStreamReferenceIdHelper {
         return toCompactString(value);
     }
 
+    /**
+     * 解析当前 marshaller 对系统属性 {@code id} 的别名。
+     *
+     * @param marshaller XStream 引用 marshaller
+     * @return 当前 mapper 配置下的 `id` 属性别名；若不可用则返回 {@code null}
+     */
+    public static String resolveIdAttributeAlias(final Object marshaller) {
+        final Mapper mapper = readMapper(marshaller);
+        return mapper == null ? null : mapper.aliasForSystemAttribute("id");
+    }
+
+    /**
+     * 直接向当前 marshaller 绑定的 writer 写入引用 ID 属性。
+     *
+     * @param marshaller XStream 引用 marshaller
+     * @param attributeName 属性名
+     * @param item 属性值对象
+     */
+    public static void writeReferenceIdAttribute(final Object marshaller,
+                                                 final String attributeName,
+                                                 final Object item) {
+        final HierarchicalStreamWriter writer = readWriter(marshaller);
+        if (writer == null || attributeName == null) {
+            return;
+        }
+        writer.addAttribute(attributeName, item instanceof String string ? string : item.toString());
+    }
+
     static String toCompactString(final int value) {
         if (value < 0) {
             throw new IllegalArgumentException("Reference id must be non-negative: " + value);
@@ -85,6 +119,14 @@ public final class XStreamReferenceIdHelper {
         }
     }
 
+    private static Class<?> resolveTreeMarshallerClass() {
+        try {
+            return Class.forName("com.thoughtworks.xstream.core.TreeMarshaller");
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
     private static VarHandle resolveSequenceCounterHandle() {
         final Class<?> generatorClass = SEQUENCE_GENERATOR_CLASS;
         if (generatorClass == null) {
@@ -97,5 +139,49 @@ public final class XStreamReferenceIdHelper {
         } catch (ReflectiveOperationException e) {
             return null;
         }
+    }
+
+    private static VarHandle resolveTreeMarshallerMapperHandle() {
+        final Class<?> treeMarshallerClass = TREE_MARSHALLER_CLASS;
+        if (treeMarshallerClass == null) {
+            return null;
+        }
+
+        try {
+            return MethodHandles.privateLookupIn(treeMarshallerClass, MethodHandles.lookup())
+                    .findVarHandle(treeMarshallerClass, "mapper", Mapper.class);
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    private static VarHandle resolveTreeMarshallerWriterHandle() {
+        final Class<?> treeMarshallerClass = TREE_MARSHALLER_CLASS;
+        if (treeMarshallerClass == null) {
+            return null;
+        }
+
+        try {
+            return MethodHandles.privateLookupIn(treeMarshallerClass, MethodHandles.lookup())
+                    .findVarHandle(treeMarshallerClass, "writer", HierarchicalStreamWriter.class);
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    private static Mapper readMapper(final Object marshaller) {
+        final VarHandle handle = TREE_MARSHALLER_MAPPER_HANDLE;
+        if (handle == null || marshaller == null) {
+            return null;
+        }
+        return (Mapper) handle.get(marshaller);
+    }
+
+    private static HierarchicalStreamWriter readWriter(final Object marshaller) {
+        final VarHandle handle = TREE_MARSHALLER_WRITER_HANDLE;
+        if (handle == null || marshaller == null) {
+            return null;
+        }
+        return (HierarchicalStreamWriter) handle.get(marshaller);
     }
 }
