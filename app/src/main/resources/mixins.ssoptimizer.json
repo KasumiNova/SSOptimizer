@@ -20,6 +20,7 @@
     "save.HyperspaceAutomatonMixin",
     "save.Txw2IndentingXmlStreamWriterMixin",
     "save.XStreamDefaultConverterLookupMixin",
+    "save.XStreamReferenceByIdMarshallerMixin",
     "save.XStreamFieldAliasingMapperMixin",
     "save.XStreamFieldDictionaryMixin",
     "save.XStreamFieldsMixin",

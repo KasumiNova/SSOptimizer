@@ -19,6 +19,7 @@ class MixinBridgeTransformerTest {
         assertFalse(MixinBridgeTransformer.shouldSkipClass("com/sun/xml/txw2/output/DelegatingXMLStreamWriter"));
         assertFalse(MixinBridgeTransformer.shouldSkipClass("com/sun/xml/txw2/output/IndentingXMLStreamWriter"));
         assertFalse(MixinBridgeTransformer.shouldSkipClass("com/thoughtworks/xstream/core/DefaultConverterLookup"));
+        assertFalse(MixinBridgeTransformer.shouldSkipClass("com/thoughtworks/xstream/core/ReferenceByIdMarshaller"));
         assertFalse(MixinBridgeTransformer.shouldSkipClass("com/thoughtworks/xstream/mapper/FieldAliasingMapper"));
         assertFalse(MixinBridgeTransformer.shouldSkipClass("com/thoughtworks/xstream/converters/reflection/FieldDictionary"));
         assertFalse(MixinBridgeTransformer.shouldSkipClass("org/codehaus/janino/JavaSourceClassLoader"));

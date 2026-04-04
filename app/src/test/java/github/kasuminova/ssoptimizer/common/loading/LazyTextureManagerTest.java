@@ -12,6 +12,7 @@ class LazyTextureManagerTest {
     @AfterEach
     void tearDown() {
         System.clearProperty(LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY);
+        System.clearProperty(LazyTextureManager.PREVIEW_PROTECT_MILLIS_PROPERTY);
         System.clearProperty(LazyTextureManager.MINIMAL_STARTUP_PROPERTY);
         System.clearProperty(LazyTextureManager.TRACK_MIN_GPU_BYTES_PROPERTY);
         System.clearProperty(LazyTextureManager.COMPOSITION_REPORT_FILE_PROPERTY);
@@ -96,6 +97,21 @@ class LazyTextureManagerTest {
         System.setProperty(LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY, "0");
 
         assertEquals(0L, LazyTextureManager.idleUnloadMillis());
+    }
+
+    @Test
+    void previewSensitiveTexturesUseExtendedIdleGraceWindow() {
+        System.setProperty(LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY, "60000");
+        System.setProperty(LazyTextureManager.PREVIEW_PROTECT_MILLIS_PROPERTY, "240000");
+
+        assertTrue(LazyTextureManager.isPreviewProtectedTexture("graphics/ships/frigate.png"));
+        assertTrue(LazyTextureManager.isPreviewProtectedTexture("graphics/stations/battlestation.png"));
+        assertTrue(LazyTextureManager.isPreviewProtectedTexture("graphics/weapons/railgun.png"));
+        assertFalse(LazyTextureManager.isPreviewProtectedTexture("graphics/portraits/captain.png"));
+
+        assertEquals(240_000L, LazyTextureManager.effectiveIdleUnloadMillis("graphics/ships/frigate.png"));
+        assertEquals(240_000L, LazyTextureManager.effectiveIdleUnloadMillis("graphics/weapons/railgun.png"));
+        assertEquals(60_000L, LazyTextureManager.effectiveIdleUnloadMillis("graphics/portraits/captain.png"));
     }
 
     @Test

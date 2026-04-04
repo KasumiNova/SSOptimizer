@@ -38,6 +38,7 @@ public final class LazyTextureManager {
     static final         String   MIN_GPU_BYTES_PROPERTY                      = "ssoptimizer.lazytextureupload.minbytes";
     static final         String   TRACK_MIN_GPU_BYTES_PROPERTY                = "ssoptimizer.lazytextureupload.trackminbytes";
     static final         String   IDLE_UNLOAD_MILLIS_PROPERTY                 = "ssoptimizer.lazytextureupload.idleunloadmillis";
+    static final         String   PREVIEW_PROTECT_MILLIS_PROPERTY             = "ssoptimizer.lazytextureupload.previewprotectmillis";
     static final         String   SWEEP_INTERVAL_MILLIS_PROPERTY              = "ssoptimizer.lazytextureupload.sweepintervalmillis";
     static final         String   COMPOSITION_REPORT_INTERVAL_MILLIS_PROPERTY = "ssoptimizer.texturecomposition.reportintervalmillis";
     static final         String   MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY     = "ssoptimizer.texturemanager.logintervalmillis";
@@ -56,6 +57,7 @@ public final class LazyTextureManager {
     private static final long     DEFAULT_MIN_GPU_BYTES                       = 1L << 20;
     private static final long     DEFAULT_TRACK_MIN_GPU_BYTES                 = 64L << 10;
     private static final long     DEFAULT_IDLE_UNLOAD_MILLIS                  = 60_000L;
+    private static final long     DEFAULT_PREVIEW_PROTECT_MILLIS              = 300_000L;
     private static final long     DEFAULT_SWEEP_INTERVAL_MILLIS               = 1_000L;
     private static final long     DEFAULT_COMPOSITION_REPORT_INTERVAL_MILLIS  = 5_000L;
     private static final long     DEFAULT_MANAGEMENT_LOG_INTERVAL_MILLIS      = 15_000L;
@@ -66,6 +68,11 @@ public final class LazyTextureManager {
     private static final String   INSIGNIA_PREFIX                             = FONTS_PREFIX + "insignia";
     private static final String   ORBITRON_PREFIX                             = FONTS_PREFIX + "orbitron";
     private static final String   VICTOR_PREFIX                               = FONTS_PREFIX + "victor";
+    private static final String[] PREVIEW_PROTECTED_PREFIXES                  = {
+            "graphics/ships/",
+            "graphics/stations/",
+            "graphics/weapons/"
+    };
     private static final String[] EAGER_PREFIXES                              = {
             "graphics/icons/",
             "graphics/ui/",
@@ -319,6 +326,17 @@ public final class LazyTextureManager {
         return Math.max(0L, Long.getLong(IDLE_UNLOAD_MILLIS_PROPERTY, DEFAULT_IDLE_UNLOAD_MILLIS));
     }
 
+    static long effectiveIdleUnloadMillis(final String resourcePath) {
+        final long baseIdleMillis = idleUnloadMillis();
+        if (!isPreviewProtectedTexture(resourcePath)) {
+            return baseIdleMillis;
+        }
+
+        final long protectedMillis = Math.max(0L,
+                Long.getLong(PREVIEW_PROTECT_MILLIS_PROPERTY, DEFAULT_PREVIEW_PROTECT_MILLIS));
+        return Math.max(baseIdleMillis, protectedMillis);
+    }
+
     private static long minimumGpuBytes() {
         final long configured = Long.getLong(MIN_GPU_BYTES_PROPERTY, DEFAULT_MIN_GPU_BYTES);
         return Math.max(262_144L, configured);
@@ -362,6 +380,16 @@ public final class LazyTextureManager {
                 && !isAlwaysEager(resourcePath);
     }
 
+    static boolean isPreviewProtectedTexture(final String resourcePath) {
+        final String normalized = normalizeResourcePath(resourcePath);
+        for (final String prefix : PREVIEW_PROTECTED_PREFIXES) {
+            if (normalized.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean isOriginalLazyModeEnabled() {
         final Method method = ORIGINAL_LAZY_MODE_METHOD;
         if (method == null) {
@@ -387,7 +415,6 @@ public final class LazyTextureManager {
         }
         nextSweepNanos = now + sweepIntervalMillis() * 1_000_000L;
 
-        final long idleNanos = idleMillis * 1_000_000L;
         int evicted = 0;
         synchronized (MANAGED_TEXTURES) {
             for (Map.Entry<com.fs.graphics.TextureObject, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
@@ -409,7 +436,8 @@ public final class LazyTextureManager {
                     entry.markPendingUpload();
                     continue;
                 }
-                if (now - entry.lastBindNanos() < idleNanos) {
+                final long candidateIdleNanos = effectiveIdleUnloadMillis(entry.resourcePath) * 1_000_000L;
+                if (now - entry.lastBindNanos() < candidateIdleNanos) {
                     continue;
                 }
 
