@@ -50,4 +50,19 @@ public abstract class XStreamReferenceByIdMarshallerMixin {
         }
         return generator.next(item);
     }
+
+    /**
+     * 将引用 key 格式化为真正写入 XML 的引用值。
+     *
+     * @param path 当前 XStream 路径
+     * @param item 引用 key
+     * @return 写入 XML 的引用字符串
+     * @author GitHub Copilot
+     * @reason 优化路径已经直接返回 String；这里优先走零额外分派的快速路径，并保留对非 String 自定义 key 的兼容回退。
+     */
+    @Overwrite(remap = false)
+    protected String createReference(final Path path,
+                                     final Object item) {
+        return item instanceof String string ? string : item.toString();
+    }
 }

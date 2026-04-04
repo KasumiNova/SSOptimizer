@@ -23,6 +23,7 @@ class XStreamReferenceIdHelperTest {
         assertEquals("10", XStreamReferenceIdHelper.toCompactString(36));
         assertEquals("11", XStreamReferenceIdHelper.toCompactString(37));
         assertEquals("100", XStreamReferenceIdHelper.toCompactString(36 * 36));
+        assertEquals("21", XStreamReferenceIdHelper.nextReferenceId(73));
     }
 
     @Test

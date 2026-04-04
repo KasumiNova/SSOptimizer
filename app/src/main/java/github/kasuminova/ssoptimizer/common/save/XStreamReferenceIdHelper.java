@@ -52,10 +52,10 @@ public final class XStreamReferenceIdHelper {
      * 创建新的紧凑引用 ID。
      *
      * @param value 顺序整数值
-     * @return 可安全放入 XStream 引用字典的紧凑 ID 对象
+     * @return 与原始 XStream 兼容的紧凑字符串 ID
      */
-    public static Object nextReferenceId(final int value) {
-        return new CompactReferenceId(value);
+    public static String nextReferenceId(final int value) {
+        return toCompactString(value);
     }
 
     static String toCompactString(final int value) {
@@ -96,27 +96,6 @@ public final class XStreamReferenceIdHelper {
                     .findVarHandle(generatorClass, "counter", int.class);
         } catch (ReflectiveOperationException e) {
             return null;
-        }
-    }
-
-    private static final class CompactReferenceId {
-        private final int value;
-        private String cachedString;
-
-        private CompactReferenceId(final int value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            final String cached = cachedString;
-            if (cached != null) {
-                return cached;
-            }
-
-            final String resolved = toCompactString(value);
-            cachedString = resolved;
-            return resolved;
         }
     }
 }
