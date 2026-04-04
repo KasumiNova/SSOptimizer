@@ -251,8 +251,8 @@ public final class OriginalGameFontOverrides {
                     List.of("Maple UI Bold.ttf", "MapleUI-Bold.otf", "Maple UI.ttf", "MapleUI.otf"),
                     List.of("Maple UI.ttf", "MapleUI.otf"),
                     List.of("Maple UI Bold.ttf", "MapleUI-Bold.otf"),
-                    List.of("victor-pixel.ttf"),
-                    List.of("ZpixEX2_EX.ttf", "MiSans-Medium.ttf", "font.ttf"),
+                    List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"),
+                    List.of("MiSans-Medium.ttf", "font.ttf"),
                     List.of("MiSans-Medium.ttf", "font.ttf")
             );
         }
@@ -263,8 +263,8 @@ public final class OriginalGameFontOverrides {
                 List.of("lte50549.ttf", "MiSans-Medium.ttf"),
                 List.of("orbitron-light.ttf", "MiSans-Medium.ttf"),
                 List.of("orbitron-bold.ttf", "MiSans-Medium.ttf"),
-                List.of("victor-pixel.ttf"),
-                List.of("ZpixEX2_EX.ttf", "MiSans-Medium.ttf", "font.ttf"),
+                List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"),
+                List.of("MiSans-Medium.ttf", "font.ttf"),
                 List.of("MiSans-Medium.ttf", "font.ttf")
         );
     }

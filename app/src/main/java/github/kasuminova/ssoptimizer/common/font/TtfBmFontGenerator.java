@@ -26,20 +26,23 @@ import java.util.List;
  * 支持高 DPI 缩放和完整 CJK 字符集。
  */
 final class TtfBmFontGenerator {
-    private static final Logger LOGGER                     = Logger.getLogger(TtfBmFontGenerator.class);
-    private static final int    SPACE_CODE_POINT           = ' ';
-    private static final int    LEFT_BRACE_CODE_POINT      = '{';
-    private static final int    RIGHT_BRACE_CODE_POINT     = '}';
-    private static final String PRIMARY_VISUAL_SAMPLE      = "HNM0";
-    private static final String PRIMARY_ADVANCE_SAMPLE     = "HNM0UI";
-    private static final String FALLBACK_VISUAL_SAMPLE     = "汉界测港";
-    private static final int    MAX_RUNTIME_PAGE_DIMENSION = 8192;
-    private static final int    MIN_RUNTIME_PAGE_STEP      = 64;
-    private static final int    MAX_RUNTIME_PAGE_STEP      = 512;
-    private static final float  MIN_PRIMARY_ADVANCE_SCALE  = 0.88f;
-    private static final float  MAX_PRIMARY_ADVANCE_SCALE  = 1.08f;
-    private static final float  MIN_FALLBACK_VISUAL_SCALE  = 0.88f;
-    private static final float  MAX_FALLBACK_VISUAL_SCALE  = 1.36f;
+    private static final Logger LOGGER                          = Logger.getLogger(TtfBmFontGenerator.class);
+    private static final int    SPACE_CODE_POINT                = ' ';
+    private static final int    LEFT_BRACE_CODE_POINT           = '{';
+    private static final int    RIGHT_BRACE_CODE_POINT          = '}';
+    private static final String PRIMARY_VISUAL_SAMPLE           = "HNM0";
+    private static final String PRIMARY_ADVANCE_SAMPLE          = "HNM0UI";
+    private static final String FALLBACK_VISUAL_SAMPLE          = "汉界测港";
+    private static final String VICTOR_PRIMARY_SAMPLE           = "ABMWQJ";
+    private static final int    MAX_RUNTIME_PAGE_DIMENSION      = 8192;
+    private static final int    MIN_RUNTIME_PAGE_STEP           = 64;
+    private static final int    MAX_RUNTIME_PAGE_STEP           = 512;
+    private static final float  MIN_PRIMARY_ADVANCE_SCALE       = 0.88f;
+    private static final float  MAX_PRIMARY_ADVANCE_SCALE       = 1.08f;
+    private static final float  MIN_FALLBACK_VISUAL_SCALE       = 0.88f;
+    private static final float  MAX_FALLBACK_VISUAL_SCALE       = 1.36f;
+    private static final float  MIN_VICTOR_PRIMARY_VISUAL_SCALE = 0.94f;
+    private static final float  MAX_VICTOR_PRIMARY_VISUAL_SCALE = 1.24f;
 
     private TtfBmFontGenerator() {
     }
@@ -159,17 +162,21 @@ final class TtfBmFontGenerator {
                                            final SourceBmFont source) throws IOException, FontFormatException {
         final float requestedSize = Math.max(1f, Math.abs(source.infoSize()));
         final FontRenderPolicy renderPolicy = renderPolicyForSpec(spec, source);
+        final boolean victorManaged = isVictorManagedFontPath(spec.originalFontPath());
         final boolean antiAlias = renderPolicy.antiAlias();
         final boolean fractionalMetrics = renderPolicy.fractionalMetrics();
         final List<LoadedFont> primary = new ArrayList<>();
         for (String candidate : spec.primaryFontCandidates()) {
             final Path path = spec.resolveCandidate(fontDir, candidate);
             if (Files.isRegularFile(path)) {
-                final Font calibrated = harmonizePrimaryAdvance(
+                Font calibrated = harmonizePrimaryAdvance(
                         calibrate(loadFont(path), requestedSize, source.lineHeight(), antiAlias, fractionalMetrics),
                         source,
                         antiAlias,
                         fractionalMetrics);
+                if (victorManaged) {
+                    calibrated = harmonizeVictorPrimaryVisual(calibrated, source, antiAlias, fractionalMetrics);
+                }
                 primary.add(new LoadedFont(
                         path.getFileName().toString(),
                         path,
@@ -213,7 +220,7 @@ final class TtfBmFontGenerator {
         final List<LoadedFont> chain = new ArrayList<>(primary.size() + fallback.size());
         chain.addAll(primary);
         chain.addAll(fallback);
-        return new FontChain(chain, antiAlias, fractionalMetrics, renderPolicy.pixelFont());
+        return new FontChain(chain, antiAlias, fractionalMetrics, renderPolicy.pixelFont(), victorManaged);
     }
 
     private static Font loadFont(final Path path) throws IOException, FontFormatException {
@@ -371,6 +378,79 @@ final class TtfBmFontGenerator {
         return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
     }
 
+    private static Font harmonizeVictorPrimaryVisual(final Font calibrated,
+                                                     final SourceBmFont source,
+                                                     final boolean antiAlias,
+                                                     final boolean fractionalMetrics) {
+        final float sourceAverageHeight = source.averageHeight(VICTOR_PRIMARY_SAMPLE);
+        if (sourceAverageHeight <= 0f) {
+            return calibrated;
+        }
+
+        final float renderedAverageHeight = measureAverageHeight(calibrated, VICTOR_PRIMARY_SAMPLE, antiAlias,
+                fractionalMetrics);
+        final float scaleFactor = victorPrimaryVisualScaleFactor(sourceAverageHeight, renderedAverageHeight);
+        if (Math.abs(scaleFactor - 1.0f) < 0.02f) {
+            return calibrated;
+        }
+        return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
+    }
+
+    static float victorPrimaryVisualScaleFactor(final float sourceAverageHeight,
+                                                final float renderedAverageHeight) {
+        if (!Float.isFinite(sourceAverageHeight) || !Float.isFinite(renderedAverageHeight)
+                || sourceAverageHeight <= 0f || renderedAverageHeight <= 0f) {
+            return 1.0f;
+        }
+
+        final float rawScale = sourceAverageHeight / renderedAverageHeight;
+        if (!Float.isFinite(rawScale) || rawScale <= 0f) {
+            return 1.0f;
+        }
+        return Math.max(MIN_VICTOR_PRIMARY_VISUAL_SCALE,
+                Math.min(MAX_VICTOR_PRIMARY_VISUAL_SCALE, rawScale));
+    }
+
+    static boolean isVictorManagedFontPath(final String fontPath) {
+        final String normalized = OriginalGameFontOverrides.normalize(fontPath).toLowerCase(Locale.ROOT);
+        return normalized.startsWith("graphics/fonts/victor10")
+                || normalized.startsWith("graphics/fonts/victor14")
+                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor10")
+                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor14");
+    }
+
+    static int substituteVictorLowercaseCodePoint(final int codePoint) {
+        if (codePoint >= 'a' && codePoint <= 'z') {
+            return Character.toUpperCase(codePoint);
+        }
+        return codePoint;
+    }
+
+    private static int remappedRasterCodePoint(final int codePoint,
+                                               final FontChain fonts) {
+        if (!fonts.substituteLowercaseWithUppercase()) {
+            return codePoint;
+        }
+        return substituteVictorLowercaseCodePoint(codePoint);
+    }
+
+    private static GlyphRaster withCodePoint(final GlyphRaster rasterized,
+                                             final int codePoint) {
+        if (rasterized == null || rasterized.codePoint() == codePoint) {
+            return rasterized;
+        }
+        return new GlyphRaster(
+                codePoint,
+                rasterized.sourceName(),
+                rasterized.faceName(),
+                rasterized.image(),
+                rasterized.width(),
+                rasterized.height(),
+                rasterized.xOffset(),
+                rasterized.yOffset(),
+                rasterized.xAdvance());
+    }
+
     private static float measureVisualHeight(final Font font,
                                              final String sample,
                                              final boolean antiAlias,
@@ -455,7 +535,11 @@ final class TtfBmFontGenerator {
                     continue;
                 }
 
-                final GlyphRaster rasterized = rasterizer.rasterizeGlyph(codePoint, source.base(), fonts);
+                final int rasterCodePoint = remappedRasterCodePoint(codePoint, fonts);
+                final GlyphRaster rasterized = withCodePoint(
+                        rasterizer.rasterizeGlyph(rasterCodePoint, source.base(), fonts),
+                        codePoint
+                );
                 glyphs.add(reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric));
             }
             glyphs.sort(Comparator.comparingInt(GlyphRaster::sortHeight).reversed()
@@ -905,10 +989,11 @@ final class TtfBmFontGenerator {
            .append("\" size=")
            .append(source.infoSize())
            .append(" bold=0 italic=0 charset=\"\" unicode=1 stretchH=100 smooth=")
-           .append(source.antiAlias() ? 1 : 0)
+           .append(fonts.antiAlias() ? 1 : 0)
            .append(" aa=")
-           .append(source.antiAlias() ? 1 : 0)
-           .append(" padding=1,1,1,1 spacing=1,1 outline=0\n");
+           .append(fonts.antiAlias() ? 1 : 0)
+           .append(fonts.pixelFont() ? " padding=0,0,0,0" : " padding=1,1,1,1")
+           .append(" spacing=1,1 outline=0\n");
         fnt.append("common lineHeight=")
            .append(source.lineHeight())
            .append(" base=")
@@ -987,19 +1072,10 @@ final class TtfBmFontGenerator {
 
     private static FontRenderPolicy renderPolicyForSpec(final OriginalGameFontOverrides.FontOverrideSpec spec,
                                                         final SourceBmFont source) {
-        final boolean pixelFont = isVictorManagedFontPath(spec.originalFontPath());
         return new FontRenderPolicy(
-                source.antiAlias() && !pixelFont,
-                !pixelFont,
-                pixelFont);
-    }
-
-    private static boolean isVictorManagedFontPath(final String fontPath) {
-        final String normalized = OriginalGameFontOverrides.normalize(fontPath).toLowerCase(Locale.ROOT);
-        return normalized.startsWith("graphics/fonts/victor10")
-                || normalized.startsWith("graphics/fonts/victor14")
-                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor10")
-                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor14");
+                source.antiAlias(),
+                true,
+                false);
     }
 
     private static void applyTextHints(final Graphics2D g,
@@ -1066,7 +1142,8 @@ final class TtfBmFontGenerator {
     private record FontChain(List<LoadedFont> fonts,
                              boolean antiAlias,
                              boolean fractionalMetrics,
-                             boolean pixelFont) {
+                             boolean pixelFont,
+                             boolean substituteLowercaseWithUppercase) {
         private FontChain {
             fonts = List.copyOf(fonts);
         }

@@ -33,7 +33,7 @@ public final class ImeService {
     private final    IntSupplier                                       windowHeightSupplier;
     private volatile ImeBackend                                        backend;
     private volatile WeakReference<TextFieldAPI>                       explicitlyFocusedField;
-    private volatile boolean                                           windowFocused = true;
+    private volatile boolean                                           windowFocused    = true;
 
     public ImeService(final ImeBackend backend) {
         this(backend, EffectiveScreenScale::current, () -> Display.getHeight());
@@ -76,26 +76,22 @@ public final class ImeService {
         if (textField == null) {
             return;
         }
-        cleanupStaleReferences();
-        for (WeakReference<TextFieldAPI> ref : registeredFields) {
-            if (ref.get() == textField) {
-                return;
-            }
+        ensureRegistered(textField);
+        if (textField.hasFocus()) {
+            syncImplicitFocusedField(textField);
         }
-        registeredFields.add(new WeakReference<>(textField));
-        ImeDiagnostics.logTextFieldRegistration(textField, registeredFieldCount());
     }
 
     public void onFocusGained(final TextFieldAPI textField) {
         if (textField == null) {
             return;
         }
-        register(textField);
+        ensureRegistered(textField);
         explicitlyFocusedField = new WeakReference<>(textField);
         if (windowFocused) {
             backend.focusIn();
         }
-        final ImeCaretRect rect = computeCurrentCaretRect();
+        final ImeCaretRect rect = computeCaretRect(textField);
         if (windowFocused && rect != null) {
             backend.updateSpot(rect);
         }
@@ -148,38 +144,7 @@ public final class ImeService {
 
     public ImeCaretRect computeCurrentCaretRect() {
         cleanupStaleReferences();
-        TextFieldAPI focused = currentFocusedField();
-        if (focused == null) {
-            return null;
-        }
-
-        PositionAPI position = focused.getPosition();
-        if (position == null) {
-            return null;
-        }
-
-        String text = focused.getText();
-        if (text == null) {
-            text = "";
-        }
-
-        float textWidth = 0.0f;
-        LabelAPI label = focused.getTextLabelAPI();
-        if (label != null) {
-            textWidth = label.computeTextWidth(text);
-        }
-
-        final float scale = currentWindowScale();
-        final int windowHeight = currentWindowHeight();
-        final int scaledX = Math.round((position.getX() + textWidth) * scale);
-        final int scaledY = windowHeight - Math.round((position.getY() + position.getHeight()) * scale);
-        final int scaledHeight = Math.round(position.getHeight() * scale);
-
-        return new ImeCaretRect(
-                scaledX,
-                scaledY,
-                scaledHeight
-        );
+        return computeCaretRect(currentFocusedField());
     }
 
     public void pollAndApplyCommittedText() {
@@ -215,23 +180,92 @@ public final class ImeService {
 
     private TextFieldAPI currentFocusedField() {
         final TextFieldAPI explicit = explicitlyFocusedField != null ? explicitlyFocusedField.get() : null;
-        if (explicit != null) {
+        if (explicit != null && explicit.hasFocus()) {
             return explicit;
         }
+        explicitlyFocusedField = null;
 
         final TextFieldAPI globallyFocused = globalFocusedTextField();
-        if (globallyFocused != null) {
-            register(globallyFocused);
+        if (globallyFocused != null && globallyFocused.hasFocus()) {
+            ensureRegistered(globallyFocused);
+            syncImplicitFocusedField(globallyFocused);
             return globallyFocused;
         }
 
         for (WeakReference<TextFieldAPI> ref : registeredFields) {
             TextFieldAPI field = ref.get();
             if (field != null && field.hasFocus()) {
+                syncImplicitFocusedField(field);
                 return field;
             }
         }
         return null;
+    }
+
+    private void ensureRegistered(final TextFieldAPI textField) {
+        cleanupStaleReferences();
+        for (WeakReference<TextFieldAPI> ref : registeredFields) {
+            if (ref.get() == textField) {
+                return;
+            }
+        }
+        registeredFields.add(new WeakReference<>(textField));
+        ImeDiagnostics.logTextFieldRegistration(textField, registeredFieldCount());
+    }
+
+    private void syncImplicitFocusedField(final TextFieldAPI textField) {
+        if (textField == null || !textField.hasFocus()) {
+            return;
+        }
+
+        final TextFieldAPI explicit = explicitlyFocusedField != null ? explicitlyFocusedField.get() : null;
+        if (explicit == textField) {
+            return;
+        }
+
+        explicitlyFocusedField = new WeakReference<>(textField);
+        if (windowFocused) {
+            backend.focusIn();
+            final ImeCaretRect rect = computeCaretRect(textField);
+            if (rect != null) {
+                backend.updateSpot(rect);
+            }
+        }
+        ImeDiagnostics.logTextFieldFocus("focused-implicit", textField, registeredFieldCount());
+    }
+
+    private ImeCaretRect computeCaretRect(final TextFieldAPI focused) {
+        if (focused == null) {
+            return null;
+        }
+
+        final PositionAPI position = focused.getPosition();
+        if (position == null) {
+            return null;
+        }
+
+        String text = focused.getText();
+        if (text == null) {
+            text = "";
+        }
+
+        float textWidth = 0.0f;
+        final LabelAPI label = focused.getTextLabelAPI();
+        if (label != null) {
+            textWidth = label.computeTextWidth(text);
+        }
+
+        final float scale = currentWindowScale();
+        final int windowHeight = currentWindowHeight();
+        final int scaledX = Math.round((position.getX() + textWidth) * scale);
+        final int scaledY = windowHeight - Math.round((position.getY() + position.getHeight()) * scale);
+        final int scaledHeight = Math.round(position.getHeight() * scale);
+
+        return new ImeCaretRect(
+                scaledX,
+                scaledY,
+                scaledHeight
+        );
     }
 
     private TextFieldAPI globalFocusedTextField() {

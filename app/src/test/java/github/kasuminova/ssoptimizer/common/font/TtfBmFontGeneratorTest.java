@@ -137,6 +137,10 @@ class TtfBmFontGeneratorTest {
                 new int[]{9, 8, 0, 2, 9, 9, 8},
                 TtfBmFontGenerator.alignedGlyphMetrics(9, 8, 0, 2, 8, 8, 8, 0, 2, 8)
         );
+        assertArrayEquals(
+            new int[]{11, 15, 2, 2, 17, 11, 15},
+                TtfBmFontGenerator.alignedGlyphMetrics(10, 15, 2, 2, 16, 11, 15, 2, 2, 17)
+        );
     }
 
     @Test
@@ -167,6 +171,24 @@ class TtfBmFontGeneratorTest {
                 TtfBmFontGenerator.spaceEquivalentGlyphMetrics('}', 7)
         );
         assertNull(TtfBmFontGenerator.spaceEquivalentGlyphMetrics('A', 7));
+    }
+
+    @Test
+    void substitutesVictorAsciiLowercaseWithUppercaseGlyphs() {
+        assertEquals('A', TtfBmFontGenerator.substituteVictorLowercaseCodePoint('a'));
+        assertEquals('Z', TtfBmFontGenerator.substituteVictorLowercaseCodePoint('z'));
+        assertEquals('A', TtfBmFontGenerator.substituteVictorLowercaseCodePoint('A'));
+        assertEquals('目', TtfBmFontGenerator.substituteVictorLowercaseCodePoint('目'));
+    }
+
+    @Test
+    void detectsVictorManagedFontPaths() {
+        assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor10.fnt"));
+        assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor14_0.png"));
+        assertTrue(TtfBmFontGenerator.isVictorManagedFontPath(
+                "ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500.fnt"
+        ));
+        assertFalse(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/orbitron20aa.fnt"));
     }
 
     @Test
@@ -248,6 +270,17 @@ class TtfBmFontGeneratorTest {
 
         final float shrink = TtfBmFontGenerator.primaryAdvanceScaleFactor(11.67f, 13.5f);
         assertTrue(shrink < 1.0f && shrink >= 0.88f);
+    }
+
+    @Test
+    void clampsVictorPrimaryVisualScaleFactorIntoSafeRange() {
+        assertEquals(1.0f, TtfBmFontGenerator.victorPrimaryVisualScaleFactor(12f, 0f));
+        assertEquals(1.0f, TtfBmFontGenerator.victorPrimaryVisualScaleFactor(Float.NaN, 10f));
+        assertEquals(1.24f, TtfBmFontGenerator.victorPrimaryVisualScaleFactor(20f, 10f));
+        assertEquals(0.94f, TtfBmFontGenerator.victorPrimaryVisualScaleFactor(8f, 20f));
+
+        final float balanced = TtfBmFontGenerator.victorPrimaryVisualScaleFactor(11f, 10f);
+        assertTrue(balanced > 1.0f && balanced < 1.24f);
     }
 
     @Test

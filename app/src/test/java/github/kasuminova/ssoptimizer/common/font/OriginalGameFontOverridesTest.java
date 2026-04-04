@@ -2,6 +2,8 @@ package github.kasuminova.ssoptimizer.common.font;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class OriginalGameFontOverridesTest {
@@ -73,8 +75,8 @@ class OriginalGameFontOverridesTest {
         assertEquals("lte50549.ttf", profile.insigniaBoldPrimary().getFirst());
         assertEquals("orbitron-light.ttf", profile.orbitronRegularPrimary().getFirst());
         assertEquals("orbitron-bold.ttf", profile.orbitronBoldPrimary().getFirst());
-        assertEquals("victor-pixel.ttf", profile.victorPrimary().getFirst());
-        assertEquals("ZpixEX2_EX.ttf", profile.victorFallback().getFirst());
+        assertEquals(List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"), profile.victorPrimary());
+        assertEquals(List.of("MiSans-Medium.ttf", "font.ttf"), profile.victorFallback());
     }
 
     @Test

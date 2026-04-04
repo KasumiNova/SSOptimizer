@@ -21,6 +21,10 @@ final class ImeDiagnostics {
     static void logBackendSelection(final ImeProperties.BackendMode mode,
                                     final boolean enabled,
                                     final ImeBackend backend) {
+        if (!ImeProperties.diagnosticsEnabled()) {
+            return;
+        }
+
         final String osName = System.getProperty("os.name", "");
         final String backendName = backend != null ? backend.getClass().getSimpleName() : "null";
         final boolean available = backend != null && backend.isAvailable();
@@ -39,16 +43,23 @@ final class ImeDiagnostics {
                              final String detail) {
         final String backendName = backend != null ? backend.getClass().getSimpleName() : "null";
         final String suffix = detail == null || detail.isBlank() ? "" : " " + detail;
-        LOGGER.info(String.format(Locale.ROOT,
+        final String message = String.format(Locale.ROOT,
                 "[SSOptimizer] IME %s backend=%s context=%s%s",
                 event,
                 backendName,
                 hex(contextHandle),
-                suffix));
+                suffix);
+        if (ImeProperties.diagnosticsEnabled()) {
+            LOGGER.info(message);
+            return;
+        }
+        if ("attach-failed".equals(event)) {
+            LOGGER.warn(message);
+        }
     }
 
     static void logCommittedText(final String committed) {
-        if (committed == null || committed.isEmpty()) {
+        if (!ImeProperties.diagnosticsEnabled() || committed == null || committed.isEmpty()) {
             return;
         }
 
@@ -78,7 +89,7 @@ final class ImeDiagnostics {
 
     static void logTextFieldRegistration(final TextFieldAPI textField,
                                          final int registeredCount) {
-        if (textField == null) {
+        if (!ImeProperties.diagnosticsEnabled() || textField == null) {
             return;
         }
 
@@ -94,7 +105,7 @@ final class ImeDiagnostics {
     static void logTextFieldFocus(final String event,
                                   final TextFieldAPI textField,
                                   final int registeredCount) {
-        if (textField == null) {
+        if (!ImeProperties.diagnosticsEnabled() || textField == null) {
             return;
         }
 
@@ -111,6 +122,10 @@ final class ImeDiagnostics {
     static void logFocuslessComposition(final int registeredCount,
                                         final boolean composing,
                                         final String preeditText) {
+        if (!ImeProperties.diagnosticsEnabled()) {
+            return;
+        }
+
         if (!composing && (preeditText == null || preeditText.isBlank())) {
             return;
         }

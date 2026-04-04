@@ -42,6 +42,22 @@ class ImeServiceTest {
     }
 
     @Test
+    void registeringAlreadyFocusedTextFieldImplicitlyActivatesIme() {
+        FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
+        FakeImeBackend backend = new FakeImeBackend(List.of());
+
+        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+        service.register(focused);
+
+        assertEquals(1, backend.focusInCount);
+        assertTrue(service.shouldCaptureImeInput());
+        assertNotNull(backend.lastSpot);
+        assertEquals(336, backend.lastSpot.x());
+        assertEquals(400, backend.lastSpot.y());
+        assertEquals(24, backend.lastSpot.height());
+    }
+
+    @Test
     void ignoresControlCharactersInCommittedText() {
         FakeTextField focused = new FakeTextField(true, 10f, 20f, 200f, 24f, "abc", 0f);
         FakeImeBackend backend = new FakeImeBackend(List.of("\b", "中"));
@@ -99,6 +115,26 @@ class ImeServiceTest {
         assertEquals(1, backend.focusOutCount);
         assertTrue(service.shouldCaptureImeInput());
         assertNotNull(backend.lastSpot);
+    }
+
+    @Test
+    void staleExplicitFocusFallsBackToStillFocusedRegisteredField() {
+        FakeTextField first = new FakeTextField(true, 100f, 200f, 160f, 24f, "a", 12f);
+        FakeTextField second = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
+        FakeImeBackend backend = new FakeImeBackend(List.of());
+        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+
+        service.onFocusGained(first);
+        service.register(second);
+        first.setFocused(false);
+
+        ImeCaretRect rect = service.computeCurrentCaretRect();
+
+        assertNotNull(rect);
+        assertEquals(336, rect.x());
+        assertEquals(400, rect.y());
+        assertEquals(24, rect.height());
+        assertEquals(2, backend.focusInCount);
     }
 
     @Test

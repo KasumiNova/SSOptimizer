@@ -24,7 +24,7 @@ public final class FontPackCache {
     public static final String DIRECTORY_PROPERTY = "ssoptimizer.fontcache.dir";
 
     private static final String              MAGIC          = "SSOFONT";
-    private static final int                 VERSION        = 3;
+    private static final int                 VERSION        = 6;
     private static final String              FILE_EXTENSION = ".ssofont.zst";
     private static final Map<String, Object> LOCKS          = new ConcurrentHashMap<>();
 
@@ -188,7 +188,7 @@ public final class FontPackCache {
                       .resolve("cache")
                       .resolve("fonts")
                       .resolve("zstd")
-                      .resolve("v3")
+                      .resolve("v6")
                       .toAbsolutePath();
     }
 

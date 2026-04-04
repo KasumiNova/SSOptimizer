@@ -107,7 +107,7 @@ public final class LinuxDisplayImeHooks {
                 final long displayWindow = invokeStaticLong(LINUX_DISPLAY_GET_WINDOW);
                 ImeDiagnostics.logX11KeyEvent(eventType, displayWindow, eventWindow, false, consumed);
                 final String keyEventSummary = backend.lastKeyEventSummary();
-                if (keyEventSummary != null && !keyEventSummary.isBlank()) {
+                if (ImeProperties.diagnosticsEnabled() && keyEventSummary != null && !keyEventSummary.isBlank()) {
                     LOGGER.info("[SSOptimizer] IME key event summary: " + keyEventSummary);
                 }
                 ImeDiagnostics.logPreeditState(eventType, backend.isComposing(), backend.currentPreeditText());
