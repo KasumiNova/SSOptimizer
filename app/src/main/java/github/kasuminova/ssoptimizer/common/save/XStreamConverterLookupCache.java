@@ -1,9 +1,7 @@
 package github.kasuminova.ssoptimizer.common.save;
 
 import com.thoughtworks.xstream.converters.Converter;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
 /**
  * XStream 转换器查询快缓存。
@@ -16,7 +14,7 @@ import java.util.concurrent.ConcurrentMap;
  * XStream 主缓存被清空时，调用方必须同步调用 {@link #clear()}，确保命中结果与原始语义保持一致。
  */
 public final class XStreamConverterLookupCache {
-    private final ConcurrentMap<Class<?>, Converter> converters = new ConcurrentHashMap<>();
+    private final Reference2ObjectOpenHashMap<Class<?>, Converter> converters = new Reference2ObjectOpenHashMap<>();
 
     /**
      * 查询指定类型已缓存的转换器。
@@ -24,7 +22,7 @@ public final class XStreamConverterLookupCache {
      * @param type 目标类型
      * @return 已缓存的转换器；若未命中则返回 {@code null}
      */
-    public Converter lookup(final Class<?> type) {
+    public synchronized Converter lookup(final Class<?> type) {
         if (type == null) {
             return null;
         }
@@ -37,8 +35,8 @@ public final class XStreamConverterLookupCache {
      * @param type      目标类型
      * @param converter 已解析出的转换器
      */
-    public void remember(final Class<?> type,
-                         final Converter converter) {
+    public synchronized void remember(final Class<?> type,
+                                      final Converter converter) {
         if (type == null || converter == null) {
             return;
         }
@@ -48,7 +46,7 @@ public final class XStreamConverterLookupCache {
     /**
      * 清空缓存。
      */
-    public void clear() {
+    public synchronized void clear() {
         converters.clear();
     }
 }

@@ -1,7 +1,8 @@
 package github.kasuminova.ssoptimizer.common.save;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+
 import java.util.function.Supplier;
 
 /**
@@ -15,8 +16,10 @@ import java.util.function.Supplier;
 public final class XStreamFieldAliasingCache {
     private static final Object MISSING = new Object();
 
-    private final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> serializedMemberCache = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> realMemberCache = new ConcurrentHashMap<>();
+    private final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> serializedMemberCache =
+        new Reference2ObjectOpenHashMap<>();
+    private final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> realMemberCache =
+        new Reference2ObjectOpenHashMap<>();
 
     /**
      * 获取或解析序列化字段名。
@@ -49,25 +52,35 @@ public final class XStreamFieldAliasingCache {
     /**
      * 清空全部缓存结果。
      */
-    public void clear() {
+    public synchronized void clear() {
         serializedMemberCache.clear();
         realMemberCache.clear();
     }
 
-    private static String getOrResolve(final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> cache,
-                                       final Class<?> type,
-                                       final String memberName,
-                                       final Supplier<String> resolver) {
-        final ConcurrentMap<String, Object> memberCache = cache.computeIfAbsent(type, ignored -> new ConcurrentHashMap<>());
+    private synchronized String getOrResolve(final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> cache,
+                                             final Class<?> type,
+                                             final String memberName,
+                                             final Supplier<String> resolver) {
+        final Object2ObjectOpenHashMap<String, Object> memberCache = getOrCreateMemberCache(cache, type);
         final Object cached = memberCache.get(memberName);
         if (cached != null) {
             return cached == MISSING ? null : (String) cached;
         }
 
         final String resolved = resolver.get();
-        final Object value = resolved != null ? resolved : MISSING;
-        final Object previous = memberCache.putIfAbsent(memberName, value);
-        final Object effective = previous != null ? previous : value;
-        return effective == MISSING ? null : (String) effective;
+        memberCache.put(memberName, resolved != null ? resolved : MISSING);
+        return resolved;
+    }
+
+    private static Object2ObjectOpenHashMap<String, Object> getOrCreateMemberCache(final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> cache,
+                                                                                    final Class<?> type) {
+        final Object2ObjectOpenHashMap<String, Object> cached = cache.get(type);
+        if (cached != null) {
+            return cached;
+        }
+
+        final Object2ObjectOpenHashMap<String, Object> created = new Object2ObjectOpenHashMap<>();
+        cache.put(type, created);
+        return created;
     }
 }

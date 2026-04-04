@@ -1,8 +1,9 @@
 package github.kasuminova.ssoptimizer.common.save;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+
 import java.lang.reflect.Field;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 /**
@@ -16,8 +17,10 @@ import java.util.function.Supplier;
 public final class XStreamFieldDictionaryLookupCache {
     private static final Object MISSING = new Object();
 
-    private final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> unqualifiedCache = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Class<?>, ConcurrentMap<Class<?>, ConcurrentMap<String, Object>>> qualifiedCache = new ConcurrentHashMap<>();
+    private final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> unqualifiedCache =
+        new Reference2ObjectOpenHashMap<>();
+    private final Reference2ObjectOpenHashMap<Class<?>, Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>>> qualifiedCache =
+        new Reference2ObjectOpenHashMap<>();
 
     /**
      * 按查询键解析字段，并缓存解析结果。
@@ -28,61 +31,61 @@ public final class XStreamFieldDictionaryLookupCache {
      * @param resolver   首次未命中缓存时执行的真实解析逻辑
      * @return 找到的字段；若不存在则返回 {@code null}
      */
-    public Field getOrResolve(final Class<?> ownerType,
-                              final String fieldName,
-                              final Class<?> definedIn,
-                              final Supplier<Field> resolver) {
-        final ConcurrentMap<String, Object> fieldCache = cacheFor(ownerType, definedIn);
+    public synchronized Field getOrResolve(final Class<?> ownerType,
+                                           final String fieldName,
+                                           final Class<?> definedIn,
+                                           final Supplier<Field> resolver) {
+        final Object2ObjectOpenHashMap<String, Object> fieldCache = cacheFor(ownerType, definedIn);
         final Object cached = fieldCache.get(fieldName);
         if (cached != null) {
             return cached == MISSING ? null : (Field) cached;
         }
 
         final Field resolved = resolver.get();
-        final Object value = resolved != null ? resolved : MISSING;
-        final Object previous = fieldCache.putIfAbsent(fieldName, value);
-        final Object effective = previous != null ? previous : value;
-        return effective == MISSING ? null : (Field) effective;
+        fieldCache.put(fieldName, resolved != null ? resolved : MISSING);
+        return resolved;
     }
 
     /**
      * 清空缓存。
      */
-    public void clear() {
+    public synchronized void clear() {
         unqualifiedCache.clear();
         qualifiedCache.clear();
     }
 
-    private ConcurrentMap<String, Object> cacheFor(final Class<?> ownerType,
-                                                   final Class<?> definedIn) {
+    private Object2ObjectOpenHashMap<String, Object> cacheFor(final Class<?> ownerType,
+                                                              final Class<?> definedIn) {
         if (definedIn == null) {
             return getOrCreateFieldCache(unqualifiedCache, ownerType);
         }
 
-        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> declaredTypeCache = getOrCreateDeclaredTypeCache(ownerType);
+        final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> declaredTypeCache =
+                getOrCreateDeclaredTypeCache(ownerType);
         return getOrCreateFieldCache(declaredTypeCache, definedIn);
     }
 
-    private ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> getOrCreateDeclaredTypeCache(final Class<?> ownerType) {
-        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> cached = qualifiedCache.get(ownerType);
+    private Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> getOrCreateDeclaredTypeCache(final Class<?> ownerType) {
+        final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> cached = qualifiedCache.get(ownerType);
         if (cached != null) {
             return cached;
         }
 
-        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> created = new ConcurrentHashMap<>();
-        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> previous = qualifiedCache.putIfAbsent(ownerType, created);
-        return previous != null ? previous : created;
+        final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> created =
+                new Reference2ObjectOpenHashMap<>();
+        qualifiedCache.put(ownerType, created);
+        return created;
     }
 
-    private static <K> ConcurrentMap<String, Object> getOrCreateFieldCache(final ConcurrentMap<K, ConcurrentMap<String, Object>> cache,
-                                                                           final K key) {
-        final ConcurrentMap<String, Object> cached = cache.get(key);
+    private static <K> Object2ObjectOpenHashMap<String, Object> getOrCreateFieldCache(final Reference2ObjectOpenHashMap<K, Object2ObjectOpenHashMap<String, Object>> cache,
+                                                                                       final K key) {
+        final Object2ObjectOpenHashMap<String, Object> cached = cache.get(key);
         if (cached != null) {
             return cached;
         }
 
-        final ConcurrentMap<String, Object> created = new ConcurrentHashMap<>();
-        final ConcurrentMap<String, Object> previous = cache.putIfAbsent(key, created);
-        return previous != null ? previous : created;
+        final Object2ObjectOpenHashMap<String, Object> created = new Object2ObjectOpenHashMap<>();
+        cache.put(key, created);
+        return created;
     }
 }
