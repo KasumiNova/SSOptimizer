@@ -21,12 +21,16 @@ public final class XStreamObjectIdDictionaryHelper {
         @Override
         protected WrapperAccessor computeValue(final Class<?> type) {
             try {
-                final Method method = type.getDeclaredMethod("get");
+                final Method method = findGetMethod(type);
                 method.setAccessible(true);
-                final MethodHandle handle = MethodHandles.lookup()
-                                                         .unreflect(method)
-                                                         .asType(MethodType.methodType(Object.class, Object.class));
-                return new MethodHandleWrapperAccessor(handle);
+                try {
+                    final MethodHandle handle = MethodHandles.privateLookupIn(type, MethodHandles.lookup())
+                                                             .unreflect(method)
+                                                             .asType(MethodType.methodType(Object.class, Object.class));
+                    return new MethodHandleWrapperAccessor(handle);
+                } catch (final IllegalAccessException ignored) {
+                    return new ReflectionWrapperAccessor(method);
+                }
             } catch (final ReflectiveOperationException e) {
                 return UnsupportedWrapperAccessor.INSTANCE;
             }
@@ -91,6 +95,14 @@ public final class XStreamObjectIdDictionaryHelper {
         }
     }
 
+    private static Method findGetMethod(final Class<?> type) throws NoSuchMethodException {
+        try {
+            return type.getMethod("get");
+        } catch (final NoSuchMethodException ignored) {
+            return type.getDeclaredMethod("get");
+        }
+    }
+
     private static Object unwrapWrappedObject(final Object wrapper) {
         if (wrapper instanceof MutableIdProbe probe) {
             return probe.target();
@@ -109,6 +121,17 @@ public final class XStreamObjectIdDictionaryHelper {
                 return handle.invokeExact(wrapper);
             } catch (final Throwable throwable) {
                 throw new IllegalStateException("读取 XStream 对象 ID 包装器失败", throwable);
+            }
+        }
+    }
+
+    private record ReflectionWrapperAccessor(Method method) implements WrapperAccessor {
+        @Override
+        public Object get(final Object wrapper) {
+            try {
+                return method.invoke(wrapper);
+            } catch (final ReflectiveOperationException e) {
+                throw new IllegalStateException("通过反射读取 XStream 对象 ID 包装器失败", e);
             }
         }
     }
