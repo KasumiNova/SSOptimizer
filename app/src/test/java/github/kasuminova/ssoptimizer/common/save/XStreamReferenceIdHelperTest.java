@@ -24,6 +24,9 @@ class XStreamReferenceIdHelperTest {
         assertEquals("11", XStreamReferenceIdHelper.toCompactString(37));
         assertEquals("100", XStreamReferenceIdHelper.toCompactString(36 * 36));
         assertEquals("21", XStreamReferenceIdHelper.nextReferenceId(73));
+        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(4096), XStreamReferenceIdHelper.toCompactString(4096));
+        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(65_535), XStreamReferenceIdHelper.toCompactString(65_535));
+        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(262_144), XStreamReferenceIdHelper.toCompactString(262_144));
     }
 
     @Test

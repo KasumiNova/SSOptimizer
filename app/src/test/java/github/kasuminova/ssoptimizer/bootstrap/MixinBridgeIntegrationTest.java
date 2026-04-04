@@ -105,12 +105,19 @@ class MixinBridgeIntegrationTest {
     private static boolean containsMethodInvocation(final byte[] classBytes,
                                                     final String owner,
                                                     final String methodName) {
+        return containsMethodInvocation(classBytes, owner, methodName, null);
+    }
+
+    private static boolean containsMethodInvocation(final byte[] classBytes,
+                                                    final String owner,
+                                                    final String methodName,
+                                                    final String expectedDescriptor) {
         final boolean[] found = {false};
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public MethodVisitor visitMethod(final int access,
                                              final String name,
-                                             final String descriptor,
+                                             final String methodDescriptor,
                                              final String signature,
                                              final String[] exceptions) {
                 return new MethodVisitor(Opcodes.ASM9) {
@@ -120,7 +127,9 @@ class MixinBridgeIntegrationTest {
                                                 final String invocationName,
                                                 final String invocationDescriptor,
                                                 final boolean isInterface) {
-                        if (owner.equals(invocationOwner) && methodName.equals(invocationName)) {
+                        if (owner.equals(invocationOwner)
+                                && methodName.equals(invocationName)
+                                && (expectedDescriptor == null || expectedDescriptor.equals(invocationDescriptor))) {
                             found[0] = true;
                         }
                     }
@@ -374,6 +383,7 @@ class MixinBridgeIntegrationTest {
         assertTrue(containsMethodInvocation(transformed, XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER, "lookupId"));
         assertTrue(containsMethodInvocation(transformed, XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER, "containsId"));
         assertTrue(containsMethodInvocation(transformed, XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER, "removeId"));
+        assertTrue(containsMethodInvocation(transformed, "java/util/HashMap", "<init>", "(I)V"));
     }
 
     @Test

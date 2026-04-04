@@ -17,7 +17,9 @@ import java.lang.invoke.VarHandle;
  * 若上游传入自定义 {@code IDGenerator}，则完全回退到原始生成逻辑，不改变外部行为。
  */
 public final class XStreamReferenceIdHelper {
+    private static final int PRECOMPUTED_REFERENCE_ID_LIMIT = 1 << 16;
     private static final char[] DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray();
+    private static final String[] PRECOMPUTED_REFERENCE_IDS = buildPrecomputedReferenceIds();
 
     private static final Class<?> SEQUENCE_GENERATOR_CLASS = resolveSequenceGeneratorClass();
     private static final VarHandle SEQUENCE_COUNTER_HANDLE = resolveSequenceCounterHandle();
@@ -96,6 +98,16 @@ public final class XStreamReferenceIdHelper {
         if (value < 0) {
             throw new IllegalArgumentException("Reference id must be non-negative: " + value);
         }
+        if (value < PRECOMPUTED_REFERENCE_ID_LIMIT) {
+            return PRECOMPUTED_REFERENCE_IDS[value];
+        }
+        return toCompactStringUncached(value);
+    }
+
+    static String toCompactStringUncached(final int value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Reference id must be non-negative: " + value);
+        }
         if (value == 0) {
             return "0";
         }
@@ -109,6 +121,15 @@ public final class XStreamReferenceIdHelper {
             current /= DIGITS.length;
         }
         return new String(buffer, cursor, buffer.length - cursor);
+    }
+
+    private static String[] buildPrecomputedReferenceIds() {
+        final String[] cache = new String[PRECOMPUTED_REFERENCE_ID_LIMIT];
+        cache[0] = "0";
+        for (int value = 1; value < cache.length; value++) {
+            cache[value] = toCompactStringUncached(value);
+        }
+        return cache;
     }
 
     private static Class<?> resolveSequenceGeneratorClass() {

@@ -17,10 +17,11 @@ import java.util.function.Supplier;
 public final class XStreamFieldDictionaryLookupCache {
     private static final Object MISSING = new Object();
 
-    private final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> unqualifiedCache =
-        new Reference2ObjectOpenHashMap<>();
-    private final Reference2ObjectOpenHashMap<Class<?>, Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>>> qualifiedCache =
-        new Reference2ObjectOpenHashMap<>();
+    private final Reference2ObjectOpenHashMap<Class<?>, OwnerFieldCache> ownerCaches =
+            new Reference2ObjectOpenHashMap<>();
+
+    private Class<?>        lastOwnerType;
+    private OwnerFieldCache lastOwnerCache;
 
     /**
      * 按查询键解析字段，并缓存解析结果。
@@ -31,61 +32,103 @@ public final class XStreamFieldDictionaryLookupCache {
      * @param resolver   首次未命中缓存时执行的真实解析逻辑
      * @return 找到的字段；若不存在则返回 {@code null}
      */
-    public synchronized Field getOrResolve(final Class<?> ownerType,
-                                           final String fieldName,
-                                           final Class<?> definedIn,
-                                           final Supplier<Field> resolver) {
-        final Object2ObjectOpenHashMap<String, Object> fieldCache = cacheFor(ownerType, definedIn);
+    public Field getOrResolve(final Class<?> ownerType,
+                              final String fieldName,
+                              final Class<?> definedIn,
+                              final Supplier<Field> resolver) {
+        final Object2ObjectOpenHashMap<String, Object> fieldCache = ownerCacheFor(ownerType).fieldCacheFor(definedIn);
         final Object cached = fieldCache.get(fieldName);
         if (cached != null) {
             return cached == MISSING ? null : (Field) cached;
         }
 
-        final Field resolved = resolver.get();
-        fieldCache.put(fieldName, resolved != null ? resolved : MISSING);
-        return resolved;
+        synchronized (fieldCache) {
+            final Object rechecked = fieldCache.get(fieldName);
+            if (rechecked != null) {
+                return rechecked == MISSING ? null : (Field) rechecked;
+            }
+
+            final Field resolved = resolver.get();
+            fieldCache.put(fieldName, resolved != null ? resolved : MISSING);
+            return resolved;
+        }
     }
 
     /**
      * 清空缓存。
      */
     public synchronized void clear() {
-        unqualifiedCache.clear();
-        qualifiedCache.clear();
+        ownerCaches.clear();
+        lastOwnerType = null;
+        lastOwnerCache = null;
     }
 
-    private Object2ObjectOpenHashMap<String, Object> cacheFor(final Class<?> ownerType,
-                                                              final Class<?> definedIn) {
-        if (definedIn == null) {
-            return getOrCreateFieldCache(unqualifiedCache, ownerType);
+    private OwnerFieldCache ownerCacheFor(final Class<?> ownerType) {
+        if (ownerType == lastOwnerType && lastOwnerCache != null) {
+            return lastOwnerCache;
         }
 
-        final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> declaredTypeCache =
-                getOrCreateDeclaredTypeCache(ownerType);
-        return getOrCreateFieldCache(declaredTypeCache, definedIn);
-    }
-
-    private Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> getOrCreateDeclaredTypeCache(final Class<?> ownerType) {
-        final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> cached = qualifiedCache.get(ownerType);
+        final OwnerFieldCache cached = ownerCaches.get(ownerType);
         if (cached != null) {
+            lastOwnerType = ownerType;
+            lastOwnerCache = cached;
             return cached;
         }
 
-        final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> created =
+        synchronized (this) {
+            final OwnerFieldCache rechecked = ownerCaches.get(ownerType);
+            if (rechecked != null) {
+                lastOwnerType = ownerType;
+                lastOwnerCache = rechecked;
+                return rechecked;
+            }
+
+            final OwnerFieldCache created = new OwnerFieldCache();
+            ownerCaches.put(ownerType, created);
+            lastOwnerType = ownerType;
+            lastOwnerCache = created;
+            return created;
+        }
+    }
+
+    private static final class OwnerFieldCache {
+        private final Object2ObjectOpenHashMap<String, Object> unqualifiedCache =
+                new Object2ObjectOpenHashMap<>(16);
+        private final Reference2ObjectOpenHashMap<Class<?>, Object2ObjectOpenHashMap<String, Object>> qualifiedCache =
                 new Reference2ObjectOpenHashMap<>();
-        qualifiedCache.put(ownerType, created);
-        return created;
-    }
 
-    private static <K> Object2ObjectOpenHashMap<String, Object> getOrCreateFieldCache(final Reference2ObjectOpenHashMap<K, Object2ObjectOpenHashMap<String, Object>> cache,
-                                                                                       final K key) {
-        final Object2ObjectOpenHashMap<String, Object> cached = cache.get(key);
-        if (cached != null) {
-            return cached;
+        private Class<?> lastDefinedIn;
+        private Object2ObjectOpenHashMap<String, Object> lastQualifiedCache;
+
+        private Object2ObjectOpenHashMap<String, Object> fieldCacheFor(final Class<?> definedIn) {
+            if (definedIn == null) {
+                return unqualifiedCache;
+            }
+            if (definedIn == lastDefinedIn && lastQualifiedCache != null) {
+                return lastQualifiedCache;
+            }
+
+            final Object2ObjectOpenHashMap<String, Object> cached = qualifiedCache.get(definedIn);
+            if (cached != null) {
+                lastDefinedIn = definedIn;
+                lastQualifiedCache = cached;
+                return cached;
+            }
+
+            synchronized (this) {
+                final Object2ObjectOpenHashMap<String, Object> rechecked = qualifiedCache.get(definedIn);
+                if (rechecked != null) {
+                    lastDefinedIn = definedIn;
+                    lastQualifiedCache = rechecked;
+                    return rechecked;
+                }
+
+                final Object2ObjectOpenHashMap<String, Object> created = new Object2ObjectOpenHashMap<>(8);
+                qualifiedCache.put(definedIn, created);
+                lastDefinedIn = definedIn;
+                lastQualifiedCache = created;
+                return created;
+            }
         }
-
-        final Object2ObjectOpenHashMap<String, Object> created = new Object2ObjectOpenHashMap<>();
-        cache.put(key, created);
-        return created;
     }
 }
