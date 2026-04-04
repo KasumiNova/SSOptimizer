@@ -17,6 +17,7 @@
     "save.CampaignSaveProgressDialogMixin",
     "save.CampaignSaveProgressOutputStreamMixin",
     "save.Txw2IndentingXmlStreamWriterMixin",
+    "save.XStreamDefaultConverterLookupMixin",
     "save.XStreamFieldDictionaryMixin",
     "save.XStreamFieldsMixin",
     "save.XStreamObjectIdDictionaryMixin",

@@ -31,6 +31,7 @@ class MixinBridgeIntegrationTest {
     private static final String SAVE_OVERLAY_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/save/SaveProgressOverlayCoordinator";
     private static final String TXW2_ACCESSOR_INTERFACE = "github/kasuminova/ssoptimizer/mixin/accessor/Txw2DelegatingXmlStreamWriterAccessor";
     private static final String TXW2_COMPACT_WRITER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/Txw2CompactXmlWriterHelper";
+    private static final String XSTREAM_CONVERTER_LOOKUP_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamConverterLookupCache";
     private static final String XSTREAM_FIELD_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldDictionaryLookupCache";
     private static final String XSTREAM_FIELD_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldAccessHelper";
     private static final String XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamObjectIdDictionaryHelper";
@@ -223,6 +224,25 @@ class MixinBridgeIntegrationTest {
         assertNotNull(transformed);
         assertTrue(containsMethodInvocation(transformed, XSTREAM_FIELD_HELPER_OWNER, "read"));
         assertTrue(containsMethodInvocation(transformed, XSTREAM_FIELD_HELPER_OWNER, "write"));
+    }
+
+    @Test
+    void bridgeAppliesXStreamDefaultConverterLookupMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/thoughtworks/xstream/core/DefaultConverterLookup.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/thoughtworks/xstream/core/DefaultConverterLookup",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_CONVERTER_LOOKUP_HELPER_OWNER, "lookup"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_CONVERTER_LOOKUP_HELPER_OWNER, "remember"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_CONVERTER_LOOKUP_HELPER_OWNER, "clear"));
     }
 
     @Test
