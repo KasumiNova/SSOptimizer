@@ -9,10 +9,12 @@
     "accessor.EngineSlotAccessor",
     "accessor.EngineStateAccessor",
     "accessor.ShipAccessor",
+    "accessor.Txw2DelegatingXmlStreamWriterAccessor",
     "loading.JaninoJavaSourceClassLoaderMixin",
     "loading.ParallelImagePreloaderMixin",
     "loading.SoundManagerMixin",
     "render.EngineRenderMixin",
+    "save.Txw2IndentingXmlStreamWriterMixin",
     "save.XStreamFieldDictionaryMixin",
     "save.XStreamFieldsMixin",
     "save.XStreamPathTrackerMixin"

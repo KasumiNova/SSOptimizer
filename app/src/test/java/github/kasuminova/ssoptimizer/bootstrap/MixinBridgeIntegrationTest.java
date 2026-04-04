@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class MixinBridgeIntegrationTest {
     private static final String JANINO_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/loading/script/JaninoScriptCompilerCoordinator";
     private static final String SOUND_COORDINATOR_OWNER  = "github/kasuminova/ssoptimizer/common/loading/sound/ParallelSoundLoadCoordinator";
+    private static final String TXW2_ACCESSOR_INTERFACE = "github/kasuminova/ssoptimizer/mixin/accessor/Txw2DelegatingXmlStreamWriterAccessor";
+    private static final String TXW2_COMPACT_WRITER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/Txw2CompactXmlWriterHelper";
     private static final String XSTREAM_FIELD_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldDictionaryLookupCache";
     private static final String XSTREAM_FIELD_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldAccessHelper";
     private static final String XSTREAM_PATH_TRACKER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamPathTrackerHelper";
@@ -254,6 +256,44 @@ class MixinBridgeIntegrationTest {
         assertNotNull(transformed);
         assertTrue(containsMethodInvocation(transformed, XSTREAM_PATH_TRACKER_HELPER_OWNER, "formatElement"));
         assertTrue(containsMethodInvocation(transformed, XSTREAM_PATH_TRACKER_HELPER_OWNER, "buildPath"));
+    }
+
+    @Test
+    void bridgeAppliesTxw2DelegatingWriterAccessorToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/sun/xml/txw2/output/DelegatingXMLStreamWriter.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/sun/xml/txw2/output/DelegatingXMLStreamWriter",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+
+        ClassReader reader = new ClassReader(transformed);
+        assertTrue(Arrays.asList(reader.getInterfaces()).contains(TXW2_ACCESSOR_INTERFACE),
+                "Transformed DelegatingXMLStreamWriter should implement Txw2DelegatingXmlStreamWriterAccessor");
+    }
+
+    @Test
+    void bridgeAppliesTxw2IndentingWriterMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/sun/xml/txw2/output/IndentingXMLStreamWriter.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/sun/xml/txw2/output/IndentingXMLStreamWriter",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, TXW2_COMPACT_WRITER_HELPER_OWNER, "writeStartElement"));
+        assertTrue(containsMethodInvocation(transformed, TXW2_COMPACT_WRITER_HELPER_OWNER, "writeEndElement"));
     }
 
     @Test

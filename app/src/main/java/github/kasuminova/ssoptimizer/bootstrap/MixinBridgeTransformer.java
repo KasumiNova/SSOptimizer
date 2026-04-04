@@ -66,6 +66,10 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
             return true;
         }
 
+        if (isExplicitThirdPartyMixinTarget(className)) {
+            return false;
+        }
+
         return className.startsWith("java/")
                 || className.startsWith("javax/")
                 || className.startsWith("jdk/")
@@ -79,6 +83,8 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
 
     private static boolean isExplicitThirdPartyMixinTarget(final String className) {
         return "org/codehaus/janino/JavaSourceClassLoader".equals(className)
+            || "com/sun/xml/txw2/output/DelegatingXMLStreamWriter".equals(className)
+            || "com/sun/xml/txw2/output/IndentingXMLStreamWriter".equals(className)
                 || "com/thoughtworks/xstream/converters/reflection/FieldDictionary".equals(className)
                 || "com/thoughtworks/xstream/core/util/Fields".equals(className)
                 || "com/thoughtworks/xstream/io/path/PathTracker".equals(className)
