@@ -52,11 +52,14 @@ class ReflectionSanitizingTransformerTest {
     }
 
     @Test
-    void skipsJaninoLoadedClassesEvenWhenHelperVisibilityIsReady() {
+    void rewritesJaninoLoadedClassesWhenHelperVisibilityIsReady() {
         BootstrapSearchInstaller.forceInstalledForTest();
         ClassLoader janinoLoader = new JavaSourceClassLoader(getClass().getClassLoader(), new File[0], null);
-        byte[] classBytes = createClassWithGetMethod("thirdparty/mod/MyModEntry");
-        assertNull(transformer.transform(janinoLoader, "thirdparty/mod/MyModEntry", null, null, classBytes));
+        byte[] classBytes = createClassWithGetDeclaredField("thirdparty/mod/MyModEntry");
+        byte[] result = transformer.transform(janinoLoader, "thirdparty/mod/MyModEntry", null, null, classBytes);
+
+        assertNotNull(result, "Janino 运行时编译的模组类也应被反射净化覆盖");
+        assertTrue(containsInvokeStatic(result, "github/kasuminova/ssoptimizer/bootstrap/ReflectionHelper", "getDeclaredField"));
     }
 
     @Test

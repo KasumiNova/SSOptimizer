@@ -71,20 +71,16 @@ public final class ReflectionSanitizingTransformer implements ClassFileTransform
                 || className.startsWith("github/kasuminova/ssoptimizer/");
     }
 
-    private static boolean isJaninoLoader(ClassLoader loader) {
-        for (Class<?> type = loader != null ? loader.getClass() : null; type != null; type = type.getSuperclass()) {
-            if ("org.codehaus.janino.JavaSourceClassLoader".equals(type.getName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * {@inheritDoc}
      * <p>
      * 遍历类中所有方法的字节码，将 {@code invokevirtual Class.getMethod/getField} 等
      * 调用重写为 {@code invokestatic ReflectionHelper} 的对应方法。
+     * 这里不能跳过 Janino 脚本类：大量模组源码会由
+     * {@code org.codehaus.janino.JavaSourceClassLoader} 在运行时编译加载，
+     * 这些类同样可能通过 {@link Class#getDeclaredField(String)} /
+     * {@link Class#getDeclaredMethod(String, Class[])} 反射访问已被 remap 或 sanitize
+     * 的引擎成员。若跳过 Janino loader，就会漏掉这类第三方模组兼容。
      */
     @Override
     public byte[] transform(ClassLoader loader,
@@ -95,7 +91,7 @@ public final class ReflectionSanitizingTransformer implements ClassFileTransform
         if (className == null || classfileBuffer == null) {
             return null;
         }
-        if (isJaninoLoader(loader) || isSkipped(className)) {
+        if (isSkipped(className)) {
             return null;
         }
 

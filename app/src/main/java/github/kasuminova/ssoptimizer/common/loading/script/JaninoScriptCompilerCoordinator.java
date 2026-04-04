@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -58,6 +59,7 @@ public final class JaninoScriptCompilerCoordinator {
     private static final Field DIRECTORY_FIELD        = resolveField(DirectoryResourceFinder.class, "directory");
 
     private static final Map<JavaSourceClassLoader, WarmupState> WARMUP_STATES = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final ConcurrentHashMap<String, byte[]> IN_MEMORY_CACHE = new ConcurrentHashMap<>();
 
     private JaninoScriptCompilerCoordinator() {
     }
@@ -93,6 +95,12 @@ public final class JaninoScriptCompilerCoordinator {
                                                              final String className) {
         if (loader == null || className == null || className.isBlank() || Boolean.getBoolean(DISABLE_CACHE_PROPERTY)) {
             return null;
+        }
+
+        // 优先从内存缓存取（warmup 线程编译后直接写入，免磁盘 round-trip）
+        final byte[] inMemory = IN_MEMORY_CACHE.get(className);
+        if (inMemory != null) {
+            return Map.of(className, inMemory);
         }
 
         final List<File> sourceRoots = resolveSourceRoots(loader);
@@ -208,6 +216,7 @@ public final class JaninoScriptCompilerCoordinator {
         synchronized (WARMUP_STATES) {
             WARMUP_STATES.clear();
         }
+        IN_MEMORY_CACHE.clear();
     }
 
     private static void warmupClass(final ClassLoader parentLoader,
@@ -251,6 +260,9 @@ public final class JaninoScriptCompilerCoordinator {
             if (className == null || className.isBlank() || bytes == null || bytes.length == 0) {
                 continue;
             }
+
+            // 同时写入内存缓存，使主线程可直接取用而无需再走磁盘
+            IN_MEMORY_CACHE.put(className, bytes);
 
             final Path cacheFile = cacheFile(className);
             try {

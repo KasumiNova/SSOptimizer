@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
+import org.apache.log4j.Logger;
 import org.lwjgl.BufferUtils;
 
 import java.awt.*;
@@ -15,8 +16,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * 贴图像素转换缓存。
@@ -24,11 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * 将解码后的 ARGB 像素数据经 Zstd 压缩缓存到磁盘，避免每次启动都重新解码和像素转换。
  * 缓存文件经 MD5 hash 校验，源文件变更后自动失效。
  */
-final class TextureConversionCache {
+public final class TextureConversionCache {
     static final String DISABLE_PROPERTY          = "ssoptimizer.disable.texturecache";
     static final String DIRECTORY_PROPERTY        = "ssoptimizer.texturecache.dir";
     static final String MEMORY_MAX_BYTES_PROPERTY = "ssoptimizer.texturecache.memory.maxbytes";
+    static final String DISABLE_WARMUP_PROPERTY   = "ssoptimizer.disable.texturecache.warmup";
 
+    private static final Logger                        LOGGER                   = Logger.getLogger(TextureConversionCache.class);
     private static final String                        MAGIC                    = "SSOTEX";
     private static final String                        INDEX_MAGIC              = "SSOTEXIDX";
     private static final int                           VERSION                  = 3;
@@ -40,6 +47,8 @@ final class TextureConversionCache {
     private static final Object                        MEMORY_CACHE_LOCK        = new Object();
     private static final LinkedHashMap<String, byte[]> MEMORY_CACHE             = new LinkedHashMap<>(16, 0.75f, true);
     private static final Map<String, ResourceIndexEntry> RESOURCE_INDEX_CACHE   = new ConcurrentHashMap<>();
+    private static final AtomicBoolean                 WARMUP_STARTED           = new AtomicBoolean(false);
+    private static volatile CompletableFuture<Void>    warmupFuture             = null;
     private static       long                          memoryCacheBytes         = 0L;
 
     private TextureConversionCache() {
@@ -167,6 +176,127 @@ final class TextureConversionCache {
             memoryCacheBytes = 0L;
         }
         RESOURCE_INDEX_CACHE.clear();
+    }
+
+    /**
+     * 在后台线程批量预热磁盘缓存到内存，降低后续主线程贴图加载的磁盘 I/O。
+     * <p>
+     * 同时预加载所有资源路径索引条目到 {@code RESOURCE_INDEX_CACHE}，
+     * 使 {@link #loadByResourcePath} 不需要逐个磁盘查找。
+     * <p>
+     * 仅在首次调用时生效；重复调用无效。
+     */
+    public static void warmupMemoryCache() {
+        if (!isEnabled()
+                || Boolean.getBoolean(DISABLE_WARMUP_PROPERTY)
+                || !WARMUP_STARTED.compareAndSet(false, true)) {
+            return;
+        }
+
+        warmupFuture = CompletableFuture.runAsync(TextureConversionCache::doWarmup);
+    }
+
+    /**
+     * 等待预热完成（仅测试用途）。
+     *
+     * @param timeoutMillis 最大等待毫秒
+     * @return 预热是否在超时前完成
+     */
+    static boolean awaitWarmup(final long timeoutMillis) {
+        final CompletableFuture<Void> future = warmupFuture;
+        if (future == null) {
+            return true;
+        }
+        try {
+            future.get(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    static void resetWarmupForTests() {
+        WARMUP_STARTED.set(false);
+        warmupFuture = null;
+    }
+
+    private static void doWarmup() {
+        final Path cacheDir = cacheDirectory();
+        if (!Files.isDirectory(cacheDir)) {
+            return;
+        }
+
+        final long maxBytes = maximumMemoryBytes();
+        final long startNanos = System.nanoTime();
+        int indexCount = 0;
+        int dataCount = 0;
+        long totalBytes = 0L;
+
+        // 1. 预热资源路径索引
+        final Path indexDir = cacheDir.resolve("index");
+        if (Files.isDirectory(indexDir)) {
+            try (Stream<Path> indexPaths = Files.walk(indexDir)) {
+                final List<Path> indexFiles = indexPaths
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.getFileName().toString().endsWith(INDEX_EXTENSION))
+                        .toList();
+                for (Path indexFile : indexFiles) {
+                    try {
+                        preloadIndexFile(indexFile);
+                        indexCount++;
+                    } catch (IOException | RuntimeException ignored) {
+                    }
+                }
+            } catch (IOException ignored) {
+            }
+        }
+
+        // 2. 预热 zstd 压缩数据到内存
+        try (Stream<Path> cachePaths = Files.walk(cacheDir)) {
+            final List<Path> dataFiles = cachePaths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(FILE_EXTENSION))
+                    .toList();
+            for (Path dataFile : dataFiles) {
+                if (totalBytes >= maxBytes) {
+                    break;
+                }
+                try {
+                    final byte[] compressed = Files.readAllBytes(dataFile);
+                    final String fileName = dataFile.getFileName().toString();
+                    final String sourceHash = fileName.substring(0, fileName.length() - FILE_EXTENSION.length());
+                    rememberCompressed(sourceHash, compressed);
+                    totalBytes += compressed.length;
+                    dataCount++;
+                } catch (IOException | RuntimeException ignored) {
+                }
+            }
+        } catch (IOException ignored) {
+        }
+
+        final long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
+        LOGGER.info("[SSOptimizer] Texture cache warmup complete: "
+                + dataCount + " data file(s) (" + (totalBytes >> 10) + " KiB), "
+                + indexCount + " index file(s), "
+                + elapsedMs + " ms");
+    }
+
+    private static void preloadIndexFile(final Path indexFile) throws IOException {
+        try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(indexFile)))) {
+            final String magic = input.readUTF();
+            final int version = input.readInt();
+            final ResourceIndexEntry entry = new ResourceIndexEntry(
+                    input.readUTF(),
+                    input.readUTF(),
+                    input.readLong(),
+                    input.readLong(),
+                    input.readUTF()
+            );
+            if (!INDEX_MAGIC.equals(magic) || version != INDEX_VERSION) {
+                return;
+            }
+            RESOURCE_INDEX_CACHE.put(entry.normalizedResourcePath(), entry);
+        }
     }
 
     private static Object lockFor(final String sourceHash) {
