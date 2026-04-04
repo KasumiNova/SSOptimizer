@@ -1,7 +1,10 @@
 package github.kasuminova.ssoptimizer.common.save;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.SettingsAPI;
 import com.fs.starfarer.campaign.save.CampaignSaveProgressDialog;
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 import org.lwjgl.opengl.GLContext;
 
 import java.util.Locale;
@@ -15,22 +18,32 @@ import java.util.concurrent.atomic.AtomicLong;
  * 设计动机：原版将保存 UI 的 render 与 {@code OutputStream.write(...)} 紧耦合，导致一旦真实写出落到后台线程，
  * 就会在无 OpenGL 上下文的线程里调用渲染代码并崩溃。<br>
  * 兼容性策略：后台线程只更新状态，不直接触碰原版 UI；真正的原版界面回调只允许在当前线程持有 OpenGL
- * 上下文时发生，并且按固定帧率节流，避免重新落回“每写一点就重画一次”的旧模型。
+ * 上下文时发生，并且按目标刷新率节流，避免重新落回“每写一点就重画一次”的旧模型。
  */
 public final class SaveProgressOverlayCoordinator {
     private static final Logger LOGGER = Logger.getLogger(SaveProgressOverlayCoordinator.class);
+
+    private static final long DEFAULT_MIN_RENDER_INTERVAL_NANOS = 33_000_000L;
+    private static final long RENDER_INTERVAL_CACHE_NANOS = 1_000_000_000L;
+    private static final int  MIN_TARGET_FPS = 30;
+    private static final int  MAX_TARGET_FPS = 240;
 
     /**
     * 禁用保存进度原版界面回放的系统属性。
      */
     public static final String DISABLE_SAVE_OVERLAY_PROPERTY = "ssoptimizer.disable.save.progress.overlay";
 
-    private static final long        MIN_RENDER_INTERVAL_NANOS = 33_000_000L;
+    /**
+     * 覆盖保存/读档进度界面目标刷新率的系统属性。
+     */
+    public static final String SAVE_OVERLAY_FPS_OVERRIDE_PROPERTY = "ssoptimizer.save.progress.fps";
+
     private static final long        PUMP_HINT_INTERVAL_MASK   = 0x7FL;
     private static final AtomicLong  UPDATE_SEQUENCE           = new AtomicLong();
     private static final AtomicLong  PUMP_HINT_COUNTER         = new AtomicLong();
     private static final ThreadLocal<Boolean> RENDER_GUARD     = ThreadLocal.withInitial(() -> false);
     private static final ThreadLocal<Boolean> REPLAY_GUARD     = ThreadLocal.withInitial(() -> false);
+    private static final Object      CURRENT_REFRESH_LOCK      = new Object();
 
     private static volatile CampaignSaveProgressDialog dialog;
     private static volatile boolean active;
@@ -46,6 +59,9 @@ public final class SaveProgressOverlayCoordinator {
     private static volatile float   explicitProgress = Float.NaN;
     private static volatile long    lastRenderedSequence;
     private static volatile long    lastRenderNanos;
+    private static volatile long    lastPumpHintNanos;
+    private static volatile long    cachedRenderIntervalExpiresAtNanos = Long.MIN_VALUE;
+    private static volatile long    cachedRenderIntervalNanos = DEFAULT_MIN_RENDER_INTERVAL_NANOS;
 
     private SaveProgressOverlayCoordinator() {
     }
@@ -73,6 +89,7 @@ public final class SaveProgressOverlayCoordinator {
         startProgress = clamp01(phaseStart);
         endProgress = Math.max(startProgress, clamp01(phaseEnd));
         explicitProgress = Float.NaN;
+        lastPumpHintNanos = 0L;
         if (statusText == null || statusText.isBlank()) {
             statusText = "保存中...";
         }
@@ -210,9 +227,19 @@ public final class SaveProgressOverlayCoordinator {
         if (Boolean.getBoolean(DISABLE_SAVE_OVERLAY_PROPERTY) || (!active && !completed)) {
             return;
         }
+
+        final long now = System.nanoTime();
+        final long minRenderIntervalNanos = minimumRenderIntervalNanos();
+        if (completed || now - lastPumpHintNanos >= minRenderIntervalNanos) {
+            lastPumpHintNanos = now;
+            maybePumpFrame();
+            return;
+        }
+
         if ((PUMP_HINT_COUNTER.incrementAndGet() & PUMP_HINT_INTERVAL_MASK) != 0L) {
             return;
         }
+        lastPumpHintNanos = now;
         maybePumpFrame();
     }
 
@@ -257,7 +284,8 @@ public final class SaveProgressOverlayCoordinator {
         }
 
         final long now = System.nanoTime();
-        if (!completed && now - lastRenderNanos < MIN_RENDER_INTERVAL_NANOS) {
+        final long minRenderIntervalNanos = minimumRenderIntervalNanos();
+        if (!completed && now - lastRenderNanos < minRenderIntervalNanos) {
             return;
         }
 
@@ -323,6 +351,43 @@ public final class SaveProgressOverlayCoordinator {
 
     static void resetForTests() {
         clearState();
+        resetRefreshRateCacheForTests();
+    }
+
+    static DisplayRefreshConfig readDisplayRefreshConfig() {
+        try {
+            final SettingsAPI settings = Global.getSettings();
+            if (settings == null) {
+                return DisplayRefreshConfig.DEFAULT;
+            }
+
+            final boolean vsync = readBooleanSetting(settings, "vsync");
+            final int fps = readIntSetting(settings, "fps");
+            final int refreshRateOverride = readRefreshRateOverride(settings);
+            return new DisplayRefreshConfig(vsync, fps, refreshRateOverride);
+        } catch (final Throwable ignored) {
+            return DisplayRefreshConfig.DEFAULT;
+        }
+    }
+
+    static long resolveRenderIntervalNanos(final DisplayRefreshConfig config) {
+        final int propertyOverride = Integer.getInteger(SAVE_OVERLAY_FPS_OVERRIDE_PROPERTY, 0);
+        if (propertyOverride > 0) {
+            return intervalForFramesPerSecond(propertyOverride);
+        }
+
+        if (config == null) {
+            return DEFAULT_MIN_RENDER_INTERVAL_NANOS;
+        }
+
+        final int configuredRefreshRate = config.vsyncEnabled() && config.refreshRateOverride() > 0
+                ? config.refreshRateOverride()
+                : config.framesPerSecond();
+        if (configuredRefreshRate <= 0) {
+            return DEFAULT_MIN_RENDER_INTERVAL_NANOS;
+        }
+
+        return intervalForFramesPerSecond(configuredRefreshRate);
     }
 
     private static float resolveProgress() {
@@ -344,6 +409,24 @@ public final class SaveProgressOverlayCoordinator {
         return startProgress + (endProgress - startProgress) * ratio;
     }
 
+    private static long minimumRenderIntervalNanos() {
+        final long now = System.nanoTime();
+        if (now < cachedRenderIntervalExpiresAtNanos) {
+            return cachedRenderIntervalNanos;
+        }
+
+        synchronized (CURRENT_REFRESH_LOCK) {
+            final long refreshedNow = System.nanoTime();
+            if (refreshedNow < cachedRenderIntervalExpiresAtNanos) {
+                return cachedRenderIntervalNanos;
+            }
+
+            cachedRenderIntervalNanos = resolveRenderIntervalNanos(readDisplayRefreshConfig());
+            cachedRenderIntervalExpiresAtNanos = refreshedNow + RENDER_INTERVAL_CACHE_NANOS;
+            return cachedRenderIntervalNanos;
+        }
+    }
+
     private static boolean hasCurrentOpenGlContext() {
         try {
             return GLContext.getCapabilities() != null;
@@ -362,6 +445,44 @@ public final class SaveProgressOverlayCoordinator {
         return value;
     }
 
+    private static long intervalForFramesPerSecond(final int framesPerSecond) {
+        final int clampedFps = Math.max(MIN_TARGET_FPS, Math.min(framesPerSecond, MAX_TARGET_FPS));
+        return Math.max(1L, 1_000_000_000L / clampedFps);
+    }
+
+    private static int readIntSetting(final SettingsAPI settings,
+                                      final String key) {
+        try {
+            return settings.getInt(key);
+        } catch (final Throwable ignored) {
+            return 0;
+        }
+    }
+
+    private static boolean readBooleanSetting(final SettingsAPI settings,
+                                              final String key) {
+        try {
+            return settings.getBoolean(key);
+        } catch (final Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static int readRefreshRateOverride(final SettingsAPI settings) {
+        try {
+            final JSONObject settingsJson = settings.getSettingsJSON();
+            return settingsJson != null ? settingsJson.optInt("refreshRateOverride", 0) : 0;
+        } catch (final Throwable ignored) {
+            return 0;
+        }
+    }
+
+    private static void resetRefreshRateCacheForTests() {
+        cachedRenderIntervalExpiresAtNanos = Long.MIN_VALUE;
+        cachedRenderIntervalNanos = DEFAULT_MIN_RENDER_INTERVAL_NANOS;
+        lastPumpHintNanos = 0L;
+    }
+
     private static void clearState() {
         active = false;
         completed = false;
@@ -377,7 +498,14 @@ public final class SaveProgressOverlayCoordinator {
         explicitProgress = Float.NaN;
         lastRenderedSequence = 0L;
         lastRenderNanos = 0L;
+        lastPumpHintNanos = 0L;
         PUMP_HINT_COUNTER.set(0L);
+    }
+
+    record DisplayRefreshConfig(boolean vsyncEnabled,
+                                int framesPerSecond,
+                                int refreshRateOverride) {
+        private static final DisplayRefreshConfig DEFAULT = new DisplayRefreshConfig(false, 0, 0);
     }
 
     /**
