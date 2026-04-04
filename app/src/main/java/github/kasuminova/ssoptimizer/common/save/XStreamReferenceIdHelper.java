@@ -5,21 +5,38 @@ import com.thoughtworks.xstream.mapper.Mapper;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * XStream 引用 ID 生成辅助类。
  * <p>
  * 职责：为 {@code ReferenceByIdMarshaller} 的默认 {@code SequenceGenerator} 提供更紧凑的引用 ID 生成路径，
- * 避免每次都走十进制 {@link String#valueOf(int)} 的热点转换。<br>
- * 设计动机：更新后的热点报告显示 {@code SequenceGenerator.next()} 在大存档保存时稳定占据前排 CPU；
- * 这些 ID 只在单个 XML 文档内部做引用匹配，不要求保持十进制格式，因此可以改为更短的 base36 文本。<br>
+ * 避免每次都走十进制 {@link String#valueOf(int)} 的热点转换，并按需异步扩展预生成 ID 池。<br>
+ * 设计动机：现有真实战役存档的对象引用序号普遍远超 64K；若只缓存一小段前缀，保存后半程仍会重新落回
+ * `int -> String` 热点，因此这里改为“固定首块 + 后台分块补齐”的自适应池。<br>
  * 兼容性策略：仅当 marshaller 实际持有 XStream 默认的 {@code SequenceGenerator} 时才启用优化；
  * 若上游传入自定义 {@code IDGenerator}，则完全回退到原始生成逻辑，不改变外部行为。
  */
 public final class XStreamReferenceIdHelper {
-    private static final int PRECOMPUTED_REFERENCE_ID_LIMIT = 1 << 16;
+    static final String MAX_PRECOMPUTED_REFERENCE_ID_PROPERTY = "ssoptimizer.save.referenceid.cache.max";
+
+    private static final int REFERENCE_ID_CHUNK_SHIFT = 16;
+    private static final int REFERENCE_ID_CHUNK_SIZE = 1 << REFERENCE_ID_CHUNK_SHIFT;
+    private static final int REFERENCE_ID_CHUNK_MASK = REFERENCE_ID_CHUNK_SIZE - 1;
+    private static final int DEFAULT_MAX_PRECOMPUTED_REFERENCE_ID_LIMIT = 1 << 20;
+    private static final int PROACTIVE_WARMUP_REMAINING_THRESHOLD = REFERENCE_ID_CHUNK_SIZE >>> 2;
+
     private static final char[] DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray();
-    private static final String[] PRECOMPUTED_REFERENCE_IDS = buildPrecomputedReferenceIds();
+    private static final AtomicInteger REQUESTED_WARMUP_LIMIT = new AtomicInteger(REFERENCE_ID_CHUNK_SIZE);
+    private static final AtomicBoolean WARMUP_RUNNING = new AtomicBoolean(false);
+
+    private static volatile String[][] precomputedReferenceIdChunks = buildInitialPrecomputedChunks();
+    private static volatile int precomputedReferenceIdLimit = REFERENCE_ID_CHUNK_SIZE;
+    private static volatile CompletableFuture<Void> warmupFuture;
 
     private static final Class<?> SEQUENCE_GENERATOR_CLASS = resolveSequenceGeneratorClass();
     private static final VarHandle SEQUENCE_COUNTER_HANDLE = resolveSequenceCounterHandle();
@@ -91,16 +108,23 @@ public final class XStreamReferenceIdHelper {
         if (writer == null || attributeName == null) {
             return;
         }
-        writer.addAttribute(attributeName, item instanceof String string ? string : item.toString());
+        writer.addAttribute(attributeName, item.toString());
     }
 
     static String toCompactString(final int value) {
         if (value < 0) {
             throw new IllegalArgumentException("Reference id must be non-negative: " + value);
         }
-        if (value < PRECOMPUTED_REFERENCE_ID_LIMIT) {
-            return PRECOMPUTED_REFERENCE_IDS[value];
+
+        final String cached = lookupPrecomputedReferenceId(value);
+        if (cached != null) {
+            if (value >= precomputedReferenceIdLimit - PROACTIVE_WARMUP_REMAINING_THRESHOLD) {
+                requestAdaptiveWarmup(value + REFERENCE_ID_CHUNK_SIZE);
+            }
+            return cached;
         }
+
+        requestAdaptiveWarmup(value);
         return toCompactStringUncached(value);
     }
 
@@ -123,13 +147,129 @@ public final class XStreamReferenceIdHelper {
         return new String(buffer, cursor, buffer.length - cursor);
     }
 
-    private static String[] buildPrecomputedReferenceIds() {
-        final String[] cache = new String[PRECOMPUTED_REFERENCE_ID_LIMIT];
-        cache[0] = "0";
-        for (int value = 1; value < cache.length; value++) {
-            cache[value] = toCompactStringUncached(value);
+    static void resetAdaptiveCacheForTests() {
+        REQUESTED_WARMUP_LIMIT.set(REFERENCE_ID_CHUNK_SIZE);
+        precomputedReferenceIdChunks = buildInitialPrecomputedChunks();
+        precomputedReferenceIdLimit = REFERENCE_ID_CHUNK_SIZE;
+        warmupFuture = null;
+        WARMUP_RUNNING.set(false);
+    }
+
+    static void requestWarmupToForTests(final int maxValue) {
+        requestAdaptiveWarmup(maxValue);
+    }
+
+    static boolean awaitWarmup(final long timeoutMillis) {
+        final CompletableFuture<Void> future = warmupFuture;
+        if (future == null) {
+            return true;
         }
-        return cache;
+        try {
+            future.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    static int cachedReferenceIdUpperBound() {
+        return precomputedReferenceIdLimit - 1;
+    }
+
+    private static void requestAdaptiveWarmup(final int maxValue) {
+        final int targetLimit = clampWarmupLimit(roundUpToChunkBoundary(maxValue + 1));
+        if (targetLimit <= precomputedReferenceIdLimit) {
+            return;
+        }
+
+        REQUESTED_WARMUP_LIMIT.accumulateAndGet(targetLimit, Math::max);
+        startWarmupIfNeeded();
+    }
+
+    private static void startWarmupIfNeeded() {
+        if (!WARMUP_RUNNING.compareAndSet(false, true)) {
+            return;
+        }
+
+        warmupFuture = CompletableFuture.runAsync(() -> {
+            try {
+                warmupRequestedChunks();
+            } finally {
+                WARMUP_RUNNING.set(false);
+                if (REQUESTED_WARMUP_LIMIT.get() > precomputedReferenceIdLimit) {
+                    startWarmupIfNeeded();
+                }
+            }
+        });
+    }
+
+    private static void warmupRequestedChunks() {
+        while (true) {
+            final int requestedLimit = REQUESTED_WARMUP_LIMIT.get();
+            final int currentLimit = precomputedReferenceIdLimit;
+            if (currentLimit >= requestedLimit) {
+                return;
+            }
+
+            final int nextChunkIndex = currentLimit >>> REFERENCE_ID_CHUNK_SHIFT;
+            final String[] nextChunk = buildReferenceIdChunk(nextChunkIndex);
+
+            synchronized (XStreamReferenceIdHelper.class) {
+                if (precomputedReferenceIdLimit != currentLimit) {
+                    continue;
+                }
+
+                final String[][] currentChunks = precomputedReferenceIdChunks;
+                final String[][] expanded = Arrays.copyOf(currentChunks, nextChunkIndex + 1);
+                expanded[nextChunkIndex] = nextChunk;
+                precomputedReferenceIdChunks = expanded;
+                precomputedReferenceIdLimit = (nextChunkIndex + 1) * REFERENCE_ID_CHUNK_SIZE;
+            }
+        }
+    }
+
+    private static int clampWarmupLimit(final int requestedLimit) {
+        return Math.max(REFERENCE_ID_CHUNK_SIZE,
+                Math.min(requestedLimit, configuredMaximumPrecomputedReferenceIdLimit()));
+    }
+
+    private static int configuredMaximumPrecomputedReferenceIdLimit() {
+        final int configured = Integer.getInteger(MAX_PRECOMPUTED_REFERENCE_ID_PROPERTY,
+                DEFAULT_MAX_PRECOMPUTED_REFERENCE_ID_LIMIT);
+        return roundUpToChunkBoundary(Math.max(REFERENCE_ID_CHUNK_SIZE, configured));
+    }
+
+    private static int roundUpToChunkBoundary(final int value) {
+        if (value <= REFERENCE_ID_CHUNK_SIZE) {
+            return REFERENCE_ID_CHUNK_SIZE;
+        }
+
+        final long rounded = ((long) value + REFERENCE_ID_CHUNK_SIZE - 1L) & ~((long) REFERENCE_ID_CHUNK_MASK);
+        return rounded >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) rounded;
+    }
+
+    private static String lookupPrecomputedReferenceId(final int value) {
+        final String[][] chunks = precomputedReferenceIdChunks;
+        final int chunkIndex = value >>> REFERENCE_ID_CHUNK_SHIFT;
+        if (chunkIndex >= chunks.length) {
+            return null;
+        }
+
+        final String[] chunk = chunks[chunkIndex];
+        return chunk == null ? null : chunk[value & REFERENCE_ID_CHUNK_MASK];
+    }
+
+    private static String[][] buildInitialPrecomputedChunks() {
+        return new String[][]{buildReferenceIdChunk(0)};
+    }
+
+    private static String[] buildReferenceIdChunk(final int chunkIndex) {
+        final int startValue = chunkIndex * REFERENCE_ID_CHUNK_SIZE;
+        final String[] chunk = new String[REFERENCE_ID_CHUNK_SIZE];
+        for (int offset = 0; offset < chunk.length; offset++) {
+            chunk[offset] = toCompactStringUncached(startValue + offset);
+        }
+        return chunk;
     }
 
     private static Class<?> resolveSequenceGeneratorClass() {

@@ -11,6 +11,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.concurrent.TimeUnit;
@@ -32,14 +33,24 @@ public class XStreamReferenceIdStringBenchmark {
      */
     @State(Scope.Thread)
     public static class SequenceState {
-        @Param({"1024", "65535", "262144"})
+        @Param({"1024", "65535", "262144", "1048576"})
         public int maxValue;
 
         private int currentValue;
 
-        @Setup(Level.Iteration)
+        @Setup(Level.Trial)
         public void setup() {
+            XStreamReferenceIdHelper.resetAdaptiveCacheForTests();
+            XStreamReferenceIdHelper.requestWarmupToForTests(maxValue);
+            if (!XStreamReferenceIdHelper.awaitWarmup(30_000L)) {
+                throw new IllegalStateException("等待 XStream 引用 ID 池预热超时: maxValue=" + maxValue);
+            }
             currentValue = 0;
+        }
+
+        @TearDown(Level.Trial)
+        public void tearDown() {
+            XStreamReferenceIdHelper.resetAdaptiveCacheForTests();
         }
 
         int nextValue() {

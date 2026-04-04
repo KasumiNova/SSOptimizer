@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.mixin.save;
 
 import com.thoughtworks.xstream.io.path.Path;
 import github.kasuminova.ssoptimizer.common.save.XStreamPathTrackerHelper;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -72,7 +73,7 @@ public abstract class XStreamPathTrackerMixin {
         pathStack[pointer] = name;
         Map<String, Integer> indexMap = indexMapStack[pointer];
         if (indexMap == null) {
-            indexMap = new HashMap<>();
+            indexMap = new Object2ObjectOpenHashMap<>();
             indexMapStack[pointer] = indexMap;
         }
 

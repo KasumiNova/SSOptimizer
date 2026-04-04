@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.common.save;
 
 import com.thoughtworks.xstream.core.SequenceGenerator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,6 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class XStreamReferenceIdHelperTest {
+    @AfterEach
+    void tearDown() {
+        XStreamReferenceIdHelper.resetAdaptiveCacheForTests();
+    }
+
     @Test
     void readsDefaultSequenceGeneratorCounter() {
         final SequenceGenerator generator = new SequenceGenerator(73);
@@ -32,5 +38,23 @@ class XStreamReferenceIdHelperTest {
     @Test
     void helperRejectsUnsupportedGeneratorTypes() {
         assertFalse(XStreamReferenceIdHelper.supportsOptimizedIds(new Object()));
+    }
+
+    @Test
+    void helperWarmsAdditionalChunksForLargeReferenceIds() {
+        assertEquals(65_535, XStreamReferenceIdHelper.cachedReferenceIdUpperBound());
+
+        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(262_144), XStreamReferenceIdHelper.toCompactString(262_144));
+        assertTrue(XStreamReferenceIdHelper.awaitWarmup(5_000L));
+        assertTrue(XStreamReferenceIdHelper.cachedReferenceIdUpperBound() >= 262_143);
+        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(131_072), XStreamReferenceIdHelper.toCompactString(131_072));
+    }
+
+    @Test
+    void explicitWarmupCanExpandCacheUpToConfiguredLimit() {
+        XStreamReferenceIdHelper.requestWarmupToForTests(700_000);
+
+        assertTrue(XStreamReferenceIdHelper.awaitWarmup(10_000L));
+        assertTrue(XStreamReferenceIdHelper.cachedReferenceIdUpperBound() >= 720_895);
     }
 }
