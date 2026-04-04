@@ -87,48 +87,57 @@ class MappingLookupTest {
         assertEquals("Ò00000", methodEntry.obfuscatedName());
     }
 
-        @Test
-        void saveProgressMappingsCanBeResolvedByNamedName() {
+    @Test
+    void saveProgressMappingsCanBeResolvedByNamedName() {
         MappingEntry dialogClass = lookup.requireClassByNamedName("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog");
         MappingEntry reportProgress = lookup.requireMethodByNamedName(
-            "com/fs/starfarer/campaign/save/CampaignSaveProgressDialog",
-            "reportProgress",
-            "(Ljava/lang/String;F)V");
+                "com/fs/starfarer/campaign/save/CampaignSaveProgressDialog",
+                "reportProgress",
+                "(Ljava/lang/String;F)V");
         MappingEntry streamField = lookup.requireFieldByNamedName(
-            "com/fs/starfarer/util/SaveProgressOutputStream",
-            "writtenBytes");
+                "com/fs/starfarer/util/SaveProgressOutputStream",
+                "writtenBytes");
 
         assertEquals("com/fs/starfarer/campaign/save/B", dialogClass.obfuscatedName());
         assertEquals("o00000", reportProgress.obfuscatedName());
         assertEquals("String", streamField.obfuscatedName());
-        }
+    }
 
-        @Test
-        void renderAndSettingsHelperMappingsRemainQueryable() {
+    @Test
+    void terrainTileClassMappingsCanBeResolvedByNamedName() {
+        MappingEntry baseTerrain = lookup.requireClassByNamedName("com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain");
+        MappingEntry automaton = lookup.requireClassByNamedName("com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton");
+
+        assertEquals("com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain", baseTerrain.obfuscatedName());
+        assertEquals("com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton", automaton.obfuscatedName());
+    }
+
+    @Test
+    void renderAndSettingsHelperMappingsRemainQueryable() {
         MappingEntry beginOverlay = lookup.requireMethodByNamedName(
-            "com/fs/graphics/util/RenderStateUtils",
-            "beginScreenOverlay",
-            "(FFFFF)V");
+                "com/fs/graphics/util/RenderStateUtils",
+                "beginScreenOverlay",
+                "(FFFFF)V");
         MappingEntry endOverlay = lookup.requireMethodByNamedName(
-            "com/fs/graphics/util/RenderStateUtils",
-            "endScreenOverlay",
-            "()V");
+                "com/fs/graphics/util/RenderStateUtils",
+                "endScreenOverlay",
+                "()V");
         MappingEntry getBoolean = lookup.requireMethodByNamedName(
-            "com/fs/starfarer/settings/StarfarerSettings",
-            "getBoolean",
-            "(Ljava/lang/String;)Z");
+                "com/fs/starfarer/settings/StarfarerSettings",
+                "getBoolean",
+                "(Ljava/lang/String;)Z");
 
         assertEquals("o00000", beginOverlay.obfuscatedName());
         assertEquals("class", endOverlay.obfuscatedName());
         assertEquals("Õ00000", getBoolean.obfuscatedName());
-        }
+    }
 
     @Test
     void missingMethodMappingReportsReadableError() {
         MappingLookup lookup = new MappingLookup(TinyV2MappingRepository.loadDefault());
 
         MappingLookupException exception = assertThrows(MappingLookupException.class,
-            () -> lookup.requireMethodByNamedName("com/fs/graphics/TextureLoader", "missingMethod", "()V"));
+                () -> lookup.requireMethodByNamedName("com/fs/graphics/TextureLoader", "missingMethod", "()V"));
         assertEquals("未找到方法映射: com/fs/graphics/TextureLoader#missingMethod()V", exception.getMessage());
     }
 }

@@ -49,6 +49,10 @@ public final class GameClassNames {
     public static final String LOADING_UTILS                       = "com/fs/starfarer/loading/LoadingUtils";
     public static final String STARFARER_SETTINGS                  = "com/fs/starfarer/settings/StarfarerSettings";
     public static final String STARFARER_SETTINGS_DOTTED           = "com.fs.starfarer.settings.StarfarerSettings";
+    public static final String BASE_TILED_TERRAIN                  = "com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain";
+    public static final String BASE_TILED_TERRAIN_DOTTED           = "com.fs.starfarer.api.impl.campaign.terrain.BaseTiledTerrain";
+    public static final String HYPERSPACE_AUTOMATON                = "com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton";
+    public static final String HYPERSPACE_AUTOMATON_DOTTED         = "com.fs.starfarer.api.impl.campaign.terrain.HyperspaceAutomaton";
     public static final String CAMPAIGN_SAVE_PROGRESS_DIALOG       = "com/fs/starfarer/campaign/save/CampaignSaveProgressDialog";
     public static final String CAMPAIGN_SAVE_PROGRESS_DIALOG_DOTTED = "com.fs.starfarer.campaign.save.CampaignSaveProgressDialog";
     public static final String SAVE_PROGRESS_OUTPUT_STREAM         = "com/fs/starfarer/util/SaveProgressOutputStream";

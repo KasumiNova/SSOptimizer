@@ -84,6 +84,8 @@ c com/fs/starfarer/settings/StarfarerSettings$1 com/fs/starfarer/settings/Starfa
 	m Õ00000 getBoolean (Ljava/lang/String;)Z
 c com/fs/starfarer/loading/LoadingUtils com/fs/starfarer/loading/LoadingUtils
 	m super readText (Ljava/io/InputStream;)Ljava/lang/String;
+c com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain
+c com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton
  c com/fs/starfarer/campaign/save/B com/fs/starfarer/campaign/save/CampaignSaveProgressDialog
 	f Ø00000 saveLabel Ljava/lang/String;
 	m o00000 reportProgress (Ljava/lang/String;F)V

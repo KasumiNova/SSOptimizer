@@ -29,6 +29,7 @@ class MixinBridgeIntegrationTest {
     private static final String JANINO_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/loading/script/JaninoScriptCompilerCoordinator";
     private static final String SOUND_COORDINATOR_OWNER  = "github/kasuminova/ssoptimizer/common/loading/sound/ParallelSoundLoadCoordinator";
     private static final String SAVE_OVERLAY_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/save/SaveProgressOverlayCoordinator";
+    private static final String TERRAIN_TILE_COMPRESSION_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/TerrainTileCompressionHelper";
     private static final String TXW2_ACCESSOR_INTERFACE = "github/kasuminova/ssoptimizer/mixin/accessor/Txw2DelegatingXmlStreamWriterAccessor";
     private static final String TXW2_COMPACT_WRITER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/Txw2CompactXmlWriterHelper";
     private static final String XSTREAM_CONVERTER_LOOKUP_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamConverterLookupCache";
@@ -169,6 +170,42 @@ class MixinBridgeIntegrationTest {
         assertTrue(Arrays.asList(reader.getInterfaces())
                          .contains("github/kasuminova/ssoptimizer/common/render/engine/EngineBridge"),
                 "Transformed Engine should implement EngineBridge after mixin application");
+    }
+
+    @Test
+    void bridgeAppliesBaseTiledTerrainMixinToGameClass() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, TERRAIN_TILE_COMPRESSION_HELPER_OWNER, "encodeBinaryTiles"));
+        assertTrue(containsMethodInvocation(transformed, TERRAIN_TILE_COMPRESSION_HELPER_OWNER, "decodeBinaryTiles"));
+    }
+
+    @Test
+    void bridgeAppliesHyperspaceAutomatonMixinToGameClass() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, TERRAIN_TILE_COMPRESSION_HELPER_OWNER, "encodeQuaternaryTiles"));
+        assertTrue(containsMethodInvocation(transformed, TERRAIN_TILE_COMPRESSION_HELPER_OWNER, "decodeQuaternaryTiles"));
     }
 
     @Test
