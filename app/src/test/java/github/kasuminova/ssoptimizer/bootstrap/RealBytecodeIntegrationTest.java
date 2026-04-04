@@ -225,7 +225,7 @@ class RealBytecodeIntegrationTest {
 
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
                 "Parallel preload processor should handle real com.fs.graphics.ParallelImagePreloader bytecode");
-            assertNotNull(rewritten, "Processor should rewrite com.fs.graphics.ParallelImagePreloader lifecycle methods");
+        assertNotNull(rewritten, "Processor should rewrite com.fs.graphics.ParallelImagePreloader lifecycle methods");
 
         int startCalls = countHelperCalls(rewritten,
                 github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.HELPER_OWNER,

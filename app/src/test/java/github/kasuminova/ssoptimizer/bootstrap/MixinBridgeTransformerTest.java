@@ -16,6 +16,8 @@ class MixinBridgeTransformerTest {
         assertTrue(MixinBridgeTransformer.shouldSkipClass("github/kasuminova/ssoptimizer/mixin/render/EngineRenderMixin"));
         assertTrue(MixinBridgeTransformer.shouldSkipClass("thirdparty/mod/PlainModEntry"));
         assertFalse(MixinBridgeTransformer.shouldSkipClass("com/fs/starfarer/combat/entities/G"));
+        assertFalse(MixinBridgeTransformer.shouldSkipClass("org/codehaus/janino/JavaSourceClassLoader"));
+        assertFalse(MixinBridgeTransformer.shouldSkipClass("sound/Object"));
     }
 
     @Test

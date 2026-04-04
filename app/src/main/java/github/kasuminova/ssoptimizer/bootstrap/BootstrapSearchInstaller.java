@@ -22,15 +22,15 @@ import java.util.jar.JarOutputStream;
  * 加入引导类路径。
  */
 final class BootstrapSearchInstaller {
-    private static final Logger   LOGGER             = Logger.getLogger(BootstrapSearchInstaller.class);
-    private static final String[] HELPER_ENTRY_NAMES = {
+    private static final Logger   LOGGER                = Logger.getLogger(BootstrapSearchInstaller.class);
+    private static final String[] HELPER_ENTRY_NAMES    = {
             "github/kasuminova/ssoptimizer/bootstrap/ReflectionHelper.class",
-        "github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class",
-        "mappings/ssoptimizer.tiny"
+            "github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class",
+            "mappings/ssoptimizer.tiny"
     };
     private static final String[] HELPER_ENTRY_PREFIXES = {
-        "github/kasuminova/ssoptimizer/mapping/",
-        "org/objectweb/asm/"
+            "github/kasuminova/ssoptimizer/mapping/",
+            "org/objectweb/asm/"
     };
 
     private static volatile JarFile appendedJar;

@@ -42,6 +42,8 @@ public final class GameClassNames {
     public static final String PARALLEL_IMAGE_PRELOADER_DOTTED     = "com.fs.graphics.ParallelImagePreloader";
     public static final String TEXTURE_LOADER                      = "com/fs/graphics/TextureLoader";
     public static final String TEXTURE_OBJECT                      = "com/fs/graphics/TextureObject";
+    public static final String SOUND_MANAGER                       = "sound/SoundManager";
+    public static final String SOUND_MANAGER_DOTTED                = "sound.SoundManager";
     public static final String RENDER_STATE_UTILS                  = "com/fs/graphics/util/RenderStateUtils";
     public static final String LOADING_UTILS                       = "com/fs/starfarer/loading/LoadingUtils";
     public static final String LINUX_DISPLAY                       = "org/lwjgl/opengl/LinuxDisplay";

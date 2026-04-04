@@ -8,6 +8,7 @@ import org.spongepowered.asm.service.MixinService;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
+import java.util.Arrays;
 
 /**
  * Mixin 框架桥接变换器，将 Mixin 的类变换桥接到 javaagent 的 {@link ClassFileTransformer}。
@@ -22,7 +23,7 @@ import java.security.ProtectionDomain;
 public final class MixinBridgeTransformer implements ClassFileTransformer {
     private static final Logger LOGGER = Logger.getLogger(MixinBridgeTransformer.class);
 
-    private final IMixinTransformer transformer;
+    private final IMixinTransformer   transformer;
     private final RuntimeRemapContext remapContext;
 
     /**
@@ -73,7 +74,12 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
                 || className.startsWith("org/objectweb/asm/")
                 || className.startsWith("org/spongepowered/asm/")
                 || className.startsWith("github/kasuminova/ssoptimizer/")
-                || !className.startsWith("com/fs/");
+                || (!className.startsWith("com/fs/") && !isExplicitThirdPartyMixinTarget(className));
+    }
+
+    private static boolean isExplicitThirdPartyMixinTarget(final String className) {
+        return "org/codehaus/janino/JavaSourceClassLoader".equals(className)
+                || "sound/Object".equals(className);
     }
 
     private static boolean isJaninoLoader(ClassLoader loader) {
@@ -101,15 +107,19 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
         }
 
         try {
-            String namedInternalName = NameTranslator.translate(className);
-            String namedDottedName = namedInternalName.replace('/', '.');
             byte[] namedBytes = remapContext.remap(className, classfileBuffer);
             byte[] mixinInput = namedBytes != null ? namedBytes : classfileBuffer;
-            String mixinName = namedBytes != null ? namedDottedName : className.replace('/', '.');
+            // 类名翻译：只查映射表，把混淆类名翻译成可读名；
+            // 如果类本身没有映射条目（如 EngineSlot），则原样使用 JVM 类名。
+            // 不能调用 NameTranslator.translate()，因为它的 sanitize fallback
+            // 会把合法的 '/' 替换为 '$slash$'，导致 Mixin 框架匹配不到 target。
+            String mixinName = namedBytes != null
+                    ? remapContext.translateClassName(className).replace('/', '.')
+                    : className.replace('/', '.');
 
-            byte[] result = transformer.transformClassBytes(mixinName, namedDottedName, mixinInput);
-            if (result != null && result != classfileBuffer) {
-                LOGGER.info("[SSOptimizer] Mixin-applied class: " + className + " -> " + namedDottedName);
+            byte[] result = transformer.transformClassBytes(mixinName, mixinName, mixinInput);
+            if (result != null && !Arrays.equals(result, mixinInput)) {
+                LOGGER.info("[SSOptimizer] Mixin-applied class: " + className + " -> " + mixinName);
             }
             return result;
         } catch (Throwable t) {

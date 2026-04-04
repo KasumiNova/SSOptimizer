@@ -64,6 +64,10 @@ c com/fs/graphics/TextureLoader com/fs/graphics/TextureLoader
 	m super convertPixels (Ljava/awt/image/BufferedImage;Lcom/fs/graphics/Object;)Ljava/nio/ByteBuffer;
 	m super loadTexture (Ljava/lang/String;)Lcom/fs/graphics/Object;
 	m super textureDimension (I)I
+c sound/Object sound/SoundManager
+	m Object loadObjectFamily (Ljava/lang/String;)Lsound/O0OO;
+	m o00000 loadO00000Family (Ljava/lang/String;)Lsound/O0OO;
+	m Ò00000 loadOAccentFamily (Ljava/lang/String;)Lsound/O0OO;
 c com/fs/starfarer/combat/o0OO/oOoO com/fs/starfarer/combat/CollisionGridQuery
 	f class cells [[Ljava/util/List;
 	f Ó00000 gridWidth I

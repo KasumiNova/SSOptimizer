@@ -5,11 +5,13 @@
   "mixins": [
     "accessor.ContrailGroupAccessor",
     "accessor.ContrailSegmentAccessor",
-    "accessor.EngineSlotAccessor",
     "accessor.EngineOwnerAccessor",
+    "accessor.EngineSlotAccessor",
     "accessor.EngineStateAccessor",
     "accessor.ShipAccessor",
+    "loading.JaninoJavaSourceClassLoaderMixin",
     "loading.ParallelImagePreloaderMixin",
+    "loading.SoundManagerMixin",
     "render.EngineRenderMixin"
   ],
   "client": [],

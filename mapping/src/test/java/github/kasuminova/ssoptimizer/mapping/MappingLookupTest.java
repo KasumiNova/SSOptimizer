@@ -76,6 +76,18 @@ class MappingLookupTest {
     }
 
     @Test
+    void soundManagerPathLoaderMappingCanBeResolvedByNamedName() {
+        MappingEntry classEntry = lookup.requireClassByNamedName("sound/SoundManager");
+        MappingEntry methodEntry = lookup.requireMethodByNamedName(
+                "sound/SoundManager",
+                "loadOAccentFamily",
+                "(Ljava/lang/String;)Lsound/O0OO;");
+
+        assertEquals("sound/Object", classEntry.obfuscatedName());
+        assertEquals("Ò00000", methodEntry.obfuscatedName());
+    }
+
+    @Test
     void missingMethodMappingReportsReadableError() {
         MappingLookup lookup = new MappingLookup(TinyV2MappingRepository.loadDefault());
 

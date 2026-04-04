@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * 类名、字段名和方法名翻译成 Tiny v2 中定义的可读命名，并且对重复输入保持幂等。
  */
 class RuntimeRemapTransformerTest {
-    private static final String SPRITE_CLASS = "com/fs/graphics/Sprite";
-    private static final String TEXTURE_LOADER_CLASS = "com/fs/graphics/TextureLoader";
-    private static final String TEXTURE_OBJECT_CLASS = "com/fs/graphics/TextureObject";
-    private static final TinyV2MappingRepository REPOSITORY = TinyV2MappingRepository.loadDefault();
+    private static final String                  SPRITE_CLASS         = "com/fs/graphics/Sprite";
+    private static final String                  TEXTURE_LOADER_CLASS = "com/fs/graphics/TextureLoader";
+    private static final String                  TEXTURE_OBJECT_CLASS = "com/fs/graphics/TextureObject";
+    private static final TinyV2MappingRepository REPOSITORY           = TinyV2MappingRepository.loadDefault();
 
     private static byte[] createNamedSpriteWithObfuscatedTextureField() {
         String obfuscatedTextureObjectClass = REPOSITORY.requireClassByNamedName(TEXTURE_OBJECT_CLASS).obfuscatedName();

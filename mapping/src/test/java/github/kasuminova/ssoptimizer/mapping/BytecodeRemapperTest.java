@@ -46,6 +46,37 @@ class BytecodeRemapperTest {
         assertTrue(foundLookupMethod[0], "renamed owner class should also remap its method name and descriptor");
     }
 
+    @Test
+    void remapsSoundManagerPathMethodForRenamedOwnerClass() {
+        BytecodeRemapper remapper = new BytecodeRemapper(
+                TinyV2MappingRepository.loadDefault(),
+                MappingDirection.OBFUSCATED_TO_NAMED);
+
+        BytecodeRemapper.RemappedClass remapped = remapper.remapClass(createObfuscatedSoundManager());
+
+        assertTrue(remapped.modified());
+        assertEquals("sound/Object", remapped.inputInternalName());
+        assertEquals("sound/SoundManager", remapped.outputInternalName());
+
+        final boolean[] foundNamedMethod = {false};
+        new ClassReader(remapped.bytecode()).accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override
+            public MethodVisitor visitMethod(final int access,
+                                             final String name,
+                                             final String descriptor,
+                                             final String signature,
+                                             final String[] exceptions) {
+                if ("loadOAccentFamily".equals(name)
+                        && "(Ljava/lang/String;)Lsound/O0OO;".equals(descriptor)) {
+                    foundNamedMethod[0] = true;
+                }
+                return super.visitMethod(access, name, descriptor, signature, exceptions);
+            }
+        }, 0);
+
+        assertTrue(foundNamedMethod[0], "sound manager path loader should remap to the named method");
+    }
+
     private static byte[] createObfuscatedBitmapFontManager() {
         ClassWriter writer = new ClassWriter(0);
         writer.visit(Opcodes.V1_8,
@@ -73,6 +104,39 @@ class BytecodeRemapperTest {
         method.visitInsn(Opcodes.ACONST_NULL);
         method.visitInsn(Opcodes.ARETURN);
         method.visitMaxs(1, 1);
+        method.visitEnd();
+
+        writer.visitEnd();
+        return writer.toByteArray();
+    }
+
+    private static byte[] createObfuscatedSoundManager() {
+        ClassWriter writer = new ClassWriter(0);
+        writer.visit(Opcodes.V1_8,
+                Opcodes.ACC_PUBLIC,
+                "sound/Object",
+                null,
+                "java/lang/Object",
+                null);
+
+        MethodVisitor constructor = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+        constructor.visitCode();
+        constructor.visitVarInsn(Opcodes.ALOAD, 0);
+        constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+        constructor.visitInsn(Opcodes.RETURN);
+        constructor.visitMaxs(1, 1);
+        constructor.visitEnd();
+
+        MethodVisitor method = writer.visitMethod(
+                Opcodes.ACC_PUBLIC,
+                "Ò00000",
+                "(Ljava/lang/String;)Lsound/O0OO;",
+                null,
+                null);
+        method.visitCode();
+        method.visitInsn(Opcodes.ACONST_NULL);
+        method.visitInsn(Opcodes.ARETURN);
+        method.visitMaxs(1, 2);
         method.visitEnd();
 
         writer.visitEnd();

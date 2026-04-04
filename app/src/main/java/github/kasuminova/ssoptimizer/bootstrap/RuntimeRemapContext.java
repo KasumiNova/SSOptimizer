@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
 import github.kasuminova.ssoptimizer.mapping.MappingDirection;
+import github.kasuminova.ssoptimizer.mapping.MappingEntry;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 
 import java.util.Objects;
@@ -14,6 +15,7 @@ import java.util.Objects;
  */
 public final class RuntimeRemapContext {
     private final BytecodeRemapper        bytecodeRemapper;
+    private final TinyV2MappingRepository repository;
 
     /**
      * 使用指定映射仓库创建上下文。
@@ -23,6 +25,7 @@ public final class RuntimeRemapContext {
     public RuntimeRemapContext(TinyV2MappingRepository repository) {
         Objects.requireNonNull(repository, "repository");
         this.bytecodeRemapper = new BytecodeRemapper(repository, MappingDirection.OBFUSCATED_TO_NAMED);
+        this.repository = repository;
     }
 
     /**
@@ -47,9 +50,9 @@ public final class RuntimeRemapContext {
 
     /**
      * 重映射指定类字节码。
-        * <p>
-        * 即使类名本身在 named 侧保持不变，只要该类的字段或方法存在映射，这里也必须
-        * 尝试重映射，以确保运行时优先暴露 mapped 命名。
+     * <p>
+     * 即使类名本身在 named 侧保持不变，只要该类的字段或方法存在映射，这里也必须
+     * 尝试重映射，以确保运行时优先暴露 mapped 命名。
      *
      * @param className       JVM 内部类名
      * @param classfileBuffer 原始字节码
@@ -66,5 +69,20 @@ public final class RuntimeRemapContext {
         } catch (Throwable throwable) {
             return null;
         }
+    }
+
+    /**
+     * 将混淆类名翻译为可读命名。
+     * <p>
+     * 仅查询 Tiny v2 映射表的类条目；若没有对应映射则原样返回输入名，
+     * 保证合法 JVM 内部类名中的 {@code /} 不被污染。
+     *
+     * @param className JVM 内部格式的混淆类名
+     * @return 可读类名（JVM 内部格式），没有映射时返回原值
+     */
+    public String translateClassName(String className) {
+        return repository.findClassByObfuscatedName(className)
+                .map(MappingEntry::namedName)
+                .orElse(className);
     }
 }

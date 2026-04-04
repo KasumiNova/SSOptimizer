@@ -5,7 +5,11 @@ import github.kasuminova.ssoptimizer.mapping.MappingDirection;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.junit.jupiter.api.Test;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
@@ -22,6 +26,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MixinBridgeIntegrationTest {
+    private static final String JANINO_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/loading/script/JaninoScriptCompilerCoordinator";
+    private static final String SOUND_COORDINATOR_OWNER  = "github/kasuminova/ssoptimizer/common/loading/sound/ParallelSoundLoadCoordinator";
+
     private static void bootstrapMixin() {
         MixinBootstrap.init();
         Mixins.addConfiguration("mixins.ssoptimizer.json");
@@ -84,6 +91,34 @@ class MixinBridgeIntegrationTest {
         assertEquals(expectedValue, actual[0], "Unexpected ConstantValue for COST_REDUCTION");
     }
 
+    private static boolean containsMethodInvocation(final byte[] classBytes,
+                                                    final String owner,
+                                                    final String methodName) {
+        final boolean[] found = {false};
+        new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override
+            public MethodVisitor visitMethod(final int access,
+                                             final String name,
+                                             final String descriptor,
+                                             final String signature,
+                                             final String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9) {
+                    @Override
+                    public void visitMethodInsn(final int opcode,
+                                                final String invocationOwner,
+                                                final String invocationName,
+                                                final String invocationDescriptor,
+                                                final boolean isInterface) {
+                        if (owner.equals(invocationOwner) && methodName.equals(invocationName)) {
+                            found[0] = true;
+                        }
+                    }
+                };
+            }
+        }, 0);
+        return found[0];
+    }
+
     @Test
     void bridgeAppliesContrailAccessorMixinToGameClass() throws Exception {
         bootstrapMixin();
@@ -123,8 +158,46 @@ class MixinBridgeIntegrationTest {
 
         ClassReader reader = new ClassReader(transformed);
         assertTrue(Arrays.asList(reader.getInterfaces())
-                 .contains("github/kasuminova/ssoptimizer/common/render/engine/EngineBridge"),
-            "Transformed Engine should implement EngineBridge after mixin application");
+                         .contains("github/kasuminova/ssoptimizer/common/render/engine/EngineBridge"),
+                "Transformed Engine should implement EngineBridge after mixin application");
+    }
+
+    @Test
+    void bridgeAppliesJaninoMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("org/codehaus/janino/JavaSourceClassLoader.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "org/codehaus/janino/JavaSourceClassLoader",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, JANINO_COORDINATOR_OWNER, "warmup"));
+        assertTrue(containsMethodInvocation(transformed, JANINO_COORDINATOR_OWNER, "tryLoadCachedBytecodes"));
+        assertTrue(containsMethodInvocation(transformed, JANINO_COORDINATOR_OWNER, "cacheGeneratedBytecodes"));
+    }
+
+    @Test
+    void bridgeAppliesSoundMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = reobfuscate(readClassBytes("sound/SoundManager.class"));
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "sound/Object",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadObjectFamily"));
+        assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadO00000Family"));
+        assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadOAccentFamily"));
     }
 
     @Test

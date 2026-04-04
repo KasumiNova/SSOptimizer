@@ -84,24 +84,24 @@ class HybridWeaverTransformerTest {
     @Test
     void remapsDescriptorsBeforePassingNamedClassToProcessor() {
         var transformer = new HybridWeaverTransformer(TinyV2MappingRepository.of(java.util.List.of(
-            MappingEntry.classEntry("com/fs/graphics/Object", "com/fs/graphics/TextureObject")
+                MappingEntry.classEntry("com/fs/graphics/Object", "com/fs/graphics/TextureObject")
         )));
         transformer.registerProcessor("com.fs.graphics.Sprite", bytes -> bytes);
 
         byte[] result = transformer.transform(null,
-            "com/fs/graphics/Sprite",
-            null,
-            null,
-            createNamedSpriteWithObfuscatedTextureField());
+                "com/fs/graphics/Sprite",
+                null,
+                null,
+                createNamedSpriteWithObfuscatedTextureField());
 
         assertNotNull(result, "processor 命中后应返回传给它的字节码");
 
         ClassNode node = readClass(result);
         assertTrue(node.fields.stream().anyMatch(field -> "texture".equals(field.name)
-                && "Lcom/fs/graphics/TextureObject;".equals(field.desc)),
-            "HybridWeaverTransformer 应先把字段描述符 remap 成 named，再交给 ASM processor");
+                        && "Lcom/fs/graphics/TextureObject;".equals(field.desc)),
+                "HybridWeaverTransformer 应先把字段描述符 remap 成 named，再交给 ASM processor");
         assertTrue(node.methods.stream().anyMatch(method -> "getTexture".equals(method.name)
-                && "()Lcom/fs/graphics/TextureObject;".equals(method.desc)),
-            "HybridWeaverTransformer 也应同步 remap 方法描述符");
+                        && "()Lcom/fs/graphics/TextureObject;".equals(method.desc)),
+                "HybridWeaverTransformer 也应同步 remap 方法描述符");
     }
 }
