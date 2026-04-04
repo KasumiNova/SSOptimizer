@@ -79,7 +79,9 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
 
     private static boolean isExplicitThirdPartyMixinTarget(final String className) {
         return "org/codehaus/janino/JavaSourceClassLoader".equals(className)
+                || "com/thoughtworks/xstream/converters/reflection/FieldDictionary".equals(className)
                 || "com/thoughtworks/xstream/core/util/Fields".equals(className)
+                || "com/thoughtworks/xstream/io/path/PathTracker".equals(className)
                 || "sound/Object".equals(className);
     }
 

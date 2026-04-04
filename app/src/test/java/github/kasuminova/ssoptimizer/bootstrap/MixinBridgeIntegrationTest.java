@@ -28,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class MixinBridgeIntegrationTest {
     private static final String JANINO_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/loading/script/JaninoScriptCompilerCoordinator";
     private static final String SOUND_COORDINATOR_OWNER  = "github/kasuminova/ssoptimizer/common/loading/sound/ParallelSoundLoadCoordinator";
+    private static final String XSTREAM_FIELD_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldDictionaryLookupCache";
     private static final String XSTREAM_FIELD_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldAccessHelper";
+    private static final String XSTREAM_PATH_TRACKER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamPathTrackerHelper";
 
     private static void bootstrapMixin() {
         MixinBootstrap.init();
@@ -217,6 +219,41 @@ class MixinBridgeIntegrationTest {
         assertNotNull(transformed);
         assertTrue(containsMethodInvocation(transformed, XSTREAM_FIELD_HELPER_OWNER, "read"));
         assertTrue(containsMethodInvocation(transformed, XSTREAM_FIELD_HELPER_OWNER, "write"));
+    }
+
+    @Test
+    void bridgeAppliesXStreamFieldDictionaryMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/thoughtworks/xstream/converters/reflection/FieldDictionary.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/thoughtworks/xstream/converters/reflection/FieldDictionary",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_FIELD_DICTIONARY_HELPER_OWNER, "getOrResolve"));
+    }
+
+    @Test
+    void bridgeAppliesXStreamPathTrackerMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/thoughtworks/xstream/io/path/PathTracker.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/thoughtworks/xstream/io/path/PathTracker",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_PATH_TRACKER_HELPER_OWNER, "formatElement"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_PATH_TRACKER_HELPER_OWNER, "buildPath"));
     }
 
     @Test

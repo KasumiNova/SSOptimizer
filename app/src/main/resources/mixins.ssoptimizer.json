@@ -13,7 +13,9 @@
     "loading.ParallelImagePreloaderMixin",
     "loading.SoundManagerMixin",
     "render.EngineRenderMixin",
-    "save.XStreamFieldsMixin"
+    "save.XStreamFieldDictionaryMixin",
+    "save.XStreamFieldsMixin",
+    "save.XStreamPathTrackerMixin"
   ],
   "client": [],
   "injectors": {
