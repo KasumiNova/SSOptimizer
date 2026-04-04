@@ -16,7 +16,8 @@ import java.util.function.Supplier;
 public final class XStreamFieldDictionaryLookupCache {
     private static final Object MISSING = new Object();
 
-    private final ConcurrentMap<LookupKey, Object> cache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> unqualifiedCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, ConcurrentMap<Class<?>, ConcurrentMap<String, Object>>> qualifiedCache = new ConcurrentHashMap<>();
 
     /**
      * 按查询键解析字段，并缓存解析结果。
@@ -31,15 +32,15 @@ public final class XStreamFieldDictionaryLookupCache {
                               final String fieldName,
                               final Class<?> definedIn,
                               final Supplier<Field> resolver) {
-        final LookupKey key = new LookupKey(ownerType, fieldName, definedIn);
-        final Object cached = cache.get(key);
+        final ConcurrentMap<String, Object> fieldCache = cacheFor(ownerType, definedIn);
+        final Object cached = fieldCache.get(fieldName);
         if (cached != null) {
             return cached == MISSING ? null : (Field) cached;
         }
 
         final Field resolved = resolver.get();
         final Object value = resolved != null ? resolved : MISSING;
-        final Object previous = cache.putIfAbsent(key, value);
+        final Object previous = fieldCache.putIfAbsent(fieldName, value);
         final Object effective = previous != null ? previous : value;
         return effective == MISSING ? null : (Field) effective;
     }
@@ -48,9 +49,40 @@ public final class XStreamFieldDictionaryLookupCache {
      * 清空缓存。
      */
     public void clear() {
-        cache.clear();
+        unqualifiedCache.clear();
+        qualifiedCache.clear();
     }
 
-    private record LookupKey(Class<?> ownerType, String fieldName, Class<?> definedIn) {
+    private ConcurrentMap<String, Object> cacheFor(final Class<?> ownerType,
+                                                   final Class<?> definedIn) {
+        if (definedIn == null) {
+            return getOrCreateFieldCache(unqualifiedCache, ownerType);
+        }
+
+        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> declaredTypeCache = getOrCreateDeclaredTypeCache(ownerType);
+        return getOrCreateFieldCache(declaredTypeCache, definedIn);
+    }
+
+    private ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> getOrCreateDeclaredTypeCache(final Class<?> ownerType) {
+        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> cached = qualifiedCache.get(ownerType);
+        if (cached != null) {
+            return cached;
+        }
+
+        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> created = new ConcurrentHashMap<>();
+        final ConcurrentMap<Class<?>, ConcurrentMap<String, Object>> previous = qualifiedCache.putIfAbsent(ownerType, created);
+        return previous != null ? previous : created;
+    }
+
+    private static <K> ConcurrentMap<String, Object> getOrCreateFieldCache(final ConcurrentMap<K, ConcurrentMap<String, Object>> cache,
+                                                                           final K key) {
+        final ConcurrentMap<String, Object> cached = cache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+
+        final ConcurrentMap<String, Object> created = new ConcurrentHashMap<>();
+        final ConcurrentMap<String, Object> previous = cache.putIfAbsent(key, created);
+        return previous != null ? previous : created;
     }
 }

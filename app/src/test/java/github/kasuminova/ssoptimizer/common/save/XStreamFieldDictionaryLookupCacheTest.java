@@ -49,7 +49,60 @@ class XStreamFieldDictionaryLookupCacheTest {
         assertEquals(1, calls.get());
     }
 
+    @Test
+    void separatesQualifiedLookupsByDeclaringType() throws Exception {
+        XStreamFieldDictionaryLookupCache cache = new XStreamFieldDictionaryLookupCache();
+        AtomicInteger calls = new AtomicInteger();
+        Field baseField = Parent.class.getDeclaredField("value");
+        Field childField = Child.class.getDeclaredField("value");
+
+        Field first = cache.getOrResolve(Child.class, "value", Parent.class, () -> {
+            calls.incrementAndGet();
+            return baseField;
+        });
+        Field second = cache.getOrResolve(Child.class, "value", Child.class, () -> {
+            calls.incrementAndGet();
+            return childField;
+        });
+        Field firstAgain = cache.getOrResolve(Child.class, "value", Parent.class, () -> {
+            calls.incrementAndGet();
+            return childField;
+        });
+
+        assertSame(baseField, first);
+        assertSame(childField, second);
+        assertSame(baseField, firstAgain);
+        assertEquals(2, calls.get());
+    }
+
+    @Test
+    void clearDropsAllNestedCaches() throws Exception {
+        XStreamFieldDictionaryLookupCache cache = new XStreamFieldDictionaryLookupCache();
+        AtomicInteger calls = new AtomicInteger();
+        Field field = Sample.class.getDeclaredField("value");
+
+        cache.getOrResolve(Sample.class, "value", null, () -> {
+            calls.incrementAndGet();
+            return field;
+        });
+        cache.clear();
+        cache.getOrResolve(Sample.class, "value", null, () -> {
+            calls.incrementAndGet();
+            return field;
+        });
+
+        assertEquals(2, calls.get());
+    }
+
     private static final class Sample {
+        private int value;
+    }
+
+    private static class Parent {
+        private int value;
+    }
+
+    private static final class Child extends Parent {
         private int value;
     }
 }

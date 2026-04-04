@@ -82,7 +82,14 @@ public final class XStreamFieldAccessHelper {
     }
 
     private static FieldAccessor accessorFor(final Field field) {
-        return ACCESSOR_CACHE.computeIfAbsent(field, XStreamFieldAccessHelper::createAccessor);
+        final FieldAccessor cached = ACCESSOR_CACHE.get(field);
+        if (cached != null) {
+            return cached;
+        }
+
+        final FieldAccessor created = createAccessor(field);
+        final FieldAccessor previous = ACCESSOR_CACHE.putIfAbsent(field, created);
+        return previous != null ? previous : created;
     }
 
     private static FieldAccessor createAccessor(final Field field) {

@@ -3,8 +3,10 @@ package github.kasuminova.ssoptimizer.common.save;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class XStreamFieldAccessHelperTest {
     @Test
@@ -40,6 +42,19 @@ class XStreamFieldAccessHelperTest {
         } finally {
             Sample.counter = original;
         }
+    }
+
+    @Test
+    void reusesCachedAccessorInstances() throws Exception {
+        Field numberField = Sample.class.getDeclaredField("number");
+        numberField.setAccessible(true);
+        Method accessorFor = XStreamFieldAccessHelper.class.getDeclaredMethod("accessorFor", Field.class);
+        accessorFor.setAccessible(true);
+
+        Object first = accessorFor.invoke(null, numberField);
+        Object second = accessorFor.invoke(null, numberField);
+
+        assertSame(first, second);
     }
 
     private static final class Sample {

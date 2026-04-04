@@ -33,6 +33,7 @@ class MixinBridgeIntegrationTest {
     private static final String TXW2_COMPACT_WRITER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/Txw2CompactXmlWriterHelper";
     private static final String XSTREAM_FIELD_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldDictionaryLookupCache";
     private static final String XSTREAM_FIELD_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldAccessHelper";
+    private static final String XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamObjectIdDictionaryHelper";
     private static final String XSTREAM_PATH_TRACKER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamPathTrackerHelper";
 
     private static void bootstrapMixin() {
@@ -257,6 +258,25 @@ class MixinBridgeIntegrationTest {
         assertNotNull(transformed);
         assertTrue(containsMethodInvocation(transformed, XSTREAM_PATH_TRACKER_HELPER_OWNER, "formatElement"));
         assertTrue(containsMethodInvocation(transformed, XSTREAM_PATH_TRACKER_HELPER_OWNER, "buildPath"));
+    }
+
+    @Test
+    void bridgeAppliesXStreamObjectIdDictionaryMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/thoughtworks/xstream/core/util/ObjectIdDictionary.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/thoughtworks/xstream/core/util/ObjectIdDictionary",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER, "lookupId"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER, "containsId"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER, "removeId"));
     }
 
     @Test

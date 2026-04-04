@@ -19,6 +19,7 @@
     "save.Txw2IndentingXmlStreamWriterMixin",
     "save.XStreamFieldDictionaryMixin",
     "save.XStreamFieldsMixin",
+    "save.XStreamObjectIdDictionaryMixin",
     "save.XStreamPathTrackerMixin"
   ],
   "client": [],
