@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MixinBridgeIntegrationTest {
     private static final String JANINO_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/loading/script/JaninoScriptCompilerCoordinator";
     private static final String SOUND_COORDINATOR_OWNER  = "github/kasuminova/ssoptimizer/common/loading/sound/ParallelSoundLoadCoordinator";
+    private static final String XSTREAM_FIELD_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldAccessHelper";
 
     private static void bootstrapMixin() {
         MixinBootstrap.init();
@@ -198,6 +199,24 @@ class MixinBridgeIntegrationTest {
         assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadObjectFamily"));
         assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadO00000Family"));
         assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadOAccentFamily"));
+    }
+
+    @Test
+    void bridgeAppliesXStreamFieldsMixinToExplicitThirdPartyTarget() throws Exception {
+        bootstrapMixin();
+
+        byte[] original = readClassBytes("com/thoughtworks/xstream/core/util/Fields.class");
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+                "com/thoughtworks/xstream/core/util/Fields",
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_FIELD_HELPER_OWNER, "read"));
+        assertTrue(containsMethodInvocation(transformed, XSTREAM_FIELD_HELPER_OWNER, "write"));
     }
 
     @Test

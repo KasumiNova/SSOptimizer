@@ -12,7 +12,8 @@
     "loading.JaninoJavaSourceClassLoaderMixin",
     "loading.ParallelImagePreloaderMixin",
     "loading.SoundManagerMixin",
-    "render.EngineRenderMixin"
+    "render.EngineRenderMixin",
+    "save.XStreamFieldsMixin"
   ],
   "client": [],
   "injectors": {
