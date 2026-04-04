@@ -26,6 +26,22 @@ public final class FastResourceImageDecoder {
     static BufferedImage decode(final String path,
                                 final InputStream inputStream,
                                 final PngByteDecoder nativePngDecoder) throws IOException {
+        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint = TextureConversionCache.isEnabled()
+                ? TextureConversionCache.probeFingerprint(path)
+                : null;
+        if (sourceFingerprint != null) {
+            final TextureConversionCache.ResourceCacheHit resourceCacheHit = TextureConversionCache.loadByResourcePath(path, sourceFingerprint);
+            if (resourceCacheHit != null) {
+                return TrackedResourceImage.cached(
+                        path,
+                        resourceCacheHit.sourceHash(),
+                        null,
+                        resourceCacheHit.cachedData(),
+                        sourceFingerprint
+                );
+            }
+        }
+
         if (inputStream == null) {
             return null;
         }
@@ -41,7 +57,7 @@ public final class FastResourceImageDecoder {
         if (sourceHash != null) {
             final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(sourceHash);
             if (cached != null) {
-                return TrackedResourceImage.cached(path, sourceHash, imageBytes, cached);
+                return TrackedResourceImage.cached(path, sourceHash, imageBytes, cached, sourceFingerprint);
             }
         }
 
@@ -49,16 +65,16 @@ public final class FastResourceImageDecoder {
 
         if (!isPng(imageBytes)) {
             decoded = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            return TrackedResourceImage.wrap(path, sourceHash, decoded);
+            return TrackedResourceImage.wrap(path, sourceHash, decoded, sourceFingerprint);
         }
 
         try {
             decoded = nativePngDecoder.decode(imageBytes);
         } catch (IOException | UnsupportedOperationException ignored) {
-            return TrackedResourceImage.wrap(path, sourceHash, ImageIO.read(new ByteArrayInputStream(imageBytes)));
+            return TrackedResourceImage.wrap(path, sourceHash, ImageIO.read(new ByteArrayInputStream(imageBytes)), sourceFingerprint);
         }
 
-        return TrackedResourceImage.wrap(path, sourceHash, decoded);
+        return TrackedResourceImage.wrap(path, sourceHash, decoded, sourceFingerprint);
     }
 
     static BufferedImage decodeUntracked(final byte[] imageBytes) throws IOException {

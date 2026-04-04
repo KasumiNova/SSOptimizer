@@ -3,9 +3,8 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 import com.fs.graphics.Sprite;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
-import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
+import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.ShipAccessor;
 import org.lwjgl.opengl.GL11;
@@ -166,14 +165,14 @@ public final class EngineRenderHelper {
         renderEngineStripPasses(position.x, position.y, angle, angularRotation, spreadRotation,
                 passCount, layerCount, texU, texSpan, textureAdvance,
                 innerLength, stripLength, stripWidth,
-            red, green, blue, colorAlphaScale, exactAlphaPath);
+                red, green, blue, colorAlphaScale, exactAlphaPath);
 
         engine.ssoptimizer$getFlameTexture().bind();
         int coreAlpha = clampColorComponent((int) (flameLevel * 50.0f * colorAlphaScale));
         renderEngineCorePass(position.x, position.y, angle,
                 state.ssoptimizer$getCoreRotation(), omegaMode ? angularRotation : 0.0f,
                 stripLength, stripWidth,
-            red, green, blue, coreAlpha, exactAlphaPath);
+                red, green, blue, coreAlpha, exactAlphaPath);
 
         renderGlowSprite(engine, owner, slotAccessor, state, position, angle,
                 primaryBrightness, edgeAlpha, spread, maxSpread,
@@ -287,7 +286,7 @@ public final class EngineRenderHelper {
     private static java.lang.reflect.Method resolveBlendColorsMethod() {
         try {
             final Class<?> helperClass = Class.forName(RENDER_STATE_UTILS_CLASS, false, EngineRenderHelper.class.getClassLoader());
-                final java.lang.reflect.Method method = helperClass.getDeclaredMethod(
+            final java.lang.reflect.Method method = helperClass.getDeclaredMethod(
                     "blendColors",
                     Color.class,
                     Color.class,
@@ -405,8 +404,8 @@ public final class EngineRenderHelper {
                                         float stripWidth) {
         float passIndexF = passIndex;
         float rotation1 = passCount <= 1.0f
-            ? angularRotation
-            : ((passCount - passIndexF - 1.0f) / passCount) * angularRotation;
+                ? angularRotation
+                : ((passCount - passIndexF - 1.0f) / passCount) * angularRotation;
         float direction = (passIndex % 2 == 0) ? -1.0f : 1.0f;
         float phase = (passIndexF + 1.0f) / 2.0f;
         float halfPassCount = passCount / 2.0f;
@@ -418,17 +417,17 @@ public final class EngineRenderHelper {
 
         float[] vertices = new float[12];
         transformStripVertex(vertices, 0, 0.0f, -halfWidth,
-            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 2, 0.0f, halfWidth,
-            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 4, innerLength, -halfWidth,
-            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 6, innerLength, halfWidth,
-            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 8, stripLength, -halfWidth,
-            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         transformStripVertex(vertices, 10, stripLength, halfWidth,
-            posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
+                posX, posY, angle, rotation1, rotation2, translateX, scaleX, scaleY);
         return vertices;
     }
 
@@ -441,13 +440,13 @@ public final class EngineRenderHelper {
         float[] vertices = new float[8];
         float halfWidth = stripWidth * 0.5f;
         transformCoreVertex(vertices, 0, 0.0f, -halfWidth,
-            posX, posY, angle, stateRotation, omegaRotation);
+                posX, posY, angle, stateRotation, omegaRotation);
         transformCoreVertex(vertices, 2, 0.0f, halfWidth,
-            posX, posY, angle, stateRotation, omegaRotation);
+                posX, posY, angle, stateRotation, omegaRotation);
         transformCoreVertex(vertices, 4, stripLength, -halfWidth,
-            posX, posY, angle, stateRotation, omegaRotation);
+                posX, posY, angle, stateRotation, omegaRotation);
         transformCoreVertex(vertices, 6, stripLength, halfWidth,
-            posX, posY, angle, stateRotation, omegaRotation);
+                posX, posY, angle, stateRotation, omegaRotation);
         return vertices;
     }
 

@@ -10,6 +10,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * {@link ParallelImagePreloadWorker} 的反射入口选择回归测试。
  */
 class ParallelImagePreloadWorkerTest {
+    private static Method resolveMethod(final Class<?> owner,
+                                        final String methodName,
+                                        final Class<?> returnType,
+                                        final Class<?>... parameterTypes) throws Exception {
+        final Method method = owner.getDeclaredMethod(methodName, parameterTypes);
+        method.setAccessible(true);
+        assertEquals(returnType, method.getReturnType());
+        return method;
+    }
+
     @Test
     void resolvesNamedLoadBytesMethod() throws Exception {
         final Method method = resolveMethod(FakeDeferredLoaderWithNamedLoader.class, "loadBytes", byte[].class, String.class);
@@ -22,16 +32,6 @@ class ParallelImagePreloadWorkerTest {
         final Method method = resolveMethod(FakeDeferredLoaderWithNamedLoader.class, "decodeImage", java.awt.image.BufferedImage.class, String.class);
 
         assertEquals("decodeImage", method.getName());
-    }
-
-    private static Method resolveMethod(final Class<?> owner,
-                                        final String methodName,
-                                        final Class<?> returnType,
-                                        final Class<?>... parameterTypes) throws Exception {
-        final Method method = owner.getDeclaredMethod(methodName, parameterTypes);
-        method.setAccessible(true);
-        assertEquals(returnType, method.getReturnType());
-        return method;
     }
 
     static final class FakeDeferredLoaderWithNamedLoader {

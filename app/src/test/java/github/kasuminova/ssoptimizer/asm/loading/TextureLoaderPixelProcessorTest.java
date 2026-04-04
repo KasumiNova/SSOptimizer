@@ -123,7 +123,7 @@ class TextureLoaderPixelProcessorTest {
                             helper[0] = true;
                         }
                         if (TextureLoaderPixelProcessor.DIMENSION_METHOD.equals(name)
-                            && "(I)I".equals(desc)
+                                && "(I)I".equals(desc)
                                 && TextureLoaderPixelProcessor.DIMENSION_HELPER_OWNER.equals(owner)
                                 && "textureDimension".equals(methodName)) {
                             dimensionHelper[0] = true;
@@ -132,7 +132,7 @@ class TextureLoaderPixelProcessorTest {
                                 && TextureLoaderPixelProcessor.TARGET_DESC.equals(desc)
                                 && GameClassNames.TEXTURE_OBJECT.equals(owner)
                                 && (GameMemberNames.TextureObject.SET_TEXTURE_HEIGHT.equals(methodName)
-                                    || GameMemberNames.TextureObject.SET_TEXTURE_WIDTH.equals(methodName))) {
+                                || GameMemberNames.TextureObject.SET_TEXTURE_WIDTH.equals(methodName))) {
                             textureSizeSetters[0] = true;
                         }
                         if (TextureLoaderPixelProcessor.TARGET_METHOD.equals(name)

@@ -49,7 +49,6 @@ public final class LazyTextureManager {
     private static final int      INTERNAL_FORMAT_RGBA                        = 6408;
     private static final int      FORMAT_RGB                                  = 6407;
     private static final int      FORMAT_RGBA                                 = 6408;
-    private static final int      FILTER_NEAREST                              = 9728;
     private static final int      FILTER_LINEAR                               = 9729;
     private static final int      FILTER_LINEAR_MIPMAP_LINEAR                 = 9987;
     private static final int      GENERATE_MIPMAP                             = 33169;
@@ -176,8 +175,8 @@ public final class LazyTextureManager {
             return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath), resourcePath);
         }
 
-        final boolean defer = shouldDefer(normalizedPath, source.sourceBytes.length, metadata.estimatedGpuBytes);
-        final boolean trackResidency = shouldTrackResidency(normalizedPath, source.sourceBytes.length, metadata.estimatedGpuBytes);
+        final boolean defer = shouldDefer(normalizedPath, source.sourceByteLength(), metadata.estimatedGpuBytes);
+        final boolean trackResidency = shouldTrackResidency(normalizedPath, source.sourceByteLength(), metadata.estimatedGpuBytes);
         if (!trackResidency) {
             return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath), resourcePath);
         }
@@ -234,9 +233,35 @@ public final class LazyTextureManager {
 
         final long now = System.nanoTime();
         final int ensuredTextureId = ensureTextureReady(texture, target, now, true);
+        noteTextureIdExternalized(texture, now);
         maybeSweepIdleTextures(texture, now);
         maybeEmitTextureDiagnostics(now);
         return ensuredTextureId >= 0 ? ensuredTextureId : currentTextureId;
+    }
+
+    static boolean isTextureEvictable(final com.fs.graphics.TextureObject texture) {
+        final ManagedTextureEntry entry = MANAGED_TEXTURES.get(texture);
+        return entry != null && entry.evictable;
+    }
+
+    static void trackResidentTextureForTests(final com.fs.graphics.TextureObject texture,
+                                             final String resourcePath) {
+        if (texture == null) {
+            return;
+        }
+        final LazyTextureMetadata metadata = new LazyTextureMetadata(
+                64,
+                64,
+                true,
+                64,
+                64,
+                Color.BLACK,
+                Color.BLACK,
+                Color.BLACK,
+                64L * 64L * 4L
+        );
+        MANAGED_TEXTURES.put(texture,
+                ManagedTextureEntry.resident(normalizeResourcePath(resourcePath), "test-hash", metadata, System.nanoTime(), true));
     }
 
     static String configuredCompositionReportPath() {
@@ -375,6 +400,9 @@ public final class LazyTextureManager {
                 if (entry == null || entry.pendingUpload()) {
                     continue;
                 }
+                if (!entry.evictable) {
+                    continue;
+                }
 
                 final int textureId = readTextureId(candidate, -1);
                 if (textureId == -1) {
@@ -494,12 +522,32 @@ public final class LazyTextureManager {
 
     private static SourceSnapshot readSource(final String normalizedPath,
                                              final String originalPath) throws IOException {
+        TextureConversionCache.TextureSourceFingerprint sourceFingerprint = TextureConversionCache.probeFingerprint(originalPath);
+        if (sourceFingerprint == null && !normalizedPath.equals(originalPath)) {
+            sourceFingerprint = TextureConversionCache.probeFingerprint(normalizedPath);
+        }
+        if (sourceFingerprint != null) {
+            final TextureConversionCache.ResourceCacheHit resourceCacheHit = TextureConversionCache.loadByResourcePath(normalizedPath, sourceFingerprint);
+            if (resourceCacheHit != null) {
+                return SourceSnapshot.cached(
+                        resourceCacheHit.sourceHash(),
+                        resourceCacheHit.sourceByteLength(),
+                        resourceCacheHit.cachedData(),
+                        sourceFingerprint
+                );
+            }
+        }
+
         try (InputStream input = openStream(originalPath, normalizedPath)) {
             if (input == null) {
                 throw new IOException("Unable to locate texture resource: " + originalPath);
             }
             final byte[] sourceBytes = input.readAllBytes();
-            return new SourceSnapshot(sourceBytes, TrackedResourceImage.computeSourceHash(sourceBytes));
+            return SourceSnapshot.loaded(
+                    sourceBytes,
+                    TrackedResourceImage.computeSourceHash(sourceBytes),
+                    sourceFingerprint
+            );
         }
     }
 
@@ -606,6 +654,17 @@ public final class LazyTextureManager {
         return readTextureId(texture, -1);
     }
 
+    private static void noteTextureIdExternalized(final com.fs.graphics.TextureObject texture,
+                                                  final long now) {
+        final ManagedTextureEntry entry = MANAGED_TEXTURES.get(texture);
+        if (entry == null) {
+            return;
+        }
+
+        entry.touch(now);
+        entry.markNonEvictable();
+    }
+
     static boolean shouldTrackContextBoundTexture(final String resourcePath) {
         return !normalizeResourcePath(resourcePath).isEmpty();
     }
@@ -656,6 +715,14 @@ public final class LazyTextureManager {
 
     private static LazyTextureMetadata buildMetadata(final String resourcePath,
                                                      final SourceSnapshot source) throws IOException {
+        if (source.cachedData() != null) {
+            return LazyTextureMetadata.from(resourcePath,
+                    source.cachedData().imageWidth(),
+                    source.cachedData().imageHeight(),
+                    source.cachedData().hasAlpha(),
+                    source.cachedData().conversionResult());
+        }
+
         final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(source.sourceHash);
         if (cached != null) {
             return LazyTextureMetadata.from(resourcePath,
@@ -670,7 +737,7 @@ public final class LazyTextureManager {
             return null;
         }
 
-        final BufferedImage tracked = TrackedResourceImage.wrap(resourcePath, source.sourceHash, decoded);
+        final BufferedImage tracked = TrackedResourceImage.wrap(resourcePath, source.sourceHash, decoded, source.sourceFingerprint());
         final TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
         return LazyTextureMetadata.from(resourcePath,
                 tracked.getWidth(),
@@ -918,14 +985,18 @@ public final class LazyTextureManager {
     }
 
     static int minFilterForResourcePath(final String resourcePath) {
-        return isVictorPixelFontTexture(resourcePath) ? FILTER_NEAREST : FILTER_LINEAR;
+        return FILTER_LINEAR;
     }
 
     static int magFilterForResourcePath(final String resourcePath) {
-        return isVictorPixelFontTexture(resourcePath) ? FILTER_NEAREST : FILTER_LINEAR;
+        return FILTER_LINEAR;
     }
 
     static boolean isVictorPixelFontTexture(final String resourcePath) {
+        return false;
+    }
+
+    static boolean isManagedVictorFontTexture(final String resourcePath) {
         final String normalized = normalizeResourcePath(resourcePath);
         return (normalized.startsWith(VICTOR_PREFIX)
                 || normalized.startsWith("ssoptimizer/runtimefonts/" + VICTOR_PREFIX))
@@ -933,7 +1004,7 @@ public final class LazyTextureManager {
     }
 
     static boolean isManagedFontTexture(final String resourcePath) {
-        return isVictorPixelFontTexture(resourcePath) || isSharpenedUiFontTexture(resourcePath);
+        return isManagedVictorFontTexture(resourcePath) || isSharpenedUiFontTexture(resourcePath);
     }
 
     private static void noteCurrentBoundTexture(final com.fs.graphics.TextureObject texture) {
@@ -970,7 +1041,7 @@ public final class LazyTextureManager {
     }
 
     private static boolean isFontAtlasWithoutMipmaps(final String resourcePath) {
-        return isVictorPixelFontTexture(resourcePath) || isSharpenedUiFontTexture(resourcePath);
+        return isManagedVictorFontTexture(resourcePath) || isSharpenedUiFontTexture(resourcePath);
     }
 
     private static void maybeEmitTextureDiagnostics(final long now) {
@@ -1296,7 +1367,30 @@ public final class LazyTextureManager {
     }
 
     private record SourceSnapshot(byte[] sourceBytes,
-                                  String sourceHash) {
+                                  String sourceHash,
+                                  int sourceByteLength,
+                                  TextureConversionCache.CachedTextureData cachedData,
+                                  TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
+        private static SourceSnapshot loaded(final byte[] sourceBytes,
+                                             final String sourceHash,
+                                             final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
+            return new SourceSnapshot(sourceBytes,
+                    sourceHash,
+                    sourceBytes == null ? 0 : sourceBytes.length,
+                    null,
+                    sourceFingerprint);
+        }
+
+        private static SourceSnapshot cached(final String sourceHash,
+                                             final int sourceByteLength,
+                                             final TextureConversionCache.CachedTextureData cachedData,
+                                             final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
+            return new SourceSnapshot(null,
+                    sourceHash,
+                    sourceByteLength,
+                    cachedData,
+                    sourceFingerprint);
+        }
     }
 
     private record ContextBoundTextureEntry(String resourcePath,
@@ -1311,7 +1405,7 @@ public final class LazyTextureManager {
         private final    int     textureWidth;
         private final    int     textureHeight;
         private final    long    estimatedGpuBytes;
-        private final    boolean evictable;
+        private volatile boolean evictable;
         private volatile boolean pendingUpload;
         private volatile boolean uploadedOnce;
         private volatile long    bindCount;
@@ -1383,6 +1477,10 @@ public final class LazyTextureManager {
 
         void markPendingUpload() {
             pendingUpload = true;
+        }
+
+        void markNonEvictable() {
+            evictable = false;
         }
     }
 

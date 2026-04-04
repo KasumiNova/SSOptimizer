@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -54,8 +55,59 @@ class TextureConversionCacheTest {
                 "Without memory budget, cache reload should fail once the disk entry is gone");
     }
 
+    @Test
+    void canResolveCachedTextureByResourcePathFingerprint() throws Exception {
+        final Path cacheDir = tempDir.resolve("cache");
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, cacheDir.toString());
+
+        final Path sourceFile = tempDir.resolve("graphics/test_resource.png");
+        Files.createDirectories(sourceFile.getParent());
+        final byte[] sourceBytes = new byte[]{1, 2, 3, 4, 5, 6};
+        Files.write(sourceFile, sourceBytes);
+
+        final String sourceHash = seedTrackedConversion(sourceFile.toString(), sourceBytes, sourceFile.toString());
+        final TextureConversionCache.TextureSourceFingerprint fingerprint = TextureConversionCache.probeFingerprint(sourceFile.toString());
+
+        assertNotNull(fingerprint);
+
+        final TextureConversionCache.ResourceCacheHit cached = TextureConversionCache.loadByResourcePath(sourceFile.toString(), fingerprint);
+
+        assertNotNull(cached, "Resource-path lookup should resolve the persisted zstd texture cache");
+        assertEquals(sourceHash, cached.sourceHash());
+        assertEquals(sourceBytes.length, cached.sourceByteLength());
+        assertEquals(2, cached.cachedData().imageWidth());
+        assertEquals(2, cached.cachedData().imageHeight());
+    }
+
+    @Test
+    void resourcePathLookupInvalidatesWhenFingerprintChanges() throws Exception {
+        final Path cacheDir = tempDir.resolve("cache");
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, cacheDir.toString());
+
+        final Path sourceFile = tempDir.resolve("graphics/test_resource_changed.png");
+        Files.createDirectories(sourceFile.getParent());
+        final byte[] originalBytes = new byte[]{9, 8, 7, 6};
+        Files.write(sourceFile, originalBytes);
+        seedTrackedConversion(sourceFile.toString(), originalBytes, sourceFile.toString());
+
+        final long changedLastModified = Files.getLastModifiedTime(sourceFile).toMillis() + 1_000L;
+        Files.write(sourceFile, new byte[]{9, 8, 7, 6, 5, 4, 3});
+        Files.setLastModifiedTime(sourceFile, FileTime.fromMillis(changedLastModified));
+
+        final TextureConversionCache.TextureSourceFingerprint changedFingerprint = TextureConversionCache.probeFingerprint(sourceFile.toString());
+        assertNotNull(changedFingerprint);
+        assertNull(TextureConversionCache.loadByResourcePath(sourceFile.toString(), changedFingerprint),
+                "Changed source file metadata should invalidate the resource-path index entry");
+    }
+
     private String seedTrackedConversion(final String resourcePath,
                                          final byte[] sourceBytes) {
+        return seedTrackedConversion(resourcePath, sourceBytes, null);
+    }
+
+    private String seedTrackedConversion(final String resourcePath,
+                                         final byte[] sourceBytes,
+                                         final String fingerprintPath) {
         final BufferedImage source = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
         source.setRGB(0, 0, new Color(10, 20, 30, 255).getRGB());
         source.setRGB(1, 0, new Color(40, 50, 60, 255).getRGB());
@@ -63,7 +115,10 @@ class TextureConversionCacheTest {
         source.setRGB(1, 1, new Color(100, 110, 120, 255).getRGB());
 
         final String sourceHash = TrackedResourceImage.computeSourceHash(sourceBytes);
-        final BufferedImage tracked = TrackedResourceImage.wrap(resourcePath, sourceHash, source);
+        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint = fingerprintPath == null
+                ? null
+                : TextureConversionCache.probeFingerprint(fingerprintPath);
+        final BufferedImage tracked = TrackedResourceImage.wrap(resourcePath, sourceHash, source, sourceFingerprint);
 
         TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
         assertNotNull(result);

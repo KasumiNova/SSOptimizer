@@ -77,7 +77,6 @@ public abstract class ParallelImagePreloaderMixin {
      * 将图片路径加入并行预加载队列。
      *
      * @param path 资源路径
-     *
      * @author GitHub Copilot
      * @reason 通过路径计数跟踪器维护待处理项，避免主线程反复对同步列表做 contains 扫描。
      */
@@ -90,7 +89,6 @@ public abstract class ParallelImagePreloaderMixin {
      * 将字节资源路径加入并行预加载队列。
      *
      * @param path 资源路径
-     *
      * @author GitHub Copilot
      * @reason 通过路径计数跟踪器维护待处理项，避免字节预加载在高并发下退化为线性扫描。
      */
@@ -104,7 +102,6 @@ public abstract class ParallelImagePreloaderMixin {
      *
      * @param path 资源路径
      * @return 已加载的字节数组；若任务已取消或不存在则返回 {@code null}
-     *
      * @author GitHub Copilot
      * @reason 改为使用并发队列跟踪器等待结果，避免原版同步列表 contains + sleep 的高开销轮询。
      */
@@ -118,7 +115,6 @@ public abstract class ParallelImagePreloaderMixin {
      *
      * @param path 资源路径
      * @return 已加载的图片；若任务已取消或不存在则返回 {@code null}
-     *
      * @author GitHub Copilot
      * @reason 改为使用并发队列跟踪器等待结果，减少主线程在图片预加载阶段的同步争用。
      */

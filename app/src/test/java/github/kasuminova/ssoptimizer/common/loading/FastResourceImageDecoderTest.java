@@ -10,7 +10,9 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -199,6 +201,52 @@ class FastResourceImageDecoderTest {
         assertEquals(source.getWidth(), decoded.getWidth());
         assertEquals(source.getHeight(), decoded.getHeight());
 
+        TexturePixelConversionResult cached = TexturePixelConverter.convert(decoded);
+        ByteBuffer buffer = cached.buffer();
+        assertEquals(seeded.averageColor().getRGB(), cached.averageColor().getRGB());
+        assertEquals(Byte.toUnsignedInt(seeded.buffer().get(0)), Byte.toUnsignedInt(buffer.get(0)));
+        assertEquals(Byte.toUnsignedInt(seeded.buffer().get(1)), Byte.toUnsignedInt(buffer.get(1)));
+        assertEquals(Byte.toUnsignedInt(seeded.buffer().get(2)), Byte.toUnsignedInt(buffer.get(2)));
+        assertEquals(Byte.toUnsignedInt(seeded.buffer().get(3)), Byte.toUnsignedInt(buffer.get(3)));
+    }
+
+    @Test
+    void usesResourcePathIndexBeforeTouchingProvidedStream() throws Exception {
+        final Path cacheDir = tempDir.resolve("cache");
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, cacheDir.toString());
+
+        final Path sourceFile = tempDir.resolve("graphics/direct_index.png");
+        Files.createDirectories(sourceFile.getParent());
+
+        final byte[] imageBytes = pngBytes(new Color(77, 88, 99, 255));
+        Files.write(sourceFile, imageBytes);
+
+        final BufferedImage source = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint = TextureConversionCache.probeFingerprint(sourceFile.toString());
+        assertNotNull(sourceFingerprint);
+
+        TexturePixelConversionResult seeded = TexturePixelConverter.convert(
+                TrackedResourceImage.wrap(
+                        sourceFile.toString(),
+                        TrackedResourceImage.computeSourceHash(imageBytes),
+                        source,
+                        sourceFingerprint)
+        );
+
+        BufferedImage decoded = FastResourceImageDecoder.decode(
+                sourceFile.toString(),
+                new InputStream() {
+                    @Override
+                    public int read() {
+                        throw new AssertionError("cached resource-path hit should bypass the original input stream");
+                    }
+                },
+                bytes -> {
+                    throw new AssertionError("native decoder should also be skipped on direct resource-path cache hit");
+                }
+        );
+
+        assertNotNull(decoded);
         TexturePixelConversionResult cached = TexturePixelConverter.convert(decoded);
         ByteBuffer buffer = cached.buffer();
         assertEquals(seeded.averageColor().getRGB(), cached.averageColor().getRGB());

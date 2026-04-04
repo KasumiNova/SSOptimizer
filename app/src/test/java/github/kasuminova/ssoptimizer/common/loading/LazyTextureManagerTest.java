@@ -155,11 +155,13 @@ class LazyTextureManagerTest {
     }
 
     @Test
-    void victorPixelFontsUseNearestFilteringWithoutMipmaps() {
-        assertTrue(LazyTextureManager.isVictorPixelFontTexture("graphics/fonts/victor14_0.png"));
-        assertTrue(LazyTextureManager.isVictorPixelFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor14_s1500_0.png"));
-        assertEquals(9728, LazyTextureManager.minFilterForResourcePath("graphics/fonts/victor14_0.png"));
-        assertEquals(9728, LazyTextureManager.magFilterForResourcePath("graphics/fonts/victor14_0.png"));
+    void victorFontsUseLinearFilteringWithoutMipmaps() {
+        assertFalse(LazyTextureManager.isVictorPixelFontTexture("graphics/fonts/victor14_0.png"));
+        assertFalse(LazyTextureManager.isVictorPixelFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor14_s1500_0.png"));
+        assertTrue(LazyTextureManager.isManagedVictorFontTexture("graphics/fonts/victor14_0.png"));
+        assertTrue(LazyTextureManager.isManagedVictorFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor14_s1500_0.png"));
+        assertEquals(9729, LazyTextureManager.minFilterForResourcePath("graphics/fonts/victor14_0.png"));
+        assertEquals(9729, LazyTextureManager.magFilterForResourcePath("graphics/fonts/victor14_0.png"));
 
         final long estimated = LazyTextureManager.estimateTextureGpuBytes(
                 "graphics/fonts/victor14_0.png",
@@ -190,6 +192,7 @@ class LazyTextureManagerTest {
         assertTrue(LazyTextureManager.isSharpenedUiFontTexture("graphics/fonts/insignia21LTaa_0.png"));
         assertTrue(LazyTextureManager.isSharpenedUiFontTexture("graphics/fonts/orbitron24aa_0.png"));
         assertTrue(LazyTextureManager.isSharpenedUiFontTexture("ssoptimizer/runtimefonts/graphics/fonts/orbitron24aa_s1250_0.png"));
+        assertTrue(LazyTextureManager.isManagedVictorFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500_0.png"));
         assertTrue(LazyTextureManager.isManagedFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500_0.png"));
         assertEquals(9729, LazyTextureManager.minFilterForResourcePath("graphics/fonts/insignia21LTaa_0.png"));
         assertEquals(9729, LazyTextureManager.magFilterForResourcePath("graphics/fonts/insignia21LTaa_0.png"));
@@ -221,6 +224,16 @@ class LazyTextureManagerTest {
                 () -> LazyTextureManager.getTextureId(texture, 3553, 42));
 
         assertEquals(42, id);
+    }
+
+    @Test
+    void getTextureIdMarksManagedTextureAsNonEvictableAfterIdEscapes() {
+        final TextureObject texture = new TextureObject(3553, 42, "graphics/weapons/railgun.png");
+        LazyTextureManager.trackResidentTextureForTests(texture, "graphics/weapons/railgun.png");
+
+        assertTrue(LazyTextureManager.isTextureEvictable(texture));
+        assertEquals(42, LazyTextureManager.getTextureId(texture, 3553, 42));
+        assertFalse(LazyTextureManager.isTextureEvictable(texture));
     }
 
     @Test

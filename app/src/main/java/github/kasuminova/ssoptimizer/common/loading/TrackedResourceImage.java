@@ -6,6 +6,8 @@ import java.awt.image.ColorModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -23,6 +25,7 @@ final class TrackedResourceImage extends BufferedImage {
     private final String                       resourcePath;
     private final String                       sourceHash;
     private final byte[]                       sourceBytes;
+    private final TextureConversionCache.TextureSourceFingerprint sourceFingerprint;
     private final int                          imageWidth;
     private final int                          imageHeight;
     private final boolean                      hasAlpha;
@@ -32,11 +35,13 @@ final class TrackedResourceImage extends BufferedImage {
 
     private TrackedResourceImage(final BufferedImage delegate,
                                  final String resourcePath,
-                                 final String sourceHash) {
+                                 final String sourceHash,
+                                 final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         super(delegate.getColorModel(), delegate.getRaster(), delegate.isAlphaPremultiplied(), null);
         this.resourcePath = resourcePath;
         this.sourceHash = sourceHash;
         this.sourceBytes = null;
+        this.sourceFingerprint = sourceFingerprint;
         this.imageWidth = delegate.getWidth();
         this.imageHeight = delegate.getHeight();
         this.hasAlpha = delegate.getColorModel().hasAlpha();
@@ -47,11 +52,13 @@ final class TrackedResourceImage extends BufferedImage {
     private TrackedResourceImage(final String resourcePath,
                                  final String sourceHash,
                                  final byte[] sourceBytes,
-                                 final TextureConversionCache.CachedTextureData cachedData) {
+                                 final TextureConversionCache.CachedTextureData cachedData,
+                                 final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         super(1, 1, cachedData.hasAlpha() ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
         this.resourcePath = resourcePath;
         this.sourceHash = sourceHash;
         this.sourceBytes = sourceBytes;
+        this.sourceFingerprint = sourceFingerprint;
         this.imageWidth = cachedData.imageWidth();
         this.imageHeight = cachedData.imageHeight();
         this.hasAlpha = cachedData.hasAlpha();
@@ -61,6 +68,13 @@ final class TrackedResourceImage extends BufferedImage {
     static BufferedImage wrap(final String resourcePath,
                               final String sourceHash,
                               final BufferedImage image) {
+        return wrap(resourcePath, sourceHash, image, null);
+    }
+
+    static BufferedImage wrap(final String resourcePath,
+                              final String sourceHash,
+                              final BufferedImage image,
+                              final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         if (image == null) {
             return null;
         }
@@ -71,17 +85,36 @@ final class TrackedResourceImage extends BufferedImage {
             return image;
         }
 
-        return new TrackedResourceImage(image, resourcePath != null ? resourcePath : "", sourceHash != null ? sourceHash : "");
+        return new TrackedResourceImage(
+                image,
+                resourcePath != null ? resourcePath : "",
+                sourceHash != null ? sourceHash : "",
+                sourceFingerprint
+        );
     }
 
     static BufferedImage cached(final String resourcePath,
                                 final String sourceHash,
                                 final byte[] sourceBytes,
                                 final TextureConversionCache.CachedTextureData cachedData) {
+        return cached(resourcePath, sourceHash, sourceBytes, cachedData, null);
+    }
+
+    static BufferedImage cached(final String resourcePath,
+                                final String sourceHash,
+                                final byte[] sourceBytes,
+                                final TextureConversionCache.CachedTextureData cachedData,
+                                final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         if (!TextureConversionCache.isEnabled()) {
             return null;
         }
-        return new TrackedResourceImage(resourcePath != null ? resourcePath : "", sourceHash, sourceBytes, cachedData);
+        return new TrackedResourceImage(
+                resourcePath != null ? resourcePath : "",
+                sourceHash,
+                sourceBytes,
+                cachedData,
+                sourceFingerprint
+        );
     }
 
     static String computeSourceHash(final byte[] bytes) {
@@ -103,6 +136,10 @@ final class TrackedResourceImage extends BufferedImage {
 
     TexturePixelConversionResult cachedConversionResult() {
         return cachedConversionResult;
+    }
+
+    TextureConversionCache.TextureSourceFingerprint sourceFingerprint() {
+        return sourceFingerprint;
     }
 
     @Override
@@ -221,12 +258,22 @@ final class TrackedResourceImage extends BufferedImage {
                 return current;
             }
             try {
-                current = FastResourceImageDecoder.decodeUntracked(sourceBytes);
+                current = FastResourceImageDecoder.decodeUntracked(loadMaterializationBytes());
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to materialize tracked resource image: " + resourcePath, e);
             }
             delegate = current;
             return current;
         }
+    }
+
+    private byte[] loadMaterializationBytes() throws IOException {
+        if (sourceBytes != null) {
+            return sourceBytes;
+        }
+        if (sourceFingerprint != null) {
+            return Files.readAllBytes(Path.of(sourceFingerprint.resolvedSourcePath()));
+        }
+        throw new IOException("No tracked source bytes available for " + resourcePath);
     }
 }

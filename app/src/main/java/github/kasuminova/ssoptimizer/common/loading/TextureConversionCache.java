@@ -6,10 +6,14 @@ import org.lwjgl.BufferUtils;
 
 import java.awt.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,12 +30,16 @@ final class TextureConversionCache {
     static final String MEMORY_MAX_BYTES_PROPERTY = "ssoptimizer.texturecache.memory.maxbytes";
 
     private static final String                        MAGIC                    = "SSOTEX";
+    private static final String                        INDEX_MAGIC              = "SSOTEXIDX";
     private static final int                           VERSION                  = 3;
+    private static final int                           INDEX_VERSION            = 1;
     private static final String                        FILE_EXTENSION           = ".ssotex.zst";
+    private static final String                        INDEX_EXTENSION          = ".ssotexidx";
     private static final long                          DEFAULT_MEMORY_MAX_BYTES = 64L << 20;
     private static final Map<String, Object>           LOCKS                    = new ConcurrentHashMap<>();
     private static final Object                        MEMORY_CACHE_LOCK        = new Object();
     private static final LinkedHashMap<String, byte[]> MEMORY_CACHE             = new LinkedHashMap<>(16, 0.75f, true);
+    private static final Map<String, ResourceIndexEntry> RESOURCE_INDEX_CACHE   = new ConcurrentHashMap<>();
     private static       long                          memoryCacheBytes         = 0L;
 
     private TextureConversionCache() {
@@ -78,6 +86,53 @@ final class TextureConversionCache {
         }
     }
 
+    static ResourceCacheHit loadByResourcePath(final String resourcePath,
+                                               final TextureSourceFingerprint sourceFingerprint) {
+        if (!isEnabled() || resourcePath == null || resourcePath.isBlank() || sourceFingerprint == null) {
+            return null;
+        }
+
+        final String normalizedPath = normalizeResourcePath(resourcePath);
+        final ResourceIndexEntry indexEntry = loadResourceIndex(normalizedPath);
+        if (indexEntry == null || !indexEntry.matches(sourceFingerprint)) {
+            return null;
+        }
+
+        final CachedTextureData cached = load(indexEntry.sourceHash());
+        if (cached == null) {
+            RESOURCE_INDEX_CACHE.remove(normalizedPath);
+            deleteQuietly(indexFile(normalizedPath));
+            return null;
+        }
+
+        return new ResourceCacheHit(indexEntry.sourceHash(), sourceFingerprint.byteLength(), cached);
+    }
+
+    static TextureSourceFingerprint probeFingerprint(final String resourcePath) {
+        if (resourcePath == null || resourcePath.isBlank()) {
+            return null;
+        }
+
+        for (String candidate : candidatePaths(resourcePath)) {
+            try {
+                final Path path = Path.of(candidate).toAbsolutePath().normalize();
+                if (!Files.isRegularFile(path)) {
+                    continue;
+                }
+
+                final long sizeBytes = Files.size(path);
+                return new TextureSourceFingerprint(
+                        path.toString(),
+                        Files.getLastModifiedTime(path).toMillis(),
+                        sizeBytes
+                );
+            } catch (IOException | RuntimeException ignored) {
+            }
+        }
+
+        return null;
+    }
+
     static void store(final TrackedResourceImage image,
                       final TexturePixelConversionResult result) {
         if (!isEnabled()) {
@@ -98,6 +153,7 @@ final class TextureConversionCache {
                         StandardOpenOption.TRUNCATE_EXISTING,
                         StandardOpenOption.WRITE);
                 rememberCompressed(image.sourceHash(), compressedBytes);
+                storeResourceIndex(image);
             } catch (IOException | RuntimeException ignored) {
                 deleteQuietly(cacheFile);
                 forgetCompressed(image.sourceHash());
@@ -110,6 +166,7 @@ final class TextureConversionCache {
             MEMORY_CACHE.clear();
             memoryCacheBytes = 0L;
         }
+        RESOURCE_INDEX_CACHE.clear();
     }
 
     private static Object lockFor(final String sourceHash) {
@@ -133,6 +190,12 @@ final class TextureConversionCache {
     private static Path cacheFile(final String sourceHash) {
         final String prefix = sourceHash.substring(0, 2);
         return cacheDirectory().resolve(prefix).resolve(sourceHash + FILE_EXTENSION);
+    }
+
+    private static Path indexFile(final String normalizedResourcePath) {
+        final String pathHash = stableHash(normalizedResourcePath);
+        final String prefix = pathHash.substring(0, 2);
+        return cacheDirectory().resolve("index").resolve(prefix).resolve(pathHash + INDEX_EXTENSION);
     }
 
     private static Path cacheDirectory() {
@@ -285,9 +348,137 @@ final class TextureConversionCache {
         }
     }
 
+    private static void storeResourceIndex(final TrackedResourceImage image) {
+        final TextureSourceFingerprint sourceFingerprint = image.sourceFingerprint();
+        if (sourceFingerprint == null) {
+            return;
+        }
+
+        final String normalizedResourcePath = normalizeResourcePath(image.resourcePath());
+        final ResourceIndexEntry indexEntry = new ResourceIndexEntry(
+                normalizedResourcePath,
+                sourceFingerprint.resolvedSourcePath(),
+                sourceFingerprint.lastModifiedMillis(),
+                sourceFingerprint.sizeBytes(),
+                image.sourceHash()
+        );
+
+        final Path indexFile = indexFile(normalizedResourcePath);
+        try {
+            Files.createDirectories(indexFile.getParent());
+            try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(
+                    indexFile,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE
+            )))) {
+                output.writeUTF(INDEX_MAGIC);
+                output.writeInt(INDEX_VERSION);
+                output.writeUTF(indexEntry.normalizedResourcePath());
+                output.writeUTF(indexEntry.resolvedSourcePath());
+                output.writeLong(indexEntry.lastModifiedMillis());
+                output.writeLong(indexEntry.sizeBytes());
+                output.writeUTF(indexEntry.sourceHash());
+                output.flush();
+            }
+            RESOURCE_INDEX_CACHE.put(normalizedResourcePath, indexEntry);
+        } catch (IOException ignored) {
+            deleteQuietly(indexFile);
+            RESOURCE_INDEX_CACHE.remove(normalizedResourcePath);
+        }
+    }
+
+    private static ResourceIndexEntry loadResourceIndex(final String normalizedResourcePath) {
+        final ResourceIndexEntry cached = RESOURCE_INDEX_CACHE.get(normalizedResourcePath);
+        if (cached != null) {
+            return cached;
+        }
+
+        final Path indexFile = indexFile(normalizedResourcePath);
+        if (!Files.isRegularFile(indexFile)) {
+            return null;
+        }
+
+        try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(indexFile)))) {
+            final String magic = input.readUTF();
+            final int version = input.readInt();
+            final ResourceIndexEntry loaded = new ResourceIndexEntry(
+                    input.readUTF(),
+                    input.readUTF(),
+                    input.readLong(),
+                    input.readLong(),
+                    input.readUTF()
+            );
+            if (!INDEX_MAGIC.equals(magic)
+                    || version != INDEX_VERSION
+                    || !normalizedResourcePath.equals(loaded.normalizedResourcePath())) {
+                throw new IOException("Texture resource index header mismatch");
+            }
+
+            RESOURCE_INDEX_CACHE.put(normalizedResourcePath, loaded);
+            return loaded;
+        } catch (IOException | RuntimeException ignored) {
+            deleteQuietly(indexFile);
+            RESOURCE_INDEX_CACHE.remove(normalizedResourcePath);
+            return null;
+        }
+    }
+
+    private static String normalizeResourcePath(final String resourcePath) {
+        if (resourcePath == null || resourcePath.isBlank()) {
+            return "";
+        }
+
+        final String normalized = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        return normalized.replace('\\', '/');
+    }
+
+    private static String[] candidatePaths(final String resourcePath) {
+        final String normalized = normalizeResourcePath(resourcePath);
+        if (normalized.equals(resourcePath)) {
+            return new String[]{resourcePath};
+        }
+        return new String[]{resourcePath, normalized};
+    }
+
+    private static String stableHash(final String value) {
+        try {
+            final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 digest unavailable", e);
+        }
+    }
+
     record CachedTextureData(int imageWidth,
                              int imageHeight,
                              boolean hasAlpha,
                              TexturePixelConversionResult conversionResult) {
+    }
+
+    record ResourceCacheHit(String sourceHash,
+                            int sourceByteLength,
+                            CachedTextureData cachedData) {
+    }
+
+    record TextureSourceFingerprint(String resolvedSourcePath,
+                                    long lastModifiedMillis,
+                                    long sizeBytes) {
+        int byteLength() {
+            return sizeBytes > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.max(0L, sizeBytes);
+        }
+    }
+
+    private record ResourceIndexEntry(String normalizedResourcePath,
+                                      String resolvedSourcePath,
+                                      long lastModifiedMillis,
+                                      long sizeBytes,
+                                      String sourceHash) {
+        private boolean matches(final TextureSourceFingerprint sourceFingerprint) {
+            return sourceFingerprint != null
+                    && resolvedSourcePath.equals(sourceFingerprint.resolvedSourcePath())
+                    && lastModifiedMillis == sourceFingerprint.lastModifiedMillis()
+                    && sizeBytes == sourceFingerprint.sizeBytes();
+        }
     }
 }

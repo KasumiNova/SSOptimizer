@@ -14,11 +14,11 @@ import org.objectweb.asm.*;
  * 注入效果：替换启动、关闭、入队、等待和解码等关键方法，实现并行预加载与结果缓存。
  */
 public final class ParallelImagePreloadProcessor implements AsmClassProcessor {
-    public static final String TARGET_CLASS        = GameClassNames.PARALLEL_IMAGE_PRELOADER;
-    public static final String HELPER_OWNER        = "github/kasuminova/ssoptimizer/common/loading/ParallelImagePreloadCoordinator";
-    public static final String DECODE_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/loading/FastResourceImageDecoder";
-    public static final String DECODE_HELPER_DESC  = "(Ljava/lang/String;Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;";
-    public static final String QUEUE_HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/loading/ParallelImagePreloadQueueTracker";
+    public static final String TARGET_CLASS                = GameClassNames.PARALLEL_IMAGE_PRELOADER;
+    public static final String HELPER_OWNER                = "github/kasuminova/ssoptimizer/common/loading/ParallelImagePreloadCoordinator";
+    public static final String DECODE_HELPER_OWNER         = "github/kasuminova/ssoptimizer/common/loading/FastResourceImageDecoder";
+    public static final String DECODE_HELPER_DESC          = "(Ljava/lang/String;Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;";
+    public static final String QUEUE_HELPER_OWNER          = "github/kasuminova/ssoptimizer/common/loading/ParallelImagePreloadQueueTracker";
     public static final String ORIGINAL_AWAIT_BYTES_METHOD = "ssoptimizer$awaitBytesOriginal";
 
     private static final String START_METHOD         = GameMemberNames.ParallelImagePreloader.START;
