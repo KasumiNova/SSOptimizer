@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * XStream {@code ObjectIdDictionary} 查询辅助类。
  * <p>
- * 职责：为 {@code lookupId/containsId/removeId} 提供可复用的线程本地探针 key，
+ * 职责：为 {@code lookupId/containsId/removeId} 提供可复用探针 key，
  * 避免 XStream 原实现每次查询都分配新的 {@code IdWrapper} 包装对象。<br>
  * 设计动机：热点报告显示对象引用字典的查找路径在大存档下会频繁触发 `HashMap.get/containsKey/remove`
  * 与包装对象分配；这里利用 `HashMap` 以“查询 key 调用 equals(mapKey)”的实现细节，
@@ -37,9 +37,21 @@ public final class XStreamObjectIdDictionaryHelper {
         }
     };
 
-    private static final ThreadLocal<MutableIdProbe> LOOKUP_PROBE = ThreadLocal.withInitial(MutableIdProbe::new);
+    private static final ThreadLocal<ReusableIdProbe> LOOKUP_PROBE = ThreadLocal.withInitial(ReusableIdProbe::new);
 
     private XStreamObjectIdDictionaryHelper() {
+    }
+
+    /**
+     * 创建一个可复用的对象 ID 查询探针。
+     * <p>
+     * 适合绑定到单个 {@code ObjectIdDictionary} 实例上重复使用，以避免热点路径上的
+     * {@link ThreadLocal#get()} 读取成本。
+     *
+     * @return 新的可复用探针实例
+     */
+    public static ReusableIdProbe createReusableProbe() {
+        return new ReusableIdProbe();
     }
 
     /**
@@ -51,7 +63,21 @@ public final class XStreamObjectIdDictionaryHelper {
      */
     public static Object lookupId(final Map<?, ?> map,
                                   final Object item) {
-        final MutableIdProbe probe = LOOKUP_PROBE.get();
+        final ReusableIdProbe probe = LOOKUP_PROBE.get();
+        return lookupId(map, item, probe);
+    }
+
+    /**
+     * 使用显式提供的可复用探针查询对象的引用 ID。
+     *
+     * @param map   XStream 内部对象 ID 字典
+     * @param item  待查询对象
+     * @param probe 可复用探针
+     * @return 命中的引用 ID；若不存在则返回 {@code null}
+     */
+    public static Object lookupId(final Map<?, ?> map,
+                                  final Object item,
+                                  final ReusableIdProbe probe) {
         probe.bind(item);
         try {
             return map.get(probe);
@@ -69,7 +95,21 @@ public final class XStreamObjectIdDictionaryHelper {
      */
     public static boolean containsId(final Map<?, ?> map,
                                      final Object item) {
-        final MutableIdProbe probe = LOOKUP_PROBE.get();
+        final ReusableIdProbe probe = LOOKUP_PROBE.get();
+        return containsId(map, item, probe);
+    }
+
+    /**
+     * 使用显式提供的可复用探针判断对象是否已存在引用 ID。
+     *
+     * @param map   XStream 内部对象 ID 字典
+     * @param item  待查询对象
+     * @param probe 可复用探针
+     * @return 若存在引用 ID 则返回 {@code true}
+     */
+    public static boolean containsId(final Map<?, ?> map,
+                                     final Object item,
+                                     final ReusableIdProbe probe) {
         probe.bind(item);
         try {
             return map.containsKey(probe);
@@ -86,7 +126,20 @@ public final class XStreamObjectIdDictionaryHelper {
      */
     public static void removeId(final Map<?, ?> map,
                                 final Object item) {
-        final MutableIdProbe probe = LOOKUP_PROBE.get();
+        final ReusableIdProbe probe = LOOKUP_PROBE.get();
+        removeId(map, item, probe);
+    }
+
+    /**
+     * 使用显式提供的可复用探针删除对象对应的引用 ID。
+     *
+     * @param map   XStream 内部对象 ID 字典
+     * @param item  待删除对象
+     * @param probe 可复用探针
+     */
+    public static void removeId(final Map<?, ?> map,
+                                final Object item,
+                                final ReusableIdProbe probe) {
         probe.bind(item);
         try {
             map.remove(probe);
@@ -104,7 +157,7 @@ public final class XStreamObjectIdDictionaryHelper {
     }
 
     private static Object unwrapWrappedObject(final Object wrapper) {
-        if (wrapper instanceof MutableIdProbe probe) {
+        if (wrapper instanceof ReusableIdProbe probe) {
             return probe.target();
         }
         return WRAPPER_ACCESSORS.get(wrapper.getClass()).get(wrapper);
@@ -145,7 +198,7 @@ public final class XStreamObjectIdDictionaryHelper {
         }
     }
 
-    private static final class MutableIdProbe {
+    public static final class ReusableIdProbe {
         private Object target;
         private int    identityHashCode;
 

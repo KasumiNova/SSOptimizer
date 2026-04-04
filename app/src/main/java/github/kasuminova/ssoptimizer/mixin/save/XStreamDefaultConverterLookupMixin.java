@@ -34,6 +34,10 @@ public abstract class XStreamDefaultConverterLookupMixin {
     @Inject(method = "lookupConverterForType", at = @At("HEAD"), cancellable = true, remap = false)
     private void ssoptimizer$lookupFastCachedConverter(final Class<?> type,
                                                        final CallbackInfoReturnable<Converter> cir) {
+        if (type == null) {
+            return;
+        }
+
         final Converter cached = ssoptimizer$fastLookupCache.lookup(type);
         if (cached != null) {
             cir.setReturnValue(cached);
@@ -51,6 +55,10 @@ public abstract class XStreamDefaultConverterLookupMixin {
     @Inject(method = "lookupConverterForType", at = @At("RETURN"), remap = false)
     private void ssoptimizer$rememberResolvedConverter(final Class<?> type,
                                                        final CallbackInfoReturnable<Converter> cir) {
+        if (type == null) {
+            return;
+        }
+
         ssoptimizer$fastLookupCache.remember(type, cir.getReturnValue());
     }
 

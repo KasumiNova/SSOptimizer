@@ -25,6 +25,9 @@ public final class XStreamConverterLookupCache {
      * @return 已缓存的转换器；若未命中则返回 {@code null}
      */
     public Converter lookup(final Class<?> type) {
+        if (type == null) {
+            return null;
+        }
         return converters.get(type);
     }
 

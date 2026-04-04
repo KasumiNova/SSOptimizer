@@ -86,6 +86,7 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
             || "com/sun/xml/txw2/output/DelegatingXMLStreamWriter".equals(className)
             || "com/sun/xml/txw2/output/IndentingXMLStreamWriter".equals(className)
                 || "com/thoughtworks/xstream/core/DefaultConverterLookup".equals(className)
+                || "com/thoughtworks/xstream/mapper/FieldAliasingMapper".equals(className)
                 || "com/thoughtworks/xstream/converters/reflection/FieldDictionary".equals(className)
                 || "com/thoughtworks/xstream/core/util/Fields".equals(className)
                 || "com/thoughtworks/xstream/core/util/ObjectIdDictionary".equals(className)

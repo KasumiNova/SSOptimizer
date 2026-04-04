@@ -33,6 +33,17 @@ class XStreamConverterLookupCacheTest {
         assertNull(cache.lookup(String.class));
     }
 
+    @Test
+    void ignoresNullLookupTypes() {
+        XStreamConverterLookupCache cache = new XStreamConverterLookupCache();
+        Converter converter = new SampleConverter(String.class);
+
+        cache.remember(null, converter);
+
+        assertNull(cache.lookup(null));
+        assertNull(cache.lookup(String.class));
+    }
+
     private record SampleConverter(Class<?> supportedType) implements Converter {
         @Override
         public boolean canConvert(final Class type) {

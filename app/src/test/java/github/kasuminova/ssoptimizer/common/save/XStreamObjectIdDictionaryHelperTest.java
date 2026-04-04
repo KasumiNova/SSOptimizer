@@ -37,6 +37,25 @@ class XStreamObjectIdDictionaryHelperTest {
         assertFalse(XStreamObjectIdDictionaryHelper.containsId(map, key));
     }
 
+    @Test
+    void explicitReusableProbeCanBeReusedAcrossOperations() {
+        Object firstKey = new Object();
+        Object secondKey = new Object();
+        Map<Object, Object> map = new HashMap<>();
+        map.put(new WrapperLike(firstKey), "ref-1");
+        map.put(new WrapperLike(secondKey), "ref-2");
+
+        XStreamObjectIdDictionaryHelper.ReusableIdProbe probe = XStreamObjectIdDictionaryHelper.createReusableProbe();
+
+        assertEquals("ref-1", XStreamObjectIdDictionaryHelper.lookupId(map, firstKey, probe));
+        assertTrue(XStreamObjectIdDictionaryHelper.containsId(map, secondKey, probe));
+
+        XStreamObjectIdDictionaryHelper.removeId(map, firstKey, probe);
+
+        assertNull(XStreamObjectIdDictionaryHelper.lookupId(map, firstKey, probe));
+        assertEquals("ref-2", XStreamObjectIdDictionaryHelper.lookupId(map, secondKey, probe));
+    }
+
     private static final class WrapperLike {
         private final Object target;
         private final int    hashCode;
