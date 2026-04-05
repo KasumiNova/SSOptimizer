@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import github.kasuminova.ssoptimizer.mixin.service.AgentMixinService;
 import org.apache.log4j.Logger;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
@@ -92,7 +93,7 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
                 || "com/thoughtworks/xstream/core/util/Fields".equals(className)
                 || "com/thoughtworks/xstream/core/util/ObjectIdDictionary".equals(className)
                 || "com/thoughtworks/xstream/io/path/PathTracker".equals(className)
-                || "sound/Object".equals(className);
+                || GameMixinSignatures.SoundManager.OBFUSCATED_TARGET_CLASS_INTERNAL.equals(className);
     }
 
     private static boolean isJaninoLoader(ClassLoader loader) {

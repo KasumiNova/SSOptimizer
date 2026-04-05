@@ -2,6 +2,8 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import com.fs.graphics.TextureLoader;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -56,7 +58,7 @@ public final class LazyTextureManager {
     private static final int      TYPE_UNSIGNED_BYTE                          = 5121;
     private static final long     DEFAULT_MIN_GPU_BYTES                       = 1L << 20;
     private static final long     DEFAULT_TRACK_MIN_GPU_BYTES                 = 64L << 10;
-    private static final long     DEFAULT_IDLE_UNLOAD_MILLIS                  = 60_000L;
+    private static final long     DEFAULT_IDLE_UNLOAD_MILLIS                  = 0L;
     private static final long     DEFAULT_PREVIEW_PROTECT_MILLIS              = 300_000L;
     private static final long     DEFAULT_SWEEP_INTERVAL_MILLIS               = 1_000L;
     private static final long     DEFAULT_COMPOSITION_REPORT_INTERVAL_MILLIS  = 5_000L;
@@ -103,7 +105,7 @@ public final class LazyTextureManager {
     private static final    Method                                                       RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
     private static final    Method                                                       RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
     private static final    Field                                                        TEXTURE_ID_FIELD                    = resolveField(com.fs.graphics.TextureObject.class, "textureId");
-    private static final    Field                                                        SPECIAL_MIPMAP_SET_FIELD            = resolveField(TextureLoader.class, "null");
+    private static final    Field                                                        SPECIAL_MIPMAP_SET_FIELD            = resolveField(TextureLoader.class, GameMemberNames.TextureLoader.SPECIAL_MIPMAP_SET);
     private static volatile long                                                         nextSweepNanos                      = 0L;
     private static volatile long                                                         nextCompositionReportNanos          = 0L;
     private static volatile long                                                         nextManagementLogNanos              = 0L;
@@ -1326,14 +1328,15 @@ public final class LazyTextureManager {
 
     private static Method resolveOriginalLazyModeMethod() {
         try {
-            final Method method = findDeclaredMethod(
-                    com.fs.graphics.oOoO.class,
-                    boolean.class,
-                    true
-            );
+            final Class<?> textureManagerClass = Class.forName(
+                    GameClassNames.TEXTURE_MANAGER_DOTTED,
+                    false,
+                    TextureLoader.class.getClassLoader());
+            final Method method = textureManagerClass.getDeclaredMethod(
+                    GameMemberNames.TextureManager.IS_LAZY_LOADING_ENABLED);
             method.setAccessible(true);
             return method;
-        } catch (NoSuchMethodException e) {
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
             LOGGER.warn("[SSOptimizer] Could not resolve original lazy texture toggle", e);
             return null;
         }

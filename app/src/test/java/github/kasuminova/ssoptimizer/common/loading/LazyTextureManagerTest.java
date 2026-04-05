@@ -93,6 +93,11 @@ class LazyTextureManagerTest {
     }
 
     @Test
+    void idleUnloadIsDisabledByDefaultForSafety() {
+        assertEquals(0L, LazyTextureManager.idleUnloadMillis());
+    }
+
+    @Test
     void idleUnloadMillisCanBeDisabledViaProperty() {
         System.setProperty(LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY, "0");
 

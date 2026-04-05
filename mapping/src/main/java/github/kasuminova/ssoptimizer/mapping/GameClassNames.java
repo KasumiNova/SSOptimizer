@@ -40,6 +40,8 @@ public final class GameClassNames {
     public static final String FOCUSED_COMPONENT_TRACKER           = "com/fs/starfarer/ui/FocusedComponentTracker";
     public static final String PARALLEL_IMAGE_PRELOADER            = "com/fs/graphics/ParallelImagePreloader";
     public static final String PARALLEL_IMAGE_PRELOADER_DOTTED     = "com.fs.graphics.ParallelImagePreloader";
+    public static final String TEXTURE_MANAGER                     = "com/fs/graphics/TextureManager";
+    public static final String TEXTURE_MANAGER_DOTTED              = "com.fs.graphics.TextureManager";
     public static final String TEXTURE_LOADER                      = "com/fs/graphics/TextureLoader";
     public static final String TEXTURE_OBJECT                      = "com/fs/graphics/TextureObject";
     public static final String SOUND_MANAGER                       = "sound/SoundManager";

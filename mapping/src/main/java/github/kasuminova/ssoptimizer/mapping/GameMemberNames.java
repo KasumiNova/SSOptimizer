@@ -62,11 +62,22 @@ public final class GameMemberNames {
         public static final String TEXTURE_DIMENSION = method(GameClassNames.TEXTURE_LOADER, "textureDimension", "(I)I");
 
         public static final String TEXTURE_CACHE = field(GameClassNames.TEXTURE_LOADER, "textureCache");
+        public static final String SPECIAL_MIPMAP_SET = field(GameClassNames.TEXTURE_LOADER, "specialMipmapSet");
         public static final String UPPER_HALF_COLOR = field(GameClassNames.TEXTURE_LOADER, "upperHalfColor");
         public static final String AVERAGE_COLOR = field(GameClassNames.TEXTURE_LOADER, "averageColor");
         public static final String LOWER_HALF_COLOR = field(GameClassNames.TEXTURE_LOADER, "lowerHalfColor");
 
         private TextureLoader() {
+        }
+    }
+
+    public static final class TextureManager {
+        public static final String IS_LAZY_LOADING_ENABLED = method(
+                GameClassNames.TEXTURE_MANAGER,
+                "isLazyLoadingEnabled",
+                "()Z");
+
+        private TextureManager() {
         }
     }
 
@@ -140,6 +151,16 @@ public final class GameMemberNames {
         }
     }
 
+    public static final class TexturedStripRenderer {
+        public static final String RENDER_TEXTURED_STRIP = method(
+                GameClassNames.TEXTURED_STRIP_RENDERER,
+                "renderTexturedStrip",
+                "(Lcom/fs/graphics/TextureObject;FFFFFFLjava/awt/Color;FFFZ)V");
+
+        private TexturedStripRenderer() {
+        }
+    }
+
     public static final class LoadingUtils {
         public static final String READ_TEXT = method(GameClassNames.LOADING_UTILS, "readText", "(Ljava/io/InputStream;)Ljava/lang/String;");
 
@@ -172,6 +193,13 @@ public final class GameMemberNames {
             "(Ljava/awt/Color;Ljava/awt/Color;F)Ljava/awt/Color;");
 
         private RenderStateUtils() {
+        }
+    }
+
+    public static final class EngineGlowType {
+        public static final String PRIMARY = field(GameClassNames.ENGINE_GLOW_TYPE, "PRIMARY");
+
+        private EngineGlowType() {
         }
     }
 
@@ -209,6 +237,24 @@ public final class GameMemberNames {
         private SaveProgressOutputStream() {
         }
     }
+
+        public static final class SoundManager {
+        public static final String LOAD_OBJECT_FAMILY_FROM_STREAM = method(
+            GameClassNames.SOUND_MANAGER,
+            "loadObjectFamilyFromStream",
+            "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+        public static final String LOAD_O00000_FAMILY_FROM_STREAM = method(
+            GameClassNames.SOUND_MANAGER,
+            "loadO00000FamilyFromStream",
+            "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+        public static final String LOAD_O_ACCENT_FAMILY_FROM_STREAM = method(
+            GameClassNames.SOUND_MANAGER,
+            "loadOAccentFamilyFromStream",
+            "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+
+        private SoundManager() {
+        }
+        }
 
     private GameMemberNames() {
     }

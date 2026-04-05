@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
@@ -40,7 +41,7 @@ public final class EngineTexturedStripRendererProcessor implements AsmClassProce
             public MethodVisitor visitMethod(int access, String name, String desc,
                                              String sig, String[] ex) {
                 MethodVisitor delegate = super.visitMethod(access, name, desc, sig, ex);
-                if ("o00000".equals(name) && TARGET_DESC.equals(desc)) {
+                if (GameMemberNames.TexturedStripRenderer.RENDER_TEXTURED_STRIP.equals(name) && TARGET_DESC.equals(desc)) {
                     modified[0] = true;
                     return new RenderMethodReplacer(delegate);
                 }

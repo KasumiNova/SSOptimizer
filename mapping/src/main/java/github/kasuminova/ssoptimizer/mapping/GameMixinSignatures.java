@@ -41,4 +41,21 @@ public final class GameMixinSignatures {
         private SaveProgressOutputStream() {
         }
     }
+
+    /**
+     * 声音管理器 Mixin 签名常量。
+     * <p>
+     * 返回值中的 {@code sound/O0OO} 仍是运行时未补命名的声音句柄类型，
+     * 因而需要在 mapping 模块集中桥接，避免把描述符字面量散落到 {@code app} 模块。
+     */
+    public static final class SoundManager {
+        public static final String TARGET_CLASS = "sound.SoundManager";
+        public static final String OBFUSCATED_TARGET_CLASS_INTERNAL = "sound/Object";
+        public static final String LOAD_OBJECT_FAMILY = "loadObjectFamily(Ljava/lang/String;)Lsound/O0OO;";
+        public static final String LOAD_O00000_FAMILY = "loadO00000Family(Ljava/lang/String;)Lsound/O0OO;";
+        public static final String LOAD_O_ACCENT_FAMILY = "loadOAccentFamily(Ljava/lang/String;)Lsound/O0OO;";
+
+        private SoundManager() {
+        }
+    }
 }

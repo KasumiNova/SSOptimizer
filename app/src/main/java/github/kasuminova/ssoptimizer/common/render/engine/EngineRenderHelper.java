@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 import com.fs.graphics.Sprite;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
@@ -299,7 +300,7 @@ public final class EngineRenderHelper {
     }
 
     private static boolean isPrimaryGlowType(Object glowType) {
-        return glowType instanceof Enum<?> mode && "Object".equals(mode.name());
+        return glowType instanceof Enum<?> mode && GameMemberNames.EngineGlowType.PRIMARY.equals(mode.name());
     }
 
     private static void renderEngineStripPasses(float posX, float posY,

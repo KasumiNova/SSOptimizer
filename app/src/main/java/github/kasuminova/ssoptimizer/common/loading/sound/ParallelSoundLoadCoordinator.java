@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.common.loading.sound;
 
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
@@ -11,12 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,9 +38,9 @@ public final class ParallelSoundLoadCoordinator {
     public static final String PARALLELISM_PROPERTY      = "ssoptimizer.soundload.parallelism";
     public static final String MAX_MEMORY_BYTES_PROPERTY = "ssoptimizer.soundload.cache.maxbytes";
 
-    static final String OBJECT_FAMILY_METHOD  = "Object";
-    static final String O00000_FAMILY_METHOD  = "o00000";
-    static final String O_ACCENT_FAMILY_METHOD = "Ò00000";
+    static final String OBJECT_FAMILY_STREAM_METHOD   = GameMemberNames.SoundManager.LOAD_OBJECT_FAMILY_FROM_STREAM;
+    static final String O00000_FAMILY_STREAM_METHOD   = GameMemberNames.SoundManager.LOAD_O00000_FAMILY_FROM_STREAM;
+    static final String O_ACCENT_FAMILY_STREAM_METHOD = GameMemberNames.SoundManager.LOAD_O_ACCENT_FAMILY_FROM_STREAM;
     static final String OBJECT_PATH_ORIGINAL   = "ssoptimizer$loadPathObjectFamily";
     static final String O00000_PATH_ORIGINAL   = "ssoptimizer$loadPathO00000Family";
     static final String O_ACCENT_PATH_ORIGINAL = "ssoptimizer$loadPathOAccentFamily";
@@ -48,7 +48,7 @@ public final class ParallelSoundLoadCoordinator {
     private static final Logger LOGGER = Logger.getLogger(ParallelSoundLoadCoordinator.class);
 
     private static final String MODS_DIR_PROPERTY           = "com.fs.starfarer.settings.paths.mods";
-    private static final String RESOURCE_MANAGER_CLASS_NAME = "com.fs.util.ResourceLoader";
+    private static final String RESOURCE_MANAGER_CLASS_NAME = GameClassNames.RESOURCE_LOADER.replace('/', '.');
     private static final long   DEFAULT_MAX_MEMORY_BYTES    = 128L << 20;
 
     private static final Object MEMORY_CACHE_LOCK = new Object();
@@ -68,7 +68,7 @@ public final class ParallelSoundLoadCoordinator {
     }
 
     /**
-     * 通过 {@code Object(String)} 家族方法加载声音。
+    * 通过 {@code loadObjectFamily(String)} 家族方法加载声音。
      *
      * @param manager      游戏声音管理器实例
      * @param resourcePath 声音资源路径
@@ -76,11 +76,11 @@ public final class ParallelSoundLoadCoordinator {
      */
     public static Object loadObjectFamily(final Object manager,
                                           final String resourcePath) {
-        return load(manager, resourcePath, OBJECT_FAMILY_METHOD, OBJECT_PATH_ORIGINAL);
+        return load(manager, resourcePath, OBJECT_FAMILY_STREAM_METHOD, OBJECT_PATH_ORIGINAL);
     }
 
     /**
-     * 通过 {@code o00000(String)} 家族方法加载声音。
+    * 通过 {@code loadO00000Family(String)} 家族方法加载声音。
      *
      * @param manager      游戏声音管理器实例
      * @param resourcePath 声音资源路径
@@ -88,11 +88,11 @@ public final class ParallelSoundLoadCoordinator {
      */
     public static Object loadO00000Family(final Object manager,
                                           final String resourcePath) {
-        return load(manager, resourcePath, O00000_FAMILY_METHOD, O00000_PATH_ORIGINAL);
+        return load(manager, resourcePath, O00000_FAMILY_STREAM_METHOD, O00000_PATH_ORIGINAL);
     }
 
     /**
-     * 通过 {@code Ò00000(String)} 家族方法加载声音。
+    * 通过 {@code loadOAccentFamily(String)} 家族方法加载声音。
      *
      * @param manager      游戏声音管理器实例
      * @param resourcePath 声音资源路径
@@ -100,7 +100,7 @@ public final class ParallelSoundLoadCoordinator {
      */
     public static Object loadOAccentFamily(final Object manager,
                                            final String resourcePath) {
-        return load(manager, resourcePath, O_ACCENT_FAMILY_METHOD, O_ACCENT_PATH_ORIGINAL);
+        return load(manager, resourcePath, O_ACCENT_FAMILY_STREAM_METHOD, O_ACCENT_PATH_ORIGINAL);
     }
 
     static void clearForTests() {
@@ -288,7 +288,7 @@ public final class ParallelSoundLoadCoordinator {
         } catch (NoSuchMethodException | IllegalAccessException e) {
             return null;
         } catch (InvocationTargetException e) {
-            return sneakyThrow(e.getCause());
+            return null;
         }
     }
 
@@ -306,7 +306,7 @@ public final class ParallelSoundLoadCoordinator {
         } catch (NoSuchMethodException | IllegalAccessException e) {
             return null;
         } catch (InvocationTargetException e) {
-            return sneakyThrow(e.getCause());
+            return throwUnchecked(e.getCause());
         }
     }
 
@@ -452,12 +452,8 @@ public final class ParallelSoundLoadCoordinator {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T sneakyThrow(final Throwable throwable) {
-        return ParallelSoundLoadCoordinator.<RuntimeException, T>throwUnchecked(throwable);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <E extends Throwable, T> T throwUnchecked(final Throwable throwable) throws E {
+    private static <T, E extends Throwable> T throwUnchecked(final Throwable throwable) throws E {
         throw (E) throwable;
     }
+
 }

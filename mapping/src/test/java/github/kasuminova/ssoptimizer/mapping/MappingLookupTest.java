@@ -76,6 +76,22 @@ class MappingLookupTest {
     }
 
     @Test
+        void textureManagerLazyModeAndMipmapMappingsCanBeResolvedByNamedName() {
+                MappingEntry classEntry = lookup.requireClassByNamedName("com/fs/graphics/TextureManager");
+                MappingEntry methodEntry = lookup.requireMethodByNamedName(
+                                "com/fs/graphics/TextureManager",
+                                "isLazyLoadingEnabled",
+                                "()Z");
+                MappingEntry fieldEntry = lookup.requireFieldByNamedName(
+                                "com/fs/graphics/TextureLoader",
+                                "specialMipmapSet");
+
+                assertEquals("com/fs/graphics/oOoO", classEntry.obfuscatedName());
+                assertEquals("class", methodEntry.obfuscatedName());
+                assertEquals("null", fieldEntry.obfuscatedName());
+        }
+
+        @Test
     void soundManagerPathLoaderMappingCanBeResolvedByNamedName() {
         MappingEntry classEntry = lookup.requireClassByNamedName("sound/SoundManager");
         MappingEntry methodEntry = lookup.requireMethodByNamedName(
@@ -86,6 +102,21 @@ class MappingLookupTest {
         assertEquals("sound/Object", classEntry.obfuscatedName());
         assertEquals("Ò00000", methodEntry.obfuscatedName());
     }
+
+        @Test
+        void soundManagerStreamLoaderMappingCanBeResolvedByNamedName() {
+                MappingEntry objectFamilyStream = lookup.requireMethodByNamedName(
+                                "sound/SoundManager",
+                                "loadObjectFamilyFromStream",
+                                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                MappingEntry oAccentFamilyStream = lookup.requireMethodByNamedName(
+                                "sound/SoundManager",
+                                "loadOAccentFamilyFromStream",
+                                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+
+                assertEquals("Ò00000", objectFamilyStream.obfuscatedName());
+                assertEquals("Object", oAccentFamilyStream.obfuscatedName());
+        }
 
     @Test
     void saveProgressMappingsCanBeResolvedByNamedName() {
@@ -131,6 +162,20 @@ class MappingLookupTest {
         assertEquals("class", endOverlay.obfuscatedName());
         assertEquals("Õ00000", getBoolean.obfuscatedName());
     }
+
+        @Test
+        void texturedStripRendererAndEngineGlowMappingsRemainQueryable() {
+                MappingEntry renderTexturedStrip = lookup.requireMethodByNamedName(
+                                "com/fs/starfarer/renderers/TexturedStripRenderer",
+                                "renderTexturedStrip",
+                                "(Lcom/fs/graphics/TextureObject;FFFFFFLjava/awt/Color;FFFZ)V");
+                MappingEntry primaryGlowType = lookup.requireFieldByNamedName(
+                                "com/fs/starfarer/combat/entities/EngineGlowType",
+                                "PRIMARY");
+
+                assertEquals("o00000", renderTexturedStrip.obfuscatedName());
+                assertEquals("Object", primaryGlowType.obfuscatedName());
+        }
 
     @Test
     void missingMethodMappingReportsReadableError() {

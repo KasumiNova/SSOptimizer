@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.asm.render;
 
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
 
@@ -13,7 +14,10 @@ class EngineTexturedStripRendererProcessorTest {
                 null, "java/lang/Object", null);
 
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
-                "o00000", EngineTexturedStripRendererProcessor.TARGET_DESC, null, null);
+            GameMemberNames.TexturedStripRenderer.RENDER_TEXTURED_STRIP,
+            EngineTexturedStripRendererProcessor.TARGET_DESC,
+            null,
+            null);
         mv.visitCode();
         mv.visitIntInsn(Opcodes.SIPUSH, 3042);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC,
@@ -33,9 +37,9 @@ class EngineTexturedStripRendererProcessorTest {
 
         MethodInspection inspection = inspectMethod(rewritten);
         assertTrue(inspection.callsHelper,
-                "o00000 should call TexturedStripRenderHelper.renderTexturedStrip");
+            "renderTexturedStrip should call TexturedStripRenderHelper.renderTexturedStrip");
         assertFalse(inspection.callsGL11,
-                "o00000 should not reference GL11 after rewrite");
+            "renderTexturedStrip should not reference GL11 after rewrite");
     }
 
     @Test
@@ -57,7 +61,8 @@ class EngineTexturedStripRendererProcessorTest {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc,
                                              String sig, String[] ex) {
-                if (!"o00000".equals(name) || !EngineTexturedStripRendererProcessor.TARGET_DESC.equals(desc)) {
+                if (!GameMemberNames.TexturedStripRenderer.RENDER_TEXTURED_STRIP.equals(name)
+                        || !EngineTexturedStripRendererProcessor.TARGET_DESC.equals(desc)) {
                     return null;
                 }
                 return new MethodVisitor(Opcodes.ASM9) {

@@ -14,6 +14,8 @@ c com/fs/graphics/L com/fs/graphics/ParallelImagePreloader
 	m class awaitImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
 	m Ö00000 enqueueImage (Ljava/lang/String;)V
 	m Ó00000 enqueueBytes (Ljava/lang/String;)V
+c com/fs/graphics/oOoO com/fs/graphics/TextureManager
+	m class isLazyLoadingEnabled ()Z
 c com/fs/graphics/Object com/fs/graphics/TextureObject
 	f ö00000 bindTarget I
 	f ô00000 textureId I
@@ -57,6 +59,7 @@ c com/fs/graphics/super/Object com/fs/graphics/font/BitmapFontRenderer
 c com/fs/graphics/TextureLoader com/fs/graphics/TextureLoader
 	f a cacheSize I
 	f ÔO0000 textureCache Ljava/util/HashMap;
+	f null specialMipmapSet Ljava/util/Set;
 	f interface upperHalfColor Ljava/awt/Color;
 	f õ00000 averageColor Ljava/awt/Color;
 	f Ó00000 lowerHalfColor Ljava/awt/Color;
@@ -68,6 +71,9 @@ c sound/Object sound/SoundManager
 	m Object loadObjectFamily (Ljava/lang/String;)Lsound/O0OO;
 	m o00000 loadO00000Family (Ljava/lang/String;)Lsound/O0OO;
 	m Ò00000 loadOAccentFamily (Ljava/lang/String;)Lsound/O0OO;
+	m Ò00000 loadObjectFamilyFromStream (Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;
+	m o00000 loadO00000FamilyFromStream (Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;
+	m Object loadOAccentFamilyFromStream (Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;
 c com/fs/starfarer/combat/o0OO/oOoO com/fs/starfarer/combat/CollisionGridQuery
 	f class cells [[Ljava/util/List;
 	f Ó00000 gridWidth I
@@ -76,6 +82,7 @@ c com/fs/starfarer/combat/o0OO/oOoO com/fs/starfarer/combat/CollisionGridQuery
 	f õ00000 baseY I
 	f new cellSize F
 c com/fs/starfarer/renderers/o0OO com/fs/starfarer/renderers/TexturedStripRenderer
+	m o00000 renderTexturedStrip (Lcom/fs/graphics/Object;FFFFFFLjava/awt/Color;FFFZ)V
 c com/fs/starfarer/ui/B com/fs/starfarer/ui/TextFieldImpl
 c com/fs/starfarer/ui/O0Oo com/fs/starfarer/ui/FocusedComponentTracker
 	m Ó00000 getCurrentFocusedComponent ()Lcom/fs/starfarer/ui/S;
@@ -117,6 +124,7 @@ c com/fs/starfarer/combat/entities/G$Oo com/fs/starfarer/combat/entities/EngineS
 	f return spread F
 	f Õ00000 flameLevel F
 c com/fs/starfarer/combat/entities/G$o com/fs/starfarer/combat/entities/EngineGlowType
+	f Object PRIMARY Lcom/fs/starfarer/combat/entities/G$o;
 c com/fs/starfarer/combat/entities/ship/H$Oo com/fs/starfarer/combat/entities/ship/EngineOwner
 c com/fs/starfarer/combat/entities/ContrailEngine$o com/fs/starfarer/combat/entities/ContrailEngine$o
 	f oO0000 segments Ljava/util/List;
