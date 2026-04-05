@@ -59,6 +59,10 @@ public final class GameClassNames {
     public static final String CAMPAIGN_SAVE_PROGRESS_DIALOG_DOTTED = "com.fs.starfarer.campaign.save.CampaignSaveProgressDialog";
     public static final String SAVE_PROGRESS_OUTPUT_STREAM         = "com/fs/starfarer/util/SaveProgressOutputStream";
     public static final String SAVE_PROGRESS_OUTPUT_STREAM_DOTTED  = "com.fs.starfarer.util.SaveProgressOutputStream";
+    public static final String MARKET                              = "com/fs/starfarer/campaign/econ/Market";
+    public static final String MARKET_DOTTED                       = "com.fs.starfarer.campaign.econ.Market";
+    public static final String COMMODITY_ON_MARKET                 = "com/fs/starfarer/campaign/econ/CommodityOnMarket";
+    public static final String COMMODITY_ON_MARKET_DOTTED          = "com.fs.starfarer.campaign.econ.CommodityOnMarket";
     public static final String LINUX_DISPLAY                       = "org/lwjgl/opengl/LinuxDisplay";
     public static final String LINUX_EVENT                         = "org/lwjgl/opengl/LinuxEvent";
     public static final String LINUX_KEYBOARD                      = "org/lwjgl/opengl/LinuxKeyboard";

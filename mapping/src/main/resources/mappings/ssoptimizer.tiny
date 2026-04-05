@@ -100,6 +100,15 @@ c com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton com/fs/starfare
  c com/fs/starfarer/util/do com/fs/starfarer/util/SaveProgressOutputStream
 	f String writtenBytes J
 	m o00000 getWrittenBytes ()J
+c com/fs/starfarer/campaign/econ/CommodityOnMarket com/fs/starfarer/campaign/econ/CommodityOnMarket
+	m addTradeMod addTradeMod (Ljava/lang/String;FF)V
+	m addTradeModPlus addTradeModPlus (Ljava/lang/String;FF)V
+	m addTradeModMinus addTradeModMinus (Ljava/lang/String;FF)V
+	m reapplyEventMod reapplyEventMod ()V
+	m getAvailable getAvailable ()I
+	m getAvailableStat getAvailableStat ()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;
+c com/fs/starfarer/campaign/econ/Market com/fs/starfarer/campaign/econ/Market
+	m advance advance (F)V
 c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
 	f Óo0000 owner Lcom/fs/starfarer/combat/entities/ship/EngineOwner;
 	f õ00000 systemActivatedRenderingEnabled Z

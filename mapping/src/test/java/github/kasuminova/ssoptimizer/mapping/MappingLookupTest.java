@@ -76,22 +76,22 @@ class MappingLookupTest {
     }
 
     @Test
-        void textureManagerLazyModeAndMipmapMappingsCanBeResolvedByNamedName() {
-                MappingEntry classEntry = lookup.requireClassByNamedName("com/fs/graphics/TextureManager");
-                MappingEntry methodEntry = lookup.requireMethodByNamedName(
-                                "com/fs/graphics/TextureManager",
-                                "isLazyLoadingEnabled",
-                                "()Z");
-                MappingEntry fieldEntry = lookup.requireFieldByNamedName(
-                                "com/fs/graphics/TextureLoader",
-                                "specialMipmapSet");
+    void textureManagerLazyModeAndMipmapMappingsCanBeResolvedByNamedName() {
+        MappingEntry classEntry = lookup.requireClassByNamedName("com/fs/graphics/TextureManager");
+        MappingEntry methodEntry = lookup.requireMethodByNamedName(
+                "com/fs/graphics/TextureManager",
+                "isLazyLoadingEnabled",
+                "()Z");
+        MappingEntry fieldEntry = lookup.requireFieldByNamedName(
+                "com/fs/graphics/TextureLoader",
+                "specialMipmapSet");
 
-                assertEquals("com/fs/graphics/oOoO", classEntry.obfuscatedName());
-                assertEquals("class", methodEntry.obfuscatedName());
-                assertEquals("null", fieldEntry.obfuscatedName());
-        }
+        assertEquals("com/fs/graphics/oOoO", classEntry.obfuscatedName());
+        assertEquals("class", methodEntry.obfuscatedName());
+        assertEquals("null", fieldEntry.obfuscatedName());
+    }
 
-        @Test
+    @Test
     void soundManagerPathLoaderMappingCanBeResolvedByNamedName() {
         MappingEntry classEntry = lookup.requireClassByNamedName("sound/SoundManager");
         MappingEntry methodEntry = lookup.requireMethodByNamedName(
@@ -132,6 +132,28 @@ class MappingLookupTest {
         assertEquals("com/fs/starfarer/campaign/save/B", dialogClass.obfuscatedName());
         assertEquals("o00000", reportProgress.obfuscatedName());
         assertEquals("String", streamField.obfuscatedName());
+    }
+
+    @Test
+    void commodityAndMarketMappingsRemainQueryable() {
+        MappingEntry commodityClass = lookup.requireClassByNamedName("com/fs/starfarer/campaign/econ/CommodityOnMarket");
+        MappingEntry reapplyEventMod = lookup.requireMethodByNamedName(
+                "com/fs/starfarer/campaign/econ/CommodityOnMarket",
+                "reapplyEventMod",
+                "()V");
+        MappingEntry getAvailableStat = lookup.requireMethodByNamedName(
+                "com/fs/starfarer/campaign/econ/CommodityOnMarket",
+                "getAvailableStat",
+                "()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;");
+        MappingEntry marketAdvance = lookup.requireMethodByNamedName(
+                "com/fs/starfarer/campaign/econ/Market",
+                "advance",
+                "(F)V");
+
+        assertEquals("com/fs/starfarer/campaign/econ/CommodityOnMarket", commodityClass.obfuscatedName());
+        assertEquals("reapplyEventMod", reapplyEventMod.obfuscatedName());
+        assertEquals("getAvailableStat", getAvailableStat.obfuscatedName());
+        assertEquals("advance", marketAdvance.obfuscatedName());
     }
 
     @Test

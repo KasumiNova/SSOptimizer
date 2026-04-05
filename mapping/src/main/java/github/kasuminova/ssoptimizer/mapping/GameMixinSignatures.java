@@ -43,6 +43,34 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 市场商品事件修正 Mixin 签名常量。
+     */
+    public static final class CommodityOnMarket {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.econ.CommodityOnMarket";
+        public static final String ADD_TRADE_MOD = "addTradeMod(Ljava/lang/String;FF)V";
+        public static final String ADD_TRADE_MOD_PLUS = "addTradeModPlus(Ljava/lang/String;FF)V";
+        public static final String ADD_TRADE_MOD_MINUS = "addTradeModMinus(Ljava/lang/String;FF)V";
+        public static final String REAPPLY_EVENT_MOD = "reapplyEventMod()V";
+        public static final String GET_AVAILABLE = "getAvailable()I";
+        public static final String GET_AVAILABLE_STAT = "getAvailableStat()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;";
+        public static final String REAPPLY_EVENT_MOD_TARGET = "Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;reapplyEventMod()V";
+
+        private CommodityOnMarket() {
+        }
+    }
+
+    /**
+     * 市场推进 Mixin 签名常量。
+     */
+    public static final class Market {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.econ.Market";
+        public static final String ADVANCE = "advance(F)V";
+
+        private Market() {
+        }
+    }
+
+    /**
      * 声音管理器 Mixin 签名常量。
      * <p>
      * 返回值中的 {@code sound/O0OO} 仍是运行时未补命名的声音句柄类型，

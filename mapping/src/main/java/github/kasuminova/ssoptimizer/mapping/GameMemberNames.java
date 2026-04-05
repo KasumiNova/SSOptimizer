@@ -238,23 +238,60 @@ public final class GameMemberNames {
         }
     }
 
-        public static final class SoundManager {
+    public static final class CommodityOnMarket {
+        public static final String ADD_TRADE_MOD = method(
+                GameClassNames.COMMODITY_ON_MARKET,
+                "addTradeMod",
+                "(Ljava/lang/String;FF)V");
+        public static final String ADD_TRADE_MOD_PLUS = method(
+                GameClassNames.COMMODITY_ON_MARKET,
+                "addTradeModPlus",
+                "(Ljava/lang/String;FF)V");
+        public static final String ADD_TRADE_MOD_MINUS = method(
+                GameClassNames.COMMODITY_ON_MARKET,
+                "addTradeModMinus",
+                "(Ljava/lang/String;FF)V");
+        public static final String REAPPLY_EVENT_MOD = method(
+                GameClassNames.COMMODITY_ON_MARKET,
+                "reapplyEventMod",
+                "()V");
+        public static final String GET_AVAILABLE = method(
+                GameClassNames.COMMODITY_ON_MARKET,
+                "getAvailable",
+                "()I");
+        public static final String GET_AVAILABLE_STAT = method(
+                GameClassNames.COMMODITY_ON_MARKET,
+                "getAvailableStat",
+                "()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;");
+
+        private CommodityOnMarket() {
+        }
+    }
+
+    public static final class Market {
+        public static final String ADVANCE = method(GameClassNames.MARKET, "advance", "(F)V");
+
+        private Market() {
+        }
+    }
+
+    public static final class SoundManager {
         public static final String LOAD_OBJECT_FAMILY_FROM_STREAM = method(
-            GameClassNames.SOUND_MANAGER,
-            "loadObjectFamilyFromStream",
-            "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                GameClassNames.SOUND_MANAGER,
+                "loadObjectFamilyFromStream",
+                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
         public static final String LOAD_O00000_FAMILY_FROM_STREAM = method(
-            GameClassNames.SOUND_MANAGER,
-            "loadO00000FamilyFromStream",
-            "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                GameClassNames.SOUND_MANAGER,
+                "loadO00000FamilyFromStream",
+                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
         public static final String LOAD_O_ACCENT_FAMILY_FROM_STREAM = method(
-            GameClassNames.SOUND_MANAGER,
-            "loadOAccentFamilyFromStream",
-            "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                GameClassNames.SOUND_MANAGER,
+                "loadOAccentFamilyFromStream",
+                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
 
         private SoundManager() {
         }
-        }
+    }
 
     private GameMemberNames() {
     }

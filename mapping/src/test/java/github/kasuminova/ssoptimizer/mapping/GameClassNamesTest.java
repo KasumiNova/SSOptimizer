@@ -16,7 +16,10 @@ class GameClassNamesTest {
         assertFalse(GameClassNames.RESOURCE_LOADER.startsWith("github/kasuminova/ssoptimizer/"));
         assertFalse(GameClassNames.CAMPAIGN_SAVE_PROGRESS_DIALOG.startsWith("github/kasuminova/ssoptimizer/"));
         assertFalse(GameClassNames.SAVE_PROGRESS_OUTPUT_STREAM.startsWith("github/kasuminova/ssoptimizer/"));
+        assertFalse(GameClassNames.COMMODITY_ON_MARKET.startsWith("github/kasuminova/ssoptimizer/"));
+        assertFalse(GameClassNames.MARKET.startsWith("github/kasuminova/ssoptimizer/"));
         assertTrue(GameClassNames.TEXTURE_LOADER.startsWith("com/fs/graphics/"));
         assertTrue(GameClassNames.STARFARER_SETTINGS.startsWith("com/fs/starfarer/settings/"));
+        assertTrue(GameClassNames.COMMODITY_ON_MARKET.startsWith("com/fs/starfarer/campaign/econ/"));
     }
 }

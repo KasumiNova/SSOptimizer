@@ -10,6 +10,8 @@
     "accessor.EngineStateAccessor",
     "accessor.ShipAccessor",
     "accessor.Txw2DelegatingXmlStreamWriterAccessor",
+    "econ.CommodityOnMarketMixin",
+    "econ.MarketMixin",
     "loading.JaninoJavaSourceClassLoaderMixin",
     "loading.ParallelImagePreloaderMixin",
     "loading.SoundManagerMixin",
