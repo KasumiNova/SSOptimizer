@@ -13,6 +13,8 @@
     "loading.JaninoJavaSourceClassLoaderMixin",
     "loading.ParallelImagePreloaderMixin",
     "loading.SoundManagerMixin",
+    "render.CampaignFleetMemberViewMixin",
+    "render.CampaignFleetViewMixin",
     "render.EngineRenderMixin",
     "save.BaseTiledTerrainMixin",
     "save.CampaignSaveProgressDialogMixin",
