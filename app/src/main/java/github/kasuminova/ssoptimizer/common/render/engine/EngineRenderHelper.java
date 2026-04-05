@@ -176,7 +176,7 @@ public final class EngineRenderHelper {
                 red, green, blue, coreAlpha, exactAlphaPath);
 
         renderGlowSprite(engine, owner, slotAccessor, state, position, angle,
-                primaryBrightness, edgeAlpha, spread, maxSpread,
+            flameLevel, primaryBrightness, edgeAlpha, spread, maxSpread,
                 innerWidth, stripWidth, color, alphaScale);
     }
 
@@ -186,6 +186,7 @@ public final class EngineRenderHelper {
                                          EngineStateAccessor state,
                                          Vector2f position,
                                          float angle,
+                         float flameLevel,
                                          float primaryBrightness,
                                          float edgeAlpha,
                                          float spread,
@@ -217,8 +218,7 @@ public final class EngineRenderHelper {
         }
         glowAlphaBase = Math.max(glowAlphaBase, glowBrightness);
 
-        float glowAlpha = Math.max(glowAlphaBase, 1.0f - 0.4f) * 0.75f * alphaScale;
-        glowAlpha = Math.min(edgeAlpha, glowAlpha);
+        float glowAlpha = computeGlowAlpha(glowAlphaBase, flameLevel, edgeAlpha, alphaScale);
 
         if (owner.ssoptimizer$isMissile()) {
             glowSize *= 2.0f;
@@ -449,6 +449,14 @@ public final class EngineRenderHelper {
         transformCoreVertex(vertices, 6, stripLength, halfWidth,
                 posX, posY, angle, stateRotation, omegaRotation);
         return vertices;
+    }
+
+    static float computeGlowAlpha(float glowAlphaBase,
+                                  float flameLevel,
+                                  float edgeAlpha,
+                                  float alphaScale) {
+        float glowAlpha = Math.max(glowAlphaBase, flameLevel - 0.4f) * 0.75f * alphaScale;
+        return Math.min(edgeAlpha, glowAlpha);
     }
 
     private static void transformStripVertex(float[] vertices, int offset,

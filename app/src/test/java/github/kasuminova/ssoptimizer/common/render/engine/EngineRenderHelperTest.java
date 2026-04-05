@@ -81,4 +81,15 @@ class EngineRenderHelperTest {
         assertEquals(14.0f, vertices[4], 0.0001f);
         assertEquals(0.0f, vertices[7], 0.0001f);
     }
+
+    @Test
+    void computeGlowAlphaTracksFlameLevelInsteadOfUsingConstantFloor() {
+        float lowFlameAlpha = EngineRenderHelper.computeGlowAlpha(0.0f, 0.2f, 0.5f, 1.0f);
+        float hotFlameAlpha = EngineRenderHelper.computeGlowAlpha(0.0f, 0.9f, 1.0f, 1.0f);
+
+        assertEquals(0.0f, lowFlameAlpha, 0.0001f,
+                "Low flame levels should not force the glow sprite to a constant visible alpha");
+        assertEquals(0.375f, hotFlameAlpha, 0.0001f,
+                "Glow alpha should follow the original flameLevel-0.4 ramp before edgeAlpha clamping");
+    }
 }
