@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
 
@@ -10,8 +12,8 @@ class TextFieldFactoryProcessorTest {
     @Test
     void rewritesFactoryMethodToRegisterCreatedTextField() {
         byte[] rewritten = new TooltipTextFieldFactoryProcessor(
-                "com/fs/starfarer/ui/impl/StandardTooltipV2"
-        ).process(createFakeFactoryClass("com/fs/starfarer/ui/impl/StandardTooltipV2"));
+            GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE
+        ).process(createFakeFactoryClass(GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE));
         assertNotNull(rewritten);
 
         boolean[] foundRegisterHook = {false};
@@ -36,8 +38,8 @@ class TextFieldFactoryProcessorTest {
     @Test
     void rewritesTextFieldConstructorToRegisterCreatedTextField() {
         byte[] rewritten = new TextFieldImplementationProcessor(
-                "com/fs/starfarer/ui/B"
-        ).process(createFakeTextFieldImplementationClass("com/fs/starfarer/ui/B"));
+            GameClassNames.TEXT_FIELD_IMPL
+        ).process(createFakeTextFieldImplementationClass(GameClassNames.TEXT_FIELD_IMPL));
         assertNotNull(rewritten);
 
         boolean[] foundRegisterHook = {false};
@@ -73,8 +75,8 @@ class TextFieldFactoryProcessorTest {
     private byte[] createFakeFactoryClass(String owner) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, owner, null, "java/lang/Object", null);
-        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "addTextField",
-                "(FF)Lcom/fs/starfarer/api/ui/TextFieldAPI;", null, null);
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, GameMixinSignatures.TextFieldIme.ADD_TEXT_FIELD,
+            "(FF)" + GameMixinSignatures.TextFieldIme.TEXT_FIELD_API_DESC, null, null);
         mv.visitCode();
         mv.visitInsn(Opcodes.ACONST_NULL);
         mv.visitInsn(Opcodes.ARETURN);
@@ -87,7 +89,7 @@ class TextFieldFactoryProcessorTest {
     private byte[] createFakeTextFieldImplementationClass(String owner) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, owner, null, "java/lang/Object",
-                new String[]{"com/fs/starfarer/api/ui/TextFieldAPI"});
+            new String[]{GameClassNames.TEXT_FIELD_API});
 
         MethodVisitor ctor = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
         ctor.visitCode();
@@ -97,13 +99,21 @@ class TextFieldFactoryProcessorTest {
         ctor.visitMaxs(0, 1);
         ctor.visitEnd();
 
-        MethodVisitor grabFocus = cw.visitMethod(Opcodes.ACC_PUBLIC, "grabFocus", "(Z)V", null, null);
+        MethodVisitor grabFocus = cw.visitMethod(Opcodes.ACC_PUBLIC,
+            GameMixinSignatures.TextFieldIme.GRAB_FOCUS,
+            GameMixinSignatures.TextFieldIme.GRAB_FOCUS_DESC,
+            null,
+            null);
         grabFocus.visitCode();
         grabFocus.visitInsn(Opcodes.RETURN);
         grabFocus.visitMaxs(0, 2);
         grabFocus.visitEnd();
 
-        MethodVisitor releaseFocus = cw.visitMethod(Opcodes.ACC_PUBLIC, "releaseFocus", "(Lcom/fs/starfarer/util/super/Object;)V", null, null);
+        MethodVisitor releaseFocus = cw.visitMethod(Opcodes.ACC_PUBLIC,
+            GameMixinSignatures.TextFieldIme.RELEASE_FOCUS,
+            GameMixinSignatures.TextFieldIme.RELEASE_FOCUS_DESC,
+            null,
+            null);
         releaseFocus.visitCode();
         releaseFocus.visitInsn(Opcodes.RETURN);
         releaseFocus.visitMaxs(0, 2);

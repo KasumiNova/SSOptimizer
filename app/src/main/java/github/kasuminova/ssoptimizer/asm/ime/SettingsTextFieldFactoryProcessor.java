@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.objectweb.asm.*;
 
 /**
@@ -12,9 +14,9 @@ import org.objectweb.asm.*;
  * 注入效果：在方法每个 ARETURN 前插入 DUP + INVOKESTATIC 调用。</p>
  */
 public final class SettingsTextFieldFactoryProcessor implements AsmClassProcessor {
-    public static final String DEFAULT_TARGET_CLASS = "com/fs/starfarer/settings/StarfarerSettings$1";
+    public static final String DEFAULT_TARGET_CLASS = GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER;
 
-    private static final String TEXT_FIELD_DESC = "Lcom/fs/starfarer/api/ui/TextFieldAPI;";
+    private static final String TEXT_FIELD_DESC = GameMixinSignatures.TextFieldIme.TEXT_FIELD_API_DESC;
 
     private final String targetClass;
 
@@ -50,7 +52,7 @@ public final class SettingsTextFieldFactoryProcessor implements AsmClassProcesso
                                              final String signature,
                                              final String[] exceptions) {
                 final MethodVisitor delegate = super.visitMethod(access, name, desc, signature, exceptions);
-                if (!"createTextField".equals(name) || !desc.endsWith(TEXT_FIELD_DESC)) {
+                if (!GameMixinSignatures.TextFieldIme.CREATE_TEXT_FIELD.equals(name) || !desc.endsWith(TEXT_FIELD_DESC)) {
                     return delegate;
                 }
 

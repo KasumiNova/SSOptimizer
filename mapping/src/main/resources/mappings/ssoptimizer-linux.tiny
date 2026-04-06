@@ -1,0 +1,166 @@
+tiny 2 0 obf named
+c com/fs/graphics/L com/fs/graphics/ParallelImagePreloader
+	f class imageQueue Ljava/util/List;
+	f Ø00000 imageResults Ljava/util/Map;
+	f Ô00000 imageSentinel Ljava/awt/image/BufferedImage;
+	f õ00000 byteQueue Ljava/util/List;
+	f new byteResults Ljava/util/Map;
+	f Ö00000 byteSentinel [B
+	m o00000 start ()V
+	m o00000 decodeImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
+	m Ô00000 loadBytes (Ljava/lang/String;)[B
+	m new shutdown ()V
+	m new awaitBytes (Ljava/lang/String;)[B
+	m class awaitImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
+	m Ö00000 enqueueImage (Ljava/lang/String;)V
+	m Ó00000 enqueueBytes (Ljava/lang/String;)V
+c com/fs/graphics/oOoO com/fs/graphics/TextureManager
+	m class isLazyLoadingEnabled ()Z
+c com/fs/graphics/Object com/fs/graphics/TextureObject
+	f ö00000 bindTarget I
+	f ô00000 textureId I
+	m ô00000 isDeferredLoadingEnabled ()Z
+	m o00000 setDeferredLoadingEnabled (Z)V
+	m Ø00000 bind ()V
+	m ö00000 getTextureId ()I
+	m o00000 setImageHeight (I)V
+	m Ò00000 setImageWidth (I)V
+	m Ô00000 setTextureHeight (I)V
+	m Object setTextureWidth (I)V
+	m Object setAverageColor (Ljava/awt/Color;)V
+	m o00000 setUpperHalfColor (Ljava/awt/Color;)V
+	m Ò00000 setLowerHalfColor (Ljava/awt/Color;)V
+c com/fs/graphics/super/oOOO com/fs/graphics/font/BitmapGlyph
+	m Ö00000 getGlyphId ()I
+	m if getXOffset ()I
+	m void getXAdvance ()I
+	m ø00000 getWidth ()I
+	m ÒO0000 getHeight ()I
+	m Ò00000 getBearingY ()I
+	m õ00000 getTexX ()F
+	m do getTexY ()F
+	m String getTexWidth ()F
+	m ô00000 getTexHeight ()F
+c com/fs/graphics/super/return com/fs/graphics/font/BitmapFont
+	f ÒO0000 texture Lcom/fs/graphics/TextureObject;
+	m Ô00000 getFontPath ()Ljava/lang/String;
+	m class getNominalFontSize ()I
+	m float getLineHeight ()I
+	m class.super getTexture ()Lcom/fs/graphics/TextureObject;
+c com/fs/graphics/super/D com/fs/graphics/font/BitmapFontManager
+	m Ò00000 getFont (Ljava/lang/String;)Lcom/fs/graphics/font/BitmapFont;
+c com/fs/graphics/super/Object com/fs/graphics/font/BitmapFontRenderer
+	f øÒ0000 font Lcom/fs/graphics/font/BitmapFont;
+	f ø00000 requestedFontSize F
+	f oo0000 shadowCopies I
+	f oO0000 shadowScale F
+	m Õ00000 render ()V
+	m o00000 drawGlyph (FFLcom/fs/graphics/font/BitmapGlyph;FZ)V
+c com/fs/graphics/TextureLoader com/fs/graphics/TextureLoader
+	f a cacheSize I
+	f ÔO0000 textureCache Ljava/util/HashMap;
+	f null specialMipmapSet Ljava/util/Set;
+	f interface upperHalfColor Ljava/awt/Color;
+	f õ00000 averageColor Ljava/awt/Color;
+	f Ó00000 lowerHalfColor Ljava/awt/Color;
+	m b reloadCache (I)V
+	m super convertPixels (Ljava/awt/image/BufferedImage;Lcom/fs/graphics/Object;)Ljava/nio/ByteBuffer;
+	m super loadTexture (Ljava/lang/String;)Lcom/fs/graphics/Object;
+	m String readImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
+	m super textureDimension (I)I
+c sound/Object sound/SoundManager
+	m Object loadObjectFamily (Ljava/lang/String;)Lsound/O0OO;
+	m o00000 loadO00000Family (Ljava/lang/String;)Lsound/O0OO;
+	m Ò00000 loadOAccentFamily (Ljava/lang/String;)Lsound/O0OO;
+	m Ò00000 loadObjectFamilyFromStream (Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;
+	m o00000 loadO00000FamilyFromStream (Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;
+	m Object loadOAccentFamilyFromStream (Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;
+c com/fs/starfarer/combat/o0OO/oOoO com/fs/starfarer/combat/CollisionGridQuery
+	f class cells [[Ljava/util/List;
+	f Ó00000 gridWidth I
+	f float gridHeight I
+	f o00000 baseX I
+	f õ00000 baseY I
+	f new cellSize F
+c com/fs/starfarer/renderers/o0OO com/fs/starfarer/renderers/TexturedStripRenderer
+	m o00000 renderTexturedStrip (Lcom/fs/graphics/Object;FFFFFFLjava/awt/Color;FFFZ)V
+c com/fs/starfarer/ui/B com/fs/starfarer/ui/TextFieldImpl
+c com/fs/starfarer/ui/O0Oo com/fs/starfarer/ui/FocusedComponentTracker
+	m Ó00000 getCurrentFocusedComponent ()Lcom/fs/starfarer/ui/S;
+c com/fs/starfarer/settings/StarfarerSettings$1 com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory
+c com/fs/starfarer/settings/StarfarerSettings com/fs/starfarer/settings/StarfarerSettings
+	m Õ00000 getBoolean (Ljava/lang/String;)Z
+c com/fs/starfarer/loading/LoadingUtils com/fs/starfarer/loading/LoadingUtils
+	m super readText (Ljava/io/InputStream;)Ljava/lang/String;
+c com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain
+c com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton
+c com/fs/starfarer/campaign/save/B com/fs/starfarer/campaign/save/CampaignSaveProgressDialog
+	f Ø00000 saveLabel Ljava/lang/String;
+	m o00000 reportProgress (Ljava/lang/String;F)V
+	m o00000 reportProgress (F)V
+c com/fs/starfarer/util/do com/fs/starfarer/util/SaveProgressOutputStream
+	f String writtenBytes J
+	m o00000 getWrittenBytes ()J
+c com/fs/starfarer/campaign/econ/CommodityOnMarket com/fs/starfarer/campaign/econ/CommodityOnMarket
+	m addTradeMod addTradeMod (Ljava/lang/String;FF)V
+	m addTradeModPlus addTradeModPlus (Ljava/lang/String;FF)V
+	m addTradeModMinus addTradeModMinus (Ljava/lang/String;FF)V
+	m reapplyEventMod reapplyEventMod ()V
+	m getAvailable getAvailable ()I
+	m getAvailableStat getAvailableStat ()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;
+c com/fs/starfarer/campaign/econ/Market com/fs/starfarer/campaign/econ/Market
+	m advance advance (F)V
+c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
+	f Óo0000 owner Lcom/fs/starfarer/combat/entities/ship/EngineOwner;
+	f õ00000 systemActivatedRenderingEnabled Z
+	f öO0000 colorShifter Lcom/fs/starfarer/util/ColorShifter;
+	f class lengthShifter Lcom/fs/starfarer/util/ValueShifter;
+	f Oo0000 widthShifter Lcom/fs/starfarer/util/ValueShifter;
+	f Øo0000 glowShifter Lcom/fs/starfarer/util/ValueShifter;
+	f interface colorShiftFraction F
+	f ØO0000 boostedFlameMode Z
+	f null primaryFader Lcom/fs/graphics/util/Fader;
+	f new secondaryFader Lcom/fs/graphics/util/Fader;
+	f ÓO0000 primaryGlowTexture Lcom/fs/graphics/TextureObject;
+	f ÔO0000 secondaryGlowTexture Lcom/fs/graphics/TextureObject;
+	f class.super flameTexture Lcom/fs/graphics/TextureObject;
+	f oo0000 glowSprite Lcom/fs/graphics/Sprite;
+	m Object getState (Lcom/fs/starfarer/loading/specs/EngineSlot;)Lcom/fs/starfarer/combat/entities/G$Oo;
+	m Õ00000 renderFighter (F)V
+	m o00000 render (F)V
+c com/fs/starfarer/combat/entities/G$Oo com/fs/starfarer/combat/entities/EngineState
+	f Ø00000 texU F
+	f Ò00000 coreRotation F
+	f return spread F
+	f Õ00000 flameLevel F
+c com/fs/starfarer/combat/entities/G$o com/fs/starfarer/combat/entities/EngineGlowType
+	f Object PRIMARY Lcom/fs/starfarer/combat/entities/G$o;
+c com/fs/starfarer/combat/entities/ship/H$Oo com/fs/starfarer/combat/entities/ship/EngineOwner
+c com/fs/starfarer/combat/entities/ContrailEngine$o com/fs/starfarer/combat/entities/ContrailEngine$o
+	f oO0000 segments Ljava/util/List;
+	f ÒO0000 texture Lcom/fs/graphics/TextureObject;
+	f for tail Lorg/lwjgl/util/vector/Vector2f;
+	f Õ00000 color Ljava/awt/Color;
+	f ö00000 blendMode Lcom/fs/starfarer/loading/specs/EngineSlot$BlendMode;
+c com/fs/starfarer/combat/entities/ContrailEngine$Oo com/fs/starfarer/combat/entities/ContrailEngine$Oo
+	f ø00000 position Lorg/lwjgl/util/vector/Vector2f;
+	f return normal Lorg/lwjgl/util/vector/Vector2f;
+	f Object width F
+	f Ø00000 maxAge F
+	f o00000 progress F
+	f Ô00000 alphaMult F
+	f Ò00000 texU F
+c com/fs/starfarer/combat/entities/ContrailEngine com/fs/starfarer/combat/entities/ContrailEngine
+	f Ò00000 groups Ljava/util/Map;
+	m new render (F)V
+c com/fs/starfarer/StarfarerLauncher com/fs/starfarer/StarfarerLauncher
+	m o00000 launchGame (ZZLjava/lang/String;Ljava/lang/String;)V
+c com/fs/graphics/util/B com/fs/graphics/util/RenderStateUtils
+	m Ø00000 enableTextureClamp ()V
+	m new restoreTextureClamp ()V
+	m o00000 beginScreenOverlay (FFFFF)V
+	m class endScreenOverlay ()V
+	m Ó00000 adjustBrightness (Ljava/awt/Color;F)Ljava/awt/Color;
+	m o00000 blendColors (Ljava/awt/Color;Ljava/awt/Color;F)Ljava/awt/Color;
+c com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/util/ResourceLoader
+	m String openStream (Ljava/lang/String;)Ljava/io/InputStream;

@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
+import github.kasuminova.ssoptimizer.mapping.MappingEntry;
 import github.kasuminova.ssoptimizer.mapping.MappingDirection;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 import org.codehaus.janino.JavaSourceClassLoader;
@@ -39,6 +40,7 @@ class MixinBridgeIntegrationTest {
     private static final String XSTREAM_FIELD_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldAccessHelper";
     private static final String XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamObjectIdDictionaryHelper";
     private static final String XSTREAM_PATH_TRACKER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamPathTrackerHelper";
+    private static final TinyV2MappingRepository REPOSITORY = TinyV2MappingRepository.loadDefault();
 
     private static void bootstrapMixin() {
         MixinBootstrap.init();
@@ -67,10 +69,15 @@ class MixinBridgeIntegrationTest {
 
     private static byte[] reobfuscate(byte[] namedClassBytes) {
         BytecodeRemapper remapper = new BytecodeRemapper(
-                TinyV2MappingRepository.loadDefault(),
+                REPOSITORY,
                 MappingDirection.NAMED_TO_OBFUSCATED
         );
         return remapper.remapClass(namedClassBytes).bytecode();
+    }
+
+    private static String runtimeClassName(String namedClassName) {
+        MappingEntry classEntry = REPOSITORY.findClassByNamedName(namedClassName).orElse(null);
+        return classEntry != null ? classEntry.obfuscatedName() : namedClassName;
     }
 
     private static CompiledJaninoClass compileJaninoClass(String className, String source) throws Exception {
@@ -168,7 +175,7 @@ class MixinBridgeIntegrationTest {
         byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/combat/entities/Engine.class"));
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
-                "com/fs/starfarer/combat/entities/G",
+            runtimeClassName("com/fs/starfarer/combat/entities/Engine"),
                 null,
                 null,
                 original
@@ -244,7 +251,7 @@ class MixinBridgeIntegrationTest {
         byte[] original = reobfuscate(readClassBytes("sound/SoundManager.class"));
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
-                "sound/Object",
+            runtimeClassName("sound/SoundManager"),
                 null,
                 null,
                 original
@@ -432,7 +439,7 @@ class MixinBridgeIntegrationTest {
         byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog.class"));
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
-                "com/fs/starfarer/campaign/save/B",
+            runtimeClassName("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog"),
                 null,
                 null,
                 original
@@ -452,7 +459,7 @@ class MixinBridgeIntegrationTest {
         byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/util/SaveProgressOutputStream.class"));
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
-                "com/fs/starfarer/util/do",
+            runtimeClassName("com/fs/starfarer/util/SaveProgressOutputStream"),
                 null,
                 null,
                 original

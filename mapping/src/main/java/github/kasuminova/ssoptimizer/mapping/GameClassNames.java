@@ -34,6 +34,7 @@ public final class GameClassNames {
     public static final String COLLISION_GRID_QUERY                = "com/fs/starfarer/combat/CollisionGridQuery";
     public static final String COMBAT_STATE                        = "com/fs/starfarer/combat/CombatState";
     public static final String SMOOTH_PARTICLE                     = "com/fs/graphics/particle/SmoothParticle";
+    public static final String BASE_PARTICLE                       = "com/fs/graphics/particle/BaseParticle";
     public static final String DETAILED_SMOKE_PARTICLE             = "com/fs/starfarer/renderers/fx/DetailedSmokeParticle";
     public static final String GENERIC_TEXTURE_PARTICLE            = "com/fs/graphics/particle/GenericTextureParticle";
     public static final String STARFARER_LAUNCHER                  = "com/fs/starfarer/StarfarerLauncher";
@@ -69,6 +70,7 @@ public final class GameClassNames {
     public static final String STANDARD_TOOLTIP_V2_EXPANDABLE      = "com/fs/starfarer/ui/impl/StandardTooltipV2Expandable";
     public static final String STARFARER_SETTINGS_TEXT_FIELD_OWNER = "com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory";
     public static final String TEXT_FIELD_IMPL                     = "com/fs/starfarer/ui/TextFieldImpl";
+    public static final String TEXT_FIELD_API                      = "com/fs/starfarer/api/ui/TextFieldAPI";
     public static final String RESOURCE_LOADER                     = "com/fs/util/ResourceLoader";
 
     private GameClassNames() {

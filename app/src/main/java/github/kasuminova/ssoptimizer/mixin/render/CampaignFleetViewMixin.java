@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.starfarer.campaign.fleet.CampaignFleetView;
 import com.fs.starfarer.campaign.fleet.ContrailEngineV2;
 import github.kasuminova.ssoptimizer.common.render.campaign.CampaignFleetPerformanceHelper;
+import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -19,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public abstract class CampaignFleetViewMixin {
     @Redirect(
             method = "advance",
-            at = @At(value = "INVOKE", target = "Lcom/fs/starfarer/campaign/fleet/ContrailEngineV2;advance(F)V"),
+            at = @At(value = "INVOKE", target = GameMixinSignatures.CampaignFleetView.CONTRAIL_ADVANCE_TARGET),
             remap = false)
     private void ssoptimizer$advanceContrailsIfNeeded(final ContrailEngineV2 contrails,
                                                       final float amount) {
@@ -28,7 +29,7 @@ public abstract class CampaignFleetViewMixin {
 
     @Redirect(
             method = "renderContrails",
-            at = @At(value = "INVOKE", target = "Lcom/fs/starfarer/campaign/fleet/ContrailEngineV2;render(F)V"),
+            at = @At(value = "INVOKE", target = GameMixinSignatures.CampaignFleetView.CONTRAIL_RENDER_TARGET),
             remap = false)
     private void ssoptimizer$renderContrailsIfNeeded(final ContrailEngineV2 contrails,
                                                      final float alphaMult) {

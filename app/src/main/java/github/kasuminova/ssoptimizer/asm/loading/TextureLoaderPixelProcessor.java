@@ -32,7 +32,7 @@ public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
     public static final  String LAZY_LOAD_HELPER_DESC    = "(L" + GameClassNames.TEXTURE_LOADER + ";Ljava/util/HashMap;Ljava/lang/String;)L" + GameClassNames.TEXTURE_OBJECT + ";";
     private static final String RESULT_OWNER             = "github/kasuminova/ssoptimizer/common/loading/TexturePixelConversionResult";
     private static final String DIMENSION_DESC           = "(I)I";
-    private static final String IMAGE_READ_METHOD        = "String";
+    private static final String IMAGE_READ_METHOD        = GameMemberNames.TextureLoader.READ_IMAGE;
     private static final String IMAGE_READ_DESC          = "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;";
     private static final String IMAGEIO_OWNER            = "javax/imageio/ImageIO";
     private static final String IMAGEIO_READ_DESC        = "(Ljava/io/InputStream;)Ljava/awt/image/BufferedImage;";

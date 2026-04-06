@@ -17,6 +17,7 @@ public final class JarRemapCli {
      * <p>
      * 支持两种模式：
      * <ul>
+        *     <li>{@code --platform=<linux|windows|auto>}（可选，未传则读取系统属性 / 自动探测）</li>
      *     <li>{@code batch <obf-to-named|named-to-obf> <outputDir> <inputJar...>}</li>
      *     <li>{@code single <obf-to-named|named-to-obf> <inputJar> <outputJar>}</li>
      * </ul>
@@ -25,18 +26,25 @@ public final class JarRemapCli {
      * @throws Exception 若重映射失败
      */
     public static void main(String[] args) throws Exception {
-        if (args.length < 4) {
+        int offset = 0;
+        MappingPlatform platform = MappingPlatform.current();
+        if (args.length > 0 && args[0].startsWith("--platform=")) {
+            platform = MappingPlatform.parse(args[0].substring("--platform=".length()));
+            offset = 1;
+        }
+
+        if (args.length - offset < 4) {
             throw new IllegalArgumentException("用法: batch <direction> <outputDir> <inputJar...> | single <direction> <inputJar> <outputJar>");
         }
 
-        String mode = args[0];
-        MappingDirection direction = parseDirection(args[1]);
-        TinyV2MappingRepository repository = TinyV2MappingRepository.loadDefault();
+        String mode = args[offset];
+        MappingDirection direction = parseDirection(args[offset + 1]);
+        TinyV2MappingRepository repository = TinyV2MappingRepository.loadForPlatform(platform);
         JarRemapper remapper = new JarRemapper(repository, direction);
 
         if ("batch".equals(mode)) {
-            Path outputDir = Path.of(args[2]);
-            for (int i = 3; i < args.length; i++) {
+            Path outputDir = Path.of(args[offset + 2]);
+            for (int i = offset + 3; i < args.length; i++) {
                 Path inputJar = Path.of(args[i]);
                 Path outputJar = outputDir.resolve(inputJar.getFileName().toString());
                 remapper.remapJar(inputJar, outputJar);
@@ -46,8 +54,8 @@ public final class JarRemapCli {
         }
 
         if ("single".equals(mode)) {
-            Path inputJar = Path.of(args[2]);
-            Path outputJar = Path.of(args[3]);
+            Path inputJar = Path.of(args[offset + 2]);
+            Path outputJar = Path.of(args[offset + 3]);
             remapper.remapJar(inputJar, outputJar);
             System.out.println("[JarRemapCli] Remapped " + inputJar + " -> " + outputJar);
             return;

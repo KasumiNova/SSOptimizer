@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.mapping.MappingPlatform;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -26,7 +27,8 @@ final class BootstrapSearchInstaller {
     private static final String[] HELPER_ENTRY_NAMES    = {
             "github/kasuminova/ssoptimizer/bootstrap/ReflectionHelper.class",
             "github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class",
-            "mappings/ssoptimizer.tiny"
+            MappingPlatform.LINUX.resourcePath().substring(1),
+            MappingPlatform.WINDOWS.resourcePath().substring(1)
     };
     private static final String[] HELPER_ENTRY_PREFIXES = {
             "github/kasuminova/ssoptimizer/mapping/",

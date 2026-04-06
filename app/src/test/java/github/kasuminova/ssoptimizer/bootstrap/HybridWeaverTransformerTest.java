@@ -11,6 +11,8 @@ import org.objectweb.asm.tree.ClassNode;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HybridWeaverTransformerTest {
+    private static final TinyV2MappingRepository REPOSITORY = TinyV2MappingRepository.loadDefault();
+
     private static byte[] createNamedSpriteWithObfuscatedTextureField() {
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         writer.visit(Opcodes.V25, Opcodes.ACC_PUBLIC, "com/fs/graphics/Sprite", null, "java/lang/Object", null);
@@ -71,13 +73,14 @@ class HybridWeaverTransformerTest {
 
     @Test
     void resolvesObfuscatedIncomingClassNameThroughMappings() {
+        MappingEntry runtimeEntry = REPOSITORY.requireClassByNamedName("com/fs/starfarer/renderers/TexturedStripRenderer");
         var transformer = new HybridWeaverTransformer(TinyV2MappingRepository.of(java.util.List.of(
-                MappingEntry.classEntry("com/fs/starfarer/renderers/o0OO", "com/fs/starfarer/renderers/TexturedStripRenderer")
+            MappingEntry.classEntry(runtimeEntry.obfuscatedName(), runtimeEntry.namedName())
         )));
         byte[] expected = {4, 5, 6};
         transformer.registerProcessor("com.fs.starfarer.renderers.TexturedStripRenderer", bytes -> expected);
 
-        byte[] result = transformer.transform(null, "com/fs/starfarer/renderers/o0OO", null, null, new byte[0]);
+        byte[] result = transformer.transform(null, runtimeEntry.obfuscatedName(), null, null, new byte[0]);
         assertArrayEquals(expected, result);
     }
 

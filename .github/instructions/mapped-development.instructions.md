@@ -15,7 +15,7 @@ applyTo: "{app/src/main/java/**/*.java,mapping/src/main/java/**/*.java,mapping/s
 
 - **类名**：放到 `mapping/src/main/java/github/kasuminova/ssoptimizer/mapping/GameClassNames.java`
 - **字段/方法 named 表**：放到 `mapping/src/main/java/github/kasuminova/ssoptimizer/mapping/GameMemberNames.java`
-- **tiny 映射源**：放到 `mapping/src/main/resources/mappings/ssoptimizer.tiny`
+- **tiny 映射源**：按平台分别放到 `mapping/src/main/resources/mappings/ssoptimizer-linux.tiny` 与 `mapping/src/main/resources/mappings/ssoptimizer-windows.tiny`
 - **Mixin 编译期签名桥接**：放到 `mapping/src/main/java/github/kasuminova/ssoptimizer/mapping/GameMixinSignatures.java`
 
 ## 命名要求
@@ -27,14 +27,14 @@ applyTo: "{app/src/main/java/**/*.java,mapping/src/main/java/**/*.java,mapping/s
 ## 开发流程
 
 1. 先通过反编译、日志或运行时验证确认目标类/成员的真实职责。
-2. 在 `ssoptimizer.tiny` 中新增或更新 named 映射。
+2. 在对应平台的 tiny（Linux / Windows）中新增或更新 named 映射，并保持两端 named 语义面一致。
 3. 在 `GameClassNames` / `GameMemberNames` / `GameMixinSignatures` 中补充入口。
 4. 回到 `app` 模块改用 mapping 常量，删除原有混淆字面量。
 5. 为新增映射补充 `mapping` 模块单元测试，至少覆盖一次 class / field / method 查询。
 
 ## 测试要求
 
-- 修改 `ssoptimizer.tiny` 后，必须跑 `mapping` 相关单元测试。
+- 修改任一平台 tiny 后，必须跑 `mapping` 相关单元测试。
 - 若映射被 `app` 模块的新逻辑消费，还必须补充对应 `app` 测试或烟测验证。
 
 ## 例外处理

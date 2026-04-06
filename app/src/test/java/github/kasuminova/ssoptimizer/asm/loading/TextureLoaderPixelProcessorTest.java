@@ -55,7 +55,7 @@ class TextureLoaderPixelProcessorTest {
         dimension.visitMaxs(0, 2);
         dimension.visitEnd();
 
-        MethodVisitor read = cw.visitMethod(Opcodes.ACC_PRIVATE, "String",
+        MethodVisitor read = cw.visitMethod(Opcodes.ACC_PRIVATE, GameMemberNames.TextureLoader.READ_IMAGE,
                 "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;", null, null);
         read.visitCode();
         read.visitInsn(Opcodes.ACONST_NULL);
@@ -140,7 +140,7 @@ class TextureLoaderPixelProcessorTest {
                                 && "java/awt/image/Raster".equals(owner) && "getPixel".equals(methodName)) {
                             rasterGetPixel[0] = true;
                         }
-                        if ("String".equals(name)
+                        if (GameMemberNames.TextureLoader.READ_IMAGE.equals(name)
                                 && "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;".equals(desc)
                                 && TextureLoaderPixelProcessor.IMAGE_READ_HELPER_OWNER.equals(owner)
                                 && "decode".equals(methodName)) {

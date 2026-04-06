@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.objectweb.asm.*;
 
 /**
@@ -13,10 +15,10 @@ import org.objectweb.asm.*;
  * 注入效果：构造函数末尾调用 {@code registerCreatedTextField}，焦点丢失处调用 {@code onTextFieldFocusLost}。</p>
  */
 public final class TextFieldImplementationProcessor implements AsmClassProcessor {
-    public static final String DEFAULT_TARGET_CLASS = "com/fs/starfarer/ui/B";
+    public static final String DEFAULT_TARGET_CLASS = GameClassNames.TEXT_FIELD_IMPL;
 
-    private static final String TEXT_FIELD_DESC = "Lcom/fs/starfarer/api/ui/TextFieldAPI;";
-    private static final String FOCUS_LOST_DESC = "(Lcom/fs/starfarer/api/ui/TextFieldAPI;)V";
+    private static final String TEXT_FIELD_DESC = GameMixinSignatures.TextFieldIme.TEXT_FIELD_API_DESC;
+    private static final String FOCUS_LOST_DESC = GameMixinSignatures.TextFieldIme.TEXT_FIELD_FOCUS_HOOK_DESC;
 
     private final String targetClass;
 
@@ -53,8 +55,10 @@ public final class TextFieldImplementationProcessor implements AsmClassProcessor
                                              final String[] exceptions) {
                 final MethodVisitor delegate = super.visitMethod(access, name, desc, signature, exceptions);
                 if (!"<init>".equals(name)
-                        && !("grabFocus".equals(name) && "(Z)V".equals(desc))
-                        && !("releaseFocus".equals(name) && "(Lcom/fs/starfarer/util/super/Object;)V".equals(desc))) {
+                        && !(GameMixinSignatures.TextFieldIme.GRAB_FOCUS.equals(name)
+                        && GameMixinSignatures.TextFieldIme.GRAB_FOCUS_DESC.equals(desc))
+                        && !(GameMixinSignatures.TextFieldIme.RELEASE_FOCUS.equals(name)
+                        && GameMixinSignatures.TextFieldIme.RELEASE_FOCUS_DESC.equals(desc))) {
                     return delegate;
                 }
 
@@ -70,14 +74,14 @@ public final class TextFieldImplementationProcessor implements AsmClassProcessor
                                         "registerCreatedTextField",
                                         "(" + TEXT_FIELD_DESC + ")V",
                                         false);
-                            } else if ("grabFocus".equals(name)) {
+                            } else if (GameMixinSignatures.TextFieldIme.GRAB_FOCUS.equals(name)) {
                                 visitVarInsn(Opcodes.ALOAD, 0);
                                 visitMethodInsn(Opcodes.INVOKESTATIC,
                                         TooltipTextFieldFactoryProcessor.HOOK_OWNER,
                                         "onTextFieldFocusGained",
                                         FOCUS_LOST_DESC,
                                         false);
-                            } else if ("releaseFocus".equals(name)) {
+                            } else if (GameMixinSignatures.TextFieldIme.RELEASE_FOCUS.equals(name)) {
                                 visitVarInsn(Opcodes.ALOAD, 0);
                                 visitMethodInsn(Opcodes.INVOKESTATIC,
                                         TooltipTextFieldFactoryProcessor.HOOK_OWNER,

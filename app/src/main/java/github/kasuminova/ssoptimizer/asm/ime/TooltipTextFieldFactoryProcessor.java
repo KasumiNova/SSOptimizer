@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.objectweb.asm.*;
 
 /**
@@ -12,10 +14,10 @@ import org.objectweb.asm.*;
  * 注入效果：在方法每个 ARETURN 前插入 DUP + INVOKESTATIC 调用 {@code TextFieldImeHooks.registerCreatedTextField}。</p>
  */
 public final class TooltipTextFieldFactoryProcessor implements AsmClassProcessor {
-    public static final String DEFAULT_TARGET_CLASS = "com/fs/starfarer/ui/impl/StandardTooltipV2Expandable";
+    public static final String DEFAULT_TARGET_CLASS = GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE;
     public static final String HOOK_OWNER           = "github/kasuminova/ssoptimizer/common/input/ime/TextFieldImeHooks";
 
-    private static final String TEXT_FIELD_DESC = "Lcom/fs/starfarer/api/ui/TextFieldAPI;";
+    private static final String TEXT_FIELD_DESC = GameMixinSignatures.TextFieldIme.TEXT_FIELD_API_DESC;
 
     private final String targetClass;
 
@@ -51,7 +53,7 @@ public final class TooltipTextFieldFactoryProcessor implements AsmClassProcessor
                                              final String signature,
                                              final String[] exceptions) {
                 final MethodVisitor delegate = super.visitMethod(access, name, desc, signature, exceptions);
-                if (!"addTextField".equals(name) || !desc.endsWith(TEXT_FIELD_DESC)) {
+                if (!GameMixinSignatures.TextFieldIme.ADD_TEXT_FIELD.equals(name) || !desc.endsWith(TEXT_FIELD_DESC)) {
                     return delegate;
                 }
 

@@ -1,5 +1,8 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor;
+import github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -112,28 +115,28 @@ class RealBytecodeIntegrationTest {
 
     @Test
     void texturedStripRendererRewritesRealRendererBytecode() {
-        byte[] original = loadClassBytes("com/fs/starfarer/renderers/o0OO");
-        assumeTrue(original != null, "o0OO renderer not on classpath");
+        byte[] original = loadClassBytes(EngineTexturedStripRendererProcessor.TARGET_CLASS);
+        assumeTrue(original != null, "TexturedStripRenderer not on classpath");
 
         var processor = new github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor();
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
                 "Textured strip renderer processor should handle real renderer bytecode");
-        assertNotNull(rewritten, "Processor should rewrite the targeted o0OO overload");
+        assertNotNull(rewritten, "Processor should rewrite the targeted renderTexturedStrip overload");
 
         boolean[] helperCall = {false};
         new ClassReader(rewritten).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
-                if (!"o00000".equals(name)
-                        || !github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor.TARGET_DESC.equals(desc)) {
+                if (!GameMemberNames.TexturedStripRenderer.RENDER_TEXTURED_STRIP.equals(name)
+                        || !EngineTexturedStripRendererProcessor.TARGET_DESC.equals(desc)) {
                     return null;
                 }
                 return new MethodVisitor(Opcodes.ASM9) {
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String methodName, String methodDesc, boolean itf) {
-                        if (owner.equals(github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor.HELPER_OWNER)
+                        if (owner.equals(EngineTexturedStripRendererProcessor.HELPER_OWNER)
                                 && "renderTexturedStrip".equals(methodName)
-                                && github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor.HELPER_DESC.equals(methodDesc)) {
+                                && EngineTexturedStripRendererProcessor.HELPER_DESC.equals(methodDesc)) {
                             helperCall[0] = true;
                         }
                     }
@@ -141,13 +144,13 @@ class RealBytecodeIntegrationTest {
             }
         }, 0);
 
-        assertTrue(helperCall[0], "Real o0OO bytecode should call the textured strip helper after rewrite");
+        assertTrue(helperCall[0], "Real TexturedStripRenderer bytecode should call the textured strip helper after rewrite");
     }
 
     @Test
     void collisionGridQueryRewritesRealGridBytecode() {
-        byte[] original = loadClassBytes("com/fs/starfarer/combat/o0OO/oOoO");
-        assumeTrue(original != null, "Collision grid class not on classpath");
+        byte[] original = loadClassBytes(CollisionGridQueryProcessor.TARGET_CLASS);
+        assumeTrue(original != null, "CollisionGridQuery not on classpath");
 
         var processor = new github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor();
         byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),

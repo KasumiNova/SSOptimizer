@@ -19,7 +19,6 @@ import java.util.Optional;
  * 该实现把 Tiny v2 作为唯一读写格式，从 classpath 资源加载并建立双向查询索引。
  */
 public final class TinyV2MappingRepository implements MappingRepository {
-    private static final String DEFAULT_RESOURCE = "/mappings/ssoptimizer.tiny";
     private static final char INTERNAL_NAME_START = 'L';
     private static final char INTERNAL_NAME_END = ';';
 
@@ -75,7 +74,39 @@ public final class TinyV2MappingRepository implements MappingRepository {
      * @return 映射仓库
      */
     public static TinyV2MappingRepository loadDefault() {
-        return loadFromResource(TinyV2MappingRepository.class.getResourceAsStream(DEFAULT_RESOURCE), DEFAULT_RESOURCE);
+        return loadForPlatform(MappingPlatform.current());
+    }
+
+    /**
+     * 根据平台加载 Tiny v2 映射资源。
+     *
+     * @param platform 目标平台
+     * @return 映射仓库
+     */
+    public static TinyV2MappingRepository loadForPlatform(final MappingPlatform platform) {
+        final MappingPlatform resolvedPlatform = Objects.requireNonNull(platform, "platform");
+        final String resourcePath = resourcePathFor(resolvedPlatform);
+        InputStream resourceStream = TinyV2MappingRepository.class.getResourceAsStream(resourcePath);
+        return loadFromResource(resourceStream, resourcePath);
+    }
+
+    /**
+     * 返回当前默认平台对应的资源路径。
+     *
+     * @return 默认映射资源路径
+     */
+    public static String defaultResourcePath() {
+        return resourcePathFor(MappingPlatform.current());
+    }
+
+    /**
+     * 返回指定平台的资源路径。
+     *
+     * @param platform 目标平台
+     * @return 平台映射资源路径
+     */
+    public static String resourcePathFor(final MappingPlatform platform) {
+        return Objects.requireNonNull(platform, "platform").resourcePath();
     }
 
     /**

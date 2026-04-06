@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.mapping.MappingPlatform;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -94,11 +95,13 @@ class BootstrapSearchInstallerTest {
             copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingEntry.class");
             copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingEntry$Kind.class");
             copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingLookupException.class");
+            copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingPlatform.class");
             copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/MappingRepository.class");
             copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/TinyV2MappingRepository.class");
             copyClassEntry(output, "github/kasuminova/ssoptimizer/mapping/TinyV2MappingRepository$1.class");
             copyClassEntry(output, "org/objectweb/asm/ClassReader.class");
-            copyResourceEntry(output, "mappings/ssoptimizer.tiny");
+            copyResourceEntry(output, MappingPlatform.LINUX.resourcePath().substring(1));
+            copyResourceEntry(output, MappingPlatform.WINDOWS.resourcePath().substring(1));
         }
 
         Path helperJar = BootstrapSearchInstaller.createBootstrapHelperArchive(sourceJar);
@@ -110,7 +113,8 @@ class BootstrapSearchInstallerTest {
             assertNotNull(jarFile.getJarEntry("github/kasuminova/ssoptimizer/bootstrap/NameTranslator.class"));
             assertNotNull(jarFile.getJarEntry("github/kasuminova/ssoptimizer/mapping/TinyV2MappingRepository.class"));
             assertNotNull(jarFile.getJarEntry("org/objectweb/asm/ClassReader.class"));
-            assertNotNull(jarFile.getJarEntry("mappings/ssoptimizer.tiny"));
+            assertNotNull(jarFile.getJarEntry(MappingPlatform.LINUX.resourcePath().substring(1)));
+            assertNotNull(jarFile.getJarEntry(MappingPlatform.WINDOWS.resourcePath().substring(1)));
         }
     }
 }

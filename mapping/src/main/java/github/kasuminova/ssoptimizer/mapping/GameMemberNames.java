@@ -59,6 +59,10 @@ public final class GameMemberNames {
                 GameClassNames.TEXTURE_LOADER,
                 "loadTexture",
                 "(Ljava/lang/String;)Lcom/fs/graphics/TextureObject;");
+        public static final String READ_IMAGE = method(
+            GameClassNames.TEXTURE_LOADER,
+            "readImage",
+            "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;");
         public static final String TEXTURE_DIMENSION = method(GameClassNames.TEXTURE_LOADER, "textureDimension", "(I)I");
 
         public static final String TEXTURE_CACHE = field(GameClassNames.TEXTURE_LOADER, "textureCache");
@@ -165,6 +169,16 @@ public final class GameMemberNames {
         public static final String READ_TEXT = method(GameClassNames.LOADING_UTILS, "readText", "(Ljava/io/InputStream;)Ljava/lang/String;");
 
         private LoadingUtils() {
+        }
+    }
+
+    public static final class ResourceLoader {
+        public static final String OPEN_STREAM = method(
+                GameClassNames.RESOURCE_LOADER,
+                "openStream",
+                "(Ljava/lang/String;)Ljava/io/InputStream;");
+
+        private ResourceLoader() {
         }
     }
 

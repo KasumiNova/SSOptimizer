@@ -8,7 +8,8 @@ package github.kasuminova.ssoptimizer.mapping;
  * 字段名和方法描述符字面量。<br>
  * 设计动机：{@link GameClassNames} / {@link GameMemberNames} 适合运行时查表，但注解参数要求编译期常量，
  * 因此需要在 {@code mapping} 模块集中维护一份桥接签名表。<br>
- * 兼容性策略：所有常量都必须与 {@code ssoptimizer.tiny} 中的 named 命名保持语义一致；若运行时签名变化，
+ * 兼容性策略：所有常量都必须与平台化 mapping 资源（{@code ssoptimizer-linux.tiny} /
+ * {@code ssoptimizer-windows.tiny}）中的 named 命名保持语义一致；若运行时签名变化，
  * 必须同时更新映射表、该常量表和相应测试。
  */
 public final class GameMixinSignatures {
@@ -84,6 +85,48 @@ public final class GameMixinSignatures {
         public static final String LOAD_O_ACCENT_FAMILY = "loadOAccentFamily(Ljava/lang/String;)Lsound/O0OO;";
 
         private SoundManager() {
+        }
+    }
+
+    /**
+     * 战役舰队成员视图 Mixin 签名常量。
+     */
+    public static final class CampaignFleetMemberView {
+        public static final String COLOR_SHIFTER_ADVANCE_TARGET = "Lcom/fs/starfarer/util/ColorShifter;advance(F)V";
+        public static final String VALUE_SHIFTER_ADVANCE_TARGET = "Lcom/fs/starfarer/util/ValueShifter;advance(F)V";
+
+        private CampaignFleetMemberView() {
+        }
+    }
+
+    /**
+     * 战役舰队视图 Mixin 签名常量。
+     */
+    public static final class CampaignFleetView {
+        public static final String CONTRAIL_ADVANCE_TARGET = "Lcom/fs/starfarer/campaign/fleet/ContrailEngineV2;advance(F)V";
+        public static final String CONTRAIL_RENDER_TARGET = "Lcom/fs/starfarer/campaign/fleet/ContrailEngineV2;render(F)V";
+
+        private CampaignFleetView() {
+        }
+    }
+
+    /**
+     * 文本框 IME 相关桥接签名常量。
+     * <p>
+     * 其中 {@code releaseFocus} 的参数类型当前仍是运行时未补命名的类，故保留在桥接表中集中维护，
+     * 避免在 {@code app} 模块散落该描述符字面量。
+     */
+    public static final class TextFieldIme {
+        public static final String TEXT_FIELD_API_DESC = "Lcom/fs/starfarer/api/ui/TextFieldAPI;";
+        public static final String ADD_TEXT_FIELD = "addTextField";
+        public static final String CREATE_TEXT_FIELD = "createTextField";
+        public static final String GRAB_FOCUS = "grabFocus";
+        public static final String GRAB_FOCUS_DESC = "(Z)V";
+        public static final String RELEASE_FOCUS = "releaseFocus";
+        public static final String RELEASE_FOCUS_DESC = "(Lcom/fs/starfarer/util/super/Object;)V";
+        public static final String TEXT_FIELD_FOCUS_HOOK_DESC = "(Lcom/fs/starfarer/api/ui/TextFieldAPI;)V";
+
+        private TextFieldIme() {
         }
     }
 }

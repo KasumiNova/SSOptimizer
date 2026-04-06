@@ -26,7 +26,7 @@ public final class EngineSmoothParticleProcessor implements AsmClassProcessor {
 
     // Game class references
     private static final String PARTICLE_CLASS      = TARGET_CLASS;
-    private static final String BASE_PARTICLE_CLASS = "com/fs/graphics/particle/BaseParticle";
+    private static final String BASE_PARTICLE_CLASS = GameClassNames.BASE_PARTICLE;
     private static final String TEXTURE_CLASS       = GameClassNames.TEXTURE_OBJECT;
     private static final String TEXTURE_DESC        = "L" + TEXTURE_CLASS + ";";
     private static final String COLOR_CLASS         = "java/awt/Color";

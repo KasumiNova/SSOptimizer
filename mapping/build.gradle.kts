@@ -18,6 +18,32 @@ val namedGameJarsDir = rootProject.layout.buildDirectory.dir("named-game-jars")
 val reobfJarFile = rootProject.layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
 val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 
+fun detectMappingPlatform(gameDirPath: String?): String {
+    val gameDir = gameDirPath?.let(::file)
+    if (gameDir != null) {
+        if (gameDir.resolve("starsector-core").isDirectory) {
+            return "windows"
+        }
+        if (gameDir.resolve("starsector.sh").isFile
+                || gameDir.resolve("zulu25_linux").isDirectory
+                || gameDir.resolve("jbr25_linux").isDirectory) {
+            return "linux"
+        }
+    }
+
+    val osName = System.getProperty("os.name", "").lowercase()
+    return if (osName.contains("win")) "windows" else "linux"
+}
+
+val mappingPlatform = providers.gradleProperty("starsector.platform")
+    .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
+
+fun resolveGameJarDirectory(gameDirPath: String): File {
+    val gameDir = file(gameDirPath)
+    val starsectorCoreDir = gameDir.resolve("starsector-core")
+    return if (starsectorCoreDir.isDirectory) starsectorCoreDir else gameDir
+}
+
 dependencies {
     api("org.ow2.asm:asm:9.9.1")
     api("org.ow2.asm:asm-commons:9.9.1")
@@ -38,20 +64,22 @@ tasks.register<JavaExec>("remapGameClasspathToNamed") {
     dependsOn(tasks.named("classes"))
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("github.kasuminova.ssoptimizer.mapping.JarRemapCli")
+    systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
 
     outputs.dir(namedGameJarsDir)
     onlyIf { starsectorGameDir != null }
 
     doFirst {
         val gameDir = file(starsectorGameDir!!)
-        val inputJars = fileTree(gameDir) {
+        val jarDir = resolveGameJarDirectory(starsectorGameDir!!)
+        val inputJars = fileTree(jarDir) {
             include("*.jar")
             exclude("*-sources.jar", "*-javadoc.jar")
         }
             .files
             .sortedBy { it.name }
         require(inputJars.isNotEmpty()) {
-            "未在 Starsector 目录中找到可 remap 的 JAR: $gameDir"
+            "未在 Starsector 目录中找到可 remap 的 JAR: $gameDir (resolvedJarDir=$jarDir)"
         }
 
         val outputDir = namedGameJarsDir.get().asFile
@@ -68,6 +96,7 @@ tasks.register<JavaExec>("reobfuscateAppJar") {
     dependsOn(tasks.named("classes"), ":app:jar")
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("github.kasuminova.ssoptimizer.mapping.JarRemapCli")
+    systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
 
     inputs.file(appJarFile)
     outputs.file(reobfJarFile)

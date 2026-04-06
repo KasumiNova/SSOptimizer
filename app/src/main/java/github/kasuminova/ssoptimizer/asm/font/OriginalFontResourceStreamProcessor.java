@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.asm.font;
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;
 
@@ -17,7 +18,7 @@ import org.objectweb.asm.commons.AdviceAdapter;
  */
 public final class OriginalFontResourceStreamProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS  = GameClassNames.RESOURCE_LOADER;
-    public static final String TARGET_METHOD = "String";
+    public static final String TARGET_METHOD = GameMemberNames.ResourceLoader.OPEN_STREAM;
     public static final String TARGET_DESC   = "(Ljava/lang/String;)Ljava/io/InputStream;";
     public static final String HELPER_OWNER  = "github/kasuminova/ssoptimizer/common/font/OriginalGameFontOverrides";
     public static final String HELPER_METHOD = "openStream";

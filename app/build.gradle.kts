@@ -2,6 +2,23 @@ plugins {
     application
 }
 
+fun detectMappingPlatform(gameDirPath: String?): String {
+    val gameDir = gameDirPath?.let(::file)
+    if (gameDir != null) {
+        if (gameDir.resolve("starsector-core").isDirectory) {
+            return "windows"
+        }
+        if (gameDir.resolve("starsector.sh").isFile
+                || gameDir.resolve("zulu25_linux").isDirectory
+                || gameDir.resolve("jbr25_linux").isDirectory) {
+            return "linux"
+        }
+    }
+
+    val osName = System.getProperty("os.name", "").lowercase()
+    return if (osName.contains("win")) "windows" else "linux"
+}
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
@@ -40,6 +57,8 @@ dependencies {
     compileOnly("log4j:log4j:1.2.17")
 
     val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
+    val mappingPlatform = providers.gradleProperty("starsector.platform")
+        .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
     if (starsectorGameDir != null) {
         val namedGameClasspath = rootProject.files(rootProject.provider {
             val dir = rootProject.layout.buildDirectory.dir("named-game-jars").get().asFile
@@ -66,6 +85,10 @@ if (providers.gradleProperty("starsector.gameDir").orNull != null) {
 tasks.test {
     useJUnitPlatform()
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
+    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
+    val mappingPlatform = providers.gradleProperty("starsector.platform")
+        .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
+    systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
 }
 
 val docsTestSourceSet = sourceSets.create("docsTest") {
@@ -109,6 +132,10 @@ tasks.register<Test>("docsTest") {
     classpath = docsTestSourceSet.runtimeClasspath
     useJUnitPlatform()
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
+    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
+    val mappingPlatform = providers.gradleProperty("starsector.platform")
+        .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
+    systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
 }
 
 tasks.register<JavaExec>("jmh") {
