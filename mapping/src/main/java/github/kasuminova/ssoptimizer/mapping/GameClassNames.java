@@ -64,6 +64,8 @@ public final class GameClassNames {
     public static final String MARKET_DOTTED                       = "com.fs.starfarer.campaign.econ.Market";
     public static final String COMMODITY_ON_MARKET                 = "com/fs/starfarer/campaign/econ/CommodityOnMarket";
     public static final String COMMODITY_ON_MARKET_DOTTED          = "com.fs.starfarer.campaign.econ.CommodityOnMarket";
+    public static final String CAMPAIGN_LOCATION_MAP_CANVAS        = "com/fs/starfarer/coreui/CampaignLocationMapCanvas";
+    public static final String CAMPAIGN_LOCATION_MAP_CANVAS_DOTTED = "com.fs.starfarer.coreui.CampaignLocationMapCanvas";
     public static final String LINUX_DISPLAY                       = "org/lwjgl/opengl/LinuxDisplay";
     public static final String LINUX_EVENT                         = "org/lwjgl/opengl/LinuxEvent";
     public static final String LINUX_KEYBOARD                      = "org/lwjgl/opengl/LinuxKeyboard";

@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MixinBridgeIntegrationTest {
     private static final String JANINO_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/loading/script/JaninoScriptCompilerCoordinator";
     private static final String SOUND_COORDINATOR_OWNER  = "github/kasuminova/ssoptimizer/common/loading/sound/ParallelSoundLoadCoordinator";
+    private static final String CAMPAIGN_LOCATION_MAP_CANVAS_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/render/campaign/CampaignLocationMapCanvasPerformanceHelper";
     private static final String SAVE_OVERLAY_COORDINATOR_OWNER = "github/kasuminova/ssoptimizer/common/save/SaveProgressOverlayCoordinator";
     private static final String TERRAIN_TILE_COMPRESSION_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/TerrainTileCompressionHelper";
     private static final String TXW2_ACCESSOR_INTERFACE = "github/kasuminova/ssoptimizer/mixin/accessor/Txw2DelegatingXmlStreamWriterAccessor";
@@ -261,6 +262,29 @@ class MixinBridgeIntegrationTest {
         assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadObjectFamily"));
         assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadO00000Family"));
         assertTrue(containsMethodInvocation(transformed, SOUND_COORDINATOR_OWNER, "loadOAccentFamily"));
+    }
+
+    @Test
+        void bridgeAppliesCampaignLocationMapCanvasMixinToObfuscatedRuntimeClass() throws Exception {
+        bootstrapMixin();
+
+            String runtimeClassName = runtimeClassName("com/fs/starfarer/coreui/CampaignLocationMapCanvas");
+            byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/coreui/CampaignLocationMapCanvas.class"));
+        byte[] transformed = new MixinBridgeTransformer().transform(
+                null,
+            runtimeClassName,
+                null,
+                null,
+                original
+        );
+
+        assertNotNull(transformed);
+        assertTrue(containsMethodInvocation(
+                transformed,
+            CAMPAIGN_LOCATION_MAP_CANVAS_HELPER_OWNER,
+                "retainLiveEntities",
+                "(Ljava/util/Set;Ljava/util/Collection;)Z"
+        ));
     }
 
     @Test

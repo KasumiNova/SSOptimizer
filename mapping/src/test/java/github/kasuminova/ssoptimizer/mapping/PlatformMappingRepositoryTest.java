@@ -35,6 +35,8 @@ class PlatformMappingRepositoryTest {
 
         assertNotNull(linux.requireClassByNamedName("com/fs/graphics/TextureLoader"));
         assertNotNull(windows.requireClassByNamedName("com/fs/graphics/TextureLoader"));
+                assertNotNull(linux.requireClassByNamedName("com/fs/starfarer/coreui/CampaignLocationMapCanvas"));
+                assertNotNull(windows.requireClassByNamedName("com/fs/starfarer/coreui/CampaignLocationMapCanvas"));
         assertFalse(linux.entries().isEmpty());
         assertFalse(windows.entries().isEmpty());
     }

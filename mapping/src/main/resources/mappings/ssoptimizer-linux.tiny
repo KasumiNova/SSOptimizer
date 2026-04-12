@@ -110,6 +110,8 @@ c com/fs/starfarer/campaign/econ/CommodityOnMarket com/fs/starfarer/campaign/eco
 	m getAvailableStat getAvailableStat ()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;
 c com/fs/starfarer/campaign/econ/Market com/fs/starfarer/campaign/econ/Market
 	m advance advance (F)V
+c com/fs/starfarer/coreui/A/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/starfarer/coreui/CampaignLocationMapCanvas
+	m renderStuff renderStuff (FZ)V
 c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
 	f Óo0000 owner Lcom/fs/starfarer/combat/entities/ship/EngineOwner;
 	f õ00000 systemActivatedRenderingEnabled Z

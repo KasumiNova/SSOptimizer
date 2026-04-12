@@ -111,6 +111,18 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 战役地图渲染热点 Mixin 签名常量。
+     */
+    public static final class CampaignLocationMapCanvas {
+        public static final String TARGET_CLASS = "com.fs.starfarer.coreui.CampaignLocationMapCanvas";
+        public static final String RENDER_STUFF = "renderStuff(FZ)V";
+        public static final String SET_RETAIN_ALL_TARGET = "Ljava/util/Set;retainAll(Ljava/util/Collection;)Z";
+
+        private CampaignLocationMapCanvas() {
+        }
+    }
+
+    /**
      * 文本框 IME 相关桥接签名常量。
      * <p>
      * 其中 {@code releaseFocus} 的参数类型当前仍是运行时未补命名的类，故保留在桥接表中集中维护，

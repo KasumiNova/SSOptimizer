@@ -84,6 +84,7 @@ if (providers.gradleProperty("starsector.gameDir").orNull != null) {
 
 tasks.test {
     useJUnitPlatform()
+    dependsOn(tasks.named("jar"))
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
     val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
     val mappingPlatform = providers.gradleProperty("starsector.platform")
