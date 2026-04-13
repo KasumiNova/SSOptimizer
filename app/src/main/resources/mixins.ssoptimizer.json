@@ -10,6 +10,7 @@
     "accessor.EngineStateAccessor",
     "accessor.ShipAccessor",
     "accessor.Txw2DelegatingXmlStreamWriterAccessor",
+    "campaign.CampaignEngineBattleReportMixin",
     "econ.CommodityOnMarketMixin",
     "econ.MarketMixin",
     "loading.JaninoJavaSourceClassLoaderMixin",

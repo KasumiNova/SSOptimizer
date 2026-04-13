@@ -123,6 +123,23 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 战役引擎战斗报告 Mixin 签名常量。
+     * <p>
+     * {@code CampaignEngine.reportBattleOccurred} 在迭代舰队事件监听器时，
+     * 若监听器回调修改了同一列表会触发 {@code ConcurrentModificationException}。
+     */
+    public static final class CampaignEngine {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.CampaignEngine";
+        public static final String REPORT_BATTLE_OCCURRED =
+                "reportBattleOccurred(Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;Lcom/fs/starfarer/api/campaign/BattleAPI;)V";
+        public static final String GET_EVENT_LISTENERS_TARGET =
+                "Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;getEventListeners()Ljava/util/List;";
+
+        private CampaignEngine() {
+        }
+    }
+
+    /**
      * 文本框 IME 相关桥接签名常量。
      * <p>
      * 其中 {@code releaseFocus} 的参数类型当前仍是运行时未补命名的类，故保留在桥接表中集中维护，

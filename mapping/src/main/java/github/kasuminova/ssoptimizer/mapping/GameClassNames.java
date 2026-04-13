@@ -74,6 +74,8 @@ public final class GameClassNames {
     public static final String TEXT_FIELD_IMPL                     = "com/fs/starfarer/ui/TextFieldImpl";
     public static final String TEXT_FIELD_API                      = "com/fs/starfarer/api/ui/TextFieldAPI";
     public static final String RESOURCE_LOADER                     = "com/fs/util/ResourceLoader";
+    public static final String CAMPAIGN_ENGINE                     = "com/fs/starfarer/campaign/CampaignEngine";
+    public static final String CAMPAIGN_ENGINE_DOTTED              = "com.fs.starfarer.campaign.CampaignEngine";
 
     private GameClassNames() {
     }
