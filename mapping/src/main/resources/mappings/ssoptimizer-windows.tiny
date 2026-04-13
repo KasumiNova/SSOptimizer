@@ -15,7 +15,7 @@ c com/fs/graphics/L com/fs/graphics/ParallelImagePreloader
 	m return enqueueImage (Ljava/lang/String;)V
 	m Object enqueueBytes (Ljava/lang/String;)V
 c com/fs/graphics/oOoO com/fs/graphics/TextureManager
-	m class isLazyLoadingEnabled ()Z
+	m Õ00000 isLazyLoadingEnabled ()Z
 c com/fs/graphics/Object com/fs/graphics/TextureObject
 	f ö00000 bindTarget I
 	f ô00000 textureId I
@@ -31,27 +31,27 @@ c com/fs/graphics/Object com/fs/graphics/TextureObject
 	m o00000 setUpperHalfColor (Ljava/awt/Color;)V
 	m Ò00000 setLowerHalfColor (Ljava/awt/Color;)V
 c com/fs/graphics/A/oOOO com/fs/graphics/font/BitmapGlyph
-	m Ö00000 getGlyphId ()I
-	m if getXOffset ()I
-	m void getXAdvance ()I
+	m return getGlyphId ()I
+	m ö00000 getXOffset ()I
+	m Ø00000 getXAdvance ()I
 	m ø00000 getWidth ()I
 	m ÒO0000 getHeight ()I
 	m Ò00000 getBearingY ()I
-	m õ00000 getTexX ()F
-	m do getTexY ()F
-	m String getTexWidth ()F
+	m int getTexX ()F
+	m oO0000 getTexY ()F
+	m Ô00000 getTexWidth ()F
 	m ô00000 getTexHeight ()F
 c com/fs/graphics/A/F com/fs/graphics/font/BitmapFont
 	f ÒO0000 texture Lcom/fs/graphics/TextureObject;
 	m Ô00000 getFontPath ()Ljava/lang/String;
-	m class getNominalFontSize ()I
-	m float getLineHeight ()I
-	m class.super getTexture ()Lcom/fs/graphics/TextureObject;
+	m Õ00000 getNominalFontSize ()I
+	m ø00000 getLineHeight ()I
+	m øO0000 getTexture ()Lcom/fs/graphics/TextureObject;
 c com/fs/graphics/A/D com/fs/graphics/font/BitmapFontManager
 	m Ò00000 getFont (Ljava/lang/String;)Lcom/fs/graphics/font/BitmapFont;
 c com/fs/graphics/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/graphics/font/BitmapFontRenderer
-	f øÒ0000 font Lcom/fs/graphics/font/BitmapFont;
-	f ø00000 requestedFontSize F
+	f float.new font Lcom/fs/graphics/font/BitmapFont;
+	f float requestedFontSize F
 	f oo0000 shadowCopies I
 	f oO0000 shadowScale F
 	m Õ00000 render ()V
@@ -89,7 +89,7 @@ c com/fs/starfarer/ui/O0Oo com/fs/starfarer/ui/FocusedComponentTracker
 	m Ó00000 getCurrentFocusedComponent ()Lcom/fs/starfarer/ui/S;
 c com/fs/starfarer/settings/StarfarerSettings$1 com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory
 c com/fs/starfarer/settings/StarfarerSettings com/fs/starfarer/settings/StarfarerSettings
-	m Õ00000 getBoolean (Ljava/lang/String;)Z
+	m class getBoolean (Ljava/lang/String;)Z
 c com/fs/starfarer/loading/LoadingUtils com/fs/starfarer/loading/LoadingUtils
 	m super readText (Ljava/io/InputStream;)Ljava/lang/String;
 c com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain
@@ -159,9 +159,9 @@ c com/fs/starfarer/StarfarerLauncher com/fs/starfarer/StarfarerLauncher
 	m o00000 launchGame (ZZLjava/lang/String;Ljava/lang/String;)V
 c com/fs/graphics/util/B com/fs/graphics/util/RenderStateUtils
 	m Ø00000 enableTextureClamp ()V
-	m new restoreTextureClamp ()V
+	m Ò00000 restoreTextureClamp ()V
 	m o00000 beginScreenOverlay (FFFFF)V
-	m class endScreenOverlay ()V
+	m Õ00000 endScreenOverlay ()V
 	m Ó00000 adjustBrightness (Ljava/awt/Color;F)Ljava/awt/Color;
 	m o00000 blendColors (Ljava/awt/Color;Ljava/awt/Color;F)Ljava/awt/Color;
 c com/fs/util/C com/fs/util/ResourceLoader
