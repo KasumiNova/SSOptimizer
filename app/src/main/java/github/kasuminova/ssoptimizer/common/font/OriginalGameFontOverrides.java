@@ -43,6 +43,9 @@ public final class OriginalGameFontOverrides {
         final String normalized = normalize(resourcePath);
         final InputStream runtimeStream = RuntimeScaledFontCache.openGeneratedStream(normalized);
         if (runtimeStream != null) {
+            if (Boolean.getBoolean(DEBUG_LOG_PROPERTY)) {
+                LOGGER.info("[SSOptimizer][FontDebug] openStream HIT (runtime): " + normalized);
+            }
             return runtimeStream;
         }
         if (!isOverriddenPath(normalized)) {
@@ -52,16 +55,22 @@ public final class OriginalGameFontOverrides {
         ensureInitialized();
         final byte[] data = generatedResources.get(normalized);
         if (data == null) {
+            if (Boolean.getBoolean(DEBUG_LOG_PROPERTY)) {
+                LOGGER.info("[SSOptimizer][FontDebug] openStream MISS (not in generatedResources): " + normalized);
+            }
             return null;
+        }
+        if (Boolean.getBoolean(DEBUG_LOG_PROPERTY)) {
+            LOGGER.info("[SSOptimizer][FontDebug] openStream HIT (" + data.length + " bytes): " + normalized);
         }
         return new ByteArrayInputStream(data);
     }
 
-    static boolean isEnabled() {
+    public static boolean isEnabled() {
         return Boolean.parseBoolean(System.getProperty(ENABLE_PROPERTY, "true"));
     }
 
-    static boolean isOverriddenPath(final String resourcePath) {
+    public static boolean isOverriddenPath(final String resourcePath) {
         if (resourcePath == null || resourcePath.isBlank()) {
             return false;
         }
@@ -76,7 +85,7 @@ public final class OriginalGameFontOverrides {
         return false;
     }
 
-    static String normalize(final String resourcePath) {
+    public static String normalize(final String resourcePath) {
         if (resourcePath == null) {
             return "";
         }

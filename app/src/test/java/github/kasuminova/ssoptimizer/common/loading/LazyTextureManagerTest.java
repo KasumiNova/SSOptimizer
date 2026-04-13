@@ -4,6 +4,7 @@ import com.fs.graphics.TextureObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -149,6 +150,25 @@ class LazyTextureManagerTest {
         System.setProperty(LazyTextureManager.MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY, "0");
 
         assertEquals(0L, LazyTextureManager.managementLogIntervalMillis());
+    }
+
+    @Test
+    void normalizesWindowsStyleResourcePaths() throws Exception {
+        final Method method = LazyTextureManager.class.getDeclaredMethod("normalizeResourcePath", String.class);
+        method.setAccessible(true);
+
+        assertEquals("graphics/icons/cargo/blueprint_hightech.png",
+                method.invoke(null, "graphics\\icons\\cargo\\blueprint_hightech.png"));
+        assertEquals("graphics/icons/cargo/blueprint_hightech.png",
+                method.invoke(null, "\\graphics\\icons\\cargo\\blueprint_hightech.png"));
+    }
+
+    @Test
+    void recognizesWindowsSeparatorsInNormalizedTextureBuckets() {
+        assertFalse(LazyTextureManager.isPreviewProtectedTexture("graphics\\portraits\\captain.png"));
+        assertTrue(LazyTextureManager.isPreviewProtectedTexture("graphics\\ships\\frigate.png"));
+        assertTrue(LazyTextureManager.isSharpenedUiFontTexture("graphics\\fonts\\orbitron24aa_0.png"));
+        assertTrue(LazyTextureManager.isManagedVictorFontTexture("graphics\\fonts\\victor14_0.png"));
     }
 
     @Test
@@ -311,5 +331,27 @@ class LazyTextureManagerTest {
         assertTrue(summary.contains("totalEvicted=5"));
         assertTrue(summary.contains("graphics/ships=8.0MiB"));
         assertTrue(summary.contains("graphics/weapons=1.0MiB"));
+    }
+
+    @Test
+    void managementSummaryNormalizesBackslashResidentGroups() {
+        final String summary = LazyTextureManager.formatManagementSummary(List.of(
+                new TextureCompositionReport.TextureEntry(
+                        "graphics\\icons\\cargo\\blueprint_hightech.png",
+                        "resident",
+                        true,
+                        1,
+                        0,
+                        256,
+                        256,
+                        256,
+                        256,
+                        256L * 256L * 4L,
+                        3,
+                        "icon"
+                )
+        ), 0L, 0L);
+
+        assertTrue(summary.contains("graphics/icons=0.3MiB"));
     }
 }

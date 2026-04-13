@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import com.fs.graphics.TextureLoader;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
+import github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
@@ -162,46 +163,56 @@ public final class LazyTextureManager {
             return cached;
         }
 
+        final String normalizedPath = normalizeResourcePath(resourcePath);
+        final String effectivePath = normalizedPath.isEmpty() ? resourcePath : normalizedPath;
+        if (!effectivePath.equals(resourcePath)) {
+            final com.fs.graphics.TextureObject normalizedCached = (com.fs.graphics.TextureObject) textureCache.get(effectivePath);
+            if (normalizedCached != null) {
+                textureCache.put(resourcePath, normalizedCached);
+                ensureContextBoundTextureTracked(normalizedCached, effectivePath);
+                return normalizedCached;
+            }
+        }
+
         if (isOriginalLazyModeEnabled()) {
-            final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, resourcePath);
+            final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, effectivePath);
             texture.setDeferredLoadingEnabled(true);
-            textureCache.put(resourcePath, texture);
-            return markTextureLoadedInCurrentContext(texture, resourcePath);
+            cacheTexture(textureCache, resourcePath, effectivePath, texture);
+            return markTextureLoadedInCurrentContext(texture, effectivePath);
         }
 
         if (!isEnabled()) {
-            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath), resourcePath);
+            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, effectivePath, resourcePath), effectivePath);
         }
 
-        final String normalizedPath = normalizeResourcePath(resourcePath);
-        if (normalizedPath.isEmpty()) {
-            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath), resourcePath);
+        if (effectivePath == null || effectivePath.isEmpty()) {
+            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath, resourcePath), resourcePath);
         }
 
-        final SourceSnapshot source = readSource(normalizedPath, resourcePath);
-        final LazyTextureMetadata metadata = buildMetadata(normalizedPath, source);
+        final SourceSnapshot source = readSource(effectivePath, resourcePath);
+        final LazyTextureMetadata metadata = buildMetadata(effectivePath, source);
         if (metadata == null) {
-            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath), resourcePath);
+            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, effectivePath, resourcePath), effectivePath);
         }
 
-        final boolean defer = shouldDefer(normalizedPath, source.sourceByteLength(), metadata.estimatedGpuBytes);
-        final boolean trackResidency = shouldTrackResidency(normalizedPath, source.sourceByteLength(), metadata.estimatedGpuBytes);
+        final boolean defer = shouldDefer(effectivePath, source.sourceByteLength(), metadata.estimatedGpuBytes);
+        final boolean trackResidency = shouldTrackResidency(effectivePath, source.sourceByteLength(), metadata.estimatedGpuBytes);
         if (!trackResidency) {
-            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath), resourcePath);
+            return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, effectivePath, resourcePath), effectivePath);
         }
 
         final long now = System.nanoTime();
         if (!defer) {
-            final com.fs.graphics.TextureObject texture = eagerLoad(loader, textureCache, resourcePath);
-            MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(normalizedPath, source.sourceHash, metadata, now, true));
-            return markTextureLoadedInCurrentContext(texture, resourcePath);
+            final com.fs.graphics.TextureObject texture = eagerLoad(loader, textureCache, effectivePath, resourcePath);
+            MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(effectivePath, source.sourceHash, metadata, now, true));
+            return markTextureLoadedInCurrentContext(texture, effectivePath);
         }
 
-        final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, normalizedPath);
+        final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, effectivePath);
         applyMetadata(texture, metadata);
-        textureCache.put(resourcePath, texture);
-        MANAGED_TEXTURES.put(texture, ManagedTextureEntry.pending(normalizedPath, source.sourceHash, metadata, now, true));
-        return markTextureLoadedInCurrentContext(texture, resourcePath);
+        cacheTexture(textureCache, resourcePath, effectivePath, texture);
+        MANAGED_TEXTURES.put(texture, ManagedTextureEntry.pending(effectivePath, source.sourceHash, metadata, now, true));
+        return markTextureLoadedInCurrentContext(texture, effectivePath);
     }
 
     public static void bindTexture(final com.fs.graphics.TextureObject texture,
@@ -526,35 +537,55 @@ public final class LazyTextureManager {
 
     private static com.fs.graphics.TextureObject eagerLoad(final TextureLoader loader,
                                                            final HashMap<String, com.fs.graphics.TextureObject> textureCache,
-                                                           final String resourcePath) throws IOException {
+                                                           final String loadPath,
+                                                           final String requestedPath) throws IOException {
         final Method eagerLoadMethod = EAGER_PATH_LOAD_METHOD;
         if (eagerLoadMethod == null) {
-            throw new IOException("Unable to resolve TextureLoader eager load method for " + resourcePath);
+            throw new IOException("Unable to resolve TextureLoader eager load method for " + requestedPath);
         }
 
         try {
             final com.fs.graphics.TextureObject texture = (com.fs.graphics.TextureObject) eagerLoadMethod.invoke(
                     loader,
-                    resourcePath
+                    loadPath
             );
-            textureCache.put(resourcePath, texture);
+            cacheTexture(textureCache, requestedPath, loadPath, texture);
             return texture;
         } catch (InvocationTargetException e) {
             final Throwable cause = e.getCause();
             if (cause instanceof IOException ioException) {
                 throw ioException;
             }
-            throw new IOException("Failed to eagerly load texture " + resourcePath, cause);
+            throw new IOException("Failed to eagerly load texture " + requestedPath, cause);
         } catch (IllegalAccessException e) {
-            throw new IOException("Unable to invoke TextureLoader eager load for " + resourcePath, e);
+            throw new IOException("Unable to invoke TextureLoader eager load for " + requestedPath, e);
+        }
+    }
+
+    private static void cacheTexture(final HashMap<String, com.fs.graphics.TextureObject> textureCache,
+                                     final String requestedPath,
+                                     final String normalizedPath,
+                                     final com.fs.graphics.TextureObject texture) {
+        textureCache.put(requestedPath, texture);
+        if (normalizedPath != null && !normalizedPath.isEmpty() && !normalizedPath.equals(requestedPath)) {
+            textureCache.put(normalizedPath, texture);
         }
     }
 
     private static SourceSnapshot readSource(final String normalizedPath,
                                              final String originalPath) throws IOException {
-        TextureConversionCache.TextureSourceFingerprint sourceFingerprint = TextureConversionCache.probeFingerprint(originalPath);
-        if (sourceFingerprint == null && !normalizedPath.equals(originalPath)) {
-            sourceFingerprint = TextureConversionCache.probeFingerprint(normalizedPath);
+        // 字体覆盖路径在内存中提供 PNG 数据，磁盘指纹对应的仍然是原版文件，
+        // 因此对字体覆盖路径跳过基于磁盘指纹的缓存查找。
+        final boolean fontOverride = OriginalGameFontOverrides.isEnabled()
+                && OriginalGameFontOverrides.isOverriddenPath(
+                        OriginalGameFontOverrides.normalize(normalizedPath));
+
+        TextureConversionCache.TextureSourceFingerprint sourceFingerprint = null;
+        if (!fontOverride) {
+            sourceFingerprint = TextureConversionCache.probeFingerprint(originalPath);
+            if (sourceFingerprint == null && !normalizedPath.equals(originalPath)) {
+                sourceFingerprint = TextureConversionCache.probeFingerprint(normalizedPath);
+            }
         }
         if (sourceFingerprint != null) {
             final TextureConversionCache.ResourceCacheHit resourceCacheHit = TextureConversionCache.loadByResourcePath(normalizedPath, sourceFingerprint);
@@ -583,6 +614,20 @@ public final class LazyTextureManager {
 
     private static InputStream openStream(final String originalPath,
                                           final String normalizedPath) throws IOException {
+        // 字体覆盖资源优先：SSOptimizer 运行时生成的字体 .fnt/.png 必须先于磁盘文件
+        // 被返回，否则 FileInputStream 会读取到磁盘上（可能是汉化包预制的）位图字体
+        // atlas，与 SSOptimizer 生成的 .fnt 坐标不匹配，导致渲染乱码。
+        final InputStream fontOverride = OriginalGameFontOverrides.openStream(originalPath);
+        if (fontOverride != null) {
+            return fontOverride;
+        }
+        if (!normalizedPath.equals(originalPath)) {
+            final InputStream normalizedFontOverride = OriginalGameFontOverrides.openStream(normalizedPath);
+            if (normalizedFontOverride != null) {
+                return normalizedFontOverride;
+            }
+        }
+
         try {
             return new FileInputStream(originalPath);
         } catch (IOException ignored) {
@@ -1011,7 +1056,11 @@ public final class LazyTextureManager {
         if (resourcePath == null) {
             return "";
         }
-        return resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        String normalized = resourcePath.replace('\\', '/');
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+        return normalized;
     }
 
     static int minFilterForResourcePath(final String resourcePath) {
@@ -1226,7 +1275,7 @@ public final class LazyTextureManager {
             return "(unknown)";
         }
 
-        final String normalized = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        final String normalized = normalizeResourcePath(resourcePath);
         final String[] segments = normalized.split("/");
         if (segments.length >= 2) {
             return segments[0] + '/' + segments[1];

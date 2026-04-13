@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
+import github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
@@ -26,9 +28,18 @@ public final class FastResourceImageDecoder {
     static BufferedImage decode(final String path,
                                 final InputStream inputStream,
                                 final PngByteDecoder nativePngDecoder) throws IOException {
-        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint = TextureConversionCache.isEnabled()
-                ? TextureConversionCache.probeFingerprint(path)
-                : null;
+        // 字体覆盖路径由 OriginalGameFontOverrides 在内存中提供 PNG 数据，
+        // 但磁盘上仍然是原版（或汉化包）的 PNG 文件。基于磁盘指纹的
+        // TextureConversionCache 会命中旧缓存，返回原版像素数据而非 SSO 生成的像素，
+        // 导致 .fnt 坐标与纹理内容不匹配、渲染乱码。
+        // 因此对字体覆盖路径跳过 probeFingerprint，强制走 InputStream 解码路径。
+        final boolean fontOverride = OriginalGameFontOverrides.isEnabled()
+                && OriginalGameFontOverrides.isOverriddenPath(
+                        OriginalGameFontOverrides.normalize(path));
+        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint =
+                (!fontOverride && TextureConversionCache.isEnabled())
+                        ? TextureConversionCache.probeFingerprint(path)
+                        : null;
         if (sourceFingerprint != null) {
             final TextureConversionCache.ResourceCacheHit resourceCacheHit = TextureConversionCache.loadByResourcePath(path, sourceFingerprint);
             if (resourceCacheHit != null) {
