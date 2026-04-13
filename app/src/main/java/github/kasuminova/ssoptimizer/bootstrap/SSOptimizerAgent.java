@@ -4,6 +4,7 @@ import github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
@@ -134,7 +135,8 @@ public final class SSOptimizerAgent {
         registerCompositeIf(transformer,
                 GameClassNames.RESOURCE_LOADER,
                 new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
-                new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()));
+                new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()),
+                new ProcessorToggle("caseinsensitiveresource", new CaseInsensitiveResourceFallbackProcessor()));
     }
 
     private static void registerIf(HybridWeaverTransformer transformer,
