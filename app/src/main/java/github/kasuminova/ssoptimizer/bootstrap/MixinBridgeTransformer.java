@@ -145,10 +145,20 @@ public final class MixinBridgeTransformer implements ClassFileTransformer {
                     : className.replace('/', '.');
 
             byte[] result = transformer.transformClassBytes(mixinName, mixinName, mixinInput);
-            if (result != null && !Arrays.equals(result, mixinInput)) {
+            boolean mixinApplied = result != null && !Arrays.equals(result, mixinInput);
+            if (mixinApplied) {
                 LOGGER.info("[SSOptimizer] Mixin-applied class: " + className + " -> " + mixinName);
+                return result;
             }
-            return result;
+
+            // Mixin 未修改字节：返回重映射结果（可能为 null）。
+            // 此处不能返回未修改的 result / mixinInput，因为 JDK 25 中
+            // retransformable ClassFileTransformer 返回非 null 会触发 JVM
+            // 对返回字节进行强制验证。游戏混淆包中存在非标准标识符（如 "do.new"），
+            // 强制验证时会抛出 ClassFormatError。返回 null 表示"未变换"，
+            // 从而跳过强制验证；返回 namedBytes 则仅在确实执行了重映射时才
+            // 向 JVM 提交重映射后的字节。
+            return namedBytes;
         } catch (Throwable t) {
             LOGGER.error("[SSOptimizer] Mixin bridge failed for " + className, t);
             return null;
