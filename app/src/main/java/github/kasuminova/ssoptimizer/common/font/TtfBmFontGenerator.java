@@ -249,6 +249,21 @@ final class TtfBmFontGenerator {
         }
     }
 
+    /**
+     * 协调 fallback 字体（如 MiSans）的大小，使其与源 .fnt 中的中文字形比例一致。
+     *
+     * <p>优先使用 advance（水平间距）缩放：advance 直接决定文本排版密度，是最关键的视觉指标。
+     * 高度缩放仅在源 .fnt 缺少 fallback 采样字符的 advance 数据时作为回退方案。</p>
+     *
+     * @param calibrated           已校准到目标 lineHeight 的 fallback 字体
+     * @param source               源 .fnt 文件的解析结果
+     * @param primaryVisualHeight  主字体渲染的视觉高度（最后回退方案）
+     * @param primaryAverageHeight 主字体渲染的平均字形高度
+     * @param primaryAverageAdvance 主字体渲染的平均 advance
+     * @param antiAlias            是否抗锯齿
+     * @param fractionalMetrics    是否使用小数度量
+     * @return 缩放后的 fallback 字体
+     */
     private static Font harmonizeFallbackMetrics(final Font calibrated,
                                                  final SourceBmFont source,
                                                  final float primaryVisualHeight,
@@ -260,8 +275,7 @@ final class TtfBmFontGenerator {
             return calibrated;
         }
 
-        final List<Float> scaleFactors = new ArrayList<>(3);
-
+        // 优先使用 advance 缩放：advance 控制水平间距，是文本排版中最关键的视觉指标
         final float sourcePrimaryAdvance = source.averageAdvance(PRIMARY_ADVANCE_SAMPLE);
         final float sourceAverageAdvance = source.averageAdvance(FALLBACK_VISUAL_SAMPLE);
         final float renderedAverageAdvance = measureAverageAdvance(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
@@ -269,9 +283,14 @@ final class TtfBmFontGenerator {
         final float targetAverageAdvance = fallbackTargetMetric(primaryAverageAdvance, sourcePrimaryAdvance,
                 sourceAverageAdvance);
         if (targetAverageAdvance > 0f && renderedAverageAdvance > 0f) {
-            scaleFactors.add(fallbackVisualScaleFactor(targetAverageAdvance, renderedAverageAdvance));
+            final float scaleFactor = fallbackVisualScaleFactor(targetAverageAdvance, renderedAverageAdvance);
+            if (Math.abs(scaleFactor - 1.0f) < 0.02f) {
+                return calibrated;
+            }
+            return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
         }
 
+        // 回退方案：通过高度比例缩放（源 .fnt 中缺少 fallback 采样字符的 advance 数据时使用）
         final float sourcePrimaryHeight = source.averageHeight(PRIMARY_VISUAL_SAMPLE);
         final float sourceAverageHeight = source.averageHeight(FALLBACK_VISUAL_SAMPLE);
         final float renderedAverageHeight = measureAverageHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
@@ -279,31 +298,24 @@ final class TtfBmFontGenerator {
         final float targetAverageHeight = fallbackTargetMetric(primaryAverageHeight, sourcePrimaryHeight,
                 sourceAverageHeight);
         if (targetAverageHeight > 0f && renderedAverageHeight > 0f) {
-            scaleFactors.add(fallbackVisualScaleFactor(targetAverageHeight, renderedAverageHeight));
+            final float scaleFactor = fallbackVisualScaleFactor(targetAverageHeight, renderedAverageHeight);
+            if (Math.abs(scaleFactor - 1.0f) < 0.02f) {
+                return calibrated;
+            }
+            return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
         }
 
-        if (scaleFactors.isEmpty() && primaryVisualHeight > 0f) {
+        // 最终回退：匹配主字体的视觉高度
+        if (primaryVisualHeight > 0f) {
             final float fallbackVisualHeight = measureVisualHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
                     fractionalMetrics);
-            final float primaryVisualScale = fallbackVisualScaleFactor(primaryVisualHeight, fallbackVisualHeight);
-            if (primaryVisualScale > 0f) {
-                scaleFactors.add(primaryVisualScale);
+            final float scaleFactor = fallbackVisualScaleFactor(primaryVisualHeight, fallbackVisualHeight);
+            if (scaleFactor > 0f && Math.abs(scaleFactor - 1.0f) >= 0.02f) {
+                return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
             }
         }
 
-        if (scaleFactors.isEmpty()) {
-            return calibrated;
-        }
-
-        float scaleFactor = 0f;
-        for (Float candidateScale : scaleFactors) {
-            scaleFactor += candidateScale;
-        }
-        scaleFactor /= scaleFactors.size();
-        if (Math.abs(scaleFactor - 1.0f) < 0.02f) {
-            return calibrated;
-        }
-        return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
+        return calibrated;
     }
 
     static float fallbackTargetMetric(final float primaryRenderedMetric,
