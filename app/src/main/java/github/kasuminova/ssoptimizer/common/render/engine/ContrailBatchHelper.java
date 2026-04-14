@@ -103,6 +103,9 @@ public final class ContrailBatchHelper {
 
                 Vector2f position = segment.ssoptimizer$getPosition();
                 Vector2f normal = segment.ssoptimizer$getNormal();
+                if (position == null || normal == null) {
+                    continue;
+                }
                 float width = segment.ssoptimizer$getWidth();
                 float halfWidth = width * 0.5f;
 
@@ -119,6 +122,10 @@ public final class ContrailBatchHelper {
 
             if (tailPoint != null && lastSegment != null) {
                 Vector2f normal = lastSegment.ssoptimizer$getNormal();
+                if (normal == null) {
+                    flushStrip();
+                    return;
+                }
                 float width = lastSegment.ssoptimizer$getWidth() * 0.25f;
                 float u = lastSegment.ssoptimizer$getU();
 

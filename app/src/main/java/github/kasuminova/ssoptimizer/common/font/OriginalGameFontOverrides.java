@@ -23,7 +23,6 @@ public final class OriginalGameFontOverrides {
     public static final String EXPORT_DIR_PROPERTY = FontArtifactExporter.EXPORT_DIR_PROPERTY;
 
     private static final Logger                        LOGGER           = Logger.getLogger(OriginalGameFontOverrides.class);
-    private static final Path                          DEFAULT_FONT_DIR = Path.of("/mnt/windows/Data/FONTS");
     private static final Map<String, FontOverrideSpec> OVERRIDES        = createOverrideSpecs();
     private static final Object                        LOCK             = new Object();
 
@@ -163,9 +162,39 @@ public final class OriginalGameFontOverrides {
     private static Path resolveFontDir() {
         final String configured = System.getProperty(FONT_DIR_PROPERTY);
         if (configured == null || configured.isBlank()) {
-            return DEFAULT_FONT_DIR;
+            return resolveDefaultFontDir(System.getProperty("os.name", ""));
         }
         return Path.of(configured).toAbsolutePath().normalize();
+    }
+
+    static List<Path> defaultFontDirCandidates(final String osName) {
+        final String normalized = osName == null ? "" : osName.toLowerCase(Locale.ROOT);
+        if (normalized.contains("win")) {
+            final String windowsRoot = System.getenv().getOrDefault("WINDIR", "C:\\Windows");
+            return List.of(
+                    Path.of("C:/Data/FONTS"),
+                    Path.of(windowsRoot).resolve("Fonts"),
+                    Path.of("/mnt/windows/Data/FONTS")
+            );
+        }
+
+        return List.of(
+                Path.of("/mnt/windows/Data/FONTS"),
+                Path.of("/mnt/c/Windows/Fonts"),
+                Path.of("/usr/share/fonts"),
+                Path.of("/usr/local/share/fonts")
+        );
+    }
+
+    static Path resolveDefaultFontDir(final String osName) {
+        final List<Path> candidates = defaultFontDirCandidates(osName);
+        for (Path candidate : candidates) {
+            final Path normalized = candidate.toAbsolutePath().normalize();
+            if (Files.isDirectory(normalized)) {
+                return normalized;
+            }
+        }
+        return candidates.getFirst().toAbsolutePath().normalize();
     }
 
     static Path currentFontDir() {

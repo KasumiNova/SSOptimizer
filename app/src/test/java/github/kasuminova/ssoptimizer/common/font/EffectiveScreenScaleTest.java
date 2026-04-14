@@ -33,14 +33,21 @@ class EffectiveScreenScaleTest {
 
     @Test
     void prefersGameApiScaleOverSettingsFileFallbackWhenSettingsAreAvailable() {
-        assertEquals(1.5f, EffectiveScreenScale.resolveCurrent(true, 1.5f, 1.0f, 2.0f));
-        assertEquals(1.25f, EffectiveScreenScale.resolveCurrent(true, 1.0f, 1.25f, 2.0f));
+        assertEquals(1.5f, EffectiveScreenScale.resolveCurrent(true, 1.5f, 1.0f, 0.0f, 2.0f));
+        assertEquals(1.25f, EffectiveScreenScale.resolveCurrent(true, 1.0f, 1.25f, 0.0f, 2.0f));
     }
 
     @Test
-    void fallsBackToConfiguredOverrideBeforeGameSettingsAreAvailable() {
-        assertEquals(1.5f, EffectiveScreenScale.resolveCurrent(false, 1.0f, 1.0f, 1.5f));
-        assertEquals(1.25f, EffectiveScreenScale.resolveCurrent(false, 1.0f, 1.25f, 0.0f));
+    void fallsBackToGamePrefsBeforeGameSettingsAreAvailable() {
+        // gamePrefs 可用时，取 gamePrefs 和 desktop 的较大值
+        assertEquals(1.5f, EffectiveScreenScale.resolveCurrent(false, 1.0f, 1.0f, 1.5f, 2.0f));
+        assertEquals(1.75f, EffectiveScreenScale.resolveCurrent(false, 1.0f, 1.75f, 1.5f, 0.0f));
+    }
+
+    @Test
+    void fallsBackToConfiguredOverrideWhenGamePrefsUnavailable() {
+        assertEquals(1.5f, EffectiveScreenScale.resolveCurrent(false, 1.0f, 1.0f, 0.0f, 1.5f));
+        assertEquals(1.25f, EffectiveScreenScale.resolveCurrent(false, 1.0f, 1.25f, 0.0f, 0.0f));
     }
 
     @Test

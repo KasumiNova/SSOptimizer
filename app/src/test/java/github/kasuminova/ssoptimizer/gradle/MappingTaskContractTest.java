@@ -48,5 +48,9 @@ public class MappingTaskContractTest {
         assertTaskExists(repoRoot, "jarMapped");
         assertTaskExists(repoRoot, "jarReobf");
         assertTaskExists(repoRoot, "installDevMod");
+        assertTaskExists(repoRoot, "stageUserMod");
+        assertTaskExists(repoRoot, "stageWindowsOverlay");
+        assertTaskExists(repoRoot, "packageUserModZip");
+        assertTaskExists(repoRoot, "packageWindowsOverlayZip");
     }
 }

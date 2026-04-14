@@ -51,6 +51,7 @@ public final class SSOptimizerAgent {
      */
     public static void premain(String agentArgs, Instrumentation inst) {
         instrumentation = inst;
+        ClassFileTransformer mixinTransformer = null;
 
         ImageIoConfigurator.configure();
         LogNoiseFilterConfigurator.configure();
@@ -62,16 +63,16 @@ public final class SSOptimizerAgent {
             org.spongepowered.asm.launch.MixinBootstrap.init();
             org.spongepowered.asm.mixin.Mixins.addConfiguration("mixins.ssoptimizer.json");
             advanceMixinToDefaultPhase();
-            inst.addTransformer(new MixinBridgeTransformer(), true);
+            mixinTransformer = new MixinBridgeTransformer();
             mixinAvailable = true;
-            LOGGER.info("[SSOptimizer] Mixin bootstrap ready and bridge installed");
+            LOGGER.info("[SSOptimizer] Mixin bootstrap ready");
         } catch (Throwable t) {
             mixinAvailable = false;
             LOGGER.warn("[SSOptimizer] Mixin bootstrap failed: " + t.getMessage());
             LOGGER.info("[SSOptimizer] Falling back to ASM-only mode");
         }
 
-        BootstrapPipeline pipeline = createBootstrapPipeline();
+        BootstrapPipeline pipeline = createBootstrapPipeline(mixinTransformer);
         weaverTransformer = pipeline.weaverTransformer();
         for (ClassFileTransformer transformer : pipeline.transformers()) {
             inst.addTransformer(transformer, true);
@@ -89,19 +90,25 @@ public final class SSOptimizerAgent {
      * @return 启动阶段变换器列表
      */
     static List<ClassFileTransformer> createBootstrapTransformers() {
-        return createBootstrapPipeline().transformers();
+        return createBootstrapPipeline(null).transformers();
     }
 
-    private static BootstrapPipeline createBootstrapPipeline() {
+    static List<ClassFileTransformer> createBootstrapTransformers(final ClassFileTransformer mixinTransformer) {
+        return createBootstrapPipeline(mixinTransformer).transformers();
+    }
+
+    private static BootstrapPipeline createBootstrapPipeline(final ClassFileTransformer mixinTransformer) {
         HybridWeaverTransformer weaver = new HybridWeaverTransformer();
         registerEngineProcessors(weaver);
 
-        List<ClassFileTransformer> transformers = List.of(
-                new RuntimeRemapTransformer(),
-                new SanitizingTransformer(),
-                new ReflectionSanitizingTransformer(),
-                weaver
-        );
+        final java.util.ArrayList<ClassFileTransformer> transformers = new java.util.ArrayList<>();
+        transformers.add(new RuntimeRemapTransformer());
+        transformers.add(new SanitizingTransformer());
+        transformers.add(new ReflectionSanitizingTransformer());
+        transformers.add(weaver);
+        if (mixinTransformer != null) {
+            transformers.add(mixinTransformer);
+        }
         return new BootstrapPipeline(transformers, weaver);
     }
 
@@ -129,6 +136,7 @@ public final class SSOptimizerAgent {
         registerIf(transformer, "linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
         registerIf(transformer, "linuxeventime", GameClassNames.LINUX_EVENT, new LinuxEventImeProcessor());
         registerIf(transformer, "linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
+        registerIf(transformer, "windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());
         registerIf(transformer, "tooltiptextfieldime", GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE, new TooltipTextFieldFactoryProcessor());
         registerIf(transformer, "settingstextfieldime", GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER, new SettingsTextFieldFactoryProcessor());
         registerIf(transformer, "textfieldimplime", GameClassNames.TEXT_FIELD_IMPL, new TextFieldImplementationProcessor());

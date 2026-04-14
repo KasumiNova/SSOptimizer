@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.font;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -108,6 +109,23 @@ class OriginalGameFontOverridesTest {
                 System.setProperty(EffectiveScreenScale.OVERRIDE_PROPERTY, previous);
             }
         }
+    }
+
+    @Test
+    void windowsDefaultFontDirCandidatesPreferLocalWindowsPaths() {
+        final List<Path> candidates = OriginalGameFontOverrides.defaultFontDirCandidates("Windows 11");
+
+        assertEquals(Path.of("C:/Data/FONTS"), candidates.get(0));
+        assertTrue(candidates.get(1).toString().replace('\\', '/').endsWith("/Fonts"));
+        assertEquals(Path.of("/mnt/windows/Data/FONTS"), candidates.get(2));
+    }
+
+    @Test
+    void linuxDefaultFontDirCandidatesKeepLegacyMountFirst() {
+        final List<Path> candidates = OriginalGameFontOverrides.defaultFontDirCandidates("Linux");
+
+        assertEquals(Path.of("/mnt/windows/Data/FONTS"), candidates.get(0));
+        assertEquals(Path.of("/mnt/c/Windows/Fonts"), candidates.get(1));
     }
 
 }

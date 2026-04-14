@@ -88,6 +88,7 @@ public final class ImeService {
         }
         ensureRegistered(textField);
         explicitlyFocusedField = new WeakReference<>(textField);
+        WindowsDisplayImeHooks.ensureAttached(backend, this);
         if (windowFocused) {
             backend.focusIn();
         }
@@ -131,6 +132,7 @@ public final class ImeService {
             return;
         }
 
+        WindowsDisplayImeHooks.ensureAttached(backend, this);
         backend.focusIn();
         final ImeCaretRect rect = computeCurrentCaretRect();
         if (rect != null) {
@@ -225,6 +227,7 @@ public final class ImeService {
 
         explicitlyFocusedField = new WeakReference<>(textField);
         if (windowFocused) {
+            WindowsDisplayImeHooks.ensureAttached(backend, this);
             backend.focusIn();
             final ImeCaretRect rect = computeCaretRect(textField);
             if (rect != null) {

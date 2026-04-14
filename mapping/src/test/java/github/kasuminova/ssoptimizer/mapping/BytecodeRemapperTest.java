@@ -14,17 +14,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link BytecodeRemapper} 在类名重命名场景下的方法 remap 回归测试。
  */
 class BytecodeRemapperTest {
+    private static final MappingLookup LOOKUP = new MappingLookup(TinyV2MappingRepository.loadDefault());
 
     @Test
     void remapsMethodNameAndDescriptorForRenamedOwnerClass() {
         BytecodeRemapper remapper = new BytecodeRemapper(
                 TinyV2MappingRepository.loadDefault(),
                 MappingDirection.OBFUSCATED_TO_NAMED);
+    MappingEntry classEntry = LOOKUP.requireClassByNamedName("com/fs/graphics/font/BitmapFontManager");
+    MappingEntry methodEntry = LOOKUP.requireMethodByNamedName(
+        "com/fs/graphics/font/BitmapFontManager",
+        "getFont",
+        "(Ljava/lang/String;)Lcom/fs/graphics/font/BitmapFont;");
+    MappingEntry bitmapFontClassEntry = LOOKUP.requireClassByNamedName("com/fs/graphics/font/BitmapFont");
 
-        BytecodeRemapper.RemappedClass remapped = remapper.remapClass(createObfuscatedBitmapFontManager());
+    BytecodeRemapper.RemappedClass remapped = remapper.remapClass(createObfuscatedBitmapFontManager(
+        classEntry.obfuscatedName(),
+        methodEntry.obfuscatedName(),
+        "(Ljava/lang/String;)L" + bitmapFontClassEntry.obfuscatedName() + ";"));
 
         assertTrue(remapped.modified());
-        assertEquals("com/fs/graphics/super/D", remapped.inputInternalName());
+    assertEquals(classEntry.obfuscatedName(), remapped.inputInternalName());
         assertEquals("com/fs/graphics/font/BitmapFontManager", remapped.outputInternalName());
 
         ClassReader reader = new ClassReader(remapped.bytecode());
@@ -51,11 +61,19 @@ class BytecodeRemapperTest {
         BytecodeRemapper remapper = new BytecodeRemapper(
                 TinyV2MappingRepository.loadDefault(),
                 MappingDirection.OBFUSCATED_TO_NAMED);
+        MappingEntry classEntry = LOOKUP.requireClassByNamedName("sound/SoundManager");
+        MappingEntry methodEntry = LOOKUP.requireMethodByNamedName(
+            "sound/SoundManager",
+            "loadOAccentFamily",
+            "(Ljava/lang/String;)Lsound/O0OO;");
 
-        BytecodeRemapper.RemappedClass remapped = remapper.remapClass(createObfuscatedSoundManager());
+        BytecodeRemapper.RemappedClass remapped = remapper.remapClass(createObfuscatedSoundManager(
+            classEntry.obfuscatedName(),
+            methodEntry.obfuscatedName(),
+            methodEntry.descriptor()));
 
         assertTrue(remapped.modified());
-        assertEquals("sound/Object", remapped.inputInternalName());
+        assertEquals(classEntry.obfuscatedName(), remapped.inputInternalName());
         assertEquals("sound/SoundManager", remapped.outputInternalName());
 
         final boolean[] foundNamedMethod = {false};
@@ -77,11 +95,13 @@ class BytecodeRemapperTest {
         assertTrue(foundNamedMethod[0], "sound manager path loader should remap to the named method");
     }
 
-    private static byte[] createObfuscatedBitmapFontManager() {
+    private static byte[] createObfuscatedBitmapFontManager(final String ownerObfuscatedName,
+                                                            final String methodObfuscatedName,
+                                                            final String methodDescriptor) {
         ClassWriter writer = new ClassWriter(0);
         writer.visit(Opcodes.V1_8,
                 Opcodes.ACC_PUBLIC,
-                "com/fs/graphics/super/D",
+                ownerObfuscatedName,
                 null,
                 "java/lang/Object",
                 null);
@@ -96,8 +116,8 @@ class BytecodeRemapperTest {
 
         MethodVisitor method = writer.visitMethod(
                 Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
-                "Ò00000",
-                "(Ljava/lang/String;)Lcom/fs/graphics/super/return;",
+            methodObfuscatedName,
+            methodDescriptor,
                 null,
                 null);
         method.visitCode();
@@ -110,11 +130,13 @@ class BytecodeRemapperTest {
         return writer.toByteArray();
     }
 
-    private static byte[] createObfuscatedSoundManager() {
+    private static byte[] createObfuscatedSoundManager(final String ownerObfuscatedName,
+                                                       final String methodObfuscatedName,
+                                                       final String methodDescriptor) {
         ClassWriter writer = new ClassWriter(0);
         writer.visit(Opcodes.V1_8,
                 Opcodes.ACC_PUBLIC,
-                "sound/Object",
+                ownerObfuscatedName,
                 null,
                 "java/lang/Object",
                 null);
@@ -129,8 +151,8 @@ class BytecodeRemapperTest {
 
         MethodVisitor method = writer.visitMethod(
                 Opcodes.ACC_PUBLIC,
-                "Ò00000",
-                "(Ljava/lang/String;)Lsound/O0OO;",
+            methodObfuscatedName,
+            methodDescriptor,
                 null,
                 null);
         method.visitCode();

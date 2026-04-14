@@ -15,12 +15,23 @@ class NativeLibraryResolverTest {
     @Test
     void resolvesNativeLibraryFromModFolder() throws Exception {
         Path modsDir = tempDir.resolve("mods");
-        Path nativeDir = modsDir.resolve("ssoptimizer").resolve("native").resolve("linux");
+        Path nativeDir = modsDir.resolve("ssoptimizer").resolve("native").resolve(expectedPlatformFolder());
         Files.createDirectories(nativeDir);
         Path soFile = nativeDir.resolve(System.mapLibraryName("ssoptimizer"));
         Files.writeString(soFile, "stub");
 
         System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
         assertEquals(soFile.toAbsolutePath(), NativeLibraryResolver.resolve());
+    }
+
+    private static String expectedPlatformFolder() {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        if (os.contains("win")) {
+            return "windows";
+        }
+        if (os.contains("mac")) {
+            return "mac";
+        }
+        return "linux";
     }
 }

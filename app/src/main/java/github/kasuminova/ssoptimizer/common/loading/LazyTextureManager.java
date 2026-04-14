@@ -1337,19 +1337,32 @@ public final class LazyTextureManager {
     }
 
     private static Method resolveEagerLoadMethod() {
+        return resolveEagerLoadMethod(TextureLoader.class);
+    }
+
+    static Method resolveEagerLoadMethod(final Class<?> textureLoaderClass) {
         try {
-            final Method method = TextureLoader.class.getDeclaredMethod(ORIGINAL_EAGER_LOAD_METHOD_NAME, String.class);
+            final Method method = textureLoaderClass.getDeclaredMethod(ORIGINAL_EAGER_LOAD_METHOD_NAME, String.class);
             method.setAccessible(true);
             return method;
-        } catch (NoSuchMethodException e) {
-            try {
-                final Method fallback = TextureLoader.class.getDeclaredMethod("loadTexture", String.class);
-                fallback.setAccessible(true);
-                LOGGER.warn("[SSOptimizer] Falling back to patched TextureLoader.loadTexture(String); eager alias missing", e);
-                return fallback;
-            } catch (NoSuchMethodException fallbackException) {
-                throw new IllegalStateException("Unable to resolve TextureLoader eager load method", fallbackException);
-            }
+        } catch (NoSuchMethodException ignored) {
+        }
+
+        final Method candidate = findUniqueTextureLoadCandidate(textureLoaderClass);
+        if (candidate != null) {
+            candidate.setAccessible(true);
+            LOGGER.warn("[SSOptimizer] TextureLoader eager alias missing; resolved fallback by signature: "
+                    + textureLoaderClass.getName() + '#' + candidate.getName() + "(String)");
+            return candidate;
+        }
+
+        try {
+            final Method fallback = textureLoaderClass.getDeclaredMethod(GameMemberNames.TextureLoader.LOAD_TEXTURE, String.class);
+            fallback.setAccessible(true);
+            LOGGER.warn("[SSOptimizer] Falling back to patched TextureLoader.loadTexture(String); eager alias missing");
+            return fallback;
+        } catch (NoSuchMethodException fallbackException) {
+            throw new IllegalStateException("Unable to resolve TextureLoader eager load method", fallbackException);
         }
     }
 
@@ -1381,14 +1394,75 @@ public final class LazyTextureManager {
                     GameClassNames.TEXTURE_MANAGER_DOTTED,
                     false,
                     TextureLoader.class.getClassLoader());
+            return resolveOriginalLazyModeMethod(textureManagerClass);
+        } catch (ClassNotFoundException e) {
+            LOGGER.warn("[SSOptimizer] Could not resolve original lazy texture toggle", e);
+            return null;
+        }
+    }
+
+    static Method resolveOriginalLazyModeMethod(final Class<?> textureManagerClass) {
+        try {
             final Method method = textureManagerClass.getDeclaredMethod(
                     GameMemberNames.TextureManager.IS_LAZY_LOADING_ENABLED);
             method.setAccessible(true);
             return method;
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            LOGGER.warn("[SSOptimizer] Could not resolve original lazy texture toggle", e);
-            return null;
+        } catch (NoSuchMethodException ignored) {
         }
+
+        final Method candidate = findUniqueStaticBooleanNoArgMethod(textureManagerClass);
+        if (candidate != null) {
+            candidate.setAccessible(true);
+            LOGGER.warn("[SSOptimizer] TextureManager lazy toggle name mismatch; resolved fallback by signature: "
+                    + textureManagerClass.getName() + '#' + candidate.getName() + "()");
+            return candidate;
+        }
+
+        LOGGER.warn("[SSOptimizer] Could not resolve original lazy texture toggle for " + textureManagerClass.getName());
+        return null;
+    }
+
+    private static Method findUniqueTextureLoadCandidate(final Class<?> textureLoaderClass) {
+        Method uniqueCandidate = null;
+        for (Method method : textureLoaderClass.getDeclaredMethods()) {
+            if (Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
+            if (!com.fs.graphics.TextureObject.class.equals(method.getReturnType())) {
+                continue;
+            }
+            if (!Arrays.equals(method.getParameterTypes(), new Class<?>[]{String.class})) {
+                continue;
+            }
+            if (GameMemberNames.TextureLoader.LOAD_TEXTURE.equals(method.getName())) {
+                continue;
+            }
+            if (uniqueCandidate != null) {
+                return null;
+            }
+            uniqueCandidate = method;
+        }
+        return uniqueCandidate;
+    }
+
+    private static Method findUniqueStaticBooleanNoArgMethod(final Class<?> owner) {
+        Method uniqueCandidate = null;
+        for (Method method : owner.getDeclaredMethods()) {
+            if (!Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
+            if (!boolean.class.equals(method.getReturnType())) {
+                continue;
+            }
+            if (method.getParameterCount() != 0) {
+                continue;
+            }
+            if (uniqueCandidate != null) {
+                return null;
+            }
+            uniqueCandidate = method;
+        }
+        return uniqueCandidate;
     }
 
     private static Method resolveResourceManagerFactoryMethod() {

@@ -61,7 +61,7 @@ dependencies {
         .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
     if (starsectorGameDir != null) {
         val namedGameClasspath = rootProject.files(rootProject.provider {
-            val dir = rootProject.layout.buildDirectory.dir("named-game-jars").get().asFile
+            val dir = rootProject.layout.buildDirectory.dir("named-game-jars/${mappingPlatform.get()}").get().asFile
             dir.listFiles()
                 ?.filter { it.isFile && it.extension == "jar" }
                 ?: emptyList()

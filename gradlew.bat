@@ -26,6 +26,11 @@
 @rem Set local scope for the variables with windows NT shell
 if "%OS%"=="Windows_NT" setlocal
 
+set GRADLE_OLD_CODEPAGE=
+for /f "tokens=2 delims=:" %%i in ('chcp') do set GRADLE_OLD_CODEPAGE=%%i
+if defined GRADLE_OLD_CODEPAGE set GRADLE_OLD_CODEPAGE=%GRADLE_OLD_CODEPAGE: =%
+chcp 65001 >NUL
+
 set DIRNAME=%~dp0
 if "%DIRNAME%"=="" set DIRNAME=.
 @rem This is normally unused
@@ -78,6 +83,7 @@ set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 :end
 @rem End local scope for the variables with windows NT shell
+if defined GRADLE_OLD_CODEPAGE chcp %GRADLE_OLD_CODEPAGE% >NUL
 if %ERRORLEVEL% equ 0 goto mainEnd
 
 :fail

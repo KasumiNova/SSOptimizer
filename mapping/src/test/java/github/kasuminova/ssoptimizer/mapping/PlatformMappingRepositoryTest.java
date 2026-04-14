@@ -95,4 +95,82 @@ class PlatformMappingRepositoryTest {
                 "readImage",
                 "(Ljava/lang/String;)Ljava/awt/image/BufferedImage;").obfuscatedName());
     }
+
+    @Test
+    void bitmapFontRendererUsesWindowsSpecificObfuscatedFields() {
+        TinyV2MappingRepository windows = TinyV2MappingRepository.loadForPlatform(MappingPlatform.WINDOWS);
+
+        assertEquals("float.new", windows.requireFieldByNamedName(
+                "com/fs/graphics/font/BitmapFontRenderer",
+                "font").obfuscatedName());
+        assertEquals("float", windows.requireFieldByNamedName(
+                "com/fs/graphics/font/BitmapFontRenderer",
+                "requestedFontSize").obfuscatedName());
+        assertEquals("oo0000", windows.requireFieldByNamedName(
+                "com/fs/graphics/font/BitmapFontRenderer",
+                "shadowCopies").obfuscatedName());
+        assertEquals("oO0000", windows.requireFieldByNamedName(
+                "com/fs/graphics/font/BitmapFontRenderer",
+                "shadowScale").obfuscatedName());
+    }
+
+    @Test
+    void bitmapGlyphAndBitmapFontUseWindowsSpecificObfuscatedMethods() {
+        TinyV2MappingRepository windows = TinyV2MappingRepository.loadForPlatform(MappingPlatform.WINDOWS);
+
+        assertEquals("return", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getGlyphId",
+                "()I").obfuscatedName());
+        assertEquals("Ø00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getXAdvance",
+                "()I").obfuscatedName());
+        assertEquals("ø00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getWidth",
+                "()I").obfuscatedName());
+        assertEquals("ÒO0000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getHeight",
+                "()I").obfuscatedName());
+        assertEquals("int", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getTexX",
+                "()F").obfuscatedName());
+        assertEquals("oO0000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getTexY",
+                "()F").obfuscatedName());
+        assertEquals("Ô00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getTexWidth",
+                "()F").obfuscatedName());
+        assertEquals("ô00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapGlyph",
+                "getTexHeight",
+                "()F").obfuscatedName());
+
+        assertEquals("Ô00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapFont",
+                "getFontPath",
+                "()Ljava/lang/String;").obfuscatedName());
+        assertEquals("Õ00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapFont",
+                "getNominalFontSize",
+                "()I").obfuscatedName());
+        assertEquals("ø00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapFont",
+                "getLineHeight",
+                "()I").obfuscatedName());
+        assertEquals("øO0000", windows.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapFont",
+                "getTexture",
+                "()Lcom/fs/graphics/TextureObject;").obfuscatedName());
+
+        assertEquals("Õ00000", windows.requireMethodByNamedName(
+                "com/fs/graphics/TextureManager",
+                "isLazyLoadingEnabled",
+                "()Z").obfuscatedName());
+    }
 }

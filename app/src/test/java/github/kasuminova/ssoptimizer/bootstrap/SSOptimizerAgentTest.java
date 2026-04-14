@@ -41,10 +41,28 @@ class SSOptimizerAgentTest {
         assertFalse(transformers.isEmpty());
         assertInstanceOf(RuntimeRemapTransformer.class, transformers.get(0));
         int remapIndex = indexOf(transformers, RuntimeRemapTransformer.class);
+        int sanitizeIndex = indexOf(transformers, SanitizingTransformer.class);
         int patchIndex = indexOf(transformers, HybridWeaverTransformer.class);
 
         assertTrue(remapIndex >= 0, "应该注册运行时重映射变换器");
+        assertTrue(sanitizeIndex >= 0, "应该注册非法名净化变换器");
         assertTrue(patchIndex >= 0, "应该注册 ASM/Mixin 修复管线");
+        assertTrue(remapIndex < sanitizeIndex, "remap 必须发生在 sanitize 之前");
+        assertTrue(sanitizeIndex < patchIndex, "sanitize 必须发生在业务 ASM 之前");
         assertTrue(remapIndex < patchIndex, "remap 必须发生在 patch 之前");
+    }
+
+    @Test
+    void mixinTransformerIsRegisteredLastWhenPresent() {
+        final ClassFileTransformer mixinTransformer = new ClassFileTransformer() {
+        };
+
+        final List<ClassFileTransformer> transformers = SSOptimizerAgent.createBootstrapTransformers(mixinTransformer);
+
+        assertSame(mixinTransformer, transformers.get(transformers.size() - 1), "Mixin bridge 必须作为最后一个 transformer 注册");
+        assertTrue(indexOf(transformers, SanitizingTransformer.class) < indexOf(transformers, HybridWeaverTransformer.class),
+                "sanitize 必须先于业务 ASM");
+        assertTrue(indexOf(transformers, HybridWeaverTransformer.class) < transformers.size() - 1,
+                "业务 ASM 必须先于 Mixin bridge");
     }
 }

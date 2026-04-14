@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 
 import org.lwjgl.opengl.GL11;
 
+import java.awt.Color;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -23,6 +24,28 @@ public final class ParticleBatchHelper {
     private static final BatchContext GENERIC_TEXTURE_BATCH = new BatchContext();
 
     private ParticleBatchHelper() {
+    }
+
+    /**
+     * 按亮度倍率同步缩放粒子颜色的 RGBA 四个分量。
+     *
+     * @param color 原始粒子颜色
+     * @param brightness 亮度倍率
+     * @return 调整后的颜色；若输入为 {@code null}，则返回全透明黑色
+     */
+    public static Color adjustBrightness(final Color color,
+                                         final float brightness) {
+        if (color == null) {
+            return new Color(0, 0, 0, 0);
+        }
+
+        final float normalizedBrightness = Float.isFinite(brightness) ? Math.max(0.0f, brightness) : 0.0f;
+        return new Color(
+                scaleColorComponent(color.getRed(), normalizedBrightness),
+                scaleColorComponent(color.getGreen(), normalizedBrightness),
+                scaleColorComponent(color.getBlue(), normalizedBrightness),
+                scaleColorComponent(color.getAlpha(), normalizedBrightness)
+        );
     }
 
     public static void beginSmoothBatch() {
@@ -195,6 +218,15 @@ public final class ParticleBatchHelper {
 
     public static void flushGenericTextureBatch() {
         flushArrayBatch(GENERIC_TEXTURE_BATCH);
+    }
+
+    private static int scaleColorComponent(final int component,
+                                           final float brightness) {
+        return clampColorComponent(Math.round(component * brightness));
+    }
+
+    private static int clampColorComponent(final int component) {
+        return Math.max(0, Math.min(255, component));
     }
 
     private static void beginBatch(BatchContext batch, boolean resetBlendTracking) {

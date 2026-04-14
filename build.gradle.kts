@@ -3,6 +3,7 @@ import groovy.json.JsonSlurper
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.bundling.Zip
 
 plugins {
     base
@@ -10,6 +11,73 @@ plugins {
 
 group = "github.kasuminova.ssoptimizer"
 version = "0.1.0-SNAPSHOT"
+
+@Suppress("UNCHECKED_CAST")
+val modInfo = JsonSlurper().parse(rootProject.file("mod_info.json")) as Map<String, Any?>
+val modId = modInfo["id"]?.toString() ?: "ssoptimizer"
+val modReleaseVersion = modInfo["version"]?.toString() ?: project.version.toString()
+
+fun hostPlatformId(): String {
+    val osName = System.getProperty("os.name", "").lowercase()
+    return if (osName.contains("win")) "windows" else "linux"
+}
+
+fun detectRuntimePlatform(gameDir: File?): String {
+    if (gameDir != null) {
+        if (gameDir.resolve("starsector-core").isDirectory) {
+            return "windows"
+        }
+        if (gameDir.resolve("starsector.sh").isFile
+                || gameDir.resolve("zulu25_linux").isDirectory
+                || gameDir.resolve("jbr25_linux").isDirectory) {
+            return "linux"
+        }
+    }
+    return hostPlatformId()
+}
+
+fun resolveRuntimeDir(gameDir: File): File {
+    val starsectorCoreDir = gameDir.resolve("starsector-core")
+    return if (starsectorCoreDir.isDirectory) starsectorCoreDir else gameDir
+}
+
+fun resolveBundledJavaExecutable(gameDir: File, platform: String): File? {
+    val candidates = when (platform) {
+        "windows" -> listOf(
+            gameDir.resolve("zulu25/bin/java.exe"),
+            gameDir.resolve("jre/bin/java.exe")
+        )
+
+        else -> listOf(
+            gameDir.resolve("zulu25_linux/bin/java"),
+            gameDir.resolve("jbr25_linux/bin/java"),
+            gameDir.resolve("jre_linux/bin/java"),
+            gameDir.resolve("jre/bin/java")
+        )
+    }
+    return candidates.firstOrNull { it.isFile }
+}
+
+fun rewriteRuntimePathArgs(platform: String, args: List<String>): List<String> {
+    if (platform != "windows") {
+        return args
+    }
+    return args.map { arg ->
+        when {
+            arg.startsWith("-javaagent:./mods/") -> arg.replace("-javaagent:./mods/", "-javaagent:../mods/")
+            arg.startsWith("-Dcom.fs.starfarer.settings.paths.saves=./") -> arg.replace("=./", "=../")
+            arg.startsWith("-Dcom.fs.starfarer.settings.paths.screenshots=./") -> arg.replace("=./", "=../")
+            arg.startsWith("-Dcom.fs.starfarer.settings.paths.mods=./") -> arg.replace("=./", "=../")
+            else -> arg
+        }
+    }
+}
+
+val configuredGameDirProvider = providers.gradleProperty("starsector.gameDir")
+    .orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR"))
+val targetPlatformProvider = configuredGameDirProvider
+    .map { detectRuntimePlatform(file(it)) }
+    .orElse(providers.provider { hostPlatformId() })
 
 allprojects {
     repositories {
@@ -81,6 +149,9 @@ tasks.register<Sync>("prepareDeobfWorkspace") {
     group = "mapping"
     description = "Prepare deobfuscated workspace (download mappings + remap)"
     val remappedWorkspaceDir = layout.buildDirectory.dir("remapped-workspace")
+    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR")).orNull
+    val mappingPlatform = providers.gradleProperty("starsector.platform")
+        .orElse(providers.provider { detectRuntimePlatform(starsectorGameDir?.let(::file)) })
 
     dependsOn(":mapping:remapGameClasspathToNamed")
 
@@ -98,7 +169,7 @@ tasks.register<Sync>("prepareDeobfWorkspace") {
     from(project(":mapping").projectDir.resolve("src/main/resources")) {
         into("mapping/src/main/resources")
     }
-    from(layout.buildDirectory.dir("named-game-jars")) {
+    from(layout.buildDirectory.dir("named-game-jars/${mappingPlatform.get()}")) {
         into("game-jars/named")
     }
 }
@@ -123,6 +194,8 @@ val mappedJarFile = layout.buildDirectory.file("libs/SSOptimizer-mapped.jar")
 val reobfJarFile = layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
 val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/libnative.so")
+val nativeWindowsLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/native.dll")
+val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
 
 tasks.register<Copy>("jarMapped") {
     group = "mapping"
@@ -132,6 +205,105 @@ tasks.register<Copy>("jarMapped") {
     from(appJarFile)
     into(layout.buildDirectory.dir("libs"))
     rename { mappedJarFile.get().asFile.name }
+}
+
+tasks.register<Sync>("stageUserMod") {
+    group = "distribution"
+    description = "Stage an end-user ready mod layout under build/user-package"
+    dependsOn("jarReobf", ":native:assemble")
+
+    from(reobfJarFile) {
+        into("jars")
+        rename { "SSOptimizer.jar" }
+    }
+    from(project.provider {
+        val file = nativeLinuxLibraryFile.get().asFile
+        if (file.isFile) listOf(file) else emptyList<File>()
+    }) {
+        into("native/linux")
+        rename { System.mapLibraryName(modId) }
+    }
+    from(project.provider {
+        val file = nativeWindowsLibraryFile.get().asFile
+        if (file.isFile) listOf(file) else emptyList<File>()
+    }) {
+        into("native/windows")
+        rename { System.mapLibraryName(modId) }
+    }
+    from(rootProject.file("mod_info.json"))
+    from(rootProject.file("README.md"))
+    from(rootProject.file("tools/enable_starsector_exe_launch.ps1"))
+
+    into(userModStageDir)
+
+    doFirst {
+        check(reobfJarFile.get().asFile.isFile) {
+            "未找到用户发布所需的 reobf 产物: ${reobfJarFile.get().asFile}"
+        }
+        val hasAnyNative = nativeLinuxLibraryFile.get().asFile.isFile || nativeWindowsLibraryFile.get().asFile.isFile
+        check(hasAnyNative) {
+            "未找到任何可打包的原生库：linux=${nativeLinuxLibraryFile.get().asFile} windows=${nativeWindowsLibraryFile.get().asFile}"
+        }
+    }
+
+    doLast {
+        println("✓ End-user mod staged at ${userModStageDir.get().asFile}")
+    }
+}
+
+val windowsOverlayStageDir = layout.buildDirectory.dir("user-package/windows-overlay")
+
+tasks.register<Sync>("stageWindowsOverlay") {
+    group = "distribution"
+    description = "Stage a Windows game-root overlay with launcher patch helper"
+    dependsOn("stageUserMod")
+
+    from(userModStageDir) {
+        into("mods/$modId")
+    }
+    from(rootProject.file("tools/enable_starsector_exe_launch.ps1"))
+
+    into(windowsOverlayStageDir)
+
+    doLast {
+        println("✓ Windows overlay staged at ${windowsOverlayStageDir.get().asFile}")
+    }
+}
+
+tasks.register<Zip>("packageUserModZip") {
+    group = "distribution"
+    description = "Package an end-user ready SSOptimizer zip under build/distributions"
+    dependsOn("stageUserMod")
+
+    archiveBaseName.set("SSOptimizer")
+    archiveVersion.set(modReleaseVersion)
+    archiveClassifier.set("user")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+
+    from(userModStageDir) {
+        into(modId)
+    }
+
+    doLast {
+        println("✓ End-user zip written to ${archiveFile.get().asFile}")
+    }
+}
+
+tasks.register<Zip>("packageWindowsOverlayZip") {
+    group = "distribution"
+    description = "Package a Windows game-root overlay zip that keeps starsector.exe as the launcher entry"
+    dependsOn("stageWindowsOverlay")
+
+    archiveBaseName.set("SSOptimizer")
+    archiveVersion.set(modReleaseVersion)
+    archiveClassifier.set("windows-overlay")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+
+    from(windowsOverlayStageDir)
+
+    doLast {
+        println("✓ Windows overlay zip written to ${archiveFile.get().asFile}")
+    }
 }
 
 tasks.register("jarReobf") {
@@ -193,30 +365,46 @@ tasks.register("runTrace") {
 tasks.register<Copy>("installDevMod") {
     group = "dev workflow"
     description = "Deploy the built mod into the Starsector mods directory"
-    dependsOn(":app:jar", ":native:assemble")
+    dependsOn(":app:jar")
     dependsOn("jarMapped")
 
-    val gameDirProvider = providers.gradleProperty("starsector.gameDir")
-    val modId = "ssoptimizer"
+    if (targetPlatformProvider.get() == "linux") {
+        dependsOn(":native:assemble")
+    }
 
     from(mappedJarFile) {
         into("jars")
         rename { "SSOptimizer.jar" }
     }
-    from(nativeLinuxLibraryFile) {
-        into("native/linux")
+    from(project.provider {
+        val platform = targetPlatformProvider.get()
+        val nativeFile = if (platform == "windows") nativeWindowsLibraryFile.get().asFile else nativeLinuxLibraryFile.get().asFile
+        if (nativeFile.isFile) listOf(nativeFile) else emptyList<File>()
+    }) {
+        into("native/${targetPlatformProvider.get()}")
         rename { System.mapLibraryName("ssoptimizer") }
     }
     from(rootProject.file("mod_info.json"))
 
-    into(gameDirProvider.map { file(it).resolve("mods/$modId") })
+    into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
+
+    doFirst {
+        check(configuredGameDirProvider.isPresent) {
+            "Missing Starsector directory. Pass -Pstarsector.gameDir=/path/to/Starsector or set SSOPTIMIZER_GAME_DIR."
+        }
+    }
 
     doLast {
-        val modDir = file(gameDirProvider.get()).resolve("mods/$modId")
+        val platform = targetPlatformProvider.get()
+        val nativeFile = if (platform == "windows") nativeWindowsLibraryFile.get().asFile else nativeLinuxLibraryFile.get().asFile
+        val modDir = file(configuredGameDirProvider.get()).resolve("mods/$modId")
         modDir.resolve("jars/SSOptimizer-mapped.jar").delete()
-        println("✓ Mod deployed to ${gameDirProvider.get()}/mods/$modId")
+        println("[installDevMod] Mod deployed to ${configuredGameDirProvider.get()}/mods/$modId")
+        if (!nativeFile.isFile) {
+            println("[installDevMod] Native runtime not available for $platform; Java fallbacks will be used")
+        }
 
-        val enabledModsFile = file(gameDirProvider.get()).resolve("mods/enabled_mods.json")
+        val enabledModsFile = file(configuredGameDirProvider.get()).resolve("mods/enabled_mods.json")
         if (enabledModsFile.exists()) {
             val parsed = JsonSlurper().parse(enabledModsFile)
             if (parsed is MutableMap<*, *>) {
@@ -230,7 +418,7 @@ tasks.register<Copy>("installDevMod") {
                     enabledMods.add(modId)
                     mutableJson["enabledMods"] = enabledMods
                     enabledModsFile.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(mutableJson)))
-                    println("  → Added $modId to enabled_mods.json")
+                    println("[installDevMod] Added $modId to enabled_mods.json")
                 }
             }
         }
@@ -249,26 +437,34 @@ tasks.register<JavaExec>("runClientExec") {
     dependsOn("deployMod")
 
     doFirst {
-        val gameDir = file(providers.gradleProperty("starsector.gameDir").get())
+        check(configuredGameDirProvider.isPresent) {
+            "Missing Starsector directory. Pass -Pstarsector.gameDir=/path/to/Starsector or set SSOPTIMIZER_GAME_DIR."
+        }
+        val gameDir = file(configuredGameDirProvider.get())
+        val runtimeDir = resolveRuntimeDir(gameDir)
+        val platform = detectRuntimePlatform(gameDir)
         val launchConfigFile = rootProject.file("launch-config.json")
         if (!launchConfigFile.exists()) {
             throw IllegalStateException("Missing launch-config.json in project root")
         }
 
-        workingDir = gameDir
-        setExecutable(gameDir.resolve("zulu25_linux/bin/java").absolutePath)
+        val javaExecutable = resolveBundledJavaExecutable(gameDir, platform)
+            ?: throw IllegalStateException("Missing bundled Java runtime for $platform under ${gameDir.absolutePath}")
+
+        workingDir = runtimeDir
+        setExecutable(javaExecutable.absolutePath)
 
         @Suppress("UNCHECKED_CAST")
         val config = JsonSlurper().parse(launchConfigFile) as Map<String, Any>
         @Suppress("UNCHECKED_CAST")
         val jvmArgsConfig = config["jvmArgs"] as Map<String, List<String>>
-        val commonArgs = jvmArgsConfig["common"] ?: emptyList()
-        val linuxArgs = jvmArgsConfig["linux"] ?: emptyList()
-        jvmArgs = commonArgs + linuxArgs
+        val commonArgs = rewriteRuntimePathArgs(platform, jvmArgsConfig["common"] ?: emptyList())
+        val platformArgs = rewriteRuntimePathArgs(platform, jvmArgsConfig[platform] ?: emptyList())
+        jvmArgs = commonArgs + platformArgs
 
         @Suppress("UNCHECKED_CAST")
         val classpathJars = config["classpath"] as List<String>
-        classpath = files(classpathJars.map { gameDir.resolve(it) })
+        classpath = files(classpathJars.map { runtimeDir.resolve(it) })
         mainClass.set("com.fs.starfarer.StarfarerLauncher")
     }
 }

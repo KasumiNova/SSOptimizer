@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.prefs.Preferences;
 
 /**
  * Resolves the effective UI/screen scale that should be used when generating
@@ -20,6 +21,10 @@ public final class EffectiveScreenScale {
     static final         String JAVA2D_UI_SCALE_PROPERTY  = "sun.java2d.uiScale";
     static final         String MODS_DIR_PROPERTY         = "com.fs.starfarer.settings.paths.mods";
     private static final String SCREEN_SCALE_OVERRIDE_KEY = "\"screenScaleOverride\"";
+    /** 游戏用于存储偏好设置的 Java Preferences 节点路径（对应 Linux 上 ~/.java/.userPrefs/com/fs/starfarer/prefs.xml） */
+    static final         String GAME_PREFS_NODE           = "/com/fs/starfarer";
+    /** 游戏 Preferences 中保存缩放倍率的 key（Windows 注册表中显示为 "screen/Scale"，Preferences API 会自动处理转义） */
+    static final         String GAME_PREFS_SCREEN_SCALE   = "screenScale";
     private static final Object CONFIGURED_OVERRIDE_LOCK  = new Object();
     private static final Object CURRENT_SCALE_LOCK        = new Object();
     private static final long   CURRENT_SCALE_CACHE_NANOS = 1_000_000_000L;
@@ -29,6 +34,8 @@ public final class EffectiveScreenScale {
     private static volatile float cachedSettingsFileOverrideScale      = 0.0f;
     private static volatile long  cachedCurrentScaleExpiresAtNanos     = Long.MIN_VALUE;
     private static volatile float cachedCurrentScale                   = 1.0f;
+    /** 缓存从 Java Preferences 读取的游戏屏幕缩放值，-1 表示尚未读取 */
+    private static volatile float cachedGamePrefsScreenScale           = -1.0f;
 
     private EffectiveScreenScale() {
     }
@@ -95,10 +102,16 @@ public final class EffectiveScreenScale {
     static float resolveCurrent(final boolean gameSettingsAvailable,
                                 final float gameScale,
                                 final float desktopScale,
+                                final float gamePrefsScale,
                                 final float configuredOverrideScale) {
         if (gameSettingsAvailable) {
             return resolve(gameScale, desktopScale);
         }
+        // 游戏 API 未初始化前，优先从 Java Preferences 获取游戏已保存的缩放值
+        if (gamePrefsScale > 0.0f) {
+            return resolve(normalize(gamePrefsScale), desktopScale);
+        }
+        // 再尝试 settings.json 中的 screenScaleOverride
         if (configuredOverrideScale > 0.0f) {
             return normalize(configuredOverrideScale);
         }
@@ -112,7 +125,8 @@ public final class EffectiveScreenScale {
         if (gameSettingsAvailable) {
             return resolve(gameScale, desktopScale);
         }
-        return resolveCurrent(false, gameScale, desktopScale, configuredOverrideScale());
+        return resolveCurrent(false, gameScale, desktopScale,
+                              gamePreferencesScreenScale(), configuredOverrideScale());
     }
 
     static float readConfiguredOverrideScale(final Path settingsFile) {
@@ -172,6 +186,43 @@ public final class EffectiveScreenScale {
         return normalize(Math.max(java2dScale, transformScale));
     }
 
+    /**
+     * 从 Java Preferences 读取游戏保存的屏幕缩放倍率。
+     * <p>
+     * Starsector 使用 {@code java.util.prefs.Preferences} 保存用户偏好，
+     * 在 Linux 上对应 {@code ~/.java/.userPrefs/com/fs/starfarer/prefs.xml}，
+     * 在 Windows 上对应注册表 {@code HKCU\Software\JavaSoft\Prefs\com\fs\starfarer}。
+     * </p>
+     *
+     * @return 保存的缩放倍率（如 1.0、1.5、2.0 等），读取失败时返回 0.0
+     */
+    static float gamePreferencesScreenScale() {
+        final float cached = cachedGamePrefsScreenScale;
+        if (cached >= 0.0f) {
+            return cached;
+        }
+        final float value = readGamePreferencesScreenScale();
+        cachedGamePrefsScreenScale = value;
+        return value;
+    }
+
+    /**
+     * 实际读取 Java Preferences 节点的缩放值。
+     */
+    static float readGamePreferencesScreenScale() {
+        try {
+            final Preferences root = Preferences.userRoot();
+            if (!root.nodeExists(GAME_PREFS_NODE)) {
+                return 0.0f;
+            }
+            final Preferences gamePrefs = root.node(GAME_PREFS_NODE);
+            final String raw = gamePrefs.get(GAME_PREFS_SCREEN_SCALE, null);
+            return parseScale(raw);
+        } catch (Throwable ignored) {
+            return 0.0f;
+        }
+    }
+
     private static float configuredOverrideScale() {
         return readCachedConfiguredOverrideScale(resolveSettingsFile());
     }
@@ -215,6 +266,7 @@ public final class EffectiveScreenScale {
             cachedCurrentScale = 1.0f;
             cachedCurrentScaleExpiresAtNanos = Long.MIN_VALUE;
         }
+        cachedGamePrefsScreenScale = -1.0f;
     }
 
     private static boolean hasGameSettings() {

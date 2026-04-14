@@ -15,7 +15,7 @@ class EngineProcessorRegistrationTest {
         register.setAccessible(true);
         register.invoke(null, transformer);
 
-        assertEquals(20, transformer.getProcessorCount());
+        assertEquals(21, transformer.getProcessorCount());
         assertNull(transformer.transform(null, "org/lwjgl/opengl/GL13", null, null, new byte[]{1}));
     }
 }

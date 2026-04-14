@@ -5,56 +5,81 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LinuxXimImeBackendTest {
+    private static final String OS_NAME_PROPERTY = "os.name";
+
     @Test
     void reportsUnavailableWhenNativeBridgeIsMissing() {
-        LinuxXimImeBackend backend = new LinuxXimImeBackend(new FakeBridge(false));
-        assertFalse(backend.isAvailable());
+        withOsName("Linux", () -> {
+            LinuxXimImeBackend backend = new LinuxXimImeBackend(new FakeBridge(false));
+            assertFalse(backend.isAvailable());
+        });
     }
 
     @Test
     void recordsAttachFailureReasonFromNativeBridge() {
-        FakeBridge bridge = new FakeBridge(true);
-        bridge.handle = 0L;
-        bridge.lastError = "XOpenIM returned null";
+        withOsName("Linux", () -> {
+            FakeBridge bridge = new FakeBridge(true);
+            bridge.handle = 0L;
+            bridge.lastError = "XOpenIM returned null";
 
-        LinuxXimImeBackend backend = new LinuxXimImeBackend(bridge);
-        backend.attach(11L, 22L);
+            LinuxXimImeBackend backend = new LinuxXimImeBackend(bridge);
+            backend.attach(11L, 22L);
 
-        assertEquals("XOpenIM returned null", backend.lastAttachFailureReason());
+            assertEquals("XOpenIM returned null", backend.lastAttachFailureReason());
+        });
     }
 
     @Test
     void forwardsAttachFocusSpotAndCommitToNativeBridge() {
-        FakeBridge bridge = new FakeBridge(true);
-        LinuxXimImeBackend backend = new LinuxXimImeBackend(bridge);
+        withOsName("Linux", () -> {
+            FakeBridge bridge = new FakeBridge(true);
+            LinuxXimImeBackend backend = new LinuxXimImeBackend(bridge);
 
-        backend.attach(11L, 22L);
-        backend.focusIn();
-        backend.updateSpot(new ImeCaretRect(100, 200, 24));
-        bridge.handleKeyEventResult = true;
-        bridge.commit = "中文";
+            backend.attach(11L, 22L);
+            backend.focusIn();
+            backend.updateSpot(new ImeCaretRect(100, 200, 24));
+            bridge.handleKeyEventResult = true;
+            bridge.commit = "中文";
 
-        assertTrue(backend.onX11KeyEvent(77L, 2));
-        assertEquals("中文", backend.pollCommittedText());
-        assertTrue(bridge.attached);
-        assertTrue(bridge.focused);
-        assertEquals(100, bridge.lastSpotX);
-        assertEquals(200, bridge.lastSpotY);
-        assertEquals(24, bridge.lastSpotHeight);
+            assertTrue(backend.onX11KeyEvent(77L, 2));
+            assertEquals("中文", backend.pollCommittedText());
+            assertTrue(bridge.attached);
+            assertTrue(bridge.focused);
+            assertEquals(100, bridge.lastSpotX);
+            assertEquals(200, bridge.lastSpotY);
+            assertEquals(24, bridge.lastSpotHeight);
+        });
     }
 
     @Test
     void focusStateTracksNativeBridgeState() {
-        FakeBridge bridge = new FakeBridge(true);
-        LinuxXimImeBackend backend = new LinuxXimImeBackend(bridge);
+        withOsName("Linux", () -> {
+            FakeBridge bridge = new FakeBridge(true);
+            LinuxXimImeBackend backend = new LinuxXimImeBackend(bridge);
 
-        backend.attach(11L, 22L);
-        backend.focusIn();
-        backend.focusOut();
+            backend.attach(11L, 22L);
+            backend.focusIn();
+            backend.focusOut();
 
-        assertFalse(bridge.focused);
-        assertEquals(1, bridge.focusInCount);
-        assertEquals(1, bridge.focusOutCount);
+            assertFalse(bridge.focused);
+            assertEquals(1, bridge.focusInCount);
+            assertEquals(1, bridge.focusOutCount);
+        });
+    }
+
+    private static void withOsName(final String osName,
+                                   final Runnable action) {
+        final String previous = System.getProperty(OS_NAME_PROPERTY);
+        System.setProperty(OS_NAME_PROPERTY, osName);
+        try {
+            action.run();
+        } finally {
+            if (previous == null) {
+                System.clearProperty(OS_NAME_PROPERTY);
+            } else {
+                System.setProperty(OS_NAME_PROPERTY, previous);
+            }
+        }
     }
 
     private static final class FakeBridge implements LinuxXimNativeBridge {

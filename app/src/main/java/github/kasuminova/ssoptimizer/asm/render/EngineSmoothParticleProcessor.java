@@ -2,7 +2,6 @@ package github.kasuminova.ssoptimizer.asm.render;
 
 import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
@@ -35,9 +34,7 @@ public final class EngineSmoothParticleProcessor implements AsmClassProcessor {
 
     private static final String BIND_METHOD = "bind";
 
-    // RenderStateUtils.adjustBrightness(Color, float) — brightness-adjusts all RGBA components
-    private static final String COLOR_UTIL_CLASS    = GameClassNames.RENDER_STATE_UTILS;
-    private static final String COLOR_ADJUST_METHOD = GameMemberNames.RenderStateUtils.ADJUST_BRIGHTNESS;
+    private static final String COLOR_ADJUST_METHOD = "adjustBrightness";
 
     @Override
     public byte[] process(byte[] classfileBuffer) {
@@ -206,13 +203,13 @@ public final class EngineSmoothParticleProcessor implements AsmClassProcessor {
 
             target.visitLabel(checkBrightnessMult);
 
-            // Color adjustedColor = RenderStateUtils.adjustBrightness(this.color, getBrightness());
+                // Color adjustedColor = ParticleBatchHelper.adjustBrightness(this.color, getBrightness());
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitFieldInsn(Opcodes.GETFIELD, PARTICLE_CLASS, "color", COLOR_DESC);
             target.visitVarInsn(Opcodes.ALOAD, 0);
             target.visitMethodInsn(Opcodes.INVOKEVIRTUAL, PARTICLE_CLASS,
                     "getBrightness", "()F", false);
-            target.visitMethodInsn(Opcodes.INVOKESTATIC, COLOR_UTIL_CLASS,
+                target.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER,
                     COLOR_ADJUST_METHOD, "(Ljava/awt/Color;F)Ljava/awt/Color;", false);
             target.visitVarInsn(Opcodes.ASTORE, 1); // local 1 = adjustedColor
 

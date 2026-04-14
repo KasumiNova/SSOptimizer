@@ -37,17 +37,18 @@ class ArtifactOutputContractTest {
 
         GradleRunner.create()
                     .withProjectDir(repoRoot.toFile())
-                    .withArguments("prepareDeobfWorkspace", "remapToNamed", "jarMapped", "jarReobf", "--console=plain")
+                    .withArguments("prepareDeobfWorkspace", "remapToNamed", "jarMapped", "jarReobf", "-Pstarsector.platform=windows", "--console=plain")
                     .forwardOutput()
                     .build();
 
         assertTrue(Files.exists(buildDir.resolve("remapped-workspace")), "应生成 remapped workspace 目录");
         assertTrue(Files.exists(buildDir.resolve("named-game-jars")), "应生成 named game jars 目录");
+        assertTrue(Files.exists(buildDir.resolve("named-game-jars/windows")), "应生成平台隔离的 named game jars 目录");
         assertTrue(Files.exists(buildDir.resolve("remapped-workspace/game-jars/named")), "workspace 中应包含 named game jars");
         assertTrue(Files.exists(buildDir.resolve("libs/SSOptimizer-mapped.jar")), "应生成 mapped 产物");
         assertTrue(Files.exists(buildDir.resolve("libs/SSOptimizer-reobf.jar")), "应生成 reobf 产物");
 
-        try (Stream<Path> jars = Files.list(buildDir.resolve("named-game-jars"))) {
+        try (Stream<Path> jars = Files.list(buildDir.resolve("named-game-jars/windows"))) {
             assertTrue(jars.anyMatch(path -> path.getFileName().toString().endsWith(".jar")), "named game jars 目录中应至少有一个 remap 后的 jar");
         }
     }

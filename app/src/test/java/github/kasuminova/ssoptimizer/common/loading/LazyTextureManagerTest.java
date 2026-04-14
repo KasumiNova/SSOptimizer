@@ -354,4 +354,88 @@ class LazyTextureManagerTest {
 
         assertTrue(summary.contains("graphics/icons=0.3MiB"));
     }
+
+    @Test
+    void eagerLoadResolverPrefersInjectedAlias() {
+        final var method = LazyTextureManager.resolveEagerLoadMethod(FakeTextureLoaderWithAlias.class);
+
+        assertEquals("ssoptimizer$loadTextureEager", method.getName());
+    }
+
+    @Test
+    void eagerLoadResolverUsesUniqueHiddenSignatureFallback() {
+        final var method = LazyTextureManager.resolveEagerLoadMethod(FakeTextureLoaderWithUniqueHiddenCandidate.class);
+
+        assertEquals("hiddenLoad", method.getName());
+    }
+
+    @Test
+    void eagerLoadResolverFallsBackToPublicLoadWhenHiddenCandidatesAreAmbiguous() {
+        final var method = LazyTextureManager.resolveEagerLoadMethod(FakeTextureLoaderWithAmbiguousHiddenCandidates.class);
+
+        assertEquals("loadTexture", method.getName());
+    }
+
+    @Test
+    void originalLazyModeResolverUsesUniqueStaticBooleanFallback() {
+        final var method = LazyTextureManager.resolveOriginalLazyModeMethod(FakeTextureManagerWithUniqueToggle.class);
+
+        assertNotNull(method);
+        assertEquals("hiddenToggle", method.getName());
+    }
+
+    @Test
+    void originalLazyModeResolverReturnsNullWhenStaticBooleanCandidatesAreAmbiguous() {
+        assertNull(LazyTextureManager.resolveOriginalLazyModeMethod(FakeTextureManagerWithAmbiguousToggles.class));
+    }
+
+    private static final class FakeTextureLoaderWithAlias {
+        public TextureObject loadTexture(final String resourcePath) {
+            return null;
+        }
+
+        private TextureObject ssoptimizer$loadTextureEager(final String resourcePath) {
+            return null;
+        }
+    }
+
+    private static final class FakeTextureLoaderWithUniqueHiddenCandidate {
+        public TextureObject loadTexture(final String resourcePath) {
+            return null;
+        }
+
+        private TextureObject hiddenLoad(final String resourcePath) {
+            return null;
+        }
+    }
+
+    private static final class FakeTextureLoaderWithAmbiguousHiddenCandidates {
+        public TextureObject loadTexture(final String resourcePath) {
+            return null;
+        }
+
+        private TextureObject firstHiddenLoad(final String resourcePath) {
+            return null;
+        }
+
+        private TextureObject secondHiddenLoad(final String resourcePath) {
+            return null;
+        }
+    }
+
+    private static final class FakeTextureManagerWithUniqueToggle {
+        private static boolean hiddenToggle() {
+            return true;
+        }
+    }
+
+    private static final class FakeTextureManagerWithAmbiguousToggles {
+        private static boolean firstToggle() {
+            return true;
+        }
+
+        private static boolean secondToggle() {
+            return false;
+        }
+    }
 }

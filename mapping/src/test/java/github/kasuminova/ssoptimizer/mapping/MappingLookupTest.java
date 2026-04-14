@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mapping;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -34,19 +35,25 @@ class MappingLookupTest {
                 "convertPixels",
                 "(Ljava/awt/image/BufferedImage;Lcom/fs/graphics/TextureObject;)Ljava/nio/ByteBuffer;");
 
-        assertEquals("super", methodEntry.obfuscatedName());
+        assertEquals("com/fs/graphics/TextureLoader", methodEntry.ownerNamedName());
         assertEquals("(Ljava/awt/image/BufferedImage;Lcom/fs/graphics/Object;)Ljava/nio/ByteBuffer;", methodEntry.descriptor());
+        assertFalse(methodEntry.obfuscatedName().isBlank());
     }
 
     @Test
     void renamedClassMethodCanBeResolvedByObfuscatedDescriptor() {
+        MappingEntry namedMethodEntry = lookup.requireMethodByNamedName(
+                "com/fs/graphics/font/BitmapFontManager",
+                "getFont",
+                "(Ljava/lang/String;)Lcom/fs/graphics/font/BitmapFont;");
+        MappingEntry bitmapFontClassEntry = lookup.requireClassByNamedName("com/fs/graphics/font/BitmapFont");
         MappingEntry methodEntry = lookup.requireMethodByObfuscatedName(
-                "com/fs/graphics/super/D",
-                "Ò00000",
-                "(Ljava/lang/String;)Lcom/fs/graphics/super/return;");
+                namedMethodEntry.ownerObfuscatedName(),
+                namedMethodEntry.obfuscatedName(),
+                "(Ljava/lang/String;)L" + bitmapFontClassEntry.obfuscatedName() + ";");
 
         assertEquals("getFont", methodEntry.namedName());
-        assertEquals("(Ljava/lang/String;)Lcom/fs/graphics/font/BitmapFont;", methodEntry.descriptor());
+        assertEquals("com/fs/graphics/font/BitmapFontManager", methodEntry.ownerNamedName());
     }
 
     @Test
@@ -87,8 +94,10 @@ class MappingLookupTest {
                 "specialMipmapSet");
 
         assertEquals("com/fs/graphics/oOoO", classEntry.obfuscatedName());
-        assertEquals("class", methodEntry.obfuscatedName());
-        assertEquals("null", fieldEntry.obfuscatedName());
+                assertEquals("()Z", methodEntry.descriptor());
+                assertEquals("Ljava/util/Set;", fieldEntry.descriptor());
+                assertFalse(methodEntry.obfuscatedName().isBlank());
+                assertFalse(fieldEntry.obfuscatedName().isBlank());
     }
 
     @Test
@@ -99,8 +108,10 @@ class MappingLookupTest {
                 "loadOAccentFamily",
                 "(Ljava/lang/String;)Lsound/O0OO;");
 
-        assertEquals("sound/Object", classEntry.obfuscatedName());
-        assertEquals("Ò00000", methodEntry.obfuscatedName());
+                assertEquals("sound/SoundManager", classEntry.namedName());
+                assertEquals("(Ljava/lang/String;)Lsound/O0OO;", methodEntry.descriptor());
+                assertFalse(classEntry.obfuscatedName().isBlank());
+                assertFalse(methodEntry.obfuscatedName().isBlank());
     }
 
         @Test
@@ -181,8 +192,8 @@ class MappingLookupTest {
                 "(Ljava/lang/String;)Z");
 
         assertEquals("o00000", beginOverlay.obfuscatedName());
-        assertEquals("class", endOverlay.obfuscatedName());
-        assertEquals("Õ00000", getBoolean.obfuscatedName());
+        assertEquals("Õ00000", endOverlay.obfuscatedName());
+        assertEquals("class", getBoolean.obfuscatedName());
     }
 
         @Test

@@ -14,7 +14,6 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
-val namedGameJarsDir = rootProject.layout.buildDirectory.dir("named-game-jars")
 val reobfJarFile = rootProject.layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
 val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 
@@ -37,6 +36,9 @@ fun detectMappingPlatform(gameDirPath: String?): String {
 
 val mappingPlatform = providers.gradleProperty("starsector.platform")
     .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
+val namedGameJarsDir = mappingPlatform.map { platform ->
+    rootProject.layout.buildDirectory.dir("named-game-jars/$platform").get().asFile
+}
 
 fun resolveGameJarDirectory(gameDirPath: String): File {
     val gameDir = file(gameDirPath)
@@ -66,7 +68,6 @@ tasks.register<JavaExec>("remapGameClasspathToNamed") {
     mainClass.set("github.kasuminova.ssoptimizer.mapping.JarRemapCli")
     systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
 
-    outputs.dir(namedGameJarsDir)
     onlyIf { starsectorGameDir != null }
 
     doFirst {
@@ -82,8 +83,8 @@ tasks.register<JavaExec>("remapGameClasspathToNamed") {
             "未在 Starsector 目录中找到可 remap 的 JAR: $gameDir (resolvedJarDir=$jarDir)"
         }
 
-        val outputDir = namedGameJarsDir.get().asFile
-        outputDir.deleteRecursively()
+        val outputDir = namedGameJarsDir.get()
+        outputDir.parentFile.mkdirs()
         outputDir.mkdirs()
 
         args(listOf("batch", "obf-to-named", outputDir.absolutePath) + inputJars.map { it.absolutePath })
