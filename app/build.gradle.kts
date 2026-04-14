@@ -56,37 +56,36 @@ dependencies {
     implementation("com.github.luben:zstd-jni:1.5.7-3")
     compileOnly("log4j:log4j:1.2.17")
 
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
+    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
     val mappingPlatform = providers.gradleProperty("starsector.platform")
         .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
-    if (starsectorGameDir != null) {
-        val namedGameClasspath = rootProject.files(rootProject.provider {
-            val dir = rootProject.layout.buildDirectory.dir("named-game-jars/${mappingPlatform.get()}").get().asFile
-            dir.listFiles()
-                ?.filter { it.isFile && it.extension == "jar" }
-                ?: emptyList()
-        })
-        namedGameClasspath.builtBy(":mapping:remapGameClasspathToNamed")
 
-        compileOnly(namedGameClasspath)
-        testImplementation(namedGameClasspath)
-    }
+    // 命名空间游戏 jar（由 mapping:remapGameClasspathToNamed 产出）
+    // 本地开发模式从 gameDir 读取；CI 模式从 game-jars/{platform}/ + Maven 依赖解析
+    val namedGameClasspath = rootProject.files(rootProject.provider {
+        val dir = rootProject.layout.buildDirectory.dir("named-game-jars/${mappingPlatform.get()}").get().asFile
+        dir.listFiles()
+            ?.filter { it.isFile && it.extension == "jar" }
+            ?: emptyList()
+    })
+    namedGameClasspath.builtBy(":mapping:remapGameClasspathToNamed")
+
+    compileOnly(namedGameClasspath)
+    testImplementation(namedGameClasspath)
 }
 
-if (providers.gradleProperty("starsector.gameDir").orNull != null) {
-    tasks.named<JavaCompile>("compileJava") {
-        dependsOn(":mapping:remapGameClasspathToNamed")
-    }
-    tasks.named<JavaCompile>("compileTestJava") {
-        dependsOn(":mapping:remapGameClasspathToNamed")
-    }
+tasks.named<JavaCompile>("compileJava") {
+    dependsOn(":mapping:remapGameClasspathToNamed")
+}
+tasks.named<JavaCompile>("compileTestJava") {
+    dependsOn(":mapping:remapGameClasspathToNamed")
 }
 
 tasks.test {
     useJUnitPlatform()
     dependsOn(tasks.named("jar"))
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
+    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
     val mappingPlatform = providers.gradleProperty("starsector.platform")
         .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
     systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
@@ -133,7 +132,7 @@ tasks.register<Test>("docsTest") {
     classpath = docsTestSourceSet.runtimeClasspath
     useJUnitPlatform()
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull
+    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
     val mappingPlatform = providers.gradleProperty("starsector.platform")
         .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
     systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
