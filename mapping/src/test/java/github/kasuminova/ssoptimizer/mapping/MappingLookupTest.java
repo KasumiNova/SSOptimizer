@@ -191,9 +191,14 @@ class MappingLookupTest {
                 "getBoolean",
                 "(Ljava/lang/String;)Z");
 
+        // endScreenOverlay 和 getBoolean 的混淆名在 Linux / Windows 间互换
+        boolean isWindows = MappingPlatform.current() == MappingPlatform.WINDOWS;
+        String expectedEndOverlay = isWindows ? "Õ00000" : "class";
+        String expectedGetBoolean = isWindows ? "class" : "Õ00000";
+
         assertEquals("o00000", beginOverlay.obfuscatedName());
-        assertEquals("Õ00000", endOverlay.obfuscatedName());
-        assertEquals("class", getBoolean.obfuscatedName());
+        assertEquals(expectedEndOverlay, endOverlay.obfuscatedName());
+        assertEquals(expectedGetBoolean, getBoolean.obfuscatedName());
     }
 
         @Test

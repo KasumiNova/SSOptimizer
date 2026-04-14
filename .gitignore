@@ -1,5 +1,6 @@
 .gradle/
 **/build/
+!app/src/**/build/
 out/
 .idea/
 .vscode/

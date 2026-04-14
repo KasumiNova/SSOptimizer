@@ -1,0 +1,166 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-java:
+    name: Build Java (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ linux, windows ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build reobfuscated jar
+        run: |
+          ./gradlew build \
+            -Pstarsector.gameDir= \
+            -Pstarsector.platform=${{ matrix.platform }} \
+            -x :native:assemble \
+            -x test
+
+      - name: Run unit tests
+        run: |
+          ./gradlew test \
+            -Pstarsector.gameDir= \
+            -Pstarsector.platform=${{ matrix.platform }}
+
+      - name: Upload reobf jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: reobf-jar-${{ matrix.platform }}
+          path: build/libs/SSOptimizer-reobf.jar
+
+  build-native-linux:
+    name: Build Native (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libfreetype-dev \
+            libpng-dev \
+            libx11-dev \
+            libgl-dev
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build native library
+        run: |
+          ./gradlew :native:assemble \
+            -Pstarsector.gameDir= \
+            -Pstarsector.platform=linux
+
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-linux
+          path: native/build/lib/main/debug/libnative.so
+
+  build-native-windows:
+    name: Build Native (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install vcpkg dependencies
+        run: |
+          vcpkg install libpng freetype --triplet x64-windows
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build native library
+        shell: cmd
+        run: |
+          gradlew.bat :native:assemble ^
+            -Pstarsector.gameDir= ^
+            -Pstarsector.platform=windows ^
+            -Pssoptimizer.native.windows.vcpkgRoot=%VCPKG_INSTALLATION_ROOT% ^
+            -Pssoptimizer.native.windows.triplet=x64-windows
+
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-windows
+          path: native/build/lib/main/debug/native.dll
+
+  release:
+    name: Package & Publish Release
+    needs: [ build-java, build-native-linux, build-native-windows ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble mod package
+        run: |
+          set -e
+          MOD_ID="ssoptimizer"
+          VERSION="${{ steps.version.outputs.version }}"
+          STAGE="build/release-stage/${MOD_ID}"
+          mkdir -p "${STAGE}/jars" "${STAGE}/native/linux" "${STAGE}/native/windows"
+
+          # reobf jar（两个平台产物相同，取 linux 的即可）
+          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${STAGE}/jars/SSOptimizer.jar"
+
+          # native libraries
+          cp artifacts/native-linux/libnative.so "${STAGE}/native/linux/lib${MOD_ID}.so"
+          cp artifacts/native-windows/native.dll "${STAGE}/native/windows/${MOD_ID}.dll"
+
+          # metadata
+          cp mod_info.json "${STAGE}/"
+          cp README.md "${STAGE}/"
+          [ -f tools/enable_starsector_exe_launch.ps1 ] && cp tools/enable_starsector_exe_launch.ps1 "${STAGE}/"
+
+          # zip
+          mkdir -p build/distributions
+          cd build/release-stage
+          zip -r "../distributions/SSOptimizer-${VERSION}.zip" "${MOD_ID}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SSOptimizer ${{ steps.version.outputs.version }}
+          files: build/distributions/SSOptimizer-*.zip
+          generate_release_notes: true
