@@ -195,6 +195,12 @@ val reobfJarFile = layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
 val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/libnative.so")
 val nativeWindowsLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/native.dll")
+val packagedFontFntDir = rootProject.file("game-fonts/fnt")
+val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
+val linuxLauncherScriptFile = rootProject.file("tools/starsector.sh")
+val linuxInjectedLauncherScriptFile = rootProject.file("tools/launch_injected_ss.sh")
+val windowsLauncherScriptFile = rootProject.file("tools/starsector.bat")
+val windowsExePatchScriptFile = rootProject.file("tools/enable_starsector_exe_launch.ps1")
 val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
 
 tasks.register<Copy>("jarMapped") {
@@ -230,9 +236,15 @@ tasks.register<Sync>("stageUserMod") {
         into("native/windows")
         rename { System.mapLibraryName(modId) }
     }
+    from(packagedFontFntDir) {
+        into("graphics/fonts")
+    }
+    from(packagedFontTtfDir) {
+        into("graphics/fonts")
+    }
     from(rootProject.file("mod_info.json"))
     from(rootProject.file("README.md"))
-    from(rootProject.file("tools/enable_starsector_exe_launch.ps1"))
+    from(windowsExePatchScriptFile)
 
     into(userModStageDir)
 
@@ -251,7 +263,27 @@ tasks.register<Sync>("stageUserMod") {
     }
 }
 
+val linuxOverlayStageDir = layout.buildDirectory.dir("user-package/linux-overlay")
 val windowsOverlayStageDir = layout.buildDirectory.dir("user-package/windows-overlay")
+val installBundleStageDir = layout.buildDirectory.dir("user-package/install-bundle")
+
+tasks.register<Sync>("stageLinuxOverlay") {
+    group = "distribution"
+    description = "Stage a Linux game-root overlay containing launcher scripts and mods/ssoptimizer"
+    dependsOn("stageUserMod")
+
+    from(userModStageDir) {
+        into("mods/$modId")
+    }
+    from(linuxLauncherScriptFile)
+    from(linuxInjectedLauncherScriptFile)
+
+    into(linuxOverlayStageDir)
+
+    doLast {
+        println("✓ Linux overlay staged at ${linuxOverlayStageDir.get().asFile}")
+    }
+}
 
 tasks.register<Sync>("stageWindowsOverlay") {
     group = "distribution"
@@ -259,9 +291,12 @@ tasks.register<Sync>("stageWindowsOverlay") {
     dependsOn("stageUserMod")
 
     from(userModStageDir) {
-        into("mods/$modId")
+        into("starsector-core/mods/$modId")
     }
-    from(rootProject.file("tools/enable_starsector_exe_launch.ps1"))
+    from(windowsLauncherScriptFile) {
+        into("starsector-core")
+    }
+    from(windowsExePatchScriptFile)
 
     into(windowsOverlayStageDir)
 
@@ -270,22 +305,62 @@ tasks.register<Sync>("stageWindowsOverlay") {
     }
 }
 
+tasks.register<Sync>("stageInstallBundle") {
+    group = "distribution"
+    description = "Stage a unified install bundle containing both Linux and Windows overlays"
+    dependsOn("stageLinuxOverlay", "stageWindowsOverlay")
+
+    from(linuxOverlayStageDir) {
+        into("linux")
+    }
+    from(windowsOverlayStageDir) {
+        into("windows")
+    }
+
+    into(installBundleStageDir)
+
+    doLast {
+        println("✓ Unified install bundle staged at ${installBundleStageDir.get().asFile}")
+    }
+}
+
 tasks.register<Zip>("packageUserModZip") {
     group = "distribution"
-    description = "Package an end-user ready SSOptimizer zip under build/distributions"
-    dependsOn("stageUserMod")
+    description = "Package a unified Linux + Windows install bundle under build/distributions"
+    dependsOn("stageInstallBundle")
 
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set(modReleaseVersion)
-    archiveClassifier.set("user")
+    archiveClassifier.set("")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
-    from(userModStageDir) {
-        into(modId)
-    }
+    from(installBundleStageDir)
 
     doLast {
         println("✓ End-user zip written to ${archiveFile.get().asFile}")
+    }
+}
+
+tasks.register("packageInstallBundleZip") {
+    group = "distribution"
+    description = "Compatibility alias for the unified install bundle zip"
+    dependsOn("packageUserModZip")
+}
+
+tasks.register<Zip>("packageLinuxOverlayZip") {
+    group = "distribution"
+    description = "Package a Linux game-root overlay zip containing launch scripts and mods/ssoptimizer"
+    dependsOn("stageLinuxOverlay")
+
+    archiveBaseName.set("SSOptimizer")
+    archiveVersion.set(modReleaseVersion)
+    archiveClassifier.set("linux-overlay")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+
+    from(linuxOverlayStageDir)
+
+    doLast {
+        println("✓ Linux overlay zip written to ${archiveFile.get().asFile}")
     }
 }
 

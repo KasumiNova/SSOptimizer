@@ -21,34 +21,38 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 ### Windows
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
-2. 解压到游戏 `mods/` 目录，确保路径为 `mods/ssoptimizer/`
-3. 使用项目提供的 `starsector.bat` 启动游戏，或手动在 JVM 参数中添加：
+2. 打开压缩包中的 `windows/` 目录，把其中内容解压到游戏根目录；解压后应得到 `starsector-core/mods/ssoptimizer/`
+3. 模组目录内已包含 `graphics/fonts/` 覆盖字体与 Linux/Windows 双端原生库
+4. 使用项目提供的 `starsector-core/starsector.bat` 启动游戏；脚本会自动探测 `zulu25` / `jre` / `JAVA_HOME` 中的 Java 25
+5. 如需手动注入 JVM 参数，可添加：
    ```
-   -javaagent:./mods/ssoptimizer/jars/SSOptimizer.jar
+   -javaagent:../mods/ssoptimizer/jars/SSOptimizer.jar
    ```
-4. 启动游戏，首次运行会在游戏根目录生成 `launch-config.json` 配置文件
+6. 启动游戏，首次运行会在游戏根目录生成 `launch-config.json` 配置文件
 
 如果你希望继续直接使用 `starsector.exe`：
 
-1. 正常解压 SSOptimizer 到 `mods/ssoptimizer/`
-2. 运行 `mods/ssoptimizer/enable_starsector_exe_launch.ps1`
-3. 脚本会自动备份游戏根目录 `vmparams` 为 `vmparams.ssoptimizer.bak`，保留 `java.exe` 形式的 exe 启动参数，并将游戏根目录 `jre/` 重定向到 `zulu25/`，同时注入 javaagent 参数
+1. 正常按上面的步骤解压 `windows/` 目录内容到游戏根目录
+2. 运行游戏根目录下的 `enable_starsector_exe_launch.ps1`，或 `starsector-core/mods/ssoptimizer/enable_starsector_exe_launch.ps1`
+3. 脚本会自动检测可用的 Java 25 运行时：优先 `zulu25/`，其次已是 Java 25 的 `jre/`；随后备份 `vmparams` 并注入 javaagent 参数
 4. 之后可继续直接双击 `starsector.exe` 启动
 5. 如需回滚，执行：
    ```powershell
-   powershell -ExecutionPolicy Bypass -File .\mods\ssoptimizer\enable_starsector_exe_launch.ps1 -Restore
+   powershell -ExecutionPolicy Bypass -File .\enable_starsector_exe_launch.ps1 -Restore
    ```
 
 ### Linux
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
-2. 解压到游戏 `mods/` 目录，确保路径为 `mods/ssoptimizer/`
-3. 使用项目提供的 `starsector.sh` 启动游戏，或手动在启动脚本中添加 JVM 参数：
+2. 打开压缩包中的 `linux/` 目录，把其中内容解压到游戏根目录；解压后应得到 `mods/ssoptimizer/`
+3. 模组目录内已包含 `graphics/fonts/` 覆盖字体与 Linux/Windows 双端原生库
+4. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会自动探测 `zulu25_linux` / `jbr25_linux` / `jre_linux` / `JAVA_HOME` 中的 Java 25
+5. 如需手动注入 JVM 参数，可在启动脚本中添加：
    ```
    -javaagent:./mods/ssoptimizer/jars/SSOptimizer.jar
    ```
-4. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
-5. 启动游戏
+6. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
+7. 启动游戏
 
 ## 配置
 
@@ -78,15 +82,20 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 # Windows PowerShell / cmd 建议显式传入游戏目录
 gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 
-# 生成面向用户发布的 zip（首次构建建议显式提供游戏目录以完成 reobf）
+# 生成统一安装包（包含 linux/ 与 windows/ 两套 overlay，首次构建建议显式提供游戏目录以完成 reobf）
 ./gradlew packageUserModZip -Pstarsector.gameDir=/path/to/Starsector
-# 产物：build/distributions/SSOptimizer-<version>-user.zip
-# 解压到游戏 mods/ 目录后应得到 mods/ssoptimizer/
+# 产物：build/distributions/SSOptimizer-<version>.zip
+# 压缩包内包含 linux/ 与 windows/ 两个目录，分别解压到对应平台的游戏根目录
 
-# 生成 Windows 覆盖安装包（解压到游戏根目录后可配合 starsector.exe 启动补丁脚本）
+# 同义别名
+./gradlew packageInstallBundleZip -Pstarsector.gameDir=/path/to/Starsector
+
+# 单独生成 Linux 覆盖安装包
+./gradlew packageLinuxOverlayZip -Pstarsector.gameDir=/path/to/Starsector
+
+# 单独生成 Windows 覆盖安装包（解压到游戏根目录后可配合 starsector.exe 启动补丁脚本）
 ./gradlew packageWindowsOverlayZip -Pstarsector.gameDir=/path/to/Starsector
 # 产物：build/distributions/SSOptimizer-<version>-windows-overlay.zip
-# 解压到游戏根目录后，运行 enable_starsector_exe_launch.ps1 一次即可继续使用 starsector.exe
 
 # 原生模块编译
 ./gradlew :native:build

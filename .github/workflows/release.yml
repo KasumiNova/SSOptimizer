@@ -138,25 +138,39 @@ jobs:
           set -e
           MOD_ID="ssoptimizer"
           VERSION="${{ steps.version.outputs.version }}"
-          STAGE="build/release-stage/${MOD_ID}"
-          mkdir -p "${STAGE}/jars" "${STAGE}/native/linux" "${STAGE}/native/windows"
+          ROOT_STAGE="build/release-stage"
+          MOD_STAGE="${ROOT_STAGE}/mods/${MOD_ID}"
+          LINUX_STAGE="${ROOT_STAGE}/linux"
+          WINDOWS_STAGE="${ROOT_STAGE}/windows"
 
-          # reobf jar（两个平台产物相同，取 linux 的即可）
-          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${STAGE}/jars/SSOptimizer.jar"
+          mkdir -p "${MOD_STAGE}/jars" \
+                   "${MOD_STAGE}/native/linux" \
+                   "${MOD_STAGE}/native/windows" \
+                   "${MOD_STAGE}/graphics/fonts" \
+                   "${LINUX_STAGE}/mods" \
+                   "${WINDOWS_STAGE}/starsector-core/mods"
 
-          # native libraries
-          cp artifacts/native-linux/libnative.so "${STAGE}/native/linux/lib${MOD_ID}.so"
-          cp artifacts/native-windows/native.dll "${STAGE}/native/windows/${MOD_ID}.dll"
+          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/native-linux/libnative.so "${MOD_STAGE}/native/linux/lib${MOD_ID}.so"
+          cp artifacts/native-windows/native.dll "${MOD_STAGE}/native/windows/${MOD_ID}.dll"
+          cp game-fonts/fnt/* "${MOD_STAGE}/graphics/fonts/"
+          cp game-fonts/ttf/* "${MOD_STAGE}/graphics/fonts/"
+          cp mod_info.json "${MOD_STAGE}/"
+          cp README.md "${MOD_STAGE}/"
+          cp tools/enable_starsector_exe_launch.ps1 "${MOD_STAGE}/"
 
-          # metadata
-          cp mod_info.json "${STAGE}/"
-          cp README.md "${STAGE}/"
-          [ -f tools/enable_starsector_exe_launch.ps1 ] && cp tools/enable_starsector_exe_launch.ps1 "${STAGE}/"
+          cp -R "${MOD_STAGE}" "${LINUX_STAGE}/mods/${MOD_ID}"
+          cp tools/starsector.sh "${LINUX_STAGE}/starsector.sh"
+          cp tools/launch_injected_ss.sh "${LINUX_STAGE}/launch_injected_ss.sh"
+          chmod +x "${LINUX_STAGE}/starsector.sh" "${LINUX_STAGE}/launch_injected_ss.sh"
 
-          # zip
+          cp -R "${MOD_STAGE}" "${WINDOWS_STAGE}/starsector-core/mods/${MOD_ID}"
+          cp tools/starsector.bat "${WINDOWS_STAGE}/starsector-core/starsector.bat"
+          cp tools/enable_starsector_exe_launch.ps1 "${WINDOWS_STAGE}/enable_starsector_exe_launch.ps1"
+
           mkdir -p build/distributions
-          cd build/release-stage
-          zip -r "../distributions/SSOptimizer-${VERSION}.zip" "${MOD_ID}"
+          cd "${ROOT_STAGE}"
+          zip -r "../distributions/SSOptimizer-${VERSION}.zip" linux windows
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

@@ -10,6 +10,39 @@ $ErrorActionPreference = "Stop"
 $agentArg = "-javaagent:..\\mods\\ssoptimizer\\jars\\SSOptimizer.jar"
 $runtimeBackupDirName = "jre.ssoptimizer.bak"
 
+function Test-Java25 {
+    param([string]$JavaExe)
+
+    if (-not (Test-Path $JavaExe)) {
+        return $false
+    }
+
+    try {
+        $versionOutput = (& $JavaExe -version 2>&1 | Out-String)
+    } catch {
+        return $false
+    }
+
+    return $versionOutput -match 'version "25(?:\.|\")'
+}
+
+function Resolve-PreferredJava25RuntimeDir {
+    param([string]$ResolvedGameDir)
+
+    $candidates = @(
+        (Join-Path $ResolvedGameDir "zulu25"),
+        (Join-Path $ResolvedGameDir "jre")
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Java25 (Join-Path $candidate "bin\java.exe")) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
 function Resolve-GameDir {
     param([string]$Path)
 
@@ -57,20 +90,24 @@ function Ensure-ExeRuntimeRedirect {
         [string]$ResolvedGameDir
     )
 
-    $zuluDir = Join-Path $ResolvedGameDir "zulu25"
     $jreDir = Join-Path $ResolvedGameDir "jre"
     $runtimeBackupDir = Join-Path $ResolvedGameDir $runtimeBackupDirName
+    $targetRuntimeDir = Resolve-PreferredJava25RuntimeDir -ResolvedGameDir $ResolvedGameDir
 
-    if (-not (Test-Path (Join-Path $zuluDir "bin\java.exe"))) {
-        throw "Missing Zulu 25 runtime under $zuluDir"
+    if ($null -eq $targetRuntimeDir) {
+        throw "Missing detectable Java 25 runtime under $ResolvedGameDir (tried zulu25 and jre)"
+    }
+
+    if ($targetRuntimeDir -eq $jreDir) {
+        return "jre already provides Java 25"
     }
 
     if (Test-Path $jreDir) {
         $item = Get-Item $jreDir -Force
         if ($item.LinkType -eq "Junction") {
             $target = [string]$item.Target
-            if ($target -eq $zuluDir) {
-                return "jre already redirected to zulu25"
+            if ($target -eq $targetRuntimeDir) {
+                return "jre already redirected to $([System.IO.Path]::GetFileName($targetRuntimeDir))"
             }
             throw "Existing jre junction points to unexpected target: $target"
         }
@@ -82,8 +119,8 @@ function Ensure-ExeRuntimeRedirect {
         }
     }
 
-    New-Item -ItemType Junction -Path $jreDir -Target $zuluDir | Out-Null
-    return "jre redirected to zulu25"
+    New-Item -ItemType Junction -Path $jreDir -Target $targetRuntimeDir | Out-Null
+    return "jre redirected to $([System.IO.Path]::GetFileName($targetRuntimeDir))"
 }
 
 function Restore-ExeRuntimeRedirect {
@@ -91,17 +128,13 @@ function Restore-ExeRuntimeRedirect {
         [string]$ResolvedGameDir
     )
 
-    $zuluDir = Join-Path $ResolvedGameDir "zulu25"
     $jreDir = Join-Path $ResolvedGameDir "jre"
     $runtimeBackupDir = Join-Path $ResolvedGameDir $runtimeBackupDirName
 
     if (Test-Path $jreDir) {
         $item = Get-Item $jreDir -Force
         if ($item.LinkType -eq "Junction") {
-            $target = [string]$item.Target
-            if ($target -eq $zuluDir) {
-                Remove-Item $jreDir -Force
-            }
+            Remove-Item $jreDir -Force
         }
     }
 
