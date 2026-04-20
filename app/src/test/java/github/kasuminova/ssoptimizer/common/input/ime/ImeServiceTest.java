@@ -42,6 +42,20 @@ class ImeServiceTest {
     }
 
     @Test
+    void appliesCommittedTextAfterTransientFocusLossToExplicitField() {
+        FakeTextField focused = new FakeTextField(true, 10f, 20f, 200f, 24f, "", 0f);
+        FakeImeBackend backend = new FakeImeBackend(List.of("中", "文"));
+
+        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+        service.onFocusGained(focused);
+        focused.setFocused(false);
+
+        service.pollAndApplyCommittedText();
+
+        assertEquals("中文", focused.getText());
+    }
+
+    @Test
     void registeringAlreadyFocusedTextFieldImplicitlyActivatesIme() {
         FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
         FakeImeBackend backend = new FakeImeBackend(List.of());
@@ -152,6 +166,23 @@ class ImeServiceTest {
     }
 
     @Test
+    void prefersTextLabelPositionForCaretSpot() {
+        FakeTextField focused = new FakeTextField(true,
+                300f, 100f, 220f, 24f,
+                "中文", 36f,
+                312f, 108f, 180f, 18f);
+        ImeService service = new ImeService(new NoopImeBackend(), () -> 1.0d, () -> 900);
+        service.register(focused);
+
+        ImeCaretRect rect = service.computeCurrentCaretRect();
+
+        assertNotNull(rect);
+        assertEquals(348, rect.x());
+        assertEquals(774, rect.y());
+        assertEquals(18, rect.height());
+    }
+
+    @Test
     void windowsBackendStubReportsUnavailable() {
         assertFalse(new WindowsImmImeBackend().isAvailable());
     }
@@ -233,9 +264,23 @@ class ImeServiceTest {
         private       float        opacity = 1f;
 
         private FakeTextField(boolean focused, float x, float y, float width, float height, String text, float textWidth) {
+            this(focused, x, y, width, height, text, textWidth, x, y, width, height);
+        }
+
+        private FakeTextField(boolean focused,
+                              float x,
+                              float y,
+                              float width,
+                              float height,
+                              String text,
+                              float textWidth,
+                              float labelX,
+                              float labelY,
+                              float labelWidth,
+                              float labelHeight) {
             this.focused = focused;
             this.position = new FakePosition(x, y, width, height);
-            this.label = new FakeLabel(text, textWidth, x, y, width, height);
+            this.label = new FakeLabel(text, textWidth, labelX, labelY, labelWidth, labelHeight);
             this.text = text;
         }
 

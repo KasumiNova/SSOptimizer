@@ -182,22 +182,32 @@ public final class ImeService {
 
     private TextFieldAPI currentFocusedField() {
         final TextFieldAPI explicit = explicitlyFocusedField != null ? explicitlyFocusedField.get() : null;
-        if (explicit != null && explicit.hasFocus()) {
+        if (explicit == null) {
+            explicitlyFocusedField = null;
+        } else if (explicit.hasFocus()) {
             return explicit;
         }
-        explicitlyFocusedField = null;
 
         final TextFieldAPI globallyFocused = globalFocusedTextField();
-        if (globallyFocused != null && globallyFocused.hasFocus()) {
+        if (globallyFocused != null && globallyFocused != explicit && globallyFocused.hasFocus()) {
             ensureRegistered(globallyFocused);
             syncImplicitFocusedField(globallyFocused);
             return globallyFocused;
         }
 
+        final TextFieldAPI registeredFocused = focusedRegisteredField(explicit);
+        if (registeredFocused != null) {
+            syncImplicitFocusedField(registeredFocused);
+            return registeredFocused;
+        }
+
+        return explicit;
+    }
+
+    private TextFieldAPI focusedRegisteredField(final TextFieldAPI excluded) {
         for (WeakReference<TextFieldAPI> ref : registeredFields) {
-            TextFieldAPI field = ref.get();
-            if (field != null && field.hasFocus()) {
-                syncImplicitFocusedField(field);
+            final TextFieldAPI field = ref.get();
+            if (field != null && field != excluded && field.hasFocus()) {
                 return field;
             }
         }
@@ -242,8 +252,8 @@ public final class ImeService {
             return null;
         }
 
-        final PositionAPI position = focused.getPosition();
-        if (position == null) {
+        final PositionAPI fieldPosition = focused.getPosition();
+        if (fieldPosition == null) {
             return null;
         }
 
@@ -258,17 +268,47 @@ public final class ImeService {
             textWidth = label.computeTextWidth(text);
         }
 
+        final PositionAPI caretPosition = caretPosition(fieldPosition, label);
+        final float caretHeight = caretHeight(fieldPosition, label, text);
+
         final float scale = currentWindowScale();
         final int windowHeight = currentWindowHeight();
-        final int scaledX = Math.round((position.getX() + textWidth) * scale);
-        final int scaledY = windowHeight - Math.round((position.getY() + position.getHeight()) * scale);
-        final int scaledHeight = Math.round(position.getHeight() * scale);
+        final int scaledX = Math.round((caretPosition.getX() + textWidth) * scale);
+        final int scaledY = windowHeight - Math.round((caretPosition.getY() + caretHeight) * scale);
+        final int scaledHeight = Math.round(caretHeight * scale);
 
         return new ImeCaretRect(
                 scaledX,
                 scaledY,
                 scaledHeight
         );
+    }
+
+    private PositionAPI caretPosition(final PositionAPI fieldPosition,
+                                      final LabelAPI label) {
+        if (label == null) {
+            return fieldPosition;
+        }
+
+        final PositionAPI labelPosition = label.getPosition();
+        return labelPosition != null ? labelPosition : fieldPosition;
+    }
+
+    private float caretHeight(final PositionAPI fieldPosition,
+                              final LabelAPI label,
+                              final String text) {
+        if (label != null) {
+            final PositionAPI labelPosition = label.getPosition();
+            if (labelPosition != null && labelPosition.getHeight() > 0f) {
+                return labelPosition.getHeight();
+            }
+
+            final float textHeight = label.computeTextHeight(text);
+            if (Float.isFinite(textHeight) && textHeight > 0f) {
+                return textHeight;
+            }
+        }
+        return fieldPosition.getHeight();
     }
 
     private TextFieldAPI globalFocusedTextField() {

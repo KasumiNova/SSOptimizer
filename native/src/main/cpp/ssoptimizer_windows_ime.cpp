@@ -165,11 +165,17 @@ void updateImmSpot(WindowsImmContext* context) {
     composition.ptCurrentPos.y = spotY;
     ImmSetCompositionWindow(himc, &composition);
 
+    const int excludeWidth = spotHeight > 0 ? spotHeight : 1;
+    const int excludeHeight = spotHeight > 0 ? spotHeight : 1;
     CANDIDATEFORM candidate = {};
     candidate.dwIndex = 0;
-    candidate.dwStyle = CFS_CANDIDATEPOS;
+    candidate.dwStyle = CFS_EXCLUDE;
     candidate.ptCurrentPos.x = spotX;
-    candidate.ptCurrentPos.y = spotY + spotHeight;
+    candidate.ptCurrentPos.y = spotY;
+    candidate.rcArea.left = spotX;
+    candidate.rcArea.top = spotY;
+    candidate.rcArea.right = spotX + excludeWidth;
+    candidate.rcArea.bottom = spotY + excludeHeight;
     ImmSetCandidateWindow(himc, &candidate);
 
     ImmReleaseContext(context->hwnd, himc);

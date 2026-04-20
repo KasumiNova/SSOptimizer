@@ -6,7 +6,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 
 - **加载性能 3x+ 提升**：并行化资源加载、PNG 原生解码、纹理合批上传
 - **字体渲染优化**：FreeType 原生栅格化 + 高 DPI 适配，告别模糊锯齿
-- **中文输入支持**：Linux XIM 协议集成，支持 fcitx5 等输入法框架（Windows 支持计划中）
+- **中文输入支持**：已集成 Linux XIM 与 Windows IMM32 输入法支持
 - **渲染管线优化**：OpenGL 批渲染、着色器缓存
 - **战斗系统优化**：碰撞检测等热路径性能改进
 - **日志降噪**：过滤高频无用日志，减少 I/O 开销
@@ -93,6 +93,9 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 # 原生模块编译
 ./gradlew :native:build
 
+# Linux 主机交叉编译 Windows 原生库（需要 x86_64-w64-mingw32-g++ + vcpkg x64-mingw-static）
+./gradlew :native:build -Pstarsector.platform=windows -Pssoptimizer.native.windows.triplet=x64-mingw-static
+
 # 部署到游戏目录（开发用）
 ./gradlew installDevMod
 
@@ -115,6 +118,31 @@ SSOptimizer/
 ├── tools/         烟测脚本、日志过滤、IME 调试工具
 └── docs/design/   设计文档
 ```
+
+### Linux 主机交叉编译 Windows 原生库
+
+若需要在 Linux 主机直接产出 Windows 版 `ssoptimizer.dll`，推荐准备以下环境：
+
+- `mingw-w64`，确保 `x86_64-w64-mingw32-g++` / `x86_64-w64-mingw32-gcc` 在 `PATH` 中
+- `vcpkg`，并安装 Windows 交叉依赖：`libpng`、`freetype`
+- 设置 `VCPKG_ROOT`，或显式传入 `-Pssoptimizer.native.windows.vcpkgRoot=/path/to/vcpkg`
+
+示例：
+
+```bash
+# vcpkg 侧准备 Windows 交叉依赖
+vcpkg install libpng freetype --triplet x64-mingw-static
+
+# Linux 主机构建 Windows 原生库
+./gradlew :native:build \
+   -Pstarsector.platform=windows \
+   -Pssoptimizer.native.windows.triplet=x64-mingw-static
+```
+
+若 `libpng` / `freetype` 没有放在 vcpkg 默认目录，也可分别传入：
+
+- `-Pssoptimizer.native.windows.libpng.root=/path/to/libpng/prefix`
+- `-Pssoptimizer.native.windows.freetype.root=/path/to/freetype/prefix`
 
 ## 设计文档
 

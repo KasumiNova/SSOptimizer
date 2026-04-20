@@ -12,6 +12,15 @@ plugins {
 val hostOs = System.getProperty("os.name", "").lowercase()
 val isWindowsHost = hostOs.contains("win")
 val isLinuxHost = hostOs.contains("linux")
+val requestedNativeTarget = providers.gradleProperty("ssoptimizer.native.target").orNull?.lowercase()
+val requestedBuildPlatform = providers.gradleProperty("starsector.platform").orNull?.lowercase()
+val targetOs = when {
+    requestedNativeTarget == "windows" || requestedBuildPlatform == "windows" -> "windows"
+    requestedNativeTarget == "linux" || requestedBuildPlatform == "linux" -> "linux"
+    isWindowsHost -> "windows"
+    else -> "linux"
+}
+val buildTargetIsWindows = targetOs == "windows"
 
 val javaHome = file(System.getProperty("java.home"))
 val jdkHome = if (javaHome.resolve("include").exists()) {
@@ -20,7 +29,7 @@ val jdkHome = if (javaHome.resolve("include").exists()) {
     javaHome.parentFile ?: javaHome
 }
 val jniIncludeDir = jdkHome.resolve("include")
-val jniPlatformIncludeDir = jniIncludeDir.resolve(if (isWindowsHost) "win32" else "linux")
+val jniPlatformIncludeDir = jniIncludeDir.resolve(if (buildTargetIsWindows) "win32" else "linux")
 
 fun envOrProperty(propertyName: String, envName: String): String? {
     return providers.gradleProperty(propertyName).orNull
@@ -40,7 +49,8 @@ fun resolveWindowsPackageRoot(packageName: String): File? {
     }
 
     val vcpkgRoot = envOrProperty("ssoptimizer.native.windows.vcpkgRoot", "VCPKG_ROOT")
-    val triplet = envOrProperty("ssoptimizer.native.windows.triplet", "VCPKG_DEFAULT_TRIPLET") ?: "x64-windows"
+    val defaultTriplet = if (isWindowsHost) "x64-windows" else "x64-mingw-static"
+    val triplet = envOrProperty("ssoptimizer.native.windows.triplet", "VCPKG_DEFAULT_TRIPLET") ?: defaultTriplet
     if (vcpkgRoot.isNullOrBlank()) {
         return null
     }
@@ -49,12 +59,13 @@ fun resolveWindowsPackageRoot(packageName: String): File? {
     return installedRoot.takeIf { it.isDirectory }
 }
 
-fun includeDirArgsWindows(root: File?): List<String> {
+fun includeDirArgsWindows(root: File?, msvcStyle: Boolean): List<String> {
     if (root == null) {
         return emptyList()
     }
     val includeDir = root.resolve("include")
-    return if (includeDir.isDirectory) listOf("/I${includeDir.absolutePath}") else emptyList()
+    val prefix = if (msvcStyle) "/I" else "-I"
+    return if (includeDir.isDirectory) listOf("${prefix}${includeDir.absolutePath}") else emptyList()
 }
 
 fun resolveWindowsLibrary(libDirRoot: File?, vararg candidates: String): String? {
@@ -108,17 +119,32 @@ val x11CompilerArgs = runPkgConfig("--cflags", "x11")
 val x11LinkerArgs = runPkgConfig("--libs", "x11")
 val hasX11 = x11LinkerArgs.isNotEmpty()
 
-val windowsLibpngRoot = if (isWindowsHost) resolveWindowsPackageRoot("libpng") else null
-val windowsFreetypeRoot = if (isWindowsHost) resolveWindowsPackageRoot("freetype") else null
-val windowsLibpngCompilerArgs = if (isWindowsHost) includeDirArgsWindows(windowsLibpngRoot) else emptyList()
-val windowsFreetypeCompilerArgs = if (isWindowsHost) includeDirArgsWindows(windowsFreetypeRoot) else emptyList()
-val windowsLibpngLinkerArgs = if (isWindowsHost) {
-    listOfNotNull(resolveWindowsLibrary(windowsLibpngRoot, "libpng16.lib", "png.lib", "libpng.lib"))
+val windowsLibpngRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("libpng") else null
+val windowsFreetypeRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("freetype") else null
+val windowsLibpngCompilerArgs = if (buildTargetIsWindows) includeDirArgsWindows(windowsLibpngRoot, isWindowsHost) else emptyList()
+val windowsFreetypeCompilerArgs = if (buildTargetIsWindows) includeDirArgsWindows(windowsFreetypeRoot, isWindowsHost) else emptyList()
+val windowsLibpngLinkerArgs = if (buildTargetIsWindows) {
+    listOfNotNull(resolveWindowsLibrary(
+        windowsLibpngRoot,
+        "libpng16.lib",
+        "png.lib",
+        "libpng.lib",
+        "libpng16.a",
+        "libpng.a",
+        "libpng16.dll.a",
+        "libpng.dll.a"
+    ))
 } else {
     emptyList()
 }
-val windowsFreetypeLinkerArgs = if (isWindowsHost) {
-    listOfNotNull(resolveWindowsLibrary(windowsFreetypeRoot, "freetype.lib", "freetyped.lib"))
+val windowsFreetypeLinkerArgs = if (buildTargetIsWindows) {
+    listOfNotNull(resolveWindowsLibrary(
+        windowsFreetypeRoot,
+        "freetype.lib",
+        "freetyped.lib",
+        "libfreetype.a",
+        "libfreetype.dll.a"
+    ))
 } else {
     emptyList()
 }
@@ -126,7 +152,7 @@ val hasWindowsLibpng = windowsLibpngLinkerArgs.isNotEmpty() || !windowsLibpngCom
 val hasWindowsFreetype = windowsFreetypeLinkerArgs.isNotEmpty() || !windowsFreetypeCompilerArgs.isEmpty()
 
 library {
-    targetMachines.set(listOf(if (isWindowsHost) machines.windows.x86_64 else machines.linux.x86_64))
+    targetMachines.set(listOf(if (buildTargetIsWindows) machines.windows.x86_64 else machines.linux.x86_64))
     linkage.set(listOf(Linkage.SHARED))
 
     // 预留 generated 目录给 Java -h 产出的 JNI 头文件
@@ -135,7 +161,7 @@ library {
 
 tasks.withType<CppCompile>().configureEach {
     dependsOn(":app:compileJava")
-    if (isWindowsHost) {
+    if (buildTargetIsWindows && isWindowsHost) {
         compilerArgs.addAll(
             listOf(
                 "/std:c++20",
@@ -156,6 +182,28 @@ tasks.withType<CppCompile>().configureEach {
         }
         if (hasWindowsFreetype) {
             compilerArgs.add("/DSSOPTIMIZER_HAVE_FREETYPE=1")
+        }
+    } else if (buildTargetIsWindows) {
+        compilerArgs.addAll(
+            listOf(
+                "-std=c++20",
+                "-O3",
+                "-fno-math-errno",
+                "-fno-trapping-math",
+                "-DWIN32_LEAN_AND_MEAN",
+                "-DNOMINMAX",
+                "-D_CRT_SECURE_NO_WARNINGS",
+                "-I${jniIncludeDir.absolutePath}",
+                "-I${jniPlatformIncludeDir.absolutePath}"
+            )
+        )
+        compilerArgs.addAll(windowsLibpngCompilerArgs)
+        compilerArgs.addAll(windowsFreetypeCompilerArgs)
+        if (hasWindowsLibpng) {
+            compilerArgs.add("-DSSOPTIMIZER_HAVE_LIBPNG=1")
+        }
+        if (hasWindowsFreetype) {
+            compilerArgs.add("-DSSOPTIMIZER_HAVE_FREETYPE=1")
         }
     } else {
         compilerArgs.addAll(
@@ -185,8 +233,12 @@ tasks.withType<CppCompile>().configureEach {
 }
 
 tasks.withType<LinkSharedLibrary>().configureEach {
-    if (isWindowsHost) {
+    if (buildTargetIsWindows && isWindowsHost) {
         linkerArgs.addAll(listOf("opengl32.lib", "user32.lib", "imm32.lib"))
+        linkerArgs.addAll(windowsLibpngLinkerArgs)
+        linkerArgs.addAll(windowsFreetypeLinkerArgs)
+    } else if (buildTargetIsWindows) {
+        linkerArgs.addAll(listOf("-lopengl32", "-luser32", "-limm32"))
         linkerArgs.addAll(windowsLibpngLinkerArgs)
         linkerArgs.addAll(windowsFreetypeLinkerArgs)
     } else {
