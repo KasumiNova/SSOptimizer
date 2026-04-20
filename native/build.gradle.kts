@@ -21,6 +21,7 @@ val targetOs = when {
     else -> "linux"
 }
 val buildTargetIsWindows = targetOs == "windows"
+val useWindowsCrossCompileTask = buildTargetIsWindows && !isWindowsHost && isLinuxHost
 
 val javaHome = file(System.getProperty("java.home"))
 val jdkHome = if (javaHome.resolve("include").exists()) {
@@ -29,11 +30,51 @@ val jdkHome = if (javaHome.resolve("include").exists()) {
     javaHome.parentFile ?: javaHome
 }
 val jniIncludeDir = jdkHome.resolve("include")
-val jniPlatformIncludeDir = jniIncludeDir.resolve(if (buildTargetIsWindows) "win32" else "linux")
+val processPath = providers.environmentVariable("PATH").orNull ?: ""
 
 fun envOrProperty(propertyName: String, envName: String): String? {
     return providers.gradleProperty(propertyName).orNull
         ?: providers.environmentVariable(envName).orNull
+}
+
+fun pathWithPrependedBin(binDir: String?): String {
+    if (binDir.isNullOrBlank()) {
+        return processPath
+    }
+    return if (processPath.isBlank()) binDir else "$binDir:${processPath}"
+}
+
+fun resolveToolCommand(configuredCommand: String,
+                       binDir: String?): String {
+    val configuredFile = File(configuredCommand)
+    if (configuredFile.isAbsolute) {
+        return configuredFile.absolutePath
+    }
+    if (binDir.isNullOrBlank()) {
+        return configuredCommand
+    }
+    return File(binDir, configuredCommand).absolutePath
+}
+
+fun runCommand(workingDir: File,
+               environment: Map<String, String>,
+               command: List<String>) {
+    val process = ProcessBuilder(command)
+        .directory(workingDir)
+        .redirectErrorStream(true)
+        .apply {
+            this.environment().putAll(environment)
+        }
+        .start()
+
+    val output = process.inputStream.bufferedReader().use { it.readText() }
+    val exitCode = process.waitFor()
+    if (output.isNotBlank()) {
+        println(output)
+    }
+    check(exitCode == 0) {
+        "命令执行失败($exitCode): ${command.joinToString(" ")}"
+    }
 }
 
 fun resolveWindowsPackageRoot(packageName: String): File? {
@@ -121,6 +162,7 @@ val hasX11 = x11LinkerArgs.isNotEmpty()
 
 val windowsLibpngRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("libpng") else null
 val windowsFreetypeRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("freetype") else null
+val windowsDependencyRoot = windowsLibpngRoot ?: windowsFreetypeRoot
 val windowsLibpngCompilerArgs = if (buildTargetIsWindows) includeDirArgsWindows(windowsLibpngRoot, isWindowsHost) else emptyList()
 val windowsFreetypeCompilerArgs = if (buildTargetIsWindows) includeDirArgsWindows(windowsFreetypeRoot, isWindowsHost) else emptyList()
 val windowsLibpngLinkerArgs = if (buildTargetIsWindows) {
@@ -148,8 +190,48 @@ val windowsFreetypeLinkerArgs = if (buildTargetIsWindows) {
 } else {
     emptyList()
 }
+val windowsZlibLinkerArgs = if (buildTargetIsWindows) {
+    listOfNotNull(resolveWindowsLibrary(windowsDependencyRoot, "libzlib.a", "zlib.lib", "zlib1.lib"))
+} else {
+    emptyList()
+}
+val windowsBzip2LinkerArgs = if (buildTargetIsWindows) {
+    listOfNotNull(resolveWindowsLibrary(windowsDependencyRoot, "libbz2.a", "bz2.lib", "libbz2.lib"))
+} else {
+    emptyList()
+}
+val windowsBrotliLinkerArgs = if (buildTargetIsWindows) {
+    listOfNotNull(
+        resolveWindowsLibrary(windowsDependencyRoot, "libbrotlicommon.a", "brotlicommon.lib"),
+        resolveWindowsLibrary(windowsDependencyRoot, "libbrotlidec.a", "brotlidec.lib")
+    )
+} else {
+    emptyList()
+}
 val hasWindowsLibpng = windowsLibpngLinkerArgs.isNotEmpty() || !windowsLibpngCompilerArgs.isEmpty()
 val hasWindowsFreetype = windowsFreetypeLinkerArgs.isNotEmpty() || !windowsFreetypeCompilerArgs.isEmpty()
+val windowsToolchainBinDir = envOrProperty("ssoptimizer.native.windows.toolchainBinDir", "SSOPTIMIZER_NATIVE_WINDOWS_TOOLCHAIN_BIN")
+val windowsCrossPath = pathWithPrependedBin(windowsToolchainBinDir)
+val windowsCrossCc = resolveToolCommand(envOrProperty("ssoptimizer.native.windows.cc", "CC") ?: "x86_64-w64-mingw32-gcc", windowsToolchainBinDir)
+val windowsCrossCxx = resolveToolCommand(envOrProperty("ssoptimizer.native.windows.cxx", "CXX") ?: "x86_64-w64-mingw32-g++", windowsToolchainBinDir)
+val windowsCrossRc = resolveToolCommand(envOrProperty("ssoptimizer.native.windows.rc", "RC") ?: "x86_64-w64-mingw32-windres", windowsToolchainBinDir)
+val windowsJniPlatformIncludeOverride = envOrProperty(
+    "ssoptimizer.native.windows.jniPlatformIncludeDir",
+    "SSOPTIMIZER_NATIVE_WINDOWS_JNI_PLATFORM_INCLUDE"
+)
+val jniPlatformIncludeDir = when {
+    buildTargetIsWindows -> windowsJniPlatformIncludeOverride?.let(::file) ?: jniIncludeDir.resolve("win32")
+    else -> jniIncludeDir.resolve("linux")
+}
+val windowsCrossOutputFile = layout.buildDirectory.file("lib/main/debug/native.dll")
+val windowsCrossObjectDir = layout.buildDirectory.dir("tmp/windows-cross/obj")
+val nativeHeaderDirs = listOf(
+    file("src/main/headers"),
+    file("src/main/headers/generated")
+).filter { it.exists() }
+val windowsCrossSources = fileTree("src/main/cpp") {
+    include("**/*.cpp")
+}.files.sortedBy { it.absolutePath }
 
 library {
     targetMachines.set(listOf(if (buildTargetIsWindows) machines.windows.x86_64 else machines.linux.x86_64))
@@ -246,5 +328,124 @@ tasks.withType<LinkSharedLibrary>().configureEach {
         linkerArgs.addAll(libpngLinkerArgs)
         linkerArgs.addAll(freetypeLinkerArgs)
         linkerArgs.addAll(x11LinkerArgs)
+    }
+}
+
+if (useWindowsCrossCompileTask) {
+    val compileWindowsCrossObjects = tasks.register("compileWindowsCrossObjects") {
+        group = "build"
+        description = "Compile Windows native objects on Linux using a MinGW-compatible cross toolchain"
+        dependsOn(":app:compileJava")
+
+        inputs.files(windowsCrossSources)
+        inputs.dir(jniIncludeDir)
+        inputs.dir(jniPlatformIncludeDir)
+        outputs.dir(windowsCrossObjectDir)
+
+        doFirst {
+            check(windowsCrossSources.isNotEmpty()) {
+                "未找到任何 native C++ 源文件。"
+            }
+            check(hasWindowsLibpng) {
+                "未找到 Windows libpng 依赖，请设置 VCPKG_ROOT 或 -Pssoptimizer.native.windows.libpng.root。"
+            }
+            check(hasWindowsFreetype) {
+                "未找到 Windows freetype 依赖，请设置 VCPKG_ROOT 或 -Pssoptimizer.native.windows.freetype.root。"
+            }
+            windowsCrossObjectDir.get().asFile.mkdirs()
+        }
+
+        doLast {
+            val objectDir = windowsCrossObjectDir.get().asFile
+            val workingDir = project.projectDir
+            val environment = mapOf(
+                "PATH" to windowsCrossPath,
+                "CC" to windowsCrossCc,
+                "CXX" to windowsCrossCxx,
+                "RC" to windowsCrossRc
+            )
+            val commonArgs = mutableListOf(
+                "-std=c++20",
+                "-O3",
+                "-fno-math-errno",
+                "-fno-trapping-math",
+                "-DWIN32_LEAN_AND_MEAN",
+                "-DNOMINMAX",
+                "-D_CRT_SECURE_NO_WARNINGS",
+                "-I${jniIncludeDir.absolutePath}",
+                "-I${jniPlatformIncludeDir.absolutePath}"
+            )
+            nativeHeaderDirs.forEach { headerDir ->
+                commonArgs.add("-I${headerDir.absolutePath}")
+            }
+            commonArgs.addAll(windowsLibpngCompilerArgs)
+            commonArgs.addAll(windowsFreetypeCompilerArgs)
+            if (hasWindowsLibpng) {
+                commonArgs.add("-DSSOPTIMIZER_HAVE_LIBPNG=1")
+            }
+            if (hasWindowsFreetype) {
+                commonArgs.add("-DSSOPTIMIZER_HAVE_FREETYPE=1")
+            }
+
+            windowsCrossSources.forEach { source ->
+                val objectFile = objectDir.resolve(source.nameWithoutExtension + ".o")
+                runCommand(workingDir, environment,
+                    listOf(windowsCrossCxx) + commonArgs + listOf("-c", source.absolutePath, "-o", objectFile.absolutePath))
+            }
+        }
+    }
+
+    tasks.register("linkWindowsCrossSharedLibrary") {
+        group = "build"
+        description = "Link the Windows native shared library on Linux using a MinGW-compatible cross toolchain"
+        dependsOn(compileWindowsCrossObjects)
+
+        inputs.dir(windowsCrossObjectDir)
+        outputs.file(windowsCrossOutputFile)
+
+        doFirst {
+            val outputFile = windowsCrossOutputFile.get().asFile
+            outputFile.parentFile.mkdirs()
+        }
+
+        doLast {
+            val workingDir = project.projectDir
+            val environment = mapOf(
+                "PATH" to windowsCrossPath,
+                "CC" to windowsCrossCc,
+                "CXX" to windowsCrossCxx,
+                "RC" to windowsCrossRc
+            )
+            val outputFile = windowsCrossOutputFile.get().asFile
+
+            val objectFiles = windowsCrossSources.map { source ->
+                windowsCrossObjectDir.get().asFile.resolve(source.nameWithoutExtension + ".o").absolutePath
+            }
+
+            val argsList = mutableListOf(
+                "-shared",
+                "-static-libgcc",
+                "-static-libstdc++",
+                "-o",
+                outputFile.absolutePath
+            )
+            argsList.addAll(objectFiles)
+            argsList.addAll(listOf("-lopengl32", "-luser32", "-limm32"))
+            argsList.addAll(windowsLibpngLinkerArgs)
+            argsList.addAll(windowsFreetypeLinkerArgs)
+            argsList.addAll(windowsZlibLinkerArgs)
+            argsList.addAll(windowsBzip2LinkerArgs)
+            argsList.addAll(windowsBrotliLinkerArgs)
+
+            runCommand(workingDir, environment, listOf(windowsCrossCxx) + argsList)
+        }
+    }
+
+    tasks.named("assemble") {
+        dependsOn("linkWindowsCrossSharedLibrary")
+    }
+
+    tasks.named("build") {
+        dependsOn("linkWindowsCrossSharedLibrary")
     }
 }
