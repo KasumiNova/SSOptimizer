@@ -97,6 +97,7 @@ exec "$JAVA_EXE" \
     -Dcom.fs.starfarer.settings.paths.screenshots=./screenshots \
     -Dcom.fs.starfarer.settings.paths.mods=./mods \
     -Dcom.fs.starfarer.settings.paths.logs=. \
+    -Djava.library.path=./native/linux \
     -Dssoptimizer.font.ttf.enable=true \
     -Dlog4j.configuration=file:./log4j.properties \
     -Dcom.fs.starfarer.settings.linux=true \
