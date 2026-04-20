@@ -200,8 +200,7 @@ val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
 val linuxLauncherScriptFile = rootProject.file("tools/starsector.sh")
 val linuxInjectedLauncherScriptFile = rootProject.file("tools/launch_injected_ss.sh")
 val windowsLauncherScriptFile = rootProject.file("tools/starsector.bat")
-val windowsExePatchScriptFile = rootProject.file("tools/enable_starsector_exe_launch.ps1")
-val windowsExePatchBatFile = rootProject.file("tools/enable_starsector_exe_launch.bat")
+val windowsRootLauncherScriptFile = rootProject.file("tools/starsector-ssoptimizer.bat")
 val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
 
 tasks.register<Copy>("jarMapped") {
@@ -237,10 +236,11 @@ tasks.register<Sync>("stageUserMod") {
         into("native/windows")
         rename { System.mapLibraryName(modId) }
     }
+    from(packagedFontTtfDir) {
+        into("fonts")
+    }
     from(rootProject.file("mod_info.json"))
     from(rootProject.file("README.md"))
-    from(windowsExePatchScriptFile)
-    from(windowsExePatchBatFile)
 
     into(userModStageDir)
 
@@ -275,9 +275,6 @@ tasks.register<Sync>("stageLinuxOverlay") {
     from(packagedFontFntDir) {
         into("graphics/fonts")
     }
-    from(packagedFontTtfDir) {
-        into("graphics/fonts")
-    }
     from(linuxLauncherScriptFile)
     from(linuxInjectedLauncherScriptFile)
 
@@ -290,7 +287,7 @@ tasks.register<Sync>("stageLinuxOverlay") {
 
 tasks.register<Sync>("stageWindowsOverlay") {
     group = "distribution"
-    description = "Stage a Windows game-root overlay with launcher patch helper"
+    description = "Stage a Windows game-root overlay with direct launcher entry"
     dependsOn("stageUserMod")
 
     from(userModStageDir) {
@@ -300,14 +297,10 @@ tasks.register<Sync>("stageWindowsOverlay") {
     from(packagedFontFntDir) {
         into("starsector-core/graphics/fonts")
     }
-    from(packagedFontTtfDir) {
-        into("starsector-core/graphics/fonts")
-    }
     from(windowsLauncherScriptFile) {
         into("starsector-core")
     }
-    from(windowsExePatchScriptFile)
-    from(windowsExePatchBatFile)
+    from(windowsRootLauncherScriptFile)
 
     into(windowsOverlayStageDir)
 

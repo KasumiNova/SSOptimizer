@@ -15,6 +15,8 @@ import java.util.*;
  * using the legacy bitmap pipeline untouched.
  */
 public final class OriginalGameFontOverrides {
+    static final String MOD_ID               = "ssoptimizer";
+    static final String MOD_FONT_DIR_NAME    = "fonts";
     public static final String ENABLE_PROPERTY     = "ssoptimizer.font.ttf.enable";
     public static final String FONT_DIR_PROPERTY   = "ssoptimizer.font.ttf.dir";
     public static final String DEBUG_LOG_PROPERTY  = "ssoptimizer.font.ttf.debug";
@@ -162,39 +164,20 @@ public final class OriginalGameFontOverrides {
     private static Path resolveFontDir() {
         final String configured = System.getProperty(FONT_DIR_PROPERTY);
         if (configured == null || configured.isBlank()) {
-            return resolveDefaultFontDir(System.getProperty("os.name", ""));
+            return resolveDefaultFontDir(System.getProperty("com.fs.starfarer.settings.paths.mods", "./mods"),
+                    Path.of("").toAbsolutePath().normalize());
         }
         return Path.of(configured).toAbsolutePath().normalize();
     }
 
-    static List<Path> defaultFontDirCandidates(final String osName) {
-        final String normalized = osName == null ? "" : osName.toLowerCase(Locale.ROOT);
-        if (normalized.contains("win")) {
-            final String windowsRoot = System.getenv().getOrDefault("WINDIR", "C:\\Windows");
-            return List.of(
-                    Path.of("C:/Data/FONTS"),
-                    Path.of(windowsRoot).resolve("Fonts"),
-                    Path.of("/mnt/windows/Data/FONTS")
-            );
-        }
-
-        return List.of(
-                Path.of("/mnt/windows/Data/FONTS"),
-                Path.of("/mnt/c/Windows/Fonts"),
-                Path.of("/usr/share/fonts"),
-                Path.of("/usr/local/share/fonts")
-        );
-    }
-
-    static Path resolveDefaultFontDir(final String osName) {
-        final List<Path> candidates = defaultFontDirCandidates(osName);
-        for (Path candidate : candidates) {
-            final Path normalized = candidate.toAbsolutePath().normalize();
-            if (Files.isDirectory(normalized)) {
-                return normalized;
-            }
-        }
-        return candidates.getFirst().toAbsolutePath().normalize();
+    static Path resolveDefaultFontDir(final String modsPath,
+                                      final Path workingDir) {
+        final String normalizedModsPath = modsPath == null || modsPath.isBlank() ? "./mods" : modsPath;
+        return workingDir.resolve(normalizedModsPath)
+                .normalize()
+                .resolve(MOD_ID)
+                .resolve(MOD_FONT_DIR_NAME)
+                .normalize();
     }
 
     static Path currentFontDir() {

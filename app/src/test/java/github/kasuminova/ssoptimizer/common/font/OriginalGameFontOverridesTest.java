@@ -112,20 +112,17 @@ class OriginalGameFontOverridesTest {
     }
 
     @Test
-    void windowsDefaultFontDirCandidatesPreferLocalWindowsPaths() {
-        final List<Path> candidates = OriginalGameFontOverrides.defaultFontDirCandidates("Windows 11");
+    void defaultFontDirResolvesToModFontsUnderWorkingDirectory() {
+        final Path fontDir = OriginalGameFontOverrides.resolveDefaultFontDir("../mods", Path.of("C:/Games/Starsector/starsector-core"));
 
-        assertEquals(Path.of("C:/Data/FONTS"), candidates.get(0));
-        assertTrue(candidates.get(1).toString().replace('\\', '/').endsWith("/Fonts"));
-        assertEquals(Path.of("/mnt/windows/Data/FONTS"), candidates.get(2));
+        assertEquals(Path.of("C:/Games/Starsector/mods/ssoptimizer/fonts"), fontDir);
     }
 
     @Test
-    void linuxDefaultFontDirCandidatesKeepLegacyMountFirst() {
-        final List<Path> candidates = OriginalGameFontOverrides.defaultFontDirCandidates("Linux");
+    void blankModsPathFallsBackToRelativeModsDirectory() {
+        final Path fontDir = OriginalGameFontOverrides.resolveDefaultFontDir("", Path.of("/games/starsector"));
 
-        assertEquals(Path.of("/mnt/windows/Data/FONTS"), candidates.get(0));
-        assertEquals(Path.of("/mnt/c/Windows/Fonts"), candidates.get(1));
+        assertEquals(Path.of("/games/starsector/mods/ssoptimizer/fonts"), fontDir);
     }
 
 }

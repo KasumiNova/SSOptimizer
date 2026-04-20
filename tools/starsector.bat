@@ -2,6 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
+cd /d "%SCRIPT_DIR%"
 for %%I in ("%SCRIPT_DIR%..") do set "GAME_ROOT=%%~fI"
 set "JAVA_EXE="
 
@@ -23,19 +24,20 @@ for /f "delims=" %%I in ('where java.exe 2^>nul') do (
 )
 if defined JAVA_EXE goto runGame
 
-echo ERROR: 未找到可用的 Java 25 运行时。已尝试扫描脚本/游戏目录、JAVA_HOME 和 PATH。
+echo ERROR: ?????? Java 25 ???????????/?????JAVA_HOME ? PATH?
 exit /b 1
 
 :runGame
-"%JAVA_EXE%" -javaagent:../mods/ssoptimizer/jars/SSOptimizer.jar -noverify -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+ShowCodeDetailsInExceptionMessages -XX:+ExtensiveErrorReports -XX:+ShowMessageBoxOnError -XX:+PrintCommandLineFlags -XX:+TieredCompilation -XX:-UseCondCardMark -Xlog:async -XX:+UseFastStosb -XX:+AlwaysCompileLoopMethods -XX:TieredStopAtLevel=4 -XX:TrimNativeHeapInterval=60000 -XX:UseAVX=3 -XX:AVX3Threshold=0 -XX:UseSSE=4 -XX:+UseSSE42Intrinsics -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -XX:+UseFMA -XX:+UseBMI1Instructions -XX:+UseBMI2Instructions -XX:+UseCLMUL -XX:+UseFastUnorderedTimeStamps -XX:+UseUnalignedLoadStores -XX:+UseXMMForArrayCopy -XX:+UseXMMForObjInit -XX:+UseXmmI2D -XX:+UseXmmI2F -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:+ParallelRefProcEnabled -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=compact -XX:ShenandoahAllocationThreshold=85 -XX:ShenandoahGuaranteedGCInterval=0 -XX:+ZeroTLAB -XX:+SegmentedCodeCache -XX:+AlwaysAtomicAccesses -XX:+UseStringDeduplication -XX:-DontCompileHugeMethods -XX:Tier0Delay=1 -XX:+UseFPUForSpilling -XX:+EnableVectorAggressiveReboxing -XX:+EnableVectorReboxing -XX:+EnableVectorSupport -XX:-AlignVector -XX:TieredOldPercentage=10000 -XX:Tier0ProfilingStartPercentage=2000 -XX:IncreaseFirstTierCompileThresholdAt=99 -XX:InterpreterProfilePercentage=99 -XX:+UseVectorCmov -XX:+UseVectorStubs -XX:ReferencesPerThread=0 -XX:MaxGCPauseMillis=10 -XX:-EnableThreadSMRStatistics -XX:+UseUnalignedAccesses -XX:PerMethodRecompilationCutoff=100000 -XX:ProfileMaturityPercentage=100 -XX:NmethodSweepActivity=1 -XX:ThreadPriorityPolicy=1 -XX:ReservedCodeCacheSize=256m -XX:+PrintCodeCache -XX:-UseDynamicNumberOfCompilerThreads -XX:CompilerDirectivesFile=./compiler_directives.txt -XX:-BytecodeVerificationLocal -XX:-BytecodeVerificationRemote -Djava.util.Arrays.useLegacyMergeSort=true --enable-preview --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.nio.Buffer.UNSAFE=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.lang.ref=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED --add-opens=java.desktop/java.awt.Rectangle=ALL-UNNAMED --add-opens=java.desktop/java.awt=ALL-UNNAMED --add-exports=java.base/jdk.internal.ref=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx2048m -Xms2048m -Xss4m -Dcom.fs.starfarer.settings.paths.saves=../saves -Dcom.fs.starfarer.settings.paths.screenshots=../screenshots -Dcom.fs.starfarer.settings.paths.mods=../mods -Dcom.fs.starfarer.settings.paths.logs=. -Dssoptimizer.font.ttf.enable=true -classpath janino.jar;commons-compiler.jar;commons-compiler-jdk.jar;starfarer.api.jar;starfarer_obf.jar;jogg-0.0.7.jar;jorbis-0.0.15.jar;json.jar;lwjgl.jar;jinput.jar;log4j-1.2.9.jar;lwjgl_util.jar;fs.sound_obf.jar;fs.common_obf.jar;xstream-1.4.10.jar;txw2-3.0.2.jar;jaxb-api-2.4.0-b180830.0359.jar;webp-imageio-0.1.6.jar com.fs.starfarer.StarfarerLauncher %*
+"%JAVA_EXE%" -javaagent:../mods/ssoptimizer/jars/SSOptimizer.jar -Dfile.encoding=UTF-8 -noverify -XX:+UnlockDiagnosticVMOptions -XX:+ShowCodeDetailsInExceptionMessages -XX:+PrintCommandLineFlags -XX:+TieredCompilation -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:+ParallelRefProcEnabled -XX:+UseZGC -XX:ReservedCodeCacheSize=256m -XX:CompilerDirectivesFile=./compiler_directives.txt -Djdk.xml.maxElementDepth=10000 -XX:-BytecodeVerificationLocal -XX:-BytecodeVerificationRemote -Djava.util.Arrays.useLegacyMergeSort=true --enable-preview --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.nio.Buffer.UNSAFE=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.lang.ref=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED --add-opens=java.desktop/java.awt.Rectangle=ALL-UNNAMED --add-opens=java.desktop/java.awt=ALL-UNNAMED --add-exports=java.base/jdk.internal.ref=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xms4096m -Xmx4096m -Xss4m -Dcom.fs.starfarer.settings.paths.saves=../saves -Dcom.fs.starfarer.settings.paths.screenshots=../screenshots -Dcom.fs.starfarer.settings.paths.mods=../mods -Dcom.fs.starfarer.settings.paths.logs=. -Dssoptimizer.font.ttf.enable=true -Dlog4j.configuration=file:./log4j.properties -Djava.library.path=./native/windows -Dcom.fs.starfarer.settings.windows=true -classpath janino.jar;commons-compiler.jar;commons-compiler-jdk.jar;starfarer.api.jar;starfarer_obf.jar;jogg-0.0.7.jar;jorbis-0.0.15.jar;json.jar;lwjgl.jar;jinput.jar;log4j-1.2.9.jar;lwjgl_util.jar;fs.sound_obf.jar;fs.common_obf.jar;xstream-1.4.10.jar;txw2-3.0.2.jar;jaxb-api-2.4.0-b180830.0359.jar;webp-imageio-0.1.6.jar com.fs.starfarer.StarfarerLauncher %*
 if errorlevel 1 pause
 exit /b %errorlevel%
 
 :tryCandidate
 set "CANDIDATE=%~1"
 if not exist "%CANDIDATE%" goto :eof
-for /f "delims=" %%V in ('"%CANDIDATE%" -version 2^>^&1 ^| findstr /R /C:"\"25\.""') do (
-    set "JAVA_EXE=%CANDIDATE%"
-    goto :eof
-)
+set "VERSION_FILE=%TEMP%\ssoptimizer-java-version-%RANDOM%-%RANDOM%.txt"
+"%CANDIDATE%" -version >"%VERSION_FILE%" 2>&1
+findstr /C:"25." "%VERSION_FILE%" >nul
+if not errorlevel 1 set "JAVA_EXE=%CANDIDATE%"
+del "%VERSION_FILE%" >nul 2>&1
 goto :eof
