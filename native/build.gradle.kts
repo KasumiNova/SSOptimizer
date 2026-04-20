@@ -233,6 +233,69 @@ val windowsCrossSources = fileTree("src/main/cpp") {
     include("**/*.cpp")
 }.files.sortedBy { it.absolutePath }
 
+/**
+ * 收集需要随主 DLL 一起部署的运行时依赖 DLL/SO 文件列表。
+ * Windows: vcpkg bin 目录下的 libpng16.dll / freetype.dll / zlib1.dll / bz2.dll / brotlidec.dll / brotlicommon.dll
+ * Linux: pkg-config --libs 解析出的 .so 所在目录下的实际库文件
+ */
+fun resolveWindowsRuntimeDlls(): List<File> {
+    if (!buildTargetIsWindows) return emptyList()
+    val roots = listOfNotNull(windowsLibpngRoot, windowsFreetypeRoot).distinct()
+    val dllNames = listOf(
+        "libpng16.dll",
+        "freetype.dll",
+        "zlib1.dll",
+        "bz2.dll",
+        "brotlidec.dll", "brotlicommon.dll"
+    )
+    val found = mutableSetOf<File>()
+    for (root in roots) {
+        val dir = root.resolve("bin")
+        if (dir.isDirectory) {
+            for (name in dllNames) {
+                val candidate = dir.resolve(name)
+                if (candidate.isFile) {
+                    found.add(candidate)
+                }
+            }
+        }
+    }
+    return found.toList()
+}
+
+fun resolveLinuxRuntimeSharedLibs(): List<File> {
+    if (buildTargetIsWindows) return emptyList()
+    // On Linux, libpng and freetype are typically system libraries found via LD_LIBRARY_PATH or RPATH.
+    // We collect the .so files from pkg-config --libs output directories.
+    val libDirs = mutableSetOf<File>()
+    val allLinkerArgs = libpngLinkerArgs + freetypeLinkerArgs
+    for (arg in allLinkerArgs) {
+        if (arg.startsWith("-L")) {
+            val dir = file(arg.removePrefix("-L"))
+            if (dir.isDirectory) libDirs.add(dir)
+        }
+    }
+    // Extract library names from -l flags and resolve from lib dirs
+    val libNames = allLinkerArgs.filter { it.startsWith("-l") }.map { it.removePrefix("-l") }.distinct()
+    val found = mutableSetOf<File>()
+    for (dir in libDirs) {
+        for (name in libNames) {
+            // Look for libXXX.so and libXXX.so.* (versioned)
+            dir.listFiles()?.filter { f ->
+                f.name == "lib${name}.so" || f.name.startsWith("lib${name}.so.")
+            }?.forEach { found.add(it) }
+        }
+    }
+    return found.toList()
+}
+
+val windowsRuntimeDlls: List<File> = resolveWindowsRuntimeDlls()
+val linuxRuntimeSharedLibs: List<File> = resolveLinuxRuntimeSharedLibs()
+
+// Expose to root project for packaging
+extra["windowsRuntimeDlls"] = windowsRuntimeDlls
+extra["linuxRuntimeSharedLibs"] = linuxRuntimeSharedLibs
+
 library {
     targetMachines.set(listOf(if (buildTargetIsWindows) machines.windows.x86_64 else machines.linux.x86_64))
     linkage.set(listOf(Linkage.SHARED))
@@ -328,6 +391,8 @@ tasks.withType<LinkSharedLibrary>().configureEach {
         linkerArgs.addAll(libpngLinkerArgs)
         linkerArgs.addAll(freetypeLinkerArgs)
         linkerArgs.addAll(x11LinkerArgs)
+        // Set RPATH to $ORIGIN so that co-deployed .so dependencies are found at runtime
+        linkerArgs.addAll(listOf("-Wl,-rpath,\$ORIGIN"))
     }
 }
 

@@ -73,15 +73,33 @@ jobs:
 
       - name: Build native library
         run: |
-          ./gradlew :native:assemble \
+          ./gradlew :native:assembleRelease \
             -Pstarsector.gameDir= \
             -Pstarsector.platform=linux
+
+      - name: Collect runtime dependencies
+        run: |
+          mkdir -p native/build/runtime-deps
+          # Collect versioned .so files for libpng and freetype using ldconfig
+          for lib in libpng16 libfreetype; do
+            path=$(ldconfig -p | grep -oP "/[^\s]+${lib}\.so\.\d[^\s]*" | head -1)
+            if [ -n "$path" ] && [ -f "$path" ]; then
+              cp -L "$path" native/build/runtime-deps/
+              echo "Collected: $(basename $path)"
+            fi
+          done
+
+      - name: Stage native artifacts
+        run: |
+          mkdir -p native/build/stage
+          cp native/build/lib/main/release/libnative.so native/build/stage/
+          cp native/build/runtime-deps/*.so* native/build/stage/ 2>/dev/null || true
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: libssoptimizer-linux
-          path: native/build/lib/main/debug/libnative.so
+          path: native/build/stage/
 
   build-native-windows:
     name: Build Native (Windows)
@@ -106,14 +124,36 @@ jobs:
       - name: Build native library
         shell: cmd
         run: |
-          gradlew.bat :native:assemble ^
+          gradlew.bat :native:assembleRelease ^
             -Pstarsector.gameDir= ^
             -Pstarsector.platform=windows ^
             -Pssoptimizer.native.windows.vcpkgRoot=%VCPKG_INSTALLATION_ROOT% ^
             -Pssoptimizer.native.windows.triplet=x64-windows
 
+      - name: Collect vcpkg runtime dependencies
+        shell: pwsh
+        run: |
+          $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
+          $deps = @("libpng16.dll", "freetype.dll", "zlib1.dll", "bz2.dll", "brotlidec.dll", "brotlicommon.dll")
+          $staging = "native/build/runtime-deps"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+          foreach ($dll in $deps) {
+            $src = Join-Path $vcpkgBin $dll
+            if (Test-Path $src) {
+              Copy-Item $src $staging
+              Write-Host "Collected: $dll"
+            }
+          }
+
+      - name: Stage native artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path native/build/stage | Out-Null
+          Copy-Item native/build/lib/main/release/native.dll native/build/stage/
+          Copy-Item native/build/runtime-deps/*.dll native/build/stage/ -ErrorAction SilentlyContinue
+
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: ssoptimizer-windows
-          path: native/build/lib/main/debug/native.dll
+          path: native/build/stage/

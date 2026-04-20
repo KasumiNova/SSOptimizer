@@ -72,15 +72,32 @@ jobs:
 
       - name: Build native library
         run: |
-          ./gradlew :native:assemble \
+          ./gradlew :native:assembleRelease \
             -Pstarsector.gameDir= \
             -Pstarsector.platform=linux
+
+      - name: Collect runtime dependencies
+        run: |
+          mkdir -p native/build/runtime-deps
+          for lib in libpng16 libfreetype; do
+            path=$(ldconfig -p | grep -oP "/[^\s]+${lib}\.so\.\d[^\s]*" | head -1)
+            if [ -n "$path" ] && [ -f "$path" ]; then
+              cp -L "$path" native/build/runtime-deps/
+              echo "Collected: $(basename $path)"
+            fi
+          done
+
+      - name: Stage native artifacts
+        run: |
+          mkdir -p native/build/stage
+          cp native/build/lib/main/release/libnative.so native/build/stage/
+          cp native/build/runtime-deps/*.so* native/build/stage/ 2>/dev/null || true
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: native-linux
-          path: native/build/lib/main/debug/libnative.so
+          path: native/build/stage/
 
   build-native-windows:
     name: Build Native (Windows)
@@ -104,17 +121,39 @@ jobs:
       - name: Build native library
         shell: cmd
         run: |
-          gradlew.bat :native:assemble ^
+          gradlew.bat :native:assembleRelease ^
             -Pstarsector.gameDir= ^
             -Pstarsector.platform=windows ^
             -Pssoptimizer.native.windows.vcpkgRoot=%VCPKG_INSTALLATION_ROOT% ^
             -Pssoptimizer.native.windows.triplet=x64-windows
 
+      - name: Collect vcpkg runtime dependencies
+        shell: pwsh
+        run: |
+          $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
+          $deps = @("libpng16.dll", "freetype.dll", "zlib1.dll", "bz2.dll", "brotlidec.dll", "brotlicommon.dll")
+          $staging = "native/build/runtime-deps"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+          foreach ($dll in $deps) {
+            $src = Join-Path $vcpkgBin $dll
+            if (Test-Path $src) {
+              Copy-Item $src $staging
+              Write-Host "Collected: $dll"
+            }
+          }
+
+      - name: Stage native artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path native/build/stage | Out-Null
+          Copy-Item native/build/lib/main/release/native.dll native/build/stage/
+          Copy-Item native/build/runtime-deps/*.dll native/build/stage/ -ErrorAction SilentlyContinue
+
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: native-windows
-          path: native/build/lib/main/debug/native.dll
+          path: native/build/stage/
 
   release:
     name: Package & Publish Release
@@ -156,6 +195,17 @@ jobs:
           cp artifacts/mapped-jar-windows/SSOptimizer-mapped.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
           cp artifacts/native-linux/libnative.so "${LINUX_MOD_STAGE}/native/linux/lib${MOD_ID}.so"
           cp artifacts/native-windows/native.dll "${WINDOWS_MOD_STAGE}/native/windows/${MOD_ID}.dll"
+
+          # Copy runtime dependency libraries (libpng, freetype, zlib, etc.)
+          # They are in the same flat directory as the main library
+          for f in artifacts/native-linux/*.so*; do
+            [ "$(basename "$f")" = "libnative.so" ] && continue
+            cp "$f" "${LINUX_MOD_STAGE}/native/linux/" 2>/dev/null || true
+          done
+          for f in artifacts/native-windows/*.dll; do
+            [ "$(basename "$f")" = "native.dll" ] && continue
+            cp "$f" "${WINDOWS_MOD_STAGE}/native/windows/" 2>/dev/null || true
+          done
 
           cp mod_info.json README.md "${LINUX_MOD_STAGE}/"
           cp mod_info.json README.md "${WINDOWS_MOD_STAGE}/"

@@ -193,8 +193,16 @@ tasks.register("remapToNamed") {
 val mappedJarFile = layout.buildDirectory.file("libs/SSOptimizer-mapped.jar")
 val reobfJarFile = layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
 val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
-val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/libnative.so")
-val nativeWindowsLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/native.dll")
+val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/main/release/libnative.so")
+val nativeWindowsLibraryFile = project(":native").layout.buildDirectory.file("lib/main/release/native.dll")
+val nativeWindowsRuntimeDlls: List<File> by lazy {
+    @Suppress("UNCHECKED_CAST")
+    (project(":native").extra["windowsRuntimeDlls"] as? List<File>) ?: emptyList()
+}
+val nativeLinuxRuntimeSharedLibs: List<File> by lazy {
+    @Suppress("UNCHECKED_CAST")
+    (project(":native").extra["linuxRuntimeSharedLibs"] as? List<File>) ?: emptyList()
+}
 val packagedFontFntDir = rootProject.file("game-fonts/fnt")
 val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
 val log4jConfigFile = rootProject.file("log4j.properties")
@@ -217,7 +225,7 @@ tasks.register<Copy>("jarMapped") {
 tasks.register<Sync>("stageUserMod") {
     group = "distribution"
     description = "Stage an end-user ready mod layout under build/user-package"
-    dependsOn("jarMapped", ":native:assemble")
+    dependsOn("jarMapped", ":native:assembleRelease")
 
     from(mappedJarFile) {
         into("jars")
@@ -230,12 +238,18 @@ tasks.register<Sync>("stageUserMod") {
         into("native/linux")
         rename { System.mapLibraryName(modId) }
     }
+    from(project.provider { nativeLinuxRuntimeSharedLibs.filter { it.isFile } }) {
+        into("native/linux")
+    }
     from(project.provider {
         val file = nativeWindowsLibraryFile.get().asFile
         if (file.isFile) listOf(file) else emptyList<File>()
     }) {
         into("native/windows")
         rename { System.mapLibraryName(modId) }
+    }
+    from(project.provider { nativeWindowsRuntimeDlls.filter { it.isFile } }) {
+        into("native/windows")
     }
     from(packagedFontTtfDir) {
         into("fonts")
@@ -471,7 +485,7 @@ tasks.register<Copy>("installDevMod") {
     dependsOn("jarMapped")
 
     if (targetPlatformProvider.get() == "linux") {
-        dependsOn(":native:assemble")
+        dependsOn(":native:assembleRelease")
     }
 
     from(mappedJarFile) {
@@ -485,6 +499,13 @@ tasks.register<Copy>("installDevMod") {
     }) {
         into("native/${targetPlatformProvider.get()}")
         rename { System.mapLibraryName("ssoptimizer") }
+    }
+    from(project.provider {
+        val platform = targetPlatformProvider.get()
+        val deps = if (platform == "windows") nativeWindowsRuntimeDlls else nativeLinuxRuntimeSharedLibs
+        deps.filter { it.isFile }
+    }) {
+        into("native/${targetPlatformProvider.get()}")
     }
     from(rootProject.file("mod_info.json"))
 

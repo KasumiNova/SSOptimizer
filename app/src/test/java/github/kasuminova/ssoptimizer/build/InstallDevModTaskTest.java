@@ -15,7 +15,7 @@ class InstallDevModTaskTest {
 
         assertTrue(content.contains("tasks.register<Copy>(\"installDevMod\")"), "installDevMod task must be registered");
         assertTrue(content.contains("dependsOn(\":app:jar\")"), "installDevMod must depend on app jar");
-        assertTrue(content.contains("dependsOn(\":native:assemble\")"), "installDevMod must depend on native assemble");
+        assertTrue(content.contains("dependsOn(\":native:assembleRelease\")"), "installDevMod must depend on native assembleRelease");
         assertTrue(content.contains("starsector.gameDir"), "installDevMod must resolve the Starsector game directory");
     }
 }
