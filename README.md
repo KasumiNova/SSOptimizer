@@ -32,13 +32,13 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 
 如果你希望继续直接使用 `starsector.exe`：
 
-1. 正常按上面的步骤解压 `windows/` 目录内容到游戏根目录
-2. 运行游戏根目录下的 `enable_starsector_exe_launch.ps1`，或 `starsector-core/mods/ssoptimizer/enable_starsector_exe_launch.ps1`
+1. 正常按上面的步骤解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录
+2. 推荐运行游戏根目录下的 `enable_starsector_exe_launch.bat`，它会自动以 `ExecutionPolicy Bypass` 调用 PowerShell；也可运行 `starsector-core/mods/ssoptimizer/enable_starsector_exe_launch.bat`
 3. 脚本会自动检测可用的 Java 25 运行时：优先 `zulu25/`，其次已是 Java 25 的 `jre/`；随后备份 `vmparams` 并注入 javaagent 参数
 4. 之后可继续直接双击 `starsector.exe` 启动
 5. 如需回滚，执行：
    ```powershell
-   powershell -ExecutionPolicy Bypass -File .\enable_starsector_exe_launch.ps1 -Restore
+   .\enable_starsector_exe_launch.bat -Restore
    ```
 
 ### Linux
@@ -89,6 +89,9 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 # 生成 Windows 覆盖安装包（解压到游戏根目录后可配合 starsector.exe 启动补丁脚本）
 ./gradlew packageWindowsOverlayZip -Pstarsector.gameDir=/path/to/Starsector
 # 产物：build/distributions/SSOptimizer-<version>-windows.zip
+
+# Windows 如需继续用 exe 入口，优先运行 bat 包装器（自动带 ExecutionPolicy Bypass）
+./enable_starsector_exe_launch.bat
 
 # 一次性生成双端发布包
 ./gradlew packageReleaseZips -Pstarsector.gameDir=/path/to/Starsector

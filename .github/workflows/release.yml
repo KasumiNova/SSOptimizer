@@ -26,13 +26,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build reobfuscated jar
+      - name: Build mapped jar
         run: |
-          ./gradlew build \
+          ./gradlew jarMapped \
             -Pstarsector.gameDir= \
             -Pstarsector.platform=${{ matrix.platform }} \
-            -x :native:assemble \
-            -x test
+            -x :native:assemble
 
       - name: Run unit tests
         run: |
@@ -40,11 +39,11 @@ jobs:
             -Pstarsector.gameDir= \
             -Pstarsector.platform=${{ matrix.platform }}
 
-      - name: Upload reobf jar
+      - name: Upload mapped jar
         uses: actions/upload-artifact@v4
         with:
-          name: reobf-jar-${{ matrix.platform }}
-          path: build/libs/SSOptimizer-reobf.jar
+          name: mapped-jar-${{ matrix.platform }}
+          path: build/libs/SSOptimizer-mapped.jar
 
   build-native-linux:
     name: Build Native (Linux)
@@ -151,14 +150,15 @@ jobs:
                    "${WINDOWS_MOD_STAGE}/native/windows" \
                    "${WINDOWS_STAGE}/starsector-core/graphics/fonts"
 
-          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${LINUX_MOD_STAGE}/jars/SSOptimizer.jar"
-          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/mapped-jar-linux/SSOptimizer-mapped.jar "${LINUX_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/mapped-jar-windows/SSOptimizer-mapped.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
           cp artifacts/native-linux/libnative.so "${LINUX_MOD_STAGE}/native/linux/lib${MOD_ID}.so"
           cp artifacts/native-windows/native.dll "${WINDOWS_MOD_STAGE}/native/windows/${MOD_ID}.dll"
 
           cp mod_info.json README.md "${LINUX_MOD_STAGE}/"
           cp mod_info.json README.md "${WINDOWS_MOD_STAGE}/"
           cp tools/enable_starsector_exe_launch.ps1 "${WINDOWS_MOD_STAGE}/"
+          cp tools/enable_starsector_exe_launch.bat "${WINDOWS_MOD_STAGE}/"
           cp game-fonts/fnt/* game-fonts/ttf/* "${LINUX_STAGE}/graphics/fonts/"
           cp game-fonts/fnt/* game-fonts/ttf/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
 
@@ -168,6 +168,7 @@ jobs:
 
           cp tools/starsector.bat "${WINDOWS_STAGE}/starsector-core/starsector.bat"
           cp tools/enable_starsector_exe_launch.ps1 "${WINDOWS_STAGE}/enable_starsector_exe_launch.ps1"
+          cp tools/enable_starsector_exe_launch.bat "${WINDOWS_STAGE}/enable_starsector_exe_launch.bat"
 
           mkdir -p build/distributions
           cd "${LINUX_STAGE}"

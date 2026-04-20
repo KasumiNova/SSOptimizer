@@ -201,6 +201,7 @@ val linuxLauncherScriptFile = rootProject.file("tools/starsector.sh")
 val linuxInjectedLauncherScriptFile = rootProject.file("tools/launch_injected_ss.sh")
 val windowsLauncherScriptFile = rootProject.file("tools/starsector.bat")
 val windowsExePatchScriptFile = rootProject.file("tools/enable_starsector_exe_launch.ps1")
+val windowsExePatchBatFile = rootProject.file("tools/enable_starsector_exe_launch.bat")
 val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
 
 tasks.register<Copy>("jarMapped") {
@@ -216,9 +217,9 @@ tasks.register<Copy>("jarMapped") {
 tasks.register<Sync>("stageUserMod") {
     group = "distribution"
     description = "Stage an end-user ready mod layout under build/user-package"
-    dependsOn("jarReobf", ":native:assemble")
+    dependsOn("jarMapped", ":native:assemble")
 
-    from(reobfJarFile) {
+    from(mappedJarFile) {
         into("jars")
         rename { "SSOptimizer.jar" }
     }
@@ -239,12 +240,13 @@ tasks.register<Sync>("stageUserMod") {
     from(rootProject.file("mod_info.json"))
     from(rootProject.file("README.md"))
     from(windowsExePatchScriptFile)
+    from(windowsExePatchBatFile)
 
     into(userModStageDir)
 
     doFirst {
-        check(reobfJarFile.get().asFile.isFile) {
-            "未找到用户发布所需的 reobf 产物: ${reobfJarFile.get().asFile}"
+        check(mappedJarFile.get().asFile.isFile) {
+            "未找到用户发布所需的 mapped 产物: ${mappedJarFile.get().asFile}"
         }
         val hasAnyNative = nativeLinuxLibraryFile.get().asFile.isFile || nativeWindowsLibraryFile.get().asFile.isFile
         check(hasAnyNative) {
@@ -305,6 +307,7 @@ tasks.register<Sync>("stageWindowsOverlay") {
         into("starsector-core")
     }
     from(windowsExePatchScriptFile)
+    from(windowsExePatchBatFile)
 
     into(windowsOverlayStageDir)
 
