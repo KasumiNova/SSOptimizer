@@ -20,6 +20,7 @@ class WindowsOverlayDistributionContractTest {
     void repositoryKeepsWindowsOverlayInstallerArtifacts() throws Exception {
         Path repoRoot = MappingTaskContractTest.repositoryRoot();
         Path buildScript = repoRoot.resolve("build.gradle.kts");
+        Path releaseWorkflow = repoRoot.resolve(".github/workflows/release.yml");
         Path readme = repoRoot.resolve("README.md");
         Path rootLauncher = repoRoot.resolve("tools/starsector-ssoptimizer.bat");
         Path internalLauncher = repoRoot.resolve("tools/starsector.bat");
@@ -35,6 +36,15 @@ class WindowsOverlayDistributionContractTest {
         assertFalse(buildScriptText.contains("tools/enable_starsector_exe_launch.ps1"), "Windows overlay 包不应继续包含旧安装脚本");
         assertFalse(buildScriptText.contains("tools/enable_starsector_exe_launch.bat"), "Windows overlay 包不应继续包含旧安装包装器");
         assertTrue(buildScriptText.contains("into(\"fonts\")"), "模组打包必须包含 fonts 目录");
+
+        String releaseWorkflowText = Files.readString(releaseWorkflow);
+        assertTrue(releaseWorkflowText.contains("tools/starsector-ssoptimizer.bat"), "Release workflow 必须包含 Windows 根目录直接启动 bat");
+        assertTrue(releaseWorkflowText.contains("cp game-fonts/ttf/* \"${LINUX_MOD_STAGE}/fonts/\""), "Release workflow 必须将 Linux TTF 打包到模组 fonts 目录");
+        assertTrue(releaseWorkflowText.contains("cp game-fonts/ttf/* \"${WINDOWS_MOD_STAGE}/fonts/\""), "Release workflow 必须将 Windows TTF 打包到模组 fonts 目录");
+        assertTrue(releaseWorkflowText.contains("cp game-fonts/fnt/* \"${LINUX_STAGE}/graphics/fonts/\""), "Release workflow 必须将 Linux FNT 打包到平台根 graphics/fonts");
+        assertTrue(releaseWorkflowText.contains("cp game-fonts/fnt/* \"${WINDOWS_STAGE}/starsector-core/graphics/fonts/\""), "Release workflow 必须将 Windows FNT 打包到平台根 graphics/fonts");
+        assertFalse(releaseWorkflowText.contains("enable_starsector_exe_launch.ps1"), "Release workflow 不应继续引用旧安装脚本");
+        assertFalse(releaseWorkflowText.contains("enable_starsector_exe_launch.bat"), "Release workflow 不应继续引用旧安装包装器");
 
         String readmeText = Files.readString(readme);
         assertTrue(readmeText.contains("starsector-ssoptimizer.bat"), "README 必须说明直接启动 bat 的用法");
