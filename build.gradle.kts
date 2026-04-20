@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "github.kasuminova.ssoptimizer"
-version = "0.1.3-SNAPSHOT"
+version = "0.1.4-SNAPSHOT"
 
 @Suppress("UNCHECKED_CAST")
 val modInfo = JsonSlurper().parse(rootProject.file("mod_info.json")) as Map<String, Any?>
