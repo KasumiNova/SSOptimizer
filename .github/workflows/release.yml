@@ -141,7 +141,7 @@ jobs:
           LINUX_STAGE="${ROOT_STAGE}/linux"
           WINDOWS_STAGE="${ROOT_STAGE}/windows"
           LINUX_MOD_STAGE="${LINUX_STAGE}/mods/${MOD_ID}"
-          WINDOWS_MOD_STAGE="${WINDOWS_STAGE}/starsector-core/mods/${MOD_ID}"
+          WINDOWS_MOD_STAGE="${WINDOWS_STAGE}/mods/${MOD_ID}"
 
           mkdir -p "${LINUX_MOD_STAGE}/jars" \
                    "${LINUX_MOD_STAGE}/native/linux" \
@@ -159,6 +159,8 @@ jobs:
 
           cp mod_info.json README.md "${LINUX_MOD_STAGE}/"
           cp mod_info.json README.md "${WINDOWS_MOD_STAGE}/"
+          cp log4j.properties "${LINUX_STAGE}/log4j.properties"
+          cp log4j.properties "${WINDOWS_STAGE}/starsector-core/log4j.properties"
           cp game-fonts/ttf/* "${LINUX_MOD_STAGE}/fonts/"
           cp game-fonts/ttf/* "${WINDOWS_MOD_STAGE}/fonts/"
           cp game-fonts/fnt/* "${LINUX_STAGE}/graphics/fonts/"

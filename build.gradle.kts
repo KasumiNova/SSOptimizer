@@ -197,6 +197,7 @@ val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/
 val nativeWindowsLibraryFile = project(":native").layout.buildDirectory.file("lib/main/debug/native.dll")
 val packagedFontFntDir = rootProject.file("game-fonts/fnt")
 val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
+val log4jConfigFile = rootProject.file("log4j.properties")
 val linuxLauncherScriptFile = rootProject.file("tools/starsector.sh")
 val linuxInjectedLauncherScriptFile = rootProject.file("tools/launch_injected_ss.sh")
 val windowsLauncherScriptFile = rootProject.file("tools/starsector.bat")
@@ -275,6 +276,7 @@ tasks.register<Sync>("stageLinuxOverlay") {
     from(packagedFontFntDir) {
         into("graphics/fonts")
     }
+    from(log4jConfigFile)
     from(linuxLauncherScriptFile)
     from(linuxInjectedLauncherScriptFile)
 
@@ -291,11 +293,14 @@ tasks.register<Sync>("stageWindowsOverlay") {
     dependsOn("stageUserMod")
 
     from(userModStageDir) {
-        into("starsector-core/mods/$modId")
+        into("mods/$modId")
         exclude("native/linux/**")
     }
     from(packagedFontFntDir) {
         into("starsector-core/graphics/fonts")
+    }
+    from(log4jConfigFile) {
+        into("starsector-core")
     }
     from(windowsLauncherScriptFile) {
         into("starsector-core")

@@ -21,27 +21,29 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 ### Windows
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
-2. 下载并解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录；解压后应得到 `starsector-core/mods/ssoptimizer/`
-3. `.fnt` 覆盖字体会被解压到 `starsector-core/graphics/fonts/`；TTF 字体文件会放在 `starsector-core/mods/ssoptimizer/fonts/`；模组本体位于 `starsector-core/mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
+2. 下载并解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
+3. `.fnt` 覆盖字体会被解压到 `starsector-core/graphics/fonts/`；TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
 4. 使用项目提供的 `starsector-ssoptimizer.bat` 启动游戏；它会调用 `starsector-core/starsector.bat`，并按顺序扫描脚本/游戏目录下的所有 `java.exe`、`JAVA_HOME`、以及 `PATH` 中的 Java 25
-5. 如需手动注入 JVM 参数，可添加：
+5. 安装包会同时写入 `starsector-core/log4j.properties`，用于恢复默认文件日志输出
+6. 如需手动注入 JVM 参数，可添加：
    ```
    -javaagent:../mods/ssoptimizer/jars/SSOptimizer.jar
    ```
-6. 启动游戏，首次运行会在游戏根目录生成 `launch-config.json` 配置文件
+7. 启动游戏，首次运行会在游戏根目录生成 `launch-config.json` 配置文件
 
 ### Linux
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-linux.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
 3. `.fnt` 覆盖字体会被解压到游戏根目录 `graphics/fonts/`；TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
-4. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会按顺序扫描脚本目录下的所有 `java`、随后 `JAVA_HOME`、再扫描 `/usr/lib/jvm` 等系统目录中的 Java 25
-5. 如需手动注入 JVM 参数，可在启动脚本中添加：
+4. 安装包会同时写入游戏根目录 `log4j.properties`，用于恢复默认文件日志输出
+5. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会按顺序扫描脚本目录下的所有 `java`、随后 `JAVA_HOME`、再扫描 `/usr/lib/jvm` 等系统目录中的 Java 25
+6. 如需手动注入 JVM 参数，可在启动脚本中添加：
    ```
    -javaagent:./mods/ssoptimizer/jars/SSOptimizer.jar
    ```
-6. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
-7. 启动游戏
+7. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
+8. 启动游戏
 
 ## 配置
 
