@@ -268,6 +268,7 @@ tasks.register<Sync>("stageLinuxOverlay") {
 
     from(userModStageDir) {
         into("mods/$modId")
+        exclude("native/windows/**")
     }
     from(packagedFontFntDir) {
         into("graphics/fonts")
@@ -292,6 +293,7 @@ tasks.register<Sync>("stageWindowsOverlay") {
 
     from(userModStageDir) {
         into("starsector-core/mods/$modId")
+        exclude("native/linux/**")
     }
     from(packagedFontFntDir) {
         into("starsector-core/graphics/fonts")
@@ -360,10 +362,16 @@ tasks.register<Zip>("packageLinuxOverlayZip") {
 
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set(modReleaseVersion)
-    archiveClassifier.set("linux-overlay")
+    archiveClassifier.set("linux")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
     from(linuxOverlayStageDir)
+
+    doFirst {
+        check(nativeLinuxLibraryFile.get().asFile.isFile) {
+            "未找到 Linux 原生库: ${nativeLinuxLibraryFile.get().asFile}"
+        }
+    }
 
     doLast {
         println("✓ Linux overlay zip written to ${archiveFile.get().asFile}")
@@ -377,14 +385,26 @@ tasks.register<Zip>("packageWindowsOverlayZip") {
 
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set(modReleaseVersion)
-    archiveClassifier.set("windows-overlay")
+    archiveClassifier.set("windows")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
     from(windowsOverlayStageDir)
 
+    doFirst {
+        check(nativeWindowsLibraryFile.get().asFile.isFile) {
+            "未找到 Windows 原生库: ${nativeWindowsLibraryFile.get().asFile}"
+        }
+    }
+
     doLast {
         println("✓ Windows overlay zip written to ${archiveFile.get().asFile}")
     }
+}
+
+tasks.register("packageReleaseZips") {
+    group = "distribution"
+    description = "Build both Linux and Windows release zips"
+    dependsOn("packageLinuxOverlayZip", "packageWindowsOverlayZip")
 }
 
 tasks.register("jarReobf") {

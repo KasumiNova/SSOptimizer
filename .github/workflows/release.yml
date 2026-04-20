@@ -139,45 +139,47 @@ jobs:
           MOD_ID="ssoptimizer"
           VERSION="${{ steps.version.outputs.version }}"
           ROOT_STAGE="build/release-stage"
-          MOD_STAGE="${ROOT_STAGE}/mods/${MOD_ID}"
           LINUX_STAGE="${ROOT_STAGE}/linux"
           WINDOWS_STAGE="${ROOT_STAGE}/windows"
+          LINUX_MOD_STAGE="${LINUX_STAGE}/mods/${MOD_ID}"
+          WINDOWS_MOD_STAGE="${WINDOWS_STAGE}/starsector-core/mods/${MOD_ID}"
 
-          mkdir -p "${MOD_STAGE}/jars" \
-                   "${MOD_STAGE}/native/linux" \
-                   "${MOD_STAGE}/native/windows" \
+          mkdir -p "${LINUX_MOD_STAGE}/jars" \
+                   "${LINUX_MOD_STAGE}/native/linux" \
                    "${LINUX_STAGE}/graphics/fonts" \
-                   "${LINUX_STAGE}/mods" \
-                   "${WINDOWS_STAGE}/starsector-core/graphics/fonts" \
-                   "${WINDOWS_STAGE}/starsector-core/mods"
+                   "${WINDOWS_MOD_STAGE}/jars" \
+                   "${WINDOWS_MOD_STAGE}/native/windows" \
+                   "${WINDOWS_STAGE}/starsector-core/graphics/fonts"
 
-          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${MOD_STAGE}/jars/SSOptimizer.jar"
-          cp artifacts/native-linux/libnative.so "${MOD_STAGE}/native/linux/lib${MOD_ID}.so"
-          cp artifacts/native-windows/native.dll "${MOD_STAGE}/native/windows/${MOD_ID}.dll"
-          cp mod_info.json "${MOD_STAGE}/"
-          cp README.md "${MOD_STAGE}/"
-          cp tools/enable_starsector_exe_launch.ps1 "${MOD_STAGE}/"
-          cp game-fonts/fnt/* "${LINUX_STAGE}/graphics/fonts/"
-          cp game-fonts/ttf/* "${LINUX_STAGE}/graphics/fonts/"
-          cp game-fonts/fnt/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
-          cp game-fonts/ttf/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
+          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${LINUX_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/native-linux/libnative.so "${LINUX_MOD_STAGE}/native/linux/lib${MOD_ID}.so"
+          cp artifacts/native-windows/native.dll "${WINDOWS_MOD_STAGE}/native/windows/${MOD_ID}.dll"
 
-          cp -R "${MOD_STAGE}" "${LINUX_STAGE}/mods/${MOD_ID}"
+          cp mod_info.json README.md "${LINUX_MOD_STAGE}/"
+          cp mod_info.json README.md "${WINDOWS_MOD_STAGE}/"
+          cp tools/enable_starsector_exe_launch.ps1 "${WINDOWS_MOD_STAGE}/"
+          cp game-fonts/fnt/* game-fonts/ttf/* "${LINUX_STAGE}/graphics/fonts/"
+          cp game-fonts/fnt/* game-fonts/ttf/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
+
           cp tools/starsector.sh "${LINUX_STAGE}/starsector.sh"
           cp tools/launch_injected_ss.sh "${LINUX_STAGE}/launch_injected_ss.sh"
           chmod +x "${LINUX_STAGE}/starsector.sh" "${LINUX_STAGE}/launch_injected_ss.sh"
 
-          cp -R "${MOD_STAGE}" "${WINDOWS_STAGE}/starsector-core/mods/${MOD_ID}"
           cp tools/starsector.bat "${WINDOWS_STAGE}/starsector-core/starsector.bat"
           cp tools/enable_starsector_exe_launch.ps1 "${WINDOWS_STAGE}/enable_starsector_exe_launch.ps1"
 
           mkdir -p build/distributions
-          cd "${ROOT_STAGE}"
-          zip -r "../distributions/SSOptimizer-${VERSION}.zip" linux windows
+          cd "${LINUX_STAGE}"
+          zip -r "../../distributions/SSOptimizer-${VERSION}-linux.zip" .
+          cd "${GITHUB_WORKSPACE}/${WINDOWS_STAGE}"
+          zip -r "../../distributions/SSOptimizer-${VERSION}-windows.zip" .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: SSOptimizer ${{ steps.version.outputs.version }}
-          files: build/distributions/SSOptimizer-*.zip
+          files: |
+            build/distributions/SSOptimizer-*-linux.zip
+            build/distributions/SSOptimizer-*-windows.zip
           generate_release_notes: true

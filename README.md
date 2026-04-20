@@ -21,7 +21,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 ### Windows
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
-2. 打开压缩包中的 `windows/` 目录，把其中内容解压到游戏根目录；解压后应得到 `starsector-core/mods/ssoptimizer/`
+2. 下载并解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录；解压后应得到 `starsector-core/mods/ssoptimizer/`
 3. 覆盖字体会被解压到 `starsector-core/graphics/fonts/`；模组本体位于 `starsector-core/mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
 4. 使用项目提供的 `starsector-core/starsector.bat` 启动游戏；脚本会自动探测 `zulu25` / `jre` / `JAVA_HOME` 中的 Java 25
 5. 如需手动注入 JVM 参数，可添加：
@@ -44,7 +44,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 ### Linux
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
-2. 打开压缩包中的 `linux/` 目录，把其中内容解压到游戏根目录；解压后应得到 `mods/ssoptimizer/`
+2. 下载并解压 `SSOptimizer-<version>-linux.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
 3. 覆盖字体会被解压到游戏根目录 `graphics/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
 4. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会自动探测 `zulu25_linux` / `jbr25_linux` / `jre_linux` / `JAVA_HOME` 中的 Java 25
 5. 如需手动注入 JVM 参数，可在启动脚本中添加：
@@ -82,20 +82,19 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 # Windows PowerShell / cmd 建议显式传入游戏目录
 gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 
-# 生成统一安装包（包含 linux/ 与 windows/ 两套 overlay，首次构建建议显式提供游戏目录以完成 reobf）
-./gradlew packageUserModZip -Pstarsector.gameDir=/path/to/Starsector
-# 产物：build/distributions/SSOptimizer-<version>.zip
-# 压缩包内包含 linux/ 与 windows/ 两个目录，分别解压到对应平台的游戏根目录
-
-# 同义别名
-./gradlew packageInstallBundleZip -Pstarsector.gameDir=/path/to/Starsector
-
-# 单独生成 Linux 覆盖安装包
+# 生成 Linux 覆盖安装包
 ./gradlew packageLinuxOverlayZip -Pstarsector.gameDir=/path/to/Starsector
+# 产物：build/distributions/SSOptimizer-<version>-linux.zip
 
-# 单独生成 Windows 覆盖安装包（解压到游戏根目录后可配合 starsector.exe 启动补丁脚本）
+# 生成 Windows 覆盖安装包（解压到游戏根目录后可配合 starsector.exe 启动补丁脚本）
 ./gradlew packageWindowsOverlayZip -Pstarsector.gameDir=/path/to/Starsector
-# 产物：build/distributions/SSOptimizer-<version>-windows-overlay.zip
+# 产物：build/distributions/SSOptimizer-<version>-windows.zip
+
+# 一次性生成双端发布包
+./gradlew packageReleaseZips -Pstarsector.gameDir=/path/to/Starsector
+
+# 如需自用的统一 bundle，仍可保留
+./gradlew packageUserModZip -Pstarsector.gameDir=/path/to/Starsector
 
 # 原生模块编译
 ./gradlew :native:build
