@@ -26,17 +26,53 @@ function Test-Java25 {
     return $versionOutput -match 'version "25(?:\.|\")'
 }
 
-function Resolve-PreferredJava25RuntimeDir {
-    param([string]$ResolvedGameDir)
+function Get-JavaExeCandidatesUnder {
+    param([string]$Root)
 
-    $candidates = @(
-        (Join-Path $ResolvedGameDir "zulu25"),
-        (Join-Path $ResolvedGameDir "jre")
+    if ([string]::IsNullOrWhiteSpace($Root) -or -not (Test-Path $Root)) {
+        return @()
+    }
+
+    $normalizedRoot = (Resolve-Path $Root).Path
+    return @(Get-ChildItem -Path $normalizedRoot -Filter "java.exe" -File -Recurse -ErrorAction SilentlyContinue |
+            ForEach-Object { $_.FullName })
+}
+
+function Resolve-PreferredJava25RuntimeDir {
+    param(
+        [string]$ResolvedGameDir,
+        [string]$ScriptDir
     )
 
-    foreach ($candidate in $candidates) {
-        if (Test-Java25 (Join-Path $candidate "bin\java.exe")) {
-            return $candidate
+    $tested = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($root in @($ScriptDir, $ResolvedGameDir)) {
+        foreach ($candidate in Get-JavaExeCandidatesUnder $root) {
+            if (-not $tested.Add($candidate)) {
+                continue
+            }
+            if (Test-Java25 $candidate) {
+                return Split-Path -Parent (Split-Path -Parent $candidate)
+            }
+        }
+    }
+
+    $javaHome = $env:JAVA_HOME
+    if (-not [string]::IsNullOrWhiteSpace($javaHome)) {
+        $javaExe = Join-Path $javaHome "bin\java.exe"
+        if ($tested.Add($javaExe) -and (Test-Java25 $javaExe)) {
+            return $javaHome
+        }
+    }
+
+    $pathCandidates = @(Get-Command java.exe -All -ErrorAction SilentlyContinue |
+            ForEach-Object { $_.Source })
+    foreach ($candidate in $pathCandidates) {
+        if (-not $tested.Add($candidate)) {
+            continue
+        }
+        if (Test-Java25 $candidate) {
+            return Split-Path -Parent (Split-Path -Parent $candidate)
         }
     }
 
@@ -92,10 +128,11 @@ function Ensure-ExeRuntimeRedirect {
 
     $jreDir = Join-Path $ResolvedGameDir "jre"
     $runtimeBackupDir = Join-Path $ResolvedGameDir $runtimeBackupDirName
-    $targetRuntimeDir = Resolve-PreferredJava25RuntimeDir -ResolvedGameDir $ResolvedGameDir
+    $scriptDir = Split-Path -Parent $PSCommandPath
+    $targetRuntimeDir = Resolve-PreferredJava25RuntimeDir -ResolvedGameDir $ResolvedGameDir -ScriptDir $scriptDir
 
     if ($null -eq $targetRuntimeDir) {
-        throw "Missing detectable Java 25 runtime under $ResolvedGameDir (tried zulu25 and jre)"
+        throw "Missing detectable Java 25 runtime under $ResolvedGameDir (searched script/game directories, JAVA_HOME, and PATH)"
     }
 
     if ($targetRuntimeDir -eq $jreDir) {

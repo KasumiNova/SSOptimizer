@@ -1,18 +1,29 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%..") do set "GAME_ROOT=%%~fI"
 set "JAVA_EXE="
 
-call :tryCandidate "%GAME_ROOT%\zulu25\bin\java.exe"
+for /r "%SCRIPT_DIR%" %%I in (java.exe) do (
+    if not defined JAVA_EXE call :tryCandidate "%%~fI"
+)
 if defined JAVA_EXE goto runGame
-call :tryCandidate "%GAME_ROOT%\jre\bin\java.exe"
+
+for /r "%GAME_ROOT%" %%I in (java.exe) do (
+    if not defined JAVA_EXE call :tryCandidate "%%~fI"
+)
 if defined JAVA_EXE goto runGame
+
 if defined JAVA_HOME call :tryCandidate "%JAVA_HOME%\bin\java.exe"
 if defined JAVA_EXE goto runGame
 
-echo ERROR: 未找到可用的 Java 25 运行时。请安装 zulu25，或设置 JAVA_HOME 指向 Java 25。
+for /f "delims=" %%I in ('where java.exe 2^>nul') do (
+    if not defined JAVA_EXE call :tryCandidate "%%~fI"
+)
+if defined JAVA_EXE goto runGame
+
+echo ERROR: 未找到可用的 Java 25 运行时。已尝试扫描脚本/游戏目录、JAVA_HOME 和 PATH。
 exit /b 1
 
 :runGame

@@ -23,7 +23,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录；解压后应得到 `starsector-core/mods/ssoptimizer/`
 3. 覆盖字体会被解压到 `starsector-core/graphics/fonts/`；模组本体位于 `starsector-core/mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
-4. 使用项目提供的 `starsector-core/starsector.bat` 启动游戏；脚本会自动探测 `zulu25` / `jre` / `JAVA_HOME` 中的 Java 25
+4. 使用项目提供的 `starsector-core/starsector.bat` 启动游戏；脚本会按顺序扫描脚本/游戏目录下的所有 `java.exe`、`JAVA_HOME`、以及 `PATH` 中的 Java 25
 5. 如需手动注入 JVM 参数，可添加：
    ```
    -javaagent:../mods/ssoptimizer/jars/SSOptimizer.jar
@@ -34,7 +34,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 
 1. 正常按上面的步骤解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录
 2. 推荐运行游戏根目录下的 `enable_starsector_exe_launch.bat`，它会自动以 `ExecutionPolicy Bypass` 调用 PowerShell；也可运行 `starsector-core/mods/ssoptimizer/enable_starsector_exe_launch.bat`
-3. 脚本会自动检测可用的 Java 25 运行时：优先 `zulu25/`，其次已是 Java 25 的 `jre/`；随后备份 `vmparams` 并注入 javaagent 参数
+3. 脚本会自动检测可用的 Java 25 运行时：优先扫描脚本/游戏目录中的 `java.exe`，随后 `JAVA_HOME`，最后扫描 `PATH`；随后备份 `vmparams` 并注入 javaagent 参数
 4. 之后可继续直接双击 `starsector.exe` 启动
 5. 如需回滚，执行：
    ```powershell
@@ -46,7 +46,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-linux.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
 3. 覆盖字体会被解压到游戏根目录 `graphics/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
-4. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会自动探测 `zulu25_linux` / `jbr25_linux` / `jre_linux` / `JAVA_HOME` 中的 Java 25
+4. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会按顺序扫描脚本目录下的所有 `java`、随后 `JAVA_HOME`、再扫描 `/usr/lib/jvm` 等系统目录中的 Java 25
 5. 如需手动注入 JVM 参数，可在启动脚本中添加：
    ```
    -javaagent:./mods/ssoptimizer/jars/SSOptimizer.jar

@@ -14,33 +14,44 @@ is_java_25() {
 }
 
 resolve_java() {
-    for candidate in \
-        "$SCRIPT_DIR/zulu25_linux/bin/java" \
-        "$SCRIPT_DIR/jbr25_linux/bin/java" \
-        "$SCRIPT_DIR/jre_linux/bin/java" \
-        "$SCRIPT_DIR/jre/bin/java"
-    do
-        if is_java_25 "$candidate"; then
-            printf '%s\n' "$candidate"
+    find_java_under() {
+        search_root="$1"
+        if [ ! -d "$search_root" ]; then
             return 0
         fi
-    done
+
+        find "$search_root" -type f -name java 2>/dev/null | while IFS= read -r candidate; do
+            if is_java_25 "$candidate"; then
+                printf '%s\n' "$candidate"
+                break
+            fi
+        done
+    }
+
+    candidate=$(find_java_under "$SCRIPT_DIR" | head -n 1 || true)
+    if [ -n "$candidate" ]; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
 
     if [ -n "${JAVA_HOME:-}" ] && is_java_25 "$JAVA_HOME/bin/java"; then
         printf '%s\n' "$JAVA_HOME/bin/java"
         return 0
     fi
 
-    if command -v java >/dev/null 2>&1 && is_java_25 "$(command -v java)"; then
-        command -v java
-        return 0
-    fi
+    for system_root in /usr/lib/jvm /usr/lib64/jvm /usr/java /opt/java /opt/jdk /opt/jdks; do
+        candidate=$(find_java_under "$system_root" | head -n 1 || true)
+        if [ -n "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
 
     return 1
 }
 
 JAVA_EXE=$(resolve_java) || {
-    echo "ERROR: 未找到可用的 Java 25 运行时。请安装/放置 zulu25_linux、jbr25_linux、jre_linux，或设置 JAVA_HOME 指向 Java 25。" >&2
+    echo "ERROR: 未找到可用的 Java 25 运行时。已尝试扫描脚本目录、JAVA_HOME 和 /usr/lib/jvm 等系统目录。" >&2
     exit 1
 }
 
