@@ -21,16 +21,19 @@ class WindowsOverlayDistributionContractTest {
         Path buildScript = repoRoot.resolve("build.gradle.kts");
         Path readme = repoRoot.resolve("README.md");
         Path installerScript = repoRoot.resolve("tools/enable_starsector_exe_launch.ps1");
+        Path installerWrapper = repoRoot.resolve("tools/enable_starsector_exe_launch.bat");
 
         assertTrue(Files.exists(installerScript), "必须提供 Windows starsector.exe 启动补丁脚本");
+        assertTrue(Files.exists(installerWrapper), "必须提供 Windows starsector.exe 启动补丁 bat 包装器");
 
         String buildScriptText = Files.readString(buildScript);
         assertTrue(buildScriptText.contains("stageWindowsOverlay"), "必须提供 Windows overlay staging 任务");
         assertTrue(buildScriptText.contains("packageWindowsOverlayZip"), "必须提供 Windows overlay 打包任务");
         assertTrue(buildScriptText.contains("tools/enable_starsector_exe_launch.ps1"), "Windows overlay 包必须包含 vmparams 补丁脚本");
+        assertTrue(buildScriptText.contains("tools/enable_starsector_exe_launch.bat"), "Windows overlay 包必须包含 bat 包装器");
 
         String readmeText = Files.readString(readme);
-        assertTrue(readmeText.contains("enable_starsector_exe_launch.ps1"), "README 必须说明 starsector.exe 启动补丁脚本的用法");
+        assertTrue(readmeText.contains("enable_starsector_exe_launch.bat"), "README 必须说明 starsector.exe 启动补丁 bat 包装器的用法");
         assertTrue(readmeText.contains("packageWindowsOverlayZip"), "README 必须说明 Windows overlay 打包入口");
     }
 }
