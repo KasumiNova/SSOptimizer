@@ -236,12 +236,6 @@ tasks.register<Sync>("stageUserMod") {
         into("native/windows")
         rename { System.mapLibraryName(modId) }
     }
-    from(packagedFontFntDir) {
-        into("graphics/fonts")
-    }
-    from(packagedFontTtfDir) {
-        into("graphics/fonts")
-    }
     from(rootProject.file("mod_info.json"))
     from(rootProject.file("README.md"))
     from(windowsExePatchScriptFile)
@@ -275,6 +269,12 @@ tasks.register<Sync>("stageLinuxOverlay") {
     from(userModStageDir) {
         into("mods/$modId")
     }
+    from(packagedFontFntDir) {
+        into("graphics/fonts")
+    }
+    from(packagedFontTtfDir) {
+        into("graphics/fonts")
+    }
     from(linuxLauncherScriptFile)
     from(linuxInjectedLauncherScriptFile)
 
@@ -292,6 +292,12 @@ tasks.register<Sync>("stageWindowsOverlay") {
 
     from(userModStageDir) {
         into("starsector-core/mods/$modId")
+    }
+    from(packagedFontFntDir) {
+        into("starsector-core/graphics/fonts")
+    }
+    from(packagedFontTtfDir) {
+        into("starsector-core/graphics/fonts")
     }
     from(windowsLauncherScriptFile) {
         into("starsector-core")

@@ -22,7 +22,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 打开压缩包中的 `windows/` 目录，把其中内容解压到游戏根目录；解压后应得到 `starsector-core/mods/ssoptimizer/`
-3. 模组目录内已包含 `graphics/fonts/` 覆盖字体与 Linux/Windows 双端原生库
+3. 覆盖字体会被解压到 `starsector-core/graphics/fonts/`；模组本体位于 `starsector-core/mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
 4. 使用项目提供的 `starsector-core/starsector.bat` 启动游戏；脚本会自动探测 `zulu25` / `jre` / `JAVA_HOME` 中的 Java 25
 5. 如需手动注入 JVM 参数，可添加：
    ```
@@ -45,7 +45,7 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 打开压缩包中的 `linux/` 目录，把其中内容解压到游戏根目录；解压后应得到 `mods/ssoptimizer/`
-3. 模组目录内已包含 `graphics/fonts/` 覆盖字体与 Linux/Windows 双端原生库
+3. 覆盖字体会被解压到游戏根目录 `graphics/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
 4. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会自动探测 `zulu25_linux` / `jbr25_linux` / `jre_linux` / `JAVA_HOME` 中的 Java 25
 5. 如需手动注入 JVM 参数，可在启动脚本中添加：
    ```

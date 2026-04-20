@@ -146,18 +146,21 @@ jobs:
           mkdir -p "${MOD_STAGE}/jars" \
                    "${MOD_STAGE}/native/linux" \
                    "${MOD_STAGE}/native/windows" \
-                   "${MOD_STAGE}/graphics/fonts" \
+                   "${LINUX_STAGE}/graphics/fonts" \
                    "${LINUX_STAGE}/mods" \
+                   "${WINDOWS_STAGE}/starsector-core/graphics/fonts" \
                    "${WINDOWS_STAGE}/starsector-core/mods"
 
           cp artifacts/reobf-jar-linux/SSOptimizer-reobf.jar "${MOD_STAGE}/jars/SSOptimizer.jar"
           cp artifacts/native-linux/libnative.so "${MOD_STAGE}/native/linux/lib${MOD_ID}.so"
           cp artifacts/native-windows/native.dll "${MOD_STAGE}/native/windows/${MOD_ID}.dll"
-          cp game-fonts/fnt/* "${MOD_STAGE}/graphics/fonts/"
-          cp game-fonts/ttf/* "${MOD_STAGE}/graphics/fonts/"
           cp mod_info.json "${MOD_STAGE}/"
           cp README.md "${MOD_STAGE}/"
           cp tools/enable_starsector_exe_launch.ps1 "${MOD_STAGE}/"
+          cp game-fonts/fnt/* "${LINUX_STAGE}/graphics/fonts/"
+          cp game-fonts/ttf/* "${LINUX_STAGE}/graphics/fonts/"
+          cp game-fonts/fnt/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
+          cp game-fonts/ttf/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
 
           cp -R "${MOD_STAGE}" "${LINUX_STAGE}/mods/${MOD_ID}"
           cp tools/starsector.sh "${LINUX_STAGE}/starsector.sh"
