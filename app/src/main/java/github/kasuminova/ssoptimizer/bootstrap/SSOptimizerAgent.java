@@ -12,7 +12,6 @@ import github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor;
 import github.kasuminova.ssoptimizer.asm.render.*;
 import github.kasuminova.ssoptimizer.common.loading.ImageIoConfigurator;
 import github.kasuminova.ssoptimizer.common.logging.LogNoiseFilterConfigurator;
-import github.kasuminova.ssoptimizer.common.render.EngineRenderOptimizationToggle;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.apache.log4j.Logger;
 
@@ -116,26 +115,20 @@ public final class SSOptimizerAgent {
     /**
      * 注册所有引擎级 ASM 处理器到混合织入变换器。
      * <p>
-    * 每个处理器可通过系统属性 {@code ssoptimizer.disable.<key>} 单独禁用。
-    * 引擎渲染批处理优化默认关闭，需通过 {@code -Dssoptimizer.render.engine.enable=true} 启用。
+        * 每个处理器可通过系统属性 {@code ssoptimizer.disable.<key>} 单独禁用。
      *
      * @param transformer 目标混合织入变换器
      */
     static void registerEngineProcessors(HybridWeaverTransformer transformer) {
-        if (EngineRenderOptimizationToggle.isEnabled()) {
-            registerIf(transformer, "sprite", GameClassNames.SPRITE, new EngineSpriteProcessor());
-            registerIf(transformer, "bitmapfontrenderer", GameClassNames.BITMAP_FONT_RENDERER, new EngineBitmapFontRendererProcessor());
-            registerIf(transformer, "texturedstrip", GameClassNames.TEXTURED_STRIP_RENDERER, new EngineTexturedStripRendererProcessor());
-            registerIf(transformer, "contrailengine", GameClassNames.CONTRAIL_ENGINE, new EngineContrailEngineProcessor());
-            registerIf(transformer, "smoothparticle", GameClassNames.SMOOTH_PARTICLE, new EngineSmoothParticleProcessor());
-            registerIf(transformer, "detailedsmoke", GameClassNames.DETAILED_SMOKE_PARTICLE, new EngineDetailedSmokeProcessor());
-            registerIf(transformer, "generictextureparticle", GameClassNames.GENERIC_TEXTURE_PARTICLE, new EngineGenericTextureParticleProcessor());
-        } else {
-            LOGGER.info("[SSOptimizer] Engine render optimization disabled by default; enable with -D"
-                    + EngineRenderOptimizationToggle.ENABLE_PROPERTY + "=true");
-        }
+        registerIf(transformer, "sprite", GameClassNames.SPRITE, new EngineSpriteProcessor());
+        registerIf(transformer, "bitmapfontrenderer", GameClassNames.BITMAP_FONT_RENDERER, new EngineBitmapFontRendererProcessor());
+        registerIf(transformer, "texturedstrip", GameClassNames.TEXTURED_STRIP_RENDERER, new EngineTexturedStripRendererProcessor());
+        registerIf(transformer, "contrailengine", GameClassNames.CONTRAIL_ENGINE, new EngineContrailEngineProcessor());
         registerIf(transformer, "aigridquery", GameClassNames.COLLISION_GRID_QUERY, new CollisionGridQueryProcessor());
         transformer.registerProcessor(GameClassNames.COMBAT_STATE, new CombatStateProcessor());
+        registerIf(transformer, "smoothparticle", GameClassNames.SMOOTH_PARTICLE, new EngineSmoothParticleProcessor());
+        registerIf(transformer, "detailedsmoke", GameClassNames.DETAILED_SMOKE_PARTICLE, new EngineDetailedSmokeProcessor());
+        registerIf(transformer, "generictextureparticle", GameClassNames.GENERIC_TEXTURE_PARTICLE, new EngineGenericTextureParticleProcessor());
         registerIf(transformer, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
         registerIf(transformer, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
         registerIf(transformer, "textureobject", GameClassNames.TEXTURE_OBJECT, new TextureObjectBindProcessor());

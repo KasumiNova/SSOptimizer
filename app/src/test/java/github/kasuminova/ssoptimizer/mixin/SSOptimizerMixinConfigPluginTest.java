@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin;
 
-import github.kasuminova.ssoptimizer.common.render.EngineRenderOptimizationToggle;
+import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderOptimizationToggle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SSOptimizerMixinConfigPluginTest {
     @AfterEach
     void clearEngineRenderProperty() {
-        System.clearProperty(EngineRenderOptimizationToggle.ENABLE_PROPERTY);
+        System.clearProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY);
     }
 
     @Test
@@ -24,7 +24,7 @@ class SSOptimizerMixinConfigPluginTest {
 
     @Test
     void appliesEngineRenderMixinWhenExplicitlyEnabled() {
-        System.setProperty(EngineRenderOptimizationToggle.ENABLE_PROPERTY, "true");
+        System.setProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY, "true");
         SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
 
         assertTrue(plugin.shouldApplyMixin(

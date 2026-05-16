@@ -15,8 +15,8 @@ class LaunchConfigAgentArgTest {
         String content = Files.readString(config);
         assertTrue(content.contains("-javaagent:./mods/ssoptimizer/jars/SSOptimizer.jar"));
         assertTrue(content.contains("-Dssoptimizer.font.ttf.enable=true"));
-        assertFalse(content.contains("-Dssoptimizer.render.engine.enable=true"),
-            "引擎渲染优化应默认关闭，只能由用户显式添加 JVM 参数启用");
+        assertFalse(content.contains("-Dssoptimizer.render.shipengine.enable=true"),
+            "舰船引擎渲染替换应默认关闭，只能由用户显式添加 JVM 参数启用");
         assertTrue(content.contains("-Dlog4j.configuration=file:./log4j.properties"));
     }
 }

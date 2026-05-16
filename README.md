@@ -51,13 +51,13 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 
 ### 可选优化开关
 
-引擎渲染批处理优化默认关闭。若需要测试该路径，可在 `launch-config.json` 的 `jvmArgs.common` 中手动加入：
+舰船引擎火焰渲染替换默认关闭。若需要测试该路径，可在 `launch-config.json` 的 `jvmArgs.common` 中手动加入：
 
 ```text
--Dssoptimizer.render.engine.enable=true
+-Dssoptimizer.render.shipengine.enable=true
 ```
 
-未加入该参数时，SSOptimizer 不会替换引擎火焰、粒子、Sprite、字体 quad 等渲染热点路径。
+未加入该参数时，SSOptimizer 不会替换舰船 `Engine.render()` 火焰渲染路径；Sprite、字体 quad、粒子等其他渲染优化不受此开关影响。
 
 ### 存档兼容性说明
 

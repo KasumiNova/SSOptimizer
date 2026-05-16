@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin;
 
-import github.kasuminova.ssoptimizer.common.render.EngineRenderOptimizationToggle;
+import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderOptimizationToggle;
 import org.apache.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -12,9 +12,9 @@ import java.util.Set;
 /**
  * SSOptimizer Mixin 配置插件。
  * <p>
- * 根据 JVM 参数过滤默认关闭的实验性/高风险 Mixin。目前用于让引擎渲染优化
- * {@code render.EngineRenderMixin} 仅在 {@code -Dssoptimizer.render.engine.enable=true}
- * 显式启用时生效。
+ * 根据 JVM 参数过滤默认关闭的实验性/高风险 Mixin。目前仅让舰船引擎火焰渲染替换
+ * {@code render.EngineRenderMixin} 在 {@code -Dssoptimizer.render.shipengine.enable=true}
+ * 显式启用时生效，不影响 Sprite、字体、粒子等其他渲染优化。
  */
 public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
     private static final Logger LOGGER = Logger.getLogger(SSOptimizerMixinConfigPlugin.class);
@@ -48,9 +48,9 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(final String targetClassName,
                                     final String mixinClassName) {
-        if (mixinClassName.endsWith(".render.EngineRenderMixin") && !EngineRenderOptimizationToggle.isEnabled()) {
-            LOGGER.info("[SSOptimizer] Engine render optimization mixin disabled by default; enable with -D"
-                    + EngineRenderOptimizationToggle.ENABLE_PROPERTY + "=true");
+        if (mixinClassName.endsWith(".render.EngineRenderMixin") && !ShipEngineRenderOptimizationToggle.isEnabled()) {
+            LOGGER.info("[SSOptimizer] Ship engine render optimization mixin disabled by default; enable with -D"
+                + ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY + "=true");
             return false;
         }
         return true;

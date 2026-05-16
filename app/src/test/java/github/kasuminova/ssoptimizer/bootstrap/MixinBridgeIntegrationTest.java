@@ -4,7 +4,7 @@ import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
 import github.kasuminova.ssoptimizer.mapping.MappingEntry;
 import github.kasuminova.ssoptimizer.mapping.MappingDirection;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
-import github.kasuminova.ssoptimizer.common.render.EngineRenderOptimizationToggle;
+import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderOptimizationToggle;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
@@ -173,7 +173,7 @@ class MixinBridgeIntegrationTest {
 
     @Test
     void bridgeSkipsEngineMixinByDefault() throws Exception {
-        System.clearProperty(EngineRenderOptimizationToggle.ENABLE_PROPERTY);
+        System.clearProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY);
         bootstrapMixin();
 
         byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/combat/entities/Engine.class"));
