@@ -49,6 +49,16 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 
 配置文件为游戏根目录下的 `launch-config.json`，首次启动自动生成默认配置。各项参数含义见文件内注释。
 
+### 可选优化开关
+
+引擎渲染批处理优化默认关闭。若需要测试该路径，可在 `launch-config.json` 的 `jvmArgs.common` 中手动加入：
+
+```text
+-Dssoptimizer.render.engine.enable=true
+```
+
+未加入该参数时，SSOptimizer 不会替换引擎火焰、粒子、Sprite、字体 quad 等渲染热点路径。
+
 ### 存档兼容性说明
 
 - SSOptimizer 现在会对 `BaseTiledTerrain` 和 `HyperspaceAutomaton` 的地形 tile 存档优先写入 **Zstd 新格式**。

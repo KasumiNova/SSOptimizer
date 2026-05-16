@@ -4,6 +4,7 @@ import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
 import github.kasuminova.ssoptimizer.mapping.MappingEntry;
 import github.kasuminova.ssoptimizer.mapping.MappingDirection;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
+import github.kasuminova.ssoptimizer.common.render.EngineRenderOptimizationToggle;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
@@ -171,24 +172,24 @@ class MixinBridgeIntegrationTest {
     }
 
     @Test
-    void bridgeAppliesEngineMixinToObfuscatedRuntimeClass() throws Exception {
+    void bridgeSkipsEngineMixinByDefault() throws Exception {
+        System.clearProperty(EngineRenderOptimizationToggle.ENABLE_PROPERTY);
         bootstrapMixin();
 
         byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/combat/entities/Engine.class"));
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
-            runtimeClassName("com/fs/starfarer/combat/entities/Engine"),
+                runtimeClassName("com/fs/starfarer/combat/entities/Engine"),
                 null,
                 null,
                 original
         );
 
-        assertNotNull(transformed);
-
-        ClassReader reader = new ClassReader(transformed);
-        assertTrue(Arrays.asList(reader.getInterfaces())
-                         .contains("github/kasuminova/ssoptimizer/common/render/engine/EngineBridge"),
-                "Transformed Engine should implement EngineBridge after mixin application");
+        byte[] inspectedBytes = transformed != null ? transformed : original;
+        ClassReader reader = new ClassReader(inspectedBytes);
+        assertFalse(Arrays.asList(reader.getInterfaces())
+                  .contains("github/kasuminova/ssoptimizer/common/render/engine/EngineBridge"),
+            "EngineRenderMixin 默认关闭时不应让 Engine 实现 EngineBridge");
     }
 
     @Test

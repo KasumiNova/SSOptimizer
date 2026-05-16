@@ -223,7 +223,7 @@ val jniPlatformIncludeDir = when {
     buildTargetIsWindows -> windowsJniPlatformIncludeOverride?.let(::file) ?: jniIncludeDir.resolve("win32")
     else -> jniIncludeDir.resolve("linux")
 }
-val windowsCrossOutputFile = layout.buildDirectory.file("lib/main/debug/native.dll")
+val windowsCrossOutputFile = layout.buildDirectory.file("lib/main/release/native.dll")
 val windowsCrossObjectDir = layout.buildDirectory.dir("tmp/windows-cross/obj")
 val nativeHeaderDirs = listOf(
     file("src/main/headers"),
@@ -507,6 +507,10 @@ if (useWindowsCrossCompileTask) {
     }
 
     tasks.named("assemble") {
+        dependsOn("linkWindowsCrossSharedLibrary")
+    }
+
+    tasks.matching { it.name == "assembleRelease" }.configureEach {
         dependsOn("linkWindowsCrossSharedLibrary")
     }
 

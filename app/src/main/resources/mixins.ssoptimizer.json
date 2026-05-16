@@ -1,6 +1,7 @@
 {
   "required": true,
   "package": "github.kasuminova.ssoptimizer.mixin",
+  "plugin": "github.kasuminova.ssoptimizer.mixin.SSOptimizerMixinConfigPlugin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "accessor.ContrailGroupAccessor",
