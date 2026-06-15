@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer;
 
 import com.fs.starfarer.api.BaseModPlugin;
+import github.kasuminova.ssoptimizer.common.automation.AutomationReporter;
 import github.kasuminova.ssoptimizer.common.loading.ImageIoConfigurator;
 import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
 import github.kasuminova.ssoptimizer.common.loading.TextureConversionCache;
@@ -22,6 +23,7 @@ public class SSOptimizerModPlugin extends BaseModPlugin {
         LogNoiseFilterConfigurator.configure();
         TextureConversionCache.warmupMemoryCache();
         LazyTextureManager.installCompositionReportHookIfConfigured();
+        AutomationReporter.logProfileIfEnabled();
         LOGGER.info("[SSOptimizer] Loaded on Java " + Runtime.version());
     }
 }

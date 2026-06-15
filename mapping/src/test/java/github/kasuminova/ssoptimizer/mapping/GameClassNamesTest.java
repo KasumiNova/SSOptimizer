@@ -19,9 +19,11 @@ class GameClassNamesTest {
         assertFalse(GameClassNames.COMMODITY_ON_MARKET.startsWith("github/kasuminova/ssoptimizer/"));
         assertFalse(GameClassNames.MARKET.startsWith("github/kasuminova/ssoptimizer/"));
         assertFalse(GameClassNames.CAMPAIGN_LOCATION_MAP_CANVAS.startsWith("github/kasuminova/ssoptimizer/"));
+        assertFalse(GameClassNames.TITLE_SCREEN_STATE.startsWith("github/kasuminova/ssoptimizer/"));
         assertTrue(GameClassNames.TEXTURE_LOADER.startsWith("com/fs/graphics/"));
         assertTrue(GameClassNames.STARFARER_SETTINGS.startsWith("com/fs/starfarer/settings/"));
         assertTrue(GameClassNames.COMMODITY_ON_MARKET.startsWith("com/fs/starfarer/campaign/econ/"));
         assertTrue(GameClassNames.CAMPAIGN_LOCATION_MAP_CANVAS.startsWith("com/fs/starfarer/coreui/"));
+        assertTrue(GameClassNames.TITLE_SCREEN_STATE.startsWith("com/fs/starfarer/title/"));
     }
 }

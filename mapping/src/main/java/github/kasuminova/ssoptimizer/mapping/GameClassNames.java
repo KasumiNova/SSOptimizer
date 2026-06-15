@@ -76,6 +76,8 @@ public final class GameClassNames {
     public static final String RESOURCE_LOADER                     = "com/fs/util/ResourceLoader";
     public static final String CAMPAIGN_ENGINE                     = "com/fs/starfarer/campaign/CampaignEngine";
     public static final String CAMPAIGN_ENGINE_DOTTED              = "com.fs.starfarer.campaign.CampaignEngine";
+    public static final String TITLE_SCREEN_STATE                  = "com/fs/starfarer/title/TitleScreenState";
+    public static final String TITLE_SCREEN_STATE_DOTTED           = "com.fs.starfarer.title.TitleScreenState";
 
     private GameClassNames() {
     }

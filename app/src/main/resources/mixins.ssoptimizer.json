@@ -11,6 +11,7 @@
     "accessor.EngineStateAccessor",
     "accessor.ShipAccessor",
     "accessor.Txw2DelegatingXmlStreamWriterAccessor",
+    "automation.TitleScreenAutomationMixin",
     "campaign.CampaignEngineBattleReportMixin",
     "econ.CommodityOnMarketMixin",
     "econ.MarketMixin",

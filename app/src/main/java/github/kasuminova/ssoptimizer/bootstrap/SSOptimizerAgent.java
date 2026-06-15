@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor;
+import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
@@ -136,6 +137,7 @@ public final class SSOptimizerAgent {
         registerIf(transformer, "linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
         registerIf(transformer, "linuxeventime", GameClassNames.LINUX_EVENT, new LinuxEventImeProcessor());
         registerIf(transformer, "linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
+        registerIf(transformer, "astdautomation", ASTDAutomationCombatPluginProcessor.TARGET_CLASS, new ASTDAutomationCombatPluginProcessor());
         registerIf(transformer, "windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());
         registerIf(transformer, "tooltiptextfieldime", GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE, new TooltipTextFieldFactoryProcessor());
         registerIf(transformer, "settingstextfieldime", GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER, new SettingsTextFieldFactoryProcessor());
