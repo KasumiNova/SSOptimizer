@@ -1,4 +1,4 @@
-package github.kasuminova.ssoptimizer.bootstrap;
+package github.kasuminova.ssoptimizer.api;
 
 /**
  * ASM 字节码处理器的核心抽象接口。

@@ -1,5 +1,8 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.api.CompositeAsmClassProcessor;
+import github.kasuminova.ssoptimizer.api.ExternalModOptimizer;
 import github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor;
 import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
@@ -101,6 +104,7 @@ public final class SSOptimizerAgent {
     private static BootstrapPipeline createBootstrapPipeline(final ClassFileTransformer mixinTransformer) {
         HybridWeaverTransformer weaver = new HybridWeaverTransformer();
         registerEngineProcessors(weaver);
+        registerExternalModOptimizers(weaver);
 
         final java.util.ArrayList<ClassFileTransformer> transformers = new java.util.ArrayList<>();
         transformers.add(new RuntimeRemapTransformer());
@@ -147,6 +151,33 @@ public final class SSOptimizerAgent {
                 new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
                 new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()),
                 new ProcessorToggle("caseinsensitiveresource", new CaseInsensitiveResourceFallbackProcessor()));
+    }
+
+    /**
+     * 通过 {@link ServiceLoader} 发现并注册所有外部模组性能优化（{@link ExternalModOptimizer}）。
+     * <p>
+     * 动机：针对第三方模组（如 DetailedCombatResults）的优化独立存放于 {@code :mod-optimizations}
+     * 模块，{@code :app} 不在编译期依赖其代码；此处在 agent 启动阶段（早于任何 mod 类加载）经 SPI
+     * 装配。ServiceLoader 使用 {@link ExternalModOptimizer} 自身的类加载器（即 agent/system 加载器），
+     * 以确保能看见随 {@code -javaagent} jar 一同打包的实现。每个实现受
+     * {@code -Dssoptimizer.disable.<featureKey>=true} 总开关控制。
+     *
+     * @param transformer 织入器，外部优化的处理器将按目标类内部名登记其上
+     */
+    private static void registerExternalModOptimizers(final HybridWeaverTransformer transformer) {
+        for (ExternalModOptimizer optimizer : java.util.ServiceLoader.load(
+                ExternalModOptimizer.class, ExternalModOptimizer.class.getClassLoader())) {
+            final String featureKey = optimizer.featureKey();
+            if (Boolean.getBoolean("ssoptimizer.disable." + featureKey)) {
+                LOGGER.info("[SSOptimizer] External mod optimizer DISABLED via system property: " + featureKey);
+                continue;
+            }
+            optimizer.processors().forEach((className, processor) -> {
+                transformer.registerProcessor(className, processor);
+                LOGGER.info("[SSOptimizer] Registered external mod optimizer '" + featureKey
+                        + "' processor for " + className);
+            });
+        }
     }
 
     private static void registerIf(HybridWeaverTransformer transformer,

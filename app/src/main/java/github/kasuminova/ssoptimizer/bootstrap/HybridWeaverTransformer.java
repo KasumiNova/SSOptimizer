@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
 import github.kasuminova.ssoptimizer.mapping.MappingDirection;
 import github.kasuminova.ssoptimizer.mapping.MappingRepository;

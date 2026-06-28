@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
-import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.objectweb.asm.*;

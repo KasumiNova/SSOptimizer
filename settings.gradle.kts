@@ -5,5 +5,7 @@ plugins {
 rootProject.name = "SSOptimizer"
 
 include(":app")
+include(":agent-api")
+include(":mod-optimizations")
 include(":mapping")
 include(":native")

@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.asm.automation;
 
-import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;

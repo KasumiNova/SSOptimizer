@@ -47,6 +47,8 @@ dependencies {
     testImplementation("log4j:log4j:1.2.17")
 
     implementation(project(":mapping"))
+    implementation(project(":agent-api"))
+    runtimeOnly(project(":mod-optimizations"))
     implementation("org.ow2.asm:asm:9.9.1")
     implementation("org.ow2.asm:asm-commons:9.9.1")
     implementation("org.ow2.asm:asm-tree:9.9.1")
@@ -121,6 +123,7 @@ dependencies {
 
     "jmhImplementation"("org.openjdk.jmh:jmh-core:1.37")
     "jmhImplementation"("org.glassfish.jaxb:txw2:3.0.2")
+    "jmhImplementation"(project(":mod-optimizations"))
     "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.37")
     "jmhRuntimeOnly"("log4j:log4j:1.2.17")
 }

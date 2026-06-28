@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.asm.loading;
 
-import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;

@@ -1,4 +1,4 @@
-package github.kasuminova.ssoptimizer.bootstrap;
+package github.kasuminova.ssoptimizer.api;
 
 import java.util.ArrayList;
 import java.util.List;

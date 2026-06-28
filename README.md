@@ -66,6 +66,16 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 - **原版未安装 SSOptimizer 的 Starsector 无法读取带 `SSOZ1:` 前缀的新地形 tile 存档内容**；也就是说，用 SSOptimizer 保存后的新存档，不能保证再回到原版直接读取。
 - 如果你需要保持对原版读取的写出兼容性，可在 JVM 参数中添加：`-Dssoptimizer.disable.save.terrain.zstd=true`，强制退回旧版 Deflater 写入格式。
 
+### 外部模组优化：DetailedCombatResults（DCR）
+
+针对第三方模组的性能优化独立存放于 `:mod-optimizations` 模块，经 SPI（`ExternalModOptimizer`）在 agent 启动时自动装配。首个目标是 **DetailedCombatResults（详细战斗报告）** 的读档热点：
+
+- **L1（默认开，零格式风险）**：读档时 DCR 会在裁剪战报后「清空 + 逐条重写」整份历史（O(N²) 的重序列化 + 压缩）。SSOptimizer 将其合并为「收集 N 次 + 落盘一次」，把该热点从十余秒降到亚秒级。此优化不改变存档格式，卸载 SSOptimizer 后 DCR 仍可正常读档。
+- **L2（默认开，可关）**：将 DCR 的压缩内核从 `Deflater` 级别 9 替换为 **Zstd**（基准下大存档约 6–13× 提速），读取时自动识别 Zstd / 旧 Deflate 两种格式，旧存档读出后下一次保存即迁移为 Zstd。
+  - **权衡**：DCR 战报压缩串会随存档落盘；一旦迁移为 Zstd，卸载 SSOptimizer（或开启下方子开关）后，DCR 原生 `Inflater` 将无法读取这些战报，会判定数据损坏并清空历史战报记录（仅影响战报分析数据，不影响存档本体）。
+  - 如需保持对「无 SSOptimizer 环境」的兼容，可加入：`-Dssoptimizer.disable.dcrzstd=true`，仅保留 L1 合并、压缩走 DCR 原生 Deflater。
+- 关闭对 DCR 的全部优化：`-Dssoptimizer.disable.dcr=true`。
+
 ## 从源码构建
 
 ### 环境要求

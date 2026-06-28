@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.Gl11TextureTrackingProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.Gl12TextureTrackingProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.Gl30RenderbufferTrackingProcessor;
