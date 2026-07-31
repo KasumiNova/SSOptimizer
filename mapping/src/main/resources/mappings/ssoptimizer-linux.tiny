@@ -57,13 +57,11 @@ c com/fs/graphics/super/Object com/fs/graphics/font/BitmapFontRenderer
 	m Õ00000 render ()V
 	m o00000 drawGlyph (FFLcom/fs/graphics/font/BitmapGlyph;FZ)V
 c com/fs/graphics/TextureLoader com/fs/graphics/TextureLoader
-	f a cacheSize I
 	f ÔO0000 textureCache Ljava/util/HashMap;
 	f null specialMipmapSet Ljava/util/Set;
 	f interface upperHalfColor Ljava/awt/Color;
 	f õ00000 averageColor Ljava/awt/Color;
 	f Ó00000 lowerHalfColor Ljava/awt/Color;
-	m b reloadCache (I)V
 	m super convertPixels (Ljava/awt/image/BufferedImage;Lcom/fs/graphics/Object;)Ljava/nio/ByteBuffer;
 	m super loadTexture (Ljava/lang/String;)Lcom/fs/graphics/Object;
 	m String readImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
@@ -86,7 +84,9 @@ c com/fs/starfarer/renderers/o0OO com/fs/starfarer/renderers/TexturedStripRender
 	m o00000 renderTexturedStrip (Lcom/fs/graphics/Object;FFFFFFLjava/awt/Color;FFFZ)V
 c com/fs/starfarer/ui/B com/fs/starfarer/ui/TextFieldImpl
 c com/fs/starfarer/ui/O0Oo com/fs/starfarer/ui/FocusedComponentTracker
-	m Ó00000 getCurrentFocusedComponent ()Lcom/fs/starfarer/ui/S;
+	m Ó00000 getCurrentFocusedComponent ()Lcom/fs/starfarer/ui/FocusedComponent;
+c com/fs/starfarer/ui/S com/fs/starfarer/ui/FocusedComponent
+c com/fs/starfarer/util/super/Object com/fs/starfarer/util/InputEvent
 c com/fs/starfarer/settings/StarfarerSettings$1 com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory
 c com/fs/starfarer/settings/StarfarerSettings com/fs/starfarer/settings/StarfarerSettings
 	m Õ00000 getBoolean (Ljava/lang/String;)Z

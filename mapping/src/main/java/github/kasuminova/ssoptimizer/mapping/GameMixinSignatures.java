@@ -79,7 +79,6 @@ public final class GameMixinSignatures {
      */
     public static final class SoundManager {
         public static final String TARGET_CLASS = "sound.SoundManager";
-        public static final String OBFUSCATED_TARGET_CLASS_INTERNAL = "sound/Object";
         public static final String LOAD_OBJECT_FAMILY = "loadObjectFamily(Ljava/lang/String;)Lsound/O0OO;";
         public static final String LOAD_O00000_FAMILY = "loadO00000Family(Ljava/lang/String;)Lsound/O0OO;";
         public static final String LOAD_O_ACCENT_FAMILY = "loadOAccentFamily(Ljava/lang/String;)Lsound/O0OO;";
@@ -142,8 +141,9 @@ public final class GameMixinSignatures {
     /**
      * 文本框 IME 相关桥接签名常量。
      * <p>
-     * 其中 {@code releaseFocus} 的参数类型当前仍是运行时未补命名的类，故保留在桥接表中集中维护，
-     * 避免在 {@code app} 模块散落该描述符字面量。
+     * {@code releaseFocus} 的参数类型是游戏的输入事件实现类，已在两平台映射表中统一命名为
+     * {@code com/fs/starfarer/util/InputEvent}（linux 混淆名 {@code com/fs/starfarer/util/super/Object}，
+     * windows 混淆名 {@code com/fs/starfarer/util/A/C}），因此该描述符在 named 命名空间下跨平台一致。
      */
     public static final class TextFieldIme {
         public static final String TEXT_FIELD_API_DESC = "Lcom/fs/starfarer/api/ui/TextFieldAPI;";
@@ -152,7 +152,7 @@ public final class GameMixinSignatures {
         public static final String GRAB_FOCUS = "grabFocus";
         public static final String GRAB_FOCUS_DESC = "(Z)V";
         public static final String RELEASE_FOCUS = "releaseFocus";
-        public static final String RELEASE_FOCUS_DESC = "(Lcom/fs/starfarer/util/super/Object;)V";
+        public static final String RELEASE_FOCUS_DESC = "(Lcom/fs/starfarer/util/InputEvent;)V";
         public static final String TEXT_FIELD_FOCUS_HOOK_DESC = "(Lcom/fs/starfarer/api/ui/TextFieldAPI;)V";
 
         private TextFieldIme() {

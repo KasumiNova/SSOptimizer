@@ -46,8 +46,8 @@ class RuntimeRemapTransformerTest {
 
     private static byte[] createObfuscatedTextureLoader() {
         MappingEntry textureLoaderClass = REPOSITORY.requireClassByNamedName(TEXTURE_LOADER_CLASS);
-        MappingEntry cacheSizeField = REPOSITORY.requireFieldByNamedName(TEXTURE_LOADER_CLASS, "cacheSize");
-        MappingEntry reloadCacheMethod = REPOSITORY.requireMethodByNamedName(TEXTURE_LOADER_CLASS, "reloadCache", "(I)V");
+        MappingEntry textureCacheField = REPOSITORY.requireFieldByNamedName(TEXTURE_LOADER_CLASS, "textureCache");
+        MappingEntry textureDimensionMethod = REPOSITORY.requireMethodByNamedName(TEXTURE_LOADER_CLASS, "textureDimension", "(I)I");
         MappingEntry loadTextureMethod = REPOSITORY.requireMethodByNamedName(
                 TEXTURE_LOADER_CLASS,
                 "loadTexture",
@@ -55,11 +55,12 @@ class RuntimeRemapTransformerTest {
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         writer.visit(Opcodes.V25, Opcodes.ACC_PUBLIC, textureLoaderClass.obfuscatedName(), null, "java/lang/Object", null);
-        writer.visitField(Opcodes.ACC_PRIVATE, cacheSizeField.obfuscatedName(), "I", null, null).visitEnd();
+        writer.visitField(Opcodes.ACC_PRIVATE, textureCacheField.obfuscatedName(), "Ljava/util/HashMap;", null, null).visitEnd();
 
-        var method = writer.visitMethod(Opcodes.ACC_PUBLIC, reloadCacheMethod.obfuscatedName(), reloadCacheMethod.descriptor(), null, null);
+        var method = writer.visitMethod(Opcodes.ACC_PUBLIC, textureDimensionMethod.obfuscatedName(), textureDimensionMethod.descriptor(), null, null);
         method.visitCode();
-        method.visitInsn(Opcodes.RETURN);
+        method.visitInsn(Opcodes.ICONST_0);
+        method.visitInsn(Opcodes.IRETURN);
         method.visitMaxs(0, 2);
         method.visitEnd();
 
@@ -83,8 +84,8 @@ class RuntimeRemapTransformerTest {
     @Test
     void remapsObfuscatedTextureLoaderToReadableNames() {
         MappingEntry textureLoaderClass = REPOSITORY.requireClassByNamedName(TEXTURE_LOADER_CLASS);
-        MappingEntry cacheSizeField = REPOSITORY.requireFieldByNamedName(TEXTURE_LOADER_CLASS, "cacheSize");
-        MappingEntry reloadCacheMethod = REPOSITORY.requireMethodByNamedName(TEXTURE_LOADER_CLASS, "reloadCache", "(I)V");
+        MappingEntry textureCacheField = REPOSITORY.requireFieldByNamedName(TEXTURE_LOADER_CLASS, "textureCache");
+        MappingEntry textureDimensionMethod = REPOSITORY.requireMethodByNamedName(TEXTURE_LOADER_CLASS, "textureDimension", "(I)I");
 
         RuntimeRemapTransformer transformer = new RuntimeRemapTransformer();
         byte[] transformed = transformer.transform(null, textureLoaderClass.obfuscatedName(), null, null, createObfuscatedTextureLoader());
@@ -93,8 +94,8 @@ class RuntimeRemapTransformerTest {
 
         ClassNode node = readClass(transformed);
         assertEquals(textureLoaderClass.namedName(), node.name);
-        assertTrue(node.fields.stream().anyMatch(field -> cacheSizeField.namedName().equals(field.name)));
-        assertTrue(node.methods.stream().anyMatch(method -> reloadCacheMethod.namedName().equals(method.name)));
+        assertTrue(node.fields.stream().anyMatch(field -> textureCacheField.namedName().equals(field.name)));
+        assertTrue(node.methods.stream().anyMatch(method -> textureDimensionMethod.namedName().equals(method.name)));
     }
 
     @Test

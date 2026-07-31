@@ -49,7 +49,7 @@ class NameTranslatorTest {
 
     @Test
     void translateMappedMemberName() {
-        assertEquals("cacheSize", NameTranslator.translate("a"));
-        assertEquals("reloadCache", NameTranslator.translate("b"));
+        assertEquals("font", NameTranslator.translate("øÒ0000"));
+        assertEquals("owner", NameTranslator.translate("Óo0000"));
     }
 }

@@ -186,7 +186,7 @@ public final class GameMemberNames {
         public static final String GET_CURRENT_FOCUSED_COMPONENT = method(
                 GameClassNames.FOCUSED_COMPONENT_TRACKER,
                 "getCurrentFocusedComponent",
-                "()Lcom/fs/starfarer/ui/S;");
+                "()Lcom/fs/starfarer/ui/FocusedComponent;");
 
         private FocusedComponentTracker() {
         }

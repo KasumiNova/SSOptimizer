@@ -19,13 +19,15 @@ class MappingLookupTest {
     @Test
     void classFieldAndMethodCanBeResolvedBidirectionally() {
         MappingEntry classEntry = lookup.requireClassByObfuscatedName("com/fs/graphics/TextureLoader");
-        MappingEntry fieldEntry = lookup.requireFieldByNamedName("com/fs/graphics/TextureLoader", "cacheSize");
-        MappingEntry methodEntry = lookup.requireMethodByObfuscatedName("com/fs/graphics/TextureLoader", "b", "(I)V");
+        MappingEntry fieldEntry = lookup.requireFieldByNamedName("com/fs/graphics/TextureLoader", "textureCache");
+        MappingEntry methodByNamed = lookup.requireMethodByNamedName("com/fs/graphics/TextureLoader", "textureDimension", "(I)I");
+        MappingEntry methodEntry = lookup.requireMethodByObfuscatedName(
+                "com/fs/graphics/TextureLoader", methodByNamed.obfuscatedName(), "(I)I");
 
         assertEquals("com/fs/graphics/TextureLoader", classEntry.namedName());
-        assertEquals("cacheSize", fieldEntry.namedName());
-        assertEquals("reloadCache", methodEntry.namedName());
-        assertEquals("(I)V", methodEntry.descriptor());
+        assertEquals("textureCache", fieldEntry.namedName());
+        assertEquals("textureDimension", methodEntry.namedName());
+        assertEquals("(I)I", methodEntry.descriptor());
     }
 
     @Test

@@ -17,24 +17,24 @@ class ReflectionHelperTest {
 
     @Test
     void resolvesMappedFieldNameThroughTranslator() throws Exception {
-        Field field = ReflectionHelper.getDeclaredField(RemappedTarget.class, "a");
+        Field field = ReflectionHelper.getDeclaredField(RemappedTarget.class, "øÒ0000");
 
-        assertEquals("cacheSize", field.getName());
+        assertEquals("font", field.getName());
     }
 
     @Test
     void resolvesMappedMethodNameThroughTranslator() throws Exception {
-        Method method = ReflectionHelper.getDeclaredMethod(RemappedTarget.class, "b", int.class);
+        Method method = ReflectionHelper.getDeclaredMethod(RemappedTarget.class, "if");
 
-        assertEquals("reloadCache", method.getName());
+        assertEquals("getXOffset", method.getName());
     }
 
     private static final class RemappedTarget {
-        private int cacheSize;
+        private String font;
 
         @SuppressWarnings("unused")
-        private void reloadCache(int value) {
-            this.cacheSize = value;
+        private int getXOffset() {
+            return font.length();
         }
     }
 }
