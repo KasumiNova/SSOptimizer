@@ -1,0 +1,324 @@
+tiny 2 0 obf named
+c	com/fs/starfarer/ui/newui/AbilityPickerDialog	AbilityPickerDialog
+	c	javap取证 | 高 | AbilityPickerDialog 主类：能力槽选择对话框（字符串 Select an ability for this slot / Hyperspace / Clear ability slot）
+	f	ÕÕô000	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	ôÔô000	abilityPanel	Lcom/fs/starfarer/ui/newui/H;
+	f	super.if$String	defaultButton	Lcom/fs/starfarer/ui/n;
+	f	ÒÕô000	hyperspaceButton	Lcom/fs/starfarer/ui/n;
+	f	void.if$String	clearSlotButton	Lcom/fs/starfarer/ui/n;
+	m	syncWithMode	syncWithMode	(Z)V
+	m	createSelectionPanel	createSelectionPanel	()V
+	m	show	show	(FF)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/AbilityPickerDialog$1	AbilityPickerDialog$AbilityComparator
+	c	继承关系+javap取证 | 中 | 实现 Comparator<AbilityPlugin>，按 AbilitySpec sortOrder 比较（AbilityPickerDialog$1）
+	m	o00000	compareBySortOrder	(Lcom/fs/starfarer/api/characters/AbilityPlugin;Lcom/fs/starfarer/api/characters/AbilityPlugin;)I
+c	com/fs/starfarer/ui/newui/AbilityPickerDialog$2	AbilityPickerDialog$TooltipPositioner
+	c	javap取证 | 中 | Runnable：设置能力 tooltip 相对锚点位置（AbilityPickerDialog$2）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/AbilityPickerDialog$3	AbilityPickerDialog$ClearSlotTooltipPositioner
+	c	javap取证 | 中 | Runnable：设置清空槽位提示 tooltip 位置（AbilityPickerDialog$3）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/CampaignEntityPickerDialog	CampaignEntityPickerDialog
+	c	javap取证 | 高 | 星系实体选择对话框（含地图 createMap/selectedLabel/selected 字段，CampaignEntityPickerListener 回调）
+	f	ÒÖÖ000	listener	Lcom/fs/starfarer/api/campaign/CampaignEntityPickerListener;
+	f	void.float$Object	entities	Ljava/util/List;
+	f	OÖÖ000	faction	Lcom/fs/starfarer/campaign/Faction;
+	m	createUI	createUI	()V
+	m	updateSelectedInfo	updateSelectedInfo	()V
+	m	createMap	createMap	(FFLjava/lang/String;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getSelected	getSelected	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	dismiss	dismiss	(I)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	advanceImpl	advanceImpl	(F)V
+c	com/fs/starfarer/ui/newui/CampaignEntityPickerDialog$1	CampaignEntityPickerDialog$MapClickListener
+	c	继承关系 | 中 | 实现 coreui.A.M（地图点击监听），实体选择回调（CampaignEntityPickerDialog$1）
+	m	super	entitySelected	(Lcom/fs/starfarer/coreui/A/P;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+c	com/fs/starfarer/ui/newui/CampaignEntityPickerDialog$1$1	CampaignEntityPickerDialog$1$EntityNameComparator
+	c	继承关系+javap取证 | 中 | 实现 Comparator<SectorEntityToken>，按实体名称 map 排序（CampaignEntityPickerDialog$1$1）
+	m	o00000	compareByName	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)I
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog	FleetMemberRecoveryDialog
+	c	javap取证 | 高 | 舰队成员打捞/恢复对话框（字符串 Fleet size limit / Bonus experience / Difficult recovery）
+	f	õôÕ000	listener	Lcom/fs/starfarer/api/campaign/FleetMemberPickerListener;
+	f	ÒøÕ000	textPanel	Lcom/fs/starfarer/api/campaign/TextPanelAPI;
+	m	show	show	(FF)V
+	m	getTotalBonusXP	getTotalBonusXP	()F
+	m	advance	advance	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	getNumDMods	getNumDMods	(Lcom/fs/starfarer/api/combat/ShipVariantAPI;)I
+	m	addToList	addToList	(Lcom/fs/starfarer/campaign/ui/S;Ljava/util/List;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getNumStoryPointsUsed	getNumStoryPointsUsed	()I
+	m	getNumSelected	getNumSelected	()I
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dismiss	dismiss	(I)V
+	m	showOverMaxWarning	showOverMaxWarning	()V
+	m	fleetMemberClicked	fleetMemberClicked	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/B/new;Lcom/fs/starfarer/util/A/C;)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$1	FleetMemberRecoveryDialog$CrewTooltip
+	c	字符串常量 | 中 | 船员需求说明 tooltip（Total crew on board, and number of crew required...）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$2	FleetMemberRecoveryDialog$SuppliesTooltip
+	c	字符串常量 | 中 | 补给消耗说明 tooltip（Available supplies, and projected supply cost...）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$3	FleetMemberRecoveryDialog$CrewTooltip2
+	c	字符串常量 | 中 | 船员需求说明 tooltip（第二处）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$4	FleetMemberRecoveryDialog$SuppliesTooltip2
+	c	字符串常量 | 中 | 补给消耗说明 tooltip（第二处）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$5	FleetMemberRecoveryDialog$CrewTooltip3
+	c	字符串常量 | 中 | 船员需求说明 tooltip（第三处）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$6	FleetMemberRecoveryDialog$SuppliesTooltip3
+	c	字符串常量 | 中 | 补给消耗说明 tooltip（第三处）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$7	FleetMemberRecoveryDialog$BonusXPTooltip
+	c	字符串常量 | 高 | 额外经验奖励说明 tooltip（Bonus experience doubles your experience gain...）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$8	FleetMemberRecoveryDialog$DModComparator
+	c	javap取证 | 高 | 实现 Comparator<FleetMemberAPI>，按船体 DMod 数升序排序（getNumDMods）
+	m	o00000	compareByDModCount	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)I
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$9	FleetMemberRecoveryDialog$DModComparator2
+	c	javap取证 | 高 | 同 $8 的按 DMod 数排序比较器（第二处，用于另一成员列表）
+	m	o00000	compareByDModCount	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)I
+c	com/fs/starfarer/ui/newui/FleetMemberRecoveryDialog$10	FleetMemberRecoveryDialog$TooltipPositioner
+	c	javap取证 | 中 | Runnable：设置成员 tooltip 相对面板位置（FleetMemberRecoveryDialog$10）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/H	AbilityPanel
+	c	javap取证(switch表名) | 高 | 能力栏面板：$SWITCH_TABLE$com$fs$starfarer$ui$newui$AbilityPanel$DialogType + 字符串 abilities/empty_slot + CampaignUIPersistentData$AbilitySlot
+	f	do.class$while	plugin	Lcom/fs/starfarer/api/characters/AbilityPlugin;
+	f	õôÒo00	slotIndex	I
+	f	OõÒo00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	ÖôÒo00	tooltip	Lcom/fs/starfarer/ui/n;
+	f	øôÒo00	shortcutLabel	Lcom/fs/starfarer/ui/d;
+	f	private.class$while	icon	Lcom/fs/starfarer/ui/x;
+	f	ÕõÒo00	dialogType	Lcom/fs/starfarer/ui/newui/H$o;
+	f	ÖõÒo00	activeGlow	Lcom/fs/starfarer/ui/newui/H$Oo;
+	f	ÓõÒo00	activeGlow2	Lcom/fs/starfarer/ui/newui/H$Oo;
+	f	ÕôÒo00	progressGlow	Lcom/fs/starfarer/ui/newui/H$Oo;
+	f	if.class$while	progressGlow2	Lcom/fs/starfarer/ui/newui/H$Oo;
+	m	getSlot	getSlot	()Lcom/fs/starfarer/campaign/CampaignUIPersistentData$AbilitySlot;
+	m	updateShortcutLabel	updateShortcutLabel	()V
+	m	showActive	showActive	()V
+	m	hideActive	hideActive	()V
+	m	showProgress	showProgress	()V
+	m	hideProgress	hideProgress	()V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	getControlForAbilitySlotIndex	getControlForAbilitySlotIndex	(I)Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	m	createAbilityTooltip	createAbilityTooltip	(Lcom/fs/starfarer/api/characters/AbilityPlugin;Z)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/api/characters/AbilityPlugin;
+	m	new.super	syncWithSlot	(Z)V
+	m	new.public	openAbilityPicker	()V
+c	com/fs/starfarer/ui/newui/H$1	AbilityPanel$ExpandableTooltipPositioner
+	c	javap取证 | 中 | Runnable：isTooltipExpandable 分支的 tooltip 定位（H$1）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/H$2	AbilityPanel$TooltipPositioner
+	c	javap取证 | 中 | Runnable：普通 tooltip 定位（H$2）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/H$3	AbilityPanel$AbilityTooltip
+	c	继承关系+javap取证 | 中 | StandardTooltipV2Expandable 子类：能力详情展开 tooltip（createAbilityTooltip 中创建）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/H$Oo	AbilityPanel$SlotGlow
+	c	javap取证 | 中 | 能力槽状态光效组件（getColor/setColor/setAutoMove/setCurrFraction，渲染颜色渐变）
+	f	String.class$while	color	Ljava/awt/Color;
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setAutoMove	setAutoMove	(Z)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	setCurrFraction	setCurrFraction	(F)V
+c	com/fs/starfarer/ui/newui/H$o	AbilityPanel$DialogType
+	c	字符串常量+switch表名 | 高 | AbilityPanel 对话框类型枚举，值 ABILITY_PICKER（字符串常量直接给出）
+	f	Ò00000	ABILITY_PICKER	Lcom/fs/starfarer/ui/newui/H$o;
+	m	values	values	()[Lcom/fs/starfarer/ui/newui/H$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/newui/H$o;
+c	com/fs/starfarer/ui/newui/HintPanel	HintPanel
+	c	API-impl种子 | 高 | 实现 HintPanelAPI 的提示面板（类名未混淆），方法集与接口完全一致
+	f	ôøÒo00	hints	Ljava/util/List;
+	m	setHint	setHint	(ILjava/lang/String;)Lcom/fs/starfarer/api/ui/LabelAPI;
+	m	setHint	setHint	(ILjava/lang/String;Ljava/awt/Color;)Lcom/fs/starfarer/api/ui/LabelAPI;
+	m	setHint	setHint	(ILjava/lang/String;ZLjava/awt/Color;[Ljava/lang/String;)Lcom/fs/starfarer/api/ui/LabelAPI;
+	m	setHint	setHint	(ILjava/lang/String;ZLjava/awt/Color;Ljava/awt/Color;[Ljava/lang/String;)Lcom/fs/starfarer/api/ui/LabelAPI;
+	m	hasHint	hasHint	(I)Z
+	m	fadeOutHint	fadeOutHint	(I)V
+	m	makeDim	makeDim	(I)V
+	m	makeNormal	makeNormal	(I)V
+	m	setOpacity	setOpacity	(IF)V
+	m	clearHints	clearHints	()V
+	m	clearHints	clearHints	(Z)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getHints	getHints	()Ljava/util/List;
+	m	class	getOrCreateHint	(I)Lcom/fs/starfarer/ui/newui/HintPanel$o;
+c	com/fs/starfarer/ui/newui/HintPanel$o	HintPanel$Hint
+	c	javap取证 | 中 | 单条提示（index + label + SavedHintData），HintPanel 内部条目
+	f	new	index	I
+	f	o00000	label	Lcom/fs/starfarer/ui/d;
+	f	Ó00000	savedHintData	Lcom/fs/starfarer/ui/newui/HintPanel$SavedHintData;
+	m	super	update	()V
+c	com/fs/starfarer/ui/newui/HintPanel$SavedHintData	HintPanel$SavedHintData
+	c	继承关系 | 高 | 实现 DoNotObfuscate 的提示数据类（类名与字段名未混淆）
+	f	index	index	I
+	f	format	format	Ljava/lang/String;
+	f	color	color	Ljava/awt/Color;
+	f	hl	hl	Ljava/awt/Color;
+	f	highlights	highlights	[Ljava/lang/String;
+	f	opacity	opacity	F
+	f	flash	flash	Z
+	f	alpha	alpha	F
+	f	fadingIn	fadingIn	Z
+	f	fadingOut	fadingOut	Z
+c	com/fs/starfarer/ui/newui/int	CustomPanelImpl
+	c	API-impl种子 | 高 | 实现 CustomPanelAPI 的自定义面板容器（方法集与接口一致，windows 类名 int，对应 linux I）
+	f	do.return$while	plugin	Lcom/fs/starfarer/api/campaign/CustomUIPanelPlugin;
+	f	õõÒo00	intelUI	Lcom/fs/starfarer/api/ui/IntelUIAPI;
+	f	if.return$while	eventsPanel	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel;
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/api/campaign/CustomUIPanelPlugin;
+	m	getIntelUI	getIntelUI	()Lcom/fs/starfarer/api/ui/IntelUIAPI;
+	m	setIntelUI	setIntelUI	(Lcom/fs/starfarer/api/ui/IntelUIAPI;)V
+	m	createPanel	createPanel	()Lcom/fs/starfarer/api/ui/UIPanelAPI;
+	m	createCustomPanel	createCustomPanel	(FFLcom/fs/starfarer/api/campaign/CustomUIPanelPlugin;)Lcom/fs/starfarer/api/ui/CustomPanelAPI;
+	m	createUIElement	createUIElement	(FFZ)Lcom/fs/starfarer/api/ui/TooltipMakerAPI;
+	m	updateUIElementSizeAndMakeItProcessInput	updateUIElementSizeAndMakeItProcessInput	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
+	m	addUIElement	addUIElement	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)Lcom/fs/starfarer/api/ui/PositionAPI;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	locationChanged	locationChanged	()V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	wrapTooltipWithBox	wrapTooltipWithBox	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)Lcom/fs/starfarer/api/ui/UIPanelAPI;
+	m	wrapTooltipWithBox	wrapTooltipWithBox	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Ljava/awt/Color;)Lcom/fs/starfarer/api/ui/UIPanelAPI;
+	m	wrapTooltipWithBox	wrapTooltipWithBox	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;FFFFLjava/awt/Color;)Lcom/fs/starfarer/api/ui/UIPanelAPI;
+c	com/fs/starfarer/ui/newui/int$1	CustomPanelImpl$BackgroundPanel
+	c	javap取证 | 中 | 带颜色背景面板（wrapTooltipWithBox 中渲染底色矩形，int$1 对应 linux I$1）
+	f	void.return$while	color	Ljava/awt/Color;
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/ui/newui/J	SpriteElement
+	c	javap取证 | 中 | 精灵显示元素：渲染 sprite 区域并支持 x/y 偏移（getSprite/getxOffset/getyOffset）
+	f	ÖöÒo00	sprite	Lcom/fs/graphics/Sprite;
+	f	super.void$while	xOffset	F
+	f	õöÒo00	yOffset	F
+	m	renderImpl	renderImpl	(F)V
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	getxOffset	getxOffset	()F
+	m	getyOffset	getyOffset	()F
+c	com/fs/starfarer/ui/newui/L	CoreUIV2
+	c	javap取证(switch表名) | 高 | 核心 UI v2 主类：$SWITCH_TABLE$...CoreUIV2$DialogType + 七个 tab 按钮文本(Character/Fleet/Refit/Crew-Cargo/Map/Intel/Command) + 实现 CoreUIAPI
+	f	øOô000	plugin	Lcom/fs/starfarer/coreui/OO0o;
+	f	øøØ000	other	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	ø0ô000	buttons	Lcom/fs/starfarer/ui/newui/thissuper;
+	f	void.void$String	course	Lcom/fs/starfarer/coreui/A/O0Oo;
+	f	do.return$String	logistics	Lcom/fs/starfarer/coreui/Objectnew;
+	f	Ó0ô000	terrainInfo	Lcom/fs/starfarer/ui/newui/public;
+	f	ÖOô000	hintPanel	Lcom/fs/starfarer/ui/newui/HintPanel;
+	f	ÓOô000	powerButton	Lcom/fs/starfarer/ui/n;
+	f	ÒOô000	planetBackground	Lcom/fs/starfarer/campaign/ui/marketinfo/nullnew;
+	f	ôOô000	listener	Lcom/fs/starfarer/api/campaign/CoreInteractionListener;
+	f	OOô000	tradeMode	Lcom/fs/starfarer/api/campaign/CampaignUIAPI$CoreUITradeMode;
+	f	Ö0ô000	dialogType	Lcom/fs/starfarer/ui/newui/L$o;
+	f	if.return$String	currentTab	Lcom/fs/starfarer/ui/newui/o0OO;
+	f	O0ô000	pendingTabId	Ljava/lang/Object;
+	f	Õ0ô000	bgFader	Lcom/fs/graphics/util/Fader;
+	f	private.return$String	noiseRenderer	Lcom/fs/starfarer/ui/newui/d;
+	m	getCourse	getCourse	()Lcom/fs/starfarer/coreui/A/O0Oo;
+	m	updateBackground	updateBackground	()V
+	m	setOther	setOther	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	setCurrentTab	setCurrentTab	(Ljava/lang/Object;)V
+	m	setCurrentTab	setCurrentTab	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getCurrentTabId	getCurrentTabId	()Ljava/lang/Object;
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	showPanelAsDialog	showPanelAsDialog	(Lcom/fs/starfarer/ui/n;Lcom/fs/starfarer/ui/interfacenew;ZZ)V
+	m	showPanelAsDialog	showPanelAsDialog	(Lcom/fs/starfarer/ui/n;Lcom/fs/starfarer/ui/interfacenew;ZZZZ)V
+	m	setNextTransitionFast	setNextTransitionFast	(Z)V
+	m	getCurrentTab	getCurrentTab	()Lcom/fs/starfarer/ui/interfacenew;
+	m	showWeaponGroupsWarningIfNeeded	showWeaponGroupsWarningIfNeeded	(Lcom/fs/starfarer/ui/oo0O$o;)Z
+	m	dismiss	dismiss	(I)V
+	m	showAbilityBar	showAbilityBar	()V
+	m	hideAbilityBar	hideAbilityBar	()V
+	m	getTerrainInfo	getTerrainInfo	()Lcom/fs/starfarer/ui/newui/public;
+	m	getHintPanel	getHintPanel	()Lcom/fs/starfarer/api/ui/HintPanelAPI;
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	computePanelWidth	computePanelWidth	(Z)F
+	m	computePanelHeight	computePanelHeight	(Z)F
+	m	hideLogistics	hideLogistics	()V
+	m	showLogistics	showLogistics	()V
+	m	showLogistics	showLogistics	(Z)V
+	m	finishLogisticsAnimation	finishLogisticsAnimation	()V
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/coreui/OO0o;
+	m	getOther	getOther	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getLogistics	getLogistics	()Lcom/fs/starfarer/coreui/Objectnew;
+	m	closeCurrent	closeCurrent	()V
+	m	getDialogParentForSubDialog	getDialogParentForSubDialog	()Lcom/fs/starfarer/ui/interfacenew;
+	m	isCampaignUI	isCampaignUI	()Z
+	m	getListener	getListener	()Lcom/fs/starfarer/api/campaign/CoreInteractionListener;
+	m	setListener	setListener	(Lcom/fs/starfarer/api/campaign/CoreInteractionListener;)V
+	m	disableEnabledTabs	disableEnabledTabs	()Ljava/util/List;
+	m	enableTabs	enableTabs	(Ljava/util/List;)V
+	m	enableAllTabs	enableAllTabs	()V
+	m	getTradeMode	getTradeMode	()Lcom/fs/starfarer/api/campaign/CampaignUIAPI$CoreUITradeMode;
+	m	setTradeMode	setTradeMode	(Lcom/fs/starfarer/api/campaign/CampaignUIAPI$CoreUITradeMode;)V
+	m	getPowerButton	getPowerButton	()Lcom/fs/starfarer/ui/n;
+	m	getPlanetBackground	getPlanetBackground	()Lcom/fs/starfarer/campaign/ui/marketinfo/nullnew;
+	m	getButtons	getButtons	()Lcom/fs/starfarer/ui/newui/thissuper;
+	m	Óõ0000	isRefitUnsaved	()Z
+c	com/fs/starfarer/ui/newui/L$1	CoreUIV2$PowerButtonListener
+	c	javap取证 | 中 | 电源/关闭按钮监听器（L$1：actionPerformed 调 dismiss(0)，绑定 tripad_power_button）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/L$10	CoreUIV2$RefitUnsavedWarningListener
+	c	javap取证 | 中 | 改装未保存警告回调（L$10：确认后打开武器组 / 恢复当前 tab，dialogType=REFIT_UNSAVED_CHANGING_TABS）
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/ui/newui/L$11	CoreUIV2$RefitUnsavedCloseListener
+	c	javap取证 | 中 | 改装未保存关闭回调（L$11：关闭 UI 时确认，dialogType=REFIT_UNSAVED_CLOSING_UI）
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/ui/newui/L$2	CoreUIV2$CharacterTabListener
+	c	javap取证 | 高 | Character tab 按钮监听器（L$2，绑定字符串 Character + CoreUITabId.CHARACTER）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/L$3	CoreUIV2$FleetTabListener
+	c	javap取证 | 高 | Fleet tab 按钮监听器（L$3，绑定字符串 Fleet + CoreUITabId.FLEET）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/L$4	CoreUIV2$RefitTabListener
+	c	javap取证 | 高 | Refit tab 按钮监听器（L$4，绑定字符串 Refit + CoreUITabId.REFIT，含 chmRefitOnStation/chmRefitCRLoss 警告）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/L$4$1	CoreUIV2$RefitTabListener$OnStationConfirm
+	c	javap取证 | 中 | 空间站改装确认回调（chmRefitOnStation 警告的 oOOo$o 确认，super() 返回 true）
+	m	o00000	confirm	()Z
+c	com/fs/starfarer/ui/newui/L$4$2	CoreUIV2$RefitTabListener$OnStationDismiss
+	c	javap取证 | 中 | 空间站改装警告关闭回调（L$4$2）
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/ui/newui/L$4$3	CoreUIV2$RefitTabListener$CRLossConfirm
+	c	javap取证 | 中 | 改装 CR 损失警告确认回调（chmRefitCRLoss，super() 返回 true）
+	m	o00000	confirm	()Z
+c	com/fs/starfarer/ui/newui/L$4$4	CoreUIV2$RefitTabListener$CRLossDismiss
+	c	javap取证 | 中 | 改装 CR 损失警告关闭回调（L$4$4）
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/ui/newui/L$5	CoreUIV2$CargoTabListener
+	c	javap取证 | 高 | Crew/Cargo tab 按钮监听器（L$5，绑定字符串 Crew/Cargo + CoreUITabId.CARGO，含 chmOpenTrade 警告）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/L$5$1	CoreUIV2$CargoTabListener$TradeConfirm
+	c	javap取证 | 中 | 打开贸易警告确认回调（chmOpenTrade，super() 返回 true）
+	m	o00000	confirm	()Z
+c	com/fs/starfarer/ui/newui/L$5$2	CoreUIV2$CargoTabListener$TradeDismiss
+	c	javap取证 | 中 | 打开贸易警告关闭回调（L$5$2）
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/ui/newui/L$6	CoreUIV2$MapTabListener
+	c	javap取证 | 高 | Map tab 按钮监听器（L$6，绑定字符串 Map + CoreUITabId.MAP）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/L$7	CoreUIV2$IntelTabListener
+	c	javap取证 | 高 | Intel tab 按钮监听器（L$7，绑定字符串 Intel + CoreUITabId.INTEL）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/L$8	CoreUIV2$CommandTabListener
+	c	javap取证 | 高 | Command tab 按钮监听器（L$8，绑定字符串 Command + CoreUITabId.OUTPOSTS）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V

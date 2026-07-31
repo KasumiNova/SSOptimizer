@@ -1,0 +1,145 @@
+tiny	2	0	obf	named
+
+c	com/fs/starfarer/BaseGameState	com/fs/starfarer/BaseGameState
+	c javap取证（类名与成员名均未混淆，implements com.fs.state.AppState 的游戏状态基类；windows 引用类型名与 linux 不同） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.BaseGameState)
+	m	prepare	prepare	()V
+	m	render	render	(F)V
+	m	advance	advance	(FLcom/fs/starfarer/util/A/new;)V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/A/new;F)V
+	m	onStateTransition	onStateTransition	(Ljava/lang/String;)V
+	m	goToState	goToState	(Ljava/lang/String;)V
+	m	getFps	getFps	()Lcom/fs/graphics/util/A;
+	m	getFader	getFader	()Lcom/fs/graphics/util/Fader;
+	m	isTransitioningToNextState	isTransitioningToNextState	()Z
+	m	isLauncherMode	isLauncherMode	()Z
+	m	setLauncherMode	setLauncherMode	(Z)V
+	m	traverse	traverse	()Ljava/lang/String;
+	m	getNextState	getNextState	()Ljava/lang/String;
+c	com/fs/starfarer/O0OO	com/fs/starfarer/UISettingsColors
+	c 字符串常量（settings.json UI 颜色键静态 Color 表；指纹 C_9c2358ae 与 linux String 对齐，named 以 linux 包前缀为准保持双平台一致） | 中 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.String)
+c	com/fs/starfarer/ooOO	com/fs/starfarer/CodexOverlayHost
+	c javap取证（接口方法名未混淆：getOverlayPanelForCodex/setShowingCodex/isShowingCodex；与 linux ooOOOO… 内容比对一致，非指纹对齐） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.ooOOOO)
+c	com/fs/starfarer/StarfarerLauncher	com/fs/starfarer/StarfarerLauncher
+	c javap取证（人工表已命名，此处为补全 scope 覆盖率的身份条目） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md direct 包)
+c	com/fs/starfarer/StarfarerLauncher$1	com/fs/starfarer/StarfarerLauncher$LaunchGameRunnable
+	c javap取证（Runnable，run() 调 StarfarerLauncher.launchGame(ZZLjava/lang/String;Ljava/lang/String;)V） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.StarfarerLauncher$1)
+	m	run	run	()V
+c	com/fs/starfarer/StarfarerLauncher$2	com/fs/starfarer/StarfarerLauncher$ModSortComparator
+	c javap取证（Comparator<ModManager$ModSpec>，按 getSortString/getName 排序） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.StarfarerLauncher$2)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/StarfarerLauncher$o	com/fs/starfarer/StarfarerLauncher$PlusMinusIcon
+	c 字符串常量（Plus.gif/Minus.gif，javax.swing.Icon 加减号图标） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.StarfarerLauncher$o)
+	m	paintIcon	paintIcon	(Ljava/awt/Component;Ljava/awt/Graphics;II)V
+	m	getIconWidth	getIconWidth	()I
+	m	getIconHeight	getIconHeight	()I
+c	com/fs/starfarer/super	com/fs/starfarer/GameExitException
+	c javap取证（extends RuntimeException；指纹 C_be39a782 对齐 linux oOOO，窗口关闭请求退出信号） | 中 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.oOOO)
+c	com/fs/starfarer/Version	com/fs/starfarer/Version
+	c javap取证（implements com.fs.util.DoNotObfuscate，versionString=Starsector 0.98a-RC8，类名成员名未混淆） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.Version)
+	f	versionInfoForMods	versionInfoForMods	Lcom/fs/starfarer/launcher/ModManager$VersionInfo;
+	f	versionOnly	versionOnly	Ljava/lang/String;
+	f	versionString	versionString	Ljava/lang/String;
+	m	render	render	()V
+c	com/fs/starfarer/B/super	com/fs/starfarer/B/LogPatternLayout
+	c 继承关系（extends org.apache.log4j.PatternLayout；指纹 C_63ad892c 对齐 linux B/A） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.B.A)
+c	com/fs/starfarer/B/C	com/fs/starfarer/B/LogPatternConverter
+	c 继承关系（extends log4j PatternConverter；指纹 C_b1516e47 对齐 linux B/Object） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.B.Object)
+c	com/fs/starfarer/B/D	com/fs/starfarer/B/LogPatternParser
+	c 继承关系（extends log4j PatternParser；指纹 C_cdfe9e43 对齐 linux B/O0OO） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.B.O0OO)
+c	com/fs/starfarer/oOOO/B	com/fs/starfarer/super/SimulatorMission
+	c 字符串常量（船/行星/任务名布置舰队；指纹 C_8c0329e6 对齐 linux super/B，named 以 linux 包前缀为准） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.super.B)
+c	com/fs/starfarer/oOOO/super	com/fs/starfarer/super/SimulatorMissions
+	c 字符串常量（模拟战任务名清单；指纹 C_0dd3c28f 对齐 linux super/A，named 以 linux 包前缀为准） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.super.A)
+c	com/fs/starfarer/return/A	com/fs/starfarer/F/CursorImageLoader
+	c javap取证（Toolkit.createImage+PixelGrabber+RGBA 转换+ByteBuffer；指纹 C_c16624b2 对齐 linux F/oOOO，named 以 linux 包前缀为准） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.F.oOOO)
+c	com/fs/starfarer/return/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/F/CursorManager
+	c 字符串常量（graphics/cursors/cursor_blue_2x.png 等，LWJGL Mouse.setNativeCursor；内容与 linux F/B 一致，named 以 linux 包前缀为准） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.F.B)
+c	com/fs/starfarer/return/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/F/CursorManager$CursorType
+	c javap取证（enum STANDARD/RED；内容与 linux F/B$o 一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.F.B$o)
+c	com/fs/starfarer/Object/A	com/fs/starfarer/C/MersenneTwister
+	c javap取证（MT19937 常量 624/397/0x9908B0DF 等；指纹 C_7ae9794c 对齐 linux C/A，named 以 linux 包前缀为准） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.C.A)
+c	com/fs/starfarer/Object/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/C/CopyProtection
+	c 字符串常量（CD 序列号表 + 反盗版文本；内容与 linux C/B 一致，named 以 linux 包前缀为准） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.C.B)
+c	com/fs/starfarer/D/A	com/fs/starfarer/O0OO/SoundLoop
+	c javap取证（Sound + 上下文 + 位置/音量 + Fader + 去重判定；内容与 linux O0OO/oOOO 一致，named 以 linux 包前缀为准） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.oOOO)
+c	com/fs/starfarer/D/B	com/fs/starfarer/O0OO/SoundLoopManager
+	c 字符串常量（Playing sound loop/Deduping playing loops；内容与 linux O0OO/B 一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.B)
+c	com/fs/starfarer/D/C	com/fs/starfarer/O0OO/CombatMusicPlayer
+	c API-impl种子（getMusicSetIdForCombat；注册表以 COMBAT+"music_combat" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.C)
+c	com/fs/starfarer/D/class	com/fs/starfarer/O0OO/MarketMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken；注册表以 MARKET 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.E)
+c	com/fs/starfarer/D/D	com/fs/starfarer/O0OO/MusicPlayer
+	c javap取证（单状态音乐播放器接口 7 抽象方法；指纹 C_30dfdd07 对齐 linux O0OO/O0OO） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.O0OO)
+c	com/fs/starfarer/D/I	com/fs/starfarer/O0OO/SoundFilter
+	c javap取证（ALC_EXT_EFX + enableSoundFilters + 滤波句柄；内容与 linux O0OO/I 一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.I)
+c	com/fs/starfarer/D/I$o	com/fs/starfarer/O0OO/SoundFilter$FilterType
+	c 字符串常量（enum LOWPASS/HIGHPASS/BANDPASS/NONE） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.I$o)
+c	com/fs/starfarer/D/I$Oo	com/fs/starfarer/O0OO/SoundFilter$FilterParams
+	c javap取证（类型 + 6 浮点滤波参数纯数据容器） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.I$Oo)
+c	com/fs/starfarer/D/if	com/fs/starfarer/O0OO/TitleMusicPlayer
+	c API-impl种子（getMusicSetIdForTitle；注册表以 TITLE+"music_title" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.J)
+c	com/fs/starfarer/D/K	com/fs/starfarer/O0OO/BaseMusicPlayer
+	c API-impl种子（implements D/D；内容与 linux O0OO/K 一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.K)
+c	com/fs/starfarer/D/M	com/fs/starfarer/O0OO/SoundManager
+	c 字符串常量（Playing UI sound:/Playing loop:/Queueing at listener:；常量 200/300.0f/0.2f/0.2f 与 linux O0OO/OO0O 一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OO0O)
+c	com/fs/starfarer/D/M$o	com/fs/starfarer/O0OO/SoundManager$FadingSound
+	c javap取证（Sound + 0.1s 淡出 Fader；指纹 C_5dbe0e80 对齐 linux O0OO/OO0O$o） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OO0O$o)
+c	com/fs/starfarer/D/M$Oo	com/fs/starfarer/O0OO/SoundManager$QueuedSound
+	c javap取证（specs.e + Sound + 音量/位置浮点 + 老化计时；指纹 C_1e7a964e 对齐 linux O0OO/OO0O$Oo） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OO0O$Oo)
+c	com/fs/starfarer/D/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/O0OO/EncounterMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken；注册表以 ENCOUNTER 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.M)
+c	com/fs/starfarer/D/oOoO	com/fs/starfarer/O0OO/CampaignMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken + o00000(float) 音量控制；CampaignState 引用） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.void)
+c	com/fs/starfarer/D/OooO	com/fs/starfarer/O0OO/PlanetSurveyMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken；注册表以 PLANET_SURVEY+"music_survey_and_scavenge" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.null)
+c	com/fs/starfarer/D/return	com/fs/starfarer/O0OO/MusicManager
+	c API-impl种子（按 MusicPlayerPluginImpl token 注册/切换播放器；内容与 linux O0OO/OOoO 一致，被 CombatMain/CombatState/TitleScreenState/CampaignState 引用） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OOoO)
+	m	int	init	()V
+		c API-impl种子（注册内置播放器 music_title/music_combat/music_survey_and_scavenge 并启动轮询线程） | 高
+	m	o00000	setCurrentMusicState	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c API-impl种子（按状态 token 切换当前音乐播放器） | 高
+	m	oO0000	playTitle	()V
+		c API-impl种子（调用 setCurrentMusicState(TITLE, null)） | 高
+	m	ö00000	playCampaignSystem	()V
+		c API-impl种子（调用 setCurrentMusicState(CAMPAIGN_SYSTEM, null)） | 高
+	m	for	playCampaignHyperspace	()V
+		c API-impl种子（调用 setCurrentMusicState(CAMPAIGN_HYPERSPACE, null)） | 高
+	m	public	playCombat	()V
+		c API-impl种子（调用 setCurrentMusicState(COMBAT, null)） | 高
+	m	o00000	playMarket	(Ljava/lang/Object;)V
+		c API-impl种子（调用 setCurrentMusicState(MARKET, token)） | 高
+	m	Object	playPlanetSurvey	(Ljava/lang/Object;)V
+		c API-impl种子（调用 setCurrentMusicState(PLANET_SURVEY, token)） | 高
+	m	Ò00000	playEncounter	(Ljava/lang/Object;)V
+		c API-impl种子（调用 setCurrentMusicState(ENCOUNTER, token)） | 高
+	m	Õ00000	playNoMusic	(Ljava/lang/Object;)V
+		c API-impl种子（先 NO_MUSIC 后 ENCOUNTER，静音遭遇） | 高
+	m	Ô00000	getCurrentMusicPlayer	()Lcom/fs/starfarer/D/D;
+		c javap取证（返回当前状态音乐播放器） | 高
+	m	ÒO0000	getCurrentStateToken	()Ljava/lang/Object;
+		c javap取证（返回当前播放器的状态 token） | 高
+	m	Ò00000	resumeCurrentMusic	()V
+		c javap取证（D/return$1 轮询线程在曲目未播放时调用以恢复音乐） | 高
+	m	o00000	getCurrentTrackName	()Ljava/lang/String;
+		c 字符串常量（无曲目时返回 "nothing"） | 高
+	m	Object	stopCustomMusic	()V
+		c javap取证（取 CUSTOM 播放器调 K 停止） | 高
+	m	Õ00000	pauseCustomMusic	()V
+		c javap取证（取 CUSTOM 播放器暂停） | 高
+	m	o00000	playCustomMusic	(IILjava/lang/String;)V
+		c javap取证（转发 playCustomMusic(IILjava/lang/String;Z) loop=false） | 高
+	m	o00000	playCustomMusic	(IILjava/lang/String;Z)V
+		c javap取证（取 CUSTOM 播放器播放并置标记） | 高
+c	com/fs/starfarer/D/return$1	com/fs/starfarer/O0OO/MusicManager$MusicPollingRunnable
+	c javap取证（daemon 线程每 500ms 检查音乐状态并恢复；内容与 linux O0OO/OOoO$1 一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OOoO$1)
+c	zzz/com/fs/starfarer/prototype/junk/CombatStarfieldParticle	zzz/com/fs/starfarer/prototype/junk/CombatStarfieldParticle
+	c javap取证（类名与成员名未混淆，战斗星空粒子；指纹 C_fd78e3fa 双平台一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md zzz.com.fs.starfarer.prototype.junk.CombatStarfieldParticle)
+	f	velocity	velocity	Lorg/lwjgl/util/vector/Vector2f;
+	f	normalVelocity	normalVelocity	Lorg/lwjgl/util/vector/Vector2f;
+	m	preBatch	preBatch	()V
+	m	postBatch	postBatch	()V
+	m	render	render	()V
+	m	isExpired	isExpired	()Z
+	m	preBatch	preBatch	(I)V
+c	zzz/com/fs/starfarer/prototype/junk/super	zzz/com/fs/starfarer/prototype/junk/StarfieldTest
+	c javap取证（junk 废弃包，生成 100 个 CombatStarfieldParticle；指纹 C_0dcf550e 对齐 linux junk/A） | 中 | 证据(.dev/mapping-evidence/starfarer-misc.md zzz.com.fs.starfarer.prototype.junk.A)

@@ -1,0 +1,416 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/save/A	com/fs/starfarer/campaign/save/NewGameStatsDialog
+	c 来源(javap取证) | 置信度(高) | 证据(NewGameStatsDialog（A）)
+	f	O0Ô000	gameData	Lcom/fs/starfarer/campaign/save/return;
+	f	String.void$new	characterPanel	Lcom/fs/starfarer/coreui/k;
+	m	getTab	getTab	()Lcom/fs/starfarer/coreui/k;
+	m	setTab	setTab	(Lcom/fs/starfarer/coreui/k;)V
+	m	getGameData	getGameData	()Lcom/fs/starfarer/campaign/save/return;
+	m	setData	setData	(Lcom/fs/starfarer/campaign/save/return;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/save/B	com/fs/starfarer/campaign/save/CampaignSaveProgressDialog
+	c 来源(人工表+字符串常量) | 置信度(高) | 证据(CampaignSaveProgressDialog（B）)
+	f	for	progressText	Ljava/lang/String;
+	m	Ò00000	getSaveLabel	()Ljava/lang/String;
+	m	o00000	setSaveLabel	(Ljava/lang/String;)V
+	m	o00000	getProgressText	()Ljava/lang/String;
+	m	Ò00000	setProgressText	(Ljava/lang/String;)V
+c	com/fs/starfarer/campaign/save/CampaignGameManager	com/fs/starfarer/campaign/save/CampaignGameManager
+	c 来源(未混淆类名) | 置信度(高) | 证据(CampaignGameManager)
+	f	õ00000	SAVE_VERSION	Ljava/lang/String;
+	f	Ö00000	log	Lorg/apache/log4j/Logger;
+	f	if	lastSaveTime	J
+	f	Õ00000	continueCampaignName	Ljava/lang/String;
+	f	Ó00000	currentSaveGameData	Lcom/fs/starfarer/campaign/save/SaveGameData;
+	f	void	saveProgressOutputStream	Lcom/fs/starfarer/util/do;
+	f	String	xstream	Lcom/thoughtworks/xstream/XStream;
+	m	Ó00000	getLastSaveTime	()J
+	m	o00000	setLastSaveTime	(J)V
+	m	o00000	generateSaveName	(Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	newGame	(Lcom/fs/starfarer/campaign/save/return;Lcom/fs/starfarer/campaign/CampaignState;)Ljava/lang/String;
+	m	o00000	scatterNearbyHostileFleets	(F)V
+	m	Ô00000	getCurrentSaveGameData	()Lcom/fs/starfarer/campaign/save/SaveGameData;
+	m	o00000	setCurrentSaveGameData	(Lcom/fs/starfarer/campaign/save/SaveGameData;)V
+	m	o00000	saveGame	(Lcom/fs/starfarer/campaign/CampaignEngine$o;)Ljava/lang/String;
+	m	o00000	saveGame	(Lcom/fs/starfarer/campaign/CampaignEngine$o;JZ)Ljava/lang/String;
+	m	o00000	saveGame	(Lcom/fs/starfarer/campaign/void;Lcom/fs/starfarer/campaign/CampaignEngine$o;Z)Ljava/lang/String;
+	m	o00000	checkSaveExists	(Z)Z
+	m	Ö00000	isSaveDirectoryValid	()Z
+	m	o00000	loadGame	(Ljava/lang/String;Lcom/fs/starfarer/campaign/void;Lcom/fs/starfarer/campaign/CampaignEngine$o;)Ljava/lang/String;
+	m	o00000	loadGame	(Ljava/lang/String;Lcom/fs/starfarer/campaign/void;Lcom/fs/starfarer/campaign/CampaignEngine$o;ZZ)Ljava/lang/String;
+	m	class	isSaveAllowed	()Z
+	m	o00000	hasExistingSave	()Z
+	m	new	getSaveGameDataList	()Ljava/util/List;
+	m	new	deleteSaveGame	(Ljava/io/File;)V
+	m	new	getXStream	(Ljava/lang/String;)Lcom/thoughtworks/xstream/XStream;
+	m	Ó00000	checkSaveFileValid	(Ljava/io/File;)V
+	m	o00000	waitForFileDeletion	(Ljava/io/File;)V
+	m	o00000	renameSaveFile	(Ljava/io/File;Ljava/io/File;)V
+	f	OO0000	OO0000	Ljava/util/HashSet;
+c	com/fs/starfarer/campaign/save/CampaignGameManager$1	com/fs/starfarer/campaign/save/SectorGenProgressCallback
+	c 来源(继承关系) | 置信度(高) | 证据(CampaignGameManager内部类)
+	m	render	render	(Ljava/lang/String;F)V
+c	com/fs/starfarer/campaign/save/CampaignGameManager$2	com/fs/starfarer/campaign/save/EconomyUpdateCallback
+	c 来源(继承关系) | 置信度(高) | 证据(CampaignGameManager内部类)
+c	com/fs/starfarer/campaign/save/CampaignGameManager$3	com/fs/starfarer/campaign/save/ModSortOrderComparator
+	c 来源(javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/save/CampaignGameManager$4	com/fs/starfarer/campaign/save/SaveDataDateComparator
+	c 来源(javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/save/CampaignGameManager$5	com/fs/starfarer/campaign/save/SaveXMLDriver
+	c 来源(继承关系+javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
+	m	createWriter	createWriter	(Ljava/io/OutputStream;)Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;
+	m	createReader	createReader	(Ljava/io/InputStream;)Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;
+c	com/fs/starfarer/campaign/save/CampaignGameManager$6	com/fs/starfarer/campaign/save/SaveXStream
+	c 来源(继承关系+javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
+	m	wrapMapper	wrapMapper	(Lcom/thoughtworks/xstream/mapper/MapperWrapper;)Lcom/thoughtworks/xstream/mapper/MapperWrapper;
+c	com/fs/starfarer/campaign/save/CampaignGameManager$6$1	com/fs/starfarer/campaign/save/SaveMapperWrapper
+	c 来源(继承关系+javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
+	m	shouldSerializeMember	shouldSerializeMember	(Ljava/lang/Class;Ljava/lang/String;)Z
+c	com/fs/starfarer/campaign/save/CampaignGameManager$o	com/fs/starfarer/campaign/save/InterfacePassthroughConverter
+	c 来源(javap取证) | 置信度(中) | 证据(CampaignGameManager内部类)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	processInterfaces	processInterfaces	(Ljava/lang/Class;Ljava/util/Set;)V
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/E	com/fs/starfarer/campaign/save/ColorConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/G	com/fs/starfarer/campaign/save/MutatingValueConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/O0oO	com/fs/starfarer/campaign/save/SaveAsDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(SaveAsDialog（J）)
+	f	ôÔÓ000	makeCurrentCheckbox	Lcom/fs/starfarer/ui/n;
+	f	void.new$new	currentSlot	Lcom/fs/starfarer/campaign/save/SaveGameData;
+	f	ÕÔÓ000	newSlot	Lcom/fs/starfarer/campaign/save/SaveGameData;
+	f	ÒÔÓ000	textField	Lcom/fs/starfarer/ui/new;
+	f	MAKE_SAVE_CURRENT_CHECKBOX_STATE_KEY	MAKE_SAVE_CURRENT_CHECKBOX_STATE_KEY	Ljava/lang/String;
+	m	init	init	(Lcom/fs/starfarer/campaign/save/SaveGameData;Lcom/fs/starfarer/campaign/save/SaveGameData;Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FF)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	getTextField	getTextField	()Lcom/fs/starfarer/ui/new;
+	m	dismiss	dismiss	(I)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getText	getText	()Ljava/lang/String;
+	m	getMakeCurrent	getMakeCurrent	()Lcom/fs/starfarer/ui/n;
+	m	getCurrentSlot	getCurrentSlot	()Lcom/fs/starfarer/campaign/save/SaveGameData;
+	m	getNewSlot	getNewSlot	()Lcom/fs/starfarer/campaign/save/SaveGameData;
+	m	backspacePressed	backspacePressed	(Lcom/fs/starfarer/ui/new;Z)V
+	m	charTyped	charTyped	(Lcom/fs/starfarer/ui/new;C)V
+	m	charTypeFailed	charTypeFailed	(Lcom/fs/starfarer/ui/new;C)V
+	m	tabPressed	tabPressed	(Lcom/fs/starfarer/ui/new;Lcom/fs/starfarer/util/A/C;)V
+c	com/fs/starfarer/campaign/save/LoadGameDialog	com/fs/starfarer/campaign/save/LoadGameDialog
+	c 来源(未混淆类名) | 置信度(高) | 证据(LoadGameDialog)
+	f	Ö0Ô000	log	Lorg/apache/log4j/Logger;
+	f	ø0Ô000	activeDialogState	Lcom/fs/starfarer/campaign/save/LoadGameDialog$O0;
+	f	ô0Ô000	dialogType	Lcom/fs/starfarer/campaign/save/LoadGameDialog$Oo;
+	f	do.void$new	campaignUI	Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	super.null$new	table	Lcom/fs/starfarer/campaign/ui/UITable;
+	f	Õ0Ô000	selectedRowButton	Lcom/fs/starfarer/campaign/ui/B;
+	f	õ0Ô000	currentRowButton	Lcom/fs/starfarer/campaign/ui/B;
+	f	if.void$new	saveAsDialog	Lcom/fs/starfarer/campaign/save/O0oO;
+	m	interface.String	showSaveAsDialog	()V
+	m	o00000	createSaveSlotTooltip	(Lcom/fs/starfarer/campaign/save/SaveGameData;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	o00000	showSaveAsDialog	(Lcom/fs/starfarer/campaign/save/SaveGameData;Lcom/fs/starfarer/campaign/save/SaveGameData;)V
+	m	getRowData	getRowData	(Ljava/util/List;Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$o0;
+	m	advanceImpl	advanceImpl	(F)V
+	m	getSelectedData	getSelectedData	()Lcom/fs/starfarer/campaign/save/SaveGameData;
+	m	getCurrentData	getCurrentData	()Lcom/fs/starfarer/campaign/save/SaveGameData;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	getSaveAs	getSaveAs	()Lcom/fs/starfarer/campaign/save/O0oO;
+	m	getCompatibility	getCompatibility	(Lcom/fs/starfarer/campaign/save/SaveGameData;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$oo;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/save/LoadGameDialog$1	com/fs/starfarer/campaign/save/SaveDateComparator
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/save/LoadGameDialog$2	com/fs/starfarer/campaign/save/SlotTooltipBeforeShowRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialog内部类)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/save/LoadGameDialog$3	com/fs/starfarer/campaign/save/SaveSlotTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/save/LoadGameDialog$3$1	com/fs/starfarer/campaign/save/ModCheckRowComparator
+	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialog内部类)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/save/LoadGameDialog$3$2	com/fs/starfarer/campaign/save/ModRowTooltipBeforeShowRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialog内部类)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/save/LoadGameDialog$O0	com/fs/starfarer/campaign/save/DialogState
+	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$O0;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$O0;
+c	com/fs/starfarer/campaign/save/LoadGameDialog$OOo	com/fs/starfarer/campaign/save/SortKey
+	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$OOo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$OOo;
+c	com/fs/starfarer/campaign/save/LoadGameDialog$Oo	com/fs/starfarer/campaign/save/DialogType
+	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$Oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$Oo;
+c	com/fs/starfarer/campaign/save/LoadGameDialog$o	com/fs/starfarer/campaign/save/SaveRowPanel
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
+	f	icon	icon	Lcom/fs/starfarer/ui/ooO0;
+	f	name	name	Lcom/fs/starfarer/ui/d;
+	f	data	data	Lcom/fs/starfarer/campaign/save/SaveGameData;
+	f	level	level	Lcom/fs/starfarer/ui/d;
+	f	desc	desc	Lcom/fs/starfarer/ui/d;
+	f	compat	compat	Lcom/fs/starfarer/ui/d;
+	f	loc	loc	Lcom/fs/starfarer/ui/d;
+	m	createRow	createRow	()V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/A/new;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/save/LoadGameDialog$o0	com/fs/starfarer/campaign/save/ModCheckRow
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
+	f	super	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+c	com/fs/starfarer/campaign/save/LoadGameDialog$oo	com/fs/starfarer/campaign/save/Compatibility
+	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$oo;
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld	com/fs/starfarer/campaign/save/LoadGameDialogOld
+	c 来源(未混淆类名) | 置信度(高) | 证据(LoadGameDialogOld)
+	m	getRowData	getRowData	(Ljava/util/List;Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$O0;
+	m	advanceImpl	advanceImpl	(F)V
+	m	getSelectedGame	getSelectedGame	()Lcom/fs/starfarer/campaign/save/SaveGameData;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	getCompatibility	getCompatibility	(Lcom/fs/starfarer/campaign/save/SaveGameData;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$oo;
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$1	com/fs/starfarer/campaign/save/OldSaveDateComparator
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$2	com/fs/starfarer/campaign/save/OldSlotTooltipBeforeShowRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialogOld内部类)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$3	com/fs/starfarer/campaign/save/OldSaveSlotTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$3$1	com/fs/starfarer/campaign/save/OldModCheckRowComparator
+	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialogOld内部类)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$3$2	com/fs/starfarer/campaign/save/OldModRowTooltipBeforeShowRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialogOld内部类)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$O0	com/fs/starfarer/campaign/save/OldModCheckRow
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
+	f	o00000	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$Oo	com/fs/starfarer/campaign/save/OldDialogState
+	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialogOld内部类)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$Oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$Oo;
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$o	com/fs/starfarer/campaign/save/OldSaveRowPanel
+	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/save/LoadGameDialogOld$oo	com/fs/starfarer/campaign/save/OldCompatibility
+	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialogOld内部类)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$oo;
+c	com/fs/starfarer/campaign/save/N	com/fs/starfarer/campaign/save/CrewCompositionConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/O	com/fs/starfarer/campaign/save/CampaignEngineConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+c	com/fs/starfarer/campaign/save/return	com/fs/starfarer/campaign/save/CharacterCreationDataImpl
+	c 来源(继承关系) | 置信度(高) | 证据(CharacterCreationDataImpl（长名类）)
+	f	while	difficulty	Ljava/lang/String;
+	f	oO0000	customData	Ljava/util/Map;
+	f	null	startingShipChoices	Ljava/util/List;
+	f	ÔO0000	startingShip	Ljava/lang/String;
+	f	Ö00000	characterData	Lcom/fs/starfarer/campaign/PlayerCharacterData;
+	f	interface	startingCargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	new	additionalShips	Ljava/util/List;
+	f	Ø00000	startingLocationName	Ljava/lang/String;
+	f	class	startingCoordinates	Lorg/lwjgl/util/vector/Vector2f;
+	f	õ00000	campaignHelpEnabled	Z
+	f	ö00000	done	Z
+	f	Ó00000	scripts	Ljava/util/List;
+	f	OO0000	scriptsBeforeTimePass	Ljava/util/List;
+	f	o00000	seedString	Ljava/lang/String;
+	f	Ô00000	seed	J
+	f	ÖO0000	sectorAge	Lcom/fs/starfarer/api/impl/campaign/procgen/StarAge;
+	f	ÓO0000	sectorSize	Ljava/lang/String;
+	f	float	withTimePass	Z
+	m	getDifficulty	getDifficulty	()Ljava/lang/String;
+	m	setDifficulty	setDifficulty	(Ljava/lang/String;)V
+	m	getStartingShipChoices	getStartingShipChoices	()Ljava/util/List;
+	m	setStartingShipChoices	setStartingShipChoices	(Ljava/util/List;)V
+	m	getStartingShip	getStartingShip	()Ljava/lang/String;
+	m	setStartingShip	setStartingShip	(Ljava/lang/String;)V
+	m	getCharacterData	getCharacterData	()Lcom/fs/starfarer/campaign/PlayerCharacterData;
+	m	setCharacterData	setCharacterData	(Lcom/fs/starfarer/campaign/PlayerCharacterData;)V
+	m	isIronMode	isIronMode	()Z
+	m	setIronMode	setIronMode	(Z)V
+	m	addStartingShipChoice	addStartingShipChoice	(Ljava/lang/String;)V
+	m	removeStartingShipChoice	removeStartingShipChoice	(Ljava/lang/String;)V
+	m	getPerson	getPerson	()Lcom/fs/starfarer/api/characters/PersonAPI;
+	m	getStartingCargo	getStartingCargo	()Lcom/fs/starfarer/api/campaign/CargoAPI;
+	m	resetStartingCargo	resetStartingCargo	()V
+	m	addStartingFleetMember	addStartingFleetMember	(Ljava/lang/String;Lcom/fs/starfarer/api/fleet/FleetMemberType;)V
+	m	removeStartingFleetMember	removeStartingFleetMember	(Ljava/lang/String;)V
+	m	getStartingShips	getStartingShips	()Ljava/util/List;
+	m	getAdditionalShips	getAdditionalShips	()Ljava/util/List;
+	m	clearAdditionalShips	clearAdditionalShips	()V
+	m	getStartingLocationName	getStartingLocationName	()Ljava/lang/String;
+	m	setStartingLocationName	setStartingLocationName	(Ljava/lang/String;)V
+	m	getStartingCoordinates	getStartingCoordinates	()Lorg/lwjgl/util/vector/Vector2f;
+	m	isCampaignHelpEnabled	isCampaignHelpEnabled	()Z
+	m	setCampaignHelpEnabled	setCampaignHelpEnabled	(Z)V
+	m	isDone	isDone	()Z
+	m	setDone	setDone	(Z)V
+	m	addScript	addScript	(Lcom/fs/starfarer/api/Script;)V
+	m	getScripts	getScripts	()Ljava/util/List;
+	m	addScriptBeforeTimePass	addScriptBeforeTimePass	(Lcom/fs/starfarer/api/Script;)V
+	m	getScriptsBeforeTimePass	getScriptsBeforeTimePass	()Ljava/util/List;
+	m	getSeedString	getSeedString	()Ljava/lang/String;
+	m	setSeedString	setSeedString	(Ljava/lang/String;)V
+	m	getSeed	getSeed	()J
+	m	setSeed	setSeed	(J)V
+	m	getSectorAge	getSectorAge	()Lcom/fs/starfarer/api/impl/campaign/procgen/StarAge;
+	m	setSectorAge	setSectorAge	(Lcom/fs/starfarer/api/impl/campaign/procgen/StarAge;)V
+	m	getSectorSize	getSectorSize	()Ljava/lang/String;
+	m	setSectorSize	setSectorSize	(Ljava/lang/String;)V
+	m	getCustomData	getCustomData	()Ljava/util/Map;
+	m	isWithTimePass	isWithTimePass	()Z
+	m	setWithTimePass	setWithTimePass	(Z)V
+	m	getCharacterData	getCharacterData	()Lcom/fs/starfarer/api/campaign/CharacterDataAPI;
+c	com/fs/starfarer/campaign/save/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/save/FloatArrayConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/null	com/fs/starfarer/campaign/save/NewGameOptionsPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(NewGameOptionsPanel（OooO）)
+	f	ÖôoO00	gameData	Lcom/fs/starfarer/campaign/save/return;
+	f	OØoO00	nameTextField	Lcom/fs/starfarer/ui/new;
+	f	ôôoO00	gender	Lcom/fs/starfarer/api/characters/FullName$Gender;
+	f	if.int$void	dialogType	Lcom/fs/starfarer/campaign/save/null$o;
+	m	addTooltip	addTooltip	(Lcom/fs/starfarer/ui/w;Ljava/lang/String;)V
+	m	getSeedText	getSeedText	()Ljava/lang/String;
+	m	isValidSeedString	isValidSeedString	(Ljava/lang/String;)Z
+	m	updateFromSeedString	updateFromSeedString	(Ljava/lang/String;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getPlayerName	getPlayerName	()Ljava/lang/String;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	updateGameData	updateGameData	()V
+c	com/fs/starfarer/campaign/save/null$o	com/fs/starfarer/campaign/save/OptionsDialogType
+	c 来源(字符串常量) | 置信度(高) | 证据(NewGameOptionsPanel（OooO）)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/null$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/null$o;
+c	com/fs/starfarer/campaign/save/SaveGameData	com/fs/starfarer/campaign/save/SaveGameData
+	c 来源(未混淆类名) | 置信度(高) | 证据(SaveGameData)
+	f	characterName	characterName	Ljava/lang/String;
+	f	characterLevel	characterLevel	I
+	f	isIronMode	isIronMode	Z
+	f	enabledMods	enabledMods	Ljava/util/List;
+	f	desc	desc	Ljava/lang/String;
+	m	isAutosave	isAutosave	()Z
+	m	setAutosave	setAutosave	(Z)V
+	m	getLocDesc	getLocDesc	()Ljava/lang/String;
+	m	setLocDesc	setLocDesc	(Ljava/lang/String;)V
+	m	isEmptySlot	isEmptySlot	()Z
+	m	setEmptySlot	setEmptySlot	(Z)V
+	m	isCurrent	isCurrent	()Z
+	m	setCurrent	setCurrent	(Z)V
+	m	getRawDesc	getRawDesc	()Ljava/lang/String;
+	m	getDesc	getDesc	()Ljava/lang/String;
+	m	setDesc	setDesc	(Ljava/lang/String;)V
+	m	getGameVersion	getGameVersion	()Ljava/lang/String;
+	m	setGameVersion	setGameVersion	(Ljava/lang/String;)V
+	m	getSlotCreationTimestamp	getSlotCreationTimestamp	()J
+	m	setSlotCreationTimestamp	setSlotCreationTimestamp	(J)V
+	m	getDifficulty	getDifficulty	()Ljava/lang/String;
+	m	setDifficulty	setDifficulty	(Ljava/lang/String;)V
+	m	getPortraitName	getPortraitName	()Ljava/lang/String;
+	m	setPortraitName	setPortraitName	(Ljava/lang/String;)V
+	m	getCharacterName	getCharacterName	()Ljava/lang/String;
+	m	setCharacterName	setCharacterName	(Ljava/lang/String;)V
+	m	getCharacterLevel	getCharacterLevel	()I
+	m	setCharacterLevel	setCharacterLevel	(I)V
+	m	isCompressed	isCompressed	()Z
+	m	setCompressed	setCompressed	(Z)V
+	m	getGameDate	getGameDate	()Lcom/fs/starfarer/campaign/CampaignClock;
+	m	setGameDate	setGameDate	(Lcom/fs/starfarer/campaign/CampaignClock;)V
+	m	getSaveFileVersion	getSaveFileVersion	()Ljava/lang/String;
+	m	setSaveFileVersion	setSaveFileVersion	(Ljava/lang/String;)V
+	m	getSaveDate	getSaveDate	()Ljava/util/Date;
+	m	setSaveDate	setSaveDate	(Ljava/util/Date;)V
+	m	getSaveDir	getSaveDir	()Ljava/io/File;
+	m	setSaveDir	setSaveDir	(Ljava/io/File;)V
+	m	getAllModsEverEnabled	getAllModsEverEnabled	()Ljava/util/List;
+	m	setAllModsEverEnabled	setAllModsEverEnabled	(Ljava/util/List;)V
+	m	getEnabledMods	getEnabledMods	()Ljava/util/List;
+	m	setEnabledMods	setEnabledMods	(Ljava/util/List;)V
+	m	isIronMode	isIronMode	()Z
+	m	setIronMode	setIronMode	(Z)V
+c	com/fs/starfarer/campaign/save/O0OO	com/fs/starfarer/campaign/save/CampaignMenuDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(CampaignMenuDialog（String）)
+	f	String.null$new	callback	Lcom/fs/starfarer/campaign/save/O0OO$o;
+	f	ÒoÔ000	dialogType	Lcom/fs/starfarer/campaign/save/O0OO$Oo;
+	m	o00000	showSaveAsDialog	(Ljava/lang/String;Lcom/fs/starfarer/campaign/save/O0OO$Oo;)V
+	m	new	showConfirmDialog	(Ljava/lang/String;Lcom/fs/starfarer/campaign/save/O0OO$Oo;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/campaign/save/O0OO$1	com/fs/starfarer/campaign/save/CampaignMenuTooltipRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(CampaignMenuDialog（String）)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/save/O0OO$Oo	com/fs/starfarer/campaign/save/ConfirmDialogType
+	c 来源(字符串常量) | 置信度(高) | 证据(CampaignMenuDialog（String）)
+	m	values	values	()[Lcom/fs/starfarer/campaign/save/O0OO$Oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/O0OO$Oo;
+c	com/fs/starfarer/campaign/save/O0OO$o	com/fs/starfarer/campaign/save/CampaignMenuCallback
+	c 来源(字符串常量) | 置信度(高) | 证据(CampaignMenuDialog（String）)
+	m	cmdSave	cmdSave	()Z
+	m	cmdLoad	cmdLoad	()V
+	m	cmdCodex	cmdCodex	()V
+	m	cmdSettings	cmdSettings	()V
+	m	cmdSaveAndExit	cmdSaveAndExit	()Z
+	m	cmdExitWithoutSaving	cmdExitWithoutSaving	()V
+	m	cmdSaveCopy	cmdSaveCopy	()V
+c	com/fs/starfarer/campaign/save/float	com/fs/starfarer/campaign/save/IntArrayConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/for	com/fs/starfarer/campaign/save/SlipstreamSegmentConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/oO0O	com/fs/starfarer/campaign/save/Vector2fConverter
+	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
+	m	canConvert	canConvert	(Ljava/lang/Class;)Z
+	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
+	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/save/I	com/fs/starfarer/campaign/save/RandomNameDialog
+	c 来源(javap取证) | 置信度(中) | 证据(RandomNameDialog（oooO）)
+	f	super.int$new	nameList	Lcom/fs/starfarer/coreui/v;
+	f	ÕoÔ000	pickedName	Ljava/lang/String;
+	f	private.null$new	pickedGender	Lcom/fs/starfarer/api/characters/FullName$Gender;
+	m	pickRandom	pickRandom	()V
+	m	getPickedSpriteName	getPickedSpriteName	()Ljava/lang/String;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getPickedGender	getPickedGender	()Lcom/fs/starfarer/api/characters/FullName$Gender;
+c	com/fs/starfarer/campaign/save/I$o	com/fs/starfarer/campaign/save/NameEntry
+	c 来源(javap取证) | 置信度(高) | 证据(RandomNameDialog（oooO）)
+	f	o00000	name	Ljava/lang/String;
+	f	new	gender	Lcom/fs/starfarer/api/characters/FullName$Gender;

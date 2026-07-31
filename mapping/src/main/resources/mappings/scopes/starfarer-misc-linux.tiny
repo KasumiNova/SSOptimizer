@@ -1,0 +1,145 @@
+tiny	2	0	obf	named
+
+c	com/fs/starfarer/BaseGameState	com/fs/starfarer/BaseGameState
+	c javap取证（类名与成员名均未混淆，implements com.fs.state.AppState 的游戏状态基类） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.BaseGameState)
+	m	prepare	prepare	()V
+	m	render	render	(F)V
+	m	advance	advance	(FLcom/fs/starfarer/util/super/B;)V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;F)V
+	m	onStateTransition	onStateTransition	(Ljava/lang/String;)V
+	m	goToState	goToState	(Ljava/lang/String;)V
+	m	getFps	getFps	()Lcom/fs/graphics/util/super;
+	m	getFader	getFader	()Lcom/fs/graphics/util/Fader;
+	m	isTransitioningToNextState	isTransitioningToNextState	()Z
+	m	isLauncherMode	isLauncherMode	()Z
+	m	setLauncherMode	setLauncherMode	(Z)V
+	m	traverse	traverse	()Ljava/lang/String;
+	m	getNextState	getNextState	()Ljava/lang/String;
+c	com/fs/starfarer/oOOO	com/fs/starfarer/GameExitException
+	c javap取证（extends RuntimeException；BaseGameState/CombatState 在 Display.isCloseRequested 时抛出，作为退出信号） | 中 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.oOOO)
+c	com/fs/starfarer/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/CodexOverlayHost
+	c javap取证（接口方法名未混淆：getOverlayPanelForCodex/setShowingCodex/isShowingCodex） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.ooOOOO)
+c	com/fs/starfarer/StarfarerLauncher	com/fs/starfarer/StarfarerLauncher
+	c javap取证（人工表已命名，此处为补全 scope 覆盖率的身份条目） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md direct 包)
+c	com/fs/starfarer/StarfarerLauncher$1	com/fs/starfarer/StarfarerLauncher$LaunchGameRunnable
+	c javap取证（Runnable，run() 调 StarfarerLauncher.launchGame(ZZLjava/lang/String;Ljava/lang/String;)V） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.StarfarerLauncher$1)
+	m	run	run	()V
+c	com/fs/starfarer/StarfarerLauncher$2	com/fs/starfarer/StarfarerLauncher$ModSortComparator
+	c javap取证（Comparator<ModManager$ModSpec>，按 getSortString/getName 排序） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.StarfarerLauncher$2)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/StarfarerLauncher$o	com/fs/starfarer/StarfarerLauncher$PlusMinusIcon
+	c 字符串常量（Plus.gif/Minus.gif，javax.swing.Icon 加减号图标） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.StarfarerLauncher$o)
+	m	paintIcon	paintIcon	(Ljava/awt/Component;Ljava/awt/Graphics;II)V
+	m	getIconWidth	getIconWidth	()I
+	m	getIconHeight	getIconHeight	()I
+c	com/fs/starfarer/String	com/fs/starfarer/UISettingsColors
+	c 字符串常量（settings.json UI 颜色键：progressBarFuelColor/weaponArcColor/buttonBg 等，全部 Color 静态字段） | 中 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.String)
+c	com/fs/starfarer/Version	com/fs/starfarer/Version
+	c javap取证（implements com.fs.util.DoNotObfuscate，versionString=Starsector 0.98a-RC8，类名成员名未混淆） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.Version)
+	f	versionInfoForMods	versionInfoForMods	Lcom/fs/starfarer/launcher/ModManager$VersionInfo;
+	f	versionOnly	versionOnly	Ljava/lang/String;
+	f	versionString	versionString	Ljava/lang/String;
+	m	render	render	()V
+c	com/fs/starfarer/B/A	com/fs/starfarer/B/LogPatternLayout
+	c 继承关系（extends org.apache.log4j.PatternLayout，createPatternParser 返回 B/O0OO） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.B.A)
+c	com/fs/starfarer/B/O0OO	com/fs/starfarer/B/LogPatternParser
+	c 继承关系（extends log4j PatternParser，'C' 转换字符注册 B/Object） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.B.O0OO)
+c	com/fs/starfarer/B/Object	com/fs/starfarer/B/LogPatternConverter
+	c 继承关系（extends log4j PatternConverter，convert 取 LoggingEvent.getRenderedMessage） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.B.Object)
+c	com/fs/starfarer/C/A	com/fs/starfarer/C/MersenneTwister
+	c javap取证（MT19937 标准常量 624/397/0x9908B0DF/0x9D2C5680/0xEFC60000，Serializable+Cloneable 随机数类） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.C.A)
+c	com/fs/starfarer/C/B	com/fs/starfarer/C/CopyProtection
+	c 字符串常量（合法 CD 序列号表 + 反盗版文本 "Nobody will ever pirate starfarer..."，checkKey 校验） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.C.B)
+c	com/fs/starfarer/F/B	com/fs/starfarer/F/CursorManager
+	c 字符串常量（graphics/cursors/cursor_blue_2x.png/cursor_red_2x.png，LWJGL Mouse.setNativeCursor） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.F.B)
+c	com/fs/starfarer/F/B$o	com/fs/starfarer/F/CursorManager$CursorType
+	c javap取证（enum 常量 STANDARD/RED，与 cursor_blue/cursor_red 对应） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.F.B$o)
+c	com/fs/starfarer/F/oOOO	com/fs/starfarer/F/CursorImageLoader
+	c javap取证（Toolkit.createImage+PixelGrabber+RGBA 转换+ByteBuffer，problem loading image (most likely cursor)） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.F.oOOO)
+c	com/fs/starfarer/super/A	com/fs/starfarer/super/SimulatorMissions
+	c 字符串常量（模拟战任务名：Sunder Test/Nebula Ambush/Defense at Alpha Perseus/It's a Trap!/Blockade Run 等） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.super.A)
+c	com/fs/starfarer/super/B	com/fs/starfarer/super/SimulatorMission
+	c 字符串常量（船/行星/任务名：apogee_Balanced/astral1/arid/barren/Battle vs Onslaught/Carrier Test 等，布置舰队） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.super.B)
+c	com/fs/starfarer/O0OO/B	com/fs/starfarer/O0OO/SoundLoopManager
+	c 字符串常量（Playing sound loop/Deduping playing loops；位置/距离去重管理音效循环，持有 List<oOOO>） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.B)
+c	com/fs/starfarer/O0OO/C	com/fs/starfarer/O0OO/CombatMusicPlayer
+	c API-impl种子（MusicPlayerPlugin.getMusicSetIdForCombat(CombatEngineAPI)，OOoO 以 COMBAT+"music_combat" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.C)
+c	com/fs/starfarer/O0OO/E	com/fs/starfarer/O0OO/MarketMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken，OOoO 以 MARKET token 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.E)
+c	com/fs/starfarer/O0OO/I	com/fs/starfarer/O0OO/SoundFilter
+	c javap取证（ALC_EXT_EFX 检测 + enableSoundFilters settings 键 + LOWPASS/HIGHPASS/BANDPASS 滤波器句柄） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.I)
+c	com/fs/starfarer/O0OO/I$o	com/fs/starfarer/O0OO/SoundFilter$FilterType
+	c 字符串常量（enum LOWPASS/HIGHPASS/BANDPASS/NONE） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.I$o)
+c	com/fs/starfarer/O0OO/I$Oo	com/fs/starfarer/O0OO/SoundFilter$FilterParams
+	c javap取证（I$o 类型 + 6 浮点滤波参数的纯数据容器） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.I$Oo)
+c	com/fs/starfarer/O0OO/J	com/fs/starfarer/O0OO/TitleMusicPlayer
+	c API-impl种子（MusicPlayerPlugin.getMusicSetIdForTitle，OOoO 以 TITLE+"music_title" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.J)
+c	com/fs/starfarer/O0OO/K	com/fs/starfarer/O0OO/BaseMusicPlayer
+	c API-impl种子（implements O0OO；持 MusicSpec/曲目规格/曲目，o00000(IILjava/lang/String;Z) 播放、Õ00000 切歌，CUSTOM 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.K)
+c	com/fs/starfarer/O0OO/M	com/fs/starfarer/O0OO/EncounterMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken，OOoO 以 ENCOUNTER token 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.M)
+c	com/fs/starfarer/O0OO/null	com/fs/starfarer/O0OO/PlanetSurveyMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken，OOoO 以 PLANET_SURVEY+"music_survey_and_scavenge" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.null)
+c	com/fs/starfarer/O0OO/O0OO	com/fs/starfarer/O0OO/MusicPlayer
+	c javap取证（单状态音乐播放器接口，7 抽象方法，被 K 实现） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.O0OO)
+c	com/fs/starfarer/O0OO/OO0O	com/fs/starfarer/O0OO/SoundManager
+	c 字符串常量（Playing UI sound:/Playing loop:/Queueing at listener:/Sound set with id...not found；逐帧更新监听位置与排队音效，被 BaseGameState/combat 大量引用） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OO0O)
+c	com/fs/starfarer/O0OO/OO0O$Oo	com/fs/starfarer/O0OO/SoundManager$QueuedSound
+	c javap取证（specs.e 音效规格 + Sound + 音量/位置浮点 + 老化计时的排队音效条目） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OO0O$Oo)
+c	com/fs/starfarer/O0OO/OO0O$o	com/fs/starfarer/O0OO/SoundManager$FadingSound
+	c javap取证（Sound + 0.1s 淡出 Fader + 音量，OO0O.super(Sound) 创建） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OO0O$o)
+c	com/fs/starfarer/O0OO/OOoO	com/fs/starfarer/O0OO/MusicManager
+	c API-impl种子（按 MusicPlayerPluginImpl TITLE/COMBAT/PLANET_SURVEY/MARKET/ENCOUNTER/CUSTOM token 注册播放器并切换；被 CombatMain/CombatState/TitleScreenState/CampaignState 引用） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OOoO)
+	m	õ00000	init	()V
+		c API-impl种子（注册内置播放器 music_title/music_combat/music_survey_and_scavenge 并启动轮询线程） | 高
+	m	o00000	setCurrentMusicState	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c API-impl种子（按状态 token 切换当前音乐播放器，旧播放器停止、新播放器设上下文） | 高
+	m	oO0000	playTitle	()V
+		c API-impl种子（调用 setCurrentMusicState(TITLE, null)） | 高
+	m	ö00000	playCampaignSystem	()V
+		c API-impl种子（调用 setCurrentMusicState(CAMPAIGN_SYSTEM, null)） | 高
+	m	OO0000	playCampaignHyperspace	()V
+		c API-impl种子（调用 setCurrentMusicState(CAMPAIGN_HYPERSPACE, null)） | 高
+	m	ÓO0000	playCombat	()V
+		c API-impl种子（调用 setCurrentMusicState(COMBAT, null)） | 高
+	m	o00000	playMarket	(Ljava/lang/Object;)V
+		c API-impl种子（调用 setCurrentMusicState(MARKET, token)） | 高
+	m	Ó00000	playPlanetSurvey	(Ljava/lang/Object;)V
+		c API-impl种子（调用 setCurrentMusicState(PLANET_SURVEY, token)） | 高
+	m	new	playEncounter	(Ljava/lang/Object;)V
+		c API-impl种子（调用 setCurrentMusicState(ENCOUNTER, token)） | 高
+	m	class	playNoMusic	(Ljava/lang/Object;)V
+		c API-impl种子（先 NO_MUSIC 后 ENCOUNTER，静音遭遇） | 高
+	m	Ô00000	getCurrentMusicPlayer	()Lcom/fs/starfarer/O0OO/O0OO;
+		c javap取证（返回当前状态音乐播放器） | 高
+	m	while	getCurrentStateToken	()Ljava/lang/Object;
+		c javap取证（返回当前播放器的状态 token） | 高
+	m	new	resumeCurrentMusic	()V
+		c javap取证（OOoO$1 轮询线程在曲目未播放时调用以恢复音乐） | 高
+	m	o00000	getCurrentTrackName	()Ljava/lang/String;
+		c 字符串常量（无曲目时返回 "nothing"） | 高
+	m	Ó00000	stopCustomMusic	()V
+		c javap取证（取 CUSTOM 播放器调 K.Õ00000 停止） | 高
+	m	class	pauseCustomMusic	()V
+		c javap取证（取 CUSTOM 播放器调 K.return 并置 ø00000=false 暂停） | 高
+	m	o00000	playCustomMusic	(IILjava/lang/String;)V
+		c javap取证（转发 playCustomMusic(IILjava/lang/String;Z) loop=false） | 高
+	m	o00000	playCustomMusic	(IILjava/lang/String;Z)V
+		c javap取证（取 CUSTOM 播放器调 K.o00000(IILjava/lang/String;Z) 并置 ø00000=true） | 高
+c	com/fs/starfarer/O0OO/OOoO$1	com/fs/starfarer/O0OO/MusicManager$MusicPollingRunnable
+	c javap取证（daemon 线程每 500ms 检查音乐开关与曲目播放状态并恢复/切换，异常记 log） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OOoO$1)
+c	com/fs/starfarer/O0OO/oOOO	com/fs/starfarer/O0OO/SoundLoop
+	c javap取证（Sound + 上下文 + 位置/音量 + Fader 淡入淡出 + 同音效去重判定，SoundLoopManager 的元素） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.oOOO)
+c	com/fs/starfarer/O0OO/void	com/fs/starfarer/O0OO/CampaignMusicPlayer
+	c API-impl种子（getMusicSetIdForCampaignStateToken，带音量控制 o00000(float)，CampaignState 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.void)
+c	zzz/com/fs/starfarer/prototype/junk/A	zzz/com/fs/starfarer/prototype/junk/StarfieldTest
+	c javap取证（junk 废弃包，生成 100 个 CombatStarfieldParticle 注册 AnimationManager 并渲染） | 中 | 证据(.dev/mapping-evidence/starfarer-misc.md zzz.com.fs.starfarer.prototype.junk.A)
+c	zzz/com/fs/starfarer/prototype/junk/CombatStarfieldParticle	zzz/com/fs/starfarer/prototype/junk/CombatStarfieldParticle
+	c javap取证（类名与成员名未混淆，extends graphics.particle.BaseParticle 的战斗星空粒子，GL11 线段绘制） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md zzz.com.fs.starfarer.prototype.junk.CombatStarfieldParticle)
+	f	velocity	velocity	Lorg/lwjgl/util/vector/Vector2f;
+	f	normalVelocity	normalVelocity	Lorg/lwjgl/util/vector/Vector2f;
+	m	preBatch	preBatch	()V
+	m	postBatch	postBatch	()V
+	m	render	render	()V
+	m	isExpired	isExpired	()Z
+	m	preBatch	preBatch	(I)V

@@ -1,0 +1,203 @@
+tiny 2 0 obf named
+c com/fs/starfarer/combat/entities/A com/fs/starfarer/combat/entities/ValueTrendTracker
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#A-value-trend-tracker
+	f	super	maxPoints	I
+	f	Ò00000	points	Ljava/util/List;
+	m	new	getSize	()I
+	m	o00000	isFull	()Z
+	m	Ó00000	clear	()V
+	m	new	addPoint	(FF)V
+	m	o00000	fitTrend	(F)Lcom/fs/starfarer/combat/entities/A$Oo;
+	m	o00000	fitTrend	(FF)Lcom/fs/starfarer/combat/entities/A$Oo;
+	m	o00000	main	([Ljava/lang/String;)V
+c com/fs/starfarer/combat/entities/A$o com/fs/starfarer/combat/entities/ValueTrendPoint
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#a-o-trend-point
+	f	new	value	F
+	f	o00000	interval	F
+c com/fs/starfarer/combat/entities/A$Oo com/fs/starfarer/combat/entities/TrendFit
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#a-oo-trend-fit
+	f	new	minX	F
+	f	Ó00000	maxX	F
+	f	o00000	slope	F
+	f	Ö00000	intercept	F
+	f	class	avgX	F
+	f	Ô00000	sumX	F
+c com/fs/starfarer/combat/entities/B com/fs/starfarer/combat/entities/TrailExtender
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#b-trail-extender
+	f	super	target	Lorg/lwjgl/util/vector/Vector2f;
+	f	void	tailPos	Lorg/lwjgl/util/vector/Vector2f;
+	f	String	progress	F
+	f	ô00000	fadeTime	F
+	f	Ó00000	maxLength	F
+	f	if	distanceTravelled	F
+	m	super	setTarget	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	super	advance	(FLorg/lwjgl/util/vector/Vector2f;Z)V
+	m	String	getProgress	()F
+	m	super	getBrightnessMult	()F
+	m	void	isDone	()Z
+	m	Ö00000	getTailPos	()Lorg/lwjgl/util/vector/Vector2f;
+	m	Ó00000	getDistanceTravelled	()F
+c com/fs/starfarer/combat/entities/BallisticProjectile com/fs/starfarer/combat/entities/BallisticProjectile
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/BaseEntity com/fs/starfarer/combat/entities/BaseEntity
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#base-entity
+c com/fs/starfarer/combat/entities/BattlefieldWaypoint com/fs/starfarer/combat/entities/BattlefieldWaypoint
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/BattleObjective com/fs/starfarer/combat/entities/BattleObjective
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/BeamWeaponRay com/fs/starfarer/combat/entities/BeamWeaponRay
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/Billboard com/fs/starfarer/combat/entities/Billboard
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/C com/fs/starfarer/combat/entities/DamageParamHolder
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#c-damage-param-holder
+c com/fs/starfarer/combat/entities/ContrailEmitter com/fs/starfarer/combat/entities/ContrailEmitter
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/ContrailEngine com/fs/starfarer/combat/entities/ContrailEngine
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode com/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/ContrailEngine$Oo com/fs/starfarer/combat/entities/ContrailEngine$Oo
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/ContrailEngine$o com/fs/starfarer/combat/entities/ContrailEngine$o
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/ContrailParticle com/fs/starfarer/combat/entities/ContrailParticle
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/CustomCombatEntity com/fs/starfarer/combat/entities/CustomCombatEntity
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/D com/fs/starfarer/combat/entities/DamageProvider
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#d-damage-provider
+	m	o00000	getDamage	()Lcom/fs/starfarer/combat/o0OO/F;
+c com/fs/starfarer/combat/entities/DamagingExplosion com/fs/starfarer/combat/entities/DamagingExplosion
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/E com/fs/starfarer/combat/entities/ShipBreakdownSystem
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#e-ship-breakdown-system
+	f	super	remaining	F
+	m	super	isDepleted	()Z
+	m	super	consume	(F)V
+	m	Ò00000	advance	(F)V
+c com/fs/starfarer/combat/entities/EmitterFactory com/fs/starfarer/combat/entities/EmitterFactory
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/EmitterFactory$1 com/fs/starfarer/combat/entities/EmitterFactory$1
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+c com/fs/starfarer/combat/entities/EmitterFactory$2 com/fs/starfarer/combat/entities/EmitterFactory$2
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+c com/fs/starfarer/combat/entities/EmitterFactory$3 com/fs/starfarer/combat/entities/EmitterFactory$3
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+c com/fs/starfarer/combat/entities/EmitterFactory$4 com/fs/starfarer/combat/entities/EmitterFactory$4
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+c com/fs/starfarer/combat/entities/EmitterFactory$5 com/fs/starfarer/combat/entities/EmitterFactory$5
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+c com/fs/starfarer/combat/entities/for com/fs/starfarer/combat/entities/RayExtender
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#for-ray-extender
+	m	Ô00000	getFrom	()Lorg/lwjgl/util/vector/Vector2f;
+	m	Ö00000	getTo	()Lorg/lwjgl/util/vector/Vector2f;
+	m	õ00000	getVelocity	()Lorg/lwjgl/util/vector/Vector2f;
+	m	o00000	advance	(FZ)V
+	m	ö00000	isDone	()Z
+	m	o00000	getBrightnessMult	()F
+	m	null	isFading	()Z
+	m	new	hasHit	()Z
+	m	Ø00000	getFadeFactor	()F
+c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
+c com/fs/starfarer/combat/entities/G$Oo com/fs/starfarer/combat/entities/EngineState
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
+c com/fs/starfarer/combat/entities/G$o com/fs/starfarer/combat/entities/EngineGlowType
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
+c com/fs/starfarer/combat/entities/H com/fs/starfarer/combat/entities/BreakingAnimation
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#h-breaking-animation
+	f	Ô00000	pieces	Ljava/util/List;
+	m	o00000	hasPieces	()Z
+	m	o00000	advance	(F)V
+	m	Ò00000	isStation	()Z
+c com/fs/starfarer/combat/entities/int com/fs/starfarer/combat/entities/ShipStatistics
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#int-ship-statistics
+	f	o00000	hullLevelHistory	Lcom/fs/starfarer/combat/entities/A;
+	f	oO0000	armorFractionHistory	Lcom/fs/starfarer/combat/entities/A;
+	f	ö00000	fluxLevelHistory	Lcom/fs/starfarer/combat/entities/A;
+	f	ô00000	hardFluxLevelHistory	Lcom/fs/starfarer/combat/entities/A;
+	f	Õ00000	distanceToEnemyHistory	Lcom/fs/starfarer/combat/entities/A;
+	f	Ø00000	backingOffHistory	Lcom/fs/starfarer/combat/entities/A;
+	f	Ò00000	totalDamageHistory	Lcom/fs/starfarer/combat/entities/A;
+	f	ø00000	hullArmorDamageHistory	Lcom/fs/starfarer/combat/entities/A;
+	m	o00000	advance	(F)V
+	m	Ô00000	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+	m	Ø00000	getHullLevelHistory	()Lcom/fs/starfarer/combat/entities/A;
+	m	Õ00000	getArmorFractionHistory	()Lcom/fs/starfarer/combat/entities/A;
+	m	ô00000	getFluxLevelHistory	()Lcom/fs/starfarer/combat/entities/A;
+	m	Object	getHardFluxLevelHistory	()Lcom/fs/starfarer/combat/entities/A;
+	m	Ò00000	getDistanceToEnemyHistory	()Lcom/fs/starfarer/combat/entities/A;
+	m	o00000	getBackingOffHistory	()Lcom/fs/starfarer/combat/entities/A;
+	m	return	getHullArmorDamageHistory	()Lcom/fs/starfarer/combat/entities/A;
+c com/fs/starfarer/combat/entities/Missile com/fs/starfarer/combat/entities/Missile
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/Missile$GuidedMissileAIWrapper com/fs/starfarer/combat/entities/Missile$GuidedMissileAIWrapper
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/Missile$MissileAIWrapper com/fs/starfarer/combat/entities/Missile$MissileAIWrapper
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/MovingRay com/fs/starfarer/combat/entities/MovingRay
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/o0oO com/fs/starfarer/combat/entities/BaseBeam
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#o0oo-base-beam
+	f	Ø00000	from	Lorg/lwjgl/util/vector/Vector2f;
+	f	ô00000	to	Lorg/lwjgl/util/vector/Vector2f;
+	f	o00000	source	Lcom/fs/starfarer/combat/entities/Ship;
+	f	Ô00000	damage	Lcom/fs/starfarer/combat/o0OO/F;
+	f	return	velocity	Lorg/lwjgl/util/vector/Vector2f;
+c com/fs/starfarer/combat/entities/O0oO com/fs/starfarer/combat/entities/BeamEntity
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#o0oo-beam-entity
+c com/fs/starfarer/combat/entities/oO0O com/fs/starfarer/combat/entities/CombatEntity
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#oo0o-combat-entity
+c com/fs/starfarer/combat/entities/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/starfarer/combat/entities/SpriteWarpUtils
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#sprite-warp-utils
+c com/fs/starfarer/combat/entities/PlasmaShot com/fs/starfarer/combat/entities/PlasmaShot
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/PlasmaShot$o com/fs/starfarer/combat/entities/PlasmaShot$o
+	c javap取证 | 低 | .dev/mapping-evidence/combat-entities-core.md#plasma-shot-inner
+c com/fs/starfarer/combat/entities/return com/fs/starfarer/combat/entities/DamagingProjectile
+	c 继承关系 | 高 | .dev/mapping-evidence/combat-entities-core.md#return-damaging-projectile
+c com/fs/starfarer/combat/entities/return$o com/fs/starfarer/combat/entities/ProjectileHitMode
+	c 字符串常量 | 中 | .dev/mapping-evidence/combat-entities-core.md#return-o-projectile-hit-mode
+	f	String	REWIND_TO_LAST_FRAME	Lcom/fs/starfarer/combat/entities/return$o;
+	f	Ò00000	PASS_THROUGH	Lcom/fs/starfarer/combat/entities/return$o;
+	f	super	EXPLODE	Lcom/fs/starfarer/combat/entities/return$o;
+c com/fs/starfarer/combat/entities/Ship com/fs/starfarer/combat/entities/Ship
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+c com/fs/starfarer/combat/entities/Ship$1 com/fs/starfarer/combat/entities/Ship$1
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#ship-inner-classes
+c com/fs/starfarer/combat/entities/Ship$2 com/fs/starfarer/combat/entities/Ship$2
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#ship-inner-classes
+c com/fs/starfarer/combat/entities/Ship$o com/fs/starfarer/combat/entities/ShipAfterimage
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#ship-o-afterimage
+	f	Õ00000	color	Ljava/awt/Color;
+	f	Ø00000	additiveBlend	Z
+	m	super	advance	(F)V
+	m	super	isExpired	()Z
+	m	Ò00000	getAlphaMult	()F
+c com/fs/starfarer/combat/entities/Ship$Oo com/fs/starfarer/combat/entities/ShipCommandItem
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#ship-oo-command-item
+	f	Ò00000	command	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	Ó00000	param	Ljava/lang/Object;
+c com/fs/starfarer/combat/entities/Ship$oo com/fs/starfarer/combat/entities/ShipCommand
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-core.md#ship-oo-ship-command
+	f	OO0000	TURN_LEFT	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	Ö00000	TURN_RIGHT	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	ÕO0000	STRAFE_LEFT	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	super	STRAFE_RIGHT	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	ÖO0000	ACCELERATE	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	if	ACCELERATE_BACKWARDS	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	Ò00000	DECELERATE	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	Ó00000	TRIGGER_AUTO_SLOWDOWN	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	ô00000	SELECT_GROUP	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	do	USE_SELECTED_GROUP	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	õ00000	FIRE_AT_WILL	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	void	FIRE	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	private	RAISE_FLUX	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	ø00000	VENT_FLUX	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	super.super	TOGGLE_SHIELD	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	ÒO0000	HOLD_FIRE	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	ÓO0000	PULL_BACK_FIGHTERS	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	Õ00000	USE_SYSTEM	Lcom/fs/starfarer/combat/entities/Ship$oo;
+c com/fs/starfarer/combat/entities/Ship$ShipAIWrapper com/fs/starfarer/combat/entities/Ship$ShipAIWrapper
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes

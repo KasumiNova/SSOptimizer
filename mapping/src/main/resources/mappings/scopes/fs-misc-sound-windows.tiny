@@ -1,0 +1,96 @@
+tiny	2	0	obf	named
+c	sound/int	sound/AiffData
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-aiff-data)
+c	com/fs/state/AppDriver	com/fs/state/AppDriver
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#appdriver)
+c	com/fs/state/AppState	com/fs/state/AppState
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#appstate)
+c	sound/O0OO	sound/Audio
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-audio)
+c	sound/A	sound/AudioImpl
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-audio-impl)
+c	sound/do	sound/AudioInputStream
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-audio-input-stream)
+c	sound/float$o	sound/AudioStreamSource
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-stream-source)
+c	sound/A$o	sound/BufferInfo
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-buffer-info)
+c	com/fs/util/container/repo/Classifier	com/fs/util/container/repo/Classifier
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#repo)
+c	sound/B	sound/DeferredSound
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-deferred-sound)
+c	com/fs/util/DoNotObfuscate	com/fs/util/DoNotObfuscate
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#donotobfuscate)
+c	com/fs/util/container/repo/FastIterationClassifier	com/fs/util/container/repo/FastIterationClassifier
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#repo)
+c	com/fs/util/container/repo/FastLookupClassifier	com/fs/util/container/repo/FastLookupClassifier
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#repo)
+c	com/fs/util/C$1	com/fs/util/FileSuffixFilter
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#resourceloader-1)
+c	com/fs/util/C$2	com/fs/util/FileSuffixFilterVariant
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#resourceloader-2)
+c	com/fs/util/B	com/fs/util/FrameLimiter
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#util-oooo)
+c	com/fs/util/container/repo/A	com/fs/util/container/repo/IdProvider
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#repo-idprovider)
+c	com/fs/util/D	com/fs/util/IntPair
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#util-d)
+c	sound/O	sound/Music
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-music)
+c	sound/O$o	sound/MusicFadeState
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-music-fade)
+c	sound/H	sound/MusicManager
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-music-manager)
+c	sound/O$Oo	sound/MusicPlaybackState
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-music-state)
+c	sound/H$2	sound/MusicUpdateTask
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-music-manager-2)
+c	sound/H$1	sound/MusicZipStreamSource
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-music-manager-1)
+c	sound/for	sound/NullAudio
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-null-audio)
+c	com/fs/util/container/repo/ObjectRepository	com/fs/util/container/repo/ObjectRepository
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#repo)
+c	com/fs/util/container/repo/ObjectRepository$o	com/fs/util/container/repo/ObjectRepositoryListener
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#repo)
+c	sound/G	sound/OggData
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-ogg-data)
+c	sound/O0oO	sound/OggDecoder
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-ogg-decoder)
+c	sound/F	sound/OggInputStream
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-ogg-input-stream)
+c	com/fs/util/container/Pair	com/fs/util/container/Pair
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#pair)
+c	com/fs/profiler/Profiler$o	com/fs/profiler/ProfileSample
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#profiler-o)
+c	com/fs/profiler/Profiler	com/fs/profiler/Profiler
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#profiler)
+	m	Ò00000	begin	(Ljava/lang/String;)V
+	m	o00000	end	()V
+c	com/fs/util/C	com/fs/util/ResourceLoader
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#resourceloader)
+c	com/fs/util/C$Oo	com/fs/util/ResourceSpec
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#resourceloader-oo)
+c	com/fs/util/C$o	com/fs/util/ResourceType
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#resourceloader-o)
+c	com/fs/profiler/Profiler$1	com/fs/profiler/SampleDurationComparator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#profiler-1)
+c	sound/Sound	sound/Sound
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-sound)
+	m	new	setVolume	(F)V
+	m	new	getVolume	()F
+	m	o00000	isPlaying	()Z
+c	sound/C	sound/SoundManager
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-manager)
+c	sound/C$o	sound/SoundSource
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-manager-o)
+c	sound/C$1	sound/SoundStoreInitializer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-manager-1)
+c	sound/N	sound/StreamSound
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-stream-sound)
+c	sound/float	sound/StreamingAudioSource
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-streaming-source)
+c	com/fs/util/oOOO	com/fs/util/VectorMathUtils
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#util-oooo2)
+c	sound/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	sound/WAVData
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#sound-wav-data)
