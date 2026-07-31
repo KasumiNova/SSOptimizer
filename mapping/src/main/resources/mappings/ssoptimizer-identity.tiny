@@ -1,8 +1,16 @@
 tiny 2 0 obf named
 c com/fs/graphics/Sprite com/fs/graphics/Sprite
 	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/graphics/particle/GenericTextureParticle com/fs/graphics/particle/GenericTextureParticle
+	c app ASM 处理器运行期契约直接引用的类（jar 内未混淆，实现 com/fs/util/DoNotObfuscate）：类与全部成员保持原名
+c com/fs/graphics/particle/SmoothParticle com/fs/graphics/particle/SmoothParticle
+	c app ASM 处理器运行期契约直接引用的类（jar 内未混淆，实现 com/fs/util/DoNotObfuscate）：类与全部成员保持原名
 c com/fs/graphics/util/Fader com/fs/graphics/util/Fader
 	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/starfarer/combat/CombatState com/fs/starfarer/combat/CombatState
+	c app ASM 处理器运行期契约直接引用的类（jar 内未混淆，CombatStateProcessor 目标）：类与全部成员保持原名
+c com/fs/starfarer/combat/entities/Ship com/fs/starfarer/combat/entities/Ship
+	c app Mixin Accessor 运行期契约直接引用的类（ShipAccessor 注入目标，成员名混合混淆/未混淆）：类与全部成员保持原名直到迁入人工表
 c com/fs/starfarer/campaign/fleet/CampaignFleetMemberView com/fs/starfarer/campaign/fleet/CampaignFleetMemberView
 	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
 c com/fs/starfarer/campaign/fleet/CampaignFleetView com/fs/starfarer/campaign/fleet/CampaignFleetView
