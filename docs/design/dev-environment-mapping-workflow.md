@@ -22,6 +22,7 @@
 - 报告（`mapping/build/reports/`，不入库）：
   - `mapping-drift-{platform}.txt`：人工条目在 jar 当前结构中找不到对应类/成员（name+desc 精确匹配）的清单，正常应为 0 条；
   - `cross-platform-match.txt`：双平台类指纹精确匹配数/匹配率与未匹配清单。不匹配项（平台分支/条件编译）只报告，不强行对齐。
+- `./gradlew :mapping:scanMappingUsage`：扫描消费方（app 等）字节码对全量表的引用，产出 `mapping-usage-{platform}.txt`——占位名引用数（正常应为 0）与按引用数排序的热点类清单，用于决定语义命名的优先批次。实现：`MappingUsageScanner` + `UsageScanCli`。
 
 ## IDE 源码附加（named jar sources）
 

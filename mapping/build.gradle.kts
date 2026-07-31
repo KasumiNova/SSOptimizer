@@ -169,6 +169,39 @@ tasks.register<JavaExec>("mergeScopeFragments") {
     }
 }
 
+tasks.register<JavaExec>("scanMappingUsage") {
+    group = "mapping"
+    description = "Scan consumer bytecode (app/agent-api/mod-optimizations) for game class/member references, classify by mapping layer"
+    dependsOn(
+        tasks.named("classes"), "generateFullMappings",
+        ":app:jar", ":app:compileTestJava", ":agent-api:jar", ":mod-optimizations:jar"
+    )
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("github.kasuminova.ssoptimizer.mapping.gen.UsageScanCli")
+
+    val humanMappingsDir = file("src/main/resources/mappings")
+    val consumerInputs = listOf(
+        project(":app").tasks.named<Jar>("jar").flatMap { it.archiveFile },
+        project(":agent-api").tasks.named<Jar>("jar").flatMap { it.archiveFile },
+        project(":mod-optimizations").tasks.named<Jar>("jar").flatMap { it.archiveFile },
+        project(":app").layout.buildDirectory.dir("classes/java/test")
+    )
+    inputs.dir(humanMappingsDir)
+    inputs.dir(generatedMappingsDir)
+    inputs.files(consumerInputs)
+    outputs.files(listOf("linux", "windows").map { platformId ->
+        mappingReportsDir.map { it.file("mapping-usage-$platformId.txt") }
+    })
+
+    doFirst {
+        args(listOf(
+            humanMappingsDir.absolutePath,
+            generatedMappingsDir.get().asFile.absolutePath,
+            mappingReportsDir.get().asFile.absolutePath
+        ) + consumerInputs.map { it.get().asFile.absolutePath })
+    }
+}
+
 tasks.register<JavaExec>("remapGameClasspathToNamed") {
     group = "mapping"
     description = "Remap Starsector compile classpath jars to named namespace"
