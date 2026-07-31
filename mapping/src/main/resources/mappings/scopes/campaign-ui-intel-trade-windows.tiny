@@ -1,0 +1,669 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/ui/intel/A	com/fs/starfarer/campaign/ui/intel/RelationshipDisplayPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(RelationshipDisplayPanel（A），Attitude 关系显示)
+	f	õOÒO00	relationship	Lcom/fs/starfarer/api/characters/RelationshipAPI;
+	m	create	create	()V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/intel/E	com/fs/starfarer/campaign/ui/intel/PlanetDisplay
+	c 来源(javap取证) | 置信度(高) | 证据(PlanetDisplay（E），行星/空间站图像展示)
+	f	ÓÖÓO00	planet	Lcom/fs/starfarer/campaign/CampaignPlanet;
+	f	private.void$null	faction	Lcom/fs/starfarer/api/campaign/FactionAPI;
+	f	ÒÖÓO00	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getEntity	getEntity	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	isFullSizeMode	isFullSizeMode	()Z
+	m	setFullSizeMode	setFullSizeMode	(Z)V
+	m	createStationImage	createStationImage	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;FF)Lcom/fs/starfarer/ui/ooO0;
+	m	makeNonInteractive	makeNonInteractive	()V
+	m	create	create	()V
+	m	getFirst	getFirst	()Lcom/fs/starfarer/ui/d;
+	m	getSecond	getSecond	()Lcom/fs/starfarer/ui/d;
+	m	addFirstLine	addFirstLine	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	addSecondLine	addSecondLine	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	afterSizeFirstChanged	afterSizeFirstChanged	(FF)V
+	m	setMinScale	setMinScale	(F)V
+	m	setMinMult	setMinMult	(F)V
+	m	getMinPlanetRadius	getMinPlanetRadius	()F
+	m	setMinPlanetRadius	setMinPlanetRadius	(F)V
+	m	getMaxPlanetRadius	getMaxPlanetRadius	()F
+	m	setMaxPlanetRadius	setMaxPlanetRadius	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+c	com/fs/starfarer/campaign/ui/intel/FactionIntelPanel	com/fs/starfarer/campaign/ui/intel/FactionIntelPanel
+	c 来源(未混淆类名) | 置信度(高) | 证据(FactionIntelPanel)
+	f	øÒÒO00	list	Lcom/fs/starfarer/coreui/v;
+	f	õÒÒO00	selectedFactionInfo	Lcom/fs/starfarer/campaign/ui/intel/SelectedFactionInfo;
+	m	sizeChanged	sizeChanged	(FF)V
+	m	getList	getList	()Lcom/fs/starfarer/coreui/v;
+	m	showFactionInfo	showFactionInfo	(Lcom/fs/starfarer/campaign/Faction;)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/intel/FactionIntelPanel$1	com/fs/starfarer/campaign/ui/intel/FactionIntelPanel$FactionNameComparator
+	c 来源(javap取证) | 置信度(高) | 证据(FactionIntelPanel内部类，按 getDisplayName 排序)
+	m	o00000	compareByDisplayName	(Lcom/fs/starfarer/campaign/Faction;Lcom/fs/starfarer/campaign/Faction;)I
+c	com/fs/starfarer/campaign/ui/intel/H	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(PlanetSearchFiltersPanel（H）)
+	f	øÓÒO00	planetList	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2;
+	f	ÒÓÒO00	title	Lcom/fs/starfarer/ui/d;
+	f	do.public$void	resetButton	Lcom/fs/starfarer/ui/n;
+	f	private.public$void	loadButton	Lcom/fs/starfarer/ui/n;
+	f	if.public$void	storeButton	Lcom/fs/starfarer/ui/n;
+	f	ÓÓÒO00	params	Ljava/util/Map;
+	f	colonyFactors	colonyFactors	Ljava/util/List;
+	m	createAreaButton	createAreaButton	(Ljava/lang/String;Lcom/fs/starfarer/ui/U;)Lcom/fs/starfarer/ui/n;
+	m	syncWithParams	syncWithParams	(Ljava/util/Map;)V
+	m	getParams	getParams	()Ljava/util/Map;
+	m	updatePlanetList	updatePlanetList	()V
+	m	addTooltip	addTooltip	(Lcom/fs/starfarer/ui/n;Lcom/fs/starfarer/api/impl/PlanetSearchData$PlanetFilter;Ljava/lang/String;)V
+	m	getFilteredPlanets	getFilteredPlanets	()Ljava/util/List;
+	m	getAllFilters	getAllFilters	()Ljava/util/List;
+	m	getColonyFactors	getColonyFactors	()Ljava/util/List;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/intel/H$1	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$ResetFilterTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Reset the planet filter settings to their default values.)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/intel/H$2	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$LoadFilterTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Load the stored planet filter settings.)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/intel/H$3	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$StoreFilterTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Store the current planet filter settings so they can be loaded later. Can also press {{Ctrl-S}}.)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/intel/H$4	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$SingleSelectHintTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Ctrl or shift-click to select just one option from row.)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/intel/H$5	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$TooltipPositioner
+	c 来源(javap取证) | 置信度(高) | 证据(Runnable，setTooltipPositionRelativeToAnchor 定位 tooltip)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/intel/H$6	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$ColonyFactorRowData
+	c 来源(javap取证+继承关系) | 置信度(高) | 证据(extends PlanetSearchData$PSToggleButtonRowData，持 PlanetFilter)
+	f	super	filter	Lcom/fs/starfarer/api/impl/PlanetSearchData$PlanetFilter;
+	m	accept	accept	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Ljava/util/Map;)Z
+	m	shouldShow	shouldShow	()Z
+	m	createTooltip	createTooltip	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;FLjava/lang/String;)V
+c	com/fs/starfarer/campaign/ui/intel/H$O0	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$RequirementMode
+	c 来源(字符串常量) | 置信度(高) | 证据(enum ANY/REQUIRED/NONE)
+	f	Ò00000	ANY	Lcom/fs/starfarer/campaign/ui/intel/H$O0;
+	f	Ó00000	REQUIRED	Lcom/fs/starfarer/campaign/ui/intel/H$O0;
+	f	String	NONE	Lcom/fs/starfarer/campaign/ui/intel/H$O0;
+	m	values	values	()[Lcom/fs/starfarer/campaign/ui/intel/H$O0;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/intel/H$O0;
+c	com/fs/starfarer/campaign/ui/intel/H$OOo	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$ResourceDepositsFilterRow
+	c 来源(javap取证) | 置信度(高) | 证据(持 ResourceDepositsData data + buttonList/any/none)
+	f	data	data	Lcom/fs/starfarer/api/impl/PlanetSearchData$ResourceDepositsData;
+	f	buttonList	buttonList	Ljava/util/List;
+	f	any	any	Lcom/fs/starfarer/ui/n;
+	f	none	none	Lcom/fs/starfarer/ui/n;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getParams	getParams	()Ljava/util/Map;
+	m	syncWithParams	syncWithParams	(Ljava/util/Map;)V
+c	com/fs/starfarer/campaign/ui/intel/H$Oo	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$ToggleButtonRowPanel
+	c 来源(javap取证) | 置信度(高) | 证据(持 PSToggleButtonRowData data + buttons)
+	f	data	data	Lcom/fs/starfarer/api/impl/PlanetSearchData$PSToggleButtonRowData;
+	f	buttons	buttons	Ljava/util/List;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getParams	getParams	()Ljava/util/Map;
+	m	syncWithParams	syncWithParams	(Ljava/util/Map;)V
+	m	setToDefaultStateIfNeeded	setToDefaultStateIfNeeded	()V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/intel/H$o	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$FilterRow
+	c 来源(javap取证) | 置信度(高) | 证据(过滤行接口 getParams/syncWithParams)
+	m	getParams	getParams	()Ljava/util/Map;
+	m	syncWithParams	syncWithParams	(Ljava/util/Map;)V
+c	com/fs/starfarer/campaign/ui/intel/H$o0	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$MarketConditionFilterRow
+	c 来源(javap取证) | 置信度(高) | 证据(持 MarketConditionData data + button)
+	f	data	data	Lcom/fs/starfarer/api/impl/PlanetSearchData$MarketConditionData;
+	f	button	button	Lcom/fs/starfarer/ui/n;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getParams	getParams	()Ljava/util/Map;
+	m	syncWithParams	syncWithParams	(Ljava/util/Map;)V
+c	com/fs/starfarer/campaign/ui/intel/H$oo	com/fs/starfarer/campaign/ui/intel/PlanetSearchFiltersPanel$ColonyItemFilterRow
+	c 来源(javap取证) | 置信度(高) | 证据(持 ColonyItemData data + button)
+	f	data	data	Lcom/fs/starfarer/api/impl/PlanetSearchData$ColonyItemData;
+	f	button	button	Lcom/fs/starfarer/ui/n;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getParams	getParams	()Ljava/util/Map;
+	m	syncWithParams	syncWithParams	(Ljava/util/Map;)V
+c	com/fs/starfarer/campaign/ui/intel/J	com/fs/starfarer/campaign/ui/intel/PlanetDetailPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(PlanetDetailPanel（J），Lay in course/Show on map/Planet list)
+	f	void.private$void	faction	Lcom/fs/starfarer/api/campaign/FactionAPI;
+	f	ÒÔÒO00	listener	Lcom/fs/starfarer/ui/U;
+	f	ÖÔÒO00	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getEntity	getEntity	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	afterSizeFirstChanged	afterSizeFirstChanged	(FF)V
+	m	getBackToList	getBackToList	()Lcom/fs/starfarer/ui/n;
+	m	getOpenMap	getOpenMap	()Lcom/fs/starfarer/ui/n;
+	m	getLayInCourse	getLayInCourse	()Lcom/fs/starfarer/ui/n;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+c	com/fs/starfarer/campaign/ui/intel/J$1	com/fs/starfarer/campaign/ui/intel/PlanetDetailPanel$PlanetDetailConditionFilter
+	c 来源(javap取证) | 置信度(中) | 证据(PlanetDetailPanel内部类，市场条件过滤)
+	m	o00000	isShown	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+c	com/fs/starfarer/campaign/ui/intel/J$2	com/fs/starfarer/campaign/ui/intel/PlanetDetailPanel$PlanetDetailTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(PlanetDetailPanel内部类，tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/intel/J$3	com/fs/starfarer/campaign/ui/intel/PlanetDetailPanel$ButtonCallback
+	c 来源(javap取证) | 置信度(低) | 证据(PlanetDetailPanel内部类，按钮回调)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/intel/O0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/intel/IllegalCommoditiesPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(IllegalCommoditiesPanel（长名类），Illegal commodities)
+	f	ôÒÒO00	faction	Lcom/fs/starfarer/campaign/Faction;
+	f	super.public$void	title	Lcom/fs/starfarer/ui/d;
+	m	hasIllegal	hasIllegal	()Z
+	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/campaign/ui/intel/O0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/campaign/ui/intel/IllegalCommoditiesPanel$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(Runnable，定位商品 tooltip)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/intel/PLPanel	com/fs/starfarer/campaign/ui/intel/PLPanel
+	c 来源(未混淆类名) | 置信度(高) | 证据(PLPanel)
+	f	ÒÓØ000	log	Lcom/fs/starfarer/api/impl/campaign/plog/PlaythroughLog;
+	f	ÕÓØ000	snapshots	Ljava/util/List;
+	f	ÓÓØ000	table	Lcom/fs/starfarer/campaign/ui/UITable;
+	f	ÖÓØ000	campaignUI	Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/intel/PLPanel$1	com/fs/starfarer/campaign/ui/intel/PLPanel$PLEntryTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(PLPanel内部类，持 PLEntry 的 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/intel/PLPanel$2	com/fs/starfarer/campaign/ui/intel/PLPanel$ColumnComparator
+	c 来源(javap取证) | 置信度(高) | 证据(PLPanel内部类，按 DATE/ENTRY/AGO 列排序)
+	f	val$id	id	Ljava/lang/Object;
+	m	o00000	compareByColumn	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/campaign/ui/intel/PLPanel$o	com/fs/starfarer/campaign/ui/intel/PLPanel$ColumnType
+	c 来源(字符串常量) | 置信度(高) | 证据(enum DATE/ENTRY/AGO)
+	f	Ô00000	DATE	Lcom/fs/starfarer/campaign/ui/intel/PLPanel$o;
+	f	Object	ENTRY	Lcom/fs/starfarer/campaign/ui/intel/PLPanel$o;
+	f	o00000	AGO	Lcom/fs/starfarer/campaign/ui/intel/PLPanel$o;
+	m	values	values	()[Lcom/fs/starfarer/campaign/ui/intel/PLPanel$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/intel/PLPanel$o;
+c	com/fs/starfarer/campaign/ui/intel/PlanetListV2	com/fs/starfarer/campaign/ui/intel/PlanetListV2
+	c 来源(未混淆类名) | 置信度(高) | 证据(PlanetListV2)
+	f	õÓØ000	surveyPlugin	Lcom/fs/starfarer/api/plugins/SurveyPlugin;
+	f	øÓØ000	campaignUI	Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	ôÓØ000	table	Lcom/fs/starfarer/campaign/ui/UITable;
+	f	void.this$String	planets	Ljava/util/List;
+	f	if.this$String	planetInfoPanel	Lcom/fs/starfarer/campaign/ui/intel/new;
+	m	getAllPlanets	getAllPlanets	()Ljava/util/List;
+	m	setAllPlanets	setAllPlanets	(Ljava/util/List;)V
+	m	getTable	getTable	()Lcom/fs/starfarer/campaign/ui/UITable;
+	m	updateList	updateList	(Ljava/util/List;)V
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
+	m	sortUsingPreviousSort	sortUsingPreviousSort	()V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/intel/PlanetListV2$1	com/fs/starfarer/campaign/ui/intel/PlanetListV2$PlanetRowHoverListener
+	c 来源(javap取证) | 置信度(中) | 证据(PlanetListV2内部类，行星行悬停上报 codex_unlockable)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/intel/PlanetListV2$2	com/fs/starfarer/campaign/ui/intel/PlanetListV2$PlanetRowComparator
+	c 来源(javap取证) | 置信度(高) | 证据(PlanetListV2内部类，按 TableColumns 排序)
+	f	val$sort	sortColumn	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	m	super	compareByColumn	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo	com/fs/starfarer/campaign/ui/intel/PlanetListV2$TableColumns
+	c 来源(字符串常量) | 置信度(高) | 证据(enum NAME/TYPE/LOCATION/POPULATION/STABLE_LOCS/CLASS/HAZARD/DISTANCE)
+	f	ô00000	NAME	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	f	return	TYPE	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	f	o00000	LOCATION	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	f	Õ00000	POPULATION	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	f	Ø00000	STABLE_LOCS	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	f	int	CLASS	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	f	Ô00000	HAZARD	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	f	Ò00000	DISTANCE	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	m	values	values	()[Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$Oo;
+c	com/fs/starfarer/campaign/ui/intel/PlanetListV2$o	com/fs/starfarer/campaign/ui/intel/PlanetListV2$PlanetRowPanel
+	c 来源(javap取证) | 置信度(高) | 证据(PlanetListV2内部类，公开行星行数据字段)
+	f	entity	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	name	name	Lcom/fs/starfarer/ui/d;
+	f	nameStr	nameStr	Ljava/lang/String;
+	f	typeStr	typeStr	Ljava/lang/String;
+	f	classStr	classStr	Ljava/lang/String;
+	f	distance	distance	F
+	f	hazard	hazard	F
+	f	planetClass	planetClass	F
+	f	pop	pop	F
+	f	stableLocs	stableLocs	I
+	f	hazardSet	hazardSet	Z
+	f	classSet	classSet	Z
+	f	popSet	popSet	Z
+	f	stableSet	stableSet	Z
+	m	createRow	createRow	()V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/A/new;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/intel/PlanetListV2$o$1	com/fs/starfarer/campaign/ui/intel/PlanetListV2$PlanetRowPanel$PlanetListConditionFilter
+	c 来源(javap取证) | 置信度(中) | 证据(行星行内部类，show_in_planet_list 条件过滤)
+	m	o00000	isShownInPlanetList	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo
+	c 来源(未混淆类名) | 置信度(高) | 证据(SelectedFactionInfo)
+	f	OOÒO00	list	Lcom/fs/starfarer/coreui/v;
+	f	ÒOÒO00	faction	Lcom/fs/starfarer/campaign/Faction;
+	f	void.do$void	panel	Lcom/fs/starfarer/campaign/ui/intel/FactionIntelPanel;
+	f	õ0ÒO00	illegalCommoditiesPanel	Lcom/fs/starfarer/campaign/ui/intel/O0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	sizeChanged	sizeChanged	(FF)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$1	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$EnemyFactionFilter
+	c 来源(javap取证) | 置信度(高) | 证据(HOSTILE 关系过滤)
+	m	o00000	isEnemy	(Lcom/fs/starfarer/campaign/Faction;)Z
+c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$2	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$AllyFactionFilter
+	c 来源(javap取证) | 置信度(高) | 证据(FAVORABLE 关系过滤)
+	m	o00000	isAlly	(Lcom/fs/starfarer/campaign/Faction;)Z
+c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$3	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$FactionNameComparator
+	c 来源(javap取证) | 置信度(中) | 证据(按 getDisplayName 排序)
+	m	super	compareByDisplayName	(Lcom/fs/starfarer/campaign/Faction;Lcom/fs/starfarer/campaign/Faction;)I
+c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$o	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$FactionFilter
+	c 来源(javap取证) | 置信度(中) | 证据(派系过滤接口)
+	m	o00000	accept	(Lcom/fs/starfarer/campaign/Faction;)Z
+c	com/fs/starfarer/campaign/ui/intel/StarSystemDisplay	com/fs/starfarer/campaign/ui/intel/StarSystemDisplay
+	c 来源(未混淆类名) | 置信度(高) | 证据(StarSystemDisplay)
+	f	do.private$void	starSystem	Lcom/fs/starfarer/campaign/StarSystem;
+	f	ÒÕÒO00	listener	Lcom/fs/starfarer/ui/U;
+	f	ÖÕÒO00	faction	Lcom/fs/starfarer/api/campaign/FactionAPI;
+	f	ÓÕÒO00	buttons	Ljava/util/List;
+	m	getStandaloneStations	getStandaloneStations	(Lcom/fs/starfarer/api/campaign/StarSystemAPI;)Ljava/util/List;
+	m	afterSizeFirstChanged	afterSizeFirstChanged	(FF)V
+	m	getAllButtons	getAllButtons	()Ljava/util/List;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+c	com/fs/starfarer/campaign/ui/intel/StarSystemDisplay$1	com/fs/starfarer/campaign/ui/intel/StarSystemDisplay$OrbitDistanceComparator
+	c 来源(javap取证) | 置信度(高) | 证据(按到轨道中心距离排序)
+	f	val$orbitCenter	orbitCenter	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	o00000	compareByOrbitDistance	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)I
+c	com/fs/starfarer/campaign/ui/intel/int	com/fs/starfarer/campaign/ui/intel/PLEntryRowPanel
+	c 来源(javap取证) | 置信度(高) | 证据(PLEntryRowPanel（int）)
+	f	void.class$int	entry	Lcom/fs/starfarer/api/impl/campaign/plog/PLEntry;
+	m	getEntry	getEntry	()Lcom/fs/starfarer/api/impl/campaign/plog/PLEntry;
+	m	getDaysAgo	getDaysAgo	()F
+	m	getText	getText	()Ljava/lang/String;
+	m	createRow	createRow	()V
+c	com/fs/starfarer/campaign/ui/intel/new	com/fs/starfarer/campaign/ui/intel/PlanetInfoPanel
+	c 来源(javap取证) | 置信度(高) | 证据(PlanetInfoPanel（new）)
+	f	øoÒO00	planet	Lcom/fs/starfarer/campaign/CampaignPlanet;
+	f	void.while$void	starSystemDisplay	Lcom/fs/starfarer/campaign/ui/intel/StarSystemDisplay;
+	f	ÖoÒO00	planetDetailPanel	Lcom/fs/starfarer/campaign/ui/intel/J;
+	f	ÓoÒO00	faction	Lcom/fs/starfarer/api/campaign/FactionAPI;
+	f	ÒoÒO00	tab	Lcom/fs/starfarer/campaign/comms/F;
+	f	private.while$void	starSystem	Lcom/fs/starfarer/campaign/StarSystem;
+	f	OoÒO00	planetList	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2;
+	f	ôoÒO00	searchFiltersPanel	Lcom/fs/starfarer/campaign/ui/intel/H;
+	m	getTab	getTab	()Lcom/fs/starfarer/campaign/comms/F;
+	m	sizeChanged	sizeChanged	(FF)V
+	m	createUI	createUI	()V
+	m	isReturnToMap	isReturnToMap	()Z
+	m	setReturnToMap	setReturnToMap	(Z)V
+	m	showPlanetInfo	showPlanetInfo	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Z)V
+	m	showOnMap	showOnMap	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	getBright	getBright	()Ljava/awt/Color;
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	getDark	getDark	()Ljava/awt/Color;
+	m	getGrid	getGrid	()Ljava/awt/Color;
+	m	getPlanetList2	getPlanetList2	()Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2;
+c	com/fs/starfarer/campaign/ui/intel/o0oO	com/fs/starfarer/campaign/ui/intel/ColumnTitleButton
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(ColumnTitleButton（o0oO），sortIcon + getTitle)
+	m	setLeftAlign	setLeftAlign	(Z)V
+	m	afterSizeFirstChanged	afterSizeFirstChanged	(FF)V
+	m	create	create	()V
+	m	isWithBorder	isWithBorder	()Z
+	m	setWithBorder	setWithBorder	(Z)V
+	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/campaign/ui/intel/oOoO	com/fs/starfarer/campaign/ui/intel/FactionRowButton
+	c 来源(javap取证) | 置信度(高) | 证据(FactionRowButton（oOoO）)
+	f	õôÓO00	faction	Lcom/fs/starfarer/campaign/Faction;
+	f	if.int$null	playerFaction	Lcom/fs/starfarer/campaign/Faction;
+	m	create	create	()V
+	m	setBorderColorOverride	setBorderColorOverride	(Ljava/awt/Color;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	renderGlow	renderGlow	(F)V
+	m	setText	setText	(Lcom/fs/starfarer/ui/n;Ljava/lang/String;)V
+c	com/fs/starfarer/campaign/ui/intel/ooOO	com/fs/starfarer/campaign/ui/intel/CommodityConsumedLabel
+	c 来源(字符串常量) | 置信度(中) | 证据(CommodityConsumedLabel（ooOO），Consumed 文本)
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setText	setText	(Ljava/lang/String;)V
+	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
+	m	isNumberOnlyMode	isNumberOnlyMode	()Z
+	m	setNumberOnlyMode	setNumberOnlyMode	(Z)V
+	m	create	create	()V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	setHighlightOnMouseover	setHighlightOnMouseover	(Z)V
+	m	renderGlow	renderGlow	(F)V
+	m	setText	setText	(Lcom/fs/starfarer/ui/n;Ljava/lang/String;)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+c	com/fs/starfarer/campaign/ui/intel/return	com/fs/starfarer/campaign/ui/intel/GlowBorderTextPanel
+	c 来源(javap取证) | 置信度(中) | 证据(两行文本+边框发光面板（return）)
+	f	borderThickness	borderThickness	F
+	m	afterSizeFirstChanged	afterSizeFirstChanged	(FF)V
+	m	create	create	()V
+	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
+	m	getGlowMax	getGlowMax	()F
+	m	setGlowMax	setGlowMax	(F)V
+	m	getBgOverride	getBgOverride	()Ljava/awt/Color;
+	m	setBgOverride	setBgOverride	(Ljava/awt/Color;)V
+	m	getGlowOverride	getGlowOverride	()Ljava/awt/Color;
+	m	setGlowOverride	setGlowOverride	(Ljava/awt/Color;)V
+	m	getBorderOverride	getBorderOverride	()Ljava/awt/Color;
+	m	setBorderOverride	setBorderOverride	(Ljava/awt/Color;)V
+	m	getBorderThickness	getBorderThickness	()F
+	m	setBorderThickness	setBorderThickness	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+c	com/fs/starfarer/campaign/ui/trade/A	com/fs/starfarer/campaign/ui/trade/FighterWingIconRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(FighterWingIconRenderer（A），FighterWingSpec 生成 FleetMember)
+	f	null	wingSpecId	Ljava/lang/String;
+	f	õ00000	texture	Lcom/fs/starfarer/ui/B/new;
+	m	super	getTexture	()Lcom/fs/starfarer/ui/B/new;
+	m	render	render	(FFFFFF)V
+c	com/fs/starfarer/campaign/ui/trade/CargoDataGridView	com/fs/starfarer/campaign/ui/trade/CargoDataGridView
+	c 来源(未混淆类名) | 置信度(高) | 证据(CargoDataGridView)
+	f	rows	rows	I
+	f	cols	cols	I
+	f	texture	texture	Lcom/fs/graphics/Object;
+	f	texture2	texture2	Lcom/fs/graphics/Object;
+	f	cargo	cargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	stackView	stackView	Lcom/fs/starfarer/campaign/util/CollectionView;
+	f	scroller	scroller	Lcom/fs/starfarer/ui/g;
+	f	manifest	manifest	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	f	stats	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+	f	token	token	Lcom/fs/graphics/util/GLListManager$GLListToken;
+	f	transferHandler	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/F;
+	f	prevColor	prevColor	Ljava/awt/Color;
+	f	color	color	Ljava/awt/Color;
+	m	setStats	setStats	(Lcom/fs/starfarer/campaign/CharacterStats;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	setCargo	setCargo	(Lcom/fs/starfarer/campaign/fleet/CargoData;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	clearChildren	clearChildren	()V
+	m	createItemView	createItemView	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/ui/trade/CargoStackView;
+	m	createTooltipForStack	createTooltipForStack	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/campaign/ui/trade/F;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	assignTooltipToView	assignTooltipToView	(Lcom/fs/starfarer/campaign/ui/trade/CargoStackView;Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/campaign/ui/trade/F;)V
+	m	shouldCreateViewFor	shouldCreateViewFor	(Ljava/lang/Object;)Z
+	m	getRows	getRows	()I
+	m	setRows	setRows	(I)V
+	m	getCols	getCols	()I
+	m	setCols	setCols	(I)V
+	m	setTransferHandler	setTransferHandler	(Lcom/fs/starfarer/campaign/ui/trade/F;)V
+	m	createItemView	createItemView	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/util/CollectionItemView;
+c	com/fs/starfarer/campaign/ui/trade/CargoDataGridView$1	com/fs/starfarer/campaign/ui/trade/CargoDataGridView$StackTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CargoDataGridView内部类，特殊物品 tooltip)
+	f	ÒoõO00	stack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	f	do.new$float	plugin	Lcom/fs/starfarer/api/campaign/SpecialItemPlugin;
+	f	øOõO00	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/F;
+	f	OoõO00	manifest	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/trade/CargoDataGridView$2	com/fs/starfarer/campaign/ui/trade/CargoDataGridView$TooltipPositioner
+	c 来源(javap取证) | 置信度(高) | 证据(Runnable，定位货物 tooltip)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/trade/CargoDataGridView$o	com/fs/starfarer/campaign/ui/trade/CargoDataGridView$CargoManifest
+	c 来源(未混淆接口名) | 置信度(高) | 证据(CargoDataGridView$o)
+	m	getCargoStackIndexForCellIndex	getCargoStackIndexForCellIndex	(I)I
+	m	getCargo	getCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	getFilteredCargo	getFilteredCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	getScroller	getScroller	()Lcom/fs/starfarer/ui/g;
+	m	getCargoDataView	getCargoDataView	()Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView;
+	m	preventPickup	preventPickup	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)Z
+	m	updateFilteredCargo	updateFilteredCargo	()V
+	m	isInvalidDropTarget	isInvalidDropTarget	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)Z
+	m	setInvalidDropTarget	setInvalidDropTarget	(Z)V
+	m	flashRed	flashRed	()V
+c	com/fs/starfarer/campaign/ui/trade/CargoItemStack	com/fs/starfarer/campaign/ui/trade/CargoItemStack
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(CargoItemStack)
+	f	roundSize	roundSize	Z
+	f	size	size	F
+	f	maxSize	maxSize	F
+	f	cargoSpacePerUnit	cargoSpacePerUnit	F
+	f	type	type	Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;
+	f	data	data	Ljava/lang/Object;
+	f	cargo	cargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	plugin	plugin	Lcom/fs/starfarer/api/campaign/SpecialItemPlugin;
+	f	isPickedUp	isPickedUp	Z
+	m	clone	clone	()Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	m	isPickedUp	isPickedUp	()Z
+	m	setPickedUp	setPickedUp	(Z)V
+	m	getSoundId	getSoundId	()Ljava/lang/String;
+	m	getSoundIdDrop	getSoundIdDrop	()Ljava/lang/String;
+	m	writeReplace	writeReplace	()Ljava/lang/Object;
+	m	readResolve	readResolve	()Ljava/lang/Object;
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/api/campaign/SpecialItemPlugin;
+	m	isWeaponStack	isWeaponStack	()Z
+	m	isModSpecStack	isModSpecStack	()Z
+	m	isFighterWingStack	isFighterWingStack	()Z
+	m	isResourceStack	isResourceStack	()Z
+	m	isPersonnelStack	isPersonnelStack	()Z
+	m	isCommodityStack	isCommodityStack	()Z
+	m	getCommodityId	getCommodityId	()Ljava/lang/String;
+	m	isMarineStack	isMarineStack	()Z
+	m	isFuelStack	isFuelStack	()Z
+	m	isSupplyStack	isSupplyStack	()Z
+	m	isCrewStack	isCrewStack	()Z
+	m	getWeaponSpecIfWeapon	getWeaponSpecIfWeapon	()Lcom/fs/starfarer/api/loading/WeaponSpecAPI;
+	m	getHullModSpecIfHullMod	getHullModSpecIfHullMod	()Lcom/fs/starfarer/loading/specs/O00O;
+	m	getFighterWingSpecIfWing	getFighterWingSpecIfWing	()Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	m	getWeaponIfWeapon	getWeaponIfWeapon	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	getResourceIfResource	getResourceIfResource	()Lcom/fs/starfarer/loading/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getSpecialItemSpecIfSpecial	getSpecialItemSpecIfSpecial	()Lcom/fs/starfarer/loading/X;
+	m	getSpecialDataIfSpecial	getSpecialDataIfSpecial	()Lcom/fs/starfarer/api/campaign/SpecialItemData;
+	m	getCargoSpace	getCargoSpace	()F
+	m	getCargoSpacePerUnit	getCargoSpacePerUnit	()F
+	m	add	add	(F)V
+	m	subtract	subtract	(F)V
+	m	setRoundSize	setRoundSize	(Z)V
+	m	getFree	getFree	()F
+	m	isNull	isNull	()Z
+	m	isEmpty	isEmpty	()Z
+	m	isFull	isFull	()Z
+	m	getSize	getSize	()F
+	m	setSize	setSize	(F)V
+	m	getMaxSize	getMaxSize	()F
+	m	setMaxSize	setMaxSize	(I)V
+	m	getType	getType	()Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;
+	m	setType	setType	(Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;)V
+	m	getData	getData	()Ljava/lang/Object;
+	m	setData	setData	(Ljava/lang/Object;)V
+	m	getBaseValue	getBaseValue	()I
+	m	getBaseValuePerUnit	getBaseValuePerUnit	()I
+	m	isSpecialStack	isSpecialStack	()Z
+	m	getDisplayName	getDisplayName	()Ljava/lang/String;
+	m	getCargo	getCargo	()Lcom/fs/starfarer/api/campaign/CargoAPI;
+	m	setCargo	setCargo	(Lcom/fs/starfarer/api/campaign/CargoAPI;)V
+	m	isInPlayerCargo	isInPlayerCargo	()Z
+	m	getResourceIfResource	getResourceIfResource	()Lcom/fs/starfarer/api/campaign/econ/CommoditySpecAPI;
+	m	getHullModSpecIfHullMod	getHullModSpecIfHullMod	()Lcom/fs/starfarer/api/loading/HullModSpecAPI;
+	m	getSpecialItemSpecIfSpecial	getSpecialItemSpecIfSpecial	()Lcom/fs/starfarer/api/campaign/SpecialItemSpecAPI;
+	m	getFighterWingSpecIfWing	getFighterWingSpecIfWing	()Lcom/fs/starfarer/api/loading/FighterWingSpecAPI;
+	m	clone	clone	()Ljava/lang/Object;
+c	com/fs/starfarer/campaign/ui/trade/CargoStackView	com/fs/starfarer/campaign/ui/trade/CargoStackView
+	c 来源(未混淆类名) | 置信度(高) | 证据(CargoStackView)
+	f	stack	stack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	f	qty	qty	Lcom/fs/starfarer/ui/d;
+	f	cost	cost	Lcom/fs/starfarer/ui/d;
+	f	highlightFader	highlightFader	Lcom/fs/graphics/util/Fader;
+	f	weaponIcon	weaponIcon	Lcom/fs/starfarer/ui/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	icon	icon	Lcom/fs/graphics/Sprite;
+	f	custom	custom	Lcom/fs/starfarer/campaign/ui/trade/OooO;
+	f	scroller	scroller	Lcom/fs/starfarer/ui/g;
+	f	showRedBackground	showRedBackground	Z
+	f	prevQty	prevQty	I
+	f	highlightOnMouseOver	highlightOnMouseOver	Z
+	f	row2	row2	Ljava/awt/Color;
+	f	row3	row3	Ljava/awt/Color;
+	f	scaleMult	scaleMult	F
+	f	showQuantity	showQuantity	Z
+	f	expired	expired	Z
+	m	isShowRedBackground	isShowRedBackground	()Z
+	m	setShowRedBackground	setShowRedBackground	(Z)V
+	m	setCost	setCost	(I)V
+	m	setCostColor	setCostColor	(Ljava/awt/Color;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	getHighlightFader	getHighlightFader	()Lcom/fs/graphics/util/Fader;
+	m	advanceImpl	advanceImpl	(F)V
+	m	updateQuantity	updateQuantity	()V
+	m	isHighlightOnMouseOver	isHighlightOnMouseOver	()Z
+	m	setHighlightOnMouseOver	setHighlightOnMouseOver	(Z)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	setScaleMult	setScaleMult	(F)V
+	m	setShowQuantity	setShowQuantity	(Z)V
+	m	getQuantityLabel	getQuantityLabel	()Lcom/fs/starfarer/ui/d;
+	m	getRenderOrder	getRenderOrder	()I
+	m	isExpired	isExpired	()Z
+	m	notifyOrphaned	notifyOrphaned	()V
+	m	getStack	getStack	()Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	m	getItem	getItem	()Ljava/lang/Object;
+	m	getIcon	getIcon	()Lcom/fs/graphics/Sprite;
+c	com/fs/starfarer/campaign/ui/trade/D	com/fs/starfarer/campaign/ui/trade/FighterWingStatsDisplay
+	c 来源(字符串常量) | 置信度(高) | 证据(FighterWingStatsDisplay（D），战机属性)
+	f	super.String$for	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	do.Object$for	wingSpec	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	f	ÒÔøO00	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+	m	update	update	()V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/trade/F	com/fs/starfarer/campaign/ui/trade/CargoTransferHandler
+	c 来源(继承关系+字符串常量) | 置信度(高) | 证据(CargoTransferHandler（F），implements CargoTransferHandlerAPI，Buy/Sell)
+	f	ÕôøO00	pickedUpStack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	f	ÖôøO00	pickedUpView	Lcom/fs/starfarer/campaign/ui/trade/CargoStackView;
+	f	ÓôøO00	origStackSource	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	f	do.return$for	manifestOne	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	f	String.return$for	manifestTwo	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	f	ôôøO00	bought	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	void.return$for	sold	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	ÒôøO00	quantitySlider	Lcom/fs/starfarer/campaign/ui/trade/G;
+	f	øØøO00	market	Lcom/fs/starfarer/campaign/econ/Market;
+	f	super.void$for	submarketTradedWith	Lcom/fs/starfarer/campaign/econ/Submarket;
+	f	allowedToLearn	allowedToLearn	Z
+	m	isCanLeavePersonnelInLootMode	isCanLeavePersonnelInLootMode	()Z
+	m	setCanLeavePersonnelInLootMode	setCanLeavePersonnelInLootMode	(Z)V
+	m	getSubmarketTradedWith	getSubmarketTradedWith	()Lcom/fs/starfarer/campaign/econ/Submarket;
+	m	setSubmarketTradedWith	setSubmarketTradedWith	(Lcom/fs/starfarer/campaign/econ/Submarket;)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/A/new;)V
+	m	getManifestOne	getManifestOne	()Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	m	getManifestTwo	getManifestTwo	()Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	m	getPickedUpStack	getPickedUpStack	()Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	m	isAllowedToLearn	isAllowedToLearn	()Z
+	m	setAllowedToLearn	setAllowedToLearn	(Z)V
+	m	cargoCellRightClicked	cargoCellRightClicked	(Lcom/fs/starfarer/util/A/C;Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;I)V
+	m	cargoCellClicked	cargoCellClicked	(Lcom/fs/starfarer/util/A/C;Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;I)V
+	m	getOrigStackSource	getOrigStackSource	()Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$o;
+	m	isNoCost	isNoCost	()Z
+	m	addLineItems	addLineItems	(Lcom/fs/starfarer/api/campaign/PlayerMarketTransaction;)V
+	m	getTransactionValue	getTransactionValue	(Z)F
+	m	updateTransactionWidgetItems	updateTransactionWidgetItems	(Lcom/fs/starfarer/campaign/ui/J;)V
+	m	confirmTransaction	confirmTransaction	()V
+	m	cancelTransaction	cancelTransaction	()V
+	m	getBought	getBought	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	getSold	getSold	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	resetTransaction	resetTransaction	()V
+	m	transactionExists	transactionExists	()Z
+	m	computeBuyCost	computeBuyCost	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;F)F
+	m	computeCurrentSingleItemBuyCost	computeCurrentSingleItemBuyCost	(Lcom/fs/starfarer/api/campaign/CargoStackAPI;)F
+	m	computeCurrentSingleItemSellCost	computeCurrentSingleItemSellCost	(Lcom/fs/starfarer/api/campaign/CargoStackAPI;)F
+	m	computeBuyCostOfItem	computeBuyCostOfItem	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;FLcom/fs/starfarer/campaign/econ/Market;)F
+	m	computeSellCost	computeSellCost	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;F)F
+c	com/fs/starfarer/campaign/ui/trade/F$1	com/fs/starfarer/campaign/ui/trade/CargoTransferHandler$RightClickActionHelper
+	c 来源(继承关系) | 置信度(高) | 证据(implements SpecialItemPlugin$RightClickActionHelper)
+	m	removeFromClickedStackFirst	removeFromClickedStackFirst	(I)V
+	m	removeFromAnyStack	removeFromAnyStack	(Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;Ljava/lang/Object;I)V
+	m	addItems	addItems	(Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;Ljava/lang/Object;F)V
+	m	getNumItems	getNumItems	(Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;Ljava/lang/Object;)F
+c	com/fs/starfarer/campaign/ui/trade/G	com/fs/starfarer/campaign/ui/trade/QuantitySlider
+	c 来源(javap取证) | 置信度(高) | 证据(QuantitySlider（G），WIDTH_PER_PIP/QUANTITIES/getValue/getMax)
+	f	WIDTH_PER_PIP	WIDTH_PER_PIP	F
+	f	QUANTITIES	QUANTITIES	[I
+	f	void.void$for	pips	Ljava/util/List;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	isAdjustingSize	isAdjustingSize	()Z
+	m	getValue	getValue	()I
+	m	getMax	getMax	()I
+c	com/fs/starfarer/campaign/ui/trade/Object	com/fs/starfarer/campaign/ui/trade/SpecialItemRenderer
+	c 来源(继承关系+字符串常量) | 置信度(高) | 证据(SpecialItemRenderer（Object），implements SpecialItemRendererAPI)
+	f	o00000	stack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	f	Ô00000	plugin	Lcom/fs/starfarer/api/campaign/SpecialItemPlugin;
+	m	render	render	(FFFFFF)V
+	m	renderSchematic	renderSchematic	(Lcom/fs/starfarer/api/graphics/SpriteAPI;FFF)V
+	m	renderSchematicWithCorners	renderSchematicWithCorners	(Lcom/fs/starfarer/api/graphics/SpriteAPI;Ljava/awt/Color;FFFFFFFFF)V
+	m	renderScanlines	renderScanlines	(Lcom/fs/starfarer/api/graphics/SpriteAPI;FFF)V
+	m	renderScanlinesWithCorners	renderScanlinesWithCorners	(FFFFFFFFFZ)V
+	m	renderShipWithCorners	renderShipWithCorners	(Ljava/lang/String;Ljava/awt/Color;FFFFFFFFFFZ)V
+	m	renderBGWithCorners	renderBGWithCorners	(Ljava/awt/Color;FFFFFFFFFFZ)V
+	m	renderWeaponWithCorners	renderWeaponWithCorners	(Ljava/lang/String;FFFFFFFFFFZ)V
+c	com/fs/starfarer/campaign/ui/trade/OooO	com/fs/starfarer/campaign/ui/trade/StackIconRenderer
+	c 来源(未混淆接口名) | 置信度(高) | 证据(OooO)
+	m	render	render	(FFFFFF)V
+c	com/fs/starfarer/campaign/ui/trade/int	com/fs/starfarer/campaign/ui/trade/HullModIconRenderer
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(HullModIconRenderer（int），knowsHullMod+scanline11)
+	f	Ö00000	hullModId	Ljava/lang/String;
+	f	class	sprite	Lcom/fs/graphics/Sprite;
+	m	render	render	(FFFFFF)V
+c	com/fs/starfarer/campaign/ui/trade/new	com/fs/starfarer/campaign/ui/trade/ShipStatsDisplay
+	c 来源(字符串常量) | 置信度(高) | 证据(ShipStatsDisplay（new），Hull size/Cargo capacity 等)
+	f	øÒøO00	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	String.Object$for	rows	Ljava/util/Map;
+	f	OÓøO00	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+	f	ÕÓøO00	tooltipFactory	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$Oo;
+	m	update	update	()V
+	m	getItemWidth	getItemWidth	()F
+	m	getItemHeight	getItemHeight	()F
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/trade/new$o	com/fs/starfarer/campaign/ui/trade/ShipStatsDisplay$StatRowPanel
+	c 来源(javap取证) | 置信度(中) | 证据(属性行面板)
+	m	setValueColor	setValueColor	(Ljava/awt/Color;)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/trade/o0OO	com/fs/starfarer/campaign/ui/trade/CargoManifestDisplay
+	c 来源(字符串常量+switch表) | 置信度(高) | 证据(CargoManifestDisplay（o0OO），Cargo Manifest/Jettison/Salvaged Items)
+	f	ÓÖøO00	cargoDataView	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView;
+	f	ÖÖøO00	cargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	OØøO00	scroller	Lcom/fs/starfarer/ui/g;
+	f	ôÖøO00	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/F;
+	f	øÖøO00	mode	Lcom/fs/starfarer/campaign/ui/trade/o0OO$o;
+	m	setGridColor	setGridColor	(Ljava/awt/Color;)V
+	m	setStats	setStats	(Lcom/fs/starfarer/campaign/CharacterStats;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	getScroller	getScroller	()Lcom/fs/starfarer/ui/g;
+	m	advanceImpl	advanceImpl	(F)V
+	m	getCapacity	getCapacity	()Lcom/fs/starfarer/campaign/ui/N;
+	m	updateGridSize	updateGridSize	()V
+	m	setCargo	setCargo	(Lcom/fs/starfarer/campaign/fleet/CargoData;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getFilteredCargo	getFilteredCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	getCargoDataView	getCargoDataView	()Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView;
+	m	setTransferHandler	setTransferHandler	(Lcom/fs/starfarer/campaign/ui/trade/F;)V
+	m	getCargoStackIndexForCellIndex	getCargoStackIndexForCellIndex	(I)I
+	m	getCargo	getCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	preventPickup	preventPickup	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)Z
+	m	updateFilteredCargo	updateFilteredCargo	()V
+	m	isShowRedForeground	isShowRedForeground	()Z
+	m	isInvalidDropTarget	isInvalidDropTarget	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)Z
+	m	setInvalidDropTarget	setInvalidDropTarget	(Z)V
+	m	flashRed	flashRed	()V
+c	com/fs/starfarer/campaign/ui/trade/o0OO$o	com/fs/starfarer/campaign/ui/trade/CargoManifestDisplay$Mode
+	c 来源(字符串常量) | 置信度(高) | 证据(enum CARGO/CUSTOM/TRASH)
+	f	Ô00000	CARGO	Lcom/fs/starfarer/campaign/ui/trade/o0OO$o;
+	f	Object	CUSTOM	Lcom/fs/starfarer/campaign/ui/trade/o0OO$o;
+	f	Ò00000	TRASH	Lcom/fs/starfarer/campaign/ui/trade/o0OO$o;
+	m	values	values	()[Lcom/fs/starfarer/campaign/ui/trade/o0OO$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/trade/o0OO$o;

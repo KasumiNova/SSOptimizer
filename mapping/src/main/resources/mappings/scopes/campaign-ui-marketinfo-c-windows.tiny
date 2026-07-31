@@ -1,0 +1,299 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/ui/marketinfo/b$8	IndustryImproveStoryPointDelegate
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#02-c8-industry-improve-story-point-delegate)
+	m	confirm	confirm	()V
+	m	createDescription	createDescription	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
+	m	getBonusXPFraction	getBonusXPFraction	()F
+	m	getConfirmSoundId	getConfirmSoundId	()Ljava/lang/String;
+	m	getRequiredStoryPoints	getRequiredStoryPoints	()I
+	m	getTitle	getTitle	()Ljava/lang/String;
+	m	getLogText	getLogText	()Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/b$o	IndustryActionType
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#03-co-industry-action-type)
+	f	Ø00000	UPGRADE	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	new	DOWNGRADE	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	null	SHUTDOWN	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	Ö00000	STOP_BUILDING	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	o00000	STOP_UPGRADE	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	class	MANAGE_CORE	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	ö00000	MANAGE_ITEM	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	Ó00000	IMPROVE	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+	f	õ00000	CUSTOM	Lcom/fs/starfarer/campaign/ui/marketinfo/b$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/c	HistoryGraph
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#31-oo0o-history-graph)
+	m	reset	reset	()V
+	m	addHatchMark	addHatchMark	(ILjava/lang/String;Ljava/awt/Color;)V
+	m	setTempMark	setTempMark	(ILjava/lang/String;Ljava/awt/Color;Lcom/fs/starfarer/campaign/ui/marketinfo/c$o;)V
+	m	addLine	addLine	(Lcom/fs/starfarer/api/impl/campaign/plog/PLStat;Ljava/lang/String;Ljava/util/List;ZFFLjava/awt/Color;)V
+	m	addLine	addLine	(Lcom/fs/starfarer/api/impl/campaign/plog/PLStat;Ljava/lang/String;[[FZFFLjava/awt/Color;)V
+	m	recomputeRanges	recomputeRanges	()V
+	m	getMinX	getMinX	()F
+c	com/fs/starfarer/campaign/ui/marketinfo/c$O0	HistoryGraph$LegendEntry
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#36-oo0o-oo-legend-entry)
+	f	Ò00000	name	Ljava/lang/String;
+	f	o00000	color	Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/marketinfo/c$Oo	HistoryGraph$LineGlowPanel
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(低) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#33-oo0o-oo-line-glow-panel)
+c	com/fs/starfarer/campaign/ui/marketinfo/c$o	HistoryGraph$LineData
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#34-oo0o-o-line-data)
+	f	Õ00000	stat	Lcom/fs/starfarer/api/impl/campaign/plog/PLStat;
+	f	Ò00000	name	Ljava/lang/String;
+	f	ö00000	dataPoints	[[F
+	f	Ô00000	color	Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/marketinfo/c$o0	HistoryGraph$LegendCheckboxRow
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#35-oo0o-o0-legend-checkbox-row)
+	f	line	line	Lcom/fs/starfarer/campaign/ui/marketinfo/c$o;
+	f	checkbox	checkbox	Lcom/fs/starfarer/ui/n;
+	m	setChecked	setChecked	(Z)V
+	m	isChecked	isChecked	()Z
+c	com/fs/starfarer/campaign/ui/marketinfo/c$oo	HistoryGraph$DropDownLabel
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(低) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#32-oo0o-o0-drop-down-label)
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/A	cdd/CommodityDetailRow
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#04-cdd-a-commodity-detail-row)
+	f	if.class$int	commodity	Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;
+	f	ÖÓÕO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	ôÓÕO00	mode	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/A$o;
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	getCommodity	getCommodity	()Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;
+	m	getMode	getMode	()Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/A$o;
+	m	getCommodityData	getCommodityData	()Lcom/fs/starfarer/campaign/econ/reach/CommodityMarketData;
+	m	getShare	getShare	()Lcom/fs/starfarer/campaign/econ/reach/MarketShareData;
+	m	getValueAmount	getValueAmount	()I
+	m	getSortQuantity	getSortQuantity	()I
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/A$o	cdd/CommodityDetailRow$ProducerConsumerMode
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#05-cdd-ao-producer-consumer-mode)
+	f	Ó00000	PRODUCER	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/A$o;
+	f	new	CONSUMER	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/A$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2	cdd/CommodityDetailDialogV2
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#06-cdd-commodity-detail-dialog-v2)
+	f	ÓÓÔ000	commodity	Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;
+	m	createMap	createMap	(FFLcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
+	m	createUI	createUI	(Z)V
+	m	updateFactionBasedValues	updateFactionBasedValues	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	switchToCommodity	switchToCommodity	(Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	updateTables	updateTables	()V
+	m	addCSRTooltips	addCSRTooltips	(Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/A$o;)V
+	m	showMap	showMap	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$1	cdd/CommodityDetailDialogV2$OnlyShowExtremesTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#07-cdd-v2-1-only-show-extremes-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$2	cdd/CommodityDetailDialogV2$CodexButtonListener
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#08-cdd-v2-2-codex-button-listener)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$3	cdd/CommodityDetailDialogV2$ExportTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#09-cdd-v2-3-export-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$4	cdd/CommodityDetailDialogV2$DemandTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#10-cdd-v2-4-demand-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$5	cdd/CommodityDetailDialogV2$TableColumnComparator
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#11-cdd-v2-5-table-column-comparator)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o	cdd/CommodityDetailDialogV2$TableColumn
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#12-cdd-v2-o-table-column)
+	f	void	NAME	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o;
+	f	ô00000	SIZE	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o;
+	f	Ó00000	FACTION	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o;
+	f	Ò00000	QUANTITY	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o;
+	f	Ö00000	ACCESS	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o;
+	f	Õ00000	VALUE	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o;
+	f	String	SHARE	Lcom/fs/starfarer/campaign/ui/marketinfo/cdd/CommodityDetailDialogV2$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/f	CommodityIcon
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#42-oo0o-commodity-icon)
+	m	getOutlineColor	getOutlineColor	()Ljava/awt/Color;
+	m	setOutlineColor	setOutlineColor	(Ljava/awt/Color;)V
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	getOutlineMode	getOutlineMode	()Lcom/fs/starfarer/campaign/ui/marketinfo/f$Oo;
+	m	setOutlineMode	setOutlineMode	(Lcom/fs/starfarer/campaign/ui/marketinfo/f$Oo;)V
+	m	renderSprite	renderSprite	(FFFFF)V
+	m	renderOutline	renderOutline	(FFFFF)V
+	m	renderIcon	renderIcon	(FFFFF)V
+	m	renderGlow	renderGlow	(FFFFFF)V
+	m	setMode	setMode	(Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/f$Oo	CommodityIcon$OutlineMode
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#43-oo0o-oo-outline-mode)
+	f	Ô00000	NORMAL	Lcom/fs/starfarer/campaign/ui/marketinfo/f$Oo;
+	f	new	TOP_AND_BOTTOM_ONLY	Lcom/fs/starfarer/campaign/ui/marketinfo/f$Oo;
+	f	Ó00000	LOW_DETAIL	Lcom/fs/starfarer/campaign/ui/marketinfo/f$Oo;
+c	com/fs/starfarer/campaign/ui/marketinfo/f$o	CommodityIcon$RenderMode
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#44-oo0o-o-render-mode)
+	f	void	NORMAL	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	Ò00000	DIM	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	super	GREEN	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	õ00000	RED	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	String	DIM_GREEN	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	ô00000	DIM_RED	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	ø00000	BLACK	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	if	OUTLINE_CUSTOM	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	Ö00000	OUTLINE_RED	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+	f	Õ00000	OUTLINE_GREEN	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/g	ColonyEstablishDialog
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#18-g-colony-establish-dialog)
+	f	String.private$new	title	Ljava/lang/String;
+	f	Õ0Õ000	mode	Lcom/fs/starfarer/campaign/ui/marketinfo/g$o;
+	f	Ó0Õ000	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	createUI	createUI	()V
+	m	dismiss	dismiss	(I)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	getText	getText	()Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/g$o	ColonyEstablishDialog$Mode
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#19-go-colony-establish-mode)
+	f	Ó00000	OUTPOST_INIT	Lcom/fs/starfarer/campaign/ui/marketinfo/g$o;
+	f	new	OUTPOST_RENAME	Lcom/fs/starfarer/campaign/ui/marketinfo/g$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/i	Icon
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#21-i-icon)
+	f	String.for$float	iconId	Ljava/lang/String;
+	f	ÒÒöO00	color	Ljava/awt/Color;
+	m	getIcon	getIcon	()Lcom/fs/starfarer/ui/ooO0;
+c	com/fs/starfarer/campaign/ui/marketinfo/interfacesuper	ExistingIndustryRow
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#20-h-existing-industry-row)
+	f	øÕÔO00	industry	Lcom/fs/starfarer/api/campaign/econ/Industry;
+	m	getIndustry	getIndustry	()Lcom/fs/starfarer/api/campaign/econ/Industry;
+c	com/fs/starfarer/campaign/ui/marketinfo/intnew	IndustryRow
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#49-r-industry-row)
+	f	WIDTH	WIDTH	F
+	f	PAD	PAD	F
+	f	FONT_HEIGHT	FONT_HEIGHT	F
+	f	IMAGE_HEIGHT	IMAGE_HEIGHT	F
+	f	HEIGHT	HEIGHT	F
+	f	øôöO00	industry	Lcom/fs/starfarer/api/campaign/econ/Industry;
+	m	getGlow	getGlow	()Lcom/fs/graphics/util/Fader;
+	m	getQueueIndex	getQueueIndex	()I
+	m	clearLabels	clearLabels	()V
+	m	getMode	getMode	()Lcom/fs/starfarer/campaign/ui/marketinfo/intnew$Oo;
+	m	setRemoveMode	setRemoveMode	()V
+	m	setSwapMode	setSwapMode	()V
+	m	setNormalMode	setNormalMode	()V
+	m	addCostTimeLabels	addCostTimeLabels	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/intnew$1	IndustryRow$IndustryTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#50-r1-industry-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/intnew$Oo	IndustryRow$RowMode
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#51-r-oo-row-mode)
+	f	Ó00000	NORMAL	Lcom/fs/starfarer/campaign/ui/marketinfo/intnew$Oo;
+	f	Ò00000	SWAP	Lcom/fs/starfarer/campaign/ui/marketinfo/intnew$Oo;
+	f	String	REMOVE	Lcom/fs/starfarer/campaign/ui/marketinfo/intnew$Oo;
+c	com/fs/starfarer/campaign/ui/marketinfo/intnew$o	IndustryRow$ConfigMode
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#52-r-o-config-mode)
+	f	o00000	CONFIG	Lcom/fs/starfarer/campaign/ui/marketinfo/intnew$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/j	GroundRaidTargetRow
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#25-j-ground-raid-target-row)
+	f	ÓÔÕO00	objective	Lcom/fs/starfarer/api/impl/campaign/graid/GroundRaidObjectivePlugin;
+	m	createRow	createRow	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/nullnew	PlanetBackground
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#48-q-planet-background)
+	f	USE_3D	USE_3D	Z
+	m	getPlanet	getPlanet	()Lcom/fs/starfarer/campaign/CampaignPlanet;
+	m	getDimArea	getDimArea	()Lcom/fs/starfarer/ui/OO0O;
+	m	setDimArea	setDimArea	(Lcom/fs/starfarer/ui/OO0O;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/o	MarketInfoDetailView
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#56-returnnew-market-info-detail-view)
+c	com/fs/starfarer/campaign/ui/marketinfo/o0O0	IllegalGoodsPanel
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#29-o0o0oo-illegal-goods-panel)
+c	com/fs/starfarer/campaign/ui/marketinfo/o0OO	EconomyPanel
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#30-o0oo-economy-panel)
+c	com/fs/starfarer/campaign/ui/marketinfo/o0Oo	FactionCreationDialog
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#13-classsuper-faction-creation-dialog)
+c	com/fs/starfarer/campaign/ui/marketinfo/oO0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	IndustryListRow
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#16-floatsuper-industry-list-row)
+	f	private.public$null	industry	Lcom/fs/starfarer/api/campaign/econ/Industry;
+	f	õÕÔO00	baseUpkeep	I
+	f	ÕÕÔO00	upkeep	I
+	f	String.private$null	buildTime	I
+	f	ôÔÔO00	buildCost	I
+	f	if.private$null	canAfford	Z
+	f	ÒÕÔO00	typeLabel	Ljava/lang/String;
+	m	getIndustry	getIndustry	()Lcom/fs/starfarer/api/campaign/econ/Industry;
+	m	getSortBaseUpkeep	getSortBaseUpkeep	()I
+	m	getSortUpkeep	getSortUpkeep	()I
+	m	getSortBuildTime	getSortBuildTime	()I
+	m	getSortBuildCost	getSortBuildCost	()I
+	m	isCanAfford	isCanAfford	()Z
+	m	getTypeStr	getTypeStr	()Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/oOoO	ImmigrationPanel
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#39-oooooo-immigration-panel)
+	m	getExistingFreePortCondition	getExistingFreePortCondition	()Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;
+c	com/fs/starfarer/campaign/ui/marketinfo/oOoO$1	ImmigrationPanel$FreePortTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#40-oooooo-1-free-port-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/oOoO$2	ImmigrationPanel$GrowthIncentivesTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#41-oooooo-2-growth-incentives-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/ooO0	CommodityIconGroup
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#45-ooo0-commodity-icon-group)
+	m	clearGroups	clearGroups	()V
+	m	isHighlightOnMouseover	isHighlightOnMouseover	()Z
+	m	setHighlightOnMouseover	setHighlightOnMouseover	(Z)V
+	m	computeRowHeightFor	computeRowHeightFor	(FFF)F
+	m	autoSizeWithAdjust	autoSizeWithAdjust	(FFFF)V
+	m	isWideSpacing	isWideSpacing	()Z
+	m	setWideSpacing	setWideSpacing	(Z)V
+	m	isMediumSpacing	isMediumSpacing	()Z
+	m	setMediumSpacing	setMediumSpacing	(Z)V
+	m	getGroups	getGroups	()Ljava/util/List;
+	m	autoSizeTo	autoSizeTo	(FF)V
+	m	getNumRows	getNumRows	()F
+	m	addGroup	addGroup	(Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;IFLcom/fs/starfarer/campaign/ui/marketinfo/f$o;Ljava/lang/Object;)V
+	m	addGroup	addGroup	(Lcom/fs/starfarer/api/campaign/econ/CommoditySpecAPI;IFLcom/fs/starfarer/campaign/ui/marketinfo/f$o;Ljava/lang/Object;)V
+	m	isEmpty	isEmpty	()Z
+c	com/fs/starfarer/campaign/ui/marketinfo/ooO0$o	CommodityIconGroup$Entry
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#46-ooo0-o-group-entry)
+	f	super	commoditySpec	Lcom/fs/starfarer/api/campaign/econ/CommoditySpecAPI;
+	f	Ò00000	quantity	I
+	f	String	mode	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/p	FlagPickerDialog
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#37-ooo0-flag-picker-dialog)
+	m	getPick	getPick	()Lcom/fs/starfarer/campaign/ui/marketinfo/p$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/p$o	FlagSpec
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#38-ooo0-o-flag-spec)
+	f	o00000	flagId	Ljava/lang/String;
+	f	new	flagName	Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/s	MarketInfoTabs
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#22-ifnew-market-info-tabs)
+	m	getInfoPanel	getInfoPanel	()Lcom/fs/starfarer/campaign/ui/marketinfo/T;
+	m	getCoreUI	getCoreUI	()LCoreUIV2;
+	m	recreate	recreate	()V
+	m	recreateWithEconUpdate	recreateWithEconUpdate	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/s$1	MarketInfoTabs$EconRefreshRunnable
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#23-ifnew1-econ-refresh-runnable)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/s$o	MarketInfoTabs$TabType
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#24-ifnew-o-tab-type)
+	f	new	NEARBY	Lcom/fs/starfarer/campaign/ui/marketinfo/s$o;
+	f	Ô00000	INCENTIVES	Lcom/fs/starfarer/campaign/ui/marketinfo/s$o;
+	f	o00000	ADMIN_PICKER	Lcom/fs/starfarer/campaign/ui/marketinfo/s$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/t	MarketAdminPanel
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#57-t-market-admin-panel)
+	m	getPortrait	getPortrait	()Lcom/fs/starfarer/ui/n;
+c	com/fs/starfarer/campaign/ui/marketinfo/t$1	MarketAdminPanel$AbandonButtonTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#58-t1-abandon-button-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/t$2	MarketAdminPanel$StabilizeButtonTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#59-t2-stabilize-button-tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/t$3	MarketAdminPanel$AbandonConfirmDelegate
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#60-t3-abandon-confirm-delegate)
+	m	Ò00000	getConfirmationPromptWidth	()F
+	m	o00000	createConfirmationPrompt	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
+	m	o00000	isConfirmEnabled	()Z
+c	com/fs/starfarer/campaign/ui/marketinfo/t$o	MarketAdminPanel$AdminMode
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#61-to-admin-mode)
+	f	Object	ABANDON	Lcom/fs/starfarer/campaign/ui/marketinfo/t$o;
+	f	Ò00000	STABILIZE	Lcom/fs/starfarer/campaign/ui/marketinfo/t$o;
+c	com/fs/starfarer/campaign/ui/marketinfo/whilesuper	GrowthIncentivesDialog
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#14-e-growth-incentives-dialog)
+	m	createUI	createUI	()V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/whilesuper$1	GrowthIncentivesTooltip
+	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(中) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#15-e1-growth-incentives-tooltip)
+	m	createImpl	createImpl	(Z)V

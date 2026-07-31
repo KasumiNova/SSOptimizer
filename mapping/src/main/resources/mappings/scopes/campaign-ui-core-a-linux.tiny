@@ -1,0 +1,468 @@
+tiny 2 0 obf named
+c	com/fs/starfarer/campaign/ui/B	TableRowPanel
+	c	javap取证 | 高 | 表格行面板基类：header(voidsuper)+columns+button+data，initCells() 按表头列创建列（com/fs/starfarer/campaign/ui/B）
+	f	header	header	Lcom/fs/starfarer/campaign/ui/voidsuper;
+	f	columns	columns	Ljava/util/List;
+	f	button	button	Lcom/fs/starfarer/ui/n;
+	f	data	data	Ljava/lang/Object;
+	m	initCells	initCells	()V
+	m	getCol	getCol	(I)Lcom/fs/starfarer/ui/z;
+	m	getButton	getButton	()Lcom/fs/starfarer/ui/n;
+	m	setButton	setButton	(Lcom/fs/starfarer/ui/n;)V
+	m	getData	getData	()Ljava/lang/Object;
+	m	setData	setData	(Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/F	LabelValuePair
+	c	javap取证 | 高 | 标签-值对显示组件：label(左上)+value(右下) 双文本，createWithLargeFont/createWithSmallFont 工厂（com/fs/starfarer/campaign/ui/F）
+	f	öO0o00	valueLabel	Lcom/fs/starfarer/ui/d;
+	f	int.if$for	label	Lcom/fs/starfarer/ui/d;
+	f	for.if$for	labelColor	Ljava/awt/Color;
+	f	øO0o00	valueColor	Ljava/awt/Color;
+	m	createWithLargeFont	createWithLargeFont	(Ljava/lang/String;Ljava/awt/Color;Ljava/awt/Color;)Lcom/fs/starfarer/campaign/ui/F;
+	m	createWithSmallFont	createWithSmallFont	(Ljava/lang/String;Ljava/awt/Color;Ljava/awt/Color;)Lcom/fs/starfarer/campaign/ui/F;
+	m	setAlignment	setAlignment	(Lcom/fs/starfarer/api/ui/Alignment;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/campaign/ui/F;
+	m	setLabelColor	setLabelColor	(Ljava/awt/Color;)Lcom/fs/starfarer/campaign/ui/F;
+	m	setValueColor	setValueColor	(Ljava/awt/Color;)Lcom/fs/starfarer/campaign/ui/F;
+	m	setValue	setValue	(I)V
+	m	setValue	setValue	(Ljava/lang/String;)V
+	m	getValue	getValue	()Lcom/fs/starfarer/ui/d;
+	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/campaign/ui/FleetInFormationDisplay	FleetInFormationDisplay
+	c	javap取证 | 高 | 舰队编队展示：CampaignFleetMemberView 按 7 列网格排布舰队成员，按 HullSize 排序（类名未混淆）
+	f	Ò00000	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	super	memberViews	Ljava/util/List;
+	m	Ò00000	advance	(F)V
+	m	super	render	(F)V
+c	com/fs/starfarer/campaign/ui/FleetInFormationDisplay$1	FleetInFormationDisplay$HullSizeComparator
+	c	javap取证 | 高 | 实现 Comparator<FleetMember>，按 getHullSize().ordinal() 排序（FleetInFormationDisplay$1）
+	m	o00000	compareByHullSize	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
+c	com/fs/starfarer/campaign/ui/I	TreeMenuPanel
+	c	javap取证 | 高 | 树状菜单面板：addMenuItem(parentId,...)/showItem(id)，节点树 I$Oo + 按钮映射（com/fs/starfarer/campaign/ui/I）
+	f	Õo0o00	rootNode	Lcom/fs/starfarer/campaign/ui/I$Oo;
+	f	this.float$for	buttonNodeMap	Ljava/util/Map;
+	f	Øo0o00	fontPath	Ljava/lang/String;
+	f	ôo0o00	listener	Lcom/fs/starfarer/campaign/ui/I$o;
+	m	addMenuItem	addMenuItem	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;)V
+	m	showItem	showItem	(Ljava/lang/String;)V
+	m	showItem	showItem	(Lcom/fs/starfarer/campaign/ui/I$Oo;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/I$Oo	TreeMenuPanel$TreeNode
+	c	javap取证 | 高 | 菜单树节点：id/label/data + children/parent（I$Oo）
+	f	Õ00000	id	Ljava/lang/String;
+	f	String	label	Ljava/lang/String;
+	f	Ó00000	data	Ljava/lang/Object;
+	f	super	children	Ljava/util/List;
+	f	Ò00000	parent	Lcom/fs/starfarer/campaign/ui/I$Oo;
+	m	Õ00000	getId	()Ljava/lang/String;
+	m	Ó00000	getLabel	()Ljava/lang/String;
+	m	String	getData	()Ljava/lang/Object;
+	m	Ò00000	getChildren	()Ljava/util/List;
+	m	super	getParent	()Lcom/fs/starfarer/campaign/ui/I$Oo;
+c	com/fs/starfarer/campaign/ui/I$o	TreeMenuPanel$MenuItemClickListener
+	c	javap取证 | 中 | 菜单项点击回调接口（I$o，o00000(I$Oo)）
+	m	o00000	menuItemClicked	(Lcom/fs/starfarer/campaign/ui/I$Oo;)V
+c	com/fs/starfarer/campaign/ui/K	MarketInfoRow
+	c	javap取证 | 高 | 市场信息行：Stability 指示器+三个图标按钮+MarketConditionsWidget，HEIGHT=48（com/fs/starfarer/campaign/ui/K）
+	f	ÕÔ0o00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	public.for$for	stabilityIndicator	Lcom/fs/starfarer/campaign/ui/O00o;
+	f	ÔÔ0o00	marketConditionsWidget	Lcom/fs/starfarer/campaign/ui/MarketConditionsWidget;
+	m	sizeChanged	sizeChanged	(FF)V
+	m	advanceImpl	advanceImpl	(F)V
+c	com/fs/starfarer/campaign/ui/K$1	MarketInfoRow$StabilityTooltipPositioner
+	c	javap取证 | 中 | Runnable：Stability 指示器 tooltip 相对锚点定位（K$1）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/K$2	MarketInfoRow$IconButtonTooltipPositioner
+	c	javap取证 | 中 | Runnable：图标按钮 tooltip 定位（K$2）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/K$3	MarketInfoRow$IconButtonTooltipPositioner2
+	c	javap取证 | 中 | Runnable：图标按钮 tooltip 定位（K$3）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/K$4	MarketInfoRow$IconButtonTooltipPositioner3
+	c	javap取证 | 中 | Runnable：图标按钮 tooltip 定位（K$4）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/L	CargoTransferAnimator
+	c	javap取证 | 高 | 货物转移动画：按 2.2s 周期把 CargoItemStack 逐批转移，ui_number_scrolling 音效（com/fs/starfarer/campaign/ui/L）
+	f	o00000	cargoData	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	Ö00000	cargoPanel	Lcom/fs/starfarer/campaign/ui/oOoO;
+	f	class	stacks	Ljava/util/List;
+	f	new	sourceStack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	f	Ô00000	destStack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
+	f	Ó00000	timer	F
+	m	o00000	advance	(F)V
+	m	new	finishTransfer	()V
+	m	o00000	isDone	()Z
+c	com/fs/starfarer/campaign/ui/M	TransferListener
+	c	javap取证 | 低 | 无 jar 内引用的回调接口，参数带空标记接口 f（com/fs/starfarer/campaign/ui/M）
+	m	o00000	transferPerformed	(Ljava/lang/Object;Lcom/fs/starfarer/campaign/ui/f;)V
+c	com/fs/starfarer/campaign/ui/MarketConditionsWidget	MarketConditionsWidget
+	c	javap取证 | 高 | 市场条件部件：Colony/Planetary conditions 标题+条件图标网格，按 isPlanetary 分两行（类名未混淆）
+	f	this.null$for	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	ØöøO00	iconSize	F
+	f	øõøO00	conditionFilter	Lcom/fs/starfarer/campaign/ui/MarketConditionsWidget$o;
+	f	ôõøO00	showHeader	Z
+	f	ÕöøO00	baseColor	Ljava/awt/Color;
+	f	return.null$for	darkColor	Ljava/awt/Color;
+	f	ØõøO00	gridColor	Ljava/awt/Color;
+	f	ôöøO00	brightColor	Ljava/awt/Color;
+	f	ÒöøO00	displayedConditions	Ljava/util/List;
+	f	Object.null$for	seenConditions	Ljava/util/List;
+	f	public.void$for	titleLabel	Lcom/fs/starfarer/ui/d;
+	f	int.null$for	imagePad	F
+	m	getDisplayedConditions	getDisplayedConditions	()Ljava/util/List;
+	m	getImagePad	getImagePad	()F
+	m	setImagePad	setImagePad	(F)V
+	m	getBaseColor	getBaseColor	()Ljava/awt/Color;
+	m	create	create	()V
+	m	autoSize	autoSize	()V
+	m	advanceImpl	advanceImpl	(F)V
+c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$1	MarketConditionsWidget$ConditionOrderComparator
+	c	javap取证 | 高 | 实现 Comparator<MarketConditionAPI>，按 Spec order 升序（MarketConditionsWidget$1）
+	m	o00000	compareBySpecOrder	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)I
+c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$2	MarketConditionsWidget$CustomConditionTooltip
+	c	javap取证 | 高 | StandardTooltipV2Expandable 子类：MarketConditionPlugin.createTooltip 自定义 tooltip + codex 条目（MarketConditionsWidget$2）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$3	MarketConditionsWidget$ConditionTooltip
+	c	javap取证 | 高 | StandardTooltipV2Expandable 子类：条件名标题+描述+token 替换 tooltip（MarketConditionsWidget$3）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$4	MarketConditionsWidget$TooltipPositioner
+	c	javap取证 | 中 | Runnable：条件图标 tooltip 相对锚点定位（MarketConditionsWidget$4）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$o	MarketConditionsWidget$ConditionFilter
+	c	javap取证 | 中 | 条件显示过滤接口（MarketConditionsWidget$o，super(MarketConditionAPI)Z）
+	m	super	shouldShow	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+c	com/fs/starfarer/campaign/ui/O	PersonPortrait
+	c	javap取证 | 高 | 人物肖像组件：肖像 sprite + 阴影，default_portrait_automated 处理（com/fs/starfarer/campaign/ui/O）
+	f	Øô0o00	person	Lcom/fs/starfarer/rpg/Person;
+	f	for.public$for	isAutomated	Z
+	f	ôô0o00	background	Lcom/fs/starfarer/ui/ooO0;
+	f	public.public$for	portrait	Lcom/fs/starfarer/ui/ooO0;
+	m	getPerson	getPerson	()Lcom/fs/starfarer/rpg/Person;
+	m	getPortrait	getPortrait	()Lcom/fs/starfarer/ui/ooO0;
+c	com/fs/starfarer/campaign/ui/O00o	LevelIndicator
+	c	javap取证 | 高 | 等级指示器：label+数值+N 段发光条，setLevel 控制发光段数（K 中 Stability 图标，com/fs/starfarer/campaign/ui/O00o）
+	f	ÒoOo00	segments	Ljava/util/List;
+	f	Object.super$do	color	Ljava/awt/Color;
+	f	ØOOo00	label	Lcom/fs/starfarer/ui/d;
+	f	ÔoOo00	levelLabel	Lcom/fs/starfarer/ui/d;
+	f	this.super$do	level	I
+	f	ooOo00	numSegments	I
+	f	return.super$do	hoverFader	Lcom/fs/graphics/util/Fader;
+	f	ÕoOo00	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	f	int.super$do	lastLevel	I
+	m	getLevel	getLevel	()I
+	m	setLevel	setLevel	(I)V
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	advanceImpl	advanceImpl	(F)V
+c	com/fs/starfarer/campaign/ui/O00o$o	LevelIndicator$SegmentGlow
+	c	javap取证 | 中 | 单个发光段：Fader 控制 alpha 的四边形（O00o$o）
+	f	ÔOOo00	fader	Lcom/fs/graphics/util/Fader;
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/O0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	MessageList
+	c	javap取证(switch表名) | 高 | 消息滚动列表：$SWITCH_TABLE$...MessageList$ScrollDirection + addTextMessage/addMessage/setScrollSpeed/setMaxMessages（com/fs/starfarer/campaign/ui/O0Oo...）
+	f	öö0o00	messages	Ljava/util/List;
+	f	Òø0o00	scrollDirection	Lcom/fs/starfarer/campaign/ui/O0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;
+	f	Øö0o00	messageHeight	F
+	f	oø0o00	scrollSpeed	F
+	f	Object.interface$for	maxDuration	F
+	f	øö0o00	maxMessages	I
+	m	setMessageHeight	setMessageHeight	(F)V
+	m	clear	clear	()V
+	m	addTextMessage	addTextMessage	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;Ljava/awt/Color;Ljava/awt/Color;FFZ)Lcom/fs/starfarer/ui/d;
+	m	setScrollSpeed	setScrollSpeed	(F)V
+	m	addTextMessage	addTextMessage	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;Z)V
+	m	addMessage	addMessage	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	getMaxDuration	getMaxDuration	()F
+	m	setMaxDuration	setMaxDuration	(F)V
+	m	getMaxMessages	getMaxMessages	()I
+	m	setMaxMessages	setMaxMessages	(I)V
+c	com/fs/starfarer/campaign/ui/O0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	MessageList$ScrollDirection
+	c	字符串常量 | 高 | 滚动方向枚举 UP/DOWN（字符串常量直接给出）
+	f	Ò00000	UP	Lcom/fs/starfarer/campaign/ui/O0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;
+	f	Ó00000	DOWN	Lcom/fs/starfarer/campaign/ui/O0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;
+c	com/fs/starfarer/campaign/ui/O0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	MessageList$Message
+	c	javap取证 | 中 | 单条消息条目：component + 位置偏移 + 停留计时（O0Oo...$o）
+	f	Ó00000	component	Lcom/fs/starfarer/ui/OO0o;
+	f	Ô00000	startOffset	F
+	f	new	currentOffset	F
+	f	o00000	age	F
+c	com/fs/starfarer/campaign/ui/O0oO	TransactionSummaryPanel
+	c	javap取证 | 高 | 交易摘要面板：Current transaction/Salvage operation 标题+条目滚动列表+Abort/Confirm/Take All/Confirm & Continue+No tariffs/You pay（com/fs/starfarer/campaign/ui/O0oO）
+	f	for.for$for	scrollPanel	Lcom/fs/starfarer/coreui/w;
+	f	this.for$for	tariffTable	Lcom/fs/starfarer/ui/nullsuper;
+	f	oÓ0o00	confirmButton	Lcom/fs/starfarer/ui/n;
+	f	oÔ0o00	abortButton	Lcom/fs/starfarer/ui/n;
+	f	øÓ0o00	takeAllButton	Lcom/fs/starfarer/ui/n;
+	f	öÒ0o00	confirmContinueButton	Lcom/fs/starfarer/ui/n;
+	f	øÒ0o00	listener	Lcom/fs/starfarer/ui/ooOo;
+	f	ÔÓ0o00	items	Ljava/util/List;
+	f	öÓ0o00	updatedItems	Ljava/util/Set;
+	f	for.float$for	itemToEnsureVisible	Lcom/fs/starfarer/campaign/ui/O0oO$o;
+	m	recreate	recreate	(Lcom/fs/starfarer/campaign/econ/Submarket;Z)V
+	m	beginItemUpdates	beginItemUpdates	()V
+	m	addOrUpdateItem	addOrUpdateItem	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/campaign/econ/Submarket;Ljava/lang/String;FF)V
+	m	finishItemUpdates	finishItemUpdates	(Z)V
+	m	setTariffText	setTariffText	(Ljava/lang/String;)V
+	m	setTariffValue	setTariffValue	(Ljava/lang/String;)V
+	m	setTotalText	setTotalText	(Ljava/lang/String;)V
+	m	setTotalValue	setTotalValue	(Ljava/lang/String;)V
+	m	setTotalColor	setTotalColor	(Ljava/awt/Color;)V
+	m	getConfirm	getConfirm	()Lcom/fs/starfarer/ui/n;
+	m	getReset	getReset	()Lcom/fs/starfarer/ui/n;
+	m	getTakeAll	getTakeAll	()Lcom/fs/starfarer/ui/n;
+	m	getCont	getCont	()Lcom/fs/starfarer/ui/n;
+	m	getItems	getItems	()Ljava/util/List;
+	m	hasItems	hasItems	()Z
+c	com/fs/starfarer/campaign/ui/O0oO$o	TransactionSummaryPanel$Item
+	c	javap取证 | 高 | 交易条目行：text/value/perUnitValue/Unit price+数量变化标记 null.setQuantity（O0oO$o）
+	f	id	id	Ljava/lang/String;
+	f	text	text	Ljava/lang/String;
+	f	perUnitValue	perUnitValue	Ljava/lang/String;
+	f	ÕÒ0o00	valueLabel	Lcom/fs/starfarer/ui/d;
+	f	return.float$for	textLabel	Lcom/fs/starfarer/ui/d;
+	f	oÒ0o00	unitPriceLabel	Lcom/fs/starfarer/ui/d;
+	f	ÒÒ0o00	perUnitValueLabel	Lcom/fs/starfarer/ui/d;
+	f	int.float$for	value	Ljava/lang/String;
+	f	ÔÒ0o00	quantityDelta	Lcom/fs/starfarer/campaign/ui/null;
+	m	setText	setText	(Ljava/lang/String;)V
+	m	setValue	setValue	(Ljava/lang/String;)V
+	m	setPerUnitValue	setPerUnitValue	(Ljava/lang/String;)V
+	m	setDelta	setDelta	(Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;I)V
+c	com/fs/starfarer/campaign/ui/O0oO$o$1	TransactionSummaryPanel$Item$MarketImpactTooltip
+	c	字符串常量 | 高 | StandardTooltipV2Expandable：交易对商品 availability 影响说明（O0oO$o$1）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/OOoo	SpriteIconButton
+	c	javap取证 | 中 | Sprite 图标按钮：sprite+颜色+阴影/glow 渲染，isDisabled 变黑（com/fs/starfarer/campaign/ui/OOoo）
+	f	this.int$int	sprite	Lcom/fs/graphics/Sprite;
+	f	ÕôÕO00	color	Ljava/awt/Color;
+	f	ØôÕO00	drawShadow	Z
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+c	com/fs/starfarer/campaign/ui/Objectsuper	GlowingRowPanel
+	c	javap取证 | 高 | 抽象发光行面板（extends B）：labels/images + glow 高亮 quad，createRow() 抽象（com/fs/starfarer/campaign/ui/Objectsuper）
+	f	øÖÔO00	labels	Ljava/util/List;
+	f	öÖÔO00	images	Ljava/util/List;
+	f	glowColorOverride	glowColorOverride	Ljava/awt/Color;
+	f	created	created	Z
+	f	renderQuadHighlight	renderQuadHighlight	Z
+	m	getLabels	getLabels	()Ljava/util/List;
+	m	setLabels	setLabels	(Ljava/util/List;)V
+	m	getImages	getImages	()Ljava/util/List;
+	m	setImages	setImages	(Ljava/util/List;)V
+	m	clearLabelsAndImages	clearLabelsAndImages	()V
+	m	addGlowingLabel	addGlowingLabel	(Lcom/fs/starfarer/ui/d;)V
+	m	addGlowingImage	addGlowingImage	(Lcom/fs/starfarer/ui/ooO0;)V
+	m	getGlowColor	getGlowColor	()Ljava/awt/Color;
+	m	getGlowColorOverride	getGlowColorOverride	()Ljava/awt/Color;
+	m	setGlowColorOverride	setGlowColorOverride	(Ljava/awt/Color;)V
+	m	isRenderQuadHighlight	isRenderQuadHighlight	()Z
+	m	setRenderQuadHighlight	setRenderQuadHighlight	(Z)V
+c	com/fs/starfarer/campaign/ui/OoOo	SpriteButtonRenderer
+	c	javap取证 | 中 | 按钮渲染器（implements n$Oo）：渲染 sprite，高亮时 additive 叠加（com/fs/starfarer/campaign/ui/OoOo）
+	f	oÔ0000	sprite	Lcom/fs/graphics/Sprite;
+	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+	m	if	getSprite	()Lcom/fs/graphics/Sprite;
+c	com/fs/starfarer/campaign/ui/P	MessageDisplay
+	c	API-impl种子+javap取证 | 高 | 实现 MessageDisplayAPI 的消息显示：Game paused/消息队列/sticky 消息，ui_noise_static_message 音效（com/fs/starfarer/campaign/ui/P）
+	f	this.private$for	stickyMessage	Lcom/fs/starfarer/campaign/ui/P$o;
+	f	øô0o00	currentMessage	Lcom/fs/starfarer/campaign/ui/P$o;
+	f	öô0o00	messageQueue	Ljava/util/LinkedList;
+	m	addMessage	addMessage	(Ljava/lang/String;)V
+	m	addMessage	addMessage	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)V
+	m	addMessage	addMessage	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	addMessage	addMessage	(Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;Ljava/awt/Color;)V
+	m	setSticky	setSticky	(Ljava/lang/String;)V
+	m	setSticky	setSticky	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)V
+	m	setSticky	setSticky	(Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;Ljava/awt/Color;)V
+	m	hasSticky	hasSticky	()Z
+	m	o00000	enqueueMessage	(Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;Ljava/awt/Color;Z)V
+c	com/fs/starfarer/campaign/ui/P$o	MessageDisplay$Message
+	c	javap取证 | 中 | 单条消息：title/titleColor/次要文本/颜色 + 显示计时，createLabel 建标签（P$o）
+	f	Ö00000	title	Ljava/lang/String;
+	f	Ó00000	titleColor	Ljava/awt/Color;
+	f	Ò00000	text2	Ljava/lang/String;
+	f	void	text2Color	Ljava/awt/Color;
+	f	String	label	Lcom/fs/starfarer/ui/d;
+	f	Õ00000	showTime	F
+	m	o00000	createLabel	()V
+	m	new	isSticky	()Z
+c	com/fs/starfarer/campaign/ui/S	FleetMemberIconList
+	c	javap取证 | 高 | 舰队成员图标列表：addIconFor/removeIconFor + coreui.w 列表 + DMod 角标 + tooltip（com/fs/starfarer/campaign/ui/S）
+	f	for.private$for	rows	I
+	f	ôõ0o00	itemHeight	F
+	f	öõ0o00	type	Lcom/fs/starfarer/campaign/ui/String$o;
+	f	Øõ0o00	list	Lcom/fs/starfarer/coreui/w;
+	f	øõ0o00	listener	Lcom/fs/starfarer/campaign/ui/S$o;
+	f	return.private$for	members	Ljava/util/List;
+	f	Òö0o00	withTooltips	Z
+	f	Ôö0o00	showDmods	Z
+	f	Ôõ0o00	tooltipOptions	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$Oo;
+	f	int.private$for	renderBG	Z
+	f	Object.private$for	visibilityLevel	Lcom/fs/starfarer/api/campaign/SectorEntityToken$VisibilityLevel;
+	f	Õö0o00	recoveryMode	Z
+	f	Òõ0o00	allowClicksOnDisabled	Z
+	f	oõ0o00	overlayColorOverride	Ljava/awt/Color;
+	f	oö0o00	useExpandedTooltip	Z
+	f	public.private$for	useBasicTooltip	Z
+	m	getType	getType	()Lcom/fs/starfarer/campaign/ui/String$o;
+	m	setType	setType	(Lcom/fs/starfarer/campaign/ui/String$o;)V
+	m	isShowDmods	isShowDmods	()Z
+	m	setShowDmods	setShowDmods	(Z)V
+	m	isRenderBG	isRenderBG	()Z
+	m	setRenderBG	setRenderBG	(Z)V
+	m	getTooltipOptions	getTooltipOptions	()Lcom/fs/starfarer/ui/impl/StandardTooltipV2$Oo;
+	m	setTooltipOptions	setTooltipOptions	(Lcom/fs/starfarer/ui/impl/StandardTooltipV2$Oo;)V
+	m	setWithTooltips	setWithTooltips	(Z)V
+	m	autoSizeToRows	autoSizeToRows	(I)V
+	m	isRecoveryMode	isRecoveryMode	()Z
+	m	setRecoveryMode	setRecoveryMode	(Z)V
+	m	getList	getList	()Lcom/fs/starfarer/coreui/w;
+	m	clear	clear	()V
+	m	getOverlayColorOverride	getOverlayColorOverride	()Ljava/awt/Color;
+	m	setOverlayColorOverride	setOverlayColorOverride	(Ljava/awt/Color;)V
+	m	addIconFor	addIconFor	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	addIconFor	addIconFor	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
+	m	removeIconFor	removeIconFor	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	turnOffCRandHullBars	turnOffCRandHullBars	()V
+	m	getMembers	getMembers	()Ljava/util/List;
+	m	setUseExpandedTooltip	setUseExpandedTooltip	(Z)V
+	m	setUseBasicTooltip	setUseBasicTooltip	(Z)V
+	m	getIconForMember	getIconForMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/ui/super/B;
+	m	getButtonForMember	getButtonForMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/ui/n;
+	m	isEmpty	isEmpty	()Z
+	m	sizeChanged	sizeChanged	(FF)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/S$1	FleetMemberIconList$UnidentifiedVesselTooltip
+	c	字符串常量 | 高 | StandardTooltipV2Expandable：未识别飞船 tooltip（Unidentified Vessel / UNKNOWN ENTRY，S$1）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/S$2	FleetMemberIconList$TooltipPositioner
+	c	javap取证 | 中 | Runnable：成员图标 tooltip 居中偏移定位（S$2）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/S$o	FleetMemberIconList$FleetMemberClickListener
+	c	javap取证 | 中 | 成员图标点击回调接口（fleetMemberClicked 未混淆，S$o）
+	m	fleetMemberClicked	fleetMemberClicked	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/super/B;Lcom/fs/starfarer/util/super/Object;)V
+c	com/fs/starfarer/campaign/ui/String	FleetMemberIconRenderer
+	c	javap取证 | 中 | 按钮渲染器（implements n$Oo）：用 ui/super/B 渲染 FleetMember 图标，按 String$o 类型选色（com/fs/starfarer/campaign/ui/String）
+	f	return.Object	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	øÓ0000	color	Ljava/awt/Color;
+	f	öÓ0000	type	Lcom/fs/starfarer/campaign/ui/String$o;
+	f	Object.Object	icon	Lcom/fs/starfarer/ui/super/B;
+	m	õ00000	getIcon	()Lcom/fs/starfarer/ui/super/B;
+	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+c	com/fs/starfarer/campaign/ui/String$o	FleetMemberIconType
+	c	字符串常量 | 高 | 图标阵营枚举 FRIEND/ENEMY/NEUTRAL（字符串常量直接给出）
+	f	Ó00000	FRIEND	Lcom/fs/starfarer/campaign/ui/String$o;
+	f	new	ENEMY	Lcom/fs/starfarer/campaign/ui/String$o;
+	f	Ô00000	NEUTRAL	Lcom/fs/starfarer/campaign/ui/String$o;
+c	com/fs/starfarer/campaign/ui/UITable	UITable
+	c	javap取证 | 高 | 表格：voidsuper 表头 + coreui.w 列表 + 行渲染回调 UITable$Oo，可排序（类名未混淆）
+	f	ö00o00	header	Lcom/fs/starfarer/campaign/ui/voidsuper;
+	f	ÒO0o00	list	Lcom/fs/starfarer/coreui/w;
+	f	Object.if$for	tableRenderer	Lcom/fs/starfarer/campaign/ui/UITable$Oo;
+	f	public.int$for	rowClickListener	Lcom/fs/starfarer/campaign/ui/UITable$o;
+	f	ø00o00	emptyLabel	Lcom/fs/starfarer/ui/d;
+	f	oO0o00	showHeader	Z
+	f	ØO0o00	skipInputProcessing	Z
+	m	isSkipInputProcessing	isSkipInputProcessing	()Z
+	m	setSkipInputProcessing	setSkipInputProcessing	(Z)V
+	m	suspendRecompute	suspendRecompute	()V
+	m	resumeRecompute	resumeRecompute	()V
+	m	clear	clear	()V
+	m	getItemHeight	getItemHeight	()F
+	m	setShowHeader	setShowHeader	(Z)V
+	m	autoSizeToRows	autoSizeToRows	(I)V
+	m	autoSizeToHeight	autoSizeToHeight	(F)V
+c	com/fs/starfarer/campaign/ui/UITable$1	UITable$SortComparator
+	c	javap取证 | 高 | 实现 Comparator<B>：包装排序 Comparator + sortAscending 取反（UITable$1）
+	m	super	compareRows	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/campaign/ui/UITable$Oo	UITable$TableRenderer
+	c	javap取证 | 高 | 表格渲染/回调接口（tableRowSelected/tableGetComparator/tableSortFinished 未混淆）
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+c	com/fs/starfarer/campaign/ui/UITable$o	UITable$RowClickListener
+	c	javap取证 | 中 | 表格行点击回调接口（UITable$o）
+	m	o00000	rowClicked	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/W	TradeDialog
+	c	javap取证 | 高 | 货物交易对话框（extends ui/impl/E）：内嵌交易面板 m，dismiss 时 confirm/cancel 交易（com/fs/starfarer/campaign/ui/W）
+	f	oÖÕ000	tradePanel	Lcom/fs/starfarer/campaign/ui/m;
+	f	for.new$Object	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	øÕÕ000	cargoData	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	dismiss	dismiss	(I)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/Z	SubmarketPickerWidget
+	c	javap取证(switch表名) | 高 | 子市场选择部件：$SWITCH_TABLE$...SubmarketPickerWidget$DialogType + 子市场图标按钮网格 + storage/local_resources 特殊处理（com/fs/starfarer/campaign/ui/Z）
+	f	o0Oo00	market	Lcom/fs/starfarer/campaign/econ/Market;
+	f	Ò0Oo00	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	return.this$do	callback	Lcom/fs/starfarer/campaign/ui/Z$o;
+	f	ô0Oo00	dialogType	Lcom/fs/starfarer/campaign/ui/Z$Oo;
+	f	Õ0Oo00	buttons	Ljava/util/List;
+	f	Ô0Oo00	submarketWithDialog	Lcom/fs/starfarer/campaign/econ/Submarket;
+	f	this.this$do	dialogOptions	[Lcom/fs/starfarer/api/campaign/SubmarketPlugin$DialogOption;
+	m	selectFirst	selectFirst	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	showSubmarketTextDialog	showSubmarketTextDialog	(Lcom/fs/starfarer/campaign/econ/Submarket;)V
+	m	freezeOpenTab	freezeOpenTab	()V
+	m	reenableButtons	reenableButtons	()V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/campaign/ui/Z$1	SubmarketPickerWidget$SubmarketTooltip
+	c	javap取证 | 高 | StandardTooltipV2Expandable：SubmarketPlugin.createTooltip 自定义 tooltip（Z$1）
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/Z$2	SubmarketPickerWidget$TextTooltipAppendix
+	c	javap取证 | 高 | StandardTooltipV2$OOo：文本 tooltip 附录（getTooltipAppendix/highlights，Z$2）
+	m	o00000	getTooltipAppendix	(Ljava/lang/String;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/Z$3	SubmarketPickerWidget$LocalResourcesTooltipPositioner
+	c	javap取证 | 中 | Runnable：local_resources 子市场 tooltip 定位（Z$3）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/Z$4	SubmarketPickerWidget$TooltipPositioner
+	c	javap取证 | 中 | Runnable：子市场按钮 tooltip 相对锚点定位（Z$4）
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/Z$Oo	SubmarketPickerWidget$DialogType
+	c	字符串常量 | 高 | 对话框类型枚举，值 SUBMARKET_TEXT_DIALOG（字符串常量直接给出）
+	f	Ò00000	SUBMARKET_TEXT_DIALOG	Lcom/fs/starfarer/campaign/ui/Z$Oo;
+c	com/fs/starfarer/campaign/ui/Z$o	SubmarketPickerWidget$SubmarketPickerCallback
+	c	javap取证 | 中 | 子市场选择回调接口（submarketPicked/getCoreUI 未混淆）
+	m	submarketPicked	submarketPicked	(Lcom/fs/starfarer/campaign/econ/Submarket;)V
+	m	getCoreUI	getCoreUI	()Lcom/fs/starfarer/coreui/_$o;
+c	com/fs/starfarer/campaign/ui/a	IconButton
+	c	javap取证 | 中 | 图标按钮：sprite+双层描边+可选底部文字按钮+glow（jar 内无引用，结构自证；com/fs/starfarer/campaign/ui/a）
+	f	ôõÕO00	color	Ljava/awt/Color;
+	f	öõÕO00	spritePath	Ljava/lang/String;
+	f	for.int$int	sprite	Lcom/fs/starfarer/ui/ooO0;
+	f	øõÕO00	labelText	Ljava/lang/String;
+	f	ÒöÕO00	labelButton	Lcom/fs/starfarer/ui/n;
+	f	Object.if$int	imagePad	F
+	m	getImagePad	getImagePad	()F
+	m	setImagePad	setImagePad	(F)V
+	m	renderGlow	renderGlow	(F)V
+c	com/fs/starfarer/campaign/ui/b	WeaponIconRenderer
+	c	javap取证 | 中 | 按钮渲染器（implements n$Oo）：用 ui/super/Object 渲染武器图标（BaseWeaponSpec，com/fs/starfarer/campaign/ui/b）
+	f	ÒÔ0000	weaponIcon	Lcom/fs/starfarer/ui/super/Object;
+	m	ø00000	getIcon	()Lcom/fs/starfarer/ui/super/Object;
+	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+c	com/fs/starfarer/campaign/ui/b$o	WeaponIconRenderer$IconType
+	c	字符串常量 | 高 | 武器图标阵营枚举 FRIEND/ENEMY/NEUTRAL（字符串常量直接给出）
+	f	Ó00000	FRIEND	Lcom/fs/starfarer/campaign/ui/b$o;
+	f	new	ENEMY	Lcom/fs/starfarer/campaign/ui/b$o;
+	f	Ô00000	NEUTRAL	Lcom/fs/starfarer/campaign/ui/b$o;
+c	com/fs/starfarer/campaign/ui/c	IconButton2
+	c	javap取证 | 中 | 图标按钮（同 a 结构：sprite+黑底描边+底部文字+glow；jar 内无引用；com/fs/starfarer/campaign/ui/c）
+	f	return.if$int	color	Ljava/awt/Color;
+	f	ôöÕO00	spritePath	Ljava/lang/String;
+	f	ÔöÕO00	sprite	Lcom/fs/starfarer/ui/ooO0;
+	f	int.if$int	labelText	Ljava/lang/String;
+	f	for.if$int	labelButton	Lcom/fs/starfarer/ui/n;
+	f	oøÕO00	imagePad	F
+	m	getImagePad	getImagePad	()F
+	m	setImagePad	setImagePad	(F)V
+	m	renderGlow	renderGlow	(F)V
+c	com/fs/starfarer/campaign/ui/dosuper	DefensesButton
+	c	javap取证 | 高 | 市场防御按钮：ground_defenses_mod/combat_fleet_size_mult + Defenses 标题 + 防御行业图（grounddefenses/heavybatteries/planetaryshield，com/fs/starfarer/campaign/ui/dosuper）
+	f	ÕøÕO00	baseColor	Ljava/awt/Color;
+	f	øøÕO00	brightColor	Ljava/awt/Color;
+	f	öøÕO00	darkColor	Ljava/awt/Color;
+	f	ÔøÕO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	ØøÕO00	labels	Ljava/util/List;
+	f	Object.float$int	images	Ljava/util/List;
+	f	ôøÕO00	defenseValueLabel	Lcom/fs/starfarer/ui/d;
+	f	ÒøÕO00	defenseImage	Lcom/fs/starfarer/ui/ooO0;
+	m	advanceImpl	advanceImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V

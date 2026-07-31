@@ -1,0 +1,545 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/ui/e	com/fs/starfarer/campaign/ui/DateTimePanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(DateTimePanel：cycle/date 标签，victor10+orbitron20aa 字体，CampaignClock 构造)
+	f	public.this$do	dateLabel	Lcom/fs/starfarer/ui/d;
+	f	ÒOOo00	cycleLabel	Lcom/fs/starfarer/ui/d;
+	f	for.this$do	dateValue	Lcom/fs/starfarer/ui/d;
+	f	oOOo00	cycleValue	Lcom/fs/starfarer/ui/d;
+	f	ø0Oo00	daySeparator	Lcom/fs/starfarer/ui/d;
+	f	ö0Oo00	textColor	Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/i	com/fs/starfarer/campaign/ui/PriceDisplayWidget
+	c 来源(javap取证) | 置信度(高) | 证据(PriceDisplayWidget：PriceUpdatePlugin 字段 + renderPrice/renderGlow，marketinfo 价格类型图标)
+	f	ô0ÖO00	priceUpdatePlugin	Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin$PriceUpdatePlugin;
+	f	Õ0ÖO00	priceLabel	Lcom/fs/starfarer/ui/d;
+	f	Ø0ÖO00	typeIconUp	Lcom/fs/starfarer/campaign/ui/marketinfo/oo0o$o;
+	f	Ò0ÖO00	typeIconDown	Lcom/fs/starfarer/campaign/ui/marketinfo/oo0o$o;
+	m	renderPrice	renderPrice	(F)V
+	m	renderGlow	renderGlow	(F)V
+c	com/fs/starfarer/campaign/ui/interfacesuper	com/fs/starfarer/campaign/ui/GlowPanel
+	c 来源(javap取证+引用关系) | 置信度(中) | 证据(GlowPanel：背景发光面板，被 command.C/OooO 与 marketinfo.newnew 使用)
+	f	return.float$int	glowColor	Ljava/awt/Color;
+	f	o0ÖO00	created	Z
+	m	create	create	()V
+c	com/fs/starfarer/campaign/ui/m	com/fs/starfarer/campaign/ui/FleetMemberPurchaseDialog
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(FleetMemberPurchaseDialog：Confirm Transaction/Abort/Ships available for purchase，按 HullSize 分类购买列表)
+	f	öÒOo00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	øoOo00	cargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	return.new$do	fleetView	Lcom/fs/starfarer/campaign/ui/fleet/class;
+	f	oÓOo00	buyView	Lcom/fs/starfarer/campaign/ui/fleet/class;
+	f	ôoOo00	transferHandler	Lcom/fs/starfarer/campaign/ui/fleet/A;
+	m	getFleetView	getFleetView	()Lcom/fs/starfarer/campaign/ui/fleet/class;
+	m	getBuyView	getBuyView	()Lcom/fs/starfarer/campaign/ui/fleet/class;
+	m	cancelTransaction	cancelTransaction	()V
+	m	confirmTransaction	confirmTransaction	()V
+	m	getTransferHandler	getTransferHandler	()Lcom/fs/starfarer/campaign/ui/fleet/A;
+	m	getCancelButton	getCancelButton	()Lcom/fs/starfarer/ui/n;
+	m	getConfirmButton	getConfirmButton	()Lcom/fs/starfarer/ui/n;
+	m	getResetButton	getResetButton	()Lcom/fs/starfarer/ui/n;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/ui/newnew	com/fs/starfarer/campaign/ui/RuleMemoryProvider
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(RuleMemoryProvider：local/faction/global/player/market/$sourceMarket 规则内存作用域，createFakeDialog 调用)
+	f	o00000	dialog	Lcom/fs/starfarer/api/campaign/InteractionDialogAPI;
+	f	new	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	Ó00000	memories	Ljava/util/Map;
+c	com/fs/starfarer/campaign/ui/null	com/fs/starfarer/campaign/ui/QuantityAdjustPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(QuantityAdjustPanel：+/-/> 按钮，setQuantity/getCurrQuantity/getCommodity)
+	f	oo0o00	quantityLabel	Lcom/fs/starfarer/ui/d;
+	f	Ôo0o00	currQuantity	I
+	f	Òo0o00	commodity	Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;
+	m	setQuantity	setQuantity	(Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;I)V
+	m	getCurrQuantity	getCurrQuantity	()I
+	m	getCommodity	getCommodity	()Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;
+c	com/fs/starfarer/campaign/ui/o00O	com/fs/starfarer/campaign/ui/FleetInfoRow
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(FleetInfoRow：Fleets 标签 + icon_fleet0-3 舰队规模图标 + combat_fleet_size_mult 百分比)
+	f	ôÖÕO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	this.null$int	sizeLabels	Ljava/util/List;
+	f	ÒØÕO00	sizeIcons	Ljava/util/List;
+	m	getImagePad	getImagePad	()F
+	m	setImagePad	setImagePad	(F)V
+c	com/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/TradePanelV2
+	c 来源(javap取证+$SWITCH_TABLE) | 置信度(高) | 证据(TradePanelV2：$SWITCH_TABLE$...$TradePanelV2$TradePanelMode/DialogType 残存原始类名，Back to colony list/Colony Info/CARGO 等字符串)
+	f	öÕõ000	mode	Lcom/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;
+	f	øÖõ000	coreUI	Lcom/fs/starfarer/ui/newui/Object;
+	f	public.super$class	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	øØõ000	marketInfoPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/T;
+	f	øÕõ000	playerCargoDisplay	Lcom/fs/starfarer/campaign/ui/oOoO;
+	f	ÔÕõ000	entityCargoDisplay	Lcom/fs/starfarer/campaign/ui/oOoO;
+	f	oÖõ000	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/class;
+	f	ÕÖõ000	marketInfoButton	Lcom/fs/starfarer/ui/n;
+	f	return.new$class	takeAllButton	Lcom/fs/starfarer/ui/n;
+	f	allowedToLearn	allowedToLearn	Z
+	f	public.this$class	outpostPanelParams	Lcom/fs/starfarer/campaign/command/OutpostListPanel$Oo;
+	m	getOutpostPanelParams	getOutpostPanelParams	()Lcom/fs/starfarer/campaign/command/OutpostListPanel$Oo;
+	m	setPickerMode	setPickerMode	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/CargoData;Ljava/lang/String;Ljava/lang/String;)V
+	m	isAllowedToLearn	isAllowedToLearn	()Z
+	m	setAllowedToLearn	setAllowedToLearn	(Z)V
+	m	shouldShowLogisticsOnSwitch	shouldShowLogisticsOnSwitch	()Z
+	m	updateCargoViews	updateCargoViews	()V
+	m	isSkipConfirm	isSkipConfirm	()Z
+	m	setSkipConfirm	setSkipConfirm	(Z)V
+	m	confirmTransaction	confirmTransaction	()V
+	m	cancelTransaction	cancelTransaction	()V
+	m	twConfirm	twConfirm	()V
+	m	twReset	twReset	()V
+	m	showTransactionWidget	showTransactionWidget	()V
+	m	showFlavorText	showFlavorText	()V
+	m	getFlavorText	getFlavorText	()Lcom/fs/starfarer/ui/newui/Object;
+	m	updateFlavorText	updateFlavorText	()Z
+	m	createFakeDialog	createFakeDialog	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Lcom/fs/starfarer/api/campaign/TextPanelAPI;)Lcom/fs/starfarer/api/campaign/InteractionDialogAPI;
+	m	getTransferHandler	getTransferHandler	()Lcom/fs/starfarer/campaign/ui/trade/class;
+	m	getResetButton	getResetButton	()Lcom/fs/starfarer/ui/n;
+	m	getConfirmButton	getConfirmButton	()Lcom/fs/starfarer/ui/n;
+	m	getPlayerCargoDisplay	getPlayerCargoDisplay	()Lcom/fs/starfarer/campaign/ui/oOoO;
+	m	getTakeAllButton	getTakeAllButton	()Lcom/fs/starfarer/ui/n;
+	m	getContButton	getContButton	()Lcom/fs/starfarer/ui/n;
+	m	getEntityCargoDisplay	getEntityCargoDisplay	()Lcom/fs/starfarer/campaign/ui/oOoO;
+	m	getPlayerFleet	getPlayerFleet	()Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	getOtherCargo	getOtherCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	setRevealMode	setRevealMode	(Z)V
+	m	setCanLeavePersonnel	setCanLeavePersonnel	(Z)V
+	m	submarketPicked	submarketPicked	(Lcom/fs/starfarer/campaign/econ/Submarket;)V
+	m	getCoreUI	getCoreUI	()Lcom/fs/starfarer/coreui/_$o;
+	m	getEntity	getEntity	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getMarketInfo	getMarketInfo	()Lcom/fs/starfarer/ui/n;
+	m	tabClosed	tabClosed	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	isShowingMarketInfo	isShowingMarketInfo	()Z
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	isGeneratePods	isGeneratePods	()Z
+	m	setGeneratePods	setGeneratePods	(Z)V
+	m	getFactionTitle	getFactionTitle	()Lcom/fs/starfarer/ui/OO0o;
+c	com/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$2	com/fs/starfarer/campaign/ui/TradePanelV2$FakeInteractionDialog
+	c 来源(javap取证) | 置信度(高) | 证据(TradePanelV2$2：implements InteractionDialogAPI，TradePanelV2.createFakeDialog 返回该实现)
+	f	super	textPanel	Lcom/fs/starfarer/api/campaign/TextPanelAPI;
+	f	Ò00000	target	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	showTextPanel	showTextPanel	()V
+	m	hideTextPanel	hideTextPanel	()V
+	m	dismiss	dismiss	()V
+	m	dismissAsCancel	dismissAsCancel	()V
+	m	getTextPanel	getTextPanel	()Lcom/fs/starfarer/api/campaign/TextPanelAPI;
+	m	getOptionPanel	getOptionPanel	()Lcom/fs/starfarer/api/campaign/OptionPanelAPI;
+	m	getVisualPanel	getVisualPanel	()Lcom/fs/starfarer/api/campaign/VisualPanelAPI;
+	m	getInteractionTarget	getInteractionTarget	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	setInteractionTarget	setInteractionTarget	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	setPlugin	setPlugin	(Lcom/fs/starfarer/api/campaign/InteractionDialogPlugin;)V
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/api/campaign/InteractionDialogPlugin;
+c	com/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/campaign/ui/TradePanelV2$TradePanelMode
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(TradePanelV2$Oo 枚举：CARGO/CARGO_WITH_MARKET_INFO/LOOT/MARKET)
+	m	values	values	()[Lcom/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;
+c	com/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/campaign/ui/TradePanelV2$DialogType
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(TradePanelV2$o 枚举：FACTION_CONFIG/RENAME_MARKET)
+	m	values	values	()[Lcom/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
+c	com/fs/starfarer/campaign/ui/oOO0	com/fs/starfarer/campaign/ui/EntityMapMarker
+	c 来源(javap取证) | 置信度(中) | 证据(EntityMapMarker：SectorEntityToken 关联标记，Fader fadeIn 淡入，starfarer.String 静态颜色)
+	f	Ó00000	fader	Lcom/fs/graphics/util/Fader;
+	f	new	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	o00000	color	Ljava/awt/Color;
+	m	o00000	getFader	()Lcom/fs/graphics/util/Fader;
+	m	new	getColor	()Ljava/awt/Color;
+	m	o00000	setColor	(Ljava/awt/Color;)V
+c	com/fs/starfarer/campaign/ui/oOoO	com/fs/starfarer/campaign/ui/CargoDisplayV2
+	c 来源(javap取证+$SWITCH_TABLE) | 置信度(高) | 证据(CargoDisplayV2：$SWITCH_TABLE$...$CargoDisplayV2$Mode 残存原始类名，All/Eject/Sort 分类按钮)
+	f	ÒÖøO00	cargoDataView	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView;
+	f	public.class$for	filteredCargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	øÖøO00	cargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	ÒØøO00	mode	Lcom/fs/starfarer/campaign/ui/oOoO$o;
+	f	oÖøO00	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/class;
+	m	recreate	recreate	(Lcom/fs/starfarer/campaign/ui/oOoO$o;IILjava/awt/Color;Ljava/awt/Color;Ljava/awt/Color;)V
+	m	isInvalidDropTarget	isInvalidDropTarget	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)Z
+	m	setInvalidDropTarget	setInvalidDropTarget	(Z)V
+	m	flashRed	flashRed	()V
+	m	getMinRows	getMinRows	()I
+	m	getHighlighted	getHighlighted	()Lcom/fs/starfarer/ui/n;
+	m	setGridColor	setGridColor	(Ljava/awt/Color;)V
+	m	setStats	setStats	(Lcom/fs/starfarer/campaign/CharacterStats;)V
+	m	getScroller	getScroller	()Lcom/fs/starfarer/ui/g;
+	m	updateGridSize	updateGridSize	()V
+	m	setMinRows	setMinRows	(I)V
+	m	setRevealMode	setRevealMode	(Lcom/fs/starfarer/campaign/fleet/CargoData;)V
+	m	setCargo	setCargo	(Lcom/fs/starfarer/campaign/fleet/CargoData;)V
+	m	updateFilteredCargo	updateFilteredCargo	()V
+	m	setTabMirror	setTabMirror	(Lcom/fs/starfarer/campaign/ui/oOoO;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getSpecial	getSpecial	()Lcom/fs/starfarer/ui/n;
+	m	getAll	getAll	()Lcom/fs/starfarer/ui/n;
+	m	getWeapons	getWeapons	()Lcom/fs/starfarer/ui/n;
+	m	getCommodities	getCommodities	()Lcom/fs/starfarer/ui/n;
+	m	getCargo	getCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	getFilteredCargo	getFilteredCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	m	getCargoDataView	getCargoDataView	()Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView;
+	m	setTransferHandler	setTransferHandler	(Lcom/fs/starfarer/campaign/ui/trade/class;)V
+	m	getCargoStackIndexForCellIndex	getCargoStackIndexForCellIndex	(I)I
+	m	preventPickup	preventPickup	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)Z
+	m	setOtherRevealing	setOtherRevealing	(Lcom/fs/starfarer/campaign/ui/oOoO;)V
+	m	getMode	getMode	()Lcom/fs/starfarer/campaign/ui/oOoO$o;
+c	com/fs/starfarer/campaign/ui/oOoO$o	com/fs/starfarer/campaign/ui/CargoDisplayV2$Mode
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(CargoDisplayV2$o 枚举：CARGO_ENTITY/CARGO_PLAYER/SINGLE_TAB)
+	m	values	values	()[Lcom/fs/starfarer/campaign/ui/oOoO$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/oOoO$o;
+c	com/fs/starfarer/campaign/ui/ooOO	com/fs/starfarer/campaign/ui/TitleBarPanel
+	c 来源(javap取证) | 置信度(中) | 证据(TitleBarPanel：构造 (String,String,Color,Color,Color) 标题+副标题，setText，被 campaign.ui.Z 与 TradePanelV2 使用)
+	f	øÕÕO00	title	Ljava/lang/String;
+	f	ÒÖÕO00	subtitle	Ljava/lang/String;
+	f	öÕÕO00	titleLabel	Lcom/fs/starfarer/ui/d;
+	m	create	create	()V
+	m	setText	setText	(Lcom/fs/starfarer/ui/n;Ljava/lang/String;)V
+	m	renderGlow	renderGlow	(F)V
+c	com/fs/starfarer/campaign/ui/oooo	com/fs/starfarer/campaign/ui/MarketConditionRow
+	c 来源(javap取证) | 置信度(高) | 证据(MarketConditionRow：MarketConditionAPI 字段，getImagePad/setImagePad，被 MarketConditionsWidget 使用)
+	f	oõÕO00	condition	Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;
+	f	ôôÕO00	icon	Lcom/fs/starfarer/ui/ooO0;
+	f	ÔõÕO00	iconButton	Lcom/fs/starfarer/ui/n;
+	m	getImagePad	getImagePad	()F
+	m	setImagePad	setImagePad	(F)V
+c	com/fs/starfarer/campaign/ui/super	com/fs/starfarer/campaign/ui/CargoTransferDialog
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(CargoTransferDialog：Confirm/Take All/You have to pay/You will receive/Financial transaction confirmed，getManifest 返回 trade.F)
+	f	ööøO00	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/class;
+	f	o00o00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	public.null$for	manifest	Lcom/fs/starfarer/campaign/ui/trade/F;
+	f	ÔøøO00	cargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	ÕøøO00	callback	Lcom/fs/starfarer/ui/ooOo;
+	f	this.int$for	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	cancelTransaction	cancelTransaction	()V
+	m	confirmTransaction	confirmTransaction	()V
+	m	getTransferHandler	getTransferHandler	()Lcom/fs/starfarer/campaign/ui/trade/class;
+	m	getConfirmButton	getConfirmButton	()Lcom/fs/starfarer/ui/n;
+	m	getResetButton	getResetButton	()Lcom/fs/starfarer/ui/n;
+	m	getManifest	getManifest	()Lcom/fs/starfarer/campaign/ui/trade/F;
+	m	getTakeAllButton	getTakeAllButton	()Lcom/fs/starfarer/ui/n;
+	m	getContButton	getContButton	()Lcom/fs/starfarer/ui/n;
+	m	getPlayerFleet	getPlayerFleet	()Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	getOtherCargo	getOtherCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+c	com/fs/starfarer/campaign/ui/thissuper	com/fs/starfarer/campaign/ui/MarketAccessRow
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(MarketAccessRow：Access 标签 + combat_fleet_size_mult 百分比，MarketAPI 字段，与 FleetInfoRow 结构同型)
+	f	int.null$int	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	for.null$int	labels	Ljava/util/List;
+	f	oôÕO00	icons	Ljava/util/List;
+c	com/fs/starfarer/campaign/ui/voidsuper	com/fs/starfarer/campaign/ui/TableColumnHeaderPanel
+	c 来源(javap取证) | 置信度(高) | 证据(TableColumnHeaderPanel：UITable 列头管理，addColumn/getColumns/setTooltip*，试点 campaign-save 亦引用)
+	f	Øø0o00	table	Lcom/fs/starfarer/campaign/ui/UITable;
+	f	Õø0o00	columns	Ljava/util/List;
+	f	Ôø0o00	baseColor	Ljava/awt/Color;
+	f	for.interface$for	darkColor	Ljava/awt/Color;
+	f	ôø0o00	brightColor	Ljava/awt/Color;
+	m	getColumnIndex	getColumnIndex	(Ljava/lang/Object;)I
+	m	getColumn	getColumn	(I)Lcom/fs/starfarer/campaign/ui/voidsuper$o;
+	m	setTooltip	setTooltip	(ILcom/fs/starfarer/api/ui/TooltipMakerAPI$TooltipCreator;)V
+	m	setTooltip	setTooltip	(ILjava/lang/String;)V
+	m	setTooltip	setTooltip	(ILcom/fs/starfarer/ui/impl/StandardTooltipV2;)V
+	m	addColumn	addColumn	(Ljava/lang/Object;Ljava/lang/String;FZ)V
+	m	addColumn	addColumn	(Ljava/lang/Object;Ljava/lang/String;FZZ)V
+	m	getColumns	getColumns	()Ljava/util/List;
+	m	getTable	getTable	()Lcom/fs/starfarer/campaign/ui/UITable;
+	m	setTable	setTable	(Lcom/fs/starfarer/campaign/ui/UITable;)V
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	getDark	getDark	()Ljava/awt/Color;
+	m	getBright	getBright	()Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/voidsuper$o	com/fs/starfarer/campaign/ui/TableColumnHeaderPanel$ColumnData
+	c 来源(javap取证) | 置信度(中) | 证据(TableColumnHeaderPanel$o：列数据（宽度/按钮/键值），由 addColumn 填充)
+	f	Ø00000	width	F
+	f	new	height	F
+	f	Ö00000	key	Ljava/lang/Object;
+	f	Ó00000	headerButton	Lcom/fs/starfarer/ui/n;
+c	com/fs/starfarer/campaign/ui/while	com/fs/starfarer/campaign/ui/ProgressBar
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(ProgressBar：setProgress/getProgress/getRangeMin/Max/setBarColor，%d / %d、%2.2f 格式化，被 CampaignProgressIndicator 等广泛使用)
+	m	getBonusColor	getBonusColor	()Ljava/awt/Color;
+	m	setBonusColor	setBonusColor	(Ljava/awt/Color;)V
+	m	getBonusAmount	getBonusAmount	()F
+	m	setBonusAmount	setBonusAmount	(F)V
+	m	getNumSubivisions	getNumSubivisions	()I
+	m	setNumSubivisions	setNumSubivisions	(I)V
+	m	isShowNoText	isShowNoText	()Z
+	m	setShowNoText	setShowNoText	(Z)V
+	m	setShowValueOnly	setShowValueOnly	(Z)V
+	m	getRangeMin	getRangeMin	()F
+	m	getRangeMax	getRangeMax	()F
+	m	getProgress	getProgress	()F
+	m	setText	setText	(Ljava/lang/String;)V
+	m	setShowPercent	setShowPercent	(Z)V
+	m	setShowPercentAndTitle	setShowPercentAndTitle	(Z)V
+	m	isShowLabelOnly	isShowLabelOnly	()Z
+	m	setShowLabelOnly	setShowLabelOnly	(Z)V
+	m	getBarHighlightFader	getBarHighlightFader	()Lcom/fs/graphics/util/Fader;
+	m	setBarColor	setBarColor	(Ljava/awt/Color;)V
+	m	getBarColor	getBarColor	()Ljava/awt/Color;
+	m	setBarColorOverflow	setBarColorOverflow	(Ljava/awt/Color;)V
+	m	getHighlight	getHighlight	()Lcom/fs/graphics/util/Fader;
+	m	setRoundBarValue	setRoundBarValue	(Z)V
+	m	setProgress	setProgress	(F)V
+	m	setRangeMin	setRangeMin	(F)V
+	m	setRangeMax	setRangeMax	(F)V
+	m	getMax	getMax	()F
+	m	setMax	setMax	(F)V
+	m	forceSync	forceSync	()V
+c	com/fs/starfarer/campaign/ui/fleet/A	com/fs/starfarer/campaign/ui/fleet/FleetMemberTransferHandler
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(FleetMemberTransferHandler：computeBuyCost/computeSellCost/getBought/getSold，gridCellClicked，Can't sell or mothball 提示)
+	f	oöoO00	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	ÒöoO00	view	Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberView;
+	f	Object.float$void	gridOne	Lcom/fs/starfarer/campaign/ui/fleet/class;
+	f	int.float$void	gridTwo	Lcom/fs/starfarer/campaign/ui/fleet/class;
+	f	this.float$void	sold	Ljava/util/Set;
+	f	ØõoO00	bought	Ljava/util/Set;
+	m	setAllowLastShipTransferFromGridOne	setAllowLastShipTransferFromGridOne	(Z)V
+	m	gridCellClicked	gridCellClicked	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$o;I)V
+	m	viewHasNonFightersExceptFor	viewHasNonFightersExceptFor	(Lcom/fs/starfarer/campaign/ui/fleet/class;Lcom/fs/starfarer/campaign/fleet/FleetMember;)Z
+	m	isNoCost	isNoCost	()Z
+	m	getTransactionValue	getTransactionValue	()F
+	m	getSold	getSold	()Ljava/util/Set;
+	m	cancelTransaction	cancelTransaction	()V
+	m	resetTransaction	resetTransaction	()V
+	m	transactionExists	transactionExists	()Z
+	m	computeBuyCost	computeBuyCost	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)F
+	m	computeSellCost	computeSellCost	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)F
+	m	getGridOne	getGridOne	()Lcom/fs/starfarer/campaign/ui/fleet/class;
+	m	getGridTwo	getGridTwo	()Lcom/fs/starfarer/campaign/ui/fleet/class;
+	m	getBought	getBought	()Ljava/util/Set;
+c	com/fs/starfarer/campaign/ui/fleet/D	com/fs/starfarer/campaign/ui/fleet/DropdownList
+	c 来源(javap取证) | 置信度(中) | 证据(DropdownList：primeWithTarget + D$o 条目提供者 + D$Oo 回调，下拉选择列表)
+	f	ôøoO00	label	Lcom/fs/starfarer/ui/d;
+	f	öøoO00	itemProvider	Lcom/fs/starfarer/campaign/ui/fleet/D$o;
+	f	int.for$void	listener	Lcom/fs/starfarer/campaign/ui/fleet/D$Oo;
+	m	primeWithTarget	primeWithTarget	(Ljava/lang/String;Lcom/fs/starfarer/campaign/ui/fleet/D$o;)V
+c	com/fs/starfarer/campaign/ui/fleet/D$Oo	com/fs/starfarer/campaign/ui/fleet/DropdownList$SelectionListener
+	c 来源(javap取证+继承关系) | 置信度(中) | 证据(DropdownList$Oo：下拉选择回调接口)
+c	com/fs/starfarer/campaign/ui/fleet/D$o	com/fs/starfarer/campaign/ui/fleet/DropdownList$ItemProvider
+	c 来源(javap取证+继承关系) | 置信度(中) | 证据(DropdownList$o：extends ui.OO0o，getSelectedItem 条目提供接口)
+	m	getSelectedItem	getSelectedItem	(Lcom/fs/starfarer/util/super/Object;)Ljava/lang/Object;
+c	com/fs/starfarer/campaign/ui/fleet/FleetMemberView	com/fs/starfarer/campaign/ui/fleet/FleetMemberView
+	c 来源(未混淆类名) | 置信度(高) | 证据(FleetMemberView：未混淆名，member/button/fpCost 字段，ordnance point left/Not enough crew 字符串)
+	f	member	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	button	button	Lcom/fs/starfarer/ui/n;
+	f	flagshipIcon	flagshipIcon	Lcom/fs/graphics/Sprite;
+	f	fpCost	fpCost	Lcom/fs/starfarer/ui/d;
+	f	overlay	overlay	Lcom/fs/starfarer/campaign/ui/fleet/ooOO;
+	f	fighters	fighters	Lcom/fs/starfarer/coreui/refit/auto/D;
+	f	showRank	showRank	Z
+	f	expired	expired	Z
+	m	isShowFighters	isShowFighters	()Z
+	m	setShowFighters	setShowFighters	(Z)V
+	m	hideFpCost	hideFpCost	()V
+	m	turnOffButtonSounds	turnOffButtonSounds	()V
+	m	makeLookDisabled	makeLookDisabled	()V
+	m	getButton	getButton	()Lcom/fs/starfarer/ui/n;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	setStatusText	setStatusText	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	setStatusText	setStatusText	(Ljava/lang/String;Ljava/awt/Color;Z)V
+	m	setShowRank	setShowRank	(Z)V
+	m	setShowStatus	setShowStatus	(Z)V
+	m	getRenderOrder	getRenderOrder	()I
+	m	isExpired	isExpired	()Z
+	m	notifyOrphaned	notifyOrphaned	()V
+	m	getItem	getItem	()Ljava/lang/Object;
+	m	getMember	getMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+c	com/fs/starfarer/campaign/ui/fleet/GenericGridViewContent	com/fs/starfarer/campaign/ui/fleet/GenericGridViewContent
+	c 来源(未混淆类名) | 置信度(高) | 证据(GenericGridViewContent：未混淆名，CollectionView$CollectionViewDelegate 实现)
+	f	cellWidth	cellWidth	F
+	f	cellHeight	cellHeight	F
+	f	rows	rows	I
+	f	cols	cols	I
+	f	delegate	delegate	Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$o;
+	f	listener	listener	Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo;
+	f	texture	texture	Lcom/fs/graphics/Object;
+	f	texture2	texture2	Lcom/fs/graphics/Object;
+	f	itemView	itemView	Lcom/fs/starfarer/campaign/util/CollectionView;
+	f	scroller	scroller	Lcom/fs/starfarer/ui/g;
+	f	token	token	Lcom/fs/graphics/util/GLListManager$GLListToken;
+	f	prevColor	prevColor	Ljava/awt/Color;
+	m	setCellSize	setCellSize	(FF)V
+	m	processCellClicksOnly	processCellClicksOnly	(Lcom/fs/starfarer/util/super/B;)V
+	m	getIndexFor	getIndexFor	(Lcom/fs/starfarer/util/super/Object;)I
+	m	reset	reset	()V
+	m	clearChildren	clearChildren	()V
+	m	getRows	getRows	()I
+	m	setRows	setRows	(I)V
+	m	getCols	getCols	()I
+	m	setCols	setCols	(I)V
+	m	setDelegate	setDelegate	(Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$o;)V
+	m	setListener	setListener	(Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo;)V
+	m	createItemView	createItemView	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/util/CollectionItemView;
+	m	updateItemViewPositionsAndSizes	updateItemViewPositionsAndSizes	()V
+	m	shouldCreateViewFor	shouldCreateViewFor	(Ljava/lang/Object;)Z
+c	com/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo	com/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$GridClickListener
+	c 来源(未混淆接口) | 置信度(高) | 证据(GenericGridViewContent$Oo：网格单元点击监听接口，gridCellClicked)
+	m	gridCellClicked	gridCellClicked	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$o;I)V
+c	com/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$o	com/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$GridDelegate
+	c 来源(未混淆接口) | 置信度(高) | 证据(GenericGridViewContent$o：网格数据提供接口，getItems/createItemView/shouldCreateItemFor)
+	m	getItems	getItems	()Ljava/util/List;
+	m	createItemView	createItemView	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/util/CollectionItemView;
+	m	shouldCreateItemFor	shouldCreateItemFor	(Ljava/lang/Object;)Z
+c	com/fs/starfarer/campaign/ui/fleet/OoOO	com/fs/starfarer/campaign/ui/fleet/GridViewPanel
+	c 来源(javap取证) | 置信度(中) | 证据(GridViewPanel：泛型网格容器，封装 GenericGridViewContent + scroller)
+	f	ÔöoO00	grid	Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent;
+	f	for.float$void	listener	Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo;
+	f	ööoO00	delegate	Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$o;
+	m	getScroller	getScroller	()Lcom/fs/starfarer/ui/g;
+	m	updateGridSize	updateGridSize	()V
+	m	setDelegate	setDelegate	(Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$o;)V
+	m	setListener	setListener	(Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo;)V
+	m	getListener	getListener	()Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo;
+	m	getGrid	getGrid	()Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent;
+c	com/fs/starfarer/campaign/ui/fleet/class	com/fs/starfarer/campaign/ui/fleet/FleetMemberGrid
+	c 来源(javap取证) | 置信度(高) | 证据(FleetMemberGrid：FleetData + FleetMemberView 网格，getViewGrid/getScroller/getMousedOverFleetMember)
+	f	Ò0ÒO00	data	Lcom/fs/starfarer/campaign/fleet/FleetData;
+	f	this.do$void	view	Lcom/fs/starfarer/campaign/ui/fleet/OoOO;
+	f	øøoO00	filter	Lcom/fs/starfarer/campaign/ui/fleet/class$o;
+	f	Ô0ÒO00	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+	f	Ø0ÒO00	members	Ljava/util/List;
+	m	setStats	setStats	(Lcom/fs/starfarer/campaign/CharacterStats;)V
+	m	setShowStatus	setShowStatus	(Z)V
+	m	setShowRank	setShowRank	(Z)V
+	m	showStatus	showStatus	()Z
+	m	showRank	showRank	()Z
+	m	getView	getView	()Lcom/fs/starfarer/campaign/ui/fleet/OoOO;
+	m	getViewGrid	getViewGrid	()Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent;
+	m	getScroller	getScroller	()Lcom/fs/starfarer/ui/g;
+	m	getCellWidth	getCellWidth	()F
+	m	getCellHeight	getCellHeight	()F
+	m	updateGridSize	updateGridSize	()V
+	m	updatePositions	updatePositions	()V
+	m	getData	getData	()Lcom/fs/starfarer/campaign/fleet/FleetData;
+	m	setData	setData	(Lcom/fs/starfarer/campaign/fleet/FleetData;)V
+	m	createItemView	createItemView	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberView;
+	m	createItemView	createItemView	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/util/CollectionItemView;
+	m	getItems	getItems	()Ljava/util/List;
+	m	shouldCreateItemFor	shouldCreateItemFor	(Ljava/lang/Object;)Z
+	m	getFilter	getFilter	()Lcom/fs/starfarer/campaign/ui/fleet/class$o;
+	m	setFilter	setFilter	(Lcom/fs/starfarer/campaign/ui/fleet/class$o;)V
+	m	getSelectedItem	getSelectedItem	(Lcom/fs/starfarer/util/super/Object;)Ljava/lang/Object;
+	m	getMousedOverFleetMember	getMousedOverFleetMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+c	com/fs/starfarer/campaign/ui/fleet/class$o	com/fs/starfarer/campaign/ui/fleet/FleetMemberFilter
+	c 来源(javap取证) | 置信度(中) | 证据(FleetMemberFilter：class$o 过滤接口，boolean 判定 FleetMember)
+	m	o00000	accept	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Z
+c	com/fs/starfarer/campaign/ui/fleet/ooOO	com/fs/starfarer/campaign/ui/fleet/FleetMemberStatusOverlay
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(FleetMemberStatusOverlay：FleetMemberView 状态覆盖层，Not enough crew，setStatusText)
+	f	ØøoO00	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	Object.for$void	view	Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberView;
+	f	ÕøoO00	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
+	m	setStatusText	setStatusText	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	setStatusText	setStatusText	(Ljava/lang/String;Ljava/awt/Color;Z)V
+c	com/fs/starfarer/campaign/ui/super/A	com/fs/starfarer/campaign/ui/super/MapRouteLine
+	c 来源(javap取证) | 置信度(中) | 证据(MapRouteLine：line32x32 纹理绘制玩家舰队位置到目标位置的路线，被 CargoTooltipFactory 使用)
+	f	øøöO00	start	Lorg/lwjgl/util/vector/Vector2f;
+	f	int.this$for	end	Lorg/lwjgl/util/vector/Vector2f;
+	f	ØøöO00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	ôøöO00	texture	Lcom/fs/graphics/Object;
+	f	öøöO00	lineWidth	F
+c	com/fs/starfarer/campaign/ui/super/C	com/fs/starfarer/campaign/ui/super/MinimapLegend
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(MinimapLegend：fuel/max range/speed ly/day 图例，E.getLegend 返回，victor10 字体)
+	f	o0øO00	map	Lcom/fs/starfarer/campaign/ui/super/E;
+c	com/fs/starfarer/campaign/ui/super/E	com/fs/starfarer/campaign/ui/super/SectorMap
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(SectorMap：intelMapSectorWidth/Height 设置，highlightStarSystem/addConnection/showName 等星图方法，createDefaultConfig/createMinimapConfig)
+	f	this.super$for	config	Lcom/fs/starfarer/campaign/ui/super/E$o;
+	f	ø0øO00	stars	Ljava/util/List;
+	f	ô0øO00	connections	Ljava/util/List;
+	f	Ø0øO00	gridPanel	Lcom/fs/starfarer/ui/return;
+	f	return.super$for	connectionLine	Lcom/fs/starfarer/campaign/ui/super/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	Object.super$for	legend	Lcom/fs/starfarer/campaign/ui/super/C;
+	f	Õ0øO00	scroller	Lcom/fs/starfarer/ui/g;
+	m	sync	sync	()V
+	m	getLegend	getLegend	()Lcom/fs/starfarer/campaign/ui/super/C;
+	m	getStarData	getStarData	()Ljava/util/List;
+	m	getStarData	getStarData	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/super/G;
+	m	highlightStarSystem	highlightStarSystem	(Ljava/lang/String;Z)V
+	m	highlightStar	highlightStar	(Ljava/lang/String;Z)V
+	m	showName	showName	(Ljava/lang/String;)V
+	m	showName	showName	(Lcom/fs/starfarer/campaign/ui/super/G;)V
+	m	hideName	hideName	(Ljava/lang/String;)V
+	m	hideName	hideName	(Lcom/fs/starfarer/campaign/ui/super/G;)V
+	m	unhighlightStar	unhighlightStar	(Ljava/lang/String;)V
+	m	unhighlightAllStars	unhighlightAllStars	()V
+	m	addComponent	addComponent	(Lcom/fs/starfarer/ui/OO0o;Lorg/lwjgl/util/vector/Vector2f;)V
+	m	addComponent	addComponent	(Lcom/fs/starfarer/ui/OO0o;Lorg/lwjgl/util/vector/Vector2f;Z)V
+	m	addConnection	addConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	addConnection	addConnection	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)V
+	m	hasConnection	hasConnection	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	removeConnection	removeConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	highlightConstellation	highlightConstellation	(Lcom/fs/starfarer/api/impl/campaign/procgen/Constellation;)V
+	m	highlightConnection	highlightConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	unhighlightConnection	unhighlightConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	unhighlightAllConnections	unhighlightAllConnections	()V
+	m	removeAllConnections	removeAllConnections	()V
+	m	showCross	showCross	(FFF)V
+	m	showCross	showCross	(FFFLcom/fs/starfarer/ui/OO0o;)V
+	m	hideCross	hideCross	()V
+	m	getGridPanel	getGridPanel	()Lcom/fs/starfarer/ui/return;
+	m	getConfig	getConfig	()Lcom/fs/starfarer/campaign/ui/super/E$o;
+	m	createDefaultConfig	createDefaultConfig	()Lcom/fs/starfarer/campaign/ui/super/E$o;
+	m	createMinimapConfig	createMinimapConfig	(Lcom/fs/starfarer/api/campaign/LocationAPI;ZFF)Lcom/fs/starfarer/campaign/ui/super/E$o;
+	m	getDelegate	getDelegate	()Lcom/fs/starfarer/campaign/ui/super/E$Oo;
+c	com/fs/starfarer/campaign/ui/super/E$Oo	com/fs/starfarer/campaign/ui/super/SectorMap$PlanetClickListener
+	c 来源(javap取证+继承关系) | 置信度(中) | 证据(SectorMap$Oo：行星点击回调接口，PlanetAPI 参数)
+	m	o00000	planetClicked	(Lcom/fs/starfarer/api/campaign/PlanetAPI;)V
+c	com/fs/starfarer/campaign/ui/super/E$o	com/fs/starfarer/campaign/ui/super/SectorMap$Config
+	c 来源(javap取证) | 置信度(中) | 证据(SectorMap$o：星图配置字段集，createDefaultConfig/createMinimapConfig 构造)
+c	com/fs/starfarer/campaign/ui/super/G	com/fs/starfarer/campaign/ui/super/StarData
+	c 来源(未混淆类名) | 置信度(高) | 证据(StarData：恒星节点，star/sprite/size 未混淆字段，highlight/unhighlight，backgrounds/star0 字符串)
+	f	highlighted	highlighted	Z
+	f	highlightPulse	highlightPulse	Lcom/fs/graphics/util/Fader;
+	f	star	star	Lcom/fs/starfarer/campaign/CampaignPlanet;
+	f	sprite	sprite	Lcom/fs/graphics/Sprite;
+	f	angle	angle	F
+	f	size	size	F
+	f	minimap	minimap	Lcom/fs/starfarer/campaign/ui/super/E;
+	f	makeDim	makeDim	Z
+	f	Õõ0000	color	Ljava/awt/Color;
+	m	highlight	highlight	()V
+	m	unhighlight	unhighlight	()V
+	m	isHighlighted	isHighlighted	()Z
+	m	isMakeDim	isMakeDim	()Z
+	m	setMakeDim	setMakeDim	(Z)V
+	m	getHighlightPulse	getHighlightPulse	()Lcom/fs/graphics/util/Fader;
+	m	getStar	getStar	()Lcom/fs/starfarer/campaign/CampaignPlanet;
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	getSize	getSize	()F
+	m	getMinimap	getMinimap	()Lcom/fs/starfarer/campaign/ui/super/E;
+	m	getColor	getColor	()Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/super/O0OO	com/fs/starfarer/campaign/ui/super/MapLegendItem
+	c 来源(javap取证) | 置信度(中) | 证据(MapLegendItem：图例条目，label + key + 所属 SectorMap)
+	f	public.this$for	key	Ljava/lang/Object;
+	f	Ô0øO00	map	Lcom/fs/starfarer/campaign/ui/super/E;
+	f	Ò0øO00	label	Lcom/fs/starfarer/ui/d;
+	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
+	m	getKey	getKey	()Ljava/lang/Object;
+	m	actualRender	actualRender	(F)V
+c	com/fs/starfarer/campaign/ui/super/OoOO	com/fs/starfarer/campaign/ui/super/StarConnection
+	c 来源(javap取证) | 置信度(中) | 证据(StarConnection：两恒星节点连线（G→G），Fader 淡入淡出)
+	f	class	visible	Z
+	f	new	fader	Lcom/fs/graphics/util/Fader;
+	f	Ô00000	starFrom	Lcom/fs/starfarer/campaign/ui/super/G;
+	f	Ó00000	starTo	Lcom/fs/starfarer/campaign/ui/super/G;
+	f	o00000	color	Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/super/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/super/ConnectionLine
+	c 来源(javap取证) | 置信度(高) | 证据(ConnectionLine：getAnchor/getColor/getLineWidth/getX/getY/getFader 锚点连线组件)
+	f	oÒøO00	fader	Lcom/fs/graphics/util/Fader;
+	f	öoøO00	x	F
+	f	int.new$for	lineWidth	F
+	f	ÒÒøO00	y	F
+	f	for.new$for	anchor	Lcom/fs/starfarer/ui/OO0o;
+	f	øoøO00	color	Ljava/awt/Color;
+	m	getAnchor	getAnchor	()Lcom/fs/starfarer/ui/OO0o;
+	m	setAnchor	setAnchor	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	getLineWidth	getLineWidth	()F
+	m	setLineWidth	setLineWidth	(F)V
+	m	getX	getX	()F
+	m	setX	setX	(F)V
+	m	getY	getY	()F
+	m	setY	setY	(F)V
+	m	getFader	getFader	()Lcom/fs/graphics/util/Fader;
+c	com/fs/starfarer/campaign/ui/super/return	com/fs/starfarer/campaign/ui/super/MapPositionIndicator
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(MapPositionIndicator：In-system/in hyperspace 状态 + open map + fuel/day 信息，setCenterMapOnEntity/setShowMapOnClick)
+	f	int.super$for	starSystem	Lcom/fs/starfarer/api/campaign/StarSystemAPI;
+	f	ÕoøO00	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	ØoøO00	locationLabel	Lcom/fs/starfarer/ui/d;
+	f	public.super$for	inHyperspace	Z
+	f	ÔoøO00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	setShowMapOnClick	setShowMapOnClick	(Lcom/fs/starfarer/coreui/A/H$Oo;Ljava/lang/Object;)V
+	m	getDataTriggerPosition	getDataTriggerPosition	()Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	setDataTriggerPosition	setDataTriggerPosition	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	isShowClickToOpenMapText	isShowClickToOpenMapText	()Z
+	m	setShowClickToOpenMapText	setShowClickToOpenMapText	(Z)V
+	m	setCenterMapOnEntity	setCenterMapOnEntity	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V

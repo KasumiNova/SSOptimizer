@@ -1,0 +1,408 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/ui/marketinfo/MarketInfoPanel$1	com/fs/starfarer/campaign/ui/marketinfo/MarketInfoPanel$CommodityOrderComparator
+	c 来源(javap取证) | 置信度(高) | 证据(按 getCommodity().getOrder() 排序的 Comparator<CommodityOnMarket>)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/ui/marketinfo/MarketInfoPanel$2	com/fs/starfarer/campaign/ui/marketinfo/MarketInfoPanel$AmountComparator
+	c 来源(javap取证) | 置信度(中) | 证据(按 newnew.getMax() 降序的 Comparator（MarketInfoPanel 商品行数量排序）)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(Market/Size/Dist/Accessibility 列名 + No accessible colonies，邻近市场列表对话框)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	createMap	createMap	(FFLcom/fs/starfarer/api/campaign/StarSystemAPI;Lorg/lwjgl/util/vector/Vector2f;Ljava/awt/Color;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
+	m	createUI	createUI	()V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$1	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$AccessibilityTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(可及性说明 tooltip（How easy it is for the listed market to trade...）)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$2	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$SortKeyComparator
+	c 来源(javap取证) | 置信度(中) | 证据(按列 id（NAME/SIZE/DISTANCE/REMOTENESS）分派的表格列排序比较器)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$Oo	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$DialogMode
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 GENERIC/MARKET/OUTPOST（对话框模式）)
+c	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$o	com/fs/starfarer/campaign/ui/marketinfo/NearbyMarketDialog$SortKey
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 NAME/SIZE/DISTANCE/REMOTENESS（排序列键）)
+c	com/fs/starfarer/campaign/ui/marketinfo/O	com/fs/starfarer/campaign/ui/marketinfo/LabelValueButton
+	c 来源(javap取证) | 置信度(中) | 证据(标签+值双文本按钮（getValue/getGlowOverride，TYPICAL_HEIGHT=42）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getGlowOverride	getGlowOverride	()F
+	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
+	m	getValue	getValue	()Lcom/fs/starfarer/ui/d;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	setGlowOverride	setGlowOverride	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/O00O	com/fs/starfarer/campaign/ui/marketinfo/CommoditySourceInfoPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(Bought for/Sold for/Market of origin/System of origin 商品来源信息面板)
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/campaign/ui/marketinfo/O0Oo	com/fs/starfarer/campaign/ui/marketinfo/StabilizeColonyDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(Stability restored/Colony stabilized/Spent %s 稳定殖民地对话框（持 StabilizeMarketPlugin）)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	createUI	createUI	()V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/OO00	com/fs/starfarer/campaign/ui/marketinfo/IconValueButton
+	c 来源(javap取证) | 置信度(中) | 证据(带图标+数值的按钮（valueLabel/image，setValue(int|String)）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getImage	getImage	()Lcom/fs/starfarer/ui/ooO0;
+	m	getValueLabel	getValueLabel	()Lcom/fs/starfarer/ui/d;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	setValue	setValue	(I)V
+	m	setValue	setValue	(Ljava/lang/String;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	f	image	image	Lcom/fs/starfarer/ui/ooO0;
+	f	valueLabel	valueLabel	Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/marketinfo/InstallableIndustryItemPickerDialog
+	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(In local resources/In storage/In your cargo holds 可安装工业物品选择对话框)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	createUI	createUI	()V
+	m	dismiss	dismiss	(I)V
+	m	getSelected	getSelected	()Lcom/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+	m	updateTable	updateTable	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/campaign/ui/marketinfo/InstallableItemRow
+	c 来源(javap取证) | 置信度(中) | 证据(安装物品表格行（SpecialItemData + InstallableIndustryItemPlugin + CargoStackView）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getSource	getSource	()Lcom/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/campaign/ui/marketinfo/InstallableItemSlotPanel
+	c 来源(javap取证) | 置信度(中) | 证据(安装物品槽位面板（updateWithItem/setSource）)
+	m	getSource	getSource	()Lcom/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	m	setSource	setSource	(Lcom/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	updateWithItem	updateWithItem	(Lcom/fs/starfarer/api/campaign/SpecialItemData;Lcom/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;)V
+	f	data	data	Lcom/fs/starfarer/api/campaign/SpecialItemData;
+c	com/fs/starfarer/campaign/ui/marketinfo/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo	com/fs/starfarer/campaign/ui/marketinfo/InstallableItemData
+	c 来源(javap取证) | 置信度(中) | 证据(安装物品数据容器（SpecialItemData + CargoAPI）)
+c	com/fs/starfarer/campaign/ui/marketinfo/Objectsuper	com/fs/starfarer/campaign/ui/marketinfo/CommodityMarkerRow
+	c 来源(字符串常量) | 置信度(高) | 证据(commodity_markers/exports/imports/production 商品来源标记行)
+	m	getCommodity	getCommodity	()Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/Oo0O	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowButton
+	c 来源(javap取证) | 置信度(中) | 证据(campaign.ui.B 子类商品表格行按钮（CommodityOnMarketAPI + MarketAPI）)
+c	com/fs/starfarer/campaign/ui/marketinfo/Oooo	com/fs/starfarer/campaign/ui/marketinfo/TradeRelationshipRow
+	c 来源(字符串常量) | 置信度(高) | 证据(% of exports/% of imports/Relationship/neutral 贸易关系百分比行)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getPercent	getPercent	()I
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/Oooo$o	com/fs/starfarer/campaign/ui/marketinfo/TradeDirection
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 EXPORT/IMPORT（贸易方向）)
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(行星勘察面板（Perform Survey/Establish colony/Planet Fully Surveyed）)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	applySurveyResults	applySurveyResults	()V
+	m	blockOtherExitMethods	blockOtherExitMethods	()V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	goBackFromOtherFactors	goBackFromOtherFactors	()V
+	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
+	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	showColonizeScreen	showColonizeScreen	(Lcom/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$o;)V
+	m	showOtherFactors	showOtherFactors	()V
+	m	showSurveyResults	showSurveyResults	()V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	unblockOtherExitMethods	unblockOtherExitMethods	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$1	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$SurveyResourceCostColorGetter
+	c 来源(javap取证) | 置信度(中) | 证据(勘察所需/消耗资源数量不足变色的 ResourceColorGetter)
+	m	getColorFor	getColorFor	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/CargoAPI;)Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$10	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(Runnable：设置 tooltip 相对锚点位置)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$2	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$HazardRatingTooltip
+	c 来源(字符串常量+javap取证) | 置信度(中) | 证据(A preliminary survey indicates that...hazard rating 危险评级 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$3	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$SurveyCostFactorsStatGetter
+	c 来源(字符串常量+javap取证) | 置信度(中) | 证据(The base resource cost of a survey is modified by... 勘察成本因素 StatModValueGetter)
+	m	getFlatValue	getFlatValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getModColor	getModColor	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/awt/Color;
+	m	getMultValue	getMultValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getPercentValue	getPercentValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$4	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$SurveyEquipmentStatGetter
+	c 来源(字符串常量+javap取证) | 置信度(中) | 证据(specialized surveying equipment 勘察设备修正 StatModValueGetter)
+	m	getFlatValue	getFlatValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getModColor	getModColor	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/awt/Color;
+	m	getMultValue	getMultValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getPercentValue	getPercentValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$5	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$UnableToSurveyTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Unable to Perform Survey/hazard rating is too high 无法勘察 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$6	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$ConditionResourceCostColorGetter
+	c 来源(javap取证) | 置信度(中) | 证据(按条件 id→数量 Map 对比 cargo 变色的 ResourceColorGetter)
+	m	getColorFor	getColorFor	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/CargoAPI;)Ljava/awt/Color;
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$7	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$ColonyFeasibilityTooltip
+	c 来源(字符串常量+javap取证) | 置信度(中) | 证据(You have full survey data for...establish a colony 殖民地可行性 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$8	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$ShippingLimitsStatGetter
+	c 来源(字符串常量+javap取证) | 置信度(中) | 证据(Shipping limits per commodity 运输限制 StatModValueGetter)
+	m	getFlatValue	getFlatValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getModColor	getModColor	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/awt/Color;
+	m	getMultValue	getMultValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getPercentValue	getPercentValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$9	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$SurveyExperienceTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Survey Experience/The following discoveries 勘察经验 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$9$1	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$SurveyConditionComparator
+	c 来源(javap取证) | 置信度(中) | 证据(按勘察状态条件排序的 Comparator<MarketConditionAPI>)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$9$2	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$SurveyExperienceStatGetter
+	c 来源(javap取证) | 置信度(中) | 证据(勘察经验因素 StatModValueGetter)
+	m	getFlatValue	getFlatValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getModColor	getModColor	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/awt/Color;
+	m	getMultValue	getMultValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getPercentValue	getPercentValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$Oo	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$OutpostDialogState
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 FACTION_CONFIG/OUTPOST_CONFIRM/OUTPOST_NEARBY/PRE_FACTION_CONFIG)
+c	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$o	com/fs/starfarer/campaign/ui/marketinfo/PlanetSurveyPanel$ViewMode
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 MAIN/OUTPOST（勘察面板视图）)
+c	com/fs/starfarer/campaign/ui/marketinfo/Q	com/fs/starfarer/campaign/ui/marketinfo/TwoLineLabel
+	c 来源(javap取证) | 置信度(中) | 证据(两行文本标签（orbitron12condensed 小字 + insignia25 大字）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/R	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailRowButton
+	c 来源(javap取证) | 置信度(中) | 证据(商品明细对话框行按钮（CommodityOnMarketAPI + CommodityDetailDialog$o）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getData	getData	()Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$o;
+	m	getData	getData	()Ljava/lang/Object;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/S	com/fs/starfarer/campaign/ui/marketinfo/SpecialItemCommodityOnMarket
+	c 来源(javap取证) | 置信度(高) | 证据(implements CommodityOnMarketAPI 的特殊物品商品数据适配（构造 SpecialItemData）)
+	m	addToStockpile	addToStockpile	(F)V
+	m	addTradeMod	addTradeMod	(Ljava/lang/String;FF)V
+	m	addTradeMod	addTradeMod	(Ljava/lang/String;FFLjava/lang/String;)V
+	m	addTradeModMinus	addTradeModMinus	(Ljava/lang/String;FF)V
+	m	addTradeModPlus	addTradeModPlus	(Ljava/lang/String;FF)V
+	m	getAvailable	getAvailable	()I
+	m	getAvailableStat	getAvailableStat	()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;
+	m	getCombinedTradeModQuantity	getCombinedTradeModQuantity	()F
+	m	getCommodity	getCommodity	()Lcom/fs/starfarer/api/campaign/econ/CommoditySpecAPI;
+	m	getCommodityMarketData	getCommodityMarketData	()Lcom/fs/starfarer/api/campaign/econ/CommodityMarketDataAPI;
+	m	getDeficitQuantity	getDeficitQuantity	()I
+	m	getDemand	getDemand	()Lcom/fs/starfarer/api/campaign/econ/MarketDemandAPI;
+	m	getDemandClass	getDemandClass	()Ljava/lang/String;
+	m	getDemandValue	getDemandValue	()I
+	m	getExcessQuantity	getExcessQuantity	()I
+	m	getExportIncome	getExportIncome	()I
+	m	getGreed	getGreed	()Lcom/fs/starfarer/api/combat/MutableStat;
+	m	getGreedValue	getGreedValue	()F
+	m	getId	getId	()Ljava/lang/String;
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	getMaxDemand	getMaxDemand	()I
+	m	getMaxSupply	getMaxSupply	()I
+	m	getModValueForQuantity	getModValueForQuantity	(F)F
+	m	getPlayerDemandPriceMod	getPlayerDemandPriceMod	()Lcom/fs/starfarer/api/combat/StatBonus;
+	m	getPlayerPriceMod	getPlayerPriceMod	()Lcom/fs/starfarer/api/combat/StatBonus;
+	m	getPlayerSupplyPriceMod	getPlayerSupplyPriceMod	()Lcom/fs/starfarer/api/combat/StatBonus;
+	m	getPlayerTradeNetQuantity	getPlayerTradeNetQuantity	()I
+	m	getQuantityForModValue	getQuantityForModValue	(F)F
+	m	getStockpile	getStockpile	()F
+	m	getTradeMod	getTradeMod	()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;
+	m	getTradeModMinus	getTradeModMinus	()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;
+	m	getTradeModPlus	getTradeModPlus	()Lcom/fs/starfarer/api/combat/MutableStatWithTempMods;
+	m	getUtilityOnMarket	getUtilityOnMarket	()F
+	m	isDemandLegal	isDemandLegal	()Z
+	m	isExporting	isExporting	()Z
+	m	isFuel	isFuel	()Z
+	m	isIllegal	isIllegal	()Z
+	m	isIllegalAssumePrimary	isIllegalAssumePrimary	()Z
+	m	isImporting	isImporting	()Z
+	m	isMeta	isMeta	()Z
+	m	isNonEcon	isNonEcon	()Z
+	m	isPersonnel	isPersonnel	()Z
+	m	isSupplyLegal	isSupplyLegal	()Z
+	m	reapplyEventMod	reapplyEventMod	()V
+	m	removeFromStockpile	removeFromStockpile	(F)V
+	m	setDemandLegal	setDemandLegal	(Z)V
+	m	setMaxDemand	setMaxDemand	(I)V
+	m	setMaxSupply	setMaxSupply	(I)V
+	m	setStockpile	setStockpile	(F)V
+	m	setSupplyLegal	setSupplyLegal	(Z)V
+	m	updateMaxSupplyAndDemand	updateMaxSupplyAndDemand	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/S$o	com/fs/starfarer/campaign/ui/marketinfo/SpecialItemCommoditySpec
+	c 来源(javap取证) | 置信度(高) | 证据(implements CommoditySpecAPI 的特殊物品商品规格适配（代理 SpecialItemSpecAPI）)
+	m	getBaseDanger	getBaseDanger	()Lcom/fs/starfarer/api/impl/campaign/rulecmd/salvage/MarketCMD$RaidDangerLevel;
+	m	getBasePrice	getBasePrice	()F
+	m	getCargoSpace	getCargoSpace	()F
+	m	getDemandClass	getDemandClass	()Ljava/lang/String;
+	m	getEconUnit	getEconUnit	()F
+	m	getEconomyTier	getEconomyTier	()F
+	m	getExportValue	getExportValue	()F
+	m	getIconLargeName	getIconLargeName	()Ljava/lang/String;
+	m	getIconName	getIconName	()Ljava/lang/String;
+	m	getIconWidthMult	getIconWidthMult	()F
+	m	getId	getId	()Ljava/lang/String;
+	m	getLowerCaseName	getLowerCaseName	()Ljava/lang/String;
+	m	getName	getName	()Ljava/lang/String;
+	m	getOrder	getOrder	()F
+	m	getOrigin	getOrigin	()Ljava/lang/String;
+	m	getPriceVariability	getPriceVariability	()Lcom/fs/starfarer/api/campaign/econ/PriceVariability;
+	m	getSoundId	getSoundId	()Ljava/lang/String;
+	m	getSoundIdDrop	getSoundIdDrop	()Ljava/lang/String;
+	m	getSourceMod	getSourceMod	()Lcom/fs/starfarer/api/ModSpecAPI;
+	m	getStackSize	getStackSize	()I
+	m	getTags	getTags	()Ljava/util/Set;
+	m	getUtility	getUtility	()F
+	m	hasTag	hasTag	(Ljava/lang/String;)Z
+	m	isExotic	isExotic	()Z
+	m	isFuel	isFuel	()Z
+	m	isMeta	isMeta	()Z
+	m	isNonEcon	isNonEcon	()Z
+	m	isPersonnel	isPersonnel	()Z
+	m	isPrimary	isPrimary	()Z
+	m	isSupplies	isSupplies	()Z
+	m	setBaseDanger	setBaseDanger	(Lcom/fs/starfarer/api/impl/campaign/rulecmd/salvage/MarketCMD$RaidDangerLevel;)V
+	m	setBasePrice	setBasePrice	(F)V
+	m	setDemandClass	setDemandClass	(Ljava/lang/String;)V
+	m	setExportValue	setExportValue	(F)V
+	m	setIconName	setIconName	(Ljava/lang/String;)V
+	m	setName	setName	(Ljava/lang/String;)V
+	m	setOrder	setOrder	(F)V
+c	com/fs/starfarer/campaign/ui/marketinfo/ShippingPanel	com/fs/starfarer/campaign/ui/marketinfo/ShippingPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(Target stockpile level/Use stockpiles during shortages 运输/囤货面板)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getBar	getBar	()Lcom/fs/starfarer/campaign/ui/while;
+	m	getUseStockpiles	getUseStockpiles	()Lcom/fs/starfarer/ui/n;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	updateBarText	updateBarText	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/ShippingPanel$1	com/fs/starfarer/campaign/ui/marketinfo/ShippingPanel$StockpileUseTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Stockpile Use/Required each month to counter shortages 囤货使用说明 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/ShippingPanel$1$1	com/fs/starfarer/campaign/ui/marketinfo/ShippingPanel$CommodityComparator
+	c 来源(javap取证) | 置信度(中) | 证据(Comparator<CommodityOnMarketAPI> 商品排序)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/ui/marketinfo/String	com/fs/starfarer/campaign/ui/marketinfo/GradientQuad
+	c 来源(javap取证) | 置信度(低) | 证据(GL11 带方向渐变四边形（Color+dir，私有方法 o00000 与 linux 对应）)
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	getDir	getDir	()F
+	m	renderImpl	renderImpl	(F)V
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setDir	setDir	(F)V
+c	com/fs/starfarer/campaign/ui/marketinfo/Stringnew	com/fs/starfarer/campaign/ui/marketinfo/AICorePickerDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(Select AI core to assign to/Unassign AI Core/No AI cores available AI 核心选择对话框)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	createUI	createUI	()V
+	m	dismiss	dismiss	(I)V
+	m	getSelected	getSelected	()Lcom/fs/starfarer/campaign/ui/marketinfo/Stringnew$Oo;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+	m	updateTable	updateTable	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/Stringnew$Oo	com/fs/starfarer/campaign/ui/marketinfo/AICoreRow
+	c 来源(javap取证) | 置信度(高) | 证据(AI 核心表格行（String id + Industry）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getSource	getSource	()Lcom/fs/starfarer/campaign/ui/marketinfo/Stringnew$o;
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/Stringnew$o	com/fs/starfarer/campaign/ui/marketinfo/AICoreData
+	c 来源(javap取证) | 置信度(中) | 证据(AI 核心数据容器（id String + CargoAPI 引用）)
+c	com/fs/starfarer/campaign/ui/marketinfo/Stringnew$oo	com/fs/starfarer/campaign/ui/marketinfo/AICoreSlotPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(No AI core currently assigned AI 核心槽位面板)
+	m	getSource	getSource	()Lcom/fs/starfarer/campaign/ui/marketinfo/Stringnew$o;
+	m	setSource	setSource	(Lcom/fs/starfarer/campaign/ui/marketinfo/Stringnew$o;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	updateWithCore	updateWithCore	(Ljava/lang/String;Lcom/fs/starfarer/campaign/ui/marketinfo/Stringnew$o;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay
+	c 来源(javap取证) | 置信度(高) | 证据(勘察结果显示面板（addItemWithLabel/finishNow，持 SurveyPlugin）)
+	m	addItemWithLabel	addItemWithLabel	(Lcom/fs/starfarer/ui/d;)Lcom/fs/starfarer/ui/thissuper;
+	m	advanceImpl	advanceImpl	(F)V
+	m	finishNow	finishNow	()V
+	m	isFinished	isFinished	()Z
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$1	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$ConditionComparator
+	c 来源(javap取证) | 置信度(中) | 证据(Comparator<MarketConditionAPI> 勘察状态排序)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$2	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$ConditionCodexTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(codex_unlockable tag + CodexDataV2.getConditionEntryId 状态 codex 条目 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$3	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$ConditionTooltipContent
+	c 来源(javap取证) | 置信度(中) | 证据(StandardTooltipV2$OOo：状态描述 + token 替换的 tooltip 内容提供器)
+c	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$4	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(Runnable：设置 tooltip 相对锚点位置)
+	m	run	run	()V
+c	com/fs/starfarer/campaign/ui/marketinfo/T	com/fs/starfarer/campaign/ui/marketinfo/MarketPanel
+	c 来源(javap取证) | 置信度(高) | 证据(市场面板主容器（showSurvey/showOverview/showCommodityDetail/getCurrView 视图切换）)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	clean	clean	()V
+	m	getCurrView	getCurrView	()Lcom/fs/starfarer/campaign/ui/marketinfo/T$o;
+	m	getTradePanel	getTradePanel	()Lcom/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	renderImpl	renderImpl	(F)V
+	m	showCommodityDetail	showCommodityDetail	(Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;)V
+	m	showOverview	showOverview	()V
+	m	showSurvey	showSurvey	()V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/T$o	com/fs/starfarer/campaign/ui/marketinfo/MarketPanel$ViewType
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 COMMODITY_DETAIL/OVERVIEW/SURVEY（市场面板视图）)
+c	com/fs/starfarer/campaign/ui/marketinfo/_	com/fs/starfarer/campaign/ui/marketinfo/EconomyPanel
+	c 来源(javap取证) | 置信度(高) | 证据(经济面板（getAdmin/getImmigration/getLegality/getShipping/getIncome 五个子面板）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getAdmin	getAdmin	()Lcom/fs/starfarer/campaign/ui/marketinfo/t;
+	m	getImmigration	getImmigration	()Lcom/fs/starfarer/campaign/ui/marketinfo/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getIncome	getIncome	()Lcom/fs/starfarer/campaign/ui/marketinfo/o0OO;
+	m	getLegality	getLegality	()Lcom/fs/starfarer/campaign/ui/marketinfo/o0O0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getShipping	getShipping	()Lcom/fs/starfarer/campaign/ui/marketinfo/ShippingPanel;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/a	com/fs/starfarer/campaign/ui/marketinfo/LabelButton
+	c 来源(javap取证) | 置信度(中) | 证据(wrap(ui.d) 单标签包装按钮)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/campaign/ui/marketinfo/c	com/fs/starfarer/campaign/ui/marketinfo/IndustryInteractionDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(Upgrade/Downgrade/Shut down/Assign AI core/ui_*_industry 行业交互对话框)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	computeShutdownRefund	computeShutdownRefund	()I
+	m	createButton	createButton	(Ljava/lang/String;)Lcom/fs/starfarer/ui/n;
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	show	show	(FF)V
+	m	showDialog	showDialog	(FFLcom/fs/starfarer/api/campaign/CustomDialogDelegate;)V
+	m	showDialog	showDialog	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Lcom/fs/starfarer/api/campaign/InteractionDialogPlugin;)V
+	m	showDialog	showDialog	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Ljava/lang/String;)V
+	m	showDialog	showDialog	(Lcom/fs/starfarer/api/campaign/StoryPointActionDelegate;)V
+c	com/fs/starfarer/campaign/ui/marketinfo/c$1	com/fs/starfarer/campaign/ui/marketinfo/IndustryInteractionDialog$ImprovementTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(Industry.addImproveDesc(MENU_BUTTON) 行业升级说明 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/c$2	com/fs/starfarer/campaign/ui/marketinfo/IndustryInteractionDialog$ManageAICoreTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Must be present at colony to manage/No AI core currently assigned AI 核心管理 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/c$3	com/fs/starfarer/campaign/ui/marketinfo/IndustryInteractionDialog$ManageAICoreLimitTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Must be present at colony to manage 远程管理限制 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/c$4	com/fs/starfarer/campaign/ui/marketinfo/IndustryInteractionDialog$CancelConstructionTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Currently under construction. Cancel construction for a %s refund 取消建设退款 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/c$5	com/fs/starfarer/campaign/ui/marketinfo/IndustryInteractionDialog$CancelUpgradeTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(Cancel the upgrade for a %s refund 取消升级退款 tooltip)
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/ui/marketinfo/c$6	com/fs/starfarer/campaign/ui/marketinfo/IndustryInteractionDialog$OptionTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(IndustryOptionProvider.createTooltip mod 行业选项 tooltip)
+	m	createImpl	createImpl	(Z)V

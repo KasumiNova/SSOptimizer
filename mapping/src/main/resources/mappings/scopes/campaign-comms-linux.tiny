@@ -1,0 +1,519 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/comms/C	com/fs/starfarer/campaign/comms/IntelRow
+	c 来源(javap取证) | 置信度(高) | 证据(IntelRow（C）)
+	f	ÒØOO00	intel	Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	f	oØOO00	action	Lcom/fs/starfarer/api/campaign/comm/CommMessageAPI$MessageClickAction;
+	f	int.this$void	custom	Ljava/lang/Object;
+	m	getIntel	getIntel	()Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	m	getIconButton	getIconButton	()Lcom/fs/starfarer/ui/n;
+	m	getInfo	getInfo	()Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	getAction	getAction	()Lcom/fs/starfarer/api/campaign/comm/CommMessageAPI$MessageClickAction;
+	m	getCustom	getCustom	()Ljava/lang/Object;
+	m	setCustom	setCustom	(Ljava/lang/Object;)V
+	m	shouldRemove	shouldRemove	()Z
+	m	setElapsed	setElapsed	(F)V
+c	com/fs/starfarer/campaign/comms/CommMessage	com/fs/starfarer/campaign/comms/CommMessage
+	c 来源(未混淆类名) | 置信度(高) | 证据(CommMessage implements DoNotObfuscate + CommMessageAPI)
+	f	type	type	Ljava/lang/String;
+	f	shortType	shortType	Ljava/lang/String;
+	f	sender	sender	Ljava/lang/String;
+	f	sound	sound	Ljava/lang/String;
+	f	subject	subject	Ljava/lang/String;
+	f	note	note	Ljava/lang/String;
+	f	noteColor	noteColor	Ljava/awt/Color;
+	f	section1	section1	Lcom/fs/starfarer/campaign/comms/CommMessage$MessageSection;
+	f	section2	section2	Lcom/fs/starfarer/campaign/comms/CommMessage$MessageSection;
+	f	section3	section3	Lcom/fs/starfarer/campaign/comms/CommMessage$MessageSection;
+	f	smallIcon	smallIcon	Ljava/lang/String;
+	f	image	image	Ljava/lang/String;
+	f	channel	channel	Ljava/lang/String;
+	f	locationString	locationString	Ljava/lang/String;
+	f	action	action	Lcom/fs/starfarer/api/campaign/comm/CommMessageAPI$MessageClickAction;
+	f	customData	customData	Ljava/lang/Object;
+	f	id	id	Ljava/lang/String;
+	f	addToIntelTab	addToIntelTab	Z
+	f	timeSent	timeSent	J
+	f	timeReceived	timeReceived	J
+	f	deliveredBy	deliveredBy	Ljava/lang/String;
+	f	starSystemId	starSystemId	Ljava/lang/String;
+	f	locInHyper	locInHyper	Lorg/lwjgl/util/vector/Vector2f;
+	f	subjectHighlights	subjectHighlights	Lcom/fs/starfarer/api/util/Highlights;
+	f	tags	tags	Ljava/util/Set;
+	f	subjectColor	subjectColor	Ljava/awt/Color;
+	f	onDelivery	onDelivery	Lcom/fs/starfarer/api/campaign/OnMessageDeliveryScript;
+	f	marketId	marketId	Ljava/lang/String;
+	f	priceUpdates	priceUpdates	Ljava/util/List;
+	f	customMap	customMap	Ljava/util/Map;
+	f	showInCampaignList	showInCampaignList	Z
+	f	centerMapOnEntity	centerMapOnEntity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getType	getType	()Ljava/lang/String;
+	m	setType	setType	(Ljava/lang/String;)V
+	m	getShortType	getShortType	()Ljava/lang/String;
+	m	setShortType	setShortType	(Ljava/lang/String;)V
+	m	getSender	getSender	()Ljava/lang/String;
+	m	setSender	setSender	(Ljava/lang/String;)V
+	m	getSound	getSound	()Ljava/lang/String;
+	m	setSound	setSound	(Ljava/lang/String;)V
+	m	getSubject	getSubject	()Ljava/lang/String;
+	m	setSubject	setSubject	(Ljava/lang/String;)V
+	m	getNote	getNote	()Ljava/lang/String;
+	m	setNote	setNote	(Ljava/lang/String;)V
+	m	getNoteColor	getNoteColor	()Ljava/awt/Color;
+	m	setNoteColor	setNoteColor	(Ljava/awt/Color;)V
+	m	getSection1	getSection1	()Lcom/fs/starfarer/api/campaign/comm/MessageSectionAPI;
+	m	getSection2	getSection2	()Lcom/fs/starfarer/api/campaign/comm/MessageSectionAPI;
+	m	getSection3	getSection3	()Lcom/fs/starfarer/api/campaign/comm/MessageSectionAPI;
+	m	getSmallIcon	getSmallIcon	()Ljava/lang/String;
+	m	setSmallIcon	setSmallIcon	(Ljava/lang/String;)V
+	m	getImage	getImage	()Ljava/lang/String;
+	m	setImage	setImage	(Ljava/lang/String;)V
+	m	getChannel	getChannel	()Ljava/lang/String;
+	m	setChannel	setChannel	(Ljava/lang/String;)V
+	m	getLocationString	getLocationString	()Ljava/lang/String;
+	m	setLocationString	setLocationString	(Ljava/lang/String;)V
+	m	getAction	getAction	()Lcom/fs/starfarer/api/campaign/comm/CommMessageAPI$MessageClickAction;
+	m	setAction	setAction	(Lcom/fs/starfarer/api/campaign/comm/CommMessageAPI$MessageClickAction;)V
+	m	getCustomData	getCustomData	()Ljava/lang/Object;
+	m	setCustomData	setCustomData	(Ljava/lang/Object;)V
+	m	getId	getId	()Ljava/lang/String;
+	m	isAddToIntelTab	isAddToIntelTab	()Z
+	m	setAddToIntelTab	setAddToIntelTab	(Z)V
+	m	getTimeSent	getTimeSent	()J
+	m	setTimeSent	setTimeSent	(J)V
+	m	getTimeReceived	getTimeReceived	()J
+	m	setTimeReceived	setTimeReceived	(J)V
+	m	getDeliveredBy	getDeliveredBy	()Ljava/lang/String;
+	m	setDeliveredBy	setDeliveredBy	(Ljava/lang/String;)V
+	m	getStarSystemId	getStarSystemId	()Ljava/lang/String;
+	m	setStarSystemId	setStarSystemId	(Ljava/lang/String;)V
+	m	getStarSystem	getStarSystem	()Lcom/fs/starfarer/api/campaign/StarSystemAPI;
+	m	getLocInHyper	getLocInHyper	()Lorg/lwjgl/util/vector/Vector2f;
+	m	setLocInHyper	setLocInHyper	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	getSubjectHighlights	getSubjectHighlights	()Lcom/fs/starfarer/api/util/Highlights;
+	m	setSubjectHighlights	setSubjectHighlights	(Lcom/fs/starfarer/api/util/Highlights;)V
+	m	hasTag	hasTag	(Ljava/lang/String;)Z
+	m	addTag	addTag	(Ljava/lang/String;)V
+	m	removeTag	removeTag	(Ljava/lang/String;)V
+	m	getTags	getTags	()Ljava/util/Collection;
+	m	clearTags	clearTags	()V
+	m	getSubjectColor	getSubjectColor	()Ljava/awt/Color;
+	m	setSubjectColor	setSubjectColor	(Ljava/awt/Color;)V
+	m	getOnDelivery	getOnDelivery	()Lcom/fs/starfarer/api/campaign/OnMessageDeliveryScript;
+	m	setOnDelivery	setOnDelivery	(Lcom/fs/starfarer/api/campaign/OnMessageDeliveryScript;)V
+	m	getMarketId	getMarketId	()Ljava/lang/String;
+	m	setMarketId	setMarketId	(Ljava/lang/String;)V
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	getPriceUpdates	getPriceUpdates	()Ljava/util/List;
+	m	setPriceUpdates	setPriceUpdates	(Ljava/util/List;)V
+	m	getCustomMap	getCustomMap	()Ljava/util/Map;
+	m	setCustomMap	setCustomMap	(Ljava/util/Map;)V
+	m	isShowInCampaignList	isShowInCampaignList	()Z
+	m	setShowInCampaignList	setShowInCampaignList	(Z)V
+	m	getCenterMapOnEntity	getCenterMapOnEntity	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	setCenterMapOnEntity	setCenterMapOnEntity	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	getEvent	getEvent	()Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+c	com/fs/starfarer/campaign/comms/CommMessage$MessagePara	com/fs/starfarer/campaign/comms/CommMessage$MessagePara
+	c 来源(未混淆类名) | 置信度(高) | 证据(MessagePara implements DoNotObfuscate + MessageParaAPI)
+	f	heading	heading	Ljava/lang/String;
+	f	body	body	Ljava/lang/String;
+	f	headingColor	headingColor	Ljava/awt/Color;
+	f	bodyColor	bodyColor	Ljava/awt/Color;
+	m	getHeading	getHeading	()Ljava/lang/String;
+	m	setHeading	setHeading	(Ljava/lang/String;)V
+	m	getBody	getBody	()Ljava/lang/String;
+	m	setBody	setBody	(Ljava/lang/String;)V
+	m	getHeadingColor	getHeadingColor	()Ljava/awt/Color;
+	m	setHeadingColor	setHeadingColor	(Ljava/awt/Color;)V
+	m	getBodyColor	getBodyColor	()Ljava/awt/Color;
+	m	setBodyColor	setBodyColor	(Ljava/awt/Color;)V
+c	com/fs/starfarer/campaign/comms/CommMessage$MessageSection	com/fs/starfarer/campaign/comms/CommMessage$MessageSection
+	c 来源(未混淆类名) | 置信度(高) | 证据(MessageSection implements DoNotObfuscate + MessageSectionAPI)
+	f	title	title	Ljava/lang/String;
+	f	body	body	Ljava/util/List;
+	f	highlights	highlights	[Ljava/lang/String;
+	f	highlightColors	highlightColors	[Ljava/awt/Color;
+	m	getTitle	getTitle	()Ljava/lang/String;
+	m	setTitle	setTitle	(Ljava/lang/String;)V
+	m	getBody	getBody	()Ljava/util/List;
+	m	isEmpty	isEmpty	()Z
+	m	getHighlights	getHighlights	()[Ljava/lang/String;
+	m	setHighlights	setHighlights	([Ljava/lang/String;)V
+	m	getHighlightColors	getHighlightColors	()[Ljava/awt/Color;
+	m	setHighlightColors	setHighlightColors	([Ljava/awt/Color;)V
+	m	addPara	addPara	(Ljava/lang/String;)V
+	m	addPara	addPara	(Ljava/lang/String;Ljava/lang/String;)V
+	m	addPara	addPara	(Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;)V
+	m	addPara	addPara	(Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;Ljava/awt/Color;)V
+	m	addFirstPara	addFirstPara	(Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;Ljava/awt/Color;)V
+	m	addHeading	addHeading	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	addFirstHeading	addFirstHeading	(Ljava/lang/String;Ljava/awt/Color;)V
+c	com/fs/starfarer/campaign/comms/E	com/fs/starfarer/campaign/comms/CommMessageFromPanel
+	c 来源(字符串常量) | 置信度(中) | 证据(CommMessageFromPanel（E），字符串 "From:"/"star system"/"no_system_prefix"，渲染消息发件来源与 sections)
+	f	ÔõOO00	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	getMessage	getMessage	()Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+c	com/fs/starfarer/campaign/comms/F	com/fs/starfarer/campaign/comms/IntelTabPanel
+	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(IntelTabPanel（F），字符串 "Planets/Factions/Intel" 三标签，含 EventsPanel/FactionIntelPanel/行星面板)
+	f	Ô0ö000	intelData	Lcom/fs/starfarer/campaign/comms/IntelTabData;
+	f	øøõ000	eventsPanel	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel;
+	f	for.class$class	factionPanel	Lcom/fs/starfarer/campaign/ui/intel/FactionIntelPanel;
+	f	Ò0ö000	planetsPanel	Lcom/fs/starfarer/campaign/ui/intel/B;
+	f	o0ö000	coreUI	Lcom/fs/starfarer/coreui/_$o;
+	m	showFactionTab	showFactionTab	()V
+	m	showPlanetsTab	showPlanetsTab	()V
+	m	getFactionsButton	getFactionsButton	()Lcom/fs/starfarer/ui/n;
+	m	getPlanetsButton	getPlanetsButton	()Lcom/fs/starfarer/ui/n;
+	m	getEventsPanel	getEventsPanel	()Lcom/fs/starfarer/campaign/comms/v2/EventsPanel;
+	m	getFactionPanel	getFactionPanel	()Lcom/fs/starfarer/campaign/ui/intel/FactionIntelPanel;
+	m	getPlanetsPanel	getPlanetsPanel	()Lcom/fs/starfarer/campaign/ui/intel/B;
+	m	getOpenTo	getOpenTo	()Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	m	getOtherParam	getOtherParam	()Ljava/lang/Object;
+	m	tabClosed	tabClosed	()V
+c	com/fs/starfarer/campaign/comms/for	com/fs/starfarer/campaign/comms/CommMessageTimestampRow
+	c 来源(字符串常量) | 置信度(高) | 证据(CommMessageTimestampRow（for），字符串 "$sender"/"Just received"/"Today"/"N days ago"，getStringForTimestamp 时间戳格式化消息行)
+	f	ÔÓÓO00	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	getStringForTimestamp	getStringForTimestamp	(J)Ljava/lang/String;
+c	com/fs/starfarer/campaign/comms/H	com/fs/starfarer/campaign/comms/CommMessageRow
+	c 来源(javap取证) | 置信度(中) | 证据(CommMessageRow（H），图标按钮+label 的消息行，OoOO 列表元素)
+	f	ÕöOO00	iconButton	Lcom/fs/starfarer/ui/n;
+	f	Object.Object$void	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	getMessage	getMessage	()Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	getIconButton	getIconButton	()Lcom/fs/starfarer/ui/n;
+	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
+	m	shouldRemove	shouldRemove	()Z
+c	com/fs/starfarer/campaign/comms/if	com/fs/starfarer/campaign/comms/MessageFilterPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(MessageFilterPanel（if），字符串 "Show messages and events for the last..."/"Week"/"Month"/"Cycle"/"Show finished events/missions"/"Only last message/event/system"，消息过滤面板)
+	f	øöOO00	catFilter	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter;
+	f	oøOO00	mode	Lcom/fs/starfarer/campaign/comms/if$o;
+	m	getMode	getMode	()Lcom/fs/starfarer/campaign/comms/if$o;
+	m	setMode	setMode	(Lcom/fs/starfarer/campaign/comms/if$o;)V
+	m	getFilteredMessages	getFilteredMessages	()Ljava/util/List;
+	m	getCatFilter	getCatFilter	()Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter;
+c	com/fs/starfarer/campaign/comms/if$o	com/fs/starfarer/campaign/comms/FilterMode
+	c 来源(字符串常量) | 置信度(高) | 证据(FilterMode（if$o），枚举值 NORMAL/PRICES_ALL/PRICES_SINGLE，消息过滤价格显示模式)
+	m	values	values	()[Lcom/fs/starfarer/campaign/comms/if$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/if$o;
+c	com/fs/starfarer/campaign/comms/int	com/fs/starfarer/campaign/comms/ImportantButton
+	c 来源(字符串常量) | 置信度(中) | 证据(ImportantButton（int），字符串 "Important"，Stringnew$Oo 按钮子类)
+c	com/fs/starfarer/campaign/comms/IntelCategoryFilter	com/fs/starfarer/campaign/comms/IntelCategoryFilter
+	c 来源(未混淆类名+javap取证) | 置信度(高) | 证据(IntelCategoryFilter，类别过滤面板，含 ExpandableCategory 列表与 "All" 类别)
+	f	ÒöOO00	categories	Ljava/util/List;
+	f	oöOO00	intelData	Lcom/fs/starfarer/campaign/comms/IntelTabData;
+	f	øõOO00	intelPanel	Lcom/fs/starfarer/campaign/comms/O0OO;
+	m	addCategory	addCategory	(Ljava/lang/String;Ljava/lang/String;FFLcom/fs/starfarer/campaign/comms/IntelCategoryFilter$oo;)V
+	m	getCategory	getCategory	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory;
+	m	expandCategory	expandCategory	(Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory;)V
+c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory	com/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory
+	c 来源(未混淆类名+javap取证) | 置信度(高) | 证据(ExpandableCategory，可展开类别行：按钮+插件+展开状态)
+	f	ôõOO00	text	Ljava/lang/String;
+	f	ØõOO00	callback	Lcom/fs/starfarer/ui/ooOo;
+	f	return.new$void	expanded	Z
+	m	isExpanded	isExpanded	()Z
+	m	update	update	(Z)V
+	m	getAllButtons	getAllButtons	()Ljava/util/List;
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$oo;
+	m	getText	getText	()Ljava/lang/String;
+c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory$1	com/fs/starfarer/campaign/comms/IntelCategoryFilter$CategorySortComparator
+	c 来源(继承关系) | 置信度(中) | 证据(ExpandableCategory 内部 Comparator<Oo>，类别条目排序)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$Oo	com/fs/starfarer/campaign/comms/IntelCategoryFilter$CategoryEntry
+	c 来源(javap取证) | 置信度(高) | 证据(CategoryEntry（Oo），类别条目数据：id/名称/颜色/插件/事件插件)
+	f	ô00000	id	Ljava/lang/String;
+	f	Ø00000	name	Ljava/lang/String;
+	f	Õ00000	color	Ljava/awt/Color;
+	f	Ô00000	plugin	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$oo;
+	f	o00000	category	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory;
+	f	Object	eventPlugin	Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$oo	com/fs/starfarer/campaign/comms/IntelCategoryFilter$CategoryFilterPlugin
+	c 来源(javap取证) | 置信度(中) | 证据(CategoryFilterPlugin（oo），类别过滤插件接口：刷新 + 返回类别条目列表)
+	m	super	refresh	()V
+	m	Ò00000	getEntries	()Ljava/util/List;
+c	com/fs/starfarer/campaign/comms/IntelTabData	com/fs/starfarer/campaign/comms/IntelTabData
+	c 来源(未混淆类名) | 置信度(高) | 证据(IntelTabData implements DoNotObfuscate + IntelDataAPI)
+	f	commSnifferLocations	commSnifferLocations	Ljava/util/List;
+	f	intelTags	intelTags	Ljava/util/Set;
+	f	selectedIntel	selectedIntel	Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	f	selectedTabIndex	selectedTabIndex	I
+	f	selectedSubtabIndex	selectedSubtabIndex	I
+	f	showMapCheckedOnIntelScreen	showMapCheckedOnIntelScreen	Z
+	f	starscapeCheckedOnIntelScreen	starscapeCheckedOnIntelScreen	Z
+	f	planetSearchData	planetSearchData	Ljava/util/Map;
+	f	planetSearchDataPreset	planetSearchDataPreset	Ljava/util/Map;
+	f	planetListSortColumn	planetListSortColumn	Ljava/lang/String;
+	f	planetListSortAcending	planetListSortAcending	Z
+	f	prevSelectedFaction	prevSelectedFaction	Ljava/lang/String;
+	f	savedTags	savedTags	Ljava/util/Set;
+	m	getCommSnifferLocations	getCommSnifferLocations	()Ljava/util/List;
+	m	getIntelTags	getIntelTags	()Ljava/util/Set;
+	m	getSelectedIntel	getSelectedIntel	()Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	m	setSelectedIntel	setSelectedIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)V
+	m	getSelectedTabIndex	getSelectedTabIndex	()I
+	m	setSelectedTabIndex	setSelectedTabIndex	(I)V
+	m	getSelectedSubtabIndex	getSelectedSubtabIndex	()I
+	m	setSelectedSubtabIndex	setSelectedSubtabIndex	(I)V
+	m	isShowFuelCheckedOnIntelScreen	isShowFuelCheckedOnIntelScreen	()Z
+	m	setShowFuelCheckedOnIntelScreen	setShowFuelCheckedOnIntelScreen	(Z)V
+	m	isStarscapeCheckedOnIntelScreen	isStarscapeCheckedOnIntelScreen	()Z
+	m	setStarscapeCheckedOnIntelScreen	setStarscapeCheckedOnIntelScreen	(Z)V
+	m	getPlanetSearchData	getPlanetSearchData	()Ljava/util/Map;
+	m	setPlanetSearchData	setPlanetSearchData	(Ljava/util/Map;)V
+	m	getPlanetSearchDataPreset	getPlanetSearchDataPreset	()Ljava/util/Map;
+	m	setPlanetSearchDataPreset	setPlanetSearchDataPreset	(Ljava/util/Map;)V
+	m	getPlanetListSortColumn	getPlanetListSortColumn	()Ljava/lang/String;
+	m	setPlanetListSortColumn	setPlanetListSortColumn	(Ljava/lang/String;)V
+	m	isPlanetListSortAcending	isPlanetListSortAcending	()Z
+	m	setPlanetListSortAcending	setPlanetListSortAcending	(Z)V
+	m	getPrevSelectedFaction	getPrevSelectedFaction	()Ljava/lang/String;
+	m	setPrevSelectedFaction	setPrevSelectedFaction	(Ljava/lang/String;)V
+	m	getSavedTags	getSavedTags	()Ljava/util/Set;
+	m	setSavedTags	setSavedTags	(Ljava/util/Set;)V
+	m	performCleanup	performCleanup	()V
+c	com/fs/starfarer/campaign/comms/M	com/fs/starfarer/campaign/comms/StarMap
+	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(StarMap（M），星图：highlightStar/addConnection/highlightConnection，M$Oo 星条目 M$o 连线)
+	f	Õ0oO00	stars	Ljava/util/List;
+	f	Object.String$void	connections	Ljava/util/List;
+	m	sync	sync	()V
+	m	highlightStar	highlightStar	(Ljava/lang/String;Z)V
+	m	unhighlightStar	unhighlightStar	(Ljava/lang/String;)V
+	m	unhighlightAllStars	unhighlightAllStars	()V
+	m	addConnection	addConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	addConnection	addConnection	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)V
+	m	removeConnection	removeConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	highlightConnection	highlightConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	unhighlightConnection	unhighlightConnection	(Ljava/lang/String;Ljava/lang/String;)V
+	m	unhighlightAllConnections	unhighlightAllConnections	()V
+	m	removeAllConnections	removeAllConnections	()V
+c	com/fs/starfarer/campaign/comms/M$o	com/fs/starfarer/campaign/comms/StarMap$StarConnection
+	c 来源(javap取证) | 置信度(高) | 证据(StarConnection（M$o），跳跃点连线：两端 JumpPointAPI + Fader + 颜色)
+	f	return	highlighted	Z
+	f	Object	fader	Lcom/fs/graphics/util/Fader;
+	f	Õ00000	from	Lcom/fs/starfarer/api/campaign/JumpPointAPI;
+	f	Ô00000	to	Lcom/fs/starfarer/api/campaign/JumpPointAPI;
+	f	Ò00000	color	Ljava/awt/Color;
+c	com/fs/starfarer/campaign/comms/M$Oo	com/fs/starfarer/campaign/comms/StarMap$StarEntry
+	c 来源(javap取证) | 置信度(高) | 证据(StarEntry（M$Oo），星条目：JumpPointAPI + CampaignPlanet + Sprite + Fader + 坐标)
+	f	Ô00000	highlighted	Z
+	f	Õ00000	fader	Lcom/fs/graphics/util/Fader;
+	f	return	jumpPoint	Lcom/fs/starfarer/api/campaign/JumpPointAPI;
+	f	ô00000	planet	Lcom/fs/starfarer/campaign/CampaignPlanet;
+	f	ø00000	sprite	Lcom/fs/graphics/Sprite;
+c	com/fs/starfarer/campaign/comms/N	com/fs/starfarer/campaign/comms/CommMessageDetailPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(CommMessageDetailPanel（N），字符串 "Time received:"/"Time sent:"/"Delivered by:"/"Type:"/"Location:"/"Date:"，完整消息详情面板)
+	f	Ø0oO00	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	getMessage	getMessage	()Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+c	com/fs/starfarer/campaign/comms/O0OO	com/fs/starfarer/campaign/comms/IntelMainPanel
+	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(IntelMainPanel（O0OO），字符串 "Log"/"Map"/"Received"/"Prices"/"No messages matching selected criteria"，intel 主面板：消息列表+详情+过滤器+IntelTab)
+	f	ÒõOO00	intelData	Lcom/fs/starfarer/campaign/comms/IntelTabData;
+	f	øôOO00	detailPanel	Lcom/fs/starfarer/campaign/comms/N;
+	f	ÒôOO00	fromPanel	Lcom/fs/starfarer/campaign/comms/E;
+	f	Object.super$void	messageList	Lcom/fs/starfarer/campaign/comms/o0oO;
+	f	ÕôOO00	filter	Lcom/fs/starfarer/campaign/comms/if;
+	f	int.super$void	intelTab	Lcom/fs/starfarer/campaign/comms/F;
+	m	getIntelTab	getIntelTab	()Lcom/fs/starfarer/campaign/comms/F;
+	m	updateShownMessages	updateShownMessages	(Ljava/util/List;)V
+	m	showDetail	showDetail	(Lcom/fs/starfarer/campaign/comms/CommMessage;)V
+	m	commMessageSelected	commMessageSelected	(Lcom/fs/starfarer/campaign/comms/CommMessage;)V
+	m	getMessagesButton	getMessagesButton	()Lcom/fs/starfarer/ui/n;
+	m	getMapButton	getMapButton	()Lcom/fs/starfarer/ui/n;
+	m	filterDataUpdated	filterDataUpdated	()V
+	m	getFilter	getFilter	()Lcom/fs/starfarer/campaign/comms/if;
+	m	getListWidth	getListWidth	()F
+	m	getFilterWidth	getFilterWidth	()F
+c	com/fs/starfarer/campaign/comms/O0OO$o	com/fs/starfarer/campaign/comms/IntelMainPanel$PriceUpdateRow
+	c 来源(javap取证) | 置信度(中) | 证据(PriceUpdateRow（O0OO$o），价格更新行：CommodityOnMarket + 价格文本)
+	f	new	commodity	Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;
+	f	o00000	priceText	Ljava/lang/String;
+c	com/fs/starfarer/campaign/comms/OoOO	com/fs/starfarer/campaign/comms/CommMessageRowList
+	c 来源(javap取证) | 置信度(中) | 证据(CommMessageRowList（OoOO），CommMessageRow（H）列表容器，addMessage 返回行)
+	f	return.this$void	rows	Ljava/util/List;
+	m	addMessage	addMessage	(Lcom/fs/starfarer/campaign/comms/CommMessage;)Lcom/fs/starfarer/campaign/comms/H;
+	m	clear	clear	()V
+	m	isSkipEntityTooltip	isSkipEntityTooltip	()Z
+	m	setSkipEntityTooltip	setSkipEntityTooltip	(Z)V
+c	com/fs/starfarer/campaign/comms/o0oO	com/fs/starfarer/campaign/comms/MessageListPanel
+	c 来源(javap取证) | 置信度(高) | 证据(MessageListPanel（o0oO），消息列表：setMessages/isEmpty/clickRowFor，行类型 for（CommMessageTimestampRow）)
+	f	øøOO00	list	Lcom/fs/starfarer/coreui/w;
+	f	public.Object$void	listener	Lcom/fs/starfarer/campaign/comms/o0oO$o;
+	f	ôøOO00	selectedMessage	Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	setMessages	setMessages	(Ljava/util/List;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	clickRowFor	clickRowFor	(Lcom/fs/starfarer/campaign/comms/CommMessage;)V
+	m	isEmpty	isEmpty	()Z
+c	com/fs/starfarer/campaign/comms/o0oO$o	com/fs/starfarer/campaign/comms/MessageSelectionListener
+	c 来源(javap取证) | 置信度(高) | 证据(MessageSelectionListener（o0oO$o），消息选中回调接口 commMessageSelected)
+	m	commMessageSelected	commMessageSelected	(Lcom/fs/starfarer/campaign/comms/CommMessage;)V
+c	com/fs/starfarer/campaign/comms/oo0O	com/fs/starfarer/campaign/comms/CommMessageDetailPanelOld
+	c 来源(字符串常量) | 置信度(中) | 证据(CommMessageDetailPanelOld（oo0O），旧版完整消息详情（无 via/$sender 行），与 N 同构)
+	f	int.String$void	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
+	m	getMessage	getMessage	()Lcom/fs/starfarer/campaign/comms/CommMessage;
+c	com/fs/starfarer/campaign/comms/PlayerTransactionLineItemData	com/fs/starfarer/campaign/comms/PlayerTransactionLineItemData
+	c 来源(未混淆类名) | 置信度(高) | 证据(PlayerTransactionLineItemData implements DoNotObfuscate)
+	f	data	data	Ljava/util/Map;
+	m	addItem	addItem	(Lcom/fs/starfarer/api/campaign/PlayerMarketTransaction$TransactionLineItem;)V
+	m	getList	getList	(Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;Ljava/lang/String;)Ljava/util/List;
+	m	performCleanup	performCleanup	(F)V
+c	com/fs/starfarer/campaign/comms/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/comms/IntelRowList
+	c 来源(javap取证) | 置信度(高) | 证据(IntelRowList（长名类），IntelRow（C）列表容器，addMessage(IntelInfoPlugin) 返回行)
+	f	ÔÖOO00	rows	Ljava/util/List;
+	m	addMessage	addMessage	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)Lcom/fs/starfarer/campaign/comms/C;
+	m	addMessage	addMessage	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;Lcom/fs/starfarer/api/campaign/comm/CommMessageAPI$MessageClickAction;)Lcom/fs/starfarer/campaign/comms/C;
+	m	addMessage	addMessage	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;Lcom/fs/starfarer/api/campaign/comm/CommMessageAPI$MessageClickAction;Ljava/lang/Object;)Lcom/fs/starfarer/campaign/comms/C;
+	m	clear	clear	()V
+	m	isSkipEntityTooltip	isSkipEntityTooltip	()Z
+	m	setSkipEntityTooltip	setSkipEntityTooltip	(Z)V
+	m	getMessages	getMessages	()Ljava/util/List;
+c	com/fs/starfarer/campaign/comms/v2/A	com/fs/starfarer/campaign/comms/v2/EventRow
+	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(EventRow（v2/A），v2 事件行：IntelInfoPlugin + 重要按钮 + "New!" 标记)
+	f	Object.class$null	intel	Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	f	ÕoÓO00	eventsPanel	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel;
+	m	clearButLeaveSize	clearButLeaveSize	()V
+	m	recreate	recreate	()V
+	m	notifyDidNotRender	notifyDidNotRender	()V
+	m	getButtonsWithinButton	getButtonsWithinButton	()Ljava/util/List;
+	m	getImportant	getImportant	()Lcom/fs/starfarer/ui/n;
+	m	getInfo	getInfo	()Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+c	com/fs/starfarer/campaign/comms/v2/A$1	com/fs/starfarer/campaign/comms/v2/EventRow$ImportantTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(ImportantTooltip（v2/A$1），tooltip 文本 "This intel is always tagged important"/"Toggle whether this intel is tagged important")
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/campaign/comms/v2/B	com/fs/starfarer/campaign/comms/v2/IntelConfirmDialog
+	c 来源(javap取证) | 置信度(中) | 证据(IntelConfirmDialog（v2/B），ui.impl.E 对话框子类：Faction+颜色+B$o 内容回调+custom，intel 确认对话框)
+	f	øôÓ000	faction	Lcom/fs/starfarer/campaign/Faction;
+	f	ôôÓ000	content	Lcom/fs/starfarer/campaign/comms/v2/B$o;
+	f	ØôÓ000	custom	Ljava/lang/Object;
+	m	getCustom	getCustom	()Ljava/lang/Object;
+	m	recreate	recreate	()V
+	m	show	show	(FF)V
+	m	advance	advance	(F)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/campaign/comms/v2/B$o	com/fs/starfarer/campaign/comms/v2/DialogContent
+	c 来源(javap取证) | 置信度(中) | 证据(DialogContent（v2/B$o），确认对话框内容回调：创建内容 + 宽度 + 布尔标志)
+	m	o00000	createContent	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
+	m	Ò00000	getWidth	()F
+c	com/fs/starfarer/campaign/comms/v2/C	com/fs/starfarer/campaign/comms/v2/EventActionButton
+	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(EventActionButton（v2/C），字符串 "intel/important"/"intel/abandon" 图标，动作按钮（IMPORTANT/ABANDON）)
+	f	ØÒÓO00	sprite	Lcom/fs/graphics/Sprite;
+	f	ôÒÓO00	action	Lcom/fs/starfarer/campaign/comms/v2/C$o;
+	m	getAction	getAction	()Lcom/fs/starfarer/campaign/comms/v2/C$o;
+c	com/fs/starfarer/campaign/comms/v2/C$o	com/fs/starfarer/campaign/comms/v2/EventAction
+	c 来源(字符串常量) | 置信度(高) | 证据(EventAction（v2/C$o），枚举 IMPORTANT/ABANDON)
+	m	values	values	()[Lcom/fs/starfarer/campaign/comms/v2/C$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/v2/C$o;
+c	com/fs/starfarer/campaign/comms/v2/D	com/fs/starfarer/campaign/comms/v2/ExampleIntel
+	c 来源(字符串常量+javap取证) | 置信度(中) | 证据(ExampleIntel（v2/D），BaseIntelPlugin 子类：intel 示例数据（STORY_KANTA/PERSON_BOUNTY 等类型，Derelict Survey Ship Discovered/Personal Bounty 文案）)
+	f	ô00000	id	Ljava/lang/String;
+	f	Õ00000	type	Lcom/fs/starfarer/campaign/comms/v2/D$o;
+	f	String	faction	Lcom/fs/starfarer/api/campaign/FactionAPI;
+	f	void	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	createIntelInfo	createIntelInfo	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin$ListInfoMode;)V
+	m	getSmallDescriptionTitle	getSmallDescriptionTitle	()Ljava/lang/String;
+	m	createSmallDescription	createSmallDescription	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;FF)V
+	m	createLargeDescription	createLargeDescription	(Lcom/fs/starfarer/api/ui/CustomPanelAPI;FF)V
+	m	getIcon	getIcon	()Ljava/lang/String;
+	m	getIntelTags	getIntelTags	(Lcom/fs/starfarer/api/ui/SectorMapAPI;)Ljava/util/Set;
+	m	isImportant	isImportant	()Z
+	m	setImportant	setImportant	(Ljava/lang/Boolean;)V
+	m	getFactionForUIColors	getFactionForUIColors	()Lcom/fs/starfarer/api/campaign/FactionAPI;
+	m	getMapLocation	getMapLocation	(Lcom/fs/starfarer/api/ui/SectorMapAPI;)Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	shouldRemoveIntel	shouldRemoveIntel	()Z
+c	com/fs/starfarer/campaign/comms/v2/D$o	com/fs/starfarer/campaign/comms/v2/IntelType
+	c 来源(字符串常量) | 置信度(高) | 证据(IntelType（v2/D$o），枚举 STORY_KANTA/PERSON_BOUNTY/SYSTEM_BOUNTY/LOG_ENTRY/SECTOR_DECAY/ANALYZE_MISSON)
+	m	values	values	()[Lcom/fs/starfarer/campaign/comms/v2/D$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/v2/D$o;
+c	com/fs/starfarer/campaign/comms/v2/E	com/fs/starfarer/campaign/comms/v2/VariableHeightScrollingList
+	c 来源(字符串常量) | 置信度(高) | 证据(VariableHeightScrollingList（v2/E），字符串 "Can't call add() on a VariableHeightScrollingList"，可变高度滚动列表)
+	f	this.this$void	scroller	Lcom/fs/starfarer/ui/g;
+	f	ÒÖOO00	items	Ljava/util/List;
+	f	ØÕOO00	itemData	Ljava/util/Map;
+	m	getScroller	getScroller	()Lcom/fs/starfarer/ui/g;
+	m	getItems	getItems	()Ljava/util/List;
+	m	addItem	addItem	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	addItem	addItem	(Lcom/fs/starfarer/ui/OO0o;Ljava/lang/Object;)V
+	m	removeItem	removeItem	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	setRows	setRows	(I)V
+	m	getRows	getRows	()I
+	m	collapseEmptySlots	collapseEmptySlots	()V
+	m	collapseEmptySlots	collapseEmptySlots	(Z)V
+	m	clear	clear	()V
+	m	ensureVisible	ensureVisible	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	getEmpty	getEmpty	()Lcom/fs/starfarer/ui/d;
+	m	setEmptyText	setEmptyText	(Ljava/lang/String;Ljava/awt/Color;)V
+c	com/fs/starfarer/campaign/comms/v2/EventsPanel	com/fs/starfarer/campaign/comms/v2/EventsPanel
+	c 来源(未混淆类名+javap取证) | 置信度(高) | 证据(EventsPanel，v2 事件列表主面板（implements IntelUIAPI），含 VariableHeightScrollingList + IntelManager + 标签过滤)
+	f	Ô0Ó000	rowActionType	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$o;
+	f	ÔOÓ000	intelData	Lcom/fs/starfarer/campaign/comms/IntelTabData;
+	f	ö0Ó000	list	Lcom/fs/starfarer/campaign/comms/v2/E;
+	f	Ø0Ó000	intelManager	Lcom/fs/starfarer/campaign/comms/v2/IntelManager;
+	f	Õ0Ó000	tagData	Lcom/fs/starfarer/campaign/command/do;
+	f	ø0Ó000	selectedRow	Lcom/fs/starfarer/campaign/comms/v2/A;
+	m	getList	getList	()Lcom/fs/starfarer/campaign/comms/v2/E;
+	m	getIntelTab	getIntelTab	()Lcom/fs/starfarer/campaign/comms/F;
+	m	getSelectedRow	getSelectedRow	()Lcom/fs/starfarer/campaign/comms/v2/A;
+	m	showOnMap	showOnMap	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	recreateIntelUI	recreateIntelUI	()V
+	m	tagsChanged	tagsChanged	(Lcom/fs/starfarer/campaign/command/do;)V
+	m	tabClosed	tabClosed	()V
+c	com/fs/starfarer/campaign/comms/v2/EventsPanel$1	com/fs/starfarer/campaign/comms/v2/EventsPanel$EventSortComparator
+	c 来源(javap取证) | 置信度(中) | 证据(EventsPanel 内部 Comparator<IntelInfoPlugin>，按 sortTier/sortString/playerVisibleTimestamp 排序)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/comms/v2/EventsPanel$2	com/fs/starfarer/campaign/comms/v2/EventsPanel$TagSortComparator
+	c 来源(javap取证) | 置信度(中) | 证据(EventsPanel 内部 Comparator<campaign.command.do$Oo>，按标签 boolean/float/名称排序)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/comms/v2/EventsPanel$3	com/fs/starfarer/campaign/comms/v2/EventsPanel$ConfirmPromptContent
+	c 来源(继承关系+javap取证) | 置信度(中) | 证据(EventsPanel 内部实现 v2/B$o：包装 IntelInfoPlugin 确认提示 createConfirmationPrompt)
+	m	o00000	createContent	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
+	m	Ò00000	getWidth	()F
+c	com/fs/starfarer/campaign/comms/v2/EventsPanel$o	com/fs/starfarer/campaign/comms/v2/EventsPanel$RowActionType
+	c 来源(字符串常量) | 置信度(高) | 证据(RowActionType（EventsPanel$o），枚举 ROW_ACTION_CONFIRM/ROW_STORY/CUSTOM)
+	m	values	values	()[Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$o;
+c	com/fs/starfarer/campaign/comms/v2/IntelManager	com/fs/starfarer/campaign/comms/v2/IntelManager
+	c 来源(未混淆类名) | 置信度(高) | 证据(IntelManager implements DoNotObfuscate + IntelManagerAPI，v2 intel 管理器)
+	f	commQueue	commQueue	Lcom/fs/util/container/repo/ObjectRepository;
+	f	intel	intel	Lcom/fs/util/container/repo/ObjectRepository;
+	f	addToTimestamp	addToTimestamp	J
+	m	advance	advance	(F)V
+	m	clear	clear	()V
+	m	notifyPlayerAboutToOpenIntelScreen	notifyPlayerAboutToOpenIntelScreen	()V
+	m	removeAllThatShouldBeRemoved	removeAllThatShouldBeRemoved	()V
+	m	hasIntelOfClass	hasIntelOfClass	(Ljava/lang/Class;)Z
+	m	hasIntel	hasIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)Z
+	m	hasIntelQueued	hasIntelQueued	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)Z
+	m	getIntel	getIntel	()Ljava/util/List;
+	m	getIntel	getIntel	(Ljava/lang/Class;)Ljava/util/List;
+	m	getFirstIntel	getFirstIntel	(Ljava/lang/Class;)Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	m	unqueueIntel	unqueueIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)Z
+	m	queueIntel	queueIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)V
+	m	queueIntel	queueIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;F)V
+	m	addIntel	addIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)V
+	m	addIntel	addIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;Z)V
+	m	addIntel	addIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;ZLcom/fs/starfarer/api/campaign/TextPanelAPI;)V
+	m	addIntelToTextPanel	addIntelToTextPanel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;Lcom/fs/starfarer/api/campaign/TextPanelAPI;)V
+	m	removeIntel	removeIntel	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)V
+	m	getIntelCount	getIntelCount	(Ljava/lang/Class;Z)I
+	m	getCommQueue	getCommQueue	()Ljava/util/List;
+	m	getCommQueue	getCommQueue	(Ljava/lang/Class;)Ljava/util/List;
+	m	isPlayerInRangeOfCommRelay	isPlayerInRangeOfCommRelay	()Z
+	m	sortIntel	sortIntel	(Ljava/util/List;)V
+c	com/fs/starfarer/campaign/comms/v2/IntelManager$1	com/fs/starfarer/campaign/comms/v2/IntelManager$IntelSortComparator
+	c 来源(javap取证) | 置信度(中) | 证据(IntelManager 内部 Comparator<IntelInfoPlugin>，按 sortTier/sortString/playerVisibleTimestamp 排序)
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+c	com/fs/starfarer/campaign/comms/v2/OOoO	com/fs/starfarer/campaign/comms/v2/IntelMarkerDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(IntelMarkerDialog（v2/OOoO），字符串 "Create intel map marker"/"Title"/"Description"/"Open after creating"，创建地图标记对话框)
+	f	ÒÓÓ000	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	return.super$new	intel	Lcom/fs/starfarer/api/impl/campaign/intel/misc/MapMarkerIntel;
+	m	getTextField	getTextField	()Lcom/fs/starfarer/ui/B;
+	m	dismiss	dismiss	(I)V
+	m	getIntel	getIntel	()Lcom/fs/starfarer/api/impl/campaign/intel/misc/MapMarkerIntel;
+	m	getOpenIntel	getOpenIntel	()Lcom/fs/starfarer/ui/n;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	backspacePressed	backspacePressed	(Lcom/fs/starfarer/ui/B;Z)V
+	m	charTyped	charTyped	(Lcom/fs/starfarer/ui/B;C)V
+	m	charTypeFailed	charTypeFailed	(Lcom/fs/starfarer/ui/B;C)V
+	m	tabPressed	tabPressed	(Lcom/fs/starfarer/ui/B;Lcom/fs/starfarer/util/super/Object;)V
+	m	createIconSelector	createIconSelector	()Lcom/fs/starfarer/ui/g;
+c	com/fs/starfarer/campaign/comms/v2/OOoO$1	com/fs/starfarer/campaign/comms/v2/IntelMarkerDialog$IconSelectorRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(IntelMarkerDialog 内部渲染类（extends ui.z），renderImpl 遍历图标按钮 customData)
+	m	renderImpl	renderImpl	(F)V

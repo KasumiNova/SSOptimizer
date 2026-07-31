@@ -1,0 +1,423 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/command/AdminPickerDialog	com/fs/starfarer/campaign/command/AdminPickerDialog
+	c 来源(未混淆类名+字符串常量) | 置信度(高) | 证据(AdminPickerDialog：Administrators:/Manage administrators/Select administrator for)
+	f	void.return$new	listAdmins	Lcom/fs/starfarer/coreui/v;
+		c getListAdmins() 直接返回，滚动列表 | 高
+	f	String.return$new	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c 构造注入，addCoresToList/getAdmin 取市场 | 高
+	f	ôöÓ000	interactionMode	Lcom/fs/starfarer/api/campaign/econ/MarketAPI$MarketInteractionMode;
+		c 构造注入 final | 高
+	f	do.return$new	admins	Ljava/util/List;
+		c addCoresToList 填充 List<AdminPickerDialog$Oo> | 高
+	f	ÕøÓ000	insertSymbolFader	Lcom/fs/graphics/util/Fader;
+		c renderInsertSymbol 淡入淡出 | 中
+	m	recreate	recreate	()V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	show	show	(FF)V
+	m	advance	advance	(F)V
+	m	getListAdmins	getListAdmins	()Lcom/fs/starfarer/coreui/v;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	setNextPlayer	setNextPlayer	()V
+	m	setNextAdminOrCore	setNextAdminOrCore	(Lcom/fs/starfarer/api/characters/AdminData;)V
+	m	setOnSubdialogDismiss	setOnSubdialogDismiss	(Ljava/lang/Runnable;)V
+	m	assignPlayer	assignPlayer	()V
+	m	assignAdminOrCore	assignAdminOrCore	(Lcom/fs/starfarer/api/characters/AdminData;)V
+	m	assignAdmin	assignAdmin	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	unassignHumanAdmin	unassignHumanAdmin	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	unassignAICore	unassignAICore	()V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	addCoresToList	addCoresToList	(Lcom/fs/starfarer/api/campaign/CargoAPI;Ljava/util/Set;Ljava/util/List;)V
+	m	renderInsertSymbol	renderInsertSymbol	(Lcom/fs/starfarer/campaign/command/OooO;Lcom/fs/graphics/util/Fader;F)V
+	m	getPanelAfterWhichToInsert	getPanelAfterWhichToInsert	(F)Lcom/fs/starfarer/campaign/command/OooO;
+c	com/fs/starfarer/campaign/command/AdminPickerDialog$1	com/fs/starfarer/campaign/command/AdminListPositionComparator
+	c 来源(javap取证) | 置信度(高) | 证据(AdminPickerDialog内部类：Comparator<AdminData> 按 items 位置)
+	m	o00000	compare	(Lcom/fs/starfarer/api/characters/AdminData;Lcom/fs/starfarer/api/characters/AdminData;)I
+c	com/fs/starfarer/campaign/command/AdminPickerDialog$2	com/fs/starfarer/campaign/command/AssignPlayerRunnable
+	c 来源(javap取证) | 置信度(高) | 证据(AdminPickerDialog内部类：run() 调 assignPlayer())
+	m	run	run	()V
+c	com/fs/starfarer/campaign/command/AdminPickerDialog$3	com/fs/starfarer/campaign/command/AssignAdminOrCoreRunnable
+	c 来源(javap取证) | 置信度(高) | 证据(AdminPickerDialog内部类：run() 调 assignAdminOrCore(admin))
+	m	run	run	()V
+c	com/fs/starfarer/campaign/command/AdminPickerDialog$o	com/fs/starfarer/campaign/command/AdminCoreSource
+	c 来源(javap取证) | 置信度(中) | 证据(AdminPickerDialog内部类：OooO.getCoreSource 数据类)
+c	com/fs/starfarer/campaign/command/AdminPickerDialog$Oo	com/fs/starfarer/campaign/command/AdminEntry
+	c 来源(javap取证) | 置信度(中) | 证据(AdminPickerDialog内部类：AdminData+CargoAPI 条目)
+	f	o00000	admin	Lcom/fs/starfarer/api/characters/AdminData;
+		c 构造注入 | 高
+	f	new	cargo	Lcom/fs/starfarer/api/campaign/CargoAPI;
+		c 构造注入 | 中
+c	com/fs/starfarer/campaign/command/new	com/fs/starfarer/campaign/command/HullmodBlueprintRow
+	c 来源(javap取证) | 置信度(高) | 证据(new：isBlueprintEnabled 调 Faction.isHullModPriority，checkmark，windows 侧对应 linux B)
+	f	Ö0ÕO00	hullModId	Ljava/lang/String;
+		c isHullModPriority(getSpecId) 的 specId | 高
+	f	Ò0ÕO00	hullModSpec	Lcom/fs/starfarer/loading/specs/O00O;
+		c loading.specs.O00O（HullModSpec）| 中
+	f	Õ0ÕO00	enabledCheckbox	Lcom/fs/starfarer/ui/n;
+		c checkmark 勾选框 | 中
+	f	ô0ÕO00	name	Ljava/lang/String;
+		c getNameString() 返回 | 高
+	f	super.Object$int	tech	Ljava/lang/String;
+		c getTechString() 返回 | 高
+	m	getNameString	getNameString	()Ljava/lang/String;
+	m	getTechString	getTechString	()Ljava/lang/String;
+	m	getSpecId	getSpecId	()Ljava/lang/String;
+	m	isBlueprintEnabled	isBlueprintEnabled	()Z
+	m	setBlueprintEnabled	setBlueprintEnabled	(Z)V
+c	com/fs/starfarer/campaign/command/ooOO	com/fs/starfarer/campaign/command/MarketRow
+	c 来源(javap取证) | 置信度(高) | 证据(ooOO：No colonies/getMarket/setMarket，windows 侧对应 linux C)
+	f	OOÕO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c getMarket() 返回，构造注入 | 高
+	f	ÒOÕO00	faction	Lcom/fs/starfarer/campaign/Faction;
+		c 构造注入 | 中
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	setMarket	setMarket	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
+c	com/fs/starfarer/campaign/command/CommandTabData	com/fs/starfarer/campaign/command/CommandTabData
+	c 来源(未混淆类名) | 置信度(高) | 证据(CommandTabData implements DoNotObfuscate)
+	f	selectedTabIndex	selectedTabIndex	I
+	f	selectedSubtabIndex	selectedSubtabIndex	I
+	f	ships	ships	Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	f	weapons	weapons	Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	f	fighters	fighters	Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	f	shipsProd	shipsProd	Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	f	weaponsProd	weaponsProd	Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	f	fightersProd	fightersProd	Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	f	selectedProd	selectedProd	Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	m	getSelectedTabIndex	getSelectedTabIndex	()I
+	m	setSelectedTabIndex	setSelectedTabIndex	(I)V
+	m	getSelectedSubtabIndex	getSelectedSubtabIndex	()I
+	m	setSelectedSubtabIndex	setSelectedSubtabIndex	(I)V
+	m	getShips	getShips	()Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	m	getWeapons	getWeapons	()Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	m	getFighters	getFighters	()Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	m	getShipsProd	getShipsProd	()Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	m	getWeaponsProd	getWeaponsProd	()Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	m	getFightersProd	getFightersProd	()Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+	m	getSelectedProd	getSelectedProd	()Lcom/fs/starfarer/campaign/command/CommandTabData$SubtabData;
+c	com/fs/starfarer/campaign/command/CommandTabData$SubtabData	com/fs/starfarer/campaign/command/CommandTabData$SubtabData
+	c 来源(未混淆类名) | 置信度(高) | 证据(CommandTabData$SubtabData implements DoNotObfuscate)
+	f	sort	sort	Ljava/lang/Object;
+	f	ascending	ascending	Ljava/lang/Boolean;
+	f	tags	tags	Ljava/util/Set;
+c	com/fs/starfarer/campaign/command/CustomProductionPanel	com/fs/starfarer/campaign/command/CustomProductionPanel
+	c 来源(未混淆类名+字符串常量) | 置信度(高) | 证据(CustomProductionPanel：Custom order/Production plan/Production capacity)
+	f	if.public$Object	delegate	Lcom/fs/starfarer/api/campaign/CustomProductionPickerDelegate;
+		c getDelegate() 返回 | 高
+	f	OOØ000	prod	Lcom/fs/starfarer/loading/specs/FactionProduction;
+		c getProd() 返回 | 高
+	f	Ò0Ø000	faction	Lcom/fs/starfarer/campaign/Faction;
+		c 面板所属派系 | 中
+	f	Õ0Ø000	shipBrowser	Lcom/fs/starfarer/campaign/command/ShipBlueprintBrowser;
+		c 船体蓝图浏览器 | 高
+	f	ô0Ø000	weaponBrowser	Lcom/fs/starfarer/campaign/command/WeaponBlueprintBrowser;
+		c 武器蓝图浏览器 | 高
+	f	ÖoØ000	fighterBrowser	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser;
+		c 战斗机蓝图浏览器 | 高
+	f	Ö0Ø000	dialogType	Lcom/fs/starfarer/campaign/command/CustomProductionPanel$o;
+		c DialogType 枚举 | 中
+	f	super.interface$Object	prodMismatch	Z
+		c isAllowedToAddItemOfCreditValue 判定 | 中
+	m	getDelegate	getDelegate	()Lcom/fs/starfarer/api/campaign/CustomProductionPickerDelegate;
+	m	getProd	getProd	()Lcom/fs/starfarer/loading/specs/FactionProduction;
+	m	sizeChanged	sizeChanged	(FF)V
+	m	createIfNeeded	createIfNeeded	()V
+	m	ensureDidNotGoOver	ensureDidNotGoOver	(Lcom/fs/starfarer/api/campaign/FactionProductionAPI$ProductionItemType;Ljava/lang/String;)V
+	m	updatePlanTable	updatePlanTable	(Lcom/fs/starfarer/api/campaign/FactionProductionAPI$ProductionItemType;Ljava/lang/String;)V
+	m	addInfoMessageIfNeeded	addInfoMessageIfNeeded	()V
+	m	tabClosed	tabClosed	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	saveTableUIState	saveTableUIState	()V
+	m	restoreTableUIState	restoreTableUIState	()V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	isPickerMode	isPickerMode	()Z
+	m	isAllowedToAddItemOfCreditValue	isAllowedToAddItemOfCreditValue	(I)Z
+	m	getMaxValue	getMaxValue	()I
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$1	com/fs/starfarer/campaign/command/MaxOrderValueTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：Maximum number of credits worth of production)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$2	com/fs/starfarer/campaign/command/CurrentOrderValueTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：Total value of the current custom order)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$3	com/fs/starfarer/campaign/command/ProductionCapacityTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：Total production capacity: %s)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$3$1	com/fs/starfarer/campaign/command/ProductionCapacityStatModValueGetter
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：空 StatModValueGetter 占位)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$3$2	com/fs/starfarer/campaign/command/ProductionCapacityModStatModValueGetter
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：空 StatModValueGetter 占位)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$4	com/fs/starfarer/campaign/command/OrderValueDetailsTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：Total value of your current custom order)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$5	com/fs/starfarer/campaign/command/GatheringPointTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：delivered to this colony)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$6	com/fs/starfarer/campaign/command/ProductionCostTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：Production cost.)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$7	com/fs/starfarer/campaign/command/QuantityColumnTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：Left-click to remove, right-click to add)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$8	com/fs/starfarer/campaign/command/PlanRowComparator
+	c 来源(javap取证) | 置信度(高) | 证据(CustomProductionPanel内部类：Comparator<ui.B> 按 QTY/COST/名称)
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$o	com/fs/starfarer/campaign/command/DialogType
+	c 来源(字符串常量) | 置信度(高) | 证据(CustomProductionPanel内部类：enum CONFIRM_CLEAR/GATHERING_PICK)
+	m	values	values	()[Lcom/fs/starfarer/campaign/command/CustomProductionPanel$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/command/CustomProductionPanel$o;
+c	com/fs/starfarer/campaign/command/CustomProductionPanel$TableColumns	com/fs/starfarer/campaign/command/CustomProductionPanel$TableColumns
+	c 来源(未混淆类名) | 置信度(高) | 证据(CustomProductionPanel$TableColumns implements DoNotObfuscate)
+	f	ITEM	ITEM	Lcom/fs/starfarer/campaign/command/CustomProductionPanel$TableColumns;
+	f	QTY	QTY	Lcom/fs/starfarer/campaign/command/CustomProductionPanel$TableColumns;
+	f	COST	COST	Lcom/fs/starfarer/campaign/command/CustomProductionPanel$TableColumns;
+c	com/fs/starfarer/campaign/command/String	com/fs/starfarer/campaign/command/TagListener
+	c 来源(继承关系) | 置信度(高) | 证据(String：接口 tagsChanged(M)，windows 侧对应 linux D)
+	m	tagsChanged	tagsChanged	(Lcom/fs/starfarer/campaign/command/M;)V
+c	com/fs/starfarer/campaign/command/M	com/fs/starfarer/campaign/command/TagPanel
+	c 来源(继承关系+API种子) | 置信度(高) | 证据(M implements api.ui.TagDisplayAPI，windows 侧对应 linux do)
+	f	do.void$void	groups	Ljava/util/List;
+		c getGroups() 返回 List<M$o> | 高
+	f	if.void$void	currGroup	Lcom/fs/starfarer/campaign/command/M$o;
+		c getCurrGroup() 返回 | 高
+	f	String.void$void	listener	Lcom/fs/starfarer/campaign/command/String;
+		c actionPerformed 后调 tagsChanged | 高
+	f	OÔoO00	selected	Ljava/util/Set;
+		c actionPerformed 中 putfield | 中
+	m	reset	reset	()V
+	m	beginGroup	beginGroup	(ZLjava/lang/String;)V
+	m	beginGroup	beginGroup	(ZLjava/lang/String;F)V
+	m	getCurrGroup	getCurrGroup	()Lcom/fs/starfarer/campaign/command/M$o;
+	m	getAllTags	getAllTags	()Ljava/util/Set;
+	m	addTag	addTag	(Ljava/lang/String;)V
+	m	addTag	addTag	(Ljava/lang/String;I)V
+	m	addTag	addTag	(Ljava/lang/String;Ljava/lang/String;I)V
+	m	addTag	addTag	(Ljava/lang/String;Ljava/lang/String;IF)V
+	m	addTag	addTag	(Ljava/lang/String;Ljava/lang/String;IFLjava/awt/Color;Ljava/awt/Color;Ljava/awt/Color;)V
+	m	getLastAddedTag	getLastAddedTag	()Lcom/fs/starfarer/campaign/command/M$Oo;
+	m	addLineBreakToCurrentGroup	addLineBreakToCurrentGroup	(F)V
+	m	getTotalOverrideForCurrentGroup	getTotalOverrideForCurrentGroup	()I
+	m	setTotalOverrideForCurrentGroup	setTotalOverrideForCurrentGroup	(I)V
+	m	addGroup	addGroup	(F)V
+	m	getMinTagWidth	getMinTagWidth	()F
+	m	setMinTagWidth	setMinTagWidth	(F)V
+	m	getTagPad	getTagPad	()F
+	m	setTagPad	setTagPad	(F)V
+	m	isAllSelected	isAllSelected	()Z
+	m	getSelected	getSelected	()Ljava/util/Set;
+	m	setAllowUnselectAll	setAllowUnselectAll	(Z)V
+	m	isAllowUnselectAll	isAllowUnselectAll	()Z
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	check	check	(Ljava/util/Collection;)V
+	m	check	check	([Ljava/lang/String;)V
+	m	uncheck	uncheck	([Ljava/lang/String;)V
+	m	checkAll	checkAll	()V
+	m	uncheckAll	uncheckAll	()V
+	m	setGroupChecked	setGroupChecked	(IZ)V
+	m	getGroups	getGroups	()Ljava/util/List;
+c	com/fs/starfarer/campaign/command/M$o	com/fs/starfarer/campaign/command/TagGroup
+	c 来源(继承关系+javap取证) | 置信度(高) | 证据(M内部类：TagGroup，字段未混淆)
+	f	mutuallyExclusive	mutuallyExclusive	Z
+	f	allText	allText	Ljava/lang/String;
+	f	data	data	Ljava/util/List;
+	f	buttons	buttons	Ljava/util/List;
+	f	fixedWidth	fixedWidth	F
+	m	getDataFor	getDataFor	(Lcom/fs/starfarer/ui/n;)Lcom/fs/starfarer/campaign/command/M$Oo;
+c	com/fs/starfarer/campaign/command/M$Oo	com/fs/starfarer/campaign/command/TagData
+	c 来源(javap取证) | 置信度(高) | 证据(M内部类：tagId/name/count + 按钮/颜色)
+	f	oO0000	tagId	Ljava/lang/String;
+		c getAllTags/getSelected 收集 | 高
+	f	new	name	Ljava/lang/String;
+		c 渲染文本 | 中
+	f	null	count	I
+		c 数量 (N) 后缀 | 中
+	f	Ø00000	button	Lcom/fs/starfarer/ui/n;
+		c getDataFor 按 button 匹配 | 高
+	f	Ô00000	withBorder	Z
+		c 非空时 setBorderThickness(2.0f) | 中
+c	com/fs/starfarer/campaign/command/E	com/fs/starfarer/campaign/command/ProductionItemRow
+	c 来源(javap取证) | 置信度(高) | 证据(E：FactionProduction$ItemInProduction 行，_Hull 拼 FleetMember)
+	f	ÕoÕO00	type	Lcom/fs/starfarer/api/campaign/FactionProductionAPI$ProductionItemType;
+		c getType() 返回 | 高
+	f	õoÕO00	specId	Ljava/lang/String;
+		c getSpecId() 返回 | 高
+	f	øOÕO00	quantity	I
+		c getQuantity()/setQuantity() | 高
+	f	super.String$int	costValue	I
+		c getCostValue() 返回 | 高
+	f	void.String$int	item	Lcom/fs/starfarer/api/campaign/FactionProductionAPI$ItemInProductionAPI;
+		c 构造注入 | 高
+	f	String.String$int	production	Lcom/fs/starfarer/api/campaign/FactionProductionAPI;
+		c 构造注入 | 高
+	f	ôOÕO00	name	Ljava/lang/String;
+		c getNameStr() 返回 | 高
+	m	getSpecId	getSpecId	()Ljava/lang/String;
+	m	getType	getType	()Lcom/fs/starfarer/api/campaign/FactionProductionAPI$ProductionItemType;
+	m	setQuantity	setQuantity	(I)V
+	m	getQuantity	getQuantity	()I
+	m	getCostValue	getCostValue	()I
+	m	getNameStr	getNameStr	()Ljava/lang/String;
+	m	isWithCreditSign	isWithCreditSign	()Z
+	m	setWithCreditSign	setWithCreditSign	(Z)V
+c	com/fs/starfarer/campaign/command/FighterBlueprintBrowser	com/fs/starfarer/campaign/command/FighterBlueprintBrowser
+	c 来源(未混淆类名) | 置信度(高) | 证据(FighterBlueprintBrowser：Fighter blueprint)
+	f	øOÓ000	knownFighters	Ljava/util/List;
+		c getKnownFighters() 返回 | 高
+	f	super.this$new	panel	Lcom/fs/starfarer/campaign/command/CustomProductionPanel;
+		c 宿主生产面板 | 高
+	f	OoÓ000	columns	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns;
+		c 排序列 | 中
+	m	getKnownFighters	getKnownFighters	()Ljava/util/List;
+	m	updateTable	updateTable	()V
+	m	wingMatchesTags	wingMatchesTags	(Lcom/fs/starfarer/loading/specs/FighterWingSpec;Ljava/util/Set;)Z
+	m	createTags	createTags	()Lcom/fs/starfarer/campaign/command/M;
+	m	tagsChanged	tagsChanged	(Lcom/fs/starfarer/campaign/command/M;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	selectAll	selectAll	()V
+	m	unselectAll	unselectAll	()V
+	m	unselectAllReally	unselectAllReally	()V
+	m	getNumPriority	getNumPriority	()I
+	m	autoEnableSet	autoEnableSet	(Z)V
+	m	getAutoEnableSubject	getAutoEnableSubject	()Ljava/lang/String;
+	m	isAutoEnableSet	isAutoEnableSet	()Z
+c	com/fs/starfarer/campaign/command/FighterBlueprintBrowser$1	com/fs/starfarer/campaign/command/CostTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(FighterBlueprintBrowser内部类：Production cost.)
+c	com/fs/starfarer/campaign/command/FighterBlueprintBrowser$2	com/fs/starfarer/campaign/command/RowColumnComparator
+	c 来源(javap取证) | 置信度(中) | 证据(FighterBlueprintBrowser内部类：Comparator<ui.B> 按列排序)
+	m	o00000	compare	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns	com/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns
+	c 来源(未混淆类名) | 置信度(高) | 证据(implements DoNotObfuscate)
+	f	NAME	NAME	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns;
+	f	TYPE	TYPE	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns;
+	f	TECH	TECH	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns;
+	f	ENABLED	ENABLED	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns;
+	f	COST	COST	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser$TableColumns;
+c	com/fs/starfarer/campaign/command/G	com/fs/starfarer/campaign/command/FactionDoctrinePrioritySnapshot
+	c 来源(javap取证) | 置信度(高) | 证据(G：构造克隆 doctrine + priority 集合，o00000() 应用快照)
+	f	Ó00000	priorityWeapons	Ljava/util/Set;
+		c addAll(getPriorityWeapons()) | 高
+	f	Ô00000	priorityFighters	Ljava/util/Set;
+		c addAll(getPriorityFighters()) | 高
+	f	new	priorityShips	Ljava/util/Set;
+		c addAll(getPriorityShips()) | 高
+	f	o00000	doctrine	Lcom/fs/starfarer/loading/specs/FactionDoctrine;
+		c clone(getDoctrine()) | 高
+	f	class	faction	Lcom/fs/starfarer/campaign/Faction;
+		c 构造注入 | 高
+	m	o00000	apply	()V
+		c 先清空后回填 + copyTo | 高
+	m	hashCode	hashCode	()I
+	m	equals	equals	(Ljava/lang/Object;)Z
+c	com/fs/starfarer/campaign/command/HullmodBlueprintBrowser	com/fs/starfarer/campaign/command/HullmodBlueprintBrowser
+	c 来源(未混淆类名) | 置信度(高) | 证据(HullmodBlueprintBrowser：Hullmod spec)
+	f	ÖOÓ000	knownMods	Ljava/util/List;
+		c updateTable 遍历 List<specs.O00O> | 中
+	f	do.interface$super	columns	Lcom/fs/starfarer/campaign/command/HullmodBlueprintBrowser$o;
+		c 排序列枚举 | 中
+	m	updateTable	updateTable	()V
+	m	modMatchesTags	modMatchesTags	(Lcom/fs/starfarer/loading/specs/O00O;Ljava/util/Set;)Z
+	m	createTags	createTags	()Lcom/fs/starfarer/campaign/command/M;
+	m	tagsChanged	tagsChanged	(Lcom/fs/starfarer/campaign/command/M;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	selectAll	selectAll	()V
+	m	unselectAll	unselectAll	()V
+	m	unselectAllReally	unselectAllReally	()V
+	m	getNumPriority	getNumPriority	()I
+	m	autoEnableSet	autoEnableSet	(Z)V
+	m	getAutoEnableSubject	getAutoEnableSubject	()Ljava/lang/String;
+	m	isAutoEnableSet	isAutoEnableSet	()Z
+c	com/fs/starfarer/campaign/command/HullmodBlueprintBrowser$1	com/fs/starfarer/campaign/command/RowColumnComparator
+	c 来源(javap取证) | 置信度(中) | 证据(HullmodBlueprintBrowser内部类：Comparator<ui.B> 按列排序)
+	m	o00000	compare	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/campaign/command/HullmodBlueprintBrowser$o	com/fs/starfarer/campaign/command/Column
+	c 来源(字符串常量) | 置信度(高) | 证据(HullmodBlueprintBrowser内部类：enum NAME/TECH/ENABLED)
+	m	values	values	()[Lcom/fs/starfarer/campaign/command/HullmodBlueprintBrowser$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/command/HullmodBlueprintBrowser$o;
+c	com/fs/starfarer/campaign/command/K	com/fs/starfarer/campaign/command/ExpandCollapseButton
+	c 来源(javap取证) | 置信度(高) | 证据(K：extends ui.m$Oo 按钮，+/- 图标 setExpanded，windows 侧对应 linux if)
+	f	ôÓÓO00	symbol	Lcom/fs/starfarer/ui/d;
+		c +/- 文本标签 | 中
+	m	setExpanded	setExpanded	(Z)V
+c	com/fs/starfarer/campaign/command/IntelIncomePanel	com/fs/starfarer/campaign/command/IntelIncomePanel
+	c 来源(未混淆类名+字符串常量) | 置信度(高) | 证据(IntelIncomePanel：Income/Upkeep/Net/Unpaid debt)
+	f	õÒØ000	monthlyReport	Lcom/fs/starfarer/api/campaign/econ/MonthlyReport;
+		c getDebt 等调用来源 | 高
+	f	øÒØ000	table	Lcom/fs/starfarer/campaign/ui/UITable;
+		c updateTable 操作的表 | 高
+	f	void.interface$Object	faction	Lcom/fs/starfarer/campaign/Faction;
+		c 面板所属派系 | 中
+	m	updateTable	updateTable	()V
+	m	addRowsFor	addRowsFor	(Lcom/fs/starfarer/api/campaign/econ/MonthlyReport$FDNode;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	showMap	showMap	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	createMap	createMap	(FFLjava/lang/String;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+c	com/fs/starfarer/campaign/command/IntelIncomePanel$1	com/fs/starfarer/campaign/command/IncomeRowTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(IntelIncomePanel内部类：FDNode+TooltipCreator 行提示)
+c	com/fs/starfarer/campaign/command/IntelIncomePanel$2	com/fs/starfarer/campaign/command/FDNodeComparator
+	c 来源(javap取证) | 置信度(中) | 证据(IntelIncomePanel内部类：Comparator<FDNode> 按列排序)
+	m	super	compare	(Lcom/fs/starfarer/api/campaign/econ/MonthlyReport$FDNode;Lcom/fs/starfarer/api/campaign/econ/MonthlyReport$FDNode;)I
+c	com/fs/starfarer/campaign/command/IntelIncomePanel$o	com/fs/starfarer/campaign/command/Column
+	c 来源(字符串常量) | 置信度(高) | 证据(IntelIncomePanel内部类：enum DESC/INCOME/NET/UPKEEP)
+	m	values	values	()[Lcom/fs/starfarer/campaign/command/IntelIncomePanel$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/command/IntelIncomePanel$o;
+c	com/fs/starfarer/campaign/command/J	com/fs/starfarer/campaign/command/FleetDoctrinePanel
+	c 来源(字符串常量) | 置信度(高) | 证据(J：Fleet composition & doctrine/Ship size/Officer quality，windows 侧对应 linux K)
+	f	super.class$void	faction	Lcom/fs/starfarer/campaign/Faction;
+		c createIfNeeded 中 getFaction 注入 | 高
+	f	ø0oO00	doctrineSnapshot	Lcom/fs/starfarer/campaign/command/G;
+		c new G(faction)，当前学说快照 | 高
+	f	øooO00	savedSnapshot	Lcom/fs/starfarer/campaign/command/G;
+		c 保存的 G，变更比较 | 中
+	f	õOoO00	shipBrowser	Lcom/fs/starfarer/campaign/command/ShipBlueprintBrowser;
+		c 船体蓝图浏览器 | 高
+	f	String.class$void	weaponBrowser	Lcom/fs/starfarer/campaign/command/WeaponBlueprintBrowser;
+		c 武器蓝图浏览器 | 高
+	f	ÓÓoO00	fighterBrowser	Lcom/fs/starfarer/campaign/command/FighterBlueprintBrowser;
+		c 战斗机蓝图浏览器 | 高
+	f	ÒOoO00	hullmodBrowser	Lcom/fs/starfarer/campaign/command/HullmodBlueprintBrowser;
+		c 船体插件蓝图浏览器 | 高
+	m	sizeChanged	sizeChanged	(FF)V
+	m	createIfNeeded	createIfNeeded	()V
+	m	playerHasHeavyIndustryColony	playerHasHeavyIndustryColony	()Z
+	m	addInfoMessageIfNeeded	addInfoMessageIfNeeded	()V
+	m	tabClosed	tabClosed	()V
+	m	updateSampleFleet	updateSampleFleet	(Z)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	doctrineLevelSet	doctrineLevelSet	(Lcom/fs/starfarer/campaign/command/o00O;F)V
+	m	saveTableUIState	saveTableUIState	()V
+	m	restoreTableUIState	restoreTableUIState	()V
+	m	createTooltip	createTooltip	(Lcom/fs/starfarer/campaign/command/o00O;Lcom/fs/starfarer/api/ui/TooltipMakerAPI;I)V
+	m	createMaxSkillPerson	createMaxSkillPerson	()Lcom/fs/starfarer/rpg/Person;
+	m	instantiateForSimulation	instantiateForSimulation	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)Lcom/fs/starfarer/combat/entities/Ship;
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory	com/fs/starfarer/campaign/command/MarketTooltipFactory
+	c 来源(未混淆类名+字符串常量) | 置信度(高) | 证据(MarketTooltipFactory：Commodity/Income/Market share)
+	m	super	createOverviewTooltip	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/campaign/command/MarketTooltipFactory$o;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c new MarketTooltipFactory$1（市场概况）| 高
+	m	super	createHazardRatingTooltip	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c new MarketTooltipFactory$2（危险度）| 高
+	m	Ó00000	createIncomeUpkeepTooltip	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c new MarketTooltipFactory$3（收入与维护）| 高
+	m	super	addCommodityTooltipRows	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Ljava/util/List;ILcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;FF)V
+		c 追加商品表行 | 中
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$1	com/fs/starfarer/campaign/command/MarketOverviewTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(MarketTooltipFactory内部类：A size %s %s colony located)
+	f	ÒøôO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c 构造注入 | 高
+	f	do.this$float	options	Lcom/fs/starfarer/campaign/command/MarketTooltipFactory$o;
+		c 构造注入显示选项 | 中
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$1$1	com/fs/starfarer/campaign/command/IndustryOrderComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<Industry> 按 getSpec().getOrder())
+	m	o00000	compare	(Lcom/fs/starfarer/api/campaign/econ/Industry;Lcom/fs/starfarer/api/campaign/econ/Industry;)I
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$2	com/fs/starfarer/campaign/command/HazardRatingTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(MarketTooltipFactory内部类：The hazard rating at)
+	f	OøôO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c 构造注入 | 高
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$2$1	com/fs/starfarer/campaign/command/HazardRatingStatModValueGetter
+	c 来源(javap取证) | 置信度(高) | 证据(StatModValueGetter，% / + / ×)
+	m	getPercentValue	getPercentValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	m	getMultValue	getMultValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$3	com/fs/starfarer/campaign/command/IncomeUpkeepTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(MarketTooltipFactory内部类：Monthly Income & Upkeep)
+	f	øöôO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c 构造注入 | 高
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$3$1	com/fs/starfarer/campaign/command/IndustryIncomeComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<Industry> 按 getIncome())
+	m	super	compare	(Lcom/fs/starfarer/api/campaign/econ/Industry;Lcom/fs/starfarer/api/campaign/econ/Industry;)I
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$3$2	com/fs/starfarer/campaign/command/IndustryUpkeepComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<Industry> 按 getUpkeep())
+	m	o00000	compare	(Lcom/fs/starfarer/api/campaign/econ/Industry;Lcom/fs/starfarer/api/campaign/econ/Industry;)I
