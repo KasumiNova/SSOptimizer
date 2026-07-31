@@ -118,6 +118,30 @@ tasks.register<JavaExec>("generateFullMappings") {
     }
 }
 
+tasks.register<JavaExec>("mergeScopeFragments") {
+    group = "mapping"
+    description = "Validate scope mapping fragments (parse, jar consistency, cross-scope uniqueness) and write coverage report"
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("github.kasuminova.ssoptimizer.mapping.gen.ScopeFragmentCli")
+
+    val gameJarsRoot = rootProject.file("game-jars")
+    val humanMappingsDir = file("src/main/resources/mappings")
+    val reportFile = mappingReportsDir.map { it.file("scope-fragments.txt") }
+
+    inputs.dir(gameJarsRoot)
+    inputs.dir(humanMappingsDir)
+    outputs.file(reportFile)
+
+    doFirst {
+        args(listOf(
+            gameJarsRoot.absolutePath,
+            humanMappingsDir.absolutePath,
+            reportFile.get().asFile.absolutePath
+        ))
+    }
+}
+
 tasks.register<JavaExec>("remapGameClasspathToNamed") {
     group = "mapping"
     description = "Remap Starsector compile classpath jars to named namespace"

@@ -21,9 +21,10 @@ applyTo: "{app/src/main/java/**/*.java,mapping/src/main/java/**/*.java,mapping/s
 ## 两级映射表分工
 
 1. **运行期权威表** `ssoptimizer-{platform}.tiny`（入库）：人工热点表，agent 内嵌，运行期 remap 与 `reobfuscateAppJar` 的唯一表来源。新增/修改语义映射只改这里。
-2. **构建期全量表** `ssoptimizer-{platform}-full.tiny`（`mapping/build/generated/`，生成物不入库）：由 `generateFullMappings` 从人工表 + 结构指纹占位名（`C_<hash8>`/`f_<hash8>`/`m_<hash8>`）确定性导出，人工条目优先。供 `remapGameClasspathToNamed` 生成全量 named 编译 classpath。
-3. `app` 源码只允许引用人工表中的 named 名、或 `ssoptimizer-identity.tiny` 中登记保持原名的游戏类；**禁止引用占位名**（`C_`/`f_`/`m_` 前缀），占位名在运行期 reobf 管线中不存在。
-4. 工作流细节（生成/合并/漂移报告/版本升级/注释约定/identity 片段）见 `docs/design/dev-environment-mapping-workflow.md`。
+2. **构建期全量表** `ssoptimizer-{platform}-full.tiny`（`mapping/build/generated/`，生成物不入库）：由 `generateFullMappings` 从人工表 + scope 语义片段 + 结构指纹占位名（`C_<hash8>`/`f_<hash8>`/`m_<hash8>`）确定性导出，分层优先级为 占位生成 < identity 片段 < scope 片段 < 人工表。供 `remapGameClasspathToNamed` 生成全量 named 编译 classpath。
+3. **scope 语义片段** `mappings/scopes/{scope}-{platform}.tiny`（入库）：按作用域拆分的语义映射层（约定见该目录 `README.md`），只影响构建期全量表；用 `mergeScopeFragments` 校验并产出覆盖率/冲突报告。
+4. `app` 源码只允许引用人工表中的 named 名、或 `ssoptimizer-identity.tiny` 中登记保持原名的游戏类；**禁止引用占位名**（`C_`/`f_`/`m_` 前缀），占位名在运行期 reobf 管线中不存在。
+5. 工作流细节（生成/合并/漂移报告/版本升级/注释约定/identity 片段）见 `docs/design/dev-environment-mapping-workflow.md`。
 
 ## 命名要求
 

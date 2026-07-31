@@ -18,40 +18,71 @@ import java.util.TreeSet;
 /**
  * 全量映射表合并器。
  * <p>
- * 输入人工映射条目（运行期权威表）与 {@link IntermediaryNameGenerator} 生成的占位条目，
- * 输出构建期全量表条目：人工条目永远优先（同混淆类/成员以人工名为准），
- * 人工条目附带的注释原样保留，占位条目无注释。
+ * 输入人工映射条目（运行期权威表）、scope 语义片段条目与
+ * {@link IntermediaryNameGenerator} 生成的占位条目，输出构建期全量表条目。
+ * 分层优先级：占位生成 &lt; scope 片段 &lt; 人工条目（同混淆类/成员高层胜出），
+ * 人工与 scope 条目附带的注释原样保留，占位条目无注释。
  * <p>
- * 输出条目按混淆类名排序，类块内先人工成员（保持人工表顺序）后占位成员（保持 jar 声明顺序），
- * 保证同一输入两次合并输出字节一致。
+ * 输出条目按混淆类名排序，类块内先人工成员（保持人工表顺序）、再 scope 成员
+ * （保持片段顺序）、后占位成员（保持 jar 声明顺序），保证同一输入两次合并输出字节一致。
  * 生成条目的描述符在此统一换算为 named 存储：表内类写 named 名，表外类（JDK / 第三方 /
  * 未混淆的 starfarer.api）保持原样。
  */
 public final class FullMappingMerger {
     /**
-     * 合并人工条目与占位条目为全量表条目。
+     * 合并人工条目与占位条目为全量表条目（无 scope 片段）。
      *
      * @param humanEntries     人工映射条目（优先）
      * @param generatedEntries 生成的占位条目
      * @return 全量表条目（排序确定）
      */
     public List<MappingEntry> merge(List<MappingEntry> humanEntries, List<MappingEntry> generatedEntries) {
+        return merge(humanEntries, List.of(), generatedEntries);
+    }
+
+    /**
+     * 合并人工条目、scope 片段条目与占位条目为全量表条目。
+     *
+     * @param humanEntries     人工映射条目（最高优先级）
+     * @param scopeEntries     scope 语义片段条目（覆盖占位名，低于人工条目）
+     * @param generatedEntries 生成的占位条目
+     * @return 全量表条目（排序确定）
+     */
+    public List<MappingEntry> merge(List<MappingEntry> humanEntries,
+                                    List<MappingEntry> scopeEntries,
+                                    List<MappingEntry> generatedEntries) {
         Objects.requireNonNull(humanEntries, "humanEntries");
+        Objects.requireNonNull(scopeEntries, "scopeEntries");
         Objects.requireNonNull(generatedEntries, "generatedEntries");
 
         Map<String, MappingEntry> classByObfuscated = new LinkedHashMap<>();
         Map<String, String> namedClassOwner = new HashMap<>();
         Map<String, List<MappingEntry>> humanMembersByOwner = new LinkedHashMap<>();
+        Map<String, List<MappingEntry>> scopeMembersByOwner = new LinkedHashMap<>();
         Map<String, List<MappingEntry>> generatedMembersByOwner = new LinkedHashMap<>();
-        Set<String> humanMemberKeys = new HashSet<>();
 
-        for (MappingEntry entry : humanEntries) {
+        // scope 层先登记，人工层随后覆盖同混淆 key 的类条目。
+        for (MappingEntry entry : scopeEntries) {
             if (entry.isClass()) {
                 classByObfuscated.put(entry.obfuscatedName(), entry);
                 namedClassOwner.put(entry.namedName(), entry.obfuscatedName());
             } else {
+                scopeMembersByOwner.computeIfAbsent(entry.ownerObfuscatedName(), key -> new ArrayList<>()).add(entry);
+            }
+        }
+        for (MappingEntry entry : humanEntries) {
+            if (entry.isClass()) {
+                MappingEntry displaced = classByObfuscated.put(entry.obfuscatedName(), entry);
+                if (displaced != null) {
+                    namedClassOwner.remove(displaced.namedName(), entry.obfuscatedName());
+                }
+                String existingOwner = namedClassOwner.putIfAbsent(entry.namedName(), entry.obfuscatedName());
+                if (existingOwner != null && !existingOwner.equals(entry.obfuscatedName())) {
+                    throw new MappingLookupException("全量表 named 类名冲突: " + entry.namedName()
+                            + " 同时映射 " + existingOwner + " 与 " + entry.obfuscatedName());
+                }
+            } else {
                 humanMembersByOwner.computeIfAbsent(entry.ownerObfuscatedName(), key -> new ArrayList<>()).add(entry);
-                humanMemberKeys.add(memberKey(entry));
             }
         }
 
@@ -64,7 +95,7 @@ public final class FullMappingMerger {
             }
         }
 
-        // 人工优先：占位生成器已跳过人工条目，这里再做一次防御性去重与 named 唯一性校验。
+        // 人工/scope 优先：占位生成器已跳过人工条目，这里再做一次防御性去重与 named 唯一性校验。
         for (MappingEntry generatedClass : generatedClassByObfuscated.values()) {
             if (classByObfuscated.containsKey(generatedClass.obfuscatedName())) {
                 continue;
@@ -77,14 +108,28 @@ public final class FullMappingMerger {
             classByObfuscated.put(generatedClass.obfuscatedName(), generatedClass);
         }
 
+        // 成员去重 key 统一换算为混淆形式描述符：人工/scope 条目存 named 描述符，
+        // 占位条目存混淆描述符，只有换算到同一侧才能正确判重。
+        Map<String, String> namedToObfuscated = new HashMap<>();
+        classByObfuscated.forEach((obfuscatedName, classEntry) ->
+                namedToObfuscated.put(classEntry.namedName(), obfuscatedName));
+        Set<String> humanMemberKeys = memberKeys(humanMembersByOwner, namedToObfuscated);
+        Set<String> scopeMemberKeys = memberKeys(scopeMembersByOwner, namedToObfuscated);
+
         Set<String> allClassNames = new TreeSet<>(classByObfuscated.keySet());
         List<MappingEntry> merged = new ArrayList<>();
         for (String className : allClassNames) {
             merged.add(classByObfuscated.get(className));
-            List<MappingEntry> humanMembers = humanMembersByOwner.getOrDefault(className, List.of());
-            merged.addAll(humanMembers);
+            merged.addAll(humanMembersByOwner.getOrDefault(className, List.of()));
+            for (MappingEntry scopeMember : scopeMembersByOwner.getOrDefault(className, List.of())) {
+                if (humanMemberKeys.contains(memberKey(scopeMember, namedToObfuscated))) {
+                    continue;
+                }
+                merged.add(scopeMember);
+            }
             for (MappingEntry generatedMember : generatedMembersByOwner.getOrDefault(className, List.of())) {
-                if (humanMemberKeys.contains(memberKey(generatedMember))) {
+                if (humanMemberKeys.contains(memberKey(generatedMember, namedToObfuscated))
+                        || scopeMemberKeys.contains(memberKey(generatedMember, namedToObfuscated))) {
                     continue;
                 }
                 merged.add(toNamedDescriptorEntry(generatedMember, classByObfuscated));
@@ -111,22 +156,42 @@ public final class FullMappingMerger {
      * @return 漂移描述行（无漂移时为空列表）
      */
     public static List<String> driftLines(List<MappingEntry> humanEntries, List<ClassStructure> classes) {
-        Objects.requireNonNull(humanEntries, "humanEntries");
+        return driftLines(humanEntries, classes, Map.of());
+    }
+
+    /**
+     * 计算漂移报告条目，支持补充 named→obf 类名上下文。
+     * <p>
+     * scope 片段等外部表的成员描述符可能引用其他表（人工表 / 其他 scope / 占位名）
+     * 中的 named 类，逐表校验时需要通过 {@code namedToObfuscatedContext} 提供完整的
+     * named→obf 换算上下文（通常取合并后全量表的类条目），否则表外 named 引用会被
+     * 误判为成员缺失。条目自身的类映射优先于上下文。
+     *
+     * @param entries                  待校验的映射条目
+     * @param classes                  jar 扫描出的类结构
+     * @param namedToObfuscatedContext 补充的 named→obf 类名上下文
+     * @return 漂移描述行（无漂移时为空列表）
+     */
+    public static List<String> driftLines(List<MappingEntry> entries,
+                                          List<ClassStructure> classes,
+                                          Map<String, String> namedToObfuscatedContext) {
+        Objects.requireNonNull(entries, "entries");
         Objects.requireNonNull(classes, "classes");
+        Objects.requireNonNull(namedToObfuscatedContext, "namedToObfuscatedContext");
 
         Map<String, ClassStructure> classByName = new HashMap<>();
         for (ClassStructure classStructure : classes) {
             classByName.put(classStructure.name(), classStructure);
         }
-        Map<String, String> namedToObfuscated = new HashMap<>();
-        for (MappingEntry entry : humanEntries) {
+        Map<String, String> namedToObfuscated = new HashMap<>(namedToObfuscatedContext);
+        for (MappingEntry entry : entries) {
             if (entry.isClass()) {
                 namedToObfuscated.put(entry.namedName(), entry.obfuscatedName());
             }
         }
 
         List<String> drift = new ArrayList<>();
-        for (MappingEntry entry : humanEntries) {
+        for (MappingEntry entry : entries) {
             if (entry.isClass()) {
                 if (!classByName.containsKey(entry.obfuscatedName())) {
                     drift.add("类缺失: " + entry.namedName() + " (表中混淆类名: " + entry.obfuscatedName() + ")");
@@ -216,7 +281,19 @@ public final class FullMappingMerger {
         return builder.toString();
     }
 
-    private static String memberKey(MappingEntry entry) {
-        return entry.ownerObfuscatedName() + '#' + entry.kind() + '#' + entry.obfuscatedName() + '#' + entry.descriptor();
+    private static Set<String> memberKeys(Map<String, List<MappingEntry>> membersByOwner,
+                                          Map<String, String> namedToObfuscated) {
+        Set<String> keys = new HashSet<>();
+        for (List<MappingEntry> members : membersByOwner.values()) {
+            for (MappingEntry member : members) {
+                keys.add(memberKey(member, namedToObfuscated));
+            }
+        }
+        return keys;
+    }
+
+    private static String memberKey(MappingEntry entry, Map<String, String> namedToObfuscated) {
+        return entry.ownerObfuscatedName() + '#' + entry.kind() + '#' + entry.obfuscatedName()
+                + '#' + toObfuscatedDescriptor(entry.descriptor(), namedToObfuscated);
     }
 }

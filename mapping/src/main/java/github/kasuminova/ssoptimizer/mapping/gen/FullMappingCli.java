@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.mapping.gen;
 
 import github.kasuminova.ssoptimizer.mapping.MappingEntry;
+import github.kasuminova.ssoptimizer.mapping.MappingLookupException;
 import github.kasuminova.ssoptimizer.mapping.MappingPlatform;
 import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 
@@ -24,7 +25,10 @@ import java.util.stream.Stream;
  * 混淆 jar（{@code *_obf.jar}，未混淆的 starfarer.api.jar 不生成占位映射），
  * 与人工表 {@code humanMappingsDir/ssoptimizer-<platform>.tiny} 及保持原名片段
  * {@code humanMappingsDir/ssoptimizer-identity.tiny}（可选，登记 app 编译期直接引用、
- * 必须保持原名的类）合并后输出
+ * 必须保持原名的类）、scope 语义片段 {@code humanMappingsDir/scopes/<scope>-<platform>.tiny}
+ * （可选，分层优先级：占位生成 < identity 片段 < scope 片段 < 人工运行期表；
+ * scope 间混淆 key 或 named 类名冲突直接报错并指明两个 scope）
+ * 合并后输出
  * {@code outputDir/<platform>/ssoptimizer-<platform>-full.tiny}，
  * 并产出漂移报告 {@code reportDir/mapping-drift-<platform>.txt} 与
  * 跨平台匹配报告 {@code reportDir/cross-platform-match.txt}。
@@ -51,6 +55,7 @@ public final class FullMappingCli {
         Path humanMappingsDir = Path.of(args[1]);
         Path outputDir = Path.of(args[2]);
         Path reportDir = Path.of(args[3]);
+        Path scopesDir = humanMappingsDir.resolve("scopes");
 
         Map<MappingPlatform, List<ClassStructure>> classesByPlatform = new LinkedHashMap<>();
         TinyV2MappingRepository identityRepository = loadIdentityRepository(humanMappingsDir);
@@ -67,6 +72,14 @@ public final class FullMappingCli {
             List<ClassStructure> classes = ClassStructure.scan(jars);
             classesByPlatform.put(platform, classes);
 
+            List<ScopeFragments.ScopeFragment> scopeFragments = ScopeFragments.load(scopesDir, platform);
+            List<String> scopeConflicts = ScopeFragments.crossScopeConflictLines(scopeFragments);
+            if (!scopeConflicts.isEmpty()) {
+                throw new MappingLookupException("scope 片段冲突 (" + platform.id() + "):\n - "
+                        + String.join("\n - ", scopeConflicts));
+            }
+            List<MappingEntry> scopeEntries = ScopeFragments.mergedEntries(scopeFragments);
+
             TinyV2MappingRepository humanRepository = TinyV2MappingRepository.loadFromFile(
                     humanMappingsDir.resolve("ssoptimizer-" + platform.id() + ".tiny"));
             List<MappingEntry> generated = new IntermediaryNameGenerator().generate(classes, humanRepository, identityClasses);
@@ -74,7 +87,7 @@ public final class FullMappingCli {
             List<MappingEntry> priorityEntries = new ArrayList<>(humanRepository.entries().size() + identityEntries.size());
             priorityEntries.addAll(humanRepository.entries());
             priorityEntries.addAll(identityEntries);
-            List<MappingEntry> merged = merger.merge(priorityEntries, generated);
+            List<MappingEntry> merged = merger.merge(priorityEntries, scopeEntries, generated);
 
             Path outputFile = outputDir.resolve(platform.id()).resolve("ssoptimizer-" + platform.id() + "-full.tiny");
             Files.createDirectories(outputFile.getParent());
@@ -86,6 +99,7 @@ public final class FullMappingCli {
 
             System.out.println("[FullMappingCli] " + platform.id() + ": 扫描类 " + classes.size()
                     + ", 人工条目 " + humanRepository.entries().size()
+                    + ", scope 片段 " + scopeFragments.size() + " 个 / " + scopeEntries.size() + " 条目"
                     + ", 占位条目 " + generated.size()
                     + ", 全量条目 " + merged.size()
                     + ", 漂移条目 " + drift.size());
