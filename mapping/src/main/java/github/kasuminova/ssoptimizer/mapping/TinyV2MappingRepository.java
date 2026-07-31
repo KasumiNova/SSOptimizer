@@ -129,6 +129,21 @@ public final class TinyV2MappingRepository implements MappingRepository {
         }
     }
 
+    /**
+     * 从给定文件加载 Tiny v2 映射。
+     *
+     * @param mappingFile 映射文件路径
+     * @return 映射仓库
+     */
+    public static TinyV2MappingRepository loadFromFile(java.nio.file.Path mappingFile) {
+        Objects.requireNonNull(mappingFile, "mappingFile");
+        try (InputStream stream = java.nio.file.Files.newInputStream(mappingFile)) {
+            return loadFromResource(stream, mappingFile.toString());
+        } catch (IOException exception) {
+            throw new MappingLookupException("读取 Tiny v2 映射失败: " + mappingFile, exception);
+        }
+    }
+
     private static List<MappingEntry> parse(BufferedReader reader, String resourcePath) throws IOException {
         String header = reader.readLine();
         if (header == null) {
@@ -141,7 +156,8 @@ public final class TinyV2MappingRepository implements MappingRepository {
         }
 
         List<MappingEntry> entries = new ArrayList<>();
-        MappingEntry currentClass = null;
+        int currentClassIndex = -1;
+        int currentMemberIndex = -1;
 
         String line;
         while ((line = reader.readLine()) != null) {
@@ -149,26 +165,50 @@ public final class TinyV2MappingRepository implements MappingRepository {
                 continue;
             }
 
-            String trimmed = line.stripLeading();
-            if (trimmed.startsWith("c ")) {
-                String[] tokens = trimmed.split("\\s+");
-                if (tokens.length != 3) {
+            int indent = 0;
+            while (indent < line.length() && line.charAt(indent) == '\t') {
+                indent++;
+            }
+            String content = line.substring(indent).stripTrailing();
+
+            if (indent == 0) {
+                String[] tokens = content.split("\\s+");
+                if (tokens.length != 3 || !"c".equals(tokens[0])) {
                     throw new MappingLookupException("Tiny v2 类映射格式不正确: " + line);
                 }
-                currentClass = MappingEntry.classEntry(tokens[1], tokens[2]);
-                entries.add(currentClass);
+                entries.add(MappingEntry.classEntry(tokens[1], tokens[2]));
+                currentClassIndex = entries.size() - 1;
+                currentMemberIndex = -1;
                 continue;
             }
 
-            if (currentClass == null) {
+            if (currentClassIndex < 0) {
                 throw new MappingLookupException("Tiny v2 成员映射缺少类上下文: " + line);
             }
 
-            String[] tokens = trimmed.split("\\s+");
+            if (content.equals("c") || content.startsWith("c ") || content.startsWith("c\t")) {
+                // 注释行：缩进一级挂到所属类条目，缩进两级挂到所属成员条目。
+                String comment = content.length() > 1 ? content.substring(1).strip() : "";
+                int targetIndex = indent == 1 ? currentClassIndex : currentMemberIndex;
+                if (targetIndex < 0) {
+                    throw new MappingLookupException("Tiny v2 成员注释缺少成员上下文: " + line);
+                }
+                MappingEntry target = entries.get(targetIndex);
+                String merged = target.comment() == null ? comment : target.comment() + '\n' + comment;
+                entries.set(targetIndex, target.withComment(merged));
+                continue;
+            }
+
+            if (indent != 1) {
+                throw new MappingLookupException("Tiny v2 不支持的行缩进: " + line);
+            }
+
+            String[] tokens = content.split("\\s+");
             if (tokens.length != 4) {
                 throw new MappingLookupException("Tiny v2 成员映射格式不正确: " + line);
             }
 
+            MappingEntry currentClass = entries.get(currentClassIndex);
             if ("f".equals(tokens[0])) {
                 entries.add(MappingEntry.fieldEntry(
                         currentClass.obfuscatedName(),
@@ -176,6 +216,7 @@ public final class TinyV2MappingRepository implements MappingRepository {
                         tokens[1],
                         tokens[2],
                         tokens[3]));
+                currentMemberIndex = entries.size() - 1;
                 continue;
             }
 
@@ -186,6 +227,7 @@ public final class TinyV2MappingRepository implements MappingRepository {
                         tokens[1],
                         tokens[2],
                         tokens[3]));
+                currentMemberIndex = entries.size() - 1;
                 continue;
             }
 

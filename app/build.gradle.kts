@@ -72,8 +72,18 @@ dependencies {
     })
     namedGameClasspath.builtBy(":mapping:remapGameClasspathToNamed")
 
+    // 混淆原始游戏 jar（入库 vendor jar）：named jar 全量改名后，运行期模拟测试
+    // （Mixin 桥接/ASM 转换，工作在混淆命名空间）仍需从 obf 视图读取类字节码与解析类层次
+    val obfGameClasspath = rootProject.files(rootProject.provider {
+        val dir = rootProject.file("game-jars/${mappingPlatform.get()}")
+        dir.listFiles()
+            ?.filter { it.isFile && it.extension == "jar" }
+            ?: emptyList()
+    })
+
     compileOnly(namedGameClasspath)
     testImplementation(namedGameClasspath)
+    testImplementation(obfGameClasspath)
 }
 
 tasks.named<JavaCompile>("compileJava") {

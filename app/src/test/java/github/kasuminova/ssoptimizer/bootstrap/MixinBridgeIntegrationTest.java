@@ -1,9 +1,5 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
-import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
-import github.kasuminova.ssoptimizer.mapping.MappingEntry;
-import github.kasuminova.ssoptimizer.mapping.MappingDirection;
-import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderOptimizationToggle;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.junit.jupiter.api.Test;
@@ -43,7 +39,6 @@ class MixinBridgeIntegrationTest {
     private static final String XSTREAM_FIELD_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamFieldAccessHelper";
     private static final String XSTREAM_OBJECT_ID_DICTIONARY_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamObjectIdDictionaryHelper";
     private static final String XSTREAM_PATH_TRACKER_HELPER_OWNER = "github/kasuminova/ssoptimizer/common/save/XStreamPathTrackerHelper";
-    private static final TinyV2MappingRepository REPOSITORY = TinyV2MappingRepository.loadDefault();
 
     private static void bootstrapMixin() {
         MixinBootstrap.init();
@@ -70,17 +65,21 @@ class MixinBridgeIntegrationTest {
         }
     }
 
-    private static byte[] reobfuscate(byte[] namedClassBytes) {
-        BytecodeRemapper remapper = new BytecodeRemapper(
-                REPOSITORY,
-                MappingDirection.NAMED_TO_OBFUSCATED
-        );
-        return remapper.remapClass(namedClassBytes).bytecode();
+    /**
+     * 读取游戏类的原始 obf 字节码（运行期输入视图）。
+     * <p>
+     * named jar 全量改名后，obf 字节码由测试 classpath 上的入库 vendor jar 提供，
+     * 不再经由 named 字节码 reobf 近似。
+     */
+    private static byte[] readRuntimeObfuscatedBytes(String internalName) {
+        byte[] bytes = RuntimeViewFixtures.readObfuscatedBytes(internalName);
+        assertNotNull(bytes, "Missing class resource on test classpath: "
+                + RuntimeViewFixtures.runtimeClassName(internalName) + ".class");
+        return bytes;
     }
 
     private static String runtimeClassName(String namedClassName) {
-        MappingEntry classEntry = REPOSITORY.findClassByNamedName(namedClassName).orElse(null);
-        return classEntry != null ? classEntry.obfuscatedName() : namedClassName;
+        return RuntimeViewFixtures.runtimeClassName(namedClassName);
     }
 
     private static CompiledJaninoClass compileJaninoClass(String className, String source) throws Exception {
@@ -176,7 +175,7 @@ class MixinBridgeIntegrationTest {
         System.clearProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY);
         bootstrapMixin();
 
-        byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/combat/entities/Engine.class"));
+        byte[] original = readRuntimeObfuscatedBytes("com/fs/starfarer/combat/entities/Engine");
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
                 runtimeClassName("com/fs/starfarer/combat/entities/Engine"),
@@ -251,7 +250,7 @@ class MixinBridgeIntegrationTest {
     void bridgeAppliesSoundMixinToExplicitThirdPartyTarget() throws Exception {
         bootstrapMixin();
 
-        byte[] original = reobfuscate(readClassBytes("sound/SoundManager.class"));
+        byte[] original = readRuntimeObfuscatedBytes("sound/SoundManager");
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
             runtimeClassName("sound/SoundManager"),
@@ -278,7 +277,7 @@ class MixinBridgeIntegrationTest {
             probe.close();
 
             String runtimeClassName = runtimeClassName("com/fs/starfarer/coreui/CampaignLocationMapCanvas");
-            byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/coreui/CampaignLocationMapCanvas.class"));
+            byte[] original = readRuntimeObfuscatedBytes("com/fs/starfarer/coreui/CampaignLocationMapCanvas");
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
             runtimeClassName,
@@ -469,7 +468,7 @@ class MixinBridgeIntegrationTest {
     void bridgeAppliesSaveDialogMixinToObfuscatedRuntimeClass() throws Exception {
         bootstrapMixin();
 
-        byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog.class"));
+        byte[] original = readRuntimeObfuscatedBytes("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog");
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
             runtimeClassName("com/fs/starfarer/campaign/save/CampaignSaveProgressDialog"),
@@ -489,7 +488,7 @@ class MixinBridgeIntegrationTest {
     void bridgeAppliesSaveOutputStreamMixinToObfuscatedRuntimeClass() throws Exception {
         bootstrapMixin();
 
-        byte[] original = reobfuscate(readClassBytes("com/fs/starfarer/util/SaveProgressOutputStream.class"));
+        byte[] original = readRuntimeObfuscatedBytes("com/fs/starfarer/util/SaveProgressOutputStream");
         byte[] transformed = new MixinBridgeTransformer().transform(
                 null,
             runtimeClassName("com/fs/starfarer/util/SaveProgressOutputStream"),

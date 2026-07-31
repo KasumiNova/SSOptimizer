@@ -18,6 +18,7 @@ public final class JarRemapCli {
      * 支持两种模式：
      * <ul>
         *     <li>{@code --platform=<linux|windows|auto>}（可选，未传则读取系统属性 / 自动探测）</li>
+     *     <li>{@code --mapping=<path>}（可选，从指定文件加载映射；未传则走 classpath 资源，运行期行为不变）</li>
      *     <li>{@code batch <obf-to-named|named-to-obf> <outputDir> <inputJar...>}</li>
      *     <li>{@code single <obf-to-named|named-to-obf> <inputJar> <outputJar>}</li>
      * </ul>
@@ -28,9 +29,16 @@ public final class JarRemapCli {
     public static void main(String[] args) throws Exception {
         int offset = 0;
         MappingPlatform platform = MappingPlatform.current();
-        if (args.length > 0 && args[0].startsWith("--platform=")) {
-            platform = MappingPlatform.parse(args[0].substring("--platform=".length()));
-            offset = 1;
+        Path mappingFile = null;
+        while (args.length > offset && args[offset].startsWith("--")) {
+            if (args[offset].startsWith("--platform=")) {
+                platform = MappingPlatform.parse(args[offset].substring("--platform=".length()));
+            } else if (args[offset].startsWith("--mapping=")) {
+                mappingFile = Path.of(args[offset].substring("--mapping=".length()));
+            } else {
+                throw new IllegalArgumentException("不支持的参数: " + args[offset]);
+            }
+            offset++;
         }
 
         if (args.length - offset < 4) {
@@ -39,7 +47,9 @@ public final class JarRemapCli {
 
         String mode = args[offset];
         MappingDirection direction = parseDirection(args[offset + 1]);
-        TinyV2MappingRepository repository = TinyV2MappingRepository.loadForPlatform(platform);
+        TinyV2MappingRepository repository = mappingFile == null
+                ? TinyV2MappingRepository.loadForPlatform(platform)
+                : TinyV2MappingRepository.loadFromFile(mappingFile);
         JarRemapper remapper = new JarRemapper(repository, direction);
 
         if ("batch".equals(mode)) {

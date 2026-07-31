@@ -40,6 +40,15 @@ val namedGameJarsDir = mappingPlatform.map { platform ->
     rootProject.layout.buildDirectory.dir("named-game-jars/$platform").get().asFile
 }
 
+/** 全量映射生成物目录（mapping/build/generated/mappings/{platform}/，生成物不入库）。 */
+val generatedMappingsDir = layout.buildDirectory.dir("generated/mappings")
+/** 映射报告目录（mapping/build/reports/，报告不入库）。 */
+val mappingReportsDir = layout.buildDirectory.dir("reports")
+/** 当前平台的全量映射文件（由 generateFullMappings 产出）。 */
+val fullMappingFile = mappingPlatform.map { platform ->
+    generatedMappingsDir.get().file("$platform/ssoptimizer-$platform-full.tiny").asFile
+}
+
 fun resolveGameJarDirectory(gameDirPath: String): File {
     val gameDir = file(gameDirPath)
     val starsectorCoreDir = gameDir.resolve("starsector-core")
@@ -84,14 +93,49 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.register<JavaExec>("generateFullMappings") {
+    group = "mapping"
+    description = "Generate full (placeholder + human) mappings for both platforms from vendored game jars"
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("github.kasuminova.ssoptimizer.mapping.gen.FullMappingCli")
+
+    val gameJarsRoot = rootProject.file("game-jars")
+    val humanMappingsDir = file("src/main/resources/mappings")
+
+    inputs.dir(gameJarsRoot)
+    inputs.dir(humanMappingsDir)
+    outputs.dir(generatedMappingsDir)
+    outputs.dir(mappingReportsDir)
+
+    doFirst {
+        args(listOf(
+            gameJarsRoot.absolutePath,
+            humanMappingsDir.absolutePath,
+            generatedMappingsDir.get().asFile.absolutePath,
+            mappingReportsDir.get().asFile.absolutePath
+        ))
+    }
+}
+
 tasks.register<JavaExec>("remapGameClasspathToNamed") {
     group = "mapping"
     description = "Remap Starsector compile classpath jars to named namespace"
-    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named("classes"), "generateFullMappings")
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("github.kasuminova.ssoptimizer.mapping.JarRemapCli")
     systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
 
+    // 消费构建期全量表（人工条目优先 + 占位名），tiny 源或生成器输入变更会触发重跑。
+    inputs.files(fullMappingFile)
+    if (starsectorGameDir != null) {
+        inputs.dir(resolveGameJarDirectory(starsectorGameDir!!))
+    } else {
+        inputs.files(mappingPlatform.map { platform ->
+            fileTree(rootProject.file("game-jars/$platform")) { include("*.jar") }
+        })
+        inputs.files(configurations["gameClasspath"])
+    }
     outputs.dir(namedGameJarsDir)
 
     doFirst {
@@ -132,7 +176,10 @@ tasks.register<JavaExec>("remapGameClasspathToNamed") {
         outputDir.parentFile.mkdirs()
         outputDir.mkdirs()
 
-        args(listOf("batch", "obf-to-named", outputDir.absolutePath) + inputJars.map { it.absolutePath })
+        args(listOf(
+            "--mapping=${fullMappingFile.get().absolutePath}",
+            "batch", "obf-to-named", outputDir.absolutePath
+        ) + inputJars.map { it.absolutePath })
     }
 }
 

@@ -91,6 +91,42 @@ public final class MappingTableExporter {
         return builder.toString();
     }
 
+    /**
+     * 导出 Tiny v2 映射文本。
+     * <p>
+     * 按条目原始顺序输出类行与成员行，并保留注释行（类行下 {@code \tc}、成员行下
+     * {@code \t\tc}），使"解析 → 导出 → 再解析"往返不丢失注释。
+     *
+     * @return Tiny v2 文本
+     */
+    public String exportTiny() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("tiny\t2\t0\tobf\tnamed\n");
+        for (MappingEntry entry : repository.entries()) {
+            if (entry.isClass()) {
+                builder.append("c\t").append(entry.obfuscatedName()).append('\t').append(entry.namedName()).append('\n');
+                appendComment(builder, "\t", entry);
+                continue;
+            }
+            builder.append('\t').append(entry.isField() ? 'f' : 'm')
+                    .append('\t').append(entry.obfuscatedName())
+                    .append('\t').append(entry.namedName())
+                    .append('\t').append(entry.descriptor())
+                    .append('\n');
+            appendComment(builder, "\t\t", entry);
+        }
+        return builder.toString();
+    }
+
+    private static void appendComment(StringBuilder builder, String indent, MappingEntry entry) {
+        if (entry.comment() == null) {
+            return;
+        }
+        for (String commentLine : entry.comment().split("\n", -1)) {
+            builder.append(indent).append('c').append('\t').append(commentLine).append('\n');
+        }
+    }
+
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
         for (MappingEntry entry : repository.entries()) {

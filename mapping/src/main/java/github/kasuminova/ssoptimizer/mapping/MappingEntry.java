@@ -26,19 +26,22 @@ public final class MappingEntry {
     private final String obfuscatedName;
     private final String namedName;
     private final String descriptor;
+    private final String comment;
 
     private MappingEntry(Kind kind,
                          String ownerObfuscatedName,
                          String ownerNamedName,
                          String obfuscatedName,
                          String namedName,
-                         String descriptor) {
+                         String descriptor,
+                         String comment) {
         this.kind = Objects.requireNonNull(kind, "kind");
         this.ownerObfuscatedName = ownerObfuscatedName;
         this.ownerNamedName = ownerNamedName;
         this.obfuscatedName = Objects.requireNonNull(obfuscatedName, "obfuscatedName");
         this.namedName = Objects.requireNonNull(namedName, "namedName");
         this.descriptor = descriptor;
+        this.comment = comment;
     }
 
     /**
@@ -49,7 +52,7 @@ public final class MappingEntry {
      * @return 类映射条目
      */
     public static MappingEntry classEntry(String obfuscatedName, String namedName) {
-        return new MappingEntry(Kind.CLASS, null, null, obfuscatedName, namedName, null);
+        return new MappingEntry(Kind.CLASS, null, null, obfuscatedName, namedName, null, null);
     }
 
     /**
@@ -67,7 +70,7 @@ public final class MappingEntry {
                                           String obfuscatedName,
                                           String namedName,
                                           String descriptor) {
-        return new MappingEntry(Kind.FIELD, ownerObfuscatedName, ownerNamedName, obfuscatedName, namedName, descriptor);
+        return new MappingEntry(Kind.FIELD, ownerObfuscatedName, ownerNamedName, obfuscatedName, namedName, descriptor, null);
     }
 
     /**
@@ -85,7 +88,7 @@ public final class MappingEntry {
                                            String obfuscatedName,
                                            String namedName,
                                            String descriptor) {
-        return new MappingEntry(Kind.METHOD, ownerObfuscatedName, ownerNamedName, obfuscatedName, namedName, descriptor);
+        return new MappingEntry(Kind.METHOD, ownerObfuscatedName, ownerNamedName, obfuscatedName, namedName, descriptor, null);
     }
 
     /**
@@ -140,6 +143,28 @@ public final class MappingEntry {
      */
     public String descriptor() {
         return descriptor;
+    }
+
+    /**
+     * 返回映射注释。
+     * <p>
+     * 注释来自 Tiny v2 注释行（类行下的 {@code \tc ...}、成员行下的 {@code \t\tc ...}），
+     * 是映射维护者记录命名来源与证据的载体，不进入字节码。
+     *
+     * @return 注释文本；无注释返回 {@code null}
+     */
+    public String comment() {
+        return comment;
+    }
+
+    /**
+     * 返回附带指定注释的条目副本。
+     *
+     * @param newComment 注释文本；{@code null} 表示无注释
+     * @return 新条目
+     */
+    public MappingEntry withComment(String newComment) {
+        return new MappingEntry(kind, ownerObfuscatedName, ownerNamedName, obfuscatedName, namedName, descriptor, newComment);
     }
 
     /**

@@ -91,4 +91,31 @@ class MappingTableExporterTest {
         assertTrue(table.contains("reloadCache"));
         assertTrue(table.contains("(I)V"));
     }
+
+    @Test
+    void exportTinyRoundTripsEntriesAndComments() {
+        java.util.List<MappingEntry> entries = java.util.List.of(
+                MappingEntry.classEntry("com/fs/example/A", "com/fs/example/Alpha")
+                        .withComment("来源: javap取证; 置信度: 高"),
+                MappingEntry.fieldEntry("com/fs/example/A", "com/fs/example/Alpha", "a", "alphaField", "I")
+                        .withComment("字段注释"),
+                MappingEntry.methodEntry("com/fs/example/A", "com/fs/example/Alpha", "b", "doWork", "(I)V")
+        );
+
+        String tiny = new MappingTableExporter(TinyV2MappingRepository.of(entries)).exportTiny();
+        TinyV2MappingRepository reparsed = TinyV2MappingRepository.loadFromResource(
+                new java.io.ByteArrayInputStream(tiny.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                "memory:roundtrip.tiny");
+
+        assertEquals(entries.size(), reparsed.entries().size());
+        for (int i = 0; i < entries.size(); i++) {
+            MappingEntry expected = entries.get(i);
+            MappingEntry actual = reparsed.entries().get(i);
+            assertEquals(expected.kind(), actual.kind());
+            assertEquals(expected.obfuscatedName(), actual.obfuscatedName());
+            assertEquals(expected.namedName(), actual.namedName());
+            assertEquals(expected.descriptor(), actual.descriptor());
+            assertEquals(expected.comment(), actual.comment());
+        }
+    }
 }

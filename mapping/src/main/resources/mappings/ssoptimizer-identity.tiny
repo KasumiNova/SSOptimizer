@@ -1,0 +1,21 @@
+tiny 2 0 obf named
+c com/fs/graphics/Sprite com/fs/graphics/Sprite
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/graphics/util/Fader com/fs/graphics/util/Fader
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/starfarer/campaign/fleet/CampaignFleetMemberView com/fs/starfarer/campaign/fleet/CampaignFleetMemberView
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/starfarer/campaign/fleet/CampaignFleetView com/fs/starfarer/campaign/fleet/CampaignFleetView
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/starfarer/campaign/fleet/ContrailEngineV2 com/fs/starfarer/campaign/fleet/ContrailEngineV2
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/starfarer/combat/systems/F com/fs/starfarer/combat/systems/F
+	c app 编译期以原始混淆名直接引用的类（ShipAccessor 等）：保持原名直到迁入人工表
+c com/fs/starfarer/loading/specs/EngineSlot com/fs/starfarer/loading/specs/EngineSlot
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/starfarer/loading/specs/EngineSlot$BlendMode com/fs/starfarer/loading/specs/EngineSlot$BlendMode
+	c app 编译期直接引用的 EngineSlot 内部枚举：类与全部成员保持原名
+c com/fs/starfarer/util/ColorShifter com/fs/starfarer/util/ColorShifter
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名
+c com/fs/starfarer/util/ValueShifter com/fs/starfarer/util/ValueShifter
+	c app 编译期直接引用的类（游戏未混淆该真实类名）：类与全部成员保持原名

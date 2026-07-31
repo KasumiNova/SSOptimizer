@@ -9,7 +9,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,16 +17,14 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class RealBytecodeIntegrationTest {
 
+    /**
+     * 读取运行期 named 视图字节码（Sanitizing/ASM 处理器的工作视图）。
+     * <p>
+     * named jar 全量改名后，该视图不再等于 named jar 中的字节码，
+     * 改由入库 vendor jar 的 obf 字节码经人工映射表换算得到（与运行期 remap 管线一致）。
+     */
     private byte[] loadClassBytes(String internalName) {
-        String resource = internalName + ".class";
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resource)) {
-            if (is == null) {
-                return null;
-            }
-            return is.readAllBytes();
-        } catch (Exception e) {
-            return null;
-        }
+        return RuntimeViewFixtures.readRuntimeNamedBytes(internalName);
     }
 
     @Test

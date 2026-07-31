@@ -8,7 +8,6 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.objectweb.asm.ClassReader;
 
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,12 +72,10 @@ class RegisteredAsmTransformationIntegrationTest {
         return new LinkedHashMap<>((Map<String, AsmClassProcessor>) processorsField.get(transformer));
     }
 
+    /**
+     * 读取运行期 named 视图字节码（处理器的工作视图），来源见 {@link RuntimeViewFixtures}。
+     */
     private static byte[] loadClassBytes(final String internalName) {
-        final String resourcePath = internalName + ".class";
-        try (InputStream input = RegisteredAsmTransformationIntegrationTest.class.getClassLoader().getResourceAsStream(resourcePath)) {
-            return input != null ? input.readAllBytes() : null;
-        } catch (Exception exception) {
-            return null;
-        }
+        return RuntimeViewFixtures.readRuntimeNamedBytes(internalName);
     }
 }

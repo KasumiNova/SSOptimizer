@@ -1,9 +1,5 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
-import github.kasuminova.ssoptimizer.mapping.BytecodeRemapper;
-import github.kasuminova.ssoptimizer.mapping.MappingDirection;
-import github.kasuminova.ssoptimizer.mapping.MappingEntry;
-import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -42,11 +38,6 @@ class ConfiguredMixinTransformationIntegrationTest {
     private static final String MIXIN_ANNOTATION_DESC = "Lorg/spongepowered/asm/mixin/Mixin;";
     private static final Pattern MIXIN_ARRAY_PATTERN = Pattern.compile("\\\"mixins\\\"\\s*:\\s*\\[(.*?)]", Pattern.DOTALL);
     private static final Pattern STRING_PATTERN = Pattern.compile("\\\"([^\\\"]+)\\\"");
-    private static final TinyV2MappingRepository REPOSITORY = TinyV2MappingRepository.loadDefault();
-    private static final BytecodeRemapper NAMED_TO_OBFUSCATED = new BytecodeRemapper(
-            REPOSITORY,
-            MappingDirection.NAMED_TO_OBFUSCATED
-    );
 
     @BeforeAll
     static void bootstrapMixin() {
@@ -64,31 +55,20 @@ class ConfiguredMixinTransformationIntegrationTest {
             assertFalse(targets.isEmpty(), () -> "Mixin should expose at least one target: " + mixinName);
 
             for (String target : targets) {
-                final byte[] original = loadClassBytes(target);
+                final String runtimeName = RuntimeViewFixtures.runtimeClassName(target);
+                final byte[] original = RuntimeViewFixtures.readObfuscatedBytes(target);
                 assumeTrue(original != null, () -> "Mixin target not on test classpath: " + target + " for " + mixinName);
-                final RuntimeTarget runtimeTarget = toRuntimeTarget(target, original);
 
                 final MixinBridgeTransformer transformer = new MixinBridgeTransformer();
                 final byte[] transformed = assertDoesNotThrow(
-                    () -> transformer.transform(null, runtimeTarget.className(), null, null, runtimeTarget.bytecode()),
-                    () -> "Mixin bridge should transform real target without throwing: " + mixinName + " -> " + runtimeTarget.className());
-                assertNotNull(transformed, () -> "Mixin bridge should return transformed bytes: " + mixinName + " -> " + runtimeTarget.className());
+                    () -> transformer.transform(null, runtimeName, null, null, original),
+                    () -> "Mixin bridge should transform real target without throwing: " + mixinName + " -> " + runtimeName);
+                assertNotNull(transformed, () -> "Mixin bridge should return transformed bytes: " + mixinName + " -> " + runtimeName);
                 assertDoesNotThrow(() -> new ClassReader(transformed),
-                    () -> "Mixin-transformed bytes should remain parsable: " + mixinName + " -> " + runtimeTarget.className());
+                    () -> "Mixin-transformed bytes should remain parsable: " + mixinName + " -> " + runtimeName);
             }
         }));
     }
-
-            private static RuntimeTarget toRuntimeTarget(final String namedTarget,
-                                 final byte[] namedBytecode) {
-            final MappingEntry classEntry = REPOSITORY.findClassByNamedName(namedTarget).orElse(null);
-            if (classEntry == null || classEntry.obfuscatedName().equals(namedTarget)) {
-                return new RuntimeTarget(namedTarget, namedBytecode);
-            }
-
-            final BytecodeRemapper.RemappedClass remapped = NAMED_TO_OBFUSCATED.remapClass(namedBytecode);
-            return new RuntimeTarget(classEntry.obfuscatedName(), remapped.bytecode());
-            }
 
     private static List<String> configuredMixins() throws Exception {
         try (InputStream input = ConfiguredMixinTransformationIntegrationTest.class.getClassLoader()
@@ -171,9 +151,5 @@ class ConfiguredMixinTransformationIntegrationTest {
         } catch (ReflectiveOperationException exception) {
             throw new AssertionError("Failed to advance Mixin phase", exception);
         }
-    }
-
-    private record RuntimeTarget(String className,
-                                 byte[] bytecode) {
     }
 }
