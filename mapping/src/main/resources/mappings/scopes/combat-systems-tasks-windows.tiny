@@ -1,0 +1,189 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/combat/systems/B	com/fs/starfarer/combat/systems/B
+	c	来源(javap取证) | 置信度(低) | 证据(B-formation-element-interface)
+c	com/fs/starfarer/combat/systems/D	com/fs/starfarer/combat/systems/EmpSystem
+	c	来源(工厂分发+字符串常量) | 置信度(高) | 证据(D-emp-system)
+	f	ÔO0000	graphic	Lcom/fs/starfarer/combat/systems/D$oo;
+	f	this.super	params	Lcom/fs/starfarer/api/combat/EmpArcEntityAPI$EmpArcParams;
+	f	ÕO0000	target	Lcom/fs/starfarer/combat/systems/D$Oo;
+	m	o00000	computeWeight	(Lcom/fs/starfarer/combat/systems/D$Oo;Lcom/fs/starfarer/loading/specs/nullsuper;)F
+c	com/fs/starfarer/combat/systems/D$o	com/fs/starfarer/combat/systems/EmpArcTargetType
+	c	来源(字符串常量) | 置信度(高) | 证据(D-o-emp-arc-target-type)
+	f	void	ENGINE_SLOT	Lcom/fs/starfarer/combat/systems/D$o;
+	f	Ó00000	MODULE	Lcom/fs/starfarer/combat/systems/D$o;
+	f	Ö00000	MISSILE	Lcom/fs/starfarer/combat/systems/D$o;
+	f	String	SHIP_CENTER	Lcom/fs/starfarer/combat/systems/D$o;
+	f	Ò00000	RELATIVE_OFFSET	Lcom/fs/starfarer/combat/systems/D$o;
+	f	Õ00000	SHIELD_HIT	Lcom/fs/starfarer/combat/systems/D$o;
+c	com/fs/starfarer/combat/systems/D$oo	com/fs/starfarer/combat/systems/EmpArcGraphic
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(D-oo-emp-arc-graphic)
+	f	OO0000	fader	Lcom/fs/graphics/util/Fader;
+	f	ø00000	sprite	Lcom/fs/graphics/Sprite;
+	f	Õ00000	coreColor	Ljava/awt/Color;
+	f	do	fringeColor	Ljava/awt/Color;
+	f	private	params	Lcom/fs/starfarer/api/combat/EmpArcEntityAPI$EmpArcParams;
+c	com/fs/starfarer/combat/systems/D$Oo	com/fs/starfarer/combat/systems/EmpArcTarget
+	c	来源(javap取证+引用关系) | 置信度(高) | 证据(D-Oo-emp-arc-target)
+	f	Ô00000	type	Lcom/fs/starfarer/combat/systems/D$o;
+	f	Ò00000	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	Ø00000	location	Lorg/lwjgl/util/vector/Vector2f;
+	f	o00000	engineSlot	Lcom/fs/starfarer/loading/specs/EngineSlot;
+	f	Õ00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+c	com/fs/starfarer/combat/systems/E	com/fs/starfarer/combat/systems/FastReloadSystem
+	c	来源(工厂分发) | 置信度(高) | 证据(E-fast-reload-system)
+c	com/fs/starfarer/combat/systems/EmpArcEntity	com/fs/starfarer/combat/systems/EmpArcEntity
+	c	来源(未混淆类名+implements EmpArcEntityAPI) | 置信度(高) | 证据(EmpArcEntity)
+c	com/fs/starfarer/combat/systems/EmpArcVisual	com/fs/starfarer/combat/systems/EmpArcVisual
+	c	来源(未混淆类名+implements EmpArcEntityAPI) | 置信度(高) | 证据(EmpArcVisual)
+c	com/fs/starfarer/combat/systems/Flare	com/fs/starfarer/combat/systems/Flare
+	c	来源(未混淆类名) | 置信度(中) | 证据(Flare)
+c	com/fs/starfarer/combat/systems/float	com/fs/starfarer/combat/systems/PhaseCollisionSystem
+	c	来源(javap取证) | 置信度(中) | 证据(float-phase-collision-system)
+c	com/fs/starfarer/combat/systems/G	com/fs/starfarer/combat/systems/Shield
+	c	来源(implements ShieldAPI) | 置信度(高) | 证据(G-shield)
+c	com/fs/starfarer/combat/systems/if	com/fs/starfarer/combat/systems/AmmoReloadSystem
+	c	来源(工厂分发+字符串常量) | 置信度(高) | 证据(if-ammo-reload-system)
+c	com/fs/starfarer/combat/systems/int	com/fs/starfarer/combat/systems/TeleporterSystem
+	c	来源(工厂分发+方法名) | 置信度(高) | 证据(int-teleporter-displacer-system)
+	m	getDisplacerDestination	getDisplacerDestination	()Lorg/lwjgl/util/vector/Vector2f;
+c	com/fs/starfarer/combat/systems/L	com/fs/starfarer/combat/systems/EngineModSystem
+	c	来源(工厂分发) | 置信度(高) | 证据(L-engine-mod-system)
+c	com/fs/starfarer/combat/systems/L$o	com/fs/starfarer/combat/systems/EngineBoostState
+	c	来源(字符串常量) | 置信度(中) | 证据(L-o-engine-boost-state)
+	f	Ò00000	ACCELERATING	Lcom/fs/starfarer/combat/systems/L$o;
+	f	Object	SLOWING_DOWN	Lcom/fs/starfarer/combat/systems/L$o;
+c	com/fs/starfarer/combat/systems/N	com/fs/starfarer/combat/systems/WeaponChargeStateMachine
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(N-weapon-charge-state-machine)
+c	com/fs/starfarer/combat/systems/N$1	com/fs/starfarer/combat/systems/WeaponChargeStateMachine$DefaultListener
+	c	来源(javap取证) | 置信度(中) | 证据(N-1-default-listener)
+c	com/fs/starfarer/combat/systems/N$o	com/fs/starfarer/combat/systems/WeaponChargeStateListener
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(N-o-charge-state-listener)
+c	com/fs/starfarer/combat/systems/N$oo	com/fs/starfarer/combat/systems/WeaponChargeState
+	c	来源(字符串常量) | 置信度(高) | 证据(N-oo-weapon-charge-state)
+	f	Õ00000	IDLE	Lcom/fs/starfarer/combat/systems/N$oo;
+	f	Ò00000	CHARGING_UP	Lcom/fs/starfarer/combat/systems/N$oo;
+	f	String	CHARGING_DOWN	Lcom/fs/starfarer/combat/systems/N$oo;
+	f	Ó00000	ACTIVE	Lcom/fs/starfarer/combat/systems/N$oo;
+c	com/fs/starfarer/combat/systems/N$Oo	com/fs/starfarer/combat/systems/WeaponFireMode
+	c	来源(字符串常量) | 置信度(高) | 证据(N-Oo-weapon-fire-mode)
+	f	new	HOLD	Lcom/fs/starfarer/combat/systems/N$Oo;
+	f	Ô00000	TOGGLE	Lcom/fs/starfarer/combat/systems/N$Oo;
+	f	Ó00000	CHARGE_AND_FIRE	Lcom/fs/starfarer/combat/systems/N$Oo;
+c	com/fs/starfarer/combat/systems/o00O	com/fs/starfarer/combat/systems/Weapon
+	c	来源(extends WeaponAPI) | 置信度(高) | 证据(o00O-weapon)
+c	com/fs/starfarer/combat/systems/oo0O	com/fs/starfarer/combat/systems/StatModSystem
+	c	来源(工厂分发) | 置信度(高) | 证据(oo0O-stat-mod-system)
+c	com/fs/starfarer/combat/systems/oO0O	com/fs/starfarer/combat/systems/DroneLauncherSystem
+	c	来源(implements DroneLauncherShipSystemAPI) | 置信度(高) | 证据(oO0O-drone-launcher-system)
+	f	øÒ0000	droneSpawns	Ljava/util/List;
+	f	ÕÓ0000	droneRings	Ljava/util/Map;
+	f	öÒ0000	droneOrders	Lcom/fs/starfarer/api/combat/DroneLauncherShipSystemAPI$DroneOrders;
+c	com/fs/starfarer/combat/systems/oO0O$o	com/fs/starfarer/combat/systems/DroneRing
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(oO0O-o-drone-ring)
+	f	new	droneSpec	Lcom/fs/starfarer/loading/specs/do$oOo;
+	f	class	drones	Ljava/util/List;
+	f	Ô00000	motherShip	Lcom/fs/starfarer/combat/entities/Ship;
+	f	o00000	formationPoint	Lcom/fs/starfarer/combat/systems/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+c	com/fs/starfarer/combat/systems/oO0O$Oo	com/fs/starfarer/combat/systems/DroneSpawnSlot
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(oO0O-Oo-drone-spawn-slot)
+	f	Ò00000	drone	Lcom/fs/starfarer/combat/entities/Ship;
+	f	super	mountSlot	Lcom/fs/starfarer/loading/specs/nullsuper;
+c	com/fs/starfarer/combat/systems/ooOO	com/fs/starfarer/combat/systems/ShieldModSystem
+	c	来源(工厂分发) | 置信度(高) | 证据(ooOO-shield-mod-system)
+c	com/fs/starfarer/combat/systems/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/systems/OffsetPoint
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(OooO-offset-point)
+c	com/fs/starfarer/combat/systems/P	com/fs/starfarer/combat/systems/PhaseCloakSystem
+	c	来源(implements PhaseCloakSystemAPI) | 置信度(高) | 证据(P-phase-cloak-system)
+c	com/fs/starfarer/combat/systems/P$o	com/fs/starfarer/combat/systems/PhaseFlashData
+	c	来源(javap取证) | 置信度(中) | 证据(P-o-phase-flash-data)
+c	com/fs/starfarer/combat/systems/S	com/fs/starfarer/combat/systems/WeaponSystem
+	c	来源(工厂分发+字符串常量) | 置信度(高) | 证据(S-weapon-system)
+c	com/fs/starfarer/combat/systems/super	com/fs/starfarer/combat/systems/ChargeTracker
+	c	来源(javap取证+引用关系) | 置信度(高) | 证据(super-charge-tracker)
+c	com/fs/starfarer/combat/systems/super$o	com/fs/starfarer/combat/systems/ShipSystemCallbacks
+	c	来源(继承关系+javap取证) | 置信度(高) | 证据(super-o-ship-system-callbacks)
+c	com/fs/starfarer/combat/systems/thissuper	com/fs/starfarer/combat/systems/thissuper
+	c	来源(javap取证) | 置信度(低) | 证据(thissuper-empty-marker)
+c	com/fs/starfarer/combat/systems/WeaponGroup	com/fs/starfarer/combat/systems/WeaponGroup
+	c	来源(未混淆类名+implements WeaponGroupAPI) | 置信度(高) | 证据(WeaponGroup)
+c	com/fs/starfarer/combat/systems/WeaponGroup$o	com/fs/starfarer/combat/systems/WeaponGroupAction
+	c	来源(字符串常量) | 置信度(中) | 证据(WeaponGroup-o-weapon-group-action)
+	f	Ó00000	SELECT	Lcom/fs/starfarer/combat/systems/WeaponGroup$o;
+	f	Ò00000	AUTOFIRE	Lcom/fs/starfarer/combat/systems/WeaponGroup$o;
+c	com/fs/starfarer/combat/tasks/A	com/fs/starfarer/combat/tasks/TaskTypeResolver
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(A-task-type-resolver)
+c	com/fs/starfarer/combat/tasks/A$o	com/fs/starfarer/combat/tasks/TaskTargetCategory
+	c	来源(字符串常量) | 置信度(高) | 证据(A-o-task-target-category)
+	f	Ò00000	ENEMY_OBJECTIVE	Lcom/fs/starfarer/combat/tasks/A$o;
+	f	Ö00000	NEUTRAL_OBJECTIVE	Lcom/fs/starfarer/combat/tasks/A$o;
+	f	super	FRIENDLY_OBJECTIVE	Lcom/fs/starfarer/combat/tasks/A$o;
+	f	Õ00000	ENEMY_SHIP	Lcom/fs/starfarer/combat/tasks/A$o;
+	f	void	FRIENDLY_SHIP	Lcom/fs/starfarer/combat/tasks/A$o;
+	f	ô00000	NEUTRAL_SHIP	Lcom/fs/starfarer/combat/tasks/A$o;
+	f	õ00000	FRIENDLY_WAYPOINT	Lcom/fs/starfarer/combat/tasks/A$o;
+	f	String	INVALID	Lcom/fs/starfarer/combat/tasks/A$o;
+c	com/fs/starfarer/combat/tasks/A/A	com/fs/starfarer/combat/tasks/TaskSuitabilityEvaluator
+	c	来源(javap取证) | 置信度(中) | 证据(A-A-task-suitability-evaluator)
+c	com/fs/starfarer/combat/tasks/A/C	com/fs/starfarer/combat/tasks/TaskMatch
+	c	来源(javap取证+字符串常量) | 置信度(中) | 证据(A-C-task-match)
+c	com/fs/starfarer/combat/tasks/A/o0OO	com/fs/starfarer/combat/tasks/TaskAssigner
+	c	来源(javap取证+字符串常量) | 置信度(高) | 证据(A-o0OO-task-assigner)
+c	com/fs/starfarer/combat/tasks/A/o0OO$o	com/fs/starfarer/combat/tasks/TaskAssignment
+	c	来源(javap取证) | 置信度(低) | 证据(A-o0OO-o-task-assignment)
+c	com/fs/starfarer/combat/tasks/A/o0OO$Oo	com/fs/starfarer/combat/tasks/FleetMemberAssignment
+	c	来源(javap取证) | 置信度(低) | 证据(A-o0OO-Oo-fleet-member-assignment)
+c	com/fs/starfarer/combat/tasks/A/String	com/fs/starfarer/combat/tasks/TaskTypeScore
+	c	来源(javap取证) | 置信度(中) | 证据(A-String-task-type-score)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/tasks/WeaponSuitabilityFunction
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-weapon-suitability-function)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/combat/tasks/AntiFighterGate
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-o-anti-fighter-gate)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o0	com/fs/starfarer/combat/tasks/AntiFighterHeavyWeight
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-o0-anti-fighter-heavy-weight)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0	com/fs/starfarer/combat/tasks/UniformWeight
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-O0-uniform-weight)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo	com/fs/starfarer/combat/tasks/StrikeWeaponGate
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-oo-strike-weapon-gate)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/combat/tasks/MissileRangeWeight
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-Oo-missile-range-weight)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$ooo	com/fs/starfarer/combat/tasks/LongRangeStrikeGate
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-ooo-long-range-strike-gate)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oOo	com/fs/starfarer/combat/tasks/CloseRangeAntiFighterWeight
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-oOo-close-range-anti-fighter-weight)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Ooo	com/fs/starfarer/combat/tasks/FrigateKillerWeight
+	c	来源(javap取证) | 置信度(中) | 证据(OoO-Ooo-frigate-killer-weight)
+c	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$OOo	com/fs/starfarer/combat/tasks/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$OOo
+	c	来源(javap取证) | 置信度(低) | 证据(OoO-OOo-uniform-weight)
+c	com/fs/starfarer/combat/tasks/B	com/fs/starfarer/combat/tasks/CombatTaskGroup
+	c	来源(javap取证+字符串常量) | 置信度(高) | 证据(B-combat-task-group)
+	f	o00000	priority	I
+	f	Ò00000	tasks	Ljava/util/List;
+c	com/fs/starfarer/combat/tasks/CombatTask	com/fs/starfarer/combat/tasks/CombatTask
+	c	来源(未混淆类名) | 置信度(高) | 证据(CombatTask)
+c	com/fs/starfarer/combat/tasks/CombatTask$CombatTaskType	com/fs/starfarer/combat/tasks/CombatTaskType
+	c	来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(CombatTaskType)
+c	com/fs/starfarer/combat/tasks/CombatTask$o	com/fs/starfarer/combat/tasks/TaskTargetDelegate
+	c	来源(javap取证) | 置信度(中) | 证据(CombatTask-o-task-target-delegate)
+	f	ÕO0000	target	Lcom/fs/starfarer/combat/tasks/CombatTask$Oo;
+c	com/fs/starfarer/combat/tasks/CombatTask$Oo	com/fs/starfarer/combat/tasks/CombatTaskTarget
+	c	来源(extends AssignmentTargetAPI) | 置信度(高) | 证据(CombatTask-Oo-combat-task-target)
+c	com/fs/starfarer/combat/tasks/CombatTaskGroupCollection	com/fs/starfarer/combat/tasks/CombatTaskGroupCollection
+	c	来源(未混淆类名) | 置信度(高) | 证据(CombatTaskGroupCollection)
+c	com/fs/starfarer/combat/tasks/CombatTaskGroupCollection$1	com/fs/starfarer/combat/tasks/CombatTaskGroupCollection$1
+	c	来源(javap取证) | 置信度(低) | 证据(CombatTaskGroupCollection-1-comparator)
+c	com/fs/starfarer/combat/tasks/CombatTaskManager	com/fs/starfarer/combat/tasks/CombatTaskManager
+	c	来源(未混淆类名+implements CombatTaskManagerAPI) | 置信度(高) | 证据(CombatTaskManager)
+c	com/fs/starfarer/combat/tasks/CombatTaskManager$1	com/fs/starfarer/combat/tasks/CombatTaskManager$1
+	c	来源(javap取证) | 置信度(低) | 证据(CombatTaskManager-1-comparator)
+c	com/fs/starfarer/combat/tasks/Object	com/fs/starfarer/combat/tasks/DirectOrders
+	c	来源(javap取证+引用关系) | 置信度(中) | 证据(Object-direct-orders)
+	f	Ó00000	type	Lcom/fs/starfarer/combat/tasks/Object$o;
+	f	Ò00000	task	Lcom/fs/starfarer/combat/tasks/CombatTask;
+	f	Ö00000	param	Ljava/lang/Object;
+c	com/fs/starfarer/combat/tasks/Object$o	com/fs/starfarer/combat/tasks/DirectOrdersType
+	c	来源(字符串常量) | 置信度(高) | 证据(Object-o-direct-orders-type)
+	f	Ö00000	CARRY_OUT_COMBAT_TASK	Lcom/fs/starfarer/combat/tasks/Object$o;
+	f	String	RETREAT	Lcom/fs/starfarer/combat/tasks/Object$o;
+	f	Ó00000	REPAIR_AND_REFIT	Lcom/fs/starfarer/combat/tasks/Object$o;
+	f	Õ00000	SEARCH_AND_DESTROY	Lcom/fs/starfarer/combat/tasks/Object$o;
+	f	Ò00000	NO_ORDERS	Lcom/fs/starfarer/combat/tasks/Object$o;

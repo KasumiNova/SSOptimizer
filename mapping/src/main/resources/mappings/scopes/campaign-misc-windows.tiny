@@ -1,0 +1,488 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/accidents/A	com/fs/starfarer/campaign/accidents/SerialKeyValidator
+	c 来源(字符串常量) | 置信度(中) | 证据(反盗版字符串与 serial 校验逻辑，对应 linux accidents/oOOO)
+	m	super	isValidSerial	(Ljava/lang/String;)Z
+c	com/fs/starfarer/campaign/accidents/AccidentManager	com/fs/starfarer/campaign/accidents/AccidentManager
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类，成员全部原名)
+	f	risks	risks	Ljava/util/List;
+	f	random	random	Ljava/util/Random;
+	f	randomSeed	randomSeed	J
+	f	tracker	tracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	fleet	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	currentChance	currentChance	F
+	f	context	context	Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;
+	m	readResolve	readResolve	()Ljava/lang/Object;
+	m	getRisk	getRisk	()Lcom/fs/starfarer/campaign/accidents/OooO;
+	m	getRisks	getRisks	()Ljava/util/List;
+	m	getHighestSeverity	getHighestSeverity	()Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	advance	advance	(F)V
+	m	getContext	getContext	()Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;
+c	com/fs/starfarer/campaign/accidents/AccidentRisk	com/fs/starfarer/campaign/accidents/AccidentRisk
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(事故风险接口，对应 linux accidents/AccidentRisk)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext	com/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类)
+	f	daysWithoutSupplies	daysWithoutSupplies	F
+c	com/fs/starfarer/campaign/accidents/AccidentRisk$o	com/fs/starfarer/campaign/accidents/AccidentSeverity
+	c 来源(字符串常量 NONE/MINOR/MAJOR/CRITICAL) | 置信度(高) | 证据(严重性枚举，对应 linux)
+	f	Ö00000	NONE	Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	f	Ó00000	MINOR	Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	f	new	MAJOR	Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	f	Ô00000	CRITICAL	Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	f	class	label	Ljava/lang/String;
+	m	o00000	getLabel	()Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/B	com/fs/starfarer/campaign/accidents/LogisticsAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("Low logistics rating"/"chaotic logistical situation"，对应 linux accidents/B)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/C	com/fs/starfarer/campaign/accidents/FuelCapacityAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("Fuel capacity exceeded"，对应 linux accidents/ooOO)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/do	com/fs/starfarer/campaign/accidents/CrewCapacityAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("Personnel capacity exceeded"/"crew compartment"，对应 linux accidents/oO0O)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/E	com/fs/starfarer/campaign/accidents/FighterWingAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("fighter wings"/"hangar space"，对应 linux accidents/E)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/I	com/fs/starfarer/campaign/accidents/LostCargoItem
+	c 来源(构造参数+引用关系) | 置信度(高) | 证据(损失货物项，implements AccidentLoss，对应 linux OooOOO(长))
+	f	String	lossDescription	Ljava/lang/String;
+	f	Ò00000	lossName	Ljava/lang/String;
+	f	Õ00000	quantity	I
+	f	super	itemType	Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;
+	f	Ó00000	itemData	Ljava/lang/Object;
+	m	Ò00000	getLossDescription	()Ljava/lang/String;
+	m	super	getLossName	()Ljava/lang/String;
+	m	super	setQuantity	(I)V
+	m	Ó00000	getQuantity	()I
+	m	Õ00000	getItemType	()Lcom/fs/starfarer/api/campaign/CargoAPI$CargoItemType;
+	m	String	getItemData	()Ljava/lang/Object;
+c	com/fs/starfarer/campaign/accidents/K	com/fs/starfarer/campaign/accidents/CargoCapacityAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("Cargo capacity exceeded"，对应 linux accidents/o0oO)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/O0oO	com/fs/starfarer/campaign/accidents/AccidentRiskBase
+	c 来源(javap取证+继承关系) | 置信度(高) | 证据(抽象基类，实现 AccidentRisk，对应 linux accidents/J)
+	f	new	cargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	o00000	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
+	f	Ó00000	random	Ljava/util/Random;
+c	com/fs/starfarer/campaign/accidents/OO0O	com/fs/starfarer/campaign/accidents/SuppliesAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("A lack of supplies to perform maintenance"，对应 linux accidents/L)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/accidents/AccidentReport
+	c 来源(字符串常量+对话框布局) | 置信度(高) | 证据(事故报告数据类，对应 linux accidents/while)
+	f	Ò00000	severity	Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	f	Õ00000	likelyCause	Ljava/lang/String;
+	f	Ö00000	recommendation	Ljava/lang/String;
+	f	Ó00000	losses	Ljava/util/List;
+	m	new	getRecommendation	()Ljava/lang/String;
+	m	Ø00000	getLossDescription	()Ljava/lang/String;
+	m	class	getMessageText	()Ljava/lang/String;
+	m	o00000	addLoss	(Lcom/fs/starfarer/campaign/accidents/void;)V
+	m	Ô00000	getLosses	()Ljava/util/List;
+	m	Ó00000	getSeverity	()Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	null	getLikelyCause	()Ljava/lang/String;
+	m	o00000	setLikelyCause	(Ljava/lang/String;)V
+c	com/fs/starfarer/campaign/accidents/OooO	com/fs/starfarer/campaign/accidents/MaintenanceAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("lack of maintenance"/"0% combat readiness"，对应 linux accidents/I)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/OOoO	com/fs/starfarer/campaign/accidents/CommandRatingAccidentRisk
+	c 来源(字符串常量) | 置信度(高) | 证据("Fleet too large for command ability"，对应 linux accidents/return)
+	m	o00000	createAccident	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	Object	getSeverity	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Lcom/fs/starfarer/campaign/accidents/AccidentRisk$o;
+	m	Ò00000	getDescription	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+	m	Ô00000	getRecommendation	(Lcom/fs/starfarer/campaign/accidents/AccidentRisk$AccidentContext;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/accidents/ShipLoss	com/fs/starfarer/campaign/accidents/ShipLoss
+	c 来源(未混淆类名) | 置信度(高) | 证据(ShipLoss 保留名类，对应 linux accidents/ShipLoss)
+	f	õ00000	lossDescription	Ljava/lang/String;
+	f	ô00000	lossName	Ljava/lang/String;
+	f	if	ship	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	Ö00000	crLost	F
+	f	void	type	Lcom/fs/starfarer/campaign/accidents/ShipLoss$ShipLossType;
+	m	Ö00000	getCrLost	()F
+	m	super	setCrLost	(F)V
+	m	ô00000	getType	()Lcom/fs/starfarer/campaign/accidents/ShipLoss$ShipLossType;
+	m	Ò00000	getLossDescription	()Ljava/lang/String;
+	m	super	getLossName	()Ljava/lang/String;
+	m	void	getShip	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+c	com/fs/starfarer/campaign/accidents/ShipLoss$ShipLossType	com/fs/starfarer/campaign/accidents/ShipLoss$ShipLossType
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名枚举)
+	f	CR_LOST	CR_LOST	Lcom/fs/starfarer/campaign/accidents/ShipLoss$ShipLossType;
+	f	DAMAGED	DAMAGED	Lcom/fs/starfarer/campaign/accidents/ShipLoss$ShipLossType;
+	f	DESTROYED	DESTROYED	Lcom/fs/starfarer/campaign/accidents/ShipLoss$ShipLossType;
+c	com/fs/starfarer/campaign/accidents/String	com/fs/starfarer/campaign/accidents/AccidentReportDialog
+	c 来源(字符串常量) | 置信度(高) | 证据("Accident Report"/"Severity:"/"Likely cause:"/"Recommendation:"，对应 linux accidents/String)
+	f	OPAD	OPAD	F
+	f	PAD	PAD	F
+	f	do.new$Object	accidentReport	Lcom/fs/starfarer/campaign/accidents/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+c	com/fs/starfarer/campaign/accidents/String$1	com/fs/starfarer/campaign/accidents/AccidentReportDialog$ShipTooltipRunnable
+	c 来源(引用关系) | 置信度(低) | 证据(对话框内部 Runnable，持有 FleetMemberView 与 StandardTooltipV2，对应 linux String$1)
+c	com/fs/starfarer/campaign/accidents/void	com/fs/starfarer/campaign/accidents/AccidentLoss
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(损失描述接口，对应 linux accidents/G)
+	m	super	getLossName	()Ljava/lang/String;
+	m	Ò00000	getLossDescription	()Ljava/lang/String;
+c	com/fs/starfarer/campaign/A/D	com/fs/starfarer/campaign/A/InteractionPlugin
+	c 来源(javap取证+引用关系) | 置信度(中) | 证据(互动插件接口，对应 linux A/D)
+	m	super	setDialog	(Lcom/fs/starfarer/campaign/A/oOOO;)V
+	m	super	optionSelected	(Ljava/lang/String;)V
+	m	super	getCurrentOption	()Lcom/fs/starfarer/campaign/A/new;
+c	com/fs/starfarer/campaign/A/E	com/fs/starfarer/campaign/A/AggressiveInteractionPlugin
+	c 来源(字符串常量) | 置信度(高) | 证据("Threaten"/"Persuade"/"Surrender"/"greeting_aggressive"，对应 linux A/o0OO)
+	f	Ò00000	currentOption	Lcom/fs/starfarer/campaign/A/new;
+	f	int	dialog	Lcom/fs/starfarer/campaign/A/oOOO;
+	m	super	setDialog	(Lcom/fs/starfarer/campaign/A/oOOO;)V
+	m	super	getCurrentOption	()Lcom/fs/starfarer/campaign/A/new;
+	m	super	optionSelected	(Ljava/lang/String;)V
+c	com/fs/starfarer/campaign/A/new	com/fs/starfarer/campaign/A/DialogOption
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(对话选项数据类，对应 linux A/B)
+	f	Ó00000	text	Ljava/lang/String;
+	f	super	tooltip	Ljava/lang/String;
+	f	Ò00000	extraLines	Ljava/util/List;
+	m	super	getText	()Ljava/lang/String;
+	m	Ó00000	setText	(Ljava/lang/String;)V
+	m	Ó00000	getTooltip	()Ljava/lang/String;
+	m	super	setTooltip	(Ljava/lang/String;)V
+	m	Ò00000	addExtraLine	(Ljava/lang/String;)V
+	m	Ò00000	getExtraLines	()Ljava/util/List;
+c	com/fs/starfarer/campaign/A/ooOO	com/fs/starfarer/campaign/A/ConversationTextMap
+	c 来源(字符串常量) | 置信度(高) | 证据("<missing conversation line for key"，对应 linux A/C)
+	f	o00000	textMap	Ljava/util/Map;
+	m	o00000	putText	(Ljava/lang/String;Ljava/lang/String;)V
+	m	o00000	getText	(Ljava/lang/String;)Ljava/lang/String;
+c	com/fs/starfarer/campaign/A/oOOO	com/fs/starfarer/campaign/A/InteractionDialog
+	c 来源(引用关系) | 置信度(中) | 证据(对话接口，对应 linux A/A)
+	m	Ò00000	getConversationTextMap	()Lcom/fs/starfarer/campaign/A/ooOO;
+c	com/fs/starfarer/campaign/events/CampaignEventManager	com/fs/starfarer/campaign/events/CampaignEventManager
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类，实现 CampaignEventManagerAPI)
+	f	EVENT_CHECK_PERIOD	EVENT_CHECK_PERIOD	F
+	f	eventProbabilities	eventProbabilities	Ljava/util/Map;
+	f	ongoingEvents	ongoingEvents	Ljava/util/List;
+	f	tracker	tracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	keyList	keyList	Ljava/util/List;
+	f	currIndex	currIndex	I
+	f	keyListForWarnings	keyListForWarnings	Ljava/util/List;
+	f	currIndexForWarning	currIndexForWarning	I
+	f	checkWarning	checkWarning	Z
+	m	getProbability	getProbability	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/LocationAPI;)Lcom/fs/starfarer/api/campaign/events/EventProbabilityAPI;
+	m	getProbability	getProbability	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)Lcom/fs/starfarer/api/campaign/events/EventProbabilityAPI;
+	m	getProbability	getProbability	(Ljava/lang/String;Ljava/lang/Object;)Lcom/fs/starfarer/api/campaign/events/EventProbabilityAPI;
+	m	getProbability	getProbability	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/api/campaign/events/EventProbabilityAPI;
+	m	getProbability	getProbability	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;)Lcom/fs/starfarer/api/campaign/events/EventProbabilityAPI;
+	m	advance	advance	(F)V
+	m	endEvent	endEvent	(Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;)V
+	m	processNextEventCheck	processNextEventCheck	()V
+	m	primeEvent	primeEvent	(Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;Ljava/lang/String;Ljava/lang/Object;)Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	m	startEvent	startEvent	(Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;)V
+	m	startEvent	startEvent	(Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;Ljava/lang/String;Ljava/lang/Object;)Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	m	isOngoing	isOngoing	(Lcom/fs/starfarer/api/campaign/events/EventProbabilityAPI;)Z
+	m	isOngoing	isOngoing	(Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;Ljava/lang/String;)Z
+	m	getOngoingEvent	getOngoingEvent	(Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;Ljava/lang/String;)Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	m	getOngoingEvents	getOngoingEvents	()Ljava/util/List;
+	m	getNumOngoing	getNumOngoing	(Ljava/lang/String;)I
+	m	processNextWarning	processNextWarning	()V
+c	com/fs/starfarer/campaign/events/EventProbability	com/fs/starfarer/campaign/events/EventProbability
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类，实现 EventProbabilityAPI)
+	f	eventType	eventType	Ljava/lang/String;
+	f	probability	probability	F
+	f	primed	primed	Z
+	f	eventTarget	eventTarget	Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;
+	f	plugin	plugin	Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	m	isPrimed	isPrimed	()Z
+	m	setPrimed	setPrimed	(Z)V
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	m	setPlugin	setPlugin	(Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;)V
+	m	getProbability	getProbability	()F
+	m	setProbability	setProbability	(F)V
+	m	getEventType	getEventType	()Ljava/lang/String;
+	m	getEventTarget	getEventTarget	()Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;
+	m	increaseProbability	increaseProbability	(F)V
+	m	decreaseProbability	decreaseProbability	(F)V
+	m	getMult	getMult	()F
+	m	setProbabilityAfterMult	setProbabilityAfterMult	(F)V
+	m	checkProbability	checkProbability	()Z
+c	com/fs/starfarer/campaign/B/B	com/fs/starfarer/campaign/EngagementResultForFleet
+	c 来源(API-impl种子) | 置信度(高) | 证据(官方 EngagementResultForFleetImpl 同逻辑实现；对应 linux OoOO/C，字段与 linux 一致)
+	f	null	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	ö00000	goal	Lcom/fs/starfarer/api/fleet/FleetGoal;
+	f	class	deployed	Ljava/util/List;
+	f	Ô00000	reserves	Ljava/util/List;
+	f	float	destroyed	Ljava/util/List;
+	f	new	disabled	Ljava/util/List;
+	f	Ø00000	retreated	Ljava/util/List;
+	f	õ00000	marinesLost	I
+	f	Ö00000	allEverDeployed	Ljava/util/List;
+	f	o00000	winner	Z
+	f	Ó00000	player	Z
+	f	enemyCanCleanDisengage	enemyCanCleanDisengage	Z
+c	com/fs/starfarer/campaign/B/D	com/fs/starfarer/campaign/EngagementResult
+	c 来源(API-impl种子) | 置信度(高) | 证据(官方 EngagementResultImpl 同逻辑实现；对应 linux OoOO/O0OO)
+	f	super	playerOutBeforeEnd	Z
+	f	Ó00000	winnerResult	Lcom/fs/starfarer/campaign/B/B;
+	f	Õ00000	loserResult	Lcom/fs/starfarer/campaign/B/B;
+	f	String	battle	Lcom/fs/starfarer/api/campaign/BattleAPI;
+	f	Ò00000	lastCombatDamageData	Lcom/fs/starfarer/api/campaign/CombatDamageData;
+c	com/fs/starfarer/campaign/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/FleetMemberCombatStats
+	c 来源(字符串常量) | 置信度(高) | 证据(模拟战斗评分，对应 linux OoOO/B；方法与 linux 同名)
+	f	Ò00000	tierDamageMult	[F
+	f	private	statsCache	Ljava/util/Map;
+	f	if	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	ø00000	attack	F
+	f	ÒO0000	pd	F
+	f	ÓO0000	strike	F
+	f	String	move	F
+	f	Ó00000	maneuver	F
+	f	ô00000	maxHits	F
+	f	void	shields	F
+	f	ÕO0000	hullSize	Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+	f	do	decks	F
+	f	super	hitPercent	Lcom/fs/starfarer/api/util/MutableValue;
+	m	super	getStatsForMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/campaign/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	String	copy	()Lcom/fs/starfarer/campaign/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	do	getColumnHeaders	()Ljava/lang/String;
+	m	ÖO0000	getStrength	()F
+	m	if	isFighter	()Z
+	m	Ò00000	isCruiserOrCapital	()Z
+	m	ÕO0000	isFrigateOrFighter	()Z
+	m	øO0000	getHullSize	()Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+	m	super	setHullSize	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)V
+	m	super.super	getAttack	()F
+	m	void	setAttack	(F)V
+	m	void	getPD	()F
+	m	Ò00000	setPD	(F)V
+	m	õO0000	getStrike	()F
+	m	Õ00000	setStrike	(F)V
+	m	õ00000	getMove	()F
+	m	Ö00000	setMove	(F)V
+	m	ÒO0000	getMaxHits	()F
+	m	ô00000	setMaxHits	(F)V
+	m	Ö00000	getShields	()F
+	m	super	setShields	(F)V
+	m	ô00000	getDecks	()F
+	m	String	setDecks	(F)V
+	m	private	getMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	Õ00000	getHitPercent	()Lcom/fs/starfarer/api/util/MutableValue;
+	m	ôO0000	getHitsPercent	()F
+	m	super	getShieldsPercent	()F
+	m	ø00000	getManeuver	()F
+	m	Ò00000	setMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+c	com/fs/starfarer/campaign/rules/class	com/fs/starfarer/campaign/rules/RuleElement
+	c 来源(javap取证+继承关系) | 置信度(中) | 证据(规则表达式元素标记接口，对应 linux rules/String)
+	m	o00000	isOperator	()Z
+		c 来源(javap取证) | 置信度(中) | 证据(实现类恒值标记)
+	m	new	isVariable	()Z
+		c 来源(javap取证) | 置信度(中) | 证据(实现类恒值标记)
+c	com/fs/starfarer/campaign/rules/D	com/fs/starfarer/campaign/rules/RuleVariable
+	c 来源(javap取证) | 置信度(中) | 证据(规则变量元素，对应 linux rules/o0OO)
+	f	o00000	name	Ljava/lang/String;
+		c 来源(javap取证) | 置信度(中) | 证据(公开字符串字段，推测为变量名)
+	m	o00000	isOperator	()Z
+		c 来源(javap取证) | 置信度(中) | 证据(恒 false，非操作符)
+	m	new	isVariable	()Z
+		c 来源(javap取证) | 置信度(中) | 证据(恒 true，变量元素)
+c	com/fs/starfarer/campaign/rules/Memory	com/fs/starfarer/campaign/rules/Memory
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类，实现 MemoryAPI)
+	f	data	data	Ljava/util/LinkedHashMap;
+	f	expire	expire	Ljava/util/List;
+	f	require	require	Ljava/util/LinkedHashMap;
+	f	reqFor	reqFor	Ljava/util/LinkedHashMap;
+	f	EN_REF	EN_REF	Ljava/lang/String;
+	f	M_REF	M_REF	Ljava/lang/String;
+	m	clear	clear	()V
+	m	replaceEntitiesWithIds	replaceEntitiesWithIds	(Ljava/util/LinkedHashMap;)V
+	m	replaceIdsWithEntities	replaceIdsWithEntities	(Ljava/util/LinkedHashMap;)V
+	m	advance	advance	(F)V
+	m	getExpire	getExpire	(Ljava/lang/String;)F
+	m	getKeys	getKeys	()Ljava/util/Collection;
+	m	expire	expire	(Ljava/lang/String;F)V
+	m	addRequired	addRequired	(Ljava/lang/String;Ljava/lang/String;)V
+	m	removeRequired	removeRequired	(Ljava/lang/String;Ljava/lang/String;)V
+	m	getRequired	getRequired	(Ljava/lang/String;)Ljava/util/Set;
+	m	removeAllRequired	removeAllRequired	(Ljava/lang/String;)V
+	m	unset	unset	(Ljava/lang/String;)V
+	m	contains	contains	(Ljava/lang/String;)Z
+	m	is	is	(Ljava/lang/String;Ljava/lang/Object;)Z
+	m	is	is	(Ljava/lang/String;F)Z
+	m	is	is	(Ljava/lang/String;Z)Z
+	m	set	set	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	set	set	(Ljava/lang/String;Ljava/lang/Object;F)V
+	m	get	get	(Ljava/lang/String;)Ljava/lang/Object;
+	m	getEntity	getEntity	(Ljava/lang/String;)Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getString	getString	(Ljava/lang/String;)Ljava/lang/String;
+	m	getFloat	getFloat	(Ljava/lang/String;)F
+	m	parseFloat	parseFloat	(Ljava/lang/Object;)F
+	m	getLong	getLong	(Ljava/lang/String;)J
+	m	getInt	getInt	(Ljava/lang/String;)I
+	m	getBoolean	getBoolean	(Ljava/lang/String;)Z
+	m	getVector2f	getVector2f	(Ljava/lang/String;)Lorg/lwjgl/util/vector/Vector2f;
+	m	getFleet	getFleet	(Ljava/lang/String;)Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+	m	isEmpty	isEmpty	()Z
+	m	between	between	(Ljava/lang/String;FF)Z
+	m	main	main	([Ljava/lang/String;)V
+c	com/fs/starfarer/campaign/rules/Memory$Expire	com/fs/starfarer/campaign/rules/Memory$Expire
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类)
+	f	key	key	Ljava/lang/String;
+	f	timeLeft	timeLeft	F
+c	com/fs/starfarer/campaign/rules/Memory$Require	com/fs/starfarer/campaign/rules/Memory$Require
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类)
+	f	key	key	Ljava/lang/String;
+	f	req	req	Ljava/util/LinkedHashSet;
+c	com/fs/starfarer/campaign/rules/ooOO	com/fs/starfarer/campaign/rules/Rule
+	c 来源(API-impl种子) | 置信度(高) | 证据(实现 RuleAPI，方法名保留原名，对应 linux rules/ooOO)
+c	com/fs/starfarer/campaign/rules/oOOO	com/fs/starfarer/campaign/rules/RuleExpression
+	c 来源(API-impl种子) | 置信度(高) | 证据(实现 ExpressionAPI，对应 linux rules/A；字段按 linux 语义位置对应)
+	f	class	log	Lorg/apache/log4j/Logger;
+	f	OO0000	addsOptions	Z
+	f	Ø00000	commandString	Ljava/lang/String;
+	f	Ö00000	commandParams	Ljava/util/List;
+	f	Ó00000	operator	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	null	first	Lcom/fs/starfarer/api/util/Misc$Token;
+	f	new	second	Lcom/fs/starfarer/api/util/Misc$Token;
+	f	o00000	third	Lcom/fs/starfarer/api/util/Misc$Token;
+		c 来源(javap取证) | 置信度(中) | 证据(三个 Token 操作数，getFirst/getSecond 确认前两个)
+	f	õ00000	rawString	Ljava/lang/String;
+	f	Ô00000	score	I
+c	com/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/rules/Operator
+	c 来源(字符串常量) | 置信度(高) | 证据(操作符枚举 ASSIGNMENT/INCR/DECR/...，对应 linux rules/B)
+	f	oO0000	IS	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	new	INCR	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	Ö00000	DECR	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	Ô00000	ASSIGNMENT	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	OO0000	NOT	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	ö00000	NOT_EQUAL	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	õ00000	EQUAL	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	class	GT_EQUAL	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	null	LT_EQUAL	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	Ø00000	LESS_THAN	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	float	GREATER_THAN	Lcom/fs/starfarer/campaign/rules/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	o00000	isOperator	()Z
+		c 来源(javap取证) | 置信度(中) | 证据(恒 true，操作符元素)
+	m	new	isVariable	()Z
+		c 来源(javap取证) | 置信度(中) | 证据(恒 false)
+c	com/fs/starfarer/campaign/rules/Rules	com/fs/starfarer/campaign/rules/Rules
+	c 来源(未混淆类名+字符串常量) | 置信度(高) | 证据(规则管理器，对应 linux rules/Rules)
+	f	Ó00000	ALWAYS_BEST_MATCH	Ljava/lang/String;
+	f	new	log	Lorg/apache/log4j/Logger;
+	f	Ô00000	rulesByTrigger	Ljava/util/Map;
+	f	o00000	random	Ljava/util/Random;
+	m	new	getRulesFor	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/campaign/InteractionDialogAPI;Ljava/util/Map;)Ljava/util/List;
+	m	o00000	getBestMatchingRule	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/campaign/InteractionDialogAPI;Ljava/util/Map;)Lcom/fs/starfarer/campaign/rules/ooOO;
+	m	o00000	getRulesForTrigger	(Ljava/lang/String;)Ljava/util/List;
+	m	o00000	loadRules	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+c	com/fs/starfarer/campaign/util/CollectionItemView	com/fs/starfarer/campaign/util/CollectionItemView
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名接口)
+	m	notifyOrphaned	notifyOrphaned	()V
+	m	isExpired	isExpired	()Z
+	m	getItem	getItem	()Ljava/lang/Object;
+	m	getRenderOrder	getRenderOrder	()I
+c	com/fs/starfarer/campaign/util/CollectionView	com/fs/starfarer/campaign/util/CollectionView
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类)
+	f	delegate	delegate	Lcom/fs/starfarer/campaign/util/CollectionView$CollectionViewDelegate;
+	f	views	views	Ljava/util/Map;
+	f	sortedViews	sortedViews	Ljava/util/TreeSet;
+	f	orphaned	orphaned	Ljava/util/Set;
+	f	notified	notified	Ljava/util/Set;
+	m	clear	clear	()V
+	m	sync	sync	(Ljava/util/List;)V
+	m	getViewForItem	getViewForItem	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/util/CollectionItemView;
+	m	finishSync	finishSync	()V
+	m	getViews	getViews	()Ljava/util/Collection;
+c	com/fs/starfarer/campaign/util/CollectionView$1	com/fs/starfarer/campaign/util/CollectionView$RenderOrderComparator
+	c 来源(javap取证) | 置信度(低) | 证据(匿名比较器，TreeSet 排序，对应 linux CollectionView$1)
+c	com/fs/starfarer/campaign/util/CollectionView$CollectionViewDelegate	com/fs/starfarer/campaign/util/CollectionView$CollectionViewDelegate
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名接口)
+	m	createItemView	createItemView	(Ljava/lang/Object;)Lcom/fs/starfarer/campaign/util/CollectionItemView;
+	m	shouldCreateViewFor	shouldCreateViewFor	(Ljava/lang/Object;)Z
+c	com/fs/starfarer/campaign/util/new	com/fs/starfarer/campaign/util/SensorThresholdPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(传感器范围环面板，对应 linux util/B)
+	f	øÕoO00	sensorRangeMultipliers	[F
+	f	private.null$void	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	OÖoO00	baseUIColor	Ljava/awt/Color;
+	f	ÓÖoO00	darkUIColor	Ljava/awt/Color;
+	f	õÕoO00	gridUIColor	Ljava/awt/Color;
+	f	ÕÖoO00	brightUIColor	Ljava/awt/Color;
+	f	do.null$void	fader	Lcom/fs/graphics/util/Fader;
+	f	if.null$void	secondaryFader	Lcom/fs/graphics/util/Fader;
+	f	ÒÖoO00	texture	Lcom/fs/graphics/Object;
+	m	setFleet	setFleet	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;)V
+c	com/fs/starfarer/campaign/util/super	com/fs/starfarer/campaign/util/EntityIndicator
+	c 来源(引用关系+字符串常量) | 置信度(高) | 证据(实体指示器，对应 linux util/A；字段与 linux 同名)
+	f	oO0000	fader	Lcom/fs/graphics/util/Fader;
+	f	while	color	Ljava/awt/Color;
+	f	Ó00000	shape	Lcom/fs/starfarer/campaign/util/super$o;
+	f	OO0000	nextShape	Lcom/fs/starfarer/campaign/util/super$o;
+	f	ÔO0000	nextColor	Ljava/awt/Color;
+	f	Ö00000	glListToken	Lcom/fs/graphics/util/GLListManager$GLListToken;
+	f	null	texture	Lcom/fs/graphics/Object;
+	f	ö00000	secondaryFader	Lcom/fs/graphics/util/Fader;
+	f	Ø00000	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	Ò00000	getColor	()Ljava/awt/Color;
+	m	Ó00000	getFader	()Lcom/fs/graphics/util/Fader;
+	m	ô00000	getSecondaryFader	()Lcom/fs/graphics/util/Fader;
+	m	super	setNext	(Lcom/fs/starfarer/campaign/util/super$o;Ljava/awt/Color;)V
+	m	Ö00000	isActive	()Z
+		c 来源(javap取证) | 置信度(中) | 证据(读取 ÓO0000 boolean 字段，与 setter 配对)
+	m	super	setActive	(Z)V
+		c 来源(javap取证) | 置信度(中) | 证据(写入 ÓO0000 boolean 字段)
+	m	Õ00000	isFadingOut	()Z
+		c 来源(javap取证) | 置信度(低) | 证据(读取 new boolean 字段)
+	m	Ò00000	setFadingOut	(Z)V
+		c 来源(javap取证) | 置信度(低) | 证据(写入 new boolean 字段)
+c	com/fs/starfarer/campaign/util/super$o	com/fs/starfarer/campaign/util/IndicatorShape
+	c 来源(字符串常量) | 置信度(高) | 证据(指示器形状枚举 SQUARE/DIAMOND/CIRCLE，对应 linux util/A$o)
+	f	Ó00000	SQUARE	Lcom/fs/starfarer/campaign/util/super$o;
+	f	String	DIAMOND	Lcom/fs/starfarer/campaign/util/super$o;
+	f	Ò00000	CIRCLE	Lcom/fs/starfarer/campaign/util/super$o;
+c	com/fs/starfarer/campaign/util/UIIndicator	com/fs/starfarer/campaign/util/UIIndicator
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名类)
+	f	fader	fader	Lcom/fs/graphics/util/Fader;
+	f	color	color	Ljava/awt/Color;
+	f	type	type	Lcom/fs/starfarer/campaign/util/UIIndicator$IndicatorType;
+	f	next	next	Lcom/fs/starfarer/campaign/util/UIIndicator$IndicatorType;
+	f	nextColor	nextColor	Ljava/awt/Color;
+	f	radius	radius	F
+	f	lw	lw	F
+	f	token	token	Lcom/fs/graphics/util/GLListManager$GLListToken;
+	m	setRadius	setRadius	(F)V
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	getFader	getFader	()Lcom/fs/graphics/util/Fader;
+	m	setWidth	setWidth	(F)V
+	m	advance	advance	(F)V
+	m	setNext	setNext	(Lcom/fs/starfarer/campaign/util/UIIndicator$IndicatorType;Ljava/awt/Color;)V
+	m	reFanOut	reFanOut	()V
+	m	render	render	(FFF)V
+	m	renderDiamond	renderDiamond	(FFF)V
+	m	renderSquare	renderSquare	(FFF)V
+	m	renderCircle	renderCircle	(FFF)V
+	m	circleHelper	circleHelper	(FF)V
+	m	diamondHelper	diamondHelper	(FF)V
+	m	squareHelper	squareHelper	(FF)V
+	m	end	end	(Z)V
+	m	begin	begin	(FFFFZ)Z
+c	com/fs/starfarer/campaign/util/UIIndicator$IndicatorType	com/fs/starfarer/campaign/util/UIIndicator$IndicatorType
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(保留名枚举)
+	f	SQUARE	SQUARE	Lcom/fs/starfarer/campaign/util/UIIndicator$IndicatorType;
+	f	DIAMOND	DIAMOND	Lcom/fs/starfarer/campaign/util/UIIndicator$IndicatorType;
+	f	CIRCLE	CIRCLE	Lcom/fs/starfarer/campaign/util/UIIndicator$IndicatorType;

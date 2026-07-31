@@ -1,0 +1,226 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/combat/ai/admiral/AdmiralAI	com/fs/starfarer/combat/ai/admiral/AdmiralAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 AdmiralAI；implements AdmiralAIPlugin)
+	f	fleetManager	fleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+	f	enemyManager	enemyManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+	f	tracker1	tracker1	Lcom/fs/starfarer/util/IntervalTracker;
+	f	tracker2	tracker2	Lcom/fs/starfarer/util/IntervalTracker;
+	f	tracker3	tracker3	Lcom/fs/starfarer/util/IntervalTracker;
+	f	strategy	strategy	Lcom/fs/starfarer/combat/ai/admiral/ooOO;
+	f	strategyV2	strategyV2	Lcom/fs/starfarer/combat/ai/admiral/ooOO;
+	f	allyMode	allyMode	Z
+	f	noAllies	noAllies	Z
+	f	noOrders	noOrders	Z
+	f	config	config	Lcom/fs/starfarer/api/combat/AdmiralAIConfig;
+	f	delegate	delegate	Lcom/fs/starfarer/api/combat/AdmiralAIPlugin$AdmiralPluginDelegate;
+	m	getConfig	getConfig	()Lcom/fs/starfarer/api/combat/AdmiralAIConfig;
+	m	preCombat	preCombat	()V
+	m	getAllyModeReserves	getAllyModeReserves	()Ljava/util/Set;
+	m	advance	advance	(F)V
+	m	isNoOrders	isNoOrders	()Z
+	m	setNoOrders	setNoOrders	(Z)V
+	m	isAllyMode	isAllyMode	()Z
+	m	render	render	()V
+	m	getDelegate	getDelegate	()Lcom/fs/starfarer/api/combat/AdmiralAIPlugin$AdmiralPluginDelegate;
+	m	setDelegate	setDelegate	(Lcom/fs/starfarer/api/combat/AdmiralAIPlugin$AdmiralPluginDelegate;)V
+c	com/fs/starfarer/combat/ai/admiral/BaseBattleStrategy$1	com/fs/starfarer/combat/ai/admiral/BattleObjectiveDistanceComparator
+	c 来源(javap取证) | 置信度(高) | 证据(匿名 Comparator<BattleObjective>，按 val$loc 距离排序)
+c	com/fs/starfarer/combat/ai/admiral/BaseBattleStrategy	com/fs/starfarer/combat/ai/admiral/BaseBattleStrategy
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 BaseBattleStrategy；舰队战斗策略基类，产出 CombatTask；任务类型字符串 assault/defend/patrol 等)
+c	com/fs/starfarer/combat/ai/admiral/ooOO	com/fs/starfarer/combat/ai/admiral/BattleStrategy
+	c 来源(javap取证) | 置信度(高) | 证据(接口；AdmiralAI.strategy/strategyV2 字段类型；BaseBattleStrategy implements；方法 advance/render/init/getScore)
+c	com/fs/starfarer/combat/ai/admiral/DefensiveBattleStrategy$1	com/fs/starfarer/combat/ai/admiral/DefensiveObjectiveDistanceComparator
+	c 来源(javap取证) | 置信度(高) | 证据(匿名 Comparator<DefensiveBattleStrategy$o>，按 val$spawn 距离排序)
+c	com/fs/starfarer/combat/ai/admiral/DefensiveBattleStrategy$o	com/fs/starfarer/combat/ai/admiral/DefensiveObjectiveData
+	c 来源(javap取证) | 置信度(高) | 证据(Vector2f + 2 个 BattleObjective 的防御目标数据)
+c	com/fs/starfarer/combat/ai/admiral/DefensiveBattleStrategy	com/fs/starfarer/combat/ai/admiral/DefensiveBattleStrategy
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 DefensiveBattleStrategy；字符串 comm_relay 佐证围绕通信中继防御)
+c	com/fs/starfarer/combat/ai/admiral/E	com/fs/starfarer/combat/ai/admiral/EscapeBattleStrategy
+	c 来源(字符串常量) | 置信度(高) | 证据(日志 "Begin escape AI"/"Decided to engage in delaying action")
+c	com/fs/starfarer/combat/ai/admiral/G$o	com/fs/starfarer/combat/ai/admiral/ShipType
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举常量 FIGHTER_WING_OR_FRIGATE/DESTROYER/CRUISER_OR_CAPITAL/ANY_CARRIER/LARGE_CARRIER/CAPITAL)
+	f	Ô00000	FIGHTER_WING_OR_FRIGATE	Lcom/fs/starfarer/combat/ai/admiral/G$o;
+	f	new	DESTROYER	Lcom/fs/starfarer/combat/ai/admiral/G$o;
+	f	Ó00000	CRUISER_OR_CAPITAL	Lcom/fs/starfarer/combat/ai/admiral/G$o;
+	f	Ø00000	ANY_CARRIER	Lcom/fs/starfarer/combat/ai/admiral/G$o;
+	f	Ö00000	LARGE_CARRIER	Lcom/fs/starfarer/combat/ai/admiral/G$o;
+	f	class	CAPITAL	Lcom/fs/starfarer/combat/ai/admiral/G$o;
+c	com/fs/starfarer/combat/ai/admiral/G	com/fs/starfarer/combat/ai/admiral/DeploymentManager
+	c 来源(字符串常量) | 置信度(高) | 证据("Deployment manager reinforcement deployment"/"maxDisengageFraction"/"maxDisengageSize"/"pick reinforcement"；调用 deploy/DeploymentSpec/ShipType)
+c	com/fs/starfarer/combat/ai/admiral/String	com/fs/starfarer/combat/ai/admiral/PursuitBattleStrategy
+	c 来源(字符串常量) | 置信度(高) | 证据(日志 "Begin pursuit AI"；extends BaseBattleStrategy)
+c	com/fs/starfarer/combat/ai/admiral/B	com/fs/starfarer/combat/ai/admiral/AssaultBattleStrategy
+	c 来源(javap取证) | 置信度(中) | 证据(extends BaseBattleStrategy；调用 isFullAssault/isOrderedSND/removeAllTasksOfType)
+c	com/fs/starfarer/combat/ai/admiral/A	com/fs/starfarer/combat/ai/admiral/DeploymentChooser
+	c 来源(javap取证) | 置信度(中) | 证据(DeploymentSpec 选 FleetMember；调用 deploy/getReserves/getGoal/getCurrStrength)
+c	com/fs/starfarer/combat/ai/admiral/OOoO$o	com/fs/starfarer/combat/ai/admiral/UnitReference
+	c 来源(javap取证) | 置信度(中) | 证据(Ship 或 Wing(ai/M) 二选一的引用包装)
+c	com/fs/starfarer/combat/ai/admiral/OOoO	com/fs/starfarer/combat/ai/admiral/UnitReferenceList
+	c 来源(javap取证) | 置信度(中) | 证据(List<UnitReference> 的增删管理容器)
+c	com/fs/starfarer/combat/ai/movement/BasicEngineAI	com/fs/starfarer/combat/ai/movement/BasicEngineAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 BasicEngineAI，成员名全保留)
+	f	ACCEPTABLE_DISTANCE	ACCEPTABLE_DISTANCE	F
+	f	ACCEPTABLE_FACING_DIFF	ACCEPTABLE_FACING_DIFF	F
+	f	ACCEPTABLE_HEADING_DIFF	ACCEPTABLE_HEADING_DIFF	F
+	f	ACCEPTABLE_SPEED_DIFF	ACCEPTABLE_SPEED_DIFF	F
+	f	STOPPED_VELOCITY_THRESHOLD	STOPPED_VELOCITY_THRESHOLD	F
+	f	desiredFacing	desiredFacing	F
+	f	desiredHeading	desiredHeading	F
+	f	desiredSpeedFraction	desiredSpeedFraction	F
+	f	alwaysAccelerate	alwaysAccelerate	Z
+	f	isAvoidingCollision	isAvoidingCollision	Z
+	f	sinceHeadingChange	sinceHeadingChange	F
+	f	ship	ship	Lcom/fs/starfarer/combat/entities/Ship;
+	f	delay	delay	F
+	m	setAlwaysAccelerate	setAlwaysAccelerate	(Z)V
+	m	isAlwaysAccelerate	isAlwaysAccelerate	()Z
+	m	setDesiredFacing	setDesiredFacing	(F)V
+	m	isAvoidingCollision	isAvoidingCollision	()Z
+	m	setAvoidingCollision	setAvoidingCollision	(Z)V
+	m	setDesiredHeading	setDesiredHeading	(FF)V
+	m	advance	advance	(F)V
+	m	establishHeading	establishHeading	(FFFZ)Z
+	m	getSpeedChangeDir	getSpeedChangeDir	(F)F
+	m	turnTowards	turnTowards	(FF)Z
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/movement/EngineAI	com/fs/starfarer/combat/ai/movement/EngineAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 EngineAI，接口，方法名全保留)
+	m	isAlwaysAccelerate	isAlwaysAccelerate	()Z
+	m	setAlwaysAccelerate	setAlwaysAccelerate	(Z)V
+	m	setDesiredHeading	setDesiredHeading	(FF)V
+	m	setDesiredFacing	setDesiredFacing	(F)V
+	m	setAvoidingCollision	setAvoidingCollision	(Z)V
+c	com/fs/starfarer/combat/ai/movement/A	com/fs/starfarer/combat/ai/movement/FlockingAI
+	c 来源(javap取证) | 置信度(高) | 证据(ManeuverAPI.getFlockingAI 返回类型；持有 EngineAI 与 CollisionAnalysisModule，供机动查询避障)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/M	com/fs/starfarer/combat/ai/movement/maneuvers/Maneuver
+	c 来源(javap取证) | 置信度(高) | 证据(机动接口；全部 *Maneuver 实现；方法 advance/isDone/init/getTarget)
+	m	o00000	advance	(F)V
+		c 低置信度：按调用语义推断
+	m	Õ00000	isDone	()Z
+		c 低置信度：按调用语义推断
+	m	Object	init	()V
+		c 低置信度：按调用语义推断
+	m	o00000	getTarget	()Lcom/fs/starfarer/combat/E/B;
+		c 低置信度：返回目标实体
+c	com/fs/starfarer/combat/ai/movement/maneuvers/M$o	com/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI
+	c 来源(API-impl种子) | 置信度(高) | 证据(18 方法接口，方法名未混淆：cancelCurrentManeuver/getAttackingGroup/getLocation/getAIFlags/getThreatEvaluator/getAttackAI/getFlockingAI/getConfig 等，供机动查询战斗上下文)
+	m	cancelCurrentManeuver	cancelCurrentManeuver	()V
+	m	getAttackingGroup	getAttackingGroup	()Lcom/fs/starfarer/combat/ai/attack/A;
+	m	getEvaluationFor	getEvaluationFor	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)Lcom/fs/starfarer/combat/ai/attack/B;
+	m	doesShipVelocityMatterForAim	doesShipVelocityMatterForAim	()Z
+	m	getCollisionRadius	getCollisionRadius	()F
+	m	getLocation	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	isFighter	isFighter	()Z
+	m	keepTarget	keepTarget	()Z
+	m	getMaxFiringRange	getMaxFiringRange	()F
+	m	getOptimalNonMissileRange	getOptimalNonMissileRange	()F
+	m	setMaxTargetRange	setMaxTargetRange	(F)V
+	m	getAIFlags	getAIFlags	()Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+	m	getThreatEvaluator	getThreatEvaluator	()Lcom/fs/starfarer/combat/ai/D;
+	m	getAttackAI	getAttackAI	()Lcom/fs/starfarer/combat/ai/attack/AttackAIModule;
+	m	getFlockingAI	getFlockingAI	()Lcom/fs/starfarer/combat/ai/movement/A;
+	m	getShieldAI	getShieldAI	()Lcom/fs/starfarer/combat/ai/F;
+	m	getEval	getEval	()Lcom/fs/starfarer/combat/ai/ooOO;
+	m	getConfig	getConfig	()Lcom/fs/starfarer/api/combat/ShipAIConfig;
+c	com/fs/starfarer/combat/ai/movement/maneuvers/A	com/fs/starfarer/combat/ai/movement/maneuvers/ShieldAwareAttackManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(双 Ship 目标攻击机动；advance 评估目标护盾 isFront/isOff/getFluxLevel/isVenting/getOverloadTimeRemaining 决定走位)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/AttackRunManeuver	com/fs/starfarer/combat/ai/movement/maneuvers/AttackRunManeuver
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 AttackRunManeuver；字符串 attack_at_an_angle/keep_at_range/leader_no_swarm 攻击模式)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/AttackRunManeuver$1	com/fs/starfarer/combat/ai/movement/maneuvers/AttackRunLineEntity
+	c 来源(继承关系) | 置信度(中) | 证据(extends BaseEntity 匿名实体，render/applyDamage 渲染攻击航线)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/C	com/fs/starfarer/combat/ai/movement/maneuvers/TaskAttackManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Vector2f, ManeuverAPI)；调用 CombatTask$Oo.getLocation 与 AttackAIModule 攻击评估，执行战斗任务)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/E	com/fs/starfarer/combat/ai/movement/maneuvers/SimpleAttackManeuver
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, 目标实体, float, ManeuverAPI)；getAttackAI/getAttackingGroup 简单攻击+避障)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 EscortTargetManeuverV3；字符串 stay_in_front_of_ship/target_escort_target)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$1	com/fs/starfarer/combat/ai/movement/maneuvers/EscortSpotRangeComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<EscortSpot>，按护航位置到目标实体距离排序)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$2	com/fs/starfarer/combat/ai/movement/maneuvers/EscortSpotIndexComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<EscortSpot>，按 EscortSpot.int 索引排序)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$3	com/fs/starfarer/combat/ai/movement/maneuvers/EscortSpotRangeComparatorV2
+	c 来源(javap取证) | 置信度(低) | 证据(匿名 Comparator<EscortSpot>，同为距离排序的变体)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$4	com/fs/starfarer/combat/ai/movement/maneuvers/EscortSpotTestPointComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<EscortSpot>，按到 test1/test2 两测试点距离排序)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$5	com/fs/starfarer/combat/ai/movement/maneuvers/EscortSpotBackoffComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<EscortSpot>，按到 backOffAwayFrom 点距离排序)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$6	com/fs/starfarer/combat/ai/movement/maneuvers/CollisionObjectComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<ai/collisions/Object> 碰撞体排序)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$Oo	com/fs/starfarer/combat/ai/movement/maneuvers/EscortSpot
+	c 来源(javap取证) | 置信度(中) | 证据(Vector2f + int + int + float 的护航位置候选数据)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTargetManeuverV3$o	com/fs/starfarer/combat/ai/movement/maneuvers/EscortTaskData
+	c 来源(javap取证) | 置信度(中) | 证据(Ship + ai/collisions/OoOO 的护航任务数据)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/ExploreManeuver	com/fs/starfarer/combat/ai/movement/maneuvers/ExploreManeuver
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 ExploreManeuver)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/ExploreManeuver$1	com/fs/starfarer/combat/ai/movement/maneuvers/ExploreCollisionComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<ai/collisions/Object>)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/void	com/fs/starfarer/combat/ai/movement/maneuvers/AttackEntityManeuver
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, 目标实体, FlockingAI, ManeuverAPI)；调用 attack/A 与 AttackAIModule 的攻击机动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/ai/movement/maneuvers/FaceTargetEntityManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, 目标实体, float, float, ManeuverAPI)；无攻击模块调用，纯朝向目标实体移动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/HeadToTargetWhileAvoidingEnemiesManeuver	com/fs/starfarer/combat/ai/movement/maneuvers/HeadToTargetWhileAvoidingEnemiesManeuver
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名；字符串 "Finding avoid heading (going to carrier)")
+c	com/fs/starfarer/combat/ai/movement/maneuvers/HeadToTargetWhileAvoidingEnemiesManeuver$1	com/fs/starfarer/combat/ai/movement/maneuvers/HeadToTargetCollisionComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<ai/collisions/Object>)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/K	com/fs/starfarer/combat/ai/movement/maneuvers/WingAttackManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Wing(ai/M), AttackAIModule)；TransferCommandAI 与 FighterLandingManeuver 调用；舰载机联队攻击机动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/N	com/fs/starfarer/combat/ai/movement/maneuvers/WingAttackManeuverV2
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Wing(ai/M), ManeuverAPI)；FighterWingSpec.hasTag 编队标签 match_leader_facing/rapid_reform/target_escort_target/wingmen_no_swarm)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/o00O	com/fs/starfarer/combat/ai/movement/maneuvers/HoldPositionManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, FlockingAI, ManeuverAPI)；对应 windows 类调用 getFixedLocation+giveCommand 保持位置)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/if	com/fs/starfarer/combat/ai/movement/maneuvers/WeaponAssistAttackManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Ship, FlockingAI, ManeuverAPI)；内部持有并初始化 WeaponFireControlHelper(Stringsuper)，与 StrafeTargetManeuverV2 同型)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/B	com/fs/starfarer/combat/ai/movement/maneuvers/AssignmentBasedManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Ship, float, FlockingAI, ManeuverAPI) + 判定 (Ship, Ship)Z；按任务分配类型字符串 aggressive/cautious/reckless/timid 决定行为)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/ProceedToTargetWhileAvoidingDanger	com/fs/starfarer/combat/ai/movement/maneuvers/ProceedToTargetWhileAvoidingDanger
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名；构造 (Ship, CombatTask$Oo, ...) 向任务目标移动避险)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/ProceedToTargetWhileAvoidingDanger$1	com/fs/starfarer/combat/ai/movement/maneuvers/ProceedToTargetCollisionComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<ai/collisions/Object>)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/private	com/fs/starfarer/combat/ai/movement/maneuvers/IdleManeuver
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, FlockingAI, ManeuverAPI)，方法体无外部调用，近似空实现)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatManeuver	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatManeuver
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名；字符串 "Finding retreat heading")
+c	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatManeuver$1	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatCollisionComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<ai/collisions/Object>)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatManeuver$2	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatPositionEvaluator
+	c 来源(继承关系) | 置信度(中) | 证据(extends ai/while$Oo，方法 (Ship, Vector2f, Ship)Z 评估撤退位置)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/StrafeTargetManeuverV2	com/fs/starfarer/combat/ai/movement/maneuvers/StrafeTargetManeuverV2
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名；字符串 "Finding back off direction"/aggressive/cautious/reckless/steady/timid；调用 WeaponFireControlHelper)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/StrafeTargetManeuverV2$1	com/fs/starfarer/combat/ai/movement/maneuvers/StrafeCollisionComparator
+	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<ai/collisions/Object>)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/V	com/fs/starfarer/combat/ai/movement/maneuvers/WeaponFireControlHelper
+	c 来源(javap取证) | 置信度(中) | 证据(无参构造 + super(Ship, Ship, ManeuperAPI) 初始化；持有 WeaponGroup/BaseWeaponSpec/WeaponSize，管理武器开火评估；被 StrafeTargetManeuverV2 与 WeaponAssistAttackManeuver 使用)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/V$o	com/fs/starfarer/combat/ai/movement/maneuvers/WeaponTargetData
+	c 来源(javap取证) | 置信度(低) | 证据(Ship + float 的武器目标数据条目)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/T	com/fs/starfarer/combat/ai/movement/maneuvers/ChaseShipManeuver
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, Ship, float, float, float, ManeuperAPI) 双 Ship 攻击机动，调用 attack/A)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/TransferCommandAI	com/fs/starfarer/combat/ai/movement/maneuvers/TransferCommandAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 TransferCommandAI；implements ai/AI，调用 WingAttackManeuver)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/ooOo	com/fs/starfarer/combat/ai/movement/maneuvers/TaskMoveManeuver
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, Vector2f, ManeuverAPI)；调用 CombatTask/BasicShipAI 向任务点移动；被 StrafeTargetManeuverV2 引用)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/returnsuper	com/fs/starfarer/combat/ai/movement/maneuvers/MoveToPointManeuverV2
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, Vector2f, FlockingAI, ManeuverAPI) 带编队移动的位置机动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/ai/movement/maneuvers/ThreatAvoidanceManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, ManeuverAPI)/(Ship, float, ManeuverAPI)；getThreatEvaluator 判断威胁后机动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/O0OO	com/fs/starfarer/combat/ai/movement/maneuvers/AttackEntityManeuverV2
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, 目标实体, float, float, FlockingAI, ManeuverAPI) 目标实体攻击机动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/o0Oo	com/fs/starfarer/combat/ai/movement/maneuvers/OverloadAwareAttackManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(双 Ship 攻击机动；advance 检查 getFluxLevel/isOverloadedOrVenting/getOverloadTimeRemaining/getTimeToVent/isPhased)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/L	com/fs/starfarer/combat/ai/movement/maneuvers/MoveToPointManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Vector2f, ManeuverAPI) + IntervalTracker，纯向指定点移动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/R	com/fs/starfarer/combat/ai/movement/maneuvers/SimpleMoveManeuver
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, ManeuverAPI) 最简移动机动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/S	com/fs/starfarer/combat/ai/movement/maneuvers/ChaseAttackManeuver
+	c 来源(javap取证) | 置信度(低) | 证据(构造 (Ship, Ship, float, FlockingAI, ManeuverAPI) 双 Ship 攻击+避障)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/oooO	com/fs/starfarer/combat/ai/movement/maneuvers/ManeuverManager
+	c 来源(javap取证) | 置信度(高) | 证据(List<ManeuverEntry> 机动队列；addManeuver(M, priority)/advance/getCurrentManeuver)
+	m	super	addManeuver	(Lcom/fs/starfarer/combat/ai/movement/maneuvers/M;F)V
+		c 低置信度：参数 M+float 优先级
+	m	super	advance	(F)V
+	m	Ö00000	getCurrentManeuver	()Lcom/fs/starfarer/combat/ai/movement/maneuvers/M;
+c	com/fs/starfarer/combat/ai/movement/maneuvers/oooO$o	com/fs/starfarer/combat/ai/movement/maneuvers/ManeuverEntry
+	c 来源(javap取证) | 置信度(高) | 证据(构造 (oooO, M, float) 的机动队列条目)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/public	com/fs/starfarer/combat/ai/movement/maneuvers/FighterLandingManeuver
+	c 来源(javap取证) | 置信度(高) | 证据(调用 beginLandingAnimation/abortLanding/isLanding/isFinishedLanding/land 与 WingAttackManeuver 的舰载机降落机动)
+c	com/fs/starfarer/combat/ai/movement/maneuvers/OOoO	com/fs/starfarer/combat/ai/movement/maneuvers/PursuitAttackManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Ship, float, float, FlockingAI, ManeuverAPI)；getAttackAI/getAttackingGroup/keepTarget 追击+避障)

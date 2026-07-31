@@ -1,0 +1,440 @@
+tiny 2 0 obf named
+c	com/fs/starfarer/combat/B/b	com/fs/starfarer/combat/warroom/WarroomMapRenderer
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#b-warroom-map-renderer
+	f	ÕÓ0000	engine	Lcom/fs/starfarer/combat/CombatEngine;
+	f	Õo0000	state	Lcom/fs/starfarer/combat/CombatState;
+	f	ÔÓ0000	icons	Ljava/util/Map;
+	f	Òo0000	visibleIcons	Ljava/util/Set;
+	f	ÒÒ0000	hoveredIcon	Lcom/fs/starfarer/combat/B/F;
+	f	ôÒ0000	selectedIcon	Lcom/fs/starfarer/combat/B/F;
+	m	advance	advance	(F)V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/combat/B/B	com/fs/starfarer/combat/warroom/ShipIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#b-ship-icon
+	m	o00000	computeFighterWingShape	(Lcom/fs/starfarer/loading/specs/FighterWingSpec;)[[F
+c	com/fs/starfarer/combat/B/c	com/fs/starfarer/combat/warroom/CommandButtonIconRenderer
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#c-command-button-icon-renderer
+c	com/fs/starfarer/combat/B/_	com/fs/starfarer/combat/warroom/CommandUI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#_-command-ui
+	f	ô0oo00	assignmentsPanel	Lcom/fs/starfarer/combat/B/voidsuper;
+	f	for.null$do	ordersPanel	Lcom/fs/starfarer/combat/B/voidsuper;
+	f	Ô0oo00	miscPanel	Lcom/fs/starfarer/combat/B/voidsuper;
+	m	getAssignments	getAssignments	()Lcom/fs/starfarer/combat/B/voidsuper;
+	m	getOrders	getOrders	()Lcom/fs/starfarer/combat/B/voidsuper;
+	m	getMisc	getMisc	()Lcom/fs/starfarer/combat/B/voidsuper;
+	m	getTaskTarget	getTaskTarget	()Lcom/fs/starfarer/combat/tasks/CombatTask$Oo;
+c	com/fs/starfarer/combat/B/class$o	com/fs/starfarer/combat/warroom/TaskIcon
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#class-o-task-icon
+	f	String	task	Lcom/fs/starfarer/combat/tasks/C;
+	f	Ò00000	combatTask	Lcom/fs/starfarer/combat/tasks/CombatTask;
+	f	Õ00000	fleetMember	Lcom/fs/starfarer/combat/CombatFleetManager$O0;
+c	com/fs/starfarer/combat/B/class	com/fs/starfarer/combat/warroom/TaskIconManager
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#class-task-icon-manager
+	f	super	taskIcons	Ljava/util/Map;
+	f	Ö00000	taskIconList	Ljava/util/List;
+c	com/fs/starfarer/combat/B/D	com/fs/starfarer/combat/warroom/BattleObjectiveIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#d-battle-objective-icon
+c	com/fs/starfarer/combat/B/dosuper	com/fs/starfarer/combat/warroom/MissileIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#dosuper-missile-icon
+c	com/fs/starfarer/combat/B/f	com/fs/starfarer/combat/warroom/WarroomHintText
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#f-warroom-hint-text
+c	com/fs/starfarer/combat/B/F	com/fs/starfarer/combat/warroom/WarroomIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#f-warroom-icon
+c	com/fs/starfarer/combat/B/float	com/fs/starfarer/combat/warroom/FleetOrdersLabel
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#float-fleet-orders-label
+c	com/fs/starfarer/combat/B/ifsuper	com/fs/starfarer/combat/warroom/CommandButton
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#ifsuper-command-button
+	f	Òooo00	action	Lcom/fs/starfarer/combat/B/J$o;
+	m	setButton	setButton	(Lcom/fs/starfarer/ui/n;)V
+	m	getAction	getAction	()Lcom/fs/starfarer/combat/B/J$o;
+c	com/fs/starfarer/combat/B/J$o	com/fs/starfarer/combat/warroom/CommandType
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#j-o-command-type
+	f	ÓO0000	RECON	Lcom/fs/starfarer/combat/B/J$o;
+	f	Ôo0000	STRIKE	Lcom/fs/starfarer/combat/B/J$o;
+	f	float.super	STRIKE_BASE	Lcom/fs/starfarer/combat/B/J$o;
+	f	Øo0000	RALLY_FIGHTERS	Lcom/fs/starfarer/combat/B/J$o;
+	f	OO0000	CARRIER_BASE	Lcom/fs/starfarer/combat/B/J$o;
+	f	õo0000	CAPTURE	Lcom/fs/starfarer/combat/B/J$o;
+	f	OÒ0000	CONTROL	Lcom/fs/starfarer/combat/B/J$o;
+	f	oO0000	ASSAULT	Lcom/fs/starfarer/combat/B/J$o;
+	f	interface.super	ENGAGE	Lcom/fs/starfarer/combat/B/J$o;
+	f	class.super	DEFEND	Lcom/fs/starfarer/combat/B/J$o;
+	f	class	CIVILIAN_RALLY	Lcom/fs/starfarer/combat/B/J$o;
+	f	null.super	AVOID	Lcom/fs/starfarer/combat/B/J$o;
+	f	ØO0000	IGNORE	Lcom/fs/starfarer/combat/B/J$o;
+	f	öO0000	RALLY_TASK_FORCE	Lcom/fs/starfarer/combat/B/J$o;
+	f	Öo0000	PATROL	Lcom/fs/starfarer/combat/B/J$o;
+	f	ö00000	FULL_ESCORT	Lcom/fs/starfarer/combat/B/J$o;
+	f	new.super	LIGHT_ESCORT	Lcom/fs/starfarer/combat/B/J$o;
+	f	oo0000	DESTROYER_ESCORT	Lcom/fs/starfarer/combat/B/J$o;
+	f	while	HARASS	Lcom/fs/starfarer/combat/B/J$o;
+	f	Ô00000	INTERCEPT	Lcom/fs/starfarer/combat/B/J$o;
+	f	ÔO0000	SHOW_VIDEO	Lcom/fs/starfarer/combat/B/J$o;
+	f	Ó00000	MORE_INFO	Lcom/fs/starfarer/combat/B/J$o;
+	f	o00000	REMOVE_WAYPOINT	Lcom/fs/starfarer/combat/B/J$o;
+	f	Óo0000	REPAIR_AND_REFIT	Lcom/fs/starfarer/combat/B/J$o;
+	f	Ö00000	SEARCH_AND_DESTROY	Lcom/fs/starfarer/combat/B/J$o;
+	f	float	RETREAT	Lcom/fs/starfarer/combat/B/J$o;
+	f	ÖO0000	DIRECT_RETREAT	Lcom/fs/starfarer/combat/B/J$o;
+	f	õO0000	TRANSFER_COMMAND	Lcom/fs/starfarer/combat/B/J$o;
+	f	interface	TARGET	Lcom/fs/starfarer/combat/B/J$o;
+	f	Ø00000	ASSIGN_TASK	Lcom/fs/starfarer/combat/B/J$o;
+	f	öo0000	RESCIND	Lcom/fs/starfarer/combat/B/J$o;
+	f	Oo0000	CANCEL_ASSIGNMENT	Lcom/fs/starfarer/combat/B/J$o;
+	f	while.super	AUTOPILOT	Lcom/fs/starfarer/combat/B/J$o;
+c	com/fs/starfarer/combat/B/J$Oo	com/fs/starfarer/combat/warroom/Allegiance
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#j-oo-allegiance
+	f	Ó00000	FRIEND	Lcom/fs/starfarer/combat/B/J$Oo;
+	f	Ò00000	ENEMY	Lcom/fs/starfarer/combat/B/J$Oo;
+	f	String	NEUTRAL	Lcom/fs/starfarer/combat/B/J$Oo;
+c	com/fs/starfarer/combat/B/J	com/fs/starfarer/combat/warroom/CommandMenu
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#j-command-menu
+c	com/fs/starfarer/combat/B/L$o	com/fs/starfarer/combat/warroom/TaskTargetType
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#l-o-task-target-type
+	f	Ó00000	MOVE_TO_LOCATION	Lcom/fs/starfarer/combat/B/L$o;
+	f	Ö00000	ESCORT_TARGET	Lcom/fs/starfarer/combat/B/L$o;
+	f	null	CLOSE_ESCORT_TARGET	Lcom/fs/starfarer/combat/B/L$o;
+	f	Ø00000	ATTACK_TARGET	Lcom/fs/starfarer/combat/B/L$o;
+	f	class	SEARCH_AND_DESTROY	Lcom/fs/starfarer/combat/B/L$o;
+	f	o00000	RETURN_TO_CARRIER	Lcom/fs/starfarer/combat/B/L$o;
+	f	Ô00000	RETREAT	Lcom/fs/starfarer/combat/B/L$o;
+c	com/fs/starfarer/combat/B/L	com/fs/starfarer/combat/warroom/TaskTarget
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#l-task-target
+	f	super	type	Lcom/fs/starfarer/combat/B/L$o;
+	f	Ò00000	target	Ljava/lang/Object;
+	m	new	getType	()Lcom/fs/starfarer/combat/B/L$o;
+	m	o00000	getTarget	()Ljava/lang/Object;
+c	com/fs/starfarer/combat/B/M	com/fs/starfarer/combat/warroom/WaypointIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#m-waypoint-icon
+c	com/fs/starfarer/combat/B/null$o	com/fs/starfarer/combat/warroom/ShipStatusBar
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#null-o-ship-status-bar
+c	com/fs/starfarer/combat/B/null	com/fs/starfarer/combat/warroom/ShipInfoPanel
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#null-ship-info-panel
+	m	new	getHullSizeMult	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)F
+c	com/fs/starfarer/combat/B/oo0O$o	com/fs/starfarer/combat/warroom/IconEntry
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#oo0o-o-icon-entry
+c	com/fs/starfarer/combat/B/oo0O	com/fs/starfarer/combat/warroom/IconEntryList
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#oo0o-icon-entry-list
+	m	Ò00000	containsIcon	(Lcom/fs/starfarer/combat/B/F;)Z
+	m	String	getFleetMembers	()Ljava/util/List;
+	m	Ò00000	getSelectedFleetMember	()Lcom/fs/starfarer/combat/CombatFleetManager$O0;
+	m	Ö00000	getTaskTarget	()Lcom/fs/starfarer/combat/tasks/CombatTask$Oo;
+c	com/fs/starfarer/combat/B/Oo0o	com/fs/starfarer/combat/warroom/AbstractWarroomIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oo0o-abstract-warroom-icon
+	m	oO0000	getTaskLabel	()Lcom/fs/starfarer/combat/B/oOOO;
+	m	o00000	setTaskLabel	(Lcom/fs/starfarer/combat/B/oOOO;)V
+c	com/fs/starfarer/combat/B/oooO	com/fs/starfarer/combat/warroom/PausePlayWidget
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooo-pause-play-widget
+	m	getPlayButton	getPlayButton	()Lcom/fs/starfarer/ui/q;
+	m	getPauseButton	getPauseButton	()Lcom/fs/starfarer/ui/q;
+c	com/fs/starfarer/combat/B/oOoO	com/fs/starfarer/combat/warroom/WaypointLineRenderer
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#oooo-waypoint-line-renderer
+c	com/fs/starfarer/combat/B/oOOO	com/fs/starfarer/combat/warroom/TaskLabel
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#oooo-task-label
+	f	Ò00000	task	Lcom/fs/starfarer/combat/tasks/CombatTask;
+	f	Õ00000	taskTarget	Lcom/fs/starfarer/combat/tasks/CombatTask$Oo;
+	m	new	getTask	()Lcom/fs/starfarer/combat/tasks/CombatTask;
+c	com/fs/starfarer/combat/B/Oooo	com/fs/starfarer/combat/warroom/AsteroidIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooo-asteroid-icon
+c	com/fs/starfarer/combat/B/OOoo	com/fs/starfarer/combat/warroom/FighterIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooo-fighter-icon
+c	com/fs/starfarer/combat/B/OOOo	com/fs/starfarer/combat/warroom/ExplosionIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooo-explosion-icon
+c	com/fs/starfarer/combat/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/combat/warroom/WarroomMapEntity
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#ooooo-map-entity
+	m	getLocation	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getVelocity	getVelocity	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getOwner	getOwner	()I
+	m	getEntity	getEntity	()Lcom/fs/starfarer/combat/o0OO/B;
+c	com/fs/starfarer/combat/B/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/combat/warroom/FogOfWarTile
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#oooooo-fog-of-war-tile
+c	com/fs/starfarer/combat/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/warroom/Warroom
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#ooooo-warroom
+	m	getMapDisplay	getMapDisplay	()Lcom/fs/starfarer/combat/B/b;
+	m	addExplosion	addExplosion	(Lorg/lwjgl/util/vector/Vector2f;F)V
+	m	show	show	()V
+	m	hide	hide	()V
+	m	getState	getState	()Lcom/fs/starfarer/combat/CombatState;
+	m	isFadingOut	isFadingOut	()Z
+	m	getSelectionManager	getSelectionManager	()Lcom/fs/starfarer/combat/B/oo0O;
+	m	computeWorldLocation	computeWorldLocation	(FF)Lorg/lwjgl/util/vector/Vector2f;
+	m	waitForTaskTargetSelection	waitForTaskTargetSelection	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
+	m	stopWaitingForTaskTargetSelection	stopWaitingForTaskTargetSelection	()V
+	m	assignTaskNearestToLocation	assignTaskNearestToLocation	(Lorg/lwjgl/util/vector/Vector2f;)Z
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	rightClicked	rightClicked	(Lcom/fs/starfarer/util/super/Object;)V
+	m	renderImpl	renderImpl	(F)V
+	m	setPrompt	setPrompt	(Ljava/lang/String;)V
+c	com/fs/starfarer/combat/B/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/warroom/FogOfWar
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooooo-fog-of-war
+	m	renderForWarroom	renderForWarroom	(Lcom/fs/starfarer/combat/CombatViewport;FF)V
+	m	advance	advance	(F)V
+	m	updateVisibility	updateVisibility	()V
+	m	revealAroundPoint	revealAroundPoint	(Ljava/lang/Object;FFF)V
+	m	getPlayerId	getPlayerId	()I
+	m	isVisible	isVisible	(Lorg/lwjgl/util/vector/Vector2f;)Z
+	m	isVisible	isVisible	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)Z
+	m	isVisible	isVisible	(FF)Z
+c	com/fs/starfarer/combat/B/P	com/fs/starfarer/combat/warroom/PlanetIcon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#p-planet-icon
+c	com/fs/starfarer/combat/B/Q$o	com/fs/starfarer/combat/warroom/SelectionIconEntry
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#q-o-selection-icon-entry
+c	com/fs/starfarer/combat/B/Q	com/fs/starfarer/combat/warroom/SelectionIconList
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#q-selection-icon-list
+c	com/fs/starfarer/combat/B/S	com/fs/starfarer/combat/warroom/CommandToggleButton
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#s-command-toggle-button
+	m	getButton	getButton	()Lcom/fs/starfarer/ui/n;
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;)V
+	m	getControlForAction	getControlForAction	(Lcom/fs/starfarer/combat/B/J$o;)Lcom/fs/starfarer/title/B/B$oo;
+	m	getAction	getAction	()Lcom/fs/starfarer/combat/B/J$o;
+	m	toggle	toggle	()V
+	m	isChecked	isChecked	()Z
+	m	setChecked	setChecked	(Z)V
+	m	getOrientation	getOrientation	()Lcom/fs/starfarer/ui/_;
+c	com/fs/starfarer/combat/B/Stringsuper$o	com/fs/starfarer/combat/warroom/MapPing
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#stringsuper-o-map-ping
+c	com/fs/starfarer/combat/B/Stringsuper	com/fs/starfarer/combat/warroom/MapPingList
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#stringsuper-map-ping-list
+c	com/fs/starfarer/combat/B/U$1	com/fs/starfarer/combat/warroom/WarroomInfoPanelTooltip
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#u-1
+c	com/fs/starfarer/combat/B/U	com/fs/starfarer/combat/warroom/InfoPanel
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#u-info-panel
+	m	syncWith	syncWith	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
+	m	syncWith	syncWith	(Lcom/fs/starfarer/combat/entities/BattleObjective;)V
+	m	syncWith	syncWith	(Lcom/fs/starfarer/combat/entities/BattlefieldWaypoint;)V
+c	com/fs/starfarer/combat/B/voidsuper	com/fs/starfarer/combat/warroom/ButtonListPanel
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#voidsuper-button-list-panel
+	m	addButton	addButton	(Lcom/fs/starfarer/ui/n;)V
+c	com/fs/starfarer/combat/B/W	com/fs/starfarer/combat/warroom/ContextMenu
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#w-context-menu
+	m	show	show	(FF)V
+	m	outsideClickAbsorbed	outsideClickAbsorbed	(Lcom/fs/starfarer/util/super/Object;)V
+c	com/fs/starfarer/combat/B/while$o	com/fs/starfarer/combat/warroom/GridCoord
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#while-o-grid-coord
+c	com/fs/starfarer/combat/B/while	com/fs/starfarer/combat/warroom/GridCell
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#while-grid-cell
+c	com/fs/starfarer/combat/D/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/D/CombatEventListener
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#d-combat-event-listener
+	m	õÖO000	isEventPending	()Z
+	m	while.do	getEventId	()I
+c	com/fs/starfarer/combat/D/super	com/fs/starfarer/combat/D/CombatEventData
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#d-super-combat-event-data
+	f	ÕÔoo00	eventText	Ljava/lang/String;
+	f	ÔÔoo00	pending	Z
+	f	return.for$do	eventId	I
+	m	õÖO000	isEventPending	()Z
+	m	while.do	getEventId	()I
+	m	fighterWingDestroyed	fighterWingDestroyed	(Lcom/fs/starfarer/combat/ai/M;)V
+	m	fleetMemberDeployed	fleetMemberDeployed	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
+	m	fleetMemberRetreated	fleetMemberRetreated	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
+	m	objectiveChangedOwner	objectiveChangedOwner	(ILcom/fs/starfarer/api/combat/BattleObjectiveAPI;)V
+	m	orderGiven	orderGiven	(ILcom/fs/starfarer/combat/interface;)V
+	m	shipDestroyed	shipDestroyed	(Lcom/fs/starfarer/combat/entities/Ship;)V
+	m	shipDisabled	shipDisabled	(Lcom/fs/starfarer/combat/entities/Ship;)V
+	m	fleetMemberCaptured	fleetMemberCaptured	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+c	com/fs/starfarer/combat/o0OO/A/B	com/fs/starfarer/combat/o0OO/SimpleCollisionHandler
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#a-b-simple-collision-handler
+c	com/fs/starfarer/combat/o0OO/A/E	com/fs/starfarer/combat/o0OO/CollisionHandlerWithEngine
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#a-e-collision-handler-with-engine
+c	com/fs/starfarer/combat/o0OO/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/combat/o0OO/CollisionPair
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#a-ooooo-o-collision-pair
+	f	Õ00000	one	Lcom/fs/starfarer/combat/o0OO/B;
+	f	Ó00000	two	Lcom/fs/starfarer/combat/o0OO/B;
+c	com/fs/starfarer/combat/o0OO/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/combat/o0OO/CollisionEntityImpl
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#a-ooooo-oo-collision-entity-impl
+	m	getVelocity	getVelocity	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getLocation	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getMass	getMass	()F
+	m	getCollisionRadius	getCollisionRadius	()F
+	m	getAngularVelocity	getAngularVelocity	()F
+	m	getCollisionClass	getCollisionClass	()Lcom/fs/starfarer/api/combat/CollisionClass;
+	m	getFacing	getFacing	()F
+	m	getImpactClass	getImpactClass	()Lcom/fs/starfarer/combat/o0OO/I;
+	m	getOwner	getOwner	()I
+	m	isExpired	isExpired	()Z
+	m	isGhost	isGhost	()Z
+	m	setAngularVelocity	setAngularVelocity	(F)V
+	m	setCollisionClass	setCollisionClass	(Lcom/fs/starfarer/api/combat/CollisionClass;)V
+	m	setCollisionRadius	setCollisionRadius	(F)V
+	m	setFacing	setFacing	(F)V
+	m	setImpactClass	setImpactClass	(Lcom/fs/starfarer/combat/o0OO/I;)V
+	m	setOwner	setOwner	(I)V
+	m	getSource	getSource	()Lcom/fs/starfarer/combat/o0OO/B;
+	m	canCauseInsideBoundsCollision	canCauseInsideBoundsCollision	()Z
+	m	afterCollidingWith	afterCollidingWith	(Lcom/fs/starfarer/combat/o0OO/B;F)V
+	m	beforeCollidingWith	beforeCollidingWith	(Lcom/fs/starfarer/combat/o0OO/B;)V
+	m	getHitpoints	getHitpoints	()F
+	m	getHullLevel	getHullLevel	()F
+	m	getMaxHitpoints	getMaxHitpoints	()F
+	m	setMass	setMass	(F)V
+	m	setWasRemoved	setWasRemoved	(Z)V
+	m	wasRemoved	wasRemoved	()Z
+	m	getAI	getAI	()Ljava/lang/Object;
+	m	setCustomData	setCustomData	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	removeCustomData	removeCustomData	(Ljava/lang/String;)V
+	m	getCustomData	getCustomData	()Ljava/util/Map;
+	m	setHitpoints	setHitpoints	(F)V
+	m	getExactBounds	getExactBounds	()Lcom/fs/starfarer/combat/o0OO/O0OO;
+	m	getShield	getShield	()Lcom/fs/starfarer/combat/systems/G;
+c	com/fs/starfarer/combat/o0OO/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/o0OO/CollisionHandlerImpl
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#a-ooooo-collision-handler
+	m	return	isCollidable	(Lcom/fs/starfarer/combat/o0OO/B;)Z
+c	com/fs/starfarer/combat/o0OO/A/String	com/fs/starfarer/combat/o0OO/CollisionHandlerWithSet
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#a-string-collision-handler-with-set
+c	com/fs/starfarer/combat/o0OO/A/super	com/fs/starfarer/combat/o0OO/RTECollisionHandler
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#a-super-rte-collision-handler
+c	com/fs/starfarer/combat/o0OO/B	com/fs/starfarer/combat/o0OO/CollisionEntity
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#b-collision-entity
+	m	getCollisionClass	getCollisionClass	()Lcom/fs/starfarer/api/combat/CollisionClass;
+	m	setCollisionClass	setCollisionClass	(Lcom/fs/starfarer/api/combat/CollisionClass;)V
+	m	getMass	getMass	()F
+	m	getLocation	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getVelocity	getVelocity	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getAngularVelocity	getAngularVelocity	()F
+	m	setAngularVelocity	setAngularVelocity	(F)V
+	m	getCollisionRadius	getCollisionRadius	()F
+	m	setCollisionRadius	setCollisionRadius	(F)V
+	m	canCauseInsideBoundsCollision	canCauseInsideBoundsCollision	()Z
+	m	getFacing	getFacing	()F
+	m	setFacing	setFacing	(F)V
+	m	getOwner	getOwner	()I
+	m	setOwner	setOwner	(I)V
+	m	isExpired	isExpired	()Z
+	m	isGhost	isGhost	()Z
+	m	getSource	getSource	()Lcom/fs/starfarer/combat/o0OO/B;
+	m	beforeCollidingWith	beforeCollidingWith	(Lcom/fs/starfarer/combat/o0OO/B;)V
+	m	afterCollidingWith	afterCollidingWith	(Lcom/fs/starfarer/combat/o0OO/B;F)V
+	m	wasRemoved	wasRemoved	()Z
+	m	setWasRemoved	setWasRemoved	(Z)V
+	m	getShield	getShield	()Lcom/fs/starfarer/combat/systems/G;
+	m	getExactBounds	getExactBounds	()Lcom/fs/starfarer/combat/o0OO/O0OO;
+c	com/fs/starfarer/combat/o0OO/C$o	com/fs/starfarer/combat/o0OO/CollisionRelation
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#c-o-collision-relation
+c	com/fs/starfarer/combat/o0OO/C	com/fs/starfarer/combat/o0OO/CollisionType
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#c-collision-type
+	f	new	one	Lcom/fs/starfarer/api/combat/CollisionClass;
+	f	o00000	two	Lcom/fs/starfarer/api/combat/CollisionClass;
+	f	Ó00000	relation	Lcom/fs/starfarer/combat/o0OO/C$o;
+c	com/fs/starfarer/combat/o0OO/class	com/fs/starfarer/combat/o0OO/CollidableList
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#class-collidable-list
+	f	o00000	collidables	Ljava/util/List;
+c	com/fs/starfarer/combat/o0OO/F	com/fs/starfarer/combat/o0OO/Damage
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#f-damage
+	m	getDamage	getDamage	()F
+	m	getBaseDamage	getBaseDamage	()F
+	m	setDamage	setDamage	(F)V
+	m	isDps	isDps	()Z
+	m	setIsDps	setIsDps	(Z)V
+	m	getMultiplier	getMultiplier	()F
+	m	setMultiplier	setMultiplier	(F)V
+	m	getType	getType	()Lcom/fs/starfarer/api/combat/DamageType;
+	m	setType	setType	(Lcom/fs/starfarer/api/combat/DamageType;)V
+	m	getFluxComponent	getFluxComponent	()F
+	m	setFluxComponent	setFluxComponent	(F)V
+	m	getHardFluxFraction	getHardFluxFraction	()F
+	m	setHardFluxFraction	setHardFluxFraction	(F)V
+	m	computeFluxDealt	computeFluxDealt	(F)F
+	m	computeDamageDealt	computeDamageDealt	(F)F
+	m	isMissile	isMissile	()Z
+	m	setMissile	setMissile	(Z)V
+	m	isSoftFlux	isSoftFlux	()Z
+	m	setSoftFlux	setSoftFlux	(Z)V
+	m	getModifier	getModifier	()Lcom/fs/starfarer/api/combat/MutableStat;
+	m	setModifier	setModifier	(Lcom/fs/starfarer/api/combat/MutableStat;)V
+	m	isForceHardFlux	isForceHardFlux	()Z
+	m	setForceHardFlux	setForceHardFlux	(Z)V
+	f	oO0000	damage	F
+	f	ô00000	multiplier	F
+	f	ö00000	dps	Z
+	f	return	fluxComponent	F
+	f	o00000	hardFluxFraction	F
+	f	int	type	Lcom/fs/starfarer/api/combat/DamageType;
+	f	Ô00000	stats	Lcom/fs/starfarer/api/combat/MutableShipStatsAPI;
+	f	Õ00000	dpsDuration	F
+	f	Ø00000	missile	Z
+	f	for	modifiersApplied	Z
+	f	Object	overrideStats	Z
+	f	Ò00000	damageMultStat	Lcom/fs/starfarer/api/combat/MutableStat;
+c	com/fs/starfarer/combat/o0OO/I	com/fs/starfarer/combat/o0OO/ImpactClass
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#i-impact-class
+	f	class	WEIGHTLESS	Lcom/fs/starfarer/combat/o0OO/I;
+	f	o00000	FIGHTER	Lcom/fs/starfarer/combat/o0OO/I;
+	f	ÖO0000	FRIGATE	Lcom/fs/starfarer/combat/o0OO/I;
+	f	õ00000	DESTROYER	Lcom/fs/starfarer/combat/o0OO/I;
+	f	Ó00000	CRUISER	Lcom/fs/starfarer/combat/o0OO/I;
+	f	null	CAPITAL_SHIP	Lcom/fs/starfarer/combat/o0OO/I;
+	f	new	MASSIVE	Lcom/fs/starfarer/combat/o0OO/I;
+	f	ÔO0000	ASTEROID_1	Lcom/fs/starfarer/combat/o0OO/I;
+	f	ÓO0000	ASTEROID_2	Lcom/fs/starfarer/combat/o0OO/I;
+	f	while	ASTEROID_3	Lcom/fs/starfarer/combat/o0OO/I;
+	f	oO0000	ASTEROID_4	Lcom/fs/starfarer/combat/o0OO/I;
+	f	OO0000	ASTEROID_5	Lcom/fs/starfarer/combat/o0OO/I;
+	f	float	ASTEROID_6	Lcom/fs/starfarer/combat/o0OO/I;
+	f	ö00000	ASTEROID_7	Lcom/fs/starfarer/combat/o0OO/I;
+	f	Ø00000	ASTEROID_8	Lcom/fs/starfarer/combat/o0OO/I;
+	f	Ö00000	ASTEROID_9	Lcom/fs/starfarer/combat/o0OO/I;
+c	com/fs/starfarer/combat/o0OO/O0OO$o	com/fs/starfarer/combat/o0OO/BoundsSegment
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#o0oo-o-bounds-segment
+	m	set	set	(FFFF)V
+	m	getP1	getP1	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getP2	getP2	()Lorg/lwjgl/util/vector/Vector2f;
+c	com/fs/starfarer/combat/o0OO/O0OO	com/fs/starfarer/combat/o0OO/Bounds
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#o0oo-bounds
+	m	rotateAndTranslate	rotateAndTranslate	(FLorg/lwjgl/util/vector/Vector2f;)V
+	m	getSegments	getSegments	()Ljava/util/List;
+	m	getOrigSegments	getOrigSegments	()Ljava/util/List;
+	m	update	update	(Lorg/lwjgl/util/vector/Vector2f;F)V
+	m	clear	clear	()V
+	m	addSegment	addSegment	(FFFF)V
+	m	addSegment	addSegment	(FF)V
+c	com/fs/starfarer/combat/o0OO/oOoO$o	com/fs/starfarer/combat/o0OO/GridCheckIterator
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#ooooo-o-grid-check-iterator
+	m	o00000	next	()Lcom/fs/starfarer/combat/o0OO/oOoO$o;
+	m	hasNext	hasNext	()Z
+	m	next	next	()Ljava/lang/Object;
+	m	remove	remove	()V
+c	com/fs/starfarer/combat/o0OO/oOoO$oo	com/fs/starfarer/combat/o0OO/GridCell
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#ooooo-oo-grid-cell
+c	com/fs/starfarer/combat/o0OO/oOoO$Oo	com/fs/starfarer/combat/o0OO/GridCellPair
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#ooooo-oo-grid-cell-pair
+c	com/fs/starfarer/combat/o0OO/oOOO	com/fs/starfarer/combat/o0OO/CollisionEngine
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooo-collision-engine
+	m	o00000	getRtcHandler	()Lcom/fs/starfarer/combat/o0OO/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	o00000	processCollisions	(Lcom/fs/util/container/repo/ObjectRepository;F)V
+	m	o00000	registerHandler	(Lcom/fs/starfarer/combat/o0OO/OooO;Lcom/fs/starfarer/combat/o0OO/C;)V
+c	com/fs/starfarer/combat/o0OO/OooO	com/fs/starfarer/combat/o0OO/CollisionHandler
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#oooo-collision-handler
+	m	o00000	advance	(F)V
+	m	o00000	handleCollision	(Ljava/lang/Object;Ljava/lang/Object;Lorg/lwjgl/util/vector/Vector2f;ZZF)V
+c	com/fs/starfarer/combat/Object/A	com/fs/starfarer/combat/Object/BattleResultDialog
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#a-battle-result-dialog
+c	com/fs/starfarer/combat/Object/B	com/fs/starfarer/combat/Object/ScorePanel
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#b-score-panel
+	m	addItem	addItem	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Ljava/lang/String;)V
+	m	getRosterItemFor	getRosterItemFor	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/combat/Object/Object;
+c	com/fs/starfarer/combat/Object/E$o	com/fs/starfarer/combat/Object/FleetMemberScore
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#e-o-fleet-member-score
+	m	o00000	getFleetMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	Ò00000	getScore	()I
+c	com/fs/starfarer/combat/Object/E	com/fs/starfarer/combat/Object/BattleResultData
+	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#e-battle-result-data
+	m	super	compute	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Z)Lcom/fs/starfarer/campaign/OoOO/O0OO;
+	m	super	isPlayerWinner	()Z
+	m	super	setPlayerWon	(Z)V
+	m	Ó00000	getPlayerFleet	()Lcom/fs/starfarer/combat/CombatFleetManager;
+	m	String	getEnemyFleet	()Lcom/fs/starfarer/combat/CombatFleetManager;
+	m	Ò00000	getPlayerGoal	()Lcom/fs/starfarer/api/fleet/FleetGoal;
+	m	ô00000	getEnemyGoal	()Lcom/fs/starfarer/api/fleet/FleetGoal;
+	m	Õ00000	getPlayerScore	()F
+	m	if	getEnemyScore	()F
+	m	OO0000	getScores	()Ljava/util/List;
+	m	õ00000	getPlayerResultText	()Ljava/lang/String;
+	m	void	getEnemyResultText	()Ljava/lang/String;
+c	com/fs/starfarer/combat/Object/O0OO	com/fs/starfarer/combat/Object/RosterItemPanel
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#o0oo-roster-item-panel
+	m	getRosterItemFor	getRosterItemFor	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/combat/Object/Object;
+c	com/fs/starfarer/combat/Object/Object$1	com/fs/starfarer/combat/Object/RosterItemTooltipTask
+	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#object-1-roster-item-tooltip-task
+c	com/fs/starfarer/combat/Object/Object	com/fs/starfarer/combat/Object/RosterItem
+	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#object-roster-item
+	m	setScore	setScore	(I)V

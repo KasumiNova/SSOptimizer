@@ -1,0 +1,161 @@
+tiny 2 0 obf named
+c com/fs/starfarer/combat/ai/AI com/fs/starfarer/combat/ai/AI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/Orderable com/fs/starfarer/combat/ai/Orderable
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/BasicShipAI com/fs/starfarer/combat/ai/BasicShipAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/BasicShipAI$1 com/fs/starfarer/combat/ai/BasicShipAI$1
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+c com/fs/starfarer/combat/ai/BasicShipAI$o com/fs/starfarer/combat/ai/AttackMode
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#basicshipai-o-attack-mode
+	f	Ô00000	STRAFE	Lcom/fs/starfarer/combat/ai/BasicShipAI$o;
+	f	new	BACK_AWAY	Lcom/fs/starfarer/combat/ai/BasicShipAI$o;
+	f	Ó00000	HOVER	Lcom/fs/starfarer/combat/ai/BasicShipAI$o;
+c com/fs/starfarer/combat/ai/BattleGroupAI com/fs/starfarer/combat/ai/BattleGroupAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/E com/fs/starfarer/combat/ai/FighterPullbackModule
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#e-fighter-pullback-module
+c com/fs/starfarer/combat/ai/E$o com/fs/starfarer/combat/ai/FighterPullbackMode
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#e-o-fighter-pullback-mode
+	f	Ô00000	NEVER	Lcom/fs/starfarer/combat/ai/E$o;
+	f	new	EMERGENCY	Lcom/fs/starfarer/combat/ai/E$o;
+	f	Ó00000	PRIMARY	Lcom/fs/starfarer/combat/ai/E$o;
+c com/fs/starfarer/combat/ai/FighterAI com/fs/starfarer/combat/ai/FighterAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/FighterAI$1 com/fs/starfarer/combat/ai/FighterAI$1
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+c com/fs/starfarer/combat/ai/FighterAI$o com/fs/starfarer/combat/ai/FighterAttackState
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#fighterai-o-fighter-attack-state
+	f	Object	ATTACK_RUN	Lcom/fs/starfarer/combat/ai/FighterAI$o;
+	f	Ò00000	RESETTING	Lcom/fs/starfarer/combat/ai/FighterAI$o;
+c com/fs/starfarer/combat/ai/FighterWingFormation com/fs/starfarer/combat/ai/FighterWingFormation
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/FighterWingLeaderAI com/fs/starfarer/combat/ai/FighterWingLeaderAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/FighterWingLeaderAI$o com/fs/starfarer/combat/ai/FighterWingLeaderTask
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#fighterwingleaderai-o-leader-task
+	f	ô00000	PICK_TARGET	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+	f	Ô00000	APPROACH_TARGET	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+	f	Object	PICK_ATTACK_RUN_START	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+	f	Ø00000	NAVIGATE_TO_START	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+	f	Õ00000	TURN_TO_RUN_DIRECTION	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+	f	return	EXECUTE_ATTACK_RUN	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+	f	Ò00000	NO_VALID_TARGETS	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+c com/fs/starfarer/combat/ai/FindAndFollowTargetAI com/fs/starfarer/combat/ai/FindAndFollowTargetAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/FindAndFollowTargetAI$o com/fs/starfarer/combat/ai/FollowCourse
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#findandfollowtargetai-o-follow-course
+	f	Object	REACHING_POINT	Lcom/fs/starfarer/combat/ai/FindAndFollowTargetAI$o;
+	f	Õ00000	DECELERATING	Lcom/fs/starfarer/combat/ai/FindAndFollowTargetAI$o;
+	f	Ò00000	ACQUIRING_TARGET	Lcom/fs/starfarer/combat/ai/FindAndFollowTargetAI$o;
+	f	Ô00000	SEEKING_TARGET	Lcom/fs/starfarer/combat/ai/FindAndFollowTargetAI$o;
+c com/fs/starfarer/combat/ai/GuidedProximityFuseAI com/fs/starfarer/combat/ai/GuidedProximityFuseAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/new com/fs/starfarer/combat/ai/VentModule
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#a-vent-module
+c com/fs/starfarer/combat/ai/oOoO com/fs/starfarer/combat/ai/FakeWeapon
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#h-fake-weapon
+c com/fs/starfarer/combat/ai/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/starfarer/combat/ai/OmniShieldAngleAI
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#j-omni-shield-angle-ai
+c com/fs/starfarer/combat/ai/o0oO com/fs/starfarer/combat/ai/ShipCommandReceiver
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#k-ship-command-receiver
+c com/fs/starfarer/combat/ai/N com/fs/starfarer/combat/ai/BehaviorModule
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#l-behavior-module
+c com/fs/starfarer/combat/ai/M com/fs/starfarer/combat/ai/FighterWing
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#m-fighter-wing
+c com/fs/starfarer/combat/ai/M$Oo com/fs/starfarer/combat/ai/FighterWingMember
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#m-oo-fighter-wing-member
+c com/fs/starfarer/combat/ai/M$o com/fs/starfarer/combat/ai/FighterWingMode
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#m-o-fighter-wing-mode
+	f	Ò00000	FOLLOW_LEADER	Lcom/fs/starfarer/combat/ai/M$o;
+	f	o00000	RETURN_TO_CARRIER	Lcom/fs/starfarer/combat/ai/M$o;
+c com/fs/starfarer/combat/ai/O com/fs/starfarer/combat/ai/O
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#o-family-legacy
+c com/fs/starfarer/combat/ai/O$Oo com/fs/starfarer/combat/ai/O$Oo
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#o-family-legacy
+c com/fs/starfarer/combat/ai/O$o com/fs/starfarer/combat/ai/MovementBehavior
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#o-o-movement-behavior
+	f	Ô00000	FLEE	Lcom/fs/starfarer/combat/ai/O$o;
+	f	return	STRAFE	Lcom/fs/starfarer/combat/ai/O$o;
+	f	Object	HOVER	Lcom/fs/starfarer/combat/ai/O$o;
+	f	Ò00000	BACK_AWAY	Lcom/fs/starfarer/combat/ai/O$o;
+	f	Õ00000	PURSUE	Lcom/fs/starfarer/combat/ai/O$o;
+c com/fs/starfarer/combat/ai/O$oo com/fs/starfarer/combat/ai/O$oo
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#o-family-legacy
+c com/fs/starfarer/combat/ai/D com/fs/starfarer/combat/ai/ThreatEvalAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#o0oo-threat-eval-ai
+c com/fs/starfarer/combat/ai/D$Oo com/fs/starfarer/combat/ai/ThreatData
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#o0oo-oo-threat-data
+c com/fs/starfarer/combat/ai/D$o com/fs/starfarer/combat/ai/D$o
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#o0oo-o-threat-response
+c com/fs/starfarer/combat/ai/F com/fs/starfarer/combat/ai/ShieldAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#oooo-shield-ai
+c com/fs/starfarer/combat/ai/OmniShieldControlAI com/fs/starfarer/combat/ai/OmniShieldControlAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/ProximityFuseAI com/fs/starfarer/combat/ai/ProximityFuseAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/ProximityFuseAI$o com/fs/starfarer/combat/ai/FuseProjectile
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#proximityfuseai-o-fuse-projectile
+c com/fs/starfarer/combat/ai/thissuper com/fs/starfarer/combat/ai/SpreadAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#r-spread-ai
+c com/fs/starfarer/combat/ai/attack/A com/fs/starfarer/combat/ai/attack/AttackingGroup
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#attack-a-attacking-group
+c com/fs/starfarer/combat/ai/attack/AttackAIModule com/fs/starfarer/combat/ai/attack/AttackAIModule
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/attack/AttackAIModule$1 com/fs/starfarer/combat/ai/attack/AttackAIModule$1
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+c com/fs/starfarer/combat/ai/attack/AttackAIModule$Oo com/fs/starfarer/combat/ai/attack/AttackState
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#attackaimodule-oo-attack-state
+	f	Object	PICKING_TARGET	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule$Oo;
+	f	Ò00000	FIRING	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule$Oo;
+	f	Ô00000	WAITING	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule$Oo;
+c com/fs/starfarer/combat/ai/attack/AttackAIModule$o com/fs/starfarer/combat/ai/attack/AttackAIModule$o
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#attackaimodule-o-internal-data
+c com/fs/starfarer/combat/ai/attack/AutofireManagerV2 com/fs/starfarer/combat/ai/attack/AutofireManagerV2
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+c com/fs/starfarer/combat/ai/attack/AutofireManagerV2$1 com/fs/starfarer/combat/ai/attack/AutofireManagerV2$1
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+c com/fs/starfarer/combat/ai/attack/B com/fs/starfarer/combat/ai/attack/WeaponGroupEvaluation
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#attack-b-weapon-group-evaluation
+c com/fs/starfarer/combat/ai/attack/D com/fs/starfarer/combat/ai/attack/AutofireManager
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#attack-d-autofire-manager
+c com/fs/starfarer/combat/ai/attack/ooOO com/fs/starfarer/combat/ai/attack/FighterAutofireManager
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#attack-object-fighter-autofire-manager
+c com/fs/starfarer/combat/ai/I com/fs/starfarer/combat/ai/OrderResponseModule
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#int-order-response-module
+c com/fs/starfarer/combat/ai/I$o com/fs/starfarer/combat/ai/I$o
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#int-o-order-response-data
+c com/fs/starfarer/combat/ai/super com/fs/starfarer/combat/ai/ArmorAngleTracker
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#new-armor-angle-tracker
+c com/fs/starfarer/combat/ai/Q com/fs/starfarer/combat/ai/FrontShieldAI
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#o00o-front-shield-ai
+c com/fs/starfarer/combat/ai/null com/fs/starfarer/combat/ai/PhaseCloakShieldAI
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#oooo-phase-cloak-shield-ai
+c com/fs/starfarer/combat/ai/ooOO com/fs/starfarer/combat/ai/FiringSolutionEval
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#long-eval-firing-solution-eval
+c com/fs/starfarer/combat/ai/ooOO$o com/fs/starfarer/combat/ai/FiringSolutionEval$o
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#long-eval-o-eval-data
+c com/fs/starfarer/combat/ai/private com/fs/starfarer/combat/ai/PointDefenseAutofireAI
+	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#private-point-defense-autofire-ai
+c com/fs/starfarer/combat/ai/private$o com/fs/starfarer/combat/ai/AutofireState
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#private-o-autofire-state
+	f	Ô00000	WAITING	Lcom/fs/starfarer/combat/ai/private$o;
+	f	Ó00000	TRACKING	Lcom/fs/starfarer/combat/ai/private$o;
+	f	new	FIRING	Lcom/fs/starfarer/combat/ai/private$o;
+c com/fs/starfarer/combat/ai/A/oOOO com/fs/starfarer/combat/ai/A/oOOO
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#super-a-super-b-unresolved
+c com/fs/starfarer/combat/ai/A/OoOO com/fs/starfarer/combat/ai/A/OoOO
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#super-a-super-b-unresolved
+c com/fs/starfarer/combat/ai/OO0O com/fs/starfarer/combat/ai/AIUtils
+	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#while-ai-utils
+c com/fs/starfarer/combat/ai/OO0O$1 com/fs/starfarer/combat/ai/OO0O$1
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+c com/fs/starfarer/combat/ai/OO0O$O0 com/fs/starfarer/combat/ai/OO0O$O0
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+c com/fs/starfarer/combat/ai/OO0O$Oo com/fs/starfarer/combat/ai/OO0O$Oo
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+c com/fs/starfarer/combat/ai/OO0O$o com/fs/starfarer/combat/ai/OO0O$o
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+c com/fs/starfarer/combat/ai/OO0O$oo com/fs/starfarer/combat/ai/OO0O$oo
+	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes

@@ -1,0 +1,204 @@
+tiny 2 0 obf named
+c com/fs/starfarer/combat/entities/ship/A/A com/fs/starfarer/combat/entities/ship/A/FighterBay
+	c 字符串常量 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-oooo-fighter-bay
+c com/fs/starfarer/combat/entities/ship/A/C com/fs/starfarer/combat/entities/ship/A/FighterLaunchBay
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#a-fighter-launch-bay
+c com/fs/starfarer/combat/entities/ship/A/I com/fs/starfarer/combat/entities/ship/A/ImpactSoundPlayer
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-ship.md#a-i-impact-sound-player
+c com/fs/starfarer/combat/entities/ship/A/OoOO com/fs/starfarer/combat/entities/ship/A/WeaponSpriteRenderer
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-oooo-weapon-sprite-renderer
+c com/fs/starfarer/combat/entities/ship/A/OoOO$o com/fs/starfarer/combat/entities/ship/A/RecoilAnimator
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-oooo-o-recoil-animator
+c com/fs/starfarer/combat/entities/ship/A/OooO com/fs/starfarer/combat/entities/ship/A/ShipSlotEntity
+	c 继承关系 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-null-ship-slot-entity
+c com/fs/starfarer/combat/entities/ship/A/String com/fs/starfarer/combat/entities/ship/A/WeaponDamageEffect
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-d-weapon-damage-effect
+c com/fs/starfarer/combat/entities/ship/A/class com/fs/starfarer/combat/entities/ship/A/ImpactVisualEffects
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-e-impact-visual-effects
+c com/fs/starfarer/combat/entities/ship/A/if com/fs/starfarer/combat/entities/ship/A/MissileWeapon
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-j-missile-weapon
+	f	if.new$interface	aimTracker	Lcom/fs/starfarer/combat/entities/ship/trackers/oOOO;
+	f	ÕÓôo00	spec	Lcom/fs/starfarer/loading/specs/Oo0O;
+	f	void.this$interface	slot	Lcom/fs/starfarer/loading/specs/nullsuper;
+	f	ôÕôo00	ship	Lcom/fs/starfarer/combat/entities/Ship;
+c com/fs/starfarer/combat/entities/ship/A/if$1 com/fs/starfarer/combat/entities/ship/A/MissileWeapon$1
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-j-1-missile-render-data
+c com/fs/starfarer/combat/entities/ship/A/if$Oo com/fs/starfarer/combat/entities/ship/A/FireSoundEntry
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-j-oo-fire-sound-entry
+	f	Ó00000	sound	Lsound/Sound;
+	f	new	fader	Lcom/fs/graphics/util/Fader;
+	f	o00000	volume	F
+c com/fs/starfarer/combat/entities/ship/A/if$o com/fs/starfarer/combat/entities/ship/A/MissileRenderSprite
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-j-o-missile-render-sprite
+	f	o00000	sprite	Lcom/fs/graphics/Sprite;
+	f	Ò00000	brightness	F
+c com/fs/starfarer/combat/entities/ship/A/oOoO com/fs/starfarer/combat/entities/ship/A/BeamWeapon
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-ship.md#a-void-beam-weapon
+c com/fs/starfarer/combat/entities/ship/A/return com/fs/starfarer/combat/entities/ship/A/PlasmaWeapon
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#a-return-plasma-weapon
+c com/fs/starfarer/combat/entities/ship/C com/fs/starfarer/combat/entities/ship/FluxStatsProvider
+	c 继承关系 | 中 | .dev/mapping-evidence/combat-entities-ship.md#ship-c-flux-stats-provider
+c com/fs/starfarer/combat/entities/ship/D com/fs/starfarer/combat/entities/ship/FluxTracker
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-string-flux-tracker
+	f	oO0000	currFlux	F
+	f	ø00000	hardFlux	F
+	f	ÔO0000	maxFlux	F
+	f	Ô00000	fluxState	Lcom/fs/starfarer/combat/entities/ship/D$Oo;
+	f	return	overloadText	Ljava/lang/String;
+	f	this.super	listener	Lcom/fs/starfarer/combat/entities/ship/D$o;
+	f	o00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+	f	ô00000	fluxStats	Lcom/fs/starfarer/combat/entities/ship/C;
+	f	Õ00000	overloadElapsed	F
+	f	Òo0000	overloadDuration	F
+c com/fs/starfarer/combat/entities/ship/D$Oo com/fs/starfarer/combat/entities/ship/FluxState
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-string-oo-flux-state
+	f	String	NORMAL	Lcom/fs/starfarer/combat/entities/ship/D$Oo;
+	f	Ò00000	RAISING	Lcom/fs/starfarer/combat/entities/ship/D$Oo;
+	f	Ó00000	VENTING	Lcom/fs/starfarer/combat/entities/ship/D$Oo;
+c com/fs/starfarer/combat/entities/ship/D$o com/fs/starfarer/combat/entities/ship/FluxTrackerListener
+	c 继承关系 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-string-o-flux-tracker-listener
+c com/fs/starfarer/combat/entities/ship/G com/fs/starfarer/combat/entities/ship/ApplyDamageResult
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-g-apply-damage-result
+	f	Õ00000	type	Lcom/fs/starfarer/api/combat/DamageType;
+	f	Ó00000	damageToHull	F
+	f	õ00000	totalDamageToArmor	F
+	f	super	damageToPrimaryArmorCell	F
+	f	void	damageToShields	F
+	f	String	empDamage	F
+	f	ô00000	overMaxDamageToShields	F
+	f	Ö00000	dps	Z
+	f	Ò00000	affectedComponents	Ljava/util/List;
+c com/fs/starfarer/combat/entities/ship/new com/fs/starfarer/combat/entities/ship/ArmorGrid
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-oooo-armor-grid
+	f	Ò00000	grid	[[F
+	f	ø00000	leftOf	I
+	f	ÓO0000	rightOf	I
+	f	ÒO0000	above	I
+	f	õ00000	below	I
+	f	Ó00000	listener	Lcom/fs/starfarer/combat/entities/ship/new$Oo;
+	f	Ö00000	cellSize	F
+	f	ô00000	maxArmorInCell	F
+	f	super	ship	Lcom/fs/starfarer/combat/entities/Ship;
+c com/fs/starfarer/combat/entities/ship/new$Oo com/fs/starfarer/combat/entities/ship/ArmorGridListener
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#ship-oooo-oo-armor-grid-listener
+c com/fs/starfarer/combat/entities/ship/new$o com/fs/starfarer/combat/entities/ship/ArmorGridCell
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#ship-oooo-o-armor-grid-cell
+c com/fs/starfarer/combat/entities/ship/null com/fs/starfarer/combat/entities/ship/ShipEngineController
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-h-engine-controller
+	f	new	engines	Ljava/util/List;
+	f	float.super	stats	Lcom/fs/starfarer/combat/entities/ship/return;
+	f	float	engineOwner	Lcom/fs/starfarer/combat/entities/ship/null$Oo;
+c com/fs/starfarer/combat/entities/ship/null$o com/fs/starfarer/combat/entities/ship/EngineControllerState
+	c 字符串常量 | 中 | .dev/mapping-evidence/combat-entities-ship.md#ship-h-o-engine-controller-state
+	f	Ò00000	ACTIVE	Lcom/fs/starfarer/combat/entities/ship/null$o;
+	f	String	FLAMING_OUT	Lcom/fs/starfarer/combat/entities/ship/null$o;
+	f	Ó00000	REPAIRING	Lcom/fs/starfarer/combat/entities/ship/null$o;
+c com/fs/starfarer/combat/entities/ship/null$oo com/fs/starfarer/combat/entities/ship/ShipEngine
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-h-oo-ship-engine
+c com/fs/starfarer/combat/entities/ship/o0OO com/fs/starfarer/combat/entities/ship/ShipStats
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-e-ship-stats
+	f	öÖ0000	maxSpeed	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	ÓØ0000	acceleration	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	class.void	deceleration	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	ØÓ0000	maxTurnRate	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	class.Object	turnAcceleration	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	while.new	fluxCapacity	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	oÓ0000	fluxDissipation	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	o00000	maxCombatReadiness	Lcom/fs/starfarer/api/combat/MutableStat;
+	f	ÔO0000	shieldUpkeepMult	Lcom/fs/starfarer/api/combat/MutableStat;
+c com/fs/starfarer/combat/entities/ship/return com/fs/starfarer/combat/entities/ship/MovementStatsProvider
+	c 继承关系 | 中 | .dev/mapping-evidence/combat-entities-ship.md#ship-return-movement-stats-provider
+c com/fs/starfarer/combat/entities/ship/super com/fs/starfarer/combat/entities/ship/ComponentHealthTracker
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#ship-super-component-health-tracker
+	f	ô00000	maxHitpoints	F
+	f	Ø00000	hitpoints	F
+	f	o00000	state	Lcom/fs/starfarer/combat/entities/ship/super$Oo;
+	m	ö00000	getMaxHitpoints	()F
+	m	new	getHitpoints	()F
+	m	Ó00000	setHitpoints	(F)V
+	m	Ó00000	getHitpointsFraction	()F
+	m	Ø00000	repair	()V
+	m	oO0000	isDisabled	()Z
+	m	o00000	applyDamage	(F)V
+c com/fs/starfarer/combat/entities/ship/super$Oo com/fs/starfarer/combat/entities/ship/ComponentStatus
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-super-oo-component-status
+	f	Object	ACTIVE	Lcom/fs/starfarer/combat/entities/ship/super$Oo;
+	f	Ò00000	DISABLED	Lcom/fs/starfarer/combat/entities/ship/super$Oo;
+c com/fs/starfarer/combat/entities/ship/super$o com/fs/starfarer/combat/entities/ship/DamageableComponent
+	c 继承关系 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-super-o-damageable-component
+c com/fs/starfarer/combat/entities/ship/super$oo com/fs/starfarer/combat/entities/ship/ComponentType
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-ship.md#ship-super-oo-component-type
+	f	Ó00000	WEAPON	Lcom/fs/starfarer/combat/entities/ship/super$oo;
+	f	new	ENGINE	Lcom/fs/starfarer/combat/entities/ship/super$oo;
+c com/fs/starfarer/combat/entities/ship/trackers/B com/fs/starfarer/combat/entities/ship/trackers/BurstFireTracker
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-oooo-burst-fire-tracker
+c com/fs/starfarer/combat/entities/ship/trackers/B$o com/fs/starfarer/combat/entities/ship/trackers/WeaponFireCallbacks
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-oooo-o-weapon-fire-callbacks
+c com/fs/starfarer/combat/entities/ship/trackers/D com/fs/starfarer/combat/entities/ship/trackers/BeamFireTracker
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-class-beam-fire-tracker
+c com/fs/starfarer/combat/entities/ship/trackers/D$Oo com/fs/starfarer/combat/entities/ship/trackers/BeamFireState
+	c 字符串常量 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-class-oo-beam-fire-state
+	f	Ó00000	READY	Lcom/fs/starfarer/combat/entities/ship/trackers/D$Oo;
+	f	Ò00000	BURST	Lcom/fs/starfarer/combat/entities/ship/trackers/D$Oo;
+	f	String	COOLDOWN	Lcom/fs/starfarer/combat/entities/ship/trackers/D$Oo;
+c com/fs/starfarer/combat/entities/ship/trackers/D$o com/fs/starfarer/combat/entities/ship/trackers/BeamWeaponCallbacks
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-class-o-beam-weapon-callbacks
+c com/fs/starfarer/combat/entities/ship/trackers/E com/fs/starfarer/combat/entities/ship/trackers/WeaponChargeTracker
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-f-weapon-charge-tracker
+c com/fs/starfarer/combat/entities/ship/trackers/E$o com/fs/starfarer/combat/entities/ship/trackers/ChargeStateListener
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-f-o-charge-state-listener
+c com/fs/starfarer/combat/entities/ship/trackers/G com/fs/starfarer/combat/entities/ship/trackers/Animation
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#trackers-oooo-animation
+c com/fs/starfarer/combat/entities/ship/trackers/MultiBarrelRecoilTracker com/fs/starfarer/combat/entities/ship/trackers/MultiBarrelRecoilTracker
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-ship.md#trackers-identity
+c com/fs/starfarer/combat/entities/ship/trackers/MultiBarrelRecoilTracker$1 com/fs/starfarer/combat/entities/ship/trackers/MultiBarrelRecoilTracker$1
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-ship.md#trackers-identity
+c com/fs/starfarer/combat/entities/ship/trackers/MultiBarrelRecoilTracker$o com/fs/starfarer/combat/entities/ship/trackers/BarrelRecoilData
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-mbrt-o-barrel-recoil-data
+c com/fs/starfarer/combat/entities/ship/trackers/O0oO com/fs/starfarer/combat/entities/ship/trackers/RecoilTracker
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-ship.md#trackers-if-recoil-tracker
+	f	Õ00000	recoil	F
+	m	super	advance	(FZ)V
+c com/fs/starfarer/combat/entities/ship/trackers/OOoO com/fs/starfarer/combat/entities/ship/trackers/ChargeState
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-ship.md#trackers-d-charge-state
+	f	class	IDLE	Lcom/fs/starfarer/combat/entities/ship/trackers/OOoO;
+	f	new	CHARGING_UP	Lcom/fs/starfarer/combat/entities/ship/trackers/OOoO;
+	f	Ó00000	ACTIVE	Lcom/fs/starfarer/combat/entities/ship/trackers/OOoO;
+	f	Ô00000	CHARGING_DOWN	Lcom/fs/starfarer/combat/entities/ship/trackers/OOoO;
+c com/fs/starfarer/combat/entities/ship/trackers/null com/fs/starfarer/combat/entities/ship/trackers/ChargeFireTracker
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-null-charge-fire-tracker
+c com/fs/starfarer/combat/entities/ship/trackers/null$o com/fs/starfarer/combat/entities/ship/trackers/ChargeFireCallbacks
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-null-o-charge-fire-callbacks
+c com/fs/starfarer/combat/entities/ship/trackers/oOOO com/fs/starfarer/combat/entities/ship/trackers/AimTracker
+	c 继承关系 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-oooo-aim-tracker
+c com/fs/starfarer/combat/entities/ship/trackers/oOOO$o com/fs/starfarer/combat/entities/ship/trackers/WeaponPivotProvider
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-oooo-o-weapon-pivot-provider
+c com/fs/starfarer/combat/entities/ship/trackers/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/starfarer/combat/entities/ship/trackers/AmmoTracker
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#trackers-c-ammo-tracker
+	f	Ö00000	ammo	I
+	f	new	maxAmmo	I
+	f	Ô00000	ammoPerSecond	F
+	f	o00000	reloadSize	F
+	f	class	reloadProgress	F
+c com/fs/starfarer/combat/entities/ship/trackers/oooO com/fs/starfarer/combat/entities/ship/trackers/ShieldWeaponTracker
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-oooo-shield-weapon-tracker
+c com/fs/starfarer/combat/entities/ship/trackers/oooO$o com/fs/starfarer/combat/entities/ship/trackers/ShieldWeaponCallbacks
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#trackers-oooo-o-shield-weapon-callbacks
+c com/fs/starfarer/combat/entities/terrain/A com/fs/starfarer/combat/entities/terrain/CombatNebula
+	c API-impl种子 | 高 | .dev/mapping-evidence/combat-entities-ship.md#terrain-a-combat-nebula
+c com/fs/starfarer/combat/entities/terrain/Asteroid com/fs/starfarer/combat/entities/terrain/Asteroid
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-ship.md#terrain-identity
+c com/fs/starfarer/combat/entities/terrain/B com/fs/starfarer/combat/entities/terrain/NebulaDensityGenerator
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#terrain-oooo-nebula-density-generator
+c com/fs/starfarer/combat/entities/terrain/Cloud com/fs/starfarer/combat/entities/terrain/Cloud
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-ship.md#terrain-identity
+c com/fs/starfarer/combat/entities/terrain/Cloud$1 com/fs/starfarer/combat/entities/terrain/Cloud$1
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-ship.md#terrain-identity
+c com/fs/starfarer/combat/entities/terrain/Cloud$Oo com/fs/starfarer/combat/entities/terrain/CloudType
+	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-ship.md#terrain-cloud-oo-cloud-type
+	f	Ó00000	PERMANENT	Lcom/fs/starfarer/combat/entities/terrain/Cloud$Oo;
+	f	new	FLUX_CAUSED	Lcom/fs/starfarer/combat/entities/terrain/Cloud$Oo;
+c com/fs/starfarer/combat/entities/terrain/Cloud$o com/fs/starfarer/combat/entities/terrain/CloudGridPos
+	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-ship.md#terrain-cloud-o-cloud-grid-pos
+c com/fs/starfarer/combat/entities/terrain/Planet com/fs/starfarer/combat/entities/terrain/Planet
+	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-ship.md#terrain-identity
