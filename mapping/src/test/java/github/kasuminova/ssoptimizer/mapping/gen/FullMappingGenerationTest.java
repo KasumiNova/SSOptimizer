@@ -98,6 +98,46 @@ class FullMappingGenerationTest {
     }
 
     @Test
+    void readableObfuscatedMemberNamesArePromotedToNamed() {
+        List<ClassStructure> classes = List.of(new ClassStructure(
+                "com/example/A",
+                "java/lang/Object",
+                List.of(),
+                List.of(new ClassStructure.Member("ship", "Lcom/example/Ship;", 1),
+                        new ClassStructure.Member("MAX_RANGE", "F", 8),
+                        new ClassStructure.Member("oo0000", "I", 1),
+                        new ClassStructure.Member("String", "I", 1),
+                        new ClassStructure.Member("for", "I", 1),
+                        new ClassStructure.Member("null", "I", 1),
+                        new ClassStructure.Member("this$0", "Lcom/example/A;", 1)),
+                List.of(new ClassStructure.Member("render", "()V", 1),
+                        new ClassStructure.Member("render", "(I)V", 1),
+                        new ClassStructure.Member("Object", "()V", 1),
+                        new ClassStructure.Member("getSpeed", "()F", 1))));
+        TinyV2MappingRepository humanRepository = TinyV2MappingRepository.of(List.of());
+
+        List<MappingEntry> generated = new IntermediaryNameGenerator()
+                .generate(classes, humanRepository, java.util.Set.of());
+        List<MappingEntry> merged = new FullMappingMerger().merge(humanRepository.entries(), generated);
+        TinyV2MappingRepository mergedRepository = TinyV2MappingRepository.of(merged);
+
+        // 混淆器未改写的原始名直接提升为 named 名（不再落哈希占位）。
+        assertEquals("ship", mergedRepository.requireFieldByObfuscatedName("com/example/A", "ship").namedName());
+        assertEquals("MAX_RANGE", mergedRepository.requireFieldByObfuscatedName("com/example/A", "MAX_RANGE").namedName());
+        assertEquals("getSpeed", mergedRepository.requireMethodByObfuscatedName("com/example/A", "getSpeed", "()F").namedName());
+        // 重载方法同名提升，保持 Java 重载语义。
+        assertEquals("render", mergedRepository.requireMethodByObfuscatedName("com/example/A", "render", "()V").namedName());
+        assertEquals("render", mergedRepository.requireMethodByObfuscatedName("com/example/A", "render", "(I)V").namedName());
+        // 混淆器垃圾名（o0 字典 / 关键字 / 字面量 / 类型名 / 合成名）仍落哈希占位。
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/A", "oo0000").namedName().startsWith("f_"));
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/A", "String").namedName().startsWith("f_"));
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/A", "for").namedName().startsWith("f_"));
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/A", "null").namedName().startsWith("f_"));
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/A", "this$0").namedName().startsWith("f_"));
+        assertTrue(mergedRepository.requireMethodByObfuscatedName("com/example/A", "Object", "()V").namedName().startsWith("m_"));
+    }
+
+    @Test
     void identityClassesKeepOriginalNamesAndMembers() {
         List<ClassStructure> classes = List.of(new ClassStructure(
                 "com/example/Keep",

@@ -17,6 +17,7 @@
 - `./gradlew :mapping:generateFullMappings`：扫描 `game-jars/{platform}/` 下的混淆 jar（`*_obf.jar`），对 linux / windows 各生成一份全量表与报告。生成是确定性的（同一输入两次运行字节一致），有测试锁定。
 - `remapGameClasspathToNamed` 依赖 `generateFullMappings` 并通过 `--mapping=` 消费全量表；tiny 源或 game-jars 变更会触发重跑。
 - 占位名规则：保留原包前缀，类名 `C_<结构指纹8>`，成员 `f_<指纹8>` / `m_<指纹8>`（成员指纹含描述符，重载天然区分）；同作用域指纹冲突按内部名排序追加 `_2`/`_3`。构造方法与 `<clinit>` 不生成映射；同类同名字段组无法按名消歧，整组保持混淆名。
+- 成员名提升：混淆器未改写的原始成员名（如 `ship`、`render`、`MAX_RANGE`）在生成时直接作为 named 名（重载方法同名提升，保持 Java 重载语义），不再落哈希占位；o0 字典垃圾名（连零串 / 纯 oO0 堆叠）、Java 关键字/字面量/常见 JDK 类型名、编译器合成名（含 `$`）仍落哈希占位，交由后续语义命名处理。判定逻辑见 `IntermediaryNameGenerator.isPromotableObfuscatedName`。
 - 结构指纹 = 父类 + 接口(排序) + 字段描述符多重集 + 方法(desc+access)多重集（剔除 `<clinit>`），SHA-256 截前 8 hex。结构相同的类跨平台指纹一致，是双平台同步命名的锚点。
 - 报告（`mapping/build/reports/`，不入库）：
   - `mapping-drift-{platform}.txt`：人工条目在 jar 当前结构中找不到对应类/成员（name+desc 精确匹配）的清单，正常应为 0 条；

@@ -18,11 +18,43 @@ import java.util.Objects;
  * 成员指纹输入含描述符，同名重载天然区分。同一作用域内指纹冲突时按内部名排序，
  * 首个不加后缀，其余追加 {@code _2}/{@code _3} 序号。
  * <p>
+ * 成员名提升：Starsector 的混淆器只改写了部分成员名，未改写的成员在混淆 jar 中
+ * 保留原始开发者命名（如 {@code ship}、{@code render}、{@code MAX_RANGE}）。
+ * 这类可读混淆名直接提升为 named 名（重载方法同名提升，保持 Java 重载语义），
+ * 不再落哈希占位；o0 字典垃圾名、Java 关键字/字面量/常见 JDK 类型名、
+ * 编译器合成名（含 {@code $}）仍落哈希占位，交由后续语义命名处理。
+ * <p>
  * 人工表已覆盖的类与成员一律跳过（人工条目优先，由
  * {@link FullMappingMerger} 合并回最终表）。构造方法与静态初始化块不生成映射。
  * 同类同名字段组（混淆器产生的 name 相同 desc 不同字段）无法按名消歧，整组跳过并保持混淆名。
  */
 public final class IntermediaryNameGenerator {
+    /**
+     * 混淆器字典保留名：Java 关键字、字面量与常见 JDK 类型名。
+     * 这些名字是混淆器（Allatori 系）从字典里挑的合法标识符，不是原始命名，不得提升。
+     */
+    private static final java.util.Set<String> OBFUSCATOR_DICTIONARY_NAMES = java.util.Set.of(
+            // Java 关键字与字面量（named 端必须保持可被 Java 源码引用）
+            "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class",
+            "const", "continue", "default", "do", "double", "else", "enum", "extends", "final",
+            "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int",
+            "interface", "long", "native", "new", "package", "private", "protected", "public",
+            "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this",
+            "throw", "throws", "transient", "try", "void", "volatile", "while",
+            "true", "false", "null",
+            // 混淆器字典里的常见 JDK 类型名（合法标识符但明显非原始命名）
+            "String", "Object", "Class", "Number", "Integer", "Long", "Float", "Double", "Boolean",
+            "Byte", "Short", "Character", "StringBuffer", "StringBuilder", "Void", "System",
+            "Runtime", "Math", "Thread", "Runnable", "Iterable", "Comparable", "Enum", "Process",
+            "Exception", "RuntimeException", "Error", "Throwable");
+
+    /** 纯 ASCII Java 标识符。 */
+    private static final java.util.regex.Pattern ASCII_IDENTIFIER =
+            java.util.regex.Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
+    /** o0 字典垃圾特征：纯 o/O/0 堆叠。 */
+    private static final java.util.regex.Pattern O0_DICTIONARY_NAME =
+            java.util.regex.Pattern.compile("[oO0]{3,}");
+
     /**
      * 生成占位映射条目。
      *
@@ -106,6 +138,7 @@ public final class IntermediaryNameGenerator {
 
         Map<String, List<ClassStructure.Member>> fieldsByHash = new LinkedHashMap<>();
         Map<String, ClassStructure.Member> generatedFields = new LinkedHashMap<>();
+        Map<String, String> promotedFieldNames = new LinkedHashMap<>();
         for (ClassStructure.Member field : classStructure.fields()) {
             if (fieldNameCounts.get(field.name()) > 1) {
                 continue;
@@ -113,11 +146,16 @@ public final class IntermediaryNameGenerator {
             if (humanRepository.findFieldByObfuscatedName(ownerObfuscatedName, field.name()).isPresent()) {
                 continue;
             }
-            String hash = StructuralFingerprint.ofField(field);
-            fieldsByHash.computeIfAbsent(hash, key -> new ArrayList<>()).add(field);
             generatedFields.put(field.name() + ':' + field.desc(), field);
+            if (isPromotableObfuscatedName(field.name())) {
+                promotedFieldNames.put(field.name() + ':' + field.desc(), field.name());
+            } else {
+                String hash = StructuralFingerprint.ofField(field);
+                fieldsByHash.computeIfAbsent(hash, key -> new ArrayList<>()).add(field);
+            }
         }
         Map<String, String> fieldNamedNames = assignMemberNames(fieldsByHash, "f_");
+        fieldNamedNames.putAll(promotedFieldNames);
         for (ClassStructure.Member field : classStructure.fields()) {
             String key = field.name() + ':' + field.desc();
             if (!generatedFields.containsKey(key)) {
@@ -129,6 +167,7 @@ public final class IntermediaryNameGenerator {
 
         Map<String, List<ClassStructure.Member>> methodsByHash = new LinkedHashMap<>();
         Map<String, ClassStructure.Member> generatedMethods = new LinkedHashMap<>();
+        Map<String, String> promotedMethodNames = new LinkedHashMap<>();
         for (ClassStructure.Member method : classStructure.methods()) {
             if ("<init>".equals(method.name()) || "<clinit>".equals(method.name())) {
                 continue;
@@ -136,11 +175,17 @@ public final class IntermediaryNameGenerator {
             if (humanRepository.findMethodByObfuscatedName(ownerObfuscatedName, method.name(), method.desc()).isPresent()) {
                 continue;
             }
-            String hash = StructuralFingerprint.ofMethod(method);
-            methodsByHash.computeIfAbsent(hash, key -> new ArrayList<>()).add(method);
             generatedMethods.put(method.name() + ':' + method.desc(), method);
+            if (isPromotableObfuscatedName(method.name())) {
+                // 重载方法同名提升：named 端保持 Java 重载语义，不再按指纹区分。
+                promotedMethodNames.put(method.name() + ':' + method.desc(), method.name());
+            } else {
+                String hash = StructuralFingerprint.ofMethod(method);
+                methodsByHash.computeIfAbsent(hash, key -> new ArrayList<>()).add(method);
+            }
         }
         Map<String, String> methodNamedNames = assignMemberNames(methodsByHash, "m_");
+        methodNamedNames.putAll(promotedMethodNames);
         for (ClassStructure.Member method : classStructure.methods()) {
             String key = method.name() + ':' + method.desc();
             if (!generatedMethods.containsKey(key)) {
@@ -167,6 +212,30 @@ public final class IntermediaryNameGenerator {
             }
         }
         return namedNames;
+    }
+
+    /**
+     * 判定混淆成员名是否为未被混淆器改写的原始名（可提升为 named 名）。
+     * <p>
+     * 可提升条件：长度 ≥ 3 的纯 ASCII 标识符，不含 {@code $}（排除 {@code this$0}、
+     * {@code $SWITCH_TABLE$} 等编译器合成名），不在混淆器字典保留名集合
+     * （Java 关键字/字面量/常见 JDK 类型名），且无 o0 字典垃圾特征
+     * （连零串 {@code 0000} 或纯 o/O/0 堆叠）。
+     *
+     * @param name 混淆 jar 中的成员名
+     * @return true 表示该名是原始开发者命名，可直接作为 named 名
+     */
+    static boolean isPromotableObfuscatedName(String name) {
+        if (name.length() < 3 || name.indexOf('$') >= 0) {
+            return false;
+        }
+        if (OBFUSCATOR_DICTIONARY_NAMES.contains(name)) {
+            return false;
+        }
+        if (!ASCII_IDENTIFIER.matcher(name).matches()) {
+            return false;
+        }
+        return !name.contains("0000") && !O0_DICTIONARY_NAME.matcher(name).matches();
     }
 
     private static String packageOf(String internalName) {
