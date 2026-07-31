@@ -1,0 +1,305 @@
+tiny	2	0	obf	named
+c	com/fs/graphics/I	com/fs/graphics/ImageFilter
+	c 来源(javap取证) | 置信度(高) | 证据(B/E/M 三个像素变换过滤器共同实现的图像处理接口)
+	m	super	filter	(Ljava/awt/image/BufferedImage;)Ljava/awt/image/BufferedImage;
+c	com/fs/graphics/B	com/fs/graphics/BlackKeyFilter
+	c 来源(javap取证) | 置信度(高) | 证据(实现 ImageFilter；将 RGB 全 0 像素置 alpha=0 去黑底)
+	m	super	filter	(Ljava/awt/image/BufferedImage;)Ljava/awt/image/BufferedImage;
+c	com/fs/graphics/E	com/fs/graphics/DebugPixelPrintFilter
+	c 来源(字符串常量) | 置信度(高) | 证据(逐像素 System.out 打印 "%d,%d: [%d,%d,%d,%d]")
+	m	super	filter	(Ljava/awt/image/BufferedImage;)Ljava/awt/image/BufferedImage;
+c	com/fs/graphics/M	com/fs/graphics/RedChannelToAlphaFilter
+	c 来源(javap取证) | 置信度(高) | 证据(输出 RGB=255 而 alpha=红色通道的像素变换)
+	m	super	filter	(Ljava/awt/image/BufferedImage;)Ljava/awt/image/BufferedImage;
+c	com/fs/graphics/String	com/fs/graphics/RGBAColor
+	c 来源(javap取证) | 置信度(高) | 证据(四个 byte 通道 + glColor4ub 应用颜色)
+	m	super	applyColor	()V
+	m	super	setAlphaMult	(F)V
+	m	Ó00000	multiplyChannels	(F)V
+	m	Ò00000	setColorMult	(F)V
+c	com/fs/graphics/float	com/fs/graphics/LWJGL2DInitializer
+	c 来源(字符串常量) | 置信度(高) | 证据("Attempted to call LWJGL2DInitializer twice"/"Unable to set display mode")
+	m	Ó00000	getModeName	()Ljava/lang/String;
+	m	super	setModeName	(Ljava/lang/String;)V
+	m	void	isFullscreen	()Z
+	m	Ò00000	setFullscreen	(Z)V
+	m	super	getWidth	()I
+	m	Ó00000	setWidth	(I)V
+	m	Ö00000	getHeight	()I
+	m	Õ00000	setHeight	(I)V
+	m	Ò00000	createDisplay	(ZII)V
+	m	super	tryCreateDisplay	(ZII)Z
+	m	Õ00000	checkStencilSupport	()V
+c	com/fs/graphics/F	com/fs/graphics/SpriteBatch
+	c 来源(javap取证) | 置信度(高) | 证据(VBO 四边形批渲染器：GL_QUADS + glDrawArrays + 顶点/颜色/纹理指针)
+	m	super	setBlendFunc	(II)V
+	m	String	createQuad	()Lcom/fs/graphics/F$o;
+	m	super	removeQuad	(Lcom/fs/graphics/F$o;)V
+	m	super	render	(FFF)V
+	m	super	setTextureEnabled	(Z)V
+	m	Ó00000	setUseVBO	(Z)V
+	m	if	getQuadCount	()I
+	m	void	isUsingVBO	()Z
+	m	do	flush	()V
+	m	ø00000	destroy	()V
+c	com/fs/graphics/F$o	com/fs/graphics/BatchQuad
+	c 来源(javap取证) | 置信度(高) | 证据(SpriteBatch 的四边形槽位：位置/纹理区域/颜色/角度)
+	m	private	getX	()F
+	m	super	getY	()F
+	m	Ò00000	setPosition	(FF)V
+	m	super	setTexRegion	(FFFF)V
+	m	ÒO0000	getTexX	()F
+	m	ÓO0000	getTexY	()F
+	m	õ00000	getTexWidth	()F
+	m	String	getTexHeight	()F
+	m	super	setSize	(FF)V
+	m	super	setColor	(Ljava/awt/Color;)V
+	m	Ó00000	getColor	()Ljava/awt/Color;
+	m	Ò00000	setAngle	(F)V
+	m	do	getAngle	()F
+	m	super	setIndex	(I)V
+	m	Ò00000	getIndex	()I
+c	com/fs/graphics/DisplayManager	com/fs/graphics/DisplayManager
+	c 来源(未混淆类名) | 置信度(高) | 证据(LWJGL DisplayMode 管理单例)
+	m	Ó00000	getInstance	()Lcom/fs/graphics/DisplayManager;
+	m	Ò00000	getAvailableDisplayModes	()Ljava/util/List;
+	m	super	checkStencilSupport	()V
+c	com/fs/graphics/DisplayManager$1	com/fs/graphics/DisplayModeComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<DisplayMode> 按 DisplayMode.toString 宽度排序)
+	m	o00000	compare	(Lorg/lwjgl/opengl/DisplayMode;Lorg/lwjgl/opengl/DisplayMode;)I
+c	com/fs/graphics/O0oO	com/fs/graphics/TextureScreenshotExporter
+	c 来源(javap取证) | 置信度(高) | 证据(FBO 渲染纹理后 glReadPixels 读回像素并 ImageIO 写 png)
+	m	o00000	exportTexture	(Lcom/fs/graphics/Object;Ljava/lang/String;)V
+	m	o00000	exportTextureFiltered	(Lcom/fs/graphics/Object;Ljava/lang/String;Lcom/fs/graphics/oOOO;)V
+	m	o00000	setPixel	(Ljava/awt/image/WritableRaster;IILjava/awt/Color;)V
+	m	o00000	createBufferedImage	(II)Ljava/awt/image/BufferedImage;
+c	com/fs/graphics/OooO	com/fs/graphics/FrameBufferObject
+	c 来源(字符串常量) | 置信度(高) | 证据("Error allocating FBO"/glGenFramebuffersEXT/glCheckFramebufferStatusEXT)
+	m	o00000	createFramebuffer	(IIIIZ)Z
+	m	Ò00000	bindFramebuffer	()V
+	m	return	deleteFramebuffer	()V
+	m	Ô00000	isSupported	()Z
+	m	Õ00000	getSprite	()Lcom/fs/graphics/Sprite;
+c	com/fs/graphics/oOOO	com/fs/graphics/ColorTransformer
+	c 来源(javap取证) | 置信度(高) | 证据(TextureScreenshotExporter 导出时逐像素调用的颜色变换接口)
+	m	o00000	transform	(Ljava/awt/Color;)Ljava/awt/Color;
+c	com/fs/graphics/L$1	com/fs/graphics/PreloadWorker
+	c 来源(javap取证) | 置信度(高) | 证据(ParallelImagePreloader 的预加载工作线程：队列取资源名->加载字节->写结果 map)
+c	com/fs/graphics/LayeredRenderer	com/fs/graphics/LayeredRenderer
+	c 来源(未混淆类名) | 置信度(高) | 证据(按图层枚举分组的渲染器)
+	m	render	render	(Ljava/lang/Object;)V
+	m	add	add	(Lcom/fs/graphics/LayeredRenderable;)V
+	m	remove	remove	(Lcom/fs/graphics/LayeredRenderable;)V
+	m	clearAll	clearAll	()V
+c	com/fs/graphics/LayeredRenderable	com/fs/graphics/LayeredRenderable
+	c 来源(未混淆类名) | 置信度(高) | 证据(LayeredRenderer 的图层对象接口)
+	m	getActiveLayers	getActiveLayers	()Ljava/util/EnumSet;
+	m	render	render	(Ljava/lang/Enum;Ljava/lang/Object;)V
+c	com/fs/graphics/LayeredRenderer$o	com/fs/graphics/LayerType
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 A/B/C 图层)
+	m	values	values	()[Lcom/fs/graphics/LayeredRenderer$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/LayeredRenderer$o;
+c	com/fs/graphics/LayeredRenderer$1	com/fs/graphics/EmptyLayeredRenderable
+	c 来源(javap取证) | 置信度(中) | 证据(空实现 LayeredRenderable 的匿名内部类)
+c	com/fs/graphics/anim/Animation	com/fs/graphics/anim/Animation
+	c 来源(未混淆类名) | 置信度(高) | 证据(动画接口 advance/started/finished/isDone)
+	m	advance	advance	(F)V
+	m	started	started	()V
+	m	finished	finished	()V
+	m	isDone	isDone	()Z
+c	com/fs/graphics/anim/BaseAnimation	com/fs/graphics/anim/BaseAnimation
+	c 来源(未混淆类名) | 置信度(高) | 证据(动画基类，时长/帧数/循环/进度)
+	m	advance	advance	(F)V
+	m	stop	stop	()V
+	m	isDone	isDone	()Z
+	m	getCurrFrame	getCurrFrame	()I
+	m	getCurrLoop	getCurrLoop	()I
+	m	getProgress	getProgress	()F
+	m	getElapsed	getElapsed	()F
+	m	setDuration	setDuration	(F)V
+	m	setNumFrames	setNumFrames	(I)V
+	m	setLooping	setLooping	(Z)V
+	m	setReverse	setReverse	(Z)V
+	m	setBefore	setBefore	(Lcom/fs/graphics/util/GenericTask;)V
+	m	setAfter	setAfter	(Lcom/fs/graphics/util/GenericTask;)V
+c	com/fs/graphics/anim/AnimationChain	com/fs/graphics/anim/AnimationChain
+	c 来源(未混淆类名) | 置信度(高) | 证据(顺序播放动画列表的链式动画)
+	m	advance	advance	(F)V
+	m	isDone	isDone	()Z
+	m	addAnimation	addAnimation	(Lcom/fs/graphics/anim/Animation;)V
+	m	started	started	()V
+	m	finished	finished	()V
+c	com/fs/graphics/anim/AnimationManager	com/fs/graphics/anim/AnimationManager
+	c 来源(未混淆类名) | 置信度(高) | 证据(动画管理器单例，按组推进)
+	m	advanceAllGroups	advanceAllGroups	(F)V
+	m	getInstance	getInstance	()Lcom/fs/graphics/anim/AnimationManager;
+	m	getInstance	getInstance	(Ljava/lang/String;)Lcom/fs/graphics/anim/AnimationManager;
+	m	advanceAll	advanceAll	(F)V
+	m	addAnimation	addAnimation	(Lcom/fs/graphics/anim/Animation;)V
+	m	removeAnimation	removeAnimation	(Lcom/fs/graphics/anim/Animation;)V
+	m	pauseAll	pauseAll	()V
+	m	resumeAll	resumeAll	()V
+	m	clear	clear	()V
+c	com/fs/graphics/anim/SpriteAnimation	com/fs/graphics/anim/SpriteAnimation
+	c 来源(未混淆类名) | 置信度(高) | 证据(按帧切换纹理的精灵动画)
+	m	render	render	(FF)V
+	m	addFrame	addFrame	(Lcom/fs/graphics/Object;I)V
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+c	com/fs/graphics/anim/func/Approacher	com/fs/graphics/anim/func/Approacher
+	c 来源(未混淆类名) | 置信度(高) | 证据(值向目标按速率逼近的动画)
+	m	advance	advance	(F)V
+	m	isDone	isDone	()Z
+	m	getValue	getValue	()F
+	m	setValue	setValue	(F)V
+	m	getTarget	getTarget	()F
+	m	setTarget	setTarget	(F)V
+	m	getRate	getRate	()F
+	m	setRate	setRate	(F)V
+	m	setStopWhenReached	setStopWhenReached	()V
+c	com/fs/graphics/anim/func/NormalizedApproacher	com/fs/graphics/anim/func/NormalizedApproacher
+	c 来源(未混淆类名) | 置信度(高) | 证据(归一化插值逼近动画，QUADRATIC/SQRT/LINEAR/INV_QUADRATIC)
+	m	advance	advance	(F)V
+	m	isDone	isDone	()Z
+	m	isStarted	isStarted	()Z
+	m	getValue	getValue	()F
+	m	setDelay	setDelay	(I)V
+c	com/fs/graphics/anim/func/Oscillator	com/fs/graphics/anim/func/Oscillator
+	c 来源(未混淆类名) | 置信度(高) | 证据(正弦振荡动画，min/max/period)
+	m	advance	advance	(F)V
+	m	isDone	isDone	()Z
+	m	getValue	getValue	()F
+	m	resetToMidpoint	resetToMidpoint	()V
+c	com/fs/graphics/anim/B	com/fs/graphics/anim/SpriteAnimationLoader
+	c 来源(字符串常量) | 置信度(高) | 证据(properties 键 prefix/frames/duration/looping + "SAS_" 前缀加载 SpriteAnimation)
+	m	super	loadAnimation	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	m	super	getSpriteAnimation	(Ljava/lang/String;)Lcom/fs/graphics/anim/SpriteAnimation;
+c	com/fs/graphics/anim/oOOO	com/fs/graphics/anim/AnimationGroup
+	c 来源(javap取证) | 置信度(高) | 证据(Animation 列表容器：advance/加动画/空判断/前后置任务)
+	m	o00000	advance	(F)V
+	m	o00000	isEmpty	()Z
+	m	o00000	addAnimation	(Lcom/fs/graphics/anim/Animation;)V
+	m	Ò00000	finished	()V
+	m	Object	started	()V
+c	com/fs/graphics/particle/BaseParticle	com/fs/graphics/particle/BaseParticle
+	c 来源(未混淆类名) | 置信度(高) | 证据(粒子基类：年龄/位置/速度/旋转/亮度)
+	m	advance	advance	(F)V
+	m	isExpired	isExpired	()Z
+	m	setPos	setPos	(FF)V
+	m	setVel	setVel	(FF)V
+	m	getX	getX	()F
+	m	getY	getY	()F
+	m	setX	setX	(F)V
+	m	setY	setY	(F)V
+	m	getAge	getAge	()F
+	m	setAge	setAge	(F)V
+	m	getMaxAge	getMaxAge	()F
+	m	setMaxAge	setMaxAge	(F)V
+	m	getAngle	getAngle	()F
+	m	setAngle	setAngle	(F)V
+	m	getRotationSpeed	getRotationSpeed	()F
+	m	setRotationSpeed	setRotationSpeed	(F)V
+	m	setRampUpPeriod	setRampUpPeriod	(F)V
+	m	getBrightness	getBrightness	()F
+	m	setBrightnessOverride	setBrightnessOverride	(F)V
+	m	setBrightnessMult	setBrightnessMult	(F)V
+	m	getNewness	getNewness	()F
+c	com/fs/graphics/particle/BaseParticleEmitter	com/fs/graphics/particle/BaseParticleEmitter
+	c 来源(未混淆类名) | 置信度(高) | 证据(粒子发射器基类：间隔发射)
+	m	advance	advance	(F)V
+	m	started	started	()V
+	m	getInterval	getInterval	()F
+	m	everyFrame	everyFrame	(F)V
+	m	emit	emit	(F)V
+c	com/fs/graphics/particle/DynamicParticleGroup	com/fs/graphics/particle/DynamicParticleGroup
+	c 来源(未混淆类名) | 置信度(高) | 证据(动态粒子组，LinkedList 上限淘汰)
+	m	add	add	(Lcom/fs/graphics/particle/BaseParticle;)V
+	m	render	render	(FF)V
+	m	advance	advance	(F)V
+	m	size	size	()I
+	m	getLimit	getLimit	()I
+	m	setLimit	setLimit	(I)V
+	m	isEmpty	isEmpty	()Z
+	m	getParticles	getParticles	()Ljava/util/List;
+c	com/fs/graphics/particle/GenericTextureParticle	com/fs/graphics/particle/GenericTextureParticle
+	c 来源(未混淆类名) | 置信度(高) | 证据(通用纹理粒子)
+c	com/fs/graphics/particle/NebulaParticle	com/fs/graphics/particle/NebulaParticle
+	c 来源(未混淆类名) | 置信度(高) | 证据(星云纹理粒子)
+c	com/fs/graphics/particle/NegativeParticle	com/fs/graphics/particle/NegativeParticle
+	c 来源(未混淆类名) | 置信度(高) | 证据(负空间/反向粒子，particlealpha64linear.png)
+c	com/fs/graphics/particle/PointParticle	com/fs/graphics/particle/PointParticle
+	c 来源(未混淆类名) | 置信度(高) | 证据(点粒子)
+c	com/fs/graphics/particle/SmokeParticle	com/fs/graphics/particle/SmokeParticle
+	c 来源(未混淆类名) | 置信度(高) | 证据(烟雾粒子，正常混合 GL_ONE_MINUS_SRC_ALPHA)
+c	com/fs/graphics/particle/SmoothParticle	com/fs/graphics/particle/SmoothParticle
+	c 来源(未混淆类名) | 置信度(高) | 证据(平滑粒子，particlealpha32sq.png)
+c	com/fs/graphics/particle/TexturedLine	com/fs/graphics/particle/TexturedLine
+	c 来源(未混淆类名) | 置信度(高) | 证据(纹理线段粒子，particleline32ln/sq.png)
+c	com/fs/graphics/particle/TexturedLine$o	com/fs/graphics/particle/TexturedLineType
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 LINEAR/SQUARE 线段形状)
+	m	values	values	()[Lcom/fs/graphics/particle/TexturedLine$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/particle/TexturedLine$o;
+c	com/fs/graphics/particle/oOOO	com/fs/graphics/particle/StaticParticleGroup
+	c 来源(字符串常量) | 置信度(高) | 证据("Error loading StaticParticleGroup textures"；FBO 批量静态粒子)
+	m	o00000	addParticle	(FFLjava/awt/Color;I)V
+	m	o00000	setShapeType	(Lcom/fs/graphics/particle/oOOO$O0;)V
+	m	Ô00000	getShapeType	()Lcom/fs/graphics/particle/oOOO$O0;
+	m	null	render	()V
+c	com/fs/graphics/particle/oOOO$O0	com/fs/graphics/particle/ParticleShapeType
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 SQUARE/CIRCLE/CIRCLE_FADE 粒子形状)
+	m	values	values	()[Lcom/fs/graphics/particle/oOOO$O0;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/particle/oOOO$O0;
+c	com/fs/graphics/particle/oOOO$o	com/fs/graphics/particle/ParticleData
+	c 来源(javap取证) | 置信度(高) | 证据(静态粒子组单粒子数据：位置/颜色/尺寸)
+c	com/fs/graphics/particle/oOOO$oo	com/fs/graphics/particle/SpriteParticleData
+	c 来源(javap取证) | 置信度(中) | 证据(静态粒子组中带 Sprite 的粒子数据)
+c	com/fs/graphics/particle/oOOO$Oo	com/fs/graphics/particle/ParticleBounds
+	c 来源(javap取证) | 置信度(中) | 证据(粒子包围盒：min/max 初值 Integer.MAX/MIN_VALUE)
+c	com/fs/graphics/particle/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/graphics/particle/ParticleTextureGenerator
+	c 来源(字符串常量) | 置信度(中) | 证据("PTMImage" 前缀上传程序化生成粒子纹理并转 Sprite)
+	m	while	createSprite	(Ljava/awt/image/BufferedImage;)Lcom/fs/graphics/Sprite;
+c	com/fs/graphics/super/B	com/fs/graphics/font/FontPage
+	c 来源(javap取证) | 置信度(中) | 证据(BitmapFontManager 解析 BMFont 时创建的页面定义：名字+两个整数)
+c	com/fs/graphics/super/E	com/fs/graphics/font/FontGlyph
+	c 来源(javap取证) | 置信度(中) | 证据(BitmapFont 按字符 id 索引的 glyph 数据：id/x/y)
+	m	Object	getId	()I
+	m	o00000	getX	()I
+	m	Ò00000	getY	()I
+c	com/fs/graphics/util/GenericTask	com/fs/graphics/util/GenericTask
+	c 来源(未混淆类名) | 置信度(高) | 证据(无参任务回调接口 perform())
+	m	perform	perform	()V
+c	com/fs/graphics/util/GLListManager	com/fs/graphics/util/GLListManager
+	c 来源(未混淆类名) | 置信度(高) | 证据(GL 显示列表分配/释放管理)
+	m	nextFrame	nextFrame	()V
+	m	beginList	beginList	()Lcom/fs/graphics/util/GLListManager$GLListToken;
+	m	endList	endList	()V
+	m	callList	callList	(Lcom/fs/graphics/util/GLListManager$GLListToken;)Z
+	m	invalidateList	invalidateList	(Lcom/fs/graphics/util/GLListManager$GLListToken;)V
+c	com/fs/graphics/util/GLListManager$GLListToken	com/fs/graphics/util/GLListToken
+	c 来源(未混淆类名) | 置信度(高) | 证据(显示列表令牌，包装 listId)
+c	com/fs/graphics/util/Fader$State	com/fs/graphics/util/Fader$State
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 IDLE/IN/OUT 淡入淡出状态)
+	m	values	values	()[Lcom/fs/graphics/util/Fader$State;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/util/Fader$State;
+c	com/fs/graphics/util/ooOO	com/fs/graphics/util/Blinker
+	c 来源(javap取证) | 置信度(高) | 证据(周期闪烁控制器，状态 IDLE/ON/OFF，回调 blinkOn/blinkOff)
+	m	o00000	advance	(F)V
+	m	new	blinkOn	()V
+	m	o00000	isDone	()Z
+c	com/fs/graphics/util/ooOO$o	com/fs/graphics/util/BlinkState
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 IDLE/ON/OFF 闪烁状态)
+	m	values	values	()[Lcom/fs/graphics/util/ooOO$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/util/ooOO$o;
+c	com/fs/graphics/util/ooOO$Oo	com/fs/graphics/util/BlinkCallback
+	c 来源(javap取证) | 置信度(高) | 证据(闪烁回调接口 blinkOn/blinkOff)
+	m	blinkOn	blinkOn	()V
+	m	blinkOff	blinkOff	()V
+c	com/fs/graphics/util/super	com/fs/graphics/util/FPSDisplay
+	c 来源(字符串常量) | 置信度(高) | 证据("FPS: %3d, Idle: %3d%%"/"Error loading font in FPSDisplay")
+	m	super	setText	(Ljava/lang/String;)V
+c	com/fs/graphics/test/BasicGraphicsTest	com/fs/graphics/test/BasicGraphicsTest
+	c 来源(未混淆类名) | 置信度(高) | 证据(图形库演示/自测 main，anim.properties/arial20bold)
+	m	o00000	main	([Ljava/lang/String;)V
+c	com/fs/graphics/test/BasicGraphicsTest$1	com/fs/graphics/test/ParticleTestEmitter
+	c 来源(javap取证) | 置信度(中) | 证据(测试用粒子发射器，向 DynamicParticleGroup 发射)
+c	com/fs/graphics/test/BasicGraphicsTest$2	com/fs/graphics/test/LineTestEmitter
+	c 来源(javap取证) | 置信度(中) | 证据(测试用线段粒子发射器，val$lines 指向粒子组)

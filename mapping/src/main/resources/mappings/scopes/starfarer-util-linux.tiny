@@ -1,0 +1,491 @@
+tiny	2	0	obf	named
+
+c	com/fs/starfarer/util/B	com/fs/starfarer/util/PhoneticAlphabet
+	c 来源(javap取证) | 置信度(高) | 证据(Able/Bravo/Charlie 等三套字母拼读表字符串 + 3 Map 反查)
+
+c	com/fs/starfarer/util/ColorShifter	com/fs/starfarer/util/ColorShifter
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements ColorShifterAPI，字段与方法保持原名)
+	f	base	base	Ljava/awt/Color;
+	f	curr	curr	Ljava/awt/Color;
+	f	data	data	Ljava/util/Map;
+	m	getBase	getBase	()Ljava/awt/Color;
+	m	setBase	setBase	(Ljava/awt/Color;)V
+	m	getCurr	getCurr	()Ljava/awt/Color;
+	m	shift	shift	(Ljava/lang/Object;Ljava/awt/Color;FFF)V
+	m	advance	advance	(F)V
+	m	isShifted	isShifted	()Z
+	m	updateCurr	updateCurr	()V
+	m	getCurrForBase	getCurrForBase	(Ljava/awt/Color;)Ljava/awt/Color;
+	m	main	main	([Ljava/lang/String;)V
+
+c	com/fs/starfarer/util/ColorShifter$ShiftData	com/fs/starfarer/util/ColorShifter$ShiftData
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(to/fader/shift 字段保持原名)
+	f	to	to	Ljava/awt/Color;
+	f	fader	fader	Lcom/fs/graphics/util/Fader;
+	f	shift	shift	F
+
+c	com/fs/starfarer/util/DynamicStats	com/fs/starfarer/util/DynamicStats
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements DynamicStatsAPI，stats/mods 保持原名)
+	f	stats	stats	Ljava/util/Map;
+	f	mods	mods	Ljava/util/Map;
+	m	getStat	getStat	(Ljava/lang/String;)Lcom/fs/starfarer/api/combat/MutableStat;
+	m	getMod	getMod	(Ljava/lang/String;)Lcom/fs/starfarer/api/combat/StatBonus;
+	m	getValue	getValue	(Ljava/lang/String;)F
+	m	getValue	getValue	(Ljava/lang/String;F)F
+	m	removeUmodified	removeUmodified	()V
+	m	isEmpty	isEmpty	()Z
+	m	getStats	getStats	()Ljava/util/Map;
+	m	getMods	getMods	()Ljava/util/Map;
+
+c	com/fs/starfarer/util/F	com/fs/starfarer/util/ScreenshotTaker
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据('Saving screenshot to %s...'/'screenshot%03d.png' + glReadPixels 深度缓冲)
+	m	o00000	saveScreenshot	()V
+	m	Ô00000	getScreenshotFile	()Ljava/io/File;
+	m	Object	captureDepthBuffer	()V
+
+c	com/fs/starfarer/util/G	com/fs/starfarer/util/SaveProgressInputStream
+	c 来源(javap取证) | 置信度(高) | 证据(extends InputStream 带进度比例，持有 campaign/save/B 进度对话框，与 SaveProgressOutputStream 对称)
+	m	Ò00000	getProgress	()F
+	m	super	updateProgress	(Z)V
+	m	super	getTotalBytes	()J
+
+c	com/fs/starfarer/util/IntervalTracker	com/fs/starfarer/util/IntervalTracker
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(minInterval/maxInterval/advance 等保持原名)
+
+c	com/fs/starfarer/util/J	com/fs/starfarer/util/RandomTree
+	c 来源(javap取证) | 置信度(低) | 证据(Math.random/pow 递归二分树（节点含 2 float + 子节点列表），具体用途不明)
+
+c	com/fs/starfarer/util/J$o	com/fs/starfarer/util/RandomTree$Node
+	c 来源(javap取证) | 置信度(低) | 证据(树节点：2 float 值 + 子节点列表 + 父引用)
+
+c	com/fs/starfarer/util/K	com/fs/starfarer/util/ScissorStack
+	c 来源(字节码调用) | 置信度(高) | 证据(Stack<K$o> + GL11.glScissor 压栈/出栈，引用 settings/A 坐标转换)
+	m	super	push	(IIII)V
+	m	super	pop	()V
+	m	String	peek	()Lcom/fs/starfarer/util/K$o;
+
+c	com/fs/starfarer/util/K$o	com/fs/starfarer/util/ScissorRect
+	c 来源(javap取证) | 置信度(高) | 证据(4 int 矩形（x/y/w/h），构造与 union(max/min) 合并)
+	m	o00000	union	(Lcom/fs/starfarer/util/K$o;)V
+
+c	com/fs/starfarer/util/L	com/fs/starfarer/util/MouseTracker
+	c 来源(字节码调用) | 置信度(中) | 证据(读 InputEvent.getMouseX/Y 存当前帧并滚动上一帧（-1 初始化），被 InputState 持有)
+	m	Object	update	()V
+	m	o00000	reset	()V
+	m	return	getX	()F
+	m	Ô00000	getY	()F
+	m	Õ00000	getPrevX	()F
+	m	Ò00000	getPrevY	()F
+
+c	com/fs/starfarer/util/MutatingValue	com/fs/starfarer/util/MutatingValue
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(value/min/max/rate/sign 等字段与 advance/getValue 方法保持原名)
+	f	value	value	F
+	f	min	min	F
+	f	max	max	F
+	f	rate	rate	F
+	f	rateSign	rateSign	F
+	f	sign	sign	F
+	m	advance	advance	(F)V
+	m	getValue	getValue	()F
+	m	setValue	setValue	(F)V
+	m	getMin	getMin	()F
+	m	setMin	setMin	(F)V
+	m	getMax	getMax	()F
+	m	setMax	setMax	(F)V
+	m	getRate	getRate	()F
+	m	setRate	setRate	(F)V
+	m	getSign	getSign	()F
+	m	setSign	setSign	(F)V
+	m	setRandomSign	setRandomSign	()V
+	m	setRandomRateSign	setRandomRateSign	()V
+	m	getRateSign	getRateSign	()F
+	m	setRateSign	setRateSign	(F)V
+
+c	com/fs/starfarer/util/O	com/fs/starfarer/util/BitmapFont
+	c 来源(javap取证) | 置信度(高) | 证据(java.awt.Font 逐字符生成 BufferedImage 打包 GL 纹理，drawString/glBegin 渲染，getStringWidth)
+	m	Ó00000	getStringWidth	(Ljava/lang/String;)I
+	m	o00000	drawString	(FFLjava/lang/String;FF)V
+	m	o00000	drawString	(FFLjava/lang/String;FFI)V
+	m	o00000	generateTexture	(Ljava/awt/image/BufferedImage;)I
+	m	o00000	dispose	()V
+	m	new	fontExists	(Ljava/lang/String;)Z
+	m	Ó00000	getAllFonts	()[Ljava/awt/Font;
+
+c	com/fs/starfarer/util/O$o	com/fs/starfarer/util/BitmapFont$Glyph
+	c 来源(javap取证) | 置信度(高) | 证据(单字符字形数据：宽高 + 图集中 x/y 偏移（由 BitmapFont.o00000(char[]) 填充）)
+
+c	com/fs/starfarer/util/O0OO	com/fs/starfarer/util/RomanNumerals
+	c 来源(字符串常量) | 置信度(高) | 证据(I/IV/V/IX/X/L/C/D/M + 'Numbers must be in range 1-3999')
+	m	super	toRoman	(I)Ljava/lang/String;
+	m	super	isValidRoman	(Ljava/lang/String;)Z
+
+c	com/fs/starfarer/util/O0OO$o	com/fs/starfarer/util/RomanNumerals$Numeral
+	c 来源(javap取证) | 置信度(高) | 证据(int+String 对：数值与罗马符号映射条目)
+
+c	com/fs/starfarer/util/Oo0O	com/fs/starfarer/util/TextAbbreviator
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(launcher/lchr、Battlecruiser/BC、light-years/ly 等缩写替换表 + 宽度测量截断)
+	m	o00000	abbreviate	(Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	abbreviate	(Ljava/lang/String;Ljava/lang/String;F)Ljava/lang/String;
+	m	Ò00000	createWeaponAbbreviator	(Ljava/lang/String;F)Lcom/fs/starfarer/util/Oo0O;
+	m	Object	createHullClassAbbreviator	(Ljava/lang/String;F)Lcom/fs/starfarer/util/Oo0O;
+	m	o00000	createGenericAbbreviator	(Ljava/lang/String;F)Lcom/fs/starfarer/util/Oo0O;
+
+c	com/fs/starfarer/util/OooO	com/fs/starfarer/util/ProgressInputStream
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(读取进度跟踪，读取期间按 'processMessagesWhileSavingOrLoading' 设置调 Display.processMessages)
+	m	new	getProgress	()F
+	m	o00000	getBytesRead	()J
+
+c	com/fs/starfarer/util/ReplaceableSprite	com/fs/starfarer/util/ReplaceableSprite
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(sprite/originalTextureId/delegate 等字段与方法保持原名)
+	f	sprite	sprite	Lcom/fs/graphics/Sprite;
+	f	originalTextureId	originalTextureId	Ljava/lang/String;
+	f	textureFilename	textureFilename	Ljava/lang/String;
+	f	pendingTextureFilename	pendingTextureFilename	Ljava/lang/String;
+	f	delegate	delegate	Lcom/fs/starfarer/util/ReplaceableSprite$SpriteUpdateDelegate;
+	m	update	update	()V
+	m	replaceTexture	replaceTexture	(Ljava/lang/String;)V
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	getOriginalTextureId	getOriginalTextureId	()Ljava/lang/String;
+	m	getTextureFilename	getTextureFilename	()Ljava/lang/String;
+
+c	com/fs/starfarer/util/ReplaceableSprite$SpriteUpdateDelegate	com/fs/starfarer/util/ReplaceableSprite$SpriteUpdateDelegate
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(接口 spriteUpdated() 保持原名)
+	m	spriteUpdated	spriteUpdated	()V
+
+c	com/fs/starfarer/util/Tesselator	com/fs/starfarer/util/Tesselator
+	c 来源(类名未混淆+字节码) | 置信度(高) | 证据(碰撞多边形网格化工具：Bounds→多边形层，私有方法用 GLU.gluNewTess 三角剖分)
+
+c	com/fs/starfarer/util/Tesselator$1	com/fs/starfarer/util/Tesselator$PointDistanceComparator
+	c 来源(字节码调用) | 置信度(高) | 证据(Comparator<Vector2f> 按 Misc.getDistance 到参考点排序)
+
+c	com/fs/starfarer/util/Tesselator$o	com/fs/starfarer/util/Tesselator$CollisionBounds
+	c 来源(字符串常量) | 置信度(高) | 证据(8 float（w/h/minX/minY/maxX/maxY/cx/cy），调试串 'w: %.2f h: %.2f minX...')
+
+c	com/fs/starfarer/util/Tesselator$Oo	com/fs/starfarer/util/Tesselator$CollisionGridParams
+	c 来源(javap取证) | 置信度(中) | 证据(ShipAPI$HullSize + 2 多边形列表 + 中心 Vector2f + boolean + float，作为网格生成参数)
+
+c	com/fs/starfarer/util/Tesselator$oo	com/fs/starfarer/util/Tesselator$CollisionLayers
+	c 来源(javap取证) | 置信度(中) | 证据(7 个多边形 List + float + 返回 combat/o0OO/O0OO(Bounds) 的方法)
+
+c	com/fs/starfarer/util/ValueShifter	com/fs/starfarer/util/ValueShifter
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements ValueShifterAPI，base/curr/data 等保持原名)
+	f	base	base	F
+	f	curr	curr	F
+	f	averageShift	averageShift	F
+	f	data	data	Ljava/util/Map;
+	m	isShifted	isShifted	()Z
+	m	getBase	getBase	()F
+	m	setBase	setBase	(F)V
+	m	getCurr	getCurr	()F
+	m	shift	shift	(Ljava/lang/Object;FFFF)V
+	m	advance	advance	(F)V
+	m	updateCurr	updateCurr	()V
+	m	getAverageShift	getAverageShift	()F
+	m	getShiftProgress	getShiftProgress	(Ljava/lang/Object;)F
+	m	main	main	([Ljava/lang/String;)V
+
+c	com/fs/starfarer/util/ValueShifter$ShiftData	com/fs/starfarer/util/ValueShifter$ShiftData
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(to/fader/shift 字段保持原名)
+	f	to	to	F
+	f	fader	fader	Lcom/fs/graphics/util/Fader;
+	f	shift	shift	F
+
+c	com/fs/starfarer/util/do	com/fs/starfarer/util/SaveProgressOutputStream
+	c 来源(人工运行期表) | 置信度(高) | 证据(热点表已映射：输出流写进度，持有 campaign/save/B 对话框)
+
+c	com/fs/starfarer/util/int	com/fs/starfarer/util/ProgressOutputStream
+	c 来源(javap取证) | 置信度(高) | 证据(extends OutputStream 统计写入字节并提供进度比例，无对话框依赖)
+	m	Ò00000	getProgress	()F
+	m	o00000	getBytesWritten	()J
+
+c	com/fs/starfarer/util/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/util/BaseRuntimeException
+	c 来源(javap取证) | 置信度(低) | 证据(extends RuntimeException 仅 String 构造，无引用证据，泛化命名)
+
+c	com/fs/starfarer/util/ooOO	com/fs/starfarer/util/TessellationVertex
+	c 来源(字节码调用) | 置信度(中) | 证据(double[] 包装，被 TessellationCallback.combine 创建、vertex() 读取的 GLU 组合顶点)
+	f	super	coords	[D
+
+c	com/fs/starfarer/util/private	com/fs/starfarer/util/TessellationCallback
+	c 来源(继承关系) | 置信度(高) | 证据(extends GLUtessellatorCallbackAdapter，begin/combine/end/vertex 透传 GL11)
+	m	begin	begin	(I)V
+	m	combine	combine	([D[Ljava/lang/Object;[F[Ljava/lang/Object;)V
+	m	end	end	()V
+	m	vertex	vertex	(Ljava/lang/Object;)V
+
+c	com/fs/starfarer/util/super	com/fs/starfarer/util/ZoomTracker
+	c 来源(引用关系+字节码) | 置信度(高) | 证据(campaign-core 的 zoomTracker 字段类型；clamp 缩放值 + 处理鼠标滚轮 InputEvent)
+	m	Ô00000	getZoomLevel	()F
+	m	o00000	processInput	(Lcom/fs/starfarer/util/super/B;)V
+	m	Ø00000	isZoomingIn	()Z
+	m	ô00000	isZoomingOut	()Z
+	m	o00000	advance	(F)V
+
+c	com/fs/starfarer/util/super/A	com/fs/starfarer/util/InputState
+	c 来源(字节码调用) | 置信度(高) | 证据(读取 api/input 的 KEYBOARD_EVENT/MOUSE_EVENT 生成 util InputEvent 列表，静态全局状态)
+	m	Object	getEvents	()Lcom/fs/starfarer/util/super/B;
+	m	Ò00000	getMouseMoveEvent	()Lcom/fs/starfarer/util/super/Object;
+	m	o00000	getMousePosition	()Lcom/fs/starfarer/util/L;
+
+c	com/fs/starfarer/util/super/B	com/fs/starfarer/util/InputEventList
+	c 来源(继承关系) | 置信度(高) | 证据(extends ArrayList<InputEvent>，cleanUp/consume 事件)
+	m	o00000	cleanUp	()V
+	m	Ò00000	consumeKeyboardAndMouseEvents	()V
+
+c	com/fs/starfarer/util/super/Object	com/fs/starfarer/util/InputEvent
+	c 来源(人工运行期表) | 置信度(高) | 证据(热点表已映射：包装 api InputEventType/Class 的游戏输入事件)
+
+c	com/fs/starfarer/settings/A	com/fs/starfarer/settings/DisplaySettings
+	c 来源(字节码调用) | 置信度(中) | 证据(屏幕尺寸(int) + 4 个坐标转换方法，被 ScissorStack/ScreenshotTaker 经 StarfarerSettings 使用)
+
+c	com/fs/starfarer/settings/B	com/fs/starfarer/settings/SpriteAPIImpl
+	c 来源(接口实现) | 置信度(高) | 证据(implements SpriteAPI 包装 com.fs.graphics.Sprite，全部方法为接口原名)
+	f	o00000	o00000	Lcom/fs/graphics/Sprite;
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	setSprite	setSprite	(Lcom/fs/graphics/Sprite;)V
+	m	setTexX	setTexX	(F)V
+	m	setTexY	setTexY	(F)V
+	m	setTexWidth	setTexWidth	(F)V
+	m	setTexHeight	setTexHeight	(F)V
+	m	bindTexture	bindTexture	()V
+	m	getAlphaMult	getAlphaMult	()F
+	m	getAngle	getAngle	()F
+	m	getCenterX	getCenterX	()F
+	m	getCenterY	getCenterY	()F
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	getHeight	getHeight	()F
+	m	getTextureId	getTextureId	()I
+	m	getWidth	getWidth	()F
+	m	render	render	(FF)V
+	m	renderWithCorners	renderWithCorners	(FFFFFFFF)V
+	m	renderAtCenter	renderAtCenter	(FF)V
+	m	renderAtCenterNoBind	renderAtCenterNoBind	(FF)V
+	m	renderNoBind	renderNoBind	(FF)V
+	m	renderRegion	renderRegion	(FFFFFF)V
+	m	renderRegionAtCenter	renderRegionAtCenter	(FFFFFF)V
+	m	setAdditiveBlend	setAdditiveBlend	()V
+	m	setAlphaMult	setAlphaMult	(F)V
+	m	setAngle	setAngle	(F)V
+	m	setBlendFunc	setBlendFunc	(II)V
+	m	setCenter	setCenter	(FF)V
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setHeight	setHeight	(F)V
+	m	setNormalBlend	setNormalBlend	()V
+	m	setSize	setSize	(FF)V
+	m	setWidth	setWidth	(F)V
+	m	getTextureHeight	getTextureHeight	()F
+	m	getTextureWidth	getTextureWidth	()F
+	m	setCenterY	setCenterY	(F)V
+	m	setCenterX	setCenterX	(F)V
+	m	getAverageColor	getAverageColor	()Ljava/awt/Color;
+	m	getAverageBrightColor	getAverageBrightColor	()Ljava/awt/Color;
+	m	getBlendSrc	getBlendSrc	()I
+	m	getBlendDest	getBlendDest	()I
+	m	getTexX	getTexX	()F
+	m	getTexY	getTexY	()F
+	m	getTexWidth	getTexWidth	()F
+	m	getTexHeight	getTexHeight	()F
+
+c	com/fs/starfarer/settings/PlayerDamageTaken	com/fs/starfarer/settings/PlayerDamageTaken
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(枚举 HALF/FULL 保持原名)
+
+c	com/fs/starfarer/settings/StarfarerSettings	com/fs/starfarer/settings/StarfarerSettings
+	c 来源(人工运行期表) | 置信度(高) | 证据(热点表已映射：全局设置（字体路径/JSONObject/缩放标志）)
+
+c	com/fs/starfarer/settings/StarfarerSettings$1	com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory
+	c 来源(人工运行期表) | 置信度(高) | 证据(热点表已映射：设置文本字段工厂)
+
+c	com/fs/starfarer/settings/StarfarerSettings$1$1	com/fs/starfarer/settings/StarfarerSettings$SkillOrderComparator
+	c 来源(字节码调用) | 置信度(中) | 证据(Comparator<String> 按 SkillSpec.getName/ getOrder 排序)
+
+c	com/fs/starfarer/settings/StarfarerSettings$1$2	com/fs/starfarer/settings/StarfarerSettings$SpecSortOrderComparator
+	c 来源(字节码调用) | 置信度(中) | 证据(Comparator<String> 按 loading/specs/oOOO.getSortOrder 排序)
+
+c	com/fs/starfarer/settings/StarfarerSettings$o	com/fs/starfarer/settings/StarfarerSettings$TextFileEntry
+	c 来源(javap取证) | 置信度(中) | 证据(String/String 键值对：文件名+内容)
+
+c	com/fs/starfarer/settings/StarfarerSettings$Oo	com/fs/starfarer/settings/StarfarerSettings$SettingsWriterThread
+	c 来源(字节码调用) | 置信度(高) | 证据(extends Thread，队列中取 (文件名,内容) 经 SettingsAPI.writeTextFileToCommon 异步写入)
+
+c	com/fs/starfarer/rpg/A	com/fs/starfarer/rpg/PersonalityImpl
+	c 来源(接口实现) | 置信度(高) | 证据(implements PersonalityAPI，getBravery/setAffinity/getId 等全部方法为接口原名)
+	f	class	class	Ljava/lang/String;
+	f	o00000	o00000	Ljava/lang/String;
+	f	new	new	Ljava/lang/String;
+	m	getBravery	getBravery	()F
+	m	setBravery	setBravery	(F)V
+	m	setAffinity	setAffinity	(Lcom/fs/starfarer/combat/tasks/CombatTask$CombatTaskType;F)V
+	m	getAffinity	getAffinity	(Lcom/fs/starfarer/combat/tasks/CombatTask$CombatTaskType;)F
+	m	getId	getId	()Ljava/lang/String;
+	m	getDisplayName	getDisplayName	()Ljava/lang/String;
+	m	setDisplayName	setDisplayName	(Ljava/lang/String;)V
+	m	getDescription	getDescription	()Ljava/lang/String;
+	m	setDescription	setDescription	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/rpg/ImportantPeople	com/fs/starfarer/rpg/ImportantPeople
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements ImportantPeopleAPI，people/idToPersonDataMap 等保持原名)
+	f	people	people	Ljava/util/List;
+	f	excludeFromGetPerson	excludeFromGetPerson	Ljava/util/Set;
+	f	idToPersonDataMap	idToPersonDataMap	Ljava/util/Map;
+	f	lastGetPersonResultWasExistingPerson	lastGetPersonResultWasExistingPerson	Z
+	m	excludeFromGetPerson	excludeFromGetPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	resetExcludeFromGetPerson	resetExcludeFromGetPerson	()V
+	m	advance	advance	(F)V
+	m	containsPerson	containsPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;)Z
+	m	rebuildIDToPersonDataMapIfNeeded	rebuildIDToPersonDataMapIfNeeded	()V
+	m	getDataFor	getDataFor	(Ljava/lang/String;)Lcom/fs/starfarer/rpg/ImportantPeople$PersonData;
+	m	addPerson	addPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	removePerson	removePerson	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	removePerson	removePerson	(Ljava/lang/String;)V
+	m	getPeople	getPeople	()Ljava/util/List;
+	m	getPeopleCopy	getPeopleCopy	()Ljava/util/List;
+	m	getPeopleWithRank	getPeopleWithRank	(Ljava/lang/String;)Ljava/util/List;
+	m	getPeopleWithPost	getPeopleWithPost	(Ljava/lang/String;)Ljava/util/List;
+	m	getMatching	getMatching	(Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonFilter;)Ljava/util/List;
+	m	getPerson	getPerson	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonDataAPI;
+	m	getPerson	getPerson	(Lcom/fs/starfarer/api/campaign/FactionAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonDataAPI;
+	m	isLastGetPersonResultWasExistingPerson	isLastGetPersonResultWasExistingPerson	()Z
+	m	getPerson	getPerson	(Ljava/util/Random;Lcom/fs/starfarer/api/campaign/FactionAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonDataAPI;
+	m	getDataFor	getDataFor	(Lcom/fs/starfarer/api/characters/PersonAPI;)Lcom/fs/starfarer/rpg/ImportantPeople$PersonData;
+	m	getData	getData	(Lcom/fs/starfarer/api/characters/PersonAPI;)Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonDataAPI;
+	m	getData	getData	(Ljava/lang/String;)Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonDataAPI;
+	m	getPerson	getPerson	(Ljava/lang/String;)Lcom/fs/starfarer/api/characters/PersonAPI;
+	m	canCheckOutPerson	canCheckOutPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;Ljava/lang/String;)Z
+	m	isCheckedOutForAnything	isCheckedOutForAnything	(Lcom/fs/starfarer/api/characters/PersonAPI;)Z
+	m	checkOutPerson	checkOutPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;Ljava/lang/String;)V
+	m	returnPerson	returnPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;Ljava/lang/String;)V
+
+c	com/fs/starfarer/rpg/ImportantPeople$PersonData	com/fs/starfarer/rpg/ImportantPeople$PersonData
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(person/location/checkedOutFor 保持原名)
+	f	person	person	Lcom/fs/starfarer/rpg/Person;
+	f	location	location	Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonLocationAPI;
+	f	checkedOutFor	checkedOutFor	Ljava/util/Set;
+	m	getLocation	getLocation	()Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonLocationAPI;
+	m	setLocation	setLocation	(Lcom/fs/starfarer/api/characters/ImportantPeopleAPI$PersonLocationAPI;)V
+	m	getPerson	getPerson	()Lcom/fs/starfarer/api/characters/PersonAPI;
+	m	getCheckedOutFor	getCheckedOutFor	()Ljava/util/Set;
+
+c	com/fs/starfarer/rpg/ImportantPeople$PersonLocation	com/fs/starfarer/rpg/ImportantPeople$PersonLocation
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(market/entity 保持原名)
+	f	market	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	entity	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	setMarket	setMarket	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
+	m	getEntity	getEntity	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	setEntity	setEntity	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	isInMarket	isInMarket	()Z
+	m	isOnFleet	isOnFleet	()Z
+
+c	com/fs/starfarer/rpg/OfficerData	com/fs/starfarer/rpg/OfficerData
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements OfficerDataAPI，person/skillPicks/madePicks 与 addXP/levelUp 等保持原名)
+	f	person	person	Lcom/fs/starfarer/rpg/Person;
+	f	skillPicks	skillPicks	Ljava/util/List;
+	f	madePicks	madePicks	Z
+	m	getPerson	getPerson	()Lcom/fs/starfarer/rpg/Person;
+	m	setPerson	setPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	addXP	addXP	(J)V
+	m	addXP	addXP	(JLcom/fs/starfarer/api/campaign/TextPanelAPI;)V
+	m	addXP	addXP	(JLcom/fs/starfarer/api/campaign/TextPanelAPI;Z)V
+	m	makeSkillPicks	makeSkillPicks	()V
+	m	makeSkillPicks	makeSkillPicks	(Ljava/util/Random;)V
+	m	canLevelUp	canLevelUp	()Z
+	m	canLevelUp	canLevelUp	(Z)Z
+	m	levelUp	levelUp	(Ljava/lang/String;)V
+	m	levelUp	levelUp	(Ljava/lang/String;Ljava/util/Random;)V
+	m	getSkillPicks	getSkillPicks	()Ljava/util/List;
+	m	isMadePicks	isMadePicks	()Z
+	m	getPerson	getPerson	()Lcom/fs/starfarer/api/characters/PersonAPI;
+
+c	com/fs/starfarer/rpg/Person	com/fs/starfarer/rpg/Person
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements PersonAPI，getHimOrHer/getFleet/getStats 等 73 方法保持原名)
+	f	id	id	Ljava/lang/String;
+	f	personality	personality	Lcom/fs/starfarer/rpg/A;
+	f	personalityId	personalityId	Ljava/lang/String;
+	f	name	name	Lcom/fs/starfarer/api/characters/FullName;
+	f	portraitSprite	portraitSprite	Ljava/lang/String;
+	f	rankId	rankId	Ljava/lang/String;
+	f	postId	postId	Ljava/lang/String;
+	f	memory	memory	Lcom/fs/starfarer/campaign/rules/Memory;
+	f	stats	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+	f	wantsToContactReasonsCount	wantsToContactReasonsCount	I
+	f	contactWeight	contactWeight	F
+	f	factionId	factionId	Ljava/lang/String;
+	f	aiCoreId	aiCoreId	Ljava/lang/String;
+	f	relToPlayer	relToPlayer	Lcom/fs/starfarer/campaign/Relationship;
+	f	advanced	advanced	Z
+	f	fleet	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+	f	market	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	f	importance	importance	Lcom/fs/starfarer/api/campaign/PersonImportance;
+	f	tags	tags	Ljava/util/HashSet;
+	f	voiceOverride	voiceOverride	Ljava/lang/Boolean;
+	m	getHimOrHer	getHimOrHer	()Ljava/lang/String;
+	m	getHisOrHer	getHisOrHer	()Ljava/lang/String;
+	m	getHeOrShe	getHeOrShe	()Ljava/lang/String;
+	m	getManOrWoman	getManOrWoman	()Ljava/lang/String;
+	m	getFleet	getFleet	()Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+	m	setFleet	setFleet	(Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;)V
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	setMarket	setMarket	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
+	m	getFleetCommanderStats	getFleetCommanderStats	()Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI;
+	m	getAICoreId	getAICoreId	()Ljava/lang/String;
+	m	setAICoreId	setAICoreId	(Ljava/lang/String;)V
+	m	isAICore	isAICore	()Z
+	m	isDefault	isDefault	()Z
+	m	isPlayer	isPlayer	()Z
+	m	getFaction	getFaction	()Lcom/fs/starfarer/campaign/Faction;
+	m	setFaction	setFaction	(Ljava/lang/String;)V
+	m	getRelToPlayer	getRelToPlayer	()Lcom/fs/starfarer/campaign/Relationship;
+	m	advance	advance	(F)V
+	m	isAdvanced	isAdvanced	()Z
+	m	setAdvanced	setAdvanced	(Z)V
+	m	getMemory	getMemory	()Lcom/fs/starfarer/campaign/rules/Memory;
+	m	getMemoryWithoutUpdate	getMemoryWithoutUpdate	()Lcom/fs/starfarer/api/campaign/rules/MemoryAPI;
+	m	getStats	getStats	()Lcom/fs/starfarer/campaign/CharacterStats;
+	m	setStats	setStats	(Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI;)V
+	m	getPersonality	getPersonality	()Lcom/fs/starfarer/rpg/A;
+	m	getPersonalityAPI	getPersonalityAPI	()Lcom/fs/starfarer/api/characters/PersonalityAPI;
+	m	setPersonality	setPersonality	(Lcom/fs/starfarer/rpg/A;)V
+	m	setPersonality	setPersonality	(Ljava/lang/String;)V
+	m	getName	getName	()Lcom/fs/starfarer/api/characters/FullName;
+	m	getNameString	getNameString	()Ljava/lang/String;
+	m	setName	setName	(Lcom/fs/starfarer/api/characters/FullName;)V
+	m	getPortraitSprite	getPortraitSprite	()Ljava/lang/String;
+	m	setPortraitSprite	setPortraitSprite	(Ljava/lang/String;)V
+	m	getRank	getRank	()Ljava/lang/String;
+	m	getRankArticle	getRankArticle	()Ljava/lang/String;
+	m	setRankId	setRankId	(Ljava/lang/String;)V
+	m	getPost	getPost	()Ljava/lang/String;
+	m	getPostArticle	getPostArticle	()Ljava/lang/String;
+	m	setPostId	setPostId	(Ljava/lang/String;)V
+	m	getRankId	getRankId	()Ljava/lang/String;
+	m	getPostId	getPostId	()Ljava/lang/String;
+	m	getGender	getGender	()Lcom/fs/starfarer/api/characters/FullName$Gender;
+	m	setGender	setGender	(Lcom/fs/starfarer/api/characters/FullName$Gender;)V
+	m	isMale	isMale	()Z
+	m	isFemale	isFemale	()Z
+	m	wantsToContactPlayer	wantsToContactPlayer	()Z
+	m	incrWantsToContactReasons	incrWantsToContactReasons	()V
+	m	decrWantsToContactReasons	decrWantsToContactReasons	()V
+	m	getContactWeight	getContactWeight	()F
+	m	setContactWeight	setContactWeight	(F)V
+	m	getId	getId	()Ljava/lang/String;
+	m	setId	setId	(Ljava/lang/String;)V
+	m	hasTag	hasTag	(Ljava/lang/String;)Z
+	m	addTag	addTag	(Ljava/lang/String;)V
+	m	removeTag	removeTag	(Ljava/lang/String;)V
+	m	getTags	getTags	()Ljava/util/Set;
+	m	clearTags	clearTags	()V
+	m	getSortedContactTags	getSortedContactTags	()Ljava/util/List;
+	m	getSortedContactTagStrings	getSortedContactTagStrings	()Ljava/util/List;
+	m	getImportance	getImportance	()Lcom/fs/starfarer/api/campaign/PersonImportance;
+	m	setImportance	setImportance	(Lcom/fs/starfarer/api/campaign/PersonImportance;)V
+	m	setImportanceAndVoice	setImportanceAndVoice	(Lcom/fs/starfarer/api/campaign/PersonImportance;Ljava/util/Random;)V
+	m	setVoice	setVoice	(Ljava/lang/String;)V
+	m	getVoice	getVoice	()Ljava/lang/String;
+	m	toString	toString	()Ljava/lang/String;
+	m	getMemory	getMemory	()Lcom/fs/starfarer/api/campaign/rules/MemoryAPI;
+	m	getFaction	getFaction	()Lcom/fs/starfarer/api/campaign/FactionAPI;
+	m	getStats	getStats	()Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI;
+	m	getRelToPlayer	getRelToPlayer	()Lcom/fs/starfarer/api/characters/RelationshipAPI;
+
+c	com/fs/starfarer/rpg/Person$1	com/fs/starfarer/rpg/Person$ContactTagComparator
+	c 来源(字节码调用) | 置信度(中) | 证据(Comparator<ContactTagSpec>，Person 内部匿名比较器)

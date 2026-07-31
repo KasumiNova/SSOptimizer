@@ -1,0 +1,327 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/codex/C	com/fs/starfarer/codex/CodexItem
+	c 来源(javap取证) | 置信度(高) | 证据(codex-item（E/OoOO 共同实现的条目接口，4 个 String + 父类别）)
+	m	super	getSubtitle	()Ljava/lang/String;
+	m	Ó00000	getTitle	()Ljava/lang/String;
+	m	Õ00000	getSortTitle	()Ljava/lang/String;
+	m	String	getDisplayName	()Ljava/lang/String;
+	m	Ò00000	getParentCategory	()Lcom/fs/starfarer/codex/OoOO;
+c	com/fs/starfarer/codex/CodexData	com/fs/starfarer/codex/CodexData
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data（6 个类别根字段，字符串常量 Top/Ship Systems/Weapons/Fighter Wings/Ship Variants/Ship Hulls）)
+	f	String	rootCategory	Lcom/fs/starfarer/codex/OoOO;
+	f	super	weaponsCategory	Lcom/fs/starfarer/codex/OoOO;
+	f	Ö00000	fighterWingsCategory	Lcom/fs/starfarer/codex/OoOO;
+	f	Ó00000	shipVariantsCategory	Lcom/fs/starfarer/codex/OoOO;
+	f	Ò00000	shipHullsCategory	Lcom/fs/starfarer/codex/OoOO;
+	f	Õ00000	shipSystemsCategory	Lcom/fs/starfarer/codex/OoOO;
+	m	int	getRootCategory	()Lcom/fs/starfarer/codex/OoOO;
+	m	ô00000	getShipHullsCategory	()Lcom/fs/starfarer/codex/OoOO;
+	m	return	getShipVariantsCategory	()Lcom/fs/starfarer/codex/OoOO;
+	m	Õ00000	getFighterWingsCategory	()Lcom/fs/starfarer/codex/OoOO;
+	m	Ò00000	getWeaponsCategory	()Lcom/fs/starfarer/codex/OoOO;
+	m	o00000	findEntry	(Ljava/lang/Object;)Lcom/fs/starfarer/codex/C;
+	m	o00000	findEntryRecursive	(Lcom/fs/starfarer/codex/C;Ljava/lang/Object;)Lcom/fs/starfarer/codex/C;
+	m	ö00000	buildWeaponsCategory	()V
+	m	o00000	buildFighterWingsCategory	()V
+	m	ÒO0000	buildShipVariantsCategory	()V
+	m	oO0000	buildShipHullsCategory	()V
+	m	Ø00000	buildFighterWingEntries	()V
+	m	Object	buildShipVariantEntries	()V
+	m	Ô00000	buildShipHullEntries	()V
+	m	ø00000	buildWeaponEntries	()V
+	m	for	buildShipSystemEntries	()V
+c	com/fs/starfarer/codex/CodexData$1	com/fs/starfarer/codex/CodexData$BallisticWeaponFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: BaseWeaponSpec.getType()==BALLISTIC）)
+	f	Object.super	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$2	com/fs/starfarer/codex/CodexData$MissileWeaponFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: BaseWeaponSpec.getType()==MISSILE）)
+	f	ôO0000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$3	com/fs/starfarer/codex/CodexData$EnergyWeaponFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: BaseWeaponSpec.getType()==ENERGY）)
+	f	ØO0000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$4	com/fs/starfarer/codex/CodexData$SmallWeaponFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: BaseWeaponSpec.getSize()==SMALL）)
+	f	this.super	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$5	com/fs/starfarer/codex/CodexData$MediumWeaponFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: BaseWeaponSpec.getSize()==MEDIUM）)
+	f	ÕO0000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$6	com/fs/starfarer/codex/CodexData$LargeWeaponFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: BaseWeaponSpec.getSize()==LARGE）)
+	f	ÔO0000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$7	com/fs/starfarer/codex/CodexData$InterceptorWingFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: FighterWingSpec.getRole()==INTERCEPTOR）)
+	f	public	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$8	com/fs/starfarer/codex/CodexData$BomberWingFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: FighterWingSpec.getRole()==BOMBER）)
+	f	ÒO0000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$9	com/fs/starfarer/codex/CodexData$FighterWingFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: FighterWingSpec.getRole()==FIGHTER）)
+	f	oO0000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$10	com/fs/starfarer/codex/CodexData$AssaultWingFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: FighterWingSpec.getRole()==ASSAULT）)
+	f	for	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$11	com/fs/starfarer/codex/CodexData$SupportWingFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: FighterWingSpec.getRole()==SUPPORT）)
+	f	ø00000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$12	com/fs/starfarer/codex/CodexData$FrigateVariantFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: HullVariantSpec.getHullSize()==FRIGATE）)
+	f	ö00000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$13	com/fs/starfarer/codex/CodexData$DestroyerVariantFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: HullVariantSpec.getHullSize()==DESTROYER）)
+	f	int	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$14	com/fs/starfarer/codex/CodexData$CruiserVariantFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: HullVariantSpec.getHullSize()==CRUISER）)
+	f	ô00000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$15	com/fs/starfarer/codex/CodexData$CapitalVariantFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: HullVariantSpec.getHullSize()==CAPITAL_SHIP）)
+	f	Ø00000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$16	com/fs/starfarer/codex/CodexData$FrigateHullFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: ShipHullSpec.getHullSize()==FRIGATE）)
+	f	return	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$17	com/fs/starfarer/codex/CodexData$DestroyerHullFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: ShipHullSpec.getHullSize()==DESTROYER）)
+	f	Õ00000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$18	com/fs/starfarer/codex/CodexData$CruiserHullFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: ShipHullSpec.getHullSize()==CRUISER）)
+	f	Ô00000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$19	com/fs/starfarer/codex/CodexData$CapitalHullFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-filters（matches: ShipHullSpec.getHullSize()==CAPITAL_SHIP）)
+	f	öO0000	this$0	Lcom/fs/starfarer/codex/CodexData;
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/CodexData$20	com/fs/starfarer/codex/CodexData$FighterWingComparator
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<FighterWingSpec>，按 variantId/hullName 排序）)
+	m	o00000	compareWings	(Lcom/fs/starfarer/loading/specs/FighterWingSpec;Lcom/fs/starfarer/loading/specs/FighterWingSpec;)I
+c	com/fs/starfarer/codex/CodexData$21	com/fs/starfarer/codex/CodexData$HullVariantComparator
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<HullVariantSpec>，按 hullName 排序）)
+	m	o00000	compareVariants	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
+c	com/fs/starfarer/codex/CodexData$22	com/fs/starfarer/codex/CodexData$ShipHullComparator
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<ShipHullSpec>，按 hullName 排序）)
+	m	super	compareHulls	(Lcom/fs/starfarer/loading/specs/g;Lcom/fs/starfarer/loading/specs/g;)I
+c	com/fs/starfarer/codex/CodexData$23	com/fs/starfarer/codex/CodexData$WeaponComparator
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<BaseWeaponSpec>，按名称排序）)
+	m	o00000	compareWeapons	(Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;)I
+c	com/fs/starfarer/codex/CodexData$24	com/fs/starfarer/codex/CodexData$ShipSystemComparator
+	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<ShipSystemSpec>，按名称排序）)
+	m	o00000	compareSystems	(Lcom/fs/starfarer/loading/specs/M;Lcom/fs/starfarer/loading/specs/M;)I
+c	com/fs/starfarer/codex/E	com/fs/starfarer/codex/CodexEntry
+	c 来源(javap取证) | 置信度(高) | 证据(codex-entry（E(4 String, Object) 构造；数据/标题/副标题/显示名/父类别；CodexData 中按数据对象查找）)
+	f	new	title	Ljava/lang/String;
+	f	Ô00000	subtitle	Ljava/lang/String;
+	f	Ó00000	parentCategory	Lcom/fs/starfarer/codex/OoOO;
+	f	class	data	Ljava/lang/Object;
+	f	Ö00000	sortTitle	Ljava/lang/String;
+	f	o00000	displayName	Ljava/lang/String;
+	m	Ó00000	getTitle	()Ljava/lang/String;
+	m	super	getSubtitle	()Ljava/lang/String;
+	m	Õ00000	getSortTitle	()Ljava/lang/String;
+	m	String	getDisplayName	()Ljava/lang/String;
+	m	Ö00000	getData	()Ljava/lang/Object;
+	m	Ò00000	getParentCategory	()Lcom/fs/starfarer/codex/OoOO;
+	m	super	setTitle	(Ljava/lang/String;)V
+	m	Ò00000	setSubtitle	(Ljava/lang/String;)V
+	m	super	setParentCategory	(Lcom/fs/starfarer/codex/OoOO;)V
+c	com/fs/starfarer/codex/O0OO	com/fs/starfarer/codex/CodexFilter
+	c 来源(javap取证) | 置信度(高) | 证据(codex-filter（抽象过滤器：id/名称/启用态 + matches(entry)；CodexData$N 为其匿名子类）)
+	f	o00000	id	I
+	f	Object	enabled	Z
+	f	Ò00000	name	Ljava/lang/String;
+	m	Ó00000	getId	()I
+	m	super	isEnabled	()Z
+	m	super	setEnabled	(Z)V
+	m	Ò00000	getName	()Ljava/lang/String;
+	m	super	setName	(Ljava/lang/String;)V
+	m	super	matches	(Lcom/fs/starfarer/codex/C;)Z
+c	com/fs/starfarer/codex/OoOO	com/fs/starfarer/codex/CodexCategory
+	c 来源(javap取证) | 置信度(高) | 证据(codex-category（类别树节点：名称/条目列表/子类别/过滤器/父节点；if()/õ00000() 按启用过滤器筛选）)
+	f	null	name	Ljava/lang/String;
+	f	Ø00000	entries	Ljava/util/List;
+	f	float	subcategories	Ljava/util/List;
+	f	ö00000	filters	Ljava/util/List;
+	f	õ00000	parent	Lcom/fs/starfarer/codex/OoOO;
+	m	Ò00000	getParentCategory	()Lcom/fs/starfarer/codex/OoOO;
+	m	Ó00000	addSubcategory	(Lcom/fs/starfarer/codex/OoOO;)V
+	m	Ò00000	setParentCategory	(Lcom/fs/starfarer/codex/OoOO;)V
+	m	super	addEntry	(Lcom/fs/starfarer/codex/E;)V
+	m	super	addFilter	(Lcom/fs/starfarer/codex/O0OO;)V
+	m	ø00000	getFilters	()Ljava/util/List;
+	m	Ó00000	getTitle	()Ljava/lang/String;
+	m	Ó00000	setName	(Ljava/lang/String;)V
+	m	ô00000	getEntries	()Ljava/util/List;
+	m	void	getSubcategories	()Ljava/util/List;
+	m	if	getFilteredEntries	()Ljava/util/List;
+	m	õ00000	getFilteredSubcategories	()Ljava/util/List;
+	m	super	getSubtitle	()Ljava/lang/String;
+	m	Õ00000	getSortTitle	()Ljava/lang/String;
+	m	String	getDisplayName	()Ljava/lang/String;
+c	com/fs/starfarer/codex/super	com/fs/starfarer/codex/CodexBrowserDialog
+	c 来源(javap取证) | 置信度(高) | 证据(codex-browser-dialog（单例；show(Panel,DismissListener,F) 创建 ui/impl/E 对话框并挂 CodexBrowserPanel）)
+	f	super	instance	Lcom/fs/starfarer/codex/super;
+	f	Ó00000	browserPanel	Lcom/fs/starfarer/codex/ui/o0OO;
+	f	Ò00000	codexData	Lcom/fs/starfarer/codex/CodexData;
+	m	Ô00000	getInstance	()Lcom/fs/starfarer/codex/super;
+	m	o00000	updateCurrentItem	()V
+	m	o00000	show	(Lcom/fs/starfarer/ui/z;Lcom/fs/starfarer/ui/oo0O$o;F)V
+	m	Ó00000	getCodexData	()Lcom/fs/starfarer/codex/CodexData;
+	m	new	getBrowserPanel	()Lcom/fs/starfarer/codex/ui/o0OO;
+	m	o00000	setBrowserPanel	(Lcom/fs/starfarer/codex/ui/o0OO;)V
+c	com/fs/starfarer/codex/ui/B	com/fs/starfarer/codex/ui/HullWingInfoPanel
+	c 来源(javap取证) | 置信度(高) | 证据(hull-wing-info-panel（ctor(ShipHullSpec,HullVariantSpec,FighterWingSpec)；_Hull 字符串，滚动展示船体+机翼信息）)
+	f	return.int$public	hullSpec	Lcom/fs/starfarer/loading/specs/g;
+	f	ôoÕo00	wingSpec	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	f	this.int$public	scroller	Lcom/fs/starfarer/ui/g;
+	f	ØoÕo00	fontPath	Ljava/lang/String;
+c	com/fs/starfarer/codex/ui/C	com/fs/starfarer/codex/ui/CodexListItem
+	c 来源(javap取证) | 置信度(高) | 证据(codex-list-item（列表行：条目 + 按钮；category 行用 CutStyle.TL_BR 背景）)
+	f	Object.if$public	item	Lcom/fs/starfarer/codex/C;
+	f	oÓÕo00	fontPath	Ljava/lang/String;
+	f	ÔÓÕo00	browserPanel	Lcom/fs/starfarer/codex/ui/o0OO;
+	f	ÒÓÕo00	button	Lcom/fs/starfarer/ui/n;
+c	com/fs/starfarer/codex/ui/F	com/fs/starfarer/codex/ui/CodexBreadcrumbPanel
+	c 来源(javap取证) | 置信度(高) | 证据(codex-breadcrumb-panel（update(item) 沿 C.getParentCategory 链构建面包屑按钮，Map<Button,C>）)
+	f	return.float$public	pad	F
+	f	øÔÕo00	breadcrumbButtons	Ljava/util/Map;
+	f	oÕÕo00	browserPanel	Lcom/fs/starfarer/codex/ui/o0OO;
+	m	float	sizeButtonToFitText	(Lcom/fs/starfarer/ui/n;)V
+c	com/fs/starfarer/codex/ui/String	com/fs/starfarer/codex/ui/CodexFilterPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(codex-filter-panel（Filters 标签 + Map<Button,O0OO> 过滤器按钮；setCategory(OoOO)）)
+	f	ÕÓÕo00	category	Lcom/fs/starfarer/codex/OoOO;
+	f	ØÓÕo00	filterButtons	Ljava/util/Map;
+	f	return.if$public	fontPath	Ljava/lang/String;
+c	com/fs/starfarer/codex/ui/VariantStatsPanel	com/fs/starfarer/codex/ui/VariantStatsPanel
+	c 来源(javap取证) | 置信度(高) | 证据(variant-stats-panel（未混淆原名；Flux capacitors/Flux vents/Hull Modifications/Weapon Group 字符串）)
+	m	while.super	formatStatFloat	(F)Ljava/lang/String;
+	m	class	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/codex/ui/VariantStatsPanel$1	com/fs/starfarer/codex/ui/VariantStatsPanel$SlotCountComparator
+	c 来源(javap取证) | 置信度(高) | 证据(variant-stats-panel-inner（Comparator<String>，按 val$slotCount 计数排序武器槽）)
+	m	o00000	compareBySlotCount	(Ljava/lang/String;Ljava/lang/String;)I
+c	com/fs/starfarer/codex/ui/VariantStatsPanel$o	com/fs/starfarer/codex/ui/VariantStatsPanel$StatRow
+	c 来源(javap取证) | 置信度(高) | 证据(variant-stats-panel-inner（ctor(outer,文本,数值,字体,宽度)，双标签统计行，同 WeaponStatsPanel$StatRow 模式）)
+c	com/fs/starfarer/codex/ui/null	com/fs/starfarer/codex/ui/CodexListItemRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(codex-list-item-renderer（实现 ButtonRenderer，渲染 CodexListItem 的标题/副标题双字体）)
+	f	int.null	itemRow	Lcom/fs/starfarer/codex/ui/C;
+	f	Õø0000	titleFont	Lcom/fs/graphics/super/Object;
+	f	Øø0000	subtitleFont	Lcom/fs/graphics/super/Object;
+	m	super	renderButton	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+c	com/fs/starfarer/codex/ui/o0OO	com/fs/starfarer/codex/ui/CodexBrowserPanel
+	c 来源(javap取证) | 置信度(高) | 证据(codex-browser-panel（主浏览面板：类别/过滤器/条目列表/面包屑，showFleetMemberVariant 等真实名；PAD/LIST_WIDTH 等常量）)
+	f	Object.float$public	scroller	Lcom/fs/starfarer/ui/g;
+	f	öÓÕo00	breadcrumbPanel	Lcom/fs/starfarer/codex/ui/F;
+	f	ÕÔÕo00	filterPanel	Lcom/fs/starfarer/codex/ui/String;
+	f	public.if$public	currentItem	Lcom/fs/starfarer/codex/C;
+	f	int.if$public	currentCategory	Lcom/fs/starfarer/codex/OoOO;
+	f	ôÔÕo00	dialog	Lcom/fs/starfarer/ui/oo0O;
+	f	ÔÔÕo00	defaultFont	Ljava/lang/String;
+	f	for.if$public	titleFont	Ljava/lang/String;
+	m	o00000	setCategory	(Lcom/fs/starfarer/codex/OoOO;)V
+	m	o00000	showEntryDetail	(Lcom/fs/starfarer/codex/E;)V
+	m	Ö00000	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/codex/ui/oOoO	com/fs/starfarer/codex/ui/WeaponInfoPanel
+	c 来源(javap取证) | 置信度(高) | 证据(weapon-info-panel（ctor(BaseWeaponSpec)，Description$Type.WEAPON 描述 + 滚动面板）)
+	f	ÕöõO00	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	f	public.null$float	scroller	Lcom/fs/starfarer/ui/g;
+	f	ÔöõO00	fontPath	Ljava/lang/String;
+c	com/fs/starfarer/codex/ui/oooO$O0	com/fs/starfarer/codex/ui/WeaponStatsPanel$DamageTypeIconRow
+	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（DamageType switch 加载 icon_energy/icon_kinetic 等 sprite + Damage type/DPS 统计行）)
+	f	öÕÕo00	damageTypeSprite	Lcom/fs/graphics/Sprite;
+c	com/fs/starfarer/codex/ui/oooO$Oo	com/fs/starfarer/codex/ui/WeaponStatsPanel$WeaponIconRow
+	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（ctor 创建 WeaponIconRenderer，renderImpl 按 WeaponSize switch 旋转绘制）)
+	f	ÒÕÕo00	iconRenderer	Lcom/fs/starfarer/renderers/oO0O;
+c	com/fs/starfarer/codex/ui/oooO$o	com/fs/starfarer/codex/ui/WeaponStatsPanel$StatRow
+	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（ctor(outer,名称,数值,字体,宽度)，左右双标签统计行）)
+c	com/fs/starfarer/codex/ui/oooO$oo	com/fs/starfarer/codex/ui/WeaponStatsPanel$AnimatedWeaponIcon
+	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（ANIMATE_WEAPON 静态开关 + ShipSlotEntity + advanceImpl，动画武器图标）)
+	f	ØÕÕo00	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	f	ÕÕÕo00	slotEntity	Lcom/fs/starfarer/combat/entities/ship/A/null;
+c	com/fs/starfarer/codex/ui/oooO	com/fs/starfarer/codex/ui/WeaponStatsPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(weapon-stats-panel（Damage/EMP damage/Ammo / clip/Burst damage/Flux / second 等武器数值面板，ctor(BaseWeaponSpec,CharacterStats,ShipStats,FFZZ)）)
+	f	return.int$float	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	f	øøõO00	charStats	Lcom/fs/starfarer/campaign/CharacterStats;
+	f	int.int$float	shipStats	Lcom/fs/starfarer/combat/entities/ship/E;
+	f	o0öO00	isBeam	Z
+	m	while	formatStatFloat	(F)Ljava/lang/String;
+	m	Ô00000	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/codex/ui/super	com/fs/starfarer/codex/ui/ShipSystemInfoPanel
+	c 来源(javap取证) | 置信度(高) | 证据(ship-system-info-panel（ctor(ShipSystemSpec)，Description$Type.SHIP_SYSTEM 描述 + 滚动面板）)
+	f	for.null$float	systemSpec	Lcom/fs/starfarer/loading/specs/M;
+	f	öõõO00	scroller	Lcom/fs/starfarer/ui/g;
+	f	øõõO00	fontPath	Ljava/lang/String;
+c	com/fs/starfarer/codex2/CodexDetailPanel	com/fs/starfarer/codex2/CodexDetailPanel
+	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel（未混淆原名；Hull size/Base value: %s per unit/Demand/Combat readiness 等详情 tooltip 构造）)
+c	com/fs/starfarer/codex2/CodexDetailPanel$1	com/fs/starfarer/codex2/CodexDetailPanel$1
+	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：Color 背景面板）)
+c	com/fs/starfarer/codex2/CodexDetailPanel$2	com/fs/starfarer/codex2/CodexDetailPanel$2
+	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：ModSpecAPI 模组信息 tooltip 段）)
+c	com/fs/starfarer/codex2/CodexDetailPanel$3	com/fs/starfarer/codex2/CodexDetailPanel$3
+	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：Comparator<FactionSpecAPI>，val$mapper 映射值排序）)
+	m	o00000	compareByMappedValue	(Lcom/fs/starfarer/api/campaign/FactionSpecAPI;Lcom/fs/starfarer/api/campaign/FactionSpecAPI;)I
+c	com/fs/starfarer/codex2/CodexDetailPanel$4	com/fs/starfarer/codex2/CodexDetailPanel$4
+	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：字符串 tooltip 段）)
+c	com/fs/starfarer/codex2/CodexDetailPanel$5	com/fs/starfarer/codex2/CodexDetailPanel$5
+	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：空态面板，LabelImpl+ImagePanel）)
+	f	øøÒO00	emptyLabel	Lcom/fs/starfarer/ui/d;
+	f	öøÒO00	emptyIcon	Lcom/fs/starfarer/ui/ooO0;
+c	com/fs/starfarer/codex2/CodexDialog	com/fs/starfarer/codex2/CodexDialog
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog（未混淆原名；条目表格/搜索/标签/历史快照；nav_up 等导航按钮）)
+	f	ÒØÓ000	upButton	Lcom/fs/starfarer/ui/n;
+	f	ÔôÓ000	backButton	Lcom/fs/starfarer/ui/n;
+	f	oØÓ000	forwardButton	Lcom/fs/starfarer/ui/n;
+	f	for.String$new	randomButton	Lcom/fs/starfarer/ui/n;
+	f	öØÓ000	closeButton	Lcom/fs/starfarer/ui/n;
+	f	øØÓ000	searchField	Lcom/fs/starfarer/ui/B;
+	f	ÔØÓ000	currentCategory	Lcom/fs/starfarer/api/impl/codex/CodexEntryPlugin;
+	f	int.String$new	detailPanel	Lcom/fs/starfarer/codex2/CodexDetailPanel;
+c	com/fs/starfarer/codex2/CodexDialog$1	com/fs/starfarer/codex2/CodexDialog$1
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：DismissListener，恢复 FocusedComponent 焦点）)
+	f	ÕõØo00	overlayHost	Lcom/fs/starfarer/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	ÔõØo00	focusedComponent	Lcom/fs/starfarer/ui/S;
+c	com/fs/starfarer/codex2/CodexDialog$2	com/fs/starfarer/codex2/CodexDialog$2
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip，Go up a level 提示）)
+c	com/fs/starfarer/codex2/CodexDialog$3	com/fs/starfarer/codex2/CodexDialog$3
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip）)
+c	com/fs/starfarer/codex2/CodexDialog$4	com/fs/starfarer/codex2/CodexDialog$4
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip）)
+c	com/fs/starfarer/codex2/CodexDialog$5	com/fs/starfarer/codex2/CodexDialog$5
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip）)
+c	com/fs/starfarer/codex2/CodexDialog$6	com/fs/starfarer/codex2/CodexDialog$6
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：Comparator<TableRowPanel>，val$cache 缓存排序）)
+	m	o00000	compareRows	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/codex2/CodexDialog$Oo	com/fs/starfarer/codex2/CodexDialog$HistorySnapshot
+	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-history-snapshot（浏览历史快照：类别/详情条目/选中行/三处 scroller 偏移/标签/搜索文本/isCurrent）)
+	f	void	detailEntry	Lcom/fs/starfarer/api/impl/codex/CodexEntryPlugin;
+	f	if	detailScrollerOffset	Lorg/lwjgl/util/vector/Vector2f;
+	f	ô00000	category	Lcom/fs/starfarer/api/impl/codex/CodexEntryPlugin;
+	f	Õ00000	selectedRow	Lcom/fs/starfarer/campaign/ui/B;
+	f	Ö00000	tableScrollerOffset	Lorg/lwjgl/util/vector/Vector2f;
+	f	Ò00000	prevCategory	Lcom/fs/starfarer/api/impl/codex/CodexEntryPlugin;
+	f	String	tagsScrollerOffset	Lorg/lwjgl/util/vector/Vector2f;
+	f	Ó00000	tags	Ljava/util/Set;
+	f	õ00000	searchText	Ljava/lang/String;
+	f	super	isCurrent	Z
+c	com/fs/starfarer/codex2/CodexDialog$o	com/fs/starfarer/codex2/CodexDialog$Column
+	c 来源(javap取证) | 置信度(中) | 证据(codex-dialog-column（枚举，唯一常量 ITEM 作为 Item 表格列 id 与排序键）)
+	f	o00000	ITEM	Lcom/fs/starfarer/codex2/CodexDialog$o;
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/codex2/CodexDialog$o;
+c	com/fs/starfarer/codex2/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/codex2/CodexListRow
+	c 来源(javap取证) | 置信度(高) | 证据(codex-list-row（表格行：icon/name/plugin/iconButton/mode/isGoUpOption/vignetteVisual；createRow 建 tooltip，Locked entry 锁定态）)
+	f	ÔöÔO00	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+c	com/fs/starfarer/codex2/oOOO	com/fs/starfarer/codex2/ShipSystemTooltipFactory
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(ship-system-tooltip-factory（静态方法由 ShipSystemSpec+ShipStats 构造系统 tooltip；Active duration/Cooldown/Base flux / second 等）)
+	m	super	createSystemTooltip	(Lcom/fs/starfarer/loading/specs/M;Lcom/fs/starfarer/combat/entities/ship/E;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;

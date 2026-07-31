@@ -1,0 +1,394 @@
+tiny	2	0	obf	named
+
+c	com/fs/starfarer/E/A	com/fs/starfarer/E/HudWidgetBase
+	c 来源与证据（javap取证（无任何字符串/外部引用，仅持有 QuadRenderer×2 + NoiseEffect 的空壳基类，疑似旧战斗 HUD 控件基类，死代码） | 低 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.A)）
+
+c	com/fs/starfarer/E/D	com/fs/starfarer/E/ShipProgressText
+	c 来源与证据（javap取证（与 E/J 同构渲染 % 4d%% 文本，额外持有 Ship 字段并 super(Ship) 绑定，死代码，疑似舰船数值百分比文本） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.D)）
+
+c	com/fs/starfarer/E/F	com/fs/starfarer/E/QuadRenderer
+	c 来源与证据（javap取证（GL11 四边形绘制重载集合，双平台同名类 E/F 与 class/return，被 E/* 各面板广泛引用绘制背景条） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.F)）
+
+c	com/fs/starfarer/E/F$o	com/fs/starfarer/E/QuadRenderer$FadingQuad
+	c 来源与证据（javap取证（Fader + 双色渐变渐隐四边形，E/F 内类，用于闪光/高亮叠加） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.F$o)）
+
+c	com/fs/starfarer/E/J	com/fs/starfarer/E/ProgressText
+	c 来源与证据（javap取证+运行时验证（现代 combat/entities/BattleObjective 的 progress 字段类型，渲染 String.format("%% 4d",v)+"%%" 百分比文本） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.J)）
+
+c	com/fs/starfarer/E/J$o	com/fs/starfarer/E/ProgressText$Orientation
+	c 来源与证据（javap取证（枚举常量 HORIZONTAL/VERTICAL，进度条/文本方向） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.J$o)）
+
+c	com/fs/starfarer/E/K	com/fs/starfarer/E/PanelBorderRenderer
+	c 来源与证据（javap取证（字符串 _top_left/_bot_right 等 9-patch 边框分段名，StarfarerSettings ui 设置取边框纹理，构造参数为边框 key，E/int 用它画全息面板边框） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.K)）
+
+c	com/fs/starfarer/E/OoOO	com/fs/starfarer/E/OoOO/HullSchematicWidget
+	c 来源与证据（字符串常量（"Hull schematic widget" 调试名 + armor_plate + spotlight.png，持有 Ship 与 Sprite 渲染船体示意图） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO)）
+
+c	com/fs/starfarer/E/OoOO$o	com/fs/starfarer/E/OoOO/HullSchematicWidget$Allegiance
+	c 来源与证据（javap取证（枚举常量 ENEMY/FRIEND/NEUTRAL，船体示意图阵营着色） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO$o)）
+
+c	com/fs/starfarer/E/OoOO/F	com/fs/starfarer/E/OoOO/ShipInfoPanel
+	c 来源与证据（字符串常量+运行时验证（"New ship info widget" 调试名；combat/CombatState.getShipInfo() 返回本类，含 HOLDING FIRE/STRAFE LOCK/撤退/移交指挥等指令文案） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.F)）
+	m	advanceImpl	advanceImpl	(F)V
+	m	getStatusList	getStatusList	()Lcom/fs/starfarer/E/OoOO/Object;
+	m	hasSpecial	hasSpecial	()Z
+	m	hide	hide	()V
+	m	notifyGroupSelectionCommandIssued	notifyGroupSelectionCommandIssued	(I)V
+	m	reFanOut	reFanOut	()V
+	m	renderImpl	renderImpl	(F)V
+	m	setBrightness	setBrightness	(F)V
+	m	setFanOutBrightness	setFanOutBrightness	(F)V
+	m	setPivot	setPivot	(FF)V
+	m	setShip	setShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+
+c	com/fs/starfarer/E/OoOO/O0OO	com/fs/starfarer/E/OoOO/ShipOrdersPanel
+	c 来源与证据（字符串常量（"orders: engage"/"orders: regroup"/"replacement rate:"，按 Ship 显示当前指令与机队补充率） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.O0OO)）
+	m	advanceImpl	advanceImpl	(F)V
+	m	isHasWings	isHasWings	()Z
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setShip	setShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+
+c	com/fs/starfarer/E/OoOO/O0OO$o	com/fs/starfarer/E/OoOO/ShipOrdersPanel$WingStatusRow
+	c 来源与证据（javap取证（内类，构造参数 combat/ai/M 机队，victor14 字体渲染单机队状态行，isHasWings 相关） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.O0OO$o)）
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	setColor	setColor	(Ljava/awt/Color;)V
+
+c	com/fs/starfarer/E/OoOO/Object	com/fs/starfarer/E/OoOO/ShipStatusList
+	c 来源与证据（字符串常量+运行时验证（Engine Damage/Overloaded/Venting Flux 等状态文案；combat/CombatEngine 直接调 maintainStatusFor，ShipInfoPanel.getStatusList() 返回） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.Object)）
+	m	advanceImpl	advanceImpl	(F)V
+	m	maintainStatusFor	maintainStatusFor	(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZ)V
+	m	renderImpl	renderImpl	(F)V
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setShip	setShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+
+c	com/fs/starfarer/E/OoOO/Object$Oo	com/fs/starfarer/E/OoOO/ShipStatusList$StatusItemData
+	c 来源与证据（javap取证（状态条目数据持有者：key + 标题/第二行 + 持久化布尔，getter/setter 齐全） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.Object$Oo)）
+
+c	com/fs/starfarer/E/OoOO/Object$o	com/fs/starfarer/E/OoOO/ShipStatusList$StatusRow
+	c 来源与证据（javap取证（继承 ui/z 的状态行控件，getKey/fadeOut/updateLine2，渲染单条状态） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.Object$o)）
+
+c	com/fs/starfarer/E/OoOO/class	com/fs/starfarer/E/OoOO/ShipSpeedReadout
+	c 来源与证据（javap取证（Ship.getVelocity().length()/getMaxSpeed 取速 + String.format("%%d")，speed/0 文案，速度读数条） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.class)）
+	m	advanceImpl	advanceImpl	(F)V
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setShip	setShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+
+c	com/fs/starfarer/E/OoOO/new	com/fs/starfarer/E/OoOO/ShipSystemStatus
+	c 来源与证据（字符串常量（READY/ACTIVE/NO ACTIVE SYSTEM/---- 与充能 %4d，update(Ship, combat/systems/F) 系统冷却/弹药/激活态） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.new)）
+	m	advanceImpl	advanceImpl	(F)V
+	m	highlight	highlight	()V
+	m	renderImpl	renderImpl	(F)V
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	unhighlight	unhighlight	()V
+	m	update	update	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/systems/F;)V
+
+c	com/fs/starfarer/E/OoOO/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/E/OoOO/ScanlineBackgroundRenderer
+	c 来源与证据（字符串常量（scanline11/ui 背景纹理，E/F 绘制扫描线背景，被 E/int 全息面板使用） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OoOO.oOOOO)）
+
+c	com/fs/starfarer/E/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/E/CombatMinimap
+	c 来源与证据（字符串常量（"Radar"/minimap_bg2.png/holo_grid.png/point4x4.png/panel00，实现 PositionAPI 全套 UI 接口的旧战斗小地图） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.OooOOOO)）
+	m	advance	advance	(F)V
+	m	focusLost	focusLost	()V
+	m	getFader	getFader	()Lcom/fs/graphics/util/Fader;
+	m	getHeight	getHeight	()F
+	m	getOpacity	getOpacity	()F
+	m	getWidth	getWidth	()F
+	m	getX	getX	()F
+	m	getY	getY	()F
+	m	render	render	(F)V
+	m	setOpacity	setOpacity	(F)V
+	m	setParent	setParent	(Lcom/fs/starfarer/ui/z;)V
+	m	setPos	setPos	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	setSize	setSize	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+
+c	com/fs/starfarer/E/String/A	com/fs/starfarer/E/String/StatusListEntry
+	c 来源与证据（javap取证（接口：float String()/float super() 两个读数 + super(FFF) 更新 + 渲染/推进，E/String/E 等实现，状态列表条目协议） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.String.A)）
+
+c	com/fs/starfarer/E/String/B	com/fs/starfarer/E/String/StatusTextEntry
+	c 来源与证据（javap取证（(String,String,Color) 构造的静态文本状态条目，实现 A 协议） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.String.B)）
+
+c	com/fs/starfarer/E/String/D	com/fs/starfarer/E/String/StatusListManager
+	c 来源与证据（字符串常量（"Invalid parameter type [...] must be String or DeployedFleetMember"，add(int,Color,String,Object...)/blinkOn/blinkOff，战斗状态列表管理器，E/ooOO 消息面板向其投递条目） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.String.D)）
+
+c	com/fs/starfarer/E/String/E	com/fs/starfarer/E/String/StatusFleetMemberEntry
+	c 来源与证据（javap取证（实现 A，FleetMember/CombatFleetManager$O0 构造，内部 ui/super/B 舰船名图标，舰队成员状态条目） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.String.E)）
+
+c	com/fs/starfarer/E/String/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/E/String/StatusObjectiveEntry
+	c 来源与证据（javap取证（实现 A，BattleObjective 构造，战场目标状态条目） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.String.ooOOOO)）
+
+c	com/fs/starfarer/E/class	com/fs/starfarer/E/TargetingBeam
+	c 来源与证据（字符串常量+javap取证（beamfringe.png 光束纹理 + wr_select_target01.ogg 选中目标音效，GL11 淡出光束，被战斗小地图持有并逐帧推进） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.class)）
+
+c	com/fs/starfarer/E/int	com/fs/starfarer/E/HoloPanel
+	c 来源与证据（运行时验证（现代 ui/impl/E.getHolo() 返回本类，核心/市场对话框经 getHolo() 取边框厚度；ui_border1 边框 + noise/scanline11 背景 + foldOut/foldIn 折叠切换，全息面板） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.int)）
+	m	advanceImpl	advanceImpl	(F)V
+	m	flickerNoise	flickerNoise	(FF)V
+	m	foldIn	foldIn	(F)V
+	m	foldOut	foldOut	(F)V
+	m	forceFoldIn	forceFoldIn	()V
+	m	forceFoldOut	forceFoldOut	()V
+	m	getBorderThickness	getBorderThickness	()F
+	m	getContentHeight	getContentHeight	()F
+	m	getContentWidth	getContentWidth	()F
+	m	getCurr	getCurr	()Lcom/fs/starfarer/ui/OO0o;
+	m	getFanOut	getFanOut	()Lcom/fs/graphics/util/Fader;
+	m	getNext	getNext	()Lcom/fs/starfarer/ui/OO0o;
+	m	getNoiseAlpha	getNoiseAlpha	()F
+	m	isTransitionsEnabled	isTransitionsEnabled	()Z
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	renderImpl	renderImpl	(F)V
+	m	setAlwaysScissor	setAlwaysScissor	(Z)V
+	m	setBackgroundAlpha	setBackgroundAlpha	(II)V
+	m	setBorder	setBorder	(Ljava/lang/String;)V
+	m	setBorderThickness	setBorderThickness	(F)V
+	m	setNext	setNext	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	setNoiseAlpha	setNoiseAlpha	(F)V
+	m	setParent	setParent	(Lcom/fs/starfarer/ui/z;)V
+	m	setRenderBackground	setRenderBackground	(Z)V
+	m	setSize	setSize	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	setTransitionsEnabled	setTransitionsEnabled	(Z)V
+
+c	com/fs/starfarer/E/int$1	com/fs/starfarer/E/HoloPanel$BringToTopButton
+	c 来源与证据（javap取证（E/int 内匿名类，bringToTop(ui.OO0o)+getParent，点击将面板置顶的按钮处理器） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.int$1)）
+
+c	com/fs/starfarer/E/oOOO/A	com/fs/starfarer/E/oOOO/WeaponGroupsPanel
+	c 来源与证据（javap取证（持有 Ship 与 List<E.oOOO.OoOO> 行列表，逐武器组布局，旧武器组面板容器） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.oOOO.A)）
+
+c	com/fs/starfarer/E/oOOO/OoOO	com/fs/starfarer/E/oOOO/WeaponGroupRow
+	c 来源与证据（javap取证（(int, combat/systems/Q 武器组) 构造的单武器组行，orbitron10 字体渲染组号与武器） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.oOOO.OoOO)）
+
+c	com/fs/starfarer/E/ooOO	com/fs/starfarer/E/ooOO/CombatMessagePanel
+	c 来源与证据（字符串常量（" destroyed"/" deployed at location"/" captured!"/"No command points available"/insignia21LTaa 字体 + ui_noise_static_message，舰船事件回调生成战斗消息） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO)）
+	m	fighterWingDestroyed	fighterWingDestroyed	(Lcom/fs/starfarer/combat/ai/M;)V
+	m	fleetMemberCaptured	fleetMemberCaptured	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	fleetMemberDeployed	fleetMemberDeployed	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
+	m	fleetMemberRetreated	fleetMemberRetreated	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
+	m	objectiveChangedOwner	objectiveChangedOwner	(ILcom/fs/starfarer/api/combat/BattleObjectiveAPI;)V
+	m	orderGiven	orderGiven	(ILcom/fs/starfarer/combat/interface;)V
+	m	shipDestroyed	shipDestroyed	(Lcom/fs/starfarer/combat/entities/Ship;)V
+	m	shipDisabled	shipDisabled	(Lcom/fs/starfarer/combat/entities/Ship;)V
+
+c	com/fs/starfarer/E/ooOO$o	com/fs/starfarer/E/ooOO/CombatMessagePanel$Message
+	c 来源与证据（javap取证（内类：E.String.D 条目 + Fader + 时长，单条战斗消息的推进态） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO$o)）
+
+c	com/fs/starfarer/E/ooOO/A	com/fs/starfarer/E/ooOO/ObjectiveIcon
+	c 来源与证据（字符串常量（"Objective icons" + graphics/warroom/waypoint.png，战斗目标雷达图标，继承 G） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.A)）
+
+c	com/fs/starfarer/E/ooOO/C	com/fs/starfarer/E/ooOO/RadarRibbonPanel
+	c 来源与证据（字符串常量（"Radar ribbon" + THICKNESS=20 + CombatViewport，底部雷达带面板，getIconFor 取图标） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.C)）
+
+c	com/fs/starfarer/E/ooOO/G	com/fs/starfarer/E/ooOO/RadarIcon
+	c 来源与证据（javap取证（抽象雷达图标基类：位置/颜色/可见性/半径 + 委托 E.ooOO.null 渲染精灵，ui_new_radar_icon 字符串） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.G)）
+
+c	com/fs/starfarer/E/ooOO/O0OO	com/fs/starfarer/E/ooOO/RadarRibbonBackground
+	c 来源与证据（字符串常量（scanline11/ui，E/F 绘制雷达带扫描线背景，被 E.ooOO.C 持有） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.O0OO)）
+
+c	com/fs/starfarer/E/ooOO/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/E/ooOO/MissileIcon
+	c 来源与证据（字符串常量（"Missile icons"/icon_missile/ui_new_radar_missile_icon，导弹雷达图标） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.OOoOOOO)）
+
+c	com/fs/starfarer/E/ooOO/OoOO	com/fs/starfarer/E/ooOO/FighterWingIcon
+	c 来源与证据（字符串常量（"Fighter wing icons"，FighterWingSpec 取图标，机队雷达图标） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.OoOO)）
+
+c	com/fs/starfarer/E/ooOO/int	com/fs/starfarer/E/ooOO/RadarRibbonIconManager
+	c 来源与证据（字符串常量（"RadarRibbonIconManager.advance()" 自带 Profiler 名，Object→G 图标映射表） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.int)）
+
+c	com/fs/starfarer/E/ooOO/null	com/fs/starfarer/E/ooOO/RadarIconSprite
+	c 来源与证据（javap取证（Sprite + 运动轨迹点数组渲染雷达图标本体，ISR 字样，被 G 委托） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.null)）
+
+c	com/fs/starfarer/E/ooOO/o0OO	com/fs/starfarer/E/ooOO/ShipIcon
+	c 来源与证据（字符串常量（"Ship icons" + ShipAPI$HullSize，舰船雷达图标） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.o0OO)）
+
+c	com/fs/starfarer/E/void	com/fs/starfarer/E/NoiseEffect
+	c 来源与证据（运行时验证（title/TitleScreenState 的 noise 字段类型 + getFader，GL11 静态噪声/闪烁渲染器，也被 E/int 面板用） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.void)）
+
+c	com/fs/starfarer/prototype/B	com/fs/starfarer/prototype/IntersectionMath
+	c 来源与证据（javap取证（静态 Vector2f 线段求交 + main 打印 "Intersection at:"/"No intersection"，原型数学工具） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.B)）
+
+c	com/fs/starfarer/prototype/C	com/fs/starfarer/prototype/BezierCurve
+	c 来源与证据（javap取证（4 个 Vector2f 控制点 + 8 float 构造 + t 参数求值，贝塞尔曲线求值器） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.C)）
+
+c	com/fs/starfarer/prototype/CombatState	com/fs/starfarer/prototype/CombatState
+	c 来源与证据（javap取证（implements com.fs.state.AppState，COMBAT_STATE_ID 常量 + controlPlayerShip/renderOverlay，LWJGL 输入，原型战斗状态；双平台类名均为 CombatState） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.CombatState)）
+	m	controlPlayerShip	controlPlayerShip	(F)V
+	m	getID	getID	()Ljava/lang/String;
+	m	goToState	goToState	(Ljava/lang/String;)V
+	m	init	init	(Ljava/util/Map;)V
+	m	renderOverlay	renderOverlay	()V
+	m	traverse	traverse	()Ljava/lang/String;
+	f	playerShip	playerShip	Lcom/fs/starfarer/prototype/entities/Ship;
+	f	ship2	ship2	Lcom/fs/starfarer/prototype/entities/Ship;
+	f	engine	engine	Lcom/fs/starfarer/prototype/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	COMBAT_STATE_ID	COMBAT_STATE_ID	Ljava/lang/String;
+	f	aiList	aiList	Ljava/util/List;
+
+c	com/fs/starfarer/prototype/D	com/fs/starfarer/prototype/ParticleDemo
+	c 来源与证据（javap取证（持有 3 个 graphics/particle/oOOO 粒子缓冲 + 1024x768 常量，原型粒子演示/渲染） | 低 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.D)）
+
+c	com/fs/starfarer/prototype/H	com/fs/starfarer/prototype/ShipLayer
+	c 来源与证据（javap取证（枚举常量 SHIP_LAYER，Ship.getActiveLayers() 返回 EnumSet<H>，渲染图层枚举） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.H)）
+
+c	com/fs/starfarer/prototype/I	com/fs/starfarer/prototype/PrototypeMain
+	c 来源与证据（javap取证（main(String[]) 入口，经 com.fs.state.AppDriver 拉起原型 CombatState，原型启动器） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.I)）
+
+c	com/fs/starfarer/prototype/Utils	com/fs/starfarer/prototype/Utils
+	c 来源与证据（javap取证+运行时验证（全 jar 278 处引用仍存活；颜色/向量数学/XML 标签文本解析/重启 Starsector 等静态工具，o00000(I)Color 供 E/String/E 取阵营色） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.Utils)）
+
+c	com/fs/starfarer/prototype/Utils$1	com/fs/starfarer/prototype/Utils$StringComparator
+	c 来源与证据（javap取证（Comparator，compare(String,String) 按字典序排序） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.Utils$1)）
+
+c	com/fs/starfarer/prototype/Utils$2	com/fs/starfarer/prototype/Utils$RestartThread
+	c 来源与证据（javap取证（Thread 子类，Runtime.exec "open /Applications/Starsector.app" 或重启命令，游戏重启线程） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.Utils$2)）
+
+c	com/fs/starfarer/prototype/Utils$o	com/fs/starfarer/prototype/Utils$FormattedTextData
+	c 来源与证据（javap取证+运行时验证（(String,Color[],int[],boolean[]) 数据体，<c=color>text</c> 格式标签解析产物，ui/newui/Q 仍在用） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.Utils$o)）
+
+c	com/fs/starfarer/prototype/class	com/fs/starfarer/prototype/PrototypeSettings
+	c 来源与证据（javap取证（静态 float/boolean/int 存取器，CombatState 读取其屏幕尺寸值，原型设置/全局状态） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.class)）
+
+c	com/fs/starfarer/prototype/entities/C	com/fs/starfarer/prototype/entities/EntityData
+	c 来源与证据（javap取证（radius/shieldRadius/location/velocity 物理数据持有者，Ship 继承它，方法名未混淆） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.C)）
+	m	getCollisionRadius	getCollisionRadius	()F
+	m	getLocation	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getRadius	getRadius	()F
+	m	getShieldRadius	getShieldRadius	()F
+	m	getVelocity	getVelocity	()Lorg/lwjgl/util/vector/Vector2f;
+	m	setRadius	setRadius	(F)V
+	m	setShieldRadius	setShieldRadius	(F)V
+
+c	com/fs/starfarer/prototype/entities/EmitterFactory	com/fs/starfarer/prototype/entities/EmitterFactory
+	c 来源与证据（javap取证（三类粒子发射器工厂：舰船引擎 + 两点位爆点，方法名未混淆） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.EmitterFactory)）
+
+c	com/fs/starfarer/prototype/entities/EmitterFactory$1	com/fs/starfarer/prototype/entities/EmitterFactory$ShipEngineEmitter
+	c 来源与证据（javap取证（(Ship, DynamicParticleGroup) 构造，emit/explode 发射引擎尾焰粒子） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.EmitterFactory$1)）
+	m	emit	emit	(F)V
+	m	emitInitial	emitInitial	()V
+	m	everyFrame	everyFrame	(F)V
+	m	explode	explode	(FFFFF)V
+	m	getInterval	getInterval	()F
+	m	isDone	isDone	()Z
+
+c	com/fs/starfarer/prototype/entities/EmitterFactory$2	com/fs/starfarer/prototype/entities/EmitterFactory$EnergyFlashEmitter
+	c 来源与证据（javap取证（(Vector2f, group) 构造，GameWorld 在 setEnergy 后调用，随机方向火花） | 低 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.EmitterFactory$2)）
+	m	emit	emit	(F)V
+	m	emitInitial	emitInitial	()V
+	m	everyFrame	everyFrame	(F)V
+	m	explode	explode	(FFFFF)V
+	m	getInterval	getInterval	()F
+	m	isDone	isDone	()Z
+
+c	com/fs/starfarer/prototype/entities/EmitterFactory$3	com/fs/starfarer/prototype/entities/EmitterFactory$ImpactEmitter
+	c 来源与证据（javap取证（(Vector2f, group) 构造，另一处点位随机火花发射器） | 低 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.EmitterFactory$3)）
+	m	emit	emit	(F)V
+	m	emitInitial	emitInitial	()V
+	m	everyFrame	everyFrame	(F)V
+	m	explode	explode	(FFFFF)V
+	m	getInterval	getInterval	()F
+	m	isDone	isDone	()Z
+
+c	com/fs/starfarer/prototype/entities/O0OO	com/fs/starfarer/prototype/entities/ShipRay
+	c 来源与证据（javap取证（Ship 字段 ray 的类型，TexturedLine 从舰船到目标点连线渲染，最大 300 距离） | 低 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.O0OO)）
+
+c	com/fs/starfarer/prototype/entities/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/prototype/entities/Shield
+	c 来源与证据（javap取证（护盾半径/开关/覆盖度 + 点包含测试，CombatEntity.getShield() 返回类型，舰船护盾） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.OoOOOO)）
+
+c	com/fs/starfarer/prototype/entities/Ship	com/fs/starfarer/prototype/entities/Ship
+	c 来源与证据（javap取证（继承 EntityData，方法名全部未混淆：turnLeft/accelerate/fire/raiseShields 等完整原型舰船实体） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.Ship)）
+	m	accelerate	accelerate	(F)V
+	m	advance	advance	(F)V
+	m	decelerate	decelerate	(F)V
+	m	fire	fire	(Lcom/fs/starfarer/prototype/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;Lorg/lwjgl/util/vector/Vector2f;F)Z
+	m	getAcceleration	getAcceleration	()F
+	m	getActiveLayers	getActiveLayers	()Ljava/util/EnumSet;
+	m	getArmor	getArmor	()F
+	m	getEnergy	getEnergy	()F
+	m	getEnergyRegen	getEnergyRegen	()F
+	m	getFacing	getFacing	()F
+	m	getMaxArmor	getMaxArmor	()F
+	m	getMaxEnergy	getMaxEnergy	()F
+	m	getMaxSpeed	getMaxSpeed	()F
+	m	getOwner	getOwner	()I
+	m	getShield	getShield	()Lcom/fs/starfarer/prototype/entities/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getShieldCoverage	getShieldCoverage	()F
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	getTargetPoint	getTargetPoint	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getTurnRate	getTurnRate	()F
+	m	getWeaponCoverage	getWeaponCoverage	()F
+	m	giveCommand	giveCommand	(Lcom/fs/starfarer/prototype/entities/Ship$o;)V
+	m	lowerShields	lowerShields	()V
+	m	raiseShields	raiseShields	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	render	render	(Lcom/fs/starfarer/prototype/H;Lcom/fs/starfarer/prototype/C;)V
+	m	render	render	(Ljava/lang/Enum;Ljava/lang/Object;)V
+	m	setAcceleration	setAcceleration	(F)V
+	m	setArmor	setArmor	(F)V
+	m	setEnergy	setEnergy	(F)V
+	m	setEnergyRegen	setEnergyRegen	(F)V
+	m	setFacing	setFacing	(F)V
+	m	setMaxArmor	setMaxArmor	(F)V
+	m	setMaxEnergy	setMaxEnergy	(F)V
+	m	setMaxSpeed	setMaxSpeed	(F)V
+	m	setOwner	setOwner	(I)V
+	m	setShieldCoverage	setShieldCoverage	(F)V
+	m	setSprite	setSprite	(Lcom/fs/graphics/Sprite;)V
+	m	setTargetPoint	setTargetPoint	(FF)V
+	m	setTurnRate	setTurnRate	(F)V
+	m	setWeaponCoverage	setWeaponCoverage	(F)V
+	m	stopFire	stopFire	(Lcom/fs/starfarer/prototype/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	turnLeft	turnLeft	(F)V
+	m	turnRight	turnRight	(F)V
+	f	acceleration	acceleration	F
+	f	armor	armor	F
+	f	energy	energy	F
+	f	energyRegen	energyRegen	F
+	f	facing	facing	F
+	f	maxArmor	maxArmor	F
+	f	maxEnergy	maxEnergy	F
+	f	maxSpeed	maxSpeed	F
+	f	shieldCoverage	shieldCoverage	F
+	f	turnRate	turnRate	F
+	f	weaponCoverage	weaponCoverage	F
+	f	owner	owner	I
+	f	sprite	sprite	Lcom/fs/graphics/Sprite;
+	f	ray	ray	Lcom/fs/starfarer/prototype/entities/O0OO;
+	f	shield	shield	Lcom/fs/starfarer/prototype/entities/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	engine	engine	Lcom/fs/starfarer/prototype/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	commands	commands	Ljava/util/List;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+
+c	com/fs/starfarer/prototype/entities/Ship$Oo	com/fs/starfarer/prototype/entities/Ship$CommandType
+	c 来源与证据（javap取证（$SWITCH_TABLE$com$fs$starfarer$prototype$entities$Ship$CommandType 残留原始名，枚举常量 ACCELERATE/TURN_LEFT/FIRE/RAISE_SHIELD 等指令） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.Ship$Oo)）
+
+c	com/fs/starfarer/prototype/entities/Ship$o	com/fs/starfarer/prototype/entities/Ship$Command
+	c 来源与证据（javap取证（Ship$Oo 指令类型 + Object 参数，giveCommand(Ship$o) 投递的指令数据） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.Ship$o)）
+
+c	com/fs/starfarer/prototype/entities/oOOO	com/fs/starfarer/prototype/entities/CombatEntity
+	c 来源与证据（javap取证（只读实体协议接口：getShieldRadius/getShield/getCollisionRadius/getLocation/getVelocity） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.entities.oOOO)）
+	m	getCollisionRadius	getCollisionRadius	()F
+	m	getLocation	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getShield	getShield	()Lcom/fs/starfarer/prototype/entities/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getShieldRadius	getShieldRadius	()F
+	m	getVelocity	getVelocity	()Lorg/lwjgl/util/vector/Vector2f;
+
+c	com/fs/starfarer/prototype/oOOO	com/fs/starfarer/prototype/QuadRenderer
+	c 来源与证据（javap取证（log4j 日志 + "compiling quad" + 多 Color 缓存 + GL11 四边形编译渲染器） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.oOOO)）
+
+c	com/fs/starfarer/prototype/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/B	com/fs/starfarer/prototype/DisplayManager
+	c 来源与证据（javap取证（LWJGL Display 全生命周期：setDisplayMode/swapBuffers/sync + "OpenGL with LWJGL"，原型显示管理） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.oOOOO.B)）
+
+c	com/fs/starfarer/prototype/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/ooOO	com/fs/starfarer/prototype/VertexArrayTest
+	c 来源与证据（字符串常量（"Vertex Array Test" + 1024x768@60 DisplayMode + BufferUtils，顶点数组渲染测试主类） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.oOOOO.ooOO)）
+
+c	com/fs/starfarer/prototype/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/super	com/fs/starfarer/prototype/InputTest
+	c 来源与证据（javap取证（main(String[]) + Mouse + GL11 glOrtho 全屏绘制 + BufferUtils，原型输入/渲染测试） | 低 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.oOOOO.super)）
+
+c	com/fs/starfarer/prototype/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/prototype/GameWorld
+	c 来源与证据（javap取证（持有 Ship/粒子组/AnimationManager/ObjectRepository，add/advance/render 实体容器，原型游戏世界） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.oOoOOOO)）
+
+c	com/fs/starfarer/prototype/return	com/fs/starfarer/prototype/ShipAI
+	c 来源与证据（运行时验证（CombatState.aiList:List<return> 字段 + 逐帧 advance，内部 stance 枚举 + Ship$Oo 指令下发，舰船 AI 控制器） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.return)）
+
+c	com/fs/starfarer/prototype/return$o	com/fs/starfarer/prototype/ShipAI$Behavior
+	c 来源与证据（javap取证（枚举 ATTACKING/DEFENDING/FLEEING，ShipAI 行为态） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.prototype.return$o)）

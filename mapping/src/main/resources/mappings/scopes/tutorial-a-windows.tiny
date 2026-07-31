@@ -1,0 +1,244 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/tutorial/Object	com/fs/starfarer/tutorial/TutorialMessage
+	c 来源(javap取证) | 置信度(高) | 证据(SWITCH_TABLE TutorialMessage$TutorialMessageFlag；消息面板（extends Panel implements ActionListener）)
+	f	do.private$return	fader	Lcom/fs/graphics/util/Fader;
+	f	ÕÔOO00	label	Lcom/fs/starfarer/ui/d;
+	m	shouldContinue	shouldContinue	()Z
+	m	isOnLastPart	isOnLastPart	()Z
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	isContinueMode	isContinueMode	()Z
+c	com/fs/starfarer/tutorial/Object$o	com/fs/starfarer/tutorial/TutorialMessage$TutorialMessageFlag
+	c 来源(javap取证) | 置信度(高) | 证据()
+	f	new	CONTINUE_MODE	Lcom/fs/starfarer/tutorial/Object$o;
+c	com/fs/starfarer/tutorial/D	com/fs/starfarer/tutorial/TutorialScript
+	c 来源(javap取证) | 置信度(高) | 证据(D（SWITCH_TABLE TutorialScript$TutorialStepType）+未混淆成员名)
+	f	ui	ui	Lcom/fs/starfarer/combat/K;
+	f	Ø00000	steps	Ljava/util/List;
+	f	o00000	currentStep	Lcom/fs/starfarer/tutorial/D$OOo;
+	f	Ö00000	concurrentStep	Lcom/fs/starfarer/tutorial/D$O0;
+	f	everything	everything	Ljava/util/List;
+	f	everythingButShields	everythingButShields	Ljava/util/List;
+	f	everythingButWeaponsAndShields	everythingButWeaponsAndShields	Ljava/util/List;
+	f	everythingButTurning	everythingButTurning	Ljava/util/List;
+	f	everythingButTurningWeaponsAndShields	everythingButTurningWeaponsAndShields	Ljava/util/List;
+	f	Ô00000	overlay	Lcom/fs/starfarer/tutorial/H;
+	f	Ó00000	scriptStarted	Z
+	f	null	message	Lcom/fs/starfarer/tutorial/Object;
+	m	showMessage	showMessage	([Ljava/lang/Object;)V
+	m	showMessageBL	showMessageBL	([Ljava/lang/Object;)V
+	m	clearMessage	clearMessage	()V
+	m	showArrow	showArrow	(Lcom/fs/starfarer/tutorial/I$o;Lcom/fs/starfarer/ui/c;FF)V
+	m	showArrow	showArrow	(Lcom/fs/starfarer/tutorial/I$o;Lcom/fs/starfarer/combat/entities/BaseEntity;FF)V
+	m	clearAllArrows	clearAllArrows	()V
+	m	waitFor	waitFor	(Lcom/fs/starfarer/tutorial/D$oo;)V
+	m	waitFor	waitFor	(F)V
+	m	takeAction	takeAction	(Lcom/fs/starfarer/tutorial/D$o0;)V
+	m	runConcurrently	runConcurrently	(Lcom/fs/starfarer/tutorial/D$O0;)V
+	m	stopConcurrent	stopConcurrent	()V
+	m	showDeploymentDialog	showDeploymentDialog	()V
+	m	resetShip	resetShip	()V
+	m	blockCommands	blockCommands	(Ljava/util/List;ZZ[Lorg/lwjgl/util/vector/Vector2f;[Ljava/lang/String;)V
+	m	showArrowAndWaitForSelect	showArrowAndWaitForSelect	(Ljava/lang/String;I)V
+	m	showArrowAndWaitForSelectUnassigned	showArrowAndWaitForSelectUnassigned	(Ljava/lang/String;)V
+	m	showCommandUI	showCommandUI	()V
+	m	hideCommandUI	hideCommandUI	()V
+	m	pause	pause	()V
+	m	unpause	unpause	()V
+	m	waitForDeploymentDialog	waitForDeploymentDialog	()V
+	m	waitForContinue	waitForContinue	()V
+	m	waitUntilDeployed	waitUntilDeployed	(I[Ljava/lang/String;)V
+	m	waitUntilVisible	waitUntilVisible	(I[Ljava/lang/String;)V
+	m	waitUntilSelected	waitUntilSelected	([Ljava/lang/Object;)V
+	m	deploy	deploy	(Lcom/fs/starfarer/combat/CombatFleetManager;[Ljava/lang/String;)V
+	m	getShip	getShip	(Ljava/lang/String;I)Lcom/fs/starfarer/combat/entities/Ship;
+	m	getUnassignedPlayerSideShip	getUnassignedPlayerSideShip	(Ljava/lang/String;)Lcom/fs/starfarer/combat/entities/Ship;
+	m	getAssignedPlayerSideShip	getAssignedPlayerSideShip	(Ljava/lang/String;)Lcom/fs/starfarer/combat/entities/Ship;
+	m	getDeployedCount	getDeployedCount	(ILjava/lang/String;)I
+	m	isObjectiveOwnedBy	isObjectiveOwnedBy	(ILjava/lang/String;)Z
+	m	getObjective	getObjective	(Ljava/lang/String;)Lcom/fs/starfarer/combat/entities/BattleObjective;
+	m	getTaskForObjective	getTaskForObjective	(Lcom/fs/starfarer/combat/entities/BattleObjective;)Lcom/fs/starfarer/combat/tasks/CombatTask;
+	m	getTaskForObjective	getTaskForObjective	(Ljava/lang/String;)Lcom/fs/starfarer/combat/tasks/CombatTask;
+	m	getTaskOfType	getTaskOfType	(Lcom/fs/starfarer/combat/tasks/CombatTask$CombatTaskType;)Lcom/fs/starfarer/combat/tasks/CombatTask;
+	m	findUIComponent	findUIComponent	(Lcom/fs/starfarer/tutorial/D$Oo;)Lcom/fs/starfarer/ui/c;
+	m	findLabelContainingText	findLabelContainingText	(Ljava/lang/String;)Lcom/fs/starfarer/ui/c;
+	m	findUIComponentRecursive	findUIComponentRecursive	(Lcom/fs/starfarer/ui/c;Lcom/fs/starfarer/tutorial/D$Oo;)Lcom/fs/starfarer/ui/c;
+	m	findCommandButton	findCommandButton	(Lcom/fs/starfarer/combat/new/J$o;)Lcom/fs/starfarer/ui/c;
+	m	findButtonWithText	findButtonWithText	(Ljava/lang/String;)Lcom/fs/starfarer/ui/c;
+	m	findFleetMemberButton	findFleetMemberButton	(Ljava/lang/String;I)Lcom/fs/starfarer/ui/c;
+	m	createScript	createScript	()V
+	m	init	init	(Lcom/fs/starfarer/api/combat/CombatEngineAPI;)V
+	m	advance	advance	(FLjava/util/List;)V
+	m	o00000	addStep	(Lcom/fs/starfarer/tutorial/D$OOo;)V
+	m	o00000	findUIComponentIn	(Lcom/fs/starfarer/ui/interfacenew;Lcom/fs/starfarer/tutorial/D$Oo;)Lcom/fs/starfarer/ui/c;
+c	com/fs/starfarer/tutorial/D$1	com/fs/starfarer/tutorial/TutorialScript_1
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 1）)
+c	com/fs/starfarer/tutorial/D$10	com/fs/starfarer/tutorial/TutorialScript_10
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 10）)
+c	com/fs/starfarer/tutorial/D$11	com/fs/starfarer/tutorial/TutorialScript_11
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 11）)
+c	com/fs/starfarer/tutorial/D$12	com/fs/starfarer/tutorial/TutorialScript_12
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 12）)
+c	com/fs/starfarer/tutorial/D$13	com/fs/starfarer/tutorial/TutorialScript_13
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 13）)
+c	com/fs/starfarer/tutorial/D$14	com/fs/starfarer/tutorial/TutorialScript_14
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 14）)
+c	com/fs/starfarer/tutorial/D$15	com/fs/starfarer/tutorial/TutorialScript_15
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 15）)
+c	com/fs/starfarer/tutorial/D$16	com/fs/starfarer/tutorial/TutorialScript_16
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 16）)
+c	com/fs/starfarer/tutorial/D$17	com/fs/starfarer/tutorial/TutorialScript_17
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 17）)
+c	com/fs/starfarer/tutorial/D$18	com/fs/starfarer/tutorial/TutorialScript_18
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 18）)
+c	com/fs/starfarer/tutorial/D$19	com/fs/starfarer/tutorial/TutorialScript_19
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 19）)
+c	com/fs/starfarer/tutorial/D$2	com/fs/starfarer/tutorial/TutorialScript_2
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 2）)
+c	com/fs/starfarer/tutorial/D$20	com/fs/starfarer/tutorial/TutorialScript_20
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 20）)
+c	com/fs/starfarer/tutorial/D$3	com/fs/starfarer/tutorial/TutorialScript_3
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 3）)
+c	com/fs/starfarer/tutorial/D$4	com/fs/starfarer/tutorial/TutorialScript_4
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 4）)
+c	com/fs/starfarer/tutorial/D$5	com/fs/starfarer/tutorial/TutorialScript_5
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 5）)
+c	com/fs/starfarer/tutorial/D$6	com/fs/starfarer/tutorial/TutorialScript_6
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 6）)
+c	com/fs/starfarer/tutorial/D$7	com/fs/starfarer/tutorial/TutorialScript_7
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 7）)
+c	com/fs/starfarer/tutorial/D$8	com/fs/starfarer/tutorial/TutorialScript_8
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 8）)
+c	com/fs/starfarer/tutorial/D$9	com/fs/starfarer/tutorial/TutorialScript_9
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 9）)
+c	com/fs/starfarer/tutorial/D$O0	com/fs/starfarer/tutorial/TutorialScript$ConcurrentStep
+	c 来源(javap取证) | 置信度(中) | 证据(runConcurrently 参数接口，方法 o00000(float))
+	m	o00000	advance	(F)V
+c	com/fs/starfarer/tutorial/D$o0	com/fs/starfarer/tutorial/TutorialScript$TutorialAction
+	c 来源(javap取证) | 置信度(中) | 证据(takeAction 参数接口，方法 o00000()/super())
+	m	super	run	()V
+c	com/fs/starfarer/tutorial/D$Oo	com/fs/starfarer/tutorial/TutorialScript$UIComponentMatcher
+	c 来源(javap取证) | 置信度(中) | 证据(findUIComponent 参数接口，方法 o00000(UIComponent)Z)
+	m	o00000	matches	(Lcom/fs/starfarer/ui/c;)Z
+c	com/fs/starfarer/tutorial/D$o	com/fs/starfarer/tutorial/TutorialScript$TutorialStepType
+	c 来源(javap取证) | 置信度(高) | 证据(枚举 static{} ldc 原始常量名)
+	f	ô00000	RUN_CONCURRENTLY	Lcom/fs/starfarer/tutorial/D$o;
+	f	Ö00000	WAIT_FOR_TRIGGER	Lcom/fs/starfarer/tutorial/D$o;
+	f	super	SHOW_MESSAGE	Lcom/fs/starfarer/tutorial/D$o;
+	f	Ó00000	SHOW_MESSAGE_BL	Lcom/fs/starfarer/tutorial/D$o;
+	f	Õ00000	CLEAR_MESSAGE	Lcom/fs/starfarer/tutorial/D$o;
+	f	õ00000	SHOW_ARROW	Lcom/fs/starfarer/tutorial/D$o;
+	f	void	CLEAR_ARROWS	Lcom/fs/starfarer/tutorial/D$o;
+	f	String	TAKE_ACTION	Lcom/fs/starfarer/tutorial/D$o;
+c	com/fs/starfarer/tutorial/D$OOo	com/fs/starfarer/tutorial/TutorialScript$TutorialStep
+	c 来源(javap取证) | 置信度(高) | 证据(步骤封装：字段类型与 D 步骤方法参数一一对应)
+	f	õ00000	stepType	Lcom/fs/starfarer/tutorial/D$o;
+	f	Ó00000	params	[Ljava/lang/Object;
+	f	new	trigger	Lcom/fs/starfarer/tutorial/D$oo;
+	f	Ö00000	action	Lcom/fs/starfarer/tutorial/D$o0;
+	f	Ø00000	concurrent	Lcom/fs/starfarer/tutorial/D$O0;
+	f	o00000	arrowType	Lcom/fs/starfarer/tutorial/I$o;
+	f	ö00000	targetUIComponent	Lcom/fs/starfarer/ui/c;
+	f	class	targetEntity	Lcom/fs/starfarer/combat/entities/BaseEntity;
+	f	null	targetX	F
+	f	Ô00000	targetY	F
+c	com/fs/starfarer/tutorial/D$oo	com/fs/starfarer/tutorial/TutorialScript$TutorialTrigger
+	c 来源(javap取证) | 置信度(中) | 证据(waitFor 参数接口，方法 super(float)Z)
+	m	super	isDone	(F)Z
+c	com/fs/starfarer/tutorial/void	com/fs/starfarer/tutorial/TutorialFleetCommandScript
+	c 来源(javap取证) | 置信度(高) | 证据(字符串 "Welcome to the Starsector fleet command tutorial" 与 Reinforcements/Capture 命令教学)
+	m	init	init	(Lcom/fs/starfarer/api/combat/CombatEngineAPI;)V
+	m	createScript	createScript	()V
+c	com/fs/starfarer/tutorial/void$1	com/fs/starfarer/tutorial/TutorialFleetCommandScript_1
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 1）)
+c	com/fs/starfarer/tutorial/void$10	com/fs/starfarer/tutorial/TutorialFleetCommandScript_10
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 10）)
+c	com/fs/starfarer/tutorial/void$11	com/fs/starfarer/tutorial/TutorialFleetCommandScript_11
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 11）)
+c	com/fs/starfarer/tutorial/void$12	com/fs/starfarer/tutorial/TutorialFleetCommandScript_12
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 12）)
+c	com/fs/starfarer/tutorial/void$13	com/fs/starfarer/tutorial/TutorialFleetCommandScript_13
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 13）)
+c	com/fs/starfarer/tutorial/void$14	com/fs/starfarer/tutorial/TutorialFleetCommandScript_14
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 14）)
+c	com/fs/starfarer/tutorial/void$15	com/fs/starfarer/tutorial/TutorialFleetCommandScript_15
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 15）)
+c	com/fs/starfarer/tutorial/void$16	com/fs/starfarer/tutorial/TutorialFleetCommandScript_16
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 16）)
+c	com/fs/starfarer/tutorial/void$17	com/fs/starfarer/tutorial/TutorialFleetCommandScript_17
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 17）)
+c	com/fs/starfarer/tutorial/void$18	com/fs/starfarer/tutorial/TutorialFleetCommandScript_18
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 18）)
+c	com/fs/starfarer/tutorial/void$19	com/fs/starfarer/tutorial/TutorialFleetCommandScript_19
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 19）)
+c	com/fs/starfarer/tutorial/void$2	com/fs/starfarer/tutorial/TutorialFleetCommandScript_2
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 2）)
+c	com/fs/starfarer/tutorial/void$20	com/fs/starfarer/tutorial/TutorialFleetCommandScript_20
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 20）)
+c	com/fs/starfarer/tutorial/void$3	com/fs/starfarer/tutorial/TutorialFleetCommandScript_3
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 3）)
+c	com/fs/starfarer/tutorial/void$4	com/fs/starfarer/tutorial/TutorialFleetCommandScript_4
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 4）)
+c	com/fs/starfarer/tutorial/void$4$1	com/fs/starfarer/tutorial/TutorialFleetCommandScript_4_1
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类)
+c	com/fs/starfarer/tutorial/void$5	com/fs/starfarer/tutorial/TutorialFleetCommandScript_5
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 5）)
+c	com/fs/starfarer/tutorial/void$6	com/fs/starfarer/tutorial/TutorialFleetCommandScript_6
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 6）)
+c	com/fs/starfarer/tutorial/void$7	com/fs/starfarer/tutorial/TutorialFleetCommandScript_7
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 7）)
+c	com/fs/starfarer/tutorial/void$8	com/fs/starfarer/tutorial/TutorialFleetCommandScript_8
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 8）)
+c	com/fs/starfarer/tutorial/void$9	com/fs/starfarer/tutorial/TutorialFleetCommandScript_9
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 9）)
+c	com/fs/starfarer/tutorial/I	com/fs/starfarer/tutorial/TutorialArrow
+	c 来源(javap取证) | 置信度(高) | 证据(SWITCH_TABLE TutorialArrow$ArrowType；字段类型与构造器参数对应)
+	f	void.interface$return	texture	Lcom/fs/graphics/Object;
+	f	ÒÕOO00	fader	Lcom/fs/graphics/util/Fader;
+	f	String.interface$return	type	Lcom/fs/starfarer/tutorial/I$o;
+	f	OÕOO00	targetUIComponent	Lcom/fs/starfarer/ui/c;
+	f	ÕÕOO00	targetEntity	Lcom/fs/starfarer/combat/entities/BaseEntity;
+	f	øÔOO00	targetX	F
+	f	if.interface$return	targetY	F
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+c	com/fs/starfarer/tutorial/I$o	com/fs/starfarer/tutorial/TutorialArrow$ArrowType
+	c 来源(javap取证) | 置信度(高) | 证据(枚举 static{} ldc 原始常量名)
+	f	Ô00000	HORIZONTAL	Lcom/fs/starfarer/tutorial/I$o;
+	f	return	VERTICAL	Lcom/fs/starfarer/tutorial/I$o;
+	f	o00000	SHORT_UP	Lcom/fs/starfarer/tutorial/I$o;
+	f	Õ00000	SHORT_DOWN	Lcom/fs/starfarer/tutorial/I$o;
+	f	Object	SHORT_RIGHT	Lcom/fs/starfarer/tutorial/I$o;
+c	com/fs/starfarer/tutorial/OoOO	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript
+	c 来源(javap取证) | 置信度(高) | 证据(字符串 "Welcome to the advanced combat tutorial" 与伤害类型/护盾教学)
+	m	init	init	(Lcom/fs/starfarer/api/combat/CombatEngineAPI;)V
+	m	createScript	createScript	()V
+c	com/fs/starfarer/tutorial/OoOO$1	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_1
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 1）)
+c	com/fs/starfarer/tutorial/OoOO$10	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_10
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 10）)
+c	com/fs/starfarer/tutorial/OoOO$11	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_11
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 11）)
+c	com/fs/starfarer/tutorial/OoOO$12	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_12
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 12）)
+c	com/fs/starfarer/tutorial/OoOO$13	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_13
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 13）)
+c	com/fs/starfarer/tutorial/OoOO$14	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_14
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 14）)
+c	com/fs/starfarer/tutorial/OoOO$15	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_15
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 15）)
+c	com/fs/starfarer/tutorial/OoOO$16	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_16
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 16）)
+c	com/fs/starfarer/tutorial/OoOO$17	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_17
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 17）)
+c	com/fs/starfarer/tutorial/OoOO$17$1	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_17_1
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类)
+c	com/fs/starfarer/tutorial/OoOO$2	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_2
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 2）)
+c	com/fs/starfarer/tutorial/OoOO$3	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_3
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 3）)
+c	com/fs/starfarer/tutorial/OoOO$4	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_4
+	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 4）)

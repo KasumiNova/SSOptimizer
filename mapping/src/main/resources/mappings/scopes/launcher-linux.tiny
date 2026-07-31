@@ -1,0 +1,1053 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/launcher/A	com/fs/starfarer/launcher/LauncherBackgroundPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(加载 launcher_bg.jpg/launch_button_bg.png 的 Swing 背景面板，含 main)
+	f	Ó00000	frame	Ljavax/swing/JFrame;
+		c 来源(javap取证) | 置信度(中) | 证据(构造入参 JFrame)
+	f	o00000	backgroundImage	Ljava/awt/Image;
+		c 来源(字符串常量) | 置信度(高) | 证据(构造加载 launcher_bg.jpg)
+	f	Ô00000	launchButtonImage	Ljava/awt/Image;
+		c 来源(字符串常量) | 置信度(高) | 证据(构造加载 launch_button_bg.png)
+	m	paintComponent	paintComponent	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	o00000	main	([Ljava/lang/String;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(main 入口)
+c	com/fs/starfarer/launcher/ModManager	com/fs/starfarer/launcher/ModManager
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(ModManager 实现 com.fs.util.DoNotObfuscate)
+	f	MODS_KEY	MODS_KEY	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	availableMods	availableMods	Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	enabledMods	enabledMods	Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	instance	instance	Lcom/fs/starfarer/launcher/ModManager;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	log	log	Lorg/apache/log4j/Logger;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	plugins	plugins	Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getAvailableModSpec	getAvailableModSpec	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getAvailableMods	getAvailableMods	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getAvailableModsCopy	getAvailableModsCopy	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getEnabledModPlugins	getEnabledModPlugins	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getEnabledMods	getEnabledMods	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getEnabledModsCopy	getEnabledModsCopy	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getFilename	getFilename	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getInstance	getInstance	()Lcom/fs/starfarer/launcher/ModManager;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getModSpec	getModSpec	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getPriorityPlugin	getPriorityPlugin	(Lcom/fs/starfarer/launcher/ModManager$O0;)Ljava/lang/Object;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getRequiredMemory	getRequiredMemory	()I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	isModEnabled	isModEnabled	(Ljava/lang/String;)Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	loadEnabledModList	loadEnabledModList	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	loadModSpec	loadModSpec	(Ljava/io/File;Ljava/io/File;)Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	main	main	([Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	pickDroneAIPlugin	pickDroneAIPlugin	(Lcom/fs/starfarer/api/combat/ShipAPI;Lcom/fs/starfarer/api/combat/ShipAPI;Lcom/fs/starfarer/api/combat/DroneLauncherShipSystemAPI;)Lcom/fs/starfarer/api/combat/ShipAIPlugin;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	pickMissileAIOverride	pickMissileAIOverride	(Lcom/fs/starfarer/api/combat/MissileAPI;Lcom/fs/starfarer/api/combat/ShipAPI;)Lcom/fs/starfarer/api/combat/MissileAIPlugin;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	pickShipAIPlugin	pickShipAIPlugin	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/api/combat/ShipAPI;)Lcom/fs/starfarer/api/combat/ShipAIPlugin;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	pickWeaponAIPlugin	pickWeaponAIPlugin	(Lcom/fs/starfarer/api/combat/WeaponAPI;)Lcom/fs/starfarer/api/combat/AutofireAIPlugin;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	saveEnabledModList	saveEnabledModList	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	updateList	updateList	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/ModManager$1	com/fs/starfarer/launcher/ModManager$ModDirFileFilter
+	c 来源(javap取证) | 置信度(高) | 证据(FileFilter，mods 目录过滤)
+	m	accept	accept	(Ljava/io/File;)Z
+		c 来源(未混淆方法名) | 置信度(高) | 证据(FileFilter.accept)
+c	com/fs/starfarer/launcher/ModManager$2	com/fs/starfarer/launcher/ModManager$ModNameComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<ModSpec>，按 getName() 比较)
+	m	super	compareMods	(Lcom/fs/starfarer/launcher/ModManager$ModSpec;Lcom/fs/starfarer/launcher/ModManager$ModSpec;)I
+		c 来源(javap取证) | 置信度(高) | 证据(按 getName() 比较)
+c	com/fs/starfarer/launcher/ModManager$3	com/fs/starfarer/launcher/ModManager$AutofireAIPluginPicker
+	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<AutofireAIPlugin>，pickWeaponAIPlugin 实现)
+	m	super	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
+		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+c	com/fs/starfarer/launcher/ModManager$4	com/fs/starfarer/launcher/ModManager$ShipAIPluginPicker
+	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<ShipAIPlugin>(FleetMember,ShipAPI)，pickShipAIPlugin 实现)
+	m	super	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
+		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+c	com/fs/starfarer/launcher/ModManager$5	com/fs/starfarer/launcher/ModManager$DroneAIPluginPicker
+	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<ShipAIPlugin>(ShipAPI,ShipAPI,DroneLauncherShipSystemAPI)，pickDroneAIPlugin 实现)
+	m	super	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
+		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+c	com/fs/starfarer/launcher/ModManager$6	com/fs/starfarer/launcher/ModManager$MissileAIPluginPicker
+	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<MissileAIPlugin>(MissileAPI,ShipAPI)，pickMissileAIOverride 实现)
+	m	super	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
+		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+c	com/fs/starfarer/launcher/ModManager$7	com/fs/starfarer/launcher/ModManager$PluginPickComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<PluginPick<T>>)
+	m	o00000	comparePicks	(Lcom/fs/starfarer/api/PluginPick;Lcom/fs/starfarer/api/PluginPick;)I
+		c 来源(javap取证) | 置信度(高) | 证据(PluginPick 排序比较)
+c	com/fs/starfarer/launcher/ModManager$ModDependency	com/fs/starfarer/launcher/ModManager$ModDependency
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(实现 ModDependencyAPI)
+	f	id	id	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	name	name	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	version	version	Lcom/fs/starfarer/launcher/ModManager$VersionInfo;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getId	getId	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getName	getName	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getVersionInfo	getVersionInfo	()Lcom/fs/starfarer/api/VersionInfoAPI;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setId	setId	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setName	setName	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setVersion	setVersion	(Lcom/fs/starfarer/launcher/ModManager$VersionInfo;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/ModManager$ModSpec	com/fs/starfarer/launcher/ModManager$ModSpec
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(实现 ModSpecAPI)
+	f	author	author	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	dependencies	dependencies	Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	desc	desc	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	dirName	dirName	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	fullOverrides	fullOverrides	Ljava/util/Set;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	gameVersion	gameVersion	Lcom/fs/starfarer/launcher/ModManager$VersionInfo;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	id	id	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	jars	jars	Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	modPluginClassName	modPluginClassName	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	name	name	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	path	path	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	requiredMemoryMB	requiredMemoryMB	I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	sortString	sortString	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	totalConversion	totalConversion	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	utility	utility	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	version	version	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	versionInfo	versionInfo	Lcom/fs/starfarer/launcher/ModManager$VersionInfo;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getAllDependencies	getAllDependencies	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getAuthor	getAuthor	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getDependencies	getDependencies	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getDesc	getDesc	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getDirName	getDirName	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getFullOverrides	getFullOverrides	()Ljava/util/Set;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getGameVersion	getGameVersion	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getGameVersionInfo	getGameVersionInfo	()Lcom/fs/starfarer/api/VersionInfoAPI;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getId	getId	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getJars	getJars	()Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getModPluginClassName	getModPluginClassName	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getName	getName	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getPath	getPath	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getRequiredMemoryMB	getRequiredMemoryMB	()I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getSortString	getSortString	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getVersion	getVersion	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getVersionInfo	getVersionInfo	()Lcom/fs/starfarer/api/VersionInfoAPI;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	isTotalConversion	isTotalConversion	()Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	isUtility	isUtility	()Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	readResolve	readResolve	()Ljava/lang/Object;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setAuthor	setAuthor	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setDesc	setDesc	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setDirName	setDirName	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setGameVersion	setGameVersion	(Lcom/fs/starfarer/launcher/ModManager$VersionInfo;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setId	setId	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setModPluginClassName	setModPluginClassName	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setName	setName	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setPath	setPath	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setRequiredMemoryMB	setRequiredMemoryMB	(I)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setSortString	setSortString	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setTotalConversion	setTotalConversion	(Z)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setUtility	setUtility	(Z)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setVersion	setVersion	(Lcom/fs/starfarer/launcher/ModManager$VersionInfo;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	toString	toString	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/ModManager$o	com/fs/starfarer/launcher/ModManager$DependencyCheckResult
+	c 来源(javap取证) | 置信度(高) | 证据(依赖 id+兼容级别记录，ModCompatibilityCheck 构造)
+	f	Ò00000	id	Ljava/lang/String;
+		c 来源(javap取证) | 置信度(高) | 证据(依赖 id，构造入参)
+	f	super	level	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(javap取证) | 置信度(高) | 证据(依赖兼容级别)
+	m	o00000	getId	()Ljava/lang/String;
+		c 来源(javap取证) | 置信度(高) | 证据(返回 id)
+	m	Ò00000	getLevel	()Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(javap取证) | 置信度(高) | 证据(返回 level)
+c	com/fs/starfarer/launcher/ModManager$O0	com/fs/starfarer/launcher/ModManager$PluginPicker
+	c 来源(javap取证) | 置信度(高) | 证据(接口：ModPlugin->PluginPick<T>，getPriorityPlugin 参数)
+	m	super	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
+		c 来源(javap取证) | 置信度(高) | 证据(ModPlugin->PluginPick 选择回调)
+c	com/fs/starfarer/launcher/ModManager$oo	com/fs/starfarer/launcher/ModManager$CompatLevel
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 COMPATIBLE/PATCH_MISMATCH/.../MODULE_MISSING)
+	f	return	COMPATIBLE	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Õ00000	PATCH_MISMATCH	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Ø00000	MINOR_MISMATCH	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Ô00000	MAJOR_MISMATCH	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Object	VERSION_UNSPECIFIED	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Ò00000	MODULE_MISSING	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	m	values	values	()[Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/ModManager$Oo	com/fs/starfarer/launcher/ModManager$ModCompatibilityCheck
+	c 来源(javap取证) | 置信度(高) | 证据(按 ModSpec 校验游戏版本+依赖兼容级别，GLModPickerV2 使用)
+	f	new	gameVersionLevel	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(javap取证) | 置信度(高) | 证据(游戏版本兼容级别)
+	f	o00000	dependencyResults	Ljava/util/List;
+		c 来源(javap取证) | 置信度(高) | 证据(依赖检查结果列表)
+	m	new	getOverallLevel	()Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(javap取证) | 置信度(高) | 证据(取各依赖级别最差值)
+	m	Ó00000	getGameVersionLevel	()Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c 来源(javap取证) | 置信度(高) | 证据(返回 gameVersionLevel)
+	m	o00000	getDependencyResults	()Ljava/util/List;
+		c 来源(javap取证) | 置信度(高) | 证据(返回依赖结果列表)
+c	com/fs/starfarer/launcher/ModManager$VersionInfo	com/fs/starfarer/launcher/ModManager$VersionInfo
+	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(实现 VersionInfoAPI)
+	f	major	major	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	minor	minor	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	minorIsRC	minorIsRC	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	patch	patch	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	string	string	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getCompatLevel	getCompatLevel	(Lcom/fs/starfarer/api/VersionInfoAPI;)Lcom/fs/starfarer/launcher/ModManager$oo;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getMajor	getMajor	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getMinor	getMinor	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getPatch	getPatch	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getString	getString	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	isSet	isSet	()Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setFromString	setFromString	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setMajor	setMajor	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setMinor	setMinor	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setPatch	setPatch	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	toString	toString	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new	com/fs/starfarer/launcher/ModPickerDialog
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(Swing 模组选择对话框：JList<ModSpec>+Ok/Cancel，引用 ModManager)
+	f	void	okButton	Ljavax/swing/JButton;
+		c 来源(字符串常量) | 置信度(高) | 证据(构造中 new JButton("Ok"))
+	f	ø00000	cancelButton	Ljavax/swing/JButton;
+		c 来源(字符串常量) | 置信度(高) | 证据(构造中 new JButton("Cancel"))
+	f	Õ00000	descriptionArea	Ljavax/swing/JTextArea;
+		c 来源(javap取证) | 置信度(中) | 证据(选中模组描述文本区)
+	f	if	modList	Ljavax/swing/JList;
+		c 来源(javap取证) | 置信度(高) | 证据(模组列表，配 ModListCellRenderer)
+	f	õ00000	mods	Ljava/util/List;
+		c 来源(javap取证) | 置信度(中) | 证据(List<ModSpec>)
+	f	Ö00000	modListScrollPane	Ljavax/swing/JScrollPane;
+		c 来源(javap取证) | 置信度(中) | 证据(包裹 modList)
+	m	o00000	registerKeyListeners	([Ljavax/swing/JComponent;)V
+		c 来源(javap取证) | 置信度(中) | 证据(为各组件注册 new$6 KeyListener)
+	m	Ò00000	okPressed	()V
+		c 来源(javap取证) | 置信度(中) | 证据(隐藏对话框并读取 ModManager.getEnabledMods)
+	m	o00000	centerOnScreen	()V
+		c 来源(javap取证) | 置信度(中) | 证据(Toolkit 屏幕尺寸 + setLocation)
+	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$1	com/fs/starfarer/launcher/ModPickerDialog$ModDescriptionArea
+	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 JTextArea，展示选中模组描述)
+	m	paint	paint	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$2	com/fs/starfarer/launcher/ModPickerDialog$ModList
+	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 JList，模组列表)
+	m	paint	paint	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$3	com/fs/starfarer/launcher/ModPickerDialog$ModListMouseAdapter
+	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 MouseAdapter)
+	m	mouseClicked	mouseClicked	(Ljava/awt/event/MouseEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$4	com/fs/starfarer/launcher/ModPickerDialog$ModSelectionListener
+	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 ListSelectionListener)
+	m	valueChanged	valueChanged	(Ljavax/swing/event/ListSelectionEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$5	com/fs/starfarer/launcher/ModPickerDialog$ModListKeyListener
+	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 KeyListener)
+	m	keyPressed	keyPressed	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$6	com/fs/starfarer/launcher/ModPickerDialog$ComponentsKeyListener
+	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 KeyListener，随 o00000(JComponent...) 注册到各组件)
+	m	keyPressed	keyPressed	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$o	com/fs/starfarer/launcher/ModPickerDialog$ModSelection
+	c 来源(javap取证) | 置信度(高) | 证据(ModPickerDialog 内部 (enabled, ModSpec) 选择记录)
+	f	new	enabled	Z
+		c 来源(javap取证) | 置信度(高) | 证据(模组勾选状态)
+	f	Ó00000	spec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+		c 来源(javap取证) | 置信度(高) | 证据(关联 ModSpec)
+	m	new	isEnabled	()Z
+		c 来源(javap取证) | 置信度(高) | 证据(返回 enabled)
+	m	o00000	setEnabled	(Z)V
+		c 来源(javap取证) | 置信度(高) | 证据(写入 enabled)
+	m	o00000	getSpec	()Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+		c 来源(javap取证) | 置信度(高) | 证据(返回 spec)
+	m	toString	toString	()Ljava/lang/String;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/new$Oo	com/fs/starfarer/launcher/ModPickerDialog$ModListCellRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(JCheckBox+ListCellRenderer，模组行渲染)
+	m	getListCellRendererComponent	getListCellRendererComponent	(Ljavax/swing/JList;Ljava/lang/Object;IZZ)Ljava/awt/Component;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/Object	com/fs/starfarer/launcher/LauncherSettings
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(Preferences 单例，键集 serial/resolution/fullscreen/sound/memory 等)
+	f	ôO0000	SERIAL	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	Õ00000	CONTINUE	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	õO0000	RESOLUTION	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	Ö00000	FULLSCREEN	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	Òo0000	SOUND	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	String	ENABLED_MODS	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	Oo0000	CONTROLS1	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	øO0000	CONTROLS2	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	void	CONTROLS_VERSION	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	super	GAMEPLAY_SETTINGS	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	private	CAN_SKIP_TUTORIAL	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	void.super	FIRST_GAME_RUN	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	Ó00000	NUM_AA_SAMPLES	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	ÓO0000	SCREEN_SCALE	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	Ò00000	MEMORY	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	õ00000	MEMORY_AUTO	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	super.super	MEMORY_DISABLED	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	f	ô00000	MEMORY_CUSTOM	Ljava/lang/String;
+		c 来源(字符串常量+javap取证) | 置信度(高) | 证据(Preferences 键名与字段值一一对应)
+	m	OO0000	isFirstGameRun	()Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	ôO0000	setFirstGameRunDone	()V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Ó00000	getInstance	()Lcom/fs/starfarer/launcher/LauncherSettings;
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	õ00000	isLaunching	()Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	ÓO0000	markLaunching	()V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	if	clearLaunching	()V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	ø00000	isMemoryAuto	()Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	void	isMemoryDisabled	()Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super.super	isMemoryCustom	()Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	õO0000	getMemoryMB	()I
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	String.super	getRecommendedScaleMult	()F
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super	getScaleMultForSize	(FF)F
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	ÖO0000	getScreenScale	()F
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Oo0000	getDefaultScaleMult	()F
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	do	getNumAASamples	()I
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	ÕO0000	getDefaultNumAASamples	()I
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super	getAASamplesForScale	(F)I
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super	setString	(Ljava/lang/String;Ljava/lang/String;)V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super	setBoolean	(Ljava/lang/String;Z)V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Õ00000	getBoolean	(Ljava/lang/String;)Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Ò00000	getBooleanOrDefault	(Ljava/lang/String;Z)Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Ö00000	getFloat	(Ljava/lang/String;)Ljava/lang/Float;
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Ò00000	getString	(Ljava/lang/String;)Ljava/lang/String;
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Òo0000	clearLauncherSettings	()V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Ó00000	isValidSerial	(Ljava/lang/String;)Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	Ö00000	isSerialValid	()Z
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super	getSerial	()Ljava/lang/String;
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super	setSerial	(Ljava/lang/String;)V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	private	getPreferences	()Ljava/util/prefs/Preferences;
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	String	setControls	(Ljava/lang/String;)V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	ÒO0000	getControls	()Ljava/lang/String;
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	void	setControlsVersion	(Ljava/lang/String;)V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	String	getControlsVersion	()Ljava/lang/String;
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	m	super	main	([Ljava/lang/String;)V
+		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+c	com/fs/starfarer/launcher/opengl/B	com/fs/starfarer/launcher/opengl/TextButton
+	c 来源(javap取证) | 置信度(高) | 证据(ButtonBase 子类，setText/getText，用作分辨率按钮与 AA 采样显示)
+	m	setText	setText	(Ljava/lang/String;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getText	getText	()Ljava/lang/String;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/E	com/fs/starfarer/launcher/opengl/MessageDialog
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(Dialog+Ok 按钮，展示 GLLauncher 各警告文案)
+	m	show	show	(FF)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/F	com/fs/starfarer/launcher/opengl/LauncherWindow
+	c 来源(javap取证) | 置信度(高) | 证据(启动器窗口接口：switchToLaunch/focusOnResComboBox/getResolution/isFullscreen/isSoundOn)
+	m	getWidth	getWidth	()I
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	getHeight	getHeight	()I
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	setLocation	setLocation	(II)V
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	preCenter	preCenter	()V
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	show	show	()V
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	dispose	dispose	()V
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	switchToLaunch	switchToLaunch	()V
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	focusOnResComboBox	focusOnResComboBox	()V
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	focusOnFirstInputField	focusOnFirstInputField	()V
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	getResolution	getResolution	()Ljava/lang/String;
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	isFullscreen	isFullscreen	()Z
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+	m	isSoundOn	isSoundOn	()Z
+		c 来源(未混淆接口方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/G	com/fs/starfarer/launcher/opengl/AASamplesDropdown
+	c 来源(javap取证) | 置信度(中) | 证据(GLSettings 内 AA 采样下拉(Off/2/4/.../32 samples)，getResPick/setResPick；泛型下拉按用途命名)
+	f	FONT	FONT	Ljava/lang/String;
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	f	ÔÖØ000	anchor	Lcom/fs/starfarer/ui/OO0o;
+		c 来源(javap取证) | 置信度(中) | 证据(锚定组件与当前选择)
+	f	Object.new$String	currentSelection	Ljava/lang/String;
+		c 来源(javap取证) | 置信度(中) | 证据(锚定组件与当前选择)
+	m	getResPick	getResPick	()Ljava/lang/String;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	setResPick	setResPick	(Ljava/lang/String;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	show	show	(FF)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/G$o	com/fs/starfarer/launcher/opengl/AASamplesDropdown$DropdownRow
+	c 来源(javap取证) | 置信度(中) | 证据(下拉行 ButtonBase)
+c	com/fs/starfarer/launcher/opengl/GLLauncher	com/fs/starfarer/launcher/opengl/GLLauncher
+	c 来源(未混淆类名) | 置信度(高) | 证据(GLLauncher 实现 LauncherWindow)
+	f	BIG_FONT	BIG_FONT	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	EXIT	EXIT	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	HEIGHT	HEIGHT	I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	KEY_FONT	KEY_FONT	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	LAUNCH_GAME	LAUNCH_GAME	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	RESTART_LAUNCHER	RESTART_LAUNCHER	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	WARNINGS	WARNINGS	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	WIDTH	WIDTH	I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	activate	activate	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	aspectRatio	aspectRatio	F
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	close	close	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	code1	code1	Lcom/fs/starfarer/ui/B;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	code2	code2	Lcom/fs/starfarer/ui/B;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	code3	code3	Lcom/fs/starfarer/ui/B;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	code4	code4	Lcom/fs/starfarer/ui/B;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	defaultRes	defaultRes	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	dialogType	dialogType	Lcom/fs/starfarer/launcher/opengl/GLLauncher$o;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	fullscreen	fullscreen	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	isDevMode	isDevMode	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	launchButton	launchButton	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	listener	listener	Ljava/awt/event/ActionListener;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	localFocus	localFocus	Lcom/fs/starfarer/ui/OO0o;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	log	log	Lorg/apache/log4j/Logger;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	m1	m1	Lcom/fs/starfarer/ui/d;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	m2	m2	Lcom/fs/starfarer/ui/d;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	m3	m3	Lcom/fs/starfarer/ui/d;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	mods	mods	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	needToShowModsWarning	needToShowModsWarning	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	needWarnAboutScale	needWarnAboutScale	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	panel	panel	Lcom/fs/starfarer/ui/z;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	paste	paste	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	prevStartAttemptFailed	prevStartAttemptFailed	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	primedButton	primedButton	Lcom/fs/starfarer/ui/OO0o;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	resButton	resButton	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	resButtonPanel	resButtonPanel	Lcom/fs/starfarer/launcher/opengl/B;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	resolutionOverride	resolutionOverride	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	resolutions	resolutions	Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	savedFS	savedFS	Ljava/lang/Boolean;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	savedRes	savedRes	Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	savedSoundEnabled	savedSoundEnabled	Ljava/lang/Boolean;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	settings	settings	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	showLaunchUI	showLaunchUI	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	shownLaunchWarning	shownLaunchWarning	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	shownMemoryWarning	shownMemoryWarning	Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	sound	sound	Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	advance	advance	(FLcom/fs/starfarer/util/super/B;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	backspacePressed	backspacePressed	(Lcom/fs/starfarer/ui/B;Z)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	charTypeFailed	charTypeFailed	(Lcom/fs/starfarer/ui/B;C)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	charTyped	charTyped	(Lcom/fs/starfarer/ui/B;C)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	cleanup	cleanup	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	clearMessage	clearMessage	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	createActivationCodeUI	createActivationCodeUI	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	createLaunchButtonPanel	createLaunchButtonPanel	()Lcom/fs/starfarer/ui/Stringnew$Oo;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	createLaunchUI	createLaunchUI	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	createPanel	createPanel	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	createUI	createUI	(Ljava/awt/event/ActionListener;ZLjava/lang/String;F)Lcom/fs/starfarer/launcher/opengl/F;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	detectResolutions	detectResolutions	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	dispose	dispose	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	focusOnFirstInputField	focusOnFirstInputField	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	focusOnResComboBox	focusOnResComboBox	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getCode	getCode	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getHeight	getHeight	()I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getID	getID	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getResolution	getResolution	()Ljava/lang/String;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getResolutionHeight	getResolutionHeight	()I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getResolutionWidth	getResolutionWidth	()I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	getWidth	getWidth	()I
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	init	init	(Ljava/util/Map;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	isFullscreen	isFullscreen	()Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	isSoundOn	isSoundOn	()Z
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	loadFont	loadFont	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	loadSound	loadSound	(Ljava/lang/String;Ljava/lang/String;FF)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	loadTexture	loadTexture	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	onStateTransition	onStateTransition	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	preCenter	preCenter	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	prepare	prepare	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;F)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	render	render	(F)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	renderQuad	renderQuad	(FFFFLjava/awt/Color;FZ)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	selectHighestResolution	selectHighestResolution	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setCode	setCode	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setLocation	setLocation	(II)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setResolution	setResolution	(Ljava/lang/String;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	show	show	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	showModsDialog	showModsDialog	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	showResolutionDialog	showResolutionDialog	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	showSettingsDialog	showSettingsDialog	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	switchToLaunch	switchToLaunch	()V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	tabPressed	tabPressed	(Lcom/fs/starfarer/ui/B;Lcom/fs/starfarer/util/super/Object;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/GLLauncher$1	com/fs/starfarer/launcher/opengl/GLLauncher$LaunchButtonPanel
+	c 来源(javap取证) | 置信度(中) | 证据(createLaunchButtonPanel 创建，play_button0/1.png 启动按钮)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/GLLauncher$2	com/fs/starfarer/launcher/opengl/GLLauncher$GameLaunchRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(Thread 体，Fatal:/exit 游戏进程启动逻辑)
+	m	run	run	()V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(Runnable.run)
+c	com/fs/starfarer/launcher/opengl/GLLauncher$o	com/fs/starfarer/launcher/opengl/GLLauncher$DialogType
+	c 来源(SWITCH_TABLE残留类名+字符串常量) | 置信度(高) | 证据($SWITCH_TABLE$...GLLauncher$DialogType，枚举 RESOLUTION/MODS/SETTINGS/.../SCALE_WARNING)
+	f	void	RESOLUTION	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Ò00000	MODS	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Õ00000	SETTINGS	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	String	LAUNCH_WARNING	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	Ö00000	MODS_WARNING	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	super	MEMORY_WARNING	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	ô00000	SCALE_WARNING	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	m	values	values	()[Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/GLModPickerV2	com/fs/starfarer/launcher/opengl/GLModPickerV2
+	c 来源(未混淆类名) | 置信度(高) | 证据(OpenGL 模组选择对话框)
+	f	DOUBLE_CLICK_DELAY	DOUBLE_CLICK_DELAY	F
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	setSelected	setSelected	(Lcom/fs/starfarer/launcher/ModManager$ModSpec;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	show	show	(FF)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	modsEnabledWhenDialogWasShown	modsEnabledWhenDialogWasShown	Ljava/util/List;
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/GLModPickerV2$1	com/fs/starfarer/launcher/opengl/GLModPickerV2$CompatLevelComparator
+	c 来源(javap取证) | 置信度(中) | 证据(Comparator<CompatLevel>，模组排序)
+	m	super	compareLevels	(Lcom/fs/starfarer/launcher/ModManager$CompatLevel;Lcom/fs/starfarer/launcher/ModManager$CompatLevel;)I
+		c 来源(javap取证) | 置信度(高) | 证据(CompatLevel 排序比较)
+c	com/fs/starfarer/launcher/opengl/GLModPickerV2$o	com/fs/starfarer/launcher/opengl/GLModPickerV2$ModRowPanel
+	c 来源(javap取证) | 置信度(高) | 证据(ModSpec+getCheckbox+getReqs+unselectable 的模组行)
+	f	ÔÓOO00	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+		c 来源(javap取证) | 置信度(高) | 证据(行关联 ModSpec)
+	f	Object.private$return	compatCheck	Lcom/fs/starfarer/launcher/ModManager$ModCompatibilityCheck;
+		c 来源(javap取证) | 置信度(高) | 证据(getReqs 返回)
+	f	unselectable	unselectable	Z
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	m	getReqs	getReqs	()Lcom/fs/starfarer/launcher/ModManager$ModCompatibilityCheck;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getCheckbox	getCheckbox	()Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/GLModPickerV2$o$1	com/fs/starfarer/launcher/opengl/GLModPickerV2$ModRowButtonRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(实现 ButtonBackgroundRenderer 的模组行按钮渲染)
+	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+		c 来源(javap取证) | 置信度(中) | 证据(ButtonBackgroundRenderer.render 实现)
+c	com/fs/starfarer/launcher/opengl/O0OO	com/fs/starfarer/launcher/opengl/ResolutionDropdown
+	c 来源(javap取证) | 置信度(高) | 证据(GLLauncher.showResolutionDialog 实例化，分辨率列表下拉)
+	f	ØÕØ000	anchor	Lcom/fs/starfarer/ui/OO0o;
+		c 来源(javap取证) | 置信度(中) | 证据(锚定组件与当前选择)
+	f	for.super$String	currentSelection	Ljava/lang/String;
+		c 来源(javap取证) | 置信度(中) | 证据(锚定组件与当前选择)
+	m	getResPick	getResPick	()Ljava/lang/String;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	setResPick	setResPick	(Ljava/lang/String;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	show	show	(FF)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/O0OO$o	com/fs/starfarer/launcher/opengl/ResolutionDropdown$DropdownRow
+	c 来源(javap取证) | 置信度(中) | 证据(下拉行 ButtonBase)
+c	com/fs/starfarer/launcher/opengl/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/launcher/opengl/GLSettings
+	c 来源(SWITCH_TABLE残留类名+字符串常量+javap取证) | 置信度(高) | 证据($SWITCH_TABLE$...GLSettings$DialogType，内存/抗锯齿/UI缩放设置面板，成员名大多未混淆)
+	f	MEM_INCR	MEM_INCR	F
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	f	this.for$String	dialogType	Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
+		c 来源(javap取证) | 置信度(高) | 证据(dialogDismissed 按类型分发)
+	f	return.for$String	aaSamplesButton	Lcom/fs/starfarer/launcher/opengl/TextButton;
+		c 来源(javap取证) | 置信度(中) | 证据(setAASamples 更新其文本)
+	f	shownWarning	shownWarning	Z
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	f	shownWarning2	shownWarning2	Z
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	f	autoWasOn	autoWasOn	Z
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	f	prevMemory	prevMemory	I
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	m	isMemoryManagementEnabled	isMemoryManagementEnabled	()Z
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	shouldRestartOnLaunch	shouldRestartOnLaunch	(ZLcom/fs/starfarer/launcher/opengl/GLSettings;)Z
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getMemoryToStartWith	getMemoryToStartWith	(Lcom/fs/starfarer/launcher/opengl/GLSettings;)I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getDesiredMemoryMB	getDesiredMemoryMB	(Z)I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	needsTooMuchMemory	needsTooMuchMemory	()Z
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getCurrentMemoryMB	getCurrentMemoryMB	()I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getMinAllocatableMemoryMB	getMinAllocatableMemoryMB	()I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getMaxAllocatableMemoryMB	getMaxAllocatableMemoryMB	()I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getMaxSystemMemoryMB	getMaxSystemMemoryMB	()I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getSelectedMemoryMB	getSelectedMemoryMB	()I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getSelectedScaleMult	getSelectedScaleMult	()F
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	getSelectedSamples	getSelectedSamples	()I
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	canAutoMemory	canAutoMemory	()Z
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	isRecreateLauncher	isRecreateLauncher	()Z
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	setAASamples	setAASamples	(Ljava/lang/String;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	show	show	(FF)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	valueChanged	valueChanged	(Lcom/fs/starfarer/coreui/refit/float;II)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/launcher/opengl/GLSettings$MemoryTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(StandardTooltipV2Expandable，内存提示)
+	m	createImpl	createImpl	(Z)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/launcher/opengl/GLSettings$DialogType
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 AA_SAMPLES/WARNING)
+	f	Ó00000	AA_SAMPLES	Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	f	super	WARNING	Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
+		c 来源(字符串常量) | 置信度(高) | 证据(枚举常量原值)
+	m	values	values	()[Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/super	com/fs/starfarer/launcher/opengl/ModPickerPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(modsEnabledWhenDialogWasShown+setSelected+Enable all/Clear/Save；结构与 GLModPickerV2 相同的旧版模组选择面板，未被引用)
+	f	modsEnabledWhenDialogWasShown	modsEnabledWhenDialogWasShown	Ljava/util/List;
+		c 来源(未混淆字段) | 置信度(高) | 证据(real name)
+	m	setSelected	setSelected	(Lcom/fs/starfarer/launcher/ModManager$ModSpec;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	show	show	(FF)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	advanceImpl	advanceImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/super$o	com/fs/starfarer/launcher/opengl/ModPickerPanel$ModRowPanel
+	c 来源(javap取证) | 置信度(高) | 证据(ModSpec+getCheckbox 的模组行)
+	f	this.private$return	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+		c 来源(javap取证) | 置信度(高) | 证据(行关联 ModSpec)
+	f	oÓOO00	checkbox	Lcom/fs/starfarer/ui/n;
+		c 来源(javap取证) | 置信度(高) | 证据(getCheckbox 返回)
+	m	getCheckbox	getCheckbox	()Lcom/fs/starfarer/ui/n;
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	renderImpl	renderImpl	(F)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/opengl/super$o$1	com/fs/starfarer/launcher/opengl/ModPickerPanel$ModRowButtonRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(实现 ButtonBackgroundRenderer 的模组行按钮渲染)
+	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+		c 来源(javap取证) | 置信度(中) | 证据(ButtonBackgroundRenderer.render 实现)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI	com/fs/starfarer/launcher/StarfarerLauncherUI
+	c 来源(未混淆类名) | 置信度(高) | 证据(旧 Swing 启动器主界面，持有 LauncherBackgroundPanel)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$1	com/fs/starfarer/launcher/StarfarerLauncherUI$ComponentHoverListener
+	c 来源(javap取证) | 置信度(中) | 证据(MouseAdapter，组件悬停)
+	m	mouseEntered	mouseEntered	(Ljava/awt/event/MouseEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	mouseExited	mouseExited	(Ljava/awt/event/MouseEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$10	com/fs/starfarer/launcher/StarfarerLauncherUI$LauncherWindowAdapter
+	c 来源(javap取证) | 置信度(高) | 证据(实现 LauncherWindow，桥接 Swing UI 到启动器窗口接口)
+	m	switchToLaunch	switchToLaunch	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	setLocation	setLocation	(II)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	isSoundOn	isSoundOn	()Z
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	isFullscreen	isFullscreen	()Z
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	getWidth	getWidth	()I
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	getHeight	getHeight	()I
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	getResolution	getResolution	()Ljava/lang/String;
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	focusOnResComboBox	focusOnResComboBox	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	focusOnFirstInputField	focusOnFirstInputField	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	dispose	dispose	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	preCenter	preCenter	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	show	show	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$11	com/fs/starfarer/launcher/StarfarerLauncherUI$FocusFirstInputFieldRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(Runnable，JTextField.requestFocus，对应 LauncherWindow.focusOnFirstInputField)
+	m	run	run	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$12	com/fs/starfarer/launcher/StarfarerLauncherUI$FocusResComboBoxRunnable
+	c 来源(javap取证) | 置信度(中) | 证据(Runnable，JComboBox.requestFocus，对应 LauncherWindow.focusOnResComboBox)
+	m	run	run	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$2	com/fs/starfarer/launcher/StarfarerLauncherUI$ButtonHoverListener
+	c 来源(javap取证) | 置信度(中) | 证据(MouseAdapter，按钮悬停)
+	m	mouseEntered	mouseEntered	(Ljava/awt/event/MouseEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	mouseExited	mouseExited	(Ljava/awt/event/MouseEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$3	com/fs/starfarer/launcher/StarfarerLauncherUI$TextFieldFocusListener
+	c 来源(javap取证) | 置信度(中) | 证据(FocusListener，文本域焦点)
+	m	focusGained	focusGained	(Ljava/awt/event/FocusEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	focusLost	focusLost	(Ljava/awt/event/FocusEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$4	com/fs/starfarer/launcher/StarfarerLauncherUI$EscapeKeyListener
+	c 来源(javap取证) | 置信度(中) | 证据(KeyListener，ESC 退出)
+	m	keyPressed	keyPressed	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	keyReleased	keyReleased	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	keyTyped	keyTyped	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$5	com/fs/starfarer/launcher/StarfarerLauncherUI$CenterPanelUpdateRunnable
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(Runnable，A 面板换入 Center 组件并刷新)
+	m	run	run	()V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$6	com/fs/starfarer/launcher/StarfarerLauncherUI$DisplayModeComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<DisplayMode>，分辨率排序)
+	m	super	compareDisplayModes	(Lorg/lwjgl/opengl/DisplayMode;Lorg/lwjgl/opengl/DisplayMode;)I
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$7	com/fs/starfarer/launcher/StarfarerLauncherUI$MainFrameKeyListener
+	c 来源(javap取证) | 置信度(中) | 证据(JFrame.addKeyListener 注册，ESC 退出)
+	m	keyPressed	keyPressed	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	keyReleased	keyReleased	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	keyTyped	keyTyped	(Ljava/awt/event/KeyEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$8	com/fs/starfarer/launcher/StarfarerLauncherUI$ExitOnCloseListener
+	c 来源(javap取证) | 置信度(中) | 证据(WindowAdapter，windowClosing 调 System.exit)
+	m	windowClosing	windowClosing	(Ljava/awt/event/WindowEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$9	com/fs/starfarer/launcher/StarfarerLauncherUI$ExitOnCloseListener2
+	c 来源(javap取证) | 置信度(中) | 证据(WindowAdapter，windowClosing 调 System.exit；与 $8 重复注册)
+	m	windowClosing	windowClosing	(Ljava/awt/event/WindowEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$o	com/fs/starfarer/launcher/StarfarerLauncherUI$KeyBindingsPanel
+	c 来源(javap取证) | 置信度(中) | 证据(JPanel，多组 JTextField 键位绑定输入)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$o0	com/fs/starfarer/launcher/StarfarerLauncherUI$TopBarPanel
+	c 来源(javap取证) | 置信度(中) | 证据(JPanel 加入 A 的 North 区)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$O0	com/fs/starfarer/launcher/StarfarerLauncherUI$LimitedLengthDocument
+	c 来源(javap取证) | 置信度(中) | 证据(PlainDocument+insertString，限制长度文本域文档)
+	m	insertString	insertString	(ILjava/lang/String;Ljavax/swing/text/AttributeSet;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$o0$1	com/fs/starfarer/launcher/StarfarerLauncherUI$TopBarButtonListener
+	c 来源(javap取证) | 置信度(中) | 证据(TopBarPanel 内部 ActionListener)
+	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$o0$2	com/fs/starfarer/launcher/StarfarerLauncherUI$TopBarButtonListener2
+	c 来源(javap取证) | 置信度(中) | 证据(TopBarPanel 内部 ActionListener)
+	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$oo	com/fs/starfarer/launcher/StarfarerLauncherUI$StyledButton
+	c 来源(javap取证) | 置信度(中) | 证据(JButton 子类，自定义 paint)
+	m	paint	paint	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$Oo	com/fs/starfarer/launcher/StarfarerLauncherUI$StyledLabel
+	c 来源(javap取证) | 置信度(中) | 证据(JLabel 子类，自定义 paint)
+	m	paint	paint	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo	com/fs/starfarer/launcher/StarfarerLauncherUI$ResolutionOptionsPanel
+	c 来源(javap取证) | 置信度(中) | 证据(JPanel+JComboBox+JCheckBox+按钮，加入 A 的 Center 区；分辨率/全屏/声音选项)
+	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$OOo	com/fs/starfarer/launcher/StarfarerLauncherUI$StyledTextField
+	c 来源(javap取证) | 置信度(中) | 证据(JTextField 子类，自定义 paint)
+	m	paint	paint	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo$1	com/fs/starfarer/launcher/StarfarerLauncherUI$ResOptionsCustomPaint
+	c 来源(javap取证) | 置信度(中) | 证据(oOo 内部自定义 paint 组件)
+	m	paint	paint	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo$2	com/fs/starfarer/launcher/StarfarerLauncherUI$ResOptionsCustomPaint2
+	c 来源(javap取证) | 置信度(中) | 证据(oOo 内部自定义 paint 组件)
+	m	paint	paint	(Ljava/awt/Graphics;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo$3	com/fs/starfarer/launcher/StarfarerLauncherUI$ResOptionsHoverListener
+	c 来源(javap取证) | 置信度(中) | 证据(oOo 内部 MouseAdapter，ImageIcon 悬停切换)
+	m	mouseEntered	mouseEntered	(Ljava/awt/event/MouseEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	m	mouseExited	mouseExited	(Ljava/awt/event/MouseEvent;)V
+		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)

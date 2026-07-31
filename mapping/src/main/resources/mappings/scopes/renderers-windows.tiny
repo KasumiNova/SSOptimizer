@@ -1,0 +1,236 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/renderers/super	com/fs/starfarer/renderers/ArcRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/super$o	com/fs/starfarer/renderers/ArcRenderer$FadeState
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/super$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/super$o;
+c	com/fs/starfarer/renderers/A/oOOO	com/fs/starfarer/renderers/FiringSolutionWidget
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/renderers/WeaponGroupRow
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/renderers/WeaponGroupRow$WeaponRow
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/O0OO	com/fs/starfarer/renderers/CheckboxWidget
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/E	com/fs/starfarer/renderers/RenderMathUtils
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/C	com/fs/starfarer/renderers/TargetReticleRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/F	com/fs/starfarer/renderers/WeaponGroupListPanel
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/null	com/fs/starfarer/renderers/ShipTargetReticle
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/null$1	com/fs/starfarer/renderers/ShipTargetReticle$ChildWidget
+	c	来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/I	com/fs/starfarer/renderers/FluxBarWidget
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/A/G	com/fs/starfarer/renderers/WeaponEntryWidget
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/B	com/fs/starfarer/renderers/WaypointRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/O0OO	com/fs/starfarer/renderers/ShipPortraitRenderer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/OOoO	com/fs/starfarer/renderers/FfIndicator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	class	getFader	()Lcom/fs/graphics/util/Fader;
+	m	o00000	update	(FIZ)V
+c	com/fs/starfarer/renderers/OOoO$o	com/fs/starfarer/renderers/FfIndicator$Status
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/OOoO$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/OOoO$o;
+c	com/fs/starfarer/renderers/float	com/fs/starfarer/renderers/VentParticleRenderer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/renderers/VentingAnimation
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	super	setVentCoreColor	(Ljava/awt/Color;)V
+	m	super	getVentFringeColor	()Ljava/awt/Color;
+	m	super	setFluxVentTextureSheet	(Ljava/lang/String;)V
+	m	Ò00000	setVentFringeColor	(Ljava/awt/Color;)V
+	m	Ò00000	getVentCoreColor	()Ljava/awt/Color;
+	m	String	getFluxVentTextureSheet	()Ljava/lang/String;
+c	com/fs/starfarer/renderers/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/renderers/VentingAnimation$ParticleVisual
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/renderers/VentingAnimation$Particle
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/H	com/fs/starfarer/renderers/FrameRenderer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/H$o	com/fs/starfarer/renderers/FrameRenderer$Orientation
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/H$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/H$o;
+c	com/fs/starfarer/renderers/oooO	com/fs/starfarer/renderers/BeamEffect
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/JitterRenderer	com/fs/starfarer/renderers/JitterRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	seed	seed	J
+	f	random	random	Ljava/util/Random;
+	f	jitterDirection	jitterDirection	Lorg/lwjgl/util/vector/Vector2f;
+	f	jitterLength	jitterLength	F
+	f	setSeedOnRender	setSeedOnRender	Z
+	f	circular	circular	Z
+	m	renderWithJitter	renderWithJitter	(Lcom/fs/graphics/Sprite;FFFI)V
+	m	updateSeed	updateSeed	()V
+	m	getRandom	getRandom	()Ljava/util/Random;
+	m	render	render	(Lcom/fs/graphics/Sprite;FFFI)V
+	m	setJitterDirection	setJitterDirection	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	setJitterLength	setJitterLength	(F)V
+	m	isSetSeedOnRender	isSetSeedOnRender	()Z
+	m	setSetSeedOnRender	setSetSeedOnRender	(Z)V
+	m	setUseCircularJitter	setUseCircularJitter	(Z)V
+	m	render	render	(Lcom/fs/graphics/Sprite;FFFFI)V
+c	com/fs/starfarer/renderers/O00O	com/fs/starfarer/renderers/FloatingText
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/O00O$o	com/fs/starfarer/renderers/FloatingText$DisplayType
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/O00O$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/O00O$o;
+c	com/fs/starfarer/renderers/if	com/fs/starfarer/renderers/ShineRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/Object	com/fs/starfarer/renderers/BeamSegment
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/L	com/fs/starfarer/renderers/BeamRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/L$Oo	com/fs/starfarer/renderers/BeamRenderer$BeamTextureType
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/L$Oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/L$Oo;
+c	com/fs/starfarer/renderers/L$o	com/fs/starfarer/renderers/BeamRenderer$BeamVisual
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/Q	com/fs/starfarer/renderers/FloatingTextManager
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	super	addText	(FFFFLjava/awt/Color;Lcom/fs/starfarer/combat/E/B;Lcom/fs/starfarer/combat/E/B;)V
+	m	super	addText	(FFLjava/lang/String;FLjava/awt/Color;Lcom/fs/starfarer/combat/E/B;Lcom/fs/starfarer/combat/E/B;)Lcom/fs/starfarer/renderers/O00O;
+	m	super	advance	(F)V
+	m	super	isShowingText	(Lcom/fs/starfarer/combat/E/B;)Z
+c	com/fs/starfarer/renderers/E$o	com/fs/starfarer/renderers/TexturedStripRenderer$Callback
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/M	com/fs/starfarer/renderers/WeaponMountRenderer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/O	com/fs/starfarer/renderers/ShapeRenderer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/O$Oo	com/fs/starfarer/renderers/ShapeRenderer$ShapeCallback
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	m	renderShape	renderShape	(Lcom/fs/starfarer/ui/OO0O;)V
+c	com/fs/starfarer/renderers/O$o	com/fs/starfarer/renderers/ShapeWidget
+	c	来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/N	com/fs/starfarer/renderers/ProjectileRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/N$o	com/fs/starfarer/renderers/ProjectileAnimator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/DebrisParticleSystem	com/fs/starfarer/renderers/damage/DebrisParticleSystem
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	groups	groups	[Lcom/fs/graphics/particle/DynamicParticleGroup;
+	f	textures	textures	[Lcom/fs/graphics/Object;
+	f	viewport	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+	f	SMALL_CHUNK_DAMAGE	SMALL_CHUNK_DAMAGE	I
+	f	MEDIUM_CHUNK_DAMAGE	MEDIUM_CHUNK_DAMAGE	I
+	f	LARGE_CHUNK_DAMAGE	LARGE_CHUNK_DAMAGE	I
+	m	advance	advance	(F)V
+	m	render	render	(FF)V
+	m	spawnDebris	spawnDebris	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFF)V
+	m	spawnDebris	spawnDebris	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFFF)V
+	m	spawnDebris	spawnDebris	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$o;IFFFFF)V
+	m	spawnDebris	spawnDebris	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$o;IFFFFFLjava/awt/Color;)V
+c	com/fs/starfarer/renderers/damage/DebrisParticleSystem$o	com/fs/starfarer/renderers/damage/DebrisParticleSystem$DebrisSize
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$o;
+c	com/fs/starfarer/renderers/damage/E	com/fs/starfarer/renderers/damage/DamageDecal
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/E$o	com/fs/starfarer/renderers/damage/DamageDecal$DecalType
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/damage/E$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/damage/E$o;
+c	com/fs/starfarer/renderers/damage/ExplosionParticleSystem	com/fs/starfarer/renderers/damage/ExplosionParticleSystem
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	groups	groups	[Lcom/fs/graphics/particle/DynamicParticleGroup;
+	f	textures	textures	[Lcom/fs/graphics/Object;
+	f	viewport	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+	f	random	random	Ljava/util/Random;
+	m	advance	advance	(F)V
+	m	render	render	(FF)V
+	m	getExplosionSizeForCollidable	getExplosionSizeForCollidable	(Lcom/fs/starfarer/combat/E/B;F)F
+	m	spawnExplosion	spawnExplosion	(Lcom/fs/starfarer/combat/E/B;)V
+	m	spawnExplosion	spawnExplosion	(Lcom/fs/starfarer/combat/E/B;FLorg/lwjgl/util/vector/Vector2f;)V
+	m	spawnExplosion	spawnExplosion	(Lcom/fs/starfarer/combat/E/B;FLorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Ljava/awt/Color;)V
+	m	spawnExplosion	spawnExplosion	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Ljava/awt/Color;FF)V
+	m	spawnExplosion	spawnExplosion	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Ljava/awt/Color;FFZLjava/util/Random;)V
+	m	main	main	([Ljava/lang/String;)V
+c	com/fs/starfarer/renderers/damage/OOoO	com/fs/starfarer/renderers/damage/ShipDamageDecal
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/OOoO$o	com/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	values	values	()[Lcom/fs/starfarer/renderers/damage/OOoO$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/damage/OOoO$o;
+c	com/fs/starfarer/renderers/damage/void	com/fs/starfarer/renderers/damage/DamageRegion
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/OooO	com/fs/starfarer/renderers/damage/Whiteout
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/OooO$o	com/fs/starfarer/renderers/damage/Whiteout$Segment
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/I	com/fs/starfarer/renderers/damage/EmpArcRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	super	setOverloadColor	(Ljava/awt/Color;)V
+	m	Ó00000	resetOverloadColor	()V
+	m	Ò00000	getOverloadColor	()Ljava/awt/Color;
+	m	super	advance	(F)V
+c	com/fs/starfarer/renderers/damage/I$o	com/fs/starfarer/renderers/damage/EmpArcRenderer$EmpArcTarget
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	getFacing	getFacing	()F
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	getDefaultOverloadColor	getDefaultOverloadColor	()Ljava/awt/Color;
+	m	getVisualBounds	getVisualBounds	()Lcom/fs/starfarer/combat/E/o0OO;
+c	com/fs/starfarer/renderers/damage/if	com/fs/starfarer/renderers/damage/EffectTimer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/ooOO	com/fs/starfarer/renderers/damage/Flicker
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/B	com/fs/starfarer/renderers/damage/StencilSpriteRenderer
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/String	com/fs/starfarer/renderers/damage/DecalRenderer
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/damage/super	com/fs/starfarer/renderers/damage/RenderMarker
+	c	来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/fx/oOOO	com/fs/starfarer/renderers/fx/HitGlowEmitter
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+c	com/fs/starfarer/renderers/fx/DetailedSmokeParticle	com/fs/starfarer/renderers/fx/DetailedSmokeParticle
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	color	color	Ljava/awt/Color;
+	f	origSize	origSize	F
+	f	endSize	endSize	F
+	f	size	size	F
+	f	texture	texture	Lcom/fs/graphics/Object;
+	f	offsetX	offsetX	F
+	f	offsetY	offsetY	F
+	m	advance	advance	(F)V
+	m	preBatch	preBatch	()V
+	m	preBatch	preBatch	(I)V
+	m	postBatch	postBatch	()V
+	m	render	render	()V
+	m	getSize	getSize	()F
+	m	setSize	setSize	(F)V
+	m	getOffsetX	getOffsetX	()F
+	m	getOffsetY	getOffsetY	()F
+	m	getColor	getColor	()Ljava/awt/Color;
+c	com/fs/starfarer/renderers/fx/SmokeEmitter	com/fs/starfarer/renderers/fx/SmokeEmitter
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	emitDuration	emitDuration	F
+	f	size	size	F
+	f	duration	duration	F
+	f	color	color	Ljava/awt/Color;
+	f	offset	offset	Lorg/lwjgl/util/vector/Vector2f;
+	f	delegate	delegate	Lcom/fs/starfarer/renderers/fx/SmokeEmitter$o;
+	f	group	group	Lcom/fs/graphics/particle/DynamicParticleGroup;
+	f	viewport	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+	f	totalElapsed	totalElapsed	F
+	m	emit	emit	(F)V
+	m	everyFrame	everyFrame	(F)V
+	m	getInterval	getInterval	()F
+	m	isDone	isDone	()Z
+	m	computeAngle	computeAngle	()F
+	m	computeSpawnLocation	computeSpawnLocation	()Lorg/lwjgl/util/vector/Vector2f;
+c	com/fs/starfarer/renderers/fx/SmokeEmitter$o	com/fs/starfarer/renderers/fx/SmokeEmitter$SmokeEmitterDelegate
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	o00000	isActive	()Z
+	m	Ò00000	getSize	()F
