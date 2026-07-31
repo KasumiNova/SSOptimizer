@@ -1,0 +1,620 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/coreui/Q	com/fs/starfarer/coreui/EventIntelBarProgressIndicator
+	c 来源(javap取证) | 置信度(高) | 证据(BaseEventIntel 事件进度条指示器：构造用 getProgress/getMonthlyProgress/getMaxMonthlyProgress 拼进度文案，renderImpl 按 getBarProgressIndicatorColor/Width/Height/LabelColor 用 GL 自绘进度条与标签)
+	f	Ôo0O00	label	Lcom/fs/starfarer/ui/d;
+		c 进度文字标签（ui.d.create(String,Color)），highlightLast 高亮当前段 | 高
+	f	return.return$return	eventIntel	Lcom/fs/starfarer/api/impl/campaign/intel/events/BaseEventIntel;
+		c 构造注入，getBarProgressIndicator* 全部来自它 | 高
+	f	Õo0O00	labelOnRight	Z
+		c putBarProgressIndicatorLabelOnRight() 决定标签贴右还是贴左 | 高
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/coreui/String	com/fs/starfarer/coreui/OfficerLevelBar
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(军官等级条："officerLevelUp" 插件 + CharacterStats.getXP/getLevel，显示 "Level N (maximum)"，getBar() 返回 campaign.ui.while 经验条，悬停 tooltip 含 "Maximum level reached"/"Fixed level")
+	f	Ôõø000	xpBar	Lcom/fs/starfarer/campaign/ui/while;
+		c setRangeMin/setRangeMax/setProgress 的经验进度条，getBar() 返回 | 高
+	f	public.new$return	width	F
+		c 构造注入的宽度，createTextTooltip 用它限制 tooltip 宽度 | 中
+	f	int.new$return	person	Lcom/fs/starfarer/rpg/Person;
+		c 构造注入，getStats/isPlayer/isMercenary 均取自它 | 高
+	f	öôø000	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c person.getStats()，XP/等级数据源 | 高
+	f	Õôø000	showXPText	Z
+		c 构造第 4 参，决定是否显示 "N / M" XP 文本与 tooltip | 中
+	f	for.new$return	label	Lcom/fs/starfarer/ui/d;
+		c "Level N" 文字标签，getLabel() 返回 | 高
+	f	ôôø000	fixedLevel	Z
+		c 构造第 5 参，为真时显示 "Level N (fixed)" | 中
+	f	return.new$return	fader	Lcom/fs/graphics/util/Fader;
+		c 悬停淡入淡出 (0.05/0.25)，processInputImpl 控制 fadeIn/fadeOut | 中
+	f	oõø000	xpFill	Lcom/fs/starfarer/coreui/b;
+		c coreui.b 分段进度条，setCurrWithFraction 画经验填充+加成段 | 中
+	f	Øôø000	barColor	Ljava/awt/Color;
+		c interpolateColor(Oo0000, black, 0.1) 的基础色 | 低
+	f	øôø000	lastXP	J
+		c öø0000 判重的上次 XP | 低
+	f	Òõø000	lastLevel	J
+		c öø0000 判重的上次等级 | 低
+	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
+	m	getBar	getBar	()Lcom/fs/starfarer/campaign/ui/while;
+	m	öø0000	update	()V
+		c 按 stats.getXP/getLevel 刷新条/tooltip 文本，XP 等级变化时才执行 | 中
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/V	com/fs/starfarer/coreui/AptitudePanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(技能面板：CharacterStats$AptitudeLevel + SkillSpec 技能图标 + createSkillTooltip，getPlus/getMinus 技能点增减按钮，挂载于 newnew 技能对话框，每属性一面板)
+	f	Ô0Ò000	aptitudeLevel	Lcom/fs/starfarer/campaign/CharacterStats$AptitudeLevel;
+		c 构造注入，getAptitude() 返回，getMaxTier/getLevel 决定 UI 状态 | 高
+	f	int.null$super	rowBackgrounds	Ljava/util/List;
+		c 3 个 V$Oo 行背景单元格 | 中
+	f	for.null$super	color	Ljava/awt/Color;
+		c 构造注入主色，getColor() 返回 | 高
+	f	oOÒ000	plusButton	Lcom/fs/starfarer/ui/n;
+		c getPlus() 返回的 "+" 技能点按钮（V$o 自绘渲染器）| 高
+	f	Ò0Ò000	parentDialog	Lcom/fs/starfarer/coreui/newnew;
+		c 父技能对话框，取 getTooltipArea/isShowingDialog/getAptitudeList | 高
+	f	Object.null$super	minusButton	Lcom/fs/starfarer/ui/n;
+		c getMinus() 返回的 "-" 按钮（"ui_char_can_not_increase_skill_or_aptitude" 禁用音）| 高
+	f	ÔOÒ000	nameLabel	Lcom/fs/starfarer/ui/d;
+		c getNameLabel() 返回的属性名标签 | 高
+	f	ø0Ò000	levelLabel	Lcom/fs/starfarer/ui/d;
+		c SQUARE_SIZE 方框内的等级数字 | 中
+	f	public.null$super	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c 构造注入，createSkillTooltip 与技能等级查询用 | 高
+	f	this.null$super	shouldFlash	Z
+		c setShouldFlash/shouldFlashOnShowing 的闪动标记 | 高
+	f	Õ0Ò000	skillTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c createSkillTooltip 生成，悬停挂到 getTooltipArea | 高
+	f	o0Ò000	skillIconButton	Lcom/fs/starfarer/ui/n;
+		c Y 技能图标外的透明按钮（nullsuper 包装）| 中
+	f	Ø0Ò000	tierRenderer	Lcom/fs/starfarer/coreui/V$o;
+		c V$o 自绘渲染器，renderImpl 按 getMaxTier 调 Ö00000 设亮度 | 中
+	f	INSET_WIDTH	INSET_WIDTH	F
+	f	INSET_HEIGHT	INSET_HEIGHT	F
+	f	IND_W	IND_W	F
+	f	SQUARE_SIZE	SQUARE_SIZE	F
+	f	BUTTON_WIDTH	BUTTON_WIDTH	F
+	m	getAptitude	getAptitude	()Lcom/fs/starfarer/campaign/CharacterStats$AptitudeLevel;
+	m	getPlus	getPlus	()Lcom/fs/starfarer/ui/n;
+	m	getMinus	getMinus	()Lcom/fs/starfarer/ui/n;
+	m	getNameLabel	getNameLabel	()Lcom/fs/starfarer/ui/d;
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setShouldFlash	setShouldFlash	(Z)V
+	m	shouldFlashOnShowing	shouldFlashOnShowing	()Z
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/V$Oo	com/fs/starfarer/coreui/AptitudeTierRowBackground
+	c 来源(javap取证) | 置信度(中) | 证据(V 内部类：Fader+Color 半透明行背景，构造循环 3 个按 IND_W 排布，setOpacity 控制显隐)
+	f	Object.void$return	fader	Lcom/fs/graphics/util/Fader;
+		c 行高亮淡入淡出 | 中
+	f	ôÒ0O00	color	Ljava/awt/Color;
+		c 构造注入行背景色 | 中
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/coreui/V$o	com/fs/starfarer/coreui/AptitudePlusButtonRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(实现 ui.n$o 按钮渲染器，GL 自绘 chevron 与菱形图标，V.renderImpl 按 getMaxTier 调 Ö00000(F) 设亮度)
+	f	öÕ0000	brightness	F
+		c Ö00000(float) 设置的自发光亮度 | 中
+	m	Ö00000	setBrightness	(F)V
+		c V.renderImpl 按 getMaxTier 调用的亮度 setter | 中
+	m	String.super	getBrightness	()F
+		c 返回 brightness 字段 | 中
+	m	Õ00000	advance	(F)V
+		c 推进内部 Fader | 中
+c	com/fs/starfarer/coreui/X	com/fs/starfarer/coreui/OfficerLevelRow
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(军官行：campaign.ui.O 头像 + "level N" + 可升级 "+" 角标，canLevelUp() 查 officerLevelUp 插件 XP，setWithSkillList 列出技能名+"+")
+	f	ÔøÒO00	portraitPanel	Lcom/fs/starfarer/campaign/ui/O;
+		c Person+bool 构造的头像面板，getPortrait() 取头像 | 中
+	f	ôöÒO00	person	Lcom/fs/starfarer/rpg/Person;
+		c 构造注入，getPerson() 返回 | 高
+	f	ØøÒO00	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c person.getStats() | 高
+	f	ØöÒO00	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c getMember/setMember 的舰队成员 | 高
+	f	ÕöÒO00	levelLabel	Lcom/fs/starfarer/ui/d;
+		c "level N" 文字（OÒO000 按 LevelDisplayMode 刷新）| 中
+	f	ÕøÒO00	plusLabel	Lcom/fs/starfarer/ui/d;
+		c "+" 角标，canLevelUp() 为真时 setOpacity(1) | 中
+	f	for.new$null	levelDisplayMode	Lcom/fs/starfarer/coreui/X$o;
+		c 构造注入等级文字显示模式枚举 | 高
+	f	public.new$null	color	Ljava/awt/Color;
+		c getColor/setColor，setColor 同步所有文字与渲染器 | 高
+	f	ôøÒO00	withSkillList	Z
+		c setWithSkillList 控制是否渲染技能列表 | 中
+	f	ÒøÒO00	skillLabels	Ljava/util/List;
+		c 技能名+"+" 文字列表 | 中
+	m	canLevelUp	canLevelUp	()Z
+	m	setWithSkillList	setWithSkillList	(Z)V
+	m	getMember	getMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	setMember	setMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	getPerson	getPerson	()Lcom/fs/starfarer/rpg/Person;
+	m	getPortrait	getPortrait	()Lcom/fs/starfarer/campaign/ui/O;
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	setDisabledAlphaStrength	setDisabledAlphaStrength	(F)V
+	m	OÒO000	updateLevelLabel	()V
+		c 按 LevelDisplayMode 刷新等级文字 | 中
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/coreui/X$o	com/fs/starfarer/coreui/LevelDisplayMode
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 FULL/NONE/NUMBER_ONLY，X 的等级文字显示模式；常量序与字符串一一对应)
+	f	String	NONE	Lcom/fs/starfarer/coreui/X$o;
+		c 字符串 "NONE" | 高
+	f	Ó00000	NUMBER_ONLY	Lcom/fs/starfarer/coreui/X$o;
+		c 字符串 "NUMBER_ONLY" | 高
+	f	Ò00000	FULL	Lcom/fs/starfarer/coreui/X$o;
+		c 字符串 "FULL" | 高
+c	com/fs/starfarer/coreui/Y	com/fs/starfarer/coreui/SkillIcon
+	c 来源(javap取证) | 置信度(高) | 证据(SkillSpec.getSpriteName 技能图标 + 所属属性图标（getGoverningAptitude）+ 等级数字，getImage() 返回技能 sprite，getButton 挂按钮)
+	f	ØÓ0O00	skillSpec	Lcom/fs/starfarer/loading/SkillSpec;
+		c 构造注入，getSkill() 返回，图标/等级全部取自它 | 高
+	f	for.void$return	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c 构造注入，getStats()/getSkillLevel | 高
+	f	öÒ0O00	levelLabel	Lcom/fs/starfarer/ui/d;
+		c 图标右下角等级数字 | 中
+	f	ÔÓ0O00	color	Ljava/awt/Color;
+		c 构造注入主色 | 高
+	f	ôÓ0O00	bonus	I
+		c setBonus/getBonus 的额外等级 | 高
+	f	public.void$return	levelBg	Lcom/fs/starfarer/coreui/b;
+		c 等级数字的 coreui.b 背景框 | 中
+	f	ÒÓ0O00	skillImage	Lcom/fs/starfarer/ui/ooO0;
+		c 技能 sprite 图像，getImage() 返回 | 高
+	f	øÒ0O00	aptitudeImage	Lcom/fs/starfarer/ui/ooO0;
+		c 所属属性图标，等级>1 时显示 | 中
+	f	ÕÓ0O00	button	Lcom/fs/starfarer/ui/n;
+		c getButton/setButton 的按钮 | 高
+	f	oÓ0O00	displayLevel	I
+		c skillLevel+bonus 的显示等级 | 中
+	m	getButton	getButton	()Lcom/fs/starfarer/ui/n;
+	m	setButton	setButton	(Lcom/fs/starfarer/ui/n;)V
+	m	setBonus	setBonus	(I)V
+	m	getBonus	getBonus	()I
+	m	getSkill	getSkill	()Lcom/fs/starfarer/loading/SkillSpec;
+	m	getStats	getStats	()Lcom/fs/starfarer/campaign/CharacterStats;
+	m	getImage	getImage	()Lcom/fs/starfarer/ui/ooO0;
+	m	while.null	createChildren	()V
+		c sizeChanged 时重建图标/属性角标/等级文字 | 中
+	m	renderLevel	renderLevel	(F)V
+	m	renderGlow	renderGlow	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/coreui/_	com/fs/starfarer/coreui/CoreUICargoPanel
+	c 来源(javap取证) | 置信度(中) | 证据(core UI 货舱/交易页：Submarket 更新走 reportSubmarketCargoAndShipsUpdated，getMarketPicker 市场列表 + getFleetPanel 舰队面板，getTradeMode 交易模式，$autoOpenBuyShipsTab)
+	f	Øôõ000	plugin	Lcom/fs/starfarer/coreui/OO0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+		c setPlugin 注入的货物插件 | 中
+	f	Òôõ000	coreUI	Lcom/fs/starfarer/coreui/_$o;
+		c getCoreUI() 返回的宿主接口 | 高
+	f	oõõ000	fleetPanel	Lcom/fs/starfarer/coreui/o00o;
+		c getFleetPanel() 返回的舰队货物面板 | 高
+	f	Object.Object$class	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c 构造注入，getMarket() 取市场 | 高
+	f	this.Object$class	buyShipsButton	Lcom/fs/starfarer/ui/n;
+		c $autoOpenBuyShipsTab 相关按钮 | 低
+	f	øôõ000	rearmButton	Lcom/fs/starfarer/ui/n;
+		c 弹药重整/切页按钮 | 低
+	f	öôõ000	marketPicker	Lcom/fs/starfarer/campaign/ui/Z;
+		c getMarketPicker() 返回的市场货物列表 | 高
+	f	Õôõ000	market	Lcom/fs/starfarer/campaign/econ/Market;
+		c entity.getMarket() 缓存 | 高
+	f	Ôôõ000	currentSubmarket	Lcom/fs/starfarer/campaign/econ/Submarket;
+		c submarketPicked 回填的当前子市场 | 中
+	m	setPlugin	setPlugin	(Lcom/fs/starfarer/coreui/OO0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	getFleetPanel	getFleetPanel	()Lcom/fs/starfarer/coreui/o00o;
+	m	getCoreUI	getCoreUI	()Lcom/fs/starfarer/coreui/_$o;
+	m	getFleet	getFleet	()Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	getMousedOverFleetMember	getMousedOverFleetMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	getMarketPicker	getMarketPicker	()Lcom/fs/starfarer/campaign/ui/Z;
+	m	submarketPicked	submarketPicked	(Lcom/fs/starfarer/campaign/econ/Submarket;)V
+	m	recreateUI	recreateUI	()V
+	m	tabOpened	tabOpened	()V
+	m	tabClosed	tabClosed	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/_$o	com/fs/starfarer/coreui/CoreUIHost
+	c 来源(javap取证) | 置信度(中) | 证据(货舱页与 core UI 的宿主接口：setCurrentTab/isCampaignUI/getPowerButton/getTradeMode/showLogistics/getPlanetBackground 等 17 个抽象方法)
+c	com/fs/starfarer/coreui/b	com/fs/starfarer/coreui/CellProgressBar
+	c 来源(javap取证) | 置信度(高) | 证据(coreui.x 单元格分段进度条：setCurr/setCurrWithFraction(float,Color,float) 画填充+加成段，setHighlight 高亮，String/Y/dosuper 均用作进度填充)
+	f	oÖ0O00	color	Ljava/awt/Color;
+		c 构造注入单元格基色 | 中
+	f	öÕ0O00	numCells	I
+		c 构造注入单元格数量 | 中
+	f	ÔÖ0O00	cellWidth	F
+		c getIndWidth() 返回的单元格宽度 | 中
+	f	Object.int$return	cellHeight	F
+		c 构造第 4 参，setSize 高度 | 低
+	f	int.int$return	cellGap	F
+		c 构造第 5 参单元格间距 | 低
+	f	ÒÖ0O00	curr	I
+		c getCurr() 返回的当前格数 | 高
+	f	return.int$return	renderExtra	Z
+		c isRenderExtra/setRenderExtra | 高
+	f	øÕ0O00	cells	Ljava/util/List;
+		c coreui.x 单元格列表 | 高
+	m	setCurr	setCurr	(I)V
+	m	setCurrWithFraction	setCurrWithFraction	(F)V
+	m	setCurrWithFraction	setCurrWithFraction	(FLjava/awt/Color;F)V
+	m	setHighlight	setHighlight	(F)V
+	m	getCurr	getCurr	()I
+	m	isRenderExtra	isRenderExtra	()Z
+	m	setRenderExtra	setRenderExtra	(Z)V
+	m	getIndWidth	getIndWidth	()F
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/dosuper	com/fs/starfarer/coreui/StoryPointProgressBar
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据("Level N (maximum)" 文字 + LevelupPlugin.getStoryPointsPerLevel 算条几何，createXPTooltip 悬停提示；newnew 技能对话框顶部等级条)
+	f	testCurr	testCurr	F
+	f	ôÖ0O00	fader	Lcom/fs/graphics/util/Fader;
+		c 显示/悬停淡入淡出 | 中
+	f	ÕÖ0O00	progressBar	Lcom/fs/starfarer/coreui/b;
+		c coreui.b 进度条填充 | 中
+	f	ØÖ0O00	maxWidth	F
+		c 构造第 2 参派生 | 低
+	f	öÖ0O00	pad	F
+		c 内边距 | 低
+	f	øÖ0O00	levelLabel	Lcom/fs/starfarer/ui/d;
+		c "Level N" 文字 | 中
+	f	for.int$return	baseColor	Ljava/awt/Color;
+		c interpolateColor(Oo0000, black, 0.1) | 低
+	f	public.int$return	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c 构造注入，getLevel/getXP 数据源 | 高
+	m	createXPTooltip	createXPTooltip	()Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/dosuper$1	com/fs/starfarer/coreui/BonusXPTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(StandardTooltipV2Expandable 子类，createImpl 组装 bonus XP 文案："N points over the course of each level"/"%s out of %s experience gained towards next level"/"After reaching the maximum level...")
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/coreui/e	com/fs/starfarer/coreui/FleetMemberDragOverlay
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(FleetMemberView 跟随鼠标的舰队成员拖拽浮层，class(FF) 命中检测返回 e$o，gridCellClicked 回传点击；含 ui_smallaction_yes/no 动作)
+	f	ÔØ0O00	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c 拖拽中的舰队成员 | 中
+	f	Object.if$return	memberView	Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberView;
+		c 成员展示视图，随鼠标移动 | 高
+	f	return.if$return	memberIndex	I
+		c 成员在舰队列表中的索引 | 低
+	f	this.if$return	fleetPanel	Lcom/fs/starfarer/coreui/o00o;
+		c 父舰队面板，getFleetData/getList 取数据 | 高
+	f	oØ0O00	fader	Lcom/fs/graphics/util/Fader;
+		c 出现/消失淡入淡出 | 中
+	m	getPickedUpMember	getPickedUpMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	gridCellClicked	gridCellClicked	(Lcom/fs/starfarer/coreui/e$o;)V
+	m	class	hitTest	(FF)Lcom/fs/starfarer/coreui/e$o;
+		c 坐标命中检测，返回行索引+标志 | 中
+	m	focusLost	focusLost	()V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/e$o	com/fs/starfarer/coreui/DragOverlayResult
+	c 来源(javap取证) | 置信度(中) | 证据(e.class(FF) 的命中结果：索引 + 两个标志位（是否命中/是否可放置等）)
+	f	Ò00000	index	I
+		c 命中的舰队成员索引 | 中
+	f	o00000	flagA	Z
+		c 构造第 2 参标志位 | 低
+	f	Object	flagB	Z
+		c 构造第 3 参标志位 | 低
+c	com/fs/starfarer/coreui/f	com/fs/starfarer/coreui/RefitFleetMemberRow
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(实现 thisnew$o，FleetMember+refit 对话框，显示船名/机翼类型与 portrait，含 "N ordnance point(s) left" OP 余量文案)
+	f	øÒ0000	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c 构造注入，船名/机翼/portrait 均取自它 | 高
+	f	ôÒ0000	font	Ljava/lang/String;
+		c orbitron12condensed 字体路径 | 中
+	f	for.new	refitDialog	Lcom/fs/starfarer/coreui/refit/ooOo;
+		c 构造注入的 refit 对话框 | 高
+	f	oÓ0000	color	Ljava/awt/Color;
+		c 运行时组装的行颜色 | 低
+	m	super	setHullText	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/graphics/super/Object;
+		c 船名/机翼类型文字渲染入口 | 低
+c	com/fs/starfarer/coreui/fornew	com/fs/starfarer/coreui/MissionCargoAPI
+	c 来源(javap取证) | 置信度(中) | 证据(实现 CargoAPI 的任务模式货舱：missionMode 开关，getWeapons 从 SpecStore 全量武器规格过滤 SYSTEM hint 构建任务可用装备)
+	f	missionMode	missionMode	Z
+		c 任务模式开关 | 高
+c	com/fs/starfarer/coreui/g	com/fs/starfarer/coreui/LogisticsSummaryPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(Fleet/Cargo/Fuel/Personnel 四区块+图标（rank3/supplies/fuel/crew03）+Credits: 与事故风险显示，WIDTH=285/SECTION_HEIGHT=96)
+	f	øØ0O00	cargoData	Lcom/fs/starfarer/campaign/fleet/CargoData;
+		c setCargoAndFleet 注入的货舱数据 | 高
+	f	ôØ0O00	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
+		c setCargoAndFleet 注入的舰队数据 | 高
+	f	for.if$return	creditsLabel	Lcom/fs/starfarer/ui/d;
+		c "Credits:" 标签 | 中
+	f	int.if$return	fleetSection	Lcom/fs/starfarer/coreui/g$o;
+		c Fleet 区块（rank3 图标）| 高
+	f	public.if$return	cargoSection	Lcom/fs/starfarer/coreui/g$o;
+		c Cargo 区块（supplies 图标）| 高
+	f	Ôô0O00	fuelSection	Lcom/fs/starfarer/coreui/g$o;
+		c Fuel 区块（fuel 图标）| 高
+	f	öØ0O00	personnelSection	Lcom/fs/starfarer/coreui/g$o;
+		c Personnel 区块（crew03 图标）| 高
+	f	ØØ0O00	creditsPanel	Lcom/fs/starfarer/ui/nullsuper;
+		c g$1 定位 tooltip 到的信用显示面板 | 中
+	f	Òô0O00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c setCargoAndFleet 注入的舰队 | 高
+	m	setCargoAndFleet	setCargoAndFleet	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/FleetData;Lcom/fs/starfarer/campaign/fleet/CampaignFleet;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+c	com/fs/starfarer/coreui/g$o	com/fs/starfarer/coreui/LogisticsSectionRow
+	c 来源(javap取证) | 置信度(高) | 证据(区块行：字段 bar/icon 未混淆，构造(String name, Color, String iconPath) 显示图标+文字+进度条)
+	f	bar	bar	Lcom/fs/starfarer/campaign/ui/while;
+	f	icon	icon	Lcom/fs/starfarer/ui/ooO0;
+c	com/fs/starfarer/coreui/g$1	com/fs/starfarer/coreui/CreditsTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(g 内部 Runnable：run() 把区块 tooltip 定位到 g.ØØ0O00（信用面板）上方
+	m	run	run	()V
+c	com/fs/starfarer/coreui/g$2	com/fs/starfarer/coreui/FleetSectionTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(g 内部 Runnable：run() 把区块 tooltip 定位到 g.int.if$return（Fleet 区块）上方
+	m	run	run	()V
+c	com/fs/starfarer/coreui/g$3	com/fs/starfarer/coreui/CargoSectionTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(g 内部 Runnable：run() 把区块 tooltip 定位到 g.public.if$return（Cargo 区块）上方
+	m	run	run	()V
+c	com/fs/starfarer/coreui/g$4	com/fs/starfarer/coreui/FuelSectionTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(g 内部 Runnable：run() 把区块 tooltip 定位到 g.Ôô0O00（Fuel 区块）上方
+	m	run	run	()V
+c	com/fs/starfarer/coreui/g$5	com/fs/starfarer/coreui/PersonnelSectionTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(g 内部 Runnable：run() 把区块 tooltip 定位到 g.öØ0O00（Personnel 区块）上方
+	m	run	run	()V
+c	com/fs/starfarer/coreui/int	com/fs/starfarer/coreui/GridOverlay
+	c 来源(javap取证) | 置信度(高) | 证据(line4x4 网格线 + GLList 缓存，getCols/getRows/getCellWidth/getCellHeight/setGridColor 网格属性访问器)
+	f	Ò00O00	cols	F
+		c getCols() 列数 | 高
+	f	o00O00	rows	F
+		c getRows() 行数 | 高
+	f	øøø000	cellWidth	F
+		c getCellWidth() 单元格宽 | 高
+	f	ôøø000	cellHeight	F
+		c getCellHeight() 单元格高 | 高
+	f	öøø000	gridColor	Ljava/awt/Color;
+		c getGridColor() 网格线颜色 | 高
+	f	int.String$return	listToken	Lcom/fs/graphics/util/GLListManager$GLListToken;
+		c 网格 GL 列表缓存 token | 低
+	m	getCols	getCols	()F
+	m	setCols	setCols	(F)V
+	m	getRows	getRows	()F
+	m	setRows	setRows	(F)V
+	m	getCellWidth	getCellWidth	()F
+	m	setCellWidth	setCellWidth	(F)V
+	m	getCellHeight	getCellHeight	()F
+	m	setCellHeight	setCellHeight	(F)V
+	m	getGridColor	getGridColor	()Ljava/awt/Color;
+	m	setGridColor	setGridColor	(Ljava/awt/Color;)V
+	m	renderImpl	renderImpl	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/coreui/l	com/fs/starfarer/coreui/FleetLogisticsPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(campaign_logistics_display_bg/_full 背景，burn 条/容量条/传感器范围/事故指示等后勤数据，expand/contract/forceSync/getDisplaySensorRange)
+	f	Ôö0O00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c 构造注入，getFleet() 返回 | 高
+	f	Object.for$return	crBar	Lcom/fs/starfarer/coreui/J;
+		c CR 条（l$1 提供数据，l$2 同步布局）| 高
+	f	ôö0O00	cargoBar	Lcom/fs/starfarer/coreui/J;
+		c 货舱容量条（l$7/l$9）| 高
+	f	ôõ0O00	personnelBar	Lcom/fs/starfarer/coreui/J;
+		c 人员容量条（l$8/l$10）| 高
+	f	Òö0O00	suppliesRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 补给行（l$12 提供值）| 高
+	f	oö0O00	marinesRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 陆战队行（l$13）| 高
+	f	this.for$return	creditsRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 信用行（l$11）| 高
+	f	int.for$return	hullRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 船体完整度行（l$3）| 高
+	f	public.float$return	repairRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 修理天数行（l$5/l$6）| 高
+	f	øõ0O00	crewRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 船员行（l$14）| 高
+	f	öõ0O00	sensorProfileRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 传感器轮廓行（l$20）| 高
+	f	for.float$return	sensorStrengthRow	Lcom/fs/starfarer/coreui/l$Oo;
+		c 传感器强度行（l$19）| 高
+	f	return.for$return	accidentIndicator	Lcom/fs/starfarer/coreui/ooOO;
+		c 事故风险指示器 | 中
+	f	Õõ0O00	expandFader	Lcom/fs/graphics/util/Fader;
+		c 展开/收起过渡 | 低
+	f	öö0O00	expanded	Z
+		c 展开状态标记 | 低
+	f	Øö0O00	bgImage	Lcom/fs/starfarer/ui/ooO0;
+		c campaign_logistics_display_bg 背景 | 中
+	f	Õö0O00	bgFullImage	Lcom/fs/starfarer/ui/ooO0;
+		c campaign_logistics_display_bg_full 展开背景 | 中
+	f	Øõ0O00	contentFader	Lcom/fs/graphics/util/Fader;
+		c 内容淡入淡出 | 低
+	m	forceSync	forceSync	()V
+	m	expand	expand	()V
+	m	contract	contract	()V
+	m	setExtraTextOpacity	setExtraTextOpacity	(F)V
+	m	getFleet	getFleet	()Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	createAvgFleet	createAvgFleet	()Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	getDisplaySensorRange	getDisplaySensorRange	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/campaign/fleet/CampaignFleet;)F
+	m	getDisplayDetectedRange	getDisplayDetectedRange	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/campaign/fleet/CampaignFleet;)F
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/l$1	com/fs/starfarer/coreui/LogisticsCrBarProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：J$o 实现，icon_cr + 舰队平均 CR（getCR/isMothballed 统计）
+c	com/fs/starfarer/coreui/l$2	com/fs/starfarer/coreui/CrBarLayoutSync
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 把 CR 条同步到首行下方
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$3	com/fs/starfarer/coreui/LogisticsHullValueProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_hull 行，返回 "%" 百分比文本
+c	com/fs/starfarer/coreui/l$4	com/fs/starfarer/coreui/HullRowLayoutSync
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 同步船体行布局
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$5	com/fs/starfarer/coreui/LogisticsRepairDaysProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_repairs 行，"N days"/"---" 修理天数
+c	com/fs/starfarer/coreui/l$6	com/fs/starfarer/coreui/RepairTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 把 tooltip 定位到修理行
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$7	com/fs/starfarer/coreui/LogisticsCargoBarProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：J$o 实现，icon_logistics_cargo + CargoData.getSpaceUsed/Max
+c	com/fs/starfarer/coreui/l$8	com/fs/starfarer/coreui/LogisticsPersonnelBarProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：J$o 实现，icon_logistics_personnel + getTotalCrew/Required
+c	com/fs/starfarer/coreui/l$9	com/fs/starfarer/coreui/CargoBarLayoutSync
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 同步货舱条布局
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$10	com/fs/starfarer/coreui/PersonnelBarLayoutSync
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 同步人员条布局
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$11	com/fs/starfarer/coreui/LogisticsCreditsValueProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_credits 行，DecimalFormat+getCredits
+c	com/fs/starfarer/coreui/l$12	com/fs/starfarer/coreui/LogisticsSuppliesValueProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_supplies 行，"N / day"/"no supplies"
+c	com/fs/starfarer/coreui/l$13	com/fs/starfarer/coreui/LogisticsMarinesValueProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_marines 行
+c	com/fs/starfarer/coreui/l$14	com/fs/starfarer/coreui/LogisticsCrewValueProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_crew 行
+c	com/fs/starfarer/coreui/l$15	com/fs/starfarer/coreui/SuppliesRowTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 把 tooltip 定位到补给行
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$16	com/fs/starfarer/coreui/MarinesRowTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 把 tooltip 定位到陆战队行
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$17	com/fs/starfarer/coreui/CreditsRowTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 把 tooltip 定位到信用行
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$18	com/fs/starfarer/coreui/CrewRowTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 把 tooltip 定位到船员行
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$19	com/fs/starfarer/coreui/LogisticsSensorStrengthValueProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_sensorStrength 行，createAvgFleet+getDisplaySensorRange
+c	com/fs/starfarer/coreui/l$20	com/fs/starfarer/coreui/LogisticsSensorProfileValueProvider
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_sensorProfile 行
+c	com/fs/starfarer/coreui/l$21	com/fs/starfarer/coreui/SensorProfileRowLayoutSync
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 同步传感器轮廓行布局
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$22	com/fs/starfarer/coreui/SensorStrengthRowLayoutSync
+	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 同步传感器强度行布局
+	m	run	run	()V
+c	com/fs/starfarer/coreui/l$Oo	com/fs/starfarer/coreui/LogisticsResourceRow
+	c 来源(javap取证) | 置信度(高) | 证据(icon+value+valueDelta+delegate 的资源行（字段未混淆），advanceImpl 用 delegate 刷新值/差值文本)
+	f	icon	icon	Lcom/fs/starfarer/ui/ooO0;
+	f	value	value	Lcom/fs/starfarer/ui/d;
+	f	valueDelta	valueDelta	Lcom/fs/starfarer/ui/d;
+	f	delegate	delegate	Lcom/fs/starfarer/coreui/l$o;
+	f	minValueWidth	minValueWidth	F
+	m	getIcon	getIcon	()Lcom/fs/starfarer/ui/ooO0;
+	m	getValue	getValue	()Lcom/fs/starfarer/ui/d;
+	m	getValueDelta	getValueDelta	()Lcom/fs/starfarer/ui/d;
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/l$o	com/fs/starfarer/coreui/LogisticsValueProvider
+	c 来源(javap取证) | 置信度(高) | 证据(接口：Ò00000() 填 value、super()/o00000() 填 valueDelta，l$Oo.advanceImpl 逐帧调用)
+	m	Ò00000	getValueText	()Ljava/lang/String;
+		c 主值文本 | 高
+	m	super	getDeltaText	()Ljava/lang/String;
+		c 差值/附加文本 | 高
+c	com/fs/starfarer/coreui/n	com/fs/starfarer/coreui/FleetMemberDialog
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(舰队成员确认对话框：FleetMember+标题展示（orbitron24aabold）+Ok/Cancel 按钮，createFleetMemberTooltipPreDeploy tooltip)
+	f	return.public$super	okButton	Lcom/fs/starfarer/ui/n;
+		c 构造创建的第一个按钮 | 低
+	f	øõÒ000	cancelButton	Lcom/fs/starfarer/ui/n;
+		c "Cancel" 按钮 | 中
+	m	advanceImpl	advanceImpl	(F)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/coreui/n$1	com/fs/starfarer/coreui/FleetMemberTooltipUpdateRunnable
+	c 来源(javap取证) | 置信度(低) | 证据(n 内部 Runnable：setBeforeShowing 挂到 tooltip，run() 里刷新 FleetMember 展示)
+	m	run	run	()V
+c	com/fs/starfarer/coreui/new	com/fs/starfarer/coreui/LevelUpSkillDialog
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据("Level up!"/"Select skill to learn"/"Select skill to make elite"/"N learned elite"/Confirm/Not now + officerLevelUp 插件，getListChoices 技能候选列表)
+	f	øÖo000	listChoices	Lcom/fs/starfarer/coreui/w;
+		c getListChoices() 返回的技能选项列表 | 高
+	f	Object.class$super	confirmButton	Lcom/fs/starfarer/ui/n;
+		c "Confirm" 按钮 | 中
+	f	public.String$super	notNowButton	Lcom/fs/starfarer/ui/n;
+		c "Not now" 按钮 | 中
+	f	öÖo000	faction	Lcom/fs/starfarer/campaign/Faction;
+		c 派系颜色/图标来源 | 低
+	f	ÒØo000	officerData	Lcom/fs/starfarer/rpg/OfficerData;
+		c 构造注入军官数据 | 高
+	f	int.String$super	person	Lcom/fs/starfarer/rpg/Person;
+		c 军官对应的 Person | 中
+	f	ÕØo000	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c 构造注入舰队 | 高
+	f	oØo000	parent	Lcom/fs/starfarer/coreui/P;
+		c 父技能界面，notifySelected 回调 | 中
+	m	getListChoices	getListChoices	()Lcom/fs/starfarer/coreui/w;
+	m	notifySelected	notifySelected	(Lcom/fs/starfarer/coreui/P;)V
+	m	dismiss	dismiss	(I)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	show	show	(FF)V
+	m	advance	advance	(F)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/newnew	com/fs/starfarer/coreui/CharacterCreationDialog
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(角色技能/创建对话框："Start game"/"Domain sector registry ID"/seed 复制说明 + AptitudeRow 列表 + 技能点/Reassign/Reset + 名字 tooltip "Click to change your name." + Officers/Admins)
+	f	ôøõ000	playerData	Lcom/fs/starfarer/campaign/PlayerCharacterData;
+		c 构造注入的玩家角色数据 | 高
+	f	public.Object$class	tabGroup	Lcom/fs/starfarer/ui/B/oOOO;
+		c 页签组容器 | 低
+	f	Òøõ000	tabGroup2	Lcom/fs/starfarer/ui/B/oOOO;
+		c 页签组容器 2 | 低
+	f	Õöõ000	tabListener	Lcom/fs/starfarer/ui/ooOo;
+		c 页签切换监听 | 低
+	f	oöõ000	newGameUI	Lcom/fs/starfarer/ui/newui/L;
+		c 构造注入的新游戏 UI | 高
+	f	Õøõ000	aptitudeRows	Ljava/util/List;
+		c getAptitudeRows() 的属性行列表 | 高
+	f	this.class$class	aptitudePanels	Ljava/util/List;
+		c V/AptitudePanel 面板列表 | 高
+	f	public.String$class	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c setStats 注入 | 高
+	f	ööõ000	stats2	Lcom/fs/starfarer/campaign/CharacterStats;
+		c 构造持有的 CharacterStats | 中
+	f	return.String$class	skills	Ljava/util/Set;
+		c 技能 id 集合 | 低
+	f	Øöõ000	aptitudeList	Lcom/fs/starfarer/coreui/w;
+		c getAptitudeList() 属性滚动列表 | 高
+	f	Ôöõ000	tooltipFlash	Lcom/fs/graphics/util/Fader;
+		c getTooltipFlash() 提示闪烁 | 中
+	f	reassignMode	reassignMode	Z
+		c 技能重分配模式标记 | 高
+	f	noTooltipFlashThisFrame	noTooltipFlashThisFrame	I
+		c 本帧禁止 tooltip 闪烁计数 | 高
+	m	setStats	setStats	(Lcom/fs/starfarer/campaign/CharacterStats;)V
+	m	getStartGameButton	getStartGameButton	()Lcom/fs/starfarer/ui/n;
+	m	canReassign	canReassign	()Z
+	m	resetOrConfirmMode	resetOrConfirmMode	()V
+	m	reassignMode	reassignMode	()V
+	m	normalMode	normalMode	()V
+	m	normalMode	normalMode	(Z)V
+	m	getAptitudeList	getAptitudeList	()Lcom/fs/starfarer/coreui/w;
+	m	getAptitudeRows	getAptitudeRows	()Ljava/util/List;
+	m	isShowingDialog	isShowingDialog	()Z
+	m	getTooltipArea	getTooltipArea	()Lcom/fs/starfarer/ui/z;
+	m	getTooltipFlash	getTooltipFlash	()Lcom/fs/graphics/util/Fader;
+	m	isNoTooltipFlashThisFrame	isNoTooltipFlashThisFrame	()Z
+	m	setNoTooltipFlashThisFrame	setNoTooltipFlashThisFrame	(Z)V
+	m	createReassignTooltip	createReassignTooltip	()Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	createSkillPointsTooltip	createSkillPointsTooltip	()Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	createStoryPointsTooltip	createStoryPointsTooltip	(Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	getSaved	getSaved	()Lcom/fs/starfarer/campaign/CharacterStats;
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	doConfirmActions	doConfirmActions	()V
+	m	canIncreaseSkill	canIncreaseSkill	(Ljava/lang/String;)Z
+	m	canIncreaseSkill	canIncreaseSkill	(Ljava/lang/String;Z)Z
+	m	areSkillRequirementsMet	areSkillRequirementsMet	(Ljava/lang/String;)Z
+	m	areSkillRequirementsMet	areSkillRequirementsMet	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	getSpentAndRequiredPoints	getSpentAndRequiredPoints	(Ljava/lang/String;Ljava/lang/String;)[I
+	m	getSpentAndRequiredPoints	getSpentAndRequiredPoints	(Lcom/fs/starfarer/api/characters/SkillSpecAPI;Ljava/lang/String;)[I
+	m	getRequiredSkills	getRequiredSkills	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/newnew$o;
+	m	isReassignMode	isReassignMode	()Z
+	m	showCaptainPickerDialog	showCaptainPickerDialog	()V
+	m	showAdminPickerDialog	showAdminPickerDialog	()V
+	m	tabOpened	tabOpened	()V
+	m	tabClosed	tabClosed	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/coreui/newnew$1	com/fs/starfarer/coreui/SkillCodexUnlockListener
+	c 来源(javap取证+字符串常量) | 置信度(中) | 证据(ooOo 监听：actionPerformed 里取 SharedUnlockData.reportPlayerAwareOfSkill + CodexDataV2.getSkillEntryId，"codex_unlockable")
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/coreui/newnew$2	com/fs/starfarer/coreui/CharacterNameTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(StandardTooltipV2Expandable 子类，"Click to change your name." 名字编辑提示)
+	m	createImpl	createImpl	(Z)V

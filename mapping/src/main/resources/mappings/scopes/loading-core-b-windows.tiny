@@ -1,0 +1,460 @@
+tiny	2	0	obf	named
+
+c	com/fs/starfarer/loading/SpecStore$24	com/fs/starfarer/loading/SpecStore$PriorityWeaponsLoader
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$24
+	m	o00000	getList	()Ljava/util/List;
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	add	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/loading/SpecStore$25	com/fs/starfarer/loading/SpecStore$KnownHullModsLoader
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$25
+	m	o00000	getList	()Ljava/util/List;
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	add	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/loading/SpecStore$26	com/fs/starfarer/loading/SpecStore$SpecOrderComparator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$26
+	m	o00000	compare	(Ljava/lang/String;Ljava/lang/String;)I
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+
+c	com/fs/starfarer/loading/SpecStore$3	com/fs/starfarer/loading/SpecStore$PersonMissionSpecCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$3
+	m	private	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/loading/PersonMissionSpec;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/SpecStore$4	com/fs/starfarer/loading/SpecStore$BarEventSpecCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$4
+	m	ÓO0000	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/loading/BarEventSpec;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/SpecStore$5	com/fs/starfarer/loading/SpecStore$StarGenDataSpecCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$5
+	m	ÒO0000	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/StarGenDataSpec;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/SpecStore$6	com/fs/starfarer/loading/SpecStore$AgeGenDataSpecCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$6
+	m	do	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/AgeGenDataSpec;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/SpecStore$7	com/fs/starfarer/loading/SpecStore$ObjectiveGenDataSpecCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$7
+	m	OO0000	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/ObjectiveGenDataSpec;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/SpecStore$8	com/fs/starfarer/loading/SpecStore$LocationGenDataSpecCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$8
+	m	ø00000	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/LocationGenDataSpec;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/SpecStore$9	com/fs/starfarer/loading/SpecStore$NameGenDataCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$9
+	m	if	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/NameGenData;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/SpecStore$Oo	com/fs/starfarer/loading/SpecStore$StringListLoader
+	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$Oo
+	m	o00000	getList	()Ljava/util/List;
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	add	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/loading/SpecStore$o	com/fs/starfarer/loading/SpecStore$SpecCreator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$o
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+
+c	com/fs/starfarer/loading/StarfarerStrings	com/fs/starfarer/loading/StarfarerStrings
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/StarfarerStrings
+	m	super	load	()V
+	m	super	getString	(Ljava/lang/String;)Ljava/lang/String;
+	m	super	getTooltipText	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	m	String	getFormattedString	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	m	Ò00000	getTooltip	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/loading/StarfarerStrings$o;
+	m	Ó00000	hasTooltip	(Ljava/lang/String;Ljava/lang/String;)Z
+
+c	com/fs/starfarer/loading/StarfarerStrings$o	com/fs/starfarer/loading/StarfarerStrings$Tooltip
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/StarfarerStrings$o
+	f	Ò00000	title	Ljava/lang/String;
+	f	o00000	body	Ljava/lang/String;
+
+c	com/fs/starfarer/loading/T	com/fs/starfarer/loading/MarketConditionSpec
+	c	来源(继承关系) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/T
+	f	new	id	Ljava/lang/String;
+	f	o00000	name	Ljava/lang/String;
+	f	Ø00000	desc	Ljava/lang/String;
+	f	null	icon	Ljava/lang/String;
+	f	class	scriptClass	Ljava/lang/String;
+	f	Ô00000	order	F
+	f	Ö00000	planetary	Z
+	f	õ00000	decivRemove	Z
+	f	ö00000	tags	Ljava/util/Set;
+	f	Ó00000	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+	m	getTags	getTags	()Ljava/util/Set;
+	m	addTag	addTag	(Ljava/lang/String;)V
+	m	hasTag	hasTag	(Ljava/lang/String;)Z
+	m	isDecivRemove	isDecivRemove	()Z
+	m	setDecivRemove	setDecivRemove	(Z)V
+	m	getNewPluginInstance	getNewPluginInstance	()Lcom/fs/starfarer/api/campaign/econ/MarketConditionPlugin;
+	m	isPlanetary	isPlanetary	()Z
+	m	getOrder	getOrder	()F
+	m	getId	getId	()Ljava/lang/String;
+	m	getName	getName	()Ljava/lang/String;
+	m	getDesc	getDesc	()Ljava/lang/String;
+	m	getIcon	getIcon	()Ljava/lang/String;
+	m	getScriptClass	getScriptClass	()Ljava/lang/String;
+	m	setIcon	setIcon	(Ljava/lang/String;)V
+	m	setId	setId	(Ljava/lang/String;)V
+	m	setName	setName	(Ljava/lang/String;)V
+	m	setDesc	setDesc	(Ljava/lang/String;)V
+	m	setOrder	setOrder	(F)V
+	m	setPlanetary	setPlanetary	(Z)V
+	m	getGenSpec	getGenSpec	()Lcom/fs/starfarer/api/impl/campaign/procgen/ConditionGenDataSpec;
+	m	getSourceMod	getSourceMod	()Lcom/fs/starfarer/api/ModSpecAPI;
+	m	setSourceMod	setSourceMod	(Lorg/json/JSONObject;)V
+
+c	com/fs/starfarer/loading/O0Oo	com/fs/starfarer/loading/ShipRoles
+	c	来源(内容复核) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0Oo
+	f	new	roles	Ljava/util/Map;
+	m	new	getRoles	()Ljava/util/Map;
+	m	o00000	getShipRole	(Ljava/lang/String;)Lcom/fs/starfarer/loading/O0Oo$oo;
+
+c	com/fs/starfarer/loading/O0Oo$Oo	com/fs/starfarer/loading/ShipRoles$RoleWeight
+	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0Oo$Oo
+	f	o00000	variantId	Ljava/lang/String;
+	f	Ò00000	weight	F
+	m	Ò00000	getVariantId	()Ljava/lang/String;
+	m	super	getWeight	()F
+
+c	com/fs/starfarer/loading/O0Oo$o	com/fs/starfarer/loading/ShipRoles$RoleEntry
+	c	来源(继承关系) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0Oo$o
+	f	o00000	variantId	Ljava/lang/String;
+	f	new	weight	F
+	m	getVariantId	getVariantId	()Ljava/lang/String;
+	m	getWeight	getWeight	()F
+	m	setVariantId	setVariantId	(Ljava/lang/String;)V
+	m	setWeight	setWeight	(F)V
+	m	isFighterWing	isFighterWing	()Z
+	m	getFPCost	getFPCost	()F
+
+c	com/fs/starfarer/loading/O0Oo$oo	com/fs/starfarer/loading/ShipRoles$ShipRole
+	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0Oo$oo
+	f	Ó00000	roleId	Ljava/lang/String;
+	f	super	entries	Ljava/util/List;
+	f	String	fallback	Lcom/fs/starfarer/loading/O0Oo$Oo;
+	f	Ò00000	fallback2	Lcom/fs/starfarer/loading/O0Oo$Oo;
+	m	o00000	removeEntry	(Ljava/lang/String;)V
+	m	o00000	addEntry	(Ljava/lang/String;F)V
+	m	o00000	addEntry	(Lcom/fs/starfarer/loading/O0Oo$o;)V
+	m	o00000	getEntries	()Ljava/util/List;
+	m	o00000	setFallback	(Lcom/fs/starfarer/loading/O0Oo$Oo;)V
+	m	new	getRoleId	()Ljava/lang/String;
+	m	Ó00000	getFallback	()Lcom/fs/starfarer/loading/O0Oo$Oo;
+	m	Ô00000	getFallback2	()Lcom/fs/starfarer/loading/O0Oo$Oo;
+
+c	com/fs/starfarer/loading/o0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/loading/ReportDataLoader
+	c	来源(字符串常量) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/o0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+	m	super	getReports	(Ljava/lang/String;)Ljava/util/List;
+	m	super	getReports	(Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+	m	super	load	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+
+c	com/fs/starfarer/loading/WeaponSpecLoader	com/fs/starfarer/loading/WeaponSpecLoader
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/WeaponSpecLoader
+	m	o00000	loadProjectiles	()V
+	m	o00000	loadProjectileSpec	(Ljava/lang/String;)V
+	m	o00000	loadSpecificProjectiles	([Ljava/lang/String;)V
+	m	Ò00000	loadWeapons	()V
+	m	Ò00000	loadWeaponSpec	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/loading/WeaponSpreadsheetLoader	com/fs/starfarer/loading/WeaponSpreadsheetLoader
+	c	来源(内容复核) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/WeaponSpreadsheetLoader
+	m	Ò00000	load	()V
+	m	Ò00000	getDps	(Lcom/fs/starfarer/loading/specs/Oo0O;)F
+	m	super	getEmpPerSecond	(Lcom/fs/starfarer/loading/specs/Oo0O;)F
+	m	super	printDerivedWeaponStats	()V
+	m	super	createDerivedStats	(Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponSize;Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;)Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$o;
+	m	super	sanitizeString	(Lorg/json/JSONObject;Ljava/lang/String;)Ljava/lang/String;
+
+c	com/fs/starfarer/loading/WeaponSpreadsheetLoader$1	com/fs/starfarer/loading/WeaponSpreadsheetLoader$WeaponStatsComparator
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/WeaponSpreadsheetLoader$1
+	m	o00000	compare	(Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$o;Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$o;)I
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+
+c	com/fs/starfarer/loading/WeaponSpreadsheetLoader$o	com/fs/starfarer/loading/WeaponSpreadsheetLoader$DerivedWeaponStats
+	c	来源(继承关系) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/WeaponSpreadsheetLoader$o
+	f	spec	spec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	f	dps	dps	F
+	f	sustainedDps	sustainedDps	F
+	f	emp	emp	F
+	f	burstDamage	burstDamage	F
+	f	fluxPerDam	fluxPerDam	F
+	f	rof	rof	F
+	f	damageOver30Sec	damageOver30Sec	F
+	f	baseValue	baseValue	F
+	f	burstFireDuration	burstFireDuration	F
+	f	damagePerShot	damagePerShot	F
+	f	empPerShot	empPerShot	F
+	m	toString	toString	()Ljava/lang/String;
+	m	getEmpPerShot	getEmpPerShot	()F
+	m	getDamagePerShot	getDamagePerShot	()F
+	m	getBurstFireDuration	getBurstFireDuration	()F
+	m	getSustainedDps	getSustainedDps	()F
+	m	getEmpPerSecond	getEmpPerSecond	()F
+	m	getDamageOver30Sec	getDamageOver30Sec	()F
+	m	getSpec	getSpec	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	getDps	getDps	()F
+	m	getBurstDamage	getBurstDamage	()F
+	m	getFluxPerDam	getFluxPerDam	()F
+	m	getRoF	getRoF	()F
+	m	getFluxPerSecond	getFluxPerSecond	()F
+	m	getSustainedFluxPerSecond	getSustainedFluxPerSecond	()F
+	m	getBaseValue	getBaseValue	()F
+
+c	com/fs/starfarer/loading/L	com/fs/starfarer/loading/SubmarketSpec
+	c	来源(继承关系) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/L
+	f	Ø00000	id	Ljava/lang/String;
+	f	Ó00000	name	Ljava/lang/String;
+	f	Ö00000	desc	Ljava/lang/String;
+	f	Ô00000	icon	Ljava/lang/String;
+	f	class	factionId	Ljava/lang/String;
+	f	new	scriptClass	Ljava/lang/String;
+	f	o00000	order	F
+	m	getNewPluginInstance	getNewPluginInstance	()Lcom/fs/starfarer/api/campaign/SubmarketPlugin;
+	m	getOrder	getOrder	()F
+	m	getId	getId	()Ljava/lang/String;
+	m	getName	getName	()Ljava/lang/String;
+	m	getDesc	getDesc	()Ljava/lang/String;
+	m	getIcon	getIcon	()Ljava/lang/String;
+	m	getScriptClass	getScriptClass	()Ljava/lang/String;
+	m	setIcon	setIcon	(Ljava/lang/String;)V
+	m	getFactionId	getFactionId	()Ljava/lang/String;
+
+c	com/fs/starfarer/loading/O0oO	com/fs/starfarer/loading/FactionSpec
+	c	来源(内容复核) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0oO
+	m	getOverriddenHulls	getOverriddenHulls	()Ljava/util/LinkedHashSet;
+	m	getHullFrequency	getHullFrequency	()Ljava/util/Map;
+	m	setHullFrequency	setHullFrequency	(Ljava/util/Map;)V
+	m	getWeaponSellFrequency	getWeaponSellFrequency	()Ljava/util/Map;
+	m	getFighterSellFrequency	getFighterSellFrequency	()Ljava/util/Map;
+	m	getHullmodSellFrequency	getHullmodSellFrequency	()Ljava/util/Map;
+	m	getShipSellFrequency	getShipSellFrequency	()Ljava/util/Map;
+	m	getTagFrequency	getTagFrequency	()Ljava/util/Map;
+	m	setTagFrequency	setTagFrequency	(Ljava/util/Map;)V
+	m	getDisplayNameLong	getDisplayNameLong	()Ljava/lang/String;
+	m	setDisplayNameLong	setDisplayNameLong	(Ljava/lang/String;)V
+	m	getMusicMap	getMusicMap	()Ljava/util/Map;
+	m	getDisplayNameLongWithArticle	getDisplayNameLongWithArticle	()Ljava/lang/String;
+	m	setDisplayNameLongWithArticle	setDisplayNameLongWithArticle	(Ljava/lang/String;)V
+	m	getFlags	getFlags	()Ljava/util/List;
+	m	getCrests	getCrests	()Ljava/util/List;
+	m	getPersonNamePrefixAOrAn	getPersonNamePrefixAOrAn	()Ljava/lang/String;
+	m	setPersonNamePrefixAOrAn	setPersonNamePrefixAOrAn	(Ljava/lang/String;)V
+	m	getPersonNamePrefix	getPersonNamePrefix	()Ljava/lang/String;
+	m	setPersonNamePrefix	setPersonNamePrefix	(Ljava/lang/String;)V
+	m	getEntityNamePrefix	getEntityNamePrefix	()Ljava/lang/String;
+	m	setEntityNamePrefix	setEntityNamePrefix	(Ljava/lang/String;)V
+	m	getDisplayNameIsOrAre	getDisplayNameIsOrAre	()Ljava/lang/String;
+	m	setDisplayNameIsOrAre	setDisplayNameIsOrAre	(Ljava/lang/String;)V
+	m	getBarSound	getBarSound	()Ljava/lang/String;
+	m	setBarSound	setBarSound	(Ljava/lang/String;)V
+	m	isShowInIntelTab	isShowInIntelTab	()Z
+	m	setShowInIntelTab	setShowInIntelTab	(Z)V
+	m	getId	getId	()Ljava/lang/String;
+	m	setId	setId	(Ljava/lang/String;)V
+	m	getBaseUIColor	getBaseUIColor	()Ljava/awt/Color;
+	m	getBrightUIColor	getBrightUIColor	()Ljava/awt/Color;
+	m	setBrightUIColor	setBrightUIColor	(Ljava/awt/Color;)V
+	m	setBaseUIColor	setBaseUIColor	(Ljava/awt/Color;)V
+	m	getSecondaryUIColor	getSecondaryUIColor	()Ljava/awt/Color;
+	m	setSecondaryUIColor	setSecondaryUIColor	(Ljava/awt/Color;)V
+	m	getSecondarySegments	getSecondarySegments	()I
+	m	setSecondarySegments	setSecondarySegments	(I)V
+	m	getDarkUIColor	getDarkUIColor	()Ljava/awt/Color;
+	m	setDarkUIColor	setDarkUIColor	(Ljava/awt/Color;)V
+	m	getGridUIColor	getGridUIColor	()Ljava/awt/Color;
+	m	setGridUIColor	setGridUIColor	(Ljava/awt/Color;)V
+	m	getDisplayName	getDisplayName	()Ljava/lang/String;
+	m	setDisplayName	setDisplayName	(Ljava/lang/String;)V
+	m	getLogo	getLogo	()Ljava/lang/String;
+	m	getCrest	getCrest	()Ljava/lang/String;
+	m	setCrest	setCrest	(Ljava/lang/String;)V
+	m	setLogo	setLogo	(Ljava/lang/String;)V
+	m	getNameCategories	getNameCategories	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getMalePortraits	getMalePortraits	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getFemalePortraits	getFemalePortraits	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getShipNamePrefix	getShipNamePrefix	()Ljava/lang/String;
+	m	setShipNamePrefix	setShipNamePrefix	(Ljava/lang/String;)V
+	m	addStockFleet	addStockFleet	(Lcom/fs/starfarer/loading/FleetCreationSpec;)V
+	m	getStockFleet	getStockFleet	(Ljava/lang/String;)Lcom/fs/starfarer/loading/FleetCreationSpec;
+	m	getStockFleets	getStockFleets	()Ljava/util/Map;
+	m	pickPersonality	pickPersonality	()Ljava/lang/String;
+	m	getCaptainPersonalities	getCaptainPersonalities	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	addCaptainPersonality	addCaptainPersonality	(Ljava/lang/String;F)V
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	getShipNameSources	getShipNameSources	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getDisplayNameWithArticle	getDisplayNameWithArticle	()Ljava/lang/String;
+	m	setDisplayNameWithArticle	setDisplayNameWithArticle	(Ljava/lang/String;)V
+	m	getIllegalCommodities	getIllegalCommodities	()Ljava/util/Set;
+	m	getTariffFraction	getTariffFraction	()F
+	m	setTariffFraction	setTariffFraction	(F)V
+	m	getTollFraction	getTollFraction	()F
+	m	setTollFraction	setTollFraction	(F)V
+	m	getFineFraction	getFineFraction	()F
+	m	setFineFraction	setFineFraction	(F)V
+	m	getInternalCommsChannel	getInternalCommsChannel	()Ljava/lang/String;
+	m	setInternalCommsChannel	setInternalCommsChannel	(Ljava/lang/String;)V
+	m	getCustom	getCustom	()Lorg/json/JSONObject;
+	m	setCustom	setCustom	(Lorg/json/JSONObject;)V
+	m	getShipsWhenImporting	getShipsWhenImporting	()Ljava/util/Set;
+	m	getKnownShips	getKnownShips	()Ljava/util/Set;
+	m	getKnownWeapons	getKnownWeapons	()Ljava/util/Set;
+	m	getKnownFighters	getKnownFighters	()Ljava/util/Set;
+	m	getKnownIndustries	getKnownIndustries	()Ljava/util/Set;
+	m	getKnownHullMods	getKnownHullMods	()Ljava/util/Set;
+	m	getPriorityShips	getPriorityShips	()Ljava/util/Set;
+	m	getPriorityWeapons	getPriorityWeapons	()Ljava/util/Set;
+	m	getPriorityFighters	getPriorityFighters	()Ljava/util/Set;
+	m	getVariantOverrides	getVariantOverrides	()Ljava/util/Map;
+	m	getFactionDoctrine	getFactionDoctrine	()Lcom/fs/starfarer/api/campaign/FactionDoctrineAPI;
+	m	getDoctrine	getDoctrine	()Lcom/fs/starfarer/loading/specs/FactionDoctrine;
+	m	getVoicePickerLow	getVoicePickerLow	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getVoicePickerMedium	getVoicePickerMedium	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getVoicePickerHigh	getVoicePickerHigh	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getAllVariantsForRole	getAllVariantsForRole	(Ljava/lang/String;)Ljava/util/List;
+	m	getShipRoles	getShipRoles	()Lcom/fs/starfarer/loading/O0Oo;
+	m	setShipRoles	setShipRoles	(Lcom/fs/starfarer/loading/O0Oo;)V
+	m	getPortraits	getPortraits	(Lcom/fs/starfarer/loading/O0oO$o;Lcom/fs/starfarer/api/characters/FullName$Gender;)Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+	m	getAllPortraits	getAllPortraits	(Lcom/fs/starfarer/api/characters/FullName$Gender;)Ljava/util/List;
+	m	getAllPortraits	getAllPortraits	(Lcom/fs/starfarer/loading/O0oO$o;Lcom/fs/starfarer/api/characters/FullName$Gender;)Ljava/util/List;
+
+c	com/fs/starfarer/loading/O0oO$o	com/fs/starfarer/loading/FactionSpec$PortraitCategory
+	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0oO$o
+	f	new	STANDARD	Lcom/fs/starfarer/loading/O0oO$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/loading/O0oO$o;
+
+c	com/fs/starfarer/loading/B	com/fs/starfarer/loading/HullVariantSpecStore
+	c	来源(字符串常量) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/B
+	m	o00000	getAllVariantIds	()Ljava/util/List;
+	m	o00000	registerVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	o00000	registerVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Z)V
+	m	o00000	getVariant	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	o00000	getVariant	(Ljava/lang/String;Z)Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	Ó00000	clear	()V
+	m	Ó00000	removeVariant	(Ljava/lang/String;)V
+	m	new	loadMissionVariants	()V
+	m	new	removeVariant	(Ljava/lang/String;)V
+	m	Ô00000	containsVariant	(Ljava/lang/String;)Z
+
+c	com/fs/starfarer/loading/B$1	com/fs/starfarer/loading/HullVariantSpecStore$VariantFilenameFilter
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/B$1
+	m	accept	accept	(Ljava/io/File;Ljava/lang/String;)Z
+
+c	com/fs/starfarer/loading/Q	com/fs/starfarer/loading/WeaponSpecStore
+	c	来源(内容复核) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/Q
+	m	super	registerWeaponSpec	(Ljava/lang/String;Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;)V
+	m	super	registerProjectileSpec	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	String	getWeaponSpec	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	Õ00000	getProjectileSpec	(Ljava/lang/String;)Ljava/lang/Object;
+	m	Ò00000	clear	()V
+
+c	com/fs/starfarer/loading/K	com/fs/starfarer/loading/FighterWingSpecStore
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/K
+	m	o00000	clear	()V
+	m	o00000	registerFighterWingSpec	(Ljava/lang/String;Lcom/fs/starfarer/loading/specs/FighterWingSpec;)V
+	m	o00000	getFighterWingSpec	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	m	o00000	getFighterWingSpec	(Ljava/lang/String;Z)Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	m	Ò00000	getFighterWingIds	()Ljava/util/List;
+	m	Ò00000	containsFighterWingSpec	(Ljava/lang/String;)Z
+
+c	com/fs/starfarer/loading/G	com/fs/starfarer/loading/CSVParser
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/G
+	m	o00000	parseCsv	(Ljava/lang/String;)Lorg/json/JSONArray;
+
+c	com/fs/starfarer/loading/G$o	com/fs/starfarer/loading/CSVParser$ParseState
+	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/G$o
+	f	Ô00000	IN_COLUMN	Lcom/fs/starfarer/loading/G$o;
+	f	o00000	ROW_START	Lcom/fs/starfarer/loading/G$o;
+	f	Ó00000	COL_START	Lcom/fs/starfarer/loading/G$o;
+	f	new	$VALUES	[Lcom/fs/starfarer/loading/G$o;
+
+c	com/fs/starfarer/loading/Objectsuper	com/fs/starfarer/loading/ScriptSourceFinder
+	c	来源(继承关系) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/Objectsuper
+	m	findResource	findResource	(Ljava/lang/String;)Lorg/codehaus/janino/util/resource/Resource;
+
+c	com/fs/starfarer/loading/Objectsuper$1	com/fs/starfarer/loading/ScriptSourceFinder$ScriptSourceResource
+	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/Objectsuper$1
+	m	open	open	()Ljava/io/InputStream;
+	m	lastModified	lastModified	()J
+	m	getFileName	getFileName	()Ljava/lang/String;
+
+c	com/fs/starfarer/loading/int	com/fs/starfarer/loading/MusicSpec
+	c	来源(字符串常量) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/int
+	m	ô00000	getVolume	()F
+	m	o00000	setVolume	(F)V
+	m	int	getFiles	()Ljava/util/List;
+	m	Ø00000	openSound	()Lsound/O;
+
+c	com/fs/starfarer/loading/int$1	com/fs/starfarer/loading/MusicSpec$MusicStreamProvider
+	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/int$1
+	m	super	openStream	()Ljava/io/InputStream;
+
+c	com/fs/starfarer/loading/P	com/fs/starfarer/loading/SectorGenPluginLoader
+	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/P
+	f	super	pluginClassNames	Ljava/util/List;
+	m	super	addPluginClass	(Ljava/lang/String;)V
+	m	super	getPlugins	()Ljava/util/List;
+
+c	com/fs/starfarer/loading/scripts/super	com/fs/starfarer/loading/scripts/ScriptInstance
+	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/super
+	f	o00000	instance	Ljava/lang/Object;
+	f	Ò00000	name	Ljava/lang/String;
+	m	o00000	getInstance	()Ljava/lang/Object;
+	m	o00000	setInstance	(Ljava/lang/Object;)V
+	m	o00000	setName	(Ljava/lang/String;)V
+	m	new	getName	()Ljava/lang/String;
+
+c	com/fs/starfarer/loading/scripts/ScriptStore	com/fs/starfarer/loading/scripts/ScriptStore
+	c	来源(内容复核) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/ScriptStore
+	m	o00000	loadScripts	()V
+	m	o00000	getFirstScript	(Ljava/lang/Class;)Ljava/lang/Object;
+	m	Õ00000	getJarFiles	()Ljava/util/List;
+	m	Ò00000	getScriptClassNames	()Ljava/util/Set;
+	m	Ò00000	getScriptInstance	(Ljava/lang/Class;)Ljava/lang/Object;
+	m	Ò00000	loadScriptInstance	(Ljava/lang/String;)Ljava/lang/Object;
+	m	Object	getAllScripts	(Ljava/lang/Class;)Ljava/util/List;
+	m	Object	registerScriptClass	(Ljava/lang/String;)V
+	m	Object	getScriptClassLoader	()Lcom/fs/starfarer/loading/scripts/B;
+	m	Ô00000	getAllScriptInstances	(Ljava/lang/Class;)Ljava/util/List;
+	m	Ô00000	waitForLoading	()V
+	m	return	isFinishedLoading	()Z
+	m	ô00000	createScriptClassLoader	()V
+	m	ö00000	scanScriptDirectories	()V
+	m	int	startLoadingThread	()V
+	m	Ø00000	getJaninoClassLoader	()Lorg/codehaus/janino/JavaSourceClassLoader;
+
+c	com/fs/starfarer/loading/scripts/ScriptStore$1	com/fs/starfarer/loading/scripts/ScriptStore$ScriptCacheReader
+	c	来源(继承关系) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/ScriptStore$1
+	m	findResource	findResource	(Ljava/lang/String;)Lorg/codehaus/janino/util/resource/Resource;
+
+c	com/fs/starfarer/loading/scripts/ScriptStore$1$1	com/fs/starfarer/loading/scripts/ScriptStore$ScriptCacheResource
+	c	来源(继承关系) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/ScriptStore$1$1
+	m	open	open	()Ljava/io/InputStream;
+	m	lastModified	lastModified	()J
+	m	getFileName	getFileName	()Ljava/lang/String;
+
+c	com/fs/starfarer/loading/scripts/ScriptStore$2	com/fs/starfarer/loading/scripts/ScriptStore$ScriptCacheWriter
+	c	来源(继承关系) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/ScriptStore$2
+	m	createResource	createResource	(Ljava/lang/String;)Ljava/io/OutputStream;
+	m	deleteResource	deleteResource	(Ljava/lang/String;)Z
+
+c	com/fs/starfarer/loading/scripts/ScriptStore$3	com/fs/starfarer/loading/scripts/ScriptStore$ScriptLoadingTask
+	c	来源(继承关系) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/ScriptStore$3
+	m	run	run	()V
+
+c	com/fs/starfarer/loading/scripts/B	com/fs/starfarer/loading/scripts/ScriptClassLoader
+	c	来源(继承关系) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/B
+	m	loadClass	loadClass	(Ljava/lang/String;Z)Ljava/lang/Class;
+
+c	com/fs/starfarer/loading/S	com/fs/starfarer/loading/StarSystemLocations
+	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/S
+	m	o00000	load	(Ljava/lang/String;)V
+	m	Ò00000	getLocation	(Ljava/lang/String;)Lorg/lwjgl/util/vector/Vector2f;

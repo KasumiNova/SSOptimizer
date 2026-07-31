@@ -1,0 +1,262 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/coreui/AptitudeRow	com/fs/starfarer/coreui/AptitudeRow
+	c javap取证 | 高 | 技能行面板：CharacterStats+技能 Map+WIDGET_WIDTH/SKILL_PAD/TIER_PAD，getWidget 返回 V；implements StandardTooltipV2$o
+	f	WIDGET_WIDTH	WIDGET_WIDTH	F
+	f	SKILL_PAD	SKILL_PAD	F
+	f	TIER_PAD	TIER_PAD	F
+	m	getFlashed	getFlashed	()Ljava/util/Set;
+	m	getForceFlash	getForceFlash	()Ljava/util/Set;
+	m	getButtonsMap	getButtonsMap	()Ljava/util/Map;
+	m	setShouldFlash	setShouldFlash	(Z)V
+	m	shouldFlashOnShowing	shouldFlashOnShowing	()Z
+	m	getWidget	getWidget	()Lcom/fs/starfarer/coreui/Stringsuper;
+c	com/fs/starfarer/coreui/AptitudeRow$1	com/fs/starfarer/coreui/AptitudeRow$1
+	c javap取证 | 高 | 匿名 Comparator<String>：按 SkillSpec.getOrder 再按名称排序（AptitudeRow 技能排序）
+c	com/fs/starfarer/coreui/CaptainPickerDialog	com/fs/starfarer/coreui/CaptainPickerDialog
+	c javap取证+字符串常量 | 高 | 舰长选择对话框：Select captain for/Select AI core to put in charge of + 军官列表 w + FleetMember；implements ui.ooOo
+	f	OPAD	OPAD	F
+	f	PAD	PAD	F
+	f	WIDTH	WIDTH	F
+	f	HEIGHT	HEIGHT	F
+	f	ENTRY_HEIGHT	ENTRY_HEIGHT	F
+	m	canDrag	canDrag	(Lcom/fs/starfarer/ui/c;)Z
+	m	getDistanceDragged	getDistanceDragged	(F)F
+	m	getPanelAfterWhichToInsert	getPanelAfterWhichToInsert	(F)Lcom/fs/starfarer/coreui/ooo0;
+	m	renderInsertSymbol	renderInsertSymbol	(Lcom/fs/starfarer/coreui/ooo0;Lcom/fs/graphics/util/Fader;F)V
+	m	getListOfficers	getListOfficers	()Lcom/fs/starfarer/coreui/v;
+c	com/fs/starfarer/coreui/CaptainPickerDialog$1	com/fs/starfarer/coreui/CaptainPickerDialog$1
+	c javap取证 | 高 | 匿名 tooltip：军官数量上限说明（Maximum number of officers...）
+c	com/fs/starfarer/coreui/CaptainPickerDialog$2	com/fs/starfarer/coreui/CaptainPickerDialog$2
+	c javap取证 | 高 | 匿名 Comparator<OfficerData>：舰长列表排序
+c	com/fs/starfarer/coreui/D	com/fs/starfarer/coreui/SkillChangeConfirmDialog
+	c javap取证+字符串常量 | 中 | 技能变更确认对话框：Confirm/Go back/Skill change effects + skillChangesHaveEffects 检查 SkillsChangeEffect 监听器
+	m	skillChangesHaveEffects	skillChangesHaveEffects	(Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/campaign/CharacterStats;)Z
+c	com/fs/starfarer/coreui/class	com/fs/starfarer/coreui/FleetResourcesPanel
+	c javap取证+字符串常量 | 高 | 舰队资源面板：Resources/Credits + CargoData/FleetData + WIDTH 300/SECTION_HEIGHT 96
+	f	WIDTH	WIDTH	F
+	f	SECTION_HEIGHT	SECTION_HEIGHT	F
+	f	PAD	PAD	F
+	m	setCargoAndFleet	setCargoAndFleet	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/FleetData;)V
+c	com/fs/starfarer/coreui/class$O0	com/fs/starfarer/coreui/FleetResourcesPanel$SuppliesRow
+	c javap取证+字符串常量 | 高 | 补给资源行：Supplies + graphics/icons/cargo/supplies.png
+	m	setCargoAndFleet	setCargoAndFleet	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/FleetData;)V
+c	com/fs/starfarer/coreui/class$Oo	com/fs/starfarer/coreui/FleetResourcesPanel$MarinesRow
+	c javap取证+字符串常量 | 高 | 陆战队资源行：Marines + graphics/icons/cargo/marine.png
+	m	setCargoAndFleet	setCargoAndFleet	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/FleetData;)V
+c	com/fs/starfarer/coreui/class$o	com/fs/starfarer/coreui/FleetResourcesPanel$FuelRow
+	c javap取证+字符串常量 | 高 | 燃料资源行：Fuel + Usage:/Range:/per ly + graphics/icons/cargo/fuel.png
+	m	setCargoAndFleet	setCargoAndFleet	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/FleetData;)V
+c	com/fs/starfarer/coreui/class$o0	com/fs/starfarer/coreui/FleetResourcesPanel$CrewRow
+	c javap取证+字符串常量 | 高 | 船员资源行：Crew + graphics/icons/cargo/crew.png
+	m	setCargoAndFleet	setCargoAndFleet	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/FleetData;)V
+c	com/fs/starfarer/coreui/class$oo	com/fs/starfarer/coreui/FleetResourcesPanel$ResourceRowBase
+	c 继承关系+javap取证 | 中 | 资源行基类：G$O0/G$Oo/G$o/G$o0 的公共父类
+	m	setCargoAndFleet	setCargoAndFleet	(Lcom/fs/starfarer/campaign/fleet/CargoData;Lcom/fs/starfarer/campaign/fleet/FleetData;)V
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/FleetMemberRow
+	c javap取证+SWITCH_TABLE残留 | 高 | 舰队舰船操作行：showScuttleDialog/showCaptainPickerDialog/showBuyConfirmDialog/showSellConfirmDialog + $SWITCH_TABLE$...$FleetMemberRow$FleetMemberAction 原始名残留
+	m	addTooltipsForPips	addTooltipsForPips	()V
+	m	updateAllButtonStatus	updateAllButtonStatus	()V
+	m	getHoverFader	getHoverFader	()Lcom/fs/graphics/util/Fader;
+	m	okToPickUp	okToPickUp	()Z
+	m	isSelected	isSelected	()Z
+	m	setSelected	setSelected	(Z)V
+	m	showScuttleDialog	showScuttleDialog	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	showCaptainPickerDialog	showCaptainPickerDialog	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	showBuyConfirmDialog	showBuyConfirmDialog	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	showSellConfirmDialog	showSellConfirmDialog	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	getMember	getMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	getFleetPanel	getFleetPanel	()Lcom/fs/starfarer/coreui/i;
+	m	getMode	getMode	()Lcom/fs/starfarer/coreui/i$o;
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/coreui/FleetMemberRow$1
+	c javap取证 | 中 | 匿名 tooltip：舰船 D 型模组数量说明（Number of d-mods this ship has）
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$2	com/fs/starfarer/coreui/FleetMemberRow$2
+	c javap取证 | 中 | 匿名 tooltip：内置模组数量说明（Number of built in mods this ship has）
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$3	com/fs/starfarer/coreui/FleetMemberRow$3
+	c javap取证 | 低 | 匿名类：implements newui.oOOo$o（tooltip 提供者）
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$4	com/fs/starfarer/coreui/FleetMemberRow$4
+	c javap取证 | 低 | 匿名类：implements oo0O$o，dialogDismissed 回调
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$5	com/fs/starfarer/coreui/FleetMemberRow$5
+	c javap取证 | 低 | 匿名类：implements newui.oOOo$o（tooltip 提供者）
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$6	com/fs/starfarer/coreui/FleetMemberRow$6
+	c javap取证 | 低 | 匿名类：implements oo0O$o，dialogDismissed 回调
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0	com/fs/starfarer/coreui/FleetMemberRow$DialogType
+	c javap取证+SWITCH_TABLE残留 | 高 | 对话框类型枚举：SCUTTLE/CODEX/BUY_CONFIRM/SELL_CONFIRM/CAPTAIN_PICKER（$SWITCH_TABLE$...$FleetMemberRow$DialogType）
+	f	Ö00000	SCUTTLE	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
+	f	class	CODEX	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
+	f	new	BUY_CONFIRM	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
+	f	Ô00000	SELL_CONFIRM	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
+	f	Ó00000	CAPTAIN_PICKER	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo	com/fs/starfarer/coreui/FleetMemberRow$FleetMemberAction
+	c javap取证+SWITCH_TABLE残留 | 高 | 舰船操作枚举：SUSPEND_REPAIRS/LOGISTICAL_PRIORITY/MOTHBALL/SCUTTLE/REFIT/MORE_INFO/BUY/SELL/GIVE/TAKE（$SWITCH_TABLE$...$FleetMemberRow$FleetMemberAction）
+	f	class	SUSPEND_REPAIRS	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	new	LOGISTICAL_PRIORITY	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	ö00000	MOTHBALL	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	Ô00000	SCUTTLE	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	o00000	REFIT	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	õ00000	MORE_INFO	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	float	BUY	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	null	SELL	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	Ø00000	GIVE	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	Ó00000	TAKE	Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/coreui/FleetMemberRow$TooltipPanel
+	c javap取证+字符串常量 | 中 | 操作按钮 tooltip 提供者：tooltipSuspendRepairs/tooltipMothball/tooltipScuttle/tooltipBuy + buyButton 字段 + updateTooltip
+	f	buyButton	buyButton	Lcom/fs/starfarer/ui/n;
+	m	updateTooltip	updateTooltip	(Lcom/fs/starfarer/ui/n;Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;Ljava/lang/String;)V
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o$1	com/fs/starfarer/coreui/FleetMemberRow$TooltipPanel$1
+	c javap取证 | 低 | 匿名 Runnable
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o$2	com/fs/starfarer/coreui/FleetMemberRow$TooltipPanel$2
+	c javap取证+字符串常量 | 中 | 匿名 tooltip 内容：tooltipUnmothball/tooltipSuspendRepairsNotNeeded；implements StandardTooltipV2$OOo
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o$3	com/fs/starfarer/coreui/FleetMemberRow$TooltipPanel$3
+	c javap取证 | 低 | 匿名 Runnable
+c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/coreui/FleetMemberRow$ActionButton
+	c javap取证+字符串常量 | 中 | 操作按钮：icon_suspend_repairs/icon_mothball/icon_scuttle/icon_buy/icon_sell + getAction；extends Stringnew$Oo
+	m	getAction	getAction	()Lcom/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+c	com/fs/starfarer/coreui/J	com/fs/starfarer/coreui/LabeledProgressBar
+	c javap取证 | 低 | 带标签进度条组件：J$o 数据回调 + ui.impl.Q 进度条 + 悬停高亮，无字符串线索
+	f	PAD	PAD	F
+	m	getBar	getBar	()Lcom/fs/starfarer/ui/impl/Q;
+c	com/fs/starfarer/coreui/J$o	com/fs/starfarer/coreui/LabeledProgressBar$DataProvider
+	c 继承关系+javap取证 | 低 | 进度条数据回调接口：float×3/Color×2/String
+c	com/fs/starfarer/coreui/oO0O	com/fs/starfarer/coreui/AccidentRiskIndicator
+	c javap取证+字符串常量 | 高 | 事故风险指示器：accident_risk_minor/major/critical + CampaignFleet + AccidentRisk$AccidentSeverity 引用
+c	com/fs/starfarer/coreui/O	com/fs/starfarer/coreui/PersonNameDialog
+	c javap取证+字符串常量 | 高 | 人员命名对话框：Name:/Officer name:/Administrator name:/Your name: + PersonAPI + 类型枚举 OFFICER/ADMIN/PLAYER
+	f	PAD	PAD	F
+	f	OPAD	OPAD	F
+	m	createUI	createUI	()V
+	m	getText	getText	()Ljava/lang/String;
+c	com/fs/starfarer/coreui/O$o	com/fs/starfarer/coreui/PersonNameDialog$PersonType
+	c javap取证+字符串常量 | 高 | 人员类型枚举：OFFICER/ADMIN/PLAYER
+	f	Ô00000	OFFICER	Lcom/fs/starfarer/coreui/O$o;
+	f	o00000	ADMIN	Lcom/fs/starfarer/coreui/O$o;
+	f	Ó00000	PLAYER	Lcom/fs/starfarer/coreui/O$o;
+c	com/fs/starfarer/coreui/publicnew	com/fs/starfarer/coreui/FleetRepairWidget
+	c javap取证+字符串常量 | 中 | 舰队修复部件：icon_repair_widget_icon + Repairs/100% + RepairTarget 枚举(TO_100LR/TO_NEEDED/NONE)
+	f	HEIGHT	HEIGHT	F
+	f	WIDTH	WIDTH	F
+	f	PAD	PAD	F
+c	com/fs/starfarer/coreui/publicnew$Oo	com/fs/starfarer/coreui/FleetRepairWidget$SegmentData
+	c javap取证 | 中 | 修复条段数据：Color + 7 float（段颜色与比例）
+c	com/fs/starfarer/coreui/publicnew$o	com/fs/starfarer/coreui/FleetRepairWidget$RepairTarget
+	c javap取证+字符串常量 | 高 | 修复目标枚举：TO_100LR/TO_NEEDED/NONE
+	f	new	TO_100LR	Lcom/fs/starfarer/coreui/publicnew$o;
+	f	Ô00000	TO_NEEDED	Lcom/fs/starfarer/coreui/publicnew$o;
+	f	Ó00000	NONE	Lcom/fs/starfarer/coreui/publicnew$o;
+c	com/fs/starfarer/coreui/O0O0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/FleetReadinessBar
+	c javap取证 | 中 | 舰队战备条：addIndicator(每船一段)+setLevel/setMaxLevel/setBonus/setPenalty + CampaignFleet；无字符串，方法名+引用 FleetMember 体系
+	m	setAllAdditive	setAllAdditive	(Z)V
+	m	addIndicator	addIndicator	(FLjava/awt/Color;)V
+	m	addIndicator	addIndicator	(FFLjava/awt/Color;)V
+	m	setLevel	setLevel	(F)V
+	m	setMaxLevel	setMaxLevel	(F)V
+	m	setBonus	setBonus	(F)V
+	m	setPenalty	setPenalty	(F)V
+c	com/fs/starfarer/coreui/O0O0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/coreui/FleetReadinessBar$ShipIndicator
+	c javap取证 | 中 | 单舰战备指示器：5×Fader + Color + isOn/isEnabled/isShowBonus/isShowPenalty + startFlashing/stopFlashing
+	m	stopFlashing	stopFlashing	()V
+	m	startFlashing	startFlashing	()V
+	m	isEnabled	isEnabled	()Z
+	m	setEnabled	setEnabled	(Z)V
+	m	isOn	isOn	()Z
+	m	setOn	setOn	(Z)V
+	m	isShowBonus	isShowBonus	()Z
+	m	setShowBonus	setShowBonus	(Z)V
+	m	isShowPenalty	isShowPenalty	()Z
+	m	setShowPenalty	setShowPenalty	(Z)V
+	m	getBaseColor	getBaseColor	()Ljava/awt/Color;
+c	com/fs/starfarer/coreui/O0oo	com/fs/starfarer/coreui/FleetMemberStatusPanel
+	c javap取证+字符串常量 | 中 | 舰船状态面板：FleetMember+PersonAPI+getPortraitButton；状态行 CR(icon_cr)/船体(icon_hull)/补给
+	m	getPortraitButton	getPortraitButton	()Lcom/fs/starfarer/ui/n;
+c	com/fs/starfarer/coreui/O0oo$1	com/fs/starfarer/coreui/FleetMemberStatusPanel$1
+	c javap取证+字符串常量 | 中 | 匿名状态行：CR 状态（stored/halted/icon_cr），实现 O0oo$oo
+c	com/fs/starfarer/coreui/O0oo$2	com/fs/starfarer/coreui/FleetMemberStatusPanel$2
+	c javap取证+字符串常量 | 中 | 匿名状态行：船体/补给状态（out of supplies/finishing repairs/icon_hull），实现 O0oo$oo
+c	com/fs/starfarer/coreui/O0oo$3	com/fs/starfarer/coreui/FleetMemberStatusPanel$3
+	c javap取证 | 低 | 匿名 Runnable
+c	com/fs/starfarer/coreui/O0oo$4	com/fs/starfarer/coreui/FleetMemberStatusPanel$4
+	c javap取证 | 低 | 匿名 Runnable
+c	com/fs/starfarer/coreui/O0oo$5	com/fs/starfarer/coreui/FleetMemberStatusPanel$5
+	c javap取证 | 低 | 匿名 Runnable
+c	com/fs/starfarer/coreui/O0oo$6	com/fs/starfarer/coreui/FleetMemberStatusPanel$6
+	c javap取证 | 低 | 匿名 Runnable
+c	com/fs/starfarer/coreui/O0oo$Oo	com/fs/starfarer/coreui/FleetMemberStatusPanel$ShipPortrait
+	c javap取证 | 中 | 舰船头像渲染：FleetMember+Sprite+renderers.D
+c	com/fs/starfarer/coreui/O0oo$o	com/fs/starfarer/coreui/FleetMemberStatusPanel$StatusRow
+	c javap取证+字符串常量 | 中 | 状态行渲染器：icon_supplies/replacement chassis + getBar/ui.impl.Q + setTextOpacity
+	m	setTextOpacity	setTextOpacity	(F)V
+	m	getBar	getBar	()Lcom/fs/starfarer/ui/impl/Q;
+c	com/fs/starfarer/coreui/O0oo$oo	com/fs/starfarer/coreui/FleetMemberStatusPanel$RowFactory
+	c 继承关系+javap取证 | 中 | 状态行工厂接口：O0oo$1/O0oo$2 实现
+c	com/fs/starfarer/coreui/OO0o	com/fs/starfarer/coreui/RefitDataProvider
+	c javap取证 | 中 | Refit 界面数据提供接口：getFleetMembers/getCargo/getAvailableHullMods/getSavedVariantData/notifyFleetMemberChanged 等
+	m	getAvailableHullMods	getAvailableHullMods	()Ljava/util/List;
+	m	getCargo	getCargo	()Lcom/fs/starfarer/api/campaign/CargoAPI;
+	m	getFleetMembers	getFleetMembers	()Ljava/util/List;
+	m	getFleetData	getFleetData	()Lcom/fs/starfarer/campaign/fleet/FleetData;
+	m	getPlayerFleet	getPlayerFleet	()Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	getPlayerStats	getPlayerStats	()Lcom/fs/starfarer/campaign/CharacterStats;
+	m	notifyFleetMemberChanged	notifyFleetMemberChanged	(Lcom/fs/starfarer/coreui/refit/U;Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	getAvailableVariants	getAvailableVariants	()Ljava/util/List;
+	m	areShipNamesEditable	areShipNamesEditable	()Z
+	m	notifyCoreUIDismissed	notifyCoreUIDismissed	()V
+	m	autoSaveRefitChanges	autoSaveRefitChanges	()Z
+	m	isCampaign	isCampaign	()Z
+	m	isStockVariantEditor	isStockVariantEditor	()Z
+	m	getSavedVariantData	getSavedVariantData	()Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData;
+c	com/fs/starfarer/coreui/interface	com/fs/starfarer/coreui/OfficerLevelUpDialog
+	c javap取证+字符串常量 | 高 | 军官升级对话框：officerLevelUp/Select skills to make elite + OfficerData + notifySelected(P) + getRemainingStoryPoints
+	f	OPAD	OPAD	F
+	f	PAD	PAD	F
+	f	WIDTH	WIDTH	F
+	f	HEIGHT	HEIGHT	F
+	f	ENTRY_HEIGHT	ENTRY_HEIGHT	F
+	f	ELITE_EXTRA_HEIGHT	ELITE_EXTRA_HEIGHT	F
+	m	notifySelected	notifySelected	(Lcom/fs/starfarer/coreui/P;)V
+	m	getListChoices	getListChoices	()Lcom/fs/starfarer/coreui/v;
+	m	getRemainingStoryPoints	getRemainingStoryPoints	()I
+	m	getLabelX	getLabelX	()I
+	m	getLabelY	getLabelY	()I
+	m	getValueColor	getValueColor	()Ljava/awt/Color;
+c	com/fs/starfarer/coreui/oOoO	com/fs/starfarer/coreui/TradePanelBase
+	c javap取证 | 中 | 贸易面板抽象基类：tabOpened/tabClosed/setPlugin/cancelTransaction/getTransferHandler；OoOo(T) 的具体父类
+	m	tabOpened	tabOpened	()V
+	m	tabClosed	tabClosed	()V
+	m	setPlugin	setPlugin	(Lcom/fs/starfarer/coreui/OO0o;)V
+	m	cancelTransaction	cancelTransaction	()V
+	m	getTransferHandler	getTransferHandler	()Lcom/fs/starfarer/campaign/ui/trade/F;
+c	com/fs/starfarer/coreui/T	com/fs/starfarer/coreui/TradeManifestPanel
+	c javap取证 | 中 | 贸易清单面板：getManifest + 继承 TradePanelBase；implements ui.newui.Y
+	m	tabOpened	tabOpened	()V
+	m	tabClosed	tabClosed	()V
+	m	setPlugin	setPlugin	(Lcom/fs/starfarer/coreui/OO0o;)V
+	m	getManifest	getManifest	()Lcom/fs/starfarer/campaign/ui/trade/o0OO;
+	m	cancelTransaction	cancelTransaction	()V
+	m	getTransferHandler	getTransferHandler	()Lcom/fs/starfarer/campaign/ui/trade/F;
+c	com/fs/starfarer/coreui/U	com/fs/starfarer/coreui/EventProgressBar
+	c api接口+javap取证 | 高 | 事件进度条：implements api.ui.EventProgressBarAPI；构造器接收 BaseEventIntel；maxProgress 字段
+	f	maxProgress	maxProgress	I
+	m	getXCoordinateForProgress	getXCoordinateForProgress	(F)F
+c	com/fs/starfarer/coreui/P	com/fs/starfarer/coreui/SkillRow
+	c javap取证+字符串常量 | 高 | 技能行：Learn base level of skill/Make skill elite + OfficerData/getSkillId/getSkillButton/getSelector/getTitle/getDesc
+	m	getDescOverride	getDescOverride	()Ljava/lang/String;
+	m	setDescOverride	setDescOverride	(Ljava/lang/String;)V
+	m	shouldFlashOnShowing	shouldFlashOnShowing	()Z
+	m	getPanel	getPanel	()Lcom/fs/starfarer/coreui/voidsuper;
+	m	getOfficerData	getOfficerData	()Lcom/fs/starfarer/rpg/OfficerData;
+	m	getSkillId	getSkillId	()Ljava/lang/String;
+	m	getSkillButton	getSkillButton	()Lcom/fs/starfarer/ui/n;
+	m	getSelector	getSelector	()Lcom/fs/starfarer/ui/n;
+	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
+	m	getDesc	getDesc	()Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/coreui/P$1	com/fs/starfarer/coreui/SkillRow$1
+	c javap取证 | 低 | 匿名按钮回调：implements ui.n$Oo
+c	com/fs/starfarer/coreui/P$2	com/fs/starfarer/coreui/SkillRow$2
+	c javap取证 | 低 | 匿名 Runnable
+c	com/fs/starfarer/coreui/P$Oo	com/fs/starfarer/coreui/SkillRow$Action
+	c javap取证+字符串常量 | 高 | 技能行动作枚举：DISMISS/LEVEL_UP
+	f	Ò00000	DISMISS	Lcom/fs/starfarer/coreui/P$Oo;
+	f	Ó00000	LEVEL_UP	Lcom/fs/starfarer/coreui/P$Oo;
+c	com/fs/starfarer/coreui/P$o	com/fs/starfarer/coreui/SkillRow$Listener
+	c 继承关系+javap取证 | 中 | 技能行回调接口：notifySelected(SkillRow)
+	m	notifySelected	notifySelected	(Lcom/fs/starfarer/coreui/P;)V

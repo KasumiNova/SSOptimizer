@@ -1,0 +1,471 @@
+tiny	2	0	obf	named
+
+c	com/fs/starfarer/loading/A	com/fs/starfarer/loading/SoundLoaderTask
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(异常文案 "Sound with filename [%s] not found"，加载声音字节并构造 sound/Sound)
+	f	o00000	soundFilename	Ljava/lang/String;
+	f	Ò00000	error	Ljava/lang/Exception;
+	m	run	run	()V
+	m	o00000	getError	()Ljava/lang/Exception;
+
+c	com/fs/starfarer/loading/C	com/fs/starfarer/loading/IntelTagSpec
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(SpecStore "Loading intel tags" data/config/tag_data.json，构造 (id,color,JSON) 读 name/width/putFirst/sort)
+	f	o00000	id	Ljava/lang/String;
+	f	Ô00000	name	Ljava/lang/String;
+	f	Object	color	Ljava/awt/Color;
+	f	return	width	F
+	f	Ò00000	putFirst	Z
+	f	Õ00000	sort	F
+	m	Õ00000	getId	()Ljava/lang/String;
+	m	Ò00000	setId	(Ljava/lang/String;)V
+	m	Object	getName	()Ljava/lang/String;
+	m	o00000	setName	(Ljava/lang/String;)V
+	m	Ô00000	getColor	()Ljava/awt/Color;
+	m	o00000	setColor	(Ljava/awt/Color;)V
+	m	return	getWidth	()F
+	m	o00000	setWidth	(F)V
+	m	o00000	isPutFirst	()Z
+	m	o00000	setPutFirst	(Z)V
+	m	Ò00000	getSort	()F
+	m	Ò00000	setSort	(F)V
+
+c	com/fs/starfarer/loading/o0OO	com/fs/starfarer/loading/AptitudeSpec
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(SpecStore "Loading aptitude_data.csv" 逐键填充 id/name/order/effect_skill_id/sound1-5/elite_overlay*，SkillSpec.getGoverningAptitude 引用)
+	f	Õ00000	id	Ljava/lang/String;
+	f	Ó00000	name	Ljava/lang/String;
+	f	OO0000	description	Ljava/lang/String;
+	f	Ö00000	effectSkillId	Ljava/lang/String;
+	f	String	sound1	Ljava/lang/String;
+	f	super	sound2	Ljava/lang/String;
+	f	ÓO0000	sound3	Ljava/lang/String;
+	f	ÒO0000	sound4	Ljava/lang/String;
+	f	do	sound5	Ljava/lang/String;
+	f	õ00000	eliteOverlay	Ljava/lang/String;
+	f	Ò00000	eliteOverlayMedium	Ljava/lang/String;
+	f	ø00000	eliteOverlaySmall	Ljava/lang/String;
+	f	ô00000	soundStory	Ljava/lang/String;
+	f	if	color	Ljava/awt/Color;
+	f	void	order	I
+
+c	com/fs/starfarer/loading/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/loading/CommoditySpec
+	c 来源(继承/实现关系) | 置信度(高) | 证据(implements CommoditySpecAPI extends N，构造 (id,name,basePrice) 设 V4 价格波动；windows 为超长名类)
+
+c	com/fs/starfarer/loading/FactionDialogSpec	com/fs/starfarer/loading/FactionDialogSpec
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(dialogLines 键值对 + addLine/getLine/getLineWithTokens)
+	f	dialogLines	dialogLines	Ljava/util/Map;
+	m	addLine	addLine	(Ljava/lang/String;Ljava/lang/String;)V
+	m	getLine	getLine	(Ljava/lang/String;)Ljava/lang/String;
+	m	getLineWithTokens	getLineWithTokens	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+
+c	com/fs/starfarer/loading/FighterWingSpreadsheetLoader	com/fs/starfarer/loading/FighterWingSpreadsheetLoader
+	c 来源(类名未混淆) | 置信度(高) | 证据(静态 o00000() 加载 fighter wing 表格数据)
+	m	o00000	load	()V
+
+c	com/fs/starfarer/loading/FleetCreationSpec	com/fs/starfarer/loading/FleetCreationSpec
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(createFromJSON/createFleetFromSpec + 补给/燃料/船员比例字段)
+	f	specId	specId	Ljava/lang/String;
+	f	displayName	displayName	Ljava/lang/String;
+	f	maxFleetPoints	maxFleetPoints	F
+	f	minDaysWorthSupplies	minDaysWorthSupplies	F
+	f	maxDaysWorthSupplies	maxDaysWorthSupplies	F
+	f	picks	picks	Ljava/util/List;
+	m	createFromJSON	createFromJSON	(Ljava/lang/String;Lorg/json/JSONObject;)Lcom/fs/starfarer/loading/FleetCreationSpec;
+	m	addPick	addPick	(Lcom/fs/starfarer/api/fleet/FleetMemberType;Ljava/lang/String;II)V
+	m	getSpecId	getSpecId	()Ljava/lang/String;
+	m	getDisplayName	getDisplayName	()Ljava/lang/String;
+	m	getMaxFleetPoints	getMaxFleetPoints	()F
+	m	createFleetFromSpec	createFleetFromSpec	(Lcom/fs/starfarer/loading/FleetCreationSpec;Lcom/fs/starfarer/campaign/Faction;)Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+
+c	com/fs/starfarer/loading/FleetCreationSpec$FleetMemberPick	com/fs/starfarer/loading/FleetCreationSpec$FleetMemberPick
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(type/specId/min/max 可读字段)
+
+c	com/fs/starfarer/loading/null	com/fs/starfarer/loading/EventReport
+	c 来源(继承/实现关系) | 置信度(高) | 证据(implements api.campaign.events.ReportAPI，getEventType/getSubject/getChannel/getRelationship；windows 同名 null 类内容对应)
+	m	hasTag	hasTag	(Ljava/lang/String;)Z
+	m	addTag	addTag	(Ljava/lang/String;)V
+	m	removeTag	removeTag	(Ljava/lang/String;)V
+	m	getTags	getTags	()Ljava/util/Collection;
+	m	clearTags	clearTags	()V
+	m	getEventType	getEventType	()Ljava/lang/String;
+	m	getEventStage	getEventStage	()Ljava/lang/String;
+	m	getProbability	getProbability	()F
+	m	getRelationship	getRelationship	()Lcom/fs/starfarer/loading/null$o;
+	m	getChannel	getChannel	()Ljava/lang/String;
+	m	getSubject	getSubject	()Ljava/lang/String;
+	m	getSummary	getSummary	()Ljava/lang/String;
+	m	getAssessment	getAssessment	()Ljava/lang/String;
+	m	getImage	getImage	()Ljava/lang/String;
+	m	setEventType	setEventType	(Ljava/lang/String;)V
+	m	setEventStage	setEventStage	(Ljava/lang/String;)V
+	m	setProbability	setProbability	(F)V
+	m	setRelationship	setRelationship	(Lcom/fs/starfarer/loading/null$o;)V
+	m	setChannel	setChannel	(Ljava/lang/String;)V
+	m	setSubject	setSubject	(Ljava/lang/String;)V
+	m	setSummary	setSummary	(Ljava/lang/String;)V
+	m	setAssessment	setAssessment	(Ljava/lang/String;)V
+	m	setImage	setImage	(Ljava/lang/String;)V
+	m	getSound	getSound	()Ljava/lang/String;
+	m	setSound	setSound	(Ljava/lang/String;)V
+	m	getIcon	getIcon	()Ljava/lang/String;
+	m	setIcon	setIcon	(Ljava/lang/String;)V
+	f	Ò00000	eventType	Ljava/lang/String;
+	f	o00000	eventStage	Ljava/lang/String;
+	f	Õ00000	probability	F
+	f	return	relationship	Lcom/fs/starfarer/loading/null$o;
+	f	Ø00000	channel	Ljava/lang/String;
+	f	int	subject	Ljava/lang/String;
+	f	ô00000	summary	Ljava/lang/String;
+	f	Object	assessment	Ljava/lang/String;
+	f	Ô00000	image	Ljava/lang/String;
+	f	ø00000	sound	Ljava/lang/String;
+	f	ö00000	icon	Ljava/lang/String;
+	f	for	tags	Ljava/util/Set;
+
+c	com/fs/starfarer/loading/null$o	com/fs/starfarer/loading/EventReport$Relationship
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举常量 UNSET/SELF/NEUTRAL/FRIENDLY/HOSTILE；windows null$o 同常量序)
+	f	Ö00000	UNSET	Lcom/fs/starfarer/loading/null$o;
+	f	class	SELF	Lcom/fs/starfarer/loading/null$o;
+	f	Ó00000	NEUTRAL	Lcom/fs/starfarer/loading/null$o;
+	f	new	FRIENDLY	Lcom/fs/starfarer/loading/null$o;
+	f	Ô00000	HOSTILE	Lcom/fs/starfarer/loading/null$o;
+
+c	com/fs/starfarer/loading/LoadingUtils	com/fs/starfarer/loading/LoadingUtils
+	c 来源(类名未混淆) | 置信度(高) | 证据(CSV/JSON/流读取工具集，SpecStore 全量调用)
+	m	Ò00000	readCSV	(Ljava/lang/String;Ljava/lang/String;Z)Lorg/json/JSONArray;
+	m	Ó00000	readJSON	(Ljava/lang/String;)Lorg/json/JSONObject;
+	m	Ö00000	listFiles	(Ljava/lang/String;)Ljava/util/List;
+	m	super	listFilesOfType	(Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+	m	void	openStream	(Ljava/lang/String;)Ljava/io/InputStream;
+	m	super	readString	(Ljava/lang/String;)Ljava/lang/String;
+
+c	com/fs/starfarer/loading/oO0O	com/fs/starfarer/loading/ShipHullSpecStore
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据("Ship hull spec [%s] already exists/not found"，静态 Map<String,specs.g> 注册表；wendigo/grendel 特殊映射)
+	f	o00000	hullSpecs	Ljava/util/Map;
+	m	super	clear	()V
+	m	super	register	(Ljava/lang/String;Lcom/fs/starfarer/loading/specs/g;)V
+	m	super	get	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/g;
+	m	String	has	(Ljava/lang/String;)Z
+	m	Ó00000	getOrNull	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/g;
+	m	Ò00000	getIds	()Ljava/util/Collection;
+	m	Ò00000	remove	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/loading/while	com/fs/starfarer/loading/CommoditySpecBase
+	c 来源(继承/实现关系+方法签名) | 置信度(高) | 证据(实现 CommoditySpecAPI 全部方法 getBasePrice/isExotic/getSoundId 等，F 的基类)
+	f	ô00000	id	Ljava/lang/String;
+	f	Object.super	name	Ljava/lang/String;
+	f	ö00000	cargoSpace	F
+	f	this.super	basePrice	F
+	f	int	exportValue	F
+	f	oO0000	order	F
+	f	Ô00000	econUnit	F
+	f	ø00000	iconWidthMult	F
+	f	ÕO0000	stackSize	I
+	f	o00000	iconName	Ljava/lang/String;
+	f	Ò00000	iconLargeName	Ljava/lang/String;
+	f	public	soundId	Ljava/lang/String;
+	f	ÒO0000	soundIdDrop	Ljava/lang/String;
+	f	ôO0000	baseDanger	Lcom/fs/starfarer/api/impl/campaign/rulecmd/salvage/MarketCMD$RaidDangerLevel;
+	f	Ø00000	utility	F
+	f	Object	priceVariability	Lcom/fs/starfarer/api/campaign/econ/PriceVariability;
+	f	ÔO0000	demandClass	Ljava/lang/String;
+	f	ØO0000	origin	Ljava/lang/String;
+	f	return	tags	Ljava/util/Set;
+	f	Õ00000	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+
+c	com/fs/starfarer/loading/oo0O	com/fs/starfarer/loading/RankAndPostNameMap
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(default_ranks.json 的 "ranks"/"posts" 两段，if.setDefaultRanks 消费)
+	f	new	ranks	Ljava/util/Map;
+	f	o00000	posts	Ljava/util/Map;
+	m	super	loadNames	(Lorg/json/JSONObject;Ljava/util/Map;)V
+	m	super	getRank	(Ljava/lang/String;)Ljava/lang/String;
+	m	Ò00000	getPost	(Ljava/lang/String;)Ljava/lang/String;
+
+c	com/fs/starfarer/loading/String	com/fs/starfarer/loading/JSONUtils
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(transient 字段反射对象<->JSON 转换、"Key [%s] is required"、枚举/Color/Vector 解析)
+	f	o00000	fieldCache	Ljava/util/Map;
+	m	o00000	getField	(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/reflect/Field;
+	m	o00000	toJSON	(Ljava/lang/Object;Ljava/lang/Class;[Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	fromJSON	(Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/String;)V
+	m	o00000	getEnum	(Lorg/json/JSONObject;Ljava/lang/String;Ljava/lang/Class;Ljava/lang/Enum;)Ljava/lang/Enum;
+	m	return	getColor	(Lorg/json/JSONObject;Ljava/lang/String;)Ljava/awt/Color;
+	m	Ò00000	putColor	(Lorg/json/JSONObject;Ljava/lang/String;Ljava/awt/Color;)V
+	m	o00000	getColor	(Lorg/json/JSONObject;Ljava/lang/String;Ljava/awt/Color;)Ljava/awt/Color;
+
+c	com/fs/starfarer/loading/X	com/fs/starfarer/loading/SpecialItemSpec
+	c 来源(继承/实现关系) | 置信度(高) | 证据(implements SpecialItemSpecAPI，getNewPluginInstance 经 ScriptStore 实例化插件)
+	m	getBaseDanger	getBaseDanger	()Lcom/fs/starfarer/api/impl/campaign/rulecmd/salvage/MarketCMD$RaidDangerLevel;
+	m	setBaseDanger	setBaseDanger	(Lcom/fs/starfarer/api/impl/campaign/rulecmd/salvage/MarketCMD$RaidDangerLevel;)V
+	m	getNewPluginInstance	getNewPluginInstance	(Lcom/fs/starfarer/api/campaign/CargoStackAPI;)Lcom/fs/starfarer/api/campaign/SpecialItemPlugin;
+	m	getManufacturer	getManufacturer	()Ljava/lang/String;
+	m	setManufacturer	setManufacturer	(Ljava/lang/String;)V
+	m	getPluginClass	getPluginClass	()Ljava/lang/String;
+	m	setPluginClass	setPluginClass	(Ljava/lang/String;)V
+	m	getId	getId	()Ljava/lang/String;
+	m	setId	setId	(Ljava/lang/String;)V
+	m	getName	getName	()Ljava/lang/String;
+	m	setName	setName	(Ljava/lang/String;)V
+	m	getCargoSpace	getCargoSpace	()F
+	m	setCargoSpace	setCargoSpace	(F)V
+	m	getBasePrice	getBasePrice	()F
+	m	setBasePrice	setBasePrice	(F)V
+	m	getOrder	getOrder	()F
+	m	setOrder	setOrder	(F)V
+	m	getRarity	getRarity	()F
+	m	setRarity	setRarity	(F)V
+	m	getStackSize	getStackSize	()I
+	m	setStackSize	setStackSize	(I)V
+	m	getIconName	getIconName	()Ljava/lang/String;
+	m	setIconName	setIconName	(Ljava/lang/String;)V
+	m	isMeta	isMeta	()Z
+	m	isPersonnel	isPersonnel	()Z
+	m	isFuel	isFuel	()Z
+	m	isSupplies	isSupplies	()Z
+	m	isExotic	isExotic	()Z
+	m	getTags	getTags	()Ljava/util/Set;
+	m	addTag	addTag	(Ljava/lang/String;)V
+	m	hasTag	hasTag	(Ljava/lang/String;)Z
+	m	getSoundId	getSoundId	()Ljava/lang/String;
+	m	setSoundId	setSoundId	(Ljava/lang/String;)V
+	m	getSoundIdDrop	getSoundIdDrop	()Ljava/lang/String;
+	m	setSoundIdDrop	setSoundIdDrop	(Ljava/lang/String;)V
+	m	getDesc	getDesc	()Ljava/lang/String;
+	m	setDesc	setDesc	(Ljava/lang/String;)V
+	m	getDescFirstPara	getDescFirstPara	()Ljava/lang/String;
+	m	getParams	getParams	()Ljava/lang/String;
+	m	setParams	setParams	(Ljava/lang/String;)V
+	m	getSourceMod	getSourceMod	()Lcom/fs/starfarer/api/ModSpecAPI;
+	m	setSourceMod	setSourceMod	(Lorg/json/JSONObject;)V
+	f	ÔO0000	pluginClass	Ljava/lang/String;
+	f	Ò00000	id	Ljava/lang/String;
+	f	o00000	name	Ljava/lang/String;
+	f	oO0000	cargoSpace	F
+	f	ö00000	basePrice	F
+	f	Ô00000	order	F
+	f	ÕO0000	rarity	F
+	f	ÒO0000	stackSize	I
+	f	int	iconName	Ljava/lang/String;
+	f	ô00000	soundId	Ljava/lang/String;
+	f	for	soundIdDrop	Ljava/lang/String;
+	f	Ø00000	desc	Ljava/lang/String;
+	f	ø00000	manufacturer	Ljava/lang/String;
+	f	Õ00000	params	Ljava/lang/String;
+	f	public	tags	Ljava/util/Set;
+	f	return	baseDanger	Lcom/fs/starfarer/api/impl/campaign/rulecmd/salvage/MarketCMD$RaidDangerLevel;
+	f	Object	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+
+c	com/fs/starfarer/loading/PersonNameStore	com/fs/starfarer/loading/PersonNameStore
+	c 来源(类名未混淆) | 置信度(高) | 证据(加载 person_names.csv，按 gender/usage/category 生成 FullName)
+	f	o00000	namesByGenderUsage	Ljava/util/Map;
+	m	o00000	loadNames	()V
+	m	o00000	getNames	(Lcom/fs/starfarer/api/characters/FullName$Gender;Lcom/fs/starfarer/loading/PersonNameStore$Usage;Ljava/lang/String;)Ljava/util/List;
+	m	o00000	getNamesForGenderAndUsage	(Lcom/fs/starfarer/api/characters/FullName$Gender;Lcom/fs/starfarer/loading/PersonNameStore$Usage;)Ljava/util/Map;
+	m	o00000	getRandomName	(Lcom/fs/starfarer/campaign/Faction;Lcom/fs/starfarer/api/characters/FullName$Gender;)Lcom/fs/starfarer/api/characters/FullName;
+	m	o00000	getRandomName	(Lcom/fs/starfarer/campaign/Faction;Lcom/fs/starfarer/api/characters/FullName$Gender;Ljava/util/Random;)Lcom/fs/starfarer/api/characters/FullName;
+	m	o00000	getRandomName	(Lcom/fs/starfarer/loading/O0oO;Lcom/fs/starfarer/api/characters/FullName$Gender;Ljava/util/Random;)Lcom/fs/starfarer/api/characters/FullName;
+
+c	com/fs/starfarer/loading/PersonNameStore$Usage	com/fs/starfarer/loading/PersonNameStore$Usage
+	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(枚举 FIRST/LAST/ANY)
+	f	FIRST	FIRST	Lcom/fs/starfarer/loading/PersonNameStore$Usage;
+	f	LAST	LAST	Lcom/fs/starfarer/loading/PersonNameStore$Usage;
+	f	ANY	ANY	Lcom/fs/starfarer/loading/PersonNameStore$Usage;
+	m	values	values	()[Lcom/fs/starfarer/loading/PersonNameStore$Usage;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/loading/PersonNameStore$Usage;
+
+c	com/fs/starfarer/loading/R	com/fs/starfarer/loading/FleetTypeNameMap
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(default_fleet_type_names.json 键值表，if.setDefaultFleetNames 消费)
+	f	o00000	names	Ljava/util/Map;
+	m	o00000	get	(Ljava/lang/String;)Ljava/lang/String;
+
+c	com/fs/starfarer/loading/ResourceLoaderState	com/fs/starfarer/loading/ResourceLoaderState
+	c 来源(类名未混淆) | 置信度(高) | 证据(implements AppState 加载画面，queueResource/traverse/renderProgress)
+	f	resources	resources	Ljava/util/List;
+	f	totalWeight	totalWeight	I
+	f	barBg	barBg	Lcom/fs/graphics/Sprite;
+	f	title	title	Lcom/fs/graphics/Sprite;
+	f	bar	bar	Lcom/fs/graphics/Sprite;
+	f	shimmer	shimmer	Lcom/fs/graphics/Sprite;
+	m	queueResource	queueResource	(Lcom/fs/starfarer/loading/ResourceLoaderState$o;Ljava/lang/String;I)V
+	m	getID	getID	()Ljava/lang/String;
+	m	init	init	(Ljava/util/Map;)V
+	m	queueShipAndWeaponSprites	queueShipAndWeaponSprites	()V
+	m	traverse	traverse	()Ljava/lang/String;
+	m	renderBg	renderBg	()V
+	m	renderProgress	renderProgress	(F)V
+	m	goToState	goToState	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/loading/ResourceLoaderState$Oo	com/fs/starfarer/loading/ResourceLoaderState$QueuedResource
+	c 来源(字节码) | 置信度(高) | 证据(queueResource 构造 (type,name,weight) 三元组入队)
+	f	new	type	Lcom/fs/starfarer/loading/ResourceLoaderState$o;
+	f	o00000	name	Ljava/lang/String;
+	f	Ó00000	weight	I
+
+c	com/fs/starfarer/loading/ResourceLoaderState$o	com/fs/starfarer/loading/ResourceLoaderState$ResourceType
+	c 来源(字符串常量) | 置信度(高) | 证据(枚举 TEXTURE/TEXTURE_OPTIONAL/TEXTURE_ALPHA_ADDER/SOUND/FONT/SCRIPTS)
+	f	Ò00000	TEXTURE	Lcom/fs/starfarer/loading/ResourceLoaderState$o;
+	f	String	TEXTURE_OPTIONAL	Lcom/fs/starfarer/loading/ResourceLoaderState$o;
+	f	void	TEXTURE_ALPHA_ADDER	Lcom/fs/starfarer/loading/ResourceLoaderState$o;
+	f	Ö00000	SOUND	Lcom/fs/starfarer/loading/ResourceLoaderState$o;
+	f	Ó00000	FONT	Lcom/fs/starfarer/loading/ResourceLoaderState$o;
+	f	Õ00000	SCRIPTS	Lcom/fs/starfarer/loading/ResourceLoaderState$o;
+
+c	com/fs/starfarer/loading/ShipHullSpecLoader	com/fs/starfarer/loading/ShipHullSpecLoader
+	c 来源(类名未混淆) | 置信度(高) | 证据(加载 data/hulls 与 data/hulls/skins，"Loading ship hull [")
+	m	Ò00000	loadHullData	()V
+	m	Object	loadHullSkins	()V
+	m	o00000	addHullSpec	(Lcom/fs/starfarer/loading/specs/g;)V
+	m	o00000	loadHullSpec	(Ljava/lang/String;)V
+
+c	com/fs/starfarer/loading/ShipHullSpreadsheetLoader	com/fs/starfarer/loading/ShipHullSpreadsheetLoader
+	c 来源(类名未混淆) | 置信度(高) | 证据(静态 o00000() 加载 hulls 表格)
+	m	o00000	load	()V
+
+c	com/fs/starfarer/loading/ShipNameStore	com/fs/starfarer/loading/ShipNameStore
+	c 来源(类名未混淆) | 置信度(高) | 证据(加载 ship_names.json，"Loaded %d total ship names"，生成 Ship/FleetMember 名称)
+	f	Ö00000	loaded	Z
+	f	Ó00000	nameEntries	Ljava/util/Map;
+	f	o00000	allNames	Ljava/util/List;
+	f	new	namesByGroup	Ljava/util/Map;
+	f	class	random	Ljava/util/Random;
+	m	o00000	loadNames	()V
+	m	o00000	loadNamesFromJSON	(Lorg/json/JSONObject;Ljava/lang/String;)V
+	m	o00000	getNameForShip	(Lcom/fs/starfarer/combat/entities/Ship;)Ljava/lang/String;
+	m	o00000	getNameForShip	(Lcom/fs/starfarer/combat/entities/Ship;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	getNameForShip	(Lcom/fs/starfarer/combat/entities/Ship;Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	getNameForShip	(Lcom/fs/starfarer/combat/entities/Ship;Ljava/lang/String;Ljava/util/List;)Ljava/lang/String;
+	m	o00000	getNameForFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Ljava/util/Random;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	getNameForFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	getNameForFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Ljava/lang/String;Ljava/util/List;)Ljava/lang/String;
+
+c	com/fs/starfarer/loading/ShipNameStore$o	com/fs/starfarer/loading/ShipNameStore$NameEntry
+	c 来源(字节码) | 置信度(中) | 证据(name + 使用计数 Ò00000 字段，取用后自增避免重复)
+	f	super	name	Ljava/lang/String;
+	f	Ò00000	useCount	I
+
+c	com/fs/starfarer/loading/SkillSpec	com/fs/starfarer/loading/SkillSpec
+	c 来源(类名未混淆) | 置信度(高) | 证据(implements SkillSpecAPI，加载 skill_data.csv，"Loading skills")
+	f	this.super	id	Ljava/lang/String;
+	f	return.super	name	Ljava/lang/String;
+	f	Object.super	description	Ljava/lang/String;
+	f	return	author	Ljava/lang/String;
+	f	int	tier	I
+	f	Õ00000	reqPoints	I
+	f	Ø00000	reqPointsPer	I
+	f	Object	governingAptitudeId	Ljava/lang/String;
+	f	ø00000	spriteName	Ljava/lang/String;
+	f	ôO0000	effects	Ljava/util/List;
+	f	Ò00000	prefLoc	Lorg/lwjgl/util/vector/Vector2f;
+	f	öO0000	order	F
+	f	for	combatOfficerSkill	Z
+	f	ØO0000	admiralSkill	Z
+	f	ÕO0000	adminSkill	Z
+	f	ÒO0000	aptitudeEffect	Z
+	f	øO0000	elite	Z
+	f	ö00000	permanent	Z
+	f	Ô00000	scope	Lcom/fs/starfarer/api/characters/LevelBasedEffect$ScopeDescription;
+	f	o00000	scope2	Lcom/fs/starfarer/api/characters/LevelBasedEffect$ScopeDescription;
+	f	ô00000	scopeStr	Ljava/lang/String;
+	f	oO0000	scopeStr2	Ljava/lang/String;
+	f	ÔO0000	tags	Ljava/util/Set;
+	f	public	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+
+c	com/fs/starfarer/loading/SkillSpec$SkillEffectSpec	com/fs/starfarer/loading/SkillSpec$SkillEffectSpec
+	c 来源(类名未混淆) | 置信度(高) | 证据(implements SkillSpecAPI$SkillEffectSpecAPI，JSON type/script/hullmods/abilities)
+	f	Ö00000	type	Lcom/fs/starfarer/api/characters/SkillEffectType;
+	f	void	effectClass	Ljava/lang/String;
+	f	Ó00000	hullModUnlocks	Ljava/util/List;
+	f	ô00000	abilityUnlocks	Ljava/util/List;
+	f	Ò00000	governingSkill	Ljava/lang/String;
+	f	super	levelBased	Z
+	f	Õ00000	requiredSkillLevel	F
+	f	String	name	Ljava/lang/String;
+
+c	com/fs/starfarer/loading/SkillSpec$SkillEffectSpec$1	com/fs/starfarer/loading/SkillSpec$SkillEffectSpec$HullModUnlockComparator
+	c 来源(字节码) | 置信度(高) | 证据(Comparator<SkillSpec$o>：先比 level 再比 hullmod 显示名)
+	m	super	compareUnlocks	(Lcom/fs/starfarer/loading/SkillSpec$o;Lcom/fs/starfarer/loading/SkillSpec$o;)I
+
+c	com/fs/starfarer/loading/SkillSpec$o	com/fs/starfarer/loading/SkillSpec$HullModUnlock
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(JSON "hullmods" 的 (id,level) 条目，getUnlockedHullMods 按等级过滤)
+	f	o00000	hullModId	Ljava/lang/String;
+	f	Ò00000	level	I
+
+c	com/fs/starfarer/loading/SpecStore	com/fs/starfarer/loading/SpecStore
+	c 来源(类名未混淆) | 置信度(高) | 证据(全量 spec 注册中心 Map<Class,Map<String,Object>>，分类型加载器)
+	m	ÓO0000	loadStarmap	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	interface	loadSubmarkets	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	ÔO0000	loadMarketConditions	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	o00000	loadPings	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	Ó00000	loadIntelTags	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	OO0000	loadEvents	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	Ø00000	loadAbilities	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	öO0000	loadIndustries	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	null.super	loadTerrain	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	while	loadChannels	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	Óo0000	loadCustomCampaignEntities	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	õO0000	loadBattleObjectives	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	class.super	loadSkills	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	õ00000	loadAptitudes	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	new	loadEngineAndHullStyles	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	new.super	loadShipSystems	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	Oo0000	loadSectorConfig	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	ö00000	loadPersonMissions	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	ØO0000	loadBarEvents	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	float	loadProcgenData	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	Ö00000	loadCommodities	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	Ô00000	loadSpecialItems	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	oo0000	loadFactions	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	class	loadMissions	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	null	loadHullMods	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	ÖO0000	loadSoundSets	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	oO0000	loadPlanetData	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
+	m	float	loadDescriptions	()V
+	m	Ó00000	loadPersonalities	()V
+	m	oO0000	loadVariants	()V
+	m	õ00000	loadCampaignData	()V
+	m	class	loadTitleScreenVariants	()V
+
+c	com/fs/starfarer/loading/SpecStore$1	com/fs/starfarer/loading/SpecStore$AbilitySpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册于 "Loading abilities" data/campaign/abilities.csv，产出 specs/oOOO)
+
+c	com/fs/starfarer/loading/SpecStore$2	com/fs/starfarer/loading/SpecStore$IndustrySpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册于 "Loading industries" data/campaign/industries.csv，产出 specs/H)
+
+c	com/fs/starfarer/loading/SpecStore$10	com/fs/starfarer/loading/SpecStore$PlanetGenDataSpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(planet_gen_data.csv type==PLANET，产出 PlanetGenDataSpec)
+
+c	com/fs/starfarer/loading/SpecStore$11	com/fs/starfarer/loading/SpecStore$CategoryGenDataSpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(planet_gen_data.csv type==CATEGORY，产出 CategoryGenDataSpec)
+
+c	com/fs/starfarer/loading/SpecStore$12	com/fs/starfarer/loading/SpecStore$TerrainGenDataSpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(planet_gen_data.csv type==TERRAIN，产出 TerrainGenDataSpec)
+
+c	com/fs/starfarer/loading/SpecStore$13	com/fs/starfarer/loading/SpecStore$ConditionGenDataSpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(condition_gen_data.csv，校验市场条件存在性)
+
+c	com/fs/starfarer/loading/SpecStore$14	com/fs/starfarer/loading/SpecStore$DropGroupRowLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(drop_groups.csv，解析 wpn_/ftr_/item_ 前缀引用)
+
+c	com/fs/starfarer/loading/SpecStore$15	com/fs/starfarer/loading/SpecStore$SalvageEntityGenDataSpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(salvage_entity_gen_data.csv，产出 SalvageEntityGenDataSpec)
+
+c	com/fs/starfarer/loading/SpecStore$16	com/fs/starfarer/loading/SpecStore$CommoditySpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(commodities.csv，产出 CommoditySpec(F))
+
+c	com/fs/starfarer/loading/SpecStore$17	com/fs/starfarer/loading/SpecStore$SpecialItemSpecLoader
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(special_items.csv，产出 SpecialItemSpec(OOoo))
+
+c	com/fs/starfarer/loading/SpecStore$18	com/fs/starfarer/loading/SpecStore$ShipsWhenImportingList
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(SpecStore 注册 key "shipsWhenImporting" type "hulls"，SpecStore$Oo 实现)
+
+c	com/fs/starfarer/loading/SpecStore$19	com/fs/starfarer/loading/SpecStore$KnownShipsList
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "knownShips" type "hulls")
+
+c	com/fs/starfarer/loading/SpecStore$20	com/fs/starfarer/loading/SpecStore$PriorityShipsList
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "priorityShips" type "hulls")
+
+c	com/fs/starfarer/loading/SpecStore$21	com/fs/starfarer/loading/SpecStore$KnownFightersList
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "knownFighters" type "fighters")
+
+c	com/fs/starfarer/loading/SpecStore$22	com/fs/starfarer/loading/SpecStore$PriorityFightersList
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "priorityFighters" type "fighters")
+
+c	com/fs/starfarer/loading/SpecStore$23	com/fs/starfarer/loading/SpecStore$KnownWeaponsList
+	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "knownWeapons" type "weapons"，id 来自 WeaponSpecStore)

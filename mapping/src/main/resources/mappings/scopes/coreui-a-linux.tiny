@@ -1,0 +1,189 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/coreui/A/B	com/fs/starfarer/coreui/PlanetSurveyIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(行星调查状态图标：Fully surveyed/Unsurveyed/Required to survey/Quantity + CampaignPlanet)
+c	com/fs/starfarer/coreui/A/C	com/fs/starfarer/coreui/MapEntityIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星图实体图标基类：SectorEntityToken+Sprite+Fader+Alignment，被 B/S/T/b/ooOo/intsuper/if/ifsuper/o00O/o0OO/Z/O0OO 继承)
+c	com/fs/starfarer/coreui/A/H	com/fs/starfarer/coreui/SectorMapPanel
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(implements SectorMapAPI + 字符串 Sector/System/Go back/Hyperspace + getScroller/getMap/getFilter/getParams，星图主面板)
+	f	ØÓõ000	scroller	Lcom/fs/starfarer/coreui/A/while;
+		c getScroller 直接返回字段 | 高
+	f	øÓõ000	map	Lcom/fs/starfarer/coreui/A/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+		c getMap 直接返回字段 | 高
+	f	oÓõ000	filter	Lcom/fs/starfarer/coreui/A/OOOo;
+		c getFilter 直接返回字段 | 高
+	f	ôÓõ000	params	Lcom/fs/starfarer/coreui/A/H$o;
+		c getParams 直接返回字段 | 高
+	f	OPAD	OPAD	F
+	m	getScroller	getScroller	()Lcom/fs/starfarer/coreui/A/while;
+	m	getMap	getMap	()Lcom/fs/starfarer/coreui/A/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getFilter	getFilter	()Lcom/fs/starfarer/coreui/A/OOOo;
+	m	getParams	getParams	()Lcom/fs/starfarer/coreui/A/H$o;
+	m	getCoreUI	getCoreUI	()Lcom/fs/starfarer/coreui/_$o;
+	m	centerOnEntity	centerOnEntity	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	centerOn	centerOn	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	getWorldCenter	getWorldCenter	()Lorg/lwjgl/util/vector/Vector2f;
+	m	saveCoordinates	saveCoordinates	()V
+	m	loadCoordinates	loadCoordinates	()V
+	m	zoomOutAndCenter	zoomOutAndCenter	()V
+	m	updateMapAndScrollerSize	updateMapAndScrollerSize	()V
+	m	notifyMapLocationChanged	notifyMapLocationChanged	(Lcom/fs/starfarer/api/campaign/LocationAPI;)V
+c	com/fs/starfarer/coreui/A/H$Oo	com/fs/starfarer/coreui/SectorMapMode
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(枚举 INTEL_MESSAGES/INTEL_PLANETS/MARKET_SCREEN/OUTPOST_LIST/PRODUCTION_PANEL，星图打开模式)
+c	com/fs/starfarer/coreui/A/H$o	com/fs/starfarer/coreui/SectorMapParams
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(MapParams 数据类：M 监听/SectorEntityToken/MapFilterData/ArrowData/BaseLocation/Set<StarSystemAPI>/MarkerData 等)
+c	com/fs/starfarer/coreui/A/I	com/fs/starfarer/coreui/FuelRangePanel
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(燃料航程面板：字符串 fuel: %d/ly range/max range: %d ly/speed + BAR_WIDTH)
+c	com/fs/starfarer/coreui/A/L	com/fs/starfarer/coreui/FleetMapIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(舰队图标：icon_fleet0-3/icon_station + CampaignFleet + VisibilityLevel)
+c	com/fs/starfarer/coreui/A/M	com/fs/starfarer/coreui/MapClickListener
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接口：o00000(P, SectorEntityToken) 地图点击监听（ui-newui-a 注释：实现 coreui.A.M 地图点击监听）)
+c	com/fs/starfarer/coreui/A/O	com/fs/starfarer/coreui/AlignmentCalculator
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(Alignment 计算工具：o00000 系列返回 Alignment，List<O$Oo> 锚点)
+c	com/fs/starfarer/coreui/A/O$Oo	com/fs/starfarer/coreui/AlignmentAnchor
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接口：super()→Vector2f 对齐锚点)
+c	com/fs/starfarer/coreui/A/O$o	com/fs/starfarer/coreui/IconAlignmentAnchor
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(实现 O$Oo：持 MapEntityIcon(C)，返回其位置)
+c	com/fs/starfarer/coreui/A/O0OO	com/fs/starfarer/coreui/ColoredMapIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(C 子类：Color+生命周期 float，构造(canvas,token,Color,FFF)（低置信）)
+c	com/fs/starfarer/coreui/A/O0Oo	com/fs/starfarer/coreui/CourseWidget
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(航线控件：layInCourseForNextStep/getNextStep/setCurrentTarget/abort/resume + 字符串 course laid in for/nav error/cancel/resume course（ui-newui-a 引用 getCourse→本类）)
+	f	FREQUENCY	FREQUENCY	F
+	m	layInCourseForNextStep	layInCourseForNextStep	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	getNextStep	getNextStep	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	setCurrentTarget	setCurrentTarget	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	getCurrentTarget	getCurrentTarget	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	getLastLegDistance	getLastLegDistance	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)F
+	m	getNameForSource	getNameForSource	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Z)Ljava/lang/String;
+	m	abort	abort	()V
+	m	resume	resume	()V
+	m	getPhase	getPhase	()F
+	m	getInner	getInner	()Lcom/fs/graphics/util/Fader;
+c	com/fs/starfarer/coreui/A/OOOo	com/fs/starfarer/coreui/MapLegendPanel
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(图例面板：starscape/names/constellations/factions/missions/fuel/exploration/legend 字段未混淆 + 字符串 Legend/Missions)
+	f	PAD	PAD	F
+	f	starscape	starscape	Lcom/fs/starfarer/ui/n;
+	f	names	names	Lcom/fs/starfarer/ui/n;
+	f	constellations	constellations	Lcom/fs/starfarer/ui/n;
+	f	factions	factions	Lcom/fs/starfarer/ui/n;
+	f	missions	missions	Lcom/fs/starfarer/ui/n;
+	f	fuel	fuel	Lcom/fs/starfarer/ui/n;
+	f	exploration	exploration	Lcom/fs/starfarer/ui/n;
+	f	legend	legend	Lcom/fs/starfarer/ui/n;
+	m	getData	getData	()Lcom/fs/starfarer/api/ui/MapFilterData;
+c	com/fs/starfarer/coreui/A/OOOo$1	com/fs/starfarer/coreui/MapLegendPanel$StarscapeTooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(图例 Starscape tooltip：Show a "real-space" view of the sector)
+c	com/fs/starfarer/coreui/A/OOOo$2	com/fs/starfarer/coreui/MapLegendPanel$NamesTooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(图例 Names tooltip：Show the names of stars, planets...)
+c	com/fs/starfarer/coreui/A/OOOo$3	com/fs/starfarer/coreui/MapLegendPanel$ConstellationsTooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(图例 Constellations tooltip)
+c	com/fs/starfarer/coreui/A/OOOo$4	com/fs/starfarer/coreui/MapLegendPanel$InhabitedTooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(图例 Inhabited tooltip：Show only the names of star systems and planets known to be inhabited)
+c	com/fs/starfarer/coreui/A/OOOo$5	com/fs/starfarer/coreui/MapLegendPanel$PlanetSurveyTooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(图例 Planet survey tooltip：All planets fully surveyed/Planets:)
+c	com/fs/starfarer/coreui/A/OOOo$6	com/fs/starfarer/coreui/MapLegendPanel$FuelRangeTooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(图例 Fuel range tooltip：Show the maximum hyperspace range)
+c	com/fs/starfarer/coreui/A/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/DualColumnButtonList
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(双列按钮列表：addItem/setParent/getMode(LEFT/RIGHT)/getItems)
+	m	addItem	addItem	(Ljava/lang/String;Ljava/lang/String;FZLjava/lang/Object;)V
+	m	setParent	setParent	(Lcom/fs/starfarer/ui/z;)V
+	m	getMode	getMode	()Lcom/fs/starfarer/coreui/A/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	m	getWidth	getWidth	()F
+	m	getItemHeight	getItemHeight	()F
+	m	getItems	getItems	()Ljava/util/List;
+	m	isInvisible	isInvisible	()Z
+	m	setInvisible	setInvisible	(Z)V
+c	com/fs/starfarer/coreui/A/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/coreui/DualColumnButtonList$Listener
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接口：o00000(ui/n, Object) 列表项回调)
+c	com/fs/starfarer/coreui/A/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/coreui/DualColumnButtonList$Row
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(extends Stringnew$Oo(ButtonBase)：标题+文本+三色按钮行)
+	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/coreui/A/OOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo	com/fs/starfarer/coreui/DualColumnButtonList$Side
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(枚举 LEFT/RIGHT 列位置)
+c	com/fs/starfarer/coreui/A/P	com/fs/starfarer/coreui/MapContextMenuAction
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接口：o00000(String, Object) 菜单项动作（oOOO$1 实现）)
+c	com/fs/starfarer/coreui/A/S	com/fs/starfarer/coreui/PlanetSurveyDataIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(行星调查数据图标：Full survey data/Navigation data/Days at base burn level + SurveyLevel)
+c	com/fs/starfarer/coreui/A/T	com/fs/starfarer/coreui/JumpPointIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(跳跃点图标：icon_jump_point/icon_wormhole/icon_black_hole_well/icon_gas_giant_well + JumpPoint)
+c	com/fs/starfarer/coreui/A/Y	com/fs/starfarer/coreui/IntelMapMarker
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(intel 地图标记：Location marker./show intel + IntelMarkerIntel + Faction/Color/Set<String>)
+c	com/fs/starfarer/coreui/A/Y$1	com/fs/starfarer/coreui/IntelMapMarker$CoreInteractionListener
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(implements CoreInteractionListener + IntelMarkerIntel，coreUIDismissed 未混淆)
+	m	coreUIDismissed	coreUIDismissed	()V
+c	com/fs/starfarer/coreui/A/Z	com/fs/starfarer/coreui/ConstellationIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星座图标：constellation/radar_mask + Z$o 数据)
+c	com/fs/starfarer/coreui/A/Z$1	com/fs/starfarer/coreui/ConstellationIcon$Tooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星座 tooltip：Days at base burn level/Light-years/Navigation data)
+c	com/fs/starfarer/coreui/A/Z$Oo	com/fs/starfarer/coreui/MapIconClickListener
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接口：intelMapIconClicked/otherMapIconClicked 未混淆)
+c	com/fs/starfarer/coreui/A/Z$o	com/fs/starfarer/coreui/ConstellationIcon$Data
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星座数据：CommMessage/IntelInfoPlugin/SectorEntityToken/PriceUpdatePlugin)
+c	com/fs/starfarer/coreui/A/b	com/fs/starfarer/coreui/OrbitalStationIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(空间站图标：icon_station + CampaignOrbitalStation)
+c	com/fs/starfarer/coreui/A/classsuper	com/fs/starfarer/coreui/MapRadarHolder
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(雷达/位置占位：br_location_holder/br_radar_holder + Sprite×2)
+c	com/fs/starfarer/coreui/A/float	com/fs/starfarer/coreui/UnknownRegionLabel
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(未知区域文本：Hyperspace/Unknown（低置信）)
+c	com/fs/starfarer/coreui/A/if	com/fs/starfarer/coreui/CustomEntityIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(自定义实体图标：constellationLabel/objective/sensor_contact/side station + CustomCampaignEntity + VisibilityLevel)
+c	com/fs/starfarer/coreui/A/ifsuper	com/fs/starfarer/coreui/SensorContactIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(传感器接触图标：Unidentified Sensor Contact/question_mark + Sprite + List<ifsuper$o>)
+c	com/fs/starfarer/coreui/A/ifsuper$o	com/fs/starfarer/coreui/SensorContactIcon$Point
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接触点数据：Fader+Vector2f+float)
+c	com/fs/starfarer/coreui/A/intsuper	com/fs/starfarer/coreui/NascentGravityWellIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(新生引力井图标：Nascent Gravity Well/icon_nascent_well)
+c	com/fs/starfarer/coreui/A/o00O	com/fs/starfarer/coreui/SlipstreamIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星流图标：slipstream/system + CampaignTerrain)
+c	com/fs/starfarer/coreui/A/o0OO	com/fs/starfarer/coreui/DebrisFieldIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(残骸图标：Explored/debris/sensor_contact + CampaignTerrain + VisibilityLevel)
+c	com/fs/starfarer/coreui/A/oOOO	com/fs/starfarer/coreui/StarMapContextMenu
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星图右键菜单：Lay in course/Create intel map marker/Show planet info/Show star info/... + implements classsuper$o+OOoo$Oo+oo0O$o)
+	m	preProcessInput	preProcessInput	(Lcom/fs/starfarer/util/super/B;)V
+	m	showTooltip	showTooltip	(Ljava/lang/Object;)V
+	m	hideTooltip	hideTooltip	(Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/coreui/A/oOOO$1	com/fs/starfarer/coreui/StarMapContextMenu$Action
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(implements P：菜单项动作（OOoo 列表 + String）)
+c	com/fs/starfarer/coreui/A/oOOO$2	com/fs/starfarer/coreui/StarMapContextMenu$ShowTooltipAction
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(Runnable：StandardTooltipV2 tooltip 显示动作)
+c	com/fs/starfarer/coreui/A/oOOO$3	com/fs/starfarer/coreui/StarMapContextMenu$Tooltip
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(StandardTooltipV2Expandable：菜单项 tooltip)
+c	com/fs/starfarer/coreui/A/oOOO$o	com/fs/starfarer/coreui/StarMapContextMenu$ActionType
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(枚举 CREATE_MARKER/LAY_IN_COURSE/MORE_DATA/OPEN_SYSTEM_MAP)
+c	com/fs/starfarer/coreui/A/ooOo	com/fs/starfarer/coreui/AsteroidBeltIcon
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(小行星带图标：asteroidBeltMapColor/icon_asteroid + CampaignAsteroid)
+c	com/fs/starfarer/coreui/A/return	com/fs/starfarer/coreui/CampaignRadar
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(战役雷达：campaignRadar/fleet0-3/jump_point/station/salvageable/sensor_contact + renderFleet/renderSensorContact/renderCustom)
+	m	renderFleet	renderFleet	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;FFF)V
+	m	renderCustom	renderCustom	(Lcom/fs/starfarer/campaign/CustomCampaignEntity;FFF)V
+	m	renderSensorContact	renderSensorContact	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;FFF)V
+	m	getRadius	getRadius	()F
+c	com/fs/starfarer/coreui/A/while	com/fs/starfarer/coreui/SectorMapScroller
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星图滚动面板：addToOverlay/getContentContainer/setContentSize/scrollToY/ensureVisible，H.getScroller() 返回)
+	m	addToOverlay	addToOverlay	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	removeFromOverlay	removeFromOverlay	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	getContentContainer	getContentContainer	()Lcom/fs/starfarer/coreui/A/while$Oo;
+	m	setContentSize	setContentSize	(FF)V
+	m	scrollToY	scrollToY	(F)V
+	m	isScrolling	isScrolling	()Z
+	m	setRoundOffset	setRoundOffset	(Z)V
+	m	ensureVisible	ensureVisible	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	getVisiblityPad	getVisiblityPad	()F
+	m	setVisiblityPad	setVisiblityPad	(F)V
+	m	clampAndRecompute	clampAndRecompute	()V
+	m	resetOffset	resetOffset	()V
+	m	clampOffset	clampOffset	()V
+	m	processScrollInputOnly	processScrollInputOnly	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/A/while$1	com/fs/starfarer/coreui/SectorMapScroller$1
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(内部面板：仅 renderImpl 调 super（低置信）)
+c	com/fs/starfarer/coreui/A/while$Oo	com/fs/starfarer/coreui/SectorMapScrollerViewport
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(滚动视口：getVisibleArea/setVisibleArea/isScrolling/forceOffset/setOffset（windows 对应 N$Oo 被 ui-core-b 抢先命名为 ScrollViewport，本 scope 命名避开）)
+	m	getVisibleArea	getVisibleArea	()Lcom/fs/starfarer/ui/OO0o;
+	m	setVisibleArea	setVisibleArea	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	isScrolling	isScrolling	()Z
+	m	forceOffset	forceOffset	(FF)V
+	m	getXOffset	getXOffset	()F
+	m	getYOffset	getYOffset	()F
+	m	setOffset	setOffset	(FF)V
+c	com/fs/starfarer/coreui/A/while$o	com/fs/starfarer/coreui/SectorMapScroller$MouseButton
+	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(枚举 LMB/RMB，滚动面板鼠标按键模式)

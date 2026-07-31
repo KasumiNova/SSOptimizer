@@ -1,0 +1,565 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$o	com/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponSlotButton
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends Panel implements UIComponent，持 BaseWeaponSpec+WeaponSlot(Y)+Fader，"built in weapon"，getSlot/getWeapon/getGroups/getHighlightFader)
+	m	updateCheckboxes	updateCheckboxes	()V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	getHighlightFader	getHighlightFader	()Lcom/fs/graphics/util/Fader;
+	m	getWeapon	getWeapon	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	getSlot	getSlot	()Lcom/fs/starfarer/loading/specs/nullsuper;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getGroups	getGroups	()[Lcom/fs/starfarer/ui/n;
+
+c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$oo	com/fs/starfarer/coreui/refit/WeaponGroupDialog$GroupFluxLabel
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: "Group"/"flux/sec"/":" 标签，持 WeaponGroupSpec+组号，武器组表头行)
+	m	update	update	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	renderImpl	renderImpl	(F)V
+
+c	com/fs/starfarer/coreui/refit/WeaponPickerDialog$1	com/fs/starfarer/coreui/refit/WeaponPickerDialog$WeaponComparator
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: Comparator<WeaponPickerDialog$o> 武器列表排序)
+	m	o00000	compareWeapons	(Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;)I
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+
+c	com/fs/starfarer/coreui/refit/WeaponPickerDialog$2	com/fs/starfarer/coreui/refit/WeaponPickerDialog$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，setBeforeShowing 时按按钮+tooltip 宽度定位)
+	m	run	run	()V
+
+c	com/fs/starfarer/coreui/refit/WeaponPickerDialog$3	com/fs/starfarer/coreui/refit/WeaponPickerDialog$TooltipPositioner2
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，与 $2 同构的第二个 tooltip 定位器)
+	m	run	run	()V
+
+c	com/fs/starfarer/coreui/refit/WeaponPickerDialog$o	com/fs/starfarer/coreui/refit/WeaponPickerDialog$AvailableWeapon
+	c 来源(javap取证) | 置信度(高) | 证据(API-impl种子: 实现 AutofitPlugin$AvailableWeapon 全部方法（getId/getSpec/getPrice/getSource/getSubmarket/getQuantity/getOPCost）)
+	f	quantity	quantity	I
+	f	source	source	Lcom/fs/starfarer/api/campaign/CargoAPI;
+	f	spec	spec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	f	sourceString	sourceString	Ljava/lang/String;
+	f	price	price	F
+	f	submarket	submarket	Lcom/fs/starfarer/campaign/econ/Submarket;
+	m	setPrice	setPrice	(F)V
+	m	getPrice	getPrice	()F
+	m	setQuantity	setQuantity	(I)V
+	m	getSource	getSource	()Lcom/fs/starfarer/api/campaign/CargoAPI;
+	m	getSubmarket	getSubmarket	()Lcom/fs/starfarer/api/campaign/econ/SubmarketAPI;
+	m	getQuantity	getQuantity	()I
+	m	reportTransaction	reportTransaction	()V
+	m	getId	getId	()Ljava/lang/String;
+	m	getSpec	getSpec	()Lcom/fs/starfarer/api/loading/WeaponSpecAPI;
+	m	getOPCost	getOPCost	(Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI;Lcom/fs/starfarer/api/combat/MutableShipStatsAPI;)F
+
+c	com/fs/starfarer/coreui/refit/WeaponPickerDialog	com/fs/starfarer/coreui/refit/WeaponPickerDialog
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 武器选择对话框，"Ballistic"/"Energy"/"Buy Legal"/"Buy Illegal"/"currently mounted")
+	f	PAD	PAD	F
+	f	ITEM_WIDTH	ITEM_WIDTH	F
+	f	ITEM_HEIGHT	ITEM_HEIGHT	F
+	f	COLS	COLS	I
+	f	CLEAR_SLOT_TOKEN	CLEAR_SLOT_TOKEN	Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;
+	m	getCombinedAvailable	getCombinedAvailable	(Lcom/fs/starfarer/api/campaign/CargoAPI;Lcom/fs/starfarer/api/campaign/CoreUIAPI;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)Ljava/util/List;
+	m	updateYPosition	updateYPosition	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getPickedWeaponSpec	getPickedWeaponSpec	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	getPickedWeaponInfo	getPickedWeaponInfo	()Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;
+	m	getSlotButton	getSlotButton	()Lcom/fs/starfarer/ui/n;
+	m	notifyFilterChanged	notifyFilterChanged	()V
+	m	getOther	getOther	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	getOtherTooltip	getOtherTooltip	(Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	isCompareMode	isCompareMode	()Z
+
+c	com/fs/starfarer/coreui/refit/auto/A$1	com/fs/starfarer/coreui/refit/VariantRow$VariantSlotTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends StandardTooltipV2Expandable，"Click to assign a variant to this slot."/"Empty Slot")
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/auto/A	com/fs/starfarer/coreui/refit/VariantRow
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 变体行控件：getResolver(SavedVariantData$VariantResolver)/getShipButton/getRemoveButton/getName/isEmpty，持 HullVariantSpec)
+	m	getResolver	getResolver	()Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData$VariantResolver;
+	m	getShipButtonPanel	getShipButtonPanel	()Lcom/fs/starfarer/coreui/refit/auto/E;
+	m	sizeChanged	sizeChanged	(FF)V
+	m	isEmpty	isEmpty	()Z
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getShipButton	getShipButton	()Lcom/fs/starfarer/ui/n;
+	m	getRemoveButton	getRemoveButton	()Lcom/fs/starfarer/ui/n;
+	m	getName	getName	()Lcom/fs/starfarer/ui/d;
+
+c	com/fs/starfarer/coreui/refit/auto/new$1	com/fs/starfarer/coreui/refit/MassAutofitDialog$OverMaxShipsTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: extends StandardTooltipV2Expandable，"suppliesPerShipOverMaxInFleet"/超舰队上限补给说明)
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/auto/new$2	com/fs/starfarer/coreui/refit/MassAutofitDialog$FleetStatsTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: extends StandardTooltipV2Expandable，舰队技能数值表说明)
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/auto/new$3	com/fs/starfarer/coreui/refit/MassAutofitDialog$Tooltip
+	c 来源(javap取证) | 置信度(低) | 证据(javap取证: extends StandardTooltipV2Expandable，createImpl 子类)
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/auto/new$o	com/fs/starfarer/coreui/refit/MassAutofitDialog$DialogType
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: enum，常量 MASS_REFIT)
+	f	Ò00000	MASS_REFIT	Lcom/fs/starfarer/coreui/refit/auto/new$o;
+
+c	com/fs/starfarer/coreui/refit/auto/new	com/fs/starfarer/coreui/refit/MassAutofitDialog
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: "Fleet composition data"/"Mass autofit..."/"Idle officers"/维修/脱离战状态，舰队级批量自动装配对话框，持 CampaignFleet+UITable)
+	m	sizeChanged	sizeChanged	(FF)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+
+c	com/fs/starfarer/coreui/refit/auto/Object$O0	com/fs/starfarer/coreui/refit/AutofitWeaponGroupsPanel$WeaponSlotButton
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: C 内部武器槽位控件，构造 (C, BaseWeaponSpec, WeaponSlot))
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+
+c	com/fs/starfarer/coreui/refit/auto/Object$o	com/fs/starfarer/coreui/refit/AutofitWeaponGroupsPanel$GroupData
+	c 来源(javap取证) | 置信度(低) | 证据(javap取证: C 内部数据类，持 C$oo 动作枚举字段)
+
+c	com/fs/starfarer/coreui/refit/auto/Object$Oo	com/fs/starfarer/coreui/refit/AutofitWeaponGroupsPanel$WeaponIcon
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: C 内部武器图标控件，getIcon+processInputImpl)
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+
+c	com/fs/starfarer/coreui/refit/auto/Object$oo	com/fs/starfarer/coreui/refit/AutofitWeaponGroupsPanel$WeaponGroupAction
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: enum，DELAY/MERGE_GROUPS/MOVE_WEAPON_INTO_GROUP/READY_WEAPON 武器组编辑动作)
+	f	Ó00000	DELAY	Lcom/fs/starfarer/coreui/refit/auto/Object$oo;
+	f	class	MERGE_GROUPS	Lcom/fs/starfarer/coreui/refit/auto/Object$oo;
+	f	Ô00000	MOVE_WEAPON_INTO_GROUP	Lcom/fs/starfarer/coreui/refit/auto/Object$oo;
+	f	new	READY_WEAPON	Lcom/fs/starfarer/coreui/refit/auto/Object$oo;
+
+c	com/fs/starfarer/coreui/refit/auto/Object	com/fs/starfarer/coreui/refit/AutofitWeaponGroupsPanel
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Weapon group 1-4"/"Current weapon"/"Remaining weapons"/"Go"，autoGenerateWeaponGroupsV2 武器组分配面板)
+	f	INNER_WIDTH	INNER_WIDTH	F
+	f	INNER_HEIGHT	INNER_HEIGHT	F
+	f	PAD	PAD	F
+	f	OPAD	OPAD	F
+	m	createUI	createUI	()V
+	m	setHolo	setHolo	()V
+	m	getVariant	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	advanceImpl	advanceImpl	(F)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	autoGenerateWeaponGroupsV2	autoGenerateWeaponGroupsV2	()V
+
+c	com/fs/starfarer/coreui/refit/auto/D	com/fs/starfarer/coreui/refit/VariantRow$ButtonRow
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 变体行下按钮行，getButtons()List<Button>，setFleetMember+syncWithVariant，A 持有)
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	setFleetMember	setFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getButtons	getButtons	()Ljava/util/List;
+
+c	com/fs/starfarer/coreui/refit/auto/E	com/fs/starfarer/coreui/refit/ShipButtonPanel
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 变体行飞船按钮面板：getGlowBrightness/setGlowBrightness+渲染船图标，A.getShipButtonPanel() 返回)
+	m	sizeChanged	sizeChanged	(FF)V
+	m	getGlowBrightness	getGlowBrightness	()F
+	m	setGlowBrightness	setGlowBrightness	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+
+c	com/fs/starfarer/coreui/refit/auto/OOoO	com/fs/starfarer/coreui/refit/AutofitPluginDelegateImpl
+	c 来源(javap取证) | 置信度(高) | 证据(API-impl种子: 实现 AutofitPlugin$AutofitPluginDelegate 全部方法（fitFighterInSlot/fitWeaponInSlot/getAvailableWeapons/...），持 CargoData)
+	m	clearFighterSlot	clearFighterSlot	(ILcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	clearWeaponSlot	clearWeaponSlot	(Lcom/fs/starfarer/api/loading/WeaponSlotAPI;Lcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	fitFighterInSlot	fitFighterInSlot	(ILcom/fs/starfarer/api/plugins/AutofitPlugin$AvailableFighter;Lcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	fitWeaponInSlot	fitWeaponInSlot	(Lcom/fs/starfarer/api/loading/WeaponSlotAPI;Lcom/fs/starfarer/api/plugins/AutofitPlugin$AvailableWeapon;Lcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	syncUIWithVariant	syncUIWithVariant	()V
+	m	getAvailableFighters	getAvailableFighters	()Ljava/util/List;
+	m	getAvailableWeapons	getAvailableWeapons	()Ljava/util/List;
+	m	getAvailableHullmods	getAvailableHullmods	()Ljava/util/List;
+	m	isPriority	isPriority	(Lcom/fs/starfarer/api/loading/WeaponSpecAPI;)Z
+	m	isPriority	isPriority	(Lcom/fs/starfarer/api/loading/FighterWingSpecAPI;)Z
+	m	getShip	getShip	()Lcom/fs/starfarer/api/combat/ShipAPI;
+	m	getFaction	getFaction	()Lcom/fs/starfarer/api/campaign/FactionAPI;
+	m	canAddRemoveHullmodInPlayerCampaignRefit	canAddRemoveHullmodInPlayerCampaignRefit	(Ljava/lang/String;)Z
+	m	isPlayerCampaignRefit	isPlayerCampaignRefit	()Z
+	m	isAllowSlightRandomization	isAllowSlightRandomization	()Z
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	getFleetMember	getFleetMember	()Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+
+c	com/fs/starfarer/coreui/refit/auto/float	com/fs/starfarer/coreui/refit/RefitScreenAutofitDelegate
+	c 来源(javap取证) | 置信度(高) | 证据(API-impl种子+javap取证: 实现 AutofitPlugin$AutofitPluginDelegate，另含 createFighter/createWeapon/getMember，持 RefitScreen(ooOo))
+	m	getShip	getShip	()Lcom/fs/starfarer/api/combat/ShipAPI;
+	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	getFleetMember	getFleetMember	()Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+	m	clearFighterSlot	clearFighterSlot	(ILcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	clearWeaponSlot	clearWeaponSlot	(Lcom/fs/starfarer/api/loading/WeaponSlotAPI;Lcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	fitFighterInSlot	fitFighterInSlot	(ILcom/fs/starfarer/api/plugins/AutofitPlugin$AvailableFighter;Lcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	fitWeaponInSlot	fitWeaponInSlot	(Lcom/fs/starfarer/api/loading/WeaponSlotAPI;Lcom/fs/starfarer/api/plugins/AutofitPlugin$AvailableWeapon;Lcom/fs/starfarer/api/combat/ShipVariantAPI;)V
+	m	syncUIWithVariant	syncUIWithVariant	()V
+	m	getAvailableFighters	getAvailableFighters	()Ljava/util/List;
+	m	getAvailableWeapons	getAvailableWeapons	()Ljava/util/List;
+	m	getAvailableHullmods	getAvailableHullmods	()Ljava/util/List;
+	m	createFighter	createFighter	(Lcom/fs/starfarer/api/loading/FighterWingSpecAPI;)Lcom/fs/starfarer/api/plugins/AutofitPlugin$AvailableFighter;
+	m	createWeapon	createWeapon	(Lcom/fs/starfarer/api/loading/WeaponSpecAPI;)Lcom/fs/starfarer/api/plugins/AutofitPlugin$AvailableWeapon;
+	m	isPriority	isPriority	(Lcom/fs/starfarer/api/loading/WeaponSpecAPI;)Z
+	m	isPriority	isPriority	(Lcom/fs/starfarer/api/loading/FighterWingSpecAPI;)Z
+	m	getMember	getMember	()Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+	m	getFaction	getFaction	()Lcom/fs/starfarer/api/campaign/FactionAPI;
+	m	canAddRemoveHullmodInPlayerCampaignRefit	canAddRemoveHullmodInPlayerCampaignRefit	(Ljava/lang/String;)Z
+	m	isPlayerCampaignRefit	isPlayerCampaignRefit	()Z
+	m	isAllowSlightRandomization	isAllowSlightRandomization	()Z
+
+c	com/fs/starfarer/coreui/refit/auto/null	com/fs/starfarer/coreui/refit/FleetCompositionRow
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 舰队构成表行：getData/setData(int 行数据)+createRow，B(MassAutofitDialog) 使用)
+	m	getData	getData	()Lcom/fs/starfarer/coreui/refit/auto/oooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	setData	setData	(Lcom/fs/starfarer/coreui/refit/auto/oooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	createRow	createRow	()V
+	m	advance	advance	(F)V
+
+c	com/fs/starfarer/coreui/refit/auto/SavedVariantData$1	com/fs/starfarer/coreui/refit/SavedVariantData$VariantComparator
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: Comparator<HullVariantSpec> 变体排序)
+	m	o00000	compareVariants	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+
+c	com/fs/starfarer/coreui/refit/auto/SavedVariantData$VariantArray	com/fs/starfarer/coreui/refit/SavedVariantData$VariantArray
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: baseHullId/getBaseHullId/getVariants 变体数组数据类（保留原名）)
+	f	baseHullId	baseHullId	Ljava/lang/String;
+	m	getBaseHullId	getBaseHullId	()Ljava/lang/String;
+	m	getVariants	getVariants	()Ljava/util/List;
+
+c	com/fs/starfarer/coreui/refit/auto/SavedVariantData$VariantResolver	com/fs/starfarer/coreui/refit/SavedVariantData$VariantResolver
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: getVariant/variantIdIfStock 变体解析器（保留原名）)
+	f	variantIdIfStock	variantIdIfStock	Ljava/lang/String;
+	f	variant	variant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	getVariant	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+
+c	com/fs/starfarer/coreui/refit/auto/SavedVariantData$VariantSet	com/fs/starfarer/coreui/refit/SavedVariantData$VariantSet
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: baseHullId/getBaseHullId/getVariants 变体集合数据类（保留原名）)
+	f	baseHullId	baseHullId	Ljava/lang/String;
+	m	getBaseHullId	getBaseHullId	()Ljava/lang/String;
+	m	getVariants	getVariants	()Ljava/util/List;
+
+c	com/fs/starfarer/coreui/refit/auto/SavedVariantData	com/fs/starfarer/coreui/refit/SavedVariantData
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 已保存变体存储：getAllSavedVariantIds/deleteSavedVariant/addToVisible/getRecent/getStockGoalVariants（保留原名）)
+	m	addToVisible	addToVisible	(ILcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	deleteSavedVariant	deleteSavedVariant	(Ljava/lang/String;)V
+	m	getAllSavedVariantIds	getAllSavedVariantIds	()Ljava/util/Collection;
+	m	getBaseHullId	getBaseHullId	(Lcom/fs/starfarer/loading/specs/g;)Ljava/lang/String;
+	m	getCombinedRecent	getCombinedRecent	(Ljava/lang/String;)Ljava/util/List;
+	m	getRecent	getRecent	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData$VariantSet;
+	m	getSavedVariant	getSavedVariant	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	getStockGoalVariants	getStockGoalVariants	(Ljava/lang/String;)Ljava/util/List;
+	m	getTargetVariants	getTargetVariants	(Ljava/lang/String;)Ljava/util/List;
+	m	getVisible	getVisible	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData$VariantArray;
+	m	removeFromVisible	removeFromVisible	(ILjava/lang/String;)V
+
+c	com/fs/starfarer/coreui/refit/auto/oooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/refit/FleetCompositionRowData
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 行数据类：FleetTotalItem+List<SkillLevelAPI>，舰队构成表行数据)
+	f	Ò00000	fleetTotalItem	Lcom/fs/starfarer/api/characters/FleetTotalItem;
+	f	super	skillLevels	Ljava/util/List;
+
+c	com/fs/starfarer/coreui/refit/auto/J	com/fs/starfarer/coreui/refit/AutofitGoalVariantPicker
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Common Designs"/"Recent Custom Designs"/"Current Variant"/"None"/"Cancel" 目标变体选择对话框，getPick 返回 VariantResolver)
+	m	getSource	getSource	()Lcom/fs/starfarer/coreui/refit/auto/A;
+	m	show	show	(FF)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	renderImpl	renderImpl	(F)V
+	m	getPick	getPick	()Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData$VariantResolver;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+
+c	com/fs/starfarer/coreui/refit/auto/G$1	com/fs/starfarer/coreui/refit/AutofitDialog$AutofitOptionTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends StandardTooltipV2Expandable，构造 (void,float,boolean,AutofitOption) 自动装配选项说明)
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/auto/G$2	com/fs/starfarer/coreui/refit/AutofitDialog$TextTooltip
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: extends StandardTooltipV2Expandable，构造 (void,float,boolean,String) 文本 tooltip)
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/auto/G$o	com/fs/starfarer/coreui/refit/AutofitDialog$AddRecentAction
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: enum，常量 ADD_RECENT)
+	f	new	ADD_RECENT	Lcom/fs/starfarer/coreui/refit/auto/G$o;
+
+c	com/fs/starfarer/coreui/refit/auto/G	com/fs/starfarer/coreui/refit/AutofitDialog
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Autofit confirmed"/"Autofit Preview"/"Select autofit goal variant"/"Available funds:"，$SWITCH_TABLE$WeaponSize，自动装配确认对话框，持 AutofitPlugin+SavedVariantData)
+	f	INNER_WIDTH	INNER_WIDTH	F
+	f	INNER_HEIGHT	INNER_HEIGHT	F
+	f	PREVIEW_WIDTH	PREVIEW_WIDTH	F
+	f	PAD	PAD	F
+	f	OPAD	OPAD	F
+	m	o00000	createLabel	(Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
+	m	showNextMember	showNextMember	()V
+	m	createUI	createUI	()V
+	m	setPreview	setPreview	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;I)V
+	m	getCredits	getCredits	()I
+	m	getSVD	getSVD	()Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData;
+	m	getCurrentVariant	getCurrentVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	getStats	getStats	()Lcom/fs/starfarer/campaign/CharacterStats;
+	m	updatePreview	updatePreview	()V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+
+c	com/fs/starfarer/coreui/refit/returnsuper$1	com/fs/starfarer/coreui/refit/WeaponSlotButtonRenderer$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，按按钮位置定位 tooltip)
+	m	run	run	()V
+
+c	com/fs/starfarer/coreui/refit/returnsuper	com/fs/starfarer/coreui/refit/WeaponSlotButtonRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 实现 ButtonBackgroundRenderer(ui.n$Oo)，"Built in"/"Empty" 标签，渲染武器槽按钮背景，持 HullVariantSpec+WeaponSlot+武器渲染器)
+	m	super	render	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+
+c	com/fs/starfarer/coreui/refit/K$o	com/fs/starfarer/coreui/refit/ValueStepper$ValueChangedListener
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 接口 valueChanged(ValueStepper,int,int) 数值调节监听)
+	m	valueChanged	valueChanged	(Lcom/fs/starfarer/coreui/refit/K;II)V
+
+c	com/fs/starfarer/coreui/refit/K	com/fs/starfarer/coreui/refit/ValueStepper
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "+"/"-" 按钮 + 数值显示，getUp/getDown/setMax/setValue 数值步进调节控件)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	getDown	getDown	()Lcom/fs/starfarer/ui/n;
+	m	getUp	getUp	()Lcom/fs/starfarer/ui/n;
+	m	setMax	setMax	(I)V
+	m	setValue	setValue	(I)V
+
+c	com/fs/starfarer/coreui/refit/if$1	com/fs/starfarer/coreui/refit/FightersDisplay$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，按按钮定位 tooltip)
+	m	run	run	()V
+
+c	com/fs/starfarer/coreui/refit/if$2	com/fs/starfarer/coreui/refit/FightersDisplay$TooltipPositioner2
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，与 $1 同构的第二个 tooltip 定位器)
+	m	run	run	()V
+
+c	com/fs/starfarer/coreui/refit/if	com/fs/starfarer/coreui/refit/FightersDisplay
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Fighter bays"/"Left-click to install a fighter wing LPC"，RefitScreen.getFightersDisplay() 返回，战机槽显示面板)
+	m	getButtons	getButtons	()Ljava/util/List;
+	m	setFleetMember	setFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+
+c	com/fs/starfarer/coreui/refit/I	com/fs/starfarer/coreui/refit/FighterSlotButtonBackgroundRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 实现 ButtonBackgroundRenderer，渲染战机槽按钮背景（OoOOO... getInfo/isMounted/getPrice 着挂载色）)
+	m	super	render	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+
+c	com/fs/starfarer/coreui/refit/OOOo	com/fs/starfarer/coreui/refit/WeaponSlotButton
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 武器槽按钮：getSlot(WeaponSlot)/getShip/getMember/isSelectable/renderOutline(Ship)，refit 舰船显示槽位)
+	m	isSelectable	isSelectable	()Z
+	m	isMakeDim	isMakeDim	()Z
+	m	setMakeDim	setMakeDim	(Z)V
+	m	renderImpl	renderImpl	(F)V
+	m	renderOutline	renderOutline	(Lcom/fs/starfarer/combat/entities/Ship;F)V
+	m	getSlot	getSlot	()Lcom/fs/starfarer/loading/specs/nullsuper;
+	m	getShip	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+	m	getScale	getScale	()F
+	m	setScale	setScale	(F)V
+	m	getMember	getMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	setMember	setMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	exactContainsIfPositionContains	exactContainsIfPositionContains	()Z
+
+c	com/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/coreui/refit/OfficerAndCrewDisplay$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，按按钮位置定位 tooltip)
+	m	run	run	()V
+
+c	com/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$2	com/fs/starfarer/coreui/refit/OfficerAndCrewDisplay$CombatReadinessOptions
+	c 来源(javap取证) | 置信度(高) | 证据(API-impl种子: 实现 ui.impl.Oo0O$o(CombatReadinessTooltipOptions)，getCRValueOverride 覆盖 CR 显示值)
+	m	Object	getCRValueOverride	()F
+
+c	com/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$3	com/fs/starfarer/coreui/refit/OfficerAndCrewDisplay$CRBarTooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，按 CRBar(ValueDisplayBar) 定位 tooltip)
+	m	run	run	()V
+
+c	com/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/coreui/refit/OfficerAndCrewDisplay$DialogType
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: enum，CAPTAIN_PICKER/PERSONALITY_PICKER 对话框类型)
+	f	Ó00000	CAPTAIN_PICKER	Lcom/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
+	f	Ò00000	PERSONALITY_PICKER	Lcom/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
+
+c	com/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/refit/OfficerAndCrewDisplay
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: $SWITCH_TABLE$OfficerAndCrewDisplay$DialogType + getCRBar/showCaptainPickerDialog/showPersonalityDialog，船员与军官显示面板)
+	m	getCRBar	getCRBar	()Lcom/fs/starfarer/ui/impl/Q;
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	setFleetMember	setFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	showCaptainPickerDialog	showCaptainPickerDialog	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	showPersonalityDialog	showPersonalityDialog	()V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+
+c	com/fs/starfarer/coreui/refit/void$1	com/fs/starfarer/coreui/refit/RefitTab$WeaponGroupsNavListener
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 实现 Dialog$DismissListener，关闭后按武器组按钮并切对话框类型（导航到武器组）)
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+
+c	com/fs/starfarer/coreui/refit/void$Oo	com/fs/starfarer/coreui/refit/RefitTab$DialogType
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: enum，CONFIRM_NO_SAVE 对话框类型)
+	f	new	CONFIRM_NO_SAVE	Lcom/fs/starfarer/coreui/refit/void$Oo;
+
+c	com/fs/starfarer/coreui/refit/void$o	com/fs/starfarer/coreui/refit/RefitTab$MemberDisplayData
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 成员显示数据类：FleetMember+槽位+位置+回调，showMember 传入)
+	f	Ò00000	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	o00000	slot	Lcom/fs/starfarer/loading/specs/nullsuper;
+
+c	com/fs/starfarer/coreui/refit/void	com/fs/starfarer/coreui/refit/RefitTab
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: RefitScreen.getRefitTab() 返回；getFleetList/showMember/getButtonForMemberMakeFakeIfNeeded/tabOpened/tabClosed/showUnsavedChangesDialog，refit 标签页（舰队成员列表+导航）)
+	m	advanceImpl	advanceImpl	(F)V
+	m	getFleetList	getFleetList	()Lcom/fs/starfarer/coreui/v;
+	m	updateFleetMemberInList	updateFleetMemberInList	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	renderImpl	renderImpl	(F)V
+	m	getButtonForMemberMakeFakeIfNeeded	getButtonForMemberMakeFakeIfNeeded	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/ui/n;
+	m	goBackToParentIfNeeded	goBackToParentIfNeeded	()V
+	m	getButtonToMember	getButtonToMember	()Ljava/util/Map;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	showMember	showMember	(Lcom/fs/starfarer/ui/n;Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/coreui/refit/void$o;FLjava/lang/Runnable;)V
+	m	getParentData	getParentData	()Lcom/fs/starfarer/coreui/refit/void$o;
+	m	setParentData	setParentData	(Lcom/fs/starfarer/coreui/refit/void$o;)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	setDialogType	setDialogType	(Lcom/fs/starfarer/coreui/refit/void$Oo;)V
+	m	showUnsavedChangesDialog	showUnsavedChangesDialog	(Lcom/fs/starfarer/ui/oo0O$o;)V
+	m	getRefitPanel	getRefitPanel	()Lcom/fs/starfarer/coreui/refit/U;
+	m	pretendPressButtonForCurrSelectedMember	pretendPressButtonForCurrSelectedMember	()V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	setPlugin	setPlugin	(Lcom/fs/starfarer/coreui/OO0o;)V
+	m	getPlugin	getPlugin	()Lcom/fs/starfarer/coreui/OO0o;
+	m	tabOpened	tabOpened	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	tabClosed	tabClosed	()V
+
+c	com/fs/starfarer/coreui/refit/U	com/fs/starfarer/coreui/refit/RefitScreen
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Financial transaction confirmed"，getWeaponPickerSettings/getFighterPickerSettings/saveCurrentVariant/addAllWeaponsFromVariantToCargo，refit 主屏幕)
+	m	getWeaponPickerSettings	getWeaponPickerSettings	()[Z
+	m	getFighterPickerSettings	getFighterPickerSettings	()[Z
+	m	getOtherEntity	getOtherEntity	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	isNoCost	isNoCost	()Z
+	m	syncWithCurrentVariant	syncWithCurrentVariant	()V
+	m	syncWithCurrentVariant	syncWithCurrentVariant	(Z)V
+	m	saveCurrentVariant	saveCurrentVariant	()V
+	m	saveCurrentVariant	saveCurrentVariant	(Z)V
+	m	addAllWeaponsFromVariantToCargo	addAllWeaponsFromVariantToCargo	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	removeAllWeaponsInVariantFromCargo	removeAllWeaponsInVariantFromCargo	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	isEditedSinceSave	isEditedSinceSave	()Z
+	m	setEditedSinceSave	setEditedSinceSave	(Z)V
+	m	isEditedSinceLoad	isEditedSinceLoad	()Z
+	m	setEditedSinceLoad	setEditedSinceLoad	(Z)V
+	m	getDesignDisplay	getDesignDisplay	()Lcom/fs/starfarer/coreui/refit/Q;
+	m	sizeChanged	sizeChanged	(FF)V
+	m	getOpDisplay	getOpDisplay	()Lcom/fs/starfarer/coreui/refit/O0Oo;
+	m	getRefitTab	getRefitTab	()Lcom/fs/starfarer/coreui/refit/void;
+	m	getStats	getStats	()Lcom/fs/starfarer/campaign/CharacterStats;
+	m	getShipStats	getShipStats	()Lcom/fs/starfarer/combat/entities/ship/o0OO;
+	m	getShipDisplay	getShipDisplay	()Lcom/fs/starfarer/coreui/refit/oOOO;
+	m	getModDisplay	getModDisplay	()Lcom/fs/starfarer/coreui/refit/ooOO;
+	m	getFightersDisplay	getFightersDisplay	()Lcom/fs/starfarer/coreui/refit/if;
+	m	recreateUI	recreateUI	()V
+	m	setForceSetMemberNextCall	setForceSetMemberNextCall	(Z)V
+	m	isForceSetMemberNextCall	isForceSetMemberNextCall	()Z
+	m	setFleetMember	setFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;IF)V
+	m	getOfficerAndCRDisplay	getOfficerAndCRDisplay	()Lcom/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getFleetMemberIndex	getFleetMemberIndex	()I
+	m	getMember	getMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	getCoreUI	getCoreUI	()Lcom/fs/starfarer/coreui/_$o;
+	m	getCoreUIAPI	getCoreUIAPI	()Lcom/fs/starfarer/api/campaign/CoreUIAPI;
+
+c	com/fs/starfarer/coreui/refit/null	com/fs/starfarer/coreui/refit/FighterSlotButton
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 战机槽按钮：持 FighterWingSpec+FleetMember，"fighterButtonBlank"，isAutofitMode/getIcon/getSpec)
+	m	isAutofitMode	isAutofitMode	()Z
+	m	setAutofitMode	setAutofitMode	(Z)V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	getSpec	getSpec	()Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	m	getIcon	getIcon	()Lcom/fs/starfarer/ui/B/new;
+
+c	com/fs/starfarer/coreui/refit/OOoO	com/fs/starfarer/coreui/refit/ShipSpriteRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 2×graphics.Object+GLListToken+renderImpl，飞船精灵渲染器)
+	m	renderImpl	renderImpl	(F)V
+
+c	com/fs/starfarer/coreui/refit/wgd2/super	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$AutofireRow
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: "Autofire starts enabled"+updateCheckboxes/getGroups，V2 自动开火设置行)
+	m	updateCheckboxes	updateCheckboxes	()V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getGroups	getGroups	()[Lcom/fs/starfarer/ui/n;
+
+c	com/fs/starfarer/coreui/refit/wgd2/O0OO	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$GroupFluxRow
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: "Alternating"/"Linked"/" flux / second"/" - empty"，getFluxPerSecond 武器组能耗行)
+	m	getFluxPerSecond	getFluxPerSecond	()F
+	m	advanceImpl	advanceImpl	(F)V
+	m	renderImpl	renderImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+
+c	com/fs/starfarer/coreui/refit/wgd2/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$WeaponSlotRow
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "built in weapon"，getWeapon(BaseWeaponSpec)/getSlot(WeaponSlot)，V2 武器槽行)
+	m	sizeChanged	sizeChanged	(FF)V
+	m	updateCheckboxes	updateCheckboxes	()V
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	getWeapon	getWeapon	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	getSlot	getSlot	()Lcom/fs/starfarer/loading/specs/nullsuper;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+
+c	com/fs/starfarer/coreui/refit/wgd2/B	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$GroupRow
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Weapon group"/"Linked"/"Alternating"，$SWITCH_TABLE$WeaponType，getSpec(WeaponGroupSpec)/getIndex/getFluxPerSecond，V2 武器组行)
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	createRow	createRow	()V
+	m	getFluxPerSecond	getFluxPerSecond	()F
+	m	renderImpl	renderImpl	(F)V
+	m	advanceImpl	advanceImpl	(F)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	getVariant	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	setVariant	setVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	getIndex	getIndex	()I
+	m	setIndex	setIndex	(I)V
+	m	getSpec	getSpec	()Lcom/fs/starfarer/api/loading/WeaponGroupSpec;
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 武器组分配对话框 V2（UITable 表格版，保留原名）：extends ui.impl.o0OO implements UITable$Oo，构造 (RefitScreen, HullVariantSpec, 父面板, 关闭回调)，saveGroups/groupChanged/getTable/getVariant/tableRowSelected/tableGetComparator/tableSortFinished，持 List<WeaponGroupSpec>+AutofireRow(wgd2/super))
+	m	saveGroups	saveGroups	()V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	m	getTable	getTable	()Lcom/fs/starfarer/campaign/ui/UITable;
+	m	groupChanged	groupChanged	(Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/loading/specs/nullsuper;I)V
+	m	dismiss	dismiss	(I)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	getVariant	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
+	m	renderImpl	renderImpl	(F)V
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$1	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$WeaponNameComparator
+	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Comparator<String> 按名字符串比较)
+	m	super	compareStrings	(Ljava/lang/String;Ljava/lang/String;)I
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$2	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$GroupCountTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends StandardTooltipV2Expandable，"There are a maximum of %s possible weapon groups.")
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$3	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$FireModeTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends StandardTooltipV2Expandable，Linked/Alternating/autofire 开火模式说明)
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$4	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$AutofireTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends StandardTooltipV2Expandable，autofire 战术设置说明)
+	m	createImpl	createImpl	(Z)V
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$5	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$GroupNameComparator
+	c 来源(javap取证) | 置信度(低) | 证据(javap取证: Comparator<String> 按名字符串比较)
+	m	o00000	compareStrings	(Ljava/lang/String;Ljava/lang/String;)I
+	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$Group
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: enum，G1-G7+ITEM 武器组标签)
+	f	Ö00000	G1	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+	f	String	G2	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+	f	Ó00000	G3	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+	f	Ò00000	G4	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+	f	super	G5	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+	f	õ00000	G6	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+	f	ô00000	G7	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+	f	void	ITEM	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$Oo;
+
+c	com/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$o	com/fs/starfarer/coreui/refit/WeaponGroupDialogV2$ColumnType
+	c 来源(javap取证) | 置信度(高) | 证据(javap取证: enum，FLUX/GROUP/MODE 对话框列类型)
+	f	Ô00000	FLUX	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$o;
+	f	Ò00000	GROUP	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$o;
+	f	Object	MODE	Lcom/fs/starfarer/coreui/refit/wgd2/WeaponGroupDialogV2$o;
+

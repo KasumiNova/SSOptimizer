@@ -1,0 +1,337 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/coreui/refit/A	com/fs/starfarer/coreui/refit/ShipDisplayPanel
+	c	javap取证(字符串) | 高 | 改装界面舰船显示面板：插槽武器/战机安装卸载（insertInSlot/insertInFighterSlot/clearSlot/fitWeaponIfPossible）+ vents/capacitors + 模块更新 + 朝向，字符串 module_refit_bright/module_unselectable/ui_refit_slot_filled_fighter/ui_refit_slot_cleared_fighter（A）
+	m	getShipFacing	getShipFacing	()F
+	m	setShipFacing	setShipFacing	(F)V
+	m	setNumVents	setNumVents	(I)V
+	m	setNumCapacitors	setNumCapacitors	(I)V
+	m	updateModules	updateModules	()V
+	m	setFleetMember	setFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	getPreviousWeaponPicked	getPreviousWeaponPicked	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	getPreviousFighterPicked	getPreviousFighterPicked	()Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
+	m	getSlottedWeapons	getSlottedWeapons	()Ljava/util/Map;
+	m	getSlottedFighters	getSlottedFighters	()Ljava/util/Map;
+	m	clearFighterSlot	clearFighterSlot	(ILcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	clearSlot	clearSlot	(Lcom/fs/starfarer/loading/specs/Y;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	insertInFighterSlot	insertInFighterSlot	(ILcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;ZLcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	isSuppressMessages	isSuppressMessages	()Z
+	m	setSuppressMessages	setSuppressMessages	(Z)V
+	m	insertInSlot	insertInSlot	(Lcom/fs/starfarer/loading/specs/Y;Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;ZLcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	fitFighterIfPossible	fitFighterIfPossible	(ILcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;ZZLcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	fitWeaponIfPossible	fitWeaponIfPossible	(Lcom/fs/starfarer/loading/specs/Y;Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;ZZLcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	updateButtonPositionsToZoomLevel	updateButtonPositionsToZoomLevel	()V
+	m	getCoreUI	getCoreUI	()Lcom/fs/starfarer/coreui/_$o;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	isShowingDialog	isShowingDialog	()Z
+	m	setShowingDialog	setShowingDialog	(Z)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	updateFromCurrentVariant	updateFromCurrentVariant	()V
+	m	getShip	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+	m	getCurrentVariant	getCurrentVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	getOpDisplay	getOpDisplay	()Lcom/fs/starfarer/coreui/refit/V;
+	m	getCoreUIAPI	getCoreUIAPI	()Lcom/fs/starfarer/api/campaign/CoreUIAPI;
+	m	getModuleButtons	getModuleButtons	()Ljava/util/List;
+c	com/fs/starfarer/coreui/refit/A$1	com/fs/starfarer/coreui/refit/ShipDisplayPanel$ModuleSlotUpdateTask
+	c	javap取证 | 低 | 匿名 Runnable：槽位 id 非 "temp" 时把模块变体应用回 FleetMember（A$1）
+c	com/fs/starfarer/coreui/refit/C	com/fs/starfarer/coreui/refit/ShipStatsPanel
+	c	javap取证(字符串) | 高 | 舰船属性统计面板：armor/flux capacity/top speed/weapon flux/sec/Vents/Capacitors 各行 + tooltip + getColorFor 按状态着色（C）
+	m	addTooltips	addTooltips	()V
+	m	addTooltip	addTooltip	(Lcom/fs/starfarer/ui/oO00;Lcom/fs/starfarer/ui/impl/StandardTooltipV2;)V
+	m	getDelegate	getDelegate	()Lcom/fs/starfarer/coreui/refit/C$o;
+	m	setDelegate	setDelegate	(Lcom/fs/starfarer/coreui/refit/C$o;)V
+	m	getMods	getMods	()Lcom/fs/starfarer/coreui/refit/ModWidget;
+	m	valueChanged	valueChanged	(Lcom/fs/starfarer/coreui/refit/float;II)V
+	m	getVents	getVents	()Lcom/fs/starfarer/coreui/refit/float;
+	m	getCapacitors	getCapacitors	()Lcom/fs/starfarer/coreui/refit/float;
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	getColorFor	getColorFor	(Lcom/fs/starfarer/api/combat/MutableStat;Z)Ljava/awt/Color;
+	m	getColorFor	getColorFor	(Lcom/fs/starfarer/api/combat/StatBonus;FZ)Ljava/awt/Color;
+	m	getColorForStat	getColorForStat	(ZZZ)Ljava/awt/Color;
+c	com/fs/starfarer/coreui/refit/C$1	com/fs/starfarer/coreui/refit/ShipStatsPanel$DebugTooltip
+	c	javap取证 | 低 | 调试 tooltip：createImpl 仅添加 "Testing" 段落（C$1）
+c	com/fs/starfarer/coreui/refit/C$2	com/fs/starfarer/coreui/refit/ShipStatsPanel$FluxCapacityTooltip
+	c	javap取证(字符串) | 中 | Flux capacity 说明 tooltip：描述装填/散热关系（C$2）
+c	com/fs/starfarer/coreui/refit/C$3	com/fs/starfarer/coreui/refit/ShipStatsPanel$FluxDissipationTooltip
+	c	javap取证(字符串) | 中 | Flux dissipation 说明 tooltip：散热效率/主动通风双倍散热（C$3）
+c	com/fs/starfarer/coreui/refit/C$4	com/fs/starfarer/coreui/refit/ShipStatsPanel$VentsTooltip
+	c	javap取证(字符串) | 中 | Vents 说明 tooltip：每个 vent 成本与散热收益、Hull size 上限（C$4）
+c	com/fs/starfarer/coreui/refit/C$5	com/fs/starfarer/coreui/refit/ShipStatsPanel$CapacitorsTooltip
+	c	javap取证(字符串) | 中 | Capacitors 说明 tooltip：每个 capacitor 成本与容量收益、Hull size 上限（C$5）
+c	com/fs/starfarer/coreui/refit/C$6	com/fs/starfarer/coreui/refit/ShipStatsPanel$TopSpeedTooltip
+	c	javap取证(字符串) | 中 | Top speed 说明 tooltip：零通量引擎加成 zeroFluxEngineBoost（C$6）
+c	com/fs/starfarer/coreui/refit/C$7	com/fs/starfarer/coreui/refit/ShipStatsPanel$HullTooltip
+	c	javap取证(字符串) | 中 | Hull 说明 tooltip：结构损伤/系统损坏/船员伤亡（C$7）
+c	com/fs/starfarer/coreui/refit/C$8	com/fs/starfarer/coreui/refit/ShipStatsPanel$ArmorTooltip
+	c	javap取证(字符串) | 中 | Armor 说明 tooltip：减伤百分比/剥甲机制/最小有效装甲（C$8）
+c	com/fs/starfarer/coreui/refit/C$9	com/fs/starfarer/coreui/refit/ShipStatsPanel$WeaponFluxTooltip
+	c	javap取证(字符串) | 中 | Weapon flux/sec 说明 tooltip：全武器持续开火通量（C$9）
+c	com/fs/starfarer/coreui/refit/C$10	com/fs/starfarer/coreui/refit/ShipStatsPanel$ShieldArcTooltip
+	c	javap取证(字符串) | 中 | Shield arc 说明 tooltip：护盾最大弧角/展开机制/无盾提示（C$10）
+c	com/fs/starfarer/coreui/refit/C$11	com/fs/starfarer/coreui/refit/ShipStatsPanel$CloakTooltip
+	c	javap取证(字符串) | 中 | 相位 cloak 说明 tooltip：开启产生硬通量/抑制零通量加速（C$11）
+c	com/fs/starfarer/coreui/refit/C$12	com/fs/starfarer/coreui/refit/ShipStatsPanel$CloakTooltip2
+	c	javap取证(字符串) | 低 | 相位 cloak 开启提示 tooltip：开启相位斗篷产生硬通量（C$12）
+c	com/fs/starfarer/coreui/refit/C$13	com/fs/starfarer/coreui/refit/ShipStatsPanel$ShieldTooltip
+	c	javap取证(字符串) | 中 | Shield 说明 tooltip：护盾承伤效率/硬通量机制/过载（C$13）
+c	com/fs/starfarer/coreui/refit/C$14	com/fs/starfarer/coreui/refit/ShipStatsPanel$TooltipUpdater
+	c	javap取证 | 低 | 匿名 Runnable：把 tooltip 挂到 oO00 组件并更新位置（C$14）
+c	com/fs/starfarer/coreui/refit/C$Oo	com/fs/starfarer/coreui/refit/ShipStatsPanel$StatRow
+	c	javap取证 | 中 | 属性行：标签 + 数值（int/String），orbitron20aabold 字体（C$Oo）
+	m	setLabel	setLabel	(Ljava/lang/String;)V
+	m	setValue	setValue	(I)V
+	m	setValue	setValue	(Ljava/lang/String;)V
+c	com/fs/starfarer/coreui/refit/C$o	com/fs/starfarer/coreui/refit/ShipStatsPanel$VariantChangeListener
+	c	javap取证 | 中 | 变体变更回调接口：notifyRefitVariantChanged（C$o）
+	m	notifyRefitVariantChanged	notifyRefitVariantChanged	()V
+c	com/fs/starfarer/coreui/refit/E	com/fs/starfarer/coreui/refit/WeaponPlacementHint
+	c	javap取证(字符串) | 中 | 武器放置提示条：syncWithVariant 时显示武器信息 + "Shift-click to place another"（E）
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+c	com/fs/starfarer/coreui/refit/FighterPickerDialog	com/fs/starfarer/coreui/refit/FighterPickerDialog
+	c	javap取证(字符串) | 高 | 战机选择对话框：拦截/轰炸/自有/合法/黑市筛选 + cargo 列表 + CLEAR_SLOT_TOKEN，字符串 Show interceptors/Buy Legal/Buy Illegal（FighterPickerDialog）
+	f	UNINSTALLABLE_OP	UNINSTALLABLE_OP	I
+	f	CLEAR_SLOT_TOKEN	CLEAR_SLOT_TOKEN	Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
+	m	getWingIndex	getWingIndex	()I
+	m	getCombinedAvailable	getCombinedAvailable	(Lcom/fs/starfarer/api/campaign/CargoAPI;Lcom/fs/starfarer/api/campaign/CoreUIAPI;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)Ljava/util/List;
+	m	updateUI	updateUI	()V
+	m	updateYPosition	updateYPosition	()V
+	m	getStatsBlock	getStatsBlock	(Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;)Lcom/fs/starfarer/campaign/ui/trade/D;
+	m	updateTooltipPosition	updateTooltipPosition	()V
+	m	getActiveTooltip	getActiveTooltip	()Lcom/fs/starfarer/api/util/Pair;
+	m	getPickedFighterSpec	getPickedFighterSpec	()Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	m	getPickedFighterInfo	getPickedFighterInfo	()Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
+	m	getSlotButton	getSlotButton	()Lcom/fs/starfarer/ui/n;
+	m	notifyFilterChanged	notifyFilterChanged	()V
+c	com/fs/starfarer/coreui/refit/FighterPickerDialog$1	com/fs/starfarer/coreui/refit/FighterPickerDialog$FighterSorter
+	c	javap取证 | 低 | 战机条目比较器：按 FighterPickerDialog$o 排序（FighterPickerDialog$1）
+	m	o00000	compareFighters	(Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;)I
+c	com/fs/starfarer/coreui/refit/FighterPickerDialog$2	com/fs/starfarer/coreui/refit/FighterPickerDialog$TooltipUpdater
+	c	javap取证 | 低 | 匿名 Runnable：刷新 tooltip 位置（FighterPickerDialog$2）
+c	com/fs/starfarer/coreui/refit/FighterPickerDialog$3	com/fs/starfarer/coreui/refit/FighterPickerDialog$TooltipUpdater2
+	c	javap取证 | 低 | 匿名 Runnable：刷新 tooltip 位置（FighterPickerDialog$3）
+c	com/fs/starfarer/coreui/refit/FighterPickerDialog$o	com/fs/starfarer/coreui/refit/FighterPickerDialog$FighterItem
+	c	javap取证 | 中 | 战机条目：数量/来源 CargoAPI/机翼 spec/来源文本/价格/子市场 + clone（FighterPickerDialog$o）
+	f	quantity	quantity	I
+	f	source	source	Lcom/fs/starfarer/api/campaign/CargoAPI;
+	f	spec	spec	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	f	sourceString	sourceString	Ljava/lang/String;
+	f	price	price	F
+	f	submarket	submarket	Lcom/fs/starfarer/campaign/econ/Submarket;
+	m	clone	clone	()Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
+c	com/fs/starfarer/coreui/refit/L	com/fs/starfarer/coreui/refit/HullmodListRow
+	c	javap取证(字符串) | 中 | ModPickerDialogV3 的 hullmod 列表行：Built-in/Dock/checkmark 状态 + isBuiltIn + 渲染（L）
+	m	getSpec	getSpec	()Lcom/fs/starfarer/loading/specs/O;
+	m	isBuiltIn	isBuiltIn	(Lcom/fs/starfarer/loading/specs/O;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	createRow	createRow	()V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/coreui/refit/M	com/fs/starfarer/coreui/refit/WeaponButton
+	c	继承关系+javap取证 | 中 | 武器按钮内容：implements ui.n$Oo，CharacterStats + ship + BaseWeaponSpec + M$o 回调，多 sprite 绘制（M）
+	m	super	getWeaponSpec	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+c	com/fs/starfarer/coreui/refit/M$o	com/fs/starfarer/coreui/refit/WeaponButton$WeaponButtonListener
+	c	继承关系+javap取证 | 低 | 空标记接口 extends ui.n$Oo，M 的监听回调类型（M$o）
+c	com/fs/starfarer/coreui/refit/ManageVariantsDialog	com/fs/starfarer/coreui/refit/ManageVariantsDialog
+	c	javap取证(字符串) | 高 | 变体管理对话框：Enter new variant name/Export Current/删除确认（ManageVariantsDialog）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/coreui/refit/ManageVariantsDialog$1	com/fs/starfarer/coreui/refit/ManageVariantsDialog$VariantSorter
+	c	javap取证 | 低 | 变体比较器：按 HullVariantSpec 排序（ManageVariantsDialog$1）
+	m	super	compareVariants	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
+c	com/fs/starfarer/coreui/refit/ManageVariantsDialog$Oo	com/fs/starfarer/coreui/refit/ManageVariantsDialog$VariantRow
+	c	javap取证(字符串) | 中 | 变体行：custom/stock 标记 + Load/Rename/Delete 按钮（ManageVariantsDialog$Oo）
+	m	getRename	getRename	()Lcom/fs/starfarer/ui/n;
+	m	getLoad	getLoad	()Lcom/fs/starfarer/ui/n;
+	m	getVariant	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	getDelete	getDelete	()Lcom/fs/starfarer/ui/n;
+c	com/fs/starfarer/coreui/refit/ManageVariantsDialog$o	com/fs/starfarer/coreui/refit/ManageVariantsDialog$Action
+	c	字符串常量 | 高 | 动作枚举 CONFIRM_DELETE/CONFIRM_LOAD/RENAME（ManageVariantsDialog$o）
+	f	Ô00000	CONFIRM_DELETE	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
+	f	Ó00000	CONFIRM_LOAD	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
+	f	new	RENAME	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
+	m	values	values	()[Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3	com/fs/starfarer/coreui/refit/ModPickerDialogV3
+	c	javap取证(字符串) | 高 | hullmod 选择对话框 V3：All designs/types 筛选 + built-in 上限 + OP 成本，表格 UI（ModPickerDialogV3）
+	f	ALL_TECHS	ALL_TECHS	Ljava/lang/String;
+	f	ALL_TYPES	ALL_TYPES	Ljava/lang/String;
+	m	saveTags	saveTags	()V
+	m	restoreTags	restoreTags	()V
+	m	createUI	createUI	()V
+	m	show	show	(FF)V
+	m	updateTable	updateTable	()V
+	m	getRefitPanel	getRefitPanel	()Lcom/fs/starfarer/coreui/refit/ooOo;
+	m	isPermModeAndNonBuildIn	isPermModeAndNonBuildIn	(Lcom/fs/starfarer/api/loading/HullModSpecAPI;)Z
+	m	isApplicable	isApplicable	(Lcom/fs/starfarer/loading/specs/O;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	canInstallGivenMarket	canInstallGivenMarket	(Lcom/fs/starfarer/loading/specs/O;Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/coreui/_$o;)Z
+	m	canInstall	canInstall	(Lcom/fs/starfarer/loading/specs/O;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	canAfford	canAfford	(Lcom/fs/starfarer/loading/specs/O;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	hullmodMatchesFilters	hullmodMatchesFilters	(Lcom/fs/starfarer/loading/specs/O;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	getAddedSModdedBuiltIns	getAddedSModdedBuiltIns	()Ljava/util/List;
+	m	getAddedPermaMods	getAddedPermaMods	()Ljava/util/List;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dismiss	dismiss	(I)V
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
+	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	getOriginalPermaMods	getOriginalPermaMods	()Ljava/util/Set;
+	m	getOriginalSModBuiltIns	getOriginalSModBuiltIns	()Ljava/util/Set;
+	m	isPermMode	isPermMode	()Z
+	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+	m	tagsChanged	tagsChanged	(Lcom/fs/starfarer/campaign/command/do;)V
+	m	syncUIWithVariant	syncUIWithVariant	()V
+	m	notifyRefitVariantChanged	notifyRefitVariantChanged	()V
+	m	switchToPermMode	switchToPermMode	()V
+	m	switchToNormalMode	switchToNormalMode	()V
+	m	getCurrPermanentMods	getCurrPermanentMods	(Lcom/fs/starfarer/combat/entities/Ship;)I
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$1	com/fs/starfarer/coreui/refit/ModPickerDialogV3$Tooltip
+	c	javap取证(字符串) | 低 | tooltip 创建器：描述 built-in/可移除/需求满足等状态（ModPickerDialogV3$1）
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$2	com/fs/starfarer/coreui/refit/ModPickerDialogV3$ShipProvider
+	c	javap取证 | 中 | 舰船信息提供接口：getShip/getFleetMemberAPI/getVariant（ModPickerDialogV3$2）
+	m	Ó00000	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+	m	Ò00000	getFleetMember	()Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+	m	super	getVariant	()Lcom/fs/starfarer/api/combat/ShipVariantAPI;
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$3	com/fs/starfarer/coreui/refit/ModPickerDialogV3$TagSorter
+	c	javap取证 | 低 | 表格行比较器：按 campaign.ui.B 排序（ModPickerDialogV3$3）
+	m	super	compareByTag	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget
+	c	javap取证(字符串) | 高 | 永久 mod 信息组件：Built-in hullmods 数量/故事点消耗/确认取消，字符串 ui_char_spent_story_point_technology（ModPickerDialogV3$PermaModInfoWidget）
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$1	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$BonusExperienceTooltip
+	c	javap取证(字符串) | 低 | Bonus experience 说明 tooltip（PermaModInfoWidget$1）
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$2	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$PermaModsTooltip
+	c	javap取证(字符串) | 低 | Built-in hullmods 说明 tooltip：故事点消耗/hull size 加成（PermaModInfoWidget$2）
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$3	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$HullmodSorter
+	c	javap取证 | 低 | HullModSpec 比较器（PermaModInfoWidget$3）
+	m	o00000	compareHullmods	(Lcom/fs/starfarer/api/loading/HullModSpecAPI;Lcom/fs/starfarer/api/loading/HullModSpecAPI;)I
+c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$o	com/fs/starfarer/coreui/refit/ModPickerDialogV3$SortType
+	c	字符串常量 | 高 | 排序枚举 DESIGN/INSTALLED/NAME/OP_COST（ModPickerDialogV3$o）
+	f	Õ00000	DESIGN	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
+	f	Ò00000	INSTALLED	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
+	f	Ô00000	NAME	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
+	f	o00000	OP_COST	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
+	m	values	values	()[Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
+c	com/fs/starfarer/coreui/refit/ModWidget	com/fs/starfarer/coreui/refit/ModWidget
+	c	javap取证(字符串) | 高 | 船体插件小部件：Hull features & mods + Add/Build in 按钮 + 已装 mod 列表（ModWidget）
+	f	WIDTH	WIDTH	F
+	f	PAD	PAD	F
+	f	ICON_SIZE	ICON_SIZE	F
+	m	syncWithCurrentVariant	syncWithCurrentVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	addMod	addMod	(Ljava/lang/String;)V
+	m	removeNotApplicableMods	removeNotApplicableMods	()V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	getAdd	getAdd	()Lcom/fs/starfarer/ui/n;
+	m	setAdd	setAdd	(Lcom/fs/starfarer/ui/n;)V
+	m	getPerm	getPerm	()Lcom/fs/starfarer/ui/n;
+c	com/fs/starfarer/coreui/refit/ModWidget$1	com/fs/starfarer/coreui/refit/ModWidget$Tooltip
+	c	javap取证(字符串) | 低 | tooltip 创建器：built-in 加成/惩罚与故事点说明（ModWidget$1）
+c	com/fs/starfarer/coreui/refit/ModWidget$2	com/fs/starfarer/coreui/refit/ModWidget$ModSorter
+	c	javap取证 | 低 | mod 名称比较器（ModWidget$2）
+	m	o00000	compareMods	(Ljava/lang/String;Ljava/lang/String;)I
+c	com/fs/starfarer/coreui/refit/ModWidget$o	com/fs/starfarer/coreui/refit/ModWidget$ModRow
+	c	javap取证(字符串) | 中 | 单个 mod 行：图标/名称/dmod 标记渲染（ModWidget$o）
+c	com/fs/starfarer/coreui/refit/N	com/fs/starfarer/coreui/refit/LabelShapePanel
+	c	javap取证 | 低 | 形状标签面板：sprite + 双标签 + GL 绘制形状，implements renderers.public$Oo，无引用者（N）
+c	com/fs/starfarer/coreui/refit/O	com/fs/starfarer/coreui/refit/CheckboxFilterList
+	c	继承关系+javap取证 | 中 | 复选框筛选列表：addItem/isChecked/setChecked/setEnabled，FighterPickerDialog 筛选使用（O）
+	m	addItem	addItem	(Ljava/lang/Object;Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;)V
+	m	addItem	addItem	(Ljava/lang/Object;Ljava/lang/String;Ljava/awt/Color;Ljava/awt/Color;Ljava/awt/Color;Ljava/lang/String;)V
+	m	isChecked	isChecked	(Ljava/lang/Object;)Z
+	m	setChecked	setChecked	(Ljava/lang/Object;Z)V
+	m	setEnabled	setEnabled	(Ljava/lang/Object;Z)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/coreui/refit/O$1	com/fs/starfarer/coreui/refit/CheckboxFilterList$Tooltip
+	c	javap取证 | 低 | tooltip 创建器（O$1）
+c	com/fs/starfarer/coreui/refit/O$Oo	com/fs/starfarer/coreui/refit/CheckboxFilterList$FilterChangeListener
+	c	javap取证 | 中 | 筛选变更回调接口：notifyFilterChanged（O$Oo）
+	m	notifyFilterChanged	notifyFilterChanged	()V
+c	com/fs/starfarer/coreui/refit/O$o	com/fs/starfarer/coreui/refit/CheckboxFilterList$FilterItem
+	c	javap取证 | 中 | 筛选条目：value + label + tooltip + 三色（O$o）
+	f	return	value	Ljava/lang/Object;
+	f	Ô00000	label	Ljava/lang/String;
+	f	Object	tooltip	Ljava/lang/String;
+	f	Õ00000	color	Ljava/awt/Color;
+	f	o00000	brightColor	Ljava/awt/Color;
+	f	Ò00000	darkColor	Ljava/awt/Color;
+c	com/fs/starfarer/coreui/refit/O0OO	com/fs/starfarer/coreui/refit/CreditsDisplay
+	c	javap取证(字符串) | 中 | 货币显示：Credits: + syncWithVariant 更新（O0OO）
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+c	com/fs/starfarer/coreui/refit/OOoo	com/fs/starfarer/coreui/refit/LineDivider
+	c	javap取证(字符串) | 中 | 分割线组件：graphics/hud/line4x4.png 渲染（OOoo）
+c	com/fs/starfarer/coreui/refit/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/refit/FighterPickerItem
+	c	javap取证(字符串) | 中 | 战机选择条目（FighterPickerDialog 列表项，与 WeaponItem 同构；FightersDisplay 内的槽位按钮为 coreui-refit-b 的 FighterSlotButton）：isMounted/getPrice/getInfo(FighterPickerDialog$o) + Click to uninstall/Unmount for a credit refund（OoOO..长名）
+	m	isMounted	isMounted	()Z
+	m	getPrice	getPrice	()F
+	m	getInfo	getInfo	()Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
+	m	setDisabled	setDisabled	(Z)V
+c	com/fs/starfarer/coreui/refit/P	com/fs/starfarer/coreui/refit/WeaponItemHighlight
+	c	javap取证 | 低 | WeaponItem(T) 背景着色层：implements ui.n$Oo，按 mounted/价格/子市场派系色渲染底色（P）
+c	com/fs/starfarer/coreui/refit/R	com/fs/starfarer/coreui/refit/DesignDisplay
+	c	javap取证(字符串) | 高 | 改装界面设计面板（RefitScreen(ooOo).getDesignDisplay() 返回；改装主屏幕为 coreui-refit-b 的 RefitScreen）：Save/Undo/Manage/Groups/Autofit/Simulation/Restore + 舰船名/变体名输入 + 随机名（R）
+	m	getVariantFieldWidth	getVariantFieldWidth	()F
+	m	setFleetMember	setFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	undo	undo	()V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	getSaveButton	getSaveButton	()Lcom/fs/starfarer/ui/n;
+	m	getGroupsButton	getGroupsButton	()Lcom/fs/starfarer/ui/n;
+	m	getManageButton	getManageButton	()Lcom/fs/starfarer/ui/n;
+	m	getUndoButton	getUndoButton	()Lcom/fs/starfarer/ui/n;
+	m	getShipNameTextField	getShipNameTextField	()Lcom/fs/starfarer/ui/B;
+	m	getVariantTextField	getVariantTextField	()Lcom/fs/starfarer/ui/B;
+	m	getRunSimulationButton	getRunSimulationButton	()Lcom/fs/starfarer/ui/n;
+	m	createMaxSkillPerson	createMaxSkillPerson	()Lcom/fs/starfarer/rpg/Person;
+	m	instantiateForSimulation	instantiateForSimulation	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)Lcom/fs/starfarer/combat/entities/Ship;
+c	com/fs/starfarer/coreui/refit/R$1	com/fs/starfarer/coreui/refit/DesignDisplay$RestoreDockTooltip
+	c	javap取证(字符串) | 中 | 恢复 tooltip：必须在市场停靠才能恢复（R$1）
+c	com/fs/starfarer/coreui/refit/R$2	com/fs/starfarer/coreui/refit/DesignDisplay$RestoreUnavailableTooltip
+	c	javap取证(字符串) | 中 | 恢复 tooltip：该舰船无法恢复（R$2）
+c	com/fs/starfarer/coreui/refit/R$3	com/fs/starfarer/coreui/refit/DesignDisplay$RandomNameTooltip
+	c	javap取证(字符串) | 中 | 随机名 tooltip：生成随机舰船名/更新派系前缀（R$3）
+c	com/fs/starfarer/coreui/refit/R$o	com/fs/starfarer/coreui/refit/DesignDisplay$Tab
+	c	字符串常量 | 高 | 界面页签枚举 GROUPS/MANAGE/RESTORE/RESTORE_NOT_ENOUGH/STRIP/UNDO（R$o）
+	f	Õ00000	GROUPS	Lcom/fs/starfarer/coreui/refit/R$o;
+	f	Ö00000	MANAGE	Lcom/fs/starfarer/coreui/refit/R$o;
+	f	Ó00000	RESTORE	Lcom/fs/starfarer/coreui/refit/R$o;
+	f	void	RESTORE_NOT_ENOUGH	Lcom/fs/starfarer/coreui/refit/R$o;
+	f	super	STRIP	Lcom/fs/starfarer/coreui/refit/R$o;
+	f	String	UNDO	Lcom/fs/starfarer/coreui/refit/R$o;
+	m	values	values	()[Lcom/fs/starfarer/coreui/refit/R$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/R$o;
+c	com/fs/starfarer/coreui/refit/T	com/fs/starfarer/coreui/refit/WeaponItem
+	c	javap取证(字符串) | 中 | 武器选择条目：isMounted/getPrice/getInfo(WeaponPickerDialog$o) + Click to unmount/ordnance points/range（T）
+	m	isMounted	isMounted	()Z
+	m	getPrice	getPrice	()F
+	m	getInfo	getInfo	()Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;
+	m	setDisabled	setDisabled	(Z)V
+c	com/fs/starfarer/coreui/refit/V	com/fs/starfarer/coreui/refit/OPDisplay
+	c	javap取证(字符串) | 高 | OP 显示组件：setOPs/isWithinOPLimit/computeAvailableOP + 进度条 getBar + fleetScreen 标记（V）
+	m	setOPs	setOPs	(II)V
+	m	isWithinOPLimit	isWithinOPLimit	()Z
+	m	computeAvailableOP	computeAvailableOP	(Lcom/fs/starfarer/loading/specs/Y;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
+	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	m	getBar	getBar	()Lcom/fs/starfarer/campaign/ui/while;
+c	com/fs/starfarer/coreui/refit/V$1	com/fs/starfarer/coreui/refit/OPDisplay$ActionListener
+	c	javap取证 | 低 | 匿名 ui.ooOo 动作监听（V$1）
+c	com/fs/starfarer/coreui/refit/V$2	com/fs/starfarer/coreui/refit/OPDisplay$TooltipProvider
+	c	javap取证 | 低 | tooltip 提供者：返回当前 HullVariantSpec（V$2）
+	m	o00000	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+c	com/fs/starfarer/coreui/refit/V$3	com/fs/starfarer/coreui/refit/OPDisplay$TooltipUpdater
+	c	javap取证 | 低 | 匿名 Runnable：更新 tooltip（V$3）
+c	com/fs/starfarer/coreui/refit/WeaponGroupDialog	com/fs/starfarer/coreui/refit/WeaponGroupDialog
+	c	javap取证(字符串) | 高 | 武器组分配对话框：Weapon group 1-7/Auto + Capacity/Dissipation + Shift-click to assign all（WeaponGroupDialog；createLabel/assignWeaponToGroup 合并自 coreui-refit-b 重复块）
+	m	o00000	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	o00000	assignWeaponToGroup	(Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/loading/specs/Y;I)V
+c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$1	com/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponSlotSorter
+	c	javap取证 | 中 | 槽位比较器：按 built-in/WeaponSize/WeaponType/SlotType/名称排序（WeaponGroupDialog$1）
+	m	o00000	compareWeaponSlots	(Ljava/lang/String;Ljava/lang/String;)I
+c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$2	com/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponSlotSorter2
+	c	javap取证 | 低 | 槽位比较器：与 WeaponGroupDialog$1 同构（WeaponGroupDialog$2）
+	m	super	compareWeaponSlots	(Ljava/lang/String;Ljava/lang/String;)I
+c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$Oo	com/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponGroupRow
+	c	javap取证(字符串) | 中 | 武器组行：组号/自动开火状态复选框 updateCheckboxes + 高亮 Fader（WeaponGroupDialog$Oo）
+	m	updateCheckboxes	updateCheckboxes	()V
+	m	getHighlightFader	getHighlightFader	()Lcom/fs/graphics/util/Fader;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
