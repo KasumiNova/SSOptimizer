@@ -1,0 +1,21 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/combat/o0OO/oOoO	com/fs/starfarer/combat/CollisionGridQuery
+	c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	f	Ô00000	maxCellsX	I
+		c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	f	null	maxCellsY	I
+		c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	f	Ö00000	unusedTimerA	F
+		c	javap取证（仅 clinit 写 0，无读取，死代码） | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	f	ö00000	unusedTimerB	F
+		c	javap取证（仅 clinit 写 0，无读取，死代码） | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	f	Ø00000	cellHashChains	Ljava/util/Map;
+		c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	m	o00000	addToCell	(IILjava/lang/Object;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	m	new	removeFromCell	(IILjava/lang/Object;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	m	o00000	collectOverlappingPairs	([Lcom/fs/starfarer/combat/o0OO/GridCell;)Ljava/util/Set;
+		c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members
+	m	new	collectOverlappingPairsViaGrid	([Lcom/fs/starfarer/combat/o0OO/GridCell;)Ljava/util/Set;
+		c	javap取证 | 高 | .dev/mapping-evidence/combat-collision.md#collisiongridquery-members

@@ -154,7 +154,7 @@ c com/fs/starfarer/combat/entities/ContrailEngine$Oo com/fs/starfarer/combat/ent
 	f OO0000 texU F
 c com/fs/starfarer/combat/entities/ContrailEngine com/fs/starfarer/combat/entities/ContrailEngine
 	f Ò00000 groups Ljava/util/Map;
-	m o00000 render (F)V
+	m Ò00000 render (F)V
 c com/fs/starfarer/StarfarerLauncher com/fs/starfarer/StarfarerLauncher
 	m o00000 launchGame (ZZLjava/lang/String;Ljava/lang/String;)V
 c com/fs/graphics/util/B com/fs/graphics/util/RenderStateUtils

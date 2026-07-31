@@ -1,0 +1,284 @@
+tiny	2	0	obf	named
+c	com/fs/graphics/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/graphics/font/BitmapFontRenderer
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#类定位与双平台对照
+	f	OÓ0000	globalTextScale	F
+		c	javap取证（仅 clinit 写默认值、类内读取、外部零引用，检查分支恒不触发，遗留全局配置） | 中 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	while.new	globalRenderLevel	I
+		c	javap取证（仅 clinit 写默认值、类内读取、外部零引用，检查分支恒不触发，遗留全局配置） | 中 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÔÓ0000	globalCjkMode	Z
+		c	javap取证（仅 clinit 写默认值、类内读取、外部零引用，检查分支恒不触发，遗留全局配置） | 中 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Öo0000	drawX	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	float.super	drawY	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Øo0000	textColor	Ljava/awt/Color;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÖÓ0000	outlineColor	Ljava/awt/Color;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ØO0000	shadowEnabled	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	oÓ0000	borderEnabled	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	OÒ0000	text	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	while.super	renderText	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	õÒ0000	useEllipsis	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ØÒ0000	truncateEnabled	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÖÒ0000	wrapText	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	o00000	alpha	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÖO0000	shadowAlpha	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÓÓ0000	borderAlpha	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Ö00000	textAlpha	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	öO0000	highlightAlpha	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÔÒ0000	colorAlphas	[F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ö00000	blendSrcFactor	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	õO0000	blendDstFactor	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	õ00000	FONT_ORBITRON24AA_BOLD	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	class.new	FONT_ORBITRON24AA	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	null	FONT_ORBITRON20AA_BOLD	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	while	FONT_ORBITRON20AA	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÓÒ0000	FONT_INSIGNIA15LTAA	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	öÒ0000	FONT_INSIGNIA21LTAA	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	interface	FONT_INSIGNIA25LTAA	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	class	FONT_ORBITRON12_CONDENSED	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	null.super	FONT_VICTOR10	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	class.super	FONT_VICTOR14	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	new.new	isCompactFont	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Óo0000	cachedFontName	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	interface.new	selectionStart	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	interface.super	selectionEnd	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	õo0000	underlineEnabled	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Ô00000	highlightColor	Ljava/awt/Color;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	null.new	charSelectionFlags	[Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Oo0000	charWordIndexes	[I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ØÓ0000	wordColors	[Ljava/awt/Color;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Ó00000	shadowOffsetX	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	new	shadowOffsetY	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÔO0000	snapToPixels	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Ôo0000	displayListToken	Lcom/fs/graphics/util/GLListToken;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	Ø00000	visible	Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	oÒ0000	shearMatrix	Ljava/nio/FloatBuffer;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	öo0000	glyphDisplayListBase	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	OO0000	logger	Lorg/apache/log4j/Logger;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	ÓO0000	textWidth	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	f	new.super	textHeight	F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#字段取证
+	m	o00000	setBlendFunc	(II)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object.super	setDefaultBlendFunc	()V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ö00000	setPremultipliedAlphaBlend	()V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ô00000	getBlendSrcFactor	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	for	getBlendDstFactor	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	int	setBorderEnabled	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	int	updateCompactFontFlag	()V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Òo0000	configureFontOutline	()V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	getAlpha	()F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setAlpha	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setAlpha	(FZ)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	getTextHeight	(Ljava/lang/String;)F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Õ00000	getTextWidth	(Ljava/lang/String;)F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	getClosestCharIndex	(II)I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	getCharPosition	(I)Lorg/lwjgl/util/vector/Vector2f;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	getCharWidth	(I)F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ô00000	getCharHeight	(I)F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ÔO0000	getLineHeight	()F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	return	getFont	()Lcom/fs/graphics/font/BitmapFont;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	int.super	getFontSize	()F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	setSelection	(II)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ø00000	selectFirstMatch	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ô00000	selectLastMatch	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setCharWordIndexes	([I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	highlightWords	([Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	highlightWords	(Z[Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ØO0000	getCharSelectionFlags	()[Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ø00000	resetCharSelectionFlags	()V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setCharSelectionFlags	([Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	return	deselectChar	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setWordColors	([Ljava/awt/Color;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Õ00000	setSelectionAt	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ÒO0000	clearSelection	()V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ô00000	isSelectionStart	(I)Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ø00000	isSelectionEnd	(I)Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ö00000	setUnderlineEnabled	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	setShadowOffset	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ö00000	setPosition	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	drawTextBottomLeft	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	for	drawTextBottomRight	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Õ00000	drawTextTopRight	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ô00000	drawTextTopLeft	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	int	drawTextTopCentered	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ø00000	drawTextLeftVCentered	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ø00000	drawTextRightVCentered	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ô00000	drawTextBottomCentered	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	oO0000	drawTextCentered	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ô00000	setSnapToPixels	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	öO0000	hasSelection	()Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	drawText	(FFZ)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	public	isVisible	()Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setVisible	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	setShear	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	drawGlyphs	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Õ00000	renderText	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	int	setOutlinePasses	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	setOutlineSpacing	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	drawUnderline	(FFLcom/fs/graphics/font/BitmapGlyph;F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	drawGlyphFromDisplayList	(IILcom/fs/graphics/font/BitmapGlyph;F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ø00000	buildGlyphDisplayLists	()V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ô00000	setFontSize	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	countNewlines	(Ljava/lang/String;)I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ôO0000	getTextColor	()Ljava/awt/Color;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	setTextColor	(Ljava/awt/Color;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	setHighlightColor	(Ljava/awt/Color;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setOutlineColor	(Ljava/awt/Color;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	oo0000	isShadowEnabled	()Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	setShadowEnabled	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setFont	(Lcom/fs/graphics/font/BitmapFont;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	this.super	getOutlineColor	()Ljava/awt/Color;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	hasGlyph	(I)Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	oO0000	getText	()Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Object	setText	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	setText	(Ljava/lang/String;Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ÕO0000	getTextWidth	()F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ôo0000	getTextHeight	()F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	øO0000	getFontLineHeight	()F
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	return	setRenderText	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	return	drawTextWrapped	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	drawTextWrappedCjk	(FF)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	ô00000	getRenderText	()Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	o00000	isWrapEnabled	()Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	return	setWrapEnabled	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	isTruncateEnabled	()Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ø00000	setTruncateEnabled	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	return.super	isUseEllipsis	()Z
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ô00000	setUseEllipsis	(Z)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证
+	m	Ò00000	main	([Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-renderer.md#方法取证

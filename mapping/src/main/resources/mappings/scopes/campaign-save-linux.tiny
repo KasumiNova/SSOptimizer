@@ -17,6 +17,26 @@ c	com/fs/starfarer/campaign/save/B	com/fs/starfarer/campaign/save/CampaignSavePr
 	m	o00000	setSaveLabel	(Ljava/lang/String;)V
 	m	o00000	getProgressText	()Ljava/lang/String;
 	m	new	setProgressText	(Ljava/lang/String;)V
+	f	ø00000	screenWidth	F
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	Object	screenHeight	F
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	ö00000	panelWidth	F
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	Ò00000	panelHeight	F
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	Õ00000	backgroundPanel	Lcom/fs/starfarer/E/HoloPanel;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	Ô00000	progressWidgetSprite	Lcom/fs/graphics/Sprite;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	return	progressGlowSprite	Lcom/fs/graphics/Sprite;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	ô00000	statusLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	int	tipsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
+	f	o00000	tipsBlockHeight	F
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#campaignsaveprogressdialog-members
 c	com/fs/starfarer/campaign/save/CampaignGameManager	com/fs/starfarer/campaign/save/CampaignGameManager
 	c 来源(未混淆类名) | 置信度(高) | 证据(CampaignGameManager)
 	f	int	SAVE_VERSION	Ljava/lang/String;

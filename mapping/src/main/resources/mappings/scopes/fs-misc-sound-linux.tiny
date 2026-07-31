@@ -69,6 +69,56 @@ c	com/fs/profiler/Profiler	com/fs/profiler/Profiler
 	m	o00000	end	()V
 c	com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/util/ResourceLoader
 	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/fs-misc-sound.md#resourceloader)
+	f	Object	instance	Lcom/fs/util/ResourceLoader;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	f	Ò00000	resourceSpecs	Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	f	Ô00000	resourcePath	Ljava/lang/String;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	f	o00000	suppressCustomResources	Z
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	f	Õ00000	resourceTypeSwitchMap	[I
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ó00000	getInstance	()Lcom/fs/util/ResourceLoader;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Õ00000	addDirectoryResource	(Ljava/lang/String;)V
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	super	addResourceSpec	(Ljava/lang/String;ZLjava/lang/Object;)V
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ò00000	addClasspathResource	()V
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Õ00000	addAbsoluteAndCwdResource	()V
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	String	getResourceSpecs	()Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ö00000	setResourcePath	(Ljava/lang/String;)V
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ó00000	openResource	(Ljava/lang/String;Z)Ljava/io/InputStream;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ò00000	getResourceLastModified	(Ljava/lang/String;Z)J
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ò00000	getResourceLastModified	(Ljava/lang/String;Lcom/fs/util/ResourceSpec;)J
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ò00000	openResourceStreams	(Ljava/lang/String;)Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	super	getPathsInDir	(Ljava/lang/String;Ljava/lang/String;Z)Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	super	getPathsInDir	(Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ó00000	getSubdirectories	(Ljava/lang/String;)Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	String	openResource	(Ljava/lang/String;Lcom/fs/util/ResourceSpec;)Ljava/io/InputStream;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	super	getResourceFile	(Ljava/lang/String;Z)Ljava/io/File;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	Ó00000	getResourceFile	(Ljava/lang/String;Lcom/fs/util/ResourceSpec;)Ljava/io/File;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	super	getResourceRootFolderName	(Ljava/lang/String;)Ljava/lang/String;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	super	resourceExists	(Ljava/lang/String;Lcom/fs/util/ResourceSpec;)Z
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
+	m	super	getResourceTypeSwitchMap	()[I
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#resourceloader-members
 c	com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/util/ResourceSpec
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/fs-misc-sound.md#resourceloader-oo)
 c	com/fs/util/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/util/ResourceType

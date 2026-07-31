@@ -102,6 +102,10 @@ Tiny v2 注释行（类行下 `\tc <注释>`、成员行下 `\t\tc <注释>`）�
 - campaign-ui-marketinfo-c-windows 存在裸名（无包前缀）named，风格待统一。
 - 32 个类仍为占位名（死代码 / 空类 / 匿名类，有意留白）；各 scope 低置信度命名见 `.dev/mapping-evidence/*.md`，待运行期验证提升。
 - FighterAutofireManager / AutofireManagerV2 / attack/D 三同构，精确语义待定。
+- 人工表 `StarfarerSettings$1` named 为 `StarfarerSettings$SettingsTextFieldFactory`，但第二波取证（loading-settings）显示其实为 SettingsAPI 接口的实现类，类命名待修正（证据：`.dev/mapping-evidence/loading-settings.md`）。
+- 人工表 `FontGlyph.getId` 经第二波取证疑似实为 kerning amount（字偶距），语义待复核（证据：`.dev/mapping-evidence/graphics-font-atlas.md`）。
+- `RenderStateUtils.scaleColor` 与人工表 `adjustBrightness` 字节码逐字节相同，疑似重复方法（混淆器复制产物），待确认后去重或标注。
+- 人工表 windows `ContrailEngine.render` 原误记为 `o00000`（实为 `Ò00000`，GL 渲染方法），已于第二波修正；linux 对应 obf 名为 `new`。
 
 ## 版本升级增量流程（0.98.5a 到来时）
 

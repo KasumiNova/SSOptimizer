@@ -1,0 +1,5 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/campaign/econ/Market	com/fs/starfarer/campaign/econ/Market
+	c javap取证 | 高 | .dev/mapping-evidence/util-io.md#market-members
+	f	id	marketId	Ljava/lang/String;
+		c javap取证 | 高 | .dev/mapping-evidence/util-io.md#market-members

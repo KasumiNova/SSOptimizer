@@ -1,0 +1,231 @@
+tiny	2	0	obf	named
+c	com/fs/graphics/A/F	com/fs/graphics/font/BitmapFont
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	for	face	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	ÕO0000	nominalFontSize	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	ØO0000	bold	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	int	italic	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	return	charset	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	øO0000	unicode	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	Õ00000	stretchH	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	this.super	smooth	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	Òo0000	antiAliasing	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	public	unusedPadding	[I
+		c	javap取证（仅构造器分配 int[4]，全 jar 无读写，死代码；尺寸对应 BMFont padding 四元组） | 中 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	Ø00000	unusedSpacing	[I
+		c	javap取证（仅构造器分配 int[2]，全 jar 无读写，死代码；尺寸对应 BMFont spacing 二元组） | 中 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	ø00000	outline	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	Ò00000	lineHeight	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	ö00000	base	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	oo0000	scaleWidth	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	ô00000	scaleHeight	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	oO0000	pageCount	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	öO0000	packed	I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	o00000	unusedInt	I
+		c	javap取证（setter/getter 全 jar 零调用，字段永不写入，死代码） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	Ô00000	pages	[Lcom/fs/graphics/font/FontPage;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	ÔO0000	glyphs	[Lcom/fs/graphics/font/BitmapGlyph;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	return.super	kerningMap	Ljava/util/Map;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	Object.super	fontFile	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	ôO0000	fontPath	Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	Object	fontFilePrefix	Ljava/lang/String;
+		c	javap取证（静态常量 "Font_"，fontFile 前缀） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	f	int.super	kerningLookupPair	Lcom/fs/util/container/Pair;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-fields
+	m	o00000	getKerning	(II)Lcom/fs/graphics/font/FontGlyph;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Õ00000	loadFontTexture	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	o00000	addGlyph	(Lcom/fs/graphics/font/BitmapGlyph;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	o00000	addKerning	(Lcom/fs/graphics/font/FontGlyph;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ô00000	getAntiAliasing	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ø00000	setAntiAliasing	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Object.super	getBase	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ô00000	setBase	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	oO0000	getBold	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Object	setBold	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	return	getGlyphs	()[Lcom/fs/graphics/font/BitmapGlyph;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	oO0000	getGlyph	(I)Lcom/fs/graphics/font/BitmapGlyph;
+		c	javap取证（越界返回 null 的有界取字形） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	o00000	setGlyphs	([Lcom/fs/graphics/font/BitmapGlyph;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Ø00000	getCharset	()Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Ò00000	setCharset	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ÒO0000	getUnusedInt	()I
+		c	javap取证（全 jar 零调用，死代码） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	for	setUnusedInt	(I)V
+		c	javap取证（全 jar 零调用，死代码） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Object	getFace	()Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Object	setFace	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	öO0000	getItalic	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ÒO0000	setItalic	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Ô00000	setLineHeight	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	for	getOutline	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	public	setOutline	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ö00000	getPacked	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Ò00000	setPacked	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	oo0000	getUnusedPadding	()[I
+		c	javap取证（无调用方，死代码） | 中 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	o00000	unusedSetPadding	(Ljava/lang/String;)V
+		c	javap取证（解析器消费 info padding 令牌但方法体为空，数据丢弃） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	return.super	getPages	()[Lcom/fs/graphics/font/FontPage;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	o00000	setPages	([Lcom/fs/graphics/font/FontPage;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ÕO0000	getPageCount	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	int	setPageCount	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ØO0000	getScaleHeight	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	o00000	setScaleHeight	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Ò00000	getScaleWidth	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ÔO0000	setScaleWidth	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	return	setNominalFontSize	(I)V
+		c	javap取证（getter 人工表已命名 getNominalFontSize） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	int	getSmooth	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Ø00000	setSmooth	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	o00000	getUnusedSpacing	()[I
+		c	javap取证（无调用方，死代码） | 中 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Ô00000	unusedSetSpacing	(Ljava/lang/String;)V
+		c	javap取证（解析器消费 info spacing 令牌但方法体为空，数据丢弃） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ôO0000	getStretchH	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	Õ00000	setStretchH	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	this.super	getUnicode	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ö00000	setUnicode	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	public	getKerningMap	()Ljava/util/Map;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+	m	ÔO0000	getFontFile	()Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfont-methods
+c	com/fs/graphics/A/oOOO	com/fs/graphics/font/BitmapGlyph
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	Õ00000	glyphId	I
+		c	javap取证（glyphs 数组下标） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	for	x	I
+		c	javap取证（addGlyph 中 texX 分子） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	ø00000	yFlipped	I
+		c	javap取证（加载器写入 scaleHeight-y-height，翻转后的 y） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	return	width	I
+		c	javap取证（getCharWidth 返回 scale*width） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	ÒO0000	height	I
+		c	javap取证（getCharHeight 返回 scale*height） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	ô00000	xOffset	I
+		c	javap取证（渲染器绘制前的前进量） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	o00000	bearingY	I
+		c	javap取证（渲染器顶点 y 偏移） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	Ø00000	xAdvance	I
+		c	javap取证（渲染器绘制后的前进量） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	int	page	I
+		c	javap取证（char 行第 9 令牌，单页字体恒 0，渲染器不读） | 中 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	oO0000	unusedInt	I
+		c	javap取证（setter/getter 全 jar 零调用，死代码） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	Ô00000	texX	F
+		c	javap取证（addGlyph 写入 x/scaleWidth） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	Object	texY	F
+		c	javap取证（addGlyph 写入 yFlipped/scaleHeight） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	ö00000	texWidth	F
+		c	javap取证（addGlyph 写入 width/scaleWidth） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	f	Ò00000	texHeight	F
+		c	javap取证（addGlyph 写入 height/scaleHeight） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Õ00000	getUnusedInt	()I
+		c	javap取证（全 jar 零调用，死代码） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Object	setUnusedInt	(I)V
+		c	javap取证（全 jar 零调用，死代码） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Õ00000	setHeight	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	return	setGlyphId	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Object	getPage	()I
+		c	javap取证 | 中 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Ø00000	setPage	(I)V
+		c	javap取证 | 中 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	ô00000	setWidth	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	for	getX	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	int	setX	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Ò00000	setXAdvance	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	ö00000	setXOffset	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	o00000	getYFlipped	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Ô00000	setYFlipped	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	o00000	setBearingY	(I)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Object	setTexHeight	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Ô00000	setTexWidth	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	Ò00000	setTexX	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+	m	o00000	setTexY	(F)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapglyph-members
+c	com/fs/graphics/A/D	com/fs/graphics/font/BitmapFontManager
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members
+	f	Ò00000	fonts	Ljava/util/HashMap;
+		c	javap取证（字体名→BitmapFont 静态缓存） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members
+	f	Object	lineTokens	[Ljava/lang/String;
+		c	javap取证（当前行 key=value 令牌数组） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members
+	f	o00000	tokenIndex	I
+		c	javap取证（lineTokens 读取游标） | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members
+	m	super	loadFont	(Ljava/lang/String;Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members
+	m	super	tokenizeLine	(Ljava/lang/String;)V
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members
+	m	super	nextTokenInt	()I
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members
+	m	super	nextTokenString	(Z)Ljava/lang/String;
+		c	javap取证 | 高 | .dev/mapping-evidence/graphics-font-atlas.md#bitmapfontmanager-members

@@ -1,0 +1,213 @@
+tiny	2	0	obf	named
+c	com/fs/graphics/Object	com/fs/graphics/TextureObject
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	ÒO0000	imageHeight	I
+		c	javap取证（setImageHeight 人工表 + int()/for() 重算公式互证） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	Ô00000	imageWidth	I
+		c	javap取证（setImageWidth 人工表 + int()/for() 重算公式互证） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	oO0000	textureWidth	I
+		c	javap取证（setTextureWidth 人工表 + int()/for() 重算公式互证） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	Object	textureHeight	I
+		c	javap取证（setTextureHeight 人工表 + int()/for() 重算公式互证） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	for	uScale	F
+		c	javap取证（=imageWidth/textureWidth；Sprite.setTexture 存入 texWidth 作 UV 范围） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	ø00000	vScale	F
+		c	javap取证（=imageHeight/textureHeight；Sprite.setTexture 存入 texHeight 作 UV 范围） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	int	texturePath	Ljava/lang/String;
+		c	javap取证（ctor arg3=加载路径；reloadTexture 依赖其判 "resourceName"） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	Ò00000	textureName	Ljava/lang/String;
+		c	javap取证（注册 id；Sprite 存 textureId；int textureId 已占用故取此名） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	Ø00000	deferredLoadingEnabled	Z
+		c	javap取证（人工表 isDeferredLoadingEnabled/setDeferredLoadingEnabled 读写此字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	return	unusedLastBoundTextureTarget	I
+		c	javap取证（静态，仅 clinit/return() 写 -1，全 jar 无读取，死代码；target/id 归属按 bind 参数序推断） | 中 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	ÔO0000	unusedLastBoundTextureId	I
+		c	javap取证（静态，仅 clinit/return() 写 -1，全 jar 无读取，死代码；target/id 归属按 bind 参数序推断） | 中 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	Õ00000	averageColor	Ljava/awt/Color;
+		c	javap取证（setAverageColor 人工表写此字段，getter ø00000() 读取） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	o00000	upperHalfColor	Ljava/awt/Color;
+		c	javap取证（setUpperHalfColor 人工表写此字段，getter Ò00000() 读取） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	f	public	lowerHalfColor	Ljava/awt/Color;
+		c	javap取证（setLowerHalfColor 人工表写此字段，getter public() 读取） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	oO0000	getTextureName	()Ljava/lang/String;
+		c	javap取证（返回 Ò00000 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	Ò00000	setTextureName	(Ljava/lang/String;)V
+		c	javap取证（写入 Ò00000 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	Õ00000	getTexturePath	()Ljava/lang/String;
+		c	javap取证（返回 int 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	o00000	setTexturePath	(Ljava/lang/String;)V
+		c	javap取证（写入 int 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	return	unusedResetBindCache	()V
+		c	javap取证（静态，无调用方，仅复位两个死静态字段，死代码） | 中 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	o00000	bindTexture	(II)V
+		c	javap取证（静态 glBindTexture(target, id) 直调） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	Ô00000	getImageHeight	()I
+		c	javap取证（返回 ÒO0000 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	Object	getImageWidth	()I
+		c	javap取证（返回 Ô00000 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	o00000	getVScale	()F
+		c	javap取证（返回 ø00000 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	ÒO0000	getUScale	()F
+		c	javap取证（返回 for 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	int	updateVScale	()V
+		c	javap取证（私有；vScale=imageHeight/textureHeight，分母为 0 跳过） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	for	updateUScale	()V
+		c	javap取证（私有；uScale=imageWidth/textureWidth，分母为 0 跳过） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	Ò00000	getUpperHalfColor	()Ljava/awt/Color;
+		c	javap取证（返回 o00000 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	ø00000	getAverageColor	()Ljava/awt/Color;
+		c	javap取证（返回 Õ00000 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+	m	public	getLowerHalfColor	()Ljava/awt/Color;
+		c	javap取证（返回 public 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureobject-members
+c	com/fs/graphics/TextureLoader	com/fs/graphics/TextureLoader
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	OO0000	rgbaColorModel	Ljava/awt/image/ColorModel;
+		c	javap取证（ctor ComponentColorModel hasAlpha=true） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	Ø00000	rgbColorModel	Ljava/awt/image/ColorModel;
+		c	javap取证（ctor ComponentColorModel hasAlpha=false/OPAQUE） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	Ô00000	textureIdBuffer	Ljava/nio/IntBuffer;
+		c	javap取证（createIntBuffer(1)，glGenTextures 复用） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	ÓO0000	staticLogger	Lorg/apache/log4j/Logger;
+		c	javap取证（静态 Logger，供 destroyTextureBuffer） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	new	imageFilter	Lcom/fs/graphics/ImageFilter;
+		c	javap取证（非空时对加载图像调用过滤） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	ö00000	totalTextureBytesLoaded	J
+		c	javap取证（静态累计 buffer.capacity，日志 "Loaded %.2f MB of texture data so far"） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	o00000	imageWidth	I
+		c	javap取证（解码时当前图像宽；POT 校验与 mipmap 判定用） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	while	imageHeight	I
+		c	javap取证（解码时当前图像高；POT 校验与 mipmap 判定用） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	float	cleanerMethodCache	Ljava/util/Map;
+		c	javap取证（反射 cleaner Method 按类缓存） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	Ö00000	cleanMethodCache	Ljava/util/Map;
+		c	javap取证（反射 clean Method 按类缓存） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	oO0000	reusableRgbByteBuffer	Ljava/nio/ByteBuffer;
+		c	javap取证（2048x2048 无 alpha 图像复用；destroyTextureBuffer 跳过清理） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	f	class	logger	Lorg/apache/log4j/Logger;
+		c	javap取证（实例 Logger，加载日志） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	loadTextureAndRegister	(Ljava/lang/String;Ljava/lang/String;)V
+		c	javap取证（日志 "Loading [path] as texture with id [id]"；加载后设名并注册到 TextureManager） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	loadImageAndRegister	(Ljava/lang/String;Ljava/awt/image/BufferedImage;)V
+		c	javap取证（日志 "Loading image as [id]"；加载后设名并注册） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	Ò00000	generateTextureId	()I
+		c	javap取证（glGenTextures(textureIdBuffer) 后 get(0)） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	Ò00000	loadTextureFromImage	(Ljava/lang/String;Ljava/awt/image/BufferedImage;)Lcom/fs/graphics/TextureObject;
+		c	javap取证（缓存感知；延迟加载分支建占位对象） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	reloadTextureFromPath	(Lcom/fs/graphics/TextureObject;Ljava/lang/String;)V
+		c	javap取证（日志 "Loading image %s into existing tex id %d"；懒加载分支仅标记） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	reloadTexture	(Lcom/fs/graphics/TextureObject;)V
+		c	javap取证（无 resourceName 抛 "Can't reload texture..."） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	createTextureFromImage	(Ljava/awt/image/BufferedImage;IIII)Lcom/fs/graphics/TextureObject;
+		c	javap取证（过滤→生成 id→建对象→GL 上传；无缓存） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	loadTextureData	(Lcom/fs/graphics/TextureObject;Ljava/lang/String;IIIIZ)Lcom/fs/graphics/TextureObject;
+		c	javap取证（读路径→解码→GL 上传/子图更新；loadTexture 与 reloadTextureFromPath 均调它） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	destroyTextureBuffer	(Ljava/nio/ByteBuffer;Ljava/lang/String;)V
+		c	javap取证（反射 cleaner/clean 释放 direct buffer；"Cleaned buffer..." 日志） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	Ò00000	decodePng	(Ljava/lang/String;)Ljava/nio/ByteBuffer;
+		c	javap取证（PNGDecoder→RGBA direct buffer；非 POT 返回 null） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	computeHistogramMedian	([FF)F
+		c	javap取证（从 0 向上累计至 arg2*0.5 返回通道值；调用点 role 交叉验证） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	Ò00000	computeHistogramMean	([FF)F
+		c	javap取证（从 255 向下累计至 arg2 的加权均值；worklist 哈希双平台错位，按结构指纹定名） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	setImageFilter	(Lcom/fs/graphics/ImageFilter;)V
+		c	javap取证（写 imageFilter 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	Ó00000	removeTextureFromCache	(Ljava/lang/String;)V
+		c	javap取证（textureCache.remove(key)） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+	m	super	getTextureCache	()Ljava/util/HashMap;
+		c	javap取证（返回 textureCache 字段） | 高 | .dev/mapping-evidence/graphics-texture.md#textureloader-members
+c	com/fs/graphics/oOoO	com/fs/graphics/TextureManager
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	f	Ô00000	lazyLoadingEnabled	Z
+		c	javap取证（人工表 getter isLazyLoadingEnabled 读此字段） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	f	new	textureMap	Ljava/util/Map;
+		c	javap取证（注册表 Map<String,TextureObject>） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	f	o00000	textureLoader	Lcom/fs/graphics/TextureLoader;
+		c	javap取证（clinit 单例） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	f	Ó00000	logger	Lorg/apache/log4j/Logger;
+		c	javap取证（clinit getLogger） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	o00000	setLazyLoadingEnabled	(Z)V
+		c	javap取证（写 lazyLoadingEnabled） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	new	getTexture	(Ljava/lang/String;)Lcom/fs/graphics/TextureObject;
+		c	javap取证（containsKey 检查后取） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	o00000	registerTexture	(Ljava/lang/String;Lcom/fs/graphics/TextureObject;)V
+		c	javap取证（if !containsKey put，幂等） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	new	clearTextures	()V
+		c	javap取证（loader textureCache + textureMap 双清） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	o00000	loadTexture	(Ljava/lang/String;Ljava/lang/String;)V
+		c	javap取证（委托 loader.loadTextureAndRegister，参数 (id, path)） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	o00000	loadImage	(Ljava/lang/String;Ljava/awt/image/BufferedImage;)V
+		c	javap取证（委托 loader.loadImageAndRegister） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	Ó00000	removeTexture	(Ljava/lang/String;)V
+		c	javap取证（loader 缓存 + textureMap 双移除） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	o00000	getTextures	()Ljava/util/Map;
+		c	javap取证（返回 textureMap） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	o00000	reloadTexturesWithPrefix	(Ljava/lang/String;)V
+		c	javap取证（keySet 中 startsWith 前缀的逐个 reload） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	Ó00000	reloadDeferredTextures	()V
+		c	javap取证（仅 isDeferredLoadingEnabled 的，reload 后清标记） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	Ô00000	getTextureLoader	()Lcom/fs/graphics/TextureLoader;
+		c	javap取证（返回 textureLoader） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+	m	o00000	setImageFilter	(Lcom/fs/graphics/ImageFilter;)V
+		c	javap取证（委托 loader.setImageFilter） | 高 | .dev/mapping-evidence/graphics-texture.md#texturemanager-members
+c	com/fs/graphics/L	com/fs/graphics/ParallelImagePreloader
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-texture.md#parallelimagepreloader-members
+	f	Ó00000	logger	Lorg/apache/log4j/Logger;
+		c	javap取证（静态 Logger；L$1 线程体打 error） | 高 | .dev/mapping-evidence/graphics-texture.md#parallelimagepreloader-members
+	f	null	unusedMaxQueuedBytes	I
+		c	javap取证（=10485760；L 与 L$1 均不读取，死代码；"字节队列上限"为推断语义） | 低 | .dev/mapping-evidence/graphics-texture.md#parallelimagepreloader-members
+	f	o00000	loaderThread	Ljava/lang/Thread;
+		c	javap取证（start() 中 new Thread(L$1).start()，shutdown() interrupt） | 高 | .dev/mapping-evidence/graphics-texture.md#parallelimagepreloader-members
+c	com/fs/graphics/util/B	com/fs/graphics/util/RenderStateUtils
+	c	javap取证 | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	f	super	timerResolution	J
+		c	javap取证（clinit Sys.getTimerResolution；getTimeMillis 使用） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	f	Ò00000	unusedTimerValue	J
+		c	javap取证（包私有静态 long，双平台无任何读写点，死代码；原始用途不明） | 中 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	new	setGlColor	(Ljava/awt/Color;)V
+		c	javap取证（glColor4ub 封装） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	new	setGlColor	(Ljava/awt/Color;F)V
+		c	javap取证（glColor4ub；alpha 乘系数；同 obf 名重载） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	setGlColor	(Ljava/awt/Color;I)V
+		c	javap取证（glColor4ub；显式 alpha；同族重载） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	new	unusedAddColors	(Ljava/awt/Color;Ljava/awt/Color;)Ljava/awt/Color;
+		c	javap取证（四通道直接相加；双平台 0 调用方，死代码） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	multiplyColors	(Ljava/awt/Color;Ljava/awt/Color;)Ljava/awt/Color;
+		c	javap取证（逐通道 a*b/255 并截断；Ship 精灵颜色叠加） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ô00000	getTimeMillis	()J
+		c	javap取证（Sys.getTime()*1000/timerResolution） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ö00000	beginFrame	()V
+		c	javap取证（清屏+复位矩阵+颜色掩码；6 个 GameState 每帧渲染前调用） | 中 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	beginFullScreenOverlay	(FFF)V
+		c	javap取证（glOrtho(0,w,0,h,-6000,6000)；第三参被覆写未用；与 beginScreenOverlay(FFFFF) 区分） | 中 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	enableScissorTest	(IIII)V
+		c	javap取证（glEnable(SCISSOR)+glScissor；K$o 调用） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ó00000	unusedDisableScissorTest	()V
+		c	javap取证（glDisable(SCISSOR)；双平台 0 调用方，死代码） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	unusedDisableStencilTest	()V
+		c	javap取证（glDisable(STENCIL)；全限定核验 0 调用方，死代码；早期命中为 starfarer/util/B 误报） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	unusedComputeAngle	(FFFF)F
+		c	javap取证（向量夹角；双平台 0 调用方，死代码） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	padString	(Ljava/lang/String;ILjava/lang/String;)Ljava/lang/String;
+		c	javap取证（单字符 pad 补足最小长度；anim/B 调用） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	scaleColorRgb	(Ljava/awt/Color;F)Ljava/awt/Color;
+		c	javap取证（RGB×F、alpha 不变、截断；Ship 调暗船体） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	class	scaleColor	(Ljava/awt/Color;F)Ljava/awt/Color;
+		c	javap取证（RGBA×F 不截断；与 adjustBrightness 字节码逐字节相同，疑似重复方法） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ô00000	scaleAlpha	(Ljava/awt/Color;F)Ljava/awt/Color;
+		c	javap取证（仅 alpha×F、截断；双平台 UI 淡入淡出调用方最多） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	new	setAlpha	(Ljava/awt/Color;I)Ljava/awt/Color;
+		c	javap取证（new Color(r,g,b,clamp(i))） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	unusedWhiteWithAlpha	(F)Ljava/awt/Color;
+		c	javap取证（白 + clamp(255*f) alpha；双平台 0 调用方，死代码） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ö00000	scaleColorClamped	(Ljava/awt/Color;F)Ljava/awt/Color;
+		c	javap取证（RGBA×F 逐通道截断；Ship 按 255/maxChannel 归一化全亮度） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ô00000	computeLightedColor	(Ljava/awt/Color;)Ljava/awt/Color;
+		c	javap取证（blend(white,c,0.8*whitenessDeficit)*scale(lum)；唯一调用方 CampaignAsteroid 受光照着色） | 中 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ó00000	scaleColorToBrightness	(Ljava/awt/Color;I)Ljava/awt/Color;
+		c	javap取证（scaleColor(color, arg1/maxChannel)，最大通道=arg1；EventsPanel 传 235） | 中 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	unusedLuminance	(Ljava/awt/Color;)F
+		c	javap取证（0.299r+0.587g+0.114b 归一化；双平台 0 调用方，死代码） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	Ó00000	maxChannelValue	(Ljava/awt/Color;)F
+		c	javap取证（max(r,g,b)/255；Ship 亮度比对照） | 高 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members
+	m	o00000	renderVignette	(FFFFFFF)V
+		c	javap取证（黑色切角八边形四边形；唯一调用方 codex2 面板，其字段名 vignetteVisual） | 中 | .dev/mapping-evidence/graphics-texture.md#renderstateutils-members

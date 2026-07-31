@@ -55,12 +55,56 @@ c com/fs/starfarer/combat/entities/ContrailEmitter com/fs/starfarer/combat/entit
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/ContrailEngine com/fs/starfarer/combat/entities/ContrailEngine
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	Object	MAX_ALPHA_DECAY	F
+		c javap取证（render 中段 alpha 衰减速度上限 0.5f） | 中 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	f	o00000	unusedConstant	F
+		c javap取证（常量 50.0f 无任何方法体引用，死代码） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	o00000	createTrail	(Ljava/lang/Object;Ljava/awt/Color;FFFFFLcom/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode;Lcom/fs/starfarer/loading/specs/EngineSlot$BlendMode;)V
+		c javap取证（创建尾迹组并注册，Engine.init 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	Ó00000	endTrail	(Ljava/lang/Object;)V
+		c javap取证（置 ended 并补末端，Engine.cleanup 调用；windows 同名成员 Object(Object;)V） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	o00000	extendTrail	(Ljava/lang/Object;)V
+		c javap取证（沿末端延长 20f，Engine.terminateContrail 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	new	hasTrail	(Ljava/lang/Object;)Z
+		c javap取证（groups.containsKey；windows 同名成员 Ò00000(Object;)Z） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	o00000	addSegment	(Ljava/lang/Object;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;F)V
+		c javap取证（Engine.addExtraPoint/advance 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	o00000	advance	(F)V
+		c javap取证（推进全部组段寿命/宽度，清理过期组） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	o00000	render	()V
+		c javap取证（render(1.0f) 无参重载；工作清单 windows obf 名 Ò00000 与 class 文件不符，实际为 o00000） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
+	m	o00000	main	([Ljava/lang/String;)V
+		c javap取证（调试入口，打印 "here"） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
 c com/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode com/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/ContrailEngine$Oo com/fs/starfarer/combat/entities/ContrailEngine$Oo
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/ContrailEngine$o com/fs/starfarer/combat/entities/ContrailEngine$o
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	o00000	key	Ljava/lang/Object;
+		c javap取证（createTrail 保存的组标识） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	return	ended	Z
+		c javap取证（endTrail 置位，advance 加速推进段寿命） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	public	totalLength	F
+		c javap取证（addSegment/removeExpiredSegment 累加减段长度） | 中 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	Ò00000	width	F
+		c javap取证（createTrail 写 slot.getContrailWidth） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	Ô00000	segmentDuration	F
+		c javap取证（createTrail 写 slot.getContrailDuration，传段 maxAge） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	Object	minSegmentLength	F
+		c javap取证（addSegment 间距下限判断） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	Ø00000	maxSegmentLength	F
+		c javap取证（addSegment 间距上限钳制） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	ø00000	widthMultiplier	F
+		c javap取证（advance WIDEN 模式宽度计算） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	int	widthMode	Lcom/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode;
+		c javap取证（advance WIDEN/NARROW 分支） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	f	ô00000	outer	Lcom/fs/starfarer/combat/entities/ContrailEngine;
+		c javap取证（内部类外部实例引用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	m	o00000	addSegment	(Lcom/fs/starfarer/combat/entities/ContrailEngine$Oo;)V
+		c javap取证（段入列并累计 totalLength） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
+	m	o00000	removeExpiredSegment	()Z
+		c javap取证（头部段到期移除，advance 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-o-members
 c com/fs/starfarer/combat/entities/ContrailParticle com/fs/starfarer/combat/entities/ContrailParticle
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/CustomCombatEntity com/fs/starfarer/combat/entities/CustomCombatEntity
@@ -101,10 +145,114 @@ c com/fs/starfarer/combat/entities/for com/fs/starfarer/combat/entities/RayExten
 	m	Ø00000	getFadeFactor	()F
 c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
+	f	Ôo0000	MAX_FLAME_LEVEL	F
+		c javap取证（getEngineLevel 基准 0.4f / 渲染 min(0.4f, flameLevel)） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	Ó00000	FLAME_ALPHA_SCALE	F
+		c javap取证（主火焰顶点 alpha 缩放 100.0f） | 中 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	Ø00000	GLOW_ALPHA_SCALE	F
+		c javap取证（次级 glow 纹理 alpha 缩放 50.0f） | 中 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	oO0000	FLAME_EXTEND_THRESHOLD	F
+		c javap取证（火焰形状曲线拐点 0.8f） | 中 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	null.super	FLARE_COOLDOWN	F
+		c javap取证（showAccelerating/showDecelerating 冷却阈值 0.05f） | 中 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	new.super	engineController	Lcom/fs/starfarer/combat/entities/ship/ShipEngineController;
+		c javap取证（构造器参数，尾迹速度/ContrailEmitter 来源） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	ö00000	engineStates	Ljava/util/Map;
+		c javap取证（getState 的 EngineState 缓存） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	õO0000	engineLevel	F
+		c javap取证（advance 按 spread/flameLevel 更新，getEngineLevel 数据源） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	o00000	engineLevelFromGlow	Z
+		c javap取证（engineLevel 是否取自 flameLevel，H.advance 用之） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	Ö00000	accelTimer	F
+		c javap取证（showAccelerating 清零/showDecelerating 检查，get/setAccelTimer） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	OO0000	decelTimer	F
+		c javap取证（showDecelerating 清零/showAccelerating 检查，resetDecelTimer 重置） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	while	contrailEmitters	Ljava/util/Map;
+		c javap取证（Map<EngineSlot, ContrailEmitter>，init/cleanup/advance 使用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	Ô00000	pulseTimer	F
+		c javap取证（驱动 coreRotation 摆动相位） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	while.super	contrailColorShifter	Lcom/fs/starfarer/util/ColorShifter;
+		c javap取证（fadeToOtherColor 第二色/advance 更新尾迹颜色） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	Öo0000	unusedScaleFactor	F
+		c javap取证（仅构造器写 1.0f，无读取，死代码） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	ÖO0000	spreadIncreasing	Z
+		c javap取证（advance 中与 spread 增减同步） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	float.super	emitContrails	Z
+		c javap取证（showAccelerating 置位，advance 中控制尾迹发射） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	f	float	decelGlowActive	Z
+		c javap取证（showDecelerating 置位，advance 中 glow 补亮） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	o00000	getEngineLevel	()F
+		c javap取证 | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ôO0000	isEngineLevelFromGlow	()Z
+		c javap取证（windows 同名成员 new.super()Z，结构指纹一致） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ø00000	init	()V
+		c javap取证（H.init 调用，创建尾迹/ContrailEmitter） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Õ00000	updateContrailColors	()V
+		c javap取证（同步尾迹颜色） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Ò00000	isShifting	()Z
+		c javap取证（任一 shifter 过渡中） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	this.super	cleanup	()V
+		c javap取证（H.cleanup 调用，停止并移除全部尾迹） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ÔO0000	resetBrightness	()V
+		c javap取证（H.resetBrightness 调用，flameLevel 清零） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Ø00000	saveBrightness	()V
+		c javap取证（H.saveBrightness 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ØO0000	restoreBrightness	()V
+		c javap取证（H.restoreBrightness 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	return	addExtraPoint	(F)V
+		c javap取证（H.addExtraPoint 调用，发射尾迹段） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Object.super	terminateContrail	()V
+		c javap取证（H.terminateContrail 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	o00000	setSystemActivatedRenderingEnabled	(Z)V
+		c javap取证（ShipSystem 以 isEngineActivateHiddenNozzles 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ö00000	isSystemActivatedRenderingEnabled	()Z
+		c javap取证（ContrailEmitter.emit 使用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	öO0000	fadeIn	()V
+		c javap取证（H 零通量加速启动时调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ÒO0000	fadeOut	()V
+		c javap取证（H 加速结束时调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	public	emitHitParticles	()V
+		c javap取证（H.doFlameout 调用，引擎火花粒子） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	oO0000	isSystemActivationActive	()Z
+		c javap取证（lengthShifter.isShifted && systemActivatedRenderingEnabled） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Ò00000	emitHitParticles	(Lcom/fs/starfarer/loading/specs/EngineSlot;)V
+		c javap取证（单槽重载，H$oo 槽损坏时调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	o00000	resetGlow	(Lcom/fs/starfarer/loading/specs/EngineSlot;)V
+		c javap取证（单槽 flameLevel 清零，H$oo 恢复时调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	o00000	extendFlame	(Ljava/lang/Object;FFF)V
+		c javap取证（H.extendFlame/ShipSystem 调用，三 shifter 过渡） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	for	getExtendLengthFraction	()Lcom/fs/starfarer/util/ValueShifter;
+		c javap取证（H.getExtendLengthFraction 直接返回） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ô00000	getExtendWidthFraction	()Lcom/fs/starfarer/util/ValueShifter;
+		c javap取证（H.getExtendWidthFraction 直接返回） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	return	getExtendGlowFraction	()Lcom/fs/starfarer/util/ValueShifter;
+		c javap取证（H.getExtendGlowFraction 直接返回） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Ô00000	getFlameColorShifter	()Lcom/fs/starfarer/api/util/ColorShifterAPI;
+		c javap取证（H.getFlameColorShifter 直接返回） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	o00000	fadeToOtherColor	(Ljava/lang/Object;Ljava/awt/Color;Ljava/awt/Color;FF)V
+		c javap取证（H.fadeToOtherColor 透传） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Ø00000	advance	(F)V
+		c javap取证（H.advance 调用，推进全部特效状态） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Object	isBoostedFlameMode	()Z
+		c javap取证（返回 boostedFlameMode 字段） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	int	resetDecelTimer	()V
+		c javap取证（AttackRunManeuver/MoteAI/SeekerFlareAI 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Ò00000	showAccelerating	(F)V
+		c javap取证（H.showAccelerating 调用，开启尾迹） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	ÕO0000	getAccelTimer	()F
+		c javap取证（返回 accelTimer） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Object	setAccelTimer	(F)V
+		c javap取证（AttackRunManeuver 以 1000f 调用） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
+	m	Ô00000	showDecelerating	(F)V
+		c javap取证（H.showDecelerating 调用，开启 glow 补亮） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
 c com/fs/starfarer/combat/entities/G$Oo com/fs/starfarer/combat/entities/EngineState
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
 c com/fs/starfarer/combat/entities/G$o com/fs/starfarer/combat/entities/EngineGlowType
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
+	f	o00000	SMOOTH	Lcom/fs/starfarer/combat/entities/EngineGlowType;
+		c javap取证（clinit 中 "SMOOTH" 枚举常量） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-glow-type-members
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/combat/entities/EngineGlowType;
+		c javap取证（values() 返回的私有数组；windows 同名成员 new） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-glow-type-members
 c com/fs/starfarer/combat/entities/H com/fs/starfarer/combat/entities/BreakingAnimation
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#h-breaking-animation
 	f	Ô00000	pieces	Ljava/util/List;

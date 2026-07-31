@@ -1,0 +1,33 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/renderers/E	com/fs/starfarer/renderers/TexturedStripRenderer
+	c javap取证 | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderArc	(Lcom/fs/graphics/TextureObject;FFFFFFLjava/awt/Color;IIF)V
+		c javap取证（转发核心 renderArc，分段固定 20.0f、非加法混合） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderArc	(Lcom/fs/graphics/TextureObject;FFFFFFFLjava/awt/Color;IIFZ)V
+		c javap取证（核心圆弧：纹理弧带 GL_TRIANGLE_STRIP 或抗锯齿线条弧，alpha 沿弧渐变，additive 可配） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderLineArc	(FFFFFFFLjava/awt/Color;Ljava/awt/Color;IIIFZ)V
+		c javap取证（无纹理线条弧：color2 为空单色渐变 GL_LINE_LOOP/STRIP，非空双色交替 GL_LINES） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderFilledArc	(FFFFF)V
+		c javap取证（实心扇形/圆，GL_TRIANGLE_FAN 圆心+圆周，20 度/段） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderTexturedArcStrip	(Lcom/fs/graphics/TextureObject;FFFFFFLjava/awt/Color;IF)V
+		c javap取证（带纹理两段窄弧带，中心角 startAngle±arcAngle/2，列角步进 lineWidth/radius；用途为两端弧带的推断属低置信） | 中 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderTexturedQuad	(Lcom/fs/graphics/TextureObject;FFFLjava/awt/Color;F)V
+		c javap取证（带纹理轴对齐正方形 GL_QUADS，边长 size，alpha=color.alpha*scale） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderTexturedFlashStrip	(Lcom/fs/graphics/TextureObject;FFFZFFFFLjava/awt/Color;IIF)V
+		c javap取证（带纹理直线条带，线性 alpha 渐变，flash 开启时每 flashLen 长度翻转明暗） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderGradientQuad	(FFFFFLjava/awt/Color;FFFZ)V
+		c javap取证（转发 renderTexturedGradientQuad，纹理取内置 H.Ò00000=graphics/hud/line4x4.png） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderTexturedGradientQuad	(Lcom/fs/graphics/TextureObject;FFFFFLjava/awt/Color;FFFZ)V
+		c javap取证（带纹理渐变四边形：Vector2f 法线偏移，起点/中点/终点三对顶点，三档 alpha 渐变） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderLine	(FFFFFLjava/awt/Color;FZ)V
+		c javap取证（单色线段 GL_LINES，抗锯齿+线宽，additive 可配） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderSolidGradientQuad	(FFFFFLjava/awt/Color;FFF)V
+		c javap取证（无纹理渐变四边形 GL_QUAD_STRIP，三档 alpha，单色快速路径） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderTwoColorGradientQuad	(FFFFFFLjava/awt/Color;Ljava/awt/Color;FFF)V
+		c javap取证（两次 renderSolidGradientQuad：双色双宽同位置渐变四边形，亮核+外晕结构） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderGlowStrip	(FFFFFLjava/awt/Color;IIF)V
+		c javap取证（无纹理光带 GL_QUAD_STRIP，钟形 alpha 渐变中间亮两端淡，加法混合） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderCallbackStrip	(FFFFFLjava/awt/Color;Lcom/fs/starfarer/renderers/TexturedStripRenderer$Callback;F)V
+		c javap取证（回调亮度直线条带，alpha=255*callback(终点世界坐标)*scale，接口 Callback.super(FF)F） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members
+	m	o00000	renderTwoTexturedGradientQuad	(FFFFFFLjava/awt/Color;Ljava/awt/Color;FZ)V
+		c javap取证（两次 renderTexturedGradientQuad：H.Ò00000 与 H.String 双纹理双宽，双色） | 高 | .dev/mapping-evidence/renderers-fx.md#texturedstriprenderer-members

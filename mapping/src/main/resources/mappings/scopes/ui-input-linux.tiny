@@ -1,0 +1,125 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/ui/B	com/fs/starfarer/ui/TextFieldImpl
+	c	javap取证 | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	öôÓo00	pad	F
+		c	javap取证（setPad 唯一写点，构造初值 2.0f，inLMid(pad*2) 文本定位） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ÒôÓo00	textLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c	javap取证（getTextLabel/getText/setText 读写） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ôØÓo00	cursorLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c	javap取证（构造 new d("_")，showCursor/hideCursor/advanceImpl 光标闪烁） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	Object.while$while	unusedLineHeight	F
+		c	javap取证（仅构造写 getLineHeight()，类内与内部接口 $o 均无读取，死代码） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	øØÓo00	bgColor	Ljava/awt/Color;
+		c	javap取证（setBgColor 唯一写点，renderImpl 画背景） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ØØÓo00	actionListener	Lcom/fs/starfarer/ui/ActionListener;
+		c	javap取证（final，构造参数，releaseFocus 触发 actionPerformed） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	return.while$while	next	Lcom/fs/starfarer/ui/TextFieldImpl;
+		c	javap取证（getNext/setNext，processInputImpl 回车跳转 grabFocus） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	øôÓo00	minimalMode	Z
+		c	javap取证（isMinimalMode/setMinimalMode，renderImpl 分支） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	int.while$while	goToNextOnEnter	Z
+		c	javap取证（isGoToNextOnEnter/setGoToNextOnEnter，回车转移焦点） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	öØÓo00	callTabPressedOnEnter	Z
+		c	javap取证（isCallTabPressedOnEnter/setCallTabPressedOnEnter，Tab 回调） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ÔôÓo00	hintLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c	javap取证（setHint 唯一写点，advanceImpl 空文本时显示） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ôôÓo00	descLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c	javap取证（setDesc 唯一写点，renderImpl 描述区） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	this.while$while	textListener	Lcom/fs/starfarer/ui/TextFieldListener;
+		c	javap取证（getTextListener/setTextListener，文本事件回调） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	for.do$while	limitByStringWidth	Z
+		c	javap取证（isLimitByStringWidth/setLimitByStringWidth，宽度超限拒绝） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ØôÓo00	maxChars	I
+		c	javap取证（getMaxChars/setMaxChars，构造 -1 无限） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	public.do$while	undoText	Ljava/lang/String;
+		c	javap取证（grabFocus 快照 getText()，ESC 撤销恢复） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	oôÓo00	undoOnEscape	Z
+		c	javap取证（isUndoOnEscape/setUndoOnEscape，ESC 分支判据） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ÕØÓo00	handleCtrlV	Z
+		c	javap取证（isHandleCtrlV/setHandleCtrlV，Ctrl+V 粘贴判据） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ÔØÓo00	borderColor	Ljava/awt/Color;
+		c	javap取证（getBorderColor/setBorderColor，renderImpl 边框） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	f	ÕôÓo00	verticalCursor	Z
+		c	javap取证（isVerticalCursor/setVerticalCursor） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+	m	class.public	deleteLastChar	()V
+		c	javap取证（private，退格键调用，substring(0,len-1) 回写） | 高 | .dev/mapping-evidence/ui-input.md#textfieldimpl-members
+c	com/fs/starfarer/ui/O0Oo	com/fs/starfarer/ui/FocusedComponentTracker
+	c	javap取证 | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	f	o00000	focusedComponents	Ljava/util/List;
+		c	javap取证（clinit 初始化，get/setFocusedComponents 直读写） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	f	new	hasFocusedComponent	Z
+		c	javap取证（setFocusedComponent 置 true，release/clear 置 false） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	super	processInput	(Lcom/fs/starfarer/util/InputEventList;)V
+		c	javap取证（当前焦点组件 processInput(events)） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	super	getFocusedComponents	()Ljava/util/List;
+		c	javap取证（直读列表） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	super	setFocusedComponents	(Ljava/util/List;)V
+		c	javap取证（直写列表） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	Õ00000	setFocusedComponent	(Lcom/fs/starfarer/ui/FocusedComponent;)V
+		c	javap取证（全部 focusLost+clear 后 add，TextFieldImpl.grabFocus 调用） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	void	releaseFocusWithOwnerCheck	(Lcom/fs/starfarer/ui/FocusedComponent;)V
+		c	javap取证（非 owner 抛 RuntimeException("Attempt to release focus by non-owner")） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	super	releaseFocusIfCurrent	(Lcom/fs/starfarer/ui/FocusedComponent;)V
+		c	javap取证（仅当前焦点==传入组件时释放，TextFieldImpl.releaseFocus 调用） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	String	addFocusedComponent	(Lcom/fs/starfarer/ui/FocusedComponent;)V
+		c	javap取证（仅 list.add，不改 hasFocusedComponent） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	Ö00000	releaseFocus	(Lcom/fs/starfarer/ui/FocusedComponent;)V
+		c	javap取证（委托 releaseFocusWithOwnerCheck） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	Ò00000	removeFocusedComponent	(Lcom/fs/starfarer/ui/FocusedComponent;)V
+		c	javap取证（先 focusLost 再 remove，非当前且 size>1 时清标志） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	Ó00000	releaseFocusForComponent	(Lcom/fs/starfarer/ui/FocusedComponent;)V
+		c	javap取证（委托 releaseFocusIfCurrent） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+	m	Ò00000	clearFocusedComponents	()V
+		c	javap取证（全部 focusLost + clear） | 高 | .dev/mapping-evidence/ui-input.md#focusedcomponenttracker-members
+c	com/fs/starfarer/coreui/A/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/CampaignLocationMapCanvas
+	c	javap取证 | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ôOø000	gridLineTexture	Lcom/fs/graphics/TextureObject;
+		c	javap取证（构造 line4x4.png，null(F) 画网格长线） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	Object.public$class	gridPointTexture	Lcom/fs/graphics/TextureObject;
+		c	javap取证（renderers 包纹理，null(F) 非更新帧画格点标记） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	öOø000	factor	F
+		c	javap取证（getFactor 直读，advanceImpl/renderImpl 置 0.0375f/zoom，坐标换算） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	return.public$class	zoomTracker	Lcom/fs/starfarer/util/ZoomTracker;
+		c	javap取证（getZoomTracker 直读，构造/updateMaxZoomFactor/addPing 读写） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	Òoø000	icons	Ljava/util/LinkedHashMap;
+		c	javap取证（getIcons 直读，renderImpl/advanceImpl 遍历渲染） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	oOø000	radarMode	Z
+		c	javap取证（isRadarMode 直读，isStarscapeMode 组合判据，构造参数） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	public.while$class	mapTab	Lcom/fs/starfarer/coreui/SectorMapPanel;
+		c	javap取证（getMapTab 直读，getFilterData 经 mapTab.getFilter） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ø0ø000	nebulaTerrains	Ljava/util/List;
+		c	javap取证（updateSystemNebulas 生成星云 terrain，renderStuff 星景渲染） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	int.public$class	constellationLabels	Ljava/util/List;
+		c	javap取证（updateSystemNebulas 生成星座标签，getConstellationLabelEntity 遍历） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ooø000	nebulaCenterPlanets	Ljava/util/List;
+		c	javap取证（updateSystemNebulas 收集 NEBULA 星系 isNebulaCenter 恒星） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ö0ø000	intelIconEntities	Ljava/util/List;
+		c	javap取证（getIntelIconEntity 遍历，addIntelData/removeIntelData 管理） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	øOø000	inputManager	Lcom/fs/starfarer/coreui/StarMapContextMenu;
+		c	javap取证（getInputManager 直读，构造 new oOOO(this)，advanceImpl 推进） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	for.while$class	courseTargetLineProgress	F
+		c	javap取证（ö00000 累加衰减，õ00000 作指引线参数） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ÕOø000	radarBlipsRendered	Z
+		c	javap取证（构造 true 首帧跳过雷达 blip 创建，renderStuff 尾部置 false；初始/复位语义存疑） | 中 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ÒOø000	skipRenderFrames	I
+		c	javap取证（get/setSkipRenderFrames，renderImpl 开头递减跳过渲染） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	int.while$class	location	Lcom/fs/starfarer/campaign/BaseLocation;
+		c	javap取证（setLocation 直写，getLocation 自动跟随舰队） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	this.public$class	starSystem	Lcom/fs/starfarer/api/campaign/StarSystemAPI;
+		c	javap取证（setLocation 当 location 为星系时更新，地图坐标失效） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ØOø000	transientIcons	Ljava/util/List;
+		c	javap取证（renderStuff/addPing 创建一次性标记，advanceImpl 回收淡出成员） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	f	ÔOø000	currentLocationGlowSprite	Lcom/fs/graphics/Sprite;
+		c	javap取证（构造 hit_glow.png，Ø00000 中渲染当前位置发光） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	m	new	findNearestEntityAtLocation	(FFF)Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c	javap取证（private，getEntityAtScreenLocation 调用，距离最近实体查询） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	m	Ø00000	renderCurrLocationIndicator	(F)V
+		c	javap取证（MarkerData 标记星/位置发光/括号/燃料范围绘制） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	m	ö00000	advanceCourseTargetLineProgress	(F)V
+		c	javap取证（advanceImpl 调用，按航路目标距离累加进度） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	m	õ00000	renderCourseTargetLine	(F)V
+		c	javap取证（renderImpl 调用，画舰队→航路目标指引线） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	m	new	renderCurrLocationBrackets	(FFFFFFLjava/awt/Color;FFF)V
+		c	javap取证（private，仅 Ø00000 调用，8 段线矩形括号） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members
+	m	null	renderGridLines	(F)V
+		c	javap取证（renderImpl 调用，enableCampaignMapGridLines 开关，网格线/雷达圆环） | 高 | .dev/mapping-evidence/ui-input.md#campaignlocationmapcanvas-members

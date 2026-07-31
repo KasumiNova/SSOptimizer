@@ -808,6 +808,21 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable	com/fs/starfarer/ui/impl/
 	m	addPara	addPara	(Ljava/lang/String;FLjava/awt/Color;[Ljava/lang/String;)Lcom/fs/starfarer/api/ui/LabelAPI;
 	m	addTitle	addTitle	(Ljava/lang/String;Ljava/awt/Color;)Lcom/fs/starfarer/api/ui/LabelAPI;
 	m	addTitle	addTitle	(Ljava/lang/String;)Lcom/fs/starfarer/api/ui/LabelAPI;
+	f	ØØôO00	gridMaxRowIndex	I
+	f	Object.private$if	gridRowHeight	F
+	f	øÖôO00	imageWithTextPanel	Lcom/fs/starfarer/ui/Panel;
+	f	ÕÖôO00	imageWithTextImagePanel	Lcom/fs/starfarer/ui/ImagePanel;
+	f	ÒÖôO00	imageWithTextWidth	F
+	f	int.public$if	customWithCustomPanel	Lcom/fs/starfarer/ui/Panel;
+	f	ÕØôO00	customWithCustomSubTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	f	return.public$if	customWithCustomComponent	Lcom/fs/starfarer/ui/UIComponent;
+	f	ôØôO00	subTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	f	int.private$if	bulletColor	Ljava/awt/Color;
+	f	ôÖôO00	bulletWidth	Ljava/lang/Float;
+	f	this.private$if	bulletedListPrefix	Ljava/lang/String;
+	f	public.public$if	textWidthOverride	F
+	f	return.private$if	buttonListener	Lcom/fs/starfarer/ui/ActionListener;
+	f	for.public$if	parentWidget	Lcom/fs/starfarer/ui/Panel;
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$1	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TooltipBelowPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: addTooltipBelow 创建的 Runnable，定位 tooltip 于下方)
 	m	run	run	()V

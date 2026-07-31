@@ -21,6 +21,20 @@ c	com/fs/starfarer/ooOO	com/fs/starfarer/CodexOverlayHost
 	c javap取证（接口方法名未混淆：getOverlayPanelForCodex/setShowingCodex/isShowingCodex；与 linux ooOOOO… 内容比对一致，非指纹对齐） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.ooOOOO)
 c	com/fs/starfarer/StarfarerLauncher	com/fs/starfarer/StarfarerLauncher
 	c javap取证（人工表已命名，此处为补全 scope 覆盖率的身份条目） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md direct 包)
+	f	Ô00000	launcherWindow	Lcom/fs/starfarer/launcher/opengl/F;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#starfarerlauncher-members
+	f	Ó00000	logger	Lorg/apache/log4j/Logger;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#starfarerlauncher-members
+	f	new	unusedFont	Ljava/awt/Font;
+		c javap取证（全类零读写点，死代码） | 高 | .dev/mapping-evidence/loading-core.md#starfarerlauncher-members
+	f	o00000	unusedAccentColor	Ljava/awt/Color;
+		c javap取证（仅 ctor 写 70,200,255,255，零读取，死代码） | 高 | .dev/mapping-evidence/loading-core.md#starfarerlauncher-members
+	m	o00000	queryMaxAASamples	()I
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#starfarerlauncher-members
+	m	o00000	makeTransparent	(Ljavax/swing/JComponent;)V
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#starfarerlauncher-members
+	m	new	centerWindow	()V
+		c javap取证（linux 同方法 obf 名为 Ò00000，方法体逐字节一致） | 高 | .dev/mapping-evidence/loading-core.md#starfarerlauncher-members
 c	com/fs/starfarer/StarfarerLauncher$1	com/fs/starfarer/StarfarerLauncher$LaunchGameRunnable
 	c javap取证（Runnable，run() 调 StarfarerLauncher.launchGame(ZZLjava/lang/String;Ljava/lang/String;)V） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md com.fs.starfarer.StarfarerLauncher$1)
 	m	run	run	()V

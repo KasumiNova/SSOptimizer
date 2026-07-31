@@ -137,6 +137,50 @@ c	com/fs/starfarer/loading/LoadingUtils	com/fs/starfarer/loading/LoadingUtils
 	m	void	openStream	(Ljava/lang/String;)Ljava/io/InputStream;
 	m	super	readString	(Ljava/lang/String;)Ljava/lang/String;
 
+	f	Ò00000	logger	Lorg/apache/log4j/Logger;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	f	super	rowSourceKey	Ljava/lang/String;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Õ00000	listFilesOfTypeAbsolute	(Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	õ00000	setSourceFilter	(Ljava/lang/String;)V
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	ô00000	loadJSON	(Ljava/lang/String;)Lorg/json/JSONObject;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	super	loadJSONFromStream	(Ljava/lang/String;Ljava/io/InputStream;)Lorg/json/JSONObject;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Ö00000	parseJSONStrippingComments	(Ljava/lang/String;Ljava/lang/String;)Lorg/json/JSONObject;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Ò00000	readAll	(Ljava/io/InputStream;)Ljava/lang/String;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Ó00000	saveStringToFile	(Ljava/lang/String;Ljava/lang/String;Z)V
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Ò00000	appendStringToCommonFile	(Ljava/lang/String;Ljava/lang/String;)V
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Ò00000	deleteCommonFile	(Ljava/lang/String;)V
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Õ00000	readFileStrippingAnnotations	(Ljava/lang/String;)Ljava/lang/String;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Ó00000	readCSVMerged	(Ljava/lang/String;Ljava/lang/String;)Lorg/json/JSONArray;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	super	readCSV	(Ljava/util/List;Ljava/lang/String;Z)Lorg/json/JSONArray;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	super	readCSV	(Ljava/util/List;Ljava/lang/String;ZZ)Lorg/json/JSONArray;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	super	readJSONMerged	(Ljava/lang/String;Ljava/util/Set;)Lorg/json/JSONObject;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	super	mergeJSON	(Lorg/json/JSONObject;Lorg/json/JSONObject;Ljava/util/Set;Ljava/lang/String;)V
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	String	collapseNewlines	(Ljava/lang/String;)Ljava/lang/String;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	super	listFilesOfType	(Ljava/lang/String;Ljava/lang/String;Z)Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	super	listFilesOfTypeFromJar	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	Ò00000	readCSVMergedForMod	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lorg/json/JSONArray;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
+	m	String	readJSONForMod	(Ljava/lang/String;Ljava/lang/String;)Lorg/json/JSONObject;
+		c javap取证 | 高 | .dev/mapping-evidence/loading-core.md#loadingutils-members
 c	com/fs/starfarer/loading/M	com/fs/starfarer/loading/ShipHullSpecStore
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据("Ship hull spec [%s] already exists/not found"，静态 Map<String,specs.g> 注册表；wendigo/grendel 特殊映射)
 	f	o00000	hullSpecs	Ljava/util/Map;
