@@ -1,0 +1,329 @@
+tiny 2 0 obf named
+c	com/fs/starfarer/ui/newui/G	com/fs/starfarer/ui/newui/ShipPreviewPanel
+	c	javap取证 | 高 | 舰船预览面板：舰船渲染 + 舰名/船体名 + DMod 列表（Lasting damage:），tooltip 用 createFleetMemberTooltipPreDeploy（linux oOoO）
+c	com/fs/starfarer/ui/newui/G$1	com/fs/starfarer/ui/newui/ShipPreviewPanel$TooltipPositioner
+	c	javap取证 | 中 | Runnable：设置舰船 tooltip 居中位置（400x200 锚点）（linux oOoO$1）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/L$9	com/fs/starfarer/ui/newui/CoreUIV2$WeaponGroupsWarningCheck
+	c	javap取证 | 高 | 实现 oOOo$o 确认回调：refitPanel.isEditedSinceSave() && getGroupsButton().getFlashFader()!=null 判定是否弹武器组未保存警告（CoreUIV2 匿名类）
+	m	o00000	isWeaponGroupsWarningNeeded	()Z
+c	com/fs/starfarer/ui/newui/L$o	com/fs/starfarer/ui/newui/CoreUIV2$RefitUnsavedDialogType
+	c	字符串常量 | 高 | 枚举值 REFIT_UNSAVED_CHANGING_TABS / REFIT_UNSAVED_CLOSING_UI 由 static{} 字符串常量直接给出
+	f	Ó00000	REFIT_UNSAVED_CHANGING_TABS	Lcom/fs/starfarer/ui/newui/L$o;
+	f	Ò00000	REFIT_UNSAVED_CLOSING_UI	Lcom/fs/starfarer/ui/newui/L$o;
+c	com/fs/starfarer/ui/newui/M	com/fs/starfarer/ui/newui/NoiseBackgroundDialog
+	c	javap取证 | 高 | 对话框基类：extends ui.oo0O，构造创建 newui.d 噪声背景、setBackgroundDimAmount(0.75)，dismiss 时 hideDoodads/fadeOut/flickerNoise；InteractionDialog(o0Oo) 继承之
+	f	ÒÒô000	background	Lcom/fs/starfarer/ui/newui/d;
+	m	getBg	getBg	()Lcom/fs/starfarer/ui/newui/d;
+c	com/fs/starfarer/ui/newui/N	com/fs/starfarer/ui/newui/FleetStatusListPanel
+	c	javap取证 | 高 | 战况舰队状态列表面板：字符串 Held in reserve / Deployed in last engagement / Retreated from last engagement / Disabled or destroyed / Completely destroyed，FleetEncounterContextPlugin + List<campaign.ui.S>
+	m	getAllLists	getAllLists	()Ljava/util/List;
+c	com/fs/starfarer/ui/newui/O0Oo	com/fs/starfarer/ui/newui/CommPanel
+	c	javap取证 | 高 | 通讯面板：字符串 Missions -/Comm Directory - + Available missions/Personnel listings/No available postings/OpenCDE，CommDirectory + 双列表(coreui.v) + Dismiss/Back（linux Stringsuper）
+c	com/fs/starfarer/ui/newui/O0oo	com/fs/starfarer/ui/newui/CommDirectoryEntryButton
+	c	javap取证 | 高 | 通讯录条目按钮：持有 CommDirectoryEntry + SectorEntityToken + Faction（extends m$Oo 按钮基类）
+	f	private.for$int	entry	Lcom/fs/starfarer/campaign/CommDirectoryEntry;
+	f	OoÖO00	target	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	øOÖO00	faction	Lcom/fs/starfarer/campaign/Faction;
+c	com/fs/starfarer/ui/newui/OOoO	com/fs/starfarer/ui/newui/CustomVisualDialog
+	c	继承关系+javap取证 | 高 | 实现 CustomVisualDialogDelegate$DialogCallbacks 的自定义视觉对话框，委托 CustomVisualDialogDelegate + CustomPanelImpl(int) + panelFader
+	f	ÓÓÖ000	delegate	Lcom/fs/starfarer/api/campaign/CustomVisualDialogDelegate;
+	f	ÒÓÖ000	customPanel	Lcom/fs/starfarer/ui/newui/int;
+	m	dismissDialog	dismissDialog	()V
+	m	getPanelFader	getPanelFader	()Lcom/fs/starfarer/api/util/FaderUtil;
+c	com/fs/starfarer/ui/newui/Objectsuper	com/fs/starfarer/ui/newui/PreBattleJoinInfoPanel
+	c	javap取证 | 高 | 战前加入信息面板：双方舰队名 + FleetEncounterContextPlugin + 每方一个 FleetStatusListPanel(N)（InteractionDialog.showPreBattleJoinInfo 创建），字符串 Your forces（linux ooOo-long）
+c	com/fs/starfarer/ui/newui/OoOO	com/fs/starfarer/ui/newui/OptionPanelImpl
+	c	继承关系+javap取证 | 高 | 实现 OptionPanelAPI 的选项面板，按钮→选项数据 map + 选择器 + 滚动条；InteractionDialog(o0Oo).getOptionPanel() 返回该类型
+	f	ÖÓØO00	delegate	Lcom/fs/starfarer/ui/newui/OoOO$O0;
+	f	void.String$if	buttonToItemMap	Ljava/util/Map;
+	f	ÖÒØO00	selectorMap	Ljava/util/Map;
+	f	ÕÓØO00	interactionDialog	Lcom/fs/starfarer/ui/newui/o0Oo;
+	f	ÓÓØO00	scrollBar	Lcom/fs/starfarer/ui/g;
+	f	ôÒØO00	tooltipHighlightMap	Ljava/util/Map;
+	f	ÒÓØO00	optionBeingConfirmed	Lcom/fs/starfarer/ui/newui/OoOO$o;
+	f	ÕÒØO00	optionDataBeingConfirmed	Ljava/lang/Object;
+	m	clear	clear	()V
+	m	addOption	addOption	(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;)V
+	m	addOption	addOption	(Ljava/lang/String;Ljava/lang/Object;Ljava/awt/Color;Ljava/lang/String;)V
+	m	addOption	addOption	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	setEnabled	setEnabled	(Ljava/lang/Object;Z)V
+	m	removeOption	removeOption	(Ljava/lang/Object;)V
+	m	hasOption	hasOption	(Ljava/lang/Object;)Z
+	m	clearOptions	clearOptions	()V
+	m	hasOptions	hasOptions	()Z
+	m	setOptionText	setOptionText	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	setTooltip	setTooltip	(Ljava/lang/Object;Ljava/lang/String;)V
+	m	getTooltip	getTooltip	(Ljava/lang/Object;)Lcom/fs/starfarer/ui/f;
+	m	setTooltipHighlights	setTooltipHighlights	(Ljava/lang/Object;[Ljava/lang/String;)V
+	m	setTooltipHighlightColors	setTooltipHighlightColors	(Ljava/lang/Object;[Ljava/awt/Color;)V
+	m	getTHD	getTHD	(Ljava/lang/Object;)Lcom/fs/starfarer/ui/newui/OoOO$oo;
+	m	getSavedOptionList	getSavedOptionList	()Ljava/util/List;
+	m	restoreSavedOptions	restoreSavedOptions	(Ljava/util/List;)V
+	m	getButtonToItemMap	getButtonToItemMap	()Ljava/util/Map;
+	m	getOptionDataBeingConfirmed	getOptionDataBeingConfirmed	()Ljava/lang/Object;
+	m	getOptionBeingConfirmed	getOptionBeingConfirmed	()Lcom/fs/starfarer/ui/newui/OoOO$o;
+	m	setOptionBeingConfirmed	setOptionBeingConfirmed	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+	m	getDelegate	getDelegate	()Lcom/fs/starfarer/ui/newui/OoOO$O0;
+	m	addOptionConfirmation	addOptionConfirmation	(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	m	addOptionConfirmation	addOptionConfirmation	(Ljava/lang/Object;Lcom/fs/starfarer/api/campaign/StoryPointActionDelegate;)V
+	m	addOptionTooltipAppender	addOptionTooltipAppender	(Ljava/lang/Object;Lcom/fs/starfarer/api/campaign/OptionPanelAPI$OptionTooltipCreator;)V
+	m	hasOptionTooltipAppender	hasOptionTooltipAppender	(Ljava/lang/Object;)Z
+	m	setShortcut	setShortcut	(Ljava/lang/Object;IZZZZ)V
+	m	addSelector	addSelector	(Ljava/lang/String;Ljava/lang/Object;Ljava/awt/Color;FFFFLcom/fs/starfarer/api/ui/ValueDisplayMode;Ljava/lang/String;)V
+	m	setSelectorValue	setSelectorValue	(Ljava/lang/Object;F)V
+	m	getSelectorValue	getSelectorValue	(Ljava/lang/Object;)F
+	m	hasSelector	hasSelector	(Ljava/lang/Object;)Z
+	m	optionHasConfirmDelegate	optionHasConfirmDelegate	(Ljava/lang/Object;)Z
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/A/C;Lcom/fs/starfarer/ui/c;)V
+	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/A/C;Lcom/fs/starfarer/ui/c;)V
+c	com/fs/starfarer/ui/newui/OoOO$1	com/fs/starfarer/ui/newui/OptionPanelImpl$OptionTooltip
+	c	javap取证 | 中 | extends StandardTooltipV2Expandable：按 getButtonToItemMap 查 OptionData 渲染标题与高亮（setParaSmallInsignia + setHighlight + OptionTooltipCreator.createTooltip）
+c	com/fs/starfarer/ui/newui/OoOO$O0	com/fs/starfarer/ui/newui/OptionPanelImpl$OptionListener
+	c	继承关系+javap取证 | 高 | 选项回调接口：选项选中/悬停/确认三回调，InteractionDialog(o0Oo$1) 实现并转发到 InteractionDialogPlugin.optionSelected/optionMousedOver
+	m	o00000	optionSelected	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+	m	Object	optionMousedOver	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+	m	Ò00000	optionConfirm	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+c	com/fs/starfarer/ui/newui/OoOO$Oo	com/fs/starfarer/ui/newui/OptionPanelImpl$StoryOptionData
+	c	javap取证 | 中 | 故事点选项数据：SetStoryOption$StoryOptionParams + StoryPointActionDelegate（OoOO.addOptionConfirmation 的故事点委托路径）
+	f	Ò00000	storyOptionParams	Lcom/fs/starfarer/api/impl/campaign/rulecmd/SetStoryOption$StoryOptionParams;
+	f	o00000	actionDelegate	Lcom/fs/starfarer/api/campaign/StoryPointActionDelegate;
+c	com/fs/starfarer/ui/newui/OoOO$o	com/fs/starfarer/ui/newui/OptionPanelImpl$OptionData
+	c	javap取证 | 高 | 选项数据：id + data + 颜色 + 标题 + 故事点委托 + tooltip 追加器 + 目标 tab/贸易模式
+	f	do	id	Ljava/lang/String;
+	f	Ö00000	data	Ljava/lang/Object;
+	f	String	color	Ljava/awt/Color;
+	f	void	title	Ljava/lang/String;
+	f	Ò00000	actionDelegate	Lcom/fs/starfarer/api/campaign/StoryPointActionDelegate;
+	f	OO0000	tooltipCreator	Lcom/fs/starfarer/api/campaign/OptionPanelAPI$OptionTooltipCreator;
+	f	ô00000	tabId	Lcom/fs/starfarer/api/campaign/CoreUITabId;
+	f	super	tradeMode	Lcom/fs/starfarer/api/campaign/CampaignUIAPI$CoreUITradeMode;
+	m	o00000	getId	()Ljava/lang/String;
+	m	new	getData	()Ljava/lang/Object;
+c	com/fs/starfarer/ui/newui/OoOO$oo	com/fs/starfarer/ui/newui/OptionPanelImpl$TextHighlightData
+	c	javap取证 | 中 | tooltip 文本高亮数据：高亮文本串 + 颜色数组（getTHD 返回）
+	f	new	texts	[Ljava/lang/String;
+	f	o00000	colors	[Ljava/awt/Color;
+c	com/fs/starfarer/ui/newui/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/newui/FleetMemberPickerDialog
+	c	javap取证 | 高 | 舰队成员选择对话框：FleetMemberPickerListener + List<FleetMemberAPI> + 成员列表(campaign.ui.S)，fleetMemberClicked 回调（implements campaign.ui.S$o，linux newsuper）
+	f	String.return$Object	listener	Lcom/fs/starfarer/api/campaign/FleetMemberPickerListener;
+	f	Ò0Ö000	fleetMembers	Ljava/util/List;
+	f	private.return$Object	background	Lcom/fs/starfarer/title/Object/OooO;
+	m	show	show	(FF)V
+	m	advance	advance	(F)V
+	m	dismiss	dismiss	(I)V
+	m	fleetMemberClicked	fleetMemberClicked	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/B/new;Lcom/fs/starfarer/util/A/C;)V
+c	com/fs/starfarer/ui/newui/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/ui/newui/FleetMemberPickerDialog$TooltipPositioner
+	c	javap取证 | 中 | Runnable：设置成员 tooltip 相对面板背景图位置（linux newsuper$1）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/P	com/fs/starfarer/ui/newui/MissionBoardEntryButton
+	c	javap取证 | 高 | 任务板条目按钮：MissionBoard$MissionAvailability + CampaignMissionPlugin + CampaignEventPlugin（extends m$Oo 按钮基类，linux Q）
+c	com/fs/starfarer/ui/newui/Q	com/fs/starfarer/ui/newui/PlanetInfoPanel
+	c	javap取证 | 高 | 行星信息面板：字符串 Hazard rating:/%/lava + scanline11 纹理，CampaignPlanet + 行星实体渲染 + PlanetInfoParams（linux P）
+	f	ÖOÓo00	planet	Lcom/fs/starfarer/campaign/CampaignPlanet;
+	m	getPlanet	getPlanet	()Lcom/fs/starfarer/campaign/CampaignPlanet;
+	m	getGraphics	getGraphics	()Lcom/fs/starfarer/combat/entities/terrain/Planet;
+	m	updateLightSourceInfo	updateLightSourceInfo	()V
+	m	removeNameLabel	removeNameLabel	()V
+c	com/fs/starfarer/ui/newui/String	com/fs/starfarer/ui/newui/TextPanelImpl
+	c	继承关系+javap取证 | 高 | 实现 TextPanelAPI 的文本面板，InteractionDialog(o0Oo).getTextPanel() 返回该类型（字符串 ACTIVE PERSON:，linux Object）
+	f	ÖÖÒo00	scrollBar	Lcom/fs/starfarer/ui/g;
+	f	ÕÖÒo00	paragraphs	Ljava/util/ArrayList;
+	f	ôÖÒo00	interactionDialog	Lcom/fs/starfarer/api/campaign/InteractionDialogAPI;
+	m	clear	clear	()V
+	m	addPara	addPara	(Ljava/lang/String;)Lcom/fs/starfarer/api/ui/LabelAPI;
+	m	addPara	addPara	(Ljava/lang/String;Ljava/awt/Color;)Lcom/fs/starfarer/api/ui/LabelAPI;
+	m	setFont	setFont	(Ljava/lang/String;)V
+	m	setFontInsignia	setFontInsignia	()V
+	m	setFontOrbitron	setFontOrbitron	()V
+	m	setFontVictor	setFontVictor	()V
+	m	setFontSmallInsignia	setFontSmallInsignia	()V
+	m	updateSize	updateSize	()V
+	m	addSkillPanel	addSkillPanel	(Lcom/fs/starfarer/api/characters/PersonAPI;Z)V
+	m	addCostPanel	addCostPanel	(Ljava/lang/String;FLjava/awt/Color;Ljava/awt/Color;)Lcom/fs/starfarer/api/campaign/ResourceCostPanelAPI;
+	m	addCostPanel	addCostPanel	(Ljava/lang/String;[Ljava/lang/Object;)Z
+	m	setHighlightsInLastPara	setHighlightsInLastPara	(Lcom/fs/starfarer/api/util/Highlights;)V
+	m	highlightFirstInLastPara	highlightFirstInLastPara	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	highlightInLastPara	highlightInLastPara	(Ljava/awt/Color;[Ljava/lang/String;)V
+	m	highlightInLastPara	highlightInLastPara	([Ljava/lang/String;)V
+	m	highlightLastInLastPara	highlightLastInLastPara	(Ljava/lang/String;Ljava/awt/Color;)V
+	m	setHighlightColorsInLastPara	setHighlightColorsInLastPara	([Ljava/awt/Color;)V
+	m	setFontOrbitronUnnecessarilyLarge	setFontOrbitronUnnecessarilyLarge	()V
+c	com/fs/starfarer/ui/newui/X	com/fs/starfarer/ui/newui/AbilitySlotsPanel
+	c	javap取证 | 高 | 能力槽栏设置面板：字符串 abilities/holder/empty + set 1..5/prev/next 按钮 + Lock 按钮；actionPerformed 操作 CampaignUIPersistentData.getAbilitySlots().setLocked/setCurrBarIndex（linux OOoo）
+	f	OÔÓo00	lockButton	Lcom/fs/starfarer/ui/n;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/Y	com/fs/starfarer/ui/newui/TabClosedListener
+	c	javap取证 | 高 | tab 关闭回调接口，方法名 tabClosed 未混淆
+	m	tabClosed	tabClosed	()V
+c	com/fs/starfarer/ui/newui/_	com/fs/starfarer/ui/newui/CargoPickerDialog
+	c	javap取证 | 高 | 货物选择对话框：CargoPickerListener + CargoAPI + CargoData + 货物网格显示（extends ui.impl.o0OO）
+	f	void.for$Object	listener	Lcom/fs/starfarer/api/campaign/CargoPickerListener;
+	f	String.for$Object	cargoDisplay	Lcom/fs/starfarer/campaign/ui/class;
+	f	ÒØÖ000	cargo	Lcom/fs/starfarer/api/campaign/CargoAPI;
+	f	super.for$Object	cargoData	Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	ÕØÖ000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	show	show	(FF)V
+	m	advance	advance	(F)V
+	m	dismiss	dismiss	(I)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/_$1	com/fs/starfarer/ui/newui/CargoPickerDialog$RecreateTextPanelTooltip
+	c	javap取证 | 中 | extends StandardTooltipV2Expandable：createImpl 合并 CargoData + 已拾取货物栈后回调 CargoPickerListener.recreateTextPanel
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/b	com/fs/starfarer/ui/newui/SpriteButton
+	c	javap取证 | 高 | 精灵按钮：正常纹理 + 发光纹理双 Sprite，disabled 半透明 + getGlowAmount 叠加发光（extends m$Oo 按钮基类，linux d）
+	f	super.do$int	buttonSprite	Lcom/fs/graphics/Sprite;
+	f	ôoÖO00	glowSprite	Lcom/fs/graphics/Sprite;
+	m	getButtonSprite	getButtonSprite	()Lcom/fs/graphics/Sprite;
+	m	getGlow	getGlow	()Lcom/fs/graphics/Sprite;
+c	com/fs/starfarer/ui/newui/c	com/fs/starfarer/ui/newui/MissionEntryPanel
+	c	javap取证 | 高 | 任务条目面板：MissionBoard$MissionAvailability + CampaignMissionPlugin + 接受按钮（getAccept），flash 高亮（linux b）
+	f	ÓÖÓo00	missionPlugin	Lcom/fs/starfarer/api/campaign/CampaignMissionPlugin;
+	f	void.for$while	acceptButton	Lcom/fs/starfarer/ui/n;
+	m	getMissionAvailability	getMissionAvailability	()Lcom/fs/starfarer/campaign/MissionBoard$MissionAvailability;
+	m	getAccept	getAccept	()Lcom/fs/starfarer/ui/n;
+	m	flash	flash	()V
+	m	isFlashStarted	isFlashStarted	()Z
+c	com/fs/starfarer/ui/newui/c$1	com/fs/starfarer/ui/newui/MissionEntryPanel$AcceptTooltipDecorator
+	c	javap取证 | 中 | implements StandardTooltipV2$OOo：o00000(label) 应用 CampaignMissionPlugin.getAcceptTooltipHighlights 高亮接受按钮 tooltip（linux b$1）
+	m	o00000	decorateAcceptLabel	(Lcom/fs/starfarer/ui/d;)V
+c	com/fs/starfarer/ui/newui/c$2	com/fs/starfarer/ui/newui/MissionEntryPanel$AcceptTooltipPositioner
+	c	javap取证 | 中 | Runnable：设置接受按钮 tooltip 相对锚点位置（tooltip 高度取负偏移）（linux b$2）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/d	com/fs/starfarer/ui/newui/NoiseBackground
+	c	javap取证 | 高 | 噪声背景：4 个 tripad 角(topleft/topright/botleft/botright) + noise 层的 SlidingSprite(ooOO-long) + 粒子噪声，renderNoise/flickerNoise/fadeOut（linux c）
+	f	void.do$while	noiseParticles	Lcom/fs/starfarer/class/G;
+	m	showDoodads	showDoodads	()V
+	m	hideDoodads	hideDoodads	()V
+	m	setRenderDoodads	setRenderDoodads	(Z)V
+	m	renderNoise	renderNoise	(F)V
+	m	flickerNoise	flickerNoise	(FF)V
+	m	fadeOut	fadeOut	()V
+c	com/fs/starfarer/ui/newui/nullsuper	com/fs/starfarer/ui/newui/PersonInfoPanel
+	c	javap取证 | 高 | 人物信息面板：字符串 Name:/Rank:/Post:/None，getPerson/isMinimalMode/isWithRelBar（InteractionDialog.showPersonInfo 使用，linux Z）
+	m	getPerson	getPerson	()Lcom/fs/starfarer/rpg/Person;
+	m	isMinimalMode	isMinimalMode	()Z
+	m	isWithRelBar	isWithRelBar	()Z
+	m	setSecond	setSecond	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	setThird	setThird	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	hideFirst	hideFirst	()V
+	m	showFirst	showFirst	()V
+	m	hideSecond	hideSecond	()V
+	m	hideThird	hideThird	()V
+	m	hideRankNamePost	hideRankNamePost	()V
+	m	unhideRankNamePost	unhideRankNamePost	()V
+c	com/fs/starfarer/ui/newui/o0OO	com/fs/starfarer/ui/newui/TabPanelContainer
+	c	javap取证 | 高 | CoreUIV2 的 tab 内容面板容器：包裹面板 + 滑入动画 + 边框 inset（L.currentTab 字段类型，linux class）
+	f	ÒØÒo00	panel	Lcom/fs/starfarer/ui/interfacenew;
+	m	getPanel	getPanel	()Lcom/fs/starfarer/ui/interfacenew;
+	m	setPanel	setPanel	(Lcom/fs/starfarer/ui/interfacenew;)V
+	m	setBorderInsetLeft	setBorderInsetLeft	(F)V
+	m	setBorderInsetRight	setBorderInsetRight	(F)V
+	m	setBorderInsetTop	setBorderInsetTop	(F)V
+	m	setBorderInsetBottom	setBorderInsetBottom	(F)V
+c	com/fs/starfarer/ui/newui/o0Oo	com/fs/starfarer/ui/newui/InteractionDialog
+	c	继承关系+javap取证 | 高 | 实现 InteractionDialogAPI + VisualPanelAPI 的交互对话框主类：文本面板+选项面板+视觉面板+对话插件（extends NoiseBackgroundDialog(M)）
+	f	øÒô000	plugin	Lcom/fs/starfarer/api/campaign/InteractionDialogPlugin;
+	f	String.int$String	textPanel	Lcom/fs/starfarer/ui/newui/String;
+	f	do.null$String	textPanel2	Lcom/fs/starfarer/ui/newui/String;
+	f	if.null$String	optionPanel	Lcom/fs/starfarer/ui/newui/OoOO;
+	f	String.null$String	dialogType	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	ÖÒô000	interactionTarget	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	f	ÕÔô000	visualPanel	Lcom/fs/starfarer/ui/interfacenew;
+	m	getOptionPanel	getOptionPanel	()Lcom/fs/starfarer/api/campaign/OptionPanelAPI;
+	m	getTextPanel	getTextPanel	()Lcom/fs/starfarer/api/campaign/TextPanelAPI;
+	m	getPromptText	getPromptText	()Ljava/lang/String;
+	m	setPromptText	setPromptText	(Ljava/lang/String;)V
+	m	setOptionOnEscape	setOptionOnEscape	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	setOptionOnConfirm	setOptionOnConfirm	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	getInteractionTarget	getInteractionTarget	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+	m	setInteractionTarget	setInteractionTarget	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	getVisualPanel	getVisualPanel	()Lcom/fs/starfarer/api/campaign/VisualPanelAPI;
+	m	setVisualFade	setVisualFade	(FF)V
+	m	fadeVisualOut	fadeVisualOut	()V
+	m	showFleetInfo	showFleetInfo	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;Ljava/lang/String;Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;Lcom/fs/starfarer/api/campaign/FleetEncounterContextPlugin;Z)V
+	m	showPreBattleJoinInfo	showPreBattleJoinInfo	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/campaign/FleetEncounterContextPlugin;)V
+	m	showNewGameOptionsPanel	showNewGameOptionsPanel	(Lcom/fs/starfarer/api/characters/CharacterCreationData;)V
+	m	showMapMarker	showMapMarker	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Ljava/lang/String;Ljava/awt/Color;ZLjava/lang/String;Ljava/lang/String;Ljava/util/Set;)V
+	m	showPersonInfo	showPersonInfo	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	showSecondPerson	showSecondPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	hideSecondPerson	hideSecondPerson	()V
+	m	showFirstPerson	showFirstPerson	()V
+	m	hideFirstPerson	hideFirstPerson	()V
+	m	showThirdPerson	showThirdPerson	(Lcom/fs/starfarer/api/characters/PersonAPI;)V
+	m	hideThirdPerson	hideThirdPerson	()V
+	m	showPlanetInfo	showPlanetInfo	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	showLargePlanet	showLargePlanet	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
+	m	showFleetMemberInfo	showFleetMemberInfo	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)V
+	m	showImageVisual	showImageVisual	(Lcom/fs/starfarer/api/InteractionDialogImageVisual;)V
+	m	saveCurrentVisual	saveCurrentVisual	()V
+	m	restoreSavedVisual	restoreSavedVisual	()V
+	m	isShowingPersonInfo	isShowingPersonInfo	(Lcom/fs/starfarer/api/characters/PersonAPI;)Z
+	m	dismiss	dismiss	(I)V
+	m	flickerStatic	flickerStatic	(FF)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/o0Oo$1	com/fs/starfarer/ui/newui/InteractionDialog$OptionListener
+	c	继承关系+javap取证 | 高 | implements OptionPanelImpl$OptionListener(OoOO$O0)：把选项事件转发到 InteractionDialogPlugin.optionSelected/optionMousedOver，确认路径调 showOptionConfirmDialog
+	m	o00000	optionSelected	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+	m	Object	optionMousedOver	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+	m	Ò00000	confirmOption	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+c	com/fs/starfarer/ui/newui/o0Oo$2	com/fs/starfarer/ui/newui/InteractionDialog$CoreUIDismissedListener
+	c	javap取证 | 中 | implements CoreInteractionListener：coreUIDismissed 时恢复背景/文本面板淡入、CoreUI 淡出、RuleBasedDialog.updateMemory 并转发委托
+	m	coreUIDismissed	coreUIDismissed	()V
+c	com/fs/starfarer/ui/newui/o0Oo$o	com/fs/starfarer/ui/newui/InteractionDialog$DialogType
+	c	字符串常量 | 高 | 交互对话框类型枚举，12 个值由 static{} 字符串常量直接给出
+	f	Ó00000	COMM_DIRECTORY	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	Ö00000	MISSION_BOARD	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	õ00000	FLEET_MEMBER_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	Õ00000	OPTION_CONFIRM	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	Ò00000	OPTION_CONFIRM_STORY	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	ô00000	PLANET_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	void	CARGO_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	if	CUSTOM	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	do	INDUSTRY_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	OO0000	GROUND_RAID_TARGET_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	ø00000	CUSTOM_PROD_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	super	CAMPAIGN_ENTITY_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+c	com/fs/starfarer/ui/newui/o0oO	com/fs/starfarer/ui/newui/FleetInfoPanel
+	c	javap取证 | 高 | 舰队信息面板：两舰队名+舰队对峙渲染，按派系关系着色（InteractionDialog.showFleetInfo 创建），字符串 Your forces
+c	com/fs/starfarer/ui/newui/oOOo	com/fs/starfarer/ui/newui/ConfirmDialog
+	c	javap取证 | 高 | 确认对话框：静态 showIfNeeded 入口 + Don't show this again（doNotShowAgain），campaignHelp 文本前缀
+	m	showIfNeeded	showIfNeeded	(Ljava/lang/String;Lcom/fs/starfarer/ui/interfacenew;Lcom/fs/starfarer/ui/newui/oOOo$o;Lcom/fs/starfarer/ui/oo0O$o;)Z
+	m	showIfNeeded	showIfNeeded	(Ljava/lang/String;Lcom/fs/starfarer/ui/interfacenew;Lcom/fs/starfarer/ui/newui/oOOo$o;Lcom/fs/starfarer/ui/oo0O$o;[Ljava/lang/String;)Z
+	m	doNotShowAgain	doNotShowAgain	()Z
+c	com/fs/starfarer/ui/newui/oOOo$1	com/fs/starfarer/ui/newui/ConfirmDialog$ButtonListener
+	c	javap取证 | 中 | implements ui.U 的按钮监听，actionPerformed 空实现（确认对话框 Dismiss 按钮绑定）
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/newui/oOOo$o	com/fs/starfarer/ui/newui/ConfirmDialog$ConfirmCallback
+	c	javap取证 | 高 | 确认回调接口，boolean 方法表示是否确认（CoreUIV2 各警告确认回调实现恒 true/false）
+	m	o00000	confirm	()Z
+c	com/fs/starfarer/ui/newui/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/newui/SlidingSprite
+	c	javap取证 | 中 | 滑入滑出精灵组件：构造加载纹理路径，isSliding/show/hide + slideInFader；NoiseBackground(d) 用它渲染 4 个 tripad 角与 noise 层（linux O0OO-long）
+	m	isSliding	isSliding	()Z
+	m	show	show	()V
+	m	hide	hide	()V
+	m	getSlideInFader	getSlideInFader	()Lcom/fs/graphics/util/Fader;
+c	com/fs/starfarer/ui/newui/public	com/fs/starfarer/ui/newui/TerrainInfoPanel
+	c	javap取证 | 高 | 行星地表面板：Map<String,CampaignTerrain> + 地形按钮→CampaignTerrainPlugin，静态 createTerrainTooltip（CoreUIV2.terrainInfo 字段类型）
+	f	void.null$while	terrains	Ljava/util/Map;
+	f	õ0Óo00	terrainButtons	Ljava/util/Map;
+	m	recreate	recreate	()V
+	m	createTerrainTooltip	createTerrainTooltip	(Lcom/fs/starfarer/api/campaign/CampaignTerrainPlugin;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+c	com/fs/starfarer/ui/newui/public$1	com/fs/starfarer/ui/newui/TerrainInfoPanel$TooltipPositioner
+	c	javap取证 | 中 | Runnable：设置地形 tooltip 相对锚点位置（isTooltipExpandable 分支偏移不同）
+	m	run	run	()V
+c	com/fs/starfarer/ui/newui/public$2	com/fs/starfarer/ui/newui/TerrainInfoPanel$TerrainTooltip
+	c	javap取证 | 中 | extends StandardTooltipV2Expandable：createImpl 调 CampaignTerrainPlugin.createTooltip
+	m	createImpl	createImpl	(Z)V
+c	com/fs/starfarer/ui/newui/super	com/fs/starfarer/ui/newui/CustomDialog
+	c	继承关系+javap取证 | 高 | 实现 CustomDialogDelegate$CustomDialogCallback 的自定义对话框，Confirm/Cancel 按钮 + CustomDialogDelegate 委托（extends ui.impl.o0OO）
+	f	OÓÖ000	delegate	Lcom/fs/starfarer/api/campaign/CustomDialogDelegate;
+	m	dismissCustomDialog	dismissCustomDialog	(I)V
+c	com/fs/starfarer/ui/newui/thissuper	com/fs/starfarer/ui/newui/CoreUITabButtonRow
+	c	javap取证 | 高 | CoreUIV2 tab 按钮行：addButton/getButtons/getTabId + tripad_button_cap_left/right/holder 纹理（CoreUIV2.buttons 字段类型）
+	f	øoÓo00	buttons	Ljava/util/Map;
+	m	addButton	addButton	(Ljava/lang/String;Ljava/lang/Object;Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;Lcom/fs/starfarer/ui/U;)V
+	m	getButton	getButton	(Ljava/lang/Object;)Lcom/fs/starfarer/ui/n;
+	m	getButtons	getButtons	()Ljava/util/Map;
+	m	getTabId	getTabId	(Lcom/fs/starfarer/ui/n;)Ljava/lang/Object;

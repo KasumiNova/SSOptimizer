@@ -1,0 +1,157 @@
+tiny 2 0 obf named
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$4	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TooltipPositionerLeft
+	c 来源(javap取证) | 置信度(高) | 证据(addTooltipLeft 创建的 beforeShowing 定位器，与 linux $4 同语义，双平台序号一致)
+	f	new	anchor	Lcom/fs/starfarer/ui/w;
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	f	o00000	offset	F
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$5	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TooltipPositionerRight
+	c 来源(javap取证) | 置信度(高) | 证据(addTooltipRight 创建的 beforeShowing 定位器，与 linux $5 同语义)
+	f	super	anchor	Lcom/fs/starfarer/ui/w;
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$6	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TextTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(createTextTooltip 创建的纯文本 tooltip，与 linux $6 同语义)
+	f	do.class$float	text	Ljava/lang/String;
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$7	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TooltipPositionerAbove
+	c 来源(javap取证) | 置信度(高) | 证据(addTooltipAbove 创建的 beforeShowing 定位器，与 linux $7 同语义)
+	f	o00000	anchor	Lcom/fs/starfarer/ui/w;
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$8	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$UIElementTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(createAsUIElement 创建的空内容 tooltip，与 linux $8 同语义)
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$9	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$CodexTableListener
+	c 来源(javap取证) | 置信度(高) | 证据(UITable$Oo 表格监听：tableRowSelected 取 CodexEntryPlugin.getId 调 CodexDialog.show，与 linux $9 同语义)
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$9$1	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$CodexEntryComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<TableRowPanel>：CodexEntryPlugin isLocked/sortTitle 排序，与 linux $9$1 同语义)
+	m	o00000	compareByCodexEntry	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$o	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$HullCountEntry
+	c 来源(javap取证) | 置信度(中) | 证据(hullId 分组统计成员数数据条目：FleetMemberAPI + 数量，与 linux $o 同语义)
+	f	Ò00000	member	Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+	f	o00000	count	I
+c	com/fs/starfarer/ui/impl/StarSystemTooltipFactory	com/fs/starfarer/ui/impl/StarSystemTooltipFactory
+	c 来源(未混淆类名+javap取证) | 置信度(高) | 证据(星系 tooltip 工厂，与 linux 同语义)
+	m	o00000	createStarSystemTooltip	(Lcom/fs/starfarer/api/campaign/StarSystemAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+c	com/fs/starfarer/ui/impl/StarSystemTooltipFactory$1	com/fs/starfarer/ui/impl/StarSystemTooltipFactory$StarSystemTooltip
+	c 来源(javap取证) | 置信度(高) | 证据(星系信息 tooltip：addTitle 星系名 + Markets 小节，字符串 orbital station 内容复核，与 linux $1 同语义)
+	f	if.Object$float	starSystem	Lcom/fs/starfarer/api/campaign/StarSystemAPI;
+c	com/fs/starfarer/ui/impl/StarSystemTooltipFactory$1$1	com/fs/starfarer/ui/impl/StarSystemTooltipFactory$MarketSizeComparator
+	c 来源(javap取证) | 置信度(高) | 证据(Comparator<MarketAPI>：按市场规模降序，与 linux $1$1 同语义)
+	m	o00000	compareByMarketSize	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)I
+c	com/fs/starfarer/ui/impl/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/impl/LabelTableRowPanel
+	c 来源(继承关系+javap取证) | 置信度(高) | 证据(extends campaign.ui.B(TableRowPanel) 且含 getRowData/getAfterCreate/getLabels/sizeChanged，与 linux T 同结构同语义)
+	f	super.void$int	rowData	[Ljava/lang/Object;
+	f	ôÕÕO00	labels	Ljava/util/List;
+	f	ÖÕÕO00	afterCreate	Ljava/lang/Runnable;
+c	com/fs/starfarer/ui/impl/Objectsuper	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory
+	c 来源(javap取证) | 置信度(高) | 证据(殖民地市场属性 tooltip 工厂：三个工厂方法分别构造 Objectsuper$1/$2/$3，与 linux U 同语义)
+	m	o00000	createStabilityTooltip	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	Ò00000	createFleetSizeAndShipQualityTooltip	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	Object	createGroundDefensesTooltip	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+c	com/fs/starfarer/ui/impl/Objectsuper$1	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$StabilityTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(标题 Stability，方法签名 0.63 相似 + 13 字符串重叠，对应 linux U$1)
+	f	ÒÕõO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+c	com/fs/starfarer/ui/impl/Objectsuper$2	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$FleetSizeAndShipQualityTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(标题 Fleet Size & Ship Quality，对应 linux U$2)
+	f	void.class$float	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+c	com/fs/starfarer/ui/impl/Objectsuper$2$1	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$FleetSizeModValueGetter
+	c 来源(javap取证) | 置信度(中) | 证据(StatModValueGetter：addStatModGrid 首个参数百分比值显示，对应 linux U$2$1)
+c	com/fs/starfarer/ui/impl/Objectsuper$2$2	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$ShipQualityModValueGetter
+	c 来源(javap取证) | 置信度(中) | 证据(StatModValueGetter：addStatModGrid 第二个参数百分比值显示，对应 linux U$2$2)
+c	com/fs/starfarer/ui/impl/Objectsuper$3	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$GroundDefensesTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(标题 Ground Defenses，对应 linux U$3)
+	f	OÕõO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+c	com/fs/starfarer/ui/impl/O0Oo	com/fs/starfarer/ui/impl/FleetMemberTooltipHelper
+	c 来源(字符串常量) | 置信度(高) | 证据(静态工具：向 StandardTooltipV2$Oo 填充成员综合 tooltip（Combat readiness/noDeployCRPercent），对应 linux V)
+	m	o00000	createFleetMemberTooltip	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/impl/StandardTooltipV2$Oo;Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/ui/interfacenew;Lcom/fs/starfarer/ui/c;)V
+c	com/fs/starfarer/ui/impl/W	com/fs/starfarer/ui/impl/PersonTooltipFactory
+	c 来源(javap取证) | 置信度(高) | 证据(人物/军官 tooltip 工厂：五个 o00000 重载与 linux W 完全一致)
+	m	o00000	createCaptainTooltip	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	o00000	createPersonTooltip	(Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/ui/impl/W$o;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	o00000	createPersonTooltipWithFaction	(Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/ui/impl/W$o;Lcom/fs/starfarer/api/campaign/FactionAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	o00000	createPersonTooltipImpl	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/ui/impl/W$o;Lcom/fs/starfarer/api/campaign/FactionAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	o00000	createSkillRow	(Lcom/fs/starfarer/rpg/Person;Ljava/lang/String;FZ)Lcom/fs/starfarer/ui/interfacenew;
+c	com/fs/starfarer/ui/impl/W$1	com/fs/starfarer/ui/impl/PersonTooltipFactory$PersonTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(人物详情 tooltip：Monthly salary 字符串复核 + 字段结构一致，对应 linux W$1)
+	f	øÕõO00	person	Lcom/fs/starfarer/rpg/Person;
+	f	OÖõO00	faction	Lcom/fs/starfarer/api/campaign/FactionAPI;
+	f	private.class$float	mode	Lcom/fs/starfarer/ui/impl/W$o;
+	f	õÕõO00	member	Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+	f	ôÕõO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+c	com/fs/starfarer/ui/impl/W$2	com/fs/starfarer/ui/impl/PersonTooltipFactory$TooltipPositioner
+	c 来源(javap取证) | 置信度(中) | 证据(beforeShowing 定位器：Runnable + (n 按钮, StandardTooltipV2)，结构同 linux W$2)
+	f	new	button	Lcom/fs/starfarer/ui/n;
+	f	o00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+c	com/fs/starfarer/ui/impl/W$Oo	com/fs/starfarer/ui/impl/PersonTooltipFactory$PersonSkillsPanel
+	c 来源(字符串常量) | 置信度(高) | 证据(人物技能面板：Administrative skills/Combat-related skills 分节，对应 linux W$Oo)
+	f	person	person	Lcom/fs/starfarer/api/characters/PersonAPI;
+c	com/fs/starfarer/ui/impl/W$o	com/fs/starfarer/ui/impl/PersonTooltipFactory$PersonTooltipMode
+	c 来源(字符串常量) | 置信度(高) | 证据(人物 tooltip 模式枚举，值 FLEET_SCREEN/INCOME_REPORT/ADMIN/ADMIN_INCOME_REPORT，与 linux W$o 同语义但字段名不同)
+	f	Õ00000	FLEET_SCREEN	Lcom/fs/starfarer/ui/impl/W$o;
+	f	Ó00000	INCOME_REPORT	Lcom/fs/starfarer/ui/impl/W$o;
+	f	super	ADMIN	Lcom/fs/starfarer/ui/impl/W$o;
+	f	String	ADMIN_INCOME_REPORT	Lcom/fs/starfarer/ui/impl/W$o;
+c	com/fs/starfarer/ui/impl/voidsuper	com/fs/starfarer/ui/impl/TextInputDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(文本输入对话框：Confirm/Cancel 按钮 + getTextField，对应 linux Y)
+	f	super.int$Object	confirmButton	Lcom/fs/starfarer/ui/n;
+	f	ôÒÖ000	cancelButton	Lcom/fs/starfarer/ui/n;
+	f	ÖÒÖ000	textField	Lcom/fs/starfarer/ui/new;
+c	com/fs/starfarer/ui/impl/K	com/fs/starfarer/ui/impl/SimCategoryEditDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(模拟战自定义变体类别编辑对话框：Add/Remove/Clear/Reset selected variants，按钮创建字节码与 linux float 一致)
+	f	private.this$String	header	Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	String.super$String	table	Lcom/fs/starfarer/campaign/ui/UITable;
+	f	OÔØ000	header2	Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	super.super$String	table2	Lcom/fs/starfarer/campaign/ui/UITable;
+	f	ÖÔØ000	owner	Lcom/fs/starfarer/ui/impl/oO0O;
+	f	õÔØ000	addButton	Lcom/fs/starfarer/ui/n;
+	f	ÒÔØ000	removeButton	Lcom/fs/starfarer/ui/n;
+	f	ÕÔØ000	resetButton	Lcom/fs/starfarer/ui/n;
+	f	ÓÔØ000	clearButton	Lcom/fs/starfarer/ui/n;
+	f	ôÔØ000	confirmAction	Lcom/fs/starfarer/ui/impl/K$oo;
+	f	do.this$String	selectedCategory	Lcom/fs/starfarer/api/plugins/SimulatorPlugin$SimCategoryData;
+c	com/fs/starfarer/ui/impl/K$o	com/fs/starfarer/ui/impl/SimCategoryEditDialog$SimCategoryRow
+	c 来源(javap取证) | 置信度(高) | 证据(campaign.ui.U(GlowingRowPanel) 子类：SimCategoryData 类别行，对应 linux float$o)
+	f	icon	icon	Lcom/fs/starfarer/ui/ooO0;
+	f	name	name	Lcom/fs/starfarer/ui/d;
+	f	data	data	Lcom/fs/starfarer/api/plugins/SimulatorPlugin$SimCategoryData;
+c	com/fs/starfarer/ui/impl/K$oo	com/fs/starfarer/ui/impl/SimCategoryEditDialog$ConfirmAction
+	c 来源(字符串常量) | 置信度(高) | 证据(清空/重置确认操作枚举 CONFIRM_CLEAR/CONFIRM_RESET，对应 linux float$oo)
+	f	new	CONFIRM_CLEAR	Lcom/fs/starfarer/ui/impl/K$oo;
+	f	Ó00000	CONFIRM_RESET	Lcom/fs/starfarer/ui/impl/K$oo;
+c	com/fs/starfarer/ui/impl/K$Oo	com/fs/starfarer/ui/impl/SimCategoryEditDialog$CategorySortKey
+	c 来源(字符串常量) | 置信度(中) | 证据(单值枚举 NAME：类别表排序键，对应 linux float$Oo)
+	f	new	NAME	Lcom/fs/starfarer/ui/impl/K$Oo;
+c	com/fs/starfarer/ui/impl/if	com/fs/starfarer/ui/impl/TypewriterText
+	c 来源(字符串常量) | 置信度(高) | 证据(打字机文本标签：ui_typer_type + 逐字符显示，与 linux if 同语义)
+	f	if.void	typingSpeed	F
+	f	øö0000	fader	Lcom/fs/graphics/util/Fader;
+	f	private.void	renderer	Lcom/fs/graphics/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+c	com/fs/starfarer/ui/impl/a	com/fs/starfarer/ui/impl/CommandChannelBanner
+	c 来源(字符串常量) | 置信度(高) | 证据(战斗指挥频道横幅：giving orders/command frequency open 文案，对应 linux ifsuper)
+	f	OÔÒo00	givingOrdersLabel	Lcom/fs/starfarer/ui/d;
+	f	øÓÒo00	commandFrequencyOpenLabel	Lcom/fs/starfarer/ui/d;
+	f	if.new$while	fader	Lcom/fs/graphics/util/Fader;
+c	com/fs/starfarer/ui/impl/oooO	com/fs/starfarer/ui/impl/WeaponFirePermissionDialog
+	c 来源(字符串常量) | 置信度(高) | 证据(武器开火权限对话框：Strike weapons free / Fire support weapons free + Ok，对应 linux int)
+	f	ÕôÕ000	okButton	Lcom/fs/starfarer/ui/n;
+	f	ÖôÕ000	strikeWeaponsFreeButton	Lcom/fs/starfarer/ui/n;
+	f	super.String$Object	fireSupportWeaponsFreeButton	Lcom/fs/starfarer/ui/n;
+	f	ÒôÕ000	standingOrders	Lcom/fs/starfarer/combat/while;
+	m	öÖ0000	updateButtonStates	()V
+c	com/fs/starfarer/ui/impl/intsuper	com/fs/starfarer/ui/impl/LabelGlowingRowPanel
+	c 来源(继承关系+javap取证) | 置信度(高) | 证据(extends campaign.ui.U(GlowingRowPanel)：getRowData/getAfterCreate/getLabels/createRow，与 linux intsuper 同语义)
+	f	private.return$int	rowData	[Ljava/lang/Object;
+	f	ÕÕÕO00	labels	Ljava/util/List;
+	f	ÓÕÕO00	afterCreate	Ljava/lang/Runnable;
+c	com/fs/starfarer/ui/impl/G	com/fs/starfarer/ui/impl/FleetTooltipFactory
+	c 来源(javap取证) | 置信度(高) | 证据(舰队属性 tooltip 工厂：Sensor Profile / Sensor Range，对应 linux void)
+	m	super	createSensorProfileTooltip	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	m	Ò00000	createSensorRangeTooltip	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+c	com/fs/starfarer/ui/impl/G$1	com/fs/starfarer/ui/impl/FleetTooltipFactory$SensorProfileTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(标题 Sensor Profile，对应 linux void$1)
+	f	super.String$float	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	ÒÓõO00	otherFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+c	com/fs/starfarer/ui/impl/G$1$1	com/fs/starfarer/ui/impl/FleetTooltipFactory$SensorProfileMemberValueGetter
+	c 来源(javap取证) | 置信度(中) | 证据(FleetMemberValueGetter：getValue 取 getSensorProfile，对应 linux void$1$1)
+c	com/fs/starfarer/ui/impl/G$2	com/fs/starfarer/ui/impl/FleetTooltipFactory$SensorRangeTooltip
+	c 来源(字符串常量) | 置信度(高) | 证据(标题 Sensor Range，对应 linux void$2)
+	f	øÒõO00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	OÓõO00	otherFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+c	com/fs/starfarer/ui/impl/G$2$1	com/fs/starfarer/ui/impl/FleetTooltipFactory$SensorStrengthMemberValueGetter
+	c 来源(javap取证) | 置信度(中) | 证据(FleetMemberValueGetter：getValue 取 getSensorStrength + skipMember 封存舰，对应 linux void$2$1)

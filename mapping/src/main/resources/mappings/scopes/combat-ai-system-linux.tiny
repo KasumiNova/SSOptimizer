@@ -1,0 +1,450 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/combat/ai/collisions/CollisionAnalysisModule	com/fs/starfarer/combat/ai/collisions/CollisionAnalysisModule
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#collisionanalysismodule)
+	c 类保持原名；成员全为混淆名，无足够证据未映射
+c	com/fs/starfarer/combat/ai/collisions/CollisionAnalysisModule$1	com/fs/starfarer/combat/ai/collisions/CollisionDangerComparator
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#collisionanalysismodule1)
+c	com/fs/starfarer/combat/ai/collisions/Object	com/fs/starfarer/combat/ai/collisions/CollisionDangerEntry
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#collisions-object)
+c	com/fs/starfarer/combat/ai/collisions/OoOO	com/fs/starfarer/combat/ai/collisions/CollisionTimeRange
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#collisions-oooo)
+c	com/fs/starfarer/combat/ai/collisions/oOOO	com/fs/starfarer/combat/ai/collisions/CollisionCheckSegment
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#collisions-oooo2)
+c	com/fs/starfarer/combat/ai/missile/CircleTargetAI	com/fs/starfarer/combat/ai/missile/CircleTargetAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+	f	target	target	Lcom/fs/starfarer/combat/o0OO/B;
+	f	targetCheckTracker	targetCheckTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	circleRadius	circleRadius	F
+	f	angledApproachRadius	angledApproachRadius	F
+	f	pcoTracker	pcoTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	pursueCourseOffset	pursueCourseOffset	F
+	f	startedFinalApproach	startedFinalApproach	Z
+	m	updateCourseOffset	updateCourseOffset	()V
+	m	advance	advance	(F)V
+	m	seekTarget	seekTarget	()V
+	m	acquireNewTarget	acquireNewTarget	()V
+	m	isTargetValid	isTargetValid	()Z
+	m	render	render	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/api/combat/CombatEntityAPI;
+	m	setTarget	setTarget	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)V
+c	com/fs/starfarer/combat/ai/missile/DefaultBombAI	com/fs/starfarer/combat/ai/missile/DefaultBombAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	m	advance	advance	(F)V
+	m	render	render	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/api/combat/CombatEntityAPI;
+	m	setTarget	setTarget	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)V
+c	com/fs/starfarer/combat/ai/missile/ErraticMissileAI	com/fs/starfarer/combat/ai/missile/ErraticMissileAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+	f	timeSpent	timeSpent	F
+	f	timeAlotted	timeAlotted	F
+	m	setRandomTarget	setRandomTarget	()V
+	m	advance	advance	(F)V
+	m	seekTarget	seekTarget	()V
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/missile/FlareAI	com/fs/starfarer/combat/ai/missile/FlareAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	tracker	tracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	r	r	F
+	f	range	range	F
+	f	chance	chance	F
+	f	immune	immune	Ljava/util/Set;
+	m	advance	advance	(F)V
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/missile/FlareJammerAI	com/fs/starfarer/combat/ai/missile/FlareJammerAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	tracker	tracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	r	r	F
+	f	range	range	F
+	f	chance	chance	F
+	f	immune	immune	Ljava/util/Set;
+	f	target	target	Lcom/fs/starfarer/combat/entities/Ship;
+	m	advance	advance	(F)V
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/missile/HeatseekerAI	com/fs/starfarer/combat/ai/missile/HeatseekerAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+	f	target	target	Lcom/fs/starfarer/combat/o0OO/B;
+	f	targetCheckTracker	targetCheckTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	finalApproachOffset	finalApproachOffset	F
+	f	radiusOffset	radiusOffset	F
+	f	pcoTracker	pcoTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	pursueCourseOffset	pursueCourseOffset	F
+	f	startedFinalApproach	startedFinalApproach	Z
+	m	updateCourseOffset	updateCourseOffset	()V
+	m	advance	advance	(F)V
+	m	seekTarget	seekTarget	()V
+	m	acquireNewTarget	acquireNewTarget	()V
+	m	isTargetValid	isTargetValid	()Z
+	m	render	render	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/api/combat/CombatEntityAPI;
+	m	setTarget	setTarget	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)V
+c	com/fs/starfarer/combat/ai/missile/MirvAI	com/fs/starfarer/combat/ai/missile/MirvAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	log	log	Lorg/apache/log4j/Logger;
+	f	steeringAI	steeringAI	Lcom/fs/starfarer/combat/ai/missile/MissileAI;
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	splitRange	splitRange	F
+	f	splitRangeRange	splitRangeRange	F
+	f	minTimeToSplit	minTimeToSplit	F
+	f	numShots	numShots	I
+	f	debrisSmall	debrisSmall	I
+	f	debrisMedium	debrisMedium	I
+	f	debrisLarge	debrisLarge	I
+	f	arc	arc	F
+	f	arcOffset	arcOffset	F
+	f	hitpoints	hitpoints	F
+	f	spreadSpeed	spreadSpeed	F
+	f	spreadSpeedRange	spreadSpeedRange	F
+	f	projectileRange	projectileRange	F
+	f	spreadInaccuracy	spreadInaccuracy	F
+	f	splitSound	splitSound	Ljava/lang/String;
+	f	projSpec	projSpec	Ljava/lang/Object;
+	f	emptySpec	emptySpec	Ljava/lang/Object;
+	f	damage	damage	F
+	f	impact	impact	F
+	f	emp	emp	F
+	f	damageType	damageType	Lcom/fs/starfarer/api/combat/DamageType;
+	f	smokeSpec	smokeSpec	Lcom/fs/starfarer/loading/specs/d;
+	f	evenSpread	evenSpread	Z
+	f	canSplitEarly	canSplitEarly	Z
+	f	explodeOnSplit	explodeOnSplit	Z
+	f	explodeAsIfFromDamageOnSplit	explodeAsIfFromDamageOnSplit	Z
+	f	destroyedExplosionColor	destroyedExplosionColor	Ljava/awt/Color;
+	f	timeSinceLaunch	timeSinceLaunch	F
+	m	advance	advance	(F)V
+	m	checkSplit	checkSplit	(F)Z
+	m	render	render	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/api/combat/CombatEntityAPI;
+	m	setTarget	setTarget	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)V
+c	com/fs/starfarer/combat/ai/missile/MirvAI$o	com/fs/starfarer/combat/ai/missile/MirvTaskStage
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#mirv-taskstage)
+	c 枚举常量名来自 <clinit> 原始字符串常量
+	f	class	INITIAL_STAGE	Lcom/fs/starfarer/combat/ai/missile/MirvAI$o;
+	f	Ô00000	ACQUIRE_TARGET_AND_PREPARE	Lcom/fs/starfarer/combat/ai/missile/MirvAI$o;
+	f	Ó00000	SEEK_TARGET	Lcom/fs/starfarer/combat/ai/missile/MirvAI$o;
+	f	new	NO_VALID_TARGETS	Lcom/fs/starfarer/combat/ai/missile/MirvAI$o;
+c	com/fs/starfarer/combat/ai/missile/MissileAI	com/fs/starfarer/combat/ai/missile/MissileAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+	f	launchAngle	launchAngle	F
+	f	target	target	Lcom/fs/starfarer/combat/o0OO/B;
+	f	currTask	currTask	Lcom/fs/starfarer/combat/ai/missile/MissileAI$o;
+	f	timeSpent	timeSpent	F
+	f	timeAlotted	timeAlotted	F
+	f	isPd	isPd	Z
+	f	projSpeedOverride	projSpeedOverride	F
+	f	directAim	directAim	Z
+	f	zeroOffsetRange	zeroOffsetRange	F
+	f	useMineSteering	useMineSteering	Z
+	f	retargetNearest	retargetNearest	Z
+	f	pcoTracker	pcoTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	pursueCourseOffset	pursueCourseOffset	F
+	f	pickedSpreadOffset	pickedSpreadOffset	Z
+	f	spreadOffsetMult	spreadOffsetMult	F
+	f	retargetInterval	retargetInterval	Lcom/fs/starfarer/util/IntervalTracker;
+	m	isRetargetNearest	isRetargetNearest	()Z
+	m	setRetargetNearest	setRetargetNearest	(Z)V
+	m	getZeroOffsetRange	getZeroOffsetRange	()F
+	m	setZeroOffsetRange	setZeroOffsetRange	(F)V
+	m	isDirectAim	isDirectAim	()Z
+	m	setDirectAim	setDirectAim	(Z)V
+	m	isUseMineSteering	isUseMineSteering	()Z
+	m	setUseMineSteering	setUseMineSteering	(Z)V
+	m	updateCourseOffset	updateCourseOffset	()V
+	m	advance	advance	(F)V
+	m	seekTarget	seekTarget	()V
+	m	setProjSpeedOverride	setProjSpeedOverride	(F)V
+	m	acquireAndPrepare	acquireAndPrepare	()V
+	m	initialStage	initialStage	()V
+	m	setTargetPoint	setTargetPoint	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	setTarget	setTarget	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)V
+	m	setLaunchAngle	setLaunchAngle	(F)V
+	m	isTargetValid	isTargetValid	()Z
+	m	render	render	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/api/combat/CombatEntityAPI;
+c	com/fs/starfarer/combat/ai/missile/MissileAI$o	com/fs/starfarer/combat/ai/missile/MissileTaskStage
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-taskstage)
+	c 枚举常量名来自 <clinit> 原始字符串常量
+	f	class	INITIAL_STAGE	Lcom/fs/starfarer/combat/ai/missile/MissileAI$o;
+	f	Ô00000	ACQUIRE_TARGET_AND_PREPARE	Lcom/fs/starfarer/combat/ai/missile/MissileAI$o;
+	f	Ó00000	SEEK_TARGET	Lcom/fs/starfarer/combat/ai/missile/MissileAI$o;
+	f	new	NO_VALID_TARGETS	Lcom/fs/starfarer/combat/ai/missile/MissileAI$o;
+c	com/fs/starfarer/combat/ai/missile/MissileAISidewinder	com/fs/starfarer/combat/ai/missile/MissileAISidewinder
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+	f	launchAngle	launchAngle	F
+	f	target	target	Lcom/fs/starfarer/combat/o0OO/B;
+	f	timeSpent	timeSpent	F
+	f	timeAlotted	timeAlotted	F
+	f	noTargets	noTargets	Z
+	f	prevAngleDiff	prevAngleDiff	F
+	m	advance	advance	(F)V
+	m	seekTarget	seekTarget	(F)V
+	m	findTarget	findTarget	()V
+	m	setTargetPoint	setTargetPoint	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	setTarget	setTarget	(Lcom/fs/starfarer/combat/entities/Ship;)V
+	m	setLaunchAngle	setLaunchAngle	(F)V
+	m	isTargetValid	isTargetValid	()Z
+	m	render	render	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/api/combat/CombatEntityAPI;
+	m	setTarget	setTarget	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)V
+c	com/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI	com/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+	f	launchAngle	launchAngle	F
+	f	target	target	Lcom/fs/starfarer/combat/o0OO/B;
+	f	currTask	currTask	Lcom/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI$o;
+	f	timeSpent	timeSpent	F
+	f	timeAlotted	timeAlotted	F
+	f	isPd	isPd	Z
+	f	projSpeedOverride	projSpeedOverride	F
+	f	directAim	directAim	Z
+	f	zeroOffsetRange	zeroOffsetRange	F
+	f	pcoTracker	pcoTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	pursueCourseOffset	pursueCourseOffset	F
+	f	pickedSpreadOffset	pickedSpreadOffset	Z
+	f	spreadOffsetMult	spreadOffsetMult	F
+	f	seekElapsed	seekElapsed	F
+	f	fixedHeading	fixedHeading	F
+	m	getZeroOffsetRange	getZeroOffsetRange	()F
+	m	setZeroOffsetRange	setZeroOffsetRange	(F)V
+	m	isDirectAim	isDirectAim	()Z
+	m	setDirectAim	setDirectAim	(Z)V
+	m	updateCourseOffset	updateCourseOffset	()V
+	m	advance	advance	(F)V
+	m	seekTarget	seekTarget	(F)V
+	m	setProjSpeedOverride	setProjSpeedOverride	(F)V
+	m	acquireAndPrepare	acquireAndPrepare	()V
+	m	initialStage	initialStage	()V
+	m	setTargetPoint	setTargetPoint	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	setTarget	setTarget	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)V
+	m	setLaunchAngle	setLaunchAngle	(F)V
+	m	isTargetValid	isTargetValid	()Z
+	m	render	render	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/api/combat/CombatEntityAPI;
+c	com/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI$o	com/fs/starfarer/combat/ai/missile/MissileTwoStageTaskStage
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#twostage-taskstage)
+	c 枚举常量名来自 <clinit> 原始字符串常量
+	f	Ö00000	INITIAL_STAGE	Lcom/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI$o;
+	f	Õ00000	ACQUIRE_TARGET_AND_PREPARE	Lcom/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI$o;
+	f	Ó00000	SEEK_TARGET	Lcom/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI$o;
+	f	String	BURN_PHASE	Lcom/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI$o;
+	f	Ò00000	NO_VALID_TARGETS	Lcom/fs/starfarer/combat/ai/missile/MissileTwoStageSecondUnguidedAI$o;
+c	com/fs/starfarer/combat/ai/missile/MoteAI	com/fs/starfarer/combat/ai/missile/MoteAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	MAX_FLOCK_RANGE	MAX_FLOCK_RANGE	F
+	f	MAX_HARD_AVOID_RANGE	MAX_HARD_AVOID_RANGE	F
+	f	AVOID_RANGE	AVOID_RANGE	F
+	f	COHESION_RANGE	COHESION_RANGE	F
+	f	ATTRACTOR_LOCK_STOP_FLOCKING_ADD	ATTRACTOR_LOCK_STOP_FLOCKING_ADD	F
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	tracker	tracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	updateListTracker	updateListTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	missileList	missileList	Ljava/util/List;
+	f	hardAvoidList	hardAvoidList	Ljava/util/List;
+	f	r	r	F
+	f	target	target	Lcom/fs/starfarer/combat/o0OO/B;
+	f	data	data	Lcom/fs/starfarer/api/impl/combat/MoteControlScript$SharedMoteAIData;
+	f	elapsed	elapsed	F
+	m	updateList	updateList	()V
+	m	updateHardAvoidList	updateHardAvoidList	()V
+	m	doFlocking	doFlocking	()V
+	m	advance	advance	(F)V
+	m	isTargetValid	isTargetValid	()Z
+	m	acquireNewTargetIfNeeded	acquireNewTargetIfNeeded	()V
+	m	getNumMotesTargeting	getNumMotesTargeting	(Lcom/fs/starfarer/api/combat/CombatEntityAPI;)I
+	m	getAttractorLoc	getAttractorLoc	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getTarget	getTarget	()Lcom/fs/starfarer/combat/o0OO/B;
+	m	setTarget	setTarget	(Lcom/fs/starfarer/combat/o0OO/B;)V
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/missile/PhaseChargeAI	com/fs/starfarer/combat/ai/missile/PhaseChargeAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	phaseCharge	phaseCharge	Lcom/fs/starfarer/combat/entities/Missile;
+	f	targetPoint	targetPoint	Lorg/lwjgl/util/vector/Vector2f;
+	m	advance	advance	(F)V
+	m	seekTarget	seekTarget	()V
+	m	setTargetPoint	setTargetPoint	(Lorg/lwjgl/util/vector/Vector2f;)V
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/missile/RocketAI	com/fs/starfarer/combat/ai/missile/RocketAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	m	advance	advance	(F)V
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/missile/SeekerFlareAI	com/fs/starfarer/combat/ai/missile/SeekerFlareAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#missile-identity)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	missile	missile	Lcom/fs/starfarer/combat/entities/Missile;
+	f	tracker	tracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	r	r	F
+	f	range	range	F
+	f	chance	chance	F
+	f	immune	immune	Ljava/util/Set;
+	f	elapsed	elapsed	F
+	f	target	target	Lcom/fs/starfarer/combat/o0OO/B;
+	m	advance	advance	(F)V
+	m	isTargetValid	isTargetValid	()Z
+	m	acquireNewTargetIfNeeded	acquireNewTargetIfNeeded	()V
+	m	getTarget	getTarget	()Lcom/fs/starfarer/combat/o0OO/B;
+	m	setTarget	setTarget	(Lcom/fs/starfarer/combat/o0OO/B;)V
+	m	render	render	()V
+c	com/fs/starfarer/combat/ai/system/A	com/fs/starfarer/combat/ai/system/EngineModSystemAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-engine-mod)
+c	com/fs/starfarer/combat/ai/system/A$1	com/fs/starfarer/combat/ai/system/EngineModSystemAI$1
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
+c	com/fs/starfarer/combat/ai/system/A$2	com/fs/starfarer/combat/ai/system/EngineModSystemAI$2
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
+c	com/fs/starfarer/combat/ai/system/A$3	com/fs/starfarer/combat/ai/system/EngineModSystemAI$3
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
+c	com/fs/starfarer/combat/ai/system/B	com/fs/starfarer/combat/ai/system/WingWeaponSystemAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#b-weapon-wing)
+c	com/fs/starfarer/combat/ai/system/G	com/fs/starfarer/combat/ai/system/EngagementSystemAI
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#g-engagement)
+c	com/fs/starfarer/combat/ai/system/I	com/fs/starfarer/combat/ai/system/TargetScanWeaponSystemAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#i-weapon-scan)
+c	com/fs/starfarer/combat/ai/system/K	com/fs/starfarer/combat/ai/system/GenericSystemAI
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#k-generic)
+c	com/fs/starfarer/combat/ai/system/L	com/fs/starfarer/combat/ai/system/EmpSystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#l-emp)
+c	com/fs/starfarer/combat/ai/system/N	com/fs/starfarer/combat/ai/system/AcausalDisruptorSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#n-acausal-disruptor)
+c	com/fs/starfarer/combat/ai/system/O	com/fs/starfarer/combat/ai/system/TeleporterTaskSystemAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#o-teleporter-task)
+c	com/fs/starfarer/combat/ai/system/O00O	com/fs/starfarer/combat/ai/system/DamperFieldOmegaSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#o00o-damper-omega)
+c	com/fs/starfarer/combat/ai/system/O0OO	com/fs/starfarer/combat/ai/system/EntropyAmplifierSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#o0oo-entropy-amplifier)
+c	com/fs/starfarer/combat/ai/system/O0Oo	com/fs/starfarer/combat/ai/system/PhaseCloakSystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#o0oo-phase-cloak)
+c	com/fs/starfarer/combat/ai/system/O0oO	com/fs/starfarer/combat/ai/system/RecallDeviceSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#o0oo-recall-device)
+c	com/fs/starfarer/combat/ai/system/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/ai/system/WingSupportSystemAI
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#longwing-wing-support)
+c	com/fs/starfarer/combat/ai/system/R	com/fs/starfarer/combat/ai/system/WeaponTypeSystemAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#r-weapon-type)
+c	com/fs/starfarer/combat/ai/system/S	com/fs/starfarer/combat/ai/system/PhaseStateSystemAI
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#s-phase-state)
+c	com/fs/starfarer/combat/ai/system/X	com/fs/starfarer/combat/ai/system/LidarArraySystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#x-lidar-array)
+c	com/fs/starfarer/combat/ai/system/Z	com/fs/starfarer/combat/ai/system/MineStrikeSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#z-mine-strike)
+c	com/fs/starfarer/combat/ai/system/a	com/fs/starfarer/combat/ai/system/RetreatSystemAI
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-retreat)
+c	com/fs/starfarer/combat/ai/system/a$1	com/fs/starfarer/combat/ai/system/RetreatSystemAI$1
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
+c	com/fs/starfarer/combat/ai/system/a$2	com/fs/starfarer/combat/ai/system/RetreatSystemAI$2
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
+c	com/fs/starfarer/combat/ai/system/b	com/fs/starfarer/combat/ai/system/MoteControlSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#b-mote-control)
+c	com/fs/starfarer/combat/ai/system/classsuper	com/fs/starfarer/combat/ai/system/WingEngineModSystemAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#classsuper-engine-wing)
+c	com/fs/starfarer/combat/ai/system/d	com/fs/starfarer/combat/ai/system/DroneStrikeSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#d-drone-strike)
+c	com/fs/starfarer/combat/ai/system/do	com/fs/starfarer/combat/ai/system/SystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#systemai-interface)
+c	com/fs/starfarer/combat/ai/system/drones/A	com/fs/starfarer/combat/ai/system/drones/DroneCombatManeuver
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#drones-a-maneuver)
+c	com/fs/starfarer/combat/ai/system/drones/DroneAI	com/fs/starfarer/combat/ai/system/drones/DroneAI
+	c 来源(未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#drones-droneai)
+	c 类保持原名，成员全部为未混淆真实名，逐成员 identity 映射
+	f	engine	engine	Lcom/fs/starfarer/combat/CombatEngine;
+	f	ship	ship	Lcom/fs/starfarer/combat/entities/Ship;
+	f	engineAI	engineAI	Lcom/fs/starfarer/combat/ai/movement/EngineAI;
+	f	flockingAI	flockingAI	Lcom/fs/starfarer/combat/ai/movement/super;
+	f	attackAI	attackAI	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule;
+	f	sequence	sequence	Lcom/fs/starfarer/combat/ai/movement/maneuvers/oooO;
+	f	shieldAI	shieldAI	Lcom/fs/starfarer/combat/ai/OOoO;
+	f	doNotFireDelay	doNotFireDelay	F
+	f	elapsed	elapsed	F
+	f	target	target	Lcom/fs/starfarer/combat/entities/Ship;
+	f	forceTarget	forceTarget	Z
+	f	systemAI	systemAI	Lcom/fs/starfarer/combat/ai/system/do;
+	f	collisionCheckTracker	collisionCheckTracker	Lcom/fs/starfarer/util/IntervalTracker;
+	f	mothership	mothership	Lcom/fs/starfarer/combat/entities/Ship;
+	f	threatEvalAI	threatEvalAI	Lcom/fs/starfarer/combat/ai/O0OO;
+	f	system	system	Lcom/fs/starfarer/combat/systems/oO0O;
+	f	launchPoint	launchPoint	Lcom/fs/starfarer/loading/specs/Y;
+	f	config	config	Lcom/fs/starfarer/api/combat/ShipAIConfig;
+	f	desiredLocation	desiredLocation	Lorg/lwjgl/util/vector/Vector2f;
+	f	maxAttackRange	maxAttackRange	F
+	f	aiFlags	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+	f	engaged	engaged	Z
+	m	getDesiredLocation	getDesiredLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	getEngineAI	getEngineAI	()Lcom/fs/starfarer/combat/ai/movement/EngineAI;
+	m	setDoNotFireDelay	setDoNotFireDelay	(F)V
+	m	advance	advance	(F)V
+	m	avoidMissiles	avoidMissiles	()V
+	m	pickManeuver	pickManeuver	()V
+	m	isValidTarget	isValidTarget	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	setManeuver	setManeuver	(Lcom/fs/starfarer/combat/ai/movement/maneuvers/M;F)V
+	m	render	render	()V
+	m	getAttackingGroup	getAttackingGroup	()Lcom/fs/starfarer/combat/ai/attack/A;
+	m	cancelCurrentManeuver	cancelCurrentManeuver	()V
+	m	maneuverCompleted	maneuverCompleted	()V
+	m	getCollisionRadius	getCollisionRadius	()F
+	m	getLocation	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	isFighter	isFighter	()Z
+	m	getMaxFiringRange	getMaxFiringRange	()F
+	m	setMaxTargetRange	setMaxTargetRange	(F)V
+	m	getThreatEvaluator	getThreatEvaluator	()Lcom/fs/starfarer/combat/ai/O0OO;
+	m	notifyNewOrderGivenToBattleGroup	notifyNewOrderGivenToBattleGroup	(Lcom/fs/starfarer/combat/interface;)V
+	m	getAIFlags	getAIFlags	()Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+	m	setEngaged	setEngaged	(Z)V
+	m	isEngaged	isEngaged	()Z
+	m	getOptimalNonMissileRange	getOptimalNonMissileRange	()F
+	m	getAttackAI	getAttackAI	()Lcom/fs/starfarer/combat/ai/attack/AttackAIModule;
+	m	keepTarget	keepTarget	()Z
+	m	getFlockingAI	getFlockingAI	()Lcom/fs/starfarer/combat/ai/movement/super;
+	m	getShieldAI	getShieldAI	()Lcom/fs/starfarer/combat/ai/OOoO;
+	m	getLaunchPoint	getLaunchPoint	()Lcom/fs/starfarer/loading/specs/Y;
+	m	setLaunchPoint	setLaunchPoint	(Lcom/fs/starfarer/loading/specs/Y;)V
+	m	getMothership	getMothership	()Lcom/fs/starfarer/combat/entities/Ship;
+	m	getEval	getEval	()Lcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	forceCircumstanceEvaluation	forceCircumstanceEvaluation	()V
+	m	needsRefit	needsRefit	()Z
+	m	getEvaluationFor	getEvaluationFor	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)Lcom/fs/starfarer/combat/ai/attack/B;
+	m	doesShipVelocityMatterForAim	doesShipVelocityMatterForAim	()Z
+	m	getConfig	getConfig	()Lcom/fs/starfarer/api/combat/ShipAIConfig;
+c	com/fs/starfarer/combat/ai/system/drones/DroneAI$1	com/fs/starfarer/combat/ai/system/drones/DroneShieldAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#drones-droneai1)
+c	com/fs/starfarer/combat/ai/system/forsuper	com/fs/starfarer/combat/ai/system/ShieldFluxSystemAI
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#forsuper-shield-flux)
+c	com/fs/starfarer/combat/ai/system/interface	com/fs/starfarer/combat/ai/system/AmmoReloadSystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#interface-ammo-reload)
+c	com/fs/starfarer/combat/ai/system/null	com/fs/starfarer/combat/ai/system/DroneLauncherSystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#null-drone-launcher)
+c	com/fs/starfarer/combat/ai/system/o0OO	com/fs/starfarer/combat/ai/system/BomberWeaponSystemAI
+	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#o0oo-weapon-bomber)
+c	com/fs/starfarer/combat/ai/system/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/ai/system/TeleporterTargetingSystemAI
+	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#longtele-teleporter-targeting)
+c	com/fs/starfarer/combat/ai/system/ooOo	com/fs/starfarer/combat/ai/system/ReserveWingSystemAI
+	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#ooooo-reserve-wing)
+c	com/fs/starfarer/combat/ai/system/oooo	com/fs/starfarer/combat/ai/system/ShieldModSystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#oooo-shield-mod)
+c	com/fs/starfarer/combat/ai/system/return	com/fs/starfarer/combat/ai/system/FastReloadSystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#return-fast-reload)
+c	com/fs/starfarer/combat/ai/system/voidsuper	com/fs/starfarer/combat/ai/system/DisplacerSystemAI
+	c 来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#voidsuper-displacer)

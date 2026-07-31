@@ -1,0 +1,366 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/ui/B$o	com/fs/starfarer/ui/TextFieldListener
+	c	javap取证 | 高 | TextFieldImpl(B) 文本监听接口：backspacePressed/charTyped/charTypeFailed/tabPressed/escapePressed/textChanged（B$o）
+	m	backspacePressed	backspacePressed	(Lcom/fs/starfarer/ui/B;Z)V
+	m	charTyped	charTyped	(Lcom/fs/starfarer/ui/B;C)V
+	m	charTypeFailed	charTypeFailed	(Lcom/fs/starfarer/ui/B;C)V
+	m	tabPressed	tabPressed	(Lcom/fs/starfarer/ui/B;Lcom/fs/starfarer/util/super/Object;)V
+	m	escapePressed	escapePressed	(Lcom/fs/starfarer/ui/B;Lcom/fs/starfarer/util/super/Object;)V
+	m	textChanged	textChanged	(Lcom/fs/starfarer/ui/B;Ljava/lang/String;)V
+c	com/fs/starfarer/ui/B/OoOO	com/fs/starfarer/ui/MenuPanel
+	c	javap取证 | 高 | 下拉菜单面板：addMenuItem/fadeIn/fadeOut/forceIn/forceOut + 字符串 ui_border1b + 方向枚举 ui._（B/OoOO）
+	m	addMenuItem	addMenuItem	(IILcom/fs/starfarer/ui/OO0o;)V
+	m	fadeOut	fadeOut	()V
+	m	forceOut	forceOut	()V
+	m	fadeIn	fadeIn	()V
+	m	forceIn	forceIn	()V
+	m	add	add	(Lcom/fs/starfarer/ui/OO0o;)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+c	com/fs/starfarer/ui/B/OoOO$o	com/fs/starfarer/ui/MenuPanel$MenuItem
+	c	继承关系+javap取证 | 中 | MenuPanel 内部菜单项：索引 + OO0o 控件 + Fader 渐显（B/OoOO$o）
+c	com/fs/starfarer/ui/B/oOOO	com/fs/starfarer/ui/MenuPanel$Background
+	c	javap取证 | 中 | 菜单背景绘制：6 个 Sprite(_e/_e_top/_w_bot/scanline11/ui 等) + 方向枚举 + 字体（B/oOOO）
+c	com/fs/starfarer/ui/C	com/fs/starfarer/ui/RenderHookPanel
+	c	javap取证 | 低 | 透明钩子面板：renderImpl 仅回调 C$o.new(position, alpha)，自身不绘制（C）
+c	com/fs/starfarer/ui/C$o	com/fs/starfarer/ui/RenderHookListener
+	c	javap取证 | 低 | RenderHookPanel 渲染回调：new(PositionImpl, float alpha)（C$o）
+	m	new	onRender	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;F)V
+c	com/fs/starfarer/ui/C/D	com/fs/starfarer/ui/ItemListPanel
+	c	javap取证 | 中 | 条目列表面板：items 列表 + addItem/removeItem/pack/notifyItemSelected（C/D）
+	f	items	items	Ljava/util/List;
+	m	addItem	addItem	(Lcom/fs/starfarer/ui/C/ooOO;)V
+	m	removeItem	removeItem	(Lcom/fs/starfarer/ui/C/ooOO;)V
+	m	pack	pack	()V
+	m	notifyItemSelected	notifyItemSelected	(Lcom/fs/starfarer/ui/C/ooOO;)V
+c	com/fs/starfarer/ui/C/new	com/fs/starfarer/ui/Hotspot
+	c	javap取证 | 中 | 交互热点：Fader 闪烁 + OO0o 内容 + 点击回调，供 HotspotLayer 使用（C/new）
+c	com/fs/starfarer/ui/C/new$o	com/fs/starfarer/ui/HotspotListener
+	c	javap取证 | 中 | 热点点击回调接口（C/new$o）
+	m	notifyHotspotClicked	notifyHotspotClicked	(Lcom/fs/starfarer/ui/C/new;Lcom/fs/starfarer/ui/OO0o;)V
+c	com/fs/starfarer/ui/C/oOOO	com/fs/starfarer/ui/HotspotLayer
+	c	javap取证 | 中 | 热点图层：createAndAddHotspot 管理 List<C/new>，处理输入与选中状态（C/oOOO）
+	m	createAndAddHotspot	createAndAddHotspot	(Lcom/fs/starfarer/ui/OO0o;Lcom/fs/starfarer/ui/C/new$o;)Lcom/fs/starfarer/ui/C/new;
+c	com/fs/starfarer/ui/C/ooOO	com/fs/starfarer/ui/SelectableItem
+	c	继承关系+javap取证 | 中 | 可选中条目接口：extends OO0o，setMouseOver/notifySelectedStatusChanged（C/ooOO）
+	m	setMouseOver	setMouseOver	(F)V
+	m	notifySelectedStatusChanged	notifySelectedStatusChanged	(Z)V
+c	com/fs/starfarer/ui/C/super/A	com/fs/starfarer/ui/ListItemContainer
+	c	javap取证 | 中 | 列表项容器：鼠标悬停 Fader + 内容控件 + 选中通知（C/super/A）
+	m	getMouseOverFader	getMouseOverFader	()Lcom/fs/graphics/util/Fader;
+	m	getContents	getContents	()Lcom/fs/starfarer/ui/C/ooOO;
+c	com/fs/starfarer/ui/C/super/A$o	com/fs/starfarer/ui/ItemSelectionListener
+	c	javap取证 | 中 | 列表项选中回调接口（C/super/A$o）
+	m	notifyItemSelected	notifyItemSelected	(Lcom/fs/starfarer/ui/C/ooOO;)V
+c	com/fs/starfarer/ui/G	com/fs/starfarer/ui/ImageTextButton
+	c	继承关系+javap取证 | 中 | 图片+文本按钮：extends Stringnew$Oo，getImage/getSpriteName/getTextHeight + PAD（G）
+	m	getImageColor	getImageColor	()Ljava/awt/Color;
+	m	setImageColor	setImageColor	(Ljava/awt/Color;)V
+	m	getTextHeight	getTextHeight	()F
+	m	sizeChanged	sizeChanged	(FF)V
+	m	getImage	getImage	()Lcom/fs/starfarer/ui/ooO0;
+	m	getSpriteName	getSpriteName	()Ljava/lang/String;
+	m	getDisabledColor	getDisabledColor	()Ljava/awt/Color;
+	m	setImage	setImage	(Lcom/fs/starfarer/ui/ooO0;)V
+	m	setSpriteName	setSpriteName	(Ljava/lang/String;)V
+	m	setDisabledColor	setDisabledColor	(Ljava/awt/Color;)V
+c	com/fs/starfarer/ui/J	com/fs/starfarer/ui/CutPanel
+	c	javap取证 | 中 | 剪切角面板背景：Alignment + CutStyle(TL_BR) + 双色 + Sprite，绘制带切角矩形（J）
+c	com/fs/starfarer/ui/K	com/fs/starfarer/ui/ToggleButton
+	c	javap取证(字符串) | 高 | 开关按钮：toggle12/20/40_on/off 贴图 + Size 枚举（K）
+c	com/fs/starfarer/ui/K$o	com/fs/starfarer/ui/ToggleButton$Size
+	c	字符串常量 | 高 | 开关按钮尺寸枚举 TINY/SMALL/LARGE（K$o）
+	f	String	TINY	Lcom/fs/starfarer/ui/K$o;
+	f	Ó00000	SMALL	Lcom/fs/starfarer/ui/K$o;
+	f	Ò00000	LARGE	Lcom/fs/starfarer/ui/K$o;
+	m	values	values	()[Lcom/fs/starfarer/ui/K$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/K$o;
+c	com/fs/starfarer/ui/N	com/fs/starfarer/ui/BorderBox
+	c	javap取证 | 高 | 矩形边框控件：color+thickness，renderImpl 调 renderers.public.o00000(x,y,w,h,thickness) 画边框（N）
+	f	color	color	Ljava/awt/Color;
+	f	thickness	thickness	F
+c	com/fs/starfarer/ui/O0OO	com/fs/starfarer/ui/AnimatedPath
+	c	javap取证 | 中 | 周期动画路径：IntervalTracker + addToPath 点列表 + 双色，生成移动段渲染（O0OO）
+	m	addToPath	addToPath	(FF)V
+c	com/fs/starfarer/ui/O0o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/MouseOverListener
+	c	javap取证 | 高 | 鼠标悬停进出监听接口：mouseEnter/mouseLeave（O0o0O...长名）
+	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
+	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
+c	com/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/PositionImpl
+	c	API-impl种子+javap取证 | 高 | PositionAPI 实现：方法集与接口一致（inTL/inMid/leftOfTop/setLocation/recompute/children 排序，字符串 Children/Circular）
+	m	setRoundCoordinates	setRoundCoordinates	(Z)V
+	m	isSuspendRecompute	isSuspendRecompute	()Z
+	m	setSuspendRecompute	setSuspendRecompute	(Z)V
+	m	recompute	recompute	()V
+	m	setWithSortRecurvsive	setWithSortRecursive	(Z)V
+	m	setWithSortHelper	setWithSortHelper	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;Z)V
+	m	isWithSort	isWithSort	()Z
+	m	setWithSort	setWithSort	(Z)V
+	m	getX	getX	()F
+	m	getY	getY	()F
+	m	getWidth	getWidth	()F
+	m	getHeight	getHeight	()F
+	m	setSize	setSize	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	setLocation	setLocation	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	setOffset	setOffset	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getBase	getBase	()Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	add	add	(ILcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	add	add	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	remove	remove	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	clearChildren	clearChildren	()V
+	m	inTL	inTL	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inTMid	inTMid	(F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inTR	inTR	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inRMid	inRMid	(F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inMid	inMid	()Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inBR	inBR	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inBMid	inBMid	(F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inBL	inBL	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	inLMid	inLMid	(F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	leftOfTop	leftOfTop	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	leftOfMid	leftOfMid	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	leftOfBottom	leftOfBottom	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	rightOfTop	rightOfTop	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	rightOfMid	rightOfMid	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	rightOfBottom	rightOfBottom	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	aboveLeft	aboveLeft	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	aboveMid	aboveMid	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	aboveRight	aboveRight	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	belowLeft	belowLeft	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	belowMid	belowMid	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	belowRight	belowRight	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	c	API-impl种子 | 高 | 另含 getCenterX/getCenterY/containsEvent/setXAlignOffset/setYAlignOffset（PositionAPI 其余方法）
+c	com/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/ui/PositionListener
+	c	javap取证 | 高 | PositionImpl 位置/尺寸变化监听接口：locationChanged/sizeChanged（OO0O...$o）
+	m	locationChanged	locationChanged	()V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/ui/OO0o	com/fs/starfarer/ui/UIComponent
+	c	继承关系+javap取证 | 高 | UI 组件接口：extends S(FocusedComponent)+UIComponentAPI，getPosition/getFader/setParent（OO0o）
+	m	getPosition	getPosition	()Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getWidth	getWidth	()F
+	m	getHeight	getHeight	()F
+	m	getX	getX	()F
+	m	getY	getY	()F
+	m	setPos	setPos	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	setSize	setSize	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	render	render	(F)V
+	m	setParent	setParent	(Lcom/fs/starfarer/ui/z;)V
+	m	getFader	getFader	()Lcom/fs/graphics/util/Fader;
+	m	setOpacity	setOpacity	(F)V
+c	com/fs/starfarer/ui/Oo0o	com/fs/starfarer/ui/ShowableComponent
+	c	继承关系+javap取证 | 高 | 显隐组件接口：extends OO0o，notifyShown/notiftyHidden/beforeShown（Oo0o）
+	m	notifyShown	notifyShown	()V
+	m	notiftyHidden	notiftyHidden	()V
+	m	beforeShown	beforeShown	()V
+c	com/fs/starfarer/ui/OoO0	com/fs/starfarer/ui/ColorableComponent
+	c	javap取证 | 中 | 可着色组件接口：setColor（OoO0）
+	m	setColor	setColor	(Ljava/awt/Color;)V
+c	com/fs/starfarer/ui/P	com/fs/starfarer/ui/NoiseOverlay
+	c	javap取证 | 中 | 噪声干扰覆盖层：getNoise(E.void) + flicker，campaign-ui-marketinfo 片段已引用 getNoise/flicker（P）
+	m	flicker	flicker	()V
+	m	sizeChanged	sizeChanged	(FF)V
+	m	getNoise	getNoise	()Lcom/fs/starfarer/E/void;
+c	com/fs/starfarer/ui/Q	com/fs/starfarer/ui/UIElementFactory
+	c	javap取证 | 高 | UI 元素静态工厂：创建按钮 n/标签 q/文本标签等（大量静态方法，字符串 ui_button_mouseover）（Q）
+c	com/fs/starfarer/ui/Stringnew	com/fs/starfarer/ui/ButtonContentHost
+	c	继承关系+javap取证 | 中 | 按钮内容宿主：implements n$o，包装 Stringnew$o 内容为按钮（Stringnew）
+c	com/fs/starfarer/ui/Stringnew$Oo	com/fs/starfarer/ui/ButtonBase
+	c	继承关系+javap取证 | 中 | 按钮内容基类：extends z implements Stringnew$o，glow/isDisabled/isChecked/state/button（Stringnew$Oo）
+	f	glowAmount	glowAmount	F
+	f	isDisabled	isDisabled	Z
+	f	isChecked	isChecked	Z
+	f	state	state	Lcom/fs/starfarer/ui/null$o;
+	f	button	button	Lcom/fs/starfarer/ui/n;
+	f	shouldUpdate	shouldUpdate	Z
+	f	shouldAdvance	shouldAdvance	Z
+	m	getButtonsWithinButton	getButtonsWithinButton	()Ljava/util/List;
+	m	getGlowAmount	getGlowAmount	()F
+	m	setGlowAmount	setGlowAmount	(F)V
+	m	isDisabled	isDisabled	()Z
+	m	setDisabled	setDisabled	(Z)V
+	m	isChecked	isChecked	()Z
+	m	setChecked	setChecked	(Z)V
+	m	getState	getState	()Lcom/fs/starfarer/ui/null$o;
+	m	setState	setState	(Lcom/fs/starfarer/ui/null$o;)V
+	m	getButton	getButton	()Lcom/fs/starfarer/ui/n;
+	m	setButton	setButton	(Lcom/fs/starfarer/ui/n;)V
+c	com/fs/starfarer/ui/Stringnew$o	com/fs/starfarer/ui/ButtonContent
+	c	javap取证 | 中 | 按钮内容渲染接口：setGlowAmount/setState/setChecked/setDisabled/render/pack/advance/processInput（Stringnew$o）
+	m	setGlowAmount	setGlowAmount	(F)V
+	m	setState	setState	(Lcom/fs/starfarer/ui/null$o;)V
+	m	setChecked	setChecked	(Z)V
+	m	setDisabled	setDisabled	(Z)V
+	m	getPosition	getPosition	()Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	render	render	(F)V
+	m	pack	pack	()V
+	m	advance	advance	(F)V
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/ui/T	com/fs/starfarer/ui/TextLabel
+	c	javap取证 | 中 | 单行文本标签控件：半透明背景 + d 标签 + 指定文本（T）
+c	com/fs/starfarer/ui/X	com/fs/starfarer/ui/DropdownSelect
+	c	javap取证 | 高 | 下拉选择框：setSelected/getSelected + 选项列表 + actionPerformed/dialogDismissed（X）
+	m	setSelected	setSelected	(Ljava/lang/String;)V
+	m	getSelected	getSelected	()Ljava/lang/String;
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/ui/X$o	com/fs/starfarer/ui/DropdownSelect$Action
+	c	字符串常量 | 中 | 下拉选择动作枚举 SELECT（X$o）
+	f	new	SELECT	Lcom/fs/starfarer/ui/X$o;
+	m	values	values	()[Lcom/fs/starfarer/ui/X$o;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/X$o;
+c	com/fs/starfarer/ui/_	com/fs/starfarer/ui/HorizontalDirection
+	c	字符串常量 | 高 | 横向方向枚举 LEFT_TO_RIGHT/RIGHT_TO_LEFT，MenuPanel 使用（_）
+	f	Ò00000	LEFT_TO_RIGHT	Lcom/fs/starfarer/ui/_;
+	f	Object	RIGHT_TO_LEFT	Lcom/fs/starfarer/ui/_;
+	m	values	values	()[Lcom/fs/starfarer/ui/_;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/_;
+c	com/fs/starfarer/ui/a	com/fs/starfarer/ui/PlainPanel
+	c	javap取证 | 低 | 直角背景面板：与 CutPanel(J) 同构但无 CutStyle，Alignment + 单背景（a）
+c	com/fs/starfarer/ui/classsuper	com/fs/starfarer/ui/TooltipComponent
+	c	继承关系+javap取证 | 中 | 带 tooltip 的焦点组件：implements S(FocusedComponent)，showTooltip/hideTooltip/focusLost/可见性（classsuper）
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;)V
+	m	advance	advance	(F)V
+	m	focusLost	focusLost	()V
+c	com/fs/starfarer/ui/classsuper$Oo	com/fs/starfarer/ui/Visibility
+	c	字符串常量 | 高 | 可见性枚举 HIDDEN/VISIBLE（classsuper$Oo）
+	f	Ó00000	VISIBLE	Lcom/fs/starfarer/ui/classsuper$Oo;
+	f	new	HIDDEN	Lcom/fs/starfarer/ui/classsuper$Oo;
+	m	values	values	()[Lcom/fs/starfarer/ui/classsuper$Oo;
+	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/classsuper$Oo;
+c	com/fs/starfarer/ui/classsuper$o	com/fs/starfarer/ui/TooltipProvider
+	c	javap取证 | 中 | tooltip 提供接口：showTooltip/hideTooltip/preProcessInput（classsuper$o）
+	m	showTooltip	showTooltip	(Ljava/lang/Object;)V
+	m	hideTooltip	hideTooltip	(Ljava/lang/Object;)V
+	m	preProcessInput	preProcessInput	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/ui/d	com/fs/starfarer/ui/LabelImpl
+	c	API-impl种子+javap取证 | 高 | LabelAPI 实现：文本标签，静态工厂 createStoryPointsLabel/createCreditsLabel/createHeading 等 + SMALL_INSIGNIA（d）
+	f	SMALL_INSIGNIA	SMALL_INSIGNIA	Ljava/lang/String;
+	m	createStoryPointsLabel	createStoryPointsLabel	(Ljava/lang/String;F)Lcom/fs/starfarer/ui/d;
+	m	createRemainingStoryPointsLabel	createRemainingStoryPointsLabel	(Ljava/lang/String;FLcom/fs/starfarer/ui/d$o;)Lcom/fs/starfarer/ui/z;
+	m	createXOutOfYLabel	createXOutOfYLabel	(Ljava/lang/String;Ljava/lang/String;FLcom/fs/starfarer/ui/d$Oo;)Lcom/fs/starfarer/ui/z;
+	m	createCreditsLabel	createCreditsLabel	(Ljava/lang/String;F)Lcom/fs/starfarer/ui/d;
+	m	createMaxIndustriesLabel	createMaxIndustriesLabel	(Ljava/lang/String;FLcom/fs/starfarer/api/campaign/econ/MarketAPI;)Lcom/fs/starfarer/ui/d;
+	m	create	create	(Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+	m	create	create	(Ljava/lang/String;Ljava/awt/Color;)Lcom/fs/starfarer/ui/d;
+	m	create	create	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+	m	create	create	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)Lcom/fs/starfarer/ui/d;
+	m	createLabelWithBarFont	createLabelWithBarFont	(Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+	m	createHeading	createHeading	(Ljava/lang/String;FLjava/awt/Color;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
+	m	createHeading	createHeading	(Ljava/lang/String;Ljava/lang/String;FFLjava/awt/Color;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
+	m	createHeading	createHeading	(Ljava/lang/String;Ljava/lang/String;FLjava/awt/Color;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
+	m	createLabelWithBarFont	createLabelWithBarFont	(Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
+	m	createSmallInsigniaLabel	createSmallInsigniaLabel	(Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
+	m	createSmallOrbitronLabel	createSmallOrbitronLabel	(Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
+	m	italicize	italicize	()V
+	m	italicize	italicize	(F)V
+	m	unitalicize	unitalicize	()V
+	m	getBackgroundColor	getBackgroundColor	()Ljava/awt/Color;
+	m	setBackgroundColor	setBackgroundColor	(Ljava/awt/Color;)V
+	m	getFont	getFont	()Ljava/lang/String;
+	m	pop	pop	()V
+	m	blink	blink	(FFI)V
+	m	getLineHeight	getLineHeight	()F
+	m	getFlasher	getFlasher	()Lcom/fs/graphics/util/Fader;
+	m	setTooltip	setTooltip	(FLcom/fs/starfarer/ui/Oo0o;)V
+	m	getTooltipLogic	getTooltipLogic	()Lcom/fs/starfarer/ui/classsuper;
+	m	getFader	getFader	()Lcom/fs/graphics/util/Fader;
+	m	setColor	setColor	(Ljava/awt/Color;)V
+	m	getColor	getColor	()Ljava/awt/Color;
+	m	setText	setText	(Ljava/lang/String;)V
+	m	getPosition	getPosition	()Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	getText	getText	()Ljava/lang/String;
+	m	getOpacity	getOpacity	()F
+	m	setOpacity	setOpacity	(F)V
+	m	getBgExtraRight	getBgExtraRight	()F
+	m	setBgExtraRight	setBgExtraRight	(F)V
+	m	getBgExtraLeft	getBgExtraLeft	()F
+	m	setBgExtraLeft	setBgExtraLeft	(F)V
+	m	render	render	(F)V
+	m	getAdditiveColor	getAdditiveColor	()Ljava/awt/Color;
+	m	setAdditiveColor	setAdditiveColor	(Ljava/awt/Color;)V
+	m	setParent	setParent	(Lcom/fs/starfarer/ui/z;)V
+	m	getParent	getParent	()Lcom/fs/starfarer/ui/z;
+	m	setPos	setPos	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;)V
+	m	setBlinkDur	setBlinkDur	(F)V
+	m	advance	advance	(F)V
+	m	stopBlinking	stopBlinking	()V
+	m	isBlinking	isBlinking	()Z
+	m	flash	flash	(FF)V
+	m	blink	blink	(FF)V
+	m	focusLost	focusLost	()V
+	m	isHighlightOnMouseover	isHighlightOnMouseover	()Z
+	m	setHighlightOnMouseover	setHighlightOnMouseover	(Z)V
+	m	getMouseoverFader	getMouseoverFader	()Lcom/fs/graphics/util/Fader;
+	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;)V
+	m	getRenderer	getRenderer	()Lcom/fs/graphics/super/Object;
+	m	setAlignment	setAlignment	(Lcom/fs/starfarer/api/ui/Alignment;)V
+	m	autoSize	autoSize	()Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	autoSizeToWidth	autoSizeToWidth	(F)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	setSize	setSize	(FF)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	locationChanged	locationChanged	()V
+	m	sizeChanged	sizeChanged	(FF)V
+	c	API-impl种子 | 高 | 其余方法见 LabelAPI（setHighlight/highlightFirst/computeTextWidth/flash 等），未逐一列出
+c	com/fs/starfarer/ui/d$1	com/fs/starfarer/ui/LabelImpl$StoryPointLabelRefresher
+	c	javap取证 | 低 | 剩余星点标签刷新器：持 d$o 提供者 + LabelImpl，advanceImpl 更新文本（d$1）
+c	com/fs/starfarer/ui/d$2	com/fs/starfarer/ui/LabelImpl$XOutOfYLabelRefresher
+	c	javap取证 | 低 | X of Y 标签刷新器：持 d$Oo 位置提供者 + 文本 + LabelImpl，advanceImpl 更新（d$2）
+c	com/fs/starfarer/ui/d$Oo	com/fs/starfarer/ui/LabelImpl$ValueLabelPositionProvider
+	c	javap取证 | 中 | X of Y 标签数值位置提供接口：getLabelX/getLabelY/getValueColor（d$Oo）
+	m	getLabelX	getLabelX	()I
+	m	getLabelY	getLabelY	()I
+	m	getValueColor	getValueColor	()Ljava/awt/Color;
+c	com/fs/starfarer/ui/d$o	com/fs/starfarer/ui/LabelImpl$StoryPointProvider
+	c	javap取证 | 中 | 剩余星点提供接口：getRemainingStoryPoints（d$o）
+	m	getRemainingStoryPoints	getRemainingStoryPoints	()I
+c	com/fs/starfarer/ui/f	com/fs/starfarer/ui/HotkeyHint
+	c	javap取证 | 中 | 热键提示条：主/副标签 + [热键] 后缀（title.B.B.Ô00000 取键名），黑底（f）
+	m	notiftyHidden	notiftyHidden	()V
+	m	notifyShown	notifyShown	()V
+	m	beforeShown	beforeShown	()V
+c	com/fs/starfarer/ui/g	com/fs/starfarer/ui/ScrollPanelImpl
+	c	API-impl种子+javap取证 | 高 | ScrollPanelAPI 实现：滚动面板，scrollToY/ensureVisible/滚动条/阴影/网格（g）
+	m	isLeftScrollbar	isLeftScrollbar	()Z
+	m	setLeftScrollbar	setLeftScrollbar	(Z)V
+	m	addToOverlay	addToOverlay	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	removeFromOverlay	removeFromOverlay	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	getContentContainer	getContentContainer	()Lcom/fs/starfarer/ui/g$oo;
+	m	add	add	(Lcom/fs/starfarer/ui/OO0o;)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	remove	remove	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	setContentSize	setContentSize	(FF)V
+	m	processScrollInputOnly	processScrollInputOnly	(Lcom/fs/starfarer/util/super/B;Z)V
+	m	setXOffset	setXOffset	(F)V
+	m	setYOffset	setYOffset	(F)V
+	m	getTopFader	getTopFader	()Lcom/fs/graphics/util/Fader;
+	m	getBottomFader	getBottomFader	()Lcom/fs/graphics/util/Fader;
+	m	scrollToBottom	scrollToBottom	()V
+	m	scrollToY	scrollToY	(F)V
+	m	isScrollingToBottom	isScrollingToBottom	()Z
+	m	setShowGrid	setShowGrid	(FFZ)V
+	m	updateGrid	updateGrid	(FF)V
+	m	getDarkColor	getDarkColor	()Ljava/awt/Color;
+	m	setDarkColor	setDarkColor	(Ljava/awt/Color;)V
+	m	setUseSimpleShadows	setUseSimpleShadows	(Z)V
+	m	getScrollWidgetColor	getScrollWidgetColor	()Ljava/awt/Color;
+	m	setScrollWidgetColor	setScrollWidgetColor	(Ljava/awt/Color;)V
+	m	getScrollRailColor	getScrollRailColor	()Ljava/awt/Color;
+	m	setScrollRailColor	setScrollRailColor	(Ljava/awt/Color;)V
+	m	getMaxShadowHeight	getMaxShadowHeight	()F
+	m	setMaxShadowHeight	setMaxShadowHeight	(F)V
+	m	resetOffset	resetOffset	()V
+	m	setOffset	setOffset	(FF)V
+	m	clampOffset	clampOffset	()V
+	m	getXOffset	getXOffset	()F
+	m	getYOffset	getYOffset	()F
+	m	isScrolling	isScrolling	()Z
+	m	setShowScrollbars	setShowScrollbars	(Z)V
+	m	setUseMWheel	setUseMWheel	(Z)V
+	m	setRoundOffset	setRoundOffset	(Z)V
+	m	getGrid	getGrid	()Lcom/fs/starfarer/coreui/int;
+	m	getVisiblityPad	getVisiblityPad	()F
+	m	setVisiblityPad	setVisiblityPad	(F)V
+	m	ensureVisible	ensureVisible	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	saveVerticalScrollState	saveVerticalScrollState	()V
+	m	restoreVerticalScrollState	restoreVerticalScrollState	()V
+c	com/fs/starfarer/ui/g$1	com/fs/starfarer/ui/ScrollPanelImpl$ScrollbarThumb
+	c	javap取证 | 低 | ScrollPanelImpl 内部滚动条滑块：renderImpl 绘制（g$1）
+c	com/fs/starfarer/ui/g$Oo	com/fs/starfarer/ui/ScrollPanelImpl$DidNotRenderListener
+	c	javap取证 | 中 | 未渲染通知接口：notifyDidNotRender（g$Oo）
+	m	notifyDidNotRender	notifyDidNotRender	()V

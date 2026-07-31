@@ -1,0 +1,375 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/ui/g$o	com/fs/starfarer/ui/MouseButton
+	c 来源(javap取证) | 置信度(高) | 证据(MouseButton：字符串常量 LMB/RMB 的枚举，鼠标按键选择)
+	f	Ó00000	LMB	Lcom/fs/starfarer/ui/g$o;
+	f	new	RMB	Lcom/fs/starfarer/ui/g$o;
+c	com/fs/starfarer/ui/g$oo	com/fs/starfarer/ui/ScrollViewport
+	c 来源(javap取证) | 置信度(中) | 证据(ScrollViewport：滚动面板 g 的内部视口，getVisibleArea/setVisibleArea/isScrolling/forceOffset/setOffset，渲染时裁剪只画相交子项)
+	f	øoÔo00	visibleArea	Lcom/fs/starfarer/ui/OO0o;
+	m	getVisibleArea	getVisibleArea	()Lcom/fs/starfarer/ui/OO0o;
+	m	setVisibleArea	setVisibleArea	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	isScrolling	isScrolling	()Z
+	m	setOffset	setOffset	(FF)V
+	m	forceOffset	forceOffset	(FF)V
+	m	getXOffset	getXOffset	()F
+	m	getYOffset	getYOffset	()F
+c	com/fs/starfarer/ui/i	com/fs/starfarer/ui/GlowBorderTextPanel
+	c 来源(javap取证+跨平台比对) | 置信度(中) | 证据(GlowBorderTextPanel：发光边框文本面板，构造 (文本,字体,三色) + getTitle/create/afterSizeFirstChanged，renderImpl 画黑底 + 边框色矩形；windows 对应类 campaign/ui/intel/return 已被 campaign-ui-intel-trade 映射为同名 GlowBorderTextPanel，此处对齐其语义)
+	f	øÒÖO00	text	Ljava/lang/String;
+	f	for.do$int	font	Ljava/lang/String;
+	f	öÒÖO00	titleLabel	Lcom/fs/starfarer/ui/d;
+	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/ui/int	com/fs/starfarer/ui/TabsPanel
+	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(TabsPanel：addTab/setCurrentTab/disableTab/enableTab/getTab，日志 Tab [%s] not found，orbitron20aa 标题字体)
+	f	for.class$String	tabHeight	F
+	f	ØøØ000	holo	Lcom/fs/starfarer/E/int;
+	f	ÕøØ000	tabs	Ljava/util/List;
+	f	ôøØ000	currentTabData	Lcom/fs/starfarer/ui/int$o;
+	m	addTab	addTab	(Ljava/lang/String;Lcom/fs/starfarer/ui/z;)V
+	m	setCurrentTab	setCurrentTab	(Ljava/lang/String;)V
+	m	getCurrentTabData	getCurrentTabData	()Lcom/fs/starfarer/ui/int$o;
+	m	getTab	getTab	(Ljava/lang/String;)Lcom/fs/starfarer/ui/int$o;
+	m	disableTab	disableTab	(Ljava/lang/String;)V
+	m	enableTab	enableTab	(Ljava/lang/String;)V
+	m	isTabEnabled	isTabEnabled	(Ljava/lang/String;)Z
+	m	getTabs	getTabs	()Ljava/util/List;
+	m	setContentsForTab	setContentsForTab	(Ljava/lang/String;Lcom/fs/starfarer/ui/z;)V
+	m	getTabHeight	getTabHeight	()F
+	m	getHolo	getHolo	()Lcom/fs/starfarer/E/int;
+c	com/fs/starfarer/ui/int$o	com/fs/starfarer/ui/TabsPanel$TabData
+	c 来源(javap取证) | 置信度(高) | 证据(TabsPanel$TabData：标签页数据（名称 + 标签按钮 + 内容面板），构造 (String, Button, Panel)）
+	f	Ó00000	tabName	Ljava/lang/String;
+	f	o00000	tabButton	Lcom/fs/starfarer/ui/n;
+	f	new	contents	Lcom/fs/starfarer/ui/z;
+c	com/fs/starfarer/ui/interfacesuper	com/fs/starfarer/ui/GridLayoutPanel
+	c 来源(javap取证) | 置信度(高) | 证据(GridLayoutPanel：以 com.fs.util.D 网格坐标为键的网格布局面板，pack/add/isOccupied/findNextOpenCell/getGridWidth/getGridHeight，被 impl/FleetGrid 使用)
+	m	pack	pack	()V
+	m	add	add	(Lcom/fs/util/D;Lcom/fs/starfarer/ui/OO0o;)V
+	m	add	add	(IILcom/fs/starfarer/ui/OO0o;)V
+	m	isOccupied	isOccupied	(Lcom/fs/util/D;)Z
+	m	get	get	(Lcom/fs/util/D;)Lcom/fs/starfarer/ui/OO0o;
+	m	remove	remove	(Lcom/fs/util/D;)V
+	m	findNextOpenCell	findNextOpenCell	()Lcom/fs/util/D;
+	m	isEmpty	isEmpty	()Z
+	m	getGridWidth	getGridWidth	()I
+	m	getGridHeight	getGridHeight	()I
+c	com/fs/starfarer/ui/j	com/fs/starfarer/ui/PopupListDialog
+	c 来源(javap取证) | 置信度(高) | 证据(PopupListDialog：弹出选项列表选择对话框，构造 (标题, 选中项, 选项列表, 宽, 锚点组件, 父面板, 关闭回调)，点选项后 getResPick 返回选中字符串并 dismiss)
+	f	int.if$String	resPick	Ljava/lang/String;
+	m	show	show	(FF)V
+	m	getResPick	getResPick	()Ljava/lang/String;
+	m	setResPick	setResPick	(Ljava/lang/String;)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/j$o	com/fs/starfarer/ui/PopupListDialog$OptionRow
+	c 来源(javap取证) | 置信度(中) | 证据(PopupListDialog$OptionRow：选项行文本渲染（Stringnew 渲染器，构造 (文本, 字体)），被 PopupListDialog 逐项创建按钮使用)
+c	com/fs/starfarer/ui/n	com/fs/starfarer/ui/Button
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(Button：实现 com.fs.starfarer.api.ui.ButtonAPI 的按钮，getLogic 返回 ButtonLogic、getRenderer 返回 n$Oo 渲染器，342 处游戏类引用，flash/setShortcut/isActive 等方法齐全)
+	f	ôOÓO00	renderer	Lcom/fs/starfarer/ui/n$Oo;
+	f	for.String$null	logic	Lcom/fs/starfarer/ui/null;
+	m	getLogic	getLogic	()Lcom/fs/starfarer/ui/null;
+	m	getState	getState	()Lcom/fs/starfarer/ui/null$o;
+	m	getRenderer	getRenderer	()Lcom/fs/starfarer/ui/n$Oo;
+	m	setRenderer	setRenderer	(Lcom/fs/starfarer/ui/n$Oo;)V
+	m	getRendererStandard	getRendererStandard	()Lcom/fs/starfarer/ui/u;
+	m	getRendererCheckbox	getRendererCheckbox	()Lcom/fs/starfarer/ui/K;
+	m	getRendererPanel	getRendererPanel	()Lcom/fs/starfarer/ui/Stringnew;
+	m	getImageButtonPanel	getImageButtonPanel	()Lcom/fs/starfarer/ui/x;
+	m	flash	flash	()V
+	m	isActive	isActive	()Z
+	m	setActive	setActive	(Z)V
+	m	isEnabled	isEnabled	()Z
+	m	setEnabled	setEnabled	(Z)V
+	m	setShortcut	setShortcut	(Lcom/fs/starfarer/title/B/B$oo;)V
+	m	getShortcut	getShortcut	()Lcom/fs/starfarer/title/B/B$oo;
+	m	setCustomData	setCustomData	(Ljava/lang/Object;)V
+	m	getCustomData	getCustomData	()Ljava/lang/Object;
+	m	getHighlightBrightness	getHighlightBrightness	()F
+	m	setHighlightBrightness	setHighlightBrightness	(F)V
+	m	getGlowBrightness	getGlowBrightness	()F
+	m	setGlowBrightness	setGlowBrightness	(F)V
+	m	getFlashFader	getFlashFader	()Lcom/fs/graphics/util/Fader;
+	m	getGlowFader	getGlowFader	()Lcom/fs/graphics/util/Fader;
+	m	getHighlightFader	getHighlightFader	()Lcom/fs/graphics/util/Fader;
+	m	getListener	getListener	()Lcom/fs/starfarer/ui/ooOo;
+	m	setListener	setListener	(Lcom/fs/starfarer/ui/ooOo;)V
+	m	setText	setText	(Ljava/lang/String;)V
+	m	getText	getText	()Ljava/lang/String;
+	m	buttonDown	buttonDown	(Ljava/lang/Object;)V
+	m	buttonUp	buttonUp	(Ljava/lang/Object;)V
+	m	buttonPressed	buttonPressed	(Lcom/fs/starfarer/util/super/Object;Ljava/lang/Object;)V
+	m	buttonPressCancelled	buttonPressCancelled	(Ljava/lang/Object;)V
+	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/super/Object;Ljava/lang/Object;)V
+	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/super/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/n$Oo	com/fs/starfarer/ui/ButtonBackgroundRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(ButtonBackgroundRenderer：按钮背景渲染接口，单方法 super(位置, 宽, 高, 是否悬停, 是否禁用, 鼠标键状态)，由 StandardButtonRenderer(u)/IconTextButtonRenderer(r) 实现)
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+c	com/fs/starfarer/ui/n$o	com/fs/starfarer/ui/ButtonRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(ButtonRenderer：ButtonBackgroundRenderer 的扩展接口，追加逐帧更新 Õ00000(float) 与输入处理 super(B)，被 coreui/combat 多个按钮渲染器实现)
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FZZLcom/fs/starfarer/ui/null$o;)V
+	m	super	processInput	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/ui/null	com/fs/starfarer/ui/ButtonLogic
+	c 来源(javap取证) | 置信度(高) | 证据(ButtonLogic：按钮输入/状态逻辑，持有鼠标键状态 null$o(UP/DOWN) 与监听按键 null$Oo(LEFT/RIGHT/BOTH)、快捷键 title.B.B$oo、事件回调 null$oo，被 Button/SpriteButton/BaseButton 共用)
+	m	advance	advance	(F)V
+	m	focusLost	focusLost	()V
+c	com/fs/starfarer/ui/null$O0	com/fs/starfarer/ui/ButtonHitTest
+	c 来源(javap取证) | 置信度(中) | 证据(ButtonHitTest：命中测试扩展接口，exactContainsIfPositionContains() 由 ButtonLogic 持有，供精确点选判定)
+	m	exactContainsIfPositionContains	exactContainsIfPositionContains	()Z
+c	com/fs/starfarer/ui/null$Oo	com/fs/starfarer/ui/ButtonMouseButtonMode
+	c 来源(javap取证) | 置信度(高) | 证据(ButtonMouseButtonMode：按钮监听鼠标键模式枚举，字符串 LEFT/RIGHT/BOTH，由 ButtonLogic 持有)
+	f	Ò00000	LEFT	Lcom/fs/starfarer/ui/null$Oo;
+	f	Object	RIGHT	Lcom/fs/starfarer/ui/null$Oo;
+	f	Ô00000	BOTH	Lcom/fs/starfarer/ui/null$Oo;
+c	com/fs/starfarer/ui/null$o	com/fs/starfarer/ui/ButtonMouseButtonState
+	c 来源(javap取证) | 置信度(高) | 证据(ButtonMouseButtonState：按钮鼠标键状态枚举，字符串 UP/DOWN，由 ButtonLogic 持有并被 n.getState() 暴露)
+	f	Ò00000	UP	Lcom/fs/starfarer/ui/null$o;
+	f	Object	DOWN	Lcom/fs/starfarer/ui/null$o;
+c	com/fs/starfarer/ui/null$oo	com/fs/starfarer/ui/ButtonResponder
+	c 来源(javap取证) | 置信度(高) | 证据(ButtonResponder：按钮事件回调接口，buttonDown/buttonUp/mouseEnter/mouseLeave/buttonPressed/buttonPressCancelled，由 Button 等按钮类实现并注册给 ButtonLogic)
+	m	buttonDown	buttonDown	(Ljava/lang/Object;)V
+	m	buttonUp	buttonUp	(Ljava/lang/Object;)V
+	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/super/Object;Ljava/lang/Object;)V
+	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/super/Object;Ljava/lang/Object;)V
+	m	buttonPressed	buttonPressed	(Lcom/fs/starfarer/util/super/Object;Ljava/lang/Object;)V
+	m	buttonPressCancelled	buttonPressCancelled	(Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/nullsuper	com/fs/starfarer/ui/TablePanel
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(TablePanel：行列表格面板，add/updateRow/getRow/autoSizeToRows/computeHeight 按行列放置文本单元格，64 处游戏类引用（tooltip 与列表面板），nullsuper$o 为单元格含 nameLabel/valueLabel)
+	m	getValueFont	getValueFont	()Ljava/lang/String;
+	m	setValueFont	setValueFont	(Ljava/lang/String;)V
+	m	setFlipped	setFlipped	(FF)V
+	m	computeHeight	computeHeight	(I)F
+	m	autoSizeToRows	autoSizeToRows	(I)V
+	m	getItemWidth	getItemWidth	()F
+	m	getRowHeight	getRowHeight	()F
+	m	updateRow	updateRow	(IILjava/lang/String;)Lcom/fs/starfarer/ui/nullsuper$o;
+	m	getRow	getRow	(II)Lcom/fs/starfarer/ui/nullsuper$o;
+	m	updateRowText	updateRowText	(IILjava/lang/String;)Lcom/fs/starfarer/ui/nullsuper$o;
+	m	add	add	(IILjava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/nullsuper$o;
+	m	add	add	(IIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/nullsuper$o;
+	m	addOrUpdate	addOrUpdate	(IILjava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/nullsuper$o;
+	m	updateColor	updateColor	(IILjava/awt/Color;)V
+	m	getHpad	getHpad	()F
+	m	setHpad	setHpad	(F)V
+c	com/fs/starfarer/ui/nullsuper$o	com/fs/starfarer/ui/TablePanel$Cell
+	c 来源(javap取证) | 置信度(高) | 证据(TablePanel$Cell：表格单元格，公共字段 valueLabel/nameLabel 两个 d 文本标签，构造 (表格, 值, 名称, 字体, 宽, 高)）
+	f	valueLabel	valueLabel	Lcom/fs/starfarer/ui/d;
+	f	nameLabel	nameLabel	Lcom/fs/starfarer/ui/d;
+c	com/fs/starfarer/ui/o0OO	com/fs/starfarer/ui/GridLayout
+	c 来源(javap取证) | 置信度(高) | 证据(GridLayout：二维网格占用布局管理器，o00000 为 Set<o0OO$o> 二维数组，提供占用检测/摆放/合并查询，被 GridPanel(return) 持有使用)
+c	com/fs/starfarer/ui/o0OO$o	com/fs/starfarer/ui/GridLayout$Cell
+	c 来源(javap取证) | 置信度(中) | 证据(GridLayout$Cell：网格单元数据（位置/尺寸/挂载对象），equals/hashCode 参与网格占用判定)
+c	com/fs/starfarer/ui/o0o0	com/fs/starfarer/ui/DropdownValueLabel
+	c 来源(javap取证+引用关系) | 置信度(中) | 证据(DropdownValueLabel：带背景框与 arrow_down.png 箭头的文本行，setText/getText，被 DropdownPicker(X) 持有为当前值显示行)
+	m	setText	setText	(Ljava/lang/String;)V
+	m	getText	getText	()Ljava/lang/String;
+c	com/fs/starfarer/ui/o0ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/BaseToggleButton
+	c 来源(javap取证+引用关系) | 置信度(中) | 证据(BaseToggleButton：基于 BaseButton(q) 的开关按钮，双渲染器 o0oo$o 切换 on/off 外观，isOn/setOn/actionPerformed 翻转，被 impl/C（战斗舰队管理面板）持有；与 ui-core-a 的贴图开关 ToggleButton(K) 区分)
+	m	isOn	isOn	()Z
+	m	setOn	setOn	(Z)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/o0ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/ui/BaseToggleButton$Renderer
+	c 来源(javap取证) | 置信度(中) | 证据(BaseToggleButton$Renderer：双渲染器组合（on/off 两个 q$o），Ò00000(boolean) 切换启用态）
+c	com/fs/starfarer/ui/oO00	com/fs/starfarer/ui/TooltipHost
+	c 来源(javap取证) | 置信度(高) | 证据(TooltipHost：tooltip 宿主接口（extends OO0o），setTooltip/setTooltipPositionRelativeToAnchor 挂接 tooltip 内容与锚点)
+	m	setTooltip	setTooltip	(FLcom/fs/starfarer/ui/Oo0o;)V
+	m	setTooltipPositionRelativeToAnchor	setTooltipPositionRelativeToAnchor	(FFLcom/fs/starfarer/ui/OO0o;)V
+c	com/fs/starfarer/ui/oO0O	com/fs/starfarer/ui/SpriteRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(SpriteRenderer：BaseButtonRenderer(q$o) 实现，构造 (Sprite) 按九宫格缩放绘制 Sprite，供简单图片按钮使用)
+c	com/fs/starfarer/ui/oo0O	com/fs/starfarer/ui/Dialog
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(Dialog：模态对话框基类（extends Panel），show/dismiss/setOption/背景变暗/外部点击吸收/键盘快捷键关闭，84 处游戏类引用，oo0O$o 为关闭回调)
+	f	delegate	delegate	Lcom/fs/starfarer/ui/oo0O$o;
+	f	centerX	centerX	F
+	f	centerY	centerY	F
+	m	show	show	(FF)V
+	m	dismiss	dismiss	(I)V
+	m	setOption	setOption	(I)V
+	m	resetOption	resetOption	()V
+	m	makeOptionInstant	makeOptionInstant	(I)V
+	m	setCenter	setCenter	(FF)V
+	m	getDialogCenterY	getDialogCenterY	()F
+	m	getBackgroundDimAmount	getBackgroundDimAmount	()F
+	m	setBackgroundDimAmount	setBackgroundDimAmount	(F)V
+	m	setKeyboardShortcutsToAcceptEnabled	setKeyboardShortcutsToAcceptEnabled	(Z)V
+	m	getDelegate	getDelegate	()Lcom/fs/starfarer/ui/oo0O$o;
+	m	setDelegate	setDelegate	(Lcom/fs/starfarer/ui/oo0O$o;)V
+	m	getInterceptor	getInterceptor	()Lcom/fs/starfarer/ui/z;
+	m	setAbsorbOutsideEvents	setAbsorbOutsideEvents	(Z)V
+	m	setRMBAnywhereCancels	setRMBAnywhereCancels	(Z)V
+	m	setLeftClickOutsideCancels	setLeftClickOutsideCancels	(Z)V
+	m	setRightClickOutsideCancels	setRightClickOutsideCancels	(Z)V
+	m	setFadeInAndOut	setFadeInAndOut	(Z)V
+	m	getDialogParent	getDialogParent	()Lcom/fs/starfarer/ui/z;
+	m	setOptionOnKeyboardCancel	setOptionOnKeyboardCancel	(I)V
+	m	setOptionOnKeyboardConfirm	setOptionOnKeyboardConfirm	(I)V
+c	com/fs/starfarer/ui/oo0O$1	com/fs/starfarer/ui/Dialog$OutsideClickInterceptor
+	c 来源(javap取证) | 置信度(高) | 证据(Dialog$OutsideClickInterceptor：Dialog 的拦截面板（extends Panel），processInputImpl 捕获对话框外点击转 outsideClickAbsorbed 并 consume)
+	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+c	com/fs/starfarer/ui/oo0O$2	com/fs/starfarer/ui/Dialog$BackgroundDimRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(Dialog$BackgroundDimRenderer：背景变暗渲染器（implements C$o），按 getFader 亮度与 getBackgroundDimAmount 画黑色遮罩)
+c	com/fs/starfarer/ui/oo0O$o	com/fs/starfarer/ui/Dialog$DismissListener
+	c 来源(javap取证) | 置信度(高) | 证据(Dialog$DismissListener：对话框关闭回调接口，dialogDismissed(Dialog, int) 由 delegate 字段持有)
+	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+c	com/fs/starfarer/ui/ooO0	com/fs/starfarer/ui/ImagePanel
+	c 来源(javap取证) | 置信度(高) | 证据(ImagePanel：Sprite 图片显示面板，setSprite/autoSize/setWithOutline/setOW/setOH/resizeImage/restoreImageSize 等比缩放与描边)
+	m	getSpriteName	getSpriteName	()Ljava/lang/String;
+	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	m	setSprite	setSprite	(Lcom/fs/graphics/Sprite;)V
+	m	setSprite	setSprite	(Ljava/lang/String;Z)V
+	m	setSprite	setSprite	(Lcom/fs/graphics/Sprite;Z)V
+	m	autoSize	autoSize	()V
+	m	autoSizeToWidth	autoSizeToWidth	(F)V
+	m	autoSizeToHeight	autoSizeToHeight	(F)V
+	m	isWithOutline	isWithOutline	()Z
+	m	setWithOutline	setWithOutline	(Z)V
+	m	setStretch	setStretch	(Z)V
+	m	getOW	getOW	()F
+	m	setOW	setOW	(F)V
+	m	setOH	setOH	(F)V
+	m	getOriginalAR	getOriginalAR	()F
+	m	getOWw	getOWw	()F
+	m	resizeImage	resizeImage	()V
+	m	restoreImageSize	restoreImageSize	()V
+c	com/fs/starfarer/ui/ooOo	com/fs/starfarer/ui/ActionListener
+	c 来源(javap取证) | 置信度(高) | 证据(ActionListener：actionPerformed(Object, Object) 回调接口，被按钮/对话框等交互组件注册为点击回调)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/privatenew	com/fs/starfarer/ui/LabelValuePanel
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(LabelValuePanel：标签-值两列面板，addRow(label, value)/getLabelAlign/getValueAlign 双对齐，被 campaign/comms/N 等通讯面板使用)
+	m	setFont	setFont	(Ljava/lang/String;)V
+	m	autoSize	autoSize	()V
+	m	addRow	addRow	(Ljava/lang/String;Ljava/lang/String;)V
+	m	getLabelWidth	getLabelWidth	()F
+	m	setLabelWidth	setLabelWidth	(F)V
+	m	getLabelColor	getLabelColor	()Ljava/awt/Color;
+	m	setLabelColor	setLabelColor	(Ljava/awt/Color;)V
+	m	getValueColor	getValueColor	()Ljava/awt/Color;
+	m	setValueColor	setValueColor	(Ljava/awt/Color;)V
+	m	getLabelAlign	getLabelAlign	()Lcom/fs/starfarer/api/ui/Alignment;
+	m	setLabelAlign	setLabelAlign	(Lcom/fs/starfarer/api/ui/Alignment;)V
+	m	getValueAlign	getValueAlign	()Lcom/fs/starfarer/api/ui/Alignment;
+	m	setValueAlign	setValueAlign	(Lcom/fs/starfarer/api/ui/Alignment;)V
+c	com/fs/starfarer/ui/q	com/fs/starfarer/ui/BaseButton
+	c 来源(javap取证+引用关系) | 置信度(中) | 证据(BaseButton：渲染器驱动的基础按钮（extends UIComponentBase），q$o 渲染器 + ButtonLogic + 缩放/发光 Fader，14 处游戏类引用（combat/title 老按钮体系），ToggleButton(o0oo) 基于它扩展)
+	m	setShortcut	setShortcut	(Lcom/fs/starfarer/title/B/B$oo;)V
+	m	getShortcut	getShortcut	()Lcom/fs/starfarer/title/B/B$oo;
+	m	flash	flash	()V
+	m	getGlowFader	getGlowFader	()Lcom/fs/graphics/util/Fader;
+	m	getZoomFader	getZoomFader	()Lcom/fs/graphics/util/Fader;
+	m	getRenderer	getRenderer	()Lcom/fs/starfarer/ui/q$o;
+	m	setRenderer	setRenderer	(Lcom/fs/starfarer/ui/q$o;)V
+	m	isEnabled	isEnabled	()Z
+	m	setEnabled	setEnabled	(Z)V
+	m	sizeChanged	sizeChanged	(FF)V
+c	com/fs/starfarer/ui/q$o	com/fs/starfarer/ui/BaseButtonRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(BaseButtonRenderer：BaseButton 渲染接口（6 个混淆渲染方法），由 super(TextButtonRenderer)/w(LabeledTextButtonRenderer)/oO0O(SpriteRenderer)/ToggleButton$Renderer 实现)
+c	com/fs/starfarer/ui/r	com/fs/starfarer/ui/IconTextButtonRenderer
+	c 来源(javap取证+引用关系) | 置信度(中) | 证据(IconTextButtonRenderer：ButtonBackgroundRenderer(n$Oo) 实现，构造 (文本, 字体, 图标 Sprite) 渲染背景矩形 + 图标 + 文本，被 ui/impl 长名面板使用)
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+c	com/fs/starfarer/ui/return	com/fs/starfarer/ui/GridPanel
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(GridPanel：网格摆放面板（extends Panel），内部用 GridLayout(o0OO) 管理占用，getCellFor/getCellCenterOffset/getMinCellsFor/addWrapped 布局子组件，被 Q 与 campaign/ui/super/E 使用)
+	f	öõÓo00	grid	Lcom/fs/starfarer/ui/o0OO;
+	m	getCellSize	getCellSize	()F
+	m	computeLayout	computeLayout	()V
+	m	getGrid	getGrid	()Lcom/fs/starfarer/ui/o0OO;
+	m	getCellFor	getCellFor	(FF)Lcom/fs/util/container/Pair;
+	m	getCellCenterOffset	getCellCenterOffset	(FF)Lorg/lwjgl/util/vector/Vector2f;
+	m	getMinCellsFor	getMinCellsFor	(F)I
+	m	getComponents	getComponents	()Ljava/util/List;
+	m	add	add	(Lcom/fs/starfarer/ui/OO0o;IIII)V
+	m	add	add	(Lcom/fs/starfarer/ui/OO0o;IIIIZ)V
+	m	addWrapped	addWrapped	(Lcom/fs/starfarer/ui/OO0o;IIIIZ)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	remove	remove	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	getGridObject	getGridObject	(Lcom/fs/starfarer/ui/OO0o;)Lcom/fs/starfarer/ui/o0OO$o;
+c	com/fs/starfarer/ui/returnnew	com/fs/starfarer/ui/SpriteButton
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(SpriteButton：Sprite 三态按钮（正常/按下/发光 Sprite + ButtonLogic），flash/getGlowFader/setQuickMode，CheckboxButton(voidnew) 基于它扩展，被 Q 与 impl/B 使用)
+	m	flash	flash	()V
+	m	getGlowFader	getGlowFader	()Lcom/fs/graphics/util/Fader;
+	m	getListener	getListener	()Lcom/fs/starfarer/ui/ooOo;
+	m	setListener	setListener	(Lcom/fs/starfarer/ui/ooOo;)V
+	m	isEnabled	isEnabled	()Z
+	m	setEnabled	setEnabled	(Z)V
+	m	setQuickMode	setQuickMode	(Z)V
+	m	buttonDown	buttonDown	(Ljava/lang/Object;)V
+	m	buttonUp	buttonUp	(Ljava/lang/Object;)V
+	m	buttonPressed	buttonPressed	(Lcom/fs/starfarer/util/super/Object;Ljava/lang/Object;)V
+	m	buttonPressCancelled	buttonPressCancelled	(Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/super	com/fs/starfarer/ui/TextButtonRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(TextButtonRenderer：BaseButtonRenderer(q$o) 实现，构造 (文本, 字体) 渲染文本 + ui/text_glow 发光 Sprite + 绿色背景，供文本按钮使用)
+c	com/fs/starfarer/ui/super/B	com/fs/starfarer/ui/super/FighterWingIconRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(FighterWingIconRenderer：战斗机联队图标渲染器（implements BaseButtonRenderer），持有 FighterWingSpec/FleetMember/HullSize，渲染联队 Sprite 与部署状态)
+c	com/fs/starfarer/ui/super/B$o	com/fs/starfarer/ui/super/FighterWingIconRenderer$RenderData
+	c 来源(javap取证) | 置信度(中) | 证据(FighterWingIconRenderer$RenderData：联队图标渲染数据（Sprite + HullVariantSpec + Y 配置），静态内部类，被 FighterWingIconRenderer 使用)
+	f	Ò00000	iconSprite	Lcom/fs/graphics/Sprite;
+	f	o00000	hullVariantSpec	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+c	com/fs/starfarer/ui/super/Object	com/fs/starfarer/ui/super/WeaponIconRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(WeaponIconRenderer：武器图标渲染器（implements coreui C$o），构造 (BaseWeaponSpec, Y, Color, boolean) 渲染武器四态 Sprite 与射程圈)
+c	com/fs/starfarer/ui/super/super	com/fs/starfarer/ui/super/BattleObjectiveIconRenderer
+	c 来源(javap取证) | 置信度(高) | 证据(BattleObjectiveIconRenderer：战斗目标图标渲染器，构造 (BattleObjective) 持有 Sprite/颜色渲染目标图标，供战斗界面与地图使用)
+c	com/fs/starfarer/ui/thissuper	com/fs/starfarer/ui/UIComponentBase
+	c 来源(javap取证) | 置信度(高) | 证据(UIComponentBase：UI 组件抽象基类，实现 UIComponentAPI/TooltipHost/PositionAPI 等全部组件接口，SOURCE_UPDATE_POSITION_ONLY 常量，enabled/created 状态，Button/Panel 等一切 UI 组件继承它)
+	f	SOURCE_UPDATE_POSITION_ONLY	SOURCE_UPDATE_POSITION_ONLY	Ljava/lang/Object;
+	f	enabled	enabled	Z
+	f	created	created	Z
+c	com/fs/starfarer/ui/u	com/fs/starfarer/ui/StandardButtonRenderer
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(StandardButtonRenderer：ButtonBackgroundRenderer(n$Oo) 标准实现，构造 (文本, 字体, 文字色, 背景色)，支持 CutStyle/Alignment/快捷键，被 n.getRendererStandard() 返回)
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+c	com/fs/starfarer/ui/voidnew	com/fs/starfarer/ui/CheckboxButton
+	c 来源(javap取证) | 置信度(中) | 证据(CheckboxButton：基于 SpriteButton(returnnew) 的勾选按钮，isOn/setOn 翻转并渲染勾选 Sprite，actionPerformed 切换状态后转发监听)
+	m	isOn	isOn	()Z
+	m	setOn	setOn	(Z)V
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/voidsuper	com/fs/starfarer/ui/TitledPanel
+	c 来源(javap取证) | 置信度(高) | 证据(TitledPanel：带标题与中心文本的面板，wrap(标题, 面板) 静态包装，title/centerText 两个 d 标签 + titleHeight + 边框，orbitron24aabold 标题字体)
+	f	title	title	Lcom/fs/starfarer/ui/d;
+	f	centerText	centerText	Lcom/fs/starfarer/ui/d;
+	f	titleHeight	titleHeight	F
+	m	wrap	wrap	(Ljava/lang/String;Lcom/fs/starfarer/ui/z;)Lcom/fs/starfarer/ui/voidsuper;
+	m	wrap	wrap	(Ljava/lang/String;Ljava/awt/Color;Ljava/awt/Color;Lcom/fs/starfarer/ui/z;)Lcom/fs/starfarer/ui/voidsuper;
+	m	setTitleHeight	setTitleHeight	(F)V
+	m	getTitleHeight	getTitleHeight	()F
+	m	setCenterText	setCenterText	(Ljava/lang/String;)V
+	m	getCenterText	getCenterText	()Lcom/fs/starfarer/ui/d;
+	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
+	m	isWithBorder	isWithBorder	()Z
+	m	setWithBorder	setWithBorder	(Z)V
+c	com/fs/starfarer/ui/w	com/fs/starfarer/ui/LabeledTextButtonRenderer
+	c 来源(javap取证) | 置信度(中) | 证据(LabeledTextButtonRenderer：BaseButtonRenderer(q$o) 实现，构造 (文本, 前缀, 文本2, 字体, 双色) 渲染 [前缀] 标签 + 文本双段，供带标签文本按钮使用)
+c	com/fs/starfarer/ui/x	com/fs/starfarer/ui/ImageButtonPanel
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(ImageButtonPanel：图片按钮面板（extends Stringnew$Oo），渲染 Sprite 图标 + 边框 + 禁用色发光，被 n.getImageButtonPanel() 返回、CodexDialog 与 marketinfo 使用)
+	f	disableToEnableGlowMult	disableToEnableGlowMult	F
+	f	withBorder	withBorder	Z
+	f	borderColor	borderColor	Ljava/awt/Color;
+	m	getImage	getImage	()Lcom/fs/starfarer/ui/ooO0;
+	m	setImage	setImage	(Lcom/fs/starfarer/ui/ooO0;)V
+	m	getSpriteName	getSpriteName	()Ljava/lang/String;
+	m	setSpriteName	setSpriteName	(Ljava/lang/String;)V
+	m	getDisabledColor	getDisabledColor	()Ljava/awt/Color;
+	m	setDisabledColor	setDisabledColor	(Ljava/awt/Color;)V
+	m	setWithBorder	setWithBorder	(Z)V
+	m	setBorderColor	setBorderColor	(Ljava/awt/Color;)V
+	m	getDisableToEnableGlowMult	getDisableToEnableGlowMult	()F
+	m	setDisableToEnableGlowMult	setDisableToEnableGlowMult	(F)V
+c	com/fs/starfarer/ui/z	com/fs/starfarer/ui/Panel
+	c 来源(javap取证+引用关系) | 置信度(高) | 证据(Panel：UI 面板容器基类（extends UIComponentBase，implements UIPanelAPI），add/remove/disable/enable 子组件、裁剪、排序、addCodexF2Action 图鉴快捷键，是 Dialog/TablePanel/TabsPanel 等一切容器的父类)
+	f	needToCopy	needToCopy	Z
+	f	copy	copy	Ljava/util/List;
+	m	addComponent	addComponent	(Lcom/fs/starfarer/api/ui/UIComponentAPI;)Lcom/fs/starfarer/api/ui/PositionAPI;
+	m	removeComponent	removeComponent	(Lcom/fs/starfarer/api/ui/UIComponentAPI;)V
+	m	getCopy	getCopy	()Ljava/util/List;
+	m	isClipping	isClipping	()Z
+	m	setClipping	setClipping	(Z)V
+	m	add	add	(Lcom/fs/starfarer/ui/OO0o;)Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	m	add	add	([Lcom/fs/starfarer/ui/OO0o;)V
+	m	remove	remove	(Lcom/fs/starfarer/ui/OO0o;)V
+	m	remove	remove	([Lcom/fs/starfarer/ui/OO0o;)V
+	m	sendToBottom	sendToBottom	(Lcom/fs/starfarer/api/ui/UIComponentAPI;)V
+	m	bringComponentToTop	bringComponentToTop	(Lcom/fs/starfarer/api/ui/UIComponentAPI;)V
+	m	getChildrenCopy	getChildrenCopy	()Ljava/util/List;
+	m	clearChildren	clearChildren	()V
+	m	addCodexF2Action	addCodexF2Action	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)V
+	m	addCodexF2Action	addCodexF2Action	(Ljava/lang/String;)V
+	m	addCodexF2Action	addCodexF2Action	(Lcom/fs/starfarer/ui/ooOo;)V
+c	com/fs/starfarer/ui/z$1	com/fs/starfarer/ui/Panel$ShowFleetMemberCodexListener
+	c 来源(javap取证) | 置信度(中) | 证据(Panel$ShowFleetMemberCodexListener：addCodexF2Action(FleetMemberAPI) 创建的 ActionListener，actionPerformed 调 CodexDialog.showTemp(FleetMemberAPI) 打开舰队成员图鉴)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+c	com/fs/starfarer/ui/z$2	com/fs/starfarer/ui/Panel$ShowCodexListener
+	c 来源(javap取证) | 置信度(中) | 证据(Panel$ShowCodexListener：addCodexF2Action(String) 创建的 ActionListener，actionPerformed 调 CodexDialog.show(String) 打开条目图鉴)
+	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
