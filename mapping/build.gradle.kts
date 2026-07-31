@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    `maven-publish`
 }
 
 java {
@@ -39,6 +40,21 @@ val mappingPlatform = providers.gradleProperty("starsector.platform")
 val namedGameJarsDir = mappingPlatform.map { platform ->
     rootProject.layout.buildDirectory.dir("named-game-jars/$platform").get().asFile
 }
+/** named 游戏 jar 本地 Maven 仓库目录（app 以模块依赖消费，IDEA 同步时自动附加 sources）。 */
+val namedGameRepoDir = mappingPlatform.map { platform ->
+    rootProject.layout.buildDirectory.dir("named-game-repo/$platform").get().asFile
+}
+/**
+ * 游戏本体 jar 基名（vendored obf jar，remap 后进入 named 命名空间）。
+ * 第三方 jar remap 时原样透传，不进入本地仓库，app 仍按文件依赖消费。
+ */
+val gameJarBaseNames = listOf("starfarer_obf", "starfarer.api", "fs.common_obf", "fs.sound_obf")
+
+/** 发布物名称（Gradle 任务名片段）：starfarer_obf → namedStarfarerObf。 */
+fun namedGamePublicationName(baseName: String): String =
+    "named" + baseName.split('.', '_').joinToString("") { part ->
+        part.replaceFirstChar { it.uppercase() }
+    }
 
 /** 全量映射生成物目录（mapping/build/generated/mappings/{platform}/，生成物不入库）。 */
 val generatedMappingsDir = layout.buildDirectory.dir("generated/mappings")
@@ -65,6 +81,15 @@ val gameClasspath: Configuration by configurations.creating {
     isCanBeConsumed = false
 }
 
+/**
+ * Vineflower 反编译器 classpath——把 named 游戏 jar 反编译为 -sources.jar，
+ * 随本地仓库一同发布，IDEA 同步时自动附加为源码（替代内置反编译视图）。
+ */
+val vineflower: Configuration by configurations.creating {
+    isCanBeResolved = true
+    isCanBeConsumed = false
+}
+
 dependencies {
     api("org.ow2.asm:asm:9.9.1")
     api("org.ow2.asm:asm-commons:9.9.1")
@@ -87,6 +112,8 @@ dependencies {
     gameClasspath("org.glassfish.jaxb:txw2:3.0.2")
     gameClasspath("org.sejda.imageio:webp-imageio:0.1.6")
     gameClasspath("net.java.jinput:jinput:2.0.7")
+
+    vineflower("org.vineflower:vineflower:1.12.0")
 }
 
 tasks.test {
@@ -204,6 +231,82 @@ tasks.register<JavaExec>("remapGameClasspathToNamed") {
             "--mapping=${fullMappingFile.get().absolutePath}",
             "batch", "obf-to-named", outputDir.absolutePath
         ) + inputJars.map { it.absolutePath })
+    }
+}
+
+gameJarBaseNames.forEach { baseName ->
+    val publicationName = namedGamePublicationName(baseName)
+    tasks.register<JavaExec>("decompile${publicationName}ToSources") {
+        group = "mapping"
+        description = "Decompile named $baseName.jar with Vineflower into $baseName-sources.jar for IDE source attachment"
+        dependsOn("remapGameClasspathToNamed")
+
+        classpath = vineflower
+        mainClass.set("org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler")
+
+        val inputJar = mappingPlatform.map { platform ->
+            rootProject.layout.buildDirectory.file("named-game-jars/$platform/$baseName.jar").get().asFile
+        }
+        val outputJar = mappingPlatform.map { platform ->
+            rootProject.layout.buildDirectory.file("named-game-jars/$platform-sources/$baseName-sources.jar").get().asFile
+        }
+        inputs.file(inputJar)
+        outputs.file(outputJar)
+
+        doFirst {
+            require(inputJar.get().isFile) {
+                "named 游戏 jar 不存在: ${inputJar.get()} — 请先运行 :mapping:remapGameClasspathToNamed"
+            }
+            outputJar.get().parentFile.mkdirs()
+            args(listOf("-dgs=1", inputJar.get().absolutePath, outputJar.get().absolutePath))
+        }
+    }
+}
+
+tasks.register("decompileNamedGameJars") {
+    group = "mapping"
+    description = "Decompile all named game jars with Vineflower into -sources.jar for IDE source attachment"
+    gameJarBaseNames.forEach { baseName ->
+        dependsOn("decompile${namedGamePublicationName(baseName)}ToSources")
+    }
+}
+
+publishing {
+    publications {
+        gameJarBaseNames.forEach { baseName ->
+            create<MavenPublication>(namedGamePublicationName(baseName)) {
+                groupId = "starsector.named"
+                artifactId = baseName
+                // SNAPSHOT + app 端 cacheChangingModulesFor(0)：mapping 变更重发布后 IDE 同步即取新 jar
+                version = "0.98a-RC8-SNAPSHOT"
+                val platformId = mappingPlatform.get()
+                artifact(rootProject.layout.buildDirectory
+                    .file("named-game-jars/$platformId/$baseName.jar").get().asFile) {
+                    builtBy(tasks.named("remapGameClasspathToNamed"))
+                }
+                artifact(rootProject.layout.buildDirectory
+                    .file("named-game-jars/$platformId-sources/$baseName-sources.jar").get().asFile) {
+                    classifier = "sources"
+                    builtBy(tasks.named("decompileNamedGameJars"))
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "namedGameRepo"
+            url = namedGameRepoDir.get().toURI()
+        }
+    }
+}
+
+tasks.register("publishNamedGameJars") {
+    group = "mapping"
+    description = "Publish named game jars + decompiled sources to local repo build/named-game-repo/{platform}"
+    gameJarBaseNames.forEach { baseName ->
+        val publicationTaskName = namedGamePublicationName(baseName)
+            .replaceFirstChar { it.uppercase() }
+        dependsOn("publish${publicationTaskName}PublicationToNamedGameRepoRepository")
     }
 }
 

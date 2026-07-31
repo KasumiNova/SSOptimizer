@@ -22,6 +22,13 @@
   - `mapping-drift-{platform}.txt`：人工条目在 jar 当前结构中找不到对应类/成员（name+desc 精确匹配）的清单，正常应为 0 条；
   - `cross-platform-match.txt`：双平台类指纹精确匹配数/匹配率与未匹配清单。不匹配项（平台分支/条件编译）只报告，不强行对齐。
 
+## IDE 源码附加（named jar sources）
+
+- `:mapping:publishNamedGameJars`：remap → Vineflower 反编译 named 游戏 jar → 连同 named jar 发布到本地 Maven 仓库 `build/named-game-repo/{platform}/`（坐标 `starsector.named:<jar基名>:0.98a-RC8-SNAPSHOT`，含 `-sources.jar`）。
+- app 以模块依赖消费游戏本体 jar（`starfarer_obf` / `starfarer.api` / `fs.common_obf` / `fs.sound_obf`）；remap 透传的第三方 jar 仍走文件依赖。SNAPSHOT + app 端 `cacheChangingModulesFor(0)`：mapping 变更重发布后，IDE/构建每次解析都取新产物。
+- IDEA 同步时自动解析并附加 `-sources.jar`：游戏类以源码形式呈现并被完整索引（跳转 / Find Usages / 结构视图），替代内置反编译视图。若未生效，检查 IDEA 的 Gradle 设置中文源码自动下载选项是否开启。
+- **首次 clone 或 `clean` 后**：先跑 `./gradlew :mapping:publishNamedGameJars` 再同步 IDEA，否则本地仓库不存在，模块依赖解析失败会导致同步报错。
+
 ## 版本升级增量流程
 
 1. 替换 `game-jars/{platform}/` 为新版本 jar 并更新 `game-jars/README.md` 版本记录。

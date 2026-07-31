@@ -25,6 +25,25 @@ java {
     }
 }
 
+val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
+val mappingPlatform = providers.gradleProperty("starsector.platform")
+    .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
+
+/** 游戏本体 jar 基名——与 mapping 模块发布的本地仓库 artifactId 一一对应。 */
+val namedGameJarBaseNames = listOf("starfarer_obf", "starfarer.api", "fs.common_obf", "fs.sound_obf")
+
+repositories {
+    // named 游戏 jar 本地仓库（mapping:publishNamedGameJars 发布，附带 -sources.jar，IDEA 同步时自动附加源码）
+    maven {
+        url = uri(rootProject.layout.buildDirectory.dir("named-game-repo/${mappingPlatform.get()}"))
+    }
+}
+
+configurations.all {
+    // named 游戏 jar 以 SNAPSHOT 发布：mapping 变更重发布后每次解析都取新产物
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release.set(25)
@@ -58,19 +77,22 @@ dependencies {
     implementation("com.github.luben:zstd-jni:1.5.7-3")
     compileOnly("log4j:log4j:1.2.17")
 
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
-    val mappingPlatform = providers.gradleProperty("starsector.platform")
-        .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
-
     // 命名空间游戏 jar（由 mapping:remapGameClasspathToNamed 产出）
     // 本地开发模式从 gameDir 读取；CI 模式从 game-jars/{platform}/ + Maven 依赖解析
     val namedGameClasspath = rootProject.files(rootProject.provider {
         val dir = rootProject.layout.buildDirectory.dir("named-game-jars/${mappingPlatform.get()}").get().asFile
         dir.listFiles()
-            ?.filter { it.isFile && it.extension == "jar" }
+            // 游戏本体 jar 走 starsector.named 模块依赖（含 sources），这里只保留透传的第三方 jar
+            ?.filter { it.isFile && it.extension == "jar" && it.nameWithoutExtension !in namedGameJarBaseNames }
             ?: emptyList()
     })
     namedGameClasspath.builtBy(":mapping:remapGameClasspathToNamed")
+
+    // named 游戏本体 jar（模块依赖，来自 mapping 发布的本地仓库；附带 -sources.jar 供 IDE 索引）
+    namedGameJarBaseNames.forEach { baseName ->
+        compileOnly("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
+        testImplementation("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
+    }
 
     // 混淆原始游戏 jar（入库 vendor jar）：named jar 全量改名后，运行期模拟测试
     // （Mixin 桥接/ASM 转换，工作在混淆命名空间）仍需从 obf 视图读取类字节码与解析类层次
@@ -87,10 +109,10 @@ dependencies {
 }
 
 tasks.named<JavaCompile>("compileJava") {
-    dependsOn(":mapping:remapGameClasspathToNamed")
+    dependsOn(":mapping:publishNamedGameJars")
 }
 tasks.named<JavaCompile>("compileTestJava") {
-    dependsOn(":mapping:remapGameClasspathToNamed")
+    dependsOn(":mapping:publishNamedGameJars")
 }
 
 tasks.test {
@@ -101,6 +123,13 @@ tasks.test {
     val mappingPlatform = providers.gradleProperty("starsector.platform")
         .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
     systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
+    doFirst {
+        // named/obf 双视图共存于测试 classpath：同名类必须从 named jar 加载（obf 仅以字节按路径读取）。
+        // 游戏 jar 改模块依赖后解析顺序不再保证 named 在前，这里显式把 obf jar 移到末尾。
+        classpath = files(classpath.files.sortedBy {
+            if (it.absolutePath.replace('\\', '/').contains("/game-jars/")) 1 else 0
+        })
+    }
 }
 
 val docsTestSourceSet = sourceSets.create("docsTest") {
@@ -149,6 +178,12 @@ tasks.register<Test>("docsTest") {
     val mappingPlatform = providers.gradleProperty("starsector.platform")
         .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
     systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
+    doFirst {
+        // 与 test 同理：obf 游戏 jar 移到 classpath 末尾，保证同名类从 named jar 加载。
+        classpath = files(classpath.files.sortedBy {
+            if (it.absolutePath.replace('\\', '/').contains("/game-jars/")) 1 else 0
+        })
+    }
 }
 
 tasks.register<JavaExec>("jmh") {
