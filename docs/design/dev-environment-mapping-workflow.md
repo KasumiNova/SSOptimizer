@@ -54,3 +54,48 @@ Tiny v2 注释行（类行下 `\tc <注释>`、成员行下 `\t\tc <注释>`）�
 - 每次映射变更单独 PR
 - 变更必须写明命名理由
 - 必须给出风险与回滚策略
+
+## scope 片段批量命名工作流
+
+已在 0.98a-RC8 全量执行一遍：50 scope / 100 片段合入 `mapping/src/main/resources/mappings/scopes/`，`mergeScopeFragments` 与 `generateFullMappings` 全部校验通过。
+
+- **scope 契约**：每 scope 一对 `{scope}-{platform}.tiny`；obf 列写 jar 真实混淆名；named 为完整包路径，双平台 canonical 一致（linux 为 canonical 基准）；成员宁缺毋滥，未映射成员回落占位名；类注释 `\tc 来源|置信度|证据`；证据链落 `.dev/mapping-evidence/{scope}.md`（gitignored）。
+- **编排**：每 scope 一个 git worktree（`../SSOptimizer-swarm/{scope}` + `swarm/{scope}` 分支）；分批派发，每批 ≤11 个 scope；合回后主工作区跑质量门 `:mapping:test :mapping:mergeScopeFragments :mapping:generateFullMappings :app:compileJava :app:test`，然后单批单 commit，随后 worktree remove。
+- **冲突裁决先例**（三次，均 javap 取证）：
+  - 同 obf 类重复 → 留覆盖全 / 证据足的一方，并合并双方独有成员；
+  - 不同类同名 → 证据弱方改更具体名（BaseToggleButton、FleetwideCombatReadinessTooltip、DesignDisplay、FighterPickerItem、AptitudePanelCopy、AptitudeSkillRow）；
+  - a/b/c 边界 → 以边界类名 + 码点序（`LC_ALL=C sort`）实测切分。
+
+## 双平台取证纪律
+
+后续版本升级重跑时必须遵守，均为实际踩坑教训：
+
+- 指纹对齐必须做内容复核：存在撞指纹假阳性，仅凭指纹不足以确认跨平台对应。
+- 成员混淆名双平台不同：windows 侧成员需独立 javap 取证，不能复用 linux 成员混淆名。
+- 同名 ≠ 同类、同包名 ≠ 同包：windows 子包可能整体改名。
+- windows 片段类集合 = linux 类集合的跨平台对应集，不按 windows 字典序重切 scope。
+
+## identity 遮蔽教训
+
+- 对未混淆类写类级 identity 片段后，named jar 会在同路径提供成员被占位化的副本，遮蔽测试 / 运行时的 obf 视图。
+- 凡 app 运行期契约直接依赖成员名的类，必须登记进 `ssoptimizer-identity.tiny`（参照 Ship / CombatState / GenericTextureParticle 先例）。
+- 测试 fixture 已改为直接读 vendor jar，绕开 named 副本。
+
+## 遗留疑点
+
+后续跟进清单：
+
+- coreui-a 质疑：ui-core-b-windows 的 `coreui/A/N$Oo → ScrollViewport` 对应关系疑似错误（真正对应可能是 `ui/g$Oo`），待复核。
+- 人工表 `CollisionGridQuery`（o0OO / oOoO）命名存疑，语义更像 CollisionGrid。
+- GlowBorderTextPanel canonical 不对称：linux `ui/GlowBorderTextPanel` vs windows `campaign/ui/intel/GlowBorderTextPanel`，待统一。
+- `combat/systems/F`（ShipSystem 基类）仍在 identity 表，建议迁入人工表语义命名并同步 app ShipAccessor 引用。
+- tutorial-a/b 前缀不一致：OoOO 主类 linux 名 TutorialAdvancedCombatScript，tutorial-b 对 `$5..$9` 用了 `AdvancedCombatTutorialScript$` 前缀，待统一。
+- campaign-ui-marketinfo-c-windows 存在裸名（无包前缀）named，风格待统一。
+- 32 个类仍为占位名（死代码 / 空类 / 匿名类，有意留白）；各 scope 低置信度命名见 `.dev/mapping-evidence/*.md`，待运行期验证提升。
+- FighterAutofireManager / AutofireManagerV2 / attack/D 三同构，精确语义待定。
+
+## 版本升级增量流程（0.98.5a 到来时）
+
+1. 换 `game-jars` → 跑 `generateFullMappings` → 漂移报告列出失效人工 / scope 条目。
+2. 按 scope 分批重做受影响条目（同一 worktree 编排）。
+3. 质量门。
