@@ -108,7 +108,7 @@ class MappingLookupTest {
         MappingEntry methodEntry = lookup.requireMethodByNamedName(
                 "sound/SoundManager",
                 "loadOAccentFamily",
-                "(Ljava/lang/String;)Lsound/O0OO;");
+                "(Ljava/lang/String;)Lsound/Audio;");
 
                 assertEquals("sound/SoundManager", classEntry.namedName());
                 assertEquals("(Ljava/lang/String;)Lsound/O0OO;", methodEntry.descriptor());
@@ -121,11 +121,11 @@ class MappingLookupTest {
                 MappingEntry objectFamilyStream = lookup.requireMethodByNamedName(
                                 "sound/SoundManager",
                                 "loadObjectFamilyFromStream",
-                                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/Audio;");
                 MappingEntry oAccentFamilyStream = lookup.requireMethodByNamedName(
                                 "sound/SoundManager",
                                 "loadOAccentFamilyFromStream",
-                                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/Audio;");
 
                 assertEquals("Ò00000", objectFamilyStream.obfuscatedName());
                 assertEquals("Object", oAccentFamilyStream.obfuscatedName());

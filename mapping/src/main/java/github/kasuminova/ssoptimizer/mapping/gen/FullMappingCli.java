@@ -30,7 +30,9 @@ import java.util.stream.Stream;
  * scope 间混淆 key 或 named 类名冲突直接报错并指明两个 scope）
  * 合并后输出
  * {@code outputDir/<platform>/ssoptimizer-<platform>-full.tiny}，
- * 并产出漂移报告 {@code reportDir/mapping-drift-<platform>.txt} 与
+ * 输出前由 {@link InheritedMemberPropagator} 沿继承链补齐子类侧成员别名
+ * （混淆器会把继承成员引用挂在子类 owner 上），并产出漂移报告
+ * {@code reportDir/mapping-drift-<platform>.txt} 与
  * 跨平台匹配报告 {@code reportDir/cross-platform-match.txt}。
  * 生成是确定性的：同一输入两次运行输出字节一致。
  */
@@ -92,6 +94,7 @@ public final class FullMappingCli {
             priorityEntries.addAll(humanRepository.entries());
             priorityEntries.addAll(identityEntries);
             List<MappingEntry> merged = merger.merge(priorityEntries, scopeEntries, generated);
+            merged = InheritedMemberPropagator.propagate(merged, classes);
 
             Path outputFile = outputDir.resolve(platform.id()).resolve("ssoptimizer-" + platform.id() + "-full.tiny");
             Files.createDirectories(outputFile.getParent());

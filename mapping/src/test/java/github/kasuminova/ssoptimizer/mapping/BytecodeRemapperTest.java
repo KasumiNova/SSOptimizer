@@ -65,7 +65,7 @@ class BytecodeRemapperTest {
         MappingEntry methodEntry = LOOKUP.requireMethodByNamedName(
             "sound/SoundManager",
             "loadOAccentFamily",
-            "(Ljava/lang/String;)Lsound/O0OO;");
+            "(Ljava/lang/String;)Lsound/Audio;");
 
         BytecodeRemapper.RemappedClass remapped = remapper.remapClass(createObfuscatedSoundManager(
             classEntry.obfuscatedName(),
@@ -85,7 +85,7 @@ class BytecodeRemapperTest {
                                              final String signature,
                                              final String[] exceptions) {
                 if ("loadOAccentFamily".equals(name)
-                        && "(Ljava/lang/String;)Lsound/O0OO;".equals(descriptor)) {
+                        && "(Ljava/lang/String;)Lsound/Audio;".equals(descriptor)) {
                     foundNamedMethod[0] = true;
                 }
                 return super.visitMethod(access, name, descriptor, signature, exceptions);

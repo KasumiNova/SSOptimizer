@@ -293,15 +293,15 @@ public final class GameMemberNames {
         public static final String LOAD_OBJECT_FAMILY_FROM_STREAM = method(
                 GameClassNames.SOUND_MANAGER,
                 "loadObjectFamilyFromStream",
-                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/Audio;");
         public static final String LOAD_O00000_FAMILY_FROM_STREAM = method(
                 GameClassNames.SOUND_MANAGER,
                 "loadO00000FamilyFromStream",
-                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/Audio;");
         public static final String LOAD_O_ACCENT_FAMILY_FROM_STREAM = method(
                 GameClassNames.SOUND_MANAGER,
                 "loadOAccentFamilyFromStream",
-                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/O0OO;");
+                "(Ljava/lang/String;Ljava/io/InputStream;)Lsound/Audio;");
 
         private SoundManager() {
         }

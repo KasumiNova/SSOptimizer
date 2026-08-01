@@ -39,7 +39,11 @@ public final class BytecodeRemapper {
 
         ClassReader reader = new ClassReader(classfileBuffer);
         RepositoryBackedRemapper remapper = new RepositoryBackedRemapper();
-        ClassWriter writer = new ClassWriter(reader, 0);
+        // 不复用原常量池（new ClassWriter(reader, 0) 会逐字拷贝原 CP，把混淆器留下的
+        // 孤儿 Methodref/Fieldref 项（如未被任何指令引用的 "do.new"）带进产物；
+        // 运行期 SanitizingRemapper 只能改写可达项，JDK 25 对变换器修改过的类强制
+        // 格式检查时会被孤儿项击杀）。全新 ClassWriter 只保留可达常量。
+        ClassWriter writer = new ClassWriter(0);
         reader.accept(new ClassRemapper(writer, remapper), 0);
 
         String inputInternalName = reader.getClassName();
