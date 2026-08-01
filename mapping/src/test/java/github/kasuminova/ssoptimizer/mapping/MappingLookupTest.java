@@ -2,9 +2,12 @@ package github.kasuminova.ssoptimizer.mapping;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 映射双向查询契约测试。
@@ -214,7 +217,11 @@ class MappingLookupTest {
                                 "PRIMARY");
 
                 assertEquals("o00000", renderTexturedStrip.obfuscatedName());
-                assertEquals("Object", primaryGlowType.obfuscatedName());
+                // EngineGlowType#PRIMARY 的 obf 名双平台不同（混淆器各自命名，见
+                // docs/design/dev-environment-mapping-workflow.md 双平台取证纪律）：
+                // linux 为 Object，windows 为 Ó00000；测试随运行平台加载对应表，断言二者之一。
+                assertTrue(Set.of("Object", "Ó00000").contains(primaryGlowType.obfuscatedName()),
+                        "EngineGlowType#PRIMARY obf 名应为平台真实值，实际: " + primaryGlowType.obfuscatedName());
         }
 
     @Test

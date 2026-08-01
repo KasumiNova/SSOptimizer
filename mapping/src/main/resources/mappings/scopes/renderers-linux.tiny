@@ -239,7 +239,7 @@ c	com/fs/starfarer/renderers/A/OooO	com/fs/starfarer/renderers/ShipTargetReticle
 		c javap 字节码取证 | 高 | 构造参数2(持续时间>1)，true 时准星缩小/简化渲染，isPrimary=!secondary
 	f	return.super	duration	F
 		c javap 字节码取证 | 高 | 构造参数3 持续时间，setDuration 更新并 reset
-	f	Òo0000	hullSchematic	Lcom/fs/starfarer/E/OoOO/HullSchematicWidget;
+	f	Òo0000	hullSchematic	Lcom/fs/starfarer/E/CombatHudPanels/HullSchematicWidget;
 		c javap 字节码取证 | 高 | 构造按 hullSize 缩放创建，advance/渲染装甲示意图
 	f	ÒO0000	font	Lcom/fs/graphics/font/BitmapFont;
 		c javap 字节码取证 | 高 | victor10.fnt 字体，createLabel 使用
