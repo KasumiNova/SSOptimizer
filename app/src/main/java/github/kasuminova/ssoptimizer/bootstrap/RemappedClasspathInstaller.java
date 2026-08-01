@@ -38,11 +38,29 @@ public final class RemappedClasspathInstaller {
     }
 
     /**
+     * 判断当前是否需要安装 remapped classpath。
+     * <p>
+     * 全量 deobf 模式下 named jar 已直接位于系统 classpath，35 类小表产出的
+     * remapped JAR 只会引入重复类，必须跳过。
+     *
+     * @return 需要安装返回 {@code true}
+     */
+    static boolean shouldInstall() {
+        return !RuntimeRemapContext.isFullDeobfEnabled();
+    }
+
+    /**
      * 扫描映射中类名发生变化的条目，构建 remapped JAR 并追加到系统类路径。
      *
      * @param inst JVM 提供的 {@link Instrumentation} 实例
      */
     public static void install(Instrumentation inst) {
+        if (!shouldInstall()) {
+            LOGGER.info("[SSOptimizer] Full deobf mode enabled — named jars are already on the classpath, "
+                    + "skipping remapped classpath install");
+            return;
+        }
+
         TinyV2MappingRepository repo = TinyV2MappingRepository.loadDefault();
         List<RenamedClassEntry> renamedClasses = findRenamedClasses(repo);
         if (renamedClasses.isEmpty()) {

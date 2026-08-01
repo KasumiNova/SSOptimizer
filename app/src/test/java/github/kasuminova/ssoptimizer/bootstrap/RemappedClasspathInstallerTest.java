@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -16,6 +17,19 @@ class RemappedClasspathInstallerTest {
 
     @TempDir
     Path tempDir;
+
+    @Test
+    void skipsInstallWhenFullDeobfModeEnabled() {
+        System.setProperty(RuntimeRemapContext.FULL_DEOBF_PROPERTY, "true");
+        try {
+            assertFalse(RemappedClasspathInstaller.shouldInstall(),
+                    "全量 deobf 模式下 named jar 已在 classpath，不应再安装 remapped JAR");
+        } finally {
+            System.clearProperty(RuntimeRemapContext.FULL_DEOBF_PROPERTY);
+        }
+        assertTrue(RemappedClasspathInstaller.shouldInstall(),
+                "默认模式（混淆 jar + 小表桥接）仍应安装 remapped JAR");
+    }
 
     @Test
     void exportsRuntimeRemappedJarWhenConfigured() throws Exception {

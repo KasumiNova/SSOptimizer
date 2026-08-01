@@ -3,7 +3,10 @@ package github.kasuminova.ssoptimizer.mapping;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,6 +90,35 @@ class TinyV2MappingRepositoryTest {
 
         MappingEntry multiLine = repository.requireClassByObfuscatedName("com/fs/example/B");
         assertEquals("第一行注释\n第二行注释", multiLine.comment());
+    }
+
+    @Test
+    void loadsGzipCompressedResourceIdenticallyToPlainText() throws Exception {
+        String tiny = String.join("\n",
+            "tiny 2 0 obf named",
+            "c com/fs/example/GzipA com/fs/example/GzipAlpha",
+            "\tf obfField namedField I",
+            "\tm obfMethod namedMethod (I)V") + "\n";
+        byte[] plainBytes = tiny.getBytes(StandardCharsets.UTF_8);
+
+        ByteArrayOutputStream gzipBuffer = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzipStream = new GZIPOutputStream(gzipBuffer)) {
+            gzipStream.write(plainBytes);
+        }
+
+        TinyV2MappingRepository plain = TinyV2MappingRepository.loadFromResource(
+            new ByteArrayInputStream(plainBytes), "memory:test-gzip-plain.tiny");
+        TinyV2MappingRepository gzipped = TinyV2MappingRepository.loadFromResource(
+            new ByteArrayInputStream(gzipBuffer.toByteArray()), "memory:test-gzip-compressed.tiny.gz");
+
+        assertEquals(describeEntries(plain), describeEntries(gzipped));
+    }
+
+    private static List<String> describeEntries(TinyV2MappingRepository repository) {
+        return repository.entries().stream()
+            .map(entry -> entry.kind() + "|" + entry.ownerObfuscatedName() + "|" + entry.ownerNamedName()
+                + "|" + entry.obfuscatedName() + "|" + entry.namedName() + "|" + entry.descriptor())
+            .toList();
     }
 
     @Test

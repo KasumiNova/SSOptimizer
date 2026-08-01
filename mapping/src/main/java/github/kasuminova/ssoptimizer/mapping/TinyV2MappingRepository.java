@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Tiny v2 映射仓库实现。
@@ -110,10 +111,60 @@ public final class TinyV2MappingRepository implements MappingRepository {
     }
 
     /**
+     * 从当前平台的 gzip 全量映射资源加载。
+     * <p>
+     * 无参入口刻意不暴露 {@link MappingPlatform}：运行期 agent 类分处 bootstrap 与 app
+     * 两个类加载器，跨加载器传递 {@code MappingPlatform} 实例会记录 loader constraint，
+     * 导致 bootstrap 侧内部调用以 {@link LinkageError} 崩溃。
+     *
+     * @return 全量映射仓库
+     */
+    public static TinyV2MappingRepository loadFullDefault() {
+        return loadFullForPlatform(MappingPlatform.current());
+    }
+
+    /**
+     * 根据平台加载 gzip 压缩的 Tiny v2 全量映射资源。
+     * <p>
+     * 全量表（含占位名与人工命名，约 22 万条目/平台）只供全量 deobf 模式使用，
+     * 与 {@link #loadForPlatform(MappingPlatform)} 的 35 类桥接小表互斥。
+     *
+     * @param platform 目标平台
+     * @return 全量映射仓库
+     */
+    public static TinyV2MappingRepository loadFullForPlatform(final MappingPlatform platform) {
+        final MappingPlatform resolvedPlatform = Objects.requireNonNull(platform, "platform");
+        final String resourcePath = fullResourcePathFor(resolvedPlatform);
+        InputStream resourceStream = TinyV2MappingRepository.class.getResourceAsStream(resourcePath);
+        return loadFromResource(resourceStream, resourcePath);
+    }
+
+    /**
+     * 返回当前平台对应的 gzip 全量映射资源路径。
+     *
+     * @return 全量映射资源路径
+     */
+    public static String defaultFullResourcePath() {
+        return fullResourcePathFor(MappingPlatform.current());
+    }
+
+    /**
+     * 返回指定平台的 gzip 全量映射资源路径。
+     *
+     * @param platform 目标平台
+     * @return 全量映射资源路径
+     */
+    public static String fullResourcePathFor(final MappingPlatform platform) {
+        return "/mappings/ssoptimizer-" + Objects.requireNonNull(platform, "platform").id() + "-full.tiny.gz";
+    }
+
+    /**
      * 从给定 classpath 资源加载 Tiny v2 映射。
+     * <p>
+     * 资源路径以 {@code .gz} 结尾时按 gzip 压缩流解析，其余按明文解析。
      *
      * @param inputStream 资源输入流
-     * @param resourcePath 资源路径，用于错误提示
+     * @param resourcePath 资源路径，用于错误提示与压缩格式判定
      * @return 映射仓库
      */
     public static TinyV2MappingRepository loadFromResource(InputStream inputStream, String resourcePath) {
@@ -121,9 +172,15 @@ public final class TinyV2MappingRepository implements MappingRepository {
             throw new MappingLookupException("未找到 Tiny v2 映射资源: " + resourcePath);
         }
 
-        try (InputStream stream = inputStream;
-             BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-            return new TinyV2MappingRepository(parse(reader, resourcePath));
+        try {
+            InputStream stream = inputStream;
+            if (resourcePath != null && resourcePath.endsWith(".gz")) {
+                stream = new GZIPInputStream(stream);
+            }
+            try (InputStream closingStream = stream;
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(closingStream, StandardCharsets.UTF_8))) {
+                return new TinyV2MappingRepository(parse(reader, resourcePath));
+            }
         } catch (IOException exception) {
             throw new MappingLookupException("读取 Tiny v2 映射失败: " + resourcePath, exception);
         }

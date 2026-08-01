@@ -1,3 +1,5 @@
+import java.util.zip.GZIPOutputStream
+
 plugins {
     application
 }
@@ -232,7 +234,40 @@ tasks.register<JavaExec>("jmh") {
     )
 }
 
+val packFullMappings = tasks.register("packFullMappings") {
+    group = "mapping"
+    description = "Gzip both-platform full mapping tables for the agent jar (full deobf mode)"
+    dependsOn(":mapping:generateFullMappings")
+
+    val generatedMappingsDir = project(":mapping").layout.buildDirectory.dir("generated/mappings")
+    val outputDirectory = layout.buildDirectory.dir("fullMappings")
+    inputs.dir(generatedMappingsDir)
+    outputs.dir(outputDirectory)
+
+    doLast {
+        val outDir = outputDirectory.get().asFile
+        outDir.deleteRecursively()
+        outDir.mkdirs()
+        listOf("linux", "windows").forEach { platform ->
+            val source = generatedMappingsDir.get().file("$platform/ssoptimizer-$platform-full.tiny").asFile
+            val target = outDir.resolve("ssoptimizer-$platform-full.tiny.gz")
+            source.inputStream().buffered().use { input ->
+                GZIPOutputStream(target.outputStream().buffered()).use { gzip ->
+                    input.copyTo(gzip)
+                }
+            }
+        }
+    }
+}
+
 tasks.named<Jar>("jar") {
+    // 全量表只进 jar 不进 main resources：避免测试 classpath 与 test fixtures 互相遮蔽，
+    // 也避免非 jar 运行方式误把 37MB 明文表当默认资源。
+    dependsOn(packFullMappings)
+    from(layout.buildDirectory.dir("fullMappings")) {
+        into("mappings")
+    }
+
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set("")
     archiveClassifier.set("")
