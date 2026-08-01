@@ -125,6 +125,79 @@ class ScopeFragmentMergingTest {
     }
 
     @Test
+    void candidateConflictsAgainstExistingFragmentsAreDetected() {
+        List<ScopeFragment> existing = List.of(
+                new ScopeFragment("scope-a", List.of(
+                        MappingEntry.classEntry("com/example/A", "com/example/Alpha"),
+                        MappingEntry.methodEntry("com/example/A", "com/example/Alpha", "a", "run", "()V"))),
+                new ScopeFragment("scope-b", List.of(MappingEntry.classEntry("com/example/B", "com/example/Beta"))));
+
+        // 候选片段重新声明既有 scope 的类：报混淆类冲突（即使 named 一致）+ named 冲突。
+        ScopeFragment redeclareClass = new ScopeFragment("scope-c", List.of(
+                MappingEntry.classEntry("com/example/A", "com/example/Alpha")));
+        assertEquals(2, ScopeFragments.conflictLinesAgainst(existing, redeclareClass).size(),
+                "重新声明既有类应报混淆类与 named 两条冲突");
+
+        // 候选片段把既有 named 类名用于不同混淆类：只报 named 冲突。
+        ScopeFragment reuseNamed = new ScopeFragment("scope-c", List.of(
+                MappingEntry.classEntry("com/example/C", "com/example/Alpha")));
+        List<String> namedConflicts = ScopeFragments.conflictLinesAgainst(existing, reuseNamed);
+        assertEquals(1, namedConflicts.size(), "named 类名复用应报一条冲突: " + namedConflicts);
+        assertTrue(namedConflicts.get(0).contains("scope-a") && namedConflicts.get(0).contains("scope-c"),
+                "冲突信息应指明两个 scope: " + namedConflicts.get(0));
+
+        // 候选片段映射既有 scope 已映射的成员：报成员冲突。
+        ScopeFragment remapMember = new ScopeFragment("scope-c", List.of(
+                MappingEntry.classEntry("com/example/C", "com/example/Gamma"),
+                MappingEntry.methodEntry("com/example/A", "com/example/Alpha", "a", "execute", "()V")));
+        assertEquals(1, ScopeFragments.conflictLinesAgainst(existing, remapMember).size(),
+                "重复映射既有成员应报一条冲突");
+
+        // 候选片段内部重复声明同一类：报冲突。
+        ScopeFragment duplicateInside = new ScopeFragment("scope-c", List.of(
+                MappingEntry.classEntry("com/example/C", "com/example/Gamma"),
+                MappingEntry.classEntry("com/example/C", "com/example/Gamma")));
+        assertEquals(1, ScopeFragments.conflictLinesAgainst(existing, duplicateInside).size(),
+                "片段内部重复类声明应报一条冲突");
+
+        // 与既有片段互不相交的候选：无冲突。
+        ScopeFragment clean = new ScopeFragment("scope-c", List.of(
+                MappingEntry.classEntry("com/example/C", "com/example/Gamma"),
+                MappingEntry.methodEntry("com/example/C", "com/example/Gamma", "c", "walk",
+                        "(Lcom/example/Alpha;)V")));
+        assertTrue(ScopeFragments.conflictLinesAgainst(existing, clean).isEmpty(),
+                "互不相交的候选片段不应报冲突（named 描述符应正常换算）");
+    }
+
+    @Test
+    void memberExtensionFragmentsPassWithExactClassDeclaration() {
+        List<ScopeFragment> existing = List.of(
+                new ScopeFragment("scope-a", List.of(
+                        MappingEntry.classEntry("com/example/A", "com/example/Alpha"),
+                        MappingEntry.methodEntry("com/example/A", "com/example/Alpha", "a", "run", "()V"))));
+
+        // obf + named 与既有声明完全一致的成员扩展片段：类级冲突豁免，无冲突。
+        ScopeFragment extension = new ScopeFragment("wave3-p01", List.of(
+                MappingEntry.classEntry("com/example/A", "com/example/Alpha"),
+                MappingEntry.methodEntry("com/example/A", "com/example/Alpha", "b", "stop", "()V")));
+        assertTrue(ScopeFragments.extensionAwareConflictLines(existing, extension).isEmpty(),
+                "obf+named 一致的成员扩展不应报冲突");
+
+        // 扩展片段重复映射归属 scope 已映射的成员：成员级冲突照常报。
+        ScopeFragment extensionMemberConflict = new ScopeFragment("wave3-p01", List.of(
+                MappingEntry.classEntry("com/example/A", "com/example/Alpha"),
+                MappingEntry.methodEntry("com/example/A", "com/example/Alpha", "a", "execute", "()V")));
+        assertEquals(1, ScopeFragments.extensionAwareConflictLines(existing, extensionMemberConflict).size(),
+                "扩展片段与归属 scope 的成员冲突不得豁免");
+
+        // 同 obf 类但 named 不同（抢注/改名）：混淆类冲突照常报，不得豁免。
+        ScopeFragment renamedExtension = new ScopeFragment("wave3-p01", List.of(
+                MappingEntry.classEntry("com/example/A", "com/example/OtherName")));
+        assertEquals(1, ScopeFragments.extensionAwareConflictLines(existing, renamedExtension).size(),
+                "同类异名的伪扩展不得豁免");
+    }
+
+    @Test
     void emptyScopesKeepExistingBehavior() throws Exception {
         // 不存在的目录与空目录都返回空片段列表。
         assertTrue(ScopeFragments.load(tempDir.resolve("scopes"), MappingPlatform.LINUX).isEmpty());

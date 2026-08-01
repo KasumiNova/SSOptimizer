@@ -138,6 +138,48 @@ class FullMappingGenerationTest {
     }
 
     @Test
+    void zeroAmbiguityFieldsAreMechanicallyPreNamed() {
+        List<ClassStructure> classes = List.of(new ClassStructure(
+                "com/example/Settings",
+                "java/lang/Object",
+                List.of("java/io/Serializable"),
+                List.of(new ClassStructure.Member("o00000", "J", 0x0018),
+                        new ClassStructure.Member("o00001", "Ljava/lang/String;", 0x0019, "graphics/fonts/small_fonts8.fnt"),
+                        new ClassStructure.Member("o00002", "Ljava/lang/String;", 0x0019, "data/fonts/small_fonts8.fnt"),
+                        new ClassStructure.Member("o00003", "Ljava/lang/String;", 0x0019, "class"),
+                        new ClassStructure.Member("o00004", "Ljava/lang/String;", 0x0019, "   "),
+                        new ClassStructure.Member("o00005", "Lorg/apache/log4j/Logger;", 0x0008),
+                        new ClassStructure.Member("o00006", "Lorg/apache/log4j/Logger;", 0x000A),
+                        new ClassStructure.Member("o00007", "I", 0x0001)),
+                List.of(new ClassStructure.Member("<init>", "()V", 1))));
+        TinyV2MappingRepository humanRepository = TinyV2MappingRepository.of(List.of());
+
+        List<MappingEntry> generated = new IntermediaryNameGenerator()
+                .generate(classes, humanRepository, java.util.Set.of());
+        TinyV2MappingRepository mergedRepository = TinyV2MappingRepository.of(
+                new FullMappingMerger().merge(humanRepository.entries(), generated));
+
+        // 实现 Serializable 且唯一的 static final long → serialVersionUID。
+        assertEquals("serialVersionUID",
+                mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00000").namedName());
+        // String 常量字段按值派生（末尾 3 token camelCase）；派生名冲突追加 _2。
+        assertEquals("smallFonts8Fnt",
+                mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00001").namedName());
+        assertEquals("smallFonts8Fnt_2",
+                mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00002").namedName());
+        // 关键字 / 空白常量值不可派生，落回哈希占位。
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00003").namedName().startsWith("f_"));
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00004").namedName().startsWith("f_"));
+        // static Logger 字段 → logger，第二个追加 _2。
+        assertEquals("logger",
+                mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00005").namedName());
+        assertEquals("logger_2",
+                mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00006").namedName());
+        // 普通字段不受影响，仍为哈希占位。
+        assertTrue(mergedRepository.requireFieldByObfuscatedName("com/example/Settings", "o00007").namedName().startsWith("f_"));
+    }
+
+    @Test
     void identityClassesKeepOriginalNamesAndMembers() {
         List<ClassStructure> classes = List.of(new ClassStructure(
                 "com/example/Keep",

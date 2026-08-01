@@ -24,6 +24,12 @@ import java.util.Objects;
  * 不再落哈希占位；o0 字典垃圾名、Java 关键字/字面量/常见 JDK 类型名、
  * 编译器合成名（含 {@code $}）仍落哈希占位，交由后续语义命名处理。
  * <p>
+ * 机械预命名：零歧义字段不落哈希占位，直接按规则派生 named 名——唯一
+ * {@code static final long} 且实现 {@code Serializable} 的类 → {@code serialVersionUID}；
+ * 带 ConstantValue 的 {@code static final String} 常量字段按值派生 camelCase 名；
+ * {@code static} log4j Logger 字段 → {@code logger}。派生名与提升名/已分配名冲突时
+ * 按声明顺序追加 {@code _2}/{@code _3}。
+ * <p>
  * 人工表已覆盖的类与成员一律跳过（人工条目优先，由
  * {@link FullMappingMerger} 合并回最终表）。构造方法与静态初始化块不生成映射。
  * 同类同名字段组（混淆器产生的 name 相同 desc 不同字段）无法按名消歧，整组跳过并保持混淆名。
@@ -139,6 +145,8 @@ public final class IntermediaryNameGenerator {
         Map<String, List<ClassStructure.Member>> fieldsByHash = new LinkedHashMap<>();
         Map<String, ClassStructure.Member> generatedFields = new LinkedHashMap<>();
         Map<String, String> promotedFieldNames = new LinkedHashMap<>();
+        Map<String, String> mechanicalFieldNames = new LinkedHashMap<>();
+        boolean serialVersionUidCandidate = isSerialVersionUidCandidate(classStructure);
         for (ClassStructure.Member field : classStructure.fields()) {
             if (fieldNameCounts.get(field.name()) > 1) {
                 continue;
@@ -150,12 +158,34 @@ public final class IntermediaryNameGenerator {
             if (isPromotableObfuscatedName(field.name())) {
                 promotedFieldNames.put(field.name() + ':' + field.desc(), field.name());
             } else {
-                String hash = StructuralFingerprint.ofField(field);
-                fieldsByHash.computeIfAbsent(hash, key -> new ArrayList<>()).add(field);
+                String mechanicalName = mechanicalFieldName(field, serialVersionUidCandidate);
+                if (mechanicalName != null) {
+                    mechanicalFieldNames.put(field.name() + ':' + field.desc(), mechanicalName);
+                } else {
+                    String hash = StructuralFingerprint.ofField(field);
+                    fieldsByHash.computeIfAbsent(hash, key -> new ArrayList<>()).add(field);
+                }
             }
         }
         Map<String, String> fieldNamedNames = assignMemberNames(fieldsByHash, "f_");
         fieldNamedNames.putAll(promotedFieldNames);
+        // 机械预命名按声明顺序去重：与提升名 / 同已分配的机械名冲突时追加 _2/_3。
+        java.util.Set<String> usedFieldNames = new java.util.HashSet<>(promotedFieldNames.values());
+        for (ClassStructure.Member field : classStructure.fields()) {
+            String key = field.name() + ':' + field.desc();
+            String baseName = mechanicalFieldNames.get(key);
+            if (baseName == null) {
+                continue;
+            }
+            String uniqueName = baseName;
+            int ordinal = 2;
+            while (usedFieldNames.contains(uniqueName)) {
+                uniqueName = baseName + "_" + ordinal;
+                ordinal++;
+            }
+            usedFieldNames.add(uniqueName);
+            fieldNamedNames.put(key, uniqueName);
+        }
         for (ClassStructure.Member field : classStructure.fields()) {
             String key = field.name() + ':' + field.desc();
             if (!generatedFields.containsKey(key)) {
@@ -196,6 +226,93 @@ public final class IntermediaryNameGenerator {
         }
 
         return members;
+    }
+
+    /**
+     * 判定字段是否可机械预命名（零歧义类别），返回派生的 named 名；不可判定时返回 {@code null}。
+     * <p>
+     * 覆盖三类：实现 {@code Serializable} 且唯一的 {@code static final long} 字段 →
+     * {@code serialVersionUID}；带 ConstantValue 的 {@code static final String} 常量字段 →
+     * 按常量值派生 camelCase 名；{@code static} 的 log4j Logger 字段 → {@code logger}。
+     *
+     * @param field                    字段成员
+     * @param serialVersionUidCandidate 所属类是否为 serialVersionUID 候选（实现 Serializable 且仅一个 static final long）
+     * @return 派生名，或 {@code null}（落回哈希占位）
+     */
+    private static String mechanicalFieldName(ClassStructure.Member field, boolean serialVersionUidCandidate) {
+        int access = field.access();
+        boolean isStatic = (access & org.objectweb.asm.Opcodes.ACC_STATIC) != 0;
+        boolean isFinal = (access & org.objectweb.asm.Opcodes.ACC_FINAL) != 0;
+        if (isStatic && isFinal && "J".equals(field.desc()) && serialVersionUidCandidate) {
+            return "serialVersionUID";
+        }
+        if (isStatic && isFinal && "Ljava/lang/String;".equals(field.desc())
+                && field.constantValue() instanceof String constantValue) {
+            return deriveNameFromStringConstant(constantValue);
+        }
+        if (isStatic && "Lorg/apache/log4j/Logger;".equals(field.desc())) {
+            return "logger";
+        }
+        return null;
+    }
+
+    /**
+     * 判定类是否为 serialVersionUID 候选：直接实现 {@code java/io/Serializable}
+     * 且全类仅一个 {@code static final long} 字段。
+     */
+    private static boolean isSerialVersionUidCandidate(ClassStructure classStructure) {
+        if (!classStructure.interfaces().contains("java/io/Serializable")) {
+            return false;
+        }
+        int staticFinalLongCount = 0;
+        for (ClassStructure.Member field : classStructure.fields()) {
+            int access = field.access();
+            if ("J".equals(field.desc())
+                    && (access & org.objectweb.asm.Opcodes.ACC_STATIC) != 0
+                    && (access & org.objectweb.asm.Opcodes.ACC_FINAL) != 0) {
+                staticFinalLongCount++;
+            }
+        }
+        return staticFinalLongCount == 1;
+    }
+
+    /**
+     * 从字符串常量值派生 camelCase 成员名：按非字母数字切分，取末尾最多 3 个 token
+     * 拼接（路径类常量避免过长名称）。值无法派生出合法且非关键字的标识符时返回
+     * {@code null}（落回哈希占位）。
+     */
+    private static String deriveNameFromStringConstant(String value) {
+        if (value.isBlank() || value.length() > 60) {
+            return null;
+        }
+        List<String> tokens = new ArrayList<>();
+        for (String token : value.split("[^A-Za-z0-9]+")) {
+            if (!token.isEmpty()) {
+                tokens.add(token);
+            }
+        }
+        if (tokens.isEmpty()) {
+            return null;
+        }
+        int from = Math.max(0, tokens.size() - 3);
+        StringBuilder name = new StringBuilder();
+        for (int index = from; index < tokens.size(); index++) {
+            String token = tokens.get(index);
+            if (index == from) {
+                name.append(token.toLowerCase(java.util.Locale.ROOT));
+            } else {
+                name.append(Character.toUpperCase(token.charAt(0)));
+                name.append(token.substring(1).toLowerCase(java.util.Locale.ROOT));
+            }
+        }
+        String derived = name.toString();
+        if (!ASCII_IDENTIFIER.matcher(derived).matches() || !Character.isLetter(derived.charAt(0))) {
+            return null;
+        }
+        if (OBFUSCATOR_DICTIONARY_NAMES.contains(derived)) {
+            return null;
+        }
+        return derived;
     }
 
     private static Map<String, String> assignMemberNames(Map<String, List<ClassStructure.Member>> byHash, String prefix) {

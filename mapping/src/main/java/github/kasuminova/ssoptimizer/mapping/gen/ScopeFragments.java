@@ -154,6 +154,122 @@ public final class ScopeFragments {
         return conflicts;
     }
 
+    /**
+     * 检测单个候选片段与既有片段集合之间的冲突（{@code validateScopeFragment} 的数据逻辑）。
+     * <p>
+     * 判据与 {@link #crossScopeConflictLines(List)} 一致，但只报告涉及候选片段的冲突：
+     * 既有片段集合内部假定已互斥（入库前由 mergeScopeFragments 保证）。候选片段内部的
+     * 重复类声明也会被报出。
+     *
+     * @param existing  既有 scope 片段列表（不含候选片段）
+     * @param candidate 待校验的候选片段
+     * @return 冲突描述行（每条都指明涉及的两个 scope）；无冲突返回空列表
+     */
+    public static List<String> conflictLinesAgainst(List<ScopeFragment> existing, ScopeFragment candidate) {
+        Objects.requireNonNull(existing, "existing");
+        Objects.requireNonNull(candidate, "candidate");
+
+        Map<String, String> namedToObfuscated = new HashMap<>();
+        for (ScopeFragment fragment : existing) {
+            for (MappingEntry entry : fragment.entries()) {
+                if (entry.isClass()) {
+                    namedToObfuscated.put(entry.namedName(), entry.obfuscatedName());
+                }
+            }
+        }
+        Map<String, String> classScopeByObfuscated = new LinkedHashMap<>();
+        Map<String, String> classScopeByNamed = new LinkedHashMap<>();
+        Map<String, String> memberScopeByObfuscatedKey = new LinkedHashMap<>();
+        for (ScopeFragment fragment : existing) {
+            for (MappingEntry entry : fragment.entries()) {
+                if (entry.isClass()) {
+                    classScopeByObfuscated.putIfAbsent(entry.obfuscatedName(), fragment.scope());
+                    classScopeByNamed.putIfAbsent(entry.namedName(), fragment.scope());
+                    continue;
+                }
+                memberScopeByObfuscatedKey.putIfAbsent(memberKey(entry, namedToObfuscated), fragment.scope());
+            }
+        }
+
+        List<String> conflicts = new ArrayList<>();
+        for (MappingEntry entry : candidate.entries()) {
+            if (entry.isClass()) {
+                namedToObfuscated.putIfAbsent(entry.namedName(), entry.obfuscatedName());
+                String previousScope = classScopeByObfuscated.putIfAbsent(entry.obfuscatedName(), candidate.scope());
+                if (previousScope != null) {
+                    conflicts.add("混淆类 " + entry.obfuscatedName() + " 同时被 scope '"
+                            + previousScope + "' 与 '" + candidate.scope() + "' 映射");
+                }
+                String namedOwnerScope = classScopeByNamed.putIfAbsent(entry.namedName(), candidate.scope());
+                if (namedOwnerScope != null && !namedOwnerScope.equals(candidate.scope())) {
+                    conflicts.add("named 类名 " + entry.namedName() + " 同时被 scope '"
+                            + namedOwnerScope + "' 与 '" + candidate.scope() + "' 使用");
+                }
+                continue;
+            }
+            String previousScope = memberScopeByObfuscatedKey.putIfAbsent(memberKey(entry, namedToObfuscated), candidate.scope());
+            if (previousScope != null && !previousScope.equals(candidate.scope())) {
+                conflicts.add("混淆成员 " + entry.ownerObfuscatedName() + '#' + entry.obfuscatedName()
+                        + " 同时被 scope '" + previousScope + "' 与 '" + candidate.scope() + "' 映射");
+            }
+        }
+        return conflicts;
+    }
+
+    /**
+     * 成员扩展感知的候选片段冲突检测（{@code validateScopeFragment} 批量命名工作流用）。
+     * <p>
+     * 批量成员命名时，代理产出的片段会为既有 scope 已声明的类补充成员条目（成员扩展片段，
+     * 合入时由编排方把成员行迁入归属 scope）。候选片段中 obf + named 与既有声明完全一致
+     * 的类视为合法扩展，其类级冲突不报；named 不一致（同名异类 / 同类异名）与成员级冲突
+     * 照常报出。
+     *
+     * @param existing  既有 scope 片段列表（不含候选片段）
+     * @param candidate 待校验的候选片段
+     * @return 冲突描述行；无冲突返回空列表
+     */
+    public static List<String> extensionAwareConflictLines(List<ScopeFragment> existing, ScopeFragment candidate) {
+        Objects.requireNonNull(existing, "existing");
+        Objects.requireNonNull(candidate, "candidate");
+
+        Map<String, String> existingNamedByObfuscated = new HashMap<>();
+        for (ScopeFragment fragment : existing) {
+            for (MappingEntry entry : fragment.entries()) {
+                if (entry.isClass()) {
+                    existingNamedByObfuscated.putIfAbsent(entry.obfuscatedName(), entry.namedName());
+                }
+            }
+        }
+        List<String> conflicts = conflictLinesAgainst(existing, candidate);
+        List<String> filtered = new ArrayList<>();
+        for (String conflict : conflicts) {
+            boolean extensionConflict = false;
+            for (MappingEntry entry : candidate.entries()) {
+                if (!entry.isClass()) {
+                    continue;
+                }
+                if (!entry.namedName().equals(existingNamedByObfuscated.get(entry.obfuscatedName()))) {
+                    continue;
+                }
+                // obf + named 均与既有声明一致：该类是合法成员扩展，跳过其两条类级冲突。
+                if (conflict.startsWith("混淆类 " + entry.obfuscatedName() + " 同时被")
+                        || conflict.startsWith("named 类名 " + entry.namedName() + " 同时被")) {
+                    extensionConflict = true;
+                    break;
+                }
+            }
+            if (!extensionConflict) {
+                filtered.add(conflict);
+            }
+        }
+        return filtered;
+    }
+
+    private static String memberKey(MappingEntry entry, Map<String, String> namedToObfuscated) {
+        return entry.ownerObfuscatedName() + '#' + entry.kind() + '#'
+                + entry.obfuscatedName() + '#' + toObfuscatedDescriptor(entry.descriptor(), namedToObfuscated);
+    }
+
     private static String toObfuscatedDescriptor(String descriptor, Map<String, String> namedToObfuscated) {
         if (descriptor == null || descriptor.indexOf('L') < 0) {
             return descriptor;

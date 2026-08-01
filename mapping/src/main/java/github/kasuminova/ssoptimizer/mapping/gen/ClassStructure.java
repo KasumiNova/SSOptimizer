@@ -36,11 +36,24 @@ public record ClassStructure(String name,
     /**
      * 类成员（字段或方法）的签名信息。
      *
-     * @param name   成员名（混淆侧原始名）
-     * @param desc   描述符（混淆侧原始形式）
-     * @param access 访问标志位
+     * @param name          成员名（混淆侧原始名）
+     * @param desc          描述符（混淆侧原始形式）
+     * @param access        访问标志位
+     * @param constantValue 字段 ConstantValue 属性的常量值（仅 {@code static final} 常量字段有值，
+     *                      方法与非常量字段为 {@code null}）；不参与结构指纹计算，
+     *                      供机械预命名（如字符串常量字段按值派生名）使用
      */
-    public record Member(String name, String desc, int access) {
+    public record Member(String name, String desc, int access, Object constantValue) {
+        /**
+         * 非常量成员的构造（constantValue 为 {@code null}）。
+         *
+         * @param name   成员名（混淆侧原始名）
+         * @param desc   描述符（混淆侧原始形式）
+         * @param access 访问标志位
+         */
+        public Member(String name, String desc, int access) {
+            this(name, desc, access, null);
+        }
     }
 
     /**
@@ -98,7 +111,7 @@ public record ClassStructure(String name,
 
         @Override
         public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-            fields.add(new Member(name, descriptor, access));
+            fields.add(new Member(name, descriptor, access, value));
             return null;
         }
 

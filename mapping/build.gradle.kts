@@ -169,6 +169,32 @@ tasks.register<JavaExec>("mergeScopeFragments") {
     }
 }
 
+tasks.register<JavaExec>("validateScopeFragment") {
+    group = "mapping"
+    description = "Validate a single scope fragment file before submission: -Pfragment=<path-to-{scope}-{platform}.tiny>"
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("github.kasuminova.ssoptimizer.mapping.gen.ScopeFragmentCli")
+
+    val gameJarsRoot = rootProject.file("game-jars")
+    val humanMappingsDir = file("src/main/resources/mappings")
+    inputs.dir(gameJarsRoot)
+    inputs.dir(humanMappingsDir)
+    // 候选片段由 -Pfragment 传入且通常在工作区外，不参与增量缓存判定。
+    outputs.upToDateWhen { false }
+
+    doFirst {
+        val fragment = providers.gradleProperty("fragment").orNull
+            ?: throw GradleException("用法: ./gradlew :mapping:validateScopeFragment -Pfragment=<片段文件路径>")
+        args(listOf(
+            "--check",
+            gameJarsRoot.absolutePath,
+            humanMappingsDir.absolutePath,
+            rootProject.file(fragment).absolutePath
+        ))
+    }
+}
+
 tasks.register<JavaExec>("scanMappingUsage") {
     group = "mapping"
     description = "Scan consumer bytecode (app/agent-api/mod-optimizations) for game class/member references, classify by mapping layer"

@@ -35,6 +35,10 @@ import java.util.stream.Stream;
  * 生成是确定性的：同一输入两次运行输出字节一致。
  */
 public final class FullMappingCli {
+    /** 占位成员名格式（{@code f_<指纹8>} / {@code m_<指纹8>}，冲突组追加 {@code _N}），与 {@code IntermediaryNameGenerator} 一致。 */
+    private static final java.util.regex.Pattern PLACEHOLDER_MEMBER_NAME =
+            java.util.regex.Pattern.compile("[fm]_[0-9a-f]{8}(_\\d+)?");
+
     /** 跨平台报告中未匹配类清单的最大行数。 */
     private static final int UNMATCHED_LIST_LIMIT = 200;
 
@@ -97,12 +101,21 @@ public final class FullMappingCli {
                     ClassStructure.scan(allJars(gameJarsRoot.resolve(platform.id()))));
             writeDriftReport(reportDir.resolve("mapping-drift-" + platform.id() + ".txt"), platform, drift);
 
+            long totalMembers = merged.stream().filter(entry -> !entry.isClass()).count();
+            long placeholderMembers = merged.stream()
+                    .filter(entry -> !entry.isClass() && PLACEHOLDER_MEMBER_NAME.matcher(entry.namedName()).matches())
+                    .count();
+            double semanticCoverage = totalMembers == 0 ? 100.0
+                    : (totalMembers - placeholderMembers) * 100.0 / totalMembers;
+
             System.out.println("[FullMappingCli] " + platform.id() + ": 扫描类 " + classes.size()
                     + ", 人工条目 " + humanRepository.entries().size()
                     + ", scope 片段 " + scopeFragments.size() + " 个 / " + scopeEntries.size() + " 条目"
                     + ", 占位条目 " + generated.size()
                     + ", 全量条目 " + merged.size()
-                    + ", 漂移条目 " + drift.size());
+                    + ", 漂移条目 " + drift.size()
+                    + String.format(java.util.Locale.ROOT, ", 语义覆盖率 %.1f%%（成员 %d / 占位 %d）",
+                            semanticCoverage, totalMembers, placeholderMembers));
         }
 
         writeCrossPlatformReport(reportDir.resolve("cross-platform-match.txt"), classesByPlatform);
