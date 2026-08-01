@@ -486,37 +486,37 @@ c	com/fs/starfarer/tutorial/OoOO$1	com/fs/starfarer/tutorial/TutorialAdvancedCom
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 1）)
 	f	void.super	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
 		c javap 字节码取证 | 高 | 匿名脚本外围引用
-	m	super	showStepArrow	()V
+	m	super	run	()V
 		c javap 字节码取证 | 高 | 显示箭头指向 "2." label 并对 ENFORCER 设硬通量
 c	com/fs/starfarer/tutorial/OoOO$10	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_10
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 10）)
 	f	super.super	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
 		c javap 字节码取证 | 高 | 匿名脚本外围引用
-	m	super	enforcerWeaponsDisabled	(F)Z
+	m	super	isDone	(F)Z
 		c javap 字节码取证 | 高 | 返回 ENFORCER 已禁用武器数 > 4
 c	com/fs/starfarer/tutorial/OoOO$11	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_11
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 11）)
 	f	ÖO0000	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
 		c javap 字节码取证 | 高 | 匿名脚本外围引用
-	m	super	enforcerEnginesDisabled	(F)Z
+	m	super	isDone	(F)Z
 		c javap 字节码取证 | 高 | 返回 ENFORCER 引擎 isDisabled
 c	com/fs/starfarer/tutorial/OoOO$12	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_12
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 12）)
 	f	øO0000	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
 		c javap 字节码取证 | 高 | 匿名脚本外围引用
-	m	super	removeEnforcer	()V
+	m	super	run	()V
 		c javap 字节码取证 | 高 | CombatEngine.removeObject(ENFORCER)
 c	com/fs/starfarer/tutorial/OoOO$13	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_13
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 13）)
 	f	private	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
 		c javap 字节码取证 | 高 | 匿名脚本外围引用
-	m	super	playerShieldArcLarge	(F)Z
+	m	super	isDone	(F)Z
 		c javap 字节码取证 | 高 | 玩家护盾开启且 activeArc>150
 c	com/fs/starfarer/tutorial/OoOO$14	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_14
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 14）)
 	f	õO0000	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
 		c javap 字节码取证 | 高 | 匿名脚本外围引用
-	m	super	clearWolfWeaponGroup	()V
+	m	super	run	()V
 		c javap 字节码取证 | 高 | 清空 wolf_CS 武器组 0
 c	com/fs/starfarer/tutorial/OoOO$15	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_15
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 15）)

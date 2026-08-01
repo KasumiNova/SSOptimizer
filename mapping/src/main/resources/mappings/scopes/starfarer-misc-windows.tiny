@@ -542,11 +542,11 @@ c	com/fs/starfarer/D/if	com/fs/starfarer/O0OO/TitleMusicPlayer
 	c API-impl种子（getMusicSetIdForTitle；注册表以 TITLE+"music_title" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.J)
 	f	private	titleObject	Ljava/lang/Object;
 		c javap 字节码取证 | 中 | setTitle 写入、clearTitle 置 null；本类只写不读
-	m	o00000	clearTitle	()V
+	m	o00000	clearToken	()V
 		c javap 字节码取证 | 中 | titleObject=null + 调基类空 o00000()
-	m	class	updateMusic	()V
+	m	class	play	()V
 		c javap 字节码取证 | 中 | 调 updateMusicForTitle() 后调基类 class()（按标题类型选曲）
-	m	o00000	setTitle	(Ljava/lang/Object;)V
+	m	o00000	setToken	(Ljava/lang/Object;)V
 		c javap 字节码取证 | 中 | 记录 titleObject、更新音乐、调基类 o00000(Object) 清旧曲
 	m	float	updateMusicForTitle	()V
 		c javap 字节码取证 | 高 | 私有：MusicPlayerPlugin.getMusicSetIdForTitle 取曲集 id，变化则 SpecStore 重载 spec，单曲时置基类标志
@@ -574,29 +574,29 @@ c	com/fs/starfarer/D/K	com/fs/starfarer/O0OO/BaseMusicPlayer
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	f	void	selectedSpec	Lcom/fs/starfarer/loading/MusicSpec;
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
-	m	o00000	advance	()V
+	m	o00000	clearToken	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	o00000	playMusic	(IILjava/lang/String;)V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	o00000	playMusic	(IILjava/lang/String;Z)V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
-	m	o00000	reset	(Ljava/lang/Object;)V
+	m	o00000	setToken	(Ljava/lang/Object;)V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	class	play	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
-	m	Ö00000	update	()V
+	m	Ö00000	pause	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	o00000	selectSpec	(Lcom/fs/starfarer/loading/MusicSpec;)Lcom/fs/starfarer/loading/MusicSpec;
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	Ó00000	stop	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
-	m	new	stopMusic	()V
+	m	new	stopLoop	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	Ø00000	shouldLoop	()Z
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	o00000	setLoop	(Z)V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
-	m	Ô00000	getContext	()Ljava/lang/Object;
+	m	Ô00000	getToken	()Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 c	com/fs/starfarer/D/M	com/fs/starfarer/O0OO/SoundManager
 	c 字符串常量（Playing UI sound:/Playing loop:/Queueing at listener:；常量 200/300.0f/0.2f/0.2f 与 linux O0OO/OO0O 一致） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.OO0O)
@@ -726,11 +726,11 @@ c	com/fs/starfarer/D/oOoO	com/fs/starfarer/O0OO/CampaignMusicPlayer
 	c API-impl种子（getMusicSetIdForCampaignStateToken + o00000(float) 音量控制；CampaignState 引用） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.void)
 	f	ÒO0000	campaignStateToken	Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
-	m	o00000	advance	()V
+	m	o00000	clearToken	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	class	play	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
-	m	o00000	setCampaignStateToken	(Ljava/lang/Object;)V
+	m	o00000	setToken	(Ljava/lang/Object;)V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 	m	õ00000	updateMusicSet	()V
 		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md

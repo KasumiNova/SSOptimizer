@@ -1233,7 +1233,7 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$15	com/fs/starfarer/ui/im
 		c javap 字节码取证 | 高 | hullSize ordinal 差（反向），相等比 getHullName
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$16	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TableClickActionListener
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: makeTableItemsClickable 创建，实现 campaign.ui.UITable$o 行点击回调)
-	m	super	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
+	m	super	rowClicked	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
 		c campaign-command-a 已有同签名命名 tableRowSelected | 高
 	f	o00000	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
 		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）

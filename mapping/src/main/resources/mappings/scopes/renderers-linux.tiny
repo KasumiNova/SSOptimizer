@@ -1565,13 +1565,13 @@ c	com/fs/starfarer/renderers/damage/String	com/fs/starfarer/renderers/damage/Dec
 		c javap 字节码取证 | 高 | private；new Color(255,v,0,0)，类内无调用 → 死代码
 	m	if	updateAllCells	()V
 		c javap 字节码取证 | 高 | 遍历 armorGrid 全格调 setCellDamage(x,y,null,0,false,1,0,0)
-	m	super	setCellDamage	(IILorg/lwjgl/util/vector/Vector2f;FZFFF)V
+	m	super	armorCellDamaged	(IILorg/lwjgl/util/vector/Vector2f;FZFFF)V
 		c javap 字节码取证 | 高 | 边界检查、getArmorFraction<0.9 时 getDecal 并 F.Õ00000(强度)/F.Ó00000(fraction)
-	m	Ò00000	getFacing	()F
+	m	Ò00000	getSize	()F
 		c javap 字节码取证 | 高 | 委托 ship.getFacing()
 	m	Ó00000	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 委托 ship.getLocation()
-	m	super	isExpired	()Z
+	m	super	isActive	()Z
 		c javap 字节码取证 | 高 | 委托 ship.isExpired()
 c	com/fs/starfarer/renderers/damage/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/renderers/damage/RenderMarker
 	c	来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/renderers.md)

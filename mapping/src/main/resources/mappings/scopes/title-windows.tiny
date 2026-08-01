@@ -274,7 +274,7 @@ c	com/fs/starfarer/title/oOOO	com/fs/starfarer/title/TitleScreenBackgroundBattle
 		c javap 字节码取证 | 高 | 委托 5 参版本
 	m	new	createShip	(Ljava/lang/String;IFFZ)Lcom/fs/starfarer/combat/entities/Ship;
 		c javap 字节码取证 | 高 | 建舰、setOwner/Facing、可选 setShipAI、addObject
-	m	o00000	unusedMapSync	(Lcom/fs/starfarer/combat/CombatMap;)V
+	m	o00000	init	(Lcom/fs/starfarer/combat/CombatMap;)V
 		c javap 字节码取证 | 高 | 方法体为空，死代码方法
 	m	Ø00000	unusedCreateAstralTitleVariant	()V
 		c javap 字节码取证 | 高 | 构建 astral_title 变体；类内无调用
@@ -1026,7 +1026,7 @@ c	com/fs/starfarer/title/Object/I$1	com/fs/starfarer/title/MissionListRow$Hotspo
 		c  javap 字节码取证 | 高 | final 外部类引用；构造 arg1
 	f	private.int$private	sprite	Lcom/fs/graphics/Sprite;
 		c  javap 字节码取证 | 高 | final；构造 arg2 任务图标 sprite；回调中动画
-	m	new	renderIcon	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+	m	new	onRender	(Lcom/fs/starfarer/ui/PositionImpl;F)V
 		c  javap 字节码取证 | 高 | 热点悬停回调：sprite.setAlphaMult(alpha) 并按热点中心 renderAtCenter 渲染任务图标
 c	com/fs/starfarer/title/Object/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/title/MissionList
 	c 来源(ui_noise_static 背景 + updateScores/selectMission/notifyHotspotClicked) | 置信度(高)
@@ -1436,7 +1436,7 @@ c	com/fs/starfarer/title/Object/A/B	com/fs/starfarer/title/MissionScoreStorage
 		c  javap 字节码取证 | 高 | JSONObject 分数存储；load 中从文件读或 new，save 中写入
 	m	o00000	getScore	(Ljava/lang/String;)I
 		c  javap 字节码取证 | 高 | JSONObject.getInt，异常返回 0
-	m	o00000	setScore	(Ljava/lang/String;I)V
+	m	o00000	saveScore	(Ljava/lang/String;I)V
 		c  javap 字节码取证 | 高 | JSONObject.put 后 saveScores
 	m	Object	loadScores	()V
 		c  javap 字节码取证 | 高 | 文件存在时 LoadingUtils 读 JSONObject，否则 new；异常记日志

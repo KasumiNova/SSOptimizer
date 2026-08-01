@@ -1168,7 +1168,7 @@ c	com/fs/starfarer/campaign/CampaignHelpManager$10	com/fs/starfarer/campaign/Cam
 		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$11	com/fs/starfarer/campaign/CampaignHelpManager$HelpPopupShowCallback
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(implements ui.newui.oOOo$o 恒 true 确认回调，windows 方法名 o00000)
-	m	o00000	confirmShow	()Z
+	m	o00000	confirm	()Z
 
 	f	Ó00000	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
 		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
@@ -1546,7 +1546,7 @@ c	com/fs/starfarer/campaign/CampaignState$2	com/fs/starfarer/campaign/CampaignSt
 		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignState 的合成引用
 c	com/fs/starfarer/campaign/CampaignState$3	com/fs/starfarer/campaign/CampaignState$HelpPopupShowCallback
 	c 来源(javap取证) | 置信度(高) | 证据(implements ui.newui.oOOo$o 恒 true 确认回调，windows 方法名 o00000)
-	m	o00000	confirmShow	()Z
+	m	o00000	confirm	()Z
 
 	f	Ô00000	outer	Lcom/fs/starfarer/campaign/CampaignState;
 		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignState 的合成引用

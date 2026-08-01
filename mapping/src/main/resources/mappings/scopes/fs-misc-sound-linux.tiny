@@ -830,9 +830,9 @@ c	sound/N	sound/StreamSound
 		c javap 字节码取证 | 高 | 持有的流源；setPosition/getPosition/update/isFinished 均委托
 	m	o00000	stopSource	(I)V
 		c javap 字节码取证 | 中 | 私有：alSourceStop(getSource(i)) + 反排队全部缓冲 + alSourcei(AL_BUFFER,0)；无调用点，疑似遗留
-	m	Object	setPosition	(F)Z
+	m	Object	setTimeOffset	(F)Z
 		c javap 字节码取证 | 高 | 委托 streamingAudioSource.super(F)Z
-	m	Ô00000	getPosition	()F
+	m	Ô00000	getTimeOffset	()F
 		c javap 字节码取证 | 高 | 委托 streamingAudioSource.Õ00000()F
 	m	oO0000	update	()V
 		c javap 字节码取证 | 高 | 委托 streamingAudioSource.õ00000()V（流式缓冲推进）

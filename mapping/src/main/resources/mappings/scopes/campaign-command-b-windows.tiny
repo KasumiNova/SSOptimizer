@@ -147,7 +147,7 @@ c	com/fs/starfarer/campaign/command/OooO$1	com/fs/starfarer/campaign/command/Adm
 	c 来源(继承关系) | 置信度(中) | 证据(实现 n$Oo 渲染回调，用于拖拽版本渲染)
 	f	new.Object	outer	Lcom/fs/starfarer/campaign/command/AdminRow;
 		c javap 构造 putfield | 高 | 外层 AdminRow 引用
-	m	super	renderBg	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap renderers.public.o00000 绘背景 | 高 | 绘制行背景（负高亮/暗色）
 c	com/fs/starfarer/campaign/command/OooO$2	com/fs/starfarer/campaign/command/AdminRow$TooltipPositioner
 	c 来源(javap取证) | 置信度(高) | 证据(Runnable，setTooltipPositionRelativeToAnchor 定位 tooltip)
@@ -199,7 +199,7 @@ c	com/fs/starfarer/campaign/command/OutpostItemRow$1	com/fs/starfarer/campaign/c
 	c 来源(继承关系) | 置信度(中) | 证据(实现 MarketConditionsWidget$o 条件过滤回调)
 	f	Ô00000	outer	Lcom/fs/starfarer/campaign/command/OutpostItemRow;
 		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
-	m	o00000	isPlanetaryCondition	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+	m	o00000	shouldShow	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
 		c javap 字节码取证 | 高 | 返回 condition.isPlanetary()；MarketConditionsWidget 过滤回调
 c	com/fs/starfarer/campaign/command/OutpostItemRow$2	com/fs/starfarer/campaign/command/OutpostItemRow$CommodityOrderComparator
 	c 来源(javap取证) | 置信度(中) | 证据(实现 Comparator<String>，按 CommoditySpecAPI.getOrder 排序)

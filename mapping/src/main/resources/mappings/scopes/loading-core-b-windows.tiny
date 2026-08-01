@@ -609,7 +609,7 @@ c	com/fs/starfarer/loading/int	com/fs/starfarer/loading/MusicSpec
 		c javap 字节码取证 | 高 | 返回 shuffle 字段
 c	com/fs/starfarer/loading/int$1	com/fs/starfarer/loading/MusicSpec$MusicStreamProvider
 	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/int$1
-	m	super	openStream	()Ljava/io/InputStream;
+	m	super	getInputStream	()Ljava/io/InputStream;
 
 	f	Ô00000	outerMusicSpec	Lcom/fs/starfarer/loading/MusicSpec;
 		c javap 字节码取证 | 中 | 编译器生成外部类引用（仅构造写入）

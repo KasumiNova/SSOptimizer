@@ -19,6 +19,10 @@ c com/fs/starfarer/combat/ai/BasicShipAI$1 com/fs/starfarer/combat/ai/BasicShipA
 		c javap 字节码取证 | 中 | systemAI instanceof PhaseCloakSystem 时返回其 shieldAI.getEval()，否则 null
 	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
 		c javap 字节码取证 | 高 | BasicShipAI.advance 调用点（ShieldAI 接口），委托 systemAI 同参方法
+	m	o00000	shouldKeepShieldOn	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	Ó00000	hasFiringSolution	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c com/fs/starfarer/combat/ai/BasicShipAI$o com/fs/starfarer/combat/ai/AttackMode
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#basicshipai-o-attack-mode
 	f	Ô00000	STRAFE	Lcom/fs/starfarer/combat/ai/BasicShipAI$o;
@@ -107,6 +111,10 @@ c com/fs/starfarer/combat/ai/FighterAI$1 com/fs/starfarer/combat/ai/FighterAI$1
 		c javap 字节码取证 | 中 | systemAI instanceof PhaseCloakSystem 时返回其 shieldAI.getEval()，否则 null
 	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
 		c javap 字节码取证 | 高 | FighterAI.advance 调用点（ShieldAI 接口），委托 systemAI 同参方法
+	m	o00000	shouldKeepShieldOn	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	Ó00000	hasFiringSolution	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c com/fs/starfarer/combat/ai/FighterAI$o com/fs/starfarer/combat/ai/FighterAttackState
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#fighterai-o-fighter-attack-state
 	f	Object	ATTACK_RUN	Lcom/fs/starfarer/combat/ai/FighterAI$o;
@@ -206,7 +214,7 @@ c com/fs/starfarer/combat/ai/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 中 | o00000(CollisionAnalysisModule) 写入；advance 中碰撞威胁判定时读取
 	f	super.super	timeSinceShieldHit	F
 		c javap 字节码取证 | 中 | advance 中 += 时间，盾受击/方案有效时清零；用于连续受击后的强制决策
-	m	o00000	isShieldOn	()Z
+	m	o00000	shouldKeepShieldOn	()Z
 		c javap 字节码取证 | 高 | 直接返回 shieldsOn 字段（ShieldAI 接口方法）
 	m	o00000	setCollisionAnalysisModule	(Lcom/fs/starfarer/combat/ai/collisions/CollisionAnalysisModule;)V
 		c javap 字节码取证 | 高 | 直接写 collisionAnalysisModule 字段
@@ -214,7 +222,7 @@ c com/fs/starfarer/combat/ai/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 高 | ShieldAI 主逻辑：过载/指令/威胁目标选择分支，委托 eval，计算最佳盾角度并 giveCommand
 	m	Ø00000	unused	()V
 		c javap 字节码取证 | 中 | 空方法体直接 return，无引用，死代码
-	m	Ó00000	isShieldFacingOk	()Z
+	m	Ó00000	hasFiringSolution	()Z
 		c javap 字节码取证 | 中 | 委托 eval.isShieldFacingOk()（ShieldAI 接口方法）
 	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
 		c javap 字节码取证 | 高 | 直接返回 eval 字段（ShieldAI 接口方法）
@@ -1052,13 +1060,13 @@ c com/fs/starfarer/combat/ai/Q com/fs/starfarer/combat/ai/FrontShieldAI
 		c javap 字节码取证 | 中 | shield.isOn 期间累计受击时间，超过 shieldHitTolerance 关盾
 	f	Öo0000	shieldsOn	Z
 		c javap 字节码取证 | 中 | o00000() 返回；开/关盾决策各处读写
-	m	o00000	isShieldOn	()Z
+	m	o00000	shouldKeepShieldOn	()Z
 		c javap 字节码取证 | 高 | 直接返回 shieldsOn 字段（ShieldAI 接口方法）
 	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
 		c javap 字节码取证 | 高 | ShieldAI 主逻辑：过载/指令/DO_NOT_USE_SHIELDS 分支，委托 eval，giveCommand 开/关盾
 	m	null	unused	()V
 		c javap 字节码取证 | 中 | 空方法体直接 return，无引用，死代码
-	m	Ó00000	isShieldFacingOk	()Z
+	m	Ó00000	hasFiringSolution	()Z
 		c javap 字节码取证 | 中 | 委托 eval.isShieldFacingOk()（ShieldAI 接口方法）
 	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
 		c javap 字节码取证 | 高 | 直接返回 eval 字段（ShieldAI 接口方法）
@@ -1299,8 +1307,12 @@ c com/fs/starfarer/combat/ai/private$o com/fs/starfarer/combat/ai/AutofireState
 		c javap 字节码取证 | 高 | private static final AutofireState[]，values() 返回
 c com/fs/starfarer/combat/ai/A/oOOO com/fs/starfarer/combat/ai/A/oOOO
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#super-a-super-b-unresolved
+	m	o00000	updateArmorIntegrity	()V
+		c 覆写链统一(人工裁决) | 高 | javap：遍历护甲格计算损伤均值<0.5 置完好标志
 c com/fs/starfarer/combat/ai/A/OoOO com/fs/starfarer/combat/ai/A/OoOO
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#super-a-super-b-unresolved
+	m	o00000	updateArmorIntegrity	()V
+		c 覆写链统一(人工裁决) | 高 | javap：遍历护甲格计算损伤均值<0.5 置完好标志
 c com/fs/starfarer/combat/ai/OO0O com/fs/starfarer/combat/ai/AIUtils
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#while-ai-utils
 	f	o00000	unusedInt	I
@@ -1639,11 +1651,17 @@ c com/fs/starfarer/combat/ai/OO0O com/fs/starfarer/combat/ai/AIUtils
 		c javap 字节码取证 | 高 | WeaponSize→分数表懒初始化（LARGE=3/MEDIUM=2/SMALL=1）
 c com/fs/starfarer/combat/ai/OO0O$1 com/fs/starfarer/combat/ai/OO0O$1
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c 覆写链统一(人工裁决) | 高 | 与顶层接口 OO0O$o 一致，同 linux while$o 链裁决
 c com/fs/starfarer/combat/ai/OO0O$O0 com/fs/starfarer/combat/ai/OO0O$O0
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
 c com/fs/starfarer/combat/ai/OO0O$Oo com/fs/starfarer/combat/ai/OO0O$Oo
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c 覆写链统一(人工裁决) | 高 | 与顶层接口 OO0O$o 一致，同 linux while$o 链裁决
 c com/fs/starfarer/combat/ai/OO0O$o com/fs/starfarer/combat/ai/OO0O$o
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c 覆写链统一(人工裁决) | 高 | 接口声明，同 linux while$o 链裁决
 c com/fs/starfarer/combat/ai/OO0O$oo com/fs/starfarer/combat/ai/OO0O$oo
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes

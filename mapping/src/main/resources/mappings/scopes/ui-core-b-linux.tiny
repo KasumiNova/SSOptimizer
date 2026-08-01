@@ -533,6 +533,8 @@ c	com/fs/starfarer/ui/o0ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	o00000	setSize	(FF)V
 	m	o00000	setScale	(F)V
 	m	Ò00000	setOn	(Z)V
+	m	o00000	isVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/ui/oO00	com/fs/starfarer/ui/TooltipHost
 	c 来源(javap取证) | 置信度(高) | 证据(TooltipHost：tooltip 宿主接口（extends OO0o），setTooltip/setTooltipPositionRelativeToAnchor 挂接 tooltip 内容与锚点)
 	m	setTooltip	setTooltip	(FLcom/fs/starfarer/ui/Oo0o;)V
@@ -551,14 +553,16 @@ c	com/fs/starfarer/ui/oO0O	com/fs/starfarer/ui/SpriteRenderer
 		c javap 字节码取证 | 高 | 构造器初始 4.0f；o00000(FFFF) 传给 renderers/public.o00000 作为多层发光渲染步长
 	m	Ò00000	render	(FFF)V
 		c javap 字节码取证 | 高 | 简单渲染：sprite.setAlphaMult(alpha)+renderAtCenter(x,y)
-	m	o00000	renderGlow	(FFFF)V
+	m	o00000	renderWithGlow	(FFFF)V
 		c javap 字节码取证 | 高 | alpha>0 时调 renderers/public.o00000 做多层发光渲染（blendFunc 770/1、三层缩放）
-	m	o00000	renderWithShadow	(FFF)V
+	m	o00000	renderDisabled	(FFF)V
 		c javap 字节码取证 | 高 | 先 render，再以黑/灰 0.5*alpha 各 renderAtCenter 一次叠加阴影
 	m	o00000	setScale	(F)V
 		c javap 字节码取证 | 高 | 写 scale 并 setSize(width*scale, height*scale)
 	m	o00000	setSize	(FF)V
 		c javap 字节码取证 | 高 | 写 width/height 并重算 scale 尺寸
+	m	o00000	isVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/ui/oo0O	com/fs/starfarer/ui/Dialog
 	c 来源(javap取证+引用关系) | 置信度(高) | 证据(Dialog：模态对话框基类（extends Panel），show/dismiss/setOption/背景变暗/外部点击吸收/键盘快捷键关闭，84 处游戏类引用，oo0O$o 为关闭回调)
 	f	delegate	delegate	Lcom/fs/starfarer/ui/oo0O$o;
@@ -626,7 +630,7 @@ c	com/fs/starfarer/ui/oo0O$2	com/fs/starfarer/ui/Dialog$BackgroundDimRenderer
 	c 来源(javap取证) | 置信度(高) | 证据(Dialog$BackgroundDimRenderer：背景变暗渲染器（implements C$o），按 getFader 亮度与 getBackgroundDimAmount 画黑色遮罩)
 	f	public.int$private	dialog	Lcom/fs/starfarer/ui/Dialog;
 		c javap 字节码取证 | 高 | 持有外部 Dialog 引用，取背景暗化参数
-	m	new	render	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+	m	new	onRender	(Lcom/fs/starfarer/ui/PositionImpl;F)V
 		c javap 字节码取证 | 高 | C$o 渲染回调；画黑色暗化矩形
 c	com/fs/starfarer/ui/oo0O$o	com/fs/starfarer/ui/Dialog$DismissListener
 	c 来源(javap取证) | 置信度(高) | 证据(Dialog$DismissListener：对话框关闭回调接口，dialogDismissed(Dialog, int) 由 delegate 字段持有)
@@ -743,6 +747,8 @@ c	com/fs/starfarer/ui/q$o	com/fs/starfarer/ui/BaseButtonRenderer
 	m	Ò00000	render	(FFF)V
 	m	o00000	renderDisabled	(FFF)V
 	m	o00000	renderWithGlow	(FFFF)V
+	m	o00000	isVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/ui/r	com/fs/starfarer/ui/IconTextButtonRenderer
 	c 来源(javap取证+引用关系) | 置信度(中) | 证据(IconTextButtonRenderer：ButtonBackgroundRenderer(n$Oo) 实现，构造 (文本, 字体, 图标 Sprite) 渲染背景矩形 + 图标 + 文本，被 ui/impl 长名面板使用)
 	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
@@ -850,16 +856,18 @@ c	com/fs/starfarer/ui/super	com/fs/starfarer/ui/TextButtonRenderer
 		c javap 字节码取证 | 高 | o00000(FF) 写入；渲染矩形宽
 	f	o00000	height	F
 		c javap 字节码取证 | 高 | o00000(FF) 写入；渲染矩形高
-	m	Ò00000	renderHighlighted	(FFF)V
+	m	Ò00000	render	(FFF)V
 		c javap 字节码取证 | 高 | 绿色矩形底 + fontRenderer 全 alpha 渲染（高亮态）
-	m	o00000	renderDimmed	(FFF)V
+	m	o00000	renderDisabled	(FFF)V
 		c javap 字节码取证 | 高 | 灰色矩形底 + fontRenderer 0.5*alpha 渲染（禁用/暗淡态）
-	m	o00000	renderGlow	(FFFF)V
+	m	o00000	renderWithGlow	(FFFF)V
 		c javap 字节码取证 | 高 | glowSprite.setAlphaMult(alpha*amount) + renderAtCenter
 	m	o00000	setSize	(FF)V
 		c javap 字节码取证 | 高 | 写 width/height 并同步 glowSprite 尺寸
-	m	o00000	setHeightScale	(F)V
+	m	o00000	setScale	(F)V
 		c javap 字节码取证 | 高 | glowSprite.setSize(width, height*scale)
+	m	o00000	isVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/ui/super/B	com/fs/starfarer/ui/super/FighterWingIconRenderer
 	c 来源(javap取证) | 置信度(高) | 证据(FighterWingIconRenderer：战斗机联队图标渲染器（implements BaseButtonRenderer），持有 FighterWingSpec/FleetMember/HullSize，渲染联队 Sprite 与部署状态)
 	f	int.Object	unusedConstant	F
@@ -976,9 +984,9 @@ c	com/fs/starfarer/ui/super/B	com/fs/starfarer/ui/super/FighterWingIconRenderer
 	m	int.super	getCustomPanel	()Lcom/fs/starfarer/ui/Panel;
 	m	o00000	setCustomPanel	(Lcom/fs/starfarer/ui/Panel;)V
 	m	Ô00000	renderOverlay	(FFF)V
-	m	o00000	renderWithShadow	(FFF)V
-	m	o00000	renderHighlighted	(FFFF)V
-	m	o00000	setPosition	(FF)V
+	m	o00000	renderDisabled	(FFF)V
+	m	o00000	renderWithGlow	(FFFF)V
+	m	o00000	setSize	(FF)V
 	m	Object.super	getWidth	()F
 	m	oO0000	getHeight	()F
 	m	Õo0000	getScale	()F
@@ -1036,7 +1044,7 @@ c	com/fs/starfarer/ui/super/Object	com/fs/starfarer/ui/super/WeaponIconRenderer
 	m	Ó00000	renderWithAngle	(FFFF)V
 	m	ööO000	getWidth	()F
 	m	new	rotateVector	(Lorg/lwjgl/util/vector/Vector2f;F)Lorg/lwjgl/util/vector/Vector2f;
-	m	new	renderAt	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+	m	new	onRender	(Lcom/fs/starfarer/ui/PositionImpl;F)V
 	m	ÖöO000	isFixedSize	()Z
 	m	õO0000	setFixedSize	(Z)V
 	m	Ø00000	fitToSize	(FF)V
@@ -1303,11 +1311,11 @@ c	com/fs/starfarer/ui/w	com/fs/starfarer/ui/LabeledTextButtonRenderer
 		c javap 字节码取证 | 高 | 写 alignment 返回 this
 	m	Object	setInvertAlpha	(Z)Lcom/fs/starfarer/ui/LabeledTextButtonRenderer;
 		c javap 字节码取证 | 高 | 写 invertAlpha 返回 this
-	m	Ò00000	renderIconBlended	(FFF)V
+	m	Ò00000	render	(FFF)V
 		c javap 字节码取证 | 高 | 非 rendering 时设 textRenderer/keyHint blend+alpha 后调 renderIcon
 	m	ô00000	getTextRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
 		c javap 字节码取证 | 高 | 返回 textRenderer
-	m	o00000	render	(FFFF)V
+	m	o00000	renderWithGlow	(FFFF)V
 		c javap 字节码取证 | 高 | 主渲染：invertAlpha 修正、rendering=true、文本+图标多位置绘制
 	m	o00000	renderTextShadow	(Lcom/fs/graphics/font/BitmapFontRenderer;FFLjava/awt/Color;)V
 		c javap 字节码取证 | 高 | 私有：blend(770,1)+上色+alpha=0.125*a*b 弱化绘制
@@ -1321,12 +1329,14 @@ c	com/fs/starfarer/ui/w	com/fs/starfarer/ui/LabeledTextButtonRenderer
 		c javap 字节码取证 | 高 | 私有：sprite blend/color/alpha 后按 alignmentMap 分支渲染图标+双文本
 	m	o00000	renderDisabled	(FFF)V
 		c javap 字节码取证 | 高 | 禁用态：textRenderer 置 disabledColor+0.75alpha 后调 renderIconBlended
-	m	o00000	setBackgroundAlpha	(F)V
+	m	o00000	setScale	(F)V
 		c javap 字节码取证 | 高 | 写 backgroundAlpha
-	m	o00000	setBackground	(FF)V
+	m	o00000	setSize	(FF)V
 		c javap 字节码取证 | 高 | 设 backgroundAlpha(默认)+iconWidth+iconHeight
 	m	Ø00000	getAlignmentMap	()[I
 		c javap 字节码取证 | 高 | Alignment 枚举→分支号映射表懒初始化（BL=1..TR=4, TMID=5..）
+	m	o00000	isVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/ui/x	com/fs/starfarer/ui/ImageButtonPanel
 	c 来源(javap取证+引用关系) | 置信度(高) | 证据(ImageButtonPanel：图片按钮面板（extends Stringnew$Oo），渲染 Sprite 图标 + 边框 + 禁用色发光，被 n.getImageButtonPanel() 返回、CodexDialog 与 marketinfo 使用)
 	f	disableToEnableGlowMult	disableToEnableGlowMult	F

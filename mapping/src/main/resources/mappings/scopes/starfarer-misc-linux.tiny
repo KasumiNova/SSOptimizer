@@ -476,11 +476,11 @@ c	com/fs/starfarer/O0OO/J	com/fs/starfarer/O0OO/TitleMusicPlayer
 	c API-impl种子（MusicPlayerPlugin.getMusicSetIdForTitle，OOoO 以 TITLE+"music_title" 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.J)
 	f	ÔO0000	titleObject	Ljava/lang/Object;
 		c javap 字节码取证 | 中 | setTitle 写入、clearTitle 置 null；本类只写不读（基类 o00000 字段持有效标题）
-	m	o00000	clearTitle	()V
+	m	o00000	clearToken	()V
 		c javap 字节码取证 | 中 | titleObject=null + 调基类空 o00000()
-	m	Õ00000	updateMusic	()V
+	m	Õ00000	play	()V
 		c javap 字节码取证 | 中 | 调 updateMusicForTitle() 后调基类 Õ00000()（按 TITLE/MARKET/ENCOUNTER 标题类型选曲）
-	m	o00000	setTitle	(Ljava/lang/Object;)V
+	m	o00000	setToken	(Ljava/lang/Object;)V
 		c javap 字节码取证 | 中 | 记录 titleObject、更新音乐、调基类 o00000(Object) 清旧曲
 	m	ø00000	updateMusicForTitle	()V
 		c javap 字节码取证 | 高 | 私有：MusicPlayerPlugin.getMusicSetIdForTitle 取曲集 id，变化则 SpecStore 重载 floatsuper 曲集 spec，单曲时置基类 ô00000
@@ -508,29 +508,29 @@ c	com/fs/starfarer/O0OO/K	com/fs/starfarer/O0OO/BaseMusicPlayer
 		c javap 字节码取证 | 高 | 当前播放 sound（spec.getSound()），play/stop 主对象
 	f	Ø00000	selectedSpec	Lcom/fs/starfarer/loading/MusicSpec;
 		c javap 字节码取证 | 高 | playMusic 从 trackSpec 选出的 spec，失败置 null
-	m	o00000	advance	()V
+	m	o00000	clearToken	()V
 		c javap 字节码取证 | 高 | 接口空实现（子类覆写），无操作
 	m	o00000	playMusic	(IILjava/lang/String;)V
 		c javap 字节码取证 | 高 | 包装：调 (II,String,Z) 变体 false；null id 时停音量 1
 	m	o00000	playMusic	(IILjava/lang/String;Z)V
 		c javap 字节码取证 | 高 | 加载 spec→selectedSpec→sound，setLoop(参数) 后播放器 play(音量,id,sound)
-	m	o00000	reset	(Ljava/lang/Object;)V
+	m	o00000	setToken	(Ljava/lang/Object;)V
 		c javap 字节码取证 | 高 | playing=false，清 lastSpec/currentSpec/lastMusic/currentMusic/selectedSpec
 	m	Õ00000	play	()V
 		c javap 字节码取证 | 高 | 非 TITLE/MARKET/ENCOUNTER 上下文才播；pendingMusic 优先，否则从 lastSpec 恢复
-	m	return	update	()V
+	m	return	pause	()V
 		c javap 字节码取证 | 高 | 每帧：musicEnabled&&playing 时从播放器取当前曲续播/恢复，异常 warn 并重置
 	m	o00000	selectSpec	(Lcom/fs/starfarer/loading/MusicSpec;)Lcom/fs/starfarer/loading/MusicSpec;
 		c javap 字节码取证 | 高 | 委托 trackSpec 的 WeightedRandomPicker 选择下一首（spec null 时返回 null）
 	m	Object	stop	()V
 		c javap 字节码取证 | 高 | 调 stopMusic 后，播放器播放中则停音量 1
-	m	Ò00000	stopMusic	()V
+	m	Ò00000	stopLoop	()V
 		c javap 字节码取证 | 高 | 停止 pendingMusic 并清空 current/selected 相关字段
 	m	Ø00000	shouldLoop	()Z
 		c javap 字节码取证 | 高 | 返回 loopSingleTrack
 	m	o00000	setLoop	(Z)V
 		c javap 字节码取证 | 高 | 写 loopSingleTrack
-	m	Ô00000	getContext	()Ljava/lang/Object;
+	m	Ô00000	getToken	()Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 返回 context
 c	com/fs/starfarer/O0OO/M	com/fs/starfarer/O0OO/EncounterMusicPlayer
 	c API-impl种子（getMusicSetIdForCampaignStateToken，OOoO 以 ENCOUNTER token 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.M)
@@ -800,11 +800,11 @@ c	com/fs/starfarer/O0OO/void	com/fs/starfarer/O0OO/CampaignMusicPlayer
 	c API-impl种子（getMusicSetIdForCampaignStateToken，带音量控制 o00000(float)，CampaignState 注册） | 高 | 证据(.dev/mapping-evidence/starfarer-misc.md O0OO.void)
 	f	ÒO0000	campaignStateToken	Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 战役状态 token：setCampaignStateToken 存入，updateMusicSet 查音乐集 id
-	m	o00000	advance	()V
+	m	o00000	clearToken	()V
 		c javap 字节码取证 | 高 | 覆写：清 campaignStateToken（super 为空实现）
 	m	Õ00000	play	()V
 		c javap 字节码取证 | 高 | 覆写：updateMusicSet 后调 super.play
-	m	o00000	setCampaignStateToken	(Ljava/lang/Object;)V
+	m	o00000	setToken	(Ljava/lang/Object;)V
 		c javap 字节码取证 | 高 | 覆写：存 token→updateMusicSet→super.reset
 	m	int	updateMusicSet	()V
 		c javap 字节码取证 | 高 | 私有：getMusicSetIdForCampaignStateToken，音乐集变化时 stop 并重载 trackSpec

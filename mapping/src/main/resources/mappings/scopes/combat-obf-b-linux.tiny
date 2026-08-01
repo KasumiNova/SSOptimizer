@@ -236,9 +236,9 @@ c	com/fs/starfarer/combat/B/B	com/fs/starfarer/combat/warroom/ShipIcon
 		c javap 反编译 | 高 | 返回 ship.getOwner()
 	m	Ò00000	advance	(F)V
 		c javap 反编译 | 高 | 更新编队/指示条/偏移收敛/两 fader 亮度/leader 位置
-	m	Ô00000	getShip	()Ljava/lang/Object;
+	m	Ô00000	getEntity	()Ljava/lang/Object;
 		c javap 反编译 | 高 | 返回 ship
-	m	o00000	setSelected	(Z)V
+	m	o00000	setHovered	(Z)V
 		c javap 反编译 | 高 | super 后按状态调 fadeIn 并记录 wasSelected
 	m	public	getShipIconRenderer	()Lcom/fs/starfarer/ui/super/FighterWingIconRenderer;
 		c javap 反编译 | 高 | 返回 shipIconRenderer
@@ -248,15 +248,15 @@ c	com/fs/starfarer/combat/B/c	com/fs/starfarer/combat/warroom/CommandButtonIconR
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
 	f	Õô0000	fader	Lcom/fs/graphics/util/Fader;
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
-	m	super	unusedRenderButton	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
-	m	super	renderButton	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
 	m	Õ00000	advance	(F)V
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
 	m	õo0000	getButton	()Lcom/fs/starfarer/combat/warroom/CommandButton;
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
-	m	super	unusedProcessInput	(Lcom/fs/starfarer/util/InputEventList;)V
+	m	super	processInput	(Lcom/fs/starfarer/util/InputEventList;)V
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
 c	com/fs/starfarer/combat/B/_	com/fs/starfarer/combat/warroom/CommandUI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#_-command-ui
@@ -444,17 +444,17 @@ c	com/fs/starfarer/combat/B/D	com/fs/starfarer/combat/warroom/BattleObjectiveIco
 		c javap 字节码取证 | 高 | super.advance + FfIndicator 推进
 	m	Ò00000	getOwner	()I
 		c javap 字节码取证 | 高 | battleObjective.getOwner
-	m	o00000	getScaledSize	(F)F
+	m	o00000	computeIconSize	(F)F
 		c javap 字节码取证 | 中 | 尺寸缩放换算（*1000/75 后按 iconSize 折算）
 	m	Ô00000	getEntity	()Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 返回 battleObjective
 	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | battleObjective.getLocation
-	m	o00000	renderTaskIndicator	(ZFF)V
+	m	o00000	renderIndicators	(ZFF)V
 		c javap 字节码取证 | 高 | 渲染任务标签(taskLabel)与范围指示器(FfIndicator)
-	m	Object	renderIcon	(ZFF)V
+	m	Object	render	(ZFF)V
 		c javap 字节码取证 | 高 | 按阵营着色渲染 sprite + 选中光环 + FfIndicator
-	m	Ò00000	renderLabel	(ZFF)V
+	m	Ò00000	renderStatusBars	(ZFF)V
 		c javap 字节码取证 | 高 | 文字名称标签（fontRenderer 按阵营色）
 c	com/fs/starfarer/combat/B/dosuper	com/fs/starfarer/combat/warroom/MissileIcon
 	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#dosuper-missile-icon
@@ -482,11 +482,11 @@ c	com/fs/starfarer/combat/B/dosuper	com/fs/starfarer/combat/warroom/MissileIcon
 		c javap 字节码取证 | 高 | 返回本 icon 关联的 Missile
 	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 返回 missile.getLocation()
-	m	o00000	render	(ZFF)V
+	m	o00000	renderIndicators	(ZFF)V
 		c javap 字节码取证 | 高 | 完整渲染：spec.isRenderTargetIndicator 门控、按阵营选色、sprite 渲染
-	m	Object	clearPlayerShipCache	(ZFF)V
+	m	Object	render	(ZFF)V
 		c javap 字节码取证 | 中 | 仅 putstatic playerShip=null 清玩家舰缓存；接口 (ZFF)V 渲染族变体
-	m	Ò00000	unusedRender	(ZFF)V
+	m	Ò00000	renderStatusBars	(ZFF)V
 		c javap 字节码取证 | 中 | 空方法体，无任何逻辑（接口要求的死实现）
 c	com/fs/starfarer/combat/B/f	com/fs/starfarer/combat/warroom/WarroomHintText
 	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#f-warroom-hint-text
@@ -770,15 +770,15 @@ c	com/fs/starfarer/combat/B/M	com/fs/starfarer/combat/warroom/WaypointIcon
 		c javap 字节码取证 | 高 | 返回 waypoint.getOwner()
 	m	o00000	computeIconSize	(F)F
 		c javap 字节码取证 | 高 | 1000f*zoom/75f 按 sprite 高算图标尺寸（*0.75f 修正）
-	m	Ô00000	getObject	()Ljava/lang/Object;
+	m	Ô00000	getEntity	()Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 返回 waypoint
 	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 返回 waypoint.getLocation()
-	m	o00000	renderLine	(ZFF)V
+	m	o00000	renderIndicators	(ZFF)V
 		c javap 字节码取证 | 高 | 调 oO0000().new 画任务线（waypoint 与任务目标连线）
-	m	Object	renderIcon	(ZFF)V
+	m	Object	render	(ZFF)V
 		c javap 字节码取证 | 高 | 按 owner 选色渲染 iconSprite（含选中高亮 15f 放大+additive）
-	m	Ò00000	renderNameLabel	(ZFF)V
+	m	Ò00000	renderStatusBars	(ZFF)V
 		c javap 字节码取证 | 高 | 渲染名字文本 nameRenderer（owner 色）
 c	com/fs/starfarer/combat/B/null$o	com/fs/starfarer/combat/warroom/ShipStatusBar
 	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#null-o-ship-status-bar
@@ -949,15 +949,15 @@ c	com/fs/starfarer/combat/B/Oo0o	com/fs/starfarer/combat/warroom/AbstractWarroom
 		c javap 字节码取证 | 高 | 主 fader.fadeOut
 	m	for	getBounceFader	()Lcom/fs/graphics/util/Fader;
 		c javap 字节码取证 | 高 | 返回 bounceFader
-	m	ø00000	getPulseFader	()Lcom/fs/graphics/util/Fader;
+	m	ø00000	getSecondaryFader	()Lcom/fs/graphics/util/Fader;
 		c javap 字节码取证 | 高 | 返回 pulseFader
-	m	return	isActive	()Z
+	m	return	isVisible	()Z
 		c javap 字节码取证 | 中 | 主 fader 亮度>0
 	m	Ò00000	advance	(F)V
 		c javap 字节码取证 | 高 | 推进三个 fader 与 taskLabel
-	m	o00000	fadeIn	(Z)V
+	m	o00000	setHovered	(Z)V
 		c javap 字节码取证 | 高 | 参数 true 时 fadeIn（重载）
-	m	Õ00000	isVisible	()Z
+	m	Õ00000	isShown	()Z
 		c javap 字节码取证 | 高 | 返回 isVisible 字段
 	m	Object	setVisible	(Z)V
 		c javap 字节码取证 | 高 | 写 isVisible 字段
@@ -965,7 +965,7 @@ c	com/fs/starfarer/combat/B/Oo0o	com/fs/starfarer/combat/warroom/AbstractWarroom
 		c javap 字节码取证 | 高 | 返回 isSelected 字段
 	m	Ò00000	setSelected	(Z)V
 		c javap 字节码取证 | 高 | 写 isSelected 字段
-	m	o00000	fadeInPulse	()V
+	m	o00000	fadeInFeedback	()V
 		c javap 字节码取证 | 高 | pulseFader.fadeIn
 c	com/fs/starfarer/combat/B/oooO	com/fs/starfarer/combat/warroom/PausePlayWidget
 	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooo-pause-play-widget
@@ -1052,17 +1052,17 @@ c	com/fs/starfarer/combat/B/Oooo	com/fs/starfarer/combat/warroom/AsteroidIcon
 		c javap 字节码取证 | 高 | super.advance
 	m	Ò00000	getOwner	()I
 		c javap 字节码取证 | 高 | asteroid.getOwner
-	m	o00000	getScaledRadius	(F)F
+	m	o00000	computeIconSize	(F)F
 		c javap 字节码取证 | 中 | asteroid.getCollisionRadius*F*2
 	m	Ô00000	getEntity	()Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 返回 asteroid
 	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | asteroid.getLocation
-	m	o00000	renderIcon	(ZFF)V
+	m	o00000	renderIndicators	(ZFF)V
 		c javap 字节码取证 | 高 | sprite 缩放/角度/位置 renderAtCenter
-	m	Object	renderHalo	(ZFF)V
+	m	Object	render	(ZFF)V
 		c javap 字节码取证 | 中 | 接口渲染方法空实现（小行星无光环）
-	m	Ò00000	renderLabel	(ZFF)V
+	m	Ò00000	renderStatusBars	(ZFF)V
 		c javap 字节码取证 | 中 | 接口渲染方法空实现（小行星无标签）
 	m	Ò00000	setSelected	(Z)V
 		c javap 字节码取证 | 中 | 覆盖基类为空实现
@@ -1096,11 +1096,11 @@ c	com/fs/starfarer/combat/B/OOoo	com/fs/starfarer/combat/warroom/FighterIcon
 		c javap 字节码取证 | 高 | 返回本 icon 关联的 Ship（WarroomIcon 接口契约，返回类型 Object）
 	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 返回 ship.getLocation()
-	m	o00000	render	(ZFF)V
+	m	o00000	renderIndicators	(ZFF)V
 		c javap 字节码取证 | 高 | 完整渲染：按 owner/阵营选色、sprite setAngle/setSize/setAlphaMult/renderAtCenter（boolean 参数未使用）
-	m	Object	clearPlayerShipCache	(ZFF)V
+	m	Object	render	(ZFF)V
 		c javap 字节码取证 | 中 | 仅 putstatic playerShip=null 清玩家舰缓存；接口 (ZFF)V 渲染族变体
-	m	Ò00000	unusedRender	(ZFF)V
+	m	Ò00000	renderStatusBars	(ZFF)V
 		c javap 字节码取证 | 中 | 空方法体，无任何逻辑（接口要求的死实现）
 c	com/fs/starfarer/combat/B/OOOo	com/fs/starfarer/combat/warroom/ExplosionIcon
 	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#oooo-explosion-icon
@@ -1118,11 +1118,11 @@ c	com/fs/starfarer/combat/B/OOOo	com/fs/starfarer/combat/warroom/ExplosionIcon
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
 	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
-	m	o00000	render	(ZFF)V
+	m	o00000	renderIndicators	(ZFF)V
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
-	m	Object	clearPlayerShipCache	(ZFF)V
+	m	Object	render	(ZFF)V
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
-	m	Ò00000	unusedRender	(ZFF)V
+	m	Ò00000	renderStatusBars	(ZFF)V
 		c javap 字节码取证 | 高 | 语义见 mapping-evidence/wave3-p049.md
 c	com/fs/starfarer/combat/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/combat/warroom/WarroomMapEntity
 	c javap取证 | 高 | .dev/mapping-evidence/combat-obf-b.md#ooooo-map-entity
@@ -1289,11 +1289,11 @@ c	com/fs/starfarer/combat/B/P	com/fs/starfarer/combat/warroom/PlanetIcon
 		c javap 字节码取证 | 高 | 返回本 icon 关联的 Planet
 	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 返回 planet.getLocation()
-	m	o00000	render	(ZFF)V
+	m	o00000	renderIndicators	(ZFF)V
 		c javap 字节码取证 | 高 | 渲染：sprite setAlphaMult/setSize/setAngle/renderAtCenter
-	m	Object	clearPlayerShipCache	(ZFF)V
+	m	Object	render	(ZFF)V
 		c javap 字节码取证 | 中 | 空方法体（接口 (ZFF)V 渲染族变体；行星不缓存玩家舰）
-	m	Ò00000	unusedRender	(ZFF)V
+	m	Ò00000	renderStatusBars	(ZFF)V
 		c javap 字节码取证 | 中 | 空方法体，无任何逻辑（接口要求的死实现）
 c	com/fs/starfarer/combat/B/Q$o	com/fs/starfarer/combat/warroom/SelectionIconEntry
 	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#q-o-selection-icon-entry
@@ -1542,7 +1542,7 @@ c	com/fs/starfarer/combat/o0OO/A/E	com/fs/starfarer/combat/o0OO/CollisionHandler
 	c javap取证 | 低 | .dev/mapping-evidence/combat-obf-b.md#a-e-collision-handler-with-engine
 	f	ø00000	engine	Lcom/fs/starfarer/combat/CombatEngine;
 		c javap 字节码取证 | 高 | 懒加载 CombatEngine.getInstance 缓存；isDestroyedByCollision 时 removeObject
-	m	o00000	handleProjectileCollision	(Ljava/lang/Object;Ljava/lang/Object;Lorg/lwjgl/util/vector/Vector2f;ZZF)V
+	m	o00000	handleCollision	(Ljava/lang/Object;Ljava/lang/Object;Lorg/lwjgl/util/vector/Vector2f;ZZF)V
 		c javap 字节码取证 | 高 | 弹-弹/弹-体：导弹排序、同源跳过、applyDamage、武器 spec 声音、notifyDealtDamage、销毁判定
 	m	o00000	advance	(F)V
 		c javap 字节码取证 | 高 | 接口方法空实现
@@ -1681,7 +1681,7 @@ c	com/fs/starfarer/combat/o0OO/A/super	com/fs/starfarer/combat/o0OO/RTECollision
 	c 字符串常量 | 高 | .dev/mapping-evidence/combat-obf-b.md#a-super-rte-collision-handler
 	f	OO0000	engine	Lcom/fs/starfarer/combat/CombatEngine;
 		c javap 字节码取证 | 中 | 懒加载 CombatEngine.getInstance 缓存（本类内无读取点，跨帧保留）
-	m	o00000	handleRayCollision	(Ljava/lang/Object;Ljava/lang/Object;Lorg/lwjgl/util/vector/Vector2f;ZZF)V
+	m	o00000	handleCollision	(Ljava/lang/Object;Ljava/lang/Object;Lorg/lwjgl/util/vector/Vector2f;ZZF)V
 		c javap 字节码取证 | 高 | 光束 vs 实体：MovingRay 特判、impactMass 冲量、applyDamage、声音、notifyDealtDamage；非法参数抛 RuntimeException
 	m	o00000	advance	(F)V
 		c javap 字节码取证 | 高 | 接口方法空实现

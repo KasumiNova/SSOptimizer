@@ -391,7 +391,7 @@ c	com/fs/starfarer/campaign/ui/intel/PlanetListV2$o	com/fs/starfarer/campaign/ui
 		c javap 字节码取证 | 高 | 行面板外围实例引用
 c	com/fs/starfarer/campaign/ui/intel/PlanetListV2$o$1	com/fs/starfarer/campaign/ui/intel/PlanetListV2$PlanetRowPanel$PlanetListConditionFilter
 	c 来源(javap取证) | 置信度(中) | 证据(行星行内部类，show_in_planet_list 条件过滤)
-	m	super	isShownInPlanetList	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+	m	super	shouldShow	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
 	f	Ò00000	outerPanel	Lcom/fs/starfarer/campaign/ui/intel/PlanetListV2$PlanetRowPanel;
 		c javap 字节码取证 | 高 | 条件过滤匿名类外围实例引用（show_in_planet_list tag + ConditionGenDataSpec 判断）
 c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo
@@ -422,12 +422,12 @@ c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo	com/fs/starfarer/campai
 		c javap 字节码取证 | 高 | 遍历 getAllFactions()，isShowInIntelTab()&&filter.accept() 过滤，Collections.sort($3) 后逐个建按钮
 c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$1	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$EnemyFactionFilter
 	c 来源(javap取证) | 置信度(高) | 证据(HOSTILE 关系过滤)
-	m	o00000	isEnemy	(Lcom/fs/starfarer/campaign/Faction;)Z
+	m	o00000	accept	(Lcom/fs/starfarer/campaign/Faction;)Z
 	f	o00000	selectedFactionInfo	Lcom/fs/starfarer/campaign/ui/intel/SelectedFactionInfo;
 		c javap 字节码取证 | 高 | FactionFilter 谓词内部类外围实例引用；谓词 isAtBest(other,HOSTILE)
 c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$2	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$AllyFactionFilter
 	c 来源(javap取证) | 置信度(高) | 证据(FAVORABLE 关系过滤)
-	m	o00000	isAlly	(Lcom/fs/starfarer/campaign/Faction;)Z
+	m	o00000	accept	(Lcom/fs/starfarer/campaign/Faction;)Z
 	f	new	selectedFactionInfo	Lcom/fs/starfarer/campaign/ui/intel/SelectedFactionInfo;
 		c javap 字节码取证 | 高 | FactionFilter 谓词内部类外围实例引用；谓词 isAtWorst(other,FAVORABLE)&&other!=selected
 c	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$3	com/fs/starfarer/campaign/ui/intel/SelectedFactionInfo$FactionNameComparator
@@ -680,7 +680,7 @@ c	com/fs/starfarer/campaign/ui/intel/oooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 高 | createHeading 标题（行星名,类型名）
 c	com/fs/starfarer/campaign/ui/intel/oooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/campaign/ui/intel/PlanetDetailPanel$PlanetDetailConditionFilter
 	c 来源(javap取证) | 置信度(中) | 证据(PlanetDetailPanel内部类，市场条件过滤)
-	m	super	isShown	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+	m	super	shouldShow	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
 	f	super	outerPanel	Lcom/fs/starfarer/campaign/ui/intel/PlanetDetailPanel;
 		c javap 字节码取证 | 高 | MarketConditionsWidget$o 过滤条件匿名类外围实例引用
 c	com/fs/starfarer/campaign/ui/intel/oooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$2	com/fs/starfarer/campaign/ui/intel/PlanetDetailPanel$PlanetDetailTooltip

@@ -242,15 +242,15 @@ c	com/fs/starfarer/ui/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 	m	o00000	setControlAction	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/ui/CutPanel;
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
-	m	Ò00000	renderCut	(FFF)V
+	m	Ò00000	render	(FFF)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 	m	Ô00000	getFontRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
-	m	o00000	renderHighlight	(FFFF)V
+	m	o00000	renderWithGlow	(FFFF)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 	m	Ò00000	setSize	(FF)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
-	m	o00000	renderCut	(FFF)V
+	m	o00000	renderDisabled	(FFF)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 	m	Object	renderCut	(FFF)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
@@ -258,10 +258,12 @@ c	com/fs/starfarer/ui/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 	m	Object	setSize	(FF)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
-	m	o00000	setFontScale	(F)V
+	m	o00000	setScale	(F)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 	m	o00000	setSize	(FF)V
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	isVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/ui/float	com/fs/starfarer/ui/ToggleButton
 	c	javap取证(字符串) | 高 | 开关按钮：toggle12/20/40_on/off 贴图 + Size 枚举（K）
 	f	new.String	unusedZero	F
@@ -281,7 +283,7 @@ c	com/fs/starfarer/ui/float	com/fs/starfarer/ui/ToggleButton
 	m	super	setOnSprite	(Ljava/lang/String;FF)V
 	m	super	setOffSprite	(Ljava/lang/String;)V
 	m	Ò00000	setOffSprite	(Ljava/lang/String;FF)V
-	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 	m	private	getTextOffsetX	()F
 	m	String	setTextOffsetX	(F)V
 	m	õO0000	getTextOffsetY	()F
@@ -485,9 +487,9 @@ c	com/fs/starfarer/ui/m	com/fs/starfarer/ui/ButtonContentHost
 		c javap 字节码取证 | 高 | 构造器存入并 pack()，render/update/advance/processInput/getContent 全部委托给它
 	f	Øô0000	unusedDefaultColor	Ljava/awt/Color;
 		c javap 字节码取证 | 中 | 死字段：static Color(125,125,125,255)，仅 <clinit> putstatic，类内无读取且全 jar 无 getstatic 引用
-	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 设置位置/checked/disabled/glow/state 后调 content.render（含渲染的完整版）
-	m	super	update	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 接口 n$o 方法：shouldUpdate 检查后设置位置/checked/disabled/glow/state（不渲染）
 	m	Õ00000	advance	(F)V
 		c javap 字节码取证 | 高 | shouldAdvance 检查后委托 content.advance（接口 n$o 方法）
@@ -601,18 +603,20 @@ c	com/fs/starfarer/ui/ifsuper	com/fs/starfarer/ui/PlainPanel
 		c javap 字节码取证 | 高 | 主渲染：设混合模式/alpha 后按 alignment 定位绘制文本
 	m	return	getFontRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
 		c javap 字节码取证 | 高 | getfield fontRenderer
-	m	o00000	renderWithBorder	(FFFF)V
+	m	o00000	renderWithGlow	(FFFF)V
 		c javap 字节码取证 | 高 | 8 方向偏移描边 + 中心主体渲染，置 alreadyRendered 防重复
 	m	Ô00000	renderAligned	(FF)V
 		c javap 字节码取证 | 高 | private，按 alignment 的 switch 表做 x 偏移后定位绘制
-	m	o00000	renderDimmed	(FFF)V
+	m	o00000	renderDisabled	(FFF)V
 		c javap 字节码取证 | 高 | 保存原色→设 disabledColor+0.75 alpha→调 render→恢复（禁用态）
-	m	o00000	setAlphaMult	(F)V
+	m	o00000	setScale	(F)V
 		c javap 字节码取证 | 高 | putfield alphaMult
-	m	o00000	setPosition	(FF)V
+	m	o00000	setSize	(FF)V
 		c javap 字节码取证 | 高 | putfield positionX/positionY 并复位 alphaMult
 	m	Õ00000	getAlignmentSwitchTable	()[I
 		c javap 字节码取证 | 高 | Alignment.ordinal→switch 值查找表懒初始化缓存
+	m	o00000	isVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/ui/O0Oo	com/fs/starfarer/ui/TooltipComponent
 	c	继承关系+javap取证 | 中 | 带 tooltip 的焦点组件：implements S(FocusedComponent)，showTooltip/hideTooltip/focusLost/可见性（classsuper）
 	m	processInput	processInput	(Lcom/fs/starfarer/util/A/new;)V

@@ -622,7 +622,7 @@ c	com/fs/starfarer/coreui/refit/returnsuper$1	com/fs/starfarer/coreui/refit/Weap
 		c javap 字节码取证 | 高 | run() 用其高度定位
 c	com/fs/starfarer/coreui/refit/returnsuper	com/fs/starfarer/coreui/refit/WeaponSlotButtonRenderer
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 实现 ButtonBackgroundRenderer(ui.n$Oo)，"Built in"/"Empty" 标签，渲染武器槽按钮背景，持 HullVariantSpec+WeaponSlot+武器渲染器)
-	m	super	render	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
 
 	f	class.super	slot	Lcom/fs/starfarer/loading/specs/WeaponSlot;
 		c javap 字节码取证 | 高 | Ö00000() 返回
@@ -756,7 +756,7 @@ c	com/fs/starfarer/coreui/refit/if	com/fs/starfarer/coreui/refit/FightersDisplay
 		c javap 字节码取证 | 高 | 构造初始化 ArrayList；syncWithVariant() add 槽位按钮；actionPerformed() indexOf 定位；getButtons() 返回
 c	com/fs/starfarer/coreui/refit/I	com/fs/starfarer/coreui/refit/FighterSlotButtonBackgroundRenderer
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 实现 ButtonBackgroundRenderer，渲染战机槽按钮背景（OoOOO... getInfo/isMounted/getPrice 着挂载色）)
-	m	super	render	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
 
 	f	O0O000	item	Lcom/fs/starfarer/coreui/refit/FighterPickerItem;
 		c javap 字节码取证 | 高 | 构造入参存储；渲染方法中调用 item.getInfo()/isMounted()/getPrice()/getPosition()/setDisabled()/render()
@@ -811,9 +811,9 @@ c	com/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 	f	o00000	outer	Lcom/fs/starfarer/coreui/refit/OfficerAndCrewDisplay;
 		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
-	m	Ò00000	isVisible	()Z
+	m	Ò00000	showSimulationCRHint	()Z
 		c javap 字节码取证 | 高 | 恒返回 true，windows 独立取证
-	m	o00000	isCampaignUI	()Z
+	m	o00000	showRefitNote	()Z
 		c javap 字节码取证 | 高 | 返回 outer.refitScreen.getCoreUI().isCampaignUI()
 c	com/fs/starfarer/coreui/refit/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$3	com/fs/starfarer/coreui/refit/OfficerAndCrewDisplay$CRBarTooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，按 CRBar(ValueDisplayBar) 定位 tooltip)

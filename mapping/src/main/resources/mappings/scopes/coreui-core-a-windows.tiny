@@ -246,7 +246,7 @@ c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	c javap取证 | 低 | 匿名类：implements newui.oOOo$o（tooltip 提供者）
 	f	o00000	outer	Lcom/fs/starfarer/coreui/FleetMemberRow;
 		c javap 字节码取证 | 高 | 外部行引用（编译器合成）
-	m	o00000	okToShow	()Z
+	m	o00000	confirm	()Z
 		c javap 字节码取证 | 高 | 非战机且空 hull variant 才允许显示购买确认
 c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$4	com/fs/starfarer/coreui/FleetMemberRow$4
 	c javap取证 | 低 | 匿名类：implements oo0O$o，dialogDismissed 回调
@@ -256,7 +256,7 @@ c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	c javap取证 | 低 | 匿名类：implements newui.oOOo$o（tooltip 提供者）
 	f	oO0000	outer	Lcom/fs/starfarer/coreui/FleetMemberRow;
 		c javap 字节码取证 | 高 | 外部行引用（编译器合成）
-	m	o00000	okToShow	()Z
+	m	o00000	confirm	()Z
 		c javap 字节码取证 | 高 | 非战机编队（wing）才允许显示购买确认
 c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$6	com/fs/starfarer/coreui/FleetMemberRow$6
 	c javap取证 | 低 | 匿名类：implements oo0O$o，dialogDismissed 回调
@@ -319,13 +319,13 @@ c	com/fs/starfarer/coreui/OOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 高 | private static volatile int[]，本类合成 $SWITCH_TABLE 缓存
 	f	null	anchorButton	Lcom/fs/starfarer/ui/Button;
 		c javap 字节码取证 | 高 | final Button，getShortcut 委托它
-	m	o00000	getTooltipText	(Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	modifyText	(Ljava/lang/String;)Ljava/lang/String;
 		c javap 字节码取证 | 高 | getString 实现：按 action 查 StarfarerStrings 并 String.format
-	m	o00000	updateLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+	m	o00000	setTextLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
 		c javap 字节码取证 | 高 | updateLabel 实现：计算供给/燃料/重型机械/拆解经验等并 setRenderer 文本与颜色
-	m	o00000	getShortcut	()Lcom/fs/starfarer/title/ControlAction;
+	m	o00000	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
 		c javap 字节码取证 | 高 | 返回 anchorButton.getShortcut()
-	m	Ò00000	unusedUpdateLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+	m	Ò00000	setTitleLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
 		c javap 字节码取证 | 中 | 方法体仅 return 空实现，未被执行路径使用
 	m	Ò00000	getFleetMemberActionSwitchTable	()[I
 		c javap 字节码取证 | 高 | 编译器合成 switch 表懒初始化
@@ -915,7 +915,7 @@ c	com/fs/starfarer/coreui/P$1	com/fs/starfarer/coreui/SkillRow$1
 		c javap 字节码取证 | 高 | 匿名按钮渲染器外层引用；renderButton 读 outer.skillButton 宽度
 	f	class.new	color	Ljava/awt/Color;
 		c javap 字节码取证 | 高 | final；构造参数2（recreate 中 aptitudeSpec 派生色）；renderButton 画矩形底色
-	m	super	renderButton	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 按钮渲染：以 skillButton 宽偏移画半透明色块（renderers/O.Object）
 c	com/fs/starfarer/coreui/P$2	com/fs/starfarer/coreui/SkillRow$2
 	c javap取证 | 低 | 匿名 Runnable

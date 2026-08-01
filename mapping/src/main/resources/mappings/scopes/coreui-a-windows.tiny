@@ -7,20 +7,26 @@ c	com/fs/starfarer/coreui/A/OoOO	com/fs/starfarer/coreui/PlanetSurveyIcon
 		c javap 字节码取证 | 高 | 行星名 label（orbitron20aabold.fnt），faction 非中立时上 faction 色
 	f	ÔÕ0000	surveyLevelLabel	Lcom/fs/graphics/font/BitmapFontRenderer;
 		c javap 字节码取证 | 高 | 调查等级 label（victor10.fnt），renderLabels 中拼接行星名+SurveyLevel 文本
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染钩子：行星尺寸（min(radius,100)+0.5*max(0,radius-100) 恒星/黑洞修正）*factor*3.5，iconColor 上色、radar_circle 分支
-	m	Õ00000	renderLabels	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染行星名与调查等级 label：filterData.factions/exploration/names 过滤 + 基类 label 渲染
-	m	ØO0000	getIconSize	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 与 render 相同的尺寸公式 *0.5+5，与 linux B.super.super() 同构
 	m	oÓ0000	getSprite	()Lcom/fs/graphics/Sprite;
 		c javap 字节码取证 | 高 | 直接返回基类 sprite 字段
-	m	public	getRadius	()F
+	m	public	getTooltipWidth	()F
 		c javap 字节码取证 | 高 | 返回常量 300.0f
-	m	o00000	addTooltipInfo	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
+	m	o00000	createTooltip	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
 		c javap 字节码取证 | 高 | 有市场且非中立转调静态市场 tooltip，否则 addPara 行星名+类型；含 Unsurveyed/Preliminary/Fully surveyed/Required to survey/Quantity 调查信息
 	m	o00000	addMarketTooltipInfo	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
 		c javap 字节码取证 | 高 | static：市场名-faction-size 行 + orbital station/world 行（$military 后缀）
+	m	Object	isNameVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	ô00000	hasDetailedInfo	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	oO0000	isTooltipExpandable	()Z
+		c 覆写链统一(人工裁决) | 高 | 与顶层声明一致，同 linux 裁决
 c	com/fs/starfarer/coreui/A/ooOO	com/fs/starfarer/coreui/MapEntityIcon
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星图实体图标基类（对应 linux C）)
 	f	Ö00000	entityToken	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
@@ -109,6 +115,18 @@ c	com/fs/starfarer/coreui/A/ooOO	com/fs/starfarer/coreui/MapEntityIcon
 		c javap 字节码取证 | 高 | 直接返回 iconAlpha 字段
 	m	Ô00000	setIconAlpha	(F)V
 		c javap 字节码取证 | 高 | 直接写入 iconAlpha 字段
+	m	Ò00000	renderPrice	(FF)V
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	ÔO0000	isAlwaysShown	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	Object	isNameVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	public	getTooltipWidth	()F
+		c 覆写链统一(人工裁决) | 高 | 基类默认 300f 为 tooltip 宽度，同 linux 裁决
+	m	oO0000	isTooltipExpandable	()Z
+		c 覆写链统一(人工裁决) | 高 | 与顶层声明一致，同 linux 裁决
+	m	Ô00000	onSizeChanged	(FF)V
+		c 覆写链统一(人工裁决) | 高 | 同 linux 裁决
 c	com/fs/starfarer/coreui/A/G	com/fs/starfarer/coreui/SectorMapPanel
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(implements SectorMapAPI + 字符串 Sector/System/Go back/Hyperspace + getScroller/getMap/getFilter/getParams，星图主面板（对应 linux H）)
 	f	do.interface$String	scroller	Lcom/fs/starfarer/coreui/A/N;
@@ -277,10 +295,14 @@ c	com/fs/starfarer/coreui/A/float	com/fs/starfarer/coreui/FleetMapIcon
 		c javap 字节码取证 | 高 | 舰队名/识别度文案：Unidentified Fleet/Your fleet/前缀+名称 + addPara（覆盖父类）
 	m	ô00000	hasDetailedInfo	()Z
 		c javap 字节码取证 | 高 | token 为舰队且可见级别达 COMPOSITION_DETAILS 才显示详情（覆盖父类）
+	m	public	getTooltipWidth	()F
+		c 覆写链统一(人工裁决) | 高 | 基类默认 300f 为 tooltip 宽度，同 linux 裁决
 c	com/fs/starfarer/coreui/A/do	com/fs/starfarer/coreui/MapClickListener
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接口：地图点击监听（对应 linux M）)
 	m	super	entitySelected	(Lcom/fs/starfarer/coreui/MapContextMenuAction;Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
 		c ui-newui-a 既有命名 | 高 | CampaignEntityPickerDialog$1 实现 A/M 时同 desc 方法已命名 entitySelected
+	m	super	selectEntity	(Ljava/lang/Object;)V
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/coreui/A/public	com/fs/starfarer/coreui/AlignmentCalculator
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(Alignment 计算工具（对应 linux O）)
 	f	Ó00000	anchors	Ljava/util/List;
@@ -309,7 +331,7 @@ c	com/fs/starfarer/coreui/A/public$o	com/fs/starfarer/coreui/IconAlignmentAnchor
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(实现 O$Oo（对应 linux O$o）)
 	f	o00000	icon	Lcom/fs/starfarer/coreui/MapEntityIcon;
 		c javap 字节码取证 | 高 | 构造参数保存；getAnchorLocation 读取
-	m	o00000	getAnchorLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	o00000	getPosition	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 取 icon 的 SectorEntityToken.getLocation()（实现 AlignmentAnchor 接口）
 c	com/fs/starfarer/coreui/A/D	com/fs/starfarer/coreui/ColoredMapIcon
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(C 子类（对应 linux O0OO，低置信）)
@@ -329,13 +351,13 @@ c	com/fs/starfarer/coreui/A/D	com/fs/starfarer/coreui/ColoredMapIcon
 		c javap 字节码取证 | 高 | 已过时间累加；render 淡化曲线
 	m	Õ00000	advance	(F)V
 		c javap 字节码取证 | 高 | 递减 remainingTime、累加 elapsedTime，超时 Fader.forceOut
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染：创建 campaign/util/A 光点，设置半径/颜色/透明度
 	m	oo0000	getRemainingTime	()F
 		c javap 字节码取证 | 高 | getfield interface（remainingTime）
 	m	Ø00000	setRemainingTime	(F)V
 		c javap 字节码取证 | 高 | putfield interface（remainingTime）
-	m	ØO0000	getRadius	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 返回 0
 c	com/fs/starfarer/coreui/A/O0Oo	com/fs/starfarer/coreui/CourseWidget
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(航线控件（对应 linux O0Oo）)
@@ -525,28 +547,32 @@ c	com/fs/starfarer/coreui/A/oOOo	com/fs/starfarer/coreui/PlanetSurveyDataIcon
 		c javap 字节码取证 | 高 | private：取恒星系统（自身为恒星则 null），按最大市场 size 选 faction crest 重建 ØÓ0000 sprite
 	m	oÒ0000	isSpecialNameSystem	()Z
 		c javap 字节码取证 | 高 | NameAssigner.isNameSpecial(StarSystemAPI) 判定特殊命名星系
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染钩子：params 系统高亮/缩放 alpha 处理，非 radar 时调空方法，最后调核心渲染
 	m	o00000	renderPlanetSprite	(FFFFF)V
 		c javap 字节码取证 | 高 | 核心渲染：starscape 分支渲染 starscapeSprite + GL11.glColorMask 阴影；常规分支渲染主 sprite
 	m	int	unusedNoop	(FF)V
 		c javap 字节码取证 | 高 | private 空操作：仅 getContainingLocation 后 pop return，被 render 调用但无任何效果，死代码
-	m	Õ00000	renderLabels	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染行星名/调查等级/势力标注 label，含行星杀手与海盗基地标记、星系 tag 配色
-	m	ö00000	getLabelFontThreshold	()F
+	m	ö00000	getFontZoomThreshold	()F
 		c javap 字节码取证 | 中 | override 基类阈值钩子：返回 2.0f，基类 label 渲染中作为字体切换阈值
 	m	ÒÒ0000	getSprite	()Lcom/fs/graphics/Sprite;
 		c javap 字节码取证 | 高 | 直接返回基类 sprite 字段
-	m	ØO0000	getIconSize	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | radius*factor*10（星云中心 200、恒星 0.75 修正、星景缩放）*0.5+5，与 linux S.super.super() 同构
 	m	Ò00000	getTooltip	()Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
 		c javap 字节码取证 | 高 | override 基类默认 null：所在系统含非隐藏市场时返回 StarSystemTooltipFactory 构建的 tooltip
-	m	o00000	addTooltipInfo	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
+	m	o00000	createTooltip	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
 		c javap 字节码取证 | 高 | addTitle(行星名, 类型) 后调静态 addSurveyTooltip
 	m	o00000	addSurveyTooltip	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Lcom/fs/starfarer/campaign/CampaignPlanet;F)V
 		c javap 字节码取证 | 高 | static：System unexplored/调查统计表 + 导航数据（Light-years/Fuel/Days）+ 星座信息
-	m	public	getRadius	()F
+	m	public	getTooltipWidth	()F
 		c javap 字节码取证 | 高 | 返回常量 300.0f
+	m	Object	isNameVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	ô00000	hasDetailedInfo	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/coreui/A/OoOo	com/fs/starfarer/coreui/JumpPointIcon
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(跳跃点图标（对应 linux T）)
 	f	class.Object	jumpPoint	Lcom/fs/starfarer/campaign/JumpPoint;
@@ -565,6 +591,8 @@ c	com/fs/starfarer/coreui/A/OoOo	com/fs/starfarer/coreui/JumpPointIcon
 		c javap 字节码取证 | 高 | 跳跃点名 + $unstable 校准剩余天数 Calibrating: %s remaining（覆盖父类）
 	m	ô00000	hasDetailedInfo	()Z
 		c javap 字节码取证 | 高 | 恒 true（覆盖父类默认 false）
+	m	public	getTooltipWidth	()F
+		c 覆写链统一(人工裁决) | 高 | 基类默认 300f 为 tooltip 宽度，同 linux 裁决
 c	com/fs/starfarer/coreui/A/Y	com/fs/starfarer/coreui/IntelMapMarker
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(intel 地图标记（对应 linux Y）)
 	f	øÖø000	playerFaction	Lcom/fs/starfarer/campaign/Faction;
@@ -628,17 +656,17 @@ c	com/fs/starfarer/coreui/A/Z	com/fs/starfarer/coreui/ConstellationIcon
 		c javap 字节码取证 | 高 | 返回 lineTargetToken 对应图标；无则查星系 star/jump point，兜底为自身
 	m	Õ00000	advance	(F)V
 		c javap 字节码取证 | 高 | 转发基类 advance 并按锚点位置重设 fixedLocation
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 雷达模式跳过；渲染 intel 箭头与价格 widget
 	m	o00000	renderIcon	(FFZZ)V
 		c javap 字节码取证 | 高 | private；渲染 radar_mask、双环、进度环
-	m	Õ00000	renderSprite	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 中 | 覆盖基类 sprite 渲染为空
 	m	Ò00000	renderPrice	(FF)V
 		c javap 字节码取证 | 高 | priceWidget 存在则 renderPrice，否则调 renderIcon
 	m	int.new	getLabelOffset	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 中 | 按目标图标对齐与同锚点计数计算标签偏移向量
-	m	ØO0000	getRadius	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 55/zoom 截断 16-40 再 /2；priceWidget 存在时加倍
 	m	ÔO0000	isAlwaysShown	()Z
 		c javap 字节码取证 | 高 | 返回常量 true
@@ -648,12 +676,14 @@ c	com/fs/starfarer/coreui/A/Z	com/fs/starfarer/coreui/ConstellationIcon
 		c javap 字节码取证 | 高 | intel 插件/价格更新/普通消息三种 tooltip 工厂
 	m	public	getTooltipWidth	()F
 		c javap 字节码取证 | 高 | 调基类 public() 返回 300.0f
-	m	ô00000	isTooltipExpandable	()Z
+	m	ô00000	hasDetailedInfo	()Z
 		c javap 字节码取证 | 高 | 返回常量 true
 	m	o00000	renderArrow	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FLjava/awt/Color;F)V
 		c javap 字节码取证 | 高 | static；渲染 intel 箭头；render 逐条调用
 	m	o00000	renderArrowSegment	(FFFFFFLjava/awt/Color;FFF)V
 		c javap 字节码取证 | 高 | private static；调 renderers/o0OO 画 3 条 0.5 偏移线段
+	m	Ô00000	onSizeChanged	(FF)V
+		c 覆写链统一(人工裁决) | 高 | 同 linux 裁决
 c	com/fs/starfarer/coreui/A/Z$1	com/fs/starfarer/coreui/ConstellationIcon$Tooltip
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星座 tooltip（对应 linux Z$1）)
 	f	this$0	this$0	Lcom/fs/starfarer/coreui/ConstellationIcon;
@@ -682,16 +712,22 @@ c	com/fs/starfarer/coreui/A/floatsuper	com/fs/starfarer/coreui/OrbitalStationIco
 		c javap 字节码取证 | 高 | 构造 new BitmapFontRenderer(getName, orbitron20aabold.fnt)，faction 上色，用于名字渲染
 	m	Ø00000	isVisible	()Z
 		c javap 字节码取证 | 高 | override 基类可见性钩子：isStarscapeMode 时 false（星景模式不显示），与 linux b.void() 同构
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染钩子：faction getSpec().getColor 上色、按 token.getRadius 计算尺寸、renderAtCenter
-	m	Õ00000	renderLabels	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 高 | override 基类 Õ00000(FF)V：先调 super，按 filterData.names/factions 过滤后经基类渲染名字 label
 	m	for.new	getSprite	()Lcom/fs/graphics/Sprite;
 		c javap 字节码取证 | 高 | 直接返回基类 sprite 字段
-	m	ØO0000	getIconSize	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 20.0f/zoom，与 linux b.super.super() 同构
-	m	o00000	addTooltipInfo	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
+	m	o00000	createTooltip	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
 		c javap 字节码取证 | 高 | 有市场且非中立时转调 PlanetSurveyIcon 静态市场 tooltip，否则 addPara 空间站名
+	m	Object	isNameVisible	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	ô00000	hasDetailedInfo	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	oO0000	isTooltipExpandable	()Z
+		c 覆写链统一(人工裁决) | 高 | 与顶层声明一致，同 linux 裁决
 c	com/fs/starfarer/coreui/A/o0Oo	com/fs/starfarer/coreui/MapRadarHolder
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(雷达/位置占位（对应 linux classsuper）)
 	f	ÒÕø000	mapCanvas	Lcom/fs/starfarer/coreui/CampaignLocationMapCanvas;
@@ -732,13 +768,13 @@ c	com/fs/starfarer/coreui/A/J	com/fs/starfarer/coreui/CustomEntityIcon
 		c javap 字节码取证 | 高 | private；刷新 visibilityLevel，按级别换 sensor_contact/radar_circle 图标
 	m	Ø00000	isVisible	()Z
 		c javap 字节码取证 | 高 | !starscape || (isConstellation||showNameOnlyOnMap)
-	m	o00000	renderIcon	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染图标 sprite（按 spec 尺寸/缩放/级别着色）
-	m	Õ00000	renderName	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染名称标签（含星座/滤镜分支）
 	m	Object	isNameVisible	()Z
 		c javap 字节码取证 | 中 | showName && !isConstellation && !showNameOnlyOnMap
-	m	ØO0000	getRadius	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | max(iconW,iconH)/2/zoom
 	m	ôo0000	getSprite	()Lcom/fs/graphics/Sprite;
 		c javap 字节码取证 | 高 | 返回基类 OO0000 sprite 字段
@@ -748,9 +784,9 @@ c	com/fs/starfarer/coreui/A/J	com/fs/starfarer/coreui/CustomEntityIcon
 		c javap 字节码取证 | 高 | 返回 isConstellation 字段
 	m	public	getTooltipWidth	()F
 		c javap 字节码取证 | 高 | 自定义 tooltip 时取 plugin.getMapTooltipWidth，否则 300
-	m	ô00000	isShowIconOnMap	()Z
+	m	ô00000	hasDetailedInfo	()Z
 		c javap 字节码取证 | 高 | spec.isShowIconOnMap
-	m	oO0000	isMapTooltipExpandable	()Z
+	m	oO0000	isTooltipExpandable	()Z
 		c javap 字节码取证 | 高 | plugin.isMapTooltipExpandable
 	m	Õo0000	getFaction	()Lcom/fs/starfarer/api/campaign/FactionAPI;
 		c javap 字节码取证 | 高 | objective 且不在当前地点且非玩家派系时返回 neutral
@@ -770,16 +806,18 @@ c	com/fs/starfarer/coreui/A/ifsuper	com/fs/starfarer/coreui/SensorContactIcon
 		c javap 字节码取证 | 高 | override 基类 advance：visibilityLevel 变化 fadeOut、更新/生成接触点、移除过期点
 	m	Ø00000	isVisible	()Z
 		c javap 字节码取证 | 高 | override 基类可见性钩子：isStarscapeMode 时 false
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染钩子：GL11 矩阵变换后逐点渲染 question_mark sprite
-	m	Õ00000	renderAdditive	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 高 | override 基类 Õ00000(FF)V：additive blend 通道渲染接触点（发光层）
-	m	ØO0000	getIconSize	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 1.5f*pointSpread*factor，与 linux ifsuper.super.super() 同构
-	m	o00000	addTooltipInfo	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
+	m	o00000	createTooltip	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
 		c javap 字节码取证 | 高 | 字符串 "Unidentified Sensor Contact"，neutral faction 色 addPara
-	m	public	getRadius	()F
+	m	public	getTooltipWidth	()F
 		c javap 字节码取证 | 高 | 返回常量 300.0f
+	m	ô00000	hasDetailedInfo	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/coreui/A/ifsuper$o	com/fs/starfarer/coreui/SensorContactIcon$Point
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(接触点数据（对应 linux ifsuper$o）)
 	f	Object	fader	Lcom/fs/graphics/util/Fader;
@@ -802,16 +840,18 @@ c	com/fs/starfarer/coreui/A/_	com/fs/starfarer/coreui/NascentGravityWellIcon
 		c javap 字节码取证 | 高 | 构造 putfield 保存 NascentGravityWell 实体
 	f	öÔ0000	unusedFontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
 		c javap 字节码取证 | 高 | 类内除字段声明外无任何 getfield/putfield，死代码
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染钩子（override MapEntityIcon 基类）：isStarscapeMode 早退，sprite setSize/setAlphaMult/renderAtCenter
 	m	øÒ0000	getSprite	()Lcom/fs/graphics/Sprite;
 		c javap 字节码取证 | 高 | 直接返回基类 sprite 字段
-	m	ØO0000	getIconSize	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 600.0f*factor/2（radar 模式×2），与 linux intsuper.super.super() 同构
-	m	o00000	addTooltipInfo	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
+	m	o00000	createTooltip	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;Z)V
 		c javap 字节码取证 | 高 | 字符串 "Nascent Gravity Well"，addPara 添加 tooltip 段落
-	m	public	getRadius	()F
+	m	public	getTooltipWidth	()F
 		c javap 字节码取证 | 高 | 返回常量 300.0f
+	m	ô00000	hasDetailedInfo	()Z
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/coreui/A/o00OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/SlipstreamIcon
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(星流图标（对应 linux o00O）)
 	f	oÓ0000	terrain	Lcom/fs/starfarer/campaign/CampaignTerrain;
@@ -834,10 +874,12 @@ c	com/fs/starfarer/coreui/A/o00OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 高 | seed 随机 1+r1*r2；40000f*mult 作为图标尺寸
 	m	Ø00000	isVisible	()Z
 		c javap 字节码取证 | 高 | starscape 模式可见性判断（滑流/强制显示）
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 主渲染：starscape sprite 或 terrain renderOnMap/renderOnRadar（GL 列表缓存）
-	m	Õ00000	renderAbove	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 高 | starscape 下直接 return；否则 renderOnMapAbove
+	m	ØO0000	getIconRadius	()F
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/coreui/A/o0OO	com/fs/starfarer/coreui/DebrisFieldIcon
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(残骸图标（对应 linux o0OO）)
 	f	õO0000	terrain	Lcom/fs/starfarer/campaign/CampaignTerrain;
@@ -856,11 +898,11 @@ c	com/fs/starfarer/coreui/A/o0OO	com/fs/starfarer/coreui/DebrisFieldIcon
 		c javap 字节码取证 | 高 | private；刷新 visibilityLevel，按级别换 sensor_contact/radar_circle 图标
 	m	Ø00000	isVisible	()Z
 		c javap 字节码取证 | 高 | 返回 !isStarscapeMode
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染：按 terrain 半径算尺寸，按级别着色，雷达模式走基类 super(FFF)
-	m	Õ00000	renderSprite	(FF)V
+	m	Õ00000	renderAdditiveImpl	(FF)V
 		c javap 字节码取证 | 高 | 转发基类 Õ00000(FF)（加色渲染 sprite）
-	m	ØO0000	getRadius	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 40*sqrt(radius/100)/zoom 截断 0.5-1.0
 	m	int.super	getSprite	()Lcom/fs/graphics/Sprite;
 		c javap 字节码取证 | 高 | 返回基类 OO0000 sprite 字段
@@ -868,7 +910,7 @@ c	com/fs/starfarer/coreui/A/o0OO	com/fs/starfarer/coreui/DebrisFieldIcon
 		c javap 字节码取证 | 高 | 返回 terrain 字段
 	m	public	getTooltipWidth	()F
 		c javap 字节码取证 | 高 | 返回 300.0f
-	m	ô00000	isDebris	()Z
+	m	ô00000	hasDetailedInfo	()Z
 		c javap 字节码取证 | 高 | terrain.hasTag("debris")
 	m	oO0000	isTooltipExpandable	()Z
 		c javap 字节码取证 | 高 | 返回常量 false
@@ -920,7 +962,7 @@ c	com/fs/starfarer/coreui/A/A	com/fs/starfarer/coreui/StarMapContextMenu
 		c javap 字节码取证 | 高 | 取图标自带 tooltip，无则新建 Tooltip 匿名类
 	m	Ó00000	openMapMarkerDialog	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
 		c javap 字节码取证 | 高 | 打开 MapMarkerDialog 并置 mapMarkerDialogOpen
-	m	o00000	buttonClicked	(Lcom/fs/starfarer/ui/Button;Ljava/lang/Object;)V
+	m	o00000	itemClicked	(Lcom/fs/starfarer/ui/Button;Ljava/lang/Object;)V
 		c javap 字节码取证 | 高 | 菜单按钮回调：按 ActionType 分派（intel/comm/地图/航线/殖民）
 c	com/fs/starfarer/coreui/A/A$1	com/fs/starfarer/coreui/StarMapContextMenu$Action
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(implements P：菜单项动作)
@@ -930,7 +972,7 @@ c	com/fs/starfarer/coreui/A/A$1	com/fs/starfarer/coreui/StarMapContextMenu$Actio
 		c javap 字节码取证 | 高 | 构造器参数2，addItem 的目标列表
 	f	new	text	Ljava/lang/String;
 		c javap 字节码取证 | 高 | 构造器参数3，addItem 的副标题文本
-	m	o00000	addItem	(Ljava/lang/String;Ljava/lang/Object;)V
+	m	o00000	invoke	(Ljava/lang/String;Ljava/lang/Object;)V
 		c javap 字节码取证 | 高 | 实现 A.P 接口：向 buttonList.addItem(title, text, 3f, true, data)
 c	com/fs/starfarer/coreui/A/A$2	com/fs/starfarer/coreui/StarMapContextMenu$ShowTooltipAction
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(Runnable：tooltip 显示)
@@ -968,11 +1010,11 @@ c	com/fs/starfarer/coreui/A/U	com/fs/starfarer/coreui/AsteroidBeltIcon
 		c javap 字节码取证 | 高 | 转发基类 advance
 	m	Ø00000	isVisible	()Z
 		c javap 字节码取证 | 高 | 返回 !isStarscapeMode
-	m	o00000	render	(FF)V
+	m	o00000	renderImpl	(FF)V
 		c javap 字节码取证 | 高 | 渲染 sprite（雷达模式走基类 super(FFF)）
 	m	return.new	getSprite	()Lcom/fs/graphics/Sprite;
 		c javap 字节码取证 | 高 | 返回基类 OO0000（for）sprite 字段
-	m	ØO0000	getRadius	()F
+	m	ØO0000	getIconRadius	()F
 		c javap 字节码取证 | 高 | 返回 0
 c	com/fs/starfarer/coreui/A/OOoO	com/fs/starfarer/coreui/CampaignRadar
 	c 来源(javap取证+字符串常量) | 置信度(中高) | 证据(战役雷达（对应 linux return）)

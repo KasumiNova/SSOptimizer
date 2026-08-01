@@ -93,7 +93,7 @@ c	com/fs/starfarer/campaign/save/CampaignGameManager$2	com/fs/starfarer/campaign
 	c 来源(继承关系) | 置信度(高) | 证据(CampaignGameManager内部类)
 	f	o00000	progressDialog	Lcom/fs/starfarer/campaign/save/CampaignSaveProgressDialog;
 		c javap 字节码取证 | 高 | 外部类引用（this$0），run 中调其 update 显示 "Stabilizing economy..."
-	m	o00000	updateProgress	(II)V
+	m	o00000	reportProgress	(II)V
 		c javap 字节码取证 | 高 | (done,total) 参数；每 2 帧更新一次进度 "Stabilizing economy..." + 百分比
 c	com/fs/starfarer/campaign/save/CampaignGameManager$3	com/fs/starfarer/campaign/save/ModSortOrderComparator
 	c 来源(javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)

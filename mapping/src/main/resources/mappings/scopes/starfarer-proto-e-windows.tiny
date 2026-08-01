@@ -734,7 +734,7 @@ c	com/fs/starfarer/class/O0OO/C	com/fs/starfarer/E/String/StatusListManager
 		c javap 字节码取证 | 中 | 委托 setPositions(x-maxRowWidth/2, y-totalHeight/2, alpha)，水平垂直居中
 	m	float	setPositionsBottomAligned	(FFF)V
 		c javap 字节码取证 | 中 | 委托 setPositions(x, y-totalHeight, alpha)，底对齐；面板逐消息调用
-	m	new	setPositionsBelow	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+	m	new	onRender	(Lcom/fs/starfarer/ui/PositionImpl;F)V
 		c javap 字节码取证 | 中 | 取 UI 组件 getX/getY/getHeight，在组件底部下方 y+offset 处委托 setPositionsBottomAligned（offset 亦作 alpha 传入，原代码如此）
 	m	oøO000	getLineHeight	()F
 		c javap 字节码取证 | 高 | 直接返回 lineHeight
@@ -759,12 +759,14 @@ c	com/fs/starfarer/class/O0OO/o0OO	com/fs/starfarer/E/String/StatusFleetMemberEn
 		c javap 字节码取证 | 高 | Utils 阵营色，owner==玩家时白色
 	m	o00000	getHeight	()F
 		c javap 字节码取证 | 中 | 实现接口 StatusListEntry 读数（StatusListManager 作高度累加）
-	m	o00000	update	(FFF)V
+	m	o00000	setPosition	(FFF)V
 		c javap 字节码取证 | 高 | 委托图标渲染器设置位置
-	m	Ò00000	setOwnerColor	()V
+	m	Ò00000	applyColor	()V
 		c javap 字节码取证 | 高 | 图标恢复阵营色
-	m	Object	setWhiteColor	()V
+	m	Object	applyWhite	()V
 		c javap 字节码取证 | 高 | 图标设为白色
+	m	Ô00000	getWidth	()F
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/class/O0OO/String	com/fs/starfarer/E/String/StatusObjectiveEntry
 	c 来源与证据（javap取证（实现 A，BattleObjective 构造，战场目标状态条目） | 中 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.String.ooOOOO)）
 
@@ -1177,12 +1179,16 @@ c	com/fs/starfarer/class/C/B	com/fs/starfarer/E/ooOO/FighterWingIcon
 		c javap 字节码取证 | 高 | Profiler("Fighter wing icons") + 父类 RadarIcon.render（画图标/轨迹）
 	m	o00000	advance	(F)V
 		c javap 字节码取证 | 高 | 父类 advance（fog 可见性/fader）+ 按机队存活数更新图标
-	m	Ø00000	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+	m	Ø00000	getWorldLocation	()Lorg/lwjgl/util/vector/Vector2f;
 		c javap 字节码取证 | 高 | 返回 wing.getLeader().getLocation()（RadarIcon 抽象实现）
 	m	Õ00000	getColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | wing.getWingOwner() → prototype/Utils.o00000(I)Color（RadarIcon 抽象实现）
 	m	Ô00000	isAlwaysVisible	()Z
 		c javap 字节码取证 | 中 | 恒 false；父类 advance 中 true 可跳过 fog 可见性检查（目标图标返回 true 对照）
+	m	Ò00000	getRadarPingPitch	()F
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
+	m	return	unusedGetRadarPingScale	()F
+		c 覆写链统一(override-chain-fix) | 高 | 与顶层声明一致
 c	com/fs/starfarer/class/C/I	com/fs/starfarer/E/ooOO/RadarRibbonIconManager
 	c 来源与证据（字符串常量（"RadarRibbonIconManager.advance()" 自带 Profiler 名，Object→G 图标映射表） | 高 | 证据(.dev/mapping-evidence/starfarer-proto-e.md com.fs.starfarer.E.ooOO.int)）
 
@@ -2002,7 +2008,7 @@ c	com/fs/starfarer/prototype/super/A	com/fs/starfarer/prototype/InputTest
 		c javap 字节码取证 | 高 | update 右键 1→2→3→1，render 依值选择绘制方式
 	m	o00000	main	([Ljava/lang/String;)V
 		c javap 字节码取证 | 高 | new InputTest() 并调 run()
-	m	class	setupGLState	()V
+	m	class	clearScreen	()V
 		c javap 字节码取证 | 高 | 覆写 DisplayManager.clearScreen：清色+着色模型+顶点设置+视口+正交投影
 	m	õ00000	setupVertexArrays	()V
 		c javap 字节码取证 | 高 | int 顶点+float 颜色缓冲、glVertexPointer/glColorPointer

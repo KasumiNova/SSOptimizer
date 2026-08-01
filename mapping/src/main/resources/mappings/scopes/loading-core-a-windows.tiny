@@ -669,133 +669,133 @@ c	com/fs/starfarer/loading/SpecStore$1	com/fs/starfarer/loading/SpecStore$Abilit
 
 	m	ÖO0000	createAbilitySpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/loading/specs/AbilitySpec;
 		c javap 字节码取证 | 高 | 创建 AbilitySpec 并 queueResource icon，插件类入 ScriptStore
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createAbilitySpec
 c	com/fs/starfarer/loading/SpecStore$2	com/fs/starfarer/loading/SpecStore$IndustrySpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册于 "Loading industries" data/campaign/industries.csv，产出 specs/H)
 
 	m	ÕO0000	createIndustrySpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/loading/specs/IndustrySpec;
 		c javap 字节码取证 | 高 | 创建 IndustrySpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createIndustrySpec
 c	com/fs/starfarer/loading/SpecStore$10	com/fs/starfarer/loading/SpecStore$PlanetGenDataSpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(planet_gen_data.csv type==PLANET，产出 PlanetGenDataSpec)
 
 	m	õ00000	createPlanetGenDataSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/PlanetGenDataSpec;
 		c javap 字节码取证 | 高 | 创建 PlanetGenDataSpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createPlanetGenDataSpec
 c	com/fs/starfarer/loading/SpecStore$11	com/fs/starfarer/loading/SpecStore$CategoryGenDataSpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(planet_gen_data.csv type==CATEGORY，产出 CategoryGenDataSpec)
 
 	m	ô00000	createCategoryGenDataSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/CategoryGenDataSpec;
 		c javap 字节码取证 | 高 | 创建 CategoryGenDataSpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createCategoryGenDataSpec
 c	com/fs/starfarer/loading/SpecStore$12	com/fs/starfarer/loading/SpecStore$TerrainGenDataSpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(planet_gen_data.csv type==TERRAIN，产出 TerrainGenDataSpec)
 
 	m	void	createTerrainGenDataSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/TerrainGenDataSpec;
 		c javap 字节码取证 | 高 | 创建 TerrainGenDataSpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createTerrainGenDataSpec
 c	com/fs/starfarer/loading/SpecStore$13	com/fs/starfarer/loading/SpecStore$ConditionGenDataSpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(condition_gen_data.csv，校验市场条件存在性)
 
 	m	Ö00000	createConditionGenDataSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/ConditionGenDataSpec;
 		c javap 字节码取证 | 高 | 创建 ConditionGenDataSpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createConditionGenDataSpec
 c	com/fs/starfarer/loading/SpecStore$14	com/fs/starfarer/loading/SpecStore$DropGroupRowLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(drop_groups.csv，解析 wpn_/ftr_/item_ 前缀引用)
 
 	m	Õ00000	createDropGroupRow	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/DropGroupRow;
 		c javap 字节码取证 | 高 | 创建 DropGroupRow
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createDropGroupRow
 c	com/fs/starfarer/loading/SpecStore$15	com/fs/starfarer/loading/SpecStore$SalvageEntityGenDataSpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(salvage_entity_gen_data.csv，产出 SalvageEntityGenDataSpec)
 
 	m	String	createSalvageEntityGenDataSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/api/impl/campaign/procgen/SalvageEntityGenDataSpec;
 		c javap 字节码取证 | 高 | 创建 SalvageEntityGenDataSpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createSalvageEntityGenDataSpec
 c	com/fs/starfarer/loading/SpecStore$16	com/fs/starfarer/loading/SpecStore$CommoditySpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(commodities.csv，产出 CommoditySpec(F))
 
 	m	Ó00000	createCommoditySpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/loading/CommoditySpec;
 		c javap 字节码取证 | 高 | 创建 CommoditySpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createCommoditySpec
 c	com/fs/starfarer/loading/SpecStore$17	com/fs/starfarer/loading/SpecStore$SpecialItemSpecLoader
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(special_items.csv，产出 SpecialItemSpec(OOoo))
 
 	m	Ò00000	createSpecialItemSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Lcom/fs/starfarer/loading/SpecialItemSpec;
 		c javap 字节码取证 | 高 | 创建 SpecialItemSpec
-	m	super	createSpec	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
+	m	super	create	(Lorg/json/JSONObject;Lcom/fs/starfarer/loading/ResourceLoaderState;)Ljava/lang/Object;
 		c javap 字节码取证 | 高 | 桥接方法委托 createSpecialItemSpec
 c	com/fs/starfarer/loading/SpecStore$18	com/fs/starfarer/loading/SpecStore$ShipsWhenImportingList
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(SpecStore 注册 key "shipsWhenImporting" type "hulls"，SpecStore$Oo 实现)
 
 	f	super	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
 		c javap 字节码取证 | 高 | 构造器赋值的外部 FactionSpec 引用
-	m	o00000	getAllIds	()Ljava/util/List;
+	m	o00000	getList	()Ljava/util/List;
 		c javap 字节码取证 | 高 | 返回全部候选 id（M.new() 船体 map keySet）
-	m	o00000	hasTag	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 		c javap 字节码取证 | 高 | 取 specs.g 检查 hasTag
-	m	o00000	addId	(Ljava/lang/String;)V
+	m	o00000	add	(Ljava/lang/String;)V
 		c javap 字节码取证 | 高 | 加入 faction.getShipsWhenImporting() 集合
 c	com/fs/starfarer/loading/SpecStore$19	com/fs/starfarer/loading/SpecStore$KnownShipsList
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "knownShips" type "hulls")
 
 	f	ô00000	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
 		c javap 字节码取证 | 高 | 构造器赋值的外部 FactionSpec 引用
-	m	o00000	getAllIds	()Ljava/util/List;
+	m	o00000	getList	()Ljava/util/List;
 		c javap 字节码取证 | 高 | 返回全部候选 hull id
-	m	o00000	hasTag	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 		c javap 字节码取证 | 高 | 取 specs.g 检查 hasTag
-	m	o00000	addId	(Ljava/lang/String;)V
+	m	o00000	add	(Ljava/lang/String;)V
 		c javap 字节码取证 | 高 | 加入 faction.getKnownShips() 集合
 c	com/fs/starfarer/loading/SpecStore$20	com/fs/starfarer/loading/SpecStore$PriorityShipsList
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "priorityShips" type "hulls")
 
 	f	void	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
 		c javap 字节码取证 | 高 | 构造器赋值的外部 FactionSpec 引用
-	m	o00000	getAllIds	()Ljava/util/List;
+	m	o00000	getList	()Ljava/util/List;
 		c javap 字节码取证 | 高 | 返回全部候选 hull id
-	m	o00000	hasTag	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 		c javap 字节码取证 | 高 | 取 specs.g 检查 hasTag
-	m	o00000	addId	(Ljava/lang/String;)V
+	m	o00000	add	(Ljava/lang/String;)V
 		c javap 字节码取证 | 高 | 加入 faction.getPriorityShips() 集合
 c	com/fs/starfarer/loading/SpecStore$21	com/fs/starfarer/loading/SpecStore$KnownFightersList
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "knownFighters" type "fighters")
 
 	f	Ö00000	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
 		c javap 字节码取证 | 高 | 构造器赋值的外部 FactionSpec 引用
-	m	o00000	getAllIds	()Ljava/util/List;
+	m	o00000	getList	()Ljava/util/List;
 		c javap 字节码取证 | 高 | 返回全部候选 fighter id
-	m	o00000	hasTag	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 		c javap 字节码取证 | 高 | 取 FighterWingSpec 检查 hasTag
-	m	o00000	addId	(Ljava/lang/String;)V
+	m	o00000	add	(Ljava/lang/String;)V
 		c javap 字节码取证 | 高 | 加入 faction.getKnownFighters() 集合
 c	com/fs/starfarer/loading/SpecStore$22	com/fs/starfarer/loading/SpecStore$PriorityFightersList
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "priorityFighters" type "fighters")
 
 	f	Õ00000	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
 		c javap 字节码取证 | 高 | 构造器赋值的外部 FactionSpec 引用
-	m	o00000	getAllIds	()Ljava/util/List;
+	m	o00000	getList	()Ljava/util/List;
 		c javap 字节码取证 | 高 | 返回全部候选 fighter id
-	m	o00000	hasTag	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 		c javap 字节码取证 | 高 | 取 FighterWingSpec 检查 hasTag
-	m	o00000	addId	(Ljava/lang/String;)V
+	m	o00000	add	(Ljava/lang/String;)V
 		c javap 字节码取证 | 高 | 加入 faction.getPriorityFighters() 集合
 c	com/fs/starfarer/loading/SpecStore$23	com/fs/starfarer/loading/SpecStore$KnownWeaponsList
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(注册 key "knownWeapons" type "weapons"，id 来自 WeaponSpecStore)
 	f	String	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
 		c javap 字节码取证 | 高 | 构造器赋值的外部 FactionSpec 引用
-	m	o00000	getAllIds	()Ljava/util/List;
+	m	o00000	getList	()Ljava/util/List;
 		c javap 字节码取证 | 高 | 返回全部候选 weapon id
-	m	o00000	hasTag	(Ljava/lang/String;Ljava/lang/String;)Z
+	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 		c javap 字节码取证 | 高 | 取 BaseWeaponSpec 检查 hasTag
-	m	o00000	addId	(Ljava/lang/String;)V
+	m	o00000	add	(Ljava/lang/String;)V
 		c javap 字节码取证 | 高 | 加入 faction.getKnownWeapons() 集合

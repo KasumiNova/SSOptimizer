@@ -431,7 +431,7 @@ c	com/fs/starfarer/coreui/refit/M	com/fs/starfarer/coreui/refit/WeaponButton
 		c javap 字节码取证 | 高 | 设置武器数量：weaponNameRenderer 文本改为 "name x N"
 	m	super	createTextRenderer	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)Lcom/fs/graphics/font/BitmapFontRenderer;
 		c javap 字节码取证 | 高 | 私有：构造 BitmapFontRenderer 并设颜色/关闭 highlight
-	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 渲染主方法：背景/图标/挂架/各文本渲染器，末尾转发 listener
 	m	super	setListener	(Lcom/fs/starfarer/coreui/refit/WeaponButton$WeaponButtonListener;)V
 		c javap 字节码取证 | 高 | 设置武器按钮监听回调
@@ -795,7 +795,7 @@ c	com/fs/starfarer/coreui/refit/P	com/fs/starfarer/coreui/refit/WeaponItemHighli
 		c javap 字节码取证 | 高 | final float；>0 时在 item 底边(getY+getHeight)画横条与两处角线(E.o00000)
 	f	ÖO0000	unusedHighlightColor	Ljava/awt/Color;
 		c javap 字节码取证 | 中 | static 块 new Color(255,0,0,255) 红色；全类方法体无 getstatic 读取点，判定未使用
-	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 带按钮状态参数的渲染回调：画黑色底+按 mounted/价格/高亮强度调色，同步 item 位置、setDisabled 后渲染 item
 	m	Ò00000	getItem	()Lcom/fs/starfarer/coreui/refit/WeaponItem;
 		c javap 字节码取证 | 高 | 方法体仅 getfield item 返回，标准 getter
@@ -949,7 +949,7 @@ c	com/fs/starfarer/coreui/refit/O0Oo$1	com/fs/starfarer/coreui/refit/OPDisplay$A
 		c javap 字节码取证 | 高 | 外部改装界面引用（构造参数2），取成员与 CR 显示
 c	com/fs/starfarer/coreui/refit/O0Oo$2	com/fs/starfarer/coreui/refit/OPDisplay$TooltipProvider
 	c	javap取证 | 低 | tooltip 提供者：返回当前 HullVariantSpec（O0Oo$2）
-	m	o00000	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	m	o00000	getHullVariantSpec	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
 	f	o00000	outer	Lcom/fs/starfarer/coreui/refit/OPDisplay;
 		c javap 字节码取证 | 高 | 匿名内部类对外部 OP 显示的引用（编译器合成）
 	f	new	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;

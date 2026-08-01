@@ -130,7 +130,7 @@ c	com/fs/starfarer/tutorial/combat/B	com/fs/starfarer/tutorial/combat/KineticOve
 		c javap 字节码取证 | 高 | 推进过载触发逻辑与两个 Fader
 	m	Ó00000	endStep	()V
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 动能伤害教学文本（KINETIC damage vs shields）
@@ -154,7 +154,7 @@ c	com/fs/starfarer/tutorial/combat/C	com/fs/starfarer/tutorial/combat/LiveFireTr
 		c javap 字节码取证 | 高 | 敌舰 HP<=0 触发 completeFader 并推进
 	m	Ó00000	endStep	()V
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本："Great work!"
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 实弹训练教学文本（live-fire + RMB 护盾）
@@ -174,7 +174,7 @@ c	com/fs/starfarer/tutorial/combat/E	com/fs/starfarer/tutorial/combat/TutorialCo
 		c javap 字节码取证 | 高 | 空实现（立即完成）
 	m	Ó00000	endStep	()V
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 祝贺文本（Congratulations, you've completed...）
@@ -194,7 +194,7 @@ c	com/fs/starfarer/tutorial/combat/G	com/fs/starfarer/tutorial/combat/Fragmentat
 		c javap 字节码取证 | 高 | 实现 TutorialStep.advance：fader.advance（与既有 tutorial-b 接口命名一致）
 	m	Ó00000	endStep	()V
 		c javap 字节码取证 | 中 | 实现 TutorialStep 钩子：isComplete 后由脚本调用，本类为空实现
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 上一步骤完成后追加显示文本（TutorialTaskScript 将上个 step 的此文本拼进对话框），本类返回 null
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 步骤主教学文本（与既有 tutorial-b 接口命名一致）
@@ -216,7 +216,7 @@ c	com/fs/starfarer/tutorial/combat/OOoO	com/fs/starfarer/tutorial/combat/VentFlu
 		c javap 字节码取证 | 高 | flux<0.75 时 forceMaxOutFlux 逼玩家排放；isVenting 置 vented
 	m	Ó00000	endStep	()V
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本："Good."
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 通量排放教学文本（Press V to vent）
@@ -296,7 +296,7 @@ c	com/fs/starfarer/tutorial/combat/oooO	com/fs/starfarer/tutorial/combat/IntroMo
 		c javap 字节码取证 | 高 | 空实现（与既有 tutorial-b 接口命名一致）
 	m	Ó00000	endStep	()V
 		c javap 字节码取证 | 中 | isComplete 后脚本调用的步骤结束钩子，空实现
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 上一步骤完成后的追加文本，返回 null
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 欢迎文本（Welcome to the Starfarer combat tutorial）
@@ -352,7 +352,7 @@ c	com/fs/starfarer/tutorial/oOOO/C	com/fs/starfarer/tutorial/oOOO/RallyStrikeFor
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 集结打击力量教学文本（Sensor Array 附近敌巡洋舰）
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/E	com/fs/starfarer/tutorial/oOOO/DeployRemainingFleetStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：部署剩余舰队（Reinforcements 按钮部署全部）（oOOO/E）
@@ -366,7 +366,7 @@ c	com/fs/starfarer/tutorial/oOOO/E	com/fs/starfarer/tutorial/oOOO/DeployRemainin
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 部署剩余舰队教学文本（Reinforcements 按钮）
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/F	com/fs/starfarer/tutorial/oOOO/CaptureCommRelayStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：捕获通讯中继（capture Comm Relay 增加舰队点）（oOOO/F）
@@ -380,7 +380,7 @@ c	com/fs/starfarer/tutorial/oOOO/F	com/fs/starfarer/tutorial/oOOO/CaptureCommRel
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 捕获 Comm Relay 教学文本
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/String	com/fs/starfarer/tutorial/oOOO/CaptureSensorArrayStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：捕获传感器阵列（capture Sensor Array 消除战争迷雾）（oOOO/String）
@@ -394,7 +394,7 @@ c	com/fs/starfarer/tutorial/oOOO/String	com/fs/starfarer/tutorial/oOOO/CaptureSe
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 捕获 Sensor Array 教学文本（含按键名格式化）
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/new	com/fs/starfarer/tutorial/oOOO/StrikeOrderStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：打击命令（order a strike on enemy cruiser，Dagger 轰炸机）（oOOO/new）
@@ -408,7 +408,7 @@ c	com/fs/starfarer/tutorial/oOOO/new	com/fs/starfarer/tutorial/oOOO/StrikeOrderS
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 打击命令教学文本（Strike 上下文菜单）
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/oOoO	com/fs/starfarer/tutorial/oOOO/DeployInterceptorStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：部署拦截机（deploy Wasp interceptor wing）（oOOO/oOoO）
@@ -422,7 +422,7 @@ c	com/fs/starfarer/tutorial/oOOO/oOoO	com/fs/starfarer/tutorial/oOOO/DeployInter
 		c javap 字节码取证 | 高 | 取消暂停（setPaused(false)）
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 部署 Wasp 拦截机教学文本
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/oOOO	com/fs/starfarer/tutorial/oOOO/TransferCommandStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：转移指挥权 + 完成教程（transfer command to Gemini + 祝贺文案）（oOOO/oOOO）
@@ -436,7 +436,7 @@ c	com/fs/starfarer/tutorial/oOOO/oOOO	com/fs/starfarer/tutorial/oOOO/TransferCom
 		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
 	m	Ò00000	getText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 转移指挥教学文本（Transfer Command 菜单）
-	m	Õ00000	getCompletionText	()Ljava/lang/String;
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
 		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/super	com/fs/starfarer/tutorial/BasicCombatTutorialScript
 	c	字符串常量+javap取证 | 高 | 基础战斗教程脚本 extends TutorialScript(D)：移动/转向/武器/护盾/通量/过载/排放/自动开火/舰船系统教学，ENFORCER 常量 = enforcer_Tutorial 敌舰变体（super）

@@ -1941,7 +1941,7 @@ c	com/fs/starfarer/combat/A/B$O0	com/fs/starfarer/combat/BattleObjective
 		c javap 字节码取证 | 高 | 构造参数 5（目标重要性）
 	f	String	map	Lcom/fs/starfarer/combat/CombatMap;
 		c javap 字节码取证 | 高 | 所属 CombatMap（内部类外部引用）
-	m	o00000	spawn	()V
+	m	o00000	init	()V
 		c javap 字节码取证 | 高 | 创建 entities.BattleObjective 并 CombatEngine.addObject
 c	com/fs/starfarer/combat/A/B$o	com/fs/starfarer/combat/Nebula
 	c 来源(javap取证) | 置信度(中) | 证据(构造 (CombatMap, Vector2f, PlanetAPI/String, ...) 生成星云地形)
@@ -1959,7 +1959,7 @@ c	com/fs/starfarer/combat/A/B$o	com/fs/starfarer/combat/Nebula
 		c javap 字节码取证 | 高 | 构造器置 null；非空时用其 graphics spec/lightColor 生成行星
 	f	ô00000	outer	Lcom/fs/starfarer/combat/CombatMap;
 		c javap 字节码取证 | 高 | final 外类引用
-	m	o00000	spawnPlanet	()V
+	m	o00000	init	()V
 		c javap 字节码取证 | 高 | 构造 Planet、setBackgroundPlanet、CombatEngine.addObject
 c	com/fs/starfarer/combat/A/B$oo	com/fs/starfarer/combat/TerrainPatch
 	c 来源(javap取证) | 置信度(低) | 证据(构造 (CombatMap, float, float, float) 地形片段)
@@ -1969,7 +1969,7 @@ c	com/fs/starfarer/combat/A/B$oo	com/fs/starfarer/combat/TerrainPatch
 		c javap 字节码取证 | 高 | 构造器参数 3；spawnCloud 云半径
 	f	super	outer	Lcom/fs/starfarer/combat/CombatMap;
 		c javap 字节码取证 | 高 | final 外类引用
-	m	o00000	spawnCloud	()V
+	m	o00000	init	()V
 		c javap 字节码取证 | 高 | CombatEngine.getCloudSystem().spawnCloud(location, radius)
 c	com/fs/starfarer/combat/A/C	com/fs/starfarer/combat/WingFormation
 	c 来源(字符串常量) | 置信度(中) | 证据(talon_wing/broadsword_wing 等 wing 变体；生成舰船编队)
@@ -1985,7 +1985,7 @@ c	com/fs/starfarer/combat/A/C	com/fs/starfarer/combat/WingFormation
 		c javap 字节码取证 | 中 | 构造器 250f；生成位置递增步长
 	f	ô00000	wingIds	[Ljava/lang/String;
 		c javap 字节码取证 | 高 | 13 个机队 id（talon_wing 等），按键数字索引取
-	m	o00000	processInput	(FLcom/fs/starfarer/util/InputEventList;)V
+	m	o00000	advance	(FLcom/fs/starfarer/util/InputEventList;)V
 		c javap 字节码取证 | 高 | 遍历按键事件：2-13 生成机队/舰船、46 清船、50 清导弹
 	m	new	clearAllShips	()V
 		c javap 字节码取证 | 高 | 遍历全部 Ship removeObject + executeRemoves；重置生成位置
@@ -1995,7 +1995,7 @@ c	com/fs/starfarer/combat/A/C	com/fs/starfarer/combat/WingFormation
 		c javap 字节码取证 | 高 | 包装：调 (String,IFF,Z) 变体 true
 	m	o00000	spawnShip	(Ljava/lang/String;IFFZ)Lcom/fs/starfarer/combat/entities/Ship;
 		c javap 字节码取证 | 高 | 核心：建 FleetMember(SHIP)、CR 0.6、setOwner/setFacing(90/270)、可选 setShipAI、定位、addObject
-	m	o00000	setCombatMap	(Lcom/fs/starfarer/combat/CombatMap;)V
+	m	o00000	init	(Lcom/fs/starfarer/combat/CombatMap;)V
 		c javap 字节码取证 | 高 | 接口空实现（return）
 c	com/fs/starfarer/combat/A/String	com/fs/starfarer/combat/TerrainRenderer
 	c 来源(javap取证) | 置信度(中) | 证据(implements CombatMapTerrain（地形渲染器实现）)
@@ -2073,7 +2073,7 @@ c	com/fs/starfarer/combat/A/E	com/fs/starfarer/combat/AsteroidField
 		c javap 字节码取证 | 高 | static：按贴图列表随机尺寸/朝向构造 Asteroid 实体
 c	com/fs/starfarer/combat/A/A	com/fs/starfarer/combat/PlanetTextureReloader
 	c 来源(字符串常量) | 置信度(高) | 证据('Reloading planets and textures'/'Reloading planets stats ONLY')
-	m	o00000	processInput	(FLcom/fs/starfarer/util/InputEventList;)V
+	m	o00000	advance	(FLcom/fs/starfarer/util/InputEventList;)V
 		c javap 字节码取证 | 高 | 键盘驱动：F12 全量重载、F11 仅 stats、X/ESC 半径±2；捕获 IOException/JSONException
 	m	o00000	recreateAllPlanets	()V
 		c javap 字节码取证 | 高 | 删除全部 Planet 后网格重建全部 PlanetSpec（跳过 frozen1）
@@ -2085,9 +2085,9 @@ c	com/fs/starfarer/combat/A/F	com/fs/starfarer/combat/TerrainRendererFallback
 	c 来源(javap取证) | 置信度(低) | 证据(implements CombatMapTerrain（地形渲染器实现）)
 	f	this.super	combatMap	Lcom/fs/starfarer/combat/CombatMap;
 		c javap 字节码取证 | 高 | 唯一字段；A/B=CombatMap obf；clampShipsToMap 中经它取地图边界
-	m	o00000	clampShipsToMap	(FLcom/fs/starfarer/util/InputEventList;)V
+	m	o00000	advance	(FLcom/fs/starfarer/util/InputEventList;)V
 		c javap 字节码取证 | 高 | 遍历全部 Ship 把 getLocation 夹到地图 minX/maxX/minY/maxY 内（与 linux 方法体逐字节一致）
-	m	o00000	setCombatMap	(Lcom/fs/starfarer/combat/CombatMap;)V
+	m	o00000	init	(Lcom/fs/starfarer/combat/CombatMap;)V
 		c javap 字节码取证 | 高 | 纯 setter：putfield this.super
 c	com/fs/starfarer/combat/A/oOoO	com/fs/starfarer/combat/CombatMapTerrain
 	c 来源(javap取证) | 置信度(中) | 证据(CombatMap 地形接口（init/advance 两方法）)

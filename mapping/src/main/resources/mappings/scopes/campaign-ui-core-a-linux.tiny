@@ -378,7 +378,7 @@ c	com/fs/starfarer/campaign/ui/Objectsuper	GlowingRowPanel
 c	com/fs/starfarer/campaign/ui/OoOo	SpriteButtonRenderer
 	c	javap取证 | 中 | 按钮渲染器（implements n$Oo）：渲染 sprite，高亮时 additive 叠加（com/fs/starfarer/campaign/ui/OoOo）
 	f	oÔ0000	sprite	Lcom/fs/graphics/Sprite;
-	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
 	m	if	getSprite	()Lcom/fs/graphics/Sprite;
 c	com/fs/starfarer/campaign/ui/P	MessageDisplay
 	c	API-impl种子+javap取证 | 高 | 实现 MessageDisplayAPI 的消息显示：Game paused/消息队列/sticky 消息，ui_noise_static_message 音效（com/fs/starfarer/campaign/ui/P）
@@ -482,7 +482,7 @@ c	com/fs/starfarer/campaign/ui/String	FleetMemberIconRenderer
 	f	öÓ0000	type	Lcom/fs/starfarer/campaign/ui/String$o;
 	f	Object.Object	icon	Lcom/fs/starfarer/ui/super/B;
 	m	õ00000	getIcon	()Lcom/fs/starfarer/ui/super/B;
-	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
 c	com/fs/starfarer/campaign/ui/String$o	FleetMemberIconType
 	c	字符串常量 | 高 | 图标阵营枚举 FRIEND/ENEMY/NEUTRAL（字符串常量直接给出）
 	f	Ó00000	FRIEND	Lcom/fs/starfarer/campaign/ui/String$o;
@@ -594,16 +594,16 @@ c	com/fs/starfarer/campaign/ui/Z$1	SubmarketPickerWidget$SubmarketTooltip
 		c javap 字节码取证 | 高 | final；createImpl 委托其 createTooltip
 c	com/fs/starfarer/campaign/ui/Z$2	SubmarketPickerWidget$TextTooltipAppendix
 	c	javap取证 | 高 | StandardTooltipV2$OOo：文本 tooltip 附录（getTooltipAppendix/highlights，Z$2）
-	m	o00000	getTooltipAppendix	(Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	modifyText	(Ljava/lang/String;)Ljava/lang/String;
 	f	Object	outer	LSubmarketPickerWidget;
 		c javap 字节码取证 | 高 | 内部类外部引用
 	f	Ô00000	submarket	Lcom/fs/starfarer/campaign/econ/Submarket;
 		c javap 字节码取证 | 高 | final；读其 plugin 生成 appendix
 	m	o00000	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
 		c javap 字节码取证 | 高 | 接口方法实现，返回 null
-	m	o00000	addHighlights	(Lcom/fs/starfarer/ui/LabelImpl;)V
+	m	o00000	setTextLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
 		c javap 字节码取证 | 高 | 从 plugin 取 highlights 设置文本/颜色
-	m	new	setFont	(Lcom/fs/starfarer/ui/LabelImpl;)V
+	m	new	setTitleLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
 		c javap 字节码取证 | 高 | 设置 orbitron20aabold 字体
 c	com/fs/starfarer/campaign/ui/Z$3	SubmarketPickerWidget$LocalResourcesTooltipPositioner
 	c	javap取证 | 中 | Runnable：local_resources 子市场 tooltip 定位（Z$3）
@@ -657,7 +657,7 @@ c	com/fs/starfarer/campaign/ui/b	WeaponIconRenderer
 	c	javap取证 | 中 | 按钮渲染器（implements n$Oo）：用 ui/super/Object 渲染武器图标（BaseWeaponSpec，com/fs/starfarer/campaign/ui/b）
 	f	ÒÔ0000	weaponIcon	Lcom/fs/starfarer/ui/super/Object;
 	m	ø00000	getIcon	()Lcom/fs/starfarer/ui/super/Object;
-	m	super	render	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
 	f	ÕÔ0000	unusedFleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
 		c javap 字节码取证 | 中 | private 字段，类内（构造/渲染）零读写，死字段；类型=舰队成员
 	f	ÔÔ0000	unusedIconColor	Ljava/awt/Color;

@@ -91,11 +91,11 @@ c	com/fs/starfarer/combat/ai/admiral/BaseBattleStrategy	com/fs/starfarer/combat/
 		c javap 字节码取证 | 高 | HullSize→1..6 分值的静态查找表，getHullSizeScores() 懒初始化
 	m	OO0000	isUnderEscort	()Z
 		c javap 字节码取证 | 中 | 成员当前指令为护航类（经 orders 路径）
-	m	String	updateEscortAssignments	()V
+	m	String	preCombat	()V
 		c javap 字节码取证 | 中 | 敌军部署强度超阈值时按舰级/CR/弹药给友军分配 defend/重/轻护航任务
 	m	øO0000	getAllyReserves	()Ljava/util/Set;
 		c javap 字节码取证 | 中 | 本方预备队中 isAlly 成员的 Set
-	m	super	computeFleetPoints	(F)V
+	m	super	advance	(F)V
 		c javap 字节码取证 | 高 | Collection<FleetMember> 的舰队点数和（真重载）
 	m	ÖO0000	getCommandPointsLeft	()I
 		c javap 字节码取证 | 高 | taskManager.getCommandPointsLeft()
@@ -275,7 +275,7 @@ c	com/fs/starfarer/combat/ai/admiral/DefensiveBattleStrategy	com/fs/starfarer/co
 		c javap 字节码取证 | 低 | 覆盖接口周期节拍2；空实现
 	m	Ó00000	updateStrengthAssessment	()V
 		c javap 字节码取证 | 中 | 覆盖接口周期节拍3；力量比计算→orderRetreatsForDamagedShips
-	m	super	getDecisionInterval	()F
+	m	super	advance	()F
 		c javap 字节码取证 | 中 | 返回 5.0f
 	m	void.super	getDefensiveObjectiveData	()Lcom/fs/starfarer/combat/ai/admiral/DefensiveObjectiveData;
 		c javap 字节码取证 | 高 | 目标两两中点(≤5000)或单一目标/comm_relay 构建防御数据，按 spawn 距离加权随机
@@ -313,7 +313,7 @@ c	com/fs/starfarer/combat/ai/admiral/E	com/fs/starfarer/combat/ai/admiral/Escape
 		c javap 字节码取证 | 高 | 移除全部 CONTROL 类型任务
 	m	ÒO0000	isEligibleForEscape	(Lcom/fs/starfarer/combat/DeployedFleetMember;)Z
 		c javap 字节码取证 | 中 | 非航母/民用/锁定控制、hullLevel>=0.2、且不在敌方驱逐以上部署区
-	m	super	getDecisionInterval	()F
+	m	super	advance	()F
 		c javap 字节码取证 | 高 | 返回 5.0f
 	m	String	preCombat	()V
 		c javap 字节码取证 | 高 | 覆盖接口；调 super
@@ -425,7 +425,7 @@ c	com/fs/starfarer/combat/ai/admiral/String	com/fs/starfarer/combat/ai/admiral/P
 		c javap 字节码取证 | 中 | 在地图上沿两侧 ±2500 创建两个集结路点
 	m	Óo0000	orderCaptureObjectives	()V
 		c javap 字节码取证 | 中 | 随机对本方线后目标/导航浮标下夺点指令
-	m	super	getDecisionInterval	()F
+	m	super	advance	()F
 		c javap 字节码取证 | 高 | 返回 5.0f
 	m	String	preCombat	()V
 		c javap 字节码取证 | 高 | 覆盖接口；调 super
@@ -449,7 +449,7 @@ c	com/fs/starfarer/combat/ai/admiral/B	com/fs/starfarer/combat/ai/admiral/Assaul
 		c javap 字节码取证 | 低 | 覆盖接口周期节拍2；空实现
 	m	Ó00000	updateStrengthAssessment	()V
 		c javap 字节码取证 | 中 | 覆盖接口周期节拍3；双方部署+预备强度比计算后调 orderRetreatsForDamagedShips
-	m	super	getDecisionInterval	()F
+	m	super	advance	()F
 		c javap 字节码取证 | 中 | 返回 5.0f；AdmiralAI 用它缩放三个 IntervalTracker 周期(×0.75..1.25)
 c	com/fs/starfarer/combat/ai/admiral/A	com/fs/starfarer/combat/ai/admiral/DeploymentChooser
 	c 来源(javap取证) | 置信度(中) | 证据(DeploymentSpec 选 FleetMember；调用 deploy/getReserves/getGoal/getCurrStrength)
@@ -690,10 +690,10 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/AttackRunManeuver	com/fs/starfar
 	m	this.new	updateAttackState	()V
 	m	o00000	advance	(F)V
 	m	o00000	createPointTarget	(Lorg/lwjgl/util/vector/Vector2f;)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
-	m	Õ00000	isAutonomous	()Z
-	m	Ô00000	getDesiredHeading	()F
-	m	Object	issueCommands	()V
-	m	Ò00000	getDesiredFacing	()F
+	m	Õ00000	isDone	()Z
+	m	Ô00000	getDesiredFacing	()F
+	m	Object	init	()V
+	m	Ò00000	getTargetFacing	()F
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
 c	com/fs/starfarer/combat/ai/movement/maneuvers/AttackRunManeuver$1	com/fs/starfarer/combat/ai/movement/maneuvers/AttackRunLineEntity
 	c 来源(继承关系) | 置信度(中) | 证据(extends BaseEntity 匿名实体，render/applyDamage 渲染攻击航线)
@@ -731,7 +731,7 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/C	com/fs/starfarer/combat/ai/mov
 		c javap 字节码取证 | 高 | 更新任务目标：指令目标→2200 内最近敌舰→INTERCEPT 任务目标；非战斗过滤；写 MANEUVER_TARGET
 	m	return	computeMaxRange	()F
 		c javap 字节码取证 | 高 | attackingGroup/AttackAIModule 射程 + while.super 修正计算最大射程
-	m	Ò00000	getMaxRange	()F
+	m	Ò00000	getTargetFacing	()F
 		c javap 字节码取证 | 高 | 返回 maxRange 字段
 	m	o00000	advance	(F)V
 		c javap 字节码取证 | 高 | M 接口 advance：帧推进；decisionTracker 节流主逻辑，targetUpdateTracker 重评估，末尾翻转交替侧/更新朝向
@@ -739,7 +739,7 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/C	com/fs/starfarer/combat/ai/mov
 		c javap 字节码取证 | 高 | static 机动向量角：AVOID 任务避让向量 + 目标方向 + 侧舷 ±90° 合成，设置 avoiding 标志
 	m	Õ00000	isDone	()Z
 		c javap 字节码取证 | 高 | M 接口 isDone（实现恒 true/false；接口 M.class 既有映射 isDone）
-	m	Ô00000	getCurrentRange	()F
+	m	Ô00000	getDesiredFacing	()F
 		c javap 字节码取证 | 高 | 返回 currentRange 字段
 	m	Object	init	()V
 		c javap 字节码取证 | 高 | M 接口 init：机动执行入口（Strafe: 重算朝向；C/U: 任务机动命令；Y: 空实现）
@@ -955,11 +955,11 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/void	com/fs/starfarer/combat/ai/
 	f	õõ0000	flockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
 	f	Õõ0000	desiredFacing	F
 	m	o00000	advance	(F)V
-	m	Õ00000	isAutonomous	()Z
+	m	Õ00000	isDone	()Z
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
-	m	Ô00000	getDesiredHeading	()F
-	m	Object	issueCommands	()V
-	m	Ò00000	getDesiredFacing	()F
+	m	Ô00000	getDesiredFacing	()F
+	m	Object	init	()V
+	m	Ò00000	getTargetFacing	()F
 c	com/fs/starfarer/combat/ai/movement/maneuvers/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/combat/ai/movement/maneuvers/FaceTargetEntityManeuver
 	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, 目标实体, float, float, ManeuverAPI)；无攻击模块调用，纯朝向目标实体移动)
 	f	Õö0000	ship	Lcom/fs/starfarer/combat/entities/Ship;
@@ -1155,12 +1155,12 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/if	com/fs/starfarer/combat/ai/mo
 		c javap 字节码取证 | 高 | M 接口 isDone（实现恒 true/false；接口 M.class 既有映射 isDone）
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
 		c javap 字节码取证 | 高 | M 接口 getTarget：返回目标 Ship（向上转型 CollisionEntity/B）
-	m	Ô00000	getFacing	()F
+	m	Ô00000	getDesiredFacing	()F
 		c javap 字节码取证 | 高 | M 接口 getFacing：返回当前朝向/机动朝向
 	m	Object	init	()V
 		c javap 字节码取证 | 高 | M 接口 init：机动执行入口（Strafe: 重算朝向；C/U: 任务机动命令；Y: 空实现）
 	m	øo0000	computeMoveAngle	()F
-	m	Ò00000	getDesiredFacing	()F
+	m	Ò00000	getTargetFacing	()F
 		c javap 字节码取证 | 高 | 期望朝向角（机动目标角，供 giveCommand 转向）
 c	com/fs/starfarer/combat/ai/movement/maneuvers/B	com/fs/starfarer/combat/ai/movement/maneuvers/AssignmentBasedManeuver
 	c 来源(javap取证) | 置信度(中) | 证据(构造 (Ship, Ship, float, FlockingAI, ManeuverAPI) + 判定 (Ship, Ship)Z；按任务分配类型字符串 aggressive/cautious/reckless/timid 决定行为)
@@ -1196,15 +1196,15 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/B	com/fs/starfarer/combat/ai/mov
 		c javap 字节码取证 | 中 | HARASS 任务/assignment 或 reckless/aggressive 人格等条件下的骚扰判定
 	m	o00000	advance	(F)V
 		c javap 字节码取证 | 高 | 主循环：接敌距离重算、硬转弯判定、IntervalTracker 间隔内发布指令
-	m	Õ00000	isAutonomous	()Z
+	m	Õ00000	isDone	()Z
 		c javap 字节码取证 | 中 | 接口 M 方法；恒 true，由本机动自行发布指令（与 p028 命名一致）
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
 		c javap 字节码取证 | 高 | 接口 M 方法；getfield target
-	m	Ô00000	getDesiredHeading	()F
+	m	Ô00000	getDesiredFacing	()F
 		c javap 字节码取证 | 中 | 接口 M 方法；backingOff/过载时目标角+180
-	m	Object	issueCommands	()V
+	m	Object	init	()V
 		c javap 字节码取证 | 中 | 接口 M 方法；置 PURSUING flag、计算目标方位、按状态发布 giveCommand 指令
-	m	Ò00000	getDesiredFacing	()F
+	m	Ò00000	getTargetFacing	()F
 		c javap 字节码取证 | 中 | 接口 M 方法；getfield targetBearing
 c	com/fs/starfarer/combat/ai/movement/maneuvers/ProceedToTargetWhileAvoidingDanger	com/fs/starfarer/combat/ai/movement/maneuvers/ProceedToTargetWhileAvoidingDanger
 	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名；构造 (Ship, CombatTask$Oo, ...) 向任务目标移动避险)
@@ -1328,7 +1328,7 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatManeuver$1	com/fs/starfar
 		c javap 字节码取证 | 高 | 实现 Comparator；按两对象 Ô00000() 风险值 signum 比较
 c	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatManeuver$2	com/fs/starfarer/combat/ai/movement/maneuvers/RetreatPositionEvaluator
 	c 来源(继承关系) | 置信度(中) | 证据(extends ai/while$Oo，方法 (Ship, Vector2f, Ship)Z 评估撤退位置)
-	m	o00000	isPositionValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
 		c javap 字节码取证 | 中 | 覆写基类位置评估方法并直接调 super；供 canRetreatToSide 的位置评估
 c	com/fs/starfarer/combat/ai/movement/maneuvers/StrafeTargetManeuverV2	com/fs/starfarer/combat/ai/movement/maneuvers/StrafeTargetManeuverV2
 	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名；字符串 "Finding back off direction"/aggressive/cautious/reckless/steady/timid；调用 WeaponFireControlHelper)
@@ -1434,11 +1434,11 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/StrafeTargetManeuverV2	com/fs/st
 		c javap 字节码取证 | 高 | M 接口 isDone（实现恒 true/false；接口 M.class 既有映射 isDone）
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
 		c javap 字节码取证 | 高 | M 接口 getTarget：返回目标 Ship（向上转型 CollisionEntity/B）
-	m	Ô00000	getFacing	()F
+	m	Ô00000	getDesiredFacing	()F
 		c javap 字节码取证 | 高 | M 接口 getFacing：返回当前朝向/机动朝向
 	m	Object	computeFacing	(Z)F
 		c javap 字节码取证 | 高 | 核心朝向计算（后退/侧舷/flux 判断，返回最终朝向角）
-	m	Ò00000	getDesiredFacing	()F
+	m	Ò00000	getTargetFacing	()F
 		c javap 字节码取证 | 高 | 期望朝向角（机动目标角，供 giveCommand 转向）
 	m	o00000	computeThreatScore	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;ZZ)F
 		c javap 字节码取证 | 高 | static 威胁分（性格/体型差/相位/PHASE_ATTACK_RUN flags 修正；p029 既有引用 StrafeTargetManeuverV2.o00000 威胁分）
@@ -1531,12 +1531,12 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/T	com/fs/starfarer/combat/ai/mov
 	f	do.do	fixedFacing	Z
 	f	void.do	autonomous	Z
 	m	o00000	advance	(F)V
-	m	Object	issueCommands	()V
+	m	Object	init	()V
 	m	øÒ0000	computeDesiredHeading	()V
-	m	Õ00000	isAutonomous	()Z
+	m	Õ00000	isDone	()Z
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
-	m	Ô00000	getDesiredHeading	()F
-	m	Ò00000	getDesiredFacing	()F
+	m	Ô00000	getDesiredFacing	()F
+	m	Ò00000	getTargetFacing	()F
 c	com/fs/starfarer/combat/ai/movement/maneuvers/TransferCommandAI	com/fs/starfarer/combat/ai/movement/maneuvers/TransferCommandAI
 	c 来源(未混淆类名) | 置信度(高) | 证据(未混淆名 TransferCommandAI；implements ai/AI，调用 WingAttackManeuver)
 	f	to	targetShip	Lcom/fs/starfarer/combat/entities/Ship;
@@ -1573,7 +1573,7 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/ooOo	com/fs/starfarer/combat/ai/
 		c javap 字节码取证 | 高 | 更新任务目标：指令目标→2200 内最近敌舰→INTERCEPT 任务目标；非战斗过滤；写 MANEUVER_TARGET
 	m	oÓ0000	computeMaxRange	()F
 		c javap 字节码取证 | 高 | attackingGroup/AttackAIModule 射程 + while.super 修正计算最大射程
-	m	Ò00000	getTargetDistance	()F
+	m	Ò00000	getTargetFacing	()F
 		c javap 字节码取证 | 高 | 目标距离（FACING_OVERRIDE 值或 maxRange；无目标时 MAX）
 	m	ÒÓ0000	getFacingOverride	()F
 		c javap 字节码取证 | 高 | 读取 FACING_OVERRIDE_FOR_MOVE_AND_ESCORT_MANEUVERS flag 的 Float 值
@@ -1583,7 +1583,7 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/ooOo	com/fs/starfarer/combat/ai/
 		c javap 字节码取证 | 高 | static 机动向量角：AVOID 任务避让向量 + 目标方向 + 侧舷 ±90° 合成，设置 avoiding 标志
 	m	Õ00000	isDone	()Z
 		c javap 字节码取证 | 高 | M 接口 isDone（实现恒 true/false；接口 M.class 既有映射 isDone）
-	m	Ô00000	getCurrentRange	()F
+	m	Ô00000	getDesiredFacing	()F
 		c javap 字节码取证 | 高 | 返回 currentRange 字段
 	m	Object	init	()V
 		c javap 字节码取证 | 高 | M 接口 init：机动执行入口（Strafe: 重算朝向；C/U: 任务机动命令；Y: 空实现）
@@ -1649,11 +1649,11 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c javap 字节码取证 | 高 | 威胁角度列表均值（空列表用 facing+180）
 	m	ÔÓ0000	getAvoidOffset	()F
 		c javap 字节码取证 | 高 | 返回 avoidOffset 偏转角
-	m	Ô00000	getFacing	()F
+	m	Ô00000	getDesiredFacing	()F
 		c javap 字节码取证 | 高 | M 接口 getFacing：返回当前朝向/机动朝向
 	m	Object	init	()V
 		c javap 字节码取证 | 高 | M 接口 init：机动执行入口（Strafe: 重算朝向；C/U: 任务机动命令；Y: 空实现）
-	m	Ò00000	getTargetDistance	()F
+	m	Ò00000	getTargetFacing	()F
 		c javap 字节码取证 | 高 | 目标距离（FACING_OVERRIDE 值或 maxRange；无目标时 MAX）
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
 		c javap 字节码取证 | 高 | M 接口 getTarget：返回目标 Ship（向上转型 CollisionEntity/B）
@@ -1671,11 +1671,11 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/O0OO	com/fs/starfarer/combat/ai/
 	f	ÓÕ0000	attackSideTimer	F
 	f	õÕ0000	orbitAttack	Z
 	m	o00000	advance	(F)V
-	m	Õ00000	isAutonomous	()Z
+	m	Õ00000	isDone	()Z
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
-	m	Ô00000	getDesiredHeading	()F
-	m	Object	issueCommands	()V
-	m	Ò00000	getDesiredFacing	()F
+	m	Ô00000	getDesiredFacing	()F
+	m	Object	init	()V
+	m	Ò00000	getTargetFacing	()F
 c	com/fs/starfarer/combat/ai/movement/maneuvers/o0Oo	com/fs/starfarer/combat/ai/movement/maneuvers/OverloadAwareAttackManeuver
 	c 来源(javap取证) | 置信度(中) | 证据(双 Ship 攻击机动；advance 检查 getFluxLevel/isOverloadedOrVenting/getOverloadTimeRemaining/getTimeToVent/isPhased)
 	f	ÕôO000	ship	Lcom/fs/starfarer/combat/entities/Ship;
@@ -1761,11 +1761,11 @@ c	com/fs/starfarer/combat/ai/movement/maneuvers/S	com/fs/starfarer/combat/ai/mov
 	f	ÒÕO000	rangeTolerance	F
 	f	ÖÕO000	flockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
 	m	o00000	advance	(F)V
-	m	Õ00000	isAutonomous	()Z
+	m	Õ00000	isDone	()Z
 	m	o00000	getTarget	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
-	m	Ô00000	getDesiredHeading	()F
-	m	Object	issueCommands	()V
-	m	Ò00000	getDesiredFacing	()F
+	m	Ô00000	getDesiredFacing	()F
+	m	Object	init	()V
+	m	Ò00000	getTargetFacing	()F
 c	com/fs/starfarer/combat/ai/movement/maneuvers/oooO	com/fs/starfarer/combat/ai/movement/maneuvers/ManeuverManager
 	c 来源(javap取证) | 置信度(高) | 证据(List<ManeuverEntry> 机动队列；addManeuver(M, priority)/advance/getCurrentManeuver)
 	m	super	addManeuver	(Lcom/fs/starfarer/combat/ai/movement/maneuvers/M;F)V

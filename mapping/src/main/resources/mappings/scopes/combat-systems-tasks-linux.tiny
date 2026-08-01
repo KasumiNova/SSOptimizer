@@ -905,11 +905,11 @@ c	com/fs/starfarer/combat/tasks/oOOO/A	com/fs/starfarer/combat/tasks/WeaponSuita
 		c javap 字节码取证 | 高 | 输入武器返回适配度 float；接口唯一抽象方法
 c	com/fs/starfarer/combat/tasks/oOOO/A$o	com/fs/starfarer/combat/tasks/AntiFighterGate
 	c	来源(javap取证) | 置信度(中) | 证据(A-o-anti-fighter-gate)
-	m	o00000	getWeight	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+	m	o00000	getSuitability	(Lcom/fs/starfarer/combat/systems/Weapon;)F
 		c javap 字节码取证 | 高 | 有 PD/ANTI_FTR 提示返回 1.0 否则 0.0（门限权重）
 c	com/fs/starfarer/combat/tasks/oOOO/A$o0	com/fs/starfarer/combat/tasks/AntiFighterHeavyWeight
 	c	来源(javap取证) | 置信度(中) | 证据(A-o0-anti-fighter-heavy-weight)
-	m	o00000	getWeight	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+	m	o00000	getSuitability	(Lcom/fs/starfarer/combat/systems/Weapon;)F
 		c javap 字节码取证 | 高 | ANTI_FTR 提示返回 2.5 否则 0.75（重型反战机权重）
 c	com/fs/starfarer/combat/tasks/oOOO/A$O0	com/fs/starfarer/combat/tasks/UniformWeight
 	c	来源(javap取证) | 置信度(中) | 证据(A-O0-uniform-weight)
@@ -917,23 +917,23 @@ c	com/fs/starfarer/combat/tasks/oOOO/A$O0	com/fs/starfarer/combat/tasks/UniformW
 		c javap 字节码取证 | 高 | fconst_1 返回，恒定 1.0 均匀权重
 c	com/fs/starfarer/combat/tasks/oOOO/A$oo	com/fs/starfarer/combat/tasks/StrikeWeaponGate
 	c	来源(javap取证) | 置信度(中) | 证据(A-oo-strike-weapon-gate)
-	m	o00000	getStrikeWeaponGate	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+	m	o00000	getSuitability	(Lcom/fs/starfarer/combat/systems/Weapon;)F
 		c javap 字节码取证 | 高 | STRIKE AIHint → 2.0，否则 0
 c	com/fs/starfarer/combat/tasks/oOOO/A$Oo	com/fs/starfarer/combat/tasks/MissileRangeWeight
 	c	来源(javap取证) | 置信度(中) | 证据(A-Oo-missile-range-weight)
-	m	o00000	getMissileRangeWeight	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+	m	o00000	getSuitability	(Lcom/fs/starfarer/combat/systems/Weapon;)F
 		c javap 字节码取证 | 高 | MISSILE 且弹药<10 → 0.5；否则 range/500（上限 4.0）
 c	com/fs/starfarer/combat/tasks/oOOO/A$ooo	com/fs/starfarer/combat/tasks/LongRangeStrikeGate
 	c	来源(javap取证) | 置信度(中) | 证据(A-ooo-long-range-strike-gate)
-	m	o00000	getLongRangeStrikeGate	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+	m	o00000	getSuitability	(Lcom/fs/starfarer/combat/systems/Weapon;)F
 		c javap 字节码取证 | 高 | STRIKE hint 且射程>=4000 且 maxAmmo>=10 → 1，否则 0
 c	com/fs/starfarer/combat/tasks/oOOO/A$oOo	com/fs/starfarer/combat/tasks/CloseRangeAntiFighterWeight
 	c	来源(javap取证) | 置信度(中) | 证据(A-oOo-close-range-anti-fighter-weight)
-	m	o00000	getWeight	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+	m	o00000	getSuitability	(Lcom/fs/starfarer/combat/systems/Weapon;)F
 		c javap 字节码取证 | 高 | ANTI_FTR 或射程>2000 返回 0.05 否则 1.0（近距离反战机权重）
 c	com/fs/starfarer/combat/tasks/oOOO/A$Ooo	com/fs/starfarer/combat/tasks/FrigateKillerWeight
 	c	来源(javap取证) | 置信度(中) | 证据(A-Ooo-frigate-killer-weight)
-	m	o00000	getFrigateKillerWeight	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+	m	o00000	getSuitability	(Lcom/fs/starfarer/combat/systems/Weapon;)F
 		c javap 字节码取证 | 高 | PD/ANTI_FTR/USE_VS_FRIGATES AIHint → 1.5，否则 1.0
 c	com/fs/starfarer/combat/tasks/oOOO/A$OOo	com/fs/starfarer/combat/tasks/oOOO/A$OOo
 	c	来源(javap取证) | 置信度(低) | 证据(A-OOo-uniform-weight)

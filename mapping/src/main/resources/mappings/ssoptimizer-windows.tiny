@@ -66,6 +66,7 @@ c com/fs/graphics/TextureLoader com/fs/graphics/TextureLoader
 	m o00000 loadTexture (Ljava/lang/String;)Lcom/fs/graphics/Object;
 	m Ô00000 readImage (Ljava/lang/String;)Ljava/awt/image/BufferedImage;
 	m o00000 textureDimension (I)I
+c sound/O0OO sound/Audio
 c sound/C sound/SoundManager
 	m Object loadObjectFamily (Ljava/lang/String;)Lsound/O0OO;
 	m o00000 loadO00000Family (Ljava/lang/String;)Lsound/O0OO;

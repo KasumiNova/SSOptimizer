@@ -320,7 +320,7 @@ c	com/fs/starfarer/coreui/oOO0	com/fs/starfarer/coreui/AptitudePanelCopy
 		c javap 字节码取证 | 高 | setShouldFlash 写入；shouldFlashOnShowing 读后清位
 c	com/fs/starfarer/coreui/oOO0$Oo	com/fs/starfarer/coreui/AptitudePanelCopy$TooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(实现 tooltip 回调接口，super(ui.OO0O,...) 定位 tooltip（oOO0$Oo/j$o 双向一致）)
-	m	super	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
+	m	super	processInput	(Lcom/fs/starfarer/util/super/B;)V
 
 	f	ôØ0000	highlightTexture	Lcom/fs/graphics/TextureObject;
 		c javap 字节码取证 | 高 | 构造加载 graphics/hud/line4x4.png 高亮纹理
@@ -330,9 +330,9 @@ c	com/fs/starfarer/coreui/oOO0$Oo	com/fs/starfarer/coreui/AptitudePanelCopy$Tool
 		c javap 字节码取证 | 高 | 构造 new Fader(0,0.1,0.1)；天赋满级(>=10)时 forceIn，advance 中按等级 fadeIn/Out
 	f	for.class	outerPanel	Lcom/fs/starfarer/coreui/AptitudePanelCopy;
 		c javap 字节码取证 | 高 | final 外部类引用（oOO0），构造读其 aptitude 等级
-	m	super	unusedRender	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 接口 n$o 5 参 render 重载，方法体仅 return 空实现
-	m	super	renderHighlight	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 主渲染：按状态 fadeIn/Out 双 fader，GL 绘制高亮矩形并调用两条边线方法
 	m	Ó00000	renderHighlightThinLine	(FFFF)V
 		c javap 字节码取证 | 高 | 私有：GL11 画线，常量 0.5f 细线（三角带）
@@ -431,17 +431,17 @@ c	com/fs/starfarer/coreui/ooOO$2	com/fs/starfarer/coreui/FleetFuelPanel$FuelIcon
 
 	f	Ô00000	panel	Lcom/fs/starfarer/coreui/FleetFuelPanel;
 		c javap 字节码取证 | 高 | 构造参数1；各方法经 panel.getCargo() 读燃料数据
-	m	o00000	getFuelAmount	()F
+	m	o00000	getValue	()F
 		c javap 字节码取证 | 高 | 返回 cargo.getFuel()
-	m	Ö00000	getMaxFuelAmount	()F
+	m	Ö00000	getMax	()F
 		c javap 字节码取证 | 高 | 返回 cargo.getMaxFuel()
-	m	new	getMaxFuelAmount2	()F
+	m	new	getRangeMax	()F
 		c javap 字节码取证 | 高 | 返回 cargo.getMaxFuel()，与 getMaxFuelAmount 字节码相同（接口重复方法）
 	m	Ó00000	getIconName	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 返回 "fleetScreen"/"icon_logistics_fuel" 组合路径
 	m	Ô00000	getIconColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回 String.øÓ0000
-	m	class	getGlowColor	()Ljava/awt/Color;
+	m	class	getBarColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回 String.øÓ0000，与 getIconColor 字节码相同（接口重复方法）
 c	com/fs/starfarer/coreui/ooOO$3	com/fs/starfarer/coreui/FleetFuelPanel$TooltipHideTask
 	c 来源(javap取证) | 置信度(中) | 证据(Runnable：延迟隐藏 tooltip（ooOO$3/C$3 双向一致）)
@@ -583,7 +583,7 @@ c	com/fs/starfarer/coreui/s$4	com/fs/starfarer/coreui/OfficersPanel$MentorToolti
 	f	Object.interface$if	maxEliteSkills	I
 c	com/fs/starfarer/coreui/s$5	com/fs/starfarer/coreui/OfficersPanel$TooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(实现 ui.n$Oo，super(ui.OO0O,...) 定位 tooltip（s$5/ooo0$5 双向一致）)
-	m	super	positionTooltip	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;FFZZLcom/fs/starfarer/ui/null$o;)V
 
 	f	ÕÓ0000	panel	Lcom/fs/starfarer/coreui/OfficersPanel;
 c	com/fs/starfarer/coreui/s$6	com/fs/starfarer/coreui/OfficersPanel$MercenaryTooltip
@@ -702,7 +702,7 @@ c	com/fs/starfarer/coreui/thisnew	com/fs/starfarer/coreui/FleetMemberIcon
 		c javap 字节码取证 | 高 | 调用 holoRenderer.makeLookDisabled()
 	m	void	setTintColor	(Ljava/awt/Color;)V
 		c javap 字节码取证 | 高 | 直接写入 tintColor
-	m	super	renderAtPosition	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 主渲染：背景矩形+holoRenderer.render+CR/Hull 条+mods 条，Profiler 标记 CompoundFleetMemberIcon.renderAtPosition()
 	m	Ò00000	renderHullBar	(Lcom/fs/starfarer/ui/PositionImpl;FZ)V
 		c javap 字节码取证 | 高 | 私有；showHullBar 且 hullFraction<0.99 时渲染 Hull 进度条
@@ -815,7 +815,7 @@ c	com/fs/starfarer/coreui/voidnew$1	com/fs/starfarer/coreui/LootPanel$DialogConf
 
 	f	Ò00000	panel	Lcom/fs/starfarer/coreui/LootPanel;
 		c javap 字节码取证 | 高 | 构造参数1，外层面板引用
-	m	super	shouldConfirm	()Z
+	m	super	confirm	()Z
 		c javap 字节码取证 | 高 | 固定返回 true（始终允许确认）
 c	com/fs/starfarer/coreui/voidnew$2	com/fs/starfarer/coreui/LootPanel$DialogDismissListener
 	c 来源(javap取证) | 置信度(中) | 证据(实现 ui.oo0O$o 的 dialogDismissed 监听（voidnew$2/q$2 双向一致）)

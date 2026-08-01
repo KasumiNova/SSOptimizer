@@ -575,9 +575,9 @@ c	com/fs/starfarer/campaign/ui/marketinfo/t$2	MarketAdminPanel$StabilizeButtonTo
 	f	this$0	this$0	LMarketAdminPanel;
 c	com/fs/starfarer/campaign/ui/marketinfo/t$3	MarketAdminPanel$AbandonConfirmDelegate
 	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#60-t3-abandon-confirm-delegate)
-	m	Ò00000	getConfirmationPromptWidth	()F
-	m	o00000	createConfirmationPrompt	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
-	m	o00000	isConfirmEnabled	()Z
+	m	Ò00000	getWidth	()F
+	m	o00000	createContent	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
+	m	o00000	canConfirm	()Z
 	f	Ô00000	this$0	LMarketAdminPanel;
 c	com/fs/starfarer/campaign/ui/marketinfo/t$o	MarketAdminPanel$AdminMode
 	c 来源(javap取证|字符串常量|引用关系|接口实现|未混淆类名) | 置信度(高) | 证据(.dev/mapping-evidence/campaign-ui-marketinfo-c.md#61-to-admin-mode)

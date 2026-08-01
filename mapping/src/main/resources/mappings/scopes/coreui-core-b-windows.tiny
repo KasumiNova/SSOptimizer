@@ -123,15 +123,15 @@ c	com/fs/starfarer/coreui/Stringsuper$o	com/fs/starfarer/coreui/AptitudePlusButt
 		c javap 字节码取证 | 中 | 构造 new Fader(0,0.1,0.1) 后零引用（死字段），unused 纪律
 	f	ØÕ0000	color	Ljava/awt/Color;
 		c javap 字节码取证 | 高 | final；构造参数1；render 中矩形着色
-	m	super	unusedRender	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 中 | 接口渲染方法空实现（无字节码），unused 纪律
-	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | "+"按钮渲染：glColor4ub+三条斜条+高亮段（GL11 绘制）
 	m	super	renderPlusShape	(FFFF)V
 		c javap 字节码取证 | 高 | 私有；glBegin(7) 画加号多段形状
 	m	Ò00000	renderDiamond	(FFFF)V
 		c javap 字节码取证 | 高 | 私有；glBegin(7) 画菱形/矩形角形状
-	m	super	unusedProcessInput	(Lcom/fs/starfarer/util/InputEventList;)V
+	m	super	processInput	(Lcom/fs/starfarer/util/InputEventList;)V
 		c javap 字节码取证 | 中 | 接口输入方法空实现（无字节码），unused 纪律
 c	com/fs/starfarer/coreui/OOoo	com/fs/starfarer/coreui/OfficerLevelRow
 	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(军官行：campaign.ui.O 头像 + "level N" + 可升级 "+" 角标，canLevelUp() 查 officerLevelUp 插件 XP，setWithSkillList 列出技能名+"+")
@@ -400,9 +400,9 @@ c	com/fs/starfarer/coreui/f	com/fs/starfarer/coreui/RefitFleetMemberRow
 		c javap 字节码取证 | 高 | createSmallInsigniaLabel renderer，render 时写 "{n} ordnance point(s) left"
 	f	ÔÓ0000	selectedNameColor	Ljava/awt/Color;
 		c javap 字节码取证 | 高 | static new Color(125,125,125,255)，选中行时 nameRenderer 用此灰
-	m	ô00000	initContent	()V
+	m	ô00000	onHoloRendererReady	()V
 		c javap 字节码取证 | 高 | 构造调用：建 insignia/name renderer 与双肖像，按 fighter/station/船级分支
-	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	super	renderBackground	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
 		c javap 字节码取证 | 高 | 公开：绘制名称/徽记/剩余 OP 文本，按选中与 opacity 调色
 	m	super	renderPortraits	(FFFFF)V
 		c javap 字节码取证 | 高 | 私有：32x32 绘制 portraitSprite/secondPortraitSprite
@@ -577,17 +577,17 @@ c	com/fs/starfarer/coreui/Objectnew$1	com/fs/starfarer/coreui/LogisticsCrBarProv
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：J$o 实现，icon_cr + 舰队平均 CR（getCR/isMothballed 统计）
 	f	Ó00000	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），各方法读其 fleet 字段
-	m	super	getCapacityValue	()F
+	m	super	getValue	()F
 		c javap 字节码取证 | 高 | 常量 100.0f（CR 百分比上限）
-	m	Ö00000	getMaxValue	()F
+	m	Ö00000	getMax	()F
 		c javap 字节码取证 | 高 | 遍历非停泊成员累计 RepairTracker.getMaxCR 求平均（%）*100
-	m	Ò00000	getUsedValue	()F
+	m	Ò00000	getRangeMax	()F
 		c javap 字节码取证 | 高 | 遍历非停泊成员累计 getCR 求平均（%）*100
-	m	Ó00000	getIcon	()Ljava/lang/String;
+	m	Ó00000	getIconName	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | StarfarerSettings("fleetScreen","icon_cr") 图标路径
-	m	String	getIconColor	()Ljava/awt/Color;
+	m	String	getBarColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回颜色（J 用于 sprite.setColor）
-	m	Õ00000	getBarColor	()Ljava/awt/Color;
+	m	Õ00000	getIconColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回颜色（J 用于进度条背景）
 c	com/fs/starfarer/coreui/Objectnew$2	com/fs/starfarer/coreui/CrBarLayoutSync
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 把 CR 条同步到首行下方
@@ -598,7 +598,7 @@ c	com/fs/starfarer/coreui/Objectnew$3	com/fs/starfarer/coreui/LogisticsHullValue
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_hull 行，返回 "%" 百分比文本
 	f	void	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：返回 null 表示无副文本
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 遍历成员按 hullSize 加权 computeRepairednessFraction 求百分比
@@ -611,7 +611,7 @@ c	com/fs/starfarer/coreui/Objectnew$5	com/fs/starfarer/coreui/LogisticsRepairDay
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_repairs 行，"N days"/"---" 修理天数
 	f	Ö00000	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：返回 null 表示无副文本
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | areAnyShipsPerformingRepairs 否则 "---"；否则 getDaysToFinishAllRepairs 取整 + " days"
@@ -626,33 +626,33 @@ c	com/fs/starfarer/coreui/Objectnew$7	com/fs/starfarer/coreui/LogisticsCargoBarP
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：J$o 实现，icon_logistics_cargo + CargoData.getSpaceUsed/Max
 	f	new	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），各方法读其 fleet 字段
-	m	super	getCapacityValue	()F
+	m	super	getValue	()F
 		c javap 字节码取证 | 高 | 返回 fleet.getCargo().getMaxCapacity()（与 getMaxValue 同实现，接口第三 float 方法）
-	m	Ö00000	getMaxValue	()F
+	m	Ö00000	getMax	()F
 		c javap 字节码取证 | 高 | 返回 fleet.getCargo().getMaxCapacity()
-	m	Ò00000	getUsedValue	()F
+	m	Ò00000	getRangeMax	()F
 		c javap 字节码取证 | 高 | 返回 fleet.getCargo().getSpaceUsed()
-	m	Ó00000	getIcon	()Ljava/lang/String;
+	m	Ó00000	getIconName	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | StarfarerSettings("fleetScreen","icon_logistics_cargo") 图标路径
-	m	String	getIconColor	()Ljava/awt/Color;
+	m	String	getBarColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回颜色（J 用于 sprite.setColor）
-	m	Õ00000	getBarColor	()Ljava/awt/Color;
+	m	Õ00000	getIconColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回颜色（J 用于进度条背景）
 c	com/fs/starfarer/coreui/Objectnew$8	com/fs/starfarer/coreui/LogisticsPersonnelBarProvider
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：J$o 实现，icon_logistics_personnel + getTotalCrew/Required
 	f	o00000	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），各方法读其 fleet 字段
-	m	super	getCapacityValue	()F
+	m	super	getValue	()F
 		c javap 字节码取证 | 高 | 返回 cargo.getMaxPersonnel()（与 getMaxValue 同实现）
-	m	Ö00000	getMaxValue	()F
+	m	Ö00000	getMax	()F
 		c javap 字节码取证 | 高 | 返回 cargo.getMaxPersonnel()
-	m	Ò00000	getUsedValue	()F
+	m	Ò00000	getRangeMax	()F
 		c javap 字节码取证 | 高 | cargo.getTotalCrew()+getMarines() 转 float
-	m	Ó00000	getIcon	()Ljava/lang/String;
+	m	Ó00000	getIconName	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | StarfarerSettings("fleetScreen","icon_logistics_personnel")
-	m	String	getIconColor	()Ljava/awt/Color;
+	m	String	getBarColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回颜色（J 用于 sprite.setColor）
-	m	Õ00000	getBarColor	()Ljava/awt/Color;
+	m	Õ00000	getIconColor	()Ljava/awt/Color;
 		c javap 字节码取证 | 高 | 返回颜色（J 用于进度条背景）
 c	com/fs/starfarer/coreui/Objectnew$9	com/fs/starfarer/coreui/CargoBarLayoutSync
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：Runnable 同步货舱条布局
@@ -670,7 +670,7 @@ c	com/fs/starfarer/coreui/Objectnew$11	com/fs/starfarer/coreui/LogisticsCreditsV
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
 	f	String	decimalFormat	Ljava/text/DecimalFormat;
 		c javap 字节码取证 | 高 | 构造传入，getValueText 中 format(credits)
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：返回 null 表示无副文本（l$o 对应 valueDelta）
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | fleet.getCargo().getCredits() 经 DecimalFormat 格式化
@@ -678,7 +678,7 @@ c	com/fs/starfarer/coreui/Objectnew$12	com/fs/starfarer/coreui/LogisticsSupplies
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_supplies 行，"N / day"/"no supplies"
 	f	Ó00000	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：无补给时 ""，否则 "-{getTotalSuppliesPerDay}/ day" 消耗文本
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 无补给时 "no supplies"，否则库存 int 值
@@ -686,7 +686,7 @@ c	com/fs/starfarer/coreui/Objectnew$13	com/fs/starfarer/coreui/LogisticsMarinesV
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_marines 行
 	f	Ò00000	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：返回 null 表示无副文本
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | cargo.getMarines() 转字符串
@@ -694,7 +694,7 @@ c	com/fs/starfarer/coreui/Objectnew$14	com/fs/starfarer/coreui/LogisticsCrewValu
 	c 来源(javap取证) | 置信度(中) | 证据(l 内部匿名类：l$o 实现挂 icon_logistics_crew 行
 	f	super	outerPanel	Lcom/fs/starfarer/coreui/FleetLogisticsPanel;
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：返回 null 表示无副文本
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | cargo.getTotalCrew() + " / " + fleetData.getMinCrew()
@@ -732,7 +732,7 @@ c	com/fs/starfarer/coreui/Objectnew$19	com/fs/starfarer/coreui/LogisticsSensorSt
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
 	f	ø00000	compareFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 		c javap 字节码取证 | 高 | 构造传入对比舰队；getValueText 调 getDisplaySensorRange(outerFleet, compareFleet)
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：返回 null 表示无副文本
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | getDisplaySensorRange 经 Misc.getWithDGS 格式化
@@ -742,7 +742,7 @@ c	com/fs/starfarer/coreui/Objectnew$20	com/fs/starfarer/coreui/LogisticsSensorPr
 		c javap 字节码取证 | 高 | final 外部类引用（Objectnew），getValueText 读其 fleet
 	f	õ00000	compareFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 		c javap 字节码取证 | 高 | 构造传入对比舰队；getValueText 调 getDisplayDetectedRange(outerFleet, compareFleet)
-	m	o00000	getValueDeltaText	()Ljava/lang/String;
+	m	o00000	getDeltaText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | 接口方法：返回 null 表示无副文本
 	m	Ò00000	getValueText	()Ljava/lang/String;
 		c javap 字节码取证 | 高 | getDisplayDetectedRange 经 Misc.getWithDGS 格式化

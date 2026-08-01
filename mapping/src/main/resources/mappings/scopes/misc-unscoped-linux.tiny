@@ -67,7 +67,7 @@ c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$O0	com/fs/starfarer/campai
 		c javap 字节码取证 | 中 | 构造参数 1 写入的外部类合成引用（先例命名 outer）
 	m	super	refresh	()V
 		c javap 字节码取证 | 中 | 空实现；接口方法在 IntelCategoryFilter.actionPerformed 点击分类时调用后 update(true)，语义为刷新回调
-	m	Ò00000	getCategoryItems	()Ljava/util/List;
+	m	Ò00000	getEntries	()Ljava/util/List;
 		c javap 字节码取证 | 中 | 返回 null；接口方法在 expandTo/ExpandableCategory.update 中取分类消息行列表，语义为分类条目
 c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$o	com/fs/starfarer/campaign/comms/C_d7844033_2
 	c javap 反编译 | 中 | IntelCategoryFilter$oo 分类插件空实现：super() 空、Ò00000() 返回 null；在 o00000(CampaignEventCategory) 中 new 构造
@@ -77,7 +77,7 @@ c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$o	com/fs/starfarer/campaig
 		c javap 字节码取证 | 中 | 构造参数 1 写入的外部类合成引用（先例命名 outer）
 	m	super	refresh	()V
 		c javap 字节码取证 | 中 | 空实现；接口方法在 IntelCategoryFilter.actionPerformed 点击分类时调用后 update(true)，语义为刷新回调
-	m	Ò00000	getCategoryItems	()Ljava/util/List;
+	m	Ò00000	getEntries	()Ljava/util/List;
 		c javap 字节码取证 | 中 | 返回 null；接口方法在 expandTo/ExpandableCategory.update 中取分类消息行列表，语义为分类条目
 c	com/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/campaign/ui/C_1ce5743a
 	c javap 反编译 | 高 | Runnable：按外层 TradePanelV2 按钮位置与 tooltip 尺寸调整 tooltip 锚点（setTooltipPositionRelativeToAnchor）

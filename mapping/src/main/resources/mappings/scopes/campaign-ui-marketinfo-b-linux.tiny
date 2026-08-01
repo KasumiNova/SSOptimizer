@@ -893,11 +893,11 @@ c	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$3	com/fs/starfarer
 		c javap 字节码取证 | 高 | 构造器参数2；getSpec().getDesc/getPlugin
 	m	o00000	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
 		c javap 字节码取证 | 高 | StandardTooltipV2$OOo 接口方法，返回 null（无关联快捷键）
-	m	o00000	getTextFor	(Ljava/lang/String;)Ljava/lang/String;
+	m	o00000	modifyText	(Ljava/lang/String;)Ljava/lang/String;
 		c javap 字节码取证 | 高 | 取 spec desc 并用 plugin.getTokenReplacements 替换 token
-	m	o00000	setupLabelHighlights	(Lcom/fs/starfarer/ui/LabelImpl;)V
+	m	o00000	setTextLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
 		c javap 字节码取证 | 高 | 给标签设置 plugin.getHighlights/getHighlightColors 高亮数组
-	m	new	setupLabelStyle	(Lcom/fs/starfarer/ui/LabelImpl;)V
+	m	new	setTitleLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
 		c javap 字节码取证 | 高 | 设置标签字体 orbitron20aabold 与 market.getTextColorForFactionOrPlanet 颜色
 c	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$4	com/fs/starfarer/campaign/ui/marketinfo/SurveyResultDisplay$TooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(Runnable：设置 tooltip 相对锚点位置)

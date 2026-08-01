@@ -11,7 +11,7 @@ c	com/fs/starfarer/ui/newui/G$1	com/fs/starfarer/ui/newui/ShipPreviewPanel$Toolt
 	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
 c	com/fs/starfarer/ui/newui/L$9	com/fs/starfarer/ui/newui/CoreUIV2$WeaponGroupsWarningCheck
 	c	javap取证 | 高 | 实现 oOOo$o 确认回调：refitPanel.isEditedSinceSave() && getGroupsButton().getFlashFader()!=null 判定是否弹武器组未保存警告（CoreUIV2 匿名类）
-	m	o00000	isWeaponGroupsWarningNeeded	()Z
+	m	o00000	confirm	()Z
 	f	õ00000	outerCoreUIV2	LCoreUIV2;
 		c javap 字节码取证 | 高 | 匿名类外围 CoreUIV2 引用（混淆重命名），仅构造器写入
 	f	null	refitTab	Lcom/fs/starfarer/coreui/refit/RefitTab;
@@ -474,12 +474,12 @@ c	com/fs/starfarer/ui/newui/c	com/fs/starfarer/ui/newui/MissionEntryPanel
 	f	do.for$while	faction	Lcom/fs/starfarer/campaign/Faction;
 c	com/fs/starfarer/ui/newui/c$1	com/fs/starfarer/ui/newui/MissionEntryPanel$AcceptTooltipDecorator
 	c	javap取证 | 中 | implements StandardTooltipV2$OOo：o00000(label) 应用 CampaignMissionPlugin.getAcceptTooltipHighlights 高亮接受按钮 tooltip（linux b$1）
-	m	o00000	decorateAcceptLabel	(Lcom/fs/starfarer/ui/d;)V
+	m	o00000	setTextLabel	(Lcom/fs/starfarer/ui/d;)V
 	f	class	this$0	Lcom/fs/starfarer/ui/newui/MissionEntryPanel;
 	f	Ö00000	missionPlugin	Lcom/fs/starfarer/api/campaign/CampaignMissionPlugin;
 	m	o00000	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
-	m	o00000	transformText	(Ljava/lang/String;)Ljava/lang/String;
-	m	Ò00000	onLabelCreated	(Lcom/fs/starfarer/ui/LabelImpl;)V
+	m	o00000	modifyText	(Ljava/lang/String;)Ljava/lang/String;
+	m	Ò00000	setTitleLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
 		c javap | high | TextTooltipModifier 钩子，c$1 空实现
 c	com/fs/starfarer/ui/newui/c$2	com/fs/starfarer/ui/newui/MissionEntryPanel$AcceptTooltipPositioner
 	c	javap取证 | 中 | Runnable：设置接受按钮 tooltip 相对锚点位置（tooltip 高度取负偏移）（linux b$2）
@@ -640,7 +640,7 @@ c	com/fs/starfarer/ui/newui/o0Oo$1	com/fs/starfarer/ui/newui/InteractionDialog$O
 	c	继承关系+javap取证 | 高 | implements OptionPanelImpl$OptionListener(OoOO$O0)：把选项事件转发到 InteractionDialogPlugin.optionSelected/optionMousedOver，确认路径调 showOptionConfirmDialog
 	m	o00000	optionSelected	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
 	m	Object	optionMousedOver	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
-	m	Ò00000	confirmOption	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+	m	Ò00000	optionConfirm	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
 	f	o00000	outerDialog	Lcom/fs/starfarer/ui/newui/InteractionDialog;
 		c javap 字节码取证 | 高 | 匿名类外围引用（混淆重命名），仅构造器写入
 c	com/fs/starfarer/ui/newui/o0Oo$2	com/fs/starfarer/ui/newui/InteractionDialog$CoreUIDismissedListener

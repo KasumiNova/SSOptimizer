@@ -585,19 +585,19 @@ c	com/fs/starfarer/combat/ai/system/A$1	com/fs/starfarer/combat/ai/system/Engine
 	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
 	f	ô00000	outerAI	Lcom/fs/starfarer/combat/ai/system/EngineModSystemAI;
 		c javap 字节码取证 | 高 | final 外部类引用
-	m	o00000	isHulkFilter	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
 		c javap 字节码取证 | 高 | 覆写 while$Oo 谓词：super 结果 && isHulk（计数残骸）
 c	com/fs/starfarer/combat/ai/system/A$2	com/fs/starfarer/combat/ai/system/EngineModSystemAI$2
 	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
 	f	Ø00000	outerAI	Lcom/fs/starfarer/combat/ai/system/EngineModSystemAI;
 		c javap 字节码取证 | 高 | final 外部类引用
-	m	o00000	isHulkFilter	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
 		c javap 字节码取证 | 高 | 覆写 while$Oo 谓词：super 结果 && isHulk（计数残骸）
 c	com/fs/starfarer/combat/ai/system/A$3	com/fs/starfarer/combat/ai/system/EngineModSystemAI$3
 	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
 	f	return	outerAI	Lcom/fs/starfarer/combat/ai/system/EngineModSystemAI;
 		c javap 字节码取证 | 高 | final 外部类引用
-	m	o00000	isHulkFilter	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
 		c javap 字节码取证 | 高 | 覆写 while$Oo 谓词：super 结果 && isHulk（计数残骸）
 c	com/fs/starfarer/combat/ai/system/B	com/fs/starfarer/combat/ai/system/WingWeaponSystemAI
 	c 来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/combat-ai-system.md#b-weapon-wing)
@@ -1033,13 +1033,13 @@ c	com/fs/starfarer/combat/ai/system/a$1	com/fs/starfarer/combat/ai/system/Retrea
 	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
 	f	ö00000	this$0	Lcom/fs/starfarer/combat/ai/system/RetreatSystemAI;
 		c javap 字节码取证 | 高 | 匿名类外层引用（先例：codex 等 this$0）
-	m	o00000	isHulkCondition	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
 		c javap 字节码取证 | 中 | 委托基类 while$Oo.o00000 且目标 ship.isHulk()；撤退场景残骸条件
 c	com/fs/starfarer/combat/ai/system/a$2	com/fs/starfarer/combat/ai/system/RetreatSystemAI$2
 	c 来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/combat-ai-system.md#a-anonymous)
 	f	int	this$0	Lcom/fs/starfarer/combat/ai/system/RetreatSystemAI;
 		c javap 字节码取证 | 高 | 匿名类外层引用
-	m	o00000	isHulkCondition	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
 		c javap 字节码取证 | 中 | 与 a$1 逐字节相同（基类条件 && isHulk）
 c	com/fs/starfarer/combat/ai/system/b	com/fs/starfarer/combat/ai/system/MoteControlSystemAI
 	c 来源(api.impl 脚本引用) | 置信度(高) | 证据(.dev/mapping-evidence/combat-ai-system.md#b-mote-control)
@@ -1193,11 +1193,11 @@ c	com/fs/starfarer/combat/ai/system/drones/A	com/fs/starfarer/combat/ai/system/d
 		c javap 字节码取证 | 中 | Maneuver 接口方法，返回常量 true（机动持续完成态）
 	m	ÖÓ0000	getMothership	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
 		c javap 字节码取证 | 中 | 返回 mothership 字段（B 视图）
-	m	Ô00000	getDesiredLocationDistance	()F
+	m	Ô00000	getDesiredFacing	()F
 		c javap 字节码取证 | 中 | droneAI.getDesiredLocation 非空时返回舰到该点距离，否则 MAX_VALUE
-	m	new	getMaxRange	()F
+	m	new	getTargetFacing	()F
 		c javap 字节码取证 | 中 | 返回常量 MAX_VALUE（无射程上限）
-	m	Ó00000	issueCommands	()V
+	m	Ó00000	init	()V
 		c javap 字节码取证 | 高 | Maneuver 接口方法：计算 desired location/velocity、转向/速度指令、引擎辉光、RECALL 着陆逻辑
 	m	o00000	computeTargetLeadPosition	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;FF)V
 		c javap 字节码取证 | 中 | static：按目标速度外推预测点，侧向偏移后给转向/速度指令
@@ -1270,11 +1270,11 @@ c	com/fs/starfarer/combat/ai/system/drones/DroneAI$1	com/fs/starfarer/combat/ai/
 		c javap 字节码取证 | 高 | 外部 DroneAI 引用（构造参数 1）
 	f	ØÒ0000	systemAI	Lcom/fs/starfarer/combat/ai/system/SystemAI;
 		c javap 字节码取证 | 高 | 构造参数 2；advance 委托给 systemAI
-	m	o00000	isShieldOn	()Z
+	m	o00000	shouldKeepShieldOn	()Z
 		c javap 字节码取证 | 中 | ShieldAI 接口方法，返回常量 false（无人机无护盾）
-	m	Ó00000	isPhaseCloakActive	()Z
+	m	Ó00000	hasFiringSolution	()Z
 		c javap 字节码取证 | 中 | 相位隐形系统（PhaseCloakSystemAI）的 FiringSolutionEval 有效时返回 true
-	m	new	getFiringSolution	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
 		c javap 字节码取证 | 中 | 相位隐形系统的射击解算评估对象（无则 null）
 	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
 		c javap 字节码取证 | 高 | ShieldAI 接口方法，委托 systemAI.o00000(...)

@@ -534,12 +534,12 @@ c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$6$1	com/fs/starfarer/ui/impl/
 	f	this$1	outerTooltip	Lcom/fs/starfarer/ui/impl/FuelTooltip;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$6$2	com/fs/starfarer/ui/impl/FuelUsageColorProvider
 	c 来源(javap取证) | 置信度(高) | 证据(implements LogisticsToolkitFactory$o + Color，燃料消耗行文本/颜色委托)
-	m	o00000	getLeftText	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
-	m	Ó00000	getRightText	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
+	m	o00000	getRowName	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
+	m	Ó00000	getRowValue	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
 	m	new	getRowColor	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/awt/Color;
-	m	new	getFooterLeft	()Ljava/lang/String;
-	m	o00000	getFooterColor	()Ljava/awt/Color;
-	m	Ó00000	getFooterRight	()Ljava/lang/String;
+	m	new	getHeaderText	()Ljava/lang/String;
+	m	o00000	getHeaderColor	()Ljava/awt/Color;
+	m	Ó00000	getHeaderValue	()Ljava/lang/String;
 	f	ô00000	outerTooltip	Lcom/fs/starfarer/ui/impl/FuelTooltip;
 	f	Ø00000	color	Ljava/awt/Color;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$6$3	com/fs/starfarer/ui/impl/FuelCapacityComparator
@@ -548,12 +548,12 @@ c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$6$3	com/fs/starfarer/ui/impl/
 	f	this$1	outerTooltip	Lcom/fs/starfarer/ui/impl/FuelTooltip;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$6$4	com/fs/starfarer/ui/impl/FuelCapacityColorProvider
 	c 来源(javap取证) | 置信度(高) | 证据(implements LogisticsToolkitFactory$o + Color，燃料容量行文本/颜色委托)
-	m	o00000	getLeftText	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
-	m	Ó00000	getRightText	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
+	m	o00000	getRowName	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
+	m	Ó00000	getRowValue	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
 	m	new	getRowColor	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/awt/Color;
-	m	new	getFooterLeft	()Ljava/lang/String;
-	m	o00000	getFooterColor	()Ljava/awt/Color;
-	m	Ó00000	getFooterRight	()Ljava/lang/String;
+	m	new	getHeaderText	()Ljava/lang/String;
+	m	o00000	getHeaderColor	()Ljava/awt/Color;
+	m	Ó00000	getHeaderValue	()Ljava/lang/String;
 	f	return	outerTooltip	Lcom/fs/starfarer/ui/impl/FuelTooltip;
 	f	Õ00000	color	Ljava/awt/Color;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$7	com/fs/starfarer/ui/impl/PersonnelTooltip
@@ -580,12 +580,12 @@ c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$7$1	com/fs/starfarer/ui/impl/
 	f	this$1	outerTooltip	Lcom/fs/starfarer/ui/impl/PersonnelTooltip;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$7$2	com/fs/starfarer/ui/impl/PersonnelCapacityColorProvider
 	c 来源(javap取证) | 置信度(高) | 证据(implements LogisticsToolkitFactory$o + Color，人员容量行文本/颜色委托)
-	m	o00000	getLeftText	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
-	m	Ó00000	getRightText	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
+	m	o00000	getRowName	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
+	m	Ó00000	getRowValue	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
 	m	new	getRowColor	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/awt/Color;
-	m	new	getFooterLeft	()Ljava/lang/String;
-	m	o00000	getFooterColor	()Ljava/awt/Color;
-	m	Ó00000	getFooterRight	()Ljava/lang/String;
+	m	new	getHeaderText	()Ljava/lang/String;
+	m	o00000	getHeaderColor	()Ljava/awt/Color;
+	m	Ó00000	getHeaderValue	()Ljava/lang/String;
 	f	Ô00000	outerTooltip	Lcom/fs/starfarer/ui/impl/PersonnelTooltip;
 	f	Object	color	Ljava/awt/Color;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$7$3	com/fs/starfarer/ui/impl/PersonnelCapacityComparator

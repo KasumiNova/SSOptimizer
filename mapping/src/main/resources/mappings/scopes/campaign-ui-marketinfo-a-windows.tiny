@@ -907,3 +907,6 @@ c	com/fs/starfarer/campaign/ui/marketinfo/super	com/fs/starfarer/campaign/ui/mar
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	renderImpl	renderImpl	(F)V
 	m	getMarket	getMarket	()Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+c	com/fs/starfarer/campaign/ui/marketinfo/OoO0$1	com/fs/starfarer/campaign/ui/marketinfo/OoO0$1
+	m	o00000	shouldShow	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+		c 覆写链统一(人工裁决) | 高 | 匿名条件过滤器，与顶层接口 MarketConditionsWidget$o 一致
