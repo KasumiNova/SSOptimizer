@@ -9,105 +9,19 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class RealBytecodeIntegrationTest {
 
     /**
-     * 读取运行期 named 视图字节码（Sanitizing/ASM 处理器的工作视图）。
+     * 读取运行期 named 视图字节码（ASM 处理器的工作视图），来源见 {@link RuntimeViewFixtures}。
      * <p>
-     * named jar 全量改名后，该视图不再等于 named jar 中的字节码，
-     * 改由入库 vendor jar 的 obf 字节码经人工映射表换算得到（与运行期 remap 管线一致）。
+     * coremod 化后该视图就是测试 classpath 上 SourceSector named jar 中的字节码本身
+     * （运行期由 NanoForge 在类加载前完成 obf→named 全量 remap）。
      */
     private byte[] loadClassBytes(String internalName) {
         return RuntimeViewFixtures.readRuntimeNamedBytes(internalName);
-    }
-
-    @Test
-    void combatStateSanitizedHasNoIllegalNames() {
-        byte[] original = loadClassBytes("com/fs/starfarer/combat/CombatState");
-        assumeTrue(original != null, "CombatState not on classpath — game JARs not available");
-
-        var transformer = new SanitizingTransformer();
-        byte[] sanitized = transformer.transform(null, "com/fs/starfarer/combat/CombatState", null, null, original);
-
-        byte[] toCheck = sanitized != null ? sanitized : original;
-        List<String> illegalNames = findIllegalNames(toCheck);
-        assertTrue(illegalNames.isEmpty(),
-                "Should have no illegal method/field names, but found: " + illegalNames);
-    }
-
-    @Test
-    void obfJarClassesSanitizeWithoutError() {
-        String[] obfClasses = {
-                "com/fs/starfarer/combat/CombatState",
-                "com/fs/starfarer/F",
-                "com/fs/starfarer/loading/LoadingUtils",
-        };
-        var transformer = new SanitizingTransformer();
-
-        for (String cls : obfClasses) {
-            byte[] original = loadClassBytes(cls);
-            if (original == null) {
-                continue;
-            }
-
-            assertDoesNotThrow(
-                    () -> transformer.transform(null, cls, null, null, original),
-                    "Sanitizer should not throw for " + cls
-            );
-        }
-    }
-
-    @Test
-    void sanitizedCombatStateIsLoadable() {
-        byte[] original = loadClassBytes("com/fs/starfarer/combat/CombatState");
-        assumeTrue(original != null, "CombatState not on classpath");
-
-        var transformer = new SanitizingTransformer();
-        byte[] sanitized = transformer.transform(null, "com/fs/starfarer/combat/CombatState", null, null, original);
-        assumeTrue(sanitized != null, "CombatState had no illegal names to sanitize");
-
-        var loader = new ClassLoader(getClass().getClassLoader()) {
-            Class<?> defineIt(byte[] bytes) {
-                return defineClass("com.fs.starfarer.combat.CombatState", bytes, 0, bytes.length);
-            }
-        };
-
-        assertDoesNotThrow(() -> loader.defineIt(sanitized),
-                "Sanitized CombatState should be loadable via defineClass");
-    }
-
-    @Test
-    void sanitizedThenProcessedCombatStateIsLoadable() {
-        byte[] original = loadClassBytes("com/fs/starfarer/combat/CombatState");
-        assumeTrue(original != null, "CombatState not on classpath");
-
-        var sanitizer = new SanitizingTransformer();
-        byte[] sanitized = sanitizer.transform(null, "com/fs/starfarer/combat/CombatState", null, null, original);
-        byte[] toProcess = sanitized != null ? sanitized : original;
-
-        var processor = new github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor();
-        byte[] processed = processor.process(toProcess);
-
-        byte[] finalBytes = processed != null ? processed : toProcess;
-
-        List<String> illegalNames = findIllegalNames(finalBytes);
-        assertTrue(illegalNames.isEmpty(),
-                "Sanitized+processed CombatState should have no illegal names, found: " + illegalNames);
-
-        var loader = new ClassLoader(getClass().getClassLoader()) {
-            Class<?> defineIt(byte[] bytes) {
-                return defineClass("com.fs.starfarer.combat.CombatState", bytes, 0, bytes.length);
-            }
-        };
-
-        assertDoesNotThrow(() -> loader.defineIt(finalBytes),
-                "Sanitized+processed CombatState should be loadable");
     }
 
     @Test
@@ -406,41 +320,5 @@ class RealBytecodeIntegrationTest {
             }
         }, 0);
         return count[0];
-    }
-
-    private List<String> findIllegalNames(byte[] classBytes) {
-        List<String> illegal = new ArrayList<>();
-        ClassReader reader = new ClassReader(classBytes);
-        reader.accept(new ClassVisitor(Opcodes.ASM9) {
-            @Override
-            public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
-                if (isIllegalName(name)) {
-                    illegal.add("method:" + name);
-                }
-                return null;
-            }
-
-            @Override
-            public org.objectweb.asm.FieldVisitor visitField(int access, String name, String desc, String sig, Object value) {
-                if (isIllegalName(name)) {
-                    illegal.add("field:" + name);
-                }
-                return null;
-            }
-        }, 0);
-        return illegal;
-    }
-
-    private boolean isIllegalName(String name) {
-        if ("<init>".equals(name) || "<clinit>".equals(name)) {
-            return false;
-        }
-        for (int i = 0, len = name.length(); i < len; i++) {
-            char c = name.charAt(i);
-            if (c == '.' || c == ';' || c == '[' || c == '/') {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -1,110 +1,102 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
-import github.kasuminova.ssoptimizer.mapping.MappingEntry;
-import github.kasuminova.ssoptimizer.mapping.TinyV2MappingRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class HybridWeaverTransformerTest {
-    private static final TinyV2MappingRepository REPOSITORY = TinyV2MappingRepository.loadDefault();
 
-    private static byte[] createNamedSpriteWithObfuscatedTextureField() {
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        writer.visit(Opcodes.V25, Opcodes.ACC_PUBLIC, "com/fs/graphics/Sprite", null, "java/lang/Object", null);
-        writer.visitField(Opcodes.ACC_PROTECTED, "texture", "Lcom/fs/graphics/Object;", null, null).visitEnd();
+    private static final String[] TEST_KEYS = {
+            "com/example/Target", "com/example/Bad", "com/example/Foo"
+    };
 
-        var method = writer.visitMethod(Opcodes.ACC_PUBLIC, "getTexture", "()Lcom/fs/graphics/Object;", null, null);
-        method.visitCode();
-        method.visitVarInsn(Opcodes.ALOAD, 0);
-        method.visitFieldInsn(Opcodes.GETFIELD, "com/fs/graphics/Sprite", "texture", "Lcom/fs/graphics/Object;");
-        method.visitInsn(Opcodes.ARETURN);
-        method.visitMaxs(0, 0);
-        method.visitEnd();
-
-        writer.visitEnd();
-        return writer.toByteArray();
-    }
-
-    private static ClassNode readClass(byte[] bytes) {
-        ClassNode node = new ClassNode();
-        new ClassReader(bytes).accept(node, 0);
-        return node;
+    /**
+     * 注册表为静态共享状态，每个用例结束后清理本类注册的测试键，避免用例间污染。
+     */
+    @AfterEach
+    void cleanupTestRegistrations() {
+        for (String key : TEST_KEYS) {
+            HybridWeaverTransformer.removeProcessor(key);
+        }
     }
 
     @Test
-    void returnsNullForUnregisteredClass() {
+    void returnsOriginalBytesForUnregisteredClass() {
         var transformer = new HybridWeaverTransformer();
-        assertNull(transformer.transform(null, "com/example/Unknown", null, null, new byte[]{1}));
+        // RFB 契约：runTransformers 无条件采纳返回值，null 会丢弃类字节，
+        // 未命中必须返回原字节（区别于原版 LaunchWrapper 的 null = 无变更）
+        byte[] original = {1};
+        assertArrayEquals(original, transformer.transform("com.example.Unknown", "com.example.Unknown", original));
     }
 
     @Test
-    void appliesRegisteredProcessor() {
+    void appliesRegisteredProcessorByTransformedName() {
         var transformer = new HybridWeaverTransformer();
         byte[] expected = {1, 2, 3};
-        transformer.registerProcessor("com.example.Target", bytes -> expected);
+        HybridWeaverTransformer.registerProcessor("com.example.Target", bytes -> expected);
 
-        byte[] result = transformer.transform(null, "com/example/Target", null, null, new byte[0]);
+        // transformedName 为点号格式（LaunchWrapper 语义），注册表统一按斜杠格式匹配
+        byte[] result = transformer.transform("com.example.Target", "com.example.Target", new byte[0]);
         assertArrayEquals(expected, result);
+    }
+
+    @Test
+    void fallsBackToNameWhenTransformedNameIsNull() {
+        var transformer = new HybridWeaverTransformer();
+        byte[] expected = {4, 5, 6};
+        HybridWeaverTransformer.registerProcessor("com/example/Target", bytes -> expected);
+
+        assertArrayEquals(expected, transformer.transform("com/example/Target", null, new byte[0]));
+    }
+
+    @Test
+    void returnsOriginalBytesWhenProcessorDoesNotModify() {
+        var transformer = new HybridWeaverTransformer();
+        HybridWeaverTransformer.registerProcessor("com.example.Target", bytes -> null);
+
+        byte[] original = {1};
+        assertArrayEquals(original, transformer.transform("com.example.Target", "com.example.Target", original));
     }
 
     @Test
     void exceptionFallsBackToOriginalBytecode() {
         var transformer = new HybridWeaverTransformer();
-        transformer.registerProcessor("com.example.Bad", bytes -> {
+        HybridWeaverTransformer.registerProcessor("com.example.Bad", bytes -> {
             throw new RuntimeException("boom");
         });
 
-        assertNull(transformer.transform(null, "com/example/Bad", null, null, new byte[]{1}));
+        byte[] original = {1};
+        assertArrayEquals(original, transformer.transform("com.example.Bad", "com.example.Bad", original));
     }
 
     @Test
     void registerAndRemoveProcessorChangesCount() {
+        int before = HybridWeaverTransformer.getProcessorCount();
+        HybridWeaverTransformer.registerProcessor("com.example.Foo", bytes -> bytes);
+        assertEquals(before + 1, HybridWeaverTransformer.getProcessorCount());
+        HybridWeaverTransformer.removeProcessor("com.example.Foo");
+        assertEquals(before, HybridWeaverTransformer.getProcessorCount());
+    }
+
+    @Test
+    void reentrantTransformPassesThroughOriginalBytes() {
         var transformer = new HybridWeaverTransformer();
-        transformer.registerProcessor("com.example.Foo", bytes -> bytes);
-        assertEquals(1, transformer.getProcessorCount());
-        transformer.removeProcessor("com.example.Foo");
-        assertEquals(0, transformer.getProcessorCount());
-    }
+        // 模拟「处理器执行期间同类字节经 Mixin 反读再次进入 transform」的重入场景：
+        // 重入调用必须透传原字节，外层调用仍返回处理结果
+        byte[] original = {1};
+        byte[] processed = {2};
+        byte[][] reentrantResult = new byte[1][];
+        HybridWeaverTransformer.registerProcessor("com.example.Target", bytes -> {
+            reentrantResult[0] = transformer.transform("com.example.Target", "com.example.Target", bytes);
+            return processed;
+        });
 
-    @Test
-    void resolvesObfuscatedIncomingClassNameThroughMappings() {
-        MappingEntry runtimeEntry = REPOSITORY.requireClassByNamedName("com/fs/starfarer/renderers/TexturedStripRenderer");
-        var transformer = new HybridWeaverTransformer(TinyV2MappingRepository.of(java.util.List.of(
-            MappingEntry.classEntry(runtimeEntry.obfuscatedName(), runtimeEntry.namedName())
-        )));
-        byte[] expected = {4, 5, 6};
-        transformer.registerProcessor("com.fs.starfarer.renderers.TexturedStripRenderer", bytes -> expected);
+        byte[] result = transformer.transform("com.example.Target", "com.example.Target", original);
+        assertArrayEquals(original, reentrantResult[0], "重入调用应透传原字节");
+        assertArrayEquals(processed, result, "外层调用应返回处理结果");
 
-        byte[] result = transformer.transform(null, runtimeEntry.obfuscatedName(), null, null, new byte[0]);
-        assertArrayEquals(expected, result);
-    }
-
-    @Test
-    void remapsDescriptorsBeforePassingNamedClassToProcessor() {
-        var transformer = new HybridWeaverTransformer(TinyV2MappingRepository.of(java.util.List.of(
-                MappingEntry.classEntry("com/fs/graphics/Object", "com/fs/graphics/TextureObject")
-        )));
-        transformer.registerProcessor("com.fs.graphics.Sprite", bytes -> bytes);
-
-        byte[] result = transformer.transform(null,
-                "com/fs/graphics/Sprite",
-                null,
-                null,
-                createNamedSpriteWithObfuscatedTextureField());
-
-        assertNotNull(result, "processor 命中后应返回传给它的字节码");
-
-        ClassNode node = readClass(result);
-        assertTrue(node.fields.stream().anyMatch(field -> "texture".equals(field.name)
-                        && "Lcom/fs/graphics/TextureObject;".equals(field.desc)),
-                "HybridWeaverTransformer 应先把字段描述符 remap 成 named，再交给 ASM processor");
-        assertTrue(node.methods.stream().anyMatch(method -> "getTexture".equals(method.name)
-                        && "()Lcom/fs/graphics/TextureObject;".equals(method.desc)),
-                "HybridWeaverTransformer 也应同步 remap 方法描述符");
+        // 重入状态必须在 finally 中清理，后续独立调用不受影响
+        assertArrayEquals(processed, transformer.transform("com.example.Target", "com.example.Target", original));
     }
 }

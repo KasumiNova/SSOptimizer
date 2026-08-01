@@ -1,5 +1,10 @@
 # DetailedCombatResults 读档热点优化设计
 
+> **历史文档注记（2026-08-02）**：本文成文于 javaagent 时代，文中 `:agent-api` /
+> `:mod-optimizations` 模块、`SSOptimizerAgent` 装配点已随 NanoForge R4 coremod 化
+> 收编进 `:app`（装配点改为 `SSOptimizerCorePlugin`）。优化本身的根因分析与字节码
+> 方案仍然有效，下文保留原始记录。
+
 ## 目标
 
 消除第三方模组 **DetailedCombatResults（DCR，id `DetailedCombatResults`，v5.4.2）** 在读档时 `onGameLoad` 的性能热点，并为「面向外部模组的性能优化」建立一个独立、可插拔的模块结构（`:agent-api` + `:mod-optimizations`），与游戏自身优化（`:app`）和自动化（未来独立模块）解耦。

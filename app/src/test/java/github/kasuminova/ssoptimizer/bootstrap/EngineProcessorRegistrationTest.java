@@ -1,21 +1,72 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import github.kasuminova.ssoptimizer.modopt.dcr.DcrBatchSaveSynthProcessor;
+import github.kasuminova.ssoptimizer.modopt.dcr.DcrCompressionProcessor;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Method;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EngineProcessorRegistrationTest {
-    @Test
-    void registersOnlyEngineProcessorsForRuntimeRepairPhase() throws Exception {
-        HybridWeaverTransformer transformer = new HybridWeaverTransformer();
-        Method register = SSOptimizerAgent.class.getDeclaredMethod("registerEngineProcessors", HybridWeaverTransformer.class);
-        register.setAccessible(true);
-        register.invoke(null, transformer);
 
-        assertEquals(22, transformer.getProcessorCount());
-        assertNull(transformer.transform(null, "org/lwjgl/opengl/GL13", null, null, new byte[]{1}));
+    private static Map<String, AsmClassProcessor> collectRegisteredProcessors() {
+        Map<String, AsmClassProcessor> processors = new LinkedHashMap<>();
+        SSOptimizerCorePlugin.registerAllProcessors(processors::put);
+        return processors;
+    }
+
+    @Test
+    void registersEngineAndExternalModProcessors() {
+        Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
+
+        // 22 个引擎级注册项（含 RESOURCE_LOADER 组合处理器）+ 3 个 DCR 处理器
+        assertEquals(25, processors.size());
+        assertTrue(processors.containsKey(GameClassNames.SPRITE));
+        assertTrue(processors.containsKey(GameClassNames.COMBAT_STATE));
+        assertTrue(processors.containsKey(GameClassNames.RESOURCE_LOADER));
+        assertTrue(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(DcrCompressionProcessor.TARGET_CLASS));
+    }
+
+    @Test
+    void disableSwitchSkipsSingleProcessor() {
+        String original = System.getProperty("ssoptimizer.disable.sprite");
+        try {
+            System.setProperty("ssoptimizer.disable.sprite", "true");
+            Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
+
+            assertEquals(24, processors.size());
+            assertFalse(processors.containsKey(GameClassNames.SPRITE));
+        } finally {
+            restoreProperty("ssoptimizer.disable.sprite", original);
+        }
+    }
+
+    @Test
+    void disableDcrSwitchSkipsAllDcrProcessors() {
+        String original = System.getProperty("ssoptimizer.disable.dcr");
+        try {
+            System.setProperty("ssoptimizer.disable.dcr", "true");
+            Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
+
+            assertEquals(22, processors.size());
+            assertFalse(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
+        } finally {
+            restoreProperty("ssoptimizer.disable.dcr", original);
+        }
+    }
+
+    private static void restoreProperty(String key, String original) {
+        if (original == null) {
+            System.clearProperty(key);
+        } else {
+            System.setProperty(key, original);
+        }
     }
 }

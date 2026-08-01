@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Gradle mapping 任务契约测试。
  * <p>
- * 该测试定义 mapped / reobf 工作流必须暴露的任务名称，避免后续重构时把开发、发布
+ * 该测试定义 dev 工作区与发布链路必须暴露的任务名称，避免后续重构时把开发、发布
  * 和 remapped workspace 的入口悄悄改名。
  */
 public class MappingTaskContractTest {
@@ -45,8 +45,6 @@ public class MappingTaskContractTest {
 
         assertTaskExists(repoRoot, "prepareDeobfWorkspace");
         assertTaskExists(repoRoot, "remapToNamed");
-        assertTaskExists(repoRoot, "jarMapped");
-        assertTaskExists(repoRoot, "jarReobf");
         assertTaskExists(repoRoot, "installDevMod");
         assertTaskExists(repoRoot, "stageUserMod");
         assertTaskExists(repoRoot, "stageWindowsOverlay");

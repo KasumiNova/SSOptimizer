@@ -1,3 +1,6 @@
+// 【模块冻结】mapping 的 dev 环境职能已被 NanoForge R3/R4 接管（named 游戏 jar 改由
+// SourceSector 仓发布、运行时装配改由 NanoForge coremod 通道）。本模块仅保留构建期
+// mapping 生成/remap 能力供 remapToNamed 等 dev 工作区工具使用，不再承担发布物职责。
 plugins {
     `java-library`
     `maven-publish`
@@ -15,8 +18,6 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
-val reobfJarFile = rootProject.layout.buildDirectory.file("libs/SSOptimizer-reobf.jar")
-val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 
 fun detectMappingPlatform(gameDirPath: String?): String {
     val gameDir = gameDirPath?.let(::file)
@@ -197,10 +198,10 @@ tasks.register<JavaExec>("validateScopeFragment") {
 
 tasks.register<JavaExec>("scanMappingUsage") {
     group = "mapping"
-    description = "Scan consumer bytecode (app/agent-api/mod-optimizations) for game class/member references, classify by mapping layer"
+    description = "Scan consumer bytecode (app, 含已收编的 modopt/dcr) for game class/member references, classify by mapping layer"
     dependsOn(
         tasks.named("classes"), "generateFullMappings",
-        ":app:jar", ":app:compileTestJava", ":agent-api:jar", ":mod-optimizations:jar"
+        ":app:jar", ":app:compileTestJava"
     )
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("github.kasuminova.ssoptimizer.mapping.gen.UsageScanCli")
@@ -208,8 +209,6 @@ tasks.register<JavaExec>("scanMappingUsage") {
     val humanMappingsDir = file("src/main/resources/mappings")
     val consumerInputs = listOf(
         project(":app").tasks.named<Jar>("jar").flatMap { it.archiveFile },
-        project(":agent-api").tasks.named<Jar>("jar").flatMap { it.archiveFile },
-        project(":mod-optimizations").tasks.named<Jar>("jar").flatMap { it.archiveFile },
         project(":app").layout.buildDirectory.dir("classes/java/test")
     )
     inputs.dir(humanMappingsDir)
@@ -366,32 +365,5 @@ tasks.register("publishNamedGameJars") {
         val publicationTaskName = namedGamePublicationName(baseName)
             .replaceFirstChar { it.uppercase() }
         dependsOn("publish${publicationTaskName}PublicationToNamedGameRepoRepository")
-    }
-}
-
-tasks.register<JavaExec>("reobfuscateAppJar") {
-    group = "mapping"
-    description = "Remap mapped app jar back to obfuscated namespace"
-    dependsOn(tasks.named("classes"), ":app:jar")
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass.set("github.kasuminova.ssoptimizer.mapping.JarRemapCli")
-    systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
-
-    inputs.file(appJarFile)
-    outputs.file(reobfJarFile)
-
-    doFirst {
-        val outputFile = reobfJarFile.get().asFile
-        outputFile.parentFile.mkdirs()
-        if (outputFile.exists()) {
-            outputFile.delete()
-        }
-
-        args(
-            "single",
-            "named-to-obf",
-            appJarFile.get().asFile.absolutePath,
-            outputFile.absolutePath
-        )
     }
 }

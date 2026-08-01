@@ -1,0 +1,12 @@
+id = "ssoptimizer"
+name = "SSOptimizer"
+version = "${projectVersion}"
+authors = ["kasuminova"]
+description = "Starsector 性能优化 coremod：ASM 渲染/加载优化 + Mixin 注入（NanoForge 装配）"
+pluginClass = "github.kasuminova.ssoptimizer.bootstrap.SSOptimizerCorePlugin"
+
+[asm]
+transformers = ["github.kasuminova.ssoptimizer.bootstrap.HybridWeaverTransformer"]
+
+[mixin]
+configs = ["mixins.ssoptimizer.json"]

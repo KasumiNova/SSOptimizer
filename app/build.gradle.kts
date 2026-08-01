@@ -1,24 +1,5 @@
-import java.util.zip.GZIPOutputStream
-
 plugins {
     application
-}
-
-fun detectMappingPlatform(gameDirPath: String?): String {
-    val gameDir = gameDirPath?.let(::file)
-    if (gameDir != null) {
-        if (gameDir.resolve("starsector-core").isDirectory) {
-            return "windows"
-        }
-        if (gameDir.resolve("starsector.sh").isFile
-                || gameDir.resolve("zulu25_linux").isDirectory
-                || gameDir.resolve("jbr25_linux").isDirectory) {
-            return "linux"
-        }
-    }
-
-    val osName = System.getProperty("os.name", "").lowercase()
-    return if (osName.contains("win")) "windows" else "linux"
 }
 
 java {
@@ -27,22 +8,55 @@ java {
     }
 }
 
-val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
-val mappingPlatform = providers.gradleProperty("starsector.platform")
-    .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
+/**
+ * SourceSector named 游戏 jar 本地 maven 仓（windows 仓，含 -sources.jar）。
+ * 默认取同级的 SourceSector 检出；CI 用 -Psourcesector.namedRepo=<路径> 覆盖。
+ */
+val sourceSectorNamedRepo = providers.gradleProperty("sourcesector.namedRepo")
+    .orElse(providers.provider { rootProject.file("../SourceSector/build/named-game-repo/windows").absolutePath })
 
-/** 游戏本体 jar 基名——与 mapping 模块发布的本地仓库 artifactId 一一对应。 */
+/** 游戏本体 jar 基名——与 SourceSector 发布的本地仓库 artifactId 一一对应。 */
 val namedGameJarBaseNames = listOf("starfarer_obf", "starfarer.api", "fs.common_obf", "fs.sound_obf")
 
+/**
+ * 游戏运行时的第三方依赖（编译/测试 classpath 视图）——与 Starsector 0.98a-RC8 运行时版本对齐。
+ * 不打进 coremod jar：运行时由游戏 classpath 提供。
+ */
+val gameThirdParty = configurations.create("gameThirdParty") {
+    isCanBeConsumed = false
+}
+
+/**
+ * 需要 shade 进 coremod jar 的额外依赖（log4j 1.2 API 桥接层）。
+ * 游戏自带 log4j-1.2.9.jar 已被 NanoForge 启动脚本排除，源码使用的 org.apache.log4j API
+ * 由 log4j-1.2-api 桥接到 NanoForge 运行时提供的 log4j2。
+ */
+val shade = configurations.create("shade") {
+    isCanBeConsumed = false
+}
+
+configurations.compileOnly {
+    extendsFrom(gameThirdParty)
+}
+configurations.testImplementation {
+    extendsFrom(gameThirdParty)
+}
+
 repositories {
-    // named 游戏 jar 本地仓库（mapping:publishNamedGameJars 发布，附带 -sources.jar，IDEA 同步时自动附加源码）
+    // NanoForge coremod API（publishToMavenLocal 产物）
+    mavenLocal()
+    // RFB / LaunchWrapper（IClassTransformer 编译期依赖）
     maven {
-        url = uri(rootProject.layout.buildDirectory.dir("named-game-repo/${mappingPlatform.get()}"))
+        url = uri("https://nexus.gtnewhorizons.com/repository/releases/")
+    }
+    // named 游戏 jar 本地仓库（SourceSector :mapping:publishNamedGameJars 发布，附带 -sources.jar）
+    maven {
+        url = uri(sourceSectorNamedRepo.get())
     }
 }
 
 configurations.all {
-    // named 游戏 jar 以 SNAPSHOT 发布：mapping 变更重发布后每次解析都取新产物
+    // named 游戏 jar 以 SNAPSHOT 发布：SourceSector 重发布后每次解析都取新产物
     resolutionStrategy.cacheChangingModulesFor(0, "seconds")
 }
 
@@ -65,73 +79,99 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation(gradleTestKit())
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
+    // 测试运行期的 org.apache.log4j 实现（生产运行期为 shade 的 log4j-1.2-api 桥接层）
     testImplementation("log4j:log4j:1.2.17")
 
-    implementation(project(":mapping"))
-    implementation(project(":agent-api"))
-    runtimeOnly(project(":mod-optimizations"))
-    implementation("org.ow2.asm:asm:9.9.1")
-    implementation("org.ow2.asm:asm-commons:9.9.1")
-    implementation("org.ow2.asm:asm-tree:9.9.1")
+    // ---- 打进 coremod jar 的运行时依赖（NanoForge 未提供） ----
+    // :mapping 提供 GameMemberNames 运行期查表（TinyV2 仓库 + 人工映射表资源），与旧 agent jar 同款 shade；
+    // 排除其 ASM 传递依赖——编译/运行期 ASM 统一对齐 NanoForge 提供的 9.8
+    implementation(project(":mapping")) {
+        exclude(group = "org.ow2.asm")
+    }
     implementation("it.unimi.dsi:fastutil:8.5.18")
     implementation("org.jctools:jctools-core:4.0.5")
-    implementation("net.fabricmc:sponge-mixin:0.15.4+mixin.0.8.7")
     implementation("com.github.luben:zstd-jni:1.5.7-3")
-    compileOnly("log4j:log4j:1.2.17")
+    shade("org.apache.logging.log4j:log4j-1.2-api:2.25.2")
 
-    // 命名空间游戏 jar（由 mapping:remapGameClasspathToNamed 产出）
-    // 本地开发模式从 gameDir 读取；CI 模式从 game-jars/{platform}/ + Maven 依赖解析
-    val namedGameClasspath = rootProject.files(rootProject.provider {
-        val dir = rootProject.layout.buildDirectory.dir("named-game-jars/${mappingPlatform.get()}").get().asFile
-        dir.listFiles()
-            // 游戏本体 jar 走 starsector.named 模块依赖（含 sources），这里只保留透传的第三方 jar
-            ?.filter { it.isFile && it.extension == "jar" && it.nameWithoutExtension !in namedGameJarBaseNames }
-            ?: emptyList()
-    })
-    namedGameClasspath.builtBy(":mapping:remapGameClasspathToNamed")
+    // ---- 运行时由 NanoForge 提供，编译期对齐其版本 ----
+    compileOnly("io.github.nanoforged:NanoForge:0.1.0-SNAPSHOT") {
+        isTransitive = false
+    }
+    // RFB 仅需要 LaunchWrapper 的 IClassTransformer，其 pom 传递依赖（log4j 2.0-beta9-fixed
+    // 等 legacyfabric 私有构件）与本项目无关，不传递解析
+    compileOnly("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12") {
+        isTransitive = false
+    }
+    compileOnly("org.ow2.asm:asm:9.8")
+    compileOnly("org.ow2.asm:asm-commons:9.8")
+    compileOnly("org.ow2.asm:asm-tree:9.8")
+    compileOnly("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7")
+    // 源码使用 org.apache.log4j（log4j 1.2 API），编译期用桥接层，运行时由 shade 产物提供
+    compileOnly("org.apache.logging.log4j:log4j-1.2-api:2.25.2")
+    // INanoCorePlugin/CoreModContext 签名引用 log4j2 Logger（运行时由 NanoForge 提供）
+    compileOnly("org.apache.logging.log4j:log4j-api:2.25.2")
 
-    // named 游戏本体 jar（模块依赖，来自 mapping 发布的本地仓库；附带 -sources.jar 供 IDE 索引）
+    // 测试与编译同版本对齐（NanoForge 运行时不进测试 classpath 的部分需要真实加载）
+    // NanoForge 只需要 API/CoreModContext 类，其传递运行时依赖（legacyfabric lwjgl 等）
+    // 由 NanoForge 自身部署管理，不进本项目的解析图
+    testImplementation("io.github.nanoforged:NanoForge:0.1.0-SNAPSHOT") {
+        isTransitive = false
+    }
+    testImplementation("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12") {
+        isTransitive = false
+    }
+    testImplementation("org.ow2.asm:asm:9.8")
+    testImplementation("org.ow2.asm:asm-commons:9.8")
+    testImplementation("org.ow2.asm:asm-tree:9.8")
+    testImplementation("org.ow2.asm:asm-util:9.8")
+    testImplementation("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7")
+    // DCR 执行集成测试中，SerializationManager 夹具的 getSerializer() 返回真实 XStream（与 DCR 同版本）
+    testImplementation("com.thoughtworks.xstream:xstream:1.4.10")
+
+    // named 游戏本体 jar（模块依赖，来自 SourceSector 本地仓库；附带 -sources.jar 供 IDE 索引）
     namedGameJarBaseNames.forEach { baseName ->
         compileOnly("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
         testImplementation("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
     }
 
-    // 混淆原始游戏 jar（入库 vendor jar）：named jar 全量改名后，运行期模拟测试
-    // （Mixin 桥接/ASM 转换，工作在混淆命名空间）仍需从 obf 视图读取类字节码与解析类层次
-    val obfGameClasspath = rootProject.files(rootProject.provider {
-        val dir = rootProject.file("game-jars/${mappingPlatform.get()}")
-        dir.listFiles()
-            ?.filter { it.isFile && it.extension == "jar" }
-            ?: emptyList()
-    })
-
-    compileOnly(namedGameClasspath)
-    testImplementation(namedGameClasspath)
-    testImplementation(obfGameClasspath)
+    // 游戏运行时第三方依赖（对齐 Starsector 0.98a-RC8，compileOnly + testImplementation 继承）
+    gameThirdParty("org.lwjgl.lwjgl:lwjgl:2.9.3")
+    gameThirdParty("org.lwjgl.lwjgl:lwjgl_util:2.9.3")
+    gameThirdParty("com.thoughtworks.xstream:xstream:1.4.10")
+    gameThirdParty("org.codehaus.janino:janino:2.7.8")
+    gameThirdParty("org.codehaus.janino:commons-compiler:2.7.8")
+    gameThirdParty("org.codehaus.janino:commons-compiler-jdk:2.7.8")
+    gameThirdParty("org.json:json:20231013")
+    gameThirdParty("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
+    gameThirdParty("org.glassfish.jaxb:txw2:3.0.2")
+    gameThirdParty("org.sejda.imageio:webp-imageio:0.1.6")
+    gameThirdParty("net.java.jinput:jinput:2.0.7")
 }
 
-tasks.named<JavaCompile>("compileJava") {
-    dependsOn(":mapping:publishNamedGameJars")
-}
-tasks.named<JavaCompile>("compileTestJava") {
-    dependsOn(":mapping:publishNamedGameJars")
+tasks.processResources {
+    // coremod.toml 的版本号随项目版本走，避免两处维护
+    filesMatching("coremod.toml") {
+        expand("projectVersion" to project.version.toString())
+    }
 }
 
 tasks.test {
     useJUnitPlatform()
     dependsOn(tasks.named("jar"))
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
-    val mappingPlatform = providers.gradleProperty("starsector.platform")
-        .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
-    systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
-    doFirst {
-        // named/obf 双视图共存于测试 classpath：同名类必须从 named jar 加载（obf 仅以字节按路径读取）。
-        // 游戏 jar 改模块依赖后解析顺序不再保证 named 在前，这里显式把 obf jar 移到末尾。
-        classpath = files(classpath.files.sortedBy {
-            if (it.absolutePath.replace('\\', '/').contains("/game-jars/")) 1 else 0
-        })
-    }
+    // DCR 执行集成测试中的 XStream 夹具在 JDK 25 上需与游戏运行期相同的模块开放（见 launch_nanoforge_ss.sh）
+    jvmArgs(
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang.ref=ALL-UNNAMED",
+        "--add-opens=java.base/java.text=ALL-UNNAMED",
+        "--add-opens=java.base/java.nio=ALL-UNNAMED",
+        "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+        "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED",
+        "--add-opens=java.desktop/java.awt=ALL-UNNAMED",
+        "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED"
+    )
 }
 
 val docsTestSourceSet = sourceSets.create("docsTest") {
@@ -164,7 +204,6 @@ dependencies {
 
     "jmhImplementation"("org.openjdk.jmh:jmh-core:1.37")
     "jmhImplementation"("org.glassfish.jaxb:txw2:3.0.2")
-    "jmhImplementation"(project(":mod-optimizations"))
     "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.37")
     "jmhRuntimeOnly"("log4j:log4j:1.2.17")
 }
@@ -176,16 +215,6 @@ tasks.register<Test>("docsTest") {
     classpath = docsTestSourceSet.runtimeClasspath
     useJUnitPlatform()
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orNull?.takeIf { it.isNotBlank() }
-    val mappingPlatform = providers.gradleProperty("starsector.platform")
-        .orElse(providers.provider { detectMappingPlatform(starsectorGameDir) })
-    systemProperty("ssoptimizer.mapping.platform", mappingPlatform.get())
-    doFirst {
-        // 与 test 同理：obf 游戏 jar 移到 classpath 末尾，保证同名类从 named jar 加载。
-        classpath = files(classpath.files.sortedBy {
-            if (it.absolutePath.replace('\\', '/').contains("/game-jars/")) 1 else 0
-        })
-    }
 }
 
 tasks.register<JavaExec>("jmh") {
@@ -199,7 +228,7 @@ tasks.register<JavaExec>("jmh") {
     val warmupIterations = providers.gradleProperty("jmhWarmupIterations").orElse("3")
     val measurementIterations = providers.gradleProperty("jmhIterations").orElse("5")
     val warmupTime = providers.gradleProperty("jmhWarmupTime").orElse("300ms")
-    val measurementTime = providers.gradleProperty("jmhMeasurementTime").orElse("300ms")
+    val measurementTime = providers.gradleProperty("jmhTime").orElse("300ms")
     val forks = providers.gradleProperty("jmhForks").orElse("1")
     val timeUnit = providers.gradleProperty("jmhTimeUnit").orElse("us")
     val jmhCorpus = providers.gradleProperty("jmhCorpus").orNull
@@ -234,59 +263,26 @@ tasks.register<JavaExec>("jmh") {
     )
 }
 
-val packFullMappings = tasks.register("packFullMappings") {
-    group = "mapping"
-    description = "Gzip both-platform full mapping tables for the agent jar (full deobf mode)"
-    dependsOn(":mapping:generateFullMappings")
-
-    val generatedMappingsDir = project(":mapping").layout.buildDirectory.dir("generated/mappings")
-    val outputDirectory = layout.buildDirectory.dir("fullMappings")
-    inputs.dir(generatedMappingsDir)
-    outputs.dir(outputDirectory)
-
-    doLast {
-        val outDir = outputDirectory.get().asFile
-        outDir.deleteRecursively()
-        outDir.mkdirs()
-        listOf("linux", "windows").forEach { platform ->
-            val source = generatedMappingsDir.get().file("$platform/ssoptimizer-$platform-full.tiny").asFile
-            val target = outDir.resolve("ssoptimizer-$platform-full.tiny.gz")
-            source.inputStream().buffered().use { input ->
-                GZIPOutputStream(target.outputStream().buffered()).use { gzip ->
-                    input.copyTo(gzip)
-                }
-            }
-        }
-    }
-}
-
 tasks.named<Jar>("jar") {
-    // 全量表只进 jar 不进 main resources：避免测试 classpath 与 test fixtures 互相遮蔽，
-    // 也避免非 jar 运行方式误把 37MB 明文表当默认资源。
-    dependsOn(packFullMappings)
-    from(layout.buildDirectory.dir("fullMappings")) {
-        into("mappings")
-    }
-
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set("")
     archiveClassifier.set("")
 
-    dependsOn(configurations.runtimeClasspath)
+    // NanoForge coremod jar：shade 运行时依赖（fastutil/jctools/zstd-jni/log4j-1.2-api），
+    // asm/mixin/RFB/log4j2/游戏 jar 为 compileOnly，由 NanoForge 运行时与游戏 classpath 提供
+    dependsOn(configurations.runtimeClasspath, shade)
     from({
-        configurations.runtimeClasspath.get()
+        (configurations.runtimeClasspath.get().files + shade.resolve())
             .filter { it.name.endsWith(".jar") }
             .map { zipTree(it) }
     })
 
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+    // 依赖携带的 JPMS 模块描述必须剔除：jar 一旦带 module-info，RFB 会按命名模块
+    // 加载本 jar，仅导出模块声明内的包（如 org.jctools.core 只导出 org/jctools/*），
+    // 其余包全部不可见，类加载报 "Class bytes are null"（运行时已验证）。
+    // META-INF/versions/** 是 multi-release 变体，RFB/LaunchClassLoader 不按 MR-jar 解析，
+    // 混入只会产生重复类，一并剔除。
+    exclude("module-info.class", "META-INF/versions/**")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    manifest {
-        attributes(
-            "Premain-Class" to "github.kasuminova.ssoptimizer.bootstrap.SSOptimizerAgent",
-            "Can-Retransform-Classes" to "true",
-            "Can-Redefine-Classes" to "true"
-        )
-    }
 }

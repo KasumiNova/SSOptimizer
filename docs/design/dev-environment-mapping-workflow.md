@@ -1,13 +1,21 @@
 # SSOptimizer 渲染链路 Mapping 工作流
 
+> **接管声明（2026-08-02，最终态）**：全量 deobf 运行时已被 NanoForge R3 接管
+> （NanoForge `core/remap` + `NanoRemapTransformer`，消费 SourceSector
+> 三命名空间全量表）；SSOptimizer 已随 NanoForge R4 完成 coremod 化，
+> javaagent 通道与运行期 remap/reobf 管线（`RuntimeRemapTransformer`、
+> `reobfuscateAppJar`、`jarMapped`/`jarReobf`）已全部移除。
+> 本仓库的 mapping 模块冻结：仅保留构建期全量表生成与 named classpath remap
+> 能力，供 `remapToNamed` 等 dev 工作区工具继续使用。
+
 ## 两级映射表职责
 
 | 表 | 文件 | 消费者 | 维护方式 |
 |---|---|---|---|
-| 运行期权威表 | `mapping/src/main/resources/mappings/ssoptimizer-{platform}.tiny` | agent 内嵌、`RuntimeRemapTransformer`、`reobfuscateAppJar` | 人工，热点驱动 |
+| 人工热点表 | `mapping/src/main/resources/mappings/ssoptimizer-{platform}.tiny` | `generateFullMappings`（构建期合并最高优先级层） | 人工，热点驱动 |
 | 构建期全量表 | `mapping/build/generated/mappings/{platform}/ssoptimizer-{platform}-full.tiny`（生成物，**不入库**） | `remapGameClasspathToNamed` → named-game-jars → app 编译 / remapped-workspace / IDE | 生成 + 人工条目优先合并 |
 
-- 运行期表刻意不全量：全量改名会改变 XStream 存档序列化中的类名，带来存档兼容风险，因此运行期只保留热点条目。
+- 历史上运行期表刻意不全量（避免 XStream 存档类名漂移）；R4 后运行期 remap 整体移交 NanoForge + SourceSector 全量表，存档兼容由 NanoForge 侧保证，本仓库不再有运行期表消费者。
 - 构建期全量表 = 人工表条目（优先，含注释）+ 保持原名片段（见下）+ 结构指纹占位条目（`C_<hash8>` / `f_<hash8>` / `m_<hash8>`，无注释），让开发视图完整可读且无运行期副作用。
 - **保持原名片段** `mapping/src/main/resources/mappings/ssoptimizer-identity.tiny`（入库，双平台共用）：登记 app 编译期直接引用、必须保持原名的游戏类（游戏本身未混淆这些真实类名，或 app 以原始混淆名直接引用）。片段中的类与其全部成员在全量表中保持原名，不生成占位名。该片段只被 `generateFullMappings` 消费，运行期不加载。新增 app 直接引用的游戏类时，要么把语义映射迁入人工表，要么在此登记保持原名。
 - 全量表描述符统一 **named 存储**：表内类写 named 名，表外类（JDK / 第三方 / 未混淆的 starfarer.api）保持原样；人工条目保留历史混写，解析侧双向兼容。

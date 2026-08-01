@@ -8,9 +8,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.objectweb.asm.ClassReader;
 
-import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -21,7 +19,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * 已注册 ASM 处理器的真实字节码转换测试。
  * <p>
- * 目标：覆盖 agent 运行时真正会注册的处理器集合，以及少量尚未挂到注册表、
+ * 目标：覆盖 coremod onLoad 真正会注册的处理器集合，以及少量尚未挂到注册表、
  * 但已有真实目标类的 GL 跟踪处理器，确保“给到真实 class bytes 时至少能稳定完成一次转换”。
  */
 class RegisteredAsmTransformationIntegrationTest {
@@ -62,14 +60,10 @@ class RegisteredAsmTransformationIntegrationTest {
                 }));
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, AsmClassProcessor> registeredProcessors() throws Exception {
-        HybridWeaverTransformer transformer = new HybridWeaverTransformer();
-        SSOptimizerAgent.registerEngineProcessors(transformer);
-
-        Field processorsField = HybridWeaverTransformer.class.getDeclaredField("processors");
-        processorsField.setAccessible(true);
-        return new LinkedHashMap<>((Map<String, AsmClassProcessor>) processorsField.get(transformer));
+    private static Map<String, AsmClassProcessor> registeredProcessors() {
+        Map<String, AsmClassProcessor> processors = new LinkedHashMap<>();
+        SSOptimizerCorePlugin.registerAllProcessors(processors::put);
+        return processors;
     }
 
     /**

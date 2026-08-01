@@ -26,24 +26,48 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build mapped jar (${{ matrix.platform }})
+      # coremod 编译期依赖 NanoForge API（mavenLocal SNAPSHOT），CI 需现场发布
+      - name: Checkout NanoForge
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/NanoForge
+          path: NanoForge
+
+      - name: Publish NanoForge to mavenLocal
+        working-directory: NanoForge
+        run: ./gradlew publishToMavenLocal --console=plain
+
+      # named 游戏 jar 依赖已切换为 SourceSector 本地 maven 仓，CI 现场发布 windows 仓
+      - name: Checkout SourceSector
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/SourceSector
+          path: SourceSector
+
+      - name: Publish named game jars (SourceSector)
+        working-directory: SourceSector
+        run: ./gradlew :mapping:publishNamedGameJars --console=plain
+
+      - name: Build app jar (${{ matrix.platform }})
         run: |
-          ./gradlew jarMapped \
+          ./gradlew :app:jar \
             -Pstarsector.gameDir= \
             -Pstarsector.platform=${{ matrix.platform }} \
+            -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows \
             -x :native:assemble
 
       - name: Run unit tests
         run: |
           ./gradlew test \
             -Pstarsector.gameDir= \
-            -Pstarsector.platform=${{ matrix.platform }}
+            -Pstarsector.platform=${{ matrix.platform }} \
+            -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows
 
-      - name: Upload mapped jar
+      - name: Upload app jar
         uses: actions/upload-artifact@v4
         with:
-          name: SSOptimizer-mapped-${{ matrix.platform }}
-          path: build/libs/SSOptimizer-mapped.jar
+          name: SSOptimizer-app-${{ matrix.platform }}
+          path: app/build/libs/SSOptimizer.jar
 
   build-native-linux:
     name: Build Native (Linux)

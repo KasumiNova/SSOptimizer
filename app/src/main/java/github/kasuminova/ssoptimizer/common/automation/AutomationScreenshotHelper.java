@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 /**
  * 自动化截图与 telemetry 写入助手。
  *
- * <p>该类由 SSOptimizer jar 提供，并在 javaagent / 模组类加载路径中执行，拥有普通文件 IO 权限。
+ * <p>该类由 SSOptimizer jar 提供，并在 coremod / 模组类加载路径中执行，拥有普通文件 IO 权限。
  * ASTD 的脚本类只负责构造 telemetry JSON，然后把写入与 OpenGL 截图委托到这里，规避
  * Starsector 脚本沙盒对脚本源码的文件访问限制。</p>
  */

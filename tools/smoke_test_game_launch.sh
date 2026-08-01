@@ -1,10 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Smoke test: launch Starsector with SSOptimizer agent, check for fatal errors.
-GAME_DIR="${1:-/mnt/windows_data/Games/Starsector098-linux}"
+# Smoke test: launch Starsector with SSOptimizer as a NanoForge coremod, check for fatal errors.
+GAME_DIR="${1:-/mnt/store/Games/Starsector098-linux}"
 TIMEOUT_SEC="${2:-15}"
 MODE="${3:-launcher}"
+LAUNCH_SCRIPT="${SSOPTIMIZER_SMOKE_LAUNCH_SCRIPT:-launch_nanoforge_ss.sh}"
 LOG_FILE="$GAME_DIR/starsector.log"
 PROCESS_LOG_FILE="$GAME_DIR/ssoptimizer-smoke-process.log"
 SETTINGS_FILE="$GAME_DIR/data/config/settings.json"
@@ -21,7 +22,7 @@ IME_SMOKE_TRIGGER_PATTERN="${SSOPTIMIZER_SMOKE_INPUT_TRIGGER_PATTERN:-IME text f
 AUTOMATION_SCENARIO="${SSOPTIMIZER_AUTOMATION_SCENARIO:-arc_flare_aod7_basic}"
 AUTOMATION_OUTPUT_DIR="${SSOPTIMIZER_AUTOMATION_OUTPUT_DIR:-$GAME_DIR/ssoptimizer-automation-output}"
 AUTOMATION_TELEMETRY_FILE="$AUTOMATION_OUTPUT_DIR/astd-ingame-automation-telemetry.json"
-AUTOMATION_VERIFY_SCRIPT="${SSOPTIMIZER_AUTOMATION_VERIFY_SCRIPT:-/mnt/windows_data/Games/Starsector098-linux/mods/Asteria_Directorate/tools/verify_ingame_vfx_automation.py}"
+AUTOMATION_VERIFY_SCRIPT="${SSOPTIMIZER_AUTOMATION_VERIFY_SCRIPT:-/mnt/store/Games/Starsector098-linux/mods/Asteria_Directorate/tools/verify_ingame_vfx_automation.py}"
 AUTOMATION_REQUIRE_SCREENSHOT_FILE="${SSOPTIMIZER_AUTOMATION_REQUIRE_SCREENSHOT_FILE:-false}"
 
 echo "=== SSOptimizer Game Launch Smoke Test ==="
@@ -29,8 +30,8 @@ echo "Game dir: $GAME_DIR"
 echo "Timeout:  ${TIMEOUT_SEC}s"
 echo "Mode:     ${MODE}"
 
-if [[ ! -f "$GAME_DIR/launch_injected_ss.sh" ]]; then
-    echo "FAIL: launch_injected_ss.sh not found in $GAME_DIR"
+if [[ ! -f "$GAME_DIR/$LAUNCH_SCRIPT" ]]; then
+    echo "FAIL: $LAUNCH_SCRIPT not found in $GAME_DIR"
     exit 1
 fi
 
@@ -423,10 +424,10 @@ fi
 # Launch game in background
 cd "$GAME_DIR"
 if command -v setsid >/dev/null 2>&1; then
-    setsid ./launch_injected_ss.sh > "$PROCESS_LOG_FILE" 2>&1 &
+    setsid ./"$LAUNCH_SCRIPT" > "$PROCESS_LOG_FILE" 2>&1 &
     GAME_PID=$!
 else
-    ./launch_injected_ss.sh > "$PROCESS_LOG_FILE" 2>&1 &
+    ./"$LAUNCH_SCRIPT" > "$PROCESS_LOG_FILE" 2>&1 &
     GAME_PID=$!
 fi
 

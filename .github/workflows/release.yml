@@ -26,24 +26,48 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build mapped jar
+      # coremod 编译期依赖 NanoForge API（mavenLocal SNAPSHOT），CI 需现场发布
+      - name: Checkout NanoForge
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/NanoForge
+          path: NanoForge
+
+      - name: Publish NanoForge to mavenLocal
+        working-directory: NanoForge
+        run: ./gradlew publishToMavenLocal --console=plain
+
+      # named 游戏 jar 依赖已切换为 SourceSector 本地 maven 仓，CI 现场发布 windows 仓
+      - name: Checkout SourceSector
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/SourceSector
+          path: SourceSector
+
+      - name: Publish named game jars (SourceSector)
+        working-directory: SourceSector
+        run: ./gradlew :mapping:publishNamedGameJars --console=plain
+
+      - name: Build app jar
         run: |
-          ./gradlew jarMapped \
+          ./gradlew :app:jar \
             -Pstarsector.gameDir= \
             -Pstarsector.platform=${{ matrix.platform }} \
+            -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows \
             -x :native:assemble
 
       - name: Run unit tests
         run: |
           ./gradlew test \
             -Pstarsector.gameDir= \
-            -Pstarsector.platform=${{ matrix.platform }}
+            -Pstarsector.platform=${{ matrix.platform }} \
+            -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows
 
-      - name: Upload mapped jar
+      - name: Upload app jar
         uses: actions/upload-artifact@v4
         with:
-          name: mapped-jar-${{ matrix.platform }}
-          path: build/libs/SSOptimizer-mapped.jar
+          name: app-jar-${{ matrix.platform }}
+          path: app/build/libs/SSOptimizer.jar
 
   build-native-linux:
     name: Build Native (Linux)
@@ -186,13 +210,17 @@ jobs:
                    "${LINUX_MOD_STAGE}/native/linux" \
                    "${LINUX_MOD_STAGE}/fonts" \
                    "${LINUX_STAGE}/graphics/fonts" \
+                   "${LINUX_STAGE}/mods/coremods" \
                    "${WINDOWS_MOD_STAGE}/jars" \
                    "${WINDOWS_MOD_STAGE}/native/windows" \
                    "${WINDOWS_MOD_STAGE}/fonts" \
-                   "${WINDOWS_STAGE}/starsector-core/graphics/fonts"
+                   "${WINDOWS_STAGE}/starsector-core/graphics/fonts" \
+                   "${WINDOWS_STAGE}/mods/coremods"
 
-          cp artifacts/mapped-jar-linux/SSOptimizer-mapped.jar "${LINUX_MOD_STAGE}/jars/SSOptimizer.jar"
-          cp artifacts/mapped-jar-windows/SSOptimizer-mapped.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/app-jar-linux/SSOptimizer.jar "${LINUX_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/app-jar-linux/SSOptimizer.jar "${LINUX_STAGE}/mods/coremods/SSOptimizer.jar"
+          cp artifacts/app-jar-windows/SSOptimizer.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/app-jar-windows/SSOptimizer.jar "${WINDOWS_STAGE}/mods/coremods/SSOptimizer.jar"
           cp artifacts/native-linux/libnative.so "${LINUX_MOD_STAGE}/native/linux/lib${MOD_ID}.so"
           cp artifacts/native-windows/native.dll "${WINDOWS_MOD_STAGE}/native/windows/${MOD_ID}.dll"
 
@@ -215,13 +243,6 @@ jobs:
           cp game-fonts/ttf/* "${WINDOWS_MOD_STAGE}/fonts/"
           cp game-fonts/fnt/* "${LINUX_STAGE}/graphics/fonts/"
           cp game-fonts/fnt/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
-
-          cp tools/starsector.sh "${LINUX_STAGE}/starsector.sh"
-          cp tools/launch_injected_ss.sh "${LINUX_STAGE}/launch_injected_ss.sh"
-          chmod +x "${LINUX_STAGE}/starsector.sh" "${LINUX_STAGE}/launch_injected_ss.sh"
-
-          cp tools/starsector.bat "${WINDOWS_STAGE}/starsector-core/starsector.bat"
-          cp tools/starsector-ssoptimizer.bat "${WINDOWS_STAGE}/starsector-ssoptimizer.bat"
 
           mkdir -p build/distributions
           cd "${LINUX_STAGE}"
