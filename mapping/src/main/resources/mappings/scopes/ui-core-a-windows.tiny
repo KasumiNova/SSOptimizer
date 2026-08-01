@@ -15,12 +15,108 @@ c	com/fs/starfarer/ui/A/B	com/fs/starfarer/ui/MenuPanel
 	m	fadeIn	fadeIn	()V
 	m	forceIn	forceIn	()V
 	m	add	add	(Lcom/fs/starfarer/ui/c;)Lcom/fs/starfarer/ui/OO0O;
+	f	øÔÒo00	menuWidth	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	private.new$while	menuWidth	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÖÔÒo00	background	Lcom/fs/starfarer/ui/MenuPanel$Background;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	String.Object$while	menuWidth	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	super.Object$while	itemCount	I
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÒÔÒo00	menuWidth	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ôÔÒo00	menuWidth	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÕÔÒo00	menuWidth	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÓÔÒo00	direction	Lcom/fs/starfarer/ui/HorizontalDirection;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õÔÒo00	menuItems	Ljava/util/List;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Ôo0000	renderBackground	(F)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	interface.while	getContentHeight	()F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	float.super	renderBackground	(F)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/A/B$o	com/fs/starfarer/ui/MenuPanel$MenuItem
 	c	继承关系+javap取证 | 中 | MenuPanel 内部菜单项：索引 + OO0o 控件 + Fader 渐显（B/OoOO$o）
+	f	Object	index	I
+		c javap 字节码取证 | 高 | 构造器参数 2；外层 A/B 渲染循环以 当前选中项索引-index 计算距离做高亮
+	f	Ò00000	rowCount	I
+		c javap 字节码取证 | 中 | 构造器参数 3；外层 addMenuItem 以 rowCount*(itemHeight+padding) 作组件高度
+	f	Ô00000	component	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | 构造器参数 4，o00000() 返回的 UI 组件
+	f	Õ00000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | get/set 对 + o00000(F) 中 fader.advance；外层 addMenuItem 后 fadeIn 高亮
+	f	o00000	menuPanel	Lcom/fs/starfarer/ui/MenuPanel;
+		c javap 字节码取证 | 高 | final 外层 MenuPanel 引用（this$0）
+	m	Ô00000	getIndex	()I
+		c javap 字节码取证 | 高 | getfield index
+	m	Object	getRowCount	()I
+		c javap 字节码取证 | 高 | getfield rowCount
+	m	o00000	getComponent	()Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | getfield component
+	m	Ò00000	getFader	()Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getfield fader
+	m	o00000	setFader	(Lcom/fs/graphics/util/Fader;)V
+		c javap 字节码取证 | 高 | putfield fader
+	m	o00000	advanceFader	(F)V
+		c javap 字节码取证 | 高 | fader!=null 时 fader.advance(amount)
 c	com/fs/starfarer/ui/A/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/MenuPanel$Background
 	c	javap取证 | 中 | 菜单背景绘制：6 个 Sprite(_e/_e_top/_w_bot/scanline11/ui 等) + 方向枚举 + 字体（B/oOOO）
+	f	interface	edgeSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器从 "ui"+id+"_e" 加载，水平方向主体 sprite，getImageWidth/Height 取其尺寸
+	f	ØO0000	edgeBottomSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器从 id+"_e_bot" 加载，水平方向底部边缘，renderRegion 于 x+positionX-imageWidth
+	f	new	edgeTopSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器从 id+"_e_top" 加载，水平方向顶部边缘
+	f	õ00000	wallSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器从 id+"_w" 加载，垂直方向主体，renderRegion 于 y+imageHeight
+	f	Ó00000	wallBottomSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器从 id+"_w_bot" 加载，垂直方向底部边缘
+	f	Ô00000	wallTopSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器从 id+"_w_top" 加载，垂直方向顶部边缘
+	f	ÓO0000	positionX	F
+		c javap 字节码取证 | 高 | super(FF)V 写入 fload_1，renderRegion x 基准
+	f	oO0000	positionY	F
+		c javap 字节码取证 | 高 | super(FF)V 写入 fload_2，renderRegion y 基准
+	f	class	unusedFloat	F
+		c javap 字节码取证 | 中 | private float，全类无任何 getfield/putfield 引用，死代码
+	f	Ø00000	heightScale	F
+		c javap 字节码取证 | 高 | 构造器 = 目标高/imageHeight，super(FF)V = y/imageHeight，renderRegion 高度参数
+	f	null	imageHeight	F
+		c javap 字节码取证 | 高 | 构造器 = edgeSprite.getImageHeight()
+	f	o00000	imageWidth	F
+		c javap 字节码取证 | 高 | 构造器 = edgeSprite.getImageWidth()
+	f	float	noSprites	Z
+		c javap 字节码取证 | 高 | 构造器 id==null 时置 true，super(FFF)V 开头 if(noSprites) return
+	f	Ö00000	backgroundDirection	Lcom/fs/starfarer/ui/HorizontalDirection;
+		c javap 字节码取证 | 高 | 构造器参数 2，渲染中与 _.Ò00000 / _.Object 比较选择垂直/水平分支
+	f	ÔO0000	scanlineRenderer	Lcom/fs/starfarer/E/QuadRenderer;
+		c javap 字节码取证 | 高 | 构造器 new QuadRenderer(StarfarerSettings.Ó00000("ui","scanline11"),...)，渐变渲染入口
+	f	ÖO0000	renderScanlines	Z
+		c javap 字节码取证 | 高 | 构造器默认 true，super(Z)V 写入，渲染分支 if(renderScanlines) 绘制渐变
+	f	OO0000	alphaMult	F
+		c javap 字节码取证 | 高 | 构造器默认 1.0f，super(F)V 写入，渲染时 alpha*alphaMult
+	f	while	gradientColorOpaque	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器 new Color(0,0,0,255) 不透明黑，渐变四角交替色
+	f	ö00000	gradientColorTransparent	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器 new Color(0,0,0,0) 全透明黑，渐变四角交替色
+	m	super	setRenderScanlines	(Z)V
+		c javap 字节码取证 | 高 | putfield renderScanlines
+	m	super	setPosition	(FF)V
+		c javap 字节码取证 | 高 | putfield positionX/positionY 并重算 heightScale
+	m	super	setAlphaMult	(F)V
+		c javap 字节码取证 | 高 | putfield alphaMult
+	m	super	render	(FFF)V
+		c javap 字节码取证 | 高 | 主体渲染：按方向分支 setAlphaMult 各 sprite + renderRegion + scanline 渐变
 c	com/fs/starfarer/ui/C	com/fs/starfarer/ui/RenderHookPanel
 	c	javap取证 | 低 | 透明钩子面板：renderImpl 仅回调 C$o.new(position, alpha)，自身不绘制（C）
+	f	String.null	renderHookListener	Lcom/fs/starfarer/ui/RenderHookListener;
+		c javap 字节码取证 | 高 | 构造器参数，renderImpl 调 listener.render(getPosition(),amount)
 c	com/fs/starfarer/ui/C$o	com/fs/starfarer/ui/RenderHookListener
 	c	javap取证 | 低 | RenderHookPanel 渲染回调：new(PositionImpl, float alpha)（C$o）
 	m	new	onRender	(Lcom/fs/starfarer/ui/OO0O;F)V
@@ -33,12 +129,30 @@ c	com/fs/starfarer/ui/Object/C	com/fs/starfarer/ui/ItemListPanel
 	m	notifyItemSelected	notifyItemSelected	(Lcom/fs/starfarer/ui/Object/O0OO;)V
 c	com/fs/starfarer/ui/Object/OoOO	com/fs/starfarer/ui/Hotspot
 	c	javap取证 | 中 | 交互热点：Fader 闪烁 + OO0o 内容 + 点击回调，供 HotspotLayer 使用（C/new）
+	f	Object	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	o00000	component	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	Ò00000	listener	Lcom/fs/starfarer/ui/HotspotListener;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Object	getFader	()Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Ò00000	getBrightness	()F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	getComponent	()Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	processInput	(Lcom/fs/starfarer/util/InputEventList;)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/Object/OoOO$o	com/fs/starfarer/ui/HotspotListener
 	c	javap取证 | 中 | 热点点击回调接口（C/new$o）
 	m	notifyHotspotClicked	notifyHotspotClicked	(Lcom/fs/starfarer/ui/Object/OoOO;Lcom/fs/starfarer/ui/c;)V
 c	com/fs/starfarer/ui/Object/super	com/fs/starfarer/ui/HotspotLayer
 	c	javap取证 | 中 | 热点图层：createAndAddHotspot 管理 List<C/new>，处理输入与选中状态（C/oOOO）
 	m	createAndAddHotspot	createAndAddHotspot	(Lcom/fs/starfarer/ui/c;Lcom/fs/starfarer/ui/Object/OoOO$o;)Lcom/fs/starfarer/ui/Object/OoOO;
+	f	ÓÕÒo00	hotspots	Ljava/util/List;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/Object/O0OO	com/fs/starfarer/ui/SelectableItem
 	c	继承关系+javap取证 | 中 | 可选中条目接口：extends OO0o，setMouseOver/notifySelectedStatusChanged（C/ooOO）
 	m	setMouseOver	setMouseOver	(F)V
@@ -47,6 +161,12 @@ c	com/fs/starfarer/ui/Object/A/oOOO	com/fs/starfarer/ui/ListItemContainer
 	c	javap取证 | 中 | 列表项容器：鼠标悬停 Fader + 内容控件 + 选中通知（C/super/A）
 	m	getMouseOverFader	getMouseOverFader	()Lcom/fs/graphics/util/Fader;
 	m	getContents	getContents	()Lcom/fs/starfarer/ui/Object/O0OO;
+	f	ÒÕÒo00	mouseOverFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	void.Object$while	contents	Lcom/fs/starfarer/ui/SelectableItem;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	OÕÒo00	selectionListener	Lcom/fs/starfarer/ui/ItemSelectionListener;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/Object/A/oOOO$o	com/fs/starfarer/ui/ItemSelectionListener
 	c	javap取证 | 中 | 列表项选中回调接口（C/super/A$o）
 	m	notifyItemSelected	notifyItemSelected	(Lcom/fs/starfarer/ui/Object/O0OO;)V
@@ -62,10 +182,126 @@ c	com/fs/starfarer/ui/G	com/fs/starfarer/ui/ImageTextButton
 	m	setImage	setImage	(Lcom/fs/starfarer/ui/ooO0;)V
 	m	setSpriteName	setSpriteName	(Ljava/lang/String;)V
 	m	setDisabledColor	setDisabledColor	(Ljava/awt/Color;)V
+	f	String.do$int	imagePanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	øoÖO00	fontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	OÒÖO00	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	if.do$int	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	void.do$int	disabledFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÒÒÖO00	textLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÕÒÖO00	fontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õoÖO00	fontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÓÒÖO00	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/CutPanel
 	c	javap取证 | 中 | 剪切角面板背景：Alignment + CutStyle(TL_BR) + 双色 + Sprite，绘制带切角矩形（J）
+	f	ÔO0000	alignment	Lcom/fs/starfarer/api/ui/Alignment;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	interface	cutStyle	Lcom/fs/starfarer/api/ui/CutStyle;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÓO0000	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ö00000	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	oO0000	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	new.super	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	null	TRANSPARENT_COLOR	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	Ø00000	TRANSPARENT_COLOR	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	class	scanlineSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ØO0000	transparentMode	Z
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÖO0000	TRANSPARENT_COLOR	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õO0000	TRANSPARENT_COLOR	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	Ö00000	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	while	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	OO0000	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	class.super	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õ00000	textOffset	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	setCutStyle	(Lcom/fs/starfarer/api/ui/CutStyle;)Lcom/fs/starfarer/ui/CutPanel;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	setAlignment	(Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/CutPanel;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	setControlAction	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/ui/CutPanel;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Ò00000	renderCut	(FFF)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Ô00000	getFontRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	renderHighlight	(FFFF)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Ò00000	setSize	(FF)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	renderCut	(FFF)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Object	renderCut	(FFF)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Ò00000	setFontScale	(F)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Object	setSize	(FF)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	setFontScale	(F)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	o00000	setSize	(FF)V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/float	com/fs/starfarer/ui/ToggleButton
 	c	javap取证(字符串) | 高 | 开关按钮：toggle12/20/40_on/off 贴图 + Size 枚举（K）
+	f	new.String	unusedZero	F
+	f	OÕ0000	textRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+	f	ÓÕ0000	textColor	Ljava/awt/Color;
+	f	interface.Object	onSprite	Lcom/fs/graphics/Sprite;
+	f	ØÔ0000	offSprite	Lcom/fs/graphics/Sprite;
+	f	class.String	textOffsetX	F
+	f	ÔÕ0000	textOffsetY	F
+	f	while.Object	checkedColor	Ljava/awt/Color;
+	f	ÖÔ0000	onSpriteColor	Ljava/awt/Color;
+	f	oÕ0000	offSpriteColor	Ljava/awt/Color;
+	f	öÔ0000	borderThickness	F
+	f	ÖÕ0000	borderColor	Ljava/awt/Color;
+	f	õÔ0000	sharedNormalColor	Ljava/awt/Color;
+	m	Ò00000	setOnSprite	(Ljava/lang/String;)V
+	m	super	setOnSprite	(Ljava/lang/String;FF)V
+	m	super	setOffSprite	(Ljava/lang/String;)V
+	m	Ò00000	setOffSprite	(Ljava/lang/String;FF)V
+	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+	m	private	getTextOffsetX	()F
+	m	String	setTextOffsetX	(F)V
+	m	õO0000	getTextOffsetY	()F
+	m	Ò00000	setTextOffsetY	(F)V
+	m	super	setShortcut	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/ui/ToggleButton;
+	m	OO0000	getTextRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
+	m	ôO0000	getTextColor	()Ljava/awt/Color;
+	m	Ö00000	setTextColor	(Ljava/awt/Color;)V
+	m	do	getCheckedColor	()Ljava/awt/Color;
+	m	Ò00000	setCheckedColor	(Ljava/awt/Color;)V
+	m	ÕO0000	getOnSpriteColor	()Ljava/awt/Color;
+	m	Ó00000	setOnSpriteColor	(Ljava/awt/Color;)V
+	m	ÖO0000	getOffSpriteColor	()Ljava/awt/Color;
+	m	super	setOffSpriteColor	(Ljava/awt/Color;)V
+	m	ÓO0000	getSharedNormalColor	()Ljava/awt/Color;
+	m	Õ00000	setSharedNormalColor	(Ljava/awt/Color;)V
+	m	ÒO0000	getBorderThickness	()F
+	m	Ó00000	setBorderThickness	(F)V
+	m	super.super	getBorderColor	()Ljava/awt/Color;
+	m	String	setBorderColor	(Ljava/awt/Color;)V
 c	com/fs/starfarer/ui/float$o	com/fs/starfarer/ui/ToggleButton$Size
 	c	字符串常量 | 高 | 开关按钮尺寸枚举 TINY/SMALL/LARGE（K$o）
 	f	Ô00000	TINY	Lcom/fs/starfarer/ui/float$o;
@@ -73,6 +309,7 @@ c	com/fs/starfarer/ui/float$o	com/fs/starfarer/ui/ToggleButton$Size
 	f	Ò00000	LARGE	Lcom/fs/starfarer/ui/float$o;
 	m	values	values	()[Lcom/fs/starfarer/ui/float$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/float$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/ui/ToggleButton$Size;
 c	com/fs/starfarer/ui/N	com/fs/starfarer/ui/BorderBox
 	c	javap取证 | 高 | 矩形边框控件：color+thickness，renderImpl 调 renderers.public.o00000(x,y,w,h,thickness) 画边框（N）
 	f	color	color	Ljava/awt/Color;
@@ -80,6 +317,16 @@ c	com/fs/starfarer/ui/N	com/fs/starfarer/ui/BorderBox
 c	com/fs/starfarer/ui/D	com/fs/starfarer/ui/AnimatedPath
 	c	javap取证 | 中 | 周期动画路径：IntervalTracker + addToPath 点列表 + 双色，生成移动段渲染（O0OO）
 	m	addToPath	addToPath	(FF)V
+	f	private.while$while	speed	F
+		c javap 字节码取证 | 中 | advanceImpl 中 fload_1*speed 作为移动对象每帧步进距离（构造器第 8 参数）
+	f	ôõÓo00	spawnInterval	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | advanceImpl 中 intervalElapsed() 控制移动对象生成间隔
+	f	õõÓo00	loop	Z
+		c javap 字节码取证 | 高 | advanceImpl 中移动对象到达路径末端时是否回到路径起点循环（构造器第 3 参数）
+	f	ÕõÓo00	pathPoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | addToPath 添加的路径点列表（D$o），advanceImpl 读取作移动轨迹
+	f	ÖõÓo00	movers	Ljava/util/List;
+		c javap 字节码取证 | 高 | advanceImpl 迭代推进的沿路径移动对象列表（D$Oo）
 c	com/fs/starfarer/ui/O0o0	com/fs/starfarer/ui/MouseOverListener
 	c	javap取证 | 高 | 鼠标悬停进出监听接口：mouseEnter/mouseLeave（O0o0O...长名）
 	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/A/C;Lcom/fs/starfarer/ui/c;)V
@@ -128,6 +375,46 @@ c	com/fs/starfarer/ui/OO0O	com/fs/starfarer/ui/PositionImpl
 	m	belowMid	belowMid	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0O;
 	m	belowRight	belowRight	(Lcom/fs/starfarer/api/ui/UIComponentAPI;F)Lcom/fs/starfarer/ui/OO0O;
 	c	API-impl种子 | 高 | 另含 getCenterX/getCenterY/containsEvent/setXAlignOffset/setYAlignOffset（PositionAPI 其余方法）
+	f	ø00000	x	F
+		c javap 字节码取证 | 高 | getX() 返回，recompute 计算出的实际 x
+	f	ö00000	y	F
+		c javap 字节码取证 | 高 | getY() 返回，recompute 计算出的实际 y
+	f	public	width	F
+		c javap 字节码取证 | 高 | getWidth() 返回，setSize 写入
+	f	oO0000	height	F
+		c javap 字节码取证 | 高 | getHeight() 返回，setSize 写入
+	f	int	parent	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | getParent()/setParent() 读写，recompute 中 base 缺失时的回退锚点
+	f	Õ00000	base	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | getBase() 返回，relativeTo 写入的锚点
+	f	for	parentFractionX	F
+		c javap 字节码取证 | 高 | relativeTo 参数 2，recompute: x += parentFractionX*base.width
+	f	this.super	parentFractionY	F
+		c javap 字节码取证 | 高 | relativeTo 参数 3，recompute: y += parentFractionY*base.height
+	f	Ø00000	selfFractionX	F
+		c javap 字节码取证 | 高 | relativeTo 参数 4，recompute: x += width*selfFractionX
+	f	ÕO0000	selfFractionY	F
+		c javap 字节码取证 | 高 | relativeTo 参数 5，recompute: y += height*selfFractionY
+	f	Ò00000	alignOffsetX	F
+		c javap 字节码取证 | 高 | setXAlignOffset/getXAlignOffset 读写，recompute 累加
+	f	return	alignOffsetY	F
+		c javap 字节码取证 | 高 | setYAlignOffset/getYAlignOffset 读写，recompute 累加
+	f	ØO0000	offsetX	F
+		c javap 字节码取证 | 高 | setOffset 写入 fload_1，recompute 累加
+	f	ô00000	offsetY	F
+		c javap 字节码取证 | 高 | setOffset 写入 fload_2，recompute 累加
+	f	Ô00000	children	Ljava/util/List;
+		c javap 字节码取证 | 高 | add/remove/clearChildren 操作，recompute 递归遍历；含"Children contains this"断言
+	f	Object	positionListener	Lcom/fs/starfarer/ui/PositionListener;
+		c javap 字节码取证 | 高 | 构造器参数，sizeChanged/locationChanged 通知回调
+	f	o00000	roundCoordinates	Z
+		c javap 字节码取证 | 高 | setRoundCoordinates 写入，recompute 中 Math.round 取整
+	f	ÒO0000	suspendRecompute	Z
+		c javap 字节码取证 | 高 | isSuspendRecompute/setSuspendRecompute 读写，recompute 开头短路
+	f	ÔO0000	withSort	Z
+		c javap 字节码取证 | 高 | isWithSort/setWithSort 读写，sortChildren 排序开关
+	m	o00000	sortChildren	()V
+		c javap 字节码取证 | 高 | private，拓扑排序 children（"May only anchor on siblings"/"Circular dependency"异常），写回 children
 c	com/fs/starfarer/ui/OO0O$o	com/fs/starfarer/ui/PositionListener
 	c	javap取证 | 高 | PositionImpl 位置/尺寸变化监听接口：locationChanged/sizeChanged（OO0O...$o）
 	m	locationChanged	locationChanged	()V
@@ -158,10 +445,56 @@ c	com/fs/starfarer/ui/P	com/fs/starfarer/ui/NoiseOverlay
 	m	flicker	flicker	()V
 	m	sizeChanged	sizeChanged	(FF)V
 	m	getNoise	getNoise	()Lcom/fs/starfarer/class/G;
+	f	Õø0000	noiseEffect	Lcom/fs/starfarer/E/NoiseEffect;
+		c javap 字节码取证 | 高 | 构造器 new NoiseEffect(StarfarerSettings.Ó00000("ui","noise"),0,0)，renderImpl/advanceImpl 使用，getNoise() 返回
 c	com/fs/starfarer/ui/Q	com/fs/starfarer/ui/UIElementFactory
 	c	javap取证 | 高 | UI 元素静态工厂：创建按钮 n/标签 q/文本标签等（大量静态方法，字符串 ui_button_mouseover）（Q）
+	m	o00000	setStoryOptionColors	(Lcom/fs/starfarer/ui/Button;)V
+	m	Ò00000	setDefaultButtonColors	(Lcom/fs/starfarer/ui/Button;)V
+	m	o00000	createIntelStoryOptionButton	(Ljava/lang/String;Ljava/awt/Color;Ljava/awt/Color;Ljava/awt/Color;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	Ò00000	createSpriteButton	(Ljava/lang/String;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/SpriteButton;
+	m	o00000	createShortcutButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/BaseButton;
+	m	o00000	createScaledTextButton	(Ljava/lang/String;FFLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/BaseButton;
+	m	o00000	createScaledTextButton	(Ljava/lang/String;FFLjava/awt/Color;Ljava/awt/Color;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/BaseButton;
+	m	o00000	addShortcutToText	(Lcom/fs/graphics/font/BitmapFontRenderer;Ljava/awt/Color;Lcom/fs/starfarer/title/ControlAction;)V
+	m	o00000	addShortcutToText	(Lcom/fs/graphics/font/BitmapFontRenderer;Ljava/awt/Color;Lcom/fs/starfarer/title/ControlAction;Z)V
+	m	o00000	addKeyMappingToText	(Lcom/fs/graphics/font/BitmapFontRenderer;Ljava/awt/Color;Lcom/fs/starfarer/title/KeyMapping;ZZ)V
+	m	o00000	createShortcutButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/BaseButton;
+	m	o00000	createShortcutButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/title/ControlAction;Lcom/fs/starfarer/api/ui/Alignment;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/BaseButton;
+	m	Ò00000	createTextButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createCutStyleButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;Lcom/fs/starfarer/api/ui/CutStyle;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createCutStyleButton	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;Lcom/fs/starfarer/api/ui/CutStyle;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createToggleButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/ui/ToggleButton$Size;Ljava/awt/Color;Ljava/awt/Color;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createToggleButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/ui/ToggleButton$Size;Ljava/awt/Color;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createToggleButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/ui/ToggleButton$Size;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createSpriteBackgroundButton	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/graphics/Sprite;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createCodexListButton	(Lcom/fs/starfarer/codex/ui/CodexListItem;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createFleetMemberButton	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/coreui/refit/RefitScreen;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createFleetMemberButton	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createFleetMemberButton	(Lcom/fs/starfarer/campaign/fleet/FleetMember;LFleetMemberIconType;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createWeaponButton	(Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createButtonWithContent	(Lcom/fs/starfarer/ui/ButtonContent;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createButtonWithBase	(Lcom/fs/starfarer/ui/ButtonBase;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createCustomBackgroundButton	(Lcom/fs/starfarer/ui/ButtonBackgroundRenderer;ZLcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createCampaignButton	(Ljava/lang/String;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createRefitWeaponButton	(Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/combat/entities/ship/ShipStats;Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
+	m	o00000	createRefitSlotButton	(Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/loading/specs/WeaponSlot;Lcom/fs/starfarer/coreui/refit/ShipDisplayPanel;Lcom/fs/starfarer/ui/ActionListener;)Lcom/fs/starfarer/ui/Button;
 c	com/fs/starfarer/ui/m	com/fs/starfarer/ui/ButtonContentHost
 	c	继承关系+javap取证 | 中 | 按钮内容宿主：implements n$o，包装 Stringnew$o 内容为按钮（Stringnew）
+	f	Öô0000	content	Lcom/fs/starfarer/ui/ButtonContent;
+		c javap 字节码取证 | 高 | 构造器存入并 pack()，render/update/advance/processInput/getContent 全部委托给它
+	f	Øô0000	unusedDefaultColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 死字段：static Color(125,125,125,255)，仅 <clinit> putstatic，类内无读取且全 jar 无 getstatic 引用
+	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+		c javap 字节码取证 | 高 | 设置位置/checked/disabled/glow/state 后调 content.render（含渲染的完整版）
+	m	super	update	(Lcom/fs/starfarer/ui/PositionImpl;FZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+		c javap 字节码取证 | 高 | 接口 n$o 方法：shouldUpdate 检查后设置位置/checked/disabled/glow/state（不渲染）
+	m	Õ00000	advance	(F)V
+		c javap 字节码取证 | 高 | shouldAdvance 检查后委托 content.advance（接口 n$o 方法）
+	m	private.super	getContent	()Lcom/fs/starfarer/ui/ButtonContent;
+		c javap 字节码取证 | 高 | 直接返回 content 字段
+	m	super	processInput	(Lcom/fs/starfarer/util/InputEventList;)V
+		c javap 字节码取证 | 高 | 委托 content.processInput（接口 n$o 方法）
 c	com/fs/starfarer/ui/m$Oo	com/fs/starfarer/ui/ButtonBase
 	c	继承关系+javap取证 | 中 | 按钮内容基类：extends z implements Stringnew$o，glow/isDisabled/isChecked/state/button（Stringnew$Oo）
 	f	glowAmount	glowAmount	F
@@ -195,12 +528,30 @@ c	com/fs/starfarer/ui/m$o	com/fs/starfarer/ui/ButtonContent
 	m	processInput	processInput	(Lcom/fs/starfarer/util/A/new;)V
 c	com/fs/starfarer/ui/T	com/fs/starfarer/ui/TextLabel
 	c	javap取证 | 中 | 单行文本标签控件：半透明背景 + d 标签 + 指定文本（T）
+	f	øôõO00	unusedFloat	F
+		c javap 字节码取证 | 中 | private static final float，无 clinit 赋值、类内无引用，死代码
+	f	OõõO00	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造器 new LabelImpl(text,StarfarerSettings.øÒ0000 字体)，setAlignment/setColor 后 add
+	f	private.void$float	backgroundColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器 new Color(0,0,0,175)，文本底色
 c	com/fs/starfarer/ui/X	com/fs/starfarer/ui/DropdownSelect
 	c	javap取证 | 高 | 下拉选择框：setSelected/getSelected + 选项列表 + actionPerformed/dialogDismissed（X）
 	m	setSelected	setSelected	(Ljava/lang/String;)V
 	m	getSelected	getSelected	()Ljava/lang/String;
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	private.public$while	dropdownButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	øöÓo00	valueLabel	Lcom/fs/starfarer/ui/DropdownValueLabel;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	OøÓo00	dialogType	Lcom/fs/starfarer/ui/DropdownSelect$Action;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õöÓo00	options	Ljava/util/List;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ôöÓo00	title	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	OõO000	openDropdownPicker	()V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/X$o	com/fs/starfarer/ui/DropdownSelect$Action
 	c	字符串常量 | 中 | 下拉选择动作枚举 SELECT（X$o）
 	f	Ò00000	SELECT	Lcom/fs/starfarer/ui/X$o;
@@ -214,17 +565,95 @@ c	com/fs/starfarer/ui/nullsuper	com/fs/starfarer/ui/HorizontalDirection
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/nullsuper;
 c	com/fs/starfarer/ui/ifsuper	com/fs/starfarer/ui/PlainPanel
 	c	javap取证 | 低 | 直角背景面板：与 CutPanel(J) 同构但无 CutStyle，Alignment + 单背景（a）
+	f	interface.super	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 构造器 new 字体渲染器(text,font)，setText/setColor/setAlphaMult 委托
+	f	while.super	textWidth	F
+		c javap 字节码取证 | 高 | 构造器 = fontRenderer.getTextWidth()
+	f	oÒ0000	alphaMult	F
+		c javap 字节码取证 | 高 | 默认 1.0f，o00000(F)V 写入，渲染中 1-alphaMult 反转
+	f	float.super	borderWidth	F
+		c javap 字节码取证 | 高 | 默认 4.0f，构造器参数 4；o00000(FFFF)V 以 ±borderWidth 四向+对角 8 次绘制描边
+	f	Øo0000	borderColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器参数 3；描边绘制用色，中心用 lerp(borderColor,white,alpha)
+	f	new.new	invertAlpha	Z
+		c javap 字节码取证 | 高 | 默认 false，o00000(Z)V 写入；渲染时 alpha = 1-alphaMult-alpha
+	f	õo0000	alignment	Lcom/fs/starfarer/api/ui/Alignment;
+		c javap 字节码取证 | 高 | 默认 Alignment.MID，setAlignment 写入；renderAligned 按 ordinal 查 switch 表定位
+	f	OÒ0000	alreadyRendered	Z
+		c javap 字节码取证 | 高 | renderWithBorder 置 true，(FFF)V 主渲染检测后跳过自身并复位
+	f	ÔÒ0000	disabledColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | clinit 置 Color(125,125,125,255)，renderDimmed 设为灰色
+	f	Öo0000	positionX	F
+		c javap 字节码取证 | 高 | o00000(FF)V 写入 fload_1，renderAligned 定位基准
+	f	ÓÒ0000	positionY	F
+		c javap 字节码取证 | 高 | o00000(FF)V 写入 fload_2，renderAligned 定位基准
+	f	öo0000	alignmentSwitchTable	[I
+		c javap 字节码取证 | 高 | clinit 懒加载 Alignment.ordinal→1..9 switch 值缓存
+	m	o00000	setText	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 委托 fontRenderer.setText
+	m	Ò00000	setAlignment	(Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/PlainPanel;
+		c javap 字节码取证 | 高 | putfield alignment，返回 this
+	m	o00000	setInvertAlpha	(Z)Lcom/fs/starfarer/ui/PlainPanel;
+		c javap 字节码取证 | 高 | putfield invertAlpha，返回 this
+	m	Ò00000	setControlAction	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/ui/PlainPanel;
+		c javap 字节码取证 | 高 | 委托 Q.o00000(fontRenderer,color,controlAction) 应用按键提示高亮
+	m	Ò00000	render	(FFF)V
+		c javap 字节码取证 | 高 | 主渲染：设混合模式/alpha 后按 alignment 定位绘制文本
+	m	return	getFontRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | getfield fontRenderer
+	m	o00000	renderWithBorder	(FFFF)V
+		c javap 字节码取证 | 高 | 8 方向偏移描边 + 中心主体渲染，置 alreadyRendered 防重复
+	m	Ô00000	renderAligned	(FF)V
+		c javap 字节码取证 | 高 | private，按 alignment 的 switch 表做 x 偏移后定位绘制
+	m	o00000	renderDimmed	(FFF)V
+		c javap 字节码取证 | 高 | 保存原色→设 disabledColor+0.75 alpha→调 render→恢复（禁用态）
+	m	o00000	setAlphaMult	(F)V
+		c javap 字节码取证 | 高 | putfield alphaMult
+	m	o00000	setPosition	(FF)V
+		c javap 字节码取证 | 高 | putfield positionX/positionY 并复位 alphaMult
+	m	Õ00000	getAlignmentSwitchTable	()[I
+		c javap 字节码取证 | 高 | Alignment.ordinal→switch 值查找表懒初始化缓存
 c	com/fs/starfarer/ui/O0Oo	com/fs/starfarer/ui/TooltipComponent
 	c	继承关系+javap取证 | 中 | 带 tooltip 的焦点组件：implements S(FocusedComponent)，showTooltip/hideTooltip/focusLost/可见性（classsuper）
 	m	processInput	processInput	(Lcom/fs/starfarer/util/A/new;)V
 	m	advance	advance	(F)V
 	m	focusLost	focusLost	()V
+	f	String.class	position	Lcom/fs/starfarer/ui/PositionImpl;
+	f	ôÖ0000	delay	F
+	f	private.String	tooltipProvider	Lcom/fs/starfarer/ui/TooltipProvider;
+	f	ÒÖ0000	target	Ljava/lang/Object;
+	f	ÓÖ0000	visibility	Lcom/fs/starfarer/ui/Visibility;
+	f	if.class	hoverTime	F
+	f	ÓØ0000	mouseX	I
+	f	void.class	mouseY	I
+	f	øÖ0000	hoverRegionX	F
+	f	õÖ0000	hoverRegionY	F
+	f	ÖÖ0000	hoverRegionWidth	F
+	f	do.String	hoverRegionHeight	F
+	f	ÕÖ0000	exclusionRegion	Lcom/fs/starfarer/ui/PositionImpl;
+	f	OØ0000	showWhileMoving	Z
+	f	ÒØ0000	hideOnMouseLeave	Z
+	f	super.class	frameDelta	F
+	m	class.new	getTarget	()Ljava/lang/Object;
+	m	OÒ0000	getPosition	()Lcom/fs/starfarer/ui/PositionImpl;
+	m	õÒ0000	getExclusionRegion	()Lcom/fs/starfarer/ui/PositionImpl;
+	m	new	setExclusionRegion	(Lcom/fs/starfarer/ui/PositionImpl;)V
+	m	null.new	getDelay	()F
+	m	Ó00000	setDelay	(F)V
+	m	new	setHoverRegion	(FFFF)V
+	m	ÔÒ0000	hideTooltip	()V
+	m	ÓÒ0000	showTooltip	()V
+	m	ÖÒ0000	isVisible	()Z
+	m	oÒ0000	getMouseX	()I
+	m	ØÒ0000	getMouseY	()I
+	m	new.new	clearTooltip	()V
 c	com/fs/starfarer/ui/O0Oo$Oo	com/fs/starfarer/ui/Visibility
 	c	字符串常量 | 高 | 可见性枚举 HIDDEN/VISIBLE（classsuper$Oo）
 	f	Object	VISIBLE	Lcom/fs/starfarer/ui/O0Oo$Oo;
 	f	Ò00000	HIDDEN	Lcom/fs/starfarer/ui/O0Oo$Oo;
 	m	values	values	()[Lcom/fs/starfarer/ui/O0Oo$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/ui/O0Oo$Oo;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/ui/Visibility;
 c	com/fs/starfarer/ui/O0Oo$o	com/fs/starfarer/ui/TooltipProvider
 	c	javap取证 | 中 | tooltip 提供接口：showTooltip/hideTooltip/preProcessInput（classsuper$o）
 	m	showTooltip	showTooltip	(Ljava/lang/Object;)V
@@ -298,10 +727,94 @@ c	com/fs/starfarer/ui/d	com/fs/starfarer/ui/LabelImpl
 	m	locationChanged	locationChanged	()V
 	m	sizeChanged	sizeChanged	(FF)V
 	c	API-impl种子 | 高 | 其余方法见 LabelAPI（setHighlight/highlightFirst/computeTextWidth/flash 等），未逐一列出
+	f	String.for$private	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	øØØo00	position	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÓÖØo00	alignment	Lcom/fs/starfarer/api/ui/Alignment;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	private.if$private	popFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÓØØo00	popFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÕÕØo00	onColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	if.for$private	tooltipLogic	Lcom/fs/starfarer/ui/TooltipComponent;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õÕØo00	tooltipComponent	Lcom/fs/starfarer/ui/ShowableComponent;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÕÖØo00	parent	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	øÕØo00	blinker	Lcom/fs/graphics/util/Blinker;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÖÕØo00	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	String.float$private	onColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	OØØo00	fontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	do.float$private	popFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õØØo00	popFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	void.float$private	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õÖØo00	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ôÖØo00	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÖØØo00	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÖÖØo00	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	øÖØo00	onColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	private.float$private	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÒØØo00	blinkDuration	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÓÕØo00	forceTooltipLowerRight	Z
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÒÕØo00	forceTooltipLowerRight	Z
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	super.float$private	forceTooltipLowerRight	Z
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	super.for$private	tooltipPositionRelativeToAnchor	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÕØØo00	tooltipPositionRelativeToAnchor	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÒÖØo00	tooltipAnchor	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ôÕØo00	forceTooltipLowerRight	Z
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	void.for$private	onColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	OÖØo00	onColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	if.float$private	blinkDelegate	Lcom/fs/graphics/util/BlinkCallback;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	ÔøO000	renderAligned	()V
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	interface.private	isTooltipVisible	()Z
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/d$1	com/fs/starfarer/ui/LabelImpl$StoryPointLabelRefresher
 	c	javap取证 | 低 | 剩余星点标签刷新器：持 d$o 提供者 + LabelImpl，advanceImpl 更新文本（d$1）
+	f	void.this$public	storyPointProvider	Lcom/fs/starfarer/ui/LabelImpl$StoryPointProvider;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÖoÔo00	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ôoÔo00	labelHeight	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/d$2	com/fs/starfarer/ui/LabelImpl$XOutOfYLabelRefresher
 	c	javap取证 | 低 | X of Y 标签刷新器：持 d$Oo 位置提供者 + 文本 + LabelImpl，advanceImpl 更新（d$2）
+	f	ÓoÔo00	positionProvider	Lcom/fs/starfarer/ui/LabelImpl$ValueLabelPositionProvider;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÕoÔo00	prefix	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÒoÔo00	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	String.this$public	labelHeight	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/d$Oo	com/fs/starfarer/ui/LabelImpl$ValueLabelPositionProvider
 	c	javap取证 | 中 | X of Y 标签数值位置提供接口：getLabelX/getLabelY/getValueColor（d$Oo）
 	m	getLabelX	getLabelX	()I
@@ -315,6 +828,26 @@ c	com/fs/starfarer/ui/Oo0o	com/fs/starfarer/ui/HotkeyHint
 	m	notiftyHidden	notiftyHidden	()V
 	m	notifyShown	notifyShown	()V
 	m	beforeShown	beforeShown	()V
+	f	ÖõõO00	unusedFloat	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	super.null$float	unusedFloat	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ôõõO00	unusedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÕõõO00	unusedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	String.null$float	unusedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÓõõO00	unusedFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	ÒõõO00	unusedFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	void.null$float	unusedFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	f	õõõO00	unusedFloat	F
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
+	m	Ô00000	createLabel	(Ljava/lang/String;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立取证，语义与 linux 一致
 c	com/fs/starfarer/ui/g	com/fs/starfarer/ui/ScrollPanelImpl
 	c	API-impl种子+javap取证 | 高 | ScrollPanelAPI 实现：滚动面板，scrollToY/ensureVisible/滚动条/阴影/网格（g）
 	m	isLeftScrollbar	isLeftScrollbar	()Z
@@ -359,8 +892,98 @@ c	com/fs/starfarer/ui/g	com/fs/starfarer/ui/ScrollPanelImpl
 	m	ensureVisible	ensureVisible	(Lcom/fs/starfarer/ui/c;)V
 	m	saveVerticalScrollState	saveVerticalScrollState	()V
 	m	restoreVerticalScrollState	restoreVerticalScrollState	()V
+	f	ÖÔÔo00	doNotRenderShadows	Z
+		c javap 字节码取证 | 高 | static，isDoNotRenderShadows/setDoNotRenderShadows 读写，renderShadows 开头短路
+	f	ÖÓÔo00	xOffset	F
+		c javap 字节码取证 | 高 | getXOffset/setXOffset 读写，滚轮/拖动直接修改
+	f	do.super$public	yOffset	F
+		c javap 字节码取证 | 高 | getYOffset/setYOffset 读写，滚轮/拖动直接修改
+	f	ÕÒÔo00	dragStartXOffset	F
+		c javap 字节码取证 | 高 | 拖动开始时记录 contentContainer.getXOffset，判定拖动距离
+	f	private.this$public	dragStartYOffset	F
+		c javap 字节码取证 | 高 | 拖动开始时记录 contentContainer.getYOffset，判定拖动距离
+	f	ÓÔÔo00	dragEvent	Lcom/fs/starfarer/util/InputEvent;
+		c javap 字节码取证 | 高 | 拖动开始时 clone 输入事件暂存，结束后放回输入队列
+	f	if.super$public	dragging	Z
+		c javap 字节码取证 | 高 | 内容拖拽进行标记，阻止滚动条/子组件处理
+	f	super.super$public	contentContainer	Lcom/fs/starfarer/ui/C_2935f9d2;
+		c javap 字节码取证 | 高 | 构造器 new ScrollViewport(this)，getContentContainer 返回，偏移/尺寸代理
+	f	void.super$public	scrollbarFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | new Fader(0,0.25,0.25)，鼠标入内 fadeIn、无操作超时 fadeOut
+	f	String.super$public	scrollMouseButton	Lcom/fs/starfarer/ui/MouseButton;
+		c javap 字节码取证 | 高 | 构造器默认 LMB 枚举，滚动条拖动判定 isLMBDown/isRMBDown 用
+	f	ÖÒÔo00	scrollbarThumb	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 构造器 new ScrollbarThumb(this) 面板，渲染滚动条区域
+	f	OÒÔo00	leftScrollbar	Z
+		c javap 字节码取证 | 高 | isLeftScrollbar/setLeftScrollbar 读写，决定滚动条渲染侧
+	f	ÒÔÔo00	draggingVThumb	Z
+		c javap 字节码取证 | 高 | 垂直拇指按下置 true、抬起复位，拖动期间跳过其它处理
+	f	ÕÔÔo00	draggingHThumb	Z
+		c javap 字节码取证 | 高 | 水平拇指按下置 true、抬起复位，拖动期间跳过其它处理
+	f	do.new$public	dragDistX	I
+		c javap 字节码取证 | 高 | 拖动累计 |ΔxOffset| 最大值，用于区分点击与拖拽
+	f	OÕÔo00	dragDistY	I
+		c javap 字节码取证 | 高 | 拖动累计 |ΔyOffset| 最大值，用于区分点击与拖拽
+	f	øÔÔo00	scrollingToBottom	Z
+		c javap 字节码取证 | 高 | isScrollingToBottom 返回
+	f	ôÓÔo00	unusedFloat	F
+		c javap 字节码取证 | 中 | 构造器置 500.0f，全类无引用，死代码
+	f	ôÒÔo00	unusedFloat2	F
+		c javap 字节码取证 | 中 | 构造器置 0.0f，全类无引用，死代码
+	f	super.new$public	grid	Lcom/fs/starfarer/coreui/GridOverlay;
+		c javap 字节码取证 | 高 | getGrid 返回；setShowGrid/updateGrid 读写，renderImpl 中渲染网格
+	f	ÒÓÔo00	unusedSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 中 | 构造器置 null，全类无引用，死代码
+	f	øÓÔo00	shadowFadeColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器 Color(0,0,0,0)，与 darkColor 构成阴影渐变四角
+	f	do.this$public	darkColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器 Color.black，getDarkColor/setDarkColor 读写
+	f	void.new$public	showScrollbars	Z
+		c javap 字节码取证 | 高 | setShowScrollbars 写入，构造器默认 true
+	f	ôÔÔo00	useMWheel	Z
+		c javap 字节码取证 | 高 | setUseMWheel 写入，构造器默认 true，滚轮分支判断
+	f	OÔÔo00	roundOffset	Z
+		c javap 字节码取证 | 高 | setRoundOffset 写入
+	f	ÒÒÔo00	topFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getTopFader 返回；advanceImpl 按顶部可滚动量 fadeIn/fadeOut
+	f	String.new$public	bottomFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getBottomFader 返回；advanceImpl 按底部可滚动量 fadeIn/fadeOut
+	f	OÓÔo00	vThumbHoverFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 垂直拇指区域鼠标悬停 fadeIn（processScrollInputOnly 中 oõO000() 命中）
+	f	if.new$public	vRailHoverFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 垂直轨道区域鼠标悬停 fadeIn（ÓõO000() 命中）
+	f	õÒÔo00	hThumbHoverFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 水平拇指区域鼠标悬停 fadeIn（null.public() 命中）
+	f	ÓÓÔo00	hRailHoverFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 水平轨道区域鼠标悬停 fadeIn（ÔõO000() 命中）
+	f	ÕÓÔo00	useSimpleShadows	Z
+		c javap 字节码取证 | 高 | setUseSimpleShadows 写入，renderShadows 中选简单混合分支
+	f	øÒÔo00	scrollWidgetColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getScrollWidgetColor/setScrollWidgetColor 读写
+	f	õÓÔo00	scrollRailColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getScrollRailColor/setScrollRailColor 读写
+	f	õÔÔo00	maxShadowHeight	F
+		c javap 字节码取证 | 高 | getMaxShadowHeight/setMaxShadowHeight 读写，默认 50.0f，阴影高度上限
+	f	ÓÒÔo00	visiblityPad	F
+		c javap 字节码取证 | 高 | getVisiblityPad/setVisiblityPad 读写，默认 150.0f，ensureVisible 边距
+	f	private.super$public	savedYOffset	F
+		c javap 字节码取证 | 高 | saveVerticalScrollState 写入 getYOffset，restoreVerticalScrollState 恢复
+	m	Öo0000	renderShadows	(F)V
+		c javap 字节码取证 | 高 | private，GL 混合/ColorMask 绘制上下阴影渐变（topFader/bottomFader 亮度）
+	m	Øo0000	renderScrollbars	(F)V
+		c javap 字节码取证 | 高 | private，绘制滚动条 widget/rail（scrollWidgetColor 变亮 0.66）
+	m	oõO000	getVerticalThumbPos	()Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | private，计算垂直滚动条拇指 hitbox（y = H-yOffsetRatio*H-thumbH）
+	m	ÓõO000	getVerticalRailPos	()Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | private，计算垂直滚动条轨道 hitbox，点击跳转用
+	m	null.public	getHorizontalThumbPos	()Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | private，计算水平滚动条拇指 hitbox（x = -xOffsetRatio*W）
+	m	ÔõO000	getHorizontalRailPos	()Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | private，计算水平滚动条轨道 hitbox，点击跳转用
 c	com/fs/starfarer/ui/g$1	com/fs/starfarer/ui/ScrollPanelImpl$ScrollbarThumb
 	c	javap取证 | 低 | ScrollPanelImpl 内部滚动条滑块：renderImpl 绘制（g$1）
+	f	this$0	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | final 外层 ScrollPanelImpl 引用，renderImpl 调 renderShadows/renderScrollbars
 c	com/fs/starfarer/ui/g$oo	com/fs/starfarer/ui/ScrollPanelImpl$DidNotRenderListener
 	c	javap取证 | 中 | 未渲染通知接口：notifyDidNotRender（g$Oo）
 	m	notifyDidNotRender	notifyDidNotRender	()V

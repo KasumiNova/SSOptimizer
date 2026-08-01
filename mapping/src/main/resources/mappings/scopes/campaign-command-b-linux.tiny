@@ -4,6 +4,8 @@ c	com/fs/starfarer/campaign/command/MarketTooltipFactory$7	com/fs/starfarer/camp
 	f	ôöôO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
 c	com/fs/starfarer/campaign/command/MarketTooltipFactory$7$1	com/fs/starfarer/campaign/command/MarketTooltipFactory$AccessibilityTooltip$StatModGetter
 	c 来源(继承关系) | 置信度(高) | 证据(实现 TooltipMakerAPI$StatModValueGetter)
+	f	this$1	outer	Lcom/fs/starfarer/campaign/command/MarketTooltipFactory$AccessibilityTooltip;
+		c javap 构造 putfield | 高 | 外层 AccessibilityTooltip 引用
 c	com/fs/starfarer/campaign/command/MarketTooltipFactory$8	com/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Maximum demand: %s / Excess stockpiles / Local deficit)
 	f	return.this$float	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -12,14 +14,34 @@ c	com/fs/starfarer/campaign/command/MarketTooltipFactory$8	com/fs/starfarer/camp
 		c 来源(javap取证) | 置信度(中) | 证据(枚举 PRODUCER/CONSUMER，构造参数5)
 c	com/fs/starfarer/campaign/command/MarketTooltipFactory$8$1	com/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip$CommodityComparator
 	c 来源(javap取证) | 置信度(中) | 证据(实现 Comparator<CommodityTooltipFactory$o>，按 o00000 排序)
+	f	this$1	outer	Lcom/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip;
+		c javap 构造 putfield | 高 | 外层 CommodityTooltip 引用
+	m	o00000	compareByOrder	(Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_o;Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_o;)I
+		c javap 按 order int 相减 | 高 | 按商品顺序比较
 c	com/fs/starfarer/campaign/command/MarketTooltipFactory$8$2	com/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip$CommodityComparator2
 	c 来源(javap取证) | 置信度(中) | 证据(实现 Comparator<CommodityTooltipFactory$o>，与 $8$1 同逻辑的第二个排序器)
+	f	this$1	outer	Lcom/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
+	m	o00000	compareByQuantity	(Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_o;Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_o;)I
+		c javap 字节码取证 | 高 | Comparator：后项 o00000:I（供给/需求数量）减前项，降序
 c	com/fs/starfarer/campaign/command/MarketTooltipFactory$8$3	com/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip$StatModGetter
 	c 来源(继承关系) | 置信度(中) | 证据(实现 StatModValueGetter，getFlatValue 返回 StatMod.desc)
+	f	this$1	outer	Lcom/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
 c	com/fs/starfarer/campaign/command/MarketTooltipFactory$8$4	com/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip$StatModGetter2
 	c 来源(继承关系) | 置信度(中) | 证据(实现 StatModValueGetter，getFlatValue 返回 +value% 格式)
+	f	this$1	outer	Lcom/fs/starfarer/campaign/command/MarketTooltipFactory$CommodityTooltip;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
 c	com/fs/starfarer/campaign/command/MarketTooltipFactory$o	com/fs/starfarer/campaign/command/MarketTooltipFactory$MarketTooltipOptions
 	c 来源(javap取证) | 置信度(高) | 证据(OutpostListPanel 构造该对象并设置 4 个 boolean 后传入 createTooltip，控制 tooltip 显示区块)
+	f	o00000	showIndustriesAndStructures	Z
+		c javap 字节码取证 | 高 | MarketTooltipFactory$1.createImpl 中 true 时渲染 "Industries & structures" 段
+	f	Ó00000	showIncomeUpkeepModifiers	Z
+		c javap 字节码取证 | 高 | createImpl 中 true 时渲染 "Income modifiers:"/"Upkeep modifiers:" 属性格
+	f	new	showStorageInfo	Z
+		c javap 字节码取证 | 高 | createImpl 中 true 时调用 Misc.addStorageInfo
+	f	Ô00000	includeLocalResources	Z
+		c javap 字节码取证 | 中 | Misc.addStorageInfo 第 5 参：true 时计入本地资源（storage 行置 false）
 c	com/fs/starfarer/campaign/command/O	com/fs/starfarer/campaign/command/CustomProductionPickerDialog
 	c 来源(javap取证) | 置信度(高) | 证据(包装 CustomProductionPanel，构造参数含 CustomProductionPickerDelegate)
 	f	ôøÓ000	prodPanel	Lcom/fs/starfarer/campaign/command/CustomProductionPanel;
@@ -28,12 +50,18 @@ c	com/fs/starfarer/campaign/command/OO0O	com/fs/starfarer/campaign/command/Bluep
 	c 来源(javap取证) | 置信度(高) | 证据(Ship/WeaponBlueprintBrowser 的抽象基类，枚举 DOCTRINE/PRODUCTION 模式)
 c	com/fs/starfarer/campaign/command/OO0O$1	com/fs/starfarer/campaign/command/BlueprintBrowserBase$ProductionCostTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Production cost does not include outfitting the ship / Left-click to add)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/BlueprintBrowserBase;
+		c javap 构造 putfield | 高 | 外层 BlueprintBrowserBase 引用
 c	com/fs/starfarer/campaign/command/OO0O$2	com/fs/starfarer/campaign/command/BlueprintBrowserBase$PrioritizeTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Left-click to toggle whether the item is prioritized)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/BlueprintBrowserBase;
+		c javap 构造 putfield | 高 | 外层 BlueprintBrowserBase 引用
 c	com/fs/starfarer/campaign/command/OO0O$o	com/fs/starfarer/campaign/command/BlueprintBrowserMode
 	c 来源(javap取证) | 置信度(高) | 证据(枚举值 DOCTRINE / PRODUCTION)
 	f	Ó00000	DOCTRINE	Lcom/fs/starfarer/campaign/command/OO0O$o;
 	f	new	PRODUCTION	Lcom/fs/starfarer/campaign/command/OO0O$o;
+	f	o00000	VALUES	[Lcom/fs/starfarer/campaign/command/BlueprintBrowserMode;
+		c javap clinit putstatic + values() | 高 | 枚举 $VALUES 缓存
 c	com/fs/starfarer/campaign/command/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/command/ShipBlueprintRow
 	c 来源(javap取证) | 置信度(高) | 证据(getHullId/getSpec/getMember/isCivilian/isCarrier/isPhase 方法集)
 	f	for.String$int	hullId	Ljava/lang/String;
@@ -43,6 +71,16 @@ c	com/fs/starfarer/campaign/command/Oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	f	ÒÒÕO00	costValue	I
 	f	ÕÒÕO00	mode	Lcom/fs/starfarer/campaign/command/OO0O$o;
 	f	ØÒÕO00	prodPanel	Lcom/fs/starfarer/campaign/command/CustomProductionPanel;
+	f	ôÒÕO00	iconRenderer	Lcom/fs/starfarer/ui/super/FighterWingIconRenderer;
+		c javap 字节码取证 | 高 | 由按钮 renderer 取得并配置显示开关/缩放/颜色（舰船图标渲染器）
+	f	oÒÕO00	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Q.o00000(FleetMember,...) 创建的主行按钮；挂 fleet member tooltip
+	f	öoÕO00	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | createRow 用 hullName highlightFirst 创建
+	f	this.class$int	checkmarkPanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | ooO0("ui","checkmark") 高亮标记
+	f	øoÕO00	costLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getDGSCredits(unitCost) 创建
 c	com/fs/starfarer/campaign/command/OooO	com/fs/starfarer/campaign/command/AdminRow
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Assign / Dismiss / Assigned to govern，构造参数 AdminData+AdminPickerDialog)
 	f	ÒÕÒ000	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -51,15 +89,81 @@ c	com/fs/starfarer/campaign/command/OooO	com/fs/starfarer/campaign/command/Admin
 	f	ÔÖÒ000	pastMax	Z
 	f	øÕÒ000	portrait	Lcom/fs/starfarer/ui/n;
 	f	öÕÒ000	selector	Lcom/fs/starfarer/ui/n;
+	f	this.for$super	faction	Lcom/fs/starfarer/campaign/Faction;
+		c javap 构造 FactionAPI 强转 | 高 | 管理员阵营
+	f	int.for$super	baseUIColor	Ljava/awt/Color;
+		c javap 构造 getBaseUIColor | 高 | 阵营基础色
+	f	öÔÒ000	darkUIColor	Ljava/awt/Color;
+		c javap 构造 getDarkUIColor | 高 | 阵营暗色
+	f	ôÔÒ000	gridUIColor	Ljava/awt/Color;
+		c javap 构造 getGridUIColor | 高 | 阵营网格色
+	f	ÒÖÒ000	brightUIColor	Ljava/awt/Color;
+		c javap 构造 getBrightUIColor | 高 | 阵营亮色
+	f	øÔÒ000	person	Lcom/fs/starfarer/rpg/Person;
+		c javap 构造 AdminData.getPerson | 高 | 管理员人物
+	f	öÖÒ000	stats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c javap 构造 person.getStats | 高 | 人物技能/属性统计
+	f	ØÕÒ000	assignButton	Lcom/fs/starfarer/ui/Button;
+		c javap STR "Assign" | 高 | 分配按钮（ØÕÒ000）
+	f	this.do$super	dismissButton	Lcom/fs/starfarer/ui/Button;
+		c javap STR "Dismiss" | 高 | 解雇按钮
+	f	Object.do$super	showBg	Z
+		c javap isShowBg/setShowBg | 高 | 是否显示背景
+	f	for.for$super	dialog	Lcom/fs/starfarer/campaign/command/AdminPickerDialog;
+		c javap 构造 putfield | 高 | 所属管理选择对话框
+	f	ÔÕÒ000	pendingAction	Lcom/fs/starfarer/campaign/command/AdminRowAction;
+		c javap dialogDismissed switch | 高 | 待处理的 RENAME/DISMISS 动作
+	f	ôÕÒ000	assignmentLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap setText "Unassigned (reduced salary)" 等 | 高 | 分配状态标签
+	f	oÕÒ000	unassignedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap STR "Unassigned" 初值 | 高 | 未分配标签
+	f	return.for$super	glowPanel	Lcom/fs/starfarer/campaign/ui/GlowPanel;
+		c javap recreate new GlowPanel | 高 | 行发光面板
+	f	public.for$super	planetDisplay	Lcom/fs/starfarer/campaign/ui/intel/PlanetDisplay;
+		c javap interface.Object 重建行星缩略图 | 高 | 行星显示（市场主实体）
+	f	øÖÒ000	nameButton	Lcom/fs/starfarer/ui/UIComponent;
+		c javap recreate 名字按钮/标签 | 高 | 管理员姓名按钮
+	f	ÕÕÒ000	flashFader	Lcom/fs/graphics/util/Fader;
+		c javap flashRed fadeIn | 高 | 红色闪烁渐隐器
+	f	Object.for$super	skillButtons	Ljava/util/List;
+		c javap recreate 技能按钮列表 | 高 | 已学管理技能按钮
+	f	oÖÒ000	highlightFader	Lcom/fs/graphics/util/Fader;
+		c javap renderImpl 行高亮渐隐 | 高 | 悬停高亮渐隐器
+	f	ØÖÒ000	outpostsButton	Lcom/fs/starfarer/ui/Button;
+		c javap interface.Object outposts/最大数 | 高 | 玩家殖民地上限按钮
+	f	public.float$super	$SWITCH_TABLE$com$fs$starfarer$campaign$command$AdminPickerEntryPanel$DialogType	[I
+		c javap $SWITCH_TABLE 惰性缓存 | 高 | javac 合成 switch 表数组
+	m	interface.Object	updateAdminStatus	()V
+		c javap 管理员数/分配状态/技能刷新 | 高 | 刷新行状态文本与可用性
+	m	new	getLabelValueButton	(Lcom/fs/starfarer/ui/Button;)Lcom/fs/starfarer/campaign/ui/marketinfo/LabelValueButton;
+		c javap getCustomData 强转 | 高 | 从按钮取 LabelValueButton
+	m	õÔ0000	showRenameDialog	()V
+		c javap new coreui/O 角色改名对话框 | 高 | 打开重命名对话框
+	m	öÔ0000	confirmDismiss	()V
+		c javap new ui/impl/E "Are you sure" | 高 | 打开解雇确认对话框
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$command$AdminPickerEntryPanel$DialogType	$SWITCH_TABLE$com$fs$starfarer$campaign$command$AdminPickerEntryPanel$DialogType	()[I
+		c javap 懒初始化 switch 表 | 高 | javac 合成访问器
 c	com/fs/starfarer/campaign/command/OooO$1	com/fs/starfarer/campaign/command/AdminRow$RenderCallback
 	c 来源(继承关系) | 置信度(中) | 证据(实现 n$Oo 渲染回调，用于拖拽版本渲染)
+	f	ôÓ0000	outer	Lcom/fs/starfarer/campaign/command/AdminRow;
+		c javap 构造 putfield | 高 | 外层 AdminRow 引用
+	m	super	renderBg	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+		c javap renderers.public.o00000 绘背景 | 高 | 绘制行背景（负高亮/暗色）
 c	com/fs/starfarer/campaign/command/OooO$2	com/fs/starfarer/campaign/command/AdminRow$TooltipPositioner
 	c 来源(javap取证) | 置信度(高) | 证据(Runnable，setTooltipPositionRelativeToAnchor 定位 tooltip)
+	f	super	outer	Lcom/fs/starfarer/campaign/command/AdminRow;
+		c javap 构造 putfield | 高 | 外层 AdminRow 引用
+	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap run() setTooltipPositionRelativeToAnchor | 高 | 锚定按钮
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap run() getPosition 高度取负 | 高 | 待定位 tooltip
 c	com/fs/starfarer/campaign/command/OooO$o	com/fs/starfarer/campaign/command/AdminRowAction
 	c 来源(javap取证) | 置信度(高) | 证据(枚举值 DISMISS / RENAME / LEVEL_UP)
 	f	Ó00000	DISMISS	Lcom/fs/starfarer/campaign/command/OooO$o;
 	f	Ò00000	RENAME	Lcom/fs/starfarer/campaign/command/OooO$o;
 	f	String	LEVEL_UP	Lcom/fs/starfarer/campaign/command/OooO$o;
+	f	super	VALUES	[Lcom/fs/starfarer/campaign/command/AdminRowAction;
+		c javap clinit putstatic + values() | 高 | 枚举 $VALUES 缓存
 c	com/fs/starfarer/campaign/command/OutpostItemRow	com/fs/starfarer/campaign/command/OutpostItemRow
 	c 来源(未混淆类名) | 置信度(高) | 证据(OutpostItemRow)
 	f	oOÔO00	panel	Lcom/fs/starfarer/campaign/command/OutpostListPanel;
@@ -71,10 +175,38 @@ c	com/fs/starfarer/campaign/command/OutpostItemRow	com/fs/starfarer/campaign/com
 	f	ø0ÔO00	buttonTooltipLogic	Lcom/fs/starfarer/ui/classsuper;
 	f	int.for$null	faction	Lcom/fs/starfarer/campaign/Faction;
 		c 来源(javap取证) | 置信度(中) | 证据(构造参数4)
+	f	ÕOÔO00	factionBaseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 faction.getBaseUIColor
+	f	ô0ÔO00	factionDarkColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 faction.getDarkUIColor
+	f	Ø0ÔO00	factionGridColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 faction.getGridUIColor
+	f	ôOÔO00	factionBrightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 faction.getBrightUIColor
+	f	öOÔO00	infoLabels	Ljava/util/List;
+		c javap 字节码取证 | 高 | List<d> 行内信息标签集合；recreate 收集、render 逐项渲染
+	f	ö0ÔO00	isRecreated	Z
+		c javap 字节码取证 | 中 | recreate() 置 true；advanceImpl 据此门控标签刷新逻辑
+	f	øOÔO00	planetDisplay	Lcom/fs/starfarer/campaign/ui/intel/PlanetDisplay;
+		c javap 字节码取证 | 高 | recreate 新建 PlanetDisplay 并 addFirstLine/addSecondLine
+	f	ØOÔO00	stabilityLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | recreate 用 getStabilityValue 创建；advanceImpl 刷新
+	f	ÒOÔO00	sizeLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | recreate 用 getSize 创建；storage 行 setText("Storage")
+	f	this.do$null	incomeLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getDGSCredits(netIncome) 创建；无存取权时 setText("---")
 c	com/fs/starfarer/campaign/command/OutpostItemRow$1	com/fs/starfarer/campaign/command/OutpostItemRow$ConditionFilter
 	c 来源(继承关系) | 置信度(中) | 证据(实现 MarketConditionsWidget$o 条件过滤回调)
+	f	String	outer	Lcom/fs/starfarer/campaign/command/OutpostItemRow;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
+	m	super	isPlanetaryCondition	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
+		c javap 字节码取证 | 高 | 返回 condition.isPlanetary()；MarketConditionsWidget 过滤回调
 c	com/fs/starfarer/campaign/command/OutpostItemRow$2	com/fs/starfarer/campaign/command/OutpostItemRow$CommodityOrderComparator
 	c 来源(javap取证) | 置信度(中) | 证据(实现 Comparator<String>，按 CommoditySpecAPI.getOrder 排序)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/OutpostItemRow;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
+	m	o00000	compareByCommodityOrder	(Ljava/lang/String;Ljava/lang/String;)I
+		c javap 字节码取证 | 高 | 按两商品 spec.getOrder() 差值 signum 排序
 c	com/fs/starfarer/campaign/command/OutpostItemRow$o	com/fs/starfarer/campaign/command/OutpostItemRow$RowData
 	c 来源(javap取证) | 置信度(高) | 证据(仅含 MarketAPI 字段，行数据载体)
 	f	super	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -82,14 +214,60 @@ c	com/fs/starfarer/campaign/command/OutpostListPanel	com/fs/starfarer/campaign/c
 	c 来源(未混淆类名) | 置信度(高) | 证据(OutpostListPanel)
 	f	ôöÖ000	commandPanel	Lcom/fs/starfarer/campaign/command/return;
 	f	oøÖ000	faction	Lcom/fs/starfarer/campaign/Faction;
+	f	ööÖ000	factionBaseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | sizeChanged 中 playerFaction.getBaseUIColor
+	f	ÒøÖ000	factionDarkColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | sizeChanged 中 playerFaction.getDarkUIColor
+	f	ÕöÖ000	factionGridColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | sizeChanged 中 playerFaction.getGridUIColor
+	f	ÕøÖ000	factionBrightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | sizeChanged 中 playerFaction.getBrightUIColor
+	f	this.public$Object	table	LUITable;
+		c javap 字节码取证 | 高 | sizeChanged 新建 UITable；addRow/getRows/sort 主表格
+	f	for.while$Object	headerPanel	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | voidsuper 表头：Name/Conditions/Location/St/Size/Net income/Items/Admin 列与 tooltip
+	f	ÔøÖ000	coloniesButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | O.createButton("Colonies under personal control","1 / 3")；updateStats 刷新值
+	f	public.while$Object	managementPenaltyButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Mismanagement penalty"/"Management bonus" 按钮；updateStats 按 OutpostStats.penalty 设文本
+	f	return.while$Object	manageAdminsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Manage administrators" 按钮；actionPerformed 开 AdminPickerDialog
+	f	ÔöÖ000	unusedTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 中 | 仅字段声明，类内无任何 getfield/putfield，死代码
+	f	ØöÖ000	unusedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 中 | 仅字段声明，类内无任何引用，死代码
+	f	int.while$Object	unusedButton2	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 中 | 仅字段声明，类内无任何引用，死代码
+	f	øöÖ000	personalControlTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | nullsuper 摘要表：Colonies/Waystations under personal control 行；updateStats updateRow
+	f	ØøÖ000	adminStatsTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | nullsuper 摘要表：Administrators in use/Total/AI core control 行；updateStats updateRow
+	m	interface.class	createSummarySection	()V
+		c javap 字节码取证 | 高 | 创建摘要区：penalty/admin 按钮、两 TablePanel、表头面板与 tooltip，末尾 updateStats
+	m	Ô00000	getLabelValueButton	(Lcom/fs/starfarer/ui/Button;)Lcom/fs/starfarer/campaign/ui/marketinfo/LabelValueButton;
+		c javap 字节码取证 | 高 | 返回 button.getCustomData() 强转 O（LabelValueButton）
+	m	o00000	getMarketInteractionMode	(Lcom/fs/starfarer/campaign/command/OutpostItemRow;)Lcom/fs/starfarer/api/campaign/econ/MarketAPI$MarketInteractionMode;
+		c javap 字节码取证 | 高 | coreUI 选中实体市场与行市场一致则 LOCAL，否则 REMOTE
 c	com/fs/starfarer/campaign/command/OutpostListPanel$1	com/fs/starfarer/campaign/command/OutpostListPanel$ColonyLimitTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Number of colonies under your personal control, and the maximum)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/OutpostListPanel;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
 c	com/fs/starfarer/campaign/command/OutpostListPanel$2	com/fs/starfarer/campaign/command/OutpostListPanel$StabilityPenaltyTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Stability penalty or bonus based on the number of colonies)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/OutpostListPanel;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
 c	com/fs/starfarer/campaign/command/OutpostListPanel$3	com/fs/starfarer/campaign/command/OutpostListPanel$EconomyRefreshAction
 	c 来源(javap取证) | 置信度(高) | 证据(Runnable，EconomyAPI.tripleStep 后 updateBeforeReturningToTab)
+	f	super	outer	Lcom/fs/starfarer/campaign/command/OutpostListPanel;
+		c javap 字节码取证 | 高 | Runnable 匿名类外层引用（合成字段）
 c	com/fs/starfarer/campaign/command/OutpostListPanel$4	com/fs/starfarer/campaign/command/OutpostListPanel$MarketComparator
 	c 来源(javap取证) | 置信度(中) | 证据(实现 Comparator<B>，按 OutpostItemRow 的 MarketAPI 比较)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/OutpostListPanel;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
+	f	val$sort	sortColumn	Lcom/fs/starfarer/campaign/command/OutpostListPanel$Column;
+		c javap 字节码取证 | 高 | 构造捕获的排序列枚举；compare 按列分派
+	m	o00000	compareRows	(LTableRowPanel;LTableRowPanel;)I
+		c javap 字节码取证 | 高 | 按 sortColumn 比较两 OutpostItemRow 的 market 属性（storage 行恒排后）
 c	com/fs/starfarer/campaign/command/OutpostListPanel$Oo	com/fs/starfarer/campaign/command/OutpostListPanel$MarketDetail
 	c 来源(javap取证) | 置信度(中) | 证据(showMarketDetail 参数载体：面板/行数据/实体/交互模式)
 	f	new	panel	Lcom/fs/starfarer/campaign/command/OutpostListPanel;
@@ -107,12 +285,30 @@ c	com/fs/starfarer/campaign/command/OutpostListPanel$o	com/fs/starfarer/campaign
 	f	String	INCOME	Lcom/fs/starfarer/campaign/command/OutpostListPanel$o;
 	f	Õ00000	CORES	Lcom/fs/starfarer/campaign/command/OutpostListPanel$o;
 	f	Ó00000	ADMIN	Lcom/fs/starfarer/campaign/command/OutpostListPanel$o;
+	f	Ò00000	values	[Lcom/fs/starfarer/campaign/command/OutpostListPanel$Column;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 数组（NAME/LOCATION/CONDITIONS/STABILITY/SIZE/INCOME/CORES/ADMIN）
 c	com/fs/starfarer/campaign/command/P	com/fs/starfarer/campaign/command/IncomeReportRow
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 income_report/crew/marines/officers/outposts，字段 MonthlyReport$FDNode)
 	f	int.do$null	node	Lcom/fs/starfarer/api/campaign/econ/MonthlyReport$FDNode;
 	f	ôoÔO00	faction	Lcom/fs/starfarer/campaign/Faction;
 	f	öoÔO00	expandButton	Lcom/fs/starfarer/campaign/command/if;
 		c 来源(javap取证) | 置信度(中) | 证据(ExpandButton 类型字段)
+	f	ÔoÔO00	baseUIColor	Ljava/awt/Color;
+		c javap 构造 getBaseUIColor | 高 | 阵营基础色
+	f	public.do$null	darkUIColor	Ljava/awt/Color;
+		c javap 构造 getDarkUIColor | 高 | 阵营暗色
+	f	ÒoÔO00	gridUIColor	Ljava/awt/Color;
+		c javap 构造 getGridUIColor | 高 | 阵营网格色
+	f	øoÔO00	brightUIColor	Ljava/awt/Color;
+		c javap 构造 getBrightUIColor | 高 | 阵营亮色
+	f	ØoÔO00	expanded	Z
+		c javap 构造参数→ExpandCollapseButton.setExpanded | 高 | 行是否展开
+	f	for.do$null	labels	Ljava/util/List;
+		c javap 构造 add 标签列表 | 高 | 行内标签列表
+	f	ooÔO00	icon	Lcom/fs/starfarer/ui/UIComponent;
+		c javap FDNode.icon 图标 | 高 | 节点图标
+	f	ÕoÔO00	depth	I
+		c javap getDepth 缩进 | 高 | 节点深度
 c	com/fs/starfarer/campaign/command/ShipBlueprintBrowser	com/fs/starfarer/campaign/command/ShipBlueprintBrowser
 	c 来源(未混淆类名) | 置信度(高) | 证据(ShipBlueprintBrowser)
 	f	ôOÓ000	shipHulls	Ljava/util/List;
@@ -121,10 +317,20 @@ c	com/fs/starfarer/campaign/command/ShipBlueprintBrowser	com/fs/starfarer/campai
 		c 来源(javap取证) | 置信度(中) | 证据(排序比较器写入该字段)
 c	com/fs/starfarer/campaign/command/ShipBlueprintBrowser$1	com/fs/starfarer/campaign/command/ShipBlueprintBrowser$ProductionCostTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Production cost. Does not include outfitting the ship with weapons and fighters)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/ShipBlueprintBrowser;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
 c	com/fs/starfarer/campaign/command/ShipBlueprintBrowser$2	com/fs/starfarer/campaign/command/ShipBlueprintBrowser$ColumnComparator
 	c 来源(javap取证) | 置信度(中) | 证据(实现 Comparator<B>，按 TableColumns 各列比较)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/ShipBlueprintBrowser;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
+	f	val$id	sortColumn	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 构造捕获的 TableColumns；compare 写回 browser 当前排序列
+	m	super	compareRows	(LTableRowPanel;LTableRowPanel;)I
+		c javap 字节码取证 | 高 | 按 SIZE/TECH/TYPE/ENABLED/COST 列分派比较
 c	com/fs/starfarer/campaign/command/ShipBlueprintBrowser$TableColumns	com/fs/starfarer/campaign/command/ShipBlueprintBrowser$TableColumns
 	c 来源(未混淆类名) | 置信度(高) | 证据(DoNotObfuscate，枚举 NAME/SIZE/TYPE/TECH/ENABLED/COST)
+	f	ENUM$VALUES	values	[Lcom/fs/starfarer/campaign/command/ShipBlueprintBrowser$TableColumns;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 数组（NAME/SIZE/TYPE/TECH/ENABLED/COST）
 c	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser
 	c 来源(未混淆类名) | 置信度(高) | 证据(WeaponBlueprintBrowser)
 	f	Object.this$new	weapons	Ljava/util/List;
@@ -133,22 +339,76 @@ c	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser	com/fs/starfarer/camp
 		c 来源(javap取证) | 置信度(中) | 证据(排序比较器写入该字段)
 c	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser$1	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser$ProductionCostTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Production cost.)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/WeaponBlueprintBrowser;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
 c	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser$2	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser$ColumnComparator
 	c 来源(javap取证) | 置信度(中) | 证据(实现 Comparator<B>，按 TableColumns 各列比较)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/WeaponBlueprintBrowser;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
+	f	val$id	sortColumn	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 构造捕获的 TableColumns；compare 写回 browser 当前排序列
+	m	o00000	compareRows	(LTableRowPanel;LTableRowPanel;)I
+		c javap 字节码取证 | 高 | 按 SIZE/TECH/TYPE/ENABLED/COST 列分派比较
 c	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser$TableColumns	com/fs/starfarer/campaign/command/WeaponBlueprintBrowser$TableColumns
 	c 来源(未混淆类名) | 置信度(高) | 证据(DoNotObfuscate，枚举 NAME/SIZE/TYPE/TECH/ENABLED/COST)
+	f	ENUM$VALUES	values	[Lcom/fs/starfarer/campaign/command/WeaponBlueprintBrowser$TableColumns;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 数组（NAME/SIZE/TYPE/TECH/ENABLED/COST）
 c	com/fs/starfarer/campaign/command/o00O	com/fs/starfarer/campaign/command/DoctrineRow
 	c 来源(javap取证) | 置信度(高) | 证据(接口 doctrineLevelSet / getLevel / setLevel)
 	f	this.null$void	callback	Lcom/fs/starfarer/campaign/command/o00O$o;
 		c 来源(javap取证) | 置信度(中) | 证据(构造参数回调)
 	f	ôÕoO00	titleText	Ljava/lang/String;
 		c 来源(javap取证) | 置信度(高) | 证据(getTitleText 返回该字段)
+	f	oÕoO00	baseUIColor	Ljava/awt/Color;
+		c javap 构造 getBaseUIColor | 高 | 阵营基础色
+	f	ÕÕoO00	darkUIColor	Ljava/awt/Color;
+		c javap 构造 getDarkUIColor | 高 | 阵营暗色
+	f	public.void$void	gridUIColor	Ljava/awt/Color;
+		c javap 构造 getGridUIColor | 高 | 阵营网格色
+	f	ØÕoO00	brightUIColor	Ljava/awt/Color;
+		c javap 构造 getBrightUIColor | 高 | 阵营亮色
+	f	Object.null$void	faction	Lcom/fs/starfarer/campaign/Faction;
+		c javap 构造 getPlayerFaction | 高 | 玩家阵营
+	f	ÔÕoO00	levelButtons	Ljava/util/List;
+		c javap 构造 5 个等级按钮 | 高 | 等级按钮列表
+	f	return.null$void	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 构造标题 label | 高 | 行标题标签
+	f	ÒÕoO00	imagePanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap autoSize 宽度含 IMAGE_SIZE | 高 | 右侧图片面板
+	f	øÔoO00	glowBrightness	F
+		c javap advanceImpl 最大 glow | 中 | 当前悬停发光亮度
+	f	öÔoO00	titleButton	Lcom/fs/starfarer/ui/Button;
+		c javap 构造标题按钮 | 高 | 行标题按钮
+	m	Ø00000	createLevelButton	(Ljava/lang/String;)Lcom/fs/starfarer/ui/Button;
+		c javap new oOoO 按钮 | 高 | 创建单个等级按钮
 c	com/fs/starfarer/campaign/command/o00O$1	com/fs/starfarer/campaign/command/DoctrineRow$Tooltip
 	c 来源(javap取证) | 置信度(中) | 证据(createImpl 中回调 createTooltip 生成 tooltip)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/command/DoctrineRow;
+		c javap 构造 putfield | 高 | 外层 DoctrineRow 引用
+	f	public.this$float	callback	Lcom/fs/starfarer/campaign/command/DoctrineRow$Callback;
+		c javap createImpl createTooltip | 高 | 教条回调
 c	com/fs/starfarer/campaign/command/o00O$o	com/fs/starfarer/campaign/command/DoctrineRow$Callback
 	c 来源(javap取证) | 置信度(高) | 证据(接口方法 doctrineLevelSet / createTooltip)
 c	com/fs/starfarer/campaign/command/oooO	com/fs/starfarer/campaign/command/GatheringPointPanel
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Select gathering point / No colonies，setGatheringPoint 调用)
+	f	ØõÓ000	headerPanel	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap recreate createHeader | 高 | 表头面板
+	f	this.return$new	table	LUITable;
+		c javap recreate new UITable | 高 | 市场表格
+	f	ÕõÓ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap STR "Cancel" | 高 | 取消按钮
+	f	ôõÓ000	faction	Lcom/fs/starfarer/campaign/Faction;
+		c javap 构造 getPlayerFaction | 高 | 玩家阵营
+	f	for.class$new	baseUIColor	Ljava/awt/Color;
+		c javap 构造 getBaseUIColor | 高 | 阵营基础色
+	f	public.class$new	darkUIColor	Ljava/awt/Color;
+		c javap 构造 getDarkUIColor | 高 | 阵营暗色
+	f	ÔõÓ000	gridUIColor	Ljava/awt/Color;
+		c javap 构造 getGridUIColor | 高 | 阵营网格色
+	f	øõÓ000	brightUIColor	Ljava/awt/Color;
+		c javap 构造 getBrightUIColor | 高 | 阵营亮色
+	f	öõÓ000	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap STR "Select gathering point" | 高 | 标题标签
 c	com/fs/starfarer/campaign/command/return	com/fs/starfarer/campaign/command/CommandPanel
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 Colonies/Orders/Income/Doctrine & blueprints/Custom production，getColoniesPanel/getIncomePanel/getOrdersPanel)
 	f	ÔOö000	buttonToTab	Ljava/util/Map;
@@ -158,6 +418,26 @@ c	com/fs/starfarer/campaign/command/return	com/fs/starfarer/campaign/command/Com
 	f	ooö000	data	Lcom/fs/starfarer/campaign/command/CommandTabData;
 	f	öOö000	reportsButton	Lcom/fs/starfarer/ui/n;
 	f	ØOö000	factionsButton	Lcom/fs/starfarer/ui/n;
+	f	oOö000	doctrinePanel	Lcom/fs/starfarer/ui/Panel;
+		c javap new K 面板 | 高 | Doctrine & blueprints 面板（K=FleetDoctrinePanel）
+	f	ôOö000	customProductionPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap new CustomProductionPanel | 高 | Custom production 面板
+	f	return.return$class	coreUIHost	Lcom/fs/starfarer/coreui/CoreUIHost;
+		c javap 构造入参 + getPlanetBackground | 高 | 核心 UI 宿主
+	f	ø0ö000	initialSelection	Ljava/lang/Object;
+		c javap 构造入参 "income_report"/Market | 高 | 初始选中标签（id 或市场）
+	f	ÒOö000	initialized	Z
+		c javap sizeChanged 后置位 | 高 | 是否已完成首次构建
+	f	this.return$class	ordersButton	Lcom/fs/starfarer/ui/Button;
+		c javap STR "Orders" | 高 | Orders 标签按钮
+	f	Object.return$class	doctrineButton	Lcom/fs/starfarer/ui/Button;
+		c javap STR "Doctrine & blueprints" | 高 | Doctrine 标签按钮
+	f	int.return$class	customProductionButton	Lcom/fs/starfarer/ui/Button;
+		c javap STR "Custom production" | 高 | Custom production 标签按钮
+	m	interface.void	createUI	()V
+		c javap 创建标签按钮+面板+Map 关联 | 高 | 构建命令面板 UI
+	m	Ó00000	showPanel	(Lcom/fs/starfarer/ui/Panel;)V
+		c javap Map 遍历 fader in/out + highlight | 高 | 切换并高亮标签页
 c	com/fs/starfarer/campaign/command/super	com/fs/starfarer/campaign/command/WeaponBlueprintRow
 	c 来源(javap取证) | 置信度(高) | 证据(getWingSpec/getWeaponSpec/getSpecId/getSizeOrdinal 方法集)
 	f	ôøÔO00	specId	Ljava/lang/String;
@@ -170,7 +450,31 @@ c	com/fs/starfarer/campaign/command/super	com/fs/starfarer/campaign/command/Weap
 	f	ØøÔO00	type	Lcom/fs/starfarer/campaign/command/super$o;
 	f	ÒøÔO00	mode	Lcom/fs/starfarer/campaign/command/OO0O$o;
 	f	return.new$int	prodPanel	Lcom/fs/starfarer/campaign/command/CustomProductionPanel;
+	f	ôöÔO00	unusedWingIconRenderer	Lcom/fs/starfarer/ui/super/FighterWingIconRenderer;
+		c javap 字节码取证 | 中 | 仅字段声明；类内引用均为局部变量（B 渲染器），死代码
+	f	ÕøÔO00	unusedWeaponIconRenderer	Lcom/fs/starfarer/ui/super/WeaponIconRenderer;
+		c javap 字节码取证 | 中 | 仅字段声明；类内引用为局部变量（Object 渲染器），死代码
+	f	public.super$int	wingButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 中 | 机翼行按钮：Q.o00000(FleetMember,...) 后复制给 button
+	f	ööÔO00	weaponButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 中 | 武器行按钮：Q.o00000(BaseWeaponSpec,...) 后复制给 button
+	f	oøÔO00	typeString	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTypeString 返回（wing role / weapon type display）
+	f	o0ÕO00	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | createRow 用名称字符串创建；renderImpl 高亮
+	f	for.super$int	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | 机翼行构造 FleetMember(FIGHTER_WING)；wing tooltip 数据源
+	f	for.new$int	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 主行按钮（wing 或 weapon）；挂对应 tooltip
+	f	ØöÔO00	sizeString	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 大小字符串（"Fighter" 或 weapon size display）
+	f	this.new$int	checkmarkPanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | ooO0("ui","checkmark") 高亮标记；renderImpl 按 priority 调透明度
+	f	öøÔO00	costLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 成本标签；advanceImpl 按额度允许性改色
 c	com/fs/starfarer/campaign/command/super$o	com/fs/starfarer/campaign/command/WeaponBlueprintRowType
 	c 来源(javap取证) | 置信度(高) | 证据(枚举值 WEAPON / FIGHTER)
 	f	Ò00000	WEAPON	Lcom/fs/starfarer/campaign/command/super$o;
 	f	Ó00000	FIGHTER	Lcom/fs/starfarer/campaign/command/super$o;
+	f	super	values	[Lcom/fs/starfarer/campaign/command/WeaponBlueprintRowType;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 数组（WEAPON/FIGHTER）

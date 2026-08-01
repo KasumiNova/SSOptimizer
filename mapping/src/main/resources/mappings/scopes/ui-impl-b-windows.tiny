@@ -13,15 +13,26 @@ c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$7$4	com/fs/starfarer/ui/impl/
 		c 实现 LogisticsRowDataProvider | 中
 	m	o00000	getHeaderColor	()Ljava/awt/Color;
 		c 实现 LogisticsRowDataProvider | 中
+	f	Ò00000	outerTooltip	Lcom/fs/starfarer/ui/impl/PersonnelTooltip;
+	f	super	rowColor	Ljava/awt/Color;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$8	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$CargoCapacityTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Cargo Capacity"/"The total cargo capacity of your fleet is %s"，extends StandardTooltipV2)
 	m	beforeShown	beforeShown	()V
 	m	createExpandedTooltip	createExpandedTooltip	()V
+	f	Ó0ôO00	currentComponent	Lcom/fs/starfarer/ui/UIComponent;
+	f	Ò0ôO00	contentOffset	F
+	f	do.if$if	contentWidth	F
+	f	private.if$if	contentPanel	Lcom/fs/starfarer/ui/Panel;
+	f	O0ôO00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	oO0000	refreshContent	(Z)V
+	m	new	createLabel	(Ljava/lang/String;FLjava/awt/Color;[Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+	m	new	createLabel	(Ljava/lang/String;F)Lcom/fs/starfarer/ui/LabelImpl;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$8$1	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$CargoCapacityComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: Comparator<FleetMember> 按 FleetMember.getCargoCapacity 排序)
 	m	o00000	compareByCargoCapacity	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
 		c 按 getCargoCapacity 排序 | 高
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	outerTooltip	Lcom/fs/starfarer/ui/impl/LogisticsTooltipFactory$CargoCapacityTooltip;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$8$2	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$CargoCapacityRowProvider
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: getCargoCapacity/getCargo + "(mothballed)"，货舱容量行提供者，LogisticsTooltipFactory$o 实现)
 	m	o00000	getRowName	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
@@ -36,6 +47,9 @@ c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$8$2	com/fs/starfarer/ui/impl/
 		c 实现 LogisticsRowDataProvider | 中
 	m	o00000	getHeaderColor	()Ljava/awt/Color;
 		c 实现 LogisticsRowDataProvider | 中
+	f	ø00000	outerTooltip	Lcom/fs/starfarer/ui/impl/LogisticsTooltipFactory$CargoCapacityTooltip;
+	f	if	rowColor	Ljava/awt/Color;
+	f	õ00000	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 c	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$o	com/fs/starfarer/ui/impl/LogisticsTooltipFactory$LogisticsRowDataProvider
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 接口，LogisticsTooltipFactory.o00000(List,此接口,F) 逐行取 名称/数值/颜色 渲染后勤 tooltip 行)
 	m	o00000	getRowName	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Ljava/lang/String;
@@ -80,6 +94,12 @@ c	com/fs/starfarer/ui/impl/private$1	com/fs/starfarer/ui/impl/FleetMemberRepairT
 		c 构造注入 | 高
 	m	beforeShown	beforeShown	()V
 	m	createExpandedTooltip	createExpandedTooltip	()V
+	f	ÕoôO00	currentComponent	Lcom/fs/starfarer/ui/UIComponent;
+	f	String.for$if	contentOffset	F
+	f	ÒoôO00	contentWidth	F
+	f	ÖoôO00	contentPanel	Lcom/fs/starfarer/ui/Panel;
+	m	interface	refreshContent	(Z)V
+	m	class	createLabel	(Ljava/lang/String;F)Lcom/fs/starfarer/ui/LabelImpl;
 c	com/fs/starfarer/ui/impl/N	com/fs/starfarer/ui/impl/CombatReadinessTooltipFactory
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 静态工厂 o00000(FleetMember,CharacterStats,Oo0O$o) 创建 Oo0O$1（CR tooltip）；win 对应 N 工厂签名一致)
 	m	o00000	createCombatReadinessTooltip	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/ui/impl/N$o;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
@@ -92,16 +112,21 @@ c	com/fs/starfarer/ui/impl/N$1	com/fs/starfarer/ui/impl/CombatReadinessTooltip
 		c CR 显示选项，createImpl 中查 getCRValueOverride | 高
 	m	beforeShown	beforeShown	()V
 	m	createExpandedTooltip	createExpandedTooltip	()V
+	f	super.for$if	contentPanel	Lcom/fs/starfarer/ui/Panel;
+	m	ÔO0000	refreshContent	(Z)V
 c	com/fs/starfarer/ui/impl/N$o	com/fs/starfarer/ui/impl/CombatReadinessTooltipOptions
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 接口，Oo0O$1 中 getCRValueOverride 直接覆盖显示 CR 值)
 	m	Object	getCRValueOverride	()F
 		c Oo0O$1 中用返回值直接覆盖当前 CR 显示值 | 高
+	m	Ò00000	showSimulationCRHint	()Z
+	m	o00000	showRefitNote	()Z
 c	com/fs/starfarer/ui/impl/L	com/fs/starfarer/ui/impl/ShipVariantTooltipFactory
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 静态工厂 o00000(HullVariantSpec) 创建 OO0O$1；win 对应 L 工厂签名一致)
 	m	o00000	createVariantTooltip	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
 		c 静态工厂（默认 400f 宽度） | 高
 	m	o00000	createVariantTooltip	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/ui/impl/L$o;F)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
 		c 静态工厂（带选项与宽度） | 高
+	m	Ò00000	createFleetMember	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)Lcom/fs/starfarer/campaign/fleet/FleetMember;
 c	com/fs/starfarer/ui/impl/L$1	com/fs/starfarer/ui/impl/ShipVariantTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Captain:"/"flux capacitors"/"unidentified vessel"，extends StandardTooltipV2Expandable，持变体+选项)
 	f	ÖÓõO00	options	Lcom/fs/starfarer/ui/impl/L$o;
@@ -117,6 +142,8 @@ c	com/fs/starfarer/ui/impl/L$o	com/fs/starfarer/ui/impl/ShipVariantTooltipOption
 		c gate "Captain:" 分节 | 中
 	f	Ô00000	showTitle	Z
 		c gate 标题分节（船名+" Wing"） | 中
+	f	class	showDescription	Z
+	f	Ö00000	hideTitle	Z
 c	com/fs/starfarer/ui/impl/oO0O	com/fs/starfarer/ui/impl/SimulationDeploymentScreen
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "SIM"/"Deploy"/"Deploy opposing ships for simulation"/"Projected deployment recovery cost:"，模拟战部署选择界面)
 	m	õ00000	setShowEnemyDeploymentPoints	(Z)V
@@ -151,9 +178,52 @@ c	com/fs/starfarer/ui/impl/oO0O	com/fs/starfarer/ui/impl/SimulationDeploymentScr
 		c 剩余可部署点：CombatFleetManager.getMaxStrength-getCurrStrength 减去敌方已部署点 | 高
 	m	ØØ0000	computeEnemyDeploymentPoints	()I
 		c 敌方已部署点：遍历敌方成员累加 getDeploymentPointsCost | 高
+	f	øoÖ000	iconColumns	I
+	f	do.null$Object	iconSize	F
+	f	void.null$Object	deployedList	LFleetMemberIconList;
+	f	OÒÖ000	reservesList	LFleetMemberIconList;
+	f	do.void$Object	unlockHint	Lcom/fs/starfarer/ui/LabelImpl;
+	f	õOÖ000	selectShipsHint	Lcom/fs/starfarer/ui/LabelImpl;
+	f	OOÖ000	noShipsHint	Lcom/fs/starfarer/ui/LabelImpl;
+	f	ÓOÖ000	deployButton	Lcom/fs/starfarer/ui/Button;
+	f	private.null$Object	deployAllButton	Lcom/fs/starfarer/ui/Button;
+	f	ÒOÖ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+	f	ÒÒÖ000	combatEngine	Lcom/fs/starfarer/combat/CombatEngine;
+	f	ÓoÖ000	playerFleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+	f	if.null$Object	enemyFleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+	f	ÕoÖ000	defaultFontPath	Ljava/lang/String;
+	f	ø0Ö000	buttonFontPath	Ljava/lang/String;
+	f	ÒoÖ000	fontLineHeight	F
+	f	õoÖ000	labelColor	Ljava/awt/Color;
+	f	private.void$Object	fader	Lcom/fs/graphics/util/Fader;
+	f	String.void$Object	deployEnabled	Z
+	f	ôoÖ000	deployedProgressBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+	f	øOÖ000	enemyDeployedProgressBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+	f	ÖoÖ000	borderLines	Lcom/fs/starfarer/title/BorderLines;
+	f	void.void$Object	ownerId	I
+	f	ÓÒÖ000	multiDeploy	Z
+	f	ÖOÖ000	inCampaign	Z
+	f	String.null$Object	alliesButton	Lcom/fs/starfarer/ui/Button;
+	f	ÕÒÖ000	opponentsButton	Lcom/fs/starfarer/ui/Button;
+	f	ÕOÖ000	advancedOptionsButton	Lcom/fs/starfarer/ui/Button;
+	f	super.null$Object	defaultLabel	Lcom/fs/starfarer/ui/LabelImpl;
+	f	if.void$Object	showAdvanced	Z
+	f	õ0Ö000	simCategoryEditDialog	Lcom/fs/starfarer/ui/impl/SimCategoryEditDialog;
+	f	OoÖ000	simulatorOptionPanel	Lcom/fs/starfarer/ui/impl/SimulatorOptionPanel;
+	f	ôOÖ000	crConfirmShown	Z
+	m	new	createLabel	(Ljava/lang/String;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+	m	ÔØ0000	updateDeploymentStatus	()V
+	m	ÓØ0000	createDeployedList	()V
+	m	ÖØ0000	createReservesList	()V
+	m	float.class	getSelectedReserveMembers	()Ljava/util/List;
+	m	o00000	transferMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;LFleetMemberIconList;LFleetMemberIconList;)V
+	m	Ô00000	handleShortcutInput	(Lcom/fs/starfarer/util/InputEvent;)V
+	m	new	assignControlGroup	(ILcom/fs/starfarer/util/InputEvent;)V
+	m	o00000	selectControlGroup	(ILcom/fs/starfarer/util/InputEvent;)V
 c	com/fs/starfarer/ui/impl/oO0O$1	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$EnemyDeploymentPointsTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Fleet points available for enemy deployment."，extends StandardTooltipV2Expandable)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
 c	com/fs/starfarer/ui/impl/oO0O$2	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$DeploymentPointsTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "% capable officers in command of combat-ready ships"/"Controlling battlefield objectives"，createDPTooltip 创建)
 	m	createImpl	createImpl	(Z)V
@@ -161,29 +231,45 @@ c	com/fs/starfarer/ui/impl/oO0O$3	com/fs/starfarer/ui/impl/SimulationDeploymentS
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: implements ui.newui.oOOo$o，show() 中 ldc chmDeployCostsCR 后紧接创建的确认回调（与 linux oO0O$3 同序号）)
 	m	o00000	confirm	()Z
 		c ui.newui.oOOo$o 接口方法（已有片段同款命名） | 高
+	f	Ø00000	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
 c	com/fs/starfarer/ui/impl/oO0O$4	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$DeployCostsCRDismiss
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: implements ui.oo0O$o，show() 中 chmDeployCostsCR 警告的关闭回调（与 linux oO0O$4 同序号）)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	øöØo00	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
 c	com/fs/starfarer/ui/impl/oO0O$5	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$TooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，run() 中按按钮位置设置 StandardTooltipV2 位置)
 	m	run	run	()V
+	f	o00000	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	f	new	button	Lcom/fs/starfarer/ui/Button;
 c	com/fs/starfarer/ui/impl/oO0O$6	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$ReservesTooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: Runnable，updateReserves() 中创建，按按钮位置设置 tooltip)
 	m	run	run	()V
+	f	o00000	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	f	new	button	Lcom/fs/starfarer/ui/Button;
 c	com/fs/starfarer/ui/impl/oO0O$7	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$DeployCritCRConfirm
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: implements ui.newui.oOOo$o，actionPerformed 中 ldc chmDeployCritCR 后紧接创建的确认回调（与 linux oO0O$7 同序号）)
 	m	o00000	confirm	()Z
 		c ui.newui.oOOo$o 接口方法 | 高
+	f	Ö00000	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
 c	com/fs/starfarer/ui/impl/oO0O$8	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$DeployCritCRDismiss
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: implements ui.oo0O$o，actionPerformed 中 chmDeployCritCR 警告的关闭回调（与 linux oO0O$8 同序号）)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	ôöØo00	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
+	f	õöØo00	event	Ljava/lang/Object;
+	f	if.while$private	button	Ljava/lang/Object;
 c	com/fs/starfarer/ui/impl/oO0O$9	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$DeployLowCRConfirm
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: implements ui.newui.oOOo$o，actionPerformed 中 ldc chmDeployLowCR 后紧接创建的确认回调（与 linux oO0O$9 同序号）)
 	m	o00000	confirm	()Z
 		c ui.newui.oOOo$o 接口方法 | 高
+	f	class	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
 c	com/fs/starfarer/ui/impl/oO0O$10	com/fs/starfarer/ui/impl/SimulationDeploymentScreen$DeployLowCRDismiss
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: implements ui.oo0O$o，actionPerformed 中 chmDeployLowCR 警告的关闭回调（与 linux oO0O$10 同序号）)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	OøØo00	outerSimulationDeploymentScreen	Lcom/fs/starfarer/ui/impl/SimulationDeploymentScreen;
+	f	do.while$private	event	Ljava/lang/Object;
+	f	ÒøØo00	button	Ljava/lang/Object;
 c	com/fs/starfarer/ui/impl/Q	com/fs/starfarer/ui/impl/ValueDisplayBar
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: getMode/setMode(ValueDisplayMode)+getBar/getTextLabel/getValueLabel/setIsCRBar，数值显示条)
 	f	ôÒÒo00	bar	Lcom/fs/starfarer/campaign/ui/N;
@@ -205,6 +291,26 @@ c	com/fs/starfarer/ui/impl/Q	com/fs/starfarer/ui/impl/ValueDisplayBar
 	m	getBar	getBar	()Lcom/fs/starfarer/campaign/ui/N;
 	m	getTextLabel	getTextLabel	()Lcom/fs/starfarer/ui/d;
 	m	getValueLabel	getValueLabel	()Lcom/fs/starfarer/ui/d;
+	f	ÒÓÒo00	valueLabelWidth	F
+		c javap 字节码取证 | 高 | 构造器参数4，value label setSize 宽度
+	f	do.super$while	isCRBar	Z
+		c javap 字节码取证 | 高 | setIsCRBar 写；advanceImpl 决定故障/严重故障阈值变色
+	f	OÓÒo00	useMaxForTextDisplay	Z
+		c javap 字节码取证 | 高 | setUseMaxForTextDisplay 写；文本用 max 还是 rangeMax 计算
+	f	ÓÒÒo00	textHeight	F
+		c javap 字节码取证 | 高 | 构造器 12f/参数6；removeText 中 setSize 高度
+	f	private.super$while	currentText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 缓存当前文本，变化才 setText
+	f	ÕÒÒo00	malfunctionThreshold	F
+		c javap 字节码取证 | 高 | setIsCRBar 由 getMalfunctionThreshold 写入，低于则黄条
+	f	if.super$while	criticalMalfunctionThreshold	F
+		c javap 字节码取证 | 高 | setIsCRBar 由 getCriticalMalfunctionThreshold 写入，低于则红条
+	f	øÒÒo00	originalBarColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 阈值触发前保存原条色，恢复时回填
+	f	õÒÒo00	$SWITCH_TABLE$com$fs$starfarer$api$ui$ValueDisplayMode	[I
+		c javap 字节码取证 | 高 | static volatile int[]，$SWITCH_TABLE$ 方法懒初始化缓存（javac 合成）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$ui$ValueDisplayMode	$SWITCH_TABLE$com$fs$starfarer$api$ui$ValueDisplayMode	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表构建方法（保持原名）
 c	com/fs/starfarer/ui/impl/OOOo	com/fs/starfarer/ui/impl/CombatTaskOverlay
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends ui.z，持 CombatTaskManager+Fader，构造与 win OOOo 完全一致（Fader 0.05/0.25 参数）)
 	f	String.new$while	combatTaskManager	Lcom/fs/starfarer/combat/tasks/CombatTaskManager;
@@ -214,6 +320,7 @@ c	com/fs/starfarer/ui/impl/OOOo	com/fs/starfarer/ui/impl/CombatTaskOverlay
 	m	advanceImpl	advanceImpl	(F)V
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	renderImpl	renderImpl	(F)V
+	f	ÕÓÒo00	lastCommandPoints	F
 c	com/fs/starfarer/ui/impl/X	com/fs/starfarer/ui/impl/WeaponDisplayWidget
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: extends ui.thissuper，持 BaseWeaponSpec+renderers.oO0O 武器渲染器，refit 界面武器显示组件；win X 结构一致)
 	f	Òø0000	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
@@ -235,6 +342,9 @@ c	com/fs/starfarer/ui/impl/S	com/fs/starfarer/ui/impl/PersonPortrait
 	m	setHighlightMult	setHighlightMult	(F)V
 	m	renderBorder	renderBorder	(FFFFF)V
 	m	renderImpl	renderImpl	(F)V
+	f	ô0O000	highlightMult	F
+	f	õ0O000	resize	Z
+	f	super.int	fixedPortrait	Z
 c	com/fs/starfarer/ui/impl/O	com/fs/starfarer/ui/impl/CombatCommandPanel
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: "Command Points"/"Deployment Pts"/"Reinforcements"/"Standing Orders"/"Search & Destroy"/"Full Retreat!"，战斗指挥面板)
 	m	class	createLabel	(Ljava/lang/String;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/d;
@@ -258,6 +368,52 @@ c	com/fs/starfarer/ui/impl/O	com/fs/starfarer/ui/impl/CombatCommandPanel
 	m	fleetMemberCaptured	fleetMemberCaptured	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	getReinforce	getReinforce	()Lcom/fs/starfarer/ui/n;
+	f	ÕoÒo00	warroom	Lcom/fs/starfarer/combat/warroom/Warroom;
+	f	do.interface$do	combatEngine	Lcom/fs/starfarer/combat/CombatEngine;
+	f	void.interface$do	taskManager	Lcom/fs/starfarer/combat/tasks/CombatTaskManager;
+	f	Ó0Òo00	playerFleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+	f	void.this$while	deploymentPointsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+	f	øoÒo00	commandPointsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+	f	OOÒo00	taskOverlay	Lcom/fs/starfarer/ui/impl/CombatTaskOverlay;
+	f	ÕOÒo00	reinforceButton	Lcom/fs/starfarer/ui/Button;
+	f	ô0Òo00	standingOrdersButton	Lcom/fs/starfarer/ui/Button;
+	f	øOÒo00	searchDestroyButton	Lcom/fs/starfarer/ui/Button;
+	f	Õ0Òo00	fullRetreatButton	Lcom/fs/starfarer/ui/Button;
+	f	bg	backgroundRenderer	Lcom/fs/starfarer/E/OoOO/ScanlineBackgroundRenderer;
+	f	OÒÒo00	defaultFontPath	Ljava/lang/String;
+	f	Ö0Òo00	unusedOrbitron24BoldFontPath	Ljava/lang/String;
+	f	ÒOÒo00	orbitron24FontPath	Ljava/lang/String;
+	f	super.this$while	orbitron20FontPath	Ljava/lang/String;
+	f	ÖoÒo00	victor10FontPath	Ljava/lang/String;
+	f	do.this$while	unusedFontLineHeight	F
+	f	if.this$while	topRightSprite	Lcom/fs/graphics/Sprite;
+	f	ôoÒo00	topRightIngameSprite	Lcom/fs/graphics/Sprite;
+	f	ø0Òo00	topRightLargeSprite	Lcom/fs/graphics/Sprite;
+	f	void.super$while	topRightCompactSprite	Lcom/fs/graphics/Sprite;
+	f	ÒoÒo00	topRightSmallSprite	Lcom/fs/graphics/Sprite;
+	f	super.super$while	fullRetreatIconSprite	Lcom/fs/graphics/Sprite;
+	f	õoÒo00	searchDestroyIconSprite	Lcom/fs/graphics/Sprite;
+	f	OoÒo00	deploymentPointsValueButton	Lcom/fs/starfarer/campaign/ui/marketinfo/IconValueButton;
+	f	private.interface$do	cleanDisengageValueButton	Lcom/fs/starfarer/campaign/ui/marketinfo/IconValueButton;
+	f	ôOÒo00	commandPointsValueButton	Lcom/fs/starfarer/campaign/ui/marketinfo/IconValueButton;
+	f	String.this$while	checkmarkPanel	Lcom/fs/starfarer/ui/ImagePanel;
+	f	if.interface$do	deploymentPointsButton	Lcom/fs/starfarer/ui/Button;
+	f	String.super$while	commandPointsButton	Lcom/fs/starfarer/ui/Button;
+	f	ÓoÒo00	cleanDisengageButton	Lcom/fs/starfarer/ui/Button;
+	f	Ò0Òo00	channelBanner	Lcom/fs/starfarer/ui/impl/CommandChannelBanner;
+	f	ÖOÒo00	lastStrengthDiff	I
+	f	private.this$while	lastCommandPointsLeft	I
+	f	õOÒo00	inFullRetreat	Z
+	f	õ0Òo00	lineTexture	Lcom/fs/graphics/TextureObject;
+	f	ÓOÒo00	labelColor	Ljava/awt/Color;
+	f	O0Òo00	cleanDisengageLabel	Lcom/fs/starfarer/ui/LabelImpl;
+	m	null.super	createDeploymentPointsTooltip	(F)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	oo0000	createCommandPointsTooltip	(F)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	Óo0000	createCleanDisengageTooltip	(F)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	ÔôO000	updateDeploymentPointsColor	()V
+	m	ÓôO000	updateCommandPointsColor	()V
+	m	o00000	drawLine	(FFFFFFF)V
+	m	o00000	drawLine	(FFFFFFFF)V
 c	com/fs/starfarer/ui/impl/StandardTooltipV2	com/fs/starfarer/ui/impl/StandardTooltipV2
 	c 来源(javap取证) | 置信度(高) | 证据(API-impl种子+javap取证: 静态工厂 createFleetMemberTooltipPreDeploy/createSkillTooltip/createWeaponTooltip 等 + extends ui.z implements ui.Oo0o，标准 tooltip 基类与工厂)
 	f	OøØO00	contents	Lcom/fs/starfarer/ui/c;
@@ -376,6 +532,26 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2	com/fs/starfarer/ui/impl/StandardTo
 	m	setLogic	setLogic	(Lcom/fs/starfarer/ui/O0Oo;)V
 	m	setExpandInPlace	setExpandInPlace	(Z)V
 	m	clone	clone	()Ljava/lang/Object;
+	f	ÖöØO00	beforeExpanding	Ljava/lang/Runnable;
+		c javap 字节码取证 | 高 | setBeforeExpanding 写；beforeExpanded 中 run()
+	f	õöØO00	expandAsDialog	Z
+		c javap 字节码取证 | 高 | setExpandAsDialog 写；notiftyHidden 中 expanded 时 fader.forceIn
+	f	ÓøØO00	forceShowWhileMouseInside	Z
+		c javap 字节码取证 | 高 | isForceShowWhileMouseInside/setForceShowWhileMouseInside 读写
+	f	ÓöØO00	shown	Z
+		c javap 字节码取证 | 高 | notifyShown 置 true，notiftyHidden 置 false；processInputImpl 放行判断
+	f	do.int$if	dialog	Lcom/fs/starfarer/ui/Dialog;
+		c javap 字节码取证 | 高 | beforeExpanded 中 new 对话框：setBackgroundDimAmount/show/dismiss
+	f	ÖøØO00	expandInPlace	Z
+		c javap 字节码取证 | 高 | setExpandInPlace 写；beforeExpanded 中决定就地展开还是弹对话框
+	f	if.int$if	$SWITCH_TABLE$com$fs$starfarer$api$characters$LevelBasedEffect$ScopeDescription	[I
+		c javap 字节码取证 | 高 | static volatile int[]，$SWITCH_TABLE$ 方法懒初始化缓存（javac 合成）
+	m	o00000	getScopeDescriptionString	(Lcom/fs/starfarer/api/characters/LevelBasedEffect$ScopeDescription;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | switch 枚举返回 "all ships"/"all fighters"/"piloted ship" 等描述串
+	m	ØÓO000	resetExpandLabel	()V
+		c javap 字节码取证 | 高 | 若已加 expandLabel 则移除并 makeExpandable+重置 expanded；beforeShown/notiftyHidden 调
+	m	$SWITCH_TABLE$com$fs$starfarer$api$characters$LevelBasedEffect$ScopeDescription	$SWITCH_TABLE$com$fs$starfarer$api$characters$LevelBasedEffect$ScopeDescription	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表构建方法（先例 p001 保持原名）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$1	com/fs/starfarer/ui/impl/StandardTooltipV2$FleetMemberPreDeployTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createFleetMemberTooltipPreDeploy 创建，"% bonus XP"，部署前舰队成员 tooltip)
 	f	ôÕôO00	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
@@ -386,6 +562,8 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$1	com/fs/starfarer/ui/impl/Standard
 		c 构造注入 | 高
 	m	beforeShown	beforeShown	()V
 	m	createExpandedTooltip	createExpandedTooltip	()V
+	f	øÕôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | beforeShown clearChildren 后填充成员信息
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$2	com/fs/starfarer/ui/impl/StandardTooltipV2$FleetMemberExpandedTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createFleetMemberExpandedTooltip 创建，"codex_unlockable"，展开版成员 tooltip)
 	f	private.while$if	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
@@ -395,6 +573,8 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$2	com/fs/starfarer/ui/impl/Standard
 	f	ÖÕôO00	stats	Lcom/fs/starfarer/campaign/CharacterStats;
 		c 构造注入 | 高
 	m	beforeShown	beforeShown	()V
+	f	super.public$if	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | beforeShown clearChildren 后由 V.o00000 填充
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$3	com/fs/starfarer/ui/impl/StandardTooltipV2$SkillTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createSkillTooltip 创建，extends StandardTooltipV2Expandable，技能说明 tooltip)
 	f	øÔõO00	skillSpec	Lcom/fs/starfarer/loading/SkillSpec;
@@ -402,6 +582,18 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$3	com/fs/starfarer/ui/impl/Standard
 	f	ÕÔõO00	stats	Lcom/fs/starfarer/campaign/CharacterStats;
 		c 构造注入 | 高
 	m	createImpl	createImpl	(Z)V
+	f	ÖÔõO00	creationDialog	Lcom/fs/starfarer/coreui/CharacterCreationDialog;
+		c javap 字节码取证 | 高 | 非 null 时显示 "Press %s to open Codex" 与 getRequirementsText
+	f	String.class$float	levelBonus	I
+		c javap 字节码取证 | 高 | createImpl 中 setSkillLevel(id, 当前等级+levelBonus)；0 且无等级时取 10
+	f	private.String$float	shipEffectsOnly	Z
+		c javap 字节码取证 | 高 | true 时只显示 SHIP/SHIP_FIGHTERS 类型效果（其余跳过）
+	f	ôÔõO00	governedOutpostEffectsOnly	Z
+		c javap 字节码取证 | 高 | true 时跳过非 GOVERNED_OUTPOST 效果；与 shipEffectsOnly 共同控制效果列表显示
+	f	õÔõO00	panelWidth	F
+		c javap 字节码取证 | 高 | 构造器参数10，作浮层 z 面板宽度
+	f	super.class$float	panelHeight	F
+		c javap 字节码取证 | 高 | 构造器参数11，作浮层 z 面板高度
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$4	com/fs/starfarer/ui/impl/StandardTooltipV2$PersonnelBarTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createPersonnelBarTooltip 创建，持 FleetData+CargoData，人员栏 tooltip)
 	f	if.while$if	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
@@ -411,6 +603,14 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$4	com/fs/starfarer/ui/impl/Standard
 	m	beforeShown	beforeShown	()V
 	m	advance	advance	(F)V
 	m	updateData	updateData	()V
+	f	ÒÕôO00	personnelTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | beforeShown new nullsuper；updateData 填充人员行
+	f	øÔôO00	tableHeight	F
+		c javap 字节码取证 | 高 | beforeShown 按 rowCount 计算表高
+	f	OÕôO00	rowCount	I
+		c javap 字节码取证 | 高 | 构造器置 0，updateData 中行计数
+	f	ÓÕôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后 add 标题与表
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$5	com/fs/starfarer/ui/impl/StandardTooltipV2$CargoBarTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createCargoBarTooltip 创建，"Cargo Capacity"，货舱栏 tooltip)
 	f	ÖÔôO00	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
@@ -418,6 +618,12 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$5	com/fs/starfarer/ui/impl/Standard
 	m	beforeShown	beforeShown	()V
 	m	advance	advance	(F)V
 	m	updateData	updateData	()V
+	f	ôÔôO00	cargoTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | beforeShown new nullsuper 表；updateData addOrUpdate 每成员货舱容量
+	f	void.while$if	tableHeight	F
+		c javap 字节码取证 | 高 | beforeShown 按成员数计算表高，setSize 用
+	f	õÔôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后 add 标题与表
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$6	com/fs/starfarer/ui/impl/StandardTooltipV2$FuelBarTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createFuelBarTooltip 创建，持 FleetData+CargoData，燃料栏 tooltip)
 	f	OÔôO00	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
@@ -427,6 +633,14 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$6	com/fs/starfarer/ui/impl/Standard
 	m	beforeShown	beforeShown	()V
 	m	advance	advance	(F)V
 	m	updateData	updateData	()V
+	f	String.while$if	fuelTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | beforeShown new nullsuper；updateData addOrUpdate 燃料容量行
+	f	super.while$if	tableHeight	F
+		c javap 字节码取证 | 高 | beforeShown 按 rowCount 计算表高
+	f	ÒÔôO00	rowCount	I
+		c javap 字节码取证 | 高 | updateData 中 addOrUpdate 逐行递增，作表高计算
+	f	ÕÔôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后 add 标题与表
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$7	com/fs/starfarer/ui/impl/StandardTooltipV2$FleetBarTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createFleetBarTooltip 创建，"Fleet Points"，舰队栏 tooltip)
 	f	ôÓôO00	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
@@ -434,6 +648,12 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$7	com/fs/starfarer/ui/impl/Standard
 	m	beforeShown	beforeShown	()V
 	m	advance	advance	(F)V
 	m	updateData	updateData	()V
+	f	private.do$if	fleetTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | beforeShown new nullsuper；updateData addOrUpdate 每成员部署点
+	f	õÓôO00	tableHeight	F
+		c javap 字节码取证 | 高 | beforeShown 按成员数计算表高
+	f	øÓôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后 add 标题与表
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$8	com/fs/starfarer/ui/impl/StandardTooltipV2$ResourceDetailTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createResourceDetailTooltip 创建，"Extreme"/"High"，资源丰度详情 tooltip)
 	f	ÖÓôO00	accidentManager	Lcom/fs/starfarer/campaign/accidents/AccidentManager;
@@ -441,12 +661,40 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$8	com/fs/starfarer/ui/impl/Standard
 	m	beforeShown	beforeShown	()V
 	m	advance	advance	(F)V
 	m	updateData	updateData	()V
+	f	ÕÓôO00	logisticsTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | beforeShown new nullsuper；updateData 按事故严重度加行
+	f	do.do$if	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后 add 标题与表
+	f	if.do$if	$SWITCH_TABLE$com$fs$starfarer$campaign$accidents$AccidentRisk$AccidentSeverity	[I
+		c javap 字节码取证 | 高 | static volatile int[]，$SWITCH_TABLE$ 方法懒初始化缓存（javac 合成）
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$accidents$AccidentRisk$AccidentSeverity	$SWITCH_TABLE$com$fs$starfarer$campaign$accidents$AccidentRisk$AccidentSeverity	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表构建方法（保持原名）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$9	com/fs/starfarer/ui/impl/StandardTooltipV2$FleetTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createFleetTooltip 创建，持 CampaignFleet+VisibilityLevel 处理，舰队 tooltip)
 	f	õÒôO00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 		c 构造注入 | 高
 	m	beforeShown	beforeShown	()V
 	m	advanceImpl	advanceImpl	(F)V
+	f	øÒôO00	insigniaLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | createSmallInsigniaLabel 建；文本=活动描述+立场，advanceImpl 刷新
+	f	ÒÓôO00	fleetNameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 舰队名标题（getEntityNamePrefix+" "+name 或 "Unidentified Fleet"）
+	f	OÓôO00	visibilityLevel	Lcom/fs/starfarer/api/campaign/SectorEntityToken$VisibilityLevel;
+		c javap 字节码取证 | 高 | 构造器置 NONE，beforeShown 由 getVisibilityLevelToPlayerFleet 刷新
+	f	String.do$if	maxBurnLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Maximum burn: N" 标签，advanceImpl 按 burnLevel 刷新
+	f	ÓÓôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后重建内容
+	f	void.do$if	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$FleetMemberButtonRendererV3$OverlayType	[I
+		c javap 字节码取证 | 高 | static volatile int[]，$SWITCH_TABLE$ 方法懒初始化缓存（javac 合成）
+	m	õÓO000	updateContent	()V
+		c javap 字节码取证 | 高 | 重建整个 tooltip 内容（标题/徽标/航速/AI 活动行），beforeShown/advanceImpl 调
+	m	Ô00000	getStanceString	(Lcom/fs/starfarer/api/campaign/SectorEntityToken$VisibilityLevel;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | 返回 "Hostile"/"Friendly"/"Neutral"/"Unknown"（isHostileTo/isAtWorst 判定）
+	m	Ó00000	getActivityString	(Lcom/fs/starfarer/api/campaign/SectorEntityToken$VisibilityLevel;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | 基于 ModularFleetAI 任务返回 "running from your fleet"/"avoiding contact" 等
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$FleetMemberButtonRendererV3$OverlayType	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$FleetMemberButtonRendererV3$OverlayType	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表构建方法（保持原名）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$10	com/fs/starfarer/ui/impl/StandardTooltipV2$TextTooltipSmall
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createTextTooltipSmall 创建，短文本 tooltip)
 	f	super.do$if	text1	Ljava/lang/String;
@@ -456,6 +704,10 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$10	com/fs/starfarer/ui/impl/Standar
 	f	ÖÒôO00	modifier	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$OOo;
 		c 构造注入，改写文本 | 高
 	m	beforeShown	beforeShown	()V
+	f	ôÒôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后 add 标题与正文
+	f	ÕÒôO00	width	F
+		c javap 字节码取证 | 高 | 构造器参数4，beforeShown 中宽度基准（-14 作内容宽度）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$11	com/fs/starfarer/ui/impl/StandardTooltipV2$HullModTooltipDataProviderImpl
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: 实现 StandardTooltipV2$O0，提供 Ship/FleetMemberAPI/ShipVariantAPI，createHullModTooltip 使用)
 	m	Ó00000	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
@@ -464,6 +716,12 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$11	com/fs/starfarer/ui/impl/Standar
 		c 实现 StandardTooltipV2$O0 | 高
 	m	super	getVariant	()Lcom/fs/starfarer/api/combat/ShipVariantAPI;
 		c 实现 StandardTooltipV2$O0 | 高
+	f	Ó00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器参数1，getter Ó00000() 原样返回
+	f	new	fleetMember	Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+		c javap 字节码取证 | 高 | 构造器参数2，getter Ò00000() 原样返回
+	f	o00000	shipVariant	Lcom/fs/starfarer/api/combat/ShipVariantAPI;
+		c javap 字节码取证 | 高 | 构造器参数3，getter super() 原样返回
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$12	com/fs/starfarer/ui/impl/StandardTooltipV2$HullModTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createHullModTooltip 创建，extends StandardTooltipV2Expandable，持 HullModSpec)
 	f	OÔõO00	hullModSpec	Lcom/fs/starfarer/loading/specs/O00O;
@@ -471,11 +729,23 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$12	com/fs/starfarer/ui/impl/Standar
 	f	do.String$float	dataProvider	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$O0;
 		c 构造注入 Ship/FleetMember/Variant 数据源 | 高
 	m	createImpl	createImpl	(Z)V
+	f	ÓÔõO00	width	F
+		c javap 字节码取证 | 高 | 构造器参数5，createImpl 传给 addRequiredItemSection 宽度
+	f	ÒÔõO00	uiHost	Lcom/fs/starfarer/coreui/CoreUIHost;
+		c javap 字节码取证 | 高 | createImpl 中 getPlugin/getOther/getTradeMode 判断可否安装
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$13	com/fs/starfarer/ui/impl/StandardTooltipV2$TextTooltipExpandable
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createTextTooltipV2E 创建，extends StandardTooltipV2Expandable，持 CustomCampaignEntity)
 	f	õÓõO00	entity	Lcom/fs/starfarer/campaign/CustomCampaignEntity;
 		c 构造注入 | 高
 	m	createImpl	createImpl	(Z)V
+	f	if.String$float	titleFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | createImpl 开头 setTitleFont
+	f	øÓõO00	title	Ljava/lang/String;
+		c javap 字节码取证 | 高 | createImpl addTitle(title, titleColor)
+	f	ôÓõO00	titleColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | addTitle 颜色参数
+	f	void.String$float	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | createImpl addPara 正文
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$14	com/fs/starfarer/ui/impl/StandardTooltipV2$TextTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createTextTooltip 创建，纯文本 tooltip)
 	f	ÒÒôO00	text	Ljava/lang/String;
@@ -485,6 +755,10 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$14	com/fs/starfarer/ui/impl/Standar
 	f	do.for$if	modifier	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$OOo;
 		c 构造注入 | 高
 	m	beforeShown	beforeShown	()V
+	f	ÓÒôO00	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 容器面板，clearChildren 后 add 标题与正文
+	f	øoôO00	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | createSmallInsigniaLabel 正文（可被 modifier.o00000 改写）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$15	com/fs/starfarer/ui/impl/StandardTooltipV2$CostLabel
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: createCostLabel 创建，extends ui.d，货单成本标签)
 	f	ÕôØo00	text	Ljava/lang/String;
@@ -492,11 +766,21 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$15	com/fs/starfarer/ui/impl/Standar
 	f	super.do$private	itemStack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
 		c 构造注入 | 高
 	m	advance	advance	(F)V
+	f	ÓôØo00	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/CargoTransferHandler;
+		c javap 字节码取证 | 高 | 调 getSubmarketTradedWith/isNoCost/computeCurrentSingleItemSellCost/BuyCost
+	f	ÖôØo00	manifest	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView$CargoManifest;
+		c javap 字节码取证 | 高 | 与 getManifestOne() 比较决定买卖方向（PLAYER_SELL/PLAYER_BUY）
+	f	private.for$private	maxWidth	F
+		c javap 字节码取证 | 高 | 构造器参数6，>0 时 autoSizeToWidth
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$16	com/fs/starfarer/ui/impl/StandardTooltipV2$WeaponTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createWeaponTooltip 创建，持 CargoItemStack，武器 tooltip)
 	f	ÒôØo00	itemStack	Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;
 		c 构造注入 | 高
 	m	advance	advance	(F)V
+	f	do.for$private	lastCargoSpace	F
+		c javap 字节码取证 | 高 | 缓存上次空间值，变化才 setText "Cargo space: N"；初始 -1
+	f	OôØo00	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 文本更新后调 tooltip.pack()
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$17	com/fs/starfarer/ui/impl/StandardTooltipV2$FleetMemberStatsTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: createFleetMemberStatsTooltip 创建，成员数值统计 tooltip)
 	f	void.for$if	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
@@ -506,35 +790,49 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$17	com/fs/starfarer/ui/impl/Standar
 	f	ôoôO00	stats	Lcom/fs/starfarer/campaign/CharacterStats;
 		c 构造注入 | 高
 	m	beforeShown	beforeShown	()V
+	f	if.for$if	panel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | beforeShown clearChildren 后 add 成本标签与军械面板
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$17$1	com/fs/starfarer/ui/impl/StandardTooltipV2$FleetMemberStatsTooltip$CostLabel
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: extends campaign.ui.trade.OoOO，$17 内创建的成本标签)
 	m	advanceImpl	advanceImpl	(F)V
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$FleetMemberStatsTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$4$1	com/fs/starfarer/ui/impl/StandardTooltipV2$PersonnelBarTooltip$FleetMemberComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: $4 PersonnelBarTooltip 内 Comparator<FleetMember>，按 getMaxCrew 排序)
 	m	o00000	compareByMaxCrew	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
 		c 按 getMaxCrew 排序 | 高
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$PersonnelBarTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$5$1	com/fs/starfarer/ui/impl/StandardTooltipV2$CargoBarTooltip$FleetMemberComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: $5 CargoBarTooltip 内 Comparator<FleetMember>，按 getCargoCapacity 排序)
 	m	o00000	compareByCargoCapacity	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
 		c 按 getCargoCapacity 排序 | 高
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$CargoBarTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成，先例 outer）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$6$1	com/fs/starfarer/ui/impl/StandardTooltipV2$FuelBarTooltip$FleetMemberComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: $6 FuelBarTooltip 内 Comparator<FleetMember>，按 getFuelCapacity 排序)
 	m	o00000	compareByFuelCapacity	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
 		c 按 getFuelCapacity 排序 | 高
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$FuelBarTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$7$1	com/fs/starfarer/ui/impl/StandardTooltipV2$FleetBarTooltip$FleetMemberComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: $7 FleetBarTooltip 内 Comparator<FleetMember>，按 getDeploymentPointsCost 排序)
 	m	super	compareByDeploymentPoints	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
 		c 按 getDeploymentPointsCost 排序 | 高
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2$FleetBarTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/O$1	com/fs/starfarer/ui/impl/CombatCommandPanel$CommandPointsTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends StandardTooltipV2Expandable，"Command points are required to create assignments and give direct orders to your fleet.")
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outerCombatCommandPanel	Lcom/fs/starfarer/ui/impl/CombatCommandPanel;
 c	com/fs/starfarer/ui/impl/O$2	com/fs/starfarer/ui/impl/CombatCommandPanel$CleanDisengageTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: extends StandardTooltipV2Expandable，"Clean Disengage"/"If your forces inflict sufficient losses on the enemy, you will be able to disengage...")
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outerCombatCommandPanel	Lcom/fs/starfarer/ui/impl/CombatCommandPanel;
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$o	com/fs/starfarer/ui/impl/StandardTooltipV2$FlashOnShowingProvider
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 接口 shouldFlashOnShowing()Z，createSkillTooltip 参数)
 	m	shouldFlashOnShowing	shouldFlashOnShowing	()Z
@@ -552,16 +850,54 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2$O0	com/fs/starfarer/ui/impl/Standar
 		c 接口方法，$11 实现 | 高
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$oo	com/fs/starfarer/ui/impl/StandardTooltipV2$SkillTooltipData
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 私有构造(SkillSpec,String)，$3 SkillTooltip 中遍历使用)
+	f	o00000	skillSpec	Lcom/fs/starfarer/loading/SkillSpec;
+		c javap 字节码取证 | 高 | 构造器参数1 原样存入
+	f	Ó00000	name	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数2 原样存入（技能名）
+	f	new	effects	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造器 new ArrayList 初始化，效果规格列表
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$Oo	com/fs/starfarer/ui/impl/StandardTooltipV2$TooltipOptions
 	c 来源(javap取证) | 置信度(高) | 证据(已有片段引用: campaign-ui-core-a 字段 tooltipOptions 类型；javap取证: 含 CrewComposition getter/setter 的显示选项类)
 	m	new	getCrewComposition	()Lcom/fs/starfarer/campaign/fleet/CrewComposition;
 		c 返回类型给出 | 中
 	m	o00000	setCrewComposition	(Lcom/fs/starfarer/campaign/fleet/CrewComposition;)V
 		c 参数类型给出 | 中
+	f	ô00000	showCRDecrease	Z
+		c javap 字节码取证 | 高 | isShowCRDecrease 读；true 时 CR 条 setPotentialDecreaseAmount
+	f	õ00000	cr	F
+		c javap 字节码取证 | 高 | getCR 读；>=0 时 V 中 setMothballed(false)+setCR；<0 表示"用实际值"
+	f	Ò00000	crewComposition	Lcom/fs/starfarer/campaign/fleet/CrewComposition;
+		c javap 字节码取证 | 高 | V 中非 null 时 setCrewComposition 覆盖成员编制
+	f	Ó00000	statusText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 非 null 时覆盖状态文本（如 "Ready for deployment"）
+	f	Ö00000	statusColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 非 null 时覆盖状态文本颜色
+	f	super	unusedFlag	Z
+		c javap 字节码取证 | 中 | 全 dump 无任何 getfield 读取（死代码），判定依据 grep 无读点
+	f	String	showStoryPointRecovery	Z
+		c javap 字节码取证 | 高 | true 时显示 "Requires a [STORY] point to recover, grants N% bonus XP"
+	f	Õ00000	storyPointXPBonus	F
+		c javap 字节码取证 | 高 | 需求文本中 N/100 的 XP 加成（*100 round 后拼接）
+	f	void	unusedText	Ljava/lang/String;
+		c javap 字节码取证 | 中 | 全 dump 无任何 getfield 读取（死代码），判定依据 grep 无读点
+	m	o00000	isShowCRDecrease	()Z
+		c javap 字节码取证 | 高 | getter：返回 ô00000
+	m	o00000	setShowCRDecrease	(Z)V
+		c javap 字节码取证 | 高 | setter：写 ô00000
+	m	Ó00000	getCR	()F
+		c javap 字节码取证 | 高 | getter：返回 õ00000 字段
+	m	o00000	setCR	(F)V
+		c javap 字节码取证 | 高 | setter：写 õ00000 字段
 c	com/fs/starfarer/ui/impl/StandardTooltipV2$OOo	com/fs/starfarer/ui/impl/StandardTooltipV2$TextTooltipModifier
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: 接口 o00000(String)String 改写文本，createTextTooltip 参数)
 	m	o00000	modifyText	(Ljava/lang/String;)Ljava/lang/String;
 		c createTextTooltip 中改写提示文本 | 中
+	m	Ò00000	setTitleLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | $14/$10 中收到标题 label 并回调
+	m	o00000	setTextLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | $14/$10 中收到正文徽标 label 并回调
+	m	o00000	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | $10 中取快捷键动作并拼接 "[按键]" 文本
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable
 	c 来源(javap取证) | 置信度(高) | 证据(API-impl种子: implements TooltipMakerAPI 全方法签名匹配；extends StandardTooltipV2，可展开 tooltip 构建器)
 	f	ÒØôO00	recreateEveryFrame	Z
@@ -826,40 +1162,98 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable	com/fs/starfarer/ui/impl/
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$1	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TooltipBelowPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: addTooltipBelow 创建的 Runnable，定位 tooltip 于下方)
 	m	run	run	()V
+	f	o00000	tooltipHost	Lcom/fs/starfarer/ui/TooltipHost;
+		c javap 字节码取证 | 高 | run 中 setTooltipPositionRelativeToAnchor(-2, -tooltip高)
+	f	new	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 被定位的 tooltip（取宽高）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$2	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TooltipBelowRightPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: addTooltipBelowRight 创建的 Runnable)
 	m	run	run	()V
+	f	o00000	tooltipHost	Lcom/fs/starfarer/ui/TooltipHost;
+		c javap 字节码取证 | 高 | run 中 setTooltipPositionRelativeToAnchor(host宽-tooltip宽-2, -tooltip高)
+	f	new	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 被定位的 tooltip（取宽高）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$3	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TooltipLeftPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: addTooltipLeft 创建的 Runnable)
 	m	run	run	()V
+	f	o00000	tooltipHost	Lcom/fs/starfarer/ui/TooltipHost;
+		c javap 字节码取证 | 高 | run 中 setTooltipPositionRelativeToAnchor(-tooltip宽, -(host高-tooltip高))
+	f	new	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 被定位的 tooltip（取宽高）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$10	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$ActionListenerDelegate
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: setActionListenerDelegate 创建，implements ui.ooOo 按钮监听)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	ÒöÖo00	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	ÓöÖo00	delegate	Lcom/fs/starfarer/api/ui/TooltipMakerAPI$ActionListenerDelegate;
+		c javap 字节码取证 | 高 | 构造器参数2，actionPerformed 原样转发
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$11	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$SurveyReqsStatModValueGetter
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: showFullSurveyReqs 创建，实现 TooltipMakerAPI$StatModValueGetter)
 	m	getPercentValue	getPercentValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
 	m	getMultValue	getMultValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
 	m	getModColor	getModColor	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/awt/Color;
 	m	getFlatValue	getFlatValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
+	f	this$0	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	o00000	statModDescs	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getModColor 中 contains(mod.desc) 决定返回 null（默认色）还是负高亮色
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$12	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$FleetMemberComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: addStatGridForShips 创建，Comparator<FleetMember>)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	val$getter	getter	Lcom/fs/starfarer/api/ui/TooltipMakerAPI$FleetMemberValueGetter;
+		c javap 字节码取证 | 高 | 捕获 lambda 参数（编译器合成 val$ 名）
+	f	val$ascending	ascending	Z
+		c javap 字节码取证 | 高 | 捕获 lambda 参数，决定比较方向
+	m	o00000	compareByValue	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
+		c javap 字节码取证 | 高 | getValue 差值 signum，skipMember 置 0，ascending 决定正反
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$13	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$CargoStackComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: showCargo 创建，Comparator<CargoStackAPI>)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	m	super	compareBySize	(Lcom/fs/starfarer/api/campaign/CargoStackAPI;Lcom/fs/starfarer/api/campaign/CargoStackAPI;)I
+		c javap 字节码取证 | 高 | 按 getSize 差值符号，相等再比 getDisplayName
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$14	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$CargoListTooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: showCargo 创建的 Runnable)
 	m	run	run	()V
+	f	Ò00000	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	super	cargoStackView	Lcom/fs/starfarer/campaign/ui/trade/CargoStackView;
+		c javap 字节码取证 | 高 | run 中 setTooltipPositionRelativeToAnchor(0, -tooltip高)
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 定位偏移量来源（getHeight）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$15	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$ShipListComparator
 	c 来源(javap取证) | 置信度(高) | 证据(javap取证: showShips 创建，Comparator<FleetMemberAPI>)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	m	o00000	compareByHullSize	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)I
+		c javap 字节码取证 | 高 | hullSize ordinal 差（反向），相等比 getHullName
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$16	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$TableClickActionListener
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: makeTableItemsClickable 创建，实现 campaign.ui.UITable$o 行点击回调)
 	m	super	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
 		c campaign-command-a 已有同签名命名 tableRowSelected | 高
+	f	o00000	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	new	table	LUITable;
+		c javap 字节码取证 | 高 | 构造器参数2，actionPerformed 附带对象
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$17	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$PreviousRowTooltip
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: addTooltipToPrevious 创建的 STV2E 子类 tooltip)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	ÖÕõO00	tooltipCreator	Lcom/fs/starfarer/api/ui/TooltipMakerAPI$TooltipCreator;
+		c javap 字节码取证 | 高 | createImpl 中 createTooltip 调用
+	f	ÕÕõO00	tooltipHost	Lcom/fs/starfarer/ui/TooltipHost;
+		c javap 字节码取证 | 高 | createTooltip 第三参数（宿主对象）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$18	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$AttachedRowTooltip
 	c 来源(javap取证) | 置信度(中) | 证据(javap取证: addTooltipTo 创建的 STV2E 子类 tooltip)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	if.class$float	tooltipCreator	Lcom/fs/starfarer/api/ui/TooltipMakerAPI$TooltipCreator;
+		c javap 字节码取证 | 高 | createImpl 中 createTooltip(this, expandable, host) 调用
+	f	ÓÕõO00	tooltipHost	Lcom/fs/starfarer/ui/TooltipHost;
+		c javap 字节码取证 | 高 | createTooltip 第三参数（宿主对象）

@@ -1,46 +1,552 @@
 tiny	2	0	obf	named
 c	com/fs/starfarer/renderers/super	com/fs/starfarer/renderers/ArcRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ò00000	fadeAnimation	Lcom/fs/graphics/anim/BaseAnimation;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ô00000	activeWeaponGroup	Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	return	heldWeaponGroup	Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Õ00000	lineTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ø00000	fadeState	Lcom/fs/starfarer/renderers/ArcRenderer$FadeState;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ô00000	alpha	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	int	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	glListToken	Lcom/fs/graphics/util/GLListToken;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Object	visible	Z
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	setFadeState	(Lcom/fs/starfarer/renderers/ArcRenderer$FadeState;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ò00000	setHeldWeaponGroup	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	return	getHeldWeaponGroup	()Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ò00000	getActiveWeaponGroup	()Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	setActiveWeaponGroup	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ô00000	render	()V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Object	isFadeAnimationDone	()Z
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Õ00000	toggleVisible	()V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	isVisible	()Z
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ò00000	renderWeaponArc	(Lcom/fs/starfarer/combat/systems/Weapon;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	isWeaponFiring	(Lcom/fs/starfarer/combat/systems/Weapon;)Z
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/super$o	com/fs/starfarer/renderers/ArcRenderer$FadeState
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/super$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/super$o;
+	f	Ô00000	IN	Lcom/fs/starfarer/renderers/ArcRenderer$FadeState;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	new	OUT	Lcom/fs/starfarer/renderers/ArcRenderer$FadeState;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	class	FULL	Lcom/fs/starfarer/renderers/ArcRenderer$FadeState;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	FADED	Lcom/fs/starfarer/renderers/ArcRenderer$FadeState;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ó00000	$VALUES	[Lcom/fs/starfarer/renderers/ArcRenderer$FadeState;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/A/oOOO	com/fs/starfarer/renderers/FiringSolutionWidget
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ÓÖÕo00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | setColor 写入并广播到各武器条；createLabel 用作文本色
+	f	ÖÖÕo00	weaponGroup	Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 高 | setGroup 写入；updateFiringSolution 经 ship.getSelectedGroup 更新
+	f	ÒÖÕo00	weaponBarMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 构造 new HashMap；setGroup clear+put(Weapon, A/G 条)；setColor/update 遍历 values
+	f	ÕÖÕo00	unusedQuadRenderer	Lcom/fs/starfarer/E/QuadRenderer;
+		c javap 字节码取证 | 高 | private 字段类内零 getfield/putfield 引用，死代码
+	f	super.for$public	font	Lcom/fs/graphics/font/BitmapFont;
+		c javap 字节码取证 | 高 | 构造 D.Ò00000(String) 创建；createLabel 与武器条构造共用
+	f	OÖÕo00	barHeight	F
+		c javap 字节码取证 | 高 | 构造置为字体行高；getHeight 返回 barHeight*条数
+	f	String.for$public	startFromTop	Z
+		c javap 字节码取证 | 高 | setStartFromTop 写入；setGroup 布局分支 inTL/inBL
+	m	ÓO0000	createLabel	(Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 创建 LabelImpl（ui/d）：setAlignment(LMID)+setColor+描边
 c	com/fs/starfarer/renderers/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/renderers/WeaponGroupRow
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ÖØÕo00	rowSpacing	F
+		c javap 字节码取证 | 高 | static 3.0f 行间距
+	f	super.do$public	group	Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 高 | final；getGroup()
+	f	ÓØÕo00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | setColor 传播到子组件
+	f	private.for$public	typeLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 'ALTERNATING'；updateState setText 组类型名
+	f	String.do$public	autofireLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 'AUTOFIRE:' 标签
+	f	ÒØÕo00	numberLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 'N.' 组号标签
+	f	øØÕo00	autofireCheckbox	Lcom/fs/starfarer/renderers/CheckboxWidget;
+		c javap 字节码取证 | 高 | CheckboxWidget(color)；setChecked(isFiringAtWill)
+	f	õØÕo00	selectFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | select fadeIn / unselect fadeOut
+	f	OØÕo00	autofireFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | isFiringAtWill 时 fadeIn
+	f	ÕØÕo00	lineHeight	F
+		c javap 字节码取证 | 高 | 构造 = numberLabel.getLineHeight()
+	f	øÖÕo00	iconSize	F
+		c javap 字节码取证 | 高 | lineHeight*2；WeaponRow 图标区域尺寸
+	f	do.for$public	fontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | final；createLabel 字体
+	f	OôÕo00	weaponRows	Ljava/util/List;
+		c javap 字节码取证 | 高 | WeaponRow 列表
+	f	ôØÕo00	height	F
+		c javap 字节码取证 | 高 | getHeight()；累加 WeaponRow 高度
+	m	while.public	rebuildWeaponRows	()V
+		c javap 字节码取证 | 高 | 按武器名分组重建 WeaponRow
+	m	ÔO0000	createLabel	(Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | new LabelImpl(fontName)
 c	com/fs/starfarer/renderers/A/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/renderers/WeaponGroupRow$WeaponRow
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	void.for$public	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 'Nx 武器名' 标签
+	f	õÖÕo00	damageTypeLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 'dmg: X' / 'dmg: ---'
+	f	ôÖÕo00	weaponIconRenderer	Lcom/fs/starfarer/ui/super/WeaponIconRenderer;
+		c javap 字节码取证 | 高 | WeaponIconRenderer(spec,slot,color,false,true)
+	f	if.for$public	renderHookPanel	Lcom/fs/starfarer/ui/RenderHookPanel;
+		c javap 字节码取证 | 高 | RenderHookPanel(weaponIconRenderer)
+	f	this$0	this$0	Lcom/fs/starfarer/renderers/WeaponGroupRow;
+		c javap 字节码取证 | 高 | 外部类引用（保留 this$0 惯例）
 c	com/fs/starfarer/renderers/A/O0OO	com/fs/starfarer/renderers/CheckboxWidget
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ÕOôo00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	void.private$private	drawBackground	Z
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ÖOôo00	checked	Z
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	String.private$private	glowFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ôOôo00	position	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/A/E	com/fs/starfarer/renderers/RenderMathUtils
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	m	o00000	intersectSegmentWithRect	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFFFFF)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 由 (x,y,w,h) 构矩形四角，逐边调 intersectSegments 取首个交点，无则返回起点副本
+	m	o00000	intersectSegments	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFFF)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 线段求交（4 个 margin 参数，端点外扩），无交返回 null；被 intersectSegmentWithRect 调用
+	m	o00000	distance	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)F
+		c javap 字节码取证 | 高 | 两 Vector2f 差向量 length
+	m	o00000	intersectSegments	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 两线段求交核心（参数化 t 判定），无交返回 null
+	m	o00000	main	([Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | main 调试入口：System.out.println 测试求交结果
 c	com/fs/starfarer/renderers/A/C	com/fs/starfarer/renderers/TargetReticleRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	o00000	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+		c javap 字节码取证 | 高 | 构造取 CombatEngine.getViewport
+	f	Ó00000	fluxFontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | new BitmapFontRenderer("flux",victor10.fnt)
+	f	Ö00000	hullFontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | new BitmapFontRenderer("hull",victor10.fnt)
+	f	class	fluxProgressText	Lcom/fs/starfarer/E/ProgressText;
+		c javap 字节码取证 | 高 | J(null,null,null,5,30) 显示 flux 数值文本
+	f	Ø00000	hullProgressText	Lcom/fs/starfarer/E/ProgressText;
+		c javap 字节码取证 | 高 | 同上第二实例（hull 文本）
+	f	Ô00000	reticles	Ljava/util/List;
+		c javap 字节码取证 | 高 | 活动准星列表，advance/渲染遍历
+	f	new	updatedReticles	Ljava/util/List;
+		c javap 字节码取证 | 高 | 本帧被 add/remove 触碰的准星集合，advance 末尾 clear
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 遍历 reticles 推进+移除 isDone，未触碰的 fadeOut
+	m	Ò00000	getReticles	()Ljava/util/List;
+		c javap 字节码取证 | 高 | getter reticles
+	m	super	getPrimaryReticle	()Lcom/fs/starfarer/renderers/ShipTargetReticle;
+		c javap 字节码取证 | 高 | 返回第一个 isPrimary 的准星
+	m	super	addReticle	(Lcom/fs/starfarer/combat/entities/Ship;F)V
+		c javap 字节码取证 | 高 | module_no_status_bar 跳过；已有则续期，否则新建并加入两列表
+	m	super	removeReticle	(Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 匹配 ship 的准星加入 updatedReticles 并 reset
+	m	super	render	(FFLorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 遍历 reticles 分主/次调用 render(FF,Vector2f)
 c	com/fs/starfarer/renderers/A/F	com/fs/starfarer/renderers/WeaponGroupListPanel
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ÓôÕo00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数2；setColor 传播到行与标题
+	f	ôôÕo00	unusedWeaponGroup	Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 高 | 字段存在但全类无任何读取（死代码）
+	f	void.do$public	sourceShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | setSourceShip 存储；update 触发重建
+	f	ÖôÕo00	rows	Ljava/util/List;
+		c javap 字节码取证 | 高 | WeaponGroupRow 列表
+	f	do.do$public	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 'WEAPON GROUPS' 标题
+	f	ÒôÕo00	fontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数1；createLabel 字体
+	f	if.do$public	forShipInfoWidget	Z
+		c javap 字节码取证 | 高 | setForShipInfoWidget(boolean) 标志
+	f	õôÕo00	totalHeight	F
+		c javap 字节码取证 | 高 | getHeight()；累加行高+标题
+	f	ÕôÕo00	totalShift	F
+		c javap 字节码取证 | 高 | getTotalShift()
+	m	interface	createLabel	(Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | new LabelImpl(fontName)
 c	com/fs/starfarer/renderers/A/null	com/fs/starfarer/renderers/ShipTargetReticle
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ôo0000	unusedStaticFloat	F
+		c javap 字节码取证 | 高 | private static final，全类无 getstatic/putstatic 引用（clinit 无赋值），死字段
+	f	this.super	baseSize	F
+		c javap 字节码取证 | 高 | clinit 常量 125.0f，准星面板/缩放基准
+	f	for.super	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造参数1 目标舰，getShip 返回
+	f	øO0000	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+		c javap 字节码取证 | 高 | 构造取 CombatEngine.getViewport，渲染坐标换算
+	f	ÔO0000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | Fader(0,0.25,0.25) 主淡入淡出，isDone 检查其 isIdle
+	f	Ô00000	expandFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | Fader(1,0.5,0.5) 控制准星最大显示尺寸（50+100*brightness）
+	f	Õo0000	edgeFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | Fader(0.25,0.25) 屏幕边缘方向指示器淡入淡出
+	f	return	targetInfoPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 匿名 panel，TARGET 文本+武器组列表，init/updateTargetPanel 操作
+	f	Ò00000	shipInfoPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | hull/flux 条+敌友/cr/fighters 状态文本面板
+	f	Object	identityPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 舰名/设计/变体文本面板
+	f	int.super	rangeSpeedPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | RANGE/SPEED 标签面板（----m / ----m/s）
+	f	int	weaponGroupPanel	Lcom/fs/starfarer/renderers/WeaponGroupListPanel;
+		c javap 字节码取证 | 高 | TARGET 面板内的武器组列表组件
+	f	Øo0000	hullBar	Lcom/fs/starfarer/renderers/FluxBarWidget;
+		c javap 字节码取证 | 高 | 构造传 hull 标签，update(f) 船体值
+	f	öO0000	fluxBar	Lcom/fs/starfarer/renderers/FluxBarWidget;
+		c javap 字节码取证 | 高 | 构造传 flux 标签 setShowMinimum(true)，update(flux,min)
+	f	ÕO0000	factionLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | updateStatusPanel 更新 FRIENDLY/ALLIED/NEUTRAL/HOSTILE/DISABLED 文本
+	f	ôO0000	crLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | updateStatusPanel 更新 "cr: N%" 文本
+	f	oO0000	rangeLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | updateRangeSpeedPanel 更新 "N su" 距离
+	f	ô00000	speedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | updateRangeSpeedPanel 更新 "N su/s" 速度
+	f	Object.super	fightersLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | updateStatusPanel 更新 "fighters: N%"（替代率）
+	f	Ø00000	secondary	Z
+		c javap 字节码取证 | 高 | 构造参数2(持续时间>1)，true 时准星缩小/简化渲染，isPrimary=!secondary
+	f	return.super	duration	F
+		c javap 字节码取证 | 高 | 构造参数3 持续时间，setDuration 更新并 reset
+	f	Òo0000	hullSchematic	Lcom/fs/starfarer/E/OoOO/HullSchematicWidget;
+		c javap 字节码取证 | 高 | 构造按 hullSize 缩放创建，advance/渲染装甲示意图
+	f	ÒO0000	font	Lcom/fs/graphics/font/BitmapFont;
+		c javap 字节码取证 | 高 | victor10.fnt 字体，createLabel 使用
+	f	for	fontLineHeight	F
+		c javap 字节码取证 | 高 | 构造取 font.float() 行高，标签尺寸基准
+	f	oo0000	targetLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 初始化 "TARGET: NONE"，updateTargetPanel 更新 "TARGET: %s"
+	f	Õ00000	screenPos	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 懒创建，渲染时 set 屏幕坐标，getScreenPos 返回
+	f	public	offsetPoint	Lcom/fs/starfarer/combat/systems/OffsetPoint;
+		c javap 字节码取证 | 高 | 构造 new OffsetPoint()
+	f	ø00000	lineTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | graphics/hud/line4x4.png 线段纹理
+	f	ØO0000	factionColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造先(0,0,255)后 Utils.new(owner,isAlly)，recolorPanel 应用
+	f	ö00000	transparentBlack	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | Color(0,0,0,0) alpha 遮罩用
+	f	o00000	officerRow	Lcom/fs/starfarer/coreui/OfficerLevelRow;
+		c javap 字节码取证 | 高 | 舰长信息行（有非默认船长且非玩家/玩家站时创建）
+	m	o00000	getHullSizeScale	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)F
+		c javap 字节码取证 | 高 | 1+ordinal/CAPITAL_SHIP.ordinal，准星尺寸按船型缩放
+	m	Õ00000	isPrimary	()Z
+		c javap 字节码取证 | 高 | !secondary，TargetReticleRenderer 用其挑主准星
+	m	Object	initTargetPanel	(Lcom/fs/starfarer/ui/Panel;)V
+		c javap 字节码取证 | 高 | 加 "TARGET: NONE" 标签+WeaponGroupListPanel
+	m	Ô00000	updateTargetPanel	()V
+		c javap 字节码取证 | 高 | WeaponGroupListPanel.setSourceShip/update，更新 "TARGET: %s"
+	m	o00000	initRangeSpeedPanel	(Lcom/fs/starfarer/ui/Panel;)V
+		c javap 字节码取证 | 高 | 加 RANGE/SPEED 标签+----m / ----m/s 占位
+	m	Ø00000	getFollowEntity	()Lcom/fs/starfarer/combat/warroom/WarroomMapEntity;
+		c javap 字节码取证 | 中 | CombatUI.getEntityToFollow，为空或==玩家目标时回落玩家舰
+	m	Ò00000	updateRangeSpeedPanel	()V
+		c javap 字节码取证 | 高 | 按 getFollowEntity 距离更新 "N su"，按速度更新 "N su/s"
+	m	Ò00000	initIdentityPanel	(Lcom/fs/starfarer/ui/Panel;)V
+		c javap 字节码取证 | 高 | 加舰名+设计/变体名标签
+	m	ÒO0000	updateStatusPanel	()V
+		c javap 字节码取证 | 高 | 更新敌友/中立状态+cr:/fighters: 文本
+	m	o00000	createLabel	(Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | new LabelImpl(text,font)+对齐+尺寸+颜色
+	m	o00000	isDone	()Z
+		c javap 字节码取证 | 高 | fader.isIdle && brightness==0，advance 据此移除
+	m	ø00000	fadeIn	()V
+		c javap 字节码取证 | 高 | fader.fadeIn
+	m	ö00000	fadeOut	()V
+		c javap 字节码取证 | 高 | fader.fadeOut
+	m	return	getFader	()Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getter fader
+	m	int	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | getter ship
+	m	Ô00000	recolorPanel	(Lcom/fs/starfarer/ui/Panel;)V
+		c javap 字节码取证 | 高 | 遍历子组件：Label 渲染器/FluxBar/X 设 factionColor
+	m	Ò00000	advance	(F)V
+		c javap 字节码取证 | 高 | 懒建 officerRow、更新 factionColor、3 fader+hullSchematic+4 panel advance、hull/flux bar、updateStatus/updateTarget
+	m	o00000	render	(FFLorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 转发 render(FF,Vector2f,Z,Vector2f) false,null
+	m	o00000	renderWithOffset	(FFLorg/lwjgl/util/vector/Vector2f;ZLorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 主渲染：屏幕坐标换算、护盾半径缩放、边缘指示、4 面板+示意图
+	m	ô00000	getScreenPos	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | getter screenPos
+	m	for	getPanelWidth	()F
+		c javap 字节码取证 | 中 | 返回 25+baseSize+3=153，准星面板宽度（与 getPanelHeight 同体）
+	m	Object	getPanelHeight	()F
+		c javap 字节码取证 | 中 | 返回 25+baseSize+3=153，准星面板高度
+	m	Ò00000	clampPointToScreen	(Lorg/lwjgl/util/vector/Vector2f;FF)Z
+		c javap 字节码取证 | 中 | 将输入点限制到可视区四边内（线段求交），返回是否被限
+	m	o00000	isOutsideViewport	(Lorg/lwjgl/util/vector/Vector2f;FF)Z
+		c javap 字节码取证 | 中 | 检查目标点加偏移后是否超出 viewport 四边
+	m	Ò00000	renderTargetPanel	(FF)V
+		c javap 字节码取证 | 高 | 面板边框线+targetInfoPanel.render
+	m	o00000	renderShipInfoPanel	(FF)V
+		c javap 字节码取证 | 高 | 边框线+shipInfoPanel.render
+	m	Object	renderRangeSpeedPanel	(FF)V
+		c javap 字节码取证 | 高 | 边框线+rangeSpeedPanel.render+旋转渲染 hullSchematic
+	m	Ô00000	renderIdentityPanel	(FF)V
+		c javap 字节码取证 | 高 | 边框线+identityPanel.render
+	m	o00000	renderLine	(FFFFFFF)V
+		c javap 字节码取证 | 中 | 包装 o0OO 画线段（面板边框）
+	m	o00000	renderAimLine	(FFFFFFFF)V
+		c javap 字节码取证 | 中 | 画从准星中心到瞄准点的箭头连线
+	m	o00000	setDuration	(F)V
+		c javap 字节码取证 | 高 | 值变化时 reset，存 duration
+	m	oO0000	reset	()V
+		c javap 字节码取证 | 高 | fader.forceOut+fadeIn+hullSchematic.setShip
+	m	o00000	setSecondary	(Z)V
+		c javap 字节码取证 | 高 | 值变化时 reset，存 secondary
+	m	o00000	main	([Ljava/lang/String;)V
+		c javap 字节码取证 | 中 | 调试 main，System.out.println("[%3d]" 32)
 c	com/fs/starfarer/renderers/A/null$1	com/fs/starfarer/renderers/ShipTargetReticle$ChildWidget
 	c	来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/renderers.md)
+	f	this$0	outer	Lcom/fs/starfarer/renderers/ShipTargetReticle;
+		c javap 字节码取证 | 高 | 匿名内部类合成的外层 ShipTargetReticle 引用
 c	com/fs/starfarer/renderers/A/I	com/fs/starfarer/renderers/FluxBarWidget
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	øOôo00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | setColor 写入；render 主体填充色
+	f	Öoôo00	drawBorder	Z
+		c javap 字节码取证 | 高 | 构造 iconst_1 置 true；render 中决定是否画黑色描边
+	f	do.private$private	showMinimum	Z
+		c javap 字节码取证 | 高 | 构造 iconst_0 置 false；setShowMinimum 写入；render 中决定最小条绘制
+	f	Òoôo00	flashFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | flash 创建（0,0.25,0.25 setBounce fadeIn）；advance 推进，isIdle 置 null
+	f	Ooôo00	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 构造 new Fader(1,0,0)；getFader 返回；render 取 getBrightness 乘透明度
+	f	õOôo00	fluxLevel	F
+		c javap 字节码取证 | 高 | update(float) 写入（update(float,float) 亦写）；render 中×高度得主体条高
+	f	private.private$private	minLevel	F
+		c javap 字节码取证 | 高 | update(float,float) 第二参数；render 中×宽度得最小条 x 位置
+	f	Õoôo00	flashColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | flash(Color) 写入；render 中带 flashFader 亮度叠加
+	f	if.private$private	position	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | 构造 new PositionImpl；setPos/setSize/getPosition 委托
+	f	Óoôo00	opacity	F
+		c javap 字节码取证 | 高 | 初始 1.0；setOpacity 写入；render 中 alpha 系数
 c	com/fs/starfarer/renderers/A/G	com/fs/starfarer/renderers/WeaponEntryWidget
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	super.while$public	weapon	Lcom/fs/starfarer/combat/systems/Weapon;
+		c javap 字节码取证 | 高 | 构造参数1；getWeapon()
+	f	ÒõÕo00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数2；setColor 传播
+	f	String.while$public	fluxBarWidget	Lcom/fs/starfarer/renderers/FluxBarWidget;
+		c javap 字节码取证 | 高 | new FluxBarWidget(color)；updateFluxBar 更新
+	f	ÕõÕo00	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造 shortenName(getDisplayName) 生成武器名标签
+	f	private.do$public	ammoLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | ' %4d' 弹药标签
+	f	ÓõÕo00	rangeLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 空标签；update 中 setText 'IN RANGE'
+	f	OõÕo00	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | highlight fadeIn / unhighlight fadeOut
+	f	øôÕo00	font	Lcom/fs/graphics/font/BitmapFont;
+		c javap 字节码取证 | 高 | 构造参数3 字体
+	f	ÖõÕo00	fontHeight	F
+		c javap 字节码取证 | 高 | 构造 font.float()（字体高度），组件尺寸基准
+	m	õõO000	updateFluxBar	()V
+		c javap 字节码取证 | 高 | fluxBarWidget.update(chargeLevel / reloadProgress)
+	m	ÖO0000	createLabel	(Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | new LabelImpl + 对齐/颜色/描边
 c	com/fs/starfarer/renderers/B	com/fs/starfarer/renderers/WaypointRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	void	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | Fader(0,0.125,0.125,true,true) fadeIn；advance
+	f	Õ00000	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | advance 取 CombatEngine.getPlayerShip()，无 launchBays 则 null
+	f	Ó00000	circleListToken	Lcom/fs/graphics/util/GLListToken;
+		c javap 字节码取证 | 高 | GLListManager beginList/callList 圆环显示列表
+	f	super	circleRadius	F
+		c javap 字节码取证 | 高 | render 中置 100.0f 圆环半径
+	f	Ö00000	circleWidth	F
+		c javap 字节码取证 | 高 | render 中置 7.5f 圆环宽度
+	f	Ò00000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = com/fs/starfarer/O0OO.õo0000 静态颜色
+	f	String	blendSrcFunc	I
+		c javap 字节码取证 | 高 | glBlendFunc src（默认 770）
+	f	ô00000	blendDstFunc	I
+		c javap 字节码取证 | 高 | glBlendFunc dst（默认 771）
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | fader.advance + 刷新 playerShip
+	m	Ò00000	render	(F)V
+		c javap 字节码取证 | 高 | 检查 fighterWaypoint 后设置半径/宽度并 renderCircle
+	m	o00000	renderCircle	(FFF)V
+		c javap 字节码取证 | 高 | 绘制圆环（profiler 'Creating circle indicator lists'）
+	m	o00000	drawRing	(FF)V
+		c javap 字节码取证 | 高 | static 圆环扇形顶点
+	m	Ò00000	unusedDrawCross	(FF)V
+		c javap 字节码取证 | 高 | 私有 GL 顶点方法（8 顶点），本类无任何调用点（死代码）
+	m	Object	unusedDrawStar	(FF)V
+		c javap 字节码取证 | 高 | 私有 GL 顶点方法（16 顶点），本类无任何调用点（死代码）
+	m	o00000	endCircleList	(Z)V
+		c javap 字节码取证 | 高 | !flag 时 endList；popMatrix
+	m	o00000	setBlendFunc	(II)V
+		c javap 字节码取证 | 高 | 写入 blendSrcFunc/blendDstFunc
+	m	o00000	setDefaultBlendFunc	()V
+		c javap 字节码取证 | 高 | 770/771
+	m	Ò00000	setAdditiveBlend	()V
+		c javap 字节码取证 | 高 | 770/1
+	m	o00000	renderCircleList	(FFFFZ)Z
+		c javap 字节码取证 | 高 | callList 成功则 true，否则 beginList 返回 false
 c	com/fs/starfarer/renderers/O0OO	com/fs/starfarer/renderers/ShipPortraitRenderer
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ó00000	spotlightSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造加载 graphics/hud/spotlight_small.png，黄(255,255,0) blendFunc(DST_COLOR,ONE)
+	f	Ô00000	gridSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造加载 graphics/hud/grid_small.png，橙(255,210,0) blendFunc(DST_COLOR,ONE)
+	f	new	gridSize	F
+		c javap 字节码取证 | 高 | 构造取 gridSprite.getWidth()，setGridSize 同步更新
+	f	o00000	transparentBlack	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | static final Color(0,0,0,0)，alpha 遮罩用
+	f	class	showGrid	Z
+		c javap 字节码取证 | 高 | 构造置 true，控制是否画 OoOO 网格背景，getter/setter
+	m	o00000	setGridSize	(F)V
+		c javap 字节码取证 | 高 | 存 gridSize 并 gridSprite.setSize(f,f)
+	m	o00000	setColors	(Ljava/awt/Color;Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 参数1→gridSprite 参数2→spotlightSprite
+	m	new	setSpotlightColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | spotlightSprite.setColor
+	m	o00000	setGridColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | gridSprite.setColor
+	m	new	getSpotlightColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | spotlightSprite.getColor
+	m	o00000	setSizesForSprite	(Lcom/fs/graphics/Sprite;F)V
+		c javap 字节码取证 | 中 | grid=gridSize*scale，spotlight=输入 sprite 尺寸*1.25
+	m	o00000	render	(Lcom/fs/graphics/Sprite;FFFZ)V
+		c javap 字节码取证 | 高 | 网格背景+alpha 遮罩+输入 sprite+spotlight+grid 复合渲染
+	m	o00000	renderWithCorners	(Lcom/fs/graphics/Sprite;FFFFFFFFFZ)V
+		c javap 字节码取证 | 高 | 四角坐标版本 renderWithCorners
+	m	o00000	isShowGrid	()Z
+		c javap 字节码取证 | 高 | getter showGrid
+	m	o00000	setShowGrid	(Z)V
+		c javap 字节码取证 | 高 | setter showGrid
 c	com/fs/starfarer/renderers/OOoO	com/fs/starfarer/renderers/FfIndicator
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	class	getFader	()Lcom/fs/graphics/util/Fader;
 	m	o00000	update	(FIZ)V
+	f	ø00000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 构造 new Fader(0,0.25,0.25)；advance/fadeIn/fadeOut/forceOut/getBrightness 全链路使用
+	f	ÒO0000	texture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 构造加载 "graphics/hud/line32x32.png" 纹理（com/fs/graphics/oOoO.new）
+	f	void	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | updateColor 按 status 置色；setColor 写入；render 读 RGB 调 glColor4ub
+	f	ÓO0000	status	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | getStatus/setStatus 直接读写；isFriendly/isEnemy 与 FRIEND/FOE 比较
+	f	õ00000	pendingStatus	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | advance 中 fader.isFadedOut 时由该字段切换 status（延迟生效的新状态）
+	f	do	x	F
+		c javap 字节码取证 | 高 | 构造参数 1 存入；setX（new(F)）写入，变化时 invalidateList
+	f	Ó00000	y	F
+		c javap 字节码取证 | 高 | 构造参数 2 存入；setY（o00000(F)）写入，变化时 invalidateList
+	f	Õ00000	listToken	Lcom/fs/graphics/util/GLListToken;
+		c javap 字节码取证 | 高 | GLListManager beginList/callList/invalidateList 的显示列表 token
+	f	ô00000	blendSrcFunc	I
+		c javap 字节码取证 | 高 | 默认 770（GL_SRC_ALPHA）；setBlendFunc 写入；render 中 glBlendFunc 源参数
+	f	super	blendDstFunc	I
+		c javap 字节码取证 | 高 | 默认 771（GL_ONE_MINUS_SRC_ALPHA）；setBlendFunc 写入；render 中 glBlendFunc 目标参数
+	f	private	statusOrdinalMap	[I
+		c javap 字节码取证 | 高 | Ø00000() 懒加载 Status.ordinal→形状序号映射缓存（枚举 switch 表）
+	m	Ô00000	updateColor	()V
+		c javap 字节码取证 | 高 | 按 status ordinal tableswitch 将 color 置为 String 系静态颜色之一
+	m	o00000	setColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 直接 putfield color
+	m	new	setX	(F)V
+		c javap 字节码取证 | 高 | 写 x，变化时 invalidateList
+	m	o00000	setY	(F)V
+		c javap 字节码取证 | 高 | 写 y，变化时 invalidateList
+	m	o00000	getStatus	()Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | getfield status
+	m	o00000	setStatus	(Lcom/fs/starfarer/renderers/FfIndicator$Status;)V
+		c javap 字节码取证 | 高 | putfield status
+	m	õ00000	forceShow	()V
+		c javap 字节码取证 | 高 | fader.forceOut + fadeIn 强制重新显示
+	m	Ô00000	render	(FFF)V
+		c javap 字节码取证 | 高 | Profiler "Rendering FF indicators"；按 status 分发 renderDiamond/Square/Circle
+	m	o00000	renderDiamond	(FFF)V
+		c javap 字节码取证 | 高 | Profiler "Creating diamond indicator lists"；glBegin 画菱形
+	m	new	renderSquare	(FFF)V
+		c javap 字节码取证 | 高 | Profiler "Creating square indicator lists"；glBegin 画方形
+	m	Ó00000	renderCircle	(FFF)V
+		c javap 字节码取证 | 高 | Profiler "Creating circle indicator lists"；glBegin 画圆形
+	m	new	addCircleVertices	(FF)V
+		c javap 字节码取证 | 高 | static：cos/sin 生成圆环顶点，glTexCoord2f+glVertex2f
+	m	o00000	addDiamondVertices	(FF)V
+		c javap 字节码取证 | 高 | 菱形 8 顶点 glVertex2f（尺寸 1.3/1.414 缩放）
+	m	Ó00000	addSquareVertices	(FF)V
+		c javap 字节码取证 | 高 | 方形 8 顶点 glVertex2f
+	m	o00000	endRender	(Z)V
+		c javap 字节码取证 | 高 | !flag 时 GLListManager.endList + glPopMatrix
+	m	o00000	setBlendFunc	(II)V
+		c javap 字节码取证 | 高 | 写 blendSrcFunc/blendDstFunc
+	m	Ö00000	setDefaultBlendFunc	()V
+		c javap 字节码取证 | 高 | 调 setBlendFunc(770,771) 标准 alpha 混合
+	m	Ó00000	setAdditiveBlendFunc	()V
+		c javap 字节码取证 | 高 | 调 setBlendFunc(770,1) 加法混合
+	m	o00000	renderInternal	(FFFFZ)Z
+		c javap 字节码取证 | 高 | glPushMatrix+glTranslatef+glScalef+fader 亮度+glBlendFunc+callList，返回 list 是否已存在
+	m	new	isFriendly	()Z
+		c javap 字节码取证 | 高 | status == FRIEND
+	m	null	isEnemy	()Z
+		c javap 字节码取证 | 高 | status == FOE
+	m	Ø00000	getStatusOrdinalMap	()[I
+		c javap 字节码取证 | 高 | statusOrdinalMap 懒加载 getter（status→形状序号映射）
 c	com/fs/starfarer/renderers/OOoO$o	com/fs/starfarer/renderers/FfIndicator$Status
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/OOoO$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/OOoO$o;
+	f	Ô00000	FRIEND	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | clinit ldc "FRIEND" ordinal 0
+	f	return	FOE	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | clinit ldc "FOE" ordinal 1
+	f	Õ00000	NEUTRAL	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | clinit ldc "NEUTRAL" ordinal 2
+	f	Object	ALLY	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | clinit ldc "ALLY" ordinal 3
+	f	Ò00000	PLAYER	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | clinit ldc "PLAYER" ordinal 4
+	f	Ø00000	TARGET	Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | clinit ldc "TARGET" ordinal 5
+	f	o00000	$VALUES	[Lcom/fs/starfarer/renderers/FfIndicator$Status;
+		c javap 字节码取证 | 高 | clinit 构建的枚举值数组，values() 使用
 c	com/fs/starfarer/renderers/float	com/fs/starfarer/renderers/VentParticleRenderer
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ò00000	texture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | misc/fx_radial 纹理，hullStyle 有自定义时替换
+	f	o00000	timeElapsed	F
+		c javap 字节码取证 | 高 | 初始 0，advance 累计，渲染作纹理偏移
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | timeElapsed += dt
+	m	o00000	render	(Lcom/fs/starfarer/combat/entities/Ship;FFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | glPushMatrix/rotate(ship.facing) 循环画径向圆环（距离衰减 alpha）
 c	com/fs/starfarer/renderers/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/renderers/VentingAnimation
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	super	setVentCoreColor	(Ljava/awt/Color;)V
@@ -49,18 +555,156 @@ c	com/fs/starfarer/renderers/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	Ò00000	setVentFringeColor	(Ljava/awt/Color;)V
 	m	Ò00000	getVentCoreColor	()Ljava/awt/Color;
 	m	String	getFluxVentTextureSheet	()Ljava/lang/String;
+	f	ö00000	visualParticles	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造 new ArrayList；advance 遍历移除淡出粒子
+	f	int	particles	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造 new ArrayList；构造加入 Particle；advance 遍历
+	f	return	particleRenderer	Lcom/fs/starfarer/renderers/VentParticleRenderer;
+		c javap 字节码取证 | 高 | 构造 new VentParticleRenderer(ship)；render 调其绘制
+	f	o00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造参数存船引用
+	f	Ò00000	shieldCenterOffset	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造从 hullSpec.getShieldSpec().getCenterX/Y 计算
+	f	Ô00000	particleFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | Fader(0,0.5,0.5)；startVenting setDurationIn(0.3)；驱动粒子尺寸
+	f	Õ00000	animationFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | Fader(0,1,0.5)；setDurationIn(0.6)；驱动 VentParticleRenderer 强度
+	f	ô00000	ventCoreColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 惰性 getter Ò00000() 取 hullStyle.oÒ0000()；渲染第二层低 alpha
+	f	Ø00000	ventColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 惰性 getter super() 取 hullStyle.ÕO0000()；渲染第一层主色
+	f	Object	particleSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter String()/setter super(String)；粒子 sprite 名覆盖
+	m	Ó00000	startVenting	()V
+		c javap 字节码取证 | 高 | clear 视觉粒子 + 两 fader forceOut/fadeIn
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 推进 fader/粒子，移除淡出粒子
+	m	Ò00000	render	(F)V
+		c javap 字节码取证 | 高 | GL 渲染 vent 粒子（pushMatrix/translate/renderAtCenter）
+	m	super	computeVentRadius	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 高 | static；由 sprite 尺寸算 vent 半径（fighter 减 75）
 c	com/fs/starfarer/renderers/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/renderers/VentingAnimation$ParticleVisual
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ÓO0000	sprite	Lcom/fs/starfarer/api/graphics/SpriteAPI;
+		c javap 字节码取证 | 高 | 构造 getSprite(name) + 随机贴图偏移 + additive
+	f	void	position	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 位置；advance 位置 += velocity*dt
+	f	do	velocity	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 速度；advance 沿 accelerationDirection 加速
+	f	Õ00000	scale	F
+		c javap 字节码取证 | 高 | 当前缩放（初始 0.7~1.3，按 scaleGrowthRate 增长）
+	f	if	scaleGrowthRate	F
+		c javap 字节码取证 | 高 | 3.0/生命；advance scale += rate*dt
+	f	õ00000	rotationSpeed	F
+		c javap 字节码取证 | 高 | ±30*random 角速度
+	f	Ö00000	angle	F
+		c javap 字节码取证 | 高 | 随机初始角；advance 旋转 += rotationSpeed*dt
+	f	Ó00000	unusedInitialSpeed	F
+		c javap 字节码取证 | 高 | 构造参数1 初速度，仅构造中用于计算 velocity，之后无读取
+	f	Ò00000	remainingAcceleration	F
+		c javap 字节码取证 | 高 | 从 velocity.length() 递减到 0；驱动减速
+	f	ø00000	accelerationRate	F
+		c javap 字节码取证 | 高 | 加速量系数（=初速度长度）
+	f	OO0000	remainingLife	F
+		c javap 字节码取证 | 高 | advance -= dt；<=-0.1 被父类 advance 移除
+	f	ÒO0000	maxLife	F
+		c javap 字节码取证 | 高 | 初始生命，用于衰减比例
+	f	super	unusedInitialVelocity	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造时 velocity 副本，从未读取
+	f	ô00000	fader	Lcom/fs/starfarer/api/util/FaderUtil;
+		c javap 字节码取证 | 高 | FaderUtil(0,0.5,0.05) fadeIn；亮度驱动 alpha
+	f	String	accelerationDirection	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | unit vector at angle(fload_4)；advance 加速度方向
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 位置/缩放/旋转/生命/fader 更新
 c	com/fs/starfarer/renderers/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/renderers/VentingAnimation$Particle
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ö00000	baseAngle	F
+		c javap 字节码取证 | 高 | 构造参数2 发射角；advance 中 baseAngle+random*spread 得粒子角度
+	f	Ô00000	spreadAngle	F
+		c javap 字节码取证 | 高 | 构造参数3 散布角
+	f	Ó00000	directionVector	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造参数4 方向向量；advance 随船 facing 旋转
+	f	new	emitInterval	Lcom/fs/starfarer/api/util/IntervalUtil;
+		c javap 字节码取证 | 高 | IntervalUtil(0.1,0.2) 控制粒子生成间隔
+	f	o00000	this$0	Lcom/fs/starfarer/renderers/VentingAnimation;
+		c javap 字节码取证 | 高 | 外部类引用
+	f	class	hullSizeSwitchMap	[I
+		c javap 字节码取证 | 高 | static $SwitchMap：HullSize->fadeIn 时长
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | isVenting 检查 + interval.advance + 生成 ParticleVisual
+	m	o00000	getHullSizeSwitchMap	()[I
+		c javap 字节码取证 | 高 | static switch map 生成器
 c	com/fs/starfarer/renderers/H	com/fs/starfarer/renderers/FrameRenderer
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	new	lineTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | loadTextures 加载 "graphics/hud/line4x4.png"
+	f	Ô00000	frameTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | loadTextures 由渲染器字号字符串加载
+	f	o00000	atmosphereTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | loadTextures 加载 planets/atmosphere
+	f	Ó00000	atmosphereTexture2	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | loadTextures 加载 planets/atmosphere2
+	m	super	loadTextures	()V
+		c javap 字节码取证 | 高 | static：加载四个静态纹理字段
+	m	super	renderFrame	(FFFFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | static：glDisable/glEnable/glBlendFunc 后 glBegin(GL_POLYGON) 绘制边框四边形
 c	com/fs/starfarer/renderers/H$o	com/fs/starfarer/renderers/FrameRenderer$Orientation
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/H$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/H$o;
+	f	Ó00000	VERTICAL	Lcom/fs/starfarer/renderers/FrameRenderer$Orientation;
+		c javap 字节码取证 | 高 | clinit ldc "VERTICAL" ordinal 0
+	f	new	HORIZONTAL	Lcom/fs/starfarer/renderers/FrameRenderer$Orientation;
+		c javap 字节码取证 | 高 | clinit ldc "HORIZONTAL" ordinal 1
+	f	o00000	$VALUES	[Lcom/fs/starfarer/renderers/FrameRenderer$Orientation;
+		c javap 字节码取证 | 高 | clinit 构建的枚举值数组，values() 使用
 c	com/fs/starfarer/renderers/oooO	com/fs/starfarer/renderers/BeamEffect
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ø00000	segments	Ljava/util/List;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ô00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	class	shieldCenter	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	new	shieldColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ó00000	shieldRingColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ö00000	fringeTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	coreTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ø00000	buildSegments	()V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ó00000	render	(F)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	new	advance	(F)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	createSegment	(F)Lcom/fs/starfarer/renderers/BeamSegment;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ó00000	getShieldColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	new	getShieldRingColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	setCoreTexture	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	new	setFringeTexture	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	getFringeTexturePath	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ö00000	getCoreTexturePath	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	class	getFringeTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ô00000	getCoreTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	setShieldColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	new	setShieldRingColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	computeShieldRadius	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/JitterRenderer	com/fs/starfarer/renderers/JitterRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	f	seed	seed	J
@@ -81,43 +725,415 @@ c	com/fs/starfarer/renderers/JitterRenderer	com/fs/starfarer/renderers/JitterRen
 	m	render	render	(Lcom/fs/graphics/Sprite;FFFFI)V
 c	com/fs/starfarer/renderers/O00O	com/fs/starfarer/renderers/FloatingText
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	interface	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 构造 new com/fs/graphics/A.ooOO… 字体渲染器（insignia21LTaa.fnt / orbitron20bold.fnt）
+	f	Oo0000	attachedEntity	Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 高 | setEntity 写入；advance 取 getLocation/getFacing 更新文本位置
+	f	õ00000	facing	F
+		c javap 字节码取证 | 高 | setEntity 存 entity.getFacing；advance 计算朝向差旋转偏移
+	f	ÖO0000	rotateOffset	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | advance 中按 facing 差 cos/sin 旋转后加到 location
+	f	ÔO0000	perpendicularOffset	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | updateEntityOffset 计算垂直朝向向量×50；render 中 location+该偏移
+	f	Ó00000	lifetime	F
+		c javap 字节码取证 | 高 | advance 累加时间；isFinished/isFadingIn 与 fadeInTime/fadeOut 阶段比较
+	f	new	location	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造 set(fload_1,fload_2)；advance 按实体更新；render 文本坐标
+	f	õO0000	fadeInTime	F
+		c javap 字节码取证 | 高 | 初始 1.0；getFadeInTime/setFadeInTime 读写；isFadingIn 比较
+	f	oO0000	fadeOutStartTime	F
+		c javap 字节码取证 | 高 | 初始 0.5/1.5；getFadeOutStartTime/setFadeOutStartTime 读写
+	f	float	fadeOutDuration	F
+		c javap 字节码取证 | 高 | 初始 0.5；getFadeOutDuration/setFadeOutDuration 读写
+	f	null	offset	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 初始 (0,20)；advance 末期按生命周期比例上浮位移
+	f	o00000	baseOffset	F
+		c javap 字节码取证 | 高 | 初始 18.0；render 中文本偏移基础值
+	f	ö00000	offsetBonus	F
+		c javap 字节码取证 | 高 | 初始 8.0；render 中按亮度附加偏移
+	f	while	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 主淡入淡出 fader（构造 0,0.05,0.1；advance/fadeIn/fadeOut/getBrightness）
+	f	ØO0000	value	F
+		c javap 字节码取证 | 高 | addValue 累加；updateText 以 f2i 生成文本
+	f	class.super	secondaryValue	F
+		c javap 字节码取证 | 高 | addSecondaryValue 累加（另一类数值通道）
+	f	class	displayType	Lcom/fs/starfarer/renderers/FloatingText$DisplayType;
+		c javap 字节码取证 | 高 | 构造置 DAMAGE/WEAPON_STATUS；render 按类型分支
+	f	Ø00000	fontHeight	F
+		c javap 字节码取证 | 高 | 构造 2 取字体行高；render 缩放计算基准
+	f	Ö00000	bounceFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 弹跳 fader（fadeInBounce 创建 setBounce；advance 推进；clearBounce 置 null）
+	f	Ô00000	baseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | fadeInBounce 首帧缓存字体色；clearBounce 恢复
+	f	OO0000	fadeTime	F
+		c javap 字节码取证 | 高 | fadeInBounce 清零；advance 累加，超 fadeDuration 调 clearBounce
+	f	ÓO0000	fadeDuration	F
+		c javap 字节码取证 | 高 | fadeInBounce 第二参数；advance 与之比较
+	f	new.super	zoom	F
+		c javap 字节码取证 | 高 | 初始 -1；getZoom/setZoom 读写；render 中>0 时额外缩放
+	f	öO0000	scale	F
+		c javap 字节码取证 | 高 | 初始 1.0；render 中作为文本缩放系数（×0.85/0.75）
+	m	o00000	fadeInBounce	(FF)V
+		c javap 字节码取证 | 高 | 创建 bounceFader（时长 1/f1）setBounce+fadeIn；存 fadeDuration
+	m	ö00000	clearBounce	()V
+		c javap 字节码取证 | 高 | 清零计时并恢复字体颜色、置 bounceFader null
+	m	ô00000	advance	(F)V
+		c javap 字节码取证 | 高 | 生命周期推进：lifetime 累加、bounceFader 推进、按实体更新位置/旋转、fader 淡出
+	m	Ò00000	isFinished	()Z
+		c javap 字节码取证 | 高 | lifetime >= fadeOutStartTime+fadeOutDuration+fadeInTime
+	m	Õ00000	getZoom	()F
+		c javap 字节码取证 | 高 | getfield zoom
+	m	return	setZoom	(F)V
+		c javap 字节码取证 | 高 | putfield zoom
+	m	o00000	render	(F)V
+		c javap 字节码取证 | 高 | 按 displayType 分支：DAMAGE 缩放动画 / WEAPON_STATUS 偏移淡出，字体缩放+定位
+	m	Ò00000	setEntity	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)V
+		c javap 字节码取证 | 高 | 存 entity+facing，location=entity 位置-rotateOffset
+	m	o00000	updateEntityOffset	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)V
+		c javap 字节码取证 | 高 | 计算垂直朝向单位向量×50 存 perpendicularOffset
+	m	Object	getEntity	()Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 高 | getfield attachedEntity
+	m	return	getColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 取 fontRenderer 当前颜色
+	m	Ô00000	addValue	(F)V
+		c javap 字节码取证 | 高 | value+=amount；updateText；重置 lifetime 并 fader.fadeIn
+	m	Object	addSecondaryValue	(F)V
+		c javap 字节码取证 | 高 | secondaryValue+=amount；updateText；重置 lifetime 并 fader.fadeIn
+	m	Ô00000	updateText	()V
+		c javap 字节码取证 | 高 | private：将 value f2i 生成字符串写 fontRenderer
+	m	ô00000	isFadingIn	()Z
+		c javap 字节码取证 | 高 | lifetime < fadeInTime
+	m	int	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | getfield location
+	m	o00000	getFadeInTime	()F
+		c javap 字节码取证 | 高 | getfield fadeInTime
+	m	Õ00000	setFadeInTime	(F)V
+		c javap 字节码取证 | 高 | putfield fadeInTime
+	m	ø00000	getFadeOutStartTime	()F
+		c javap 字节码取证 | 高 | getfield fadeOutStartTime
+	m	Ø00000	setFadeOutStartTime	(F)V
+		c javap 字节码取证 | 高 | putfield fadeOutStartTime
+	m	Ø00000	getFadeOutDuration	()F
+		c javap 字节码取证 | 高 | getfield fadeOutDuration
+	m	Ò00000	setFadeOutDuration	(F)V
+		c javap 字节码取证 | 高 | putfield fadeOutDuration
 c	com/fs/starfarer/renderers/O00O$o	com/fs/starfarer/renderers/FloatingText$DisplayType
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/O00O$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/O00O$o;
+	f	new	DAMAGE	Lcom/fs/starfarer/renderers/FloatingText$DisplayType;
+		c javap 字节码取证 | 高 | clinit ldc "DAMAGE" ordinal 0
+	f	Ó00000	WEAPON_STATUS	Lcom/fs/starfarer/renderers/FloatingText$DisplayType;
+		c javap 字节码取证 | 高 | clinit ldc "WEAPON_STATUS" ordinal 1
+	f	o00000	$VALUES	[Lcom/fs/starfarer/renderers/FloatingText$DisplayType;
+		c javap 字节码取证 | 高 | clinit 构建的枚举值数组，values() 使用
 c	com/fs/starfarer/renderers/if	com/fs/starfarer/renderers/ShineRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Õ00000	glowSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造加载 graphics/fx/hit_glow.png，blendFunc(SRC_ALPHA,ONE)
+	f	super	size	F
+		c javap 字节码取证 | 高 | 构造参数1，主光晕尺寸（渲染 2.5x/2x 缩放）
+	f	String	coreSize	F
+		c javap 字节码取证 | 高 | 构造参数2，白心内圈尺寸
+	f	Ò00000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数3，光晕颜色
+	f	Ó00000	alphaMult	F
+		c javap 字节码取证 | 高 | 构造初始 1.0，getter/setter，渲染乘 alpha
+	m	super	render	(FFFZ)V
+		c javap 字节码取证 | 高 | 按 boolean 画 2 层（彩色+白心）或 3 层（2.5x/0.85x/内圈）hit_glow
+	m	super	getAlphaMult	()F
+		c javap 字节码取证 | 高 | getter Ó00000
+	m	super	setAlphaMult	(F)V
+		c javap 字节码取证 | 高 | setter Ó00000
 c	com/fs/starfarer/renderers/Object	com/fs/starfarer/renderers/BeamSegment
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Õ00000	visual	Lcom/fs/starfarer/renderers/BeamRenderer$BeamVisual;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	int	fadeDuration	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Object	thickness	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ö00000	startPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ø00000	endPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ø00000	width	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	maxWidth	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ô00000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ò00000	outerRadius	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ô00000	direction	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	return	innerRadius	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	for	effect	Lcom/fs/starfarer/renderers/BeamEffect;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	super	restartFade	()V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	String	advance	(F)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ó00000	getEndPoint	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ò00000	getStartPoint	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ò00000	render	(F)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	super	renderQuad	(Lcom/fs/graphics/TextureObject;FFFFFFLjava/awt/Color;FFFF)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	super	setWidth	(F)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ó00000	setMaxWidth	(F)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/L	com/fs/starfarer/renderers/BeamRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	m	o00000	renderBeam	(Lcom/fs/starfarer/renderers/BeamRenderer$BeamVisual;Ljava/awt/Color;Ljava/awt/Color;ZIILorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFFF)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	renderBeam	(Lcom/fs/starfarer/renderers/BeamRenderer$BeamVisual;Ljava/awt/Color;Ljava/awt/Color;ZIILorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFFFZ)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	renderBeam	(Lcom/fs/starfarer/renderers/BeamRenderer$BeamVisual;Ljava/awt/Color;Ljava/awt/Color;ZLorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFF)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/L$Oo	com/fs/starfarer/renderers/BeamRenderer$BeamTextureType
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/L$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/L$Oo;
+	f	o00000	SMOOTH	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	int	MEDIUM	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ø00000	ROUGH	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ö00000	CHUNKY	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ô00000	ROUGH2	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Õ00000	WEAVE	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ô00000	LASER	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	return	fringeTexturePath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ò00000	coreTexturePath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Object	$VALUES	[Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	getFringeTexturePath	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	new	getCoreTexturePath	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/L$o	com/fs/starfarer/renderers/BeamRenderer$BeamVisual
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	String	fringeTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	super	coreTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ó00000	flickerAlpha1	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ò00000	flickerAlpha2	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	randomizeFlicker	()V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Õ00000	getFringeTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Object	getCoreTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ò00000	getFlickerAlpha2	()F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ô00000	getFlickerAlpha1	()F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	setFringeTexture	(Lcom/fs/graphics/TextureObject;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ò00000	setCoreTexture	(Lcom/fs/graphics/TextureObject;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	advanceFlicker	(FF)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	advanceFlicker	(FFF)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/renderers/Q	com/fs/starfarer/renderers/FloatingTextManager
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	super	addText	(FFFFLjava/awt/Color;Lcom/fs/starfarer/combat/E/B;Lcom/fs/starfarer/combat/E/B;)V
 	m	super	addText	(FFLjava/lang/String;FLjava/awt/Color;Lcom/fs/starfarer/combat/E/B;Lcom/fs/starfarer/combat/E/B;)Lcom/fs/starfarer/renderers/O00O;
 	m	super	advance	(F)V
 	m	super	isShowingText	(Lcom/fs/starfarer/combat/E/B;)Z
+	f	super	floatingTexts	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造 new LinkedList；addText/addDamageText add；advance 遍历并移除完成项
+	f	Ò00000	textCounts	Ljava/util/HashMap;
+		c javap 字节码取证 | 高 | 构造 new HashMap；incrementTextCount/decrementTextCount 维护实体→文本数
+	m	Ò00000	advance	(F)V
+		c javap 字节码取证 | 高 | 遍历 floatingTexts 调 FloatingText.advance，完成的移除并递减计数
+	m	Ó00000	incrementTextCount	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)V
+		c javap 字节码取证 | 高 | HashMap 计数 +1（get→+1→put）
+	m	Ò00000	decrementTextCount	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)V
+		c javap 字节码取证 | 高 | HashMap 计数 -1，<=0 时 remove
 c	com/fs/starfarer/renderers/E$o	com/fs/starfarer/renderers/TexturedStripRenderer$Callback
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	m	super	getAlphaAt	(FF)F
+		c javap 字节码取证 | 中 | 接口回调；条带渲染中 255*callback(x,y) 调制 alpha
 c	com/fs/starfarer/renderers/M	com/fs/starfarer/renderers/WeaponMountRenderer
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	String	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 默认 white；applyColor 按标志/类型设置
+	f	void	weaponType	Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;
+		c javap 字节码取证 | 高 | 构造参数1 挂载类型
+	f	if	weaponSize	Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponSize;
+		c javap 字节码取证 | 高 | 构造参数2 武器尺寸
+	f	Õ00000	scale	F
+		c javap 字节码取证 | 高 | 构造参数3；setScale；渲染按 1/0.75/0.5 分级
+	f	super	size	F
+		c javap 字节码取证 | 高 | 构造参数4；setSize；绘制尺寸基准
+	f	õ00000	useDefaultColor	Z
+		c javap 字节码取证 | 高 | final；true 用 O0OO.Ó00000，false 用 getWeaponTypeColor
+	f	ø00000	alphaMult	F
+		c javap 字节码取证 | 高 | 默认 0.5；setAlphaMult
+	f	Ò00000	zoom	F
+		c javap 字节码取证 | 高 | 默认 1.0；setZoom；glScalef 缩放
+	f	ô00000	savedSize	F
+		c javap 字节码取证 | 高 | beginShapeList 备份 size，endShapeList 恢复
+	f	Ó00000	weaponTypeSwitchMap	[I
+		c javap 字节码取证 | 高 | static $SwitchMap：WeaponType
+	f	Ö00000	weaponSizeSwitchMap	[I
+		c javap 字节码取证 | 高 | static $SwitchMap：WeaponSize
+	m	Object	applyColor	()V
+		c javap 字节码取证 | 高 | 按 useDefaultColor/类型设置颜色
+	m	o00000	getWeaponTypeColor	(Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;)Ljava/awt/Color;
+		c javap 字节码取证 | 高 | static 按类型返回颜色
+	m	Object	setScale	(F)V
+		c javap 字节码取证 | 高 | 写 scale 字段
+	m	Ò00000	setSize	(F)V
+		c javap 字节码取证 | 高 | 写 size 字段
+	m	Ò00000	getColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 读 color 字段
+	m	o00000	unusedNoop	(FI)V
+		c javap 字节码取证 | 高 | 空方法体，无任何调用（死代码）
+	m	Ô00000	setAlphaMult	(F)V
+		c javap 字节码取证 | 高 | 写 alphaMult 字段
+	m	o00000	render	(FFF)V
+		c javap 字节码取证 | 高 | 'Rendering weapon mount indicators' 主渲染
+	m	o00000	renderRing	(FFFF)V
+		c javap 字节码取证 | 高 | 调 drawRing 画圆环
+	m	Ò00000	renderCross	(FFFF)V
+		c javap 字节码取证 | 高 | 调 drawCross 画十字
+	m	Object	renderStar	(FFFF)V
+		c javap 字节码取证 | 高 | 调 drawStar 画星形
+	m	o00000	drawRing	(FF)V
+		c javap 字节码取证 | 高 | 圆环扇形顶点
+	m	Ò00000	drawCross	(FF)V
+		c javap 字节码取证 | 高 | 8 顶点十字顶点
+	m	Object	drawStar	(FF)V
+		c javap 字节码取证 | 高 | 16 顶点星形顶点
+	m	o00000	endShapeList	(Z)V
+		c javap 字节码取证 | 高 | !flag 时 endList；恢复 size；popMatrix
+	m	o00000	setZoom	(F)V
+		c javap 字节码取证 | 高 | 写 zoom 字段
+	m	o00000	beginShapeList	(FFFFZ)Z
+		c javap 字节码取证 | 高 | pushMatrix/保存 size/glScalef/glColor4ub
+	m	o00000	getWeaponTypeSwitchMap	()[I
+		c javap 字节码取证 | 高 | static switch map 生成器
+	m	Ô00000	getWeaponSizeSwitchMap	()[I
+		c javap 字节码取证 | 高 | static switch map 生成器
 c	com/fs/starfarer/renderers/O	com/fs/starfarer/renderers/ShapeRenderer
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Object	scanlineSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | clinit 加载 ui/scanline11 纹理 32x2 黑，扫描线遮罩
+	f	Ò00000	shipArrowSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | clinit 加载 graphics/warroom/ship_arrow.png，绘制舰船箭头
+	f	o00000	transparentBlack	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | static final Color(0,0,0,0)，alpha 遮罩用透明黑
+	m	Ô00000	drawRectAdditive	(FFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | glDisable(TEX)+blendFunc(SRC_ALPHA,ONE) quads 矩形（加法混合）
+	m	o00000	drawRectVertices	(FFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 仅 4 顶点无 glBegin/End，供调用方已开 GL 状态时画矩形
+	m	new	drawRect	(FFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | glDisable(TEX)+glColor+quads 普通矩形（不设混合）
+	m	Ó00000	drawRectStandard	(FFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 转发 drawRect(FFFFColor;FZ) additive=false 标准混合矩形
+	m	o00000	drawRect	(FFFFLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 高 | 核心矩形：blendFunc(SRC_ALPHA,ONE)/(SRC_ALPHA,ONE_MINUS) 由 additive 决定
+	m	o00000	drawQuad	(FFFFFFFFLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 高 | 4 个独立顶点四边形（四角坐标各异）
+	m	o00000	drawQuadGradient	(FFFFLjava/awt/Color;Ljava/awt/Color;Ljava/awt/Color;Ljava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 4 顶点各配一个 Color 的渐变四边形
+	m	o00000	renderGlow	(Lcom/fs/graphics/Sprite;FFFFF)V
+		c javap 字节码取证 | 中 | 以 0.1*w*h alpha 调 sprite，3 层递减尺寸网格光晕
+	m	o00000	renderSpriteGrid	(Lcom/fs/graphics/Sprite;FFF)V
+		c javap 字节码取证 | 中 | 私有：-size..size 步进 sprite.renderAtCenter 网格绘制
+	m	class	drawRectAlphaOnly	(FFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | blendFunc(SRC_ALPHA,ZERO) 只写 alpha 的矩形（遮罩模板）
+	m	o00000	drawWhiteAlphaMask	(FFFFF)V
+		c javap 字节码取证 | 高 | 白色 quads + blendFunc(SRC_ALPHA,ZERO)，glColorMask 阶段生成 alpha 遮罩
+	m	o00000	drawWidgetOverlay	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+		c javap 字节码取证 | 高 | 灰(155,155,155,127)覆盖 widget 全区域
+	m	o00000	drawRectOnWidget	(Lcom/fs/starfarer/ui/PositionImpl;Ljava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 取 PositionImpl x/y/w/h 转发 drawRectStandard
+	m	o00000	drawWidgetHighlight	(Lcom/fs/starfarer/ui/PositionImpl;Ljava/awt/Color;FF)V
+		c javap 字节码取证 | 中 | 颜色调亮(0.25*alpha+0.1)后画 widget 覆盖（悬停高亮）
+	m	o00000	resetSprites	()V
+		c javap 字节码取证 | 高 | 重建 scanlineSprite/shipArrowSprite（与 clinit 相同）
+	m	o00000	renderWidgetScanlines	(Lcom/fs/starfarer/ui/PositionImpl;Ljava/awt/Color;Lcom/fs/starfarer/renderers/ShapeRenderer$ShapeCallback;ZFF)V
+		c javap 字节码取证 | 高 | glColorMask+scanline sprite 双重渲染 + ShapeCallback.renderShape（禁用态扫描线遮罩）
+	m	o00000	drawRoundRectFilled	(FFFFFFLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 中 | 4 段 drawArcSegment 圆角 + 中间纹理填充矩形
+	m	Ó00000	drawArcSegment	(FFFFFFLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 中 | cos/sin 三角带画弧段（角度范围参数），纹理渐变
+	m	o00000	drawDiamond	(FFFFFLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 高 | 平移后两个三角带画菱形，blendFunc 由 additive 决定
+	m	o00000	drawDiamondVertex	(FFF)V
+		c javap 字节码取证 | 高 | 私有：菱形 8 顶点辅助
+	m	o00000	drawRoundRectOutline	(FFFFLjava/awt/Color;FF)V
+		c javap 字节码取证 | 中 | 转发 drawRoundRectOutline(FFFFColor;FFZ) false（无阴影）
+	m	o00000	drawRoundRectOutlineShadowed	(FFFFLjava/awt/Color;FFZ)V
+		c javap 字节码取证 | 中 | 亮色三角带 + 可选黑阴影条（圆角矩形边框核心）
+	m	o00000	drawNestedRectBorder	(FFFFFLjava/awt/Color;)V
+		c javap 字节码取证 | 高 | 3 层收缩矩形线框（o0OO 线段），alpha 逐层减半
+	m	o00000	drawRectBorderOnWidget	(Lcom/fs/starfarer/ui/PositionImpl;FLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 取 widget 尺寸转发 drawRectBorder 全 4 边
+	m	o00000	drawRectBorder	(FFFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 转发 drawRectBorder(FFFFFZZZZColor;F) 4 边全 true
+	m	o00000	drawRectBorderWithSides	(FFFFFZZZZLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 转发核心 drawRectBorderWithSides(...FZ) false（无阴影）
+	m	o00000	drawRectBorderWithSides	(FFFFFZZZZLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 高 | 核心：4 个 boolean 选底/顶/左/右边，圆角半径 fload4，可加阴影
+	m	new	drawCornerBrackets	(FFFFFFLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 中 | 8 个矩形拼 4 个 L 形角标（选择框角括号）
+	m	o00000	renderShipArrow	(FFFFFFFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | shipArrowSprite 沿两点方向 setAngle 循环 renderAtCenter
 c	com/fs/starfarer/renderers/O$Oo	com/fs/starfarer/renderers/ShapeRenderer$ShapeCallback
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
 	m	renderShape	renderShape	(Lcom/fs/starfarer/ui/OO0O;)V
 c	com/fs/starfarer/renderers/O$o	com/fs/starfarer/renderers/ShapeWidget
 	c	来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ÕoØo00	fillColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造传入，renderImpl 画 (x+1,y+1,w-2,h-2) 填充矩形
 c	com/fs/starfarer/renderers/N	com/fs/starfarer/renderers/ProjectileRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ò00000	unusedFlag	Z
+		c javap 字节码取证 | 高 | private static boolean，clinit 置 false，类内无其它引用
+	f	o00000	unusedColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | private static Color(255,255,255,255)，clinit 赋值后类内无引用
+	m	o00000	render	(Lcom/fs/starfarer/renderers/ProjectileAnimator;Lorg/lwjgl/util/vector/Vector2f;Ljava/awt/Color;Ljava/awt/Color;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFF)V
+		c javap 字节码取证 | 高 | static：尾迹/弹体/自定义纹理四边形与三角形 glBegin 渲染
 c	com/fs/starfarer/renderers/N$o	com/fs/starfarer/renderers/ProjectileAnimator
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ó00000	trailTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 构造加载 "graphics/fx/projtrail.png"
+	f	super	bodyTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 构造加载 "graphics/fx/projbody.png"
+	f	Ò00000	customTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 构造参数非 null 时加载自定义纹理，可空
+	f	String	textureOffset	F
+		c javap 字节码取证 | 高 | 初始 1.0；advanceTextureOffset 递减循环，动画滚动偏移
+	m	Ô00000	getCustomTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | getfield customTexture
+	m	new	getTrailTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | getfield trailTexture
+	m	Ó00000	getBodyTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | getfield bodyTexture
+	m	o00000	getTextureOffset	()F
+		c javap 字节码取证 | 高 | getfield textureOffset
+	m	o00000	advanceTextureOffset	(FF)V
+		c javap 字节码取证 | 高 | textureOffset -= f1*f2，<0 时 +1 循环
 c	com/fs/starfarer/renderers/damage/DebrisParticleSystem	com/fs/starfarer/renderers/damage/DebrisParticleSystem
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	f	groups	groups	[Lcom/fs/graphics/particle/DynamicParticleGroup;
@@ -136,12 +1152,104 @@ c	com/fs/starfarer/renderers/damage/DebrisParticleSystem$o	com/fs/starfarer/rend
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$o;
+	f	Ö00000	SMALL	Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$DebrisSize;
+		c javap 字节码取证 | 高 | <clinit> "SMALL"（0,4,8.0,2.0）
+	f	new	MEDIUM	Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$DebrisSize;
+		c javap 字节码取证 | 高 | <clinit> "MEDIUM"（4,2,12.0,3.0）
+	f	class	LARGE	Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$DebrisSize;
+		c javap 字节码取证 | 高 | <clinit> "LARGE"（6,2,16.0,4.0）
+	f	Ø00000	minParticleCount	I
+		c javap 字节码取证 | 高 | 构造参数 1；spawnDebris 中 count=min+random*range
+	f	Ó00000	particleCountRange	I
+		c javap 字节码取证 | 高 | 构造参数 2；spawnDebris 中 count=min+random*range
+	f	null	particleSize	F
+		c javap 字节码取证 | 高 | 构造参数 3；spawnDebris 中粒子尺寸 0.5*size*(1+random)
+	f	Ô00000	maxAge	F
+		c javap 字节码取证 | 高 | 构造参数 4；spawnDebris 中 setMaxAge 与 rampUp 0.05/maxAge
+	f	o00000	$VALUES	[Lcom/fs/starfarer/renderers/damage/DebrisParticleSystem$DebrisSize;
+		c javap 字节码取证 | 高 | <clinit> 缓存数组，values() 返回其拷贝
 c	com/fs/starfarer/renderers/damage/E	com/fs/starfarer/renderers/damage/DamageDecal
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ó00000	unusedFloat1	F
+		c javap 字节码取证 | 高 | public static final float 无 ConstantValue、类内无引用 → 死字段
+	f	ô00000	unusedFloat2	F
+		c javap 字节码取证 | 高 | public static final float 无引用 → 死字段
+	f	ÒO0000	unusedFloat3	F
+		c javap 字节码取证 | 高 | public static final float 无引用 → 死字段
+	f	ôO0000	inverseAlpha	F
+		c javap 字节码取证 | 高 | setOpacity 写 (1-v)*255；render/getBaseSprite 中 /255 作 alphaMult 乘子
+	f	Ò00000	flashAmount	F
+		c javap 字节码取证 | 高 | addFlash += v*2.5 封顶 255；advance 衰减，render 与 intensity 合算 glow 色
+	f	String	fadeRate	F
+		c javap 字节码取证 | 高 | init 置 1.0f；advance 中 flashAmount -= 20*fadeRate*dt
+	f	void	baseSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | getSprites 的 Pair.one；init 中 setBlendFunc(770,771)、setSize、setAngle
+	f	if	glowSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | getSprites 的 Pair.two；init 中 setBlendFunc(770,1)，render 调 makeGlowColor 设色
+	f	Õ00000	rotationAngle	F
+		c javap 字节码取证 | 高 | advance 中 += dt*(2-alpha)/rotationSpeed 后 %2π，sin() 写入 sinRotation
+	f	ÖO0000	rotationSpeed	F
+		c javap 字节码取证 | 高 | init 置 0.5f；advance 中作 rotationAngle 增量除数
+	f	Ö00000	sinRotation	F
+		c javap 字节码取证 | 高 | sin(rotationAngle) 缓存；render 中 0.9+0.1*值 调制亮度
+	f	OO0000	centerX	F
+		c javap 字节码取证 | 高 | init 参数 3 存储；render 中 renderAtCenter(x,y)
+	f	ø00000	centerY	F
+		c javap 字节码取证 | 高 | init 参数 4 存储；render 中 renderAtCenter(x,y)
+	f	super.super	angle	F
+		c javap 字节码取证 | 高 | init 中 Random*360 并写两 sprite 旋转角
+	f	private	opacity	F
+		c javap 字节码取证 | 高 | setOpacity clamp(0..1) 直写；getOpacity 返回
+	f	õ00000	damageRegion	Lcom/fs/starfarer/renderers/damage/DamageRegion;
+		c javap 字节码取证 | 高 | init new DamageRegion；advance 调 damageRegion.advance(dt,alpha)；render 读 getIntensity
+	f	super	random	Ljava/util/Random;
+		c javap 字节码取证 | 高 | public static；seedRandom(FleetMember,int)/seedRandom(long) 重播种；各随机点读取
+	f	do	flashActive	Z
+		c javap 字节码取证 | 高 | addFlash 置 true；advance 帧末置 false，true 期间 flashAmount 不衰减
+	f	String.super	unusedAlpha	F
+		c javap 字节码取证 | 高 | 仅构造器置 1.0f 与 advance 写 alpha 参数，全类无 getfield → 只写不读死字段
+	f	õO0000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | init 置白色 255,255,255,255
+	m	o00000	seedRandom	(Lcom/fs/starfarer/campaign/fleet/FleetMember;I)V
+		c javap 字节码取证 | 高 | static；hullSpec.hashCode+shipName.hashCode+序号 构造 Random 存 random
+	m	o00000	seedRandom	(J)V
+		c javap 字节码取证 | 高 | static；直接以 long 种子构造 Random 存 random
+	m	o00000	init	(Lcom/fs/starfarer/renderers/damage/DamageDecal$DecalType;FFFIIF)V
+		c javap 字节码取证 | 高 | private；置 fadeRate/centerX/centerY/两 int/random 角度/加载 sprites/设尺寸
+	m	return	addFlash	(F)V
+		c javap 字节码取证 | 高 | flashAmount += v*2.5 clamp 255，置 flashActive
+	m	o00000	advance	(FFLorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 存 alpha、驱动 damageRegion.advance(dt,alpha)、衰减 flashAmount、推进 rotationAngle
+	m	Õ00000	render	(F)V
+		c javap 字节码取证 | 高 | base/glow 双 sprite renderAtCenter；glow 颜色 = makeGlowColor(flash+intensity)
+	m	o00000	getBaseSprite	(F)Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 设 baseSprite.setAlphaMult(alpha/255*amount) 后返回
+	m	Ò00000	getGlowSprite	(F)Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 设 glowSprite 颜色（makeGlowColor(flashAmount+intensity)）后返回
+	m	Object	setOpacity	(F)V
+		c javap 字节码取证 | 高 | clamp(0..1) 写 opacity，写 inverseAlpha=(1-v)*255
+	m	Ô00000	makeGlowColor	(F)Ljava/awt/Color;
+		c javap 字节码取证 | 高 | private；clamp 后 new Color(255, 0.65b, 0.25b, b)
+	m	o00000	getSprites	(Lcom/fs/starfarer/renderers/damage/DamageDecal$DecalType;)Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 高 | static；按 DecalType+Random 选 damage_{cracks,burns,holes}48_{0,1}_{base,glow}.png 构造 Pair
+	m	o00000	loadSprite	(Ljava/lang/String;)Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | private static；new Sprite(oOoO.new(name))
+	m	Object	getOpacity	()F
+		c javap 字节码取证 | 高 | 返回 opacity
+	m	o00000	unusedMain	([Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | static main：仅构造一个 Color 即返回，无 I/O、类内无调用 → 死代码
 c	com/fs/starfarer/renderers/damage/E$o	com/fs/starfarer/renderers/damage/DamageDecal$DecalType
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/damage/E$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/damage/E$o;
+	f	Ô00000	BURNS	Lcom/fs/starfarer/renderers/damage/DamageDecal$DecalType;
+		c javap 字节码取证 | 高 | <clinit> "BURNS" 枚举常量
+	f	Object	CRACKS	Lcom/fs/starfarer/renderers/damage/DamageDecal$DecalType;
+		c javap 字节码取证 | 高 | <clinit> "CRACKS" 枚举常量
+	f	o00000	HOLES	Lcom/fs/starfarer/renderers/damage/DamageDecal$DecalType;
+		c javap 字节码取证 | 高 | <clinit> "HOLES" 枚举常量
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/renderers/damage/DamageDecal$DecalType;
+		c javap 字节码取证 | 高 | <clinit> 缓存数组，values() 返回其拷贝
 c	com/fs/starfarer/renderers/damage/ExplosionParticleSystem	com/fs/starfarer/renderers/damage/ExplosionParticleSystem
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	f	groups	groups	[Lcom/fs/graphics/particle/DynamicParticleGroup;
@@ -159,22 +1267,158 @@ c	com/fs/starfarer/renderers/damage/ExplosionParticleSystem	com/fs/starfarer/ren
 	m	main	main	([Ljava/lang/String;)V
 c	com/fs/starfarer/renderers/damage/OOoO	com/fs/starfarer/renderers/damage/ShipDamageDecal
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ØO0000	alpha	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	o00000	brightness	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Object	fadeRate	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	return	quad1	Lcom/fs/graphics/BatchQuad;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	int	quad2	Lcom/fs/graphics/BatchQuad;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ô00000	flickerAngle	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	ÕO0000	flickerSpeed	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Õ00000	flickerValue	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	ø00000	width	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	ö00000	height	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	this.super	rotation	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	public	opacity	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	ô00000	damageRegion	Lcom/fs/starfarer/renderers/damage/DamageRegion;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	for	justHit	Z
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	copyFrom	(Lcom/fs/starfarer/renderers/damage/ShipDamageDecal;)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	init	(Lcom/fs/graphics/BatchQuad;Lcom/fs/graphics/BatchQuad;Lcom/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType;FFFIIF)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	class	getWidth	()F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	new	getHeight	()F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	class	addBrightness	(F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	advance	(FFLorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	render	(F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ó00000	setOpacity	(F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ô00000	computeColor	(F)Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	setupQuads	(Lcom/fs/graphics/BatchQuad;Lcom/fs/graphics/BatchQuad;Lcom/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType;)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ø00000	getOpacity	()F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	new	setBrightness	(F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ó00000	getQuad1	()Lcom/fs/graphics/BatchQuad;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ö00000	getQuad2	()Lcom/fs/graphics/BatchQuad;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	null	getRotation	()F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 c	com/fs/starfarer/renderers/damage/OOoO$o	com/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	values	values	()[Lcom/fs/starfarer/renderers/damage/OOoO$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/renderers/damage/OOoO$o;
+	f	Ô00000	BURNS	Lcom/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Object	CRACKS	Lcom/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	o00000	HOLES	Lcom/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ò00000	VALUES	[Lcom/fs/starfarer/renderers/damage/ShipDamageDecal$DecalType;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 c	com/fs/starfarer/renderers/damage/void	com/fs/starfarer/renderers/damage/DamageRegion
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	ô00000	unusedFloat1	F
+		c javap 字节码取证 | 高 | private static final float 无引用 → 死字段
+	f	Object	unusedFloat2	F
+		c javap 字节码取证 | 高 | private static final float 无引用 → 死字段
+	f	Ò00000	unusedFloat3	F
+		c javap 字节码取证 | 高 | private static final float 无引用 → 死字段
+	f	Ô00000	unusedFloat4	F
+		c javap 字节码取证 | 高 | private static final float 无引用 → 死字段
+	f	o00000	unusedFloat5	F
+		c javap 字节码取证 | 高 | private static final float 无引用 → 死字段
+	f	Ø00000	intensity	F
+		c javap 字节码取证 | 高 | 0..255 强度；advance 超阈值刷 100+(155+100*(1-alpha))*random 并 clamp 255，否则 -=1000*dt
+	f	Õ00000	charge	F
+		c javap 字节码取证 | 高 | advance 累加 dt，与阈值 0.325*alpha+0.175 比较决定刷新/衰减
+	f	return	isFlashing	Z
+		c javap 字节码取证 | 高 | advance 刷新路径置 true、衰减路径置 false；Ó00000() 返回
+	m	Ò00000	clone	()Lcom/fs/starfarer/renderers/damage/DamageRegion;
+		c javap 字节码取证 | 高 | Object.clone 包装（CloneNotSupported 时返回 null）；ShipDamageDecal.copy 调用
+	m	super	advance	(FF)V
+		c javap 字节码取证 | 高 | (dt, alpha)；DamageDecal.advance 与 ShipDamageDecal.advance 均以此调用
+	m	Ó00000	isFlashing	()Z
+		c javap 字节码取证 | 高 | 返回 isFlashing 字段
+	m	super	getIntensity	()F
+		c javap 字节码取证 | 高 | 返回 intensity 字段
 c	com/fs/starfarer/renderers/damage/OooO	com/fs/starfarer/renderers/damage/Whiteout
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	new	topLeftSegment	Lcom/fs/starfarer/renderers/damage/Whiteout$Segment;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ô00000	topRightSegment	Lcom/fs/starfarer/renderers/damage/Whiteout$Segment;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ó00000	bottomLeftSegment	Lcom/fs/starfarer/renderers/damage/Whiteout$Segment;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	o00000	bottomRightSegment	Lcom/fs/starfarer/renderers/damage/Whiteout$Segment;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	class	centerSegment	Lcom/fs/starfarer/renderers/damage/Whiteout$Segment;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ò00000	isExpired	()Z
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	render	()V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	updateSegments	(Lorg/lwjgl/util/vector/Vector2f;F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 c	com/fs/starfarer/renderers/damage/OooO$o	com/fs/starfarer/renderers/damage/Whiteout$Segment
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ô00000	alpha	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ò00000	unusedFadeValue	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Object	fadeRate	F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	update	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	getAlpha	()F
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 c	com/fs/starfarer/renderers/damage/I	com/fs/starfarer/renderers/damage/EmpArcRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	super	setOverloadColor	(Ljava/awt/Color;)V
 	m	Ó00000	resetOverloadColor	()V
 	m	Ò00000	getOverloadColor	()Ljava/awt/Color;
 	m	super	advance	(F)V
+	f	Ó00000	unusedFloat1	F
+		c javap 字节码取证 | 高 | private static final float 无引用 → 死字段
+	f	Ø00000	unusedFloat2	F
+		c javap 字节码取证 | 高 | private static final float 无引用 → 死字段
+	f	new	target	Lcom/fs/starfarer/renderers/damage/EmpArcRenderer$EmpArcTarget;
+		c javap 字节码取证 | 高 | 构造参数存储；render 中 getVisualBounds/getFacing/getRenderOffset 读取
+	f	o00000	baseSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造 target.getSprite().clone()；render 无 visualBounds 时绘制
+	f	Ö00000	arcSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造加载 graphics/fx/emp_arcs.png、setSize(clamp 128..256)、blend(770,1)
+	f	class	flicker	Lcom/fs/starfarer/renderers/damage/Flicker;
+		c javap 字节码取证 | 高 | 构造 new Flicker；advance 喂 dt，render 取 alpha/angle
+	f	Ô00000	isLarge	Z
+		c javap 字节码取证 | 高 | 构造 max(w,h)>256 置 true；render 四方向复制绘制
+	m	super	getFlickerAlpha	()F
+		c javap 字节码取证 | 高 | 返回 flicker.getAlpha()
 c	com/fs/starfarer/renderers/damage/I$o	com/fs/starfarer/renderers/damage/EmpArcRenderer$EmpArcTarget
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	m	getFacing	getFacing	()F
@@ -183,16 +1427,180 @@ c	com/fs/starfarer/renderers/damage/I$o	com/fs/starfarer/renderers/damage/EmpArc
 	m	getVisualBounds	getVisualBounds	()Lcom/fs/starfarer/combat/E/o0OO;
 c	com/fs/starfarer/renderers/damage/if	com/fs/starfarer/renderers/damage/EffectTimer
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	super	elapsed	F
+		c javap 字节码取证 | 高 | advance 累加；isRunning/getTimeLeft 读取
+	f	Ò00000	totalDuration	F
+		c javap 字节码取证 | 高 | addTime 累加；advance 达界后与 elapsed 双双归零
+	m	Ò00000	advance	(F)V
+		c javap 字节码取证 | 高 | elapsed+=dt，达 total 后 elapsed/totalDuration 归零
+	m	o00000	isRunning	()Z
+		c javap 字节码取证 | 高 | elapsed < totalDuration
+	m	o00000	addTime	(F)V
+		c javap 字节码取证 | 高 | totalDuration += 参数
+	m	Object	getTimeLeft	()F
+		c javap 字节码取证 | 高 | totalDuration - elapsed
+	m	Ò00000	unusedAlwaysFalse	()Z
+		c javap 字节码取证 | 高 | 方法体恒 false、类内无调用 → 死代码
 c	com/fs/starfarer/renderers/damage/ooOO	com/fs/starfarer/renderers/damage/Flicker
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	Ò00000	angle	F
+		c javap 字节码取证 | 高 | randomize 中 Random*360；getAngle 返回
+	f	ô00000	currentAlpha	F
+		c javap 字节码取证 | 高 | 当前 alpha 0..1；getAlpha=currentAlpha*maxAlpha；advance 按 fade 阶段衰减
+	f	Object	elapsed	F
+		c javap 字节码取证 | 高 | advance 累加 dt；超 duration 且 restartDelay<=0 时 randomize
+	f	Ô00000	duration	F
+		c javap 字节码取证 | 高 | start 中 0.4..1.0*baseDuration 随机；getDuration/setDuration
+	f	int	maxAlpha	F
+		c javap 字节码取证 | 高 | start 置 1；randomize 置 0.5..1.0；getMaxAlpha/setMaxAlpha
+	f	return	baseDuration	F
+		c javap 字节码取证 | 高 | 构造置 0.25f；getBaseDuration/setBaseDuration
+	f	Ø00000	fadeStart	F
+		c javap 字节码取证 | 高 | randomize 置 0；getFadeStart/setFadeStart
+	f	Õ00000	fadeDuration	F
+		c javap 字节码取证 | 高 | duration/5；getFadeDuration/setFadeDuration
+	f	o00000	restartDelay	F
+		c javap 字节码取证 | 高 | start 置 0.01f；advance 达 duration 时判断用
+	m	o00000	start	(Z)V
+		c javap 字节码取证 | 高 | 置 restartDelay=0.01、duration（含随机）、maxAlpha=1、fadeDuration=duration/5
+	m	Object	randomize	()V
+		c javap 字节码取证 | 高 | private；重置 duration/maxAlpha/fadeStart/fadeDuration/elapsed/angle/currentAlpha
+	m	o00000	getAlpha	()F
+		c javap 字节码取证 | 高 | currentAlpha * maxAlpha
+	m	ô00000	getAngle	()F
+		c javap 字节码取证 | 高 | 返回 angle
+	m	Object	advance	(F)Z
+		c javap 字节码取证 | 高 | 推进 elapsed；超时且无延迟时 randomize 返回 true；否则按 fade 阶段衰减 currentAlpha
+	m	return	getDuration	()F
+		c javap 字节码取证 | 高 | 返回 duration
+	m	Õ00000	setDuration	(F)V
+		c javap 字节码取证 | 高 | 写 duration
+	m	Õ00000	getMaxAlpha	()F
+		c javap 字节码取证 | 高 | 返回 maxAlpha
+	m	Ô00000	setMaxAlpha	(F)V
+		c javap 字节码取证 | 高 | 写 maxAlpha
+	m	Ø00000	getBaseDuration	()F
+		c javap 字节码取证 | 高 | 返回 baseDuration
+	m	Ò00000	setBaseDuration	(F)V
+		c javap 字节码取证 | 高 | 写 baseDuration
+	m	Ô00000	getFadeStart	()F
+		c javap 字节码取证 | 高 | 返回 fadeStart
+	m	o00000	setFadeStart	(F)V
+		c javap 字节码取证 | 高 | 写 fadeStart
+	m	Ò00000	getFadeDuration	()F
+		c javap 字节码取证 | 高 | 返回 fadeDuration
+	m	return	setFadeDuration	(F)V
+		c javap 字节码取证 | 高 | 写 fadeDuration
 c	com/fs/starfarer/renderers/damage/B	com/fs/starfarer/renderers/damage/StencilSpriteRenderer
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	m	super	drawSpriteToStencil	(Lcom/fs/graphics/Sprite;FFI)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	drawSpriteToStencil	(Lcom/fs/graphics/Sprite;FFFI)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ò00000	disableStencil	()V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	drawQuad	(FFFF)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	drawQuadToStencil	(FFFFI)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	Ó00000	finishStencil	()V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	endStencil	()V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	super	renderRotatingSprite	(Lcom/fs/graphics/Sprite;Ljava/awt/Color;ZFFFFFF)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 c	com/fs/starfarer/renderers/damage/String	com/fs/starfarer/renderers/damage/DecalRenderer
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
+	f	õ00000	unusedFloat1	F
+		c javap 字节码取证 | 高 | public static final float 无引用 → 死字段
+	f	ö00000	unusedFloat2	F
+		c javap 字节码取证 | 高 | public static final float 无引用 → 死字段
+	f	Ó00000	circleSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 中 | 构造加载 graphics/fx/circle64.png、setSize(gridSize*1.5)、blend(770,1)；未发现其他读写点
+	f	Ô00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造参数存储；getShip/setShip 读写；多处取 getHitpoints/getLocation/getFacing
+	f	float	decalScale	F
+		c javap 字节码取证 | 高 | 构造中 5.0f/hullSize.ordinal；createDecal 中作尺寸缩放因子
+	f	new	armorGrid	Lcom/fs/starfarer/combat/entities/ship/ArmorGrid;
+		c javap 字节码取证 | 高 | 构造 ship.getArmorGrid()；getGridSize/getGridWidth/getArmorFraction 等读取
+	f	null	decalMap	Ljava/util/HashMap;
+		c javap 字节码取证 | 高 | cellKey→ShipDamageDecal；构造 new LinkedHashMap，getDecal/updateAllCells 读写
+	f	Ö00000	unusedInt	I
+		c javap 字节码取证 | 高 | public static final int 无引用 → 死字段
+	f	o00000	spriteBatches	Ljava/util/List;
+		c javap 字节码取证 | 高 | 主批次列表（blend 770/771）；initBatchesInternal 填充，render 驱动
+	f	Ø00000	glowBatches	Ljava/util/List;
+		c javap 字节码取证 | 高 | 加色批次列表（blend 770/1）；render 中 fighter&&hulk 额外渲染
+	f	OO0000	initialized	Z
+		c javap 字节码取证 | 高 | initBatchesInternal 防重入置 true；clearAndReinit 复位
+	f	class	hpFraction	F
+		c javap 字节码取证 | 高 | advance 中 clamp(hp/maxHp,0,1)，作 decal.advance 第二参数
+	m	Ø00000	initBatches	()V
+		c javap 字节码取证 | 高 | 接口入口，委托 initBatchesInternal
+	m	ô00000	initBatchesInternal	()V
+		c javap 字节码取证 | 高 | 幂等创建两批次（forceNoVBO 检查、hullStyle 纹理、分块 50）
+	m	ø00000	clearAndReinit	()V
+		c javap 字节码取证 | 高 | clear decalMap、复位 initialized 后重新 initBatchesInternal
+	m	int	dispose	()V
+		c javap 字节码取证 | 高 | 遍历两批次列表调 dispose 后 clear
+	m	Ò00000	advance	(F)V
+		c javap 字节码取证 | 高 | 算 hpFraction，遍历 decalMap 调 decal.advance(dt,hpFraction,ship.getLocation())
+	m	o00000	createDecal	(IIZ)Lcom/fs/starfarer/renderers/damage/ShipDamageDecal;
+		c javap 字节码取证 | 高 | private；按 cell 计算偏移 new ShipDamageDecal，put 进 decalMap
+	m	Ò00000	getDecal	(IIZ)Lcom/fs/starfarer/renderers/damage/ShipDamageDecal;
+		c javap 字节码取证 | 高 | map 查 cellKey，缺且创建标志时调 createDecal
+	m	o00000	makeCellKey	(II)Ljava/lang/String;
+		c javap 字节码取证 | 高 | private；StringBuilder(y*2000+x)
+	m	o00000	render	(Lcom/fs/graphics/Sprite;F)V
+		c javap 字节码取证 | 高 | GL stencil 裁剪（glStencilFunc/Op、clipToBounds/unclipToShip）、isFighter&&isHulk 分支
+	m	Ô00000	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 返回 ship
+	m	o00000	setShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 写 ship
+	m	return	setNormalBlend	()V
+		c javap 字节码取证 | 高 | 遍历 spriteBatches setBlendFunc(770,771)
+	m	Õ00000	setAdditiveBlend	()V
+		c javap 字节码取证 | 高 | 遍历 spriteBatches setBlendFunc(770,1)
+	m	o00000	unusedMakeColor	(F)Ljava/awt/Color;
+		c javap 字节码取证 | 高 | private；new Color(255,v,0,0)，类内无调用 → 死代码
+	m	ö00000	updateAllCells	()V
+		c javap 字节码取证 | 高 | 遍历 armorGrid 全格调 setCellDamage(x,y,null,0,false,1,0,0)
+	m	o00000	setCellDamage	(IILorg/lwjgl/util/vector/Vector2f;FZFFF)V
+		c javap 字节码取证 | 高 | 边界检查、getArmorFraction<0.9 时 getDecal 并 F.Õ00000(强度)/F.Ó00000(fraction)
+	m	Ò00000	getFacing	()F
+		c javap 字节码取证 | 高 | 委托 ship.getFacing()
+	m	Object	getLocation	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 委托 ship.getLocation()
+	m	o00000	isExpired	()Z
+		c javap 字节码取证 | 高 | 委托 ship.isExpired()
 c	com/fs/starfarer/renderers/damage/super	com/fs/starfarer/renderers/damage/RenderMarker
 	c	来源(javap取证) | 置信度(低) | 证据(.dev/mapping-evidence/renderers.md)
 c	com/fs/starfarer/renderers/fx/oOOO	com/fs/starfarer/renderers/fx/HitGlowEmitter
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/renderers.md)
+	f	void	glowSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ö00000	smallGlowSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Õ00000	flicker	Lcom/fs/starfarer/renderers/damage/Flicker;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ó00000	unusedIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	String	glowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	super	sparkOnHit	Z
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	f	Ò00000	done	Z
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	setColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	setGlowSize	(F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	advance	(FLorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	isDone	()Z
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
+	m	o00000	render	(Lorg/lwjgl/util/vector/Vector2f;F)V
+		c javap 字节码取证 | 高 | 证据见 mapping-evidence/wave3-p091.md
 c	com/fs/starfarer/renderers/fx/DetailedSmokeParticle	com/fs/starfarer/renderers/fx/DetailedSmokeParticle
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/renderers.md)
 	f	color	color	Ljava/awt/Color;

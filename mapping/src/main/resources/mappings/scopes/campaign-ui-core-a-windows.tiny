@@ -35,6 +35,8 @@ c	com/fs/starfarer/campaign/ui/FleetInFormationDisplay	FleetInFormationDisplay
 c	com/fs/starfarer/campaign/ui/FleetInFormationDisplay$1	FleetInFormationDisplay$HullSizeComparator
 	c	javap取证 | 高 | 实现 Comparator<FleetMember>，按 getHullSize().ordinal() 排序（FleetInFormationDisplay$1）
 	m	o00000	compareByHullSize	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
+	f	this$0	outer	LFleetInFormationDisplay;
+		c javap 字节码取证 | 高 | 匿名比较器外部类引用
 c	com/fs/starfarer/campaign/ui/I	TreeMenuPanel
 	c	javap取证 | 高 | 树状菜单面板：addMenuItem(parentId,...)/showItem(id)，节点树 I$Oo + 按钮映射
 	f	Õo0o00	rootNode	Lcom/fs/starfarer/campaign/ui/I$Oo;
@@ -45,6 +47,16 @@ c	com/fs/starfarer/campaign/ui/I	TreeMenuPanel
 	m	showItem	showItem	(Ljava/lang/String;)V
 	m	showItem	showItem	(Lcom/fs/starfarer/campaign/ui/I$Oo;)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	õo0o00	buttonWidth	F
+		c javap 字节码取证 | 高 | 构造参数1；showItem 中首个子节点按钮 setSize(此字段, itemHeight)
+	f	øo0o00	itemHeight	F
+		c javap 字节码取证 | 高 | 构造参数2；菜单项按钮高度
+	f	String.float$for	itemSpacing	F
+		c javap 字节码取证 | 高 | 构造参数3；子节点按钮 belowLeft 垂直间距
+	m	OO0000	findNode	(Ljava/lang/String;)LTreeMenuPanel$TreeNode;
+		c javap 字节码取证 | 高 | addMenuItem/showItem 按 id 找节点；包装调 findNodeRecursive(root)
+	m	o00000	findNodeRecursive	(Ljava/lang/String;LTreeMenuPanel$TreeNode;)LTreeMenuPanel$TreeNode;
+		c javap 字节码取证 | 高 | 私有递归：节点 id 匹配或沿 children 递归查找
 c	com/fs/starfarer/campaign/ui/I$Oo	TreeMenuPanel$TreeNode
 	c	javap取证 | 高 | 菜单树节点：id/label/data + children/parent（getter 字节码核对字段映射）
 	f	class	id	Ljava/lang/String;
@@ -67,18 +79,42 @@ c	com/fs/starfarer/campaign/ui/float	MarketInfoRow
 	f	private.for$for	marketConditionsWidget	Lcom/fs/starfarer/campaign/ui/MarketConditionsWidget;
 	m	sizeChanged	sizeChanged	(FF)V
 	m	advanceImpl	advanceImpl	(F)V
+	f	ÒÔ0o00	fleetInfoRow	Lcom/fs/starfarer/campaign/ui/FleetInfoRow;
+		c javap 字节码取证 | 高 | 用 MarketAPI 构造的舰队信息行，包成按钮
 c	com/fs/starfarer/campaign/ui/float$1	MarketInfoRow$StabilityTooltipPositioner
 	c	javap取证 | 中 | Runnable：Stability 指示器 tooltip 相对锚点定位（float$1）
 	m	run	run	()V
+	f	super	outer	LMarketInfoRow;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其位置；经 outer 的稳定性面板定位
 c	com/fs/starfarer/campaign/ui/float$2	MarketInfoRow$IconButtonTooltipPositioner
 	c	javap取证 | 中 | Runnable：图标按钮 tooltip 定位（float$2）
 	m	run	run	()V
+	f	o00000	outer	LMarketInfoRow;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Object	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其位置
 c	com/fs/starfarer/campaign/ui/float$3	MarketInfoRow$IconButtonTooltipPositioner2
 	c	javap取证 | 中 | Runnable：图标按钮 tooltip 定位（float$3）
 	m	run	run	()V
+	f	super	outer	LMarketInfoRow;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ò00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其位置
 c	com/fs/starfarer/campaign/ui/float$4	MarketInfoRow$IconButtonTooltipPositioner3
 	c	javap取证 | 中 | Runnable：图标按钮 tooltip 定位（float$4）
 	m	run	run	()V
+	f	o00000	outer	LMarketInfoRow;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ò00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	Object	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其位置
 c	com/fs/starfarer/campaign/ui/L	CargoTransferAnimator
 	c	javap取证 | 高 | 货物转移动画：按 2.2s 周期把 CargoItemStack 逐批转移（构造字节码核对 source/dest 字段）
 	f	o00000	cargoData	Lcom/fs/starfarer/campaign/fleet/CargoData;
@@ -90,6 +126,14 @@ c	com/fs/starfarer/campaign/ui/L	CargoTransferAnimator
 	m	o00000	advance	(F)V
 	m	new	finishTransfer	()V
 	m	o00000	isDone	()Z
+	f	ö00000	transferInterval	F
+		c javap 字节码取证 | 高 | static=0.05f；转移动作后重置计时器
+	f	ô00000	idleInterval	F
+		c javap 字节码取证 | 高 | static=0.25f；空闲时重置计时器
+	f	int	maxTransferPerTick	F
+		c javap 字节码取证 | 高 | static=37.0f；单次转移量上限
+	f	Ø00000	transferFraction	F
+		c javap 字节码取证 | 高 | static=0.3f；每拍转移剩余量比例
 c	com/fs/starfarer/campaign/ui/M	TransferListener
 	c	javap取证 | 低 | 无 jar 内引用的回调接口，参数带空标记接口 oo0o（windows 类名 M 与 linux 相同）
 	m	super	transferPerformed	(Ljava/lang/Object;Lcom/fs/starfarer/campaign/ui/oo0o;)V
@@ -114,18 +158,48 @@ c	com/fs/starfarer/campaign/ui/MarketConditionsWidget	MarketConditionsWidget
 	m	create	create	()V
 	m	autoSize	autoSize	()V
 	m	advanceImpl	advanceImpl	(F)V
+	f	super.null$for	baseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数4 基色
+	f	String.null$for	showEmptyLabel	Z
+		c javap 字节码取证 | 高 | 构造参数6；控制空态占位标签显示
+	f	private.void$for	width	F
+		c javap 字节码取证 | 高 | 构造参数2 面板宽度
+	m	o00000	buildConditionRow	(FLcom/fs/starfarer/ui/UIComponent;FLjava/util/Map;Ljava/util/List;)Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | 构建单行条件图标按钮与 tooltip
+	m	OÕO000	refreshConditions	()V
+		c javap 字节码取证 | 高 | 从 market.getConditions 过滤出显示列表
+	m	oÕO000	hasConditionChanges	()Z
+		c javap 字节码取证 | 高 | 检查条件列表是否变化
 c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$1	MarketConditionsWidget$ConditionOrderComparator
 	c	javap取证 | 高 | 实现 Comparator<MarketConditionAPI>，按 Spec order 升序（MarketConditionsWidget$1）
 	m	o00000	compareBySpecOrder	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)I
+	f	this$0	outer	LMarketConditionsWidget;
+		c javap 字节码取证 | 高 | 匿名比较器外部类引用
 c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$2	MarketConditionsWidget$CustomConditionTooltip
 	c	javap取证 | 高 | StandardTooltipV2Expandable 子类：MarketConditionPlugin.createTooltip 自定义 tooltip（MarketConditionsWidget$2）
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	LMarketConditionsWidget;
+		c javap 字节码取证 | 高 | 内部类外部引用
+	f	ÕoõO00	condition	Lcom/fs/starfarer/campaign/econ/MarketCondition;
+		c javap 字节码取证 | 高 | final；createImpl 读其 spec/plugin
 c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$3	MarketConditionsWidget$ConditionTooltip
 	c	javap取证 | 高 | StandardTooltipV2Expandable 子类：条件名标题+描述+token 替换 tooltip（MarketConditionsWidget$3）
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	LMarketConditionsWidget;
+		c javap 字节码取证 | 高 | 内部类外部引用
+	f	ÓoõO00	title	Ljava/lang/String;
+		c javap 字节码取证 | 高 | final；createImpl addTitle 的标题文本
+	f	private.new$float	condition	Lcom/fs/starfarer/campaign/econ/MarketCondition;
+		c javap 字节码取证 | 高 | final；createImpl 读其 spec/plugin
 c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$4	MarketConditionsWidget$TooltipPositioner
 	c	javap取证 | 中 | Runnable：条件图标 tooltip 相对锚点定位（MarketConditionsWidget$4）
 	m	run	run	()V
+	f	super	outer	LMarketConditionsWidget;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ò00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其位置
 c	com/fs/starfarer/campaign/ui/MarketConditionsWidget$o	MarketConditionsWidget$ConditionFilter
 	c	javap取证 | 中 | 条件显示过滤接口（MarketConditionsWidget$o）
 	m	o00000	shouldShow	(Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;)Z
@@ -152,11 +226,21 @@ c	com/fs/starfarer/campaign/ui/o00o	LevelIndicator
 	m	setLevel	setLevel	(I)V
 	m	getColor	getColor	()Ljava/awt/Color;
 	m	advanceImpl	advanceImpl	(F)V
+	f	String.super$do	segmentWidth	F
+		c javap 字节码取证 | 高 | 构造参数4=16.0f；分段绘制宽度
+	f	øOOo00	labelHeight	F
+		c javap 字节码取证 | 高 | 由标签高度计算；render 中纵向定位
+	f	ôOOo00	segmentHeight	F
+		c javap 字节码取证 | 高 | 构造参数5=32.0f；分段高度
+	f	ÕOOo00	segmentGap	F
+		c javap 字节码取证 | 高 | 构造参数6=8.0f；分段间距因子
 c	com/fs/starfarer/campaign/ui/o00o$o	LevelIndicator$SegmentGlow
 	c	javap取证 | 中 | 单个发光段：Fader 控制 alpha 的四边形（o00o$o）
 	f	private.this$do	fader	Lcom/fs/graphics/util/Fader;
 	m	advanceImpl	advanceImpl	(F)V
 	m	renderImpl	renderImpl	(F)V
+	f	this$0	outer	LLevelIndicator;
+		c javap 字节码取证 | 高 | 内部类外部引用
 c	com/fs/starfarer/campaign/ui/Stringsuper	MessageList
 	c	javap取证(switch表名) | 高 | 消息滚动列表：$SWITCH_TABLE$...MessageList$ScrollDirection + addTextMessage/setScrollSpeed（windows 类名 Stringsuper）
 	f	String.interface$for	messages	Ljava/util/List;
@@ -175,10 +259,20 @@ c	com/fs/starfarer/campaign/ui/Stringsuper	MessageList
 	m	setMaxDuration	setMaxDuration	(F)V
 	m	getMaxMessages	getMaxMessages	()I
 	m	setMaxMessages	setMaxMessages	(I)V
+	f	Oø0o00	width	F
+		c javap 字节码取证 | 高 | 构造参数1；setSize 宽度
+	f	Öö0o00	rowSpacing	F
+		c javap 字节码取证 | 高 | 构造参数3；滚动偏移计算中的行距
+	f	ôö0o00	scrollDirectionSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化缓存（ScrollDirection ordinal→分支号）
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$MessageList$ScrollDirection	getScrollDirectionSwitchTable	()[I
+		c javap 字节码取证 | 高 | 编译器生成的 ScrollDirection switch 表懒加载
 c	com/fs/starfarer/campaign/ui/Stringsuper$Oo	MessageList$ScrollDirection
 	c	字符串常量 | 高 | 滚动方向枚举 UP/DOWN（字符串常量直接给出）
 	f	Ò00000	UP	Lcom/fs/starfarer/campaign/ui/Stringsuper$Oo;
 	f	Ó00000	DOWN	Lcom/fs/starfarer/campaign/ui/Stringsuper$Oo;
+	f	super	$VALUES	[LMessageList$ScrollDirection;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组
 c	com/fs/starfarer/campaign/ui/Stringsuper$o	MessageList$Message
 	c	javap取证 | 中 | 单条消息条目：component + 位置偏移 + 停留计时（Stringsuper$o）
 	f	Object	component	Lcom/fs/starfarer/ui/c;
@@ -212,6 +306,26 @@ c	com/fs/starfarer/campaign/ui/J	TransactionSummaryPanel
 	m	getCont	getCont	()Lcom/fs/starfarer/ui/n;
 	m	getItems	getItems	()Ljava/util/List;
 	m	hasItems	hasItems	()Z
+	f	ôÒ0o00	rowHeight	F
+		c javap 字节码取证 | 高 | static=128.5f；行布局基准高度
+	f	do.float$for	rowSpacing	F
+		c javap 字节码取证 | 高 | static=25.0f；滚动高度计算
+	f	ÖÓ0o00	unusedBaseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 仅构造初始化默认色，无读取
+	f	void.for$for	unusedHighlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 仅构造初始化默认色，无读取
+	f	ôÓ0o00	isSalvageOperation	Z
+		c javap 字节码取证 | 高 | 为 true 时标题显示 "Salvage operation"
+	f	ÕÓ0o00	height	F
+		c javap 字节码取证 | 高 | 构造参数1 面板高度
+	f	õÒ0o00	unusedBoolean	Z
+		c javap 字节码取证 | 中 | 仅构造/recreate 写入，无读取
+	f	ÓÓ0o00	scrollToTop	Z
+		c javap 字节码取证 | 高 | 为 true 时滚动区域定位到顶部
+	f	õÓ0o00	unusedTitle	Ljava/lang/String;
+		c javap 字节码取证 | 中 | 仅构造写入，无读取
+	f	ÒÓ0o00	unusedBoolean2	Z
+		c javap 字节码取证 | 中 | 仅构造初始化，无读取
 c	com/fs/starfarer/campaign/ui/J$o	TransactionSummaryPanel$Item
 	c	javap取证 | 高 | 交易条目行：text/value/perUnitValue/Unit price+数量变化标记（J$o）
 	f	id	id	Ljava/lang/String;
@@ -227,15 +341,21 @@ c	com/fs/starfarer/campaign/ui/J$o	TransactionSummaryPanel$Item
 	m	setValue	setValue	(Ljava/lang/String;)V
 	m	setPerUnitValue	setPerUnitValue	(Ljava/lang/String;)V
 	m	setDelta	setDelta	(Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;I)V
+	f	this$0	this$0	LTransactionSummaryPanel;
+		c javap 字节码取证 | 高 | synthetic 外部类引用（构造 putfield），命名原样保留（先例 campaign-core-b/codex）
 c	com/fs/starfarer/campaign/ui/J$o$1	TransactionSummaryPanel$Item$MarketImpactTooltip
 	c	字符串常量 | 高 | StandardTooltipV2Expandable：交易对商品 availability 影响说明（J$o$1）
 	m	createImpl	createImpl	(Z)V
+	f	this$1	this$1	LTransactionSummaryPanel$Item;
+		c javap 字节码取证 | 高 | synthetic 外部类引用（匿名类捕获外层 Item），命名原样保留
 c	com/fs/starfarer/campaign/ui/X	SpriteIconButton
 	c	javap取证 | 中 | Sprite 图标按钮：sprite+颜色+阴影/glow 渲染（windows 类名 X）
 	f	ÖôÕO00	sprite	Lcom/fs/graphics/Sprite;
 	f	ÕôÕO00	color	Ljava/awt/Color;
 	f	super.int$int	drawShadow	Z
 	m	getSprite	getSprite	()Lcom/fs/graphics/Sprite;
+	f	private.null$int	unusedColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 仅构造初始化默认色，无读取
 c	com/fs/starfarer/campaign/ui/U	GlowingRowPanel
 	c	javap取证 | 高 | 抽象发光行面板（extends B）：labels/images + glow 高亮 quad，createRow() 抽象（windows 类名 U）
 	f	øÖÔO00	labels	Ljava/util/List;
@@ -284,6 +404,8 @@ c	com/fs/starfarer/campaign/ui/O00O$o	MessageDisplay$Message
 	f	Õ00000	showTime	F
 	m	o00000	createLabel	()V
 	m	Ò00000	isSticky	()Z
+	f	o00000	outer	LMessageDisplay;
+		c javap 字节码取证 | 高 | 内部类外部引用
 c	com/fs/starfarer/campaign/ui/S	FleetMemberIconList
 	c	javap取证 | 高 | 舰队成员图标列表：addIconFor/removeIconFor + 滚动列表 + DMod 角标 + tooltip
 	f	Oö0o00	rows	I
@@ -330,12 +452,26 @@ c	com/fs/starfarer/campaign/ui/S	FleetMemberIconList
 	m	isEmpty	isEmpty	()Z
 	m	sizeChanged	sizeChanged	(FF)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	Õõ0o00	iconSize	F
+		c javap 字节码取证 | 高 | 构造参数；图标尺寸
+	m	o00000	showMemberTooltip	(Lcom/fs/starfarer/ui/Button;Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+		c javap 字节码取证 | 高 | 构建 D-mods/船员信息 tooltip 并定位
 c	com/fs/starfarer/campaign/ui/S$1	FleetMemberIconList$UnidentifiedVesselTooltip
 	c	字符串常量 | 高 | StandardTooltipV2Expandable：未识别飞船 tooltip（Unidentified Vessel / UNKNOWN ENTRY，S$1）
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	LFleetMemberIconList;
+		c javap 字节码取证 | 高 | 内部类外部引用
+	f	ÖoõO00	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | final；createImpl 读其 hull spec 描述
 c	com/fs/starfarer/campaign/ui/S$2	FleetMemberIconList$TooltipPositioner
 	c	javap取证 | 中 | Runnable：成员图标 tooltip 居中偏移定位（S$2）
 	m	run	run	()V
+	f	super	outer	LFleetMemberIconList;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ò00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipOffsetFromCenter
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其宽高
 c	com/fs/starfarer/campaign/ui/S$o	FleetMemberIconList$FleetMemberClickListener
 	c	javap取证 | 中 | 成员图标点击回调接口（fleetMemberClicked 未混淆，S$o）
 	m	fleetMemberClicked	fleetMemberClicked	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/B/new;Lcom/fs/starfarer/util/A/C;)V
@@ -352,6 +488,8 @@ c	com/fs/starfarer/campaign/ui/D$o	FleetMemberIconType
 	f	Ó00000	FRIEND	Lcom/fs/starfarer/campaign/ui/D$o;
 	f	Ò00000	ENEMY	Lcom/fs/starfarer/campaign/ui/D$o;
 	f	String	NEUTRAL	Lcom/fs/starfarer/campaign/ui/D$o;
+	f	super	$VALUES	[LFleetMemberIconType;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组
 c	com/fs/starfarer/campaign/ui/UITable	UITable
 	c	javap取证 | 高 | 表格：voidsuper 表头 + 滚动列表 + 行渲染回调 UITable$Oo，可排序（类名未混淆）
 	f	private.int$for	header	Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
@@ -370,9 +508,33 @@ c	com/fs/starfarer/campaign/ui/UITable	UITable
 	m	setShowHeader	setShowHeader	(Z)V
 	m	autoSizeToRows	autoSizeToRows	(I)V
 	m	autoSizeToHeight	autoSizeToHeight	(F)V
+	f	ôO0o00	itemsSelectable	Z
+		c javap 字节码取证 | 高 | isItemsSelectable/setItemsSelectable 直接读写
+	f	ÕO0o00	ensureSelectedVisibleOnSort	Z
+		c javap 字节码取证 | 高 | isEnsureSelectedVisibleOnSort/setEnsureSelectedVisibleOnSort 直接读写
+	f	Õ00o00	ensureSelectedVisibleOnSelect	Z
+		c javap 字节码取证 | 高 | isEnsureSelectedVisibleOnSelect/setEnsureSelectedVisibleOnSelect 直接读写
+	f	ÖO0o00	bgAlpha	F
+		c javap 字节码取证 | 高 | getBgAlpha/setBgAlpha 直接读写；renderImpl 背景透明度
+	f	do.int$for	withBorder	Z
+		c javap 字节码取证 | 高 | isWithBorder/setWithBorder 直接读写；renderImpl 描边框
+	f	OO0o00	withBackground	Z
+		c javap 字节码取证 | 高 | isWithBackground/setWithBackground 直接读写；renderImpl 背景
+	f	String.if$for	quickMode	Z
+		c javap 字节码取证 | 高 | isQuickMode/setQuickMode 直接读写；addRow 时 n.setQuickMode
+	f	Ö00o00	lastSortColumn	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel$ColumnData;
+		c javap 字节码取证 | 高 | sort 中 putfield、getLastSortColumn 读取（最近排序列）
+	f	ô00o00	selectedRow	LTableRowPanel;
+		c javap 字节码取证 | 高 | getSelected/select 读写；removeRow 匹配时置 null
 c	com/fs/starfarer/campaign/ui/UITable$1	UITable$SortComparator
 	c	javap取证 | 高 | 实现 Comparator<B>：包装排序 Comparator + sortAscending 取反（UITable$1）
 	m	o00000	compareRows	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+	f	this$0	this$0	LUITable;
+		c javap 字节码取证 | 高 | synthetic 外部类引用，命名原样保留
+	f	val$comp	comp	Ljava/util/Comparator;
+		c javap 字节码取证 | 高 | 捕获变量（val$ 前缀按先例去掉）；compare 委托它
+	f	val$sortAscending	sortAscending	Z
+		c javap 字节码取证 | 高 | 捕获变量；升序时取反（哨兵 MIN/MAX 除外）
 c	com/fs/starfarer/campaign/ui/UITable$Oo	UITable$TableRenderer
 	c	javap取证 | 高 | 表格渲染/回调接口（tableRowSelected/tableGetComparator/tableSortFinished 未混淆）
 	m	tableRowSelected	tableRowSelected	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/B;Ljava/lang/Object;)V
@@ -388,6 +550,10 @@ c	com/fs/starfarer/campaign/ui/classsuper	TradeDialog
 	f	ôÕÕ000	cargoData	Lcom/fs/starfarer/campaign/fleet/CargoData;
 	m	dismiss	dismiss	(I)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	øÕÕ000	PAD	F
+		c javap 常量池 | 高 | static final float=3.0f 布局间距
+	f	OÖÕ000	OPAD	F
+		c javap 常量池 | 高 | static final float=10.0f 布局间距
 c	com/fs/starfarer/campaign/ui/Z	SubmarketPickerWidget
 	c	javap取证(switch表名) | 高 | 子市场选择部件：$SWITCH_TABLE$...SubmarketPickerWidget$DialogType + 子市场图标按钮网格 + storage/local_resources 特殊处理
 	f	super.this$do	market	Lcom/fs/starfarer/campaign/econ/Market;
@@ -403,21 +569,65 @@ c	com/fs/starfarer/campaign/ui/Z	SubmarketPickerWidget
 	m	freezeOpenTab	freezeOpenTab	()V
 	m	reenableButtons	reenableButtons	()V
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	void.this$do	columnWidth	F
+		c javap 字节码取证 | 高 | 构造参数4；换行时列宽基准（640*x/400）
+	f	private.interface$for	width	F
+		c javap 字节码取证 | 高 | 构造参数3 面板宽度
+	f	øø0o00	autoSelectFirst	Z
+		c javap 字节码取证 | 高 | 构造参数5；构建后自动 selectFirst
+	f	õø0o00	buttonsFrozen	Z
+		c javap 字节码取证 | 高 | freezeOpenTab 置 true；advance 中 false 时 reenableButtons
+	f	Ó0Oo00	dialogTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化缓存（DialogType ordinal→分支号）
+	m	ÓÕO000	getCoreUI	()Lcom/fs/starfarer/api/campaign/CoreUIAPI;
+		c javap 字节码取证 | 高 | 从外部 Z$o 取 CoreUIAPI
+	m	while.for	rebuild	()V
+		c javap 字节码取证 | 高 | clearChildren 后重建子市场按钮网格
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$SubmarketPickerWidget$DialogType	getDialogTypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | 编译器生成的 DialogType switch 表懒加载
 c	com/fs/starfarer/campaign/ui/Z$1	SubmarketPickerWidget$SubmarketTooltip
 	c	javap取证 | 高 | StandardTooltipV2Expandable：SubmarketPlugin.createTooltip 自定义 tooltip（Z$1）
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	LSubmarketPickerWidget;
+		c javap 字节码取证 | 高 | 内部类外部引用
+	f	void.Object$float	submarketPlugin	Lcom/fs/starfarer/api/campaign/SubmarketPlugin;
+		c javap 字节码取证 | 高 | final；createImpl 委托其 createTooltip
 c	com/fs/starfarer/campaign/ui/Z$2	SubmarketPickerWidget$TextTooltipAppendix
 	c	javap取证 | 高 | StandardTooltipV2$OOo：文本 tooltip 附录（getTooltipAppendix/highlights，Z$2）
 	m	o00000	getTooltipAppendix	(Ljava/lang/String;)Ljava/lang/String;
+	f	Ó00000	outer	LSubmarketPickerWidget;
+		c javap 字节码取证 | 高 | 内部类外部引用
+	f	Ô00000	submarket	Lcom/fs/starfarer/campaign/econ/Submarket;
+		c javap 字节码取证 | 高 | final；读其 plugin 生成 appendix
+	m	o00000	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | 接口方法实现，返回 null
+	m	o00000	addHighlights	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | 从 plugin 取 highlights 设置文本/颜色
+	m	Ò00000	setFont	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | 设置 orbitron20aabold 字体
 c	com/fs/starfarer/campaign/ui/Z$3	SubmarketPickerWidget$LocalResourcesTooltipPositioner
 	c	javap取证 | 中 | Runnable：local_resources 子市场 tooltip 定位（Z$3）
 	m	run	run	()V
+	f	super	outer	LSubmarketPickerWidget;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其位置
 c	com/fs/starfarer/campaign/ui/Z$4	SubmarketPickerWidget$TooltipPositioner
 	c	javap取证 | 中 | Runnable：子市场按钮 tooltip 相对锚点定位（Z$4）
 	m	run	run	()V
+	f	super	outer	LSubmarketPickerWidget;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其位置
 c	com/fs/starfarer/campaign/ui/Z$Oo	SubmarketPickerWidget$DialogType
 	c	字符串常量 | 高 | 对话框类型枚举，值 SUBMARKET_TEXT_DIALOG（字符串常量直接给出）
 	f	Ò00000	SUBMARKET_TEXT_DIALOG	Lcom/fs/starfarer/campaign/ui/Z$Oo;
+	f	super	$VALUES	[LSubmarketPickerWidget$DialogType;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组
 c	com/fs/starfarer/campaign/ui/Z$o	SubmarketPickerWidget$SubmarketPickerCallback
 	c	javap取证 | 中 | 子市场选择回调接口（submarketPicked/getCoreUI 未混淆）
 	m	submarketPicked	submarketPicked	(Lcom/fs/starfarer/campaign/econ/Submarket;)V
@@ -433,16 +643,34 @@ c	com/fs/starfarer/campaign/ui/_	IconButton
 	m	getImagePad	getImagePad	()F
 	m	setImagePad	setImagePad	(F)V
 	m	renderGlow	renderGlow	(F)V
+	f	õôÕO00	isInitialized	Z
+		c javap 字节码取证 | 高 | sizeChanged 后置 true 防重复构建
+	f	øôÕO00	unusedBoolean	Z
+		c javap 字节码取证 | 中 | 仅构造初始化，无读取
+	f	ÓõÕO00	buttonColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数5；传给按钮创建
+	f	ÒõÕO00	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数4；传给按钮创建
+	m	ØÒO000	buildChildren	()V
+		c javap 字节码取证 | 高 | 创建图标 ImagePanel 与底部标签按钮
 c	com/fs/starfarer/campaign/ui/b	WeaponIconRenderer
 	c	javap取证 | 中 | 按钮渲染器（implements n$Oo）：渲染武器图标（BaseWeaponSpec，windows 类名 b 与 linux 相同）
 	f	null.Object	weaponIcon	Lcom/fs/starfarer/ui/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
 	m	ø00000	getIcon	()Lcom/fs/starfarer/ui/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
 	m	super	render	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+	f	float.Object	unusedFleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 中 | private 字段，类内（构造/渲染）零读写，死字段；类型=舰队成员
+	f	ÔÔ0000	unusedIconColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | private 字段，类内零读写，死字段；类型=颜色
+	f	ÓÔ0000	unusedIconType	LWeaponIconRenderer$IconType;
+		c javap 字节码取证 | 中 | private 字段，类内零读写，死字段；类型=图标类型枚举 FRIEND/ENEMY/NEUTRAL
 c	com/fs/starfarer/campaign/ui/b$o	WeaponIconRenderer$IconType
 	c	字符串常量 | 高 | 武器图标阵营枚举 FRIEND/ENEMY/NEUTRAL（static{} 字节码核对字段顺序）
 	f	Object	FRIEND	Lcom/fs/starfarer/campaign/ui/b$o;
 	f	Ò00000	ENEMY	Lcom/fs/starfarer/campaign/ui/b$o;
 	f	Ô00000	NEUTRAL	Lcom/fs/starfarer/campaign/ui/b$o;
+	f	o00000	$VALUES	[LWeaponIconRenderer$IconType;
+		c javap 字节码取证 | 高 | 标准枚举 values 数组（clinit anewarray+putstatic，values() 读取拷贝），命名 $VALUES（先例 codex/combat-entities-core）
 c	com/fs/starfarer/campaign/ui/c	IconButton2
 	c	javap取证 | 中 | 图标按钮（同 _ 结构：sprite+黑底描边+底部文字+glow；jar 内无引用；windows 类名 c 与 linux 相同）
 	f	ÖöÕO00	color	Ljava/awt/Color;
@@ -454,6 +682,16 @@ c	com/fs/starfarer/campaign/ui/c	IconButton2
 	m	getImagePad	getImagePad	()F
 	m	setImagePad	setImagePad	(F)V
 	m	renderGlow	renderGlow	(F)V
+	f	ÕöÕO00	isInitialized	Z
+		c javap 字节码取证 | 高 | sizeChanged 后置 true 防重复构建
+	f	void.if$int	unusedBoolean	Z
+		c javap 字节码取证 | 中 | 仅构造初始化，无读取
+	f	øöÕO00	buttonColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数5；传给按钮创建
+	f	if.if$int	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造参数4；传给按钮创建
+	m	õÒO000	buildChildren	()V
+		c javap 字节码取证 | 高 | 创建图标 ImagePanel 与底部标签按钮
 c	com/fs/starfarer/campaign/ui/d	DefensesButton
 	c	javap取证 | 高 | 市场防御按钮：ground_defenses_mod + Defenses 标题 + 防御行业图（windows 类名 d）
 	f	ÕøÕO00	baseColor	Ljava/awt/Color;
@@ -466,3 +704,11 @@ c	com/fs/starfarer/campaign/ui/d	DefensesButton
 	f	ÒøÕO00	defenseImage	Lcom/fs/starfarer/ui/ooO0;
 	m	advanceImpl	advanceImpl	(F)V
 	m	sizeChanged	sizeChanged	(FF)V
+	f	ÓøÕO00	isInitialized	Z
+		c javap 字节码取证 | 高 | sizeChanged 后置 true 防重复构建
+	f	ÖøÕO00	unusedBoolean	Z
+		c javap 字节码取证 | 中 | 仅构造初始化，无读取
+	m	öÒO000	buildButton	()V
+		c javap 字节码取证 | 高 | sizeChanged 中构建按钮各标签
+	m	class.float	updateDefenseValue	()V
+		c javap 字节码取证 | 高 | advanceImpl 每帧重算 ground_defenses_mod 并 setText

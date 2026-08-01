@@ -26,6 +26,8 @@ c	com/fs/starfarer/campaign/B	com/fs/starfarer/campaign/StarfieldParticleAnimato
 	m	o00000	getParticleGroups	()[Lcom/fs/graphics/particle/DynamicParticleGroup;
 	m	o00000	render	(FF)V
 
+	f	o00000	unusedFloat	F
+		c javap 字节码取证 | 高 | 全类无任何 getfield/putfield 引用（死字段，仅声明）
 c	com/fs/starfarer/campaign/BackgroundAndStars	com/fs/starfarer/campaign/BackgroundAndStars
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(BackgroundAndStars 星域背景，ReplaceableSprite 更新)
 	f	starfield	starfield	Lcom/fs/starfarer/combat/P;
@@ -264,6 +266,8 @@ c	com/fs/starfarer/campaign/BaseCampaignEntity	com/fs/starfarer/campaign/BaseCam
 	m	getActivePerson	getActivePerson	()Lcom/fs/starfarer/api/characters/PersonAPI;
 	m	getFaction	getFaction	()Lcom/fs/starfarer/api/campaign/FactionAPI;
 
+	f	j0	serializationClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 序列化类名，readResolve 中以该类名+字段名数组做存档兼容迁移；构造置 null
 c	com/fs/starfarer/campaign/BaseLocation	com/fs/starfarer/campaign/BaseLocation
 	c 来源(类名未混淆 implements LocationAPI) | 置信度(高) | 证据(BaseLocation 星系内 LocationAPI 实现)
 	f	log	log	Lorg/apache/log4j/Logger;
@@ -977,6 +981,8 @@ c	com/fs/starfarer/campaign/CampaignEngine$1	com/fs/starfarer/campaign/CampaignE
 	m	restartEncounterMusic	restartEncounterMusic	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
 	m	getMessageDisplay	getMessageDisplay	()Lcom/fs/starfarer/api/campaign/MessageDisplayAPI;
 
+	f	this$0	outerEngine	Lcom/fs/starfarer/campaign/CampaignEngine;
+		c javap 字节码取证 | 高 | 匿名内部类对外部引擎的引用（编译器合成）
 c	com/fs/starfarer/campaign/CampaignEngine$2	com/fs/starfarer/campaign/CampaignEngine$WarpTransitionScript
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(extends BaseScript，字段 warping/state/elapsedWarpingIn/Out + JumpDestination 跃迁动画)
 	f	untilCanWarpOut	untilCanWarpOut	F
@@ -995,6 +1001,22 @@ c	com/fs/starfarer/campaign/CampaignEngine$2	com/fs/starfarer/campaign/CampaignE
 	m	getPitch	getPitch	()F
 	m	advance	advance	(F)V
 
+	f	this$0	outer	Lcom/fs/starfarer/campaign/CampaignEngine;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignEngine 的合成引用
+	f	val$fleet	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c javap 字节码取证 | 高 | 捕获参数：过渡中的舰队；advance 里 setNoEngaging/setJumpDestination
+	f	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	hullSizeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成缓存数组（ShipAPI$HullSize ordinal→switch 分支号）
+	f	val$dest	dest	Lcom/fs/starfarer/api/campaign/JumpPointAPI$JumpDestination;
+		c javap 字节码取证 | 高 | 捕获参数：跳跃目的地；getDestination().open()/播放跳跃音效
+	f	val$jumpLocation	jumpLocation	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c javap 字节码取证 | 高 | 捕获参数：跳跃位置 token，闪烁/音效定位用
+	f	val$initialDelay	initialDelay	F
+		c javap 字节码取证 | 高 | 捕获参数：初始延迟秒数，advance 累计 elapsedForMove 判断
+	f	val$playerTransition	playerTransition	Z
+		c javap 字节码取证 | 高 | 捕获参数：是否为玩家舰队的过渡（决定玩家侧音效/界面）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	getHullSizeSwitchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成访问器，懒初始化 int[]（先例 p056 getHullSizeSwitchTable）
 c	com/fs/starfarer/campaign/CampaignEngine$3	com/fs/starfarer/campaign/CampaignEngine$RulesAPIAdapter
 	c 来源(继承关系) | 置信度(高) | 证据(implements RulesAPI 规则匹配代理)
 	m	setRandomForNextRulePick	setRandomForNextRulePick	(Ljava/util/Random;)V
@@ -1004,10 +1026,14 @@ c	com/fs/starfarer/campaign/CampaignEngine$3	com/fs/starfarer/campaign/CampaignE
 	m	getTokenReplacements	getTokenReplacements	(Ljava/lang/String;Lcom/fs/starfarer/api/campaign/SectorEntityToken;Ljava/util/Map;)Ljava/util/Map;
 	m	performTokenReplacement	performTokenReplacement	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/campaign/SectorEntityToken;Ljava/util/Map;)Ljava/lang/String;
 
+	f	this$0	outer	Lcom/fs/starfarer/campaign/CampaignEngine;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignEngine 的合成引用
 c	com/fs/starfarer/campaign/CampaignEngine$3$1	com/fs/starfarer/campaign/CampaignEngine$RulesAPIAdapter$StringLengthComparator
 	c 来源(javap取证) | 置信度(中) | 证据(Comparator<String> 按 length 降序，规则名最长者优先)
 	m	super	compareByLength	(Ljava/lang/String;Ljava/lang/String;)I
 
+	f	this$1	outer	Lcom/fs/starfarer/campaign/CampaignEngine$RulesAPIAdapter;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 RulesAPIAdapter 的合成引用
 c	com/fs/starfarer/campaign/CampaignEngine$o	com/fs/starfarer/campaign/CampaignUI
 	c 来源(继承关系+方法未混淆) | 置信度(高) | 证据(接口 extends CampaignUIAPI 增加 setEngine/addMessage 等战役 UI 操作)
 	m	setEngine	setEngine	(Lcom/fs/starfarer/campaign/CampaignEngine;)V
@@ -1048,6 +1074,8 @@ c	com/fs/starfarer/campaign/CampaignEngine$TransitionState	com/fs/starfarer/camp
 	m	values	values	()[Lcom/fs/starfarer/campaign/CampaignEngine$TransitionState;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/CampaignEngine$TransitionState;
 
+	f	ENUM$VALUES	$VALUES	[Lcom/fs/starfarer/campaign/CampaignEngine$TransitionState;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成）
 c	com/fs/starfarer/campaign/CampaignEntity	com/fs/starfarer/campaign/CampaignEntity
 	c 来源(类名未混淆接口) | 置信度(高) | 证据(CampaignEntity 实体接口 extends SectorEntityToken)
 	m	cleanup	cleanup	()V
@@ -1130,51 +1158,75 @@ c	com/fs/starfarer/campaign/CampaignHelpManager$1	com/fs/starfarer/campaign/Camp
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmOverCrewCapacity 条件创建，dialogDismissed 打开 CARGO 标签)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	ÕöØo00	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$10	com/fs/starfarer/campaign/CampaignHelpManager$EnteredHyperspaceDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmEnteredHyper 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	ÔöØo00	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$11	com/fs/starfarer/campaign/CampaignHelpManager$HelpPopupShowCallback
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(implements ui.newui.oOOo$o 恒 true 确认回调)
 	m	super	confirmShow	()Z
 
+	f	Object	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$12	com/fs/starfarer/campaign/CampaignHelpManager$HelpDialogCloseDelegate
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(dialogDismissed 清 showingDialog 后转发委托 dismisser)
 	f	oöØo00	delegate	Lcom/fs/starfarer/ui/oo0O$o;
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	this.while$private	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$2	com/fs/starfarer/campaign/CampaignHelpManager$LowFuelDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmLowFuel 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	Object.while$private	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$3	com/fs/starfarer/campaign/CampaignHelpManager$LowSuppliesDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmLowSupplies 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	ÒöØo00	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$4	com/fs/starfarer/campaign/CampaignHelpManager$NotEnoughCrewDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmNotEnoughCrew 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	øõØo00	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$5	com/fs/starfarer/campaign/CampaignHelpManager$AllCriticalCRDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmAllCritCR 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	öõØo00	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$6	com/fs/starfarer/campaign/CampaignHelpManager$SomeCriticalCRDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmSomeCritCR 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	public.do$private	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$7	com/fs/starfarer/campaign/CampaignHelpManager$SomeLowCRDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmSomeLowCR 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	ôõØo00	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$8	com/fs/starfarer/campaign/CampaignHelpManager$SupplyUseAfterBattleDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmSupplyUseAfterBattle 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	ØõØo00	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$9	com/fs/starfarer/campaign/CampaignHelpManager$RiskOfAccidentsDialogDismisser
 	c 来源(字节码 chm key 对应) | 置信度(高) | 证据(advance 中 chmRiskOfAccidents 条件创建)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	for.do$private	outer	Lcom/fs/starfarer/campaign/CampaignHelpManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignHelpManager 的合成引用
 c	com/fs/starfarer/campaign/CampaignHelpManager$HelpDialogStatus	com/fs/starfarer/campaign/CampaignHelpManager$HelpDialogStatus
 	c 来源(类名未混淆) | 置信度(高) | 证据(HelpDialogStatus conditionTripped/dialogShown/elapsedUntripped)
 	f	conditionTripped	conditionTripped	Z
@@ -1475,22 +1527,62 @@ c	com/fs/starfarer/campaign/CampaignState	com/fs/starfarer/campaign/CampaignStat
 	m	isShowingCodex	isShowingCodex	()Z
 	m	getMessageDisplay	getMessageDisplay	()Lcom/fs/starfarer/api/campaign/MessageDisplayAPI;
 
+	f	$SWITCH_TABLE$com$fs$starfarer$campaign$CampaignState$CurrentDialogType	dialogTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成缓存数组（CurrentDialogType ordinal→switch 分支号）
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$CampaignState$CurrentDialogType	getDialogTypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成访问器，懒初始化 int[]（dialogDismissed 的 switch 用）
 c	com/fs/starfarer/campaign/CampaignState$1	com/fs/starfarer/campaign/CampaignState$AboveUIBelowTooltipsPanel
 	c 来源(javap取证) | 置信度(中) | 证据(extends ui.z，renderImpl 调 renderInUICoordsAboveUIBelowTooltips)
 	m	renderImpl	renderImpl	(F)V
 
+	f	this$0	outer	Lcom/fs/starfarer/campaign/CampaignState;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignState 的合成引用
 c	com/fs/starfarer/campaign/CampaignState$2	com/fs/starfarer/campaign/CampaignState$DialogDismissCallback
 	c 来源(javap取证) | 置信度(高) | 证据(dialogDismissed 转发 DismissDialogDelegate)
 	f	ØöØo00	dismissDelegate	Lcom/fs/starfarer/api/campaign/CampaignUIAPI$DismissDialogDelegate;
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 
+	f	return.while$private	outer	Lcom/fs/starfarer/campaign/CampaignState;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignState 的合成引用
 c	com/fs/starfarer/campaign/CampaignState$3	com/fs/starfarer/campaign/CampaignState$HelpPopupShowCallback
 	c 来源(javap取证) | 置信度(高) | 证据(implements ui.newui.oOOo$o 恒 true 确认回调)
 	m	super	confirmShow	()Z
 
+	f	Ô00000	outer	Lcom/fs/starfarer/campaign/CampaignState;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CampaignState 的合成引用
 c	com/fs/starfarer/campaign/CampaignState$o	com/fs/starfarer/campaign/CampaignState$CurrentDialogType
 	c 来源(合成字段名 $SWITCH_TABLE$CampaignState$CurrentDialogType) | 置信度(高) | 证据(枚举为对话框类型，setDialogType/getDialogType 使用；枚举值语义未确认不映射)
 
+	f	null	COREUI	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 COREUI（<clinit> ldc "COREUI"）
+	f	õ00000	INTERACTION	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 INTERACTION（<clinit> ldc "INTERACTION"）
+	f	ö00000	ENCOUNTER	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 ENCOUNTER（<clinit> ldc "ENCOUNTER"）
+	f	o00000	MENU	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 MENU（<clinit> ldc "MENU"）
+	f	Ô00000	LOAD_GAME	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 LOAD_GAME（<clinit> ldc "LOAD_GAME"）
+	f	ÓO0000	SAVE_AS	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 SAVE_AS（<clinit> ldc "SAVE_AS"）
+	f	float	CODEX	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 CODEX（<clinit> ldc "CODEX"）
+	f	oO0000	SETTINGS	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 SETTINGS（<clinit> ldc "SETTINGS"）
+	f	Ø00000	MESSAGE	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 MESSAGE（<clinit> ldc "MESSAGE"）
+	f	Ó00000	MESSAGE_WITH_ACTION	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 MESSAGE_WITH_ACTION（<clinit> ldc "MESSAGE_WITH_ACTION"）
+	f	OO0000	SHUTTLE	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 SHUTTLE（<clinit> ldc "SHUTTLE"）
+	f	while	ACCIDENT_REPORT	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 ACCIDENT_REPORT（<clinit> ldc "ACCIDENT_REPORT"）
+	f	class	FACTION_CONFIG	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 FACTION_CONFIG（<clinit> ldc "FACTION_CONFIG"）
+	f	new	HELP_POPUP	Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 HELP_POPUP（<clinit> ldc "HELP_POPUP"）
+	f	Ö00000	$VALUES	[Lcom/fs/starfarer/campaign/CampaignState$CurrentDialogType;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成）
 c	com/fs/starfarer/campaign/CampaignTerrain	com/fs/starfarer/campaign/CampaignTerrain
 	c 来源(类名未混淆 implements CampaignTerrainAPI) | 置信度(高) | 证据(CampaignTerrain)
 	f	plugin	plugin	Lcom/fs/starfarer/api/campaign/CampaignTerrainPlugin;
@@ -1767,18 +1859,28 @@ c	com/fs/starfarer/campaign/CharacterStats	com/fs/starfarer/campaign/CharacterSt
 	m	getRepairRateMult	getRepairRateMult	()Lcom/fs/starfarer/api/combat/MutableStat;
 	m	getDynamic	getDynamic	()Lcom/fs/starfarer/api/util/DynamicStatsAPI;
 
+	f	a	aptitudesJSON	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 天赋 JSON 缓存：setFleet 里 new JSONObject(a) 反序列化 AptitudeLevel，写回 JSONObject.toString()
+	f	s	skillsJSON	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 技能 JSON 缓存：遍历 skills 写 skill id+level 到 JSONObject 后 toString 存入
 c	com/fs/starfarer/campaign/CharacterStats$1	com/fs/starfarer/campaign/CharacterStats$AptitudeLevelComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<AptitudeLevel> 按 aptitude 顺序比较)
 	m	o00000	compareByAptitudeOrder	(Lcom/fs/starfarer/campaign/CharacterStats$AptitudeLevel;Lcom/fs/starfarer/campaign/CharacterStats$AptitudeLevel;)I
 
+	f	this$0	outer	Lcom/fs/starfarer/campaign/CharacterStats;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CharacterStats 的合成引用
 c	com/fs/starfarer/campaign/CharacterStats$2	com/fs/starfarer/campaign/CharacterStats$FleetTotalComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator 按 FleetTotalItem.sortOrder 比较)
 	m	o00000	compareBySortOrder	(Lcom/fs/starfarer/coreui/refit/auto/int;Lcom/fs/starfarer/coreui/refit/auto/int;)I
 
+	f	this$0	outer	Lcom/fs/starfarer/campaign/CharacterStats;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CharacterStats 的合成引用
 c	com/fs/starfarer/campaign/CharacterStats$3	com/fs/starfarer/campaign/CharacterStats$SkillLevelComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<SkillLevelAPI> 按 SkillSpec.getOrder 比较)
 	m	o00000	compareBySkillOrder	(Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI$SkillLevelAPI;Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI$SkillLevelAPI;)I
 
+	f	this$0	outer	Lcom/fs/starfarer/campaign/CharacterStats;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 CharacterStats 的合成引用
 c	com/fs/starfarer/campaign/CharacterStats$AptitudeLevel	com/fs/starfarer/campaign/CharacterStats$AptitudeLevel
 	c 来源(类名未混淆) | 置信度(高) | 证据(AptitudeLevel)
 	f	aptitude	aptitude	Lcom/fs/starfarer/loading/E;
@@ -1836,6 +1938,8 @@ c	com/fs/starfarer/campaign/CircularFleetOrbit	com/fs/starfarer/campaign/Circula
 	m	getOrbitalPeriod	getOrbitalPeriod	()F
 	m	updateLocation	updateLocation	()V
 
+	f	it	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | advance 里 it.advance(dt) 且 intervalElapsed() 时调用 ungroup()
 c	com/fs/starfarer/campaign/CircularOrbit	com/fs/starfarer/campaign/CircularOrbit
 	c 来源(类名未混淆 implements OrbitAPI) | 置信度(高) | 证据(CircularOrbit)
 	f	entity	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
@@ -1983,6 +2087,8 @@ c	com/fs/starfarer/campaign/CustomCampaignEntity	com/fs/starfarer/campaign/Custo
 	m	setFleetForVisual	setFleetForVisual	(Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;)V
 	m	getCargo	getCargo	()Lcom/fs/starfarer/api/campaign/CargoAPI;
 
+	f	j1	appearanceJSON	Ljava/lang/String;
+		c javap 字节码取证 | 高 | writeReplace 将 width/height/radius/sheetCellX/sheetCellY/type 序列化为 JSON；readResolve 还原
 c	com/fs/starfarer/campaign/D	com/fs/starfarer/campaign/GraphicsDeviceDiagnostics
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(Device name/Dedicated VRAM/Maximum VRAM/Free VRAM/Warning: VRAM low + GL11.glGetString)
 	f	Ó00000	isNVIDIA	Ljava/lang/Boolean;

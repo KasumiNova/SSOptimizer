@@ -3,6 +3,26 @@ tiny	2	0	obf	named
 c	com/fs/starfarer/util/B	com/fs/starfarer/util/PhoneticAlphabet
 	c 来源(javap取证) | 置信度(高) | 证据(Able/Bravo/Charlie 等三套字母拼读表字符串 + 3 Map 反查)
 
+	f	Ô00000	phoneticAlphabet	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | clinit 26 词（Able..Zulu）；getNextPhoneticName 查表
+	f	return	greekAlphabet24	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | clinit 24 词（Alpha..Omega）；getNextGreekLetter 查表
+	f	Object	greekAlphabet12	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | clinit 12 词；getNextCoolGreekLetter 查表
+	f	Ò00000	phoneticIndexMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getNextPhoneticName 记录对象→索引
+	f	o00000	greek12IndexMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getNextCoolGreekLetter 记录对象→索引
+	f	Õ00000	greek24IndexMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getNextGreekLetter 记录对象→索引
+	m	super	reset	()V
+		c javap 字节码取证 | 高 | 清空三个索引 Map；SettingsAPI.greekLetterReset() 委托
+	m	super	getNextPhoneticName	(Ljava/lang/Object;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | 26 词表按对象索引取词，索引>1 追加序号
+	m	Ò00000	getNextCoolGreekLetter	(Ljava/lang/Object;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | 12 词表；SettingsAPI.getNextCoolGreekLetter 委托
+	m	Ó00000	getNextGreekLetter	(Ljava/lang/Object;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | 24 词表；SettingsAPI.getNextGreekLetter 委托
 c	com/fs/starfarer/util/ColorShifter	com/fs/starfarer/util/ColorShifter
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements ColorShifterAPI，字段与方法保持原名)
 	f	base	base	Ljava/awt/Color;
@@ -43,31 +63,95 @@ c	com/fs/starfarer/util/return	com/fs/starfarer/util/ScreenshotTaker
 	m	Object	captureDepthBuffer	()V
 	m	Ô00000	getScreenshotFile	()Ljava/io/File;
 
+	f	Ó00000	pixelBuffer	Ljava/nio/FloatBuffer;
+		c javap 字节码取证 | 高 | 按屏幕尺寸创建 FloatBuffer；glReadPixels 目标与逐像素读取源
+	f	o00000	screenshotIndex	I
+		c javap 字节码取证 | 高 | clinit=0；Ô00000() 中自增并格式化 "screenshot%03d.png"
+	m	Ò00000	clearPixelBuffer	()V
+		c javap 字节码取证 | 高 | putstatic null 清空缓冲
+	m	o00000	setPixel	(Ljava/awt/image/WritableRaster;IILjava/awt/Color;)V
+		c javap 字节码取证 | 高 | 提取 Color 的 RGBA 后 WritableRaster.setPixel
+	m	o00000	createImage	(II)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 高 | new BufferedImage(w,h,TYPE_INT_ARGB) 并填白，返回
 c	com/fs/starfarer/util/oOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/util/SaveProgressInputStream
 	c 来源(javap取证) | 置信度(高) | 证据(extends InputStream 带进度比例，持有 campaign/save/B 进度对话框，与 SaveProgressOutputStream 对称)
 	m	Ò00000	getProgress	()F
 	m	super	updateProgress	(Z)V
 	m	super	getTotalBytes	()J
 
+	f	new	totalBytes	J
+		c javap 字节码取证 | 高 | final，构造器 File.length()；super()J 返回；Ò00000()F 分母
+	f	o00000	progressBytes	J
+		c javap 字节码取证 | 高 | volatile，read/skip 累加已读字节，Ò00000()F 分子
+	f	Ô00000	delegate	Ljava/io/InputStream;
+		c javap 字节码取证 | 高 | 构造器 FileInputStream 再包 BufferedInputStream(1000000)，read/skip/available/close 转发
+	f	Ó00000	lastProgressTime	J
+		c javap 字节码取证 | 高 | 构造器 = B.Ô00000() 当前毫秒；super(boolean) 中 (now-last)/1000f 判定刷新
+	f	class	progressDialog	Lcom/fs/starfarer/campaign/save/CampaignSaveProgressDialog;
+		c javap 字节码取证 | 高 | 构造器第 2 参；super(boolean) 中 o00000("Loading...", pct) 更新进度
+	m	Ó00000	markComplete	()V
+		c javap 字节码取证 | 高 | progressBytes 置为 totalBytes
 c	com/fs/starfarer/util/IntervalTracker	com/fs/starfarer/util/IntervalTracker
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(minInterval/maxInterval/advance 等保持原名)
 
 c	com/fs/starfarer/util/J	com/fs/starfarer/util/RandomTree
 	c 来源(javap取证) | 置信度(低) | 证据(Math.random/pow 递归二分树（节点含 2 float + 子节点列表），具体用途不明)
 
+	f	super	root	Lcom/fs/starfarer/util/RandomTree$Node;
+		c javap 字节码取证 | 高 | 静态工厂 o00000(int) 构造根节点后递归生成
+	f	Ò00000	nodes	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造器 new LinkedList，递归生成逐节点 add，o00000()List 返回
+	m	o00000	getNodes	()Ljava/util/List;
+		c javap 字节码取证 | 高 | 直接返回 nodes 字段
+	m	o00000	generate	(I)Lcom/fs/starfarer/util/RandomTree;
+		c javap 字节码取证 | 高 | 静态工厂：new 树 + 根节点，调 generateSubtree(root,0,depth)
+	m	o00000	generateSubtree	(Lcom/fs/starfarer/util/RandomTree;Lcom/fs/starfarer/util/RandomTree$Node;II)V
+		c javap 字节码取证 | 高 | 私有递归：node 入 nodes；depth==max 返回；建左右子节点（值=父*0.5^depth*randomScale，偏移=父±random()*60）
+	m	Ò00000	randomScale	()F
+		c javap 字节码取证 | 高 | 私有静态：Math.random()*0.5+0.5，衰减乘数
 c	com/fs/starfarer/util/J$o	com/fs/starfarer/util/RandomTree$Node
 	c 来源(javap取证) | 置信度(低) | 证据(树节点：2 float 值 + 子节点列表 + 父引用)
 
+	f	Object	value	F
+		c javap 字节码取证 | 高 | 根=0.5f*randomScale()，子=父.value*0.5^depth*randomScale()
+	f	Ô00000	offset	F
+		c javap 字节码取证 | 高 | 根=0，子=父.offset±random()*60
+	f	o00000	children	Ljava/util/List;
+		c javap 字节码取证 | 高 | 递归生成时 new LinkedList 并 add 两个子节点
+	f	Ò00000	parent	Lcom/fs/starfarer/util/RandomTree$Node;
+		c javap 字节码取证 | 高 | 子节点构造时指向父节点
 c	com/fs/starfarer/util/K	com/fs/starfarer/util/ScissorStack
 	c 来源(字节码调用) | 置信度(高) | 证据(Stack<K$o> + GL11.glScissor 压栈/出栈，引用 settings/A 坐标转换)
 	m	o00000	push	(IIII)V
 	m	o00000	pop	()V
 	m	Ô00000	peek	()Lcom/fs/starfarer/util/K$o;
 
+	f	Object	rectStack	Ljava/util/Stack;
+		c javap 字节码取证 | 高 | clinit new Stack；push/peek/pop 全部走它
+	f	o00000	screenHeight	I
+		c javap 字节码取证 | 高 | clinit=-1；o00000(int,int) 第 2 参；Object() 中 glScissor 高度参数
+	f	Ò00000	screenWidth	I
+		c javap 字节码取证 | 高 | clinit=-1；o00000(int,int) 第 1 参；Object() 中 glScissor 宽度参数
+	m	o00000	setScreenSize	(II)V
+		c javap 字节码取证 | 高 | Ò00000=arg0、o00000=arg1，保存全屏尺寸供禁用时恢复
+	m	Object	disableScissor	()V
+		c javap 字节码取证 | 高 | 有屏幕尺寸时 glScissor(0,0,w,h) 后 glDisable(GL_SCISSOR_TEST)
+	m	Ò00000	applyCurrentRect	()V
+		c javap 字节码取证 | 高 | 栈非空则 peek 并 o00000() 应用，空则 disableScissor
 c	com/fs/starfarer/util/K$o	com/fs/starfarer/util/ScissorRect
 	c 来源(javap取证) | 置信度(高) | 证据(4 int 矩形（x/y/w/h），构造与 union(max/min) 合并)
 	m	o00000	union	(Lcom/fs/starfarer/util/K$o;)V
 
+	f	new	x	I
+		c javap 字节码取证 | 高 | 构造第 1 参；o00000(K$o) 中 max 取交、o00000() 中 glScissor 起点 x
+	f	o00000	y	I
+		c javap 字节码取证 | 高 | 构造第 2 参；相交 max、应用时起点 y
+	f	Ô00000	right	I
+		c javap 字节码取证 | 高 | 构造 = x+width（第 1+3 参）；相交 min；应用中宽=right-x
+	f	Ó00000	bottom	I
+		c javap 字节码取证 | 高 | 构造 = y+height（第 2+4 参）；相交 min；应用中高=bottom-y
+	m	o00000	apply	()V
+		c javap 字节码取证 | 高 | 调 com/fs/graphics/util/B.o00000(x,y,right-x,bottom-y) 落地 glScissor
 c	com/fs/starfarer/util/OO0O	com/fs/starfarer/util/MouseTracker
 	c 来源(字节码调用) | 置信度(中) | 证据(读 InputEvent.getMouseX/Y 存当前帧并滚动上一帧（-1 初始化），被 InputState 持有)
 	m	Object	update	()V
@@ -77,6 +161,18 @@ c	com/fs/starfarer/util/OO0O	com/fs/starfarer/util/MouseTracker
 	m	Õ00000	getPrevX	()F
 	m	Ò00000	getPrevY	()F
 
+	f	String	x	F
+		c javap 字节码取证 | 高 | update 存入 getMouseX；getter return()/setter o00000(F) 成对
+	f	Ó00000	y	F
+		c javap 字节码取证 | 高 | update 存入 getMouseY
+	f	Ò00000	dx	F
+		c javap 字节码取证 | 高 | update 计算 x 差值；getter Õ00000() 返回
+	f	super	dy	F
+		c javap 字节码取证 | 高 | update 计算 y 差值；getter Ò00000() 返回
+	m	o00000	setX	(F)V
+		c javap 字节码取证 | 高 | 写 x 字段
+	m	Ò00000	setY	(F)V
+		c javap 字节码取证 | 高 | 写 y 字段
 c	com/fs/starfarer/util/MutatingValue	com/fs/starfarer/util/MutatingValue
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(value/min/max/rate/sign 等字段与 advance/getValue 方法保持原名)
 	f	value	value	F
@@ -111,17 +207,83 @@ c	com/fs/starfarer/util/P	com/fs/starfarer/util/BitmapFont
 	m	new	fontExists	(Ljava/lang/String;)Z
 	m	Ó00000	getAllFonts	()[Ljava/awt/Font;
 
+	f	if	ALIGN_LEFT	I
+		c javap -constants 字节码取证 | 中 | static final 0；drawString tableswitch case 0 直排无偏移
+	f	Ó00000	ALIGN_RIGHT	I
+		c javap -constants 字节码取证 | 中 | static final 1；drawString tableswitch case 1 负步进
+	f	ø00000	ALIGN_CENTER	I
+		c javap -constants 字节码取证 | 中 | static final 2；drawString tableswitch case 2 半宽负偏移
+	f	Ò00000	glyphs	[Lcom/fs/starfarer/util/BitmapFont$Glyph;
+		c javap 字节码取证 | 高 | 构造器 new Glyph[256]；char<256 查表
+	f	Ö00000	extraGlyphs	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 构造器 new HashMap；char>=256 Character→Glyph
+	f	void	antialiasing	Z
+		c javap 字节码取证 | 高 | 构造器 (Font,boolean,char[]) 次参存入；renderChar 设 KEY_ANTIALIASING
+	f	ÓO0000	defaultGlyphHeight	I
+		c javap 字节码取证 | 高 | 构造器 font.getSize()+3；renderChar 高度<=0 兜底
+	f	String	maxGlyphHeight	I
+		c javap 字节码取证 | 高 | buildGlyphs 记录最大 glyph 高度
+	f	do	textureId	I
+		c javap 字节码取证 | 高 | buildGlyphs 收纹理 id；dispose glDeleteTextures
+	f	ô00000	textureWidth	I
+		c javap 字节码取证 | 高 | 构造器 512（char[] 非空 ×2）
+	f	OO0000	textureHeight	I
+		c javap 字节码取证 | 高 | 构造器 512
+	f	Õ00000	font	Ljava/awt/Font;
+		c javap 字节码取证 | 高 | 构造器存入；renderChar setFont
+	f	super	fontMetrics	Ljava/awt/FontMetrics;
+		c javap 字节码取证 | 高 | renderChar getFontMetrics 存入
+	f	ÒO0000	letterSpacing	I
+		c javap 字节码取证 | 高 | 普通 0/紧凑 2；drawString 宽度累减
+	f	õ00000	rightAlignSpacing	I
+		c javap 字节码取证 | 高 | 普通 0/紧凑 1；ALIGN_RIGHT 分支步进
+	m	o00000	setUseCompactSpacing	(Z)V
+		c javap 字节码取证 | 高 | true→letterSpacing=2/rightAlignSpacing=1
+	m	o00000	renderChar	(C)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 高 | 测字→charWidth+8/getHeight+3 建图 drawString
+	m	o00000	buildGlyphs	([C)V
+		c javap 字节码取证 | 高 | 生成 Glyph、排布进纹理、算 maxGlyphHeight、生成纹理 id
+	m	o00000	drawGlyphQuad	(FFFFFFFF)V
+		c javap 字节码取证 | 高 | glTexCoord2f/glVertex2f 四顶点纹理四边形
+	m	Ô00000	getLineHeight	()I
+		c javap 字节码取证 | 高 | 返回 maxGlyphHeight
+	m	o00000	getLineHeight	(Ljava/lang/String;)I
+		c javap 字节码取证 | 高 | 返回 maxGlyphHeight（参数未使用）
+	m	new	getMaxGlyphHeight	()I
+		c javap 字节码取证 | 高 | 返回 maxGlyphHeight
+	m	o00000	drawString	(FFLjava/lang/String;IIFFI)V
+		c javap 字节码取证 | 高 | 按对齐模式逐字符 drawGlyphQuad（含换行）
+	m	o00000	intToRGBA	(I)[B
+		c javap 字节码取证 | 高 | int ARGB 拆 4 字节 RGBA
 c	com/fs/starfarer/util/P$o	com/fs/starfarer/util/BitmapFont$Glyph
 	c 来源(javap取证) | 置信度(高) | 证据(单字符字形数据：宽高 + 图集中 x/y 偏移（由 BitmapFont.o00000(char[]) 填充）)
 
+	f	class	width	I
+		c javap 字节码取证 | 高 | buildGlyphs 中 BufferedImage.getWidth() 赋值
+	f	Ó00000	height	I
+		c javap 字节码取证 | 高 | buildGlyphs 中 BufferedImage.getHeight() 赋值
+	f	Ô00000	x	I
+		c javap 字节码取证 | 高 | buildGlyphs 纹理排布 x
+	f	new	y	I
+		c javap 字节码取证 | 高 | buildGlyphs 纹理排布 y
+	f	o00000	this$0	Lcom/fs/starfarer/util/BitmapFont;
+		c javap 字节码取证 | 高 | 内部类合成外围引用（保留 javac 惯例）
 c	com/fs/starfarer/util/O0OO	com/fs/starfarer/util/RomanNumerals
 	c 来源(字符串常量) | 置信度(高) | 证据(I/IV/V/IX/X/L/C/D/M + 'Numbers must be in range 1-3999')
 	m	super	toRoman	(I)Ljava/lang/String;
 	m	super	isValidRoman	(Ljava/lang/String;)Z
 
+	f	o00000	NUMERALS	[Lcom/fs/starfarer/util/RomanNumerals$Numeral;
+		c javap 字节码取证 | 高 | clinit 构造 13 个 Numeral(1000,M)...(1,I)，super(int)/super(String) 遍历它
+	m	super	main	([Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | System.out.println(super(8000))，命令行演示入口
 c	com/fs/starfarer/util/O0OO$o	com/fs/starfarer/util/RomanNumerals$Numeral
 	c 来源(javap取证) | 置信度(高) | 证据(int+String 对：数值与罗马符号映射条目)
 
+	f	Ò00000	value	I
+		c javap 字节码取证 | 高 | 构造第 1 参；super(int) 中反复 isub 计数
+	f	o00000	symbol	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造第 2 参（"M"/"CM"/"I" 等），super(int) 中 append 输出
 c	com/fs/starfarer/util/N	com/fs/starfarer/util/TextAbbreviator
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(launcher/lchr、Battlecruiser/BC、light-years/ly 等缩写替换表 + 宽度测量截断)
 	m	o00000	abbreviate	(Ljava/lang/String;)Ljava/lang/String;
@@ -130,11 +292,31 @@ c	com/fs/starfarer/util/N	com/fs/starfarer/util/TextAbbreviator
 	m	Ó00000	createHullClassAbbreviator	(Ljava/lang/String;F)Lcom/fs/starfarer/util/N;
 	m	o00000	createGenericAbbreviator	(Ljava/lang/String;F)Lcom/fs/starfarer/util/N;
 
+	f	super	abbreviationRules	Ljava/util/List;
+		c javap 字节码取证 | 高 | List<Pair<String,String>> 规则表，o00000(String) 中逐条 replaceAll
+	f	Ó00000	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 构造时按字体加载，o00000(String) 中 Õ00000(text) 测宽
+	f	Ò00000	maxWidth	F
+		c javap 字节码取证 | 高 | 构造参数；o00000(String) 中与测量宽度比较决定是否缩写/截断
+	m	new	addPriorityRule	(Ljava/lang/String;Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 私有：add(0, Pair) 前插规则（优先匹配）
+	m	o00000	addRule	(Ljava/lang/String;Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 私有：list.add(Pair) 追加规则
+	m	o00000	addWeaponRules	(Lcom/fs/starfarer/util/TextAbbreviator;)V
+		c javap 字节码取证 | 高 | 静态：追加数十条武器名缩写（(?i)accelerator→acltr 等）
 c	com/fs/starfarer/util/H	com/fs/starfarer/util/ProgressInputStream
 	c 来源(字符串常量+字节码) | 置信度(高) | 证据(读取进度跟踪，读取期间按 'processMessagesWhileSavingOrLoading' 设置调 Display.processMessages)
 	m	Ò00000	getProgress	()F
 	m	o00000	getBytesRead	()J
 
+	f	new	totalBytes	J
+		c javap 字节码取证 | 高 | final；构造器 File.length() 存入
+	f	o00000	bytesRead	J
+		c javap 字节码取证 | 高 | volatile；read/skip 累加已读字节
+	f	Ó00000	wrappedStream	Ljava/io/InputStream;
+		c javap 字节码取证 | 高 | 构造器 FileInputStream 再包 BufferedInputStream(1MB)；read 系委托
+	m	Object	markAllRead	()V
+		c javap 字节码取证 | 高 | bytesRead = totalBytes
 c	com/fs/starfarer/util/ReplaceableSprite	com/fs/starfarer/util/ReplaceableSprite
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(sprite/originalTextureId/delegate 等字段与方法保持原名)
 	f	sprite	sprite	Lcom/fs/graphics/Sprite;
@@ -155,18 +337,130 @@ c	com/fs/starfarer/util/ReplaceableSprite$SpriteUpdateDelegate	com/fs/starfarer/
 c	com/fs/starfarer/util/Tesselator	com/fs/starfarer/util/Tesselator
 	c 来源(类名未混淆+字节码) | 置信度(高) | 证据(碰撞多边形网格化工具：Bounds→多边形层，私有方法用 GLU.gluNewTess 三角剖分)
 
+	f	ô00000	defaultSpacing	F
+		c javap 字节码取证 | 高 | clinit=20.0f；tesselate 入口作默认细分间距传入 subdivide，offsetLayers 中偏移基数 20
+	f	Ö00000	gridSpacing	F
+		c javap 字节码取证 | 高 | clinit=10.0f；gridScale=minSize/10 归一、tesselateBetween 中细分间距 10*gridScale、offsetLayers 偏移基数 10
+	f	Ó00000	epsilon	F
+		c javap 字节码取证 | 高 | clinit=0.1f；全类大量 Math.abs(差)<=epsilon 判接近/重合
+	f	void	useGlobalRandom	Z
+		c javap 字节码取证 | 高 | clinit=true；false 时 generateGrid/tesselateBetween 用 nanoTime 派生种子重建 Random
+	f	Õ00000	random	Ljava/util/Random;
+		c javap 字节码取证 | 高 | 全局 Random；generateGrid 随机角度/点、displaceMidpoint 扰动、smoothContour 随机偏移
+	f	String	gridScale	F
+		c javap 字节码取证 | 高 | clinit=1.0f；tesselate 中=min(w,h)/15f/10f 并 clamp<=1，tesselateBetween/offsetLayers 缩放细分间距与偏移
+	f	Ò00000	lastAngle	F
+		c javap 字节码取证 | 高 | clinit=0.0f；tesselateBetween 成功切分时 putstatic 记录最终角度
+	f	super	sharedPoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | clinit new ArrayList；subdivide 收集边界/相邻点，tesselateBetween 中 addAll 到各层 String
+	m	o00000	tesselate	(Lcom/fs/starfarer/combat/o0OO/Bounds;Lcom/fs/starfarer/util/Tesselator$CollisionGridParams;)Ljava/util/List;
+		c javap 字节码取证 | 高 | 入口：取顶点→subdivide→算包围盒→按 HullSize 定深度→generateGrid，层数不足时直接建单层
+	m	o00000	generateGrid	(Ljava/util/List;Lcom/fs/starfarer/util/Tesselator$CollisionGridParams;FFI)Ljava/util/List;
+		c javap 字节码取证 | 高 | 核心生成：WeightedRandomPicker 选角度、随机落点、与轮廓边判交、排序切点构造 CollisionLayers
+	m	o00000	findClosePoints	(Ljava/util/List;)Ljava/util/Set;
+		c javap 字节码取证 | 高 | 双层循环收集距离<=2 的点对进 HashSet，generateGrid 中作已占用点集
+	m	o00000	tesselateBetween	(Ljava/util/List;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/util/Tesselator$CollisionGridParams;)Ljava/util/List;
+		c javap 字节码取证 | 高 | 找距 A/B 最近顶点、把轮廓拆两段各自 subdivide 成两个 CollisionLayers，尾部 offsetLayers 平滑
+	m	Õ00000	centroidOutside	(Ljava/util/List;)Z
+		c javap 字节码取证 | 高 | 取包围盒中心，!com/fs/util/oOOO.o00000(点,轮廓) 即形心在多边形外
+	m	o00000	getVertices	(Lcom/fs/starfarer/combat/o0OO/Bounds;)Ljava/util/List;
+		c javap 字节码取证 | 高 | 遍历 origSegments，首段 p1 + 各段 p2 组成顶点列表
+	m	Ò00000	removeClosePoints	(Ljava/util/List;)V
+		c javap 字节码取证 | 高 | 收集与前一顶点距<epsilon 的重复点并从列表移除
+	m	o00000	subdivide	(Ljava/util/List;Ljava/util/List;F)Ljava/util/List;
+		c javap 字节码取证 | 高 | 沿每段边按间距插点（ceil(len/spacing) 等分），相邻层边界点记入 sharedPoints
+	m	Object	toBounds	(Ljava/util/List;)Lcom/fs/starfarer/combat/o0OO/Bounds;
+		c javap 字节码取证 | 高 | new Bounds + addSegment 逐点构建碰撞边界
+	m	Ò00000	computeCollisionBounds	(Lcom/fs/starfarer/combat/o0OO/Bounds;)Lcom/fs/starfarer/util/Tesselator$CollisionBounds;
+		c javap 字节码取证 | 高 | 包装：getVertices 后调 computeBounds(List)
+	m	o00000	translatePoints	(Ljava/util/List;FF)V
+		c javap 字节码取证 | 高 | 遍历点 x+=dx、y+=dy 平移
+	m	o00000	translateBounds	(Lcom/fs/starfarer/combat/o0OO/Bounds;FF)V
+		c javap 字节码取证 | 高 | 遍历 origSegments 平移 x1/y1/x2/y2 并 set p1/p2
+	m	Ô00000	isClockwise	(Ljava/util/List;)Z
+		c javap 字节码取证 | 高 | 鞋带公式 sum((x2-x1)*(y2+y1))<=0 判定绕向
+	m	o00000	smoothContour	(Ljava/util/List;Ljava/util/List;Lcom/fs/starfarer/util/Tesselator$CollisionGridParams;)V
+		c javap 字节码取证 | 高 | 逐点取角平分线方向+Random 扰动（超限点跳过），末尾首尾闭合
+	m	o00000	isCloseToAny	(Ljava/util/List;Lorg/lwjgl/util/vector/Vector2f;)Z
+		c javap 字节码取证 | 高 | 遍历列表，任一点与目标距<epsilon 即 true
+	m	o00000	offsetLayers	(Lcom/fs/starfarer/util/Tesselator$CollisionLayers;Lcom/fs/starfarer/util/Tesselator$CollisionLayers;)V
+		c javap 字节码取证 | 高 | 层2 每点找层1 最近点，generateCurve 查表取偏移系数，沿法线偏移两点
+	m	o00000	getAngleBisector	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 前/后点相对当前点方向各旋±90° 后相加归一，得角平分线单位向量
+	m	o00000	nextPowerOfTwo	(I)I
+		c javap 字节码取证 | 高 | 从 2 起倍增，返回>=入参的最小 2 的幂
+	m	return	computeBounds	(Ljava/util/List;)Lcom/fs/starfarer/util/Tesselator$CollisionBounds;
+		c javap 字节码取证 | 高 | 遍历点求 min/max/均值中心，填充 CollisionBounds 全部 8 字段
+	m	o00000	generateCurve	(IF)[F
+		c javap 字节码取证 | 高 | fill(-1) 后两端置 1，中点递归 displacement 生成 2 的幂长曲线数组
+	m	o00000	subdivideArray	([FIIIF)V
+		c javap 字节码取证 | 高 | 对数组 [i..j) 递归：中点处调 displaceMidpoint 后左右分段再递归
+	m	o00000	normalizeCurve	([FFF)V
+		c javap 字节码取证 | 高 | 私有：求数组 min/max 后线性映射到 [fload_1,fload_2]，-1 哨兵继承邻值/0.5
+	m	o00000	displaceMidpoint	([FIIIIF)V
+		c javap 字节码取证 | 高 | 私有：中点=(a+b)/2 + (rand-0.5f)*pow(f, 幂次)，单步中点位移
+	m	o00000	getClosestGridOffset	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/util/Tesselator$CollisionGridParams;)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 遍历 params 顶点找距点<epsilon 的最近索引，返回对应偏移向量（偏移集-点）
+	m	o00000	renderTriangles	(Lcom/fs/starfarer/combat/o0OO/Bounds;FFF)V
+		c javap 字节码取证 | 高 | gluNewTess+gluTessCallback 三角化轮廓，顶点带 (x,y,0,offsetX,offsetY,scale) 六维数据
 c	com/fs/starfarer/util/Tesselator$1	com/fs/starfarer/util/Tesselator$PointDistanceComparator
 	c 来源(字节码调用) | 置信度(高) | 证据(Comparator<Vector2f> 按 Misc.getDistance 到参考点排序)
 
+	f	val$a1	anchorPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造第 1 参，compare 中 Misc.getDistance 的参照点
+	m	super	compareByDistance	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)I
+		c javap 字节码取证 | 高 | 两参到 anchorPoint 距离差取 signum，近者优先
 c	com/fs/starfarer/util/Tesselator$Oo	com/fs/starfarer/util/Tesselator$CollisionBounds
 	c 来源(字符串常量) | 置信度(高) | 证据(8 float（w/h/minX/minY/maxX/maxY/cx/cy），调试串 'w: %.2f h: %.2f minX...')
 
+	f	Object	minX	F
+		c javap 字节码取证 | 高 | computeBounds 取最小 x；toString "minX: %.2f" 第 3 位
+	f	ô00000	minY	F
+		c javap 字节码取证 | 高 | computeBounds 取最小 y；toString 第 4 位
+	f	return	maxX	F
+		c javap 字节码取证 | 高 | computeBounds 取最大 x；toString 第 5 位
+	f	Õ00000	maxY	F
+		c javap 字节码取证 | 高 | computeBounds 取最大 y；toString 第 6 位
+	f	Ô00000	width	F
+		c javap 字节码取证 | 高 | =maxX-minX；toString "w: %.2f" 第 1 位
+	f	Ò00000	height	F
+		c javap 字节码取证 | 高 | =maxY-minY；toString "h: %.2f" 第 2 位
+	f	o00000	centerX	F
+		c javap 字节码取证 | 高 | computeBounds 均值 x；toString "cx: %.2f" 第 7 位
+	f	Ø00000	centerY	F
+		c javap 字节码取证 | 高 | computeBounds 均值 y；toString "cy: %.2f" 第 8 位
+	m	super	getRadius	()F
+		c javap 字节码取证 | 高 | max(|cx-minX|,|maxX-cx|) 与同式 y 向构成向量长度+20.0f
 c	com/fs/starfarer/util/Tesselator$o	com/fs/starfarer/util/Tesselator$CollisionGridParams
 	c 来源(javap取证) | 置信度(中) | 证据(ShipAPI$HullSize + 2 多边形列表 + 中心 Vector2f + boolean + float，作为网格生成参数)
 
+	f	Ö00000	hullSize	Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+		c javap 字节码取证 | 高 | 构造默认 DESTROYER；tesselate 中按 ordinal 与 DESTROYER 比较定网格深度 8/12
+	f	Õ00000	points	Ljava/util/List;
+		c javap 字节码取证 | 高 | 顶点集；tesselateBetween 赋给层 Ö00000、getClosestGridOffset 遍历判近
+	f	Ó00000	offsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | 与 points 索引对齐的偏移向量集；getClosestGridOffset 返回 offsets[i]-点
 c	com/fs/starfarer/util/Tesselator$oo	com/fs/starfarer/util/Tesselator$CollisionLayers
 	c 来源(javap取证) | 置信度(中) | 证据(7 个多边形 List + float + 返回 combat/o0OO/O0OO(Bounds) 的方法)
 
+	f	String	referencePoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | tesselateBetween 中 addAll(sharedPoints)；smoothContour 中作避开点集
+	f	Ó00000	points	Ljava/util/List;
+		c javap 字节码取证 | 高 | 细分后轮廓点，getOriginalBounds 取用
+	f	void	smoothedPoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | 平滑后的轮廓点拷贝；getSmoothedBounds 取用
+	f	super	customPoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | 仅 getBounds 使用：非空时优先由其构造 Bounds
+	f	Ö00000	gridPoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | tesselateBetween 中 = params.Õ00000（与 gridOffsets 索引对齐的网格点集）
+	f	Ò00000	gridOffsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | tesselateBetween 中 = params.Ó00000（对应网格点偏移向量）
+	m	Ò00000	getOriginalBounds	()Lcom/fs/starfarer/combat/o0OO/Bounds;
+		c javap 字节码取证 | 高 | Tesselator.toBounds(points)
+	m	Ó00000	getSmoothedBounds	()Lcom/fs/starfarer/combat/o0OO/Bounds;
+		c javap 字节码取证 | 高 | Tesselator.toBounds(smoothedPoints)
+	m	super	getBounds	()Lcom/fs/starfarer/combat/o0OO/Bounds;
+		c javap 字节码取证 | 高 | customPoints 非空用其构造，否则回落 getSmoothedBounds
 c	com/fs/starfarer/util/ValueShifter	com/fs/starfarer/util/ValueShifter
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements ValueShifterAPI，base/curr/data 等保持原名)
 	f	base	base	F
@@ -220,6 +514,18 @@ c	com/fs/starfarer/util/int	com/fs/starfarer/util/ProgressOutputStream
 	m	Ò00000	getProgress	()F
 	m	super	getBytesWritten	()J
 
+	f	Ò00000	totalBytes	J
+		c javap 字节码取证 | 高 | final（对照 linux new），super()J 直接返回，进度比例分母
+	f	String	progressBytes	J
+		c javap 字节码取证 | 高 | volatile（对照 linux Ô00000），write 系列累加，进度比例分子
+	f	Õ00000	delegate	Ljava/io/OutputStream;
+		c javap 字节码取证 | 高 | 构造器包装为 BufferedOutputStream(1000000)，write/flush/close 转发
+	f	Ó00000	progressMin	F
+		c javap 字节码取证 | 高 | 构造器第 4 参；Ò00000()F 线性映射起点、clamp 下界
+	f	super	progressMax	F
+		c javap 字节码取证 | 高 | 构造器第 5 参；进度满时直接返回、映射终点、clamp 上界
+	m	Ó00000	markComplete	()V
+		c javap 字节码取证 | 高 | 将 progressBytes 置为 totalBytes
 c	com/fs/starfarer/util/E	com/fs/starfarer/util/BaseRuntimeException
 	c 来源(javap取证) | 置信度(低) | 证据(extends RuntimeException 仅 String 构造，无引用证据，泛化命名)
 
@@ -242,23 +548,171 @@ c	com/fs/starfarer/util/A	com/fs/starfarer/util/ZoomTracker
 	m	null	isZoomingOut	()Z
 	m	o00000	advance	(F)V
 
+	f	new	currentZoom	F
+		c javap 字节码取证 | 高 | 默认 1.0f；Ô00000() 返回（clamp 到 [minZoom,maxZoom]），o00000(float) 中向 target 逼近
+	f	Ö00000	targetZoom	F
+		c javap 字节码取证 | 高 | 默认 1.0f；事件处理中按步进修正，class() 返回
+	f	Ó00000	minZoom	F
+		c javap 字节码取证 | 高 | 默认 0.5f，构造第 1 参；clamp 下界，Ó00000() 返回
+	f	Ø00000	maxZoom	F
+		c javap 字节码取证 | 高 | 默认 4.0f，构造第 2 参；clamp 上界，Ö00000() 返回
+	f	null	zoomStep	F
+		c javap 字节码取证 | 高 | 默认 0.25f，构造第 3 参；事件中 target -= step*multiplier*sign
+	f	Ô00000	unusedZoomParam	F
+		c javap 字节码取证 | 中 | 构造第 4 参写入，全类无 getfield 引用，死代码（unused 前缀先例）
+	f	o00000	zoomedIn	Z
+		c javap 字节码取证 | 高 | 事件值>0 时置 true；Ø00000() 返回
+	f	õ00000	zoomedOut	Z
+		c javap 字节码取证 | 高 | 事件值<0 时置 true；null() 返回
+	f	class	fastZoomEnabled	Z
+		c javap 字节码取证 | 高 | o00000(boolean) 写入；computeZoomStep 中启用时步长 4.0f；new() 返回
+	m	new	isFastZoomEnabled	()Z
+		c javap 字节码取证 | 高 | 返回 fastZoomEnabled
+	m	o00000	setFastZoomEnabled	(Z)V
+		c javap 字节码取证 | 高 | 写入 fastZoomEnabled
+	m	o00000	computeZoomStep	()F
+		c javap 字节码取证 | 高 | 私有：fast 时 4.0f；currentZoom>8→4.0f、>4→2.0f、否则 1.0f
+	m	class	getTargetZoom	()F
+		c javap 字节码取证 | 高 | 返回 targetZoom
+	m	new	setTargetZoom	(F)V
+		c javap 字节码取证 | 高 | targetZoom=currentZoom=入参
+	m	Ó00000	getMinZoom	()F
+		c javap 字节码取证 | 高 | 返回 minZoom
+	m	Ó00000	setMinZoom	(F)V
+		c javap 字节码取证 | 高 | 写入并保证 target/current >= min
+	m	Ö00000	getMaxZoom	()F
+		c javap 字节码取证 | 高 | 返回 maxZoom
+	m	Ô00000	setMaxZoom	(F)V
+		c javap 字节码取证 | 高 | 写入并保证 target/current <= max
 c	com/fs/starfarer/util/A/A	com/fs/starfarer/util/InputState
 	c 来源(字节码调用) | 置信度(高) | 证据(读取 api/input 的 KEYBOARD_EVENT/MOUSE_EVENT 生成 util InputEvent 列表，静态全局状态)
 	m	Object	getEvents	()Lcom/fs/starfarer/util/A/new;
 	m	Ò00000	getMouseMoveEvent	()Lcom/fs/starfarer/util/A/C;
 	m	o00000	getMousePosition	()Lcom/fs/starfarer/util/OO0O;
 
+	f	class	doubleClickThreshold	F
+		c javap -constants 字节码取证 | 中 | static final 0.5f；双击判定阈值（字节码内联）
+	f	õ00000	mouseTracker	Lcom/fs/starfarer/util/MouseTracker;
+		c javap 字节码取证 | 高 | clinit new OO0O；collectEvents 开头 update，getMouseTracker 返回
+	f	interface	leftShiftDown	Z
+		c javap 字节码取证 | 高 | updateModifierKeys 键 42(LSHIFT) 写入；isShiftDown 读取
+	f	Ö00000	rightShiftDown	Z
+		c javap 字节码取证 | 高 | updateModifierKeys 键 54(RSHIFT) 写入；isShiftDown 读取
+	f	Ô00000	leftCtrlDown	Z
+		c javap 字节码取证 | 高 | updateModifierKeys 键 29(LCONTROL)/219(LMETA) 写入；isCtrlDown 读取
+	f	while	rightCtrlDown	Z
+		c javap 字节码取证 | 高 | updateModifierKeys 键 157(RCONTROL)/220(RMETA) 写入；isCtrlDown 读取
+	f	Ó00000	leftAltDown	Z
+		c javap 字节码取证 | 高 | updateModifierKeys 键 56(LALT) 写入；isAltDown 读取
+	f	ÓO0000	rightAltDown	Z
+		c javap 字节码取证 | 高 | updateModifierKeys 键 184(RALT) 写入；isAltDown 读取
+	f	o00000	lastTime	J
+		c javap 字节码取证 | 高 | clinit -1；collectEvents 记录上次时间戳算 dt
+	f	float	shiftHeldTicks	I
+		c javap 字节码取证 | 高 | 任一 shift 按下累加、全松清零；>2 tick 且键松开清除标志
+	f	OO0000	altHeldTicks	I
+		c javap 字节码取证 | 高 | 任一 alt 按下累加、全松清零
+	f	ÔO0000	ctrlHeldTicks	I
+		c javap 字节码取证 | 高 | 任一 ctrl 按下累加、全松清零
+	f	null	lmbDownPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | clinit new Vector2f；LMB down 记录位置
+	f	ö00000	rmbDownPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | clinit new Vector2f；RMB down 记录位置
+	f	oO0000	timeSinceLastLmbClick	F
+		c javap 字节码取证 | 高 | clinit 1000.0f；每帧 +dt，LMB down 清零，<=0.5f 且位移<5 判双击
+	f	Ø00000	timeSinceLastRmbClick	F
+		c javap 字节码取证 | 高 | clinit 1000.0f；RMB 双击计时
+	f	new	collectingEvents	Z
+		c javap 字节码取证 | 高 | static；仅 collectEvents/构造器写 false 无置 true 点；外部 UI 据此忽略回调
+	m	o00000	updateModifierKeys	(Lcom/fs/starfarer/util/InputEvent;)V
+		c javap 字节码取证 | 高 | 按事件键值 lookupswitch 更新 shift/ctrl/alt 标志
+	m	return	isShiftDown	()Z
+		c javap 字节码取证 | 高 | leftShiftDown||rightShiftDown
+	m	Õ00000	isCtrlDown	()Z
+		c javap 字节码取证 | 高 | leftCtrlDown||rightCtrlDown
+	m	Ô00000	isAltDown	()Z
+		c javap 字节码取证 | 高 | leftAltDown||rightAltDown
 c	com/fs/starfarer/util/A/new	com/fs/starfarer/util/InputEventList
 	c 来源(继承关系) | 置信度(高) | 证据(extends ArrayList<InputEvent>，cleanUp/consume 事件)
 	m	super	cleanUp	()V
 	m	Ò00000	consumeKeyboardAndMouseEvents	()V
 
+	f	new	serialVersionUID	J
+		c javap -constants 字节码取证 | 高 | static final long，ArrayList 子类标准序列化 UID
+	f	o00000	unusedFloat	F
+		c javap 字节码取证 | 高 | 仅构造器写 0.0f，全类无读取点，死代码
 c	com/fs/starfarer/util/A/C	com/fs/starfarer/util/InputEvent
 	c 来源(人工运行期表) | 置信度(高) | 证据(热点表已映射：包装 api InputEventType/Class 的游戏输入事件)
 
+	f	oO0000	eventClass	Lcom/fs/starfarer/api/input/InputEventClass;
+		c javap 字节码取证 | 高 | getEventClass() 读；isMouseEvent/isKeyboardEvent 判类
+	f	Ó00000	eventType	Lcom/fs/starfarer/api/input/InputEventType;
+		c javap 字节码取证 | 高 | getEventType/setEventType 读写；isRepeat/isKeyUp 系比较
+	f	new	x	I
+		c javap 字节码取证 | 高 | getX/setX 读写；构造器经 convertToUiX 换算后存入
+	f	o00000	y	I
+		c javap 字节码取证 | 高 | getY/setY 读写
+	f	null	dx	I
+		c javap 字节码取证 | 高 | getDX/setDX 读写
+	f	class	dy	I
+		c javap 字节码取证 | 高 | getDY/setDY 读写
+	f	Ø00000	eventValue	I
+		c javap 字节码取证 | 高 | getEventValue/setEventValue 读写；LMB/RMB 判键值
+	f	OO0000	eventChar	C
+		c javap 字节码取证 | 高 | getEventChar/setEventChar 读写
+	f	while	consumed	Z
+		c javap 字节码取证 | 高 | isConsumed()/consume() 读写
+	f	float	shiftDown	Z
+		c javap 字节码取证 | 高 | isShiftDown/setShiftDown 读写
+	f	ÔO0000	ctrlDown	Z
+		c javap 字节码取证 | 高 | isCtrlDown/setCtrlDown 读写
+	f	ÓO0000	altDown	Z
+		c javap 字节码取证 | 高 | isAltDown/setAltDown 读写
+	f	Ö00000	unusedBoolean	Z
+		c javap 字节码取证 | 高 | 仅构造器初始 false，全类无读取点，死代码
+	f	ö00000	doubleClick	Z
+		c javap 字节码取证 | 高 | isDoubleClick/setDoubleClick 读写
+	f	Ô00000	enforceConsume	Z
+		c javap 字节码取证 | 高 | static；isEnforceConsume/setEnforceConsume 读写
+	f	interface	displaySettings	Lcom/fs/starfarer/settings/DisplaySettings;
+		c javap 字节码取证 | 高 | static；clinit 从 StarfarerSettings 获取；鼠标坐标换算用
+	m	o00000	checkConsumed	()V
+		c javap 字节码取证 | 高 | enforceConsume 且 isConsumed() 时抛 "Attempt to access data of a consumed InputEvent"
 c	com/fs/starfarer/settings/A	com/fs/starfarer/settings/DisplaySettings
 	c 来源(字节码调用) | 置信度(中) | 证据(屏幕尺寸(int) + 4 个坐标转换方法，被 ScissorStack/ScreenshotTaker 经 StarfarerSettings 使用)
 
+	f	super	screenWidthPixels	F
+		c javap 字节码取证 | 高 | getter new()I（getScreenWidthPixels 实现）读它
+	f	Õ00000	screenHeightPixels	F
+		c javap 字节码取证 | 高 | getter Ô00000()I（getScreenHeightPixels 实现）读它
+	f	Ó00000	uiWidth	F
+		c javap 字节码取证 | 高 | 换算分子；setter Ø00000(F)V 同步 StarfarerSettings.Ó00000(int)
+	f	String	uiHeight	F
+		c javap 字节码取证 | 高 | 换算分子；setter Ö00000(F)V 同步 StarfarerSettings.o00000(int)
+	m	class	convertFromUiY	(F)F
+		c javap 字节码取证 | 高 | x*height/uiHeight
+	m	Ó00000	convertFromUiX	(F)F
+		c javap 字节码取证 | 高 | x*width/uiWidth
+	m	new	convertToUiX	(F)F
+		c javap 字节码取证 | 高 | x*uiWidth/width；InputEvent.getMouseX/构造器屏幕→UI 换算
+	m	o00000	convertToUiY	(F)F
+		c javap 字节码取证 | 高 | x*uiHeight/height；InputEvent.getMouseY/构造器
+	m	new	getScreenWidthPixels	()I
+		c javap 字节码取证 | 高 | f2i 返回 screenWidthPixels；SettingsAPI 实现
+	m	new	setScreenWidthPixels	(I)V
+		c javap 字节码取证 | 高 | i2f 写 screenWidthPixels
+	m	Ô00000	getScreenHeightPixels	()I
+		c javap 字节码取证 | 高 | f2i 返回 screenHeightPixels；SettingsAPI 实现
+	m	o00000	setScreenHeightPixels	(I)V
+		c javap 字节码取证 | 高 | i2f 写 screenHeightPixels
+	m	o00000	getUiWidth	()F
+		c javap 字节码取证 | 高 | 返回 uiWidth
+	m	Ø00000	setUiWidth	(F)V
+		c javap 字节码取证 | 高 | 写 uiWidth 并同步 StarfarerSettings.Ó00000(int)
+	m	Ó00000	getUiHeight	()F
+		c javap 字节码取证 | 高 | 返回 uiHeight
+	m	Ö00000	setUiHeight	(F)V
+		c javap 字节码取证 | 高 | 写 uiHeight 并同步 StarfarerSettings.o00000(int)
 c	com/fs/starfarer/settings/OoOO	com/fs/starfarer/settings/SpriteAPIImpl
 	c 来源(接口实现) | 置信度(高) | 证据(implements SpriteAPI 包装 com.fs.graphics.Sprite，全部方法为接口原名)
 	f	o00000	o00000	Lcom/fs/graphics/Sprite;
@@ -310,6 +764,8 @@ c	com/fs/starfarer/settings/OoOO	com/fs/starfarer/settings/SpriteAPIImpl
 c	com/fs/starfarer/settings/PlayerDamageTaken	com/fs/starfarer/settings/PlayerDamageTaken
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(枚举 HALF/FULL 保持原名)
 
+	f	ENUM$VALUES	$VALUES	[Lcom/fs/starfarer/settings/PlayerDamageTaken;
+		c javap 字节码取证 | 高 | 未混淆枚举的 javac 合成 $VALUES 数组，values() 读它
 c	com/fs/starfarer/settings/StarfarerSettings	com/fs/starfarer/settings/StarfarerSettings
 	c 来源(人工运行期表) | 置信度(高) | 证据(热点表已映射：全局设置（字体路径/JSONObject/缩放标志）)
 
@@ -608,15 +1064,39 @@ c	com/fs/starfarer/settings/StarfarerSettings$1	com/fs/starfarer/settings/Starfa
 c	com/fs/starfarer/settings/StarfarerSettings$1$1	com/fs/starfarer/settings/StarfarerSettings$SkillOrderComparator
 	c 来源(字节码调用) | 置信度(中) | 证据(Comparator<String> 按 SkillSpec.getName/ getOrder 排序)
 
+	f	this$1	outerTextFieldFactory	Lcom/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory;
+		c javap 字节码取证 | 高 | 匿名 Comparator 合成外围引用，仅构造器写入
+	m	o00000	compareByOrder	(Ljava/lang/String;Ljava/lang/String;)I
+		c javap 字节码取证 | 高 | SpecStore 取 SkillSpec 按 getOrder() 比较，相等回落 getName()
 c	com/fs/starfarer/settings/StarfarerSettings$1$2	com/fs/starfarer/settings/StarfarerSettings$SpecSortOrderComparator
 	c 来源(字节码调用) | 置信度(中) | 证据(Comparator<String> 按 loading/specs/oOOO.getSortOrder 排序)
 
+	f	this$1	outerTextFieldFactory	Lcom/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory;
+		c javap 字节码取证 | 高 | 匿名 Comparator 合成外围引用，仅构造器写入
+	m	super	compareBySortOrder	(Ljava/lang/String;Ljava/lang/String;)I
+		c javap 字节码取证 | 高 | SpecStore 取 spec 按 getSortOrder() 之差比较
 c	com/fs/starfarer/settings/StarfarerSettings$o	com/fs/starfarer/settings/StarfarerSettings$TextFileEntry
 	c 来源(javap取证) | 置信度(中) | 证据(String/String 键值对：文件名+内容)
 
+	f	o00000	fileName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | run() 中 writeTextFileToCommon(o00000, new) 首参
+	f	new	content	Ljava/lang/String;
+		c javap 字节码取证 | 高 | run() 中作为文件内容写出
 c	com/fs/starfarer/settings/StarfarerSettings$Oo	com/fs/starfarer/settings/StarfarerSettings$SettingsWriterThread
 	c 来源(字节码调用) | 置信度(高) | 证据(extends Thread，队列中取 (文件名,内容) 经 SettingsAPI.writeTextFileToCommon 异步写入)
 
+	f	super	pendingEntries	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造器 new ArrayList；addEntry 增、pollEntry 删首
+	f	Ò00000	stopped	Z
+		c javap 字节码取证 | 高 | run() 循环条件 !isStopped()；setStopped(true) 同时 interrupt
+	m	super	addEntry	(Ljava/lang/String;Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 构造 TextFileEntry(key,value) 入队并 notify()
+	m	Ò00000	pollEntry	()Lcom/fs/starfarer/settings/StarfarerSettings$TextFileEntry;
+		c javap 字节码取证 | 高 | 空则 null，否则 remove(0) 队首
+	m	super	setStopped	(Z)V
+		c javap 字节码取证 | 高 | 写 stopped 字段，true 时 interrupt()
+	m	super	isStopped	()Z
+		c javap 字节码取证 | 高 | 返回 stopped 字段
 c	com/fs/starfarer/rpg/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/rpg/PersonalityImpl
 	c 来源(接口实现) | 置信度(高) | 证据(implements PersonalityAPI，getBravery/setAffinity/getId 等全部方法为接口原名)
 	m	getBravery	getBravery	()F
@@ -629,6 +1109,16 @@ c	com/fs/starfarer/rpg/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	getDescription	getDescription	()Ljava/lang/String;
 	m	setDescription	setDescription	(Ljava/lang/String;)V
 
+	f	Õ00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 (String) 存入，getId() 返回
+	f	super	displayName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDisplayName/setDisplayName 读写
+	f	Ò00000	description	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDescription/setDescription 读写
+	f	String	bravery	F
+		c javap 字节码取证 | 高 | getBravery/setBravery 读写（set 限幅 0..10）
+	f	Ó00000	affinityMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | setAffinity/getAffinity 读写（CombatTaskType→Float）
 c	com/fs/starfarer/rpg/ImportantPeople	com/fs/starfarer/rpg/ImportantPeople
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(implements ImportantPeopleAPI，people/idToPersonDataMap 等保持原名)
 	f	people	people	Ljava/util/List;
@@ -797,3 +1287,7 @@ c	com/fs/starfarer/rpg/Person	com/fs/starfarer/rpg/Person
 
 c	com/fs/starfarer/rpg/Person$1	com/fs/starfarer/rpg/Person$ContactTagComparator
 	c 来源(字节码调用) | 置信度(中) | 证据(Comparator<ContactTagSpec>，Person 内部匿名比较器)
+	f	this$0	outerPerson	Lcom/fs/starfarer/rpg/Person;
+		c javap 字节码取证 | 高 | 匿名 Comparator 合成外围引用，仅构造器写入
+	m	super	compareBySortOrder	(Lcom/fs/starfarer/api/loading/ContactTagSpec;Lcom/fs/starfarer/api/loading/ContactTagSpec;)I
+		c javap 字节码取证 | 高 | signum(a.getSort()-b.getSort())

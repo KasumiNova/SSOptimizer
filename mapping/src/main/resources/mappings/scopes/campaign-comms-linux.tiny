@@ -12,6 +12,20 @@ c	com/fs/starfarer/campaign/comms/C	com/fs/starfarer/campaign/comms/IntelRow
 	m	setCustom	setCustom	(Ljava/lang/Object;)V
 	m	shouldRemove	shouldRemove	()Z
 	m	setElapsed	setElapsed	(F)V
+	f	for.this$void	iconButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getIconButton 返回；图标按钮（NOTHING 时 setActive(false)）
+	f	public.this$void	elapsed	F
+		c javap 字节码取证 | 高 | setElapsed 写入；advanceImpl 累加 >15s fadeOut
+	f	ôÖOO00	iconSpriteButton	LSpriteIconButton;
+		c javap 字节码取证 | 高 | OOoo 精灵图标按钮（intel 图标）
+	f	øÖOO00	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | getInfo 返回；createIntelInfo 生成的 intel 信息 tooltip
+	f	ÔØOO00	timeScale	F
+		c javap 字节码取证 | 中 | renderImpl 乘入 amount；shouldRemove 按 >0 判断滞留
+	f	öÖOO00	actionListener	Lcom/fs/starfarer/ui/ActionListener;
+		c javap 字节码取证 | 高 | 按钮回调监听器（构造传入）
+	m	ÔOO000	unusedGetTooltipHeight	()F
+		c javap 字节码取证 | 中 | 仅遍历 tooltip 子组件后恒返 0.0f，类内无调用，死代码
 c	com/fs/starfarer/campaign/comms/CommMessage	com/fs/starfarer/campaign/comms/CommMessage
 	c 来源(未混淆类名) | 置信度(高) | 证据(CommMessage implements DoNotObfuscate + CommMessageAPI)
 	f	type	type	Ljava/lang/String;
@@ -153,6 +167,12 @@ c	com/fs/starfarer/campaign/comms/E	com/fs/starfarer/campaign/comms/CommMessageF
 	m	getMessage	getMessage	()Lcom/fs/starfarer/campaign/comms/CommMessage;
 	m	renderImpl	renderImpl	(F)V
 	m	advanceImpl	advanceImpl	(F)V
+	f	ÕõOO00	isBuilt	Z
+		c javap 字节码取证 | 中 | createLayout 入口置 true 防重建
+	m	ÖOO000	createLayout	()V
+		c javap 字节码取证 | 高 | 构建"From"来源面板布局
+	m	o00000	addMessageSection	(Lcom/fs/starfarer/ui/newui/TextPanelImpl;Lcom/fs/starfarer/api/campaign/comm/MessageSectionAPI;)V
+		c javap 字节码取证 | 高 | 向文本面板写 section 内容（发件来源段）
 c	com/fs/starfarer/campaign/comms/F	com/fs/starfarer/campaign/comms/IntelTabPanel
 	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(IntelTabPanel（F），字符串 "Planets/Factions/Intel" 三标签，含 EventsPanel/FactionIntelPanel/行星面板)
 	f	Ô0ö000	intelData	Lcom/fs/starfarer/campaign/comms/IntelTabData;
@@ -170,10 +190,30 @@ c	com/fs/starfarer/campaign/comms/F	com/fs/starfarer/campaign/comms/IntelTabPane
 	m	getOpenTo	getOpenTo	()Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
 	m	getOtherParam	getOtherParam	()Ljava/lang/Object;
 	m	tabClosed	tabClosed	()V
+	f	public.class$class	openTo	Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+		c javap 字节码取证 | 高 | getOpenTo 返回；布局完成后置 null
+	f	ô0ö000	panelsByButton	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 标签按钮→面板 映射；showTab 切换高亮
+	f	Ø0ö000	otherParam	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | getOtherParam 返回；EventsPanel 判定参数
+	f	Õ0ö000	isBuilt	Z
+		c javap 字节码取证 | 中 | sizeChanged 置 true 防重建（öö0000 一次性布局）
+	f	ö0ö000	intelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Intel" 标签按钮（默认选中）
+	f	return.class$class	factionsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Factions" 标签按钮
+	f	int.class$class	planetsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Planets" 标签按钮
+	m	öö0000	createLayout	()V
+		c javap 字节码取证 | 高 | 构建三标签按钮、FactionIntelPanel/行星面板/EventsPanel 与 panelsByButton
+	m	new	showTab	(Lcom/fs/starfarer/ui/Panel;)V
+		c javap 字节码取证 | 高 | 切换面板：目标 forceIn+按钮高亮，其余 forceOut+取消高亮
 c	com/fs/starfarer/campaign/comms/for	com/fs/starfarer/campaign/comms/CommMessageTimestampRow
 	c 来源(字符串常量) | 置信度(高) | 证据(CommMessageTimestampRow（for），字符串 "$sender"/"Just received"/"Today"/"N days ago"，getStringForTimestamp 时间戳格式化消息行)
 	f	ÔÓÓO00	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
 	m	getStringForTimestamp	getStringForTimestamp	(J)Ljava/lang/String;
+	f	ÕÓÓO00	timestampLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造用 $sender/星系/时间生成时间戳标签
 c	com/fs/starfarer/campaign/comms/H	com/fs/starfarer/campaign/comms/CommMessageRow
 	c 来源(javap取证) | 置信度(中) | 证据(CommMessageRow（H），图标按钮+label 的消息行，OoOO 列表元素)
 	f	ÕöOO00	iconButton	Lcom/fs/starfarer/ui/n;
@@ -182,6 +222,14 @@ c	com/fs/starfarer/campaign/comms/H	com/fs/starfarer/campaign/comms/CommMessageR
 	m	getIconButton	getIconButton	()Lcom/fs/starfarer/ui/n;
 	m	getLabel	getLabel	()Lcom/fs/starfarer/ui/d;
 	m	shouldRemove	shouldRemove	()Z
+	f	ØöOO00	elapsedTime	F
+		c javap 字节码取证 | 高 | advanceImpl 累加 amount；>15s 触发 fadeOut
+	f	ÔöOO00	iconSpriteButton	LSpriteIconButton;
+		c javap 字节码取证 | 高 | OOoo 图标按钮；构造按消息图标/类型生成
+	f	this.Object$void	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getLabel 返回；消息摘要文本标签
+	f	ôöOO00	timeScale	F
+		c javap 字节码取证 | 中 | renderImpl 乘入 amount；shouldRemove 按 >0 判断滞留
 c	com/fs/starfarer/campaign/comms/if	com/fs/starfarer/campaign/comms/MessageFilterPanel
 	c 来源(字符串常量) | 置信度(高) | 证据(MessageFilterPanel（if），字符串 "Show messages and events for the last..."/"Week"/"Month"/"Cycle"/"Show finished events/missions"/"Only last message/event/system"，消息过滤面板)
 	f	øöOO00	catFilter	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter;
@@ -190,12 +238,54 @@ c	com/fs/starfarer/campaign/comms/if	com/fs/starfarer/campaign/comms/MessageFilt
 	m	setMode	setMode	(Lcom/fs/starfarer/campaign/comms/if$o;)V
 	m	getFilteredMessages	getFilteredMessages	()Ljava/util/List;
 	m	getCatFilter	getCatFilter	()Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter;
+	f	ÒøOO00	mainPanel	Lcom/fs/starfarer/campaign/comms/IntelMainPanel;
+		c javap 字节码取证 | 高 | 构造器参数，所属情报主面板（O0OO）；getIntelTab 经它访问
+	f	for.Object$void	intelData	Lcom/fs/starfarer/campaign/comms/IntelTabData;
+		c javap 字节码取证 | 高 | 构造器取 CampaignEngine.getUIData().getIntelData()，标签过滤读写的持久化数据
+	f	ÔøOO00	weekButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | sizeChanged 创建文本 "Week" 的过滤按钮
+	f	ÕøOO00	monthButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | sizeChanged 创建文本 "Month" 的过滤按钮
+	f	return.Object$void	cycleButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | sizeChanged 创建文本 "Cycle" 的过滤按钮
+	f	ööOO00	showFinishedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | sizeChanged 创建文本 "Show finished events/missions" 的按钮
+	f	int.Object$void	onlyLastButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | sizeChanged 创建文本 "Only last message/event/system" 的按钮
+	m	o00000	applyFilter	(Ljava/util/List;Ljava/util/List;)V
+		c javap 字节码取证 | 高 | 私有：从列表2移除主面板 intelTab 正打开的 intel、列表1 removeAll 列表2、清空列表2（过滤收尾）
+	m	o00000	filterByTags	(Ljava/util/List;ZLjava/lang/String;[Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 私有：按 CommMessage.hasTag 数组过滤，事件 id 匹配不入列
+	m	o00000	filterByEventCategory	(Ljava/util/List;Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin$CampaignEventCategory;ZLjava/lang/String;)V
+		c javap 字节码取证 | 高 | 私有：按事件类别过滤，事件 id 与参数不等时排除
+	m	ØOO000	unused	()V
+		c javap 字节码取证 | 高 | 私有空方法体（仅 return），全类无调用点，判定死代码
 c	com/fs/starfarer/campaign/comms/if$o	com/fs/starfarer/campaign/comms/FilterMode
 	c 来源(字符串常量) | 置信度(高) | 证据(FilterMode（if$o），枚举值 NORMAL/PRICES_ALL/PRICES_SINGLE，消息过滤价格显示模式)
 	m	values	values	()[Lcom/fs/starfarer/campaign/comms/if$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/if$o;
+	f	Ò00000	NORMAL	Lcom/fs/starfarer/campaign/comms/FilterMode;
+		c javap 字节码取证 | 高 | 枚举常量 NORMAL
+	f	Ô00000	PRICES_ALL	Lcom/fs/starfarer/campaign/comms/FilterMode;
+		c javap 字节码取证 | 高 | 枚举常量 PRICES_ALL
+	f	Object	PRICES_SINGLE	Lcom/fs/starfarer/campaign/comms/FilterMode;
+		c javap 字节码取证 | 高 | 枚举常量 PRICES_SINGLE
+	f	o00000	values	[Lcom/fs/starfarer/campaign/comms/FilterMode;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 数组
 c	com/fs/starfarer/campaign/comms/int	com/fs/starfarer/campaign/comms/ImportantButton
 	c 来源(字符串常量) | 置信度(中) | 证据(ImportantButton（int），字符串 "Important"，Stringnew$Oo 按钮子类)
+	f	Object.return$null	iconPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造图标路径；new ooO0(iconPath) 渲染
+	f	øÒÓO00	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 标签文本；"Important" 时用高亮色
+	f	öÒÓO00	useDefaultFont	Z
+		c javap 字节码取证 | 中 | true 时用默认字体/0.1 背景 alpha；false 用 orbitron12condensed/0.2
+	f	this.return$null	iconColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 图标着色；null 时保持原色
+	f	ÒÓÓO00	isBuilt	Z
+		c javap 字节码取证 | 中 | sizeChanged 置 true 防重建
+	f	oÓÓO00	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | sizeChanged 创建的文本标签
 c	com/fs/starfarer/campaign/comms/IntelCategoryFilter	com/fs/starfarer/campaign/comms/IntelCategoryFilter
 	c 来源(未混淆类名+javap取证) | 置信度(高) | 证据(IntelCategoryFilter，类别过滤面板，含 ExpandableCategory 列表与 "All" 类别)
 	f	ÒöOO00	categories	Ljava/util/List;
@@ -204,6 +294,16 @@ c	com/fs/starfarer/campaign/comms/IntelCategoryFilter	com/fs/starfarer/campaign/
 	m	addCategory	addCategory	(Ljava/lang/String;Ljava/lang/String;FFLcom/fs/starfarer/campaign/comms/IntelCategoryFilter$oo;)V
 	m	getCategory	getCategory	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory;
 	m	expandCategory	expandCategory	(Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory;)V
+	f	public.new$void	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | g 滚动容器；addCategory 挂载条目、expandTo/actionPerformed 滚动定位
+	f	for.new$void	lastCategory	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 中 | 最近添加的类别锚点（belowLeft 堆叠）
+	m	o00000	getEventCategoryEntries	(Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin$CampaignEventCategory;)Ljava/util/List;
+		c javap 字节码取证 | 高 | 过滤消息中按事件类别收集 CategoryEntry 列表（去重）
+	m	Ö00000	getCategoryEntriesForTag	(Ljava/lang/String;)Ljava/util/List;
+		c javap 字节码取证 | 高 | 按消息 tag 收集 CategoryEntry 列表（去重）
+	m	õ00000	unhighlightOtherButtons	(Lcom/fs/starfarer/ui/Button;)V
+		c javap 字节码取证 | 高 | 遍历全部类别按钮，除参数外 forceOut 高亮
 c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory	com/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory
 	c 来源(未混淆类名+javap取证) | 置信度(高) | 证据(ExpandableCategory，可展开类别行：按钮+插件+展开状态)
 	f	ôõOO00	text	Ljava/lang/String;
@@ -214,9 +314,17 @@ c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory	com/fs/
 	m	getAllButtons	getAllButtons	()Ljava/util/List;
 	m	getPlugin	getPlugin	()Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$oo;
 	m	getText	getText	()Ljava/lang/String;
+	f	öõOO00	width	F
+		c javap 字节码取证 | 高 | 构造参数；按钮/子按钮 setSize 宽度
+	f	int.new$void	height	F
+		c javap 字节码取证 | 高 | 构造参数；按钮/子按钮 setSize 高度
 c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory$1	com/fs/starfarer/campaign/comms/IntelCategoryFilter$CategorySortComparator
 	c 来源(继承关系) | 置信度(中) | 证据(ExpandableCategory 内部 Comparator<Oo>，类别条目排序)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	outer	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory;
+		c javap 字节码取证 | 高 | 匿名类外层引用（合成字段）
+	m	super	compareByEventName	(Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$CategoryEntry;Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$CategoryEntry;)I
+		c javap 字节码取证 | 高 | 按条目事件名 String.compareTo 排序
 c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$Oo	com/fs/starfarer/campaign/comms/IntelCategoryFilter$CategoryEntry
 	c 来源(javap取证) | 置信度(高) | 证据(CategoryEntry（Oo），类别条目数据：id/名称/颜色/插件/事件插件)
 	f	ô00000	id	Ljava/lang/String;
@@ -225,6 +333,10 @@ c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$Oo	com/fs/starfarer/campai
 	f	Ô00000	plugin	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$oo;
 	f	o00000	category	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter$ExpandableCategory;
 	f	Object	eventPlugin	Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	f	Ò00000	iconPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 事件 spec 图标/插件图标路径；ExpandableCategory 子按钮图标
+	f	return	unusedString	Ljava/lang/String;
+		c javap 字节码取证 | 中 | 类内及关联类无任何读写，死代码
 c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$oo	com/fs/starfarer/campaign/comms/IntelCategoryFilter$CategoryFilterPlugin
 	c 来源(javap取证) | 置信度(中) | 证据(CategoryFilterPlugin（oo），类别过滤插件接口：刷新 + 返回类别条目列表)
 	m	super	refresh	()V
@@ -284,6 +396,18 @@ c	com/fs/starfarer/campaign/comms/M	com/fs/starfarer/campaign/comms/StarMap
 	m	unhighlightConnection	unhighlightConnection	(Ljava/lang/String;Ljava/lang/String;)V
 	m	unhighlightAllConnections	unhighlightAllConnections	()V
 	m	removeAllConnections	removeAllConnections	()V
+	f	o0oO00	minWorldX	F
+		c javap 字节码取证 | 高 | 构造参数1：世界坐标 X 下限，sync 按 x>=minX 过滤跳跃点
+	f	return.String$void	minWorldY	F
+		c javap 字节码取证 | 高 | 构造参数2：世界坐标 Y 下限，sync 按 y>=minY 过滤跳跃点
+	f	Ô0oO00	worldWidth	F
+		c javap 字节码取证 | 高 | 构造参数3：世界宽度，sync 用 minX+worldWidth 做 X 上限；渲染坐标换算除数
+	f	this.String$void	worldHeight	F
+		c javap 字节码取证 | 高 | 构造参数4：世界高度，sync 用 minY+worldHeight 做 Y 上限；渲染坐标换算除数
+	f	Ò0oO00	showPlayerMarker	Z
+		c javap 字节码取证 | 高 | 构造参数5：renderImpl 中为 true 时调用 OO0000 画玩家位置标记
+	m	OO0000	renderPlayerMarker	(F)V
+		c javap 字节码取证 | 高 | 私有：取玩家舰队位置（超空间坐标或星系锚点）换算屏幕坐标，画两条交叉标记线
 c	com/fs/starfarer/campaign/comms/M$o	com/fs/starfarer/campaign/comms/StarMap$StarConnection
 	c 来源(javap取证) | 置信度(高) | 证据(StarConnection（M$o），跳跃点连线：两端 JumpPointAPI + Fader + 颜色)
 	f	return	highlighted	Z
@@ -291,6 +415,18 @@ c	com/fs/starfarer/campaign/comms/M$o	com/fs/starfarer/campaign/comms/StarMap$St
 	f	Õ00000	from	Lcom/fs/starfarer/api/campaign/JumpPointAPI;
 	f	Ô00000	to	Lcom/fs/starfarer/api/campaign/JumpPointAPI;
 	f	Ò00000	color	Ljava/awt/Color;
+	f	o00000	outerMap	Lcom/fs/starfarer/campaign/comms/StarMap;
+		c javap 字节码取证 | 高 | final 外部 StarMap 引用，render/advance 取面板位置换算屏幕坐标
+	m	o00000	setHighlighted	()V
+		c javap 字节码取证 | 高 | 置 highlighted=true、Fader.setBounce(1,1)+forceOut；highlightConnection 调用
+	m	Object	clearHighlight	()V
+		c javap 字节码取证 | 高 | Fader.setBounce(0,1)+forceOut、置 highlighted=false；unhighlightConnection 调用
+	m	Ò00000	isHighlighted	()Z
+		c javap 字节码取证 | 高 | 返回 highlighted 布尔字段
+	m	Ò00000	advance	(F)V
+		c javap 字节码取证 | 高 | Fader.advance(amount)；advanceImpl 遍历调用
+	m	o00000	render	(F)V
+		c javap 字节码取证 | 高 | 取两端 JumpPointAPI 位置换算屏幕坐标，renderers.o0OO 画线；亮度>0 时画加粗高亮线
 c	com/fs/starfarer/campaign/comms/M$Oo	com/fs/starfarer/campaign/comms/StarMap$StarEntry
 	c 来源(javap取证) | 置信度(高) | 证据(StarEntry（M$Oo），星条目：JumpPointAPI + CampaignPlanet + Sprite + Fader + 坐标)
 	f	Ô00000	highlighted	Z
@@ -298,12 +434,42 @@ c	com/fs/starfarer/campaign/comms/M$Oo	com/fs/starfarer/campaign/comms/StarMap$S
 	f	return	jumpPoint	Lcom/fs/starfarer/api/campaign/JumpPointAPI;
 	f	ô00000	planet	Lcom/fs/starfarer/campaign/CampaignPlanet;
 	f	ø00000	sprite	Lcom/fs/graphics/Sprite;
+	f	Object	unusedFloat	F
+		c javap 字节码取证 | 高 | 构造器仅初始化为 0.0f，本类与 StarMap 均无读取点，判定未使用
+	f	o00000	nameRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 行星名渲染器（构造自 planet.getName()+orbitron12condensed 字体），renderName 用
+	f	int	nameWidth	F
+		c javap 字节码取证 | 高 | 构造时用 font.Õ00000(name) 测量的名字文本宽度
+	f	Ò00000	nameHeight	F
+		c javap 字节码取证 | 高 | 构造时用 font.Ò00000(name) 测量的名字文本高度
+	f	ö00000	showName	Z
+		c javap 字节码取证 | 高 | 是否显示行星名，setSelected(boolean) 的参数存入；renderName 据此渲染
+	f	Ø00000	outerMap	Lcom/fs/starfarer/campaign/comms/StarMap;
+		c javap 字节码取证 | 高 | final 外部 StarMap 引用，渲染时取面板位置换算屏幕坐标
+	m	super	setSelected	(Z)V
+		c javap 字节码取证 | 高 | 存入 showName、置 selected=true、Fader 点亮；highlightStar 调用
+	m	Ò00000	clearSelection	()V
+		c javap 字节码取证 | 高 | Fader.setBounce(0,1)+forceOut、置 selected=false；unhighlightStar/unhighlightAllStars 调用（TSV obf 名 new，javap 实为 Ò00000）
+	m	super	isSelected	()Z
+		c javap 字节码取证 | 高 | 返回 selected 布尔字段
+	m	Ó00000	advance	(F)V
+		c javap 字节码取证 | 高 | Fader.advance(amount)；StarMap.advanceImpl 遍历调用
+	m	Ò00000	render	(F)V
+		c javap 字节码取证 | 高 | 画行星图标（star0 精灵，按 Fader 亮度做缩放/旋转/白描边）；StarMap.renderImpl 调用
+	m	super	renderName	(F)V
+		c javap 字节码取证 | 高 | showName 且 selected 时按名字宽高画行星名标签（clip 到面板边缘）；StarMap.renderImpl 调用
 c	com/fs/starfarer/campaign/comms/N	com/fs/starfarer/campaign/comms/CommMessageDetailPanel
 	c 来源(字符串常量) | 置信度(高) | 证据(CommMessageDetailPanel（N），字符串 "Time received:"/"Time sent:"/"Delivered by:"/"Type:"/"Location:"/"Date:"，完整消息详情面板)
 	f	Ø0oO00	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
 	m	getMessage	getMessage	()Lcom/fs/starfarer/campaign/comms/CommMessage;
 	m	renderImpl	renderImpl	(F)V
 	m	advanceImpl	advanceImpl	(F)V
+	f	ô0oO00	isBuilt	Z
+		c javap 字节码取证 | 中 | createLayout 入口置 true 防重建；sizeChanged 据此跳过
+	m	while.int	createLayout	()V
+		c javap 字节码取证 | 高 | 构建消息详情布局：图片、From/星系/日期头部与 "No message selected"
+	m	new	addMessageSection	(Lcom/fs/starfarer/ui/newui/TextPanelImpl;Lcom/fs/starfarer/api/campaign/comm/MessageSectionAPI;)V
+		c javap 字节码取证 | 高 | 向文本面板写 section 标题+正文段落+高亮
 c	com/fs/starfarer/campaign/comms/O0OO	com/fs/starfarer/campaign/comms/IntelMainPanel
 	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(IntelMainPanel（O0OO），字符串 "Log"/"Map"/"Received"/"Prices"/"No messages matching selected criteria"，intel 主面板：消息列表+详情+过滤器+IntelTab)
 	f	ÒõOO00	intelData	Lcom/fs/starfarer/campaign/comms/IntelTabData;
@@ -322,6 +488,42 @@ c	com/fs/starfarer/campaign/comms/O0OO	com/fs/starfarer/campaign/comms/IntelMain
 	m	getFilter	getFilter	()Lcom/fs/starfarer/campaign/comms/if;
 	m	getListWidth	getListWidth	()F
 	m	getFilterWidth	getFilterWidth	()F
+	f	oôOO00	fromPanelHeight	F
+		c javap 字节码取证 | 中 | From 面板(E) setSize 高度（250→200）
+	f	return.super$void	detailHeight	F
+		c javap 字节码取证 | 高 | 详情面板(N) setSize 高度
+	f	ØôOO00	detailWidth	F
+		c javap 字节码取证 | 高 | 详情面板(N) setSize 宽度
+	f	this.super$void	dateTimePanel	Lcom/fs/starfarer/campaign/ui/DateTimePanel;
+		c javap 字节码取证 | 高 | 右上角日期时间面板（inTR 定位）
+	f	öôOO00	messagesByButton	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 按钮→CommMessage 映射；updateShownMessages 清空、actionPerformed 查询
+	f	oõOO00	priceUpdatesByButton	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 按钮→PriceUpdatePlugin 映射；actionPerformed 价格模式展开
+	f	ôØOO00	isBuilt	Z
+		c javap 字节码取证 | 中 | sizeChanged 置 true 防重建（float.int 一次性布局）
+	f	public.super$void	messagesButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Log" 标签按钮；getMessagesButton 返回
+	f	ØØOO00	mapButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Map" 标签按钮；getMapButton 返回
+	f	Object.new$void	receivedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Received" 标题标签；Log 视图显示
+	f	øØOO00	emptyLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "No messages matching selected criteria" 空态标签
+	f	this.new$void	sectorMapPanel	Lcom/fs/starfarer/coreui/SectorMapPanel;
+		c javap 字节码取证 | 高 | coreui/A/H 星系地图；updateShownMessages 打点/addIntelData
+	f	ÔôOO00	isRowSelected	Z
+		c javap 字节码取证 | 中 | actionPerformed 重复点击同一行时翻转；驱动价格展开分支
+	f	öØOO00	lastSelectedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 上一个选中行按钮；actionPerformed 取消其高亮
+	f	ÕØOO00	unusedClickedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 中 | 仅 putfield（ctor/actionPerformed/commMessageSelected），类内无 getfield，死代码
+	f	for.super$void	listWidth	F
+		c javap 字节码取证 | 高 | getListWidth 返回；消息列表宽度
+	f	ôôOO00	filterWidth	F
+		c javap 字节码取证 | 高 | getFilterWidth 返回；过滤列宽度
+	m	float.int	createLayout	()V
+		c javap 字节码取证 | 高 | 一次性布局：Log/Map 按钮、日期面板、消息列表、过滤器、星系地图、Received/空态标签
 c	com/fs/starfarer/campaign/comms/O0OO$o	com/fs/starfarer/campaign/comms/IntelMainPanel$PriceUpdateRow
 	c 来源(javap取证) | 置信度(中) | 证据(PriceUpdateRow（O0OO$o），价格更新行：CommodityOnMarket + 价格文本)
 	f	new	commodity	Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;
@@ -333,6 +535,10 @@ c	com/fs/starfarer/campaign/comms/OoOO	com/fs/starfarer/campaign/comms/CommMessa
 	m	clear	clear	()V
 	m	isSkipEntityTooltip	isSkipEntityTooltip	()Z
 	m	setSkipEntityTooltip	setSkipEntityTooltip	(Z)V
+	f	ØÖOO00	messageClickActionSwitchTable	[I
+		c javap 字节码取证 | 高 | MessageClickAction switch 表懒加载缓存（actionPerformed 使用）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$campaign$comm$CommMessageAPI$MessageClickAction	getMessageClickActionSwitchTable	()[I
+		c javap 字节码取证 | 高 | 编译器生成 switch 表懒加载
 c	com/fs/starfarer/campaign/comms/o0oO	com/fs/starfarer/campaign/comms/MessageListPanel
 	c 来源(javap取证) | 置信度(高) | 证据(MessageListPanel（o0oO），消息列表：setMessages/isEmpty/clickRowFor，行类型 for（CommMessageTimestampRow）)
 	f	øøOO00	list	Lcom/fs/starfarer/coreui/w;
@@ -342,6 +548,10 @@ c	com/fs/starfarer/campaign/comms/o0oO	com/fs/starfarer/campaign/comms/MessageLi
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	clickRowFor	clickRowFor	(Lcom/fs/starfarer/campaign/comms/CommMessage;)V
 	m	isEmpty	isEmpty	()Z
+	f	öøOO00	rowHeight	F
+		c javap 字节码取证 | 高 | 构造参数3（final）：每条消息行高，传入 coreui.w 与消息行 for 构造
+	m	o00000	getMessageAt	(I)Lcom/fs/starfarer/campaign/comms/CommMessage;
+		c javap 字节码取证 | 高 | 私有：按索引遍历 w.getItems() 返回对应 CommMessage 数据
 c	com/fs/starfarer/campaign/comms/o0oO$o	com/fs/starfarer/campaign/comms/MessageSelectionListener
 	c 来源(javap取证) | 置信度(高) | 证据(MessageSelectionListener（o0oO$o），消息选中回调接口 commMessageSelected)
 	m	commMessageSelected	commMessageSelected	(Lcom/fs/starfarer/campaign/comms/CommMessage;)V
@@ -349,6 +559,12 @@ c	com/fs/starfarer/campaign/comms/oo0O	com/fs/starfarer/campaign/comms/CommMessa
 	c 来源(字符串常量) | 置信度(中) | 证据(CommMessageDetailPanelOld（oo0O），旧版完整消息详情（无 via/$sender 行），与 N 同构)
 	f	int.String$void	message	Lcom/fs/starfarer/campaign/comms/CommMessage;
 	m	getMessage	getMessage	()Lcom/fs/starfarer/campaign/comms/CommMessage;
+	f	ö0oO00	isBuilt	Z
+		c javap 字节码取证 | 中 | createLayout 入口置 true 防重建
+	m	õOO000	createLayout	()V
+		c javap 字节码取证 | 高 | 构建消息详情布局（旧版，含多 section 渲染）
+	m	Ó00000	addMessageSection	(Lcom/fs/starfarer/ui/newui/TextPanelImpl;Lcom/fs/starfarer/api/campaign/comm/MessageSectionAPI;)V
+		c javap 字节码取证 | 高 | 向文本面板写 section 内容
 c	com/fs/starfarer/campaign/comms/PlayerTransactionLineItemData	com/fs/starfarer/campaign/comms/PlayerTransactionLineItemData
 	c 来源(未混淆类名) | 置信度(高) | 证据(PlayerTransactionLineItemData implements DoNotObfuscate)
 	f	data	data	Ljava/util/Map;
@@ -365,6 +581,10 @@ c	com/fs/starfarer/campaign/comms/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	isSkipEntityTooltip	isSkipEntityTooltip	()Z
 	m	setSkipEntityTooltip	setSkipEntityTooltip	(Z)V
 	m	getMessages	getMessages	()Ljava/util/List;
+	f	ÕÖOO00	messageClickActionSwitchTable	[I
+		c javap 字节码取证 | 高 | MessageClickAction switch 表懒加载缓存（actionPerformed 使用）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$campaign$comm$CommMessageAPI$MessageClickAction	getMessageClickActionSwitchTable	()[I
+		c javap 字节码取证 | 高 | 编译器生成 switch 表懒加载
 c	com/fs/starfarer/campaign/comms/v2/A	com/fs/starfarer/campaign/comms/v2/EventRow
 	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(EventRow（v2/A），v2 事件行：IntelInfoPlugin + 重要按钮 + "New!" 标记)
 	f	Object.class$null	intel	Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
@@ -375,9 +595,31 @@ c	com/fs/starfarer/campaign/comms/v2/A	com/fs/starfarer/campaign/comms/v2/EventR
 	m	getButtonsWithinButton	getButtonsWithinButton	()Ljava/util/List;
 	m	getImportant	getImportant	()Lcom/fs/starfarer/ui/n;
 	m	getInfo	getInfo	()Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+	f	this.class$null	newLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "New!" 标签，recreate 创建；advanceImpl 按 intel.isNew() 设透明度
+	f	oÒÓO00	paraLabels	Ljava/util/List;
+		c javap 字节码取证 | 高 | createIntelInfo 生成的段落标签（List<d>）收集，renderImpl 统一调 setAdditiveColor
+	f	ÔÒÓO00	imagePanels	Ljava/util/List;
+		c javap 字节码取证 | 高 | 图标面板列表（intelIcon+borderIcon），renderImpl 发光时 additive 渲染
+	f	öoÓO00	intelIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | intel 图标面板，recreate 用 intel.getIcon() 创建并加入 imagePanels
+	f	return.class$null	borderIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | "intel/border" 边框精灵面板，autoSize 后加入 imagePanels
+	f	ôoÓO00	importantButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 重要开关按钮（EventActionButton 包装），getImportant() 返回；advanceImpl 同步 checked/enabled
+	f	int.class$null	buttons	Ljava/util/List;
+		c javap 字节码取证 | 高 | 行内按钮列表（intel 摘要按钮+importantButton），getButtonsWithinButton 返回
+	f	ØoÓO00	rowWidth	F
+		c javap 字节码取证 | 高 | 构造参数3：行宽，recreate 用 setSize(rowWidth, ...) 布局
+	f	ÒÒÓO00	controlAction	Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | 快捷键动作，processInputImpl 用 B.B.o00000(event, B$o.Ô00000, controlAction) 匹配按键；ImportantTooltip 显示其文案
+	f	øoÓO00	recreated	Z
+		c javap 字节码取证 | 高 | 行内容是否已重建；构造后/notifyDidNotRender 置 false，renderImpl 首次置 true
 c	com/fs/starfarer/campaign/comms/v2/A$1	com/fs/starfarer/campaign/comms/v2/EventRow$ImportantTooltip
 	c 来源(字符串常量) | 置信度(高) | 证据(ImportantTooltip（v2/A$1），tooltip 文本 "This intel is always tagged important"/"Toggle whether this intel is tagged important")
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outerRow	Lcom/fs/starfarer/campaign/comms/v2/EventRow;
+		c javap 字节码取证 | 高 | 匿名内部类对外部事件行的引用（编译器合成），createImpl 读取 intel 与快捷键
 c	com/fs/starfarer/campaign/comms/v2/B	com/fs/starfarer/campaign/comms/v2/IntelConfirmDialog
 	c 来源(javap取证) | 置信度(中) | 证据(IntelConfirmDialog（v2/B），ui.impl.E 对话框子类：Faction+颜色+B$o 内容回调+custom，intel 确认对话框)
 	f	øôÓ000	faction	Lcom/fs/starfarer/campaign/Faction;
@@ -388,19 +630,51 @@ c	com/fs/starfarer/campaign/comms/v2/B	com/fs/starfarer/campaign/comms/v2/IntelC
 	m	show	show	(FF)V
 	m	advance	advance	(F)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	this.class$new	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 确认按钮（文本 getConfirmText），带快捷键、受 canConfirm 控制，点击 dismiss(0)
+	f	int.class$new	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 取消按钮（文本 getCancelText），点击 dismiss(1)
+	f	öôÓ000	baseUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | faction.getBaseUIColor 缓存
+	f	return.class$new	darkUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | faction.getDarkUIColor 缓存
+	f	ÕôÓ000	gridUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | faction.getGridUIColor 缓存
+	f	ÒõÓ000	brightUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | faction.getBrightUIColor 缓存
+	f	oõÓ000	confirmButtonText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数3：确认按钮文本（调用点传 getConfirmText）
+	f	Object.class$new	cancelButtonText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数4：取消按钮文本（调用点传 getCancelText），null 时只显示确认按钮
 c	com/fs/starfarer/campaign/comms/v2/B$o	com/fs/starfarer/campaign/comms/v2/DialogContent
 	c 来源(javap取证) | 置信度(中) | 证据(DialogContent（v2/B$o），确认对话框内容回调：创建内容 + 宽度 + 布尔标志)
 	m	o00000	createContent	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
 	m	Ò00000	getWidth	()F
+	m	o00000	canConfirm	()Z
+		c javap 字节码取证 | 高 | 接口方法：确认是否可用；EventsPanel$3 实现恒 true，B.recreate 据此 setEnabled 确认按钮
 c	com/fs/starfarer/campaign/comms/v2/C	com/fs/starfarer/campaign/comms/v2/EventActionButton
 	c 来源(字符串常量+javap取证) | 置信度(高) | 证据(EventActionButton（v2/C），字符串 "intel/important"/"intel/abandon" 图标，动作按钮（IMPORTANT/ABANDON）)
 	f	ØÒÓO00	sprite	Lcom/fs/graphics/Sprite;
 	f	ôÒÓO00	action	Lcom/fs/starfarer/campaign/comms/v2/C$o;
 	m	getAction	getAction	()Lcom/fs/starfarer/campaign/comms/v2/C$o;
+	f	public.class$null	row	Lcom/fs/starfarer/campaign/comms/v2/EventRow;
+		c javap 字节码取证 | 高 | 构造参数1：所属事件行，renderImpl 取 getGlowAmount/getPosition
+	f	ÕÒÓO00	unusedColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器仅初始化为默认色，全类无 getfield 引用，判定未使用
+	f	for.class$null	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化缓存数组
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$comms$v2$EventInfoActionButton$EventInfoAction	switchTable	()[I
+		c javap 字节码取证 | 高 | 编译器生成的 switch 查找表方法（ordinal→case 映射）
 c	com/fs/starfarer/campaign/comms/v2/C$o	com/fs/starfarer/campaign/comms/v2/EventAction
 	c 来源(字符串常量) | 置信度(高) | 证据(EventAction（v2/C$o），枚举 IMPORTANT/ABANDON)
 	m	values	values	()[Lcom/fs/starfarer/campaign/comms/v2/C$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/v2/C$o;
+	f	o00000	IMPORTANT	Lcom/fs/starfarer/campaign/comms/v2/EventAction;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "IMPORTANT" 声明
+	f	Object	ABANDON	Lcom/fs/starfarer/campaign/comms/v2/EventAction;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "ABANDON" 声明
+	f	Ò00000	VALUES	[Lcom/fs/starfarer/campaign/comms/v2/EventAction;
+		c javap 字节码取证 | 高 | 私有枚举 $VALUES 数组，values() 返回其拷贝
 c	com/fs/starfarer/campaign/comms/v2/D	com/fs/starfarer/campaign/comms/v2/ExampleIntel
 	c 来源(字符串常量+javap取证) | 置信度(中) | 证据(ExampleIntel（v2/D），BaseIntelPlugin 子类：intel 示例数据（STORY_KANTA/PERSON_BOUNTY 等类型，Derelict Survey Ship Discovered/Personal Bounty 文案）)
 	f	ô00000	id	Ljava/lang/String;
@@ -418,10 +692,36 @@ c	com/fs/starfarer/campaign/comms/v2/D	com/fs/starfarer/campaign/comms/v2/Exampl
 	m	getFactionForUIColors	getFactionForUIColors	()Lcom/fs/starfarer/api/campaign/FactionAPI;
 	m	getMapLocation	getMapLocation	(Lcom/fs/starfarer/api/ui/SectorMapAPI;)Lcom/fs/starfarer/api/campaign/SectorEntityToken;
 	m	shouldRemoveIntel	shouldRemoveIntel	()Z
+	f	super	important	Ljava/lang/Boolean;
+		c javap 字节码取证 | 高 | 重要标记，isImportant()/setImportant(Boolean) 读写；false 时视为 null
+	f	Ó00000	playerVisibleTimestamp	Ljava/lang/Long;
+		c javap 字节码取证 | 高 | 玩家可见时间戳，getPlayerVisibleTimestamp/setPlayerVisibleTimestamp 读写
+	f	Ö00000	isNew	Ljava/lang/Boolean;
+		c javap 字节码取证 | 高 | 新情报标记，isNew() 判断（时间戳+5 天窗口），reportPlayerClickedOn 置 null
+	f	Ò00000	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化缓存数组
+	m	o00000	initForType	(Lcom/fs/starfarer/campaign/comms/v2/IntelType;)V
+		c javap 字节码取证 | 高 | 私有：存 IntelType 并按类型初始化图标/阵营/目标实体（各类型 switch）
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$comms$v2$TestInfoPlugin$TestInfoType	switchTable	()[I
+		c javap 字节码取证 | 高 | 编译器生成的 switch 查找表方法（IntelType ordinal→case 映射）
 c	com/fs/starfarer/campaign/comms/v2/D$o	com/fs/starfarer/campaign/comms/v2/IntelType
 	c 来源(字符串常量) | 置信度(高) | 证据(IntelType（v2/D$o），枚举 STORY_KANTA/PERSON_BOUNTY/SYSTEM_BOUNTY/LOG_ENTRY/SECTOR_DECAY/ANALYZE_MISSON)
 	m	values	values	()[Lcom/fs/starfarer/campaign/comms/v2/D$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/v2/D$o;
+	f	o00000	STORY_KANTA	Lcom/fs/starfarer/campaign/comms/v2/IntelType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "STORY_KANTA" 声明
+	f	Ô00000	PERSON_BOUNTY	Lcom/fs/starfarer/campaign/comms/v2/IntelType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "PERSON_BOUNTY" 声明
+	f	Ö00000	SYSTEM_BOUNTY	Lcom/fs/starfarer/campaign/comms/v2/IntelType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "SYSTEM_BOUNTY" 声明
+	f	Ø00000	LOG_ENTRY	Lcom/fs/starfarer/campaign/comms/v2/IntelType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "LOG_ENTRY" 声明
+	f	Ó00000	SECTOR_DECAY	Lcom/fs/starfarer/campaign/comms/v2/IntelType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "SECTOR_DECAY" 声明
+	f	class	ANALYZE_MISSON	Lcom/fs/starfarer/campaign/comms/v2/IntelType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "ANALYZE_MISSON" 声明（原拼写）
+	f	new	VALUES	[Lcom/fs/starfarer/campaign/comms/v2/IntelType;
+		c javap 字节码取证 | 高 | 私有枚举 $VALUES 数组，values() 返回其拷贝
 c	com/fs/starfarer/campaign/comms/v2/E	com/fs/starfarer/campaign/comms/v2/VariableHeightScrollingList
 	c 来源(字符串常量) | 置信度(高) | 证据(VariableHeightScrollingList（v2/E），字符串 "Can't call add() on a VariableHeightScrollingList"，可变高度滚动列表)
 	f	this.this$void	scroller	Lcom/fs/starfarer/ui/g;
@@ -440,6 +740,22 @@ c	com/fs/starfarer/campaign/comms/v2/E	com/fs/starfarer/campaign/comms/v2/Variab
 	m	ensureVisible	ensureVisible	(Lcom/fs/starfarer/ui/OO0o;)V
 	m	getEmpty	getEmpty	()Lcom/fs/starfarer/ui/d;
 	m	setEmptyText	setEmptyText	(Ljava/lang/String;Ljava/awt/Color;)V
+	f	Object.this$void	rows	I
+		c javap 字节码取证 | 高 | 行数，getRows()/setRows(int) 读写
+	f	oÖOO00	itemWidth	F
+		c javap 字节码取证 | 高 | 条目宽度，getItemWidth()/setItemWidth(float) 读写；addItem 布局用
+	f	øÕOO00	itemPad	F
+		c javap 字节码取证 | 高 | 条目间距，getItemPad()/setItemPad(float) 读写；内容高度累加用
+	f	öÕOO00	emptyLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 空态提示标签，getEmpty()/setEmptyText(String,Color) 访问；renderImpl 按空否设透明度
+	f	public.interface$return	visibilityPad	F
+		c javap 字节码取证 | 高 | 可视区边距，getVisiblityPad()/setVisiblityPad(float) 读写；ensureVisible 用
+	f	ôÕOO00	itemCount	I
+		c javap 字节码取证 | 高 | 当前条目计数，addItem 自增、collapseEmptySlots/clear 清零
+	f	for.interface$return	contentHeight	F
+		c javap 字节码取证 | 高 | 累计内容高度（-1 触发重算），addItem/removeItem/collapse/clear 维护
+	m	new	removeItemInternal	(Lcom/fs/starfarer/ui/UIComponent;Z)V
+		c javap 字节码取证 | 高 | 私有：从 items/map/scroller 移除条目，removeItem 与 collapseEmptySlots 委托
 c	com/fs/starfarer/campaign/comms/v2/EventsPanel	com/fs/starfarer/campaign/comms/v2/EventsPanel
 	c 来源(未混淆类名+javap取证) | 置信度(高) | 证据(EventsPanel，v2 事件列表主面板（implements IntelUIAPI），含 VariableHeightScrollingList + IntelManager + 标签过滤)
 	f	Ô0Ó000	rowActionType	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$o;
@@ -455,20 +771,110 @@ c	com/fs/starfarer/campaign/comms/v2/EventsPanel	com/fs/starfarer/campaign/comms
 	m	recreateIntelUI	recreateIntelUI	()V
 	m	tagsChanged	tagsChanged	(Lcom/fs/starfarer/campaign/command/do;)V
 	m	tabClosed	tabClosed	()V
+	f	öøÒ000	uiCreated	Z
+		c javap 字节码取证 | 高 | sizeChanged 首次懒构建 ØÕ0000 后置 true
+	f	Ò0Ó000	intelTab	Lcom/fs/starfarer/campaign/comms/IntelTabPanel;
+		c javap 字节码取证 | 高 | 构造参数：所属情报标签页，getIntelTab() 返回
+	f	oOÓ000	mapPanel	Lcom/fs/starfarer/coreui/SectorMapPanel;
+		c javap 字节码取证 | 高 | 星图面板（A.H），ØÕ0000 创建；getMap() 返回
+	f	return.interface$super	listWidth	F
+		c javap 字节码取证 | 高 | 情报列表宽度（350-40-20-2*4），ØÕ0000 计算并用于 E.setSize
+	f	public.private$super	smallDescTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 小描述 tooltip（getSmallDescriptionTitle 创建），showSmallDescription 添加/移除
+	f	int.interface$super	largeDescPanel	LCustomPanelImpl;
+		c javap 字节码取证 | 高 | 大描述自定义面板（hasLargeDescription 时创建），showLargeDescription 维护
+	f	o0Ó000	baseUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 玩家阵营 baseUI 色缓存（ØÕ0000 中 getBaseUIColor 赋值）
+	f	Object.interface$super	brightUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 玩家阵营 brightUI 色缓存（getBrightUIColor 赋值）
+	f	ØøÒ000	darkUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 玩家阵营 darkUI 色缓存（getDarkUIColor 赋值）
+	f	this.interface$super	showOnMapButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Show on map" 按钮（带快捷键），actionPerformed 触发 showOnMap
+	f	øøÒ000	borderLines	Lcom/fs/starfarer/title/BorderLines;
+		c javap 字节码取证 | 高 | 面板分隔线装饰（BorderLines(baseUIColor)），ØÕ0000 创建并布局
+	f	ÕOÓ000	pendingNewIntel	Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+		c javap 字节码取证 | 高 | 待清除 isNew 标记的 intel（选择行时记录），syncIntelTabData 中 setNew(false) 后置 null
+	f	for.private$super	smallDescTitledPanel	Lcom/fs/starfarer/ui/TitledPanel;
+		c javap 字节码取证 | 高 | 小描述标题面板（getSmallDescriptionTitle 截断文本创建），showSmallDescription 维护
+	f	int.private$super	smallDescScrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | 小描述滚动面板（createSmallDescription 内容），showSmallDescription 维护
+	f	ÒOÓ000	filterRestored	Z
+		c javap 字节码取证 | 高 | advanceImpl 首次从标签页 otherParam 恢复过滤后置 true
+	f	ôøÒ000	updatingList	Z
+		c javap 字节码取证 | 高 | updateIntelList 期间置 false 抑制重入（完成后恢复 true）
+	f	return.private$super	suppressAction	Z
+		c javap 字节码取证 | 高 | intelMapIconClicked 直接触发行按钮时置 true，防止 actionPerformed 重入
+	f	ô0Ó000	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化缓存数组
+	m	õÕ0000	syncIntelTabData	()V
+		c javap 字节码取证 | 高 | 私有：把标签选择/选中 intel/地图过滤状态写回 IntelTabData，并清除 pendingNewIntel 的 isNew
+	m	null.String	restoreTagsFromParam	()V
+		c javap 字节码取证 | 高 | 私有：从 intelTab.getOtherParam() 取 intel 恢复过滤标签，advanceImpl 首次调用
+	m	o00000	getFilterTags	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)Ljava/util/Set;
+		c javap 字节码取证 | 高 | 私有：按标签页 otherParam（New/MapMarkerIntel/Fleet log）推导需应用的标签集合
+	m	class.String	unusedPopulateTestIntel	()V
+		c javap 字节码取证 | 高 | 私有：清空 IntelManager 并填充 52 条示例 ExampleIntel，全类无调用点，判定调试遗留死代码
+	m	ØÕ0000	createUI	()V
+		c javap 字节码取证 | 高 | 私有：主 UI 构建（颜色/列表 E/星图面板/标签面板/按钮/分隔线布局），sizeChanged 首次调用
+	m	ÖÕ0000	unusedCreateMapPanel	()V
+		c javap 字节码取证 | 高 | 私有：构造 SectorMapPanel 配置（超空间全图模式），全类无调用点，判定死代码
+	m	Ø00000	populateList	(Z)V
+		c javap 字节码取证 | 高 | 私有：委托 populateList(boolean,null)，列表重填入口
+	m	o00000	populateList	(ZLjava/util/List;)V
+		c javap 字节码取证 | 高 | 私有：清空列表并按标签选择/自定义子集重填 intel 行（updateIntelList 委托）
+	m	o00000	matchesTags	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;Ljava/util/Set;)Z
+		c javap 字节码取证 | 高 | 私有：intel 是否匹配所选标签集合（hidden/Important/New 动态标签处理）
+	m	ÔÕ0000	createTagPanel	()Lcom/fs/starfarer/campaign/command/TagPanel;
+		c javap 字节码取证 | 高 | 私有：新建标签面板 do（允许全不选、最小标签宽），createUI 调用并存入 Õ0Ó000
+	m	o00000	updateTagPanel	(Lcom/fs/starfarer/campaign/command/TagPanel;Z)V
+		c javap 字节码取证 | 高 | 私有：按 IntelManager 的 intel 标签计数重建标签按钮，tagsChanged 调用
+	m	o00000	showSmallDescription	(Lcom/fs/starfarer/campaign/comms/v2/EventRow;)V
+		c javap 字节码取证 | 高 | 私有：清除大描述并移除旧小描述组件，为行创建小描述（TitledPanel+ScrollPanel+tooltip）
+	m	new	showLargeDescription	(Lcom/fs/starfarer/campaign/comms/v2/EventRow;)V
+		c javap 字节码取证 | 高 | 私有：清除小描述并隐藏星图，为行创建大描述 CustomPanelImpl
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$comms$v2$EventsPanel$DialogType	switchTable	()[I
+		c javap 字节码取证 | 高 | 编译器生成的 switch 查找表方法（DialogType ordinal→case 映射）
 c	com/fs/starfarer/campaign/comms/v2/EventsPanel$1	com/fs/starfarer/campaign/comms/v2/EventsPanel$EventSortComparator
 	c 来源(javap取证) | 置信度(中) | 证据(EventsPanel 内部 Comparator<IntelInfoPlugin>，按 sortTier/sortString/playerVisibleTimestamp 排序)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outerPanel	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	val$copy	copyList	Ljava/util/List;
+		c javap 字节码取证 | 高 | 捕获的列表副本，比较相等时按 indexOf 维持原顺序
+	m	super	compare	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)I
+		c javap 字节码取证 | 高 | getSortTier ordinal→getSortString→getPlayerVisibleTimestamp→copyList.indexOf 依次比较
 c	com/fs/starfarer/campaign/comms/v2/EventsPanel$2	com/fs/starfarer/campaign/comms/v2/EventsPanel$TagSortComparator
 	c 来源(javap取证) | 置信度(中) | 证据(EventsPanel 内部 Comparator<campaign.command.do$Oo>，按标签 boolean/float/名称排序)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outerPanel	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	m	super	compare	(Lcom/fs/starfarer/campaign/command/TagData;Lcom/fs/starfarer/campaign/command/TagData;)I
+		c javap 字节码取证 | 高 | 按 TagData 的置顶/默认标记加权差值 signum，再按名称 compareTo
 c	com/fs/starfarer/campaign/comms/v2/EventsPanel$3	com/fs/starfarer/campaign/comms/v2/EventsPanel$ConfirmPromptContent
 	c 来源(继承关系+javap取证) | 置信度(中) | 证据(EventsPanel 内部实现 v2/B$o：包装 IntelInfoPlugin 确认提示 createConfirmationPrompt)
 	m	o00000	createContent	(Lcom/fs/starfarer/api/ui/TooltipMakerAPI;)V
 	m	Ò00000	getWidth	()F
+	f	o00000	outerPanel	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	Object	intel	Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;
+		c javap 字节码取证 | 高 | 构造参数：待确认的 intel，createConfirmationPrompt/getConfirmationPromptWidth 委托给它的同名接口方法
+	f	Ò00000	promptData	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 构造参数：确认动作的自定义数据对象，透传给 IntelInfoPlugin 确认方法
+	m	o00000	canConfirm	()Z
+		c javap 字节码取证 | 高 | 恒返回 true（DialogContent.canConfirm 实现）
 c	com/fs/starfarer/campaign/comms/v2/EventsPanel$o	com/fs/starfarer/campaign/comms/v2/EventsPanel$RowActionType
 	c 来源(字符串常量) | 置信度(高) | 证据(RowActionType（EventsPanel$o），枚举 ROW_ACTION_CONFIRM/ROW_STORY/CUSTOM)
 	m	values	values	()[Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$o;
+	f	new	ROW_ACTION_CONFIRM	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$RowActionType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "ROW_ACTION_CONFIRM" 声明
+	f	Ô00000	ROW_STORY	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$RowActionType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "ROW_STORY" 声明
+	f	Ó00000	CUSTOM	Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$RowActionType;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 以字符串 "CUSTOM" 声明
+	f	o00000	VALUES	[Lcom/fs/starfarer/campaign/comms/v2/EventsPanel$RowActionType;
+		c javap 字节码取证 | 高 | 私有枚举 $VALUES 数组，values() 返回其拷贝
 c	com/fs/starfarer/campaign/comms/v2/IntelManager	com/fs/starfarer/campaign/comms/v2/IntelManager
 	c 来源(未混淆类名) | 置信度(高) | 证据(IntelManager implements DoNotObfuscate + IntelManagerAPI，v2 intel 管理器)
 	f	commQueue	commQueue	Lcom/fs/util/container/repo/ObjectRepository;
@@ -500,6 +906,12 @@ c	com/fs/starfarer/campaign/comms/v2/IntelManager	com/fs/starfarer/campaign/comm
 c	com/fs/starfarer/campaign/comms/v2/IntelManager$1	com/fs/starfarer/campaign/comms/v2/IntelManager$IntelSortComparator
 	c 来源(javap取证) | 置信度(中) | 证据(IntelManager 内部 Comparator<IntelInfoPlugin>，按 sortTier/sortString/playerVisibleTimestamp 排序)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outerManager	Lcom/fs/starfarer/campaign/comms/v2/IntelManager;
+		c javap 字节码取证 | 高 | 匿名内部类对外部管理器的引用（编译器合成）
+	f	val$copy	copyList	Ljava/util/List;
+		c javap 字节码取证 | 高 | 捕获的列表副本，比较相等时按 indexOf 维持原顺序
+	m	o00000	compare	(Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;Lcom/fs/starfarer/api/campaign/comm/IntelInfoPlugin;)I
+		c javap 字节码取证 | 高 | getSortTier ordinal→getSortString→getPlayerVisibleTimestamp→copyList.indexOf 依次比较
 c	com/fs/starfarer/campaign/comms/v2/OOoO	com/fs/starfarer/campaign/comms/v2/IntelMarkerDialog
 	c 来源(字符串常量) | 置信度(高) | 证据(IntelMarkerDialog（v2/OOoO），字符串 "Create intel map marker"/"Title"/"Description"/"Open after creating"，创建地图标记对话框)
 	f	ÒÓÓ000	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
@@ -514,6 +926,34 @@ c	com/fs/starfarer/campaign/comms/v2/OOoO	com/fs/starfarer/campaign/comms/v2/Int
 	m	charTypeFailed	charTypeFailed	(Lcom/fs/starfarer/ui/B;C)V
 	m	tabPressed	tabPressed	(Lcom/fs/starfarer/ui/B;Lcom/fs/starfarer/util/super/Object;)V
 	m	createIconSelector	createIconSelector	()Lcom/fs/starfarer/ui/g;
+	f	int.super$new	createButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Create"/"Save" 按钮，标题为空时禁用，点击 dismiss(0)
+	f	øÒÓ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Cancel" 按钮，点击 dismiss(1)
+	f	øÓÓ000	openIntelCheckbox	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Open after creating" 复选框，getOpenIntel() 返回
+	f	for.super$new	includeDescriptionCheckbox	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Include entity description in intel item" 复选框
+	f	this.new$new	titleField	Lcom/fs/starfarer/ui/TextFieldImpl;
+		c javap 字节码取证 | 高 | 标题输入框（"Marker name, required"），advanceImpl 据此启用/禁用 createButton
+	f	ÕÓÓ000	descriptionField	Lcom/fs/starfarer/ui/TextFieldImpl;
+		c javap 字节码取证 | 高 | 描述输入框（"Optional description, can be left blank"），getTextField() 返回
+	f	ØÓÓ000	iconButtons	Ljava/util/List;
+		c javap 字节码取证 | 高 | 图标选择按钮列表，actionPerformed 用 contains 判断并记录选中
+	f	ÔÓÓ000	unusedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 声明后全类无 getfield/putfield 引用，判定未使用
+	f	oÔÓ000	selectedIconButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 当前选中的图标按钮（初始 null，actionPerformed 设置），renderImpl 高亮
+	f	öÓÓ000	iconSelectorRenderer	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | IconSelectorRenderer（OOoO$1），createIconSelector 创建，负责高亮选中图标
+	f	ôÓÓ000	iconSelector	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | 图标选择滚动面板（createIconSelector 返回值），布局加入对话框
+	f	oÓÓ000	iconColumns	I
+		c javap 字节码取证 | 高 | 图标列数（按可用宽度计算的 2..6），createIconSelector 计算
+	f	public.super$new	focusGrabbed	Z
+		c javap 字节码取证 | 高 | advanceImpl 首次对标题框 grabFocus 后置 true
 c	com/fs/starfarer/campaign/comms/v2/OOoO$1	com/fs/starfarer/campaign/comms/v2/IntelMarkerDialog$IconSelectorRenderer
 	c 来源(javap取证) | 置信度(中) | 证据(IntelMarkerDialog 内部渲染类（extends ui.z），renderImpl 遍历图标按钮 customData)
 	m	renderImpl	renderImpl	(F)V
+	f	this$0	outerDialog	Lcom/fs/starfarer/campaign/comms/v2/IntelMarkerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类对外部对话框的引用（编译器合成），renderImpl 读取选中图标与子面板

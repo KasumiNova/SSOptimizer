@@ -18,9 +18,13 @@ c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$8	com/fs/starfarer/ui/imp
 	c 来源(javap取证) | 置信度(高) | 证据(createAsUIElement 创建的空内容 tooltip，与 linux $8 同语义)
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$9	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$CodexTableListener
 	c 来源(javap取证) | 置信度(高) | 证据(UITable$Oo 表格监听：tableRowSelected 取 CodexEntryPlugin.getId 调 CodexDialog.show，与 linux $9 同语义)
+	f	øÔØ000	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$9$1	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$CodexEntryComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<TableRowPanel>：CodexEntryPlugin isLocked/sortTitle 排序，与 linux $9$1 同语义)
 	m	o00000	compareByCodexEntry	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable$CodexTableListener;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$o	com/fs/starfarer/ui/impl/StandardTooltipV2Expandable$HullCountEntry
 	c 来源(javap取证) | 置信度(中) | 证据(hullId 分组统计成员数数据条目：FleetMemberAPI + 数量，与 linux $o 同语义)
 	f	Ò00000	member	Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
@@ -34,6 +38,8 @@ c	com/fs/starfarer/ui/impl/StarSystemTooltipFactory$1	com/fs/starfarer/ui/impl/S
 c	com/fs/starfarer/ui/impl/StarSystemTooltipFactory$1$1	com/fs/starfarer/ui/impl/StarSystemTooltipFactory$MarketSizeComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<MarketAPI>：按市场规模降序，与 linux $1$1 同语义)
 	m	o00000	compareByMarketSize	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)I
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/StarSystemTooltipFactory$StarSystemTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/impl/LabelTableRowPanel
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(extends campaign.ui.B(TableRowPanel) 且含 getRowData/getAfterCreate/getLabels/sizeChanged，与 linux T 同结构同语义)
 	f	super.void$int	rowData	[Ljava/lang/Object;
@@ -52,14 +58,22 @@ c	com/fs/starfarer/ui/impl/Objectsuper$2	com/fs/starfarer/ui/impl/MarketStatsToo
 	f	void.class$float	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
 c	com/fs/starfarer/ui/impl/Objectsuper$2$1	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$FleetSizeModValueGetter
 	c 来源(javap取证) | 置信度(中) | 证据(StatModValueGetter：addStatModGrid 首个参数百分比值显示，对应 linux U$2$1)
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/MarketStatsTooltipFactory$FleetSizeAndShipQualityTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/Objectsuper$2$2	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$ShipQualityModValueGetter
 	c 来源(javap取证) | 置信度(中) | 证据(StatModValueGetter：addStatModGrid 第二个参数百分比值显示，对应 linux U$2$2)
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/MarketStatsTooltipFactory$FleetSizeAndShipQualityTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
 c	com/fs/starfarer/ui/impl/Objectsuper$3	com/fs/starfarer/ui/impl/MarketStatsTooltipFactory$GroundDefensesTooltip
 	c 来源(字符串常量) | 置信度(高) | 证据(标题 Ground Defenses，对应 linux U$3)
 	f	OÕõO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
 c	com/fs/starfarer/ui/impl/O0Oo	com/fs/starfarer/ui/impl/FleetMemberTooltipHelper
 	c 来源(字符串常量) | 置信度(高) | 证据(静态工具：向 StandardTooltipV2$Oo 填充成员综合 tooltip（Combat readiness/noDeployCRPercent），对应 linux V)
 	m	o00000	createFleetMemberTooltip	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/impl/StandardTooltipV2$Oo;Lcom/fs/starfarer/campaign/CharacterStats;Lcom/fs/starfarer/ui/interfacenew;Lcom/fs/starfarer/ui/c;)V
+	f	o00000	switchTable	[I
+		c javap 字节码取证 | 高 | static volatile int[]，o00000() 懒初始化缓存（HullSize switch 表）
+	m	o00000	switchTable	()[I
+		c javap 字节码取证 | 高 | 用 ShipAPI$HullSize.values() 建 ordinal 映射表（混淆去掉了 $SWITCH_TABLE$ 名）
 c	com/fs/starfarer/ui/impl/W	com/fs/starfarer/ui/impl/PersonTooltipFactory
 	c 来源(javap取证) | 置信度(高) | 证据(人物/军官 tooltip 工厂：五个 o00000 重载与 linux W 完全一致)
 	m	o00000	createCaptainTooltip	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
@@ -74,6 +88,8 @@ c	com/fs/starfarer/ui/impl/W$1	com/fs/starfarer/ui/impl/PersonTooltipFactory$Per
 	f	private.class$float	mode	Lcom/fs/starfarer/ui/impl/W$o;
 	f	õÕõO00	member	Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
 	f	ôÕõO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+	m	o00000	createSkillRow	(Lcom/fs/starfarer/rpg/Person;Ljava/lang/String;)Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | SpecStore 取 SkillSpec，建技能按钮+名称标签面板（"X Aptitude" 后缀）
 c	com/fs/starfarer/ui/impl/W$2	com/fs/starfarer/ui/impl/PersonTooltipFactory$TooltipPositioner
 	c 来源(javap取证) | 置信度(中) | 证据(beforeShowing 定位器：Runnable + (n 按钮, StandardTooltipV2)，结构同 linux W$2)
 	f	new	button	Lcom/fs/starfarer/ui/n;
@@ -87,6 +103,8 @@ c	com/fs/starfarer/ui/impl/W$o	com/fs/starfarer/ui/impl/PersonTooltipFactory$Per
 	f	Ó00000	INCOME_REPORT	Lcom/fs/starfarer/ui/impl/W$o;
 	f	super	ADMIN	Lcom/fs/starfarer/ui/impl/W$o;
 	f	String	ADMIN_INCOME_REPORT	Lcom/fs/starfarer/ui/impl/W$o;
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/ui/impl/PersonTooltipFactory$PersonTooltipMode;
+		c javap 字节码取证 | 高 | 标准枚举 $VALUES 数组，values() 返回拷贝（先例 $VALUES）
 c	com/fs/starfarer/ui/impl/voidsuper	com/fs/starfarer/ui/impl/TextInputDialog
 	c 来源(字符串常量) | 置信度(高) | 证据(文本输入对话框：Confirm/Cancel 按钮 + getTextField，对应 linux Y)
 	f	super.int$Object	confirmButton	Lcom/fs/starfarer/ui/n;
@@ -114,19 +132,59 @@ c	com/fs/starfarer/ui/impl/K$oo	com/fs/starfarer/ui/impl/SimCategoryEditDialog$C
 	c 来源(字符串常量) | 置信度(高) | 证据(清空/重置确认操作枚举 CONFIRM_CLEAR/CONFIRM_RESET，对应 linux float$oo)
 	f	new	CONFIRM_CLEAR	Lcom/fs/starfarer/ui/impl/K$oo;
 	f	Ó00000	CONFIRM_RESET	Lcom/fs/starfarer/ui/impl/K$oo;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/ui/impl/SimCategoryEditDialog$ConfirmAction;
+		c javap 字节码取证 | 高 | 标准枚举 $VALUES 数组，values() 返回拷贝（先例 $VALUES）
 c	com/fs/starfarer/ui/impl/K$Oo	com/fs/starfarer/ui/impl/SimCategoryEditDialog$CategorySortKey
 	c 来源(字符串常量) | 置信度(中) | 证据(单值枚举 NAME：类别表排序键，对应 linux float$Oo)
 	f	new	NAME	Lcom/fs/starfarer/ui/impl/K$Oo;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/ui/impl/SimCategoryEditDialog$CategorySortKey;
+		c javap 字节码取证 | 高 | 标准枚举 $VALUES 数组，values() 返回拷贝（先例 $VALUES）
 c	com/fs/starfarer/ui/impl/if	com/fs/starfarer/ui/impl/TypewriterText
 	c 来源(字符串常量) | 置信度(高) | 证据(打字机文本标签：ui_typer_type + 逐字符显示，与 linux if 同语义)
 	f	if.void	typingSpeed	F
 	f	øö0000	fader	Lcom/fs/graphics/util/Fader;
 	f	private.void	renderer	Lcom/fs/graphics/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
+	f	do.void	fullText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setText 存入、reset 用其重设；sizeChanged 用其刷新 renderer
+	f	Oö0000	currentText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setText=参数；OÓ0000 中按 typingProgress substring 截取显示
+	f	void.void	typingProgress	F
+		c javap 字节码取证 | 高 | setText 置 0，advanceImpl 按 typingSpeed 累加
+	f	Óö0000	totalTextLength	F
+		c javap 字节码取证 | 高 | isDoneTyping 上限（typingProgress 达此值完成）
+	f	ôö0000	lineBreakPositions	Ljava/util/LinkedList;
+		c javap 字节码取证 | 高 | oÓ0000 扫描 '\n' 入队；while.new removeFirst 取下一断点
+	f	Òö0000	hotspot	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | setHotspot 写入；processInputImpl 中作为点击命中区域
+	f	Öö0000	lastSoundCharIndex	I
+		c javap 字节码取证 | 中 | OÓ0000 中播放 ui_typer_type 音效的节流标记（-1 初始化）
+	f	Oø0000	nextPausePosition	F
+		c javap 字节码取证 | 高 | 队列下一断点或 1.0E7f（无断点）；advanceImpl 抵达后触发换行
+	f	õö0000	pauseTimer	F
+		c javap 字节码取证 | 高 | advanceImpl 中累加，达 pauseDuration 时 while.new 推进
+	f	Õö0000	pauseDuration	F
+		c javap 字节码取证 | 高 | <clinit>=0.75f，pauseTimer 比较阈值
+	m	while.new	advanceToNextPause	()V
+		c javap 字节码取证 | 高 | 取下一断点并重置 pauseTimer
+	m	oÓ0000	computeLineBreakPositions	()V
+		c javap 字节码取证 | 高 | 遍历 fullText 找 '\n' 加入 LinkedList
+	m	OÓ0000	updateDisplayText	()V
+		c javap 字节码取证 | 高 | 截取 currentText 前缀设入 renderer，条件播放打字音效
 c	com/fs/starfarer/ui/impl/a	com/fs/starfarer/ui/impl/CommandChannelBanner
 	c 来源(字符串常量) | 置信度(高) | 证据(战斗指挥频道横幅：giving orders/command frequency open 文案，对应 linux ifsuper)
 	f	OÔÒo00	givingOrdersLabel	Lcom/fs/starfarer/ui/d;
 	f	øÓÒo00	commandFrequencyOpenLabel	Lcom/fs/starfarer/ui/d;
 	f	if.new$while	fader	Lcom/fs/graphics/util/Fader;
+	f	õÓÒo00	lineTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 构造器载入 graphics/hud/line4x4.png，renderImpl 绘制边框
+	f	ôÓÒo00	bannerColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 文本（"giving orders"/"command frequency open"）与进度条共用色
+	f	do.new$while	lineColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | renderImpl 中 line 纹理渲染颜色
+	f	void.new$while	unusedColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 仅构造器赋值，全 dump 无读取（死代码），判定依据 grep 无读点
+	f	ÖÓÒo00	font	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器置 graphics/fonts/victor10.fnt，两行文本共用
 c	com/fs/starfarer/ui/impl/oooO	com/fs/starfarer/ui/impl/WeaponFirePermissionDialog
 	c 来源(字符串常量) | 置信度(高) | 证据(武器开火权限对话框：Strike weapons free / Fire support weapons free + Ok，对应 linux int)
 	f	ÕôÕ000	okButton	Lcom/fs/starfarer/ui/n;
@@ -134,6 +192,20 @@ c	com/fs/starfarer/ui/impl/oooO	com/fs/starfarer/ui/impl/WeaponFirePermissionDia
 	f	super.String$Object	fireSupportWeaponsFreeButton	Lcom/fs/starfarer/ui/n;
 	f	ÒôÕ000	standingOrders	Lcom/fs/starfarer/combat/while;
 	m	öÖ0000	updateButtonStates	()V
+	f	String.String$Object	combatEngine	Lcom/fs/starfarer/combat/CombatEngine;
+		c javap 字节码取证 | 高 | 构造 CombatEngine.getInstance() 存入；getPlayerId 取舰队管理器
+	f	ÓôÕ000	fleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+		c javap 字节码取证 | 高 | 构造 getFleetManager(getPlayerId()) 存入
+	f	OôÕ000	defaultFontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造=StarfarerSettings 默认字体名，供 o00000 建标签
+	f	øØÕ000	titleFontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造="graphics/fonts/orbitron20aa.fnt"
+	f	void.String$Object	fontHeight	F
+		c javap 字节码取证 | 高 | 构造=默认字体高度 float()，布局用
+	m	o00000	makeLabel	(Ljava/lang/String;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 私有工厂：3 参版本委托 4 参版本（defaultFontName）
+	m	o00000	makeLabel	(Ljava/lang/String;Ljava/awt/Color;Lcom/fs/starfarer/api/ui/Alignment;Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 私有工厂：new LabelImpl+setAlignment/setColor/autoSize
 c	com/fs/starfarer/ui/impl/intsuper	com/fs/starfarer/ui/impl/LabelGlowingRowPanel
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(extends campaign.ui.U(GlowingRowPanel)：getRowData/getAfterCreate/getLabels/createRow，与 linux intsuper 同语义)
 	f	private.return$int	rowData	[Ljava/lang/Object;
@@ -149,9 +221,17 @@ c	com/fs/starfarer/ui/impl/G$1	com/fs/starfarer/ui/impl/FleetTooltipFactory$Sens
 	f	ÒÓõO00	otherFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 c	com/fs/starfarer/ui/impl/G$1$1	com/fs/starfarer/ui/impl/FleetTooltipFactory$SensorProfileMemberValueGetter
 	c 来源(javap取证) | 置信度(中) | 证据(FleetMemberValueGetter：getValue 取 getSensorProfile，对应 linux void$1$1)
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/FleetTooltipFactory$SensorProfileTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	super	valueColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getValueColor 原样返回
 c	com/fs/starfarer/ui/impl/G$2	com/fs/starfarer/ui/impl/FleetTooltipFactory$SensorRangeTooltip
 	c 来源(字符串常量) | 置信度(高) | 证据(标题 Sensor Range，对应 linux void$2)
 	f	øÒõO00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 	f	OÓõO00	otherFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 c	com/fs/starfarer/ui/impl/G$2$1	com/fs/starfarer/ui/impl/FleetTooltipFactory$SensorStrengthMemberValueGetter
 	c 来源(javap取证) | 置信度(中) | 证据(FleetMemberValueGetter：getValue 取 getSensorStrength + skipMember 封存舰，对应 linux void$2$1)
+	f	this$1	outer	Lcom/fs/starfarer/ui/impl/FleetTooltipFactory$SensorRangeTooltip;
+		c javap 字节码取证 | 高 | 匿名内部类对外部类引用（编译器合成）
+	f	super	valueColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getValueColor 原样返回

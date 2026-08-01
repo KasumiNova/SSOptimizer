@@ -3,6 +3,8 @@ c	com/fs/starfarer/ui/g$o	com/fs/starfarer/ui/MouseButton
 	c 来源(javap取证) | 置信度(高) | 证据(MouseButton：字符串常量 LMB/RMB 的枚举，与 linux g$o 同名同结构)
 	f	Ó00000	LMB	Lcom/fs/starfarer/ui/g$o;
 	f	Ò00000	RMB	Lcom/fs/starfarer/ui/g$o;
+	f	super	values	[Lcom/fs/starfarer/ui/MouseButton;
+		c javap 字节码取证 | 高 | 枚举值数组，clinit 填充，values() 复制返回
 c	com/fs/starfarer/coreui/A/N$Oo	com/fs/starfarer/ui/ScrollViewport
 	c 来源(方法签名比对) | 置信度(中) | 证据(ScrollViewport：滚动面板 coreui/A/N 的内部视口，getVisibleArea/setVisibleArea/isScrolling/forceOffset/setOffset 与 linux g$oo 完全一致)
 	f	ÓÒø000	visibleArea	Lcom/fs/starfarer/ui/c;
@@ -13,6 +15,12 @@ c	com/fs/starfarer/coreui/A/N$Oo	com/fs/starfarer/ui/ScrollViewport
 	m	forceOffset	forceOffset	(FF)V
 	m	getXOffset	getXOffset	()F
 	m	getYOffset	getYOffset	()F
+	f	super.private$class	targetXOffset	F
+		c javap 字节码取证 | 高 | 目标 X 偏移，setOffset 写入，advanceImpl 平滑趋近 getXOffset
+	f	ÒÒø000	targetYOffset	F
+		c javap 字节码取证 | 高 | 目标 Y 偏移，setOffset 写入，isScrolling 判定差异
+	f	this$0	this$0	Lcom/fs/starfarer/coreui/SectorMapScroller;
+		c javap 字节码取证 | 高 | 外部类引用，renderImpl 裁剪/可见性判定
 c	com/fs/starfarer/ui/null	com/fs/starfarer/ui/TabsPanel
 	c 来源(方法签名比对) | 置信度(高) | 证据(TabsPanel：addTab/setCurrentTab/getTab/disableTab/enableTab/getTabHeight/getHolo 与 linux int 完全一致)
 	f	ÖøØ000	tabHeight	F
@@ -30,6 +38,12 @@ c	com/fs/starfarer/ui/null	com/fs/starfarer/ui/TabsPanel
 	m	setContentsForTab	setContentsForTab	(Ljava/lang/String;Lcom/fs/starfarer/ui/interfacenew;)V
 	m	getTabHeight	getTabHeight	()F
 	m	getHolo	getHolo	()Lcom/fs/starfarer/class/I;
+	f	if.class$String	tabWidth	F
+		c javap 字节码取证 | 高 | 构造器 150.0f；addTab 中 tab 按钮 setSize(tabWidth, tabHeight)
+	f	ÓøØ000	tabFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器先 orbitron20aa 再改 orbitron12condensed；addTab 传给 Q 创建按钮
+	f	ÒøØ000	lastTabButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | addTab 保存最近添加的 tab 按钮；后续 tab rightOfTop 定位用
 c	com/fs/starfarer/ui/null$o	com/fs/starfarer/ui/TabsPanel$TabData
 	c 来源(方法签名比对) | 置信度(高) | 证据(TabsPanel$TabData：标签页数据（名称 + 标签按钮 + 内容面板），构造 (String, Button, Panel) 与 linux int$o 一致)
 	f	Ó00000	tabName	Ljava/lang/String;
@@ -47,6 +61,20 @@ c	com/fs/starfarer/ui/o00o	com/fs/starfarer/ui/GridLayoutPanel
 	m	isEmpty	isEmpty	()Z
 	m	getGridWidth	getGridWidth	()I
 	m	getGridHeight	getGridHeight	()I
+	f	ÖÕÔo00	gridWidth	I
+		c javap 字节码取证 | 高 | 网格列数，getGridWidth 返回
+	f	ÓÕÔo00	gridHeight	I
+		c javap 字节码取证 | 高 | 网格行数，getGridHeight 返回
+	f	ÕÕÔo00	cellWidth	F
+		c javap 字节码取证 | 高 | 单元格宽，add 计算 x=margin+(cellWidth+margin)*col
+	f	ÒÕÔo00	cellHeight	F
+		c javap 字节码取证 | 高 | 单元格高，add 计算 y=margin+(cellHeight+margin)*(rows-row-1)
+	f	ôÕÔo00	cellSpacing	F
+		c javap 字节码取证 | 高 | 间距/外边距，构造 arg5
+	f	private.new$public	cellMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | D(坐标)→OO0o 映射，add/remove/get/isOccupied 读写
+	f	super.Object$public	rightJustify	Z
+		c javap 字节码取证 | 高 | setRightJustify 写入，findNextOpenCell 决定行内扫描方向
 c	com/fs/starfarer/ui/thisnew	com/fs/starfarer/ui/PopupListDialog
 	c 来源(方法签名比对) | 置信度(高) | 证据(PopupListDialog：构造 (标题, 选中项, 选项列表, 宽, 锚点, 父面板, 关闭回调) + getResPick/setResPick/show 与 linux j 完全一致)
 	f	õÕô000	resPick	Ljava/lang/String;
@@ -54,6 +82,8 @@ c	com/fs/starfarer/ui/thisnew	com/fs/starfarer/ui/PopupListDialog
 	m	getResPick	getResPick	()Ljava/lang/String;
 	m	setResPick	setResPick	(Ljava/lang/String;)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	if.if$String	anchorComponent	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | final 定位锚组件，show() 相对定位、processInputImpl 点击检测
 c	com/fs/starfarer/ui/thisnew$o	com/fs/starfarer/ui/PopupListDialog$OptionRow
 	c 来源(方法签名比对) | 置信度(中) | 证据(PopupListDialog$OptionRow：构造 (文本, 字体) + renderImpl 与 linux j$o 一致，被 PopupListDialog 创建选项按钮使用)
 c	com/fs/starfarer/ui/n	com/fs/starfarer/ui/Button
@@ -94,6 +124,52 @@ c	com/fs/starfarer/ui/n	com/fs/starfarer/ui/Button
 	m	buttonPressCancelled	buttonPressCancelled	(Ljava/lang/Object;)V
 	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/A/C;Ljava/lang/Object;)V
 	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/A/C;Ljava/lang/Object;)V
+	f	super.String$null	checked	Z
+		c javap 字节码取证 | 高 | isChecked()/setChecked() 直接 getfield/putfield
+	f	ÓOÓO00	enabled	Z
+		c javap 字节码取证 | 高 | isEnabled()/setEnabled() 直接访问
+	f	do.String$null	flashFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getFlashFader() 直接 getfield
+	f	ÓoÓO00	glowFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getGlowFader() 直接 getfield；getGlowAmount() 参与计算
+	f	if.String$null	pressFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | buttonDown/buttonUp 中 fadeIn/fadeOut；getGlowAmount 中 0.33 权重
+	f	Õ0ÓO00	highlightFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getHighlightFader()/highlight()/isHighlighted()/unhighlight()
+	f	do.Object$null	highlightBrightness	F
+		c javap 字节码取证 | 高 | getHighlightBrightness()/setHighlightBrightness()
+	f	ô0ÓO00	listener	Lcom/fs/starfarer/ui/ActionListener;
+		c javap 字节码取证 | 高 | getListener()/setListener() 直接访问；buttonPressed 中 actionPerformed
+	f	ÕOÓO00	mouseOverSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setMouseOverSound() putfield；mouseEnter 中播 Sound
+	f	ÖOÓO00	buttonPressedSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setButtonPressedSound() putfield；flash() 中播 Sound
+	f	õOÓO00	buttonDisabledPressedSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setButtonDisabledPressedSound() putfield；buttonPressed 中播 Sound
+	f	øOÓO00	customData	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | getCustomData()/setCustomData() 直接访问
+	f	private.String$null	skipPlayingPressedSoundOnce	Z
+		c javap 字节码取证 | 高 | isSkipPlayingPressedSoundOnce()/set 直接访问
+	f	ø0ÓO00	mouseOverSoundVolume	F
+		c javap 字节码取证 | 高 | setMouseOverSoundVolume() putfield
+	f	private.Object$null	pressSoundVolume	F
+		c javap 字节码取证 | 高 | setPressSoundVolume() putfield
+	f	ÒOÓO00	disabledPressSoundVolume	F
+		c javap 字节码取证 | 高 | setDisabledPressSoundVolume() putfield
+	f	OOÓO00	active	Z
+		c javap 字节码取证 | 高 | isActive()/setActive() 直接访问
+	f	Ö0ÓO00	showTooltipWhileInactive	Z
+		c javap 字节码取证 | 高 | isShowTooltipWhileInactive()/set 直接访问
+	f	ÒoÓO00	rightClicksOkWhenDisabled	Z
+		c javap 字节码取证 | 高 | isRightClicksOkWhenDisabled()/set 直接访问
+	f	String.String$null	flashBrightness	F
+		c javap 字节码取证 | 高 | getFlashBrightness()/set 直接访问
+	f	if.Object$null	glowBrightness	F
+		c javap 字节码取证 | 高 | getGlowBrightness()/set 直接访问
+	f	õ0ÓO00	addFlashToGlow	F
+		c javap 字节码取证 | 高 | setAddFlashToGlow() putfield；makeFlashAddToGlow() 置 0.2f
+	f	void.String$null	performActionWhenDisabled	Z
+		c javap 字节码取证 | 高 | isPerformActionWhenDisabled()/set 直接访问
 c	com/fs/starfarer/ui/n$Oo	com/fs/starfarer/ui/ButtonBackgroundRenderer
 	c 来源(方法签名比对) | 置信度(高) | 证据(ButtonBackgroundRenderer：按钮背景渲染接口，super(OO0O,FFZZ,int$Oo) 与 linux n$Oo 一致)
 	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
@@ -101,10 +177,148 @@ c	com/fs/starfarer/ui/n$o	com/fs/starfarer/ui/ButtonRenderer
 	c 来源(方法签名比对) | 置信度(高) | 证据(ButtonRenderer：ButtonBackgroundRenderer 扩展接口，super(FZZ)/Õ00000(F)/super(A.new) 与 linux n$o 一致)
 	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0O;FZZLcom/fs/starfarer/ui/int$Oo;)V
 	m	super	processInput	(Lcom/fs/starfarer/util/A/new;)V
+	m	Õ00000	advance	(F)V
+		c javap 字节码取证 | 高 | Button.advanceImpl 中传时间推进；渲染器动画接口方法
 c	com/fs/starfarer/ui/int	com/fs/starfarer/ui/ButtonLogic
 	c 来源(方法签名比对) | 置信度(高) | 证据(ButtonLogic：按钮输入/状态逻辑，Ö00000/öO0000/o00000(int$o)/advance/focusLost 方法集与 linux null 完全一致，持有快捷键/事件回调/状态枚举)
 	m	advance	advance	(F)V
 	m	focusLost	focusLost	()V
+	f	if.Object	quickMode	Z
+		c javap 字节码取证 | 高 | Button.setQuickMode() 委托 logic.new(Z)；getter õo0000()
+	f	ôÔ0000	component	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | 构造器存 UIComponent；new.super()/processInput 中 getPosition
+	f	OÖ0000	position	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | new.super() 返回；Ô00000(FF) containsLocation 的基准位置
+	f	øÓ0000	responder	Lcom/fs/starfarer/ui/ButtonResponder;
+		c javap 字节码取证 | 高 | new(InputEvent) 中 buttonPressed/mouseEnter/mouseLeave 接口调用
+	f	String.String	customData	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | while() getter；转发给 responder 的参数
+	f	void.Object	state	Lcom/fs/starfarer/ui/ButtonMouseButtonState;
+		c javap 字节码取证 | 高 | interface.super() getter；按下/抬起时置 UP/DOWN
+	f	ÕÔ0000	mouseDown	Z
+		c javap 字节码取证 | 高 | while.super() getter；按下置 1 抬起置 0
+	f	private.Object	pendingMouseNotify	Z
+		c javap 字节码取证 | 中 | class(Z) setter；Button.setEnabled(false) 时置 true，mouseEnter/Leave 判定用
+	f	OÔ0000	mouseInside	Z
+		c javap 字节码取证 | 高 | float.super() getter；mouseEnter/Leave 时置 1/0
+	f	øÔ0000	shortcutAction	Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | ØO0000() getter；Button.getShortcut() 委托
+	f	õÕ0000	shortcutMapping	Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | o00000(KeyMapping) setter；Button.setShortcut() 委托
+	f	ÖÕ0000	altShortcutMapping	Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | new(KeyMapping) setter；Button.setAltShortcut() 委托
+	f	õÔ0000	mouseButtonMode	Lcom/fs/starfarer/ui/ButtonMouseButtonMode;
+		c javap 字节码取证 | 高 | o00000(mode) setter；processInput 中 switch 决定 LMB/RMB
+	f	õÓ0000	hitTest	Lcom/fs/starfarer/ui/ButtonHitTest;
+		c javap 字节码取证 | 高 | öo0000() getter；processInput 中 exactContainsIfPositionContains
+	f	void.String	releaseCancelsPress	Z
+		c javap 字节码取证 | 中 | Ö00000(Z) setter；释放时若 true 走 buttonPressCancelled
+	f	øÕ0000	extraShortcutMappings	Ljava/util/List;
+		c javap 字节码取证 | 高 | Ó00000(KeyMapping) add；class.super() getter
+	f	ÓÔ0000	x	F
+		c javap 字节码取证 | 高 | o00000(FFFF) 第1参数；oo0000() getter
+	f	ÖÔ0000	y	F
+		c javap 字节码取证 | 高 | o00000(FFFF) 第2参数；Øo0000() getter
+	f	ÒÕ0000	width	F
+		c javap 字节码取证 | 高 | o00000(FFFF) 第3参数；null.super() getter
+	f	if.String	height	F
+		c javap 字节码取证 | 高 | o00000(FFFF) 第4参数；ÔO0000() getter
+	f	super.String	active	Z
+		c javap 字节码取证 | 高 | Ôo0000() getter；processInput 中是否处理输入
+	f	ÓÕ0000	shortcuts	Ljava/util/List;
+		c javap 字节码取证 | 高 | õO0000() getter；o00000(ControlAction,false) 加入
+	f	do.Object	highlightedShortcuts	Ljava/util/List;
+		c javap 字节码取证 | 中 | o00000(ControlAction,true) 加入的 ControlAction 列表
+	f	ôÕ0000	scrollThrough	Z
+		c javap 字节码取证 | 中 | Oo0000() getter；滚动事件是否穿透（consume 判定）
+	f	ÕÕ0000	hitTestArea	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 中 | Öo0000() getter；processInput 中额外 containsLocation 判定
+	f	OÕ0000	pressPosition	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | ÓO0000() getter；按下时 set(mouseX,mouseY)
+	f	String.Object	switchMap	[I
+		c javap 字节码取证 | 高 | ÖO0000() static 惰性构建 ordinal→case 映射
+	m	Ö00000	setReleaseCancelsPress	(Z)V
+		c javap 字节码取证 | 高 | putfield void.String 纯 setter
+	m	öO0000	isReleaseCancelsPress	()Z
+		c javap 字节码取证 | 高 | getfield void.String 纯 getter
+	m	o00000	setMouseButtonMode	(Lcom/fs/starfarer/ui/ButtonMouseButtonMode;)V
+		c javap 字节码取证 | 高 | putfield õÔ0000 纯 setter
+	m	öo0000	getHitTest	()Lcom/fs/starfarer/ui/ButtonHitTest;
+		c javap 字节码取证 | 高 | getfield õÓ0000 纯 getter
+	m	o00000	setHitTest	(Lcom/fs/starfarer/ui/ButtonHitTest;)V
+		c javap 字节码取证 | 高 | putfield õÓ0000 纯 setter
+	m	ØO0000	getShortcutAction	()Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | getfield øÔ0000 纯 getter；Button.getShortcut() 委托
+	m	o00000	setShortcutAction	(Lcom/fs/starfarer/title/ControlAction;)V
+		c javap 字节码取证 | 高 | putfield øÔ0000 纯 setter
+	m	o00000	setShortcutMapping	(Lcom/fs/starfarer/title/KeyMapping;)V
+		c javap 字节码取证 | 高 | putfield õÕ0000 纯 setter；Button.setShortcut 委托
+	m	new	setAltShortcutMapping	(Lcom/fs/starfarer/title/KeyMapping;)V
+		c javap 字节码取证 | 高 | putfield ÖÕ0000 纯 setter；Button.setAltShortcut 委托
+	m	Ó00000	addExtraShortcutMapping	(Lcom/fs/starfarer/title/KeyMapping;)V
+		c javap 字节码取证 | 高 | øÕ0000.add 追加附加快捷键
+	m	class.super	getExtraShortcutMappings	()Ljava/util/List;
+		c javap 字节码取证 | 高 | getfield øÕ0000 纯 getter
+	m	o00000	setClickArea	(FFFF)V
+		c javap 字节码取证 | 高 | 依次 putfield x/y/width/height
+	m	oo0000	getX	()F
+		c javap 字节码取证 | 高 | getfield ÓÔ0000 纯 getter
+	m	Øo0000	getY	()F
+		c javap 字节码取证 | 高 | getfield ÖÔ0000 纯 getter
+	m	null.super	getWidth	()F
+		c javap 字节码取证 | 高 | getfield ÒÕ0000 纯 getter
+	m	ÔO0000	getHeight	()F
+		c javap 字节码取证 | 高 | getfield if.String 纯 getter
+	m	Ôo0000	isActive	()Z
+		c javap 字节码取证 | 高 | getfield super.String 纯 getter
+	m	Ó00000	setActive	(Z)V
+		c javap 字节码取证 | 高 | putfield super.String 纯 setter
+	m	new	buttonPressed	(Lcom/fs/starfarer/util/InputEvent;)V
+		c javap 字节码取证 | 高 | 调 responder.buttonPressed(event, customData) 并置全局 consumed
+	m	new	addShortcut	(Lcom/fs/starfarer/title/ControlAction;)V
+		c javap 字节码取证 | 高 | 委托 o00000(action,false) 加入普通快捷键列表
+	m	o00000	addShortcut	(Lcom/fs/starfarer/title/ControlAction;Z)V
+		c javap 字节码取证 | 高 | flag 决定加入 highlightedShortcuts 或 shortcuts
+	m	õO0000	getShortcuts	()Ljava/util/List;
+		c javap 字节码取证 | 高 | getfield ÓÕ0000 纯 getter
+	m	Oo0000	isScrollThrough	()Z
+		c javap 字节码取证 | 高 | getfield ôÕ0000 纯 getter
+	m	o00000	setScrollThrough	(Z)V
+		c javap 字节码取证 | 高 | putfield ôÕ0000 纯 setter
+	m	Öo0000	getHitTestArea	()Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | getfield ÕÕ0000 纯 getter
+	m	o00000	setHitTestArea	(Lcom/fs/starfarer/ui/PositionImpl;)V
+		c javap 字节码取证 | 高 | putfield ÕÕ0000 纯 setter
+	m	interface	isMouseOver	()Z
+		c javap 字节码取证 | 高 | 用鼠标坐标委托 Ô00000(FF)
+	m	Ó00000	containsEvent	(Lcom/fs/starfarer/util/InputEvent;)Z
+		c javap 字节码取证 | 高 | 用事件坐标委托 Ô00000(FF)
+	m	Ô00000	isWithinBounds	(FF)Z
+		c javap 字节码取证 | 高 | position.containsLocation(x,y,width,height)
+	m	Óo0000	cancelPress	()V
+		c javap 字节码取证 | 高 | 委托 Ô00000(true)
+	m	class	setPendingMouseNotify	(Z)V
+		c javap 字节码取证 | 中 | putfield private.Object 纯 setter
+	m	Ô00000	cancelPress	(Z)V
+		c javap 字节码取证 | 高 | 复位状态、buttonPressCancelled，可选 W.super
+	m	new.super	getPosition	()Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | getfield OÖ0000；UIComponent 非空时刷新
+	m	while	getCustomData	()Ljava/lang/Object;
+		c javap 字节码取证 | 高 | getfield String.String 纯 getter
+	m	interface.super	getState	()Lcom/fs/starfarer/ui/ButtonMouseButtonState;
+		c javap 字节码取证 | 高 | getfield void.Object 纯 getter；Button.getState() 委托
+	m	while.super	isMouseDown	()Z
+		c javap 字节码取证 | 高 | getfield ÕÔ0000 纯 getter
+	m	float.super	isMouseInside	()Z
+		c javap 字节码取证 | 高 | getfield OÔ0000 纯 getter
+	m	õo0000	isQuickMode	()Z
+		c javap 字节码取证 | 高 | getfield if.Object 纯 getter
+	m	new	setQuickMode	(Z)V
+		c javap 字节码取证 | 高 | putfield if.Object 纯 setter；Button.setQuickMode 委托
+	m	ÓO0000	getPressPosition	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | getfield OÕ0000 纯 getter
+	m	ÖO0000	getSwitchMap	()[I
+		c javap 字节码取证 | 高 | static 惰性构建 ButtonMouseButtonMode ordinal→case 表
 c	com/fs/starfarer/ui/int$O0	com/fs/starfarer/ui/ButtonHitTest
 	c 来源(方法签名比对) | 置信度(中) | 证据(ButtonHitTest：exactContainsIfPositionContains() 命中测试接口与 linux null$O0 一致)
 	m	exactContainsIfPositionContains	exactContainsIfPositionContains	()Z
@@ -113,10 +327,14 @@ c	com/fs/starfarer/ui/int$o	com/fs/starfarer/ui/ButtonMouseButtonMode
 	f	Ò00000	LEFT	Lcom/fs/starfarer/ui/int$o;
 	f	Ó00000	RIGHT	Lcom/fs/starfarer/ui/int$o;
 	f	String	BOTH	Lcom/fs/starfarer/ui/int$o;
+	f	super	values	[Lcom/fs/starfarer/ui/ButtonMouseButtonMode;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 数组；values() 返回其拷贝；常量 LEFT/RIGHT/BOTH
 c	com/fs/starfarer/ui/int$Oo	com/fs/starfarer/ui/ButtonMouseButtonState
 	c 来源(字符串常量) | 置信度(高) | 证据(ButtonMouseButtonState：枚举字符串 UP/DOWN 与 linux null$o 一致)
 	f	new	UP	Lcom/fs/starfarer/ui/int$Oo;
 	f	Ó00000	DOWN	Lcom/fs/starfarer/ui/int$Oo;
+	f	o00000	values	[Lcom/fs/starfarer/ui/ButtonMouseButtonState;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 数组；values() 返回其拷贝；常量 UP/DOWN
 c	com/fs/starfarer/ui/int$oo	com/fs/starfarer/ui/ButtonResponder
 	c 来源(方法签名比对) | 置信度(高) | 证据(ButtonResponder：buttonDown/buttonUp/mouseEnter/mouseLeave/buttonPressed/buttonPressCancelled 与 linux null$oo 一致)
 	m	buttonDown	buttonDown	(Ljava/lang/Object;)V
@@ -143,31 +361,192 @@ c	com/fs/starfarer/ui/ooooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	updateColor	updateColor	(IILjava/awt/Color;)V
 	m	getHpad	getHpad	()F
 	m	setHpad	setHpad	(F)V
+	f	ÖOÔo00	numAA	I
+		c javap 字节码取证 | 高 | setNumAA 写入；setFontConfigForBarFont=3/SmallInsignia=2；Cell 构造中传给 fontRenderer.int(int)
+	f	super.this$public	aaIncr	F
+		c javap 字节码取证 | 高 | 构造器 0.125f；setAaIncr 写入；Cell 中 fontRenderer.Ò00000(aaIncr)
+	f	õ0Ôo00	fontSize	F
+		c javap 字节码取证 | 高 | 构造器 -1.0f；setFontSize 写入；Cell 中 >0 时 fontRenderer.Ô00000(-fontSize)
+	f	OoÔo00	unusedColumnWidth	F
+		c javap 字节码取证 | 中 | final，构造器写入后全类无读取点，疑似未用列宽
+	f	ôOÔo00	nameFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器默认 StarfarerSettings 字体再覆写；Cell 构造中 nameLabel 用
+	f	void.interface$while	valueFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getValueFont/setValueFont 直读写；Cell 构造中 valueLabel 用
+	f	ø0Ôo00	itemWidth	F
+		c javap 字节码取证 | 高 | 构造器第三参；getItemWidth 直读；add 按列*itemWidth 布局
+	f	ô0Ôo00	rowHeight	F
+		c javap 字节码取证 | 高 | 构造器第五参；getRowHeight 直读；computeHeight 按行*rowHeight
+	f	OOÔo00	unitsWidth	F
+		c javap 字节码取证 | 高 | 构造器第四参；Cell 中 unitsLabel setSize(unitsWidth, lineHeight)
+	f	do.interface$while	cellsMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | HashMap，Pair(行,列)->Cell；add/getRow/updateRow 读写
+	f	private.interface$while	nameColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | setNameColor 直写；Cell 构造中 nameLabel 色
+	f	øOÔo00	valueColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | setValueColor 直写；Cell 构造中 valueLabel 色
+	f	ÓOÔo00	unitsColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | setUnitsColor 直写；Cell 构造中 unitsLabel 色
+	f	ÕOÔo00	flipped	Z
+		c javap 字节码取证 | 高 | setFlipped 置 true；Cell 中翻转 name/value 对齐与宽度
+	f	õOÔo00	flippedValueWidth	F
+		c javap 字节码取证 | 高 | setFlipped 第一参；翻转时 valueLabel autoSizeToWidth(flippedValueWidth)
+	f	ÒOÔo00	flippedNameGap	F
+		c javap 字节码取证 | 高 | setFlipped 第二参；翻转时 nameLabel 宽 = itemWidth - flippedValueWidth - flippedNameGap
+	f	if.interface$while	hpad	F
+		c javap 字节码取证 | 高 | 构造器置 HPAD(9.0)；getHpad/setHpad 直读写；add 中列位置 +hpad
+	f	String.interface$while	fontConfigSet	Z
+		c javap 字节码取证 | 高 | setNumAA/setAaIncr/setFontSize/setFontConfig* 置 true；Cell 中据此应用字体配置
 c	com/fs/starfarer/ui/ooooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/ui/TablePanel$Cell
 	c 来源(方法签名比对) | 置信度(高) | 证据(TablePanel$Cell：公共字段 valueLabel/nameLabel 与 linux nullsuper$o 一致)
 	f	valueLabel	valueLabel	Lcom/fs/starfarer/ui/d;
 	f	nameLabel	nameLabel	Lcom/fs/starfarer/ui/d;
+	f	this$0	outer	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | 内部类对外部 TablePanel 的引用，构造器首参
 c	com/fs/starfarer/ui/o0OO	com/fs/starfarer/ui/GridLayout
 	c 来源(方法签名比对) | 置信度(高) | 证据(GridLayout：二维网格占用布局管理器，与 linux o0OO 同名同结构，被 GridPanel(F) 持有)
+	f	Ó00000	rowCount	I
+		c javap 字节码取证 | 高 | 网格第二维（行）；isAtBottomEdge 判 cell.y+height>=rowCount
+	f	Õ00000	columnCount	I
+		c javap 字节码取证 | 高 | 网格第一维（列）；isAtRightEdge 判 cell.x+width>=columnCount
+	f	super	cellGrid	[[Ljava/util/Set;
+		c javap 字节码取证 | 高 | Set<Cell>[][] 占位网格，addCellAt/removeCellAt/getCellsAt 读写
+	f	Ò00000	cellList	Ljava/util/List;
+		c javap 字节码取证 | 高 | 全部 Cell 列表，addCell 追加、getCellByObject 遍历
+	f	String	needsAnotherPass	Z
+		c javap 字节码取证 | 高 | layout 循环重试标志：每次 pass 置 true，冲突时 |= true
+	m	o00000	addCell	(IIIILjava/lang/Object;Z)V
+		c javap 字节码取证 | 高 | new Cell(x,y,w,h,obj,flag) 加入 cellList
+	m	o00000	getCellByObject	(Ljava/lang/Object;)Lcom/fs/starfarer/ui/GridLayout$Cell;
+		c javap 字节码取证 | 高 | 遍历 cellList，cell.object.equals(obj) 返回
+	m	new	removeCellByObject	(Ljava/lang/Object;)V
+		c javap 字节码取证 | 高 | 遍历 cellList 移除 object 匹配的 cell
+	m	class	relayout	()V
+		c javap 字节码取证 | 高 | 包装：layout(1000)
+	m	o00000	layout	(I)V
+		c javap 字节码取证 | 高 | 核心布局：Random(1000000) 种子，至多 N 次 pass 消除重叠
+	m	o00000	getAdjacentCells	(Lcom/fs/starfarer/ui/GridLayout$Cell;Ljava/util/Set;)Ljava/util/Set;
+		c javap 字节码取证 | 高 | 递归收集与 cell 四周一格相邻的所有 cell
+	m	new	getWeightedCenter	(Ljava/util/Set;)Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 高 | 按面积(宽*高)加权求质心
+	m	o00000	getCenterOffset	(Ljava/util/Set;)Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 高 | 平均 (initialX-x, initialY-y) 偏移
+	m	o00000	moveLeft	(Lcom/fs/starfarer/ui/GridLayout$Cell;)V
+		c javap 字节码取证 | 高 | placeCell(x-1, y)
+	m	class	moveRight	(Lcom/fs/starfarer/ui/GridLayout$Cell;)V
+		c javap 字节码取证 | 高 | placeCell(x+1, y)
+	m	new	moveDown	(Lcom/fs/starfarer/ui/GridLayout$Cell;)V
+		c javap 字节码取证 | 高 | placeCell(x, y+1)
+	m	õ00000	moveUp	(Lcom/fs/starfarer/ui/GridLayout$Cell;)V
+		c javap 字节码取证 | 高 | placeCell(x, y-1)
+	m	new	placeCell	(IILcom/fs/starfarer/ui/GridLayout$Cell;)V
+		c javap 字节码取证 | 高 | 先清空 cell 旧占位再写入新坐标并 addCellAt 全跨度
+	m	Ô00000	rebuildGrid	()V
+		c javap 字节码取证 | 高 | 重建 cellGrid 全空 LinkedHashSet、needsAnotherPass=false
+	m	OO0000	hasSpaceBelow	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell x 跨度上 (x, y+height) 均未被占
+	m	ö00000	hasSpaceAbove	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell x 跨度上 (x, y-1) 均未被占
+	m	Ó00000	hasSpaceLeft	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell y 跨度上 (x-1, y) 均未被占
+	m	Ö00000	hasSpaceRight	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell y 跨度上 (x+width, y) 均未被占
+	m	Ô00000	isAtLeftEdge	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell.x<=0，layout 中阻止继续左移
+	m	Ø00000	isAtRightEdge	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell.x+width>=columnCount，阻止右移
+	m	null	isAtTopEdge	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell.y<=0，阻止上移
+	m	float	isAtBottomEdge	(Lcom/fs/starfarer/ui/GridLayout$Cell;)Z
+		c javap 字节码取证 | 高 | cell.y+height>=rowCount，阻止下移
+	m	new	isOccupied	(II)Z
+		c javap 字节码取证 | 高 | 越界或 cellGrid[x][y] 非空返回 true
+	m	Ô00000	getCellsAt	(II)Ljava/util/Set;
+		c javap 字节码取证 | 高 | 越界返回 null，否则 cellGrid[x][y]
+	m	o00000	getCellCount	(II)I
+		c javap 字节码取证 | 高 | 越界返回 2，否则 cellGrid[x][y].size()
+	m	Ó00000	addCellAt	(IILcom/fs/starfarer/ui/GridLayout$Cell;)V
+		c javap 字节码取证 | 高 | 越界静默返回，否则 cellGrid[x][y].add(cell)
+	m	o00000	removeCellAt	(IILcom/fs/starfarer/ui/GridLayout$Cell;)V
+		c javap 字节码取证 | 高 | 越界静默返回，否则 cellGrid[x][y].remove(cell)
+	m	Ó00000	clearCellAt	(II)V
+		c javap 字节码取证 | 高 | 越界静默返回，否则 cellGrid[x][y].clear()
+	m	new	getRowCount	()I
+		c javap 字节码取证 | 高 | 返回网格行数
+	m	o00000	getColumnCount	()I
+		c javap 字节码取证 | 高 | 返回网格列数
+	m	Ó00000	getCells	()Ljava/util/List;
+		c javap 字节码取证 | 高 | 返回 cellList
 c	com/fs/starfarer/ui/o0OO$o	com/fs/starfarer/ui/GridLayout$Cell
 	c 来源(方法签名比对) | 置信度(中) | 证据(GridLayout$Cell：网格单元数据与 linux o0OO$o 同名同结构)
+	f	Ô00000	initialX	I
+		c javap 字节码取证 | 高 | 创建时 x（构造=arg1）
+	f	Ó00000	initialY	I
+		c javap 字节码取证 | 高 | 创建时 y（构造=arg2）
+	f	new	x	I
+		c javap 字节码取证 | 高 | 当前列，placeCell/move* 更新
+	f	null	y	I
+		c javap 字节码取证 | 高 | 当前行
+	f	Ö00000	width	I
+		c javap 字节码取证 | 高 | 跨度宽（列数），构造=arg3
+	f	o00000	height	I
+		c javap 字节码取证 | 高 | 跨度高（行数），构造=arg4
+	f	class	object	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 承载数据，equals/hashCode 依据
+	f	Ø00000	canMove	Z
+		c javap 字节码取证 | 高 | final 标志，layout 跳过不可移动 cell
 c	com/fs/starfarer/ui/t	com/fs/starfarer/ui/DropdownValueLabel
 	c 来源(方法签名比对+字符串常量) | 置信度(中) | 证据(DropdownValueLabel：构造 (float,float,String) + setText/getText/renderImpl + arrow_down.png 与 linux o0o0 一致)
 	m	setText	setText	(Ljava/lang/String;)V
 	m	getText	getText	()Ljava/lang/String;
+	f	OÓÖO00	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造器创建；setText()/getText() 委托
 c	com/fs/starfarer/ui/o0oo	com/fs/starfarer/ui/BaseToggleButton
 	c 来源(方法签名比对) | 置信度(中) | 证据(BaseToggleButton：基于 BaseButton(Ooo0长名) 的开关按钮，isOn/setOn/actionPerformed 与 linux o0oo长名 一致；与 ui-core-a 的贴图开关 ToggleButton(float) 区分)
 	m	isOn	isOn	()Z
 	m	setOn	setOn	(Z)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	Ò0Øo00	listener	Lcom/fs/starfarer/ui/ActionListener;
+	f	do.return$private	renderer	Lcom/fs/starfarer/ui/BaseToggleButton$Renderer;
+	f	O0Øo00	on	Z
 c	com/fs/starfarer/ui/o0oo$o	com/fs/starfarer/ui/BaseToggleButton$Renderer
 	c 来源(方法签名比对) | 置信度(中) | 证据(BaseToggleButton$Renderer：双渲染器组合与 linux o0oo长名$o 一致)
+	f	ØÒ0000	baseRenderer	Lcom/fs/starfarer/ui/BaseButtonRenderer;
+	f	null.new	onRenderer	Lcom/fs/starfarer/ui/BaseButtonRenderer;
+	f	ÖÒ0000	hideBaseWhenOn	Z
+	f	class.new	on	Z
+	m	Ò00000	render	(FFF)V
+	m	o00000	renderDisabled	(FFF)V
+	m	o00000	renderWithGlow	(FFFF)V
+	m	o00000	setSize	(FF)V
+	m	o00000	setScale	(F)V
+	m	Ò00000	setOn	(Z)V
 c	com/fs/starfarer/ui/w	com/fs/starfarer/ui/TooltipHost
 	c 来源(方法签名比对) | 置信度(高) | 证据(TooltipHost：setTooltip/setTooltipPositionRelativeToAnchor 接口与 linux oO00 一致，被 UIComponentBase(OOOo) 实现)
 	m	setTooltip	setTooltip	(FLcom/fs/starfarer/ui/f;)V
 	m	setTooltipPositionRelativeToAnchor	setTooltipPositionRelativeToAnchor	(FFLcom/fs/starfarer/ui/c;)V
 c	com/fs/starfarer/ui/M	com/fs/starfarer/ui/SpriteRenderer
 	c 来源(方法签名比对) | 置信度(中) | 证据(SpriteRenderer：implements BaseButtonRenderer(Ooo0长名$o)，构造 (Sprite)/(Sprite,float) 与 linux oO0O 一致)
+	f	Óo0000	sprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器保存渲染目标 sprite；各 render 方法均以其为参数
+	f	oo0000	width	F
+		c javap 字节码取证 | 高 | o00000(FF) 写入、o00000(F) 中 setSize(width*scale, height*scale)
+	f	Ôo0000	height	F
+		c javap 字节码取证 | 高 | o00000(FF) 写入、o00000(F) 中 setSize(width*scale, height*scale)
+	f	null.super	scale	F
+		c javap 字节码取证 | 高 | 构造器初始 1.0f；o00000(F) 写入并同步 sprite 尺寸
+	f	Oo0000	glowStep	F
+		c javap 字节码取证 | 高 | 构造器初始 4.0f；o00000(FFFF) 传给 renderers/O0OO.o00000 作为多层发光渲染步长
+	m	Ò00000	render	(FFF)V
+		c javap 字节码取证 | 高 | 简单渲染：sprite.setAlphaMult(alpha)+renderAtCenter(x,y)
+	m	o00000	renderGlow	(FFFF)V
+		c javap 字节码取证 | 高 | alpha>0 时调 renderers/O0OO.o00000 做多层发光渲染（blendFunc 770/1、三层缩放）
+	m	o00000	renderWithShadow	(FFF)V
+		c javap 字节码取证 | 高 | 先 render，再以黑/灰 0.5*alpha 各 renderAtCenter 一次叠加阴影
+	m	o00000	setScale	(F)V
+		c javap 字节码取证 | 高 | 写 scale 并 setSize(width*scale, height*scale)
+	m	o00000	setSize	(FF)V
+		c javap 字节码取证 | 高 | 写 width/height 并重算 scale 尺寸
 c	com/fs/starfarer/ui/oo0O	com/fs/starfarer/ui/Dialog
 	c 来源(方法签名比对+引用关系) | 置信度(高) | 证据(Dialog：模态对话框基类，show/dismiss/setOption/背景变暗/外部点击吸收与 linux oo0O 完全一致)
 	f	delegate	delegate	Lcom/fs/starfarer/ui/oo0O$o;
@@ -194,11 +573,49 @@ c	com/fs/starfarer/ui/oo0O	com/fs/starfarer/ui/Dialog
 	m	getDialogParent	getDialogParent	()Lcom/fs/starfarer/ui/interfacenew;
 	m	setOptionOnKeyboardCancel	setOptionOnKeyboardCancel	(I)V
 	m	setOptionOnKeyboardConfirm	setOptionOnKeyboardConfirm	(I)V
+	f	ÒØO000	interceptor	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | getInterceptor() 纯 getter；外部点击拦截面板
+	f	ÖØO000	dialogParent	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | getDialogParent()/setParent() 直接访问
+	f	ÕØO000	absorbOutsideEvents	Z
+		c javap 字节码取证 | 高 | setAbsorbOutsideEvents() 直接 putfield
+	f	ÓØO000	useCenter	Z
+		c javap 字节码取证 | 高 | setCenter() 置 true；show() 按 centerX/Y 定位
+	f	õØO000	option	I
+		c javap 字节码取证 | 高 | setOption()/resetOption()；isBeingDismissed() 判 >=0
+	f	do.while	instantOptions	Ljava/util/Set;
+		c javap 字节码取证 | 高 | makeOptionInstant() add；dismiss() 中 contains 判定
+	f	OØO000	backgroundDimAmount	F
+		c javap 字节码取证 | 高 | get/setBackgroundDimAmount() 直接访问
+	f	øØO000	keyboardShortcutsToAcceptEnabled	Z
+		c javap 字节码取证 | 高 | setKeyboardShortcutsToAcceptEnabled() 直接 putfield
+	f	String.while	suspendEventInterception	Z
+		c javap 字节码取证 | 高 | is/setSuspendEventInterception() 直接访问
+	f	super.while	fadeInAndOut	Z
+		c javap 字节码取证 | 高 | setFadeInAndOut() 直接 putfield
+	f	if.while	interceptAllContainedEvents	Z
+		c javap 字节码取证 | 高 | setInterceptAllContainedEvents() 直接 putfield
+	f	void.while	rmbAnywhereCancels	Z
+		c javap 字节码取证 | 高 | setRMBAnywhereCancels() 直接 putfield
+	f	ôØO000	leftClickOutsideCancels	Z
+		c javap 字节码取证 | 高 | setLeftClickOutsideCancels() 直接 putfield
+	f	ÒôO000	rightClickOutsideCancels	Z
+		c javap 字节码取证 | 高 | setRightClickOutsideCancels() 直接 putfield
+	f	øÖO000	optionOnKeyboardCancel	I
+		c javap 字节码取证 | 高 | setOptionOnKeyboardCancel() 直接 putfield
+	f	OôO000	optionOnKeyboardConfirm	I
+		c javap 字节码取证 | 高 | setOptionOnKeyboardConfirm() 直接 putfield
 c	com/fs/starfarer/ui/oo0O$1	com/fs/starfarer/ui/Dialog$OutsideClickInterceptor
 	c 来源(方法签名比对) | 置信度(高) | 证据(Dialog$OutsideClickInterceptor：extends Panel(interfacenew)，processInputImpl 捕获对话框外点击，与 linux oo0O$1 一致)
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	f	this$0	dialog	Lcom/fs/starfarer/ui/Dialog;
+		c javap 字节码取证 | 高 | 匿名内部类外部引用；processInputImpl 中访问 Dialog
 c	com/fs/starfarer/ui/oo0O$2	com/fs/starfarer/ui/Dialog$BackgroundDimRenderer
 	c 来源(方法签名比对) | 置信度(高) | 证据(Dialog$BackgroundDimRenderer：implements C$o，new(OO0O,float) 画背景遮罩，与 linux oo0O$2 一致)
+	f	õÓØo00	dialog	Lcom/fs/starfarer/ui/Dialog;
+		c javap 字节码取证 | 高 | 持有外部 Dialog 引用，取背景暗化参数
+	m	new	render	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+		c javap 字节码取证 | 高 | C$o 渲染回调；画黑色暗化矩形
 c	com/fs/starfarer/ui/oo0O$o	com/fs/starfarer/ui/Dialog$DismissListener
 	c 来源(方法签名比对) | 置信度(高) | 证据(Dialog$DismissListener：dialogDismissed(Dialog,int) 关闭回调与 linux oo0O$o 一致)
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
@@ -222,6 +639,32 @@ c	com/fs/starfarer/ui/ooO0	com/fs/starfarer/ui/ImagePanel
 	m	getOWw	getOWw	()F
 	m	resizeImage	resizeImage	()V
 	m	restoreImageSize	restoreImageSize	()V
+	f	Õ0O000	sprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 展示 sprite，getSprite/setSprite，renderAtCenter 绘制
+	f	if.null	originalWidth	F
+		c javap 字节码取证 | 高 | 原始宽，getOWw/setOW，resizeImage 比例基准
+	f	private.null	originalHeight	F
+		c javap 字节码取证 | 高 | 原始高，getOW/setOH，getOriginalAR 返回宽高比
+	f	õø0000	resize	Z
+		c javap 字节码取证 | 高 | isResize/setResize，sizeChanged 后自动 resizeImage
+	f	void.null	stretch	Z
+		c javap 字节码取证 | 高 | setStretch，resizeImage 拉伸 vs 等比缩放
+	f	ôø0000	withOutline	Z
+		c javap 字节码取证 | 高 | isWithOutline/setWithOutline，renderAtCenter 四向偏移画黑边
+	f	O0O000	spriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | sprite 路径名，getSpriteName
+	f	Öø0000	texClamp	Z
+		c javap 字节码取证 | 高 | isTexClamp/setTexClamp，渲染前 setTexClamp
+	f	Ó0O000	schematic	Lcom/fs/starfarer/renderers/ShipPortraitRenderer;
+		c javap 字节码取证 | 高 | 舰船示意图渲染器，setRenderSchematic 创建，getSchematic 返回
+	f	Ö0O000	forceNoRounding	Z
+		c javap 字节码取证 | 高 | isForceNoRounding/setForceNoRounding，renderImpl 坐标取整开关
+	f	Ò0O000	fullyBright	Z
+		c javap 字节码取证 | 高 | outline 渲染 alpha>=1 状态，控制 0.5+0.5*alpha 补偿
+	f	øø0000	borderColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getBorderColor/setBorderColor，showBorder 时边框色
+	f	do.null	showBorder	Z
+		c javap 字节码取证 | 高 | setShowBorder，renderAtCenter 尾部画双层边框
 c	com/fs/starfarer/ui/U	com/fs/starfarer/ui/ActionListener
 	c 来源(方法签名比对) | 置信度(高) | 证据(ActionListener：actionPerformed(Object,Object) 回调接口与 linux ooOo 一致)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
@@ -240,6 +683,24 @@ c	com/fs/starfarer/ui/O000	com/fs/starfarer/ui/LabelValuePanel
 	m	setLabelAlign	setLabelAlign	(Lcom/fs/starfarer/api/ui/Alignment;)V
 	m	getValueAlign	getValueAlign	()Lcom/fs/starfarer/api/ui/Alignment;
 	m	setValueAlign	setValueAlign	(Lcom/fs/starfarer/api/ui/Alignment;)V
+	f	øÕÔo00	font	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 字体路径，setFont 写入，addRow 创建 d(Label) 使用
+	f	void.Object$public	labelWidth	F
+		c javap 字节码取证 | 高 | 标签列宽，getLabelWidth/setLabelWidth，构造 arg1
+	f	õÕÔo00	rowHeight	F
+		c javap 字节码取证 | 高 | 行高，构造 arg2，addRow 按行号*rowHeight 定位
+	f	ÓÖÔo00	labelColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 标签色，getLabelColor/setLabelColor
+	f	OÖÔo00	valueColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 值色，getValueColor/setValueColor
+	f	String.Object$public	labelAlign	Lcom/fs/starfarer/api/ui/Alignment;
+		c javap 字节码取证 | 高 | 标签对齐，getLabelAlign/setLabelAlign，默认 LMID
+	f	ÒÖÔo00	valueAlign	Lcom/fs/starfarer/api/ui/Alignment;
+		c javap 字节码取证 | 高 | 值对齐，getValueAlign/setValueAlign，默认 LMID
+	f	ÕÖÔo00	rowCount	I
+		c javap 字节码取证 | 高 | 行数，addRow 自增，autoSize 高度计算
+	f	if.Object$public	maxValueWidth	F
+		c javap 字节码取证 | 高 | 已加行最大值宽，addRow 更新，autoSize 宽度基准
 c	com/fs/starfarer/ui/Ooo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/BaseButton
 	c 来源(方法签名比对) | 置信度(中) | 证据(BaseButton：渲染器驱动的基础按钮，extends UIComponentBase(OOOo) implements ButtonResponder(int$oo)，方法集与 linux q 完全一致)
 	m	setShortcut	setShortcut	(Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;)V
@@ -252,11 +713,51 @@ c	com/fs/starfarer/ui/Ooo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	isEnabled	isEnabled	()Z
 	m	setEnabled	setEnabled	(Z)V
 	m	sizeChanged	sizeChanged	(FF)V
+	f	õøÖo00	renderer	Lcom/fs/starfarer/ui/BaseButtonRenderer;
+	f	ôøÖo00	enabled	Z
+	f	øøÖo00	flashFader	Lcom/fs/graphics/util/Fader;
+	f	ÓøÖo00	glowFader	Lcom/fs/graphics/util/Fader;
+	f	if.return$private	zoomFader	Lcom/fs/graphics/util/Fader;
+	f	ÖøÖo00	buttonLogic	Lcom/fs/starfarer/ui/ButtonLogic;
+	f	ÕøÖo00	listener	Lcom/fs/starfarer/ui/ActionListener;
+	f	void.return$private	pressedScale	F
+	f	super.return$private	hoverScale	F
+	f	ÒøÖo00	mouseOverSound	Ljava/lang/String;
+	f	String.return$private	buttonPressedSound	Ljava/lang/String;
 c	com/fs/starfarer/ui/Ooo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/ui/BaseButtonRenderer
 	c 来源(方法签名比对) | 置信度(中) | 证据(BaseButtonRenderer：BaseButton 渲染接口（6 个混淆渲染方法）与 linux q$o 一致，被 M/oOOO/oO00/o0oo$o 实现)
+	m	o00000	setSize	(FF)V
+	m	o00000	setScale	(F)V
+	m	Ò00000	render	(FFF)V
+	m	o00000	renderDisabled	(FFF)V
+	m	o00000	renderWithGlow	(FFFF)V
 c	com/fs/starfarer/ui/intnew	com/fs/starfarer/ui/IconTextButtonRenderer
 	c 来源(方法签名比对) | 置信度(中) | 证据(IconTextButtonRenderer：implements ButtonBackgroundRenderer(n$Oo)，构造 (String,String,Sprite) 与 linux r 完全一致)
 	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+	f	Oõ0000	textRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 文本渲染器（构造 super.Object(text,font)），getTextRenderer 返回
+	f	õô0000	unusedFloat	F
+		c javap 字节码取证 | 中 | 仅构造器写 3.0f，全类无读取，死字段（unused 前缀纪律）
+	f	Óõ0000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 常规态文本/图标色，render 各分支使用
+	f	öô0000	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 高亮态文本色（super 私有方法 aload 15）
+	f	while.return	iconSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 图标 sprite，renderAtCenter 绘制
+	f	oõ0000	borderTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | graphics/hud/line4x4.png，边框线绘制
+	f	float.return	isFullAssaultButton	Z
+		c javap 字节码取证 | 高 | 文本=="Search & Destroy" 判定，true 时显示 Full Assault 动态文本
+	f	null.return	wasFullAssault	Z
+		c javap 字节码取证 | 高 | 上次全面突击状态缓存，避免重复重建文本
+	f	Ôõ0000	disabledColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | static Color(125,125,125,255)，disabled 分支文本/图标色
+	m	super	renderBorder	(Lcom/fs/starfarer/ui/PositionImpl;Ljava/awt/Color;FF)V
+		c javap 字节码取证 | 高 | 私有：borderTexture 画 6 段边框线（参数含 inset 5f/35f/10f）
+	m	Ò00000	setControlAction	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/ui/IconTextButtonRenderer;
+		c javap 字节码取证 | 高 | Q.o00000(textRenderer,color,action) 附加按键提示，返回 this
+	m	øo0000	getTextRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 返回 textRenderer
 c	com/fs/starfarer/ui/F	com/fs/starfarer/ui/GridPanel
 	c 来源(方法签名比对) | 置信度(高) | 证据(GridPanel：网格摆放面板，内部用 GridLayout(o0OO)，getCellFor/addWrapped 与 linux return 完全一致)
 	f	String.public$while	grid	Lcom/fs/starfarer/ui/o0OO;
@@ -272,6 +773,24 @@ c	com/fs/starfarer/ui/F	com/fs/starfarer/ui/GridPanel
 	m	addWrapped	addWrapped	(Lcom/fs/starfarer/ui/c;IIIIZ)Lcom/fs/starfarer/ui/OO0O;
 	m	remove	remove	(Lcom/fs/starfarer/ui/c;)V
 	m	getGridObject	getGridObject	(Lcom/fs/starfarer/ui/c;)Lcom/fs/starfarer/ui/o0OO$o;
+	f	ÒöÓo00	gridColumns	I
+		c javap 字节码取证 | 高 | floor(宽/cellSize)，GridLayout 构造第一维
+	f	ÕöÓo00	gridRows	I
+		c javap 字节码取证 | 高 | floor(高/cellSize)，GridLayout 构造第二维
+	f	øõÓo00	cellSize	F
+		c javap 字节码取证 | 高 | 单元尺寸，getCellSize 返回，layoutComponent 换算像素
+	f	ÖöÓo00	xOffset	F
+		c javap 字节码取证 | 高 | (宽-cols*cellSize)/2 水平留白，getCellFor/layoutComponent 用
+	f	ÓöÓo00	yOffset	F
+		c javap 字节码取证 | 高 | (高-rows*cellSize)/2 垂直留白
+	f	OöÓo00	components	Ljava/util/List;
+		c javap 字节码取证 | 高 | 组件列表，getComponents 返回，add/remove 维护
+	f	void.public$while	layoutDirty	Z
+		c javap 字节码取证 | 高 | add 后置 true，advanceImpl 触发 computeLayout 并复位
+	f	if.public$while	debugLayout	Z
+		c javap 字节码取证 | 高 | static 调试开关：computeLayout 关掉后走 grid.relayout，按键 1/2 触发重排
+	m	o00000	layoutComponent	(Lcom/fs/starfarer/ui/UIComponent;)V
+		c javap 字节码取证 | 高 | 按 cell 宽高*cellSize 设组件尺寸，inBL(xOffset+cell.x*cellSize, yOffset+cell.y*cellSize)
 c	com/fs/starfarer/ui/returnnew	com/fs/starfarer/ui/SpriteButton
 	c 来源(方法签名比对) | 置信度(高) | 证据(SpriteButton：Sprite 三态按钮（正常/按下/发光 + ButtonLogic(int)），与 linux returnnew 同名同结构)
 	m	flash	flash	()V
@@ -285,31 +804,425 @@ c	com/fs/starfarer/ui/returnnew	com/fs/starfarer/ui/SpriteButton
 	m	buttonUp	buttonUp	(Ljava/lang/Object;)V
 	m	buttonPressed	buttonPressed	(Lcom/fs/starfarer/util/A/C;Ljava/lang/Object;)V
 	m	buttonPressCancelled	buttonPressCancelled	(Ljava/lang/Object;)V
+	f	ÖOO000	enabled	Z
+		c javap 字节码取证 | 高 | isEnabled/setEnabled 直读写；构造器初始 true；setEnabled 切换时 glowFader.fadeOut
+	f	do.int	flashFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | flash(boolean) 中 null 时新建 Fader+setBounceDown(true) 并 fadeIn；advanceImpl 淡出 idle 后置 null
+	f	OOO000	glowFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getGlowFader 直读；构造器 new Fader(0,0.05,0.25)；mouseEnter fadeIn / mouseLeave fadeOut
+	f	ÒOO000	buttonLogic	Lcom/fs/starfarer/ui/ButtonLogic;
+		c javap 字节码取证 | 高 | 构造器 new int(this,this,this)；processInputImpl 转发 processInput；setQuickMode 转发
+	f	void.int	listener	Lcom/fs/starfarer/ui/ActionListener;
+		c javap 字节码取证 | 高 | getListener/setListener 直读写；buttonPressed 调 actionPerformed
+	f	ø0O000	mouseOverSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setMouseOverSound 直写；mouseEnter 非空时播放音效
+	f	ÓOO000	buttonPressedSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setButtonPressedSound 直写；flash(true) 与 buttonPressed 播放音效
+	f	if.int	upSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器加载 "ui"+"_up"；renderImpl 正常态渲染；定按钮尺寸
+	f	õOO000	downSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器加载 "ui"+"_down"；按下/未启用态渲染
+	f	ôOO000	glowSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器加载 "ui"+"_glow" 并 setBlendFunc(770,1)；renderImpl 亮度>0 时叠加渲染
+	f	ÕOO000	disabledColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器 new Color(127,127,127,255)；setEnabled(false) 时赋给 up/down sprite
+	m	o00000	renderFlashSprite	(Lcom/fs/graphics/Sprite;FFF)V
+		c javap 字节码取证 | 高 | renderImpl 私有辅助：按 flashFader 亮度设 blendFunc(770,1)+alpha 渲染 sprite，再还原 blendFunc
 c	com/fs/starfarer/ui/oOOO	com/fs/starfarer/ui/TextButtonRenderer
 	c 来源(方法签名比对) | 置信度(中) | 证据(TextButtonRenderer：implements BaseButtonRenderer，构造 (String, 字体) + text_glow 发光，与 linux super 一致)
+	f	Ô00000	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 构造器 new Object(text,font)；render 中设 alpha 并定位
+	f	new	glowSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器加载 ui/text_glow 并 setBlendFunc(770,1)；o00000(FFFF) 渲染
+	f	Ó00000	width	F
+		c javap 字节码取证 | 高 | o00000(FF) 写入；渲染矩形宽
+	f	o00000	height	F
+		c javap 字节码取证 | 高 | o00000(FF) 写入；渲染矩形高
+	m	Ò00000	renderHighlighted	(FFF)V
+		c javap 字节码取证 | 高 | 绿色矩形底 + fontRenderer 全 alpha 渲染（高亮态）
+	m	o00000	renderDimmed	(FFF)V
+		c javap 字节码取证 | 高 | 灰色矩形底 + fontRenderer 0.5*alpha 渲染（禁用/暗淡态）
+	m	o00000	renderGlow	(FFFF)V
+		c javap 字节码取证 | 高 | glowSprite.setAlphaMult(alpha*amount) + renderAtCenter
+	m	o00000	setSize	(FF)V
+		c javap 字节码取证 | 高 | 写 width/height 并同步 glowSprite 尺寸
+	m	o00000	setHeightScale	(F)V
+		c javap 字节码取证 | 高 | glowSprite.setSize(width, height*scale)
 c	com/fs/starfarer/ui/B/new	com/fs/starfarer/ui/super/FighterWingIconRenderer
 	c 来源(方法签名比对) | 置信度(高) | 证据(FighterWingIconRenderer：implements BaseButtonRenderer，持有 FighterWingSpec/FleetMember/HullSize，与 linux super/B 一致)
+	f	ÓÔ0000	unusedConstant	F
+	f	ÔÕ0000	shipSprite	Lcom/fs/graphics/Sprite;
+	f	null.Object	isFighterWing	Z
+	f	class.String	wingSpec	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+	f	oô0000	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	while.Object	spriteAspectRatio	F
+	f	oÔ0000	width	F
+	f	ÔÔ0000	height	F
+	f	OØ0000	scale	F
+	f	õØ0000	unusedFloat	F
+	f	float.class	backgroundColor	Ljava/awt/Color;
+	f	OÖ0000	leaderInsigniaSprite	Lcom/fs/graphics/Sprite;
+	f	interface.Object	starInsigniaSprite	Lcom/fs/graphics/Sprite;
+	f	new.return	deploymentPointsFont	Lcom/fs/graphics/font/BitmapFontRenderer;
+	f	float.Object	deployTextFont	Lcom/fs/graphics/font/BitmapFontRenderer;
+	f	öØ0000	deploymentCostFont	Lcom/fs/graphics/font/BitmapFontRenderer;
+	f	õÔ0000	showLeaderInsignia	Z
+	f	Öô0000	showWeapons	Z
+	f	oÖ0000	shipPortraitRenderer	Lcom/fs/starfarer/renderers/ShipPortraitRenderer;
+	f	ÓØ0000	hullSize	Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+	f	oÕ0000	showDeploymentPoints	Z
+	f	ØÕ0000	showDeploymentCost	Z
+	f	float.return	showUiOverlay	Z
+	f	while.String	showStatusBars	Z
+	f	ÓÕ0000	showDeployText	Z
+	f	Øô0000	useShipPortraitRenderer	Z
+	f	class.class	renderAllWeaponSlots	Z
+	f	interface.String	hullSizeScale	F
+	f	float.String	showPortrait	Z
+	f	ØÔ0000	personPortrait	Lcom/fs/starfarer/ui/impl/PersonPortrait;
+	f	oõ0000	useNormalColors	Z
+	f	ØØ0000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+	f	OÕ0000	crBar	Lcom/fs/starfarer/ui/impl/ValueDisplayBar;
+	f	öô0000	hullBar	Lcom/fs/starfarer/ui/impl/ValueDisplayBar;
+	f	ÔØ0000	notCombatReadySprite	Lcom/fs/graphics/Sprite;
+	f	null.class	mothballedSprite	Lcom/fs/graphics/Sprite;
+	f	oØ0000	disabledSprite	Lcom/fs/graphics/Sprite;
+	f	new.class	renderDataList	Ljava/util/List;
+	f	ÔÖ0000	visibilityLevel	Lcom/fs/starfarer/api/campaign/SectorEntityToken$VisibilityLevel;
+	f	ÖÔ0000	specialModsBar	Lcom/fs/starfarer/coreui/CellProgressBar;
+	f	interface.class	specialModsBar2	Lcom/fs/starfarer/coreui/CellProgressBar;
+	f	Ôô0000	showModules	Z
+	f	öÕ0000	deployedFleetMember	Lcom/fs/starfarer/combat/DeployedFleetMember;
+	f	null.String	positionOffset	F
+	f	öÖ0000	inactiveColor	Ljava/awt/Color;
+	f	õÕ0000	highlightColor	Ljava/awt/Color;
+	f	ÖÖ0000	showDeployCount	Z
+	f	Oõ0000	deployDirection	I
+	f	ÖÕ0000	deployText	Ljava/lang/String;
+	f	õÖ0000	deploymentPoints	I
+	f	ÖØ0000	highlighted	Z
+	f	ÓÖ0000	showStatusIcon	Z
+	f	Oô0000	damageFlashScale	F
+	f	õô0000	damageFlashColor	Ljava/awt/Color;
+	f	null.return	showStatusIconFallback	Z
+	f	new.String	hulkColor	Ljava/awt/Color;
+	f	class.return	customPanel	Lcom/fs/starfarer/ui/Panel;
+	f	while.class	layerStartScale	F
+	f	öÔ0000	layerScaleStep	F
+	f	Óô0000	showDestroyedFighters	Z
+	f	ØÖ0000	dimmed	Z
+	m	Ôo0000	getShipSprite	()Lcom/fs/graphics/Sprite;
+	m	public.super	getSpecialModsBar	()Lcom/fs/starfarer/coreui/CellProgressBar;
+	m	o00000	setSpecialModsBar	(Lcom/fs/starfarer/coreui/CellProgressBar;)V
+	m	o00000	initSpecialModsBars	(Ljava/awt/Color;FFFII)V
+	m	Òo0000	isRenderAllWeaponSlots	()Z
+	m	ö00000	setRenderAllWeaponSlots	(Z)V
+	m	ôO0000	isUseShipPortraitRenderer	()Z
+	m	ÔO0000	setUseShipPortraitRenderer	(Z)V
+	m	öO0000	isUseNormalColors	()Z
+	m	ø00000	setUseNormalColors	(Z)V
+	m	this.new	isShowWeapons	()Z
+	m	ÕO0000	setShowWeapons	(Z)V
+	m	Øo0000	getVisibilityLevel	()Lcom/fs/starfarer/api/campaign/SectorEntityToken$VisibilityLevel;
+	m	o00000	setVisibilityLevel	(Lcom/fs/starfarer/api/campaign/SectorEntityToken$VisibilityLevel;)V
+	m	ø00000	isShowModules	()Z
+	m	ô00000	setShowModules	(Z)V
+	m	for	isShowDestroyedFighters	()Z
+	m	ØO0000	getDeployedFleetMember	()Lcom/fs/starfarer/combat/DeployedFleetMember;
+	m	o00000	setDeployedFleetMember	(Lcom/fs/starfarer/combat/DeployedFleetMember;)V
+	m	return	setShowPortrait	(Z)V
+	m	return	setPositionOffset	(F)V
+	m	o00000	initFleetMember	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+	m	oo0000	getInactiveColor	()Ljava/awt/Color;
+	m	Ò00000	setInactiveColor	(Ljava/awt/Color;)V
+	m	o00000	setHighlightColor	(Ljava/awt/Color;)V
+	m	Ô00000	setSpriteAngle	(F)V
+	m	øO0000	isShowDeployCount	()Z
+	m	public	setShowDeployCount	(Z)V
+	m	Object	setDeployDirection	(I)V
+	m	int	getDeployText	()Ljava/lang/String;
+	m	Object	setDeployText	(Ljava/lang/String;)V
+	m	ÕO0000	getDeployDirection	()I
+	m	return.super	getDeploymentPoints	()I
+	m	o00000	setDeploymentPoints	(I)V
+	m	int	setShowDeployText	(Z)V
+	m	Object.super	setShowLeaderInsignia	(Z)V
+	m	Ò00000	render	(FFF)V
+	m	o00000	renderWithWing	(FFFLcom/fs/starfarer/combat/ai/FighterWing;)V
+	m	o00000	renderWithShip	(FFFLcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/ai/FighterWing;Z)V
+	m	public	isHighlighted	()Z
+	m	Ø00000	setHighlighted	(Z)V
+	m	Õ00000	setShowStatusIcon	(Z)V
+	m	ö00000	isShowStatusIcon	()Z
+	m	öo0000	getDamageFlashColor	()Ljava/awt/Color;
+	m	Object	setDamageFlashColor	(Ljava/awt/Color;)V
+	m	ôo0000	getDamageFlashScale	()F
+	m	Õ00000	setDamageFlashScale	(F)V
+	m	o00000	renderShipOrWing	(FFFLcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/ai/FighterWing;)V
+	m	o00000	renderModule	(IFFFFFLcom/fs/starfarer/ui/super/FighterWingIconRenderer$RenderData;)V
+	m	Ô00000	setShowStatusIconFallback	(Z)V
+	m	int.super	getCustomPanel	()Lcom/fs/starfarer/ui/Panel;
+	m	o00000	setCustomPanel	(Lcom/fs/starfarer/ui/Panel;)V
+	m	Ô00000	renderOverlay	(FFF)V
+	m	o00000	renderWithShadow	(FFF)V
+	m	o00000	renderHighlighted	(FFFF)V
+	m	o00000	setPosition	(FF)V
+	m	Object.super	getWidth	()F
+	m	oO0000	getHeight	()F
+	m	Õo0000	getScale	()F
+	m	ÒO0000	getShipPortraitRenderer	()Lcom/fs/starfarer/renderers/ShipPortraitRenderer;
+	m	o00000	setScale	(F)V
+	m	ÔO0000	getHullSizeScale	()F
+	m	return	setLayerScales	(FF)V
+	m	Ò00000	renderSpriteLayers	(FFFF)V
+	m	for.super	getFleetMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	m	Ô00000	setBackgroundColor	(Ljava/awt/Color;)V
+	m	Ò00000	setAvailableDeploymentPoints	(I)V
+	m	for	setShowDeploymentPoints	(Z)V
+	m	ØO0000	setShowDeploymentCost	(Z)V
+	m	this.super	setShowUiOverlay	(Z)V
+	m	Object	setHullSizeScale	(F)V
+	m	o00000	isVisible	()Z
+	m	ÒO0000	setShowDestroyedFighters	(Z)V
+	m	this.super	isShowStatusBars	()Z
+	m	oO0000	setShowStatusBars	(Z)V
+	m	øo0000	isDimmed	()Z
+	m	ôO0000	setDimmed	(Z)V
+	m	o00000	renderShipIcon	(FFFFFFFFFLcom/fs/starfarer/combat/entities/Ship;)V
+	m	o00000	rotateVector	(Lorg/lwjgl/util/vector/Vector2f;F)Lorg/lwjgl/util/vector/Vector2f;
+	m	o00000	renderWithHighlight	(FFFFFFFFFF)V
+	m	Ò00000	renderWingOrCorners	(FFFFFFFFFF)V
 c	com/fs/starfarer/ui/B/new$o	com/fs/starfarer/ui/super/FighterWingIconRenderer$RenderData
 	c 来源(方法签名比对) | 置信度(中) | 证据(FighterWingIconRenderer$RenderData：渲染数据（Sprite + HullVariantSpec + specs 配置），与 linux super/B$o 一致)
 	f	Ò00000	iconSprite	Lcom/fs/graphics/Sprite;
 	f	o00000	hullVariantSpec	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	f	Object	weaponSlot	Lcom/fs/starfarer/loading/specs/WeaponSlot;
 c	com/fs/starfarer/ui/B/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/ui/super/WeaponIconRenderer
 	c 来源(方法签名比对) | 置信度(高) | 证据(WeaponIconRenderer：implements C$o，构造 (BaseWeaponSpec, specs 配置, Color, boolean) 与 linux super/Object 一致)
+	f	String.int$private	weaponSprite	Lcom/fs/graphics/Sprite;
+	f	ÒÓØo00	weaponUnderSprite	Lcom/fs/graphics/Sprite;
+	f	ÕÒØo00	missileSprite	Lcom/fs/graphics/Sprite;
+	f	øÒØo00	gunSprite	Lcom/fs/graphics/Sprite;
+	f	if.int$private	renderer	Lcom/fs/starfarer/renderers/ShipPortraitRenderer;
+	f	õÒØo00	color	Ljava/awt/Color;
+	f	ÕÓØo00	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	f	super.int$private	missileSpec	Lcom/fs/starfarer/loading/specs/MissileSpec;
+	f	ÓÓØo00	weaponSlot	Lcom/fs/starfarer/loading/specs/WeaponSlot;
+	f	void.int$private	hasGunSprite	Z
+	f	ÖÒØo00	dimmed	Z
+	f	ôÒØo00	iconScale	F
+	f	ôÓØo00	fixedSize	Z
+	f	do.int$private	cachedScale	F
+	f	OÓØo00	scaleX	F
+	f	ÖÓØo00	scaleY	F
+	m	Ó00000	setColor	(Ljava/awt/Color;)V
+	m	o00000	setBlendFunc	(II)V
+	m	Ø00000	render	(FFF)V
+	m	õo0000	setIconScale	(F)V
+	m	class.private	setNormalBlend	()V
+	m	ØöO000	setAdditiveBlend	()V
+	m	Ó00000	renderWithAngle	(FFFF)V
+	m	ööO000	getWidth	()F
+	m	new	rotateVector	(Lorg/lwjgl/util/vector/Vector2f;F)Lorg/lwjgl/util/vector/Vector2f;
+	m	new	renderAt	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+	m	ÖöO000	isFixedSize	()Z
+	m	õO0000	setFixedSize	(Z)V
+	m	Ø00000	fitToSize	(FF)V
+	m	õöO000	getWeaponSpec	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	m	o00000	renderWithCorners	(FFFFFFFFFFZ)V
+	m	o00000	renderSpriteWithCorners	(FFFFFFFFLcom/fs/graphics/Sprite;FFZ)V
+	m	null.private	getWeaponSlot	()Lcom/fs/starfarer/loading/specs/WeaponSlot;
 c	com/fs/starfarer/ui/B/A	com/fs/starfarer/ui/super/BattleObjectiveIconRenderer
 	c 来源(方法签名比对) | 置信度(高) | 证据(BattleObjectiveIconRenderer：构造 (BattleObjective) 持有 Sprite/颜色渲染目标图标，与 linux super/super 一致)
+	f	Ô00000	objective	Lcom/fs/starfarer/combat/entities/BattleObjective;
+		c javap 字节码取证 | 高 | 构造器首参保存；super() getter 直读
+	f	Ö00000	sprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器 new Sprite(objective.getColorIconName())；Ò00000() getter 直读
+	f	Ø00000	portraitRenderer	Lcom/fs/starfarer/renderers/ShipPortraitRenderer;
+		c javap 字节码取证 | 高 | 构造器 new O0OO() 并经 super(Color) 设色；渲染/缩放转发
+	f	Ó00000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器按 objective.getOwner() 取派系色；super(Color) setter 写
+	f	class	baseWidth	F
+		c javap 字节码取证 | 高 | super(FF) 第一参；setScale 中宽度上限
+	f	o00000	baseHeight	F
+		c javap 字节码取证 | 高 | super(FF) 第二参；setScale 中高度基准
+	f	new	aspectRatio	F
+		c javap 字节码取证 | 高 | 构造器 = sprite.width/height；setScale 中按比例算宽
+	m	Ò00000	getSprite	()Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 直读 Ö00000
+	m	super	render	(FFF)V
+		c javap 字节码取证 | 高 | sprite.setAlphaMult+renderAtCenter，再转发 portraitRenderer 渲染
+	m	super	getObjective	()Lcom/fs/starfarer/combat/entities/BattleObjective;
+		c javap 字节码取证 | 高 | 直读 Ô00000
+	m	super	setBaseSize	(FF)V
+		c javap 字节码取证 | 高 | 写 baseWidth/baseHeight 并调 setScale(1)
+	m	super	setScale	(F)V
+		c javap 字节码取证 | 高 | 按 scale*baseHeight 设 sprite 高、*aspectRatio 设宽，转发 portraitRenderer
+	m	super	setColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 写 color 并调 portraitRenderer 设色（0.33 白混合）
 c	com/fs/starfarer/ui/OOOo	com/fs/starfarer/ui/UIComponentBase
 	c 来源(方法签名比对) | 置信度(高) | 证据(UIComponentBase：abstract 实现 UIComponentAPI/TooltipHost(w)/PositionAPI，SOURCE_UPDATE_POSITION_ONLY/enabled/created 与 linux thissuper 一致，Button/Panel 等一切组件继承)
 	f	SOURCE_UPDATE_POSITION_ONLY	SOURCE_UPDATE_POSITION_ONLY	Ljava/lang/Object;
 	f	enabled	enabled	Z
 	f	created	created	Z
+	f	private.return	position	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | 构造器 new OO0O(this)；getPosition/getWidth/getHeight/setPos 全走它
+	f	Oô0000	tooltip	Lcom/fs/starfarer/ui/ShowableComponent;
+		c javap 字节码取证 | 高 | setTooltip/getTooltip 直读写；advance 中淡出后移除
+	f	Óõ0000	tooltipLogic	Lcom/fs/starfarer/ui/TooltipComponent;
+		c javap 字节码取证 | 高 | setTooltipLogic/getTooltipLogic 直读写；showTooltip 时 advance/重置
+	f	øô0000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getFader/setFader 直读写；render 中乘其亮度
+	f	ÖØ0000	slideFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | slideIn/slideOut/forceSlideIn/Out 操作它；render/updateSlideOffset 用其亮度
+	f	ÕØ0000	mouseoverHighlightFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getMouseoverHighlightFader 直读；processInput 鼠标悬停 fadeIn/fadeOut
+	f	ôô0000	slideOffsetX	F
+		c javap 字节码取证 | 高 | setSlideData 第一参；updateSlideOffset 中 position.setOffset(offsetX*(1-brightness),..)
+	f	void.return	slideOffsetY	F
+		c javap 字节码取证 | 高 | setSlideData 第二参；updateSlideOffset 中 setOffset(.., offsetY*(1-brightness))
+	f	String.return	parent	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | setParent/getParent 直读写；findTopAncestor 逐级上溯
+	f	õô0000	listeners	Lcom/fs/util/container/repo/ObjectRepository;
+		c javap 字节码取证 | 高 | addListener/removeListener/getListeners 全走它
+	f	ôØ0000	opacity	F
+		c javap 字节码取证 | 高 | getOpacity/setOpacity 直读写；render 中乘 alpha
+	f	Oõ0000	slidIn	Z
+		c javap 字节码取证 | 高 | slideIn 置 false；advance 中 slideFader 亮度==1 置 true 并停更位置
+	f	Õô0000	slidOut	Z
+		c javap 字节码取证 | 高 | slideOut 置 false；advance 中 slideFader 亮度==0 置 true
+	f	Óô0000	slideIdleCount	I
+		c javap 字节码取证 | 高 | advance 中 slideFader.isIdle 时 +1 否则归零；isSliding 判其<=1
+	f	do.class	mouseOverPadLeft	F
+		c javap 字节码取证 | 高 | setMouseOverPad 第一参；containsLocation(x,y,left,right,top,bottom)
+	f	private.class	mouseOverPadRight	F
+		c javap 字节码取证 | 高 | setMouseOverPad 第二参
+	f	Òô0000	mouseOverPadTop	F
+		c javap 字节码取证 | 高 | setMouseOverPad 第三参
+	f	Òõ0000	mouseOverPadBottom	F
+		c javap 字节码取证 | 高 | setMouseOverPad 第四参
+	f	õØ0000	tooltipShowing	Z
+		c javap 字节码取证 | 高 | showTooltip 置 true；advance/forceRemoveTooltip 淡出后置 false
+	f	if.return	tooltipOffsetFromCenter	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | setTooltipOffsetFromCenter 写入；showTooltip 中 tooltip 定位在其中心+偏移
+	f	do.return	tooltipPosRelativeToAnchor	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | setTooltipPositionRelativeToAnchor 写入；showTooltip 中 tooltip 定位在 anchor 相对偏移
+	f	super.return	tooltipAnchor	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | setTooltipPositionRelativeToAnchor 写入；showTooltip 相对其位置
+	f	Öô0000	tooltipLogicResetDelegate	Lcom/fs/starfarer/ui/TooltipComponent;
+		c javap 字节码取证 | 高 | getTooltipLogicResetDelegate/setTooltipLogicResetDelegate 直读写；滚动时重置用
+	f	øØ0000	forceTooltipToLowerRightOfMouse	Z
+		c javap 字节码取证 | 高 | setForceTooltipToLowerRightOfMouse 直写；showTooltip 中鼠标位置定位分支
+	m	float.new	unusedIsTooltipVisible	()Z
+		c javap 字节码取证 | 中 | 判断 tooltip 为 UIComponentBase 且 fader 亮度>0；全类无调用点，疑似死代码
+	m	öÒ0000	updateSlideOffset	()V
+		c javap 字节码取证 | 高 | 私有：按 slideFader 亮度 position.setOffset；亮度 0/1 时触发 slidingEvent
 c	com/fs/starfarer/ui/u	com/fs/starfarer/ui/StandardButtonRenderer
 	c 来源(方法签名比对) | 置信度(高) | 证据(StandardButtonRenderer：implements ButtonBackgroundRenderer，构造 (String,String,Color,Color) + CutStyle/Alignment，与 linux u 同名同结构，被 Button.getRendererStandard() 返回)
 	m	super	renderBackground	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+	f	öö0000	alignment	Lcom/fs/starfarer/api/ui/Alignment;
+		c javap 字节码取证 | 高 | 构造器默认 RMID；super(Alignment) setter；Ò00000(FF) 按 alignment 定位文字
+	f	Oø0000	cutStyle	Lcom/fs/starfarer/api/ui/CutStyle;
+		c javap 字节码取证 | 高 | 构造器默认 TL_BR；super(CutStyle) setter；背景渲染按 cutStyle 切角
+	f	õö0000	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 构造器 new Object(text, font)；文字设置/定位/渲染全走它；OÒ0000 直读
+	f	Óö0000	unusedTextScale	F
+		c javap 字节码取证 | 中 | 仅构造器写 1.0f，全类无读取点，疑似遗留字段
+	f	õõ0000	backgroundColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器经 ô00000 setter 写入；背景渲染 super(FF,..) 用
+	f	new.void	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | õ00000 setter 写入、ÓÒ0000 直读；渲染高亮/悬浮态文字色
+	f	interface.return	scanlineSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器加载 ui/scanline11 黑色 32x2；renderRegion 绘制背景扫描线
+	f	Öõ0000	templateColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | clinit 置 125,125,125,255；作为派生静态色的 alpha 模板
+	f	Ôö0000	bgDerivedColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | clinit 125,125,125,255；ô00000 用 B.new(templateColor, bg.alpha) 刷新；背景混色用
+	f	oø0000	hlDerivedColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | clinit 165,165,165,255；õ00000 用 B.new(templateColor, hl.alpha) 刷新；高亮混色用
+	f	oö0000	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器置 null；super(KeyMapping,..) 中取 fontRenderer 当前文本；快捷键文本拼接基础
+	f	float.void	keyMapping	Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | super(KeyMapping,ZZ) 写入；super(KeyMapping) 读取并显示其文本
+	f	interface.void	keyMappingAlt	Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | super(KeyMapping) 写入并拼接 "key.text [alt]" 显示文本
+	f	Øö0000	offsetX	F
+		c javap 字节码取证 | 高 | Ó00000(FF) 写入；Ò00000(FF) 中作为文字定位偏移
+	f	Öö0000	offsetY	F
+		c javap 字节码取证 | 高 | Ó00000(FF) 写入；Ò00000(FF) 中作为文字定位偏移
+	f	new.null	transparentColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | clinit 置 (0,0,0,0) 全透明；super(FFColorFZ) 中作为 alpha 模板底色
+	f	Øõ0000	alphaMult	F
+		c javap 字节码取证 | 高 | 构造器 1.0f；if(F) setter 写入；渲染 glColor4ub 中乘 alpha
+	f	while.void	width	F
+		c javap 字节码取证 | 高 | 私有 super(FF) 写入第一参；渲染矩形宽
+	f	null.void	height	F
+		c javap 字节码取证 | 高 | 私有 super(FF) 写入第二参；渲染矩形高
+	f	Ôø0000	cutSize	F
+		c javap 字节码取证 | 高 | 构造器 10.0f；私有 super(FF) 按 cutStyle 计算 0.25/0.3333*height；õ00000(F) 手动设置
+	f	öõ0000	cutInset	F
+		c javap 字节码取证 | 高 | 构造器 15.0f；=cutSize*1.5；Ò00000(FF) 文字左右缩进
+	f	Oö0000	manualCutSize	Z
+		c javap 字节码取证 | 高 | õ00000(F) 置 true 后私有 super(FF) 跳过 cutSize 自动计算
+	f	Óø0000	alignmentMap	[I
+		c javap 字节码取证 | 高 | super.new() 懒加载 Alignment.ordinal->布局码映射表
+	f	class.void	cutStyleMap	[I
+		c javap 字节码取证 | 高 | ÒÒ0000() 懒加载 CutStyle.ordinal->切角码映射表
+	m	super	setCutStyle	(Lcom/fs/starfarer/api/ui/CutStyle;)Lcom/fs/starfarer/ui/StandardButtonRenderer;
+		c javap 字节码取证 | 高 | 写 Oø0000 并 return this
+	m	super	setAlignment	(Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/StandardButtonRenderer;
+		c javap 字节码取证 | 高 | 写 öö0000 并 return this
+	m	super	setControlAction	(Lcom/fs/starfarer/title/ControlAction;Z)Lcom/fs/starfarer/ui/StandardButtonRenderer;
+		c javap 字节码取证 | 高 | 调 ui/Q.o00000(fontRenderer, color, action, useDefault) 绑定按键提示
+	m	super	setKeyMapping	(Lcom/fs/starfarer/title/KeyMapping;ZZ)Lcom/fs/starfarer/ui/StandardButtonRenderer;
+		c javap 字节码取证 | 高 | 写 float.void 并调 ui/Q.o00000(fontRenderer, color, km, 两 boolean)
+	m	super	setKeyMappingAlt	(Lcom/fs/starfarer/title/KeyMapping;)Lcom/fs/starfarer/ui/StandardButtonRenderer;
+		c javap 字节码取证 | 高 | 写 interface.void；拼接 "key.text [alt]" 文本并设字体颜色/字符串
+	m	super	setButtonLogic	(Lcom/fs/starfarer/ui/ButtonLogic;)V
+		c javap 字节码取证 | 高 | 遍历 buttonLogic 的按键列表拼接 "text [k1,k2]" 显示文本
+	m	Ó00000	setControlAction	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/ui/StandardButtonRenderer;
+		c javap 字节码取证 | 高 | 委托 super(action, false)
+	m	OÒ0000	getFontRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 直读 õö0000
+	m	Ó00000	setOffset	(FF)V
+		c javap 字节码取证 | 高 | 写 Øö0000/Öö0000（文字偏移）
+	m	Ò00000	positionText	(FF)V
+		c javap 字节码取证 | 高 | 私有：x/y 加 offset 后按 alignment 调 fontRenderer 左/中/右定位
+	m	super	renderBackground	(FFLjava/awt/Color;FZ)V
+		c javap 字节码取证 | 高 | 私有：glColorMask 模板+scanline renderRegion+super(FFFFFCutStyle) 画背景矩形
+	m	super	renderBackgroundSimple	(FFLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 私有：无模板/扫描线，直接 glColor4ub+切角矩形
+	m	if	setAlphaMult	(F)Lcom/fs/starfarer/ui/StandardButtonRenderer;
+		c javap 字节码取证 | 高 | 写 Øõ0000 并 return this
+	m	super	renderCutQuad	(FFFFFLcom/fs/starfarer/api/ui/CutStyle;)V
+		c javap 字节码取证 | 高 | static：glBegin/glVertex 按 CutStyle 画切角多边形（ALL/TL_BR/BL_TR/TOP/BOTTOM/C2_MENU/NONE）
+	m	ô00000	setBackgroundColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 写 õõ0000 并刷新 bgDerivedColor
+	m	ÓÒ0000	getHighlightColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 直读 new.void
+	m	õ00000	setHighlightColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 写 new.void 并刷新 hlDerivedColor
+	m	super	setSize	(FF)V
+		c javap 字节码取证 | 高 | 私有：写 width/height 并按 cutStyle 计算 cutSize/cutInset
+	m	õ00000	setCutSize	(F)V
+		c javap 字节码取证 | 高 | 置 manualCutSize=true，写 cutSize=值、cutInset=值*1.5
+	m	super.new	getAlignmentMap	()[I
+		c javap 字节码取证 | 高 | static 懒加载 Alignment 映射数组
+	m	ÒÒ0000	getCutStyleMap	()[I
+		c javap 字节码取证 | 高 | static 懒加载 CutStyle 映射数组
 c	com/fs/starfarer/ui/voidnew	com/fs/starfarer/ui/CheckboxButton
 	c 来源(方法签名比对) | 置信度(中) | 证据(CheckboxButton：基于 SpriteButton(returnnew) 的勾选按钮，isOn/setOn/actionPerformed 与 linux voidnew 同名同结构)
 	m	isOn	isOn	()Z
 	m	setOn	setOn	(Z)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	ø0Øo00	actionListener	Lcom/fs/starfarer/ui/ActionListener;
+		c javap 字节码取证 | 高 | 构造器参数；actionPerformed 中转发
+	f	õ0Øo00	checkSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造器加载 "ui_<name>_check"；renderImpl 渲染
+	f	ô0Øo00	on	Z
+		c javap 字节码取证 | 高 | isOn()/setOn() 直接访问
+	f	String.void$private	disabledColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 默认 127,127,127,255；setEnabled(false) 时 sprite.setColor
 c	com/fs/starfarer/ui/voidsuper	com/fs/starfarer/ui/TitledPanel
 	c 来源(方法签名比对) | 置信度(高) | 证据(TitledPanel：带标题与中心文本面板，title/centerText/titleHeight + wrap，与 linux voidsuper 同名同结构)
 	f	title	title	Lcom/fs/starfarer/ui/d;
@@ -324,8 +1237,84 @@ c	com/fs/starfarer/ui/voidsuper	com/fs/starfarer/ui/TitledPanel
 	m	getTitle	getTitle	()Lcom/fs/starfarer/ui/d;
 	m	isWithBorder	isWithBorder	()Z
 	m	setWithBorder	setWithBorder	(Z)V
+	f	void.private$while	titleText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器首参；createHeading(titleText, titleFont,..)
+	f	super.private$while	titleFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器第二参；createHeading 字体；orbitron24aabold 时标题行高 4
+	f	ÓøÓo00	titleColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第三参；createHeading 颜色；setCenterText 默认色
+	f	String.private$while	borderColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第四参；renderImpl 中边框/背景色
+	f	ÒøÓo00	withBorder	Z
+		c javap 字节码取证 | 高 | isWithBorder/setWithBorder 直读写；renderImpl 分支画边框
+	f	ÖøÓo00	noBorderButWithBg	Z
+		c javap 字节码取证 | 高 | isNoBorderButWithBg 直读；setNoBorderButWithBg 同时 setWithBorder(false)；renderImpl 画纯背景
+	f	ÕøÓo00	bgAlpha	F
+		c javap 字节码取证 | 高 | 构造器 0.67f；getBgAlpha/setBgAlpha 直读写；renderImpl 背景透明度
 c	com/fs/starfarer/ui/oO00	com/fs/starfarer/ui/LabeledTextButtonRenderer
 	c 来源(方法签名比对) | 置信度(中) | 证据(LabeledTextButtonRenderer：implements BaseButtonRenderer，构造 (文本, 前缀, 文本2, 字体, 双色) 与 linux w 一致)
+	f	new.Object	unusedFloat	F
+		c javap 字节码取证 | 中 | static final float，全类无引用，死字段（unused 前缀纪律）
+	f	ÔÓ0000	textRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 主文本渲染器，构造 super.Object(主文本,font)，getTextRenderer 返回
+	f	OÔ0000	keyHintRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | "[快捷键]" 附属文本渲染器（仅当提示串非空非""创建）
+	f	OÓ0000	unusedTextWidth	F
+		c javap 字节码取证 | 中 | 仅构造器写 textRenderer 文本宽度，无读取，死字段
+	f	interface.new	backgroundAlpha	F
+		c javap 字节码取证 | 高 | 背景透明度，setBackgroundAlpha 写入，render 中 invertAlpha 时修正
+	f	õÒ0000	shadowOffset	F
+		c javap 字节码取证 | 高 | 图标描边偏移（默认 4.0f），render 中 8 方向偏移渲染
+	f	float.new	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 主文本色，构造 arg7，render 使用
+	f	ÖÓ0000	iconSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 图标 sprite，构造 arg1 路径，Õ00000 内 renderAtCenter
+	f	ØÓ0000	keyHintColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final 按键提示色，构造 arg8，keyHintRenderer 上色
+	f	õÓ0000	invertAlpha	Z
+		c javap 字节码取证 | 高 | 反转透明度开关，setInvertAlpha，render 中 alpha-=1-backgroundAlpha
+	f	oÓ0000	alignment	Lcom/fs/starfarer/api/ui/Alignment;
+		c javap 字节码取证 | 高 | 文本对齐，setAlignment，Õ00000 内 tableswitch 布局
+	f	ÓÓ0000	rendering	Z
+		c javap 字节码取证 | 高 | 渲染中标志，render 置 true、renderIconBlended 尾置 false
+	f	class.Object	disabledColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | static Color(125,125,125,255)，renderDisabled 使用
+	f	öÒ0000	iconWidth	F
+		c javap 字节码取证 | 高 | 图标宽，setBackground 写入，Õ00000 内偏移布局
+	f	öÓ0000	iconHeight	F
+		c javap 字节码取证 | 高 | 图标高
+	f	while.new	alignmentMap	[I
+		c javap 字节码取证 | 高 | static volatile Alignment→tableswitch 分支号查找表，getAlignmentMap 懒初始化
+	m	Ò00000	setText	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | textRenderer.Object(text) 设文本
+	m	Object	setAlignment	(Lcom/fs/starfarer/api/ui/Alignment;)Lcom/fs/starfarer/ui/LabeledTextButtonRenderer;
+		c javap 字节码取证 | 高 | 写 alignment 返回 this
+	m	Object	setInvertAlpha	(Z)Lcom/fs/starfarer/ui/LabeledTextButtonRenderer;
+		c javap 字节码取证 | 高 | 写 invertAlpha 返回 this
+	m	Ò00000	renderIconBlended	(FFF)V
+		c javap 字节码取证 | 高 | 非 rendering 时设 textRenderer/keyHint blend+alpha 后调 renderIcon
+	m	ô00000	getTextRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 返回 textRenderer
+	m	o00000	render	(FFFF)V
+		c javap 字节码取证 | 高 | 主渲染：invertAlpha 修正、rendering=true、文本+图标多位置绘制
+	m	o00000	renderTextShadow	(Lcom/fs/graphics/font/BitmapFontRenderer;FFLjava/awt/Color;)V
+		c javap 字节码取证 | 高 | 私有：blend(770,1)+上色+alpha=0.125*a*b 弱化绘制
+	m	o00000	renderTextFaded	(Lcom/fs/graphics/font/BitmapFontRenderer;FF)V
+		c javap 字节码取证 | 高 | 私有：alpha=0.25*a*b 淡出绘制
+	m	o00000	renderTextHighlighted	(Lcom/fs/graphics/font/BitmapFontRenderer;Ljava/awt/Color;FF)V
+		c javap 字节码取证 | 高 | 私有：outline=true+blend(white)+alpha 高亮绘制
+	m	o00000	setTextColor	(Lcom/fs/graphics/font/BitmapFontRenderer;Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | 私有：textRenderer 上色
+	m	Õ00000	renderIcon	(FF)V
+		c javap 字节码取证 | 高 | 私有：sprite blend/color/alpha 后按 alignmentMap 分支渲染图标+双文本
+	m	o00000	renderDisabled	(FFF)V
+		c javap 字节码取证 | 高 | 禁用态：textRenderer 置 disabledColor+0.75alpha 后调 renderIconBlended
+	m	o00000	setBackgroundAlpha	(F)V
+		c javap 字节码取证 | 高 | 写 backgroundAlpha
+	m	o00000	setBackground	(FF)V
+		c javap 字节码取证 | 高 | 设 backgroundAlpha(默认)+iconWidth+iconHeight
+	m	Ø00000	getAlignmentMap	()[I
+		c javap 字节码取证 | 高 | Alignment 枚举→分支号映射表懒初始化（BL=1..TR=4, TMID=5..）
 c	com/fs/starfarer/ui/x	com/fs/starfarer/ui/ImageButtonPanel
 	c 来源(方法签名比对+引用关系) | 置信度(高) | 证据(ImageButtonPanel：图片按钮面板，渲染 Sprite 图标 + 边框 + 禁用色，与 linux x 同名同结构，被 Button.getImageButtonPanel() 返回)
 	f	disableToEnableGlowMult	disableToEnableGlowMult	F
@@ -341,6 +1330,20 @@ c	com/fs/starfarer/ui/x	com/fs/starfarer/ui/ImageButtonPanel
 	m	setBorderColor	setBorderColor	(Ljava/awt/Color;)V
 	m	getDisableToEnableGlowMult	getDisableToEnableGlowMult	()F
 	m	setDisableToEnableGlowMult	setDisableToEnableGlowMult	(F)V
+	f	ÒÓÖO00	imagePanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 承载 sprite 的 ImagePanel，sizeChanged 创建并 add，getImage 返回
+	f	ÓÓÖO00	spriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | sprite 路径名，getSpriteName/setSpriteName
+	f	String.while$int	disabledColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 禁用态色（构造 arg2 blend black 0.5），getDisabledColor
+	f	void.while$int	imageColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 图片色，getImageColor/setImageColor，默认 white（构造 putfield 顺序确认）
+	f	ÕÓÖO00	disableToEnableFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | Fader(0,0.25,0.5)：禁用 forceIn/启用 fadeOut
+	f	super.while$int	stretch	Z
+		c javap 字节码取证 | 高 | 构造 arg3，sizeChanged 中 imagePanel.setStretch
+	f	ÖÓÖO00	padding	F
+		c javap 字节码取证 | 高 | 图片内边距，setIP 写入，sizeChanged 内缩 2*padding
 c	com/fs/starfarer/ui/interfacenew	com/fs/starfarer/ui/Panel
 	c 来源(方法签名比对+引用关系) | 置信度(高) | 证据(Panel：UI 面板容器基类（implements UIPanelAPI），add/remove/disable/enable + addCodexF2Action 图鉴快捷键，与 linux z 完全一致)
 	f	needToCopy	needToCopy	Z
@@ -361,9 +1364,21 @@ c	com/fs/starfarer/ui/interfacenew	com/fs/starfarer/ui/Panel
 	m	addCodexF2Action	addCodexF2Action	(Lcom/fs/starfarer/api/fleet/FleetMemberAPI;)V
 	m	addCodexF2Action	addCodexF2Action	(Ljava/lang/String;)V
 	m	addCodexF2Action	addCodexF2Action	(Lcom/fs/starfarer/ui/U;)V
+	f	private.int	children	Ljava/util/List;
+		c javap 字节码取证 | 高 | 子组件列表，getChildrenNonCopy 返回，add/remove 维护
+	f	øOO000	clipping	Z
+		c javap 字节码取证 | 高 | 裁剪开关，isClipping/setClipping
 c	com/fs/starfarer/ui/interfacenew$1	com/fs/starfarer/ui/Panel$ShowFleetMemberCodexListener
 	c 来源(方法签名比对) | 置信度(中) | 证据(Panel$ShowFleetMemberCodexListener：addCodexF2Action(FleetMemberAPI) 创建的监听，调 CodexDialog.showTemp，与 linux z$1 一致)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	Õ0Øo00	this$0	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 外部类引用
+	f	Ö0Øo00	fleetMember	Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+		c javap 字节码取证 | 高 | actionPerformed 调 CodexDialog.showTemp(fleetMember)
 c	com/fs/starfarer/ui/interfacenew$2	com/fs/starfarer/ui/Panel$ShowCodexListener
 	c 来源(方法签名比对) | 置信度(中) | 证据(Panel$ShowCodexListener：addCodexF2Action(String) 创建的监听，调 CodexDialog.show，与 linux z$2 一致)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	Ó0Øo00	this$0	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 外部类引用
+	f	private.return$private	codexId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | actionPerformed 调 CodexDialog.show(codexId)

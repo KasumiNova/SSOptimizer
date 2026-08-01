@@ -11,9 +11,35 @@ c	com/fs/starfarer/tutorial/C	com/fs/starfarer/tutorial/TutorialMessage
 	m	sizeChanged	sizeChanged	(FF)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	isContinueMode	isContinueMode	()Z
+	f	öÓOO00	messageParts	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器从 varargs 收集 String 到数组；isOnLastPart 按 length 判断
+	f	ØÓOO00	partRenderData	[Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 构造器收集每部分 (Color, String) 交替；refreshLabel 按下标取色与文本
+	f	int.private$return	prevButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器以 "Prev" 创建；actionPerformed 匹配后 partIndex-1
+	f	for.private$return	nextButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器以 "Next" 创建；actionPerformed 匹配后 partIndex+1
+	f	this.interface$return	continueButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器以 "Continue" 创建；actionPerformed 匹配后置 continuePressed
+	f	ÒÔOO00	partIndex	I
+		c javap 字节码取证 | 高 | 构造器 0 初始化；actionPerformed Prev/Next 增减并夹取边界
+	f	øÓOO00	backgroundRenderer	Lcom/fs/starfarer/E/OoOO/ScanlineBackgroundRenderer;
+		c javap 字节码取证 | 高 | 构造器 new ScanlineBackgroundRenderer 保存（扫描线背景）
+	f	ÔÔOO00	continueMode	Z
+		c javap 字节码取证 | 高 | 构造器 CONTINUE_MODE 标志置 true；isContinueMode 直接读
+	f	public.private$return	continuePressed	Z
+		c javap 字节码取证 | 高 | 构造器 false；actionPerformed Continue 按钮置 true；shouldContinue 直接读
+	f	ôÓOO00	tutorialMessageFlagSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$TutorialMessageFlag 方法懒初始化缓存
+	m	null.int	refreshLabel	()V
+		c javap 字节码取证 | 高 | 移除旧 label，按 partIndex 新建 ui.d 显示 messageParts[partIndex]，设置渲染器 (Color,String|分隔)
+	m	$SWITCH_TABLE$com$fs$starfarer$tutorial$TutorialMessage$TutorialMessageFlag	getTutorialMessageFlagSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化：TutorialMessageFlag ordinal→分支号，构造器 CONTINUE_MODE 分支依赖
 c	com/fs/starfarer/tutorial/C$o	com/fs/starfarer/tutorial/TutorialMessage$TutorialMessageFlag
 	c 来源(javap取证) | 置信度(高) | 证据()
 	f	new	CONTINUE_MODE	Lcom/fs/starfarer/tutorial/C$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/tutorial/TutorialMessage$TutorialMessageFlag;
+		c javap 字节码取证 | 高 | 枚举私有 $VALUES 数组，values() 克隆返回
 c	com/fs/starfarer/tutorial/D	com/fs/starfarer/tutorial/TutorialScript
 	c 来源(javap取证) | 置信度(高) | 证据(D（SWITCH_TABLE TutorialScript$TutorialStepType）+未混淆成员名)
 	f	ui	ui	Lcom/fs/starfarer/combat/K;
@@ -74,46 +100,178 @@ c	com/fs/starfarer/tutorial/D	com/fs/starfarer/tutorial/TutorialScript
 	m	advance	advance	(FLjava/util/List;)V
 	m	super	addStep	(Lcom/fs/starfarer/tutorial/D$o0;)V
 	m	super	findUIComponentIn	(Lcom/fs/starfarer/ui/z;Lcom/fs/starfarer/tutorial/D$Oo;)Lcom/fs/starfarer/ui/OO0o;
+	f	Ò00000	messageShown	Z
+		c javap 字节码取证 | 高 | 构造器 false；showMessage 首次展示消息时置 true，isOnLastPart 后复位
+	f	Õ00000	tutorialStepTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$TutorialStepType 方法懒初始化缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$tutorial$TutorialScript$TutorialStepType	getTutorialStepTypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化：TutorialStepType ordinal→分支号
 c	com/fs/starfarer/tutorial/D$1	com/fs/starfarer/tutorial/TutorialScript_1
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 1）)
+	f	Øo0000	elapsedTime	F
+		c javap 字节码取证 | 高 | 构造器 0 初始化；isDone 每次累加参数并比较
+	f	for.super	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	ôo0000	waitTime	F
+		c javap 字节码取证 | 高 | 构造器参数保存；isDone 与 elapsedTime 比较的阈值
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：elapsedTime+=amount 后 elapsedTime>=waitTime
 c	com/fs/starfarer/tutorial/D$10	com/fs/starfarer/tutorial/TutorialScript_10
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 10）)
+	f	Õo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/D$11	com/fs/starfarer/tutorial/TutorialScript_11
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 11）)
+	f	Õo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：CombatUI.getDialogType==CombatState$o.float(DEPLOYMENT)
 c	com/fs/starfarer/tutorial/D$12	com/fs/starfarer/tutorial/TutorialScript_12
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 12）)
+	f	Ôo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/D$13	com/fs/starfarer/tutorial/TutorialScript_13
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 13）)
+	f	oo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	Òo0000	specIds	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；isDone 从列表移除已部署舰 specId
+	f	int.super	fleetIndex	I
+		c javap 字节码取证 | 高 | 构造器参数保存；isDone 经 getFleetManager(index) 取部署集
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：getFleetManager(fleetIndex).getDeployed 移除后列表为空
 c	com/fs/starfarer/tutorial/D$14	com/fs/starfarer/tutorial/TutorialScript_14
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 14）)
+	f	öO0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	øO0000	specIds	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；isDone 从列表移除已部署且可见舰 specId
+	f	return.super	fleetIndex	I
+		c javap 字节码取证 | 高 | 构造器参数保存；isDone 经 getFleetManager(index) 取部署集
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：fogOfWar.isVisible 过滤后列表为空
 c	com/fs/starfarer/tutorial/D$15	com/fs/starfarer/tutorial/TutorialScript_15
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 15）)
+	f	ôO0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	Object.super	objects	[Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 构造器参数保存；isDone 检查 selectionManager 选中情况
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：全部被选中或选中数等于数组长度
 c	com/fs/starfarer/tutorial/D$16	com/fs/starfarer/tutorial/TutorialScript_16
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 16）)
+	f	Òo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	Ôo0000	specIds	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；run 遍历匹配 FleetMember.getSpecId
+	f	int.super	fleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+		c javap 字节码取证 | 高 | 构造器参数保存；run 经 getReserves 匹配成员并 enemyFleetManager.deploy
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）：DeploymentSpec 收集后 enemyFleetManager.deploy
 c	com/fs/starfarer/tutorial/D$17	com/fs/starfarer/tutorial/TutorialScript_17
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 17）)
+	f	Õ00000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	Ö00000	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；matches 与 label.getText 做 contains
+	m	o00000	matches	(Lcom/fs/starfarer/ui/UIComponent;)Z
+		c javap 字节码取证 | 高 | 实现 D$Oo.o00000（接口已命名 matches）：instanceof ui.d 且 getText().contains(text)
 c	com/fs/starfarer/tutorial/D$18	com/fs/starfarer/tutorial/TutorialScript_18
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 18）)
+	f	Ó00000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	String	commandType	Lcom/fs/starfarer/combat/warroom/CommandType;
+		c javap 字节码取证 | 高 | 构造器参数保存；matches 与按钮 renderer 的 getAction 比较
+	m	o00000	matches	(Lcom/fs/starfarer/ui/UIComponent;)Z
+		c javap 字节码取证 | 高 | 实现 D$Oo.o00000（接口已命名 matches）：按钮 renderer 为命令按钮且 getAction==commandType
 c	com/fs/starfarer/tutorial/D$19	com/fs/starfarer/tutorial/TutorialScript_19
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 19）)
+	f	super	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	Ò00000	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；matches 与按钮纹理名 equals 比较
+	m	o00000	matches	(Lcom/fs/starfarer/ui/UIComponent;)Z
+		c javap 字节码取证 | 高 | 实现 D$Oo.o00000（接口已命名 matches）：按钮 renderer 纹理 oO0000() 与 text 相等
 c	com/fs/starfarer/tutorial/D$2	com/fs/starfarer/tutorial/TutorialScript_2
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 2）)
+	f	Object.new	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）：CombatUI.showDeployDialog
 c	com/fs/starfarer/tutorial/D$20	com/fs/starfarer/tutorial/TutorialScript_20
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 20）)
+	f	õ00000	matchCount	I
+		c javap 字节码取证 | 高 | 构造器 0 初始化；matches 每次命中后自增
+	f	void	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	if	specId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；matches 与 FleetMemberButton 的 specId 比较
+	f	ô00000	index	I
+		c javap 字节码取证 | 高 | 构造器参数保存；matches 仅在 matchCount==index 时返回 true
+	m	o00000	matches	(Lcom/fs/starfarer/ui/UIComponent;)Z
+		c javap 字节码取证 | 高 | 实现 D$Oo.o00000（接口已命名 matches）：specId 相等且计数达到 index 才命中
 c	com/fs/starfarer/tutorial/D$3	com/fs/starfarer/tutorial/TutorialScript_3
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 3）)
+	f	ÒÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/D$4	com/fs/starfarer/tutorial/TutorialScript_4
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 4）)
+	f	if	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	do	shipNames	[Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；advance 逐个 getShip(name,0) 解析
+	f	ÒO0000	targetPositions	[Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造器参数保存；advance 设置舰船位置
+	f	OO0000	holdFire	Z
+		c javap 字节码取证 | 高 | 构造器参数保存；advance 调 setHoldFireOneFrame
+	f	õ00000	stopMovement	Z
+		c javap 字节码取证 | 高 | 构造器参数保存；advance 置速度为零
+	f	ø00000	blockedCommands	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造器参数保存；advance 逐项 blockCommandForOneFrame
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 实现 D$O0.o00000（接口已命名 advance）：每帧定位/锁火/停速/封锁命令
 c	com/fs/starfarer/tutorial/D$5	com/fs/starfarer/tutorial/TutorialScript_5
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 5）)
+	f	øo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	oÒ0000	specId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；run 经 getShip(specId, fleetIndex) 取舰
+	f	this.new	fleetIndex	I
+		c javap 字节码取证 | 高 | 构造器参数保存；run 传入 getShip 第二参
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）：showArrow + waitUntilSelected + clearAllArrows
 c	com/fs/starfarer/tutorial/D$6	com/fs/starfarer/tutorial/TutorialScript_6
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 6）)
+	f	public.super	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	f	öo0000	specId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存；run 经 getUnassignedPlayerSideShip(specId) 取舰
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）：showArrow + waitUntilSelected + clearAllArrows
 c	com/fs/starfarer/tutorial/D$7	com/fs/starfarer/tutorial/TutorialScript_7
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 7）)
+	f	ôo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/D$8	com/fs/starfarer/tutorial/TutorialScript_8
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 8）)
+	f	Øo0000	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/D$9	com/fs/starfarer/tutorial/TutorialScript_9
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialScript 的匿名回调类（编号 9）)
+	f	for.super	outer	Lcom/fs/starfarer/tutorial/TutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 D 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/D$O0	com/fs/starfarer/tutorial/TutorialScript$ConcurrentStep
 	c 来源(javap取证) | 置信度(中) | 证据(runConcurrently 参数接口，方法 o00000(float))
 	m	o00000	advance	(F)V
@@ -133,6 +291,8 @@ c	com/fs/starfarer/tutorial/D$o	com/fs/starfarer/tutorial/TutorialScript$Tutoria
 	f	õ00000	SHOW_ARROW	Lcom/fs/starfarer/tutorial/D$o;
 	f	Ø00000	CLEAR_ARROWS	Lcom/fs/starfarer/tutorial/D$o;
 	f	Ô00000	TAKE_ACTION	Lcom/fs/starfarer/tutorial/D$o;
+	f	new	$VALUES	[Lcom/fs/starfarer/tutorial/TutorialScript$TutorialStepType;
+		c javap 字节码取证 | 高 | 枚举私有 $VALUES 数组，values() 克隆返回
 c	com/fs/starfarer/tutorial/D$o0	com/fs/starfarer/tutorial/TutorialScript$TutorialStep
 	c 来源(javap取证) | 置信度(高) | 证据(步骤封装：字段类型与 D 步骤方法参数一一对应)
 	f	int	stepType	Lcom/fs/starfarer/tutorial/D$o;
@@ -154,46 +314,140 @@ c	com/fs/starfarer/tutorial/F	com/fs/starfarer/tutorial/TutorialFleetCommandScri
 	m	createScript	createScript	()V
 c	com/fs/starfarer/tutorial/F$1	com/fs/starfarer/tutorial/TutorialFleetCommandScript_1
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 1）)
+	f	public.new	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$10	com/fs/starfarer/tutorial/TutorialFleetCommandScript_10
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 10）)
+	f	this.new	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	f	ÒÒ0000	objective1	Lcom/fs/starfarer/combat/entities/BattleObjective;
+		c javap 字节码取证 | 高 | 构造器参数 2 保存；isDone 中第一个 getOwner()==0 判断
+	f	oÒ0000	objective2	Lcom/fs/starfarer/combat/entities/BattleObjective;
+		c javap 字节码取证 | 高 | 构造器参数 3 保存；isDone 中第二个 getOwner()==0 判断
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：两目标点均归玩家
 c	com/fs/starfarer/tutorial/F$11	com/fs/starfarer/tutorial/TutorialFleetCommandScript_11
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 11）)
+	f	int.new	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$12	com/fs/starfarer/tutorial/TutorialFleetCommandScript_12
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 12）)
+	f	ôÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$13	com/fs/starfarer/tutorial/TutorialFleetCommandScript_13
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 13）)
+	f	ØÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$14	com/fs/starfarer/tutorial/TutorialFleetCommandScript_14
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 14）)
+	f	øo0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/F$15	com/fs/starfarer/tutorial/TutorialFleetCommandScript_15
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 15）)
+	f	return.new	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$16	com/fs/starfarer/tutorial/TutorialFleetCommandScript_16
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 16）)
+	f	öo0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/F$17	com/fs/starfarer/tutorial/TutorialFleetCommandScript_17
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 17）)
+	f	ÕÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$18	com/fs/starfarer/tutorial/TutorialFleetCommandScript_18
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 18）)
+	f	ÔÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$19	com/fs/starfarer/tutorial/TutorialFleetCommandScript_19
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 19）)
+	f	public.super	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/F$2	com/fs/starfarer/tutorial/TutorialFleetCommandScript_2
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 2）)
+	f	ÒÓ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$20	com/fs/starfarer/tutorial/TutorialFleetCommandScript_20
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 20）)
+	f	int.new	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/F$3	com/fs/starfarer/tutorial/TutorialFleetCommandScript_3
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 3）)
+	f	ØÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	f	ôÒ0000	objective	Lcom/fs/starfarer/combat/entities/BattleObjective;
+		c javap 字节码取证 | 高 | 构造器参数 2 保存；isDone 经 getTaskForObjective 检查
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：getTaskForObjective(objective) 的 CombatTaskType==CAPTURE
 c	com/fs/starfarer/tutorial/F$4	com/fs/starfarer/tutorial/TutorialFleetCommandScript_4
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 4）)
+	f	oÓ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$4$1	com/fs/starfarer/tutorial/TutorialFleetCommandScript_4_1
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类)
+	f	ø00000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript_4;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F$4 引用（匿名类 this$0）
+	m	o00000	matches	(Lcom/fs/starfarer/ui/UIComponent;)Z
+		c javap 字节码取证 | 高 | 实现 D$Oo.o00000（接口已命名 matches）：instanceof com/fs/starfarer/ui/impl/ifsuper（命令按钮）
 c	com/fs/starfarer/tutorial/F$5	com/fs/starfarer/tutorial/TutorialFleetCommandScript_5
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 5）)
+	f	øÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	f	for.new	objective	Lcom/fs/starfarer/combat/entities/BattleObjective;
+		c javap 字节码取证 | 高 | 构造器参数 2 保存；run 中作为 showArrow 目标
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）：showArrow(SHORT_DOWN, objective, 0, 0)
 c	com/fs/starfarer/tutorial/F$6	com/fs/starfarer/tutorial/TutorialFleetCommandScript_6
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 6）)
+	f	ÕÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	f	return.new	objective	Lcom/fs/starfarer/combat/entities/BattleObjective;
+		c javap 字节码取证 | 高 | 构造器参数 2 保存；isDone 经 getTaskForObjective 检查
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：getTaskForObjective(objective) 的 CombatTaskType==CAPTURE
 c	com/fs/starfarer/tutorial/F$7	com/fs/starfarer/tutorial/TutorialFleetCommandScript_7
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 7）)
+	f	ÔÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/F$8	com/fs/starfarer/tutorial/TutorialFleetCommandScript_8
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 8）)
+	f	öÒ0000	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/F$9	com/fs/starfarer/tutorial/TutorialFleetCommandScript_9
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialFleetCommandScript 的匿名回调类（编号 9）)
+	f	Object.new	outer	Lcom/fs/starfarer/tutorial/TutorialFleetCommandScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 F 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/I	com/fs/starfarer/tutorial/TutorialArrow
 	c 来源(javap取证) | 置信度(高) | 证据(SWITCH_TABLE TutorialArrow$ArrowType；字段类型与构造器参数对应)
 	f	oÕOO00	texture	Lcom/fs/graphics/Object;
@@ -205,6 +459,16 @@ c	com/fs/starfarer/tutorial/I	com/fs/starfarer/tutorial/TutorialArrow
 	f	ÔÕOO00	targetY	F
 	m	renderImpl	renderImpl	(F)V
 	m	advanceImpl	advanceImpl	(F)V
+	f	int.interface$return	arrowTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ArrowType 方法懒初始化缓存（枚举 ordinal→switch 分支号）
+	m	ÓOO000	init	()V
+		c javap 字节码取证 | 高 | 两个构造器调用：加载 graphics/hud/line32x32.png 到 texture，Fader setBounce+fadeIn
+	m	o00000	renderArrowSegment	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | renderImpl 三处调用：两点求方向、按长度缩放，先后调 renderLineSegment 画杆与箭头尖
+	m	Ó00000	renderLineSegment	(FFFFFFLjava/awt/Color;FFF)V
+		c javap 字节码取证 | 高 | 直接转发 renderers/o0OO.o00000(Object,6 float,Color,3 float,Z) 绘制一条纹理线段
+	m	$SWITCH_TABLE$com$fs$starfarer$tutorial$TutorialArrow$ArrowType	getArrowTypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化：5 个 ArrowType 常量 ordinal→1..5，renderImpl 按 type 分支
 c	com/fs/starfarer/tutorial/I$o	com/fs/starfarer/tutorial/TutorialArrow$ArrowType
 	c 来源(javap取证) | 置信度(高) | 证据(枚举 static{} ldc 原始常量名)
 	f	String	HORIZONTAL	Lcom/fs/starfarer/tutorial/I$o;
@@ -212,33 +476,89 @@ c	com/fs/starfarer/tutorial/I$o	com/fs/starfarer/tutorial/TutorialArrow$ArrowTyp
 	f	super	SHORT_UP	Lcom/fs/starfarer/tutorial/I$o;
 	f	Õ00000	SHORT_DOWN	Lcom/fs/starfarer/tutorial/I$o;
 	f	Ó00000	SHORT_RIGHT	Lcom/fs/starfarer/tutorial/I$o;
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/tutorial/TutorialArrow$ArrowType;
+		c javap 字节码取证 | 高 | 枚举私有 $VALUES 数组，values() 克隆返回
 c	com/fs/starfarer/tutorial/OoOO	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript
 	c 来源(javap取证) | 置信度(高) | 证据(字符串 "Welcome to the advanced combat tutorial" 与伤害类型/护盾教学)
 	m	init	init	(Lcom/fs/starfarer/api/combat/CombatEngineAPI;)V
 	m	createScript	createScript	()V
 c	com/fs/starfarer/tutorial/OoOO$1	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_1
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 1）)
+	f	oo0000	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c  javap 字节码取证 | 高 | 匿名教程脚本外围引用
+	m	o00000	showStepArrow	()V
+		c  javap 字节码取证 | 高 | 显示箭头指向 "2." label 并对 ENFORCER 设硬通量
 c	com/fs/starfarer/tutorial/OoOO$10	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_10
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 10）)
+	f	ØO0000	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c  javap 字节码取证 | 高 | 匿名教程脚本外围引用
+	m	super	enforcerWeaponsDisabled	(F)Z
+		c  javap 字节码取证 | 高 | 返回 ENFORCER 已禁用武器数 > 4
 c	com/fs/starfarer/tutorial/OoOO$11	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_11
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 11）)
+	f	this.super	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c  javap 字节码取证 | 高 | 匿名教程脚本外围引用
+	m	super	enforcerEnginesDisabled	(F)Z
+		c  javap 字节码取证 | 高 | 返回 ENFORCER 引擎控制器 isDisabled
 c	com/fs/starfarer/tutorial/OoOO$12	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_12
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 12）)
+	f	øO0000	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c  javap 字节码取证 | 高 | 匿名教程脚本外围引用
+	m	o00000	removeEnforcer	()V
+		c  javap 字节码取证 | 高 | CombatEngine.removeObject(ENFORCER)
 c	com/fs/starfarer/tutorial/OoOO$13	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_13
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 13）)
+	f	ÔO0000	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c  javap 字节码取证 | 高 | 匿名教程脚本外围引用
+	m	super	playerShieldArcLarge	(F)Z
+		c  javap 字节码取证 | 高 | 玩家护盾开启且 activeArc > 150
 c	com/fs/starfarer/tutorial/OoOO$14	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_14
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 14）)
+	f	Object.super	outerScript	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c  javap 字节码取证 | 高 | 匿名教程脚本外围引用
+	m	o00000	clearWolfWeaponGroup	()V
+		c  javap 字节码取证 | 高 | 取 wolf_CS 舰，清空武器组 0 的武器列表
 c	com/fs/starfarer/tutorial/OoOO$15	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_15
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 15）)
+	f	ôO0000	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）：CombatEngine.getPlayerShip 重置 velocity/location(-2000,0)/facing 90/repairAndRearm
 c	com/fs/starfarer/tutorial/OoOO$16	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_16
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 16）)
+	f	oO0000	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）：playerShip.location.y>1250 && isEngineBoostActive
 c	com/fs/starfarer/tutorial/OoOO$17	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_17
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 17）)
+	f	this.super	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/OoOO$17$1	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_17_1
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类)
+	f	Object.for$do	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript_17;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO$17 引用（匿名类 this$0）
+	m	õÖO000	isEventPending	()Z
+		c javap 字节码取证 | 高 | 实现 combat/D/OoOOO...CombatEventListener 接口方法（combat-obf-b 已命名 isEventPending）：返回常量 true
+	m	while.do	getEventId	()I
+		c javap 字节码取证 | 高 | 实现同一接口方法（combat-obf-b 已命名 getEventId）：返回常量 0
 c	com/fs/starfarer/tutorial/OoOO$2	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_2
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 2）)
+	f	ÕO0000	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO 引用（匿名类 this$0）
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | 实现 D$oo.super（接口已命名 isDone）
 c	com/fs/starfarer/tutorial/OoOO$3	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_3
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 3）)
+	f	return.super	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）
 c	com/fs/starfarer/tutorial/OoOO$4	com/fs/starfarer/tutorial/TutorialAdvancedCombatScript_4
 	c 来源(javap取证) | 置信度(中) | 证据(TutorialAdvancedCombatScript 的匿名回调类（编号 4）)
+	f	öO0000	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）

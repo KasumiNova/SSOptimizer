@@ -46,6 +46,12 @@ c	com/fs/starfarer/campaign/ui/marketinfo/B	com/fs/starfarer/campaign/ui/marketi
 	m	renderImpl	renderImpl	(F)V
 	m	getNoise	getNoise	()Lcom/fs/starfarer/ui/P;
 	m	stopAndDim	stopAndDim	()V
+	f	int.interface$void	unusedColor1	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final 构造 arg2；全类仅构造器 putfield、无 getfield（死字段，unused 纪律）
+	f	ØØÒO00	unusedColor2	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final 构造 arg4；全类仅构造器 putfield、无 getfield（死字段，unused 纪律）
+	f	ÒÖÒO00	unusedColor3	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final 构造 arg5；全类仅构造器 putfield、无 getfield（死字段，unused 纪律）
 c	com/fs/starfarer/campaign/ui/marketinfo/C	com/fs/starfarer/campaign/ui/marketinfo/CommodityIconGroup
 	c	来源(javap取证) | 置信度(高) | 证据(C)
 	f	ØÔÖO00	mode	Lcom/fs/starfarer/campaign/ui/marketinfo/oo0o$o;
@@ -91,22 +97,40 @@ c	com/fs/starfarer/campaign/ui/marketinfo/C	com/fs/starfarer/campaign/ui/marketi
 	m	setDisabled	setDisabled	(Z)V
 	m	setGlowAmount	setGlowAmount	(F)V
 	m	setState	setState	(Lcom/fs/starfarer/ui/null$o;)V
+	f	Object.public$int	highlightOnMouseover	Z
+		c javap 字节码取证 | 高 | isHighlightOnMouseover/setHighlightOnMouseover 直接读写；processInputImpl 鼠标悬停高亮、setGlowAmount 依赖
+	f	öÓÖO00	lastRenderHeight	F
+		c javap 字节码取证 | 高 | renderImpl 缓存图标高度参数（fload_1）；与上次不同则 invalidateList
+	f	ôÔÖO00	lastGlowBrightness	F
+		c javap 字节码取证 | 高 | renderImpl 缓存 glowFader.getBrightness()*0.5f；与上次不同则 invalidateList
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$1	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	commodityDetailDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog;
+		c javap 字节码取证 | 高 | tooltip 匿名类外围实例引用，构造器 putfield；createImpl 文本 "Hide potential export destinations..."
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$2	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	commodityDetailDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog;
+		c javap 字节码取证 | 高 | StandardTooltipV2Expandable 提示 tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$3	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_3
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	commodityDetailDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog;
+		c javap 字节码取证 | 高 | 供求图例 tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$4	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_4
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	commodityDetailDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog;
+		c javap 字节码取证 | 高 | 供求图例 tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$5	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_5
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByMarket	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	commodityDetailDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog;
+		c javap 字节码取证 | 高 | 行比较器匿名类外围实例引用（外类 simpleName 小写约定）
+	f	val$id	sortColumn	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | compareByMarket 中与 CommodityDetailDialog$Oo 排序列枚举（RANK/NAME/...）逐项比较决定排序键
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$Oo	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_Oo
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	Ò00000	RANK	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$Oo;
@@ -118,10 +142,18 @@ c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$Oo	com/fs/starfa
 	f	Õ00000	ACCESS	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$Oo;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$Oo;
+	f	super	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_Oo;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 RANK/NAME/SIZE/FACTION/QUANTITY/INCOME/ACCESS
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog$o	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	o00000	commodityOnMarket	Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;
 	f	Ô00000	rank	I
+	f	class	unusedCommodityOnMarket	Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;
+		c javap 字节码取证 | 高 | 全 jar 仅 4 类引用 $o（CDD/$5/R/$o 自身），均只读写 o00000/Ô00000；class 仅构造器默认初始化，死字段（unused 纪律）
+	f	new	quantity	I
+		c javap 字节码取证 | 高 | 构造器置 0；linux 构建中无引用方读取（死字段），windows 构建 $5 比较器按 QUANTITY 列排序读取（跨平台证明语义为数量排序值）
+	f	Ó00000	income	I
+		c javap 字节码取证 | 高 | 构造器置 0；linux 构建中无引用方读取（死字段），windows 构建 $5 比较器按 INCOME 列排序读取（跨平台证明语义为收入排序值）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	PAD	PAD	F
@@ -151,14 +183,46 @@ c	com/fs/starfarer/campaign/ui/marketinfo/CommodityDetailDialog	com/fs/starfarer
 	m	showMap	showMap	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/api/campaign/econ/MarketAPI;)V
 	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
 	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+	f	ôôÔ000	dismissButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI "Dismiss" 按钮，afterSizeFirstChanged 后 putfield
+	f	oõÔ000	sectorMapPanel	Lcom/fs/starfarer/coreui/SectorMapPanel;
+		c javap 字节码取证 | 高 | createMap 创建的市场地图（coreui SectorMapPanel）
+	f	ÔôÔ000	mapTitledPanel	Lcom/fs/starfarer/ui/TitledPanel;
+		c javap 字节码取证 | 高 | showMap 移除旧面板→new TitledPanel→createMap→add 的市场面板容器
+	f	ÕôÔ000	alternateSuppliersButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI "Alternate suppliers" tab 按钮
+	f	ÕõÔ000	potentialExportsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI "Potential exports" tab 按钮
+	f	for.do$new	competingExportersButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI "Competing exporters" tab 按钮
+	f	ØõÔ000	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | insignia21LTaa 字体标题（商品名 + " - " + 市场名）
+	f	öØÔ000	hideZeroIncomeExportsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI "Hide 0-income exports" 开关按钮
+	f	Object.while$new	onlyShowCurrentExportsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI "Only show current exports" 开关按钮
+	f	ÒõÔ000	selectedSupplierRowPanel	LTableRowPanel;
+		c javap 字节码取证 | 高 | tableRowSelected：source==alternateTable 时存选中行
+	f	this.while$new	selectedExportRowPanel	LTableRowPanel;
+		c javap 字节码取证 | 高 | tableRowSelected：potentialTable 分支尾部存选中行；competingTable 分支读它取 market
+	f	ÔõÔ000	selectedCompetingExporterRowPanel	LTableRowPanel;
+		c javap 字节码取证 | 高 | tableRowSelected：source==competingTable 时存选中行
+	f	oôÔ000	descriptionTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | updateTextDescription createAsUIElement(700f)，填充商品/市场详情段落
+	f	return.do$new	hintTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | updateTextDescription createAsUIElement(表宽-10)，填充地图定位与供应商排名提示
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel$1	com/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByTotal	(Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2;Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	commodityOverviewPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel;
+		c javap 字节码取证 | 高 | getTotal 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel$2	com/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel_2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByTotal	(Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2;Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	commodityOverviewPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel;
+		c javap 字节码取证 | 高 | getTotal 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel	com/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	this.super$if	market	Lcom/fs/starfarer/campaign/econ/Market;
@@ -184,18 +248,36 @@ c	com/fs/starfarer/campaign/ui/marketinfo/CommodityOverviewPanel	com/fs/starfare
 	m	updateGroupTooltip	updateGroupTooltip	(Lcom/fs/starfarer/campaign/ui/marketinfo/C;)V
 	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
 	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
+	f	oöÖO00	groupTooltipPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | updateGroupTooltip 中 clearChildren 后填充悬停图标组说明 label（"Click on commodity icons for detailed information"/组详情）
+	f	Object.super$if	incomingScroll	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | getIncomingRows 中承载 Incoming 行（add CommodityRowV2）；setScrollWidgetColor(baseColor)/setMaxShadowHeight(25)
+	f	ÒöÖO00	outgoingScroll	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | getOutgoingRows 中承载 Outgoing 行；与 incomingScroll 成对创建
+	f	int.super$if	tooltipGroup	Lcom/fs/starfarer/campaign/ui/marketinfo/C;
+		c javap 字节码取证 | 高 | updateGroupTooltip 保存当前悬停图标组（arg），mouseLeave 置 null 并刷新；构造器初始 null
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel$1	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareBySourceType	(Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	commodityPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityPanel;
+		c javap 字节码取证 | 高 | MarketShareData.getSource 类型比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel$2	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel_2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	run	run	()V
+	f	o00000	commodityPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityPanel;
+		c javap 字节码取证 | 高 | tooltip 定位 Runnable 外围实例引用（run 中 getHeight 计算锚点）
+	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 中 setTooltipPositionRelativeToAnchor 的目标按钮
+	f	new	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | run() 中 getWidth/getHeight 定位的 tooltip 本体
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel$o	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	Ò00000	COMMODITY_DETAIL	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityPanel$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityPanel$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityPanel$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityPanel_o;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 COMMODITY_DETAIL
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel	com/fs/starfarer/campaign/ui/marketinfo/CommodityPanel
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	market	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -218,6 +300,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2$1	com/fs/starfarer/camp
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByQuantity	(Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$Oo;Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$Oo;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	commodityRowV2	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2;
+		c javap 字节码取证 | 高 | TransferTotal.getQuantity 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2$o	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	int	IMPORT	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2$o;
@@ -230,6 +314,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2$o	com/fs/starfarer/camp
 	f	Õ00000	DEMAND_VARIOUS	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2$o;
+	f	Object	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2_o;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 IMPORT/EXPORT/.../DEMAND_VARIOUS
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	ÒØØO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -256,26 +342,38 @@ c	com/fs/starfarer/campaign/ui/marketinfo/CommodityRowV2	com/fs/starfarer/campai
 	m	addGroup	addGroup	(Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$Oo;)V
 	m	getGroups	getGroups	()Ljava/util/List;
 	m	getTotal	getTotal	()F
+	f	øÖØO00	textLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | sizeChanged 中 setText("Production"/"Demand"/"Imported from X"/"Exported to X")；行文本标签，autoTrimHeight 用其 getLineHeight
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$1$1	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_1_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByOrder	(Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$o;Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$o;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	commodityTooltipFactory_1	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_1;
+		c javap 字节码取证 | 高 | $o 按 order 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$1$2	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_1_2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByOrder	(Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$o;Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$o;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	commodityTooltipFactory_1	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_1;
+		c javap 字节码取证 | 高 | $o 按 order 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$1$3	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_1_3
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	getPercentValue	getPercentValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
 	m	getMultValue	getMultValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
 	m	getFlatValue	getFlatValue	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/lang/String;
 	m	getModColor	getModColor	(Lcom/fs/starfarer/api/combat/MutableStat$StatMod;)Ljava/awt/Color;
+	f	this$1	commodityTooltipFactory_1	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_1;
+		c javap 字节码取证 | 高 | StatModValueGetter 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$1	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	ö0õO00	commodity	Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;
+		c javap 字节码取证 | 高 | final 构造 arg1；createImpl 主商品 tooltip（"Click to view global market info"/Legend/供求说明）反复读取
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$2	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	public.super$float	commodity	Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;
+		c javap 字节码取证 | 高 | final 构造 arg1；createImpl 出口 tooltip（"Exports"/"No local production to export"）反复读取
 c	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory$o	com/fs/starfarer/campaign/ui/marketinfo/CommodityTooltipFactory_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	new	industry	Lcom/fs/starfarer/api/campaign/econ/Industry;
@@ -296,6 +394,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$1	com/fs/starfare
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	super	compareByEconomyTier	(Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$Oo;Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$Oo;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	economyOverviewPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel;
+		c javap 字节码取证 | 高 | getEconomyTier 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$Oo	com/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel_Oo
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	super	transfer	Lcom/fs/starfarer/campaign/econ/contract/CommodityFlow$TransferTotal;
@@ -316,6 +416,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$o	com/fs/starfare
 	f	ö00000	EXCESS_STOCKPILE	Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$o;
+	f	Object	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel_o;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 EXPORT/SMUGGLE_OUT/.../EXCESS_STOCKPILE
 c	com/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel	com/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	oÔØO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -336,10 +438,22 @@ c	com/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel	com/fs/starfarer/
 	m	getTextForMouseover	getTextForMouseover	(Lcom/fs/starfarer/api/campaign/econ/MarketAPI;Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;Lcom/fs/starfarer/campaign/ui/marketinfo/EconomyOverviewPanel$o;I)Ljava/lang/String;
 	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
 	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/super/Object;Lcom/fs/starfarer/ui/OO0o;)V
+	f	for.class$if	outgoingHeading	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | sizeChanged 中 createHeading("Outgoing",...) 创建；布局/悬停 tooltip 读取
+	f	öÓØO00	groupTooltipPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | updateGroupTooltip 中 clearChildren 后填充悬停图标组说明（与 CommodityOverviewPanel 同构）
+	f	ôÔØO00	tooltipGroup	Lcom/fs/starfarer/campaign/ui/marketinfo/C;
+		c javap 字节码取证 | 高 | updateGroupTooltip 保存当前悬停图标组；mouseLeave 置 null 刷新
+	f	Object.class$if	switchTable	[I
+		c javap 字节码取证 | 高 | 编译器生成 switch 跳转表缓存（MouseoverType，懒初始化 NoSuchFieldError 容错）
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$marketinfo$EconomyOverviewPanel$MouseoverType	getSwitchTable	()[I
+		c javap 字节码取证 | 高 | 懒初始化 switch 表（MouseoverType ordinal→case 映射，约定命名）
 c	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog$1	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByIndustryName	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	existingIndustryPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog;
+		c javap 字节码取证 | 高 | 按 Industry.getCurrentName 字符串比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog$o	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	Ö00000	NAME	Lcom/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog$o;
@@ -349,6 +463,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog$o	com/fs/
 	f	Õ00000	UPKEEP	Lcom/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog$o;
+	f	super	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog_o;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 NAME/COST/BUILD_TIME/BASE_UPKEEP/UPKEEP
 c	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	PAD	PAD	F
@@ -376,33 +492,65 @@ c	com/fs/starfarer/campaign/ui/marketinfo/ExistingIndustryPickerDialog	com/fs/st
 	m	advanceImpl	advanceImpl	(F)V
 	m	getSelected	getSelected	()Lcom/fs/starfarer/campaign/ui/marketinfo/h;
 	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+	f	öoÕ000	columnHeaderPanel	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | createUI 中 addColumn("Industry/structure",...) 等构建表头；传入 UITable 构造器
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$1	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$2	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | 陆战队伤亡 tooltip 匿名类外围实例引用
+	f	ØOõO00	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+		c javap 字节码取证 | 高 | createImpl 中 getCargo().getMarines() 计算伤亡百分比
+	f	ôOõO00	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | createImpl 中 addPara 高亮 token 颜色（"Projected casualties: %s"）
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$3	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_3
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$4	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_4
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$5	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_5
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$6	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_6
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | 目标详情 tooltip 匿名类外围实例引用
+	f	return.new$float	objective	Lcom/fs/starfarer/api/impl/campaign/graid/GroundRaidObjectivePlugin;
+		c javap 字节码取证 | 高 | final 构造 arg4；createImpl 中读取目标插件信息（getSource/getMarinesRequired 等）
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$7	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_7
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	run	run	()V
+	f	super	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | tooltip 定位 Runnable 外围实例引用（外类 simpleName 小写约定）
+	f	Ò00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 中 setTooltipPositionRelativeToAnchor 的目标按钮
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$8	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_8
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareBySortValue	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	groundRaidTargetPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog;
+		c javap 字节码取证 | 高 | 行排序比较器匿名类外围实例引用
+	f	val$id	sortColumn	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | compareBySortValue 中与 GroundRaidTargetPickerDialog$o 列枚举比较（disrupt 模式用 getDisruptionDaysSort）
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$Oo	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_Oo
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
+	f	super	targetRow	LGroundRaidTargetRow;
+		c javap 字节码取证 | 高 | updateTable 中 new $Oo 后 putfield 目标行（j）；getPlugin/getMarines 读取
+	f	Ò00000	tokens	I
+		c javap 字节码取证 | 高 | updateTable 中写入分配 token 数（iload 11），超额重分配时加减调整；目标行已分配陆战队 token 数
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$o	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	void	NAME	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$o;
@@ -414,6 +562,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$o	com/fs/
 	f	ô00000	DEFICIT_CAUSED	Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog$o;
+	f	super	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog_o;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 NAME/SOURCE/DANGER/QUANTITY/VALUE/MARINES/DEFICIT_CAUSED
 c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	PAD	PAD	F
@@ -450,10 +600,30 @@ c	com/fs/starfarer/campaign/ui/marketinfo/GroundRaidTargetPickerDialog	com/fs/st
 	m	getSelected	getSelected	()Lcom/fs/starfarer/campaign/ui/marketinfo/h;
 	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
 	m	getListener	getListener	()Lcom/fs/starfarer/api/campaign/GroundRaidTargetPickerDelegate;
+	f	oÕÕ000	columnHeaderPanel	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | createUI 中 addColumn("Objective"/"Danger"/"Disrupted?"/...) 构建表头；传入 UITable 构造器
+	f	ÒÕÕ000	marineTokensGroup	Lcom/fs/starfarer/campaign/ui/marketinfo/ooO0;
+		c javap 字节码取证 | 高 | createUI 中按 marines 商品 spec + maxMarineTokens 建 addGroup；wideSpacing/highlightOnMouseover；陆战队 token 选择器
+	f	ØÔÕ000	availableForcesLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | createUI 中 createSmallInsigniaLabel("Available forces:",...) 创建
+	f	ôÓÕ000	tooltipGrid	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | addTooltips 中 StandardTooltipV2Expandable.getCurrGrid()；填充 "Available cargo space"/"Available fuel space" 网格
+	f	for.super$Object	projectedMarineLosses	Lcom/fs/starfarer/campaign/ui/marketinfo/LabelValueButton;
+		c javap 字节码取证 | 高 | "Projected marine casualties" 标签值按钮；updateGrid 中刷新 getProjectedMarineLosses 值
+	f	öÔÕ000	projectedSpoilsValue	Lcom/fs/starfarer/campaign/ui/marketinfo/LabelValueButton;
+		c javap 字节码取证 | 高 | "Projected spoils value" 标签值按钮；updateGrid 中刷新 getProjectedCreditsValue 值
+	f	ÕÔÕ000	marineLossesButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | O.createButton(projectedMarineLosses) 包装按钮
+	f	return.super$Object	spoilsValueButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | O.createButton(projectedSpoilsValue) 包装按钮
+	f	Object.super$Object	raidEffectivenessButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | O.createButton("Raid effectiveness" 标签值按钮) 包装按钮
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$1	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	super	compareByOrder	(Lcom/fs/starfarer/api/campaign/econ/Industry;Lcom/fs/starfarer/api/campaign/econ/Industry;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	industryListPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel;
+		c javap 字节码取证 | 高 | IndustrySpecAPI.getOrder 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$2	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel_2
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
@@ -461,17 +631,25 @@ c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$3$1	com/fs/starfarer
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	super	compareByOrder	(Lcom/fs/starfarer/api/campaign/econ/Industry;Lcom/fs/starfarer/api/campaign/econ/Industry;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	industryListPanel_3	Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel_3;
+		c javap 字节码取证 | 高 | getOrder 比较器匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$3	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel_3
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	Ø0õO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c javap 字节码取证 | 高 | 工业上限 tooltip 匿名类捕获的市场；createImpl 中读取 getIndustries 数量计算上限
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$4	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel_4
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	industryListPanel	Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel;
+		c javap 字节码取证 | 高 | 已达上限 tooltip 匿名类外围实例引用（外类 simpleName 小写约定）
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$o	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	new	ADD_INDUSTRY	Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel_o;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 ADD_INDUSTRY
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	market	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -498,10 +676,18 @@ c	com/fs/starfarer/campaign/ui/marketinfo/IndustryListPanel	com/fs/starfarer/cam
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	public.float$float	switchTable	[I
+		c javap 字节码取证 | 高 | 编译器生成 switch 跳转表缓存（DialogType，懒初始化 NoSuchFieldError 容错）
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$marketinfo$IndustryListPanel$DialogType	getSwitchTable	()[I
+		c javap 字节码取证 | 高 | 懒初始化 switch 表（DialogType ordinal→case 映射，约定命名）
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog$1	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog_1
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	m	o00000	compareByImportanceAndOrder	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	industryPickerDialog	Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog;
+		c javap 字节码取证 | 高 | important tag 优先 + getOrder 比较器匿名类外围实例引用
+	f	val$id	sortColumn	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | compareByImportanceAndOrder 中与 IndustryPickerDialog$o 列枚举比较（BUILD_TIME/COST/TYPE 分支）
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog$o	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog_o
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	Ö00000	NAME	Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog$o;
@@ -512,6 +698,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog$o	com/fs/starfare
 	f	class	UPKEEP	Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog_o;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 NAME/COST/BUILD_TIME/TYPE/BASE_UPKEEP/UPKEEP
 c	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog
 	c	来源(未混淆类名+javap取证) | 置信度(高) | 证据(类名)
 	f	PAD	PAD	F
@@ -536,8 +724,12 @@ c	com/fs/starfarer/campaign/ui/marketinfo/IndustryPickerDialog	com/fs/starfarer/
 	m	advanceImpl	advanceImpl	(F)V
 	m	getSelected	getSelected	()Lcom/fs/starfarer/campaign/ui/marketinfo/floatsuper;
 	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/voidsuper$o;)V
+	f	ÒöÔ000	columnHeaderPanel	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | createUI 中 addColumn("Name"/"Type"/"Build time"/"Cost"/...) 构建表头
 c	com/fs/starfarer/campaign/ui/marketinfo/J$o	com/fs/starfarer/campaign/ui/marketinfo/ButtonRowCallback
 	c	来源(继承关系+javap取证) | 置信度(高) | 证据(J$o)
+	m	super	onButtonClick	(Ljava/lang/Object;)V
+		c javap 字节码取证 | 高 | 接口唯一抽象方法；ButtonRow.actionPerformed 中 callback.onButtonClick(button.getCustomData())
 c	com/fs/starfarer/campaign/ui/marketinfo/J	com/fs/starfarer/campaign/ui/marketinfo/ButtonRow
 	c	来源(javap取证) | 置信度(中) | 证据(J)
 	f	PAD	PAD	F
@@ -552,6 +744,10 @@ c	com/fs/starfarer/campaign/ui/marketinfo/J	com/fs/starfarer/campaign/ui/marketi
 	m	setButtonHeight	setButtonHeight	(F)V
 	m	getButtonWidth	getButtonWidth	()F
 	m	setButtonWidth	setButtonWidth	(F)V
+	f	öôÖO00	buttonMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | LinkedHashMap（customData→Button）；addButton 写入，autoSize 按 map.size() 算高度
+	f	public.interface$int	lastButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 最近添加按钮；后续按钮 rightOfMid(lastButton,1) 布局锚
 c	com/fs/starfarer/campaign/ui/marketinfo/K$o	com/fs/starfarer/campaign/ui/marketinfo/SurveyScanDisplayState
 	c	来源(字符串常量) | 置信度(高) | 证据(K$o)
 	f	Õ00000	WAITING	Lcom/fs/starfarer/campaign/ui/marketinfo/K$o;
@@ -562,6 +758,8 @@ c	com/fs/starfarer/campaign/ui/marketinfo/K$o	com/fs/starfarer/campaign/ui/marke
 	f	Ö00000	DONE	Lcom/fs/starfarer/campaign/ui/marketinfo/K$o;
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/marketinfo/K$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/marketinfo/K$o;
+	f	super	$VALUES	[Lcom/fs/starfarer/campaign/ui/marketinfo/SurveyScanDisplayState;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（values() 返回）；枚举值 WAITING/SHOW_VISUAL/SEARCHING_START/SEARCHING_WAIT/FINISHING/DONE
 c	com/fs/starfarer/campaign/ui/marketinfo/K	com/fs/starfarer/campaign/ui/marketinfo/SurveyScanDisplay
 	c	来源(javap取证) | 置信度(中) | 证据(K)
 	f	return.float$null	planet	Lcom/fs/starfarer/api/campaign/PlanetAPI;
@@ -581,6 +779,26 @@ c	com/fs/starfarer/campaign/ui/marketinfo/K	com/fs/starfarer/campaign/ui/marketi
 	m	finishFast	finishFast	(Z)V
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
 	m	renderImpl	renderImpl	(F)V
+	f	this.float$null	scanlineColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final 构造 arg5；sizeChanged 传给 B(PlanetDisplay) 构造 arg3（=B 的 scanlineColor 字段，renderImpl 扫描线渐变使用）
+	f	ÕøÓO00	statusLabelColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final 构造 arg6；sizeChanged 中 statusLabel.setColor(该色)；同时传 B 构造 arg4
+	f	ööÓO00	planetDisplay	Lcom/fs/starfarer/campaign/ui/marketinfo/PlanetDisplay;
+		c javap 字节码取证 | 高 | sizeChanged 中 new B(planet, 4 色) 创建；advanceImpl/renderImpl 中 advance、getOpenFader、stopAndDim
+	f	Object.float$null	unusedConditionIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 由 condition.getSpec().getIcon() 创建、setOpacity(0/1)，但从未 add 到组件树，实际不显示（死字段，unused 纪律）
+	f	ôöÓO00	conditionIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 同一 condition 图标，add 到布局（inRMid）；搜索完成/finishFast 时 setOpacity(1) 显示
+	f	ÒöÓO00	statusLabelOverride	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 第二构造器 arg3；sizeChanged 中若非 null 覆盖 statusLabel；advanceImpl 按其文本含 "experience" 跳过搜索动画
+	f	ÔöÓO00	searchTimer	F
+		c javap 字节码取证 | 高 | advanceImpl 累积 dt；0.15/0.7/1.15 阈值驱动音效/效果阶段
+	f	int.float$null	hitSoundPlayed	Z
+		c javap 字节码取证 | 高 | 0.15s 一次性置位；播放 ui_survey_hit_1 后防重放
+	f	ÒøÓO00	midScanFlag	Z
+		c javap 字节码取证 | 高 | 0.7s 一次性置位；renderImpl 中读取但两分支同值（0.2f）无实际效果，时间线阶段标记
+	f	oøÓO00	foundEffectsPlayed	Z
+		c javap 字节码取证 | 高 | 1.15s 一次性置位；playFoundEffects（ui_survey_found_*/ui_survey_xp_gain）防重放
 c	com/fs/starfarer/campaign/ui/marketinfo/M	com/fs/starfarer/campaign/ui/marketinfo/GradientIndicator
 	c	来源(javap取证) | 置信度(低) | 证据(M)
 	f	oõÖO00	color	Ljava/awt/Color;

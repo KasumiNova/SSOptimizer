@@ -1,36 +1,144 @@
 tiny 2 0 obf named
 c com/fs/starfarer/combat/ai/A com/fs/starfarer/combat/ai/VentModule
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#a-vent-module
+	f	Õ00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造函数 putfield，散热决策所属舰船
+	f	õ00000	threatEvalAI	Lcom/fs/starfarer/combat/ai/ThreatEvalAI;
+		c javap 字节码取证 | 高 | 构造函数 putfield，威胁评估器引用（advance 中查询威胁/主威胁）
+	f	super	ventIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造函数 new IntervalTracker(0.5f,1.0f)，advance 周期控制散热决策
+	f	Ó00000	flockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
+		c javap 字节码取证 | 高 | 构造函数 putfield，集群 AI 引用（advance 读取目标点）
+	f	Ò00000	timeAboveFluxThreshold	F
+		c javap 字节码取证 | 中 | fluxLevel>0.7 时累加 elapsed，否则归零；高幅能持续计时
+	f	String	ventCooldown	F
+		c javap 字节码取证 | 中 | 随机化散热冷却（Math.random()*6+4）；幅能回落或需再评估时重置
+	f	void	maneuverAPI	Lcom/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI;
+		c javap 字节码取证 | 高 | 构造函数 putfield；getAIFlags/getShieldAI 供散热条件判定
+	f	ô00000	firingSolutionEval	Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 构造函数 new (Ship,AIFlags) 并启用 flag；散热时机评估器
+	f	Ö00000	weaponSizeScores	[I
+		c javap 字节码取证 | 高 | getWeaponSizeScores 懒初始化 WeaponSize→分表（LARGE=3/MEDIUM=2/SMALL=1）
+	m	super	advance	(FLcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 散热模块主循环：过载/DO_NOT_VENT/跃迁判定、武器幅能压力、威胁/系统评估、按条件给散热指令
+	m	super	orderVent	()V
+		c javap 字节码取证 | 高 | 给舰船 VENT 指令（Ship.giveCommand(Ship$oo.ø00000)）
+	m	Ò00000	getWeaponSizeScores	()[I
+		c javap 字节码取证 | 高 | weaponSizeScores 懒初始化（与 ThreatEvalAI.getWeaponSizeScores 同构）
 c com/fs/starfarer/combat/ai/AI com/fs/starfarer/combat/ai/AI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
 c com/fs/starfarer/combat/ai/Orderable com/fs/starfarer/combat/ai/Orderable
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
 c com/fs/starfarer/combat/ai/BasicShipAI com/fs/starfarer/combat/ai/BasicShipAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+	f	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	hullSizeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	getHullSizeSwitchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化访问器
 c com/fs/starfarer/combat/ai/BasicShipAI$1 com/fs/starfarer/combat/ai/BasicShipAI$1
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+	f	ÔÒ0000	outer	Lcom/fs/starfarer/combat/ai/BasicShipAI;
+		c javap 字节码取证 | 高 | 匿名类外部类引用（outer 先例 p001）
+	f	ÕÒ0000	systemAI	Lcom/fs/starfarer/combat/ai/system/SystemAI;
+		c javap 字节码取证 | 高 | 构造存参；advance 委托 systemAI.o00000(F,V2f,V2f,Ship)
+	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 中 | systemAI instanceof PhaseCloakSystem 时返回其 shieldAI.getEval()，否则 null
+	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | BasicShipAI.advance 调用点（OOoO 接口），委托 systemAI 同参方法
 c com/fs/starfarer/combat/ai/BasicShipAI$o com/fs/starfarer/combat/ai/AttackMode
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#basicshipai-o-attack-mode
 	f	Ô00000	STRAFE	Lcom/fs/starfarer/combat/ai/BasicShipAI$o;
 	f	Ò00000	BACK_AWAY	Lcom/fs/starfarer/combat/ai/BasicShipAI$o;
 	f	Object	HOVER	Lcom/fs/starfarer/combat/ai/BasicShipAI$o;
+	f	o00000	enumValues	[Lcom/fs/starfarer/combat/ai/AttackMode;
+		c javap 字节码取证 | 高 | private static final AttackMode[]，values() 返回
 c com/fs/starfarer/combat/ai/BattleGroupAI com/fs/starfarer/combat/ai/BattleGroupAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
 c com/fs/starfarer/combat/ai/E com/fs/starfarer/combat/ai/FighterPullbackModule
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#e-fighter-pullback-module
+	f	Ô00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造存参，载机舰数据源
+	f	ø00000	threatEvalAI	Lcom/fs/starfarer/combat/ai/ThreatEvalAI;
+		c javap 字节码取证 | 高 | 构造存参；overload/vent 时 threatEvalAI.new() 目标
+	f	ö00000	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 0.5/1.0 间隔，advance 门控
+	f	Ò00000	flockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
+		c javap 字节码取证 | 高 | final 构造存参（运动模块引用）
+	f	Object	unusedRandomDelay	F
+		c javap 字节码取证 | 中 | 构造 Math.random()*6+4 写入后全类无读取，死字段（unused 纪律）
+	f	ô00000	maneuverAPI	Lcom/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI;
+		c javap 字节码取证 | 高 | final 构造存参；getEval 查询
+	f	Õ00000	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造经 maneuverAPI.getAIFlags() 获取
+	f	return	mode	Lcom/fs/starfarer/combat/ai/FighterPullbackMode;
+		c javap 字节码取证 | 高 | 后撤模式枚举，updateMode 依机队构成/个性设定
+	f	Ø00000	hasEnoughSupportWings	Z
+		c javap 字节码取证 | 中 | updateMode 中支援/轰炸机占比>=0.5 置位，getCarrierFighterTarget 过滤驱逐
+	f	int	unusedFlag	Z
+		c javap 字节码取证 | 中 | updateMode 计算结果被立即覆写 false，读点恒 false，死字段
+	f	oO0000	elapsedPullbackTime	F
+		c javap 字节码取证 | 高 | isPullBackFighters 时累加 elapsed，否则清零
+	f	o00000	wingMemberCountAtPullback	I
+		c javap 字节码取证 | 高 | pullBackFighters 记录 getTotalWingMembers
+	f	for	hullSizeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$HullSize 懒初始化缓存
+	m	Ö00000	updateMode	()V
+		c javap 字节码取证 | 中 | 统计机队类型占比+个性，设定 mode/两个布尔旗标
+	m	o00000	advance	(FLcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 主循环：累加后撤时间、forceCarrierTarget/威胁设 CARRIER_FIGHTER_TARGET
+	m	new	findBestFighterTarget	()Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 中 | 遍历己方部署舰（机队射程内）评威胁分取最优 (舰,分) 对
+	m	new	computeThreatInArea	(Lcom/fs/starfarer/combat/entities/Ship;F)F
+		c javap 字节码取证 | 中 | getTotalThreatInRange(false) - (getTotalThreatInRange(true,true)+getThreat) 区域威胁差分
+	m	o00000	getEnemyFighterPressure	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | 敌机队近距(1000)+敌航母当前目标为该舰 加权分
+	m	Ø00000	getCarrierFighterTarget	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 核心选目标：攻击中机队目标/候选列表按尺寸分层+isClearTarget 过滤
+	m	o00000	isClearTarget	(Lcom/fs/starfarer/combat/entities/Ship;F)Z
+		c javap 字节码取证 | 中 | 敌舰队中无更近接敌舰（遮挡）则 true
+	m	o00000	findFleetEngagementTarget	()Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 中 | 机队射程内己方舰及其最大尺寸接敌目标 (友舰,目标) 对
+	m	Ô00000	getFighterTarget	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 静态工具：MANEUVER_TARGET→玩家机动目标→getShipTarget(异owner)
+	m	Ó00000	hasAlliedShipsNearby	()Z
+		c javap 字节码取证 | 中 | 己方舰队 3000 内存在非机队/驱逐+部署舰
+	m	class	pullBackFighters	()V
+		c javap 字节码取证 | 高 | 记录机队数、清 CARRIER_FIGHTER_TARGET、giveCommand 后撤指令
+	m	new	getTotalWingMembers	(Lcom/fs/starfarer/combat/entities/Ship;)I
+		c javap 字节码取证 | 高 | 静态：各发射舱 getWing().getMembers().size() 求和
+	m	Ó00000	getAverageReplacementTime	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 高 | 静态：各发射舱 replacementTime 均值
+	m	Ô00000	getHullSizeSwitchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化访问器（HullSize ordinal→分支号）
 c com/fs/starfarer/combat/ai/E$o com/fs/starfarer/combat/ai/FighterPullbackMode
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#e-o-fighter-pullback-mode
 	f	String	NEVER	Lcom/fs/starfarer/combat/ai/E$o;
 	f	Ò00000	EMERGENCY	Lcom/fs/starfarer/combat/ai/E$o;
 	f	Ó00000	PRIMARY	Lcom/fs/starfarer/combat/ai/E$o;
+	f	super	enumValues	[Lcom/fs/starfarer/combat/ai/FighterPullbackMode;
+		c javap 字节码取证 | 高 | private static final FighterPullbackMode[]，values() 返回
 c com/fs/starfarer/combat/ai/FighterAI com/fs/starfarer/combat/ai/FighterAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+	f	$SWITCH_TABLE$com$fs$starfarer$api$loading$WingRole	wingRoleSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$loading$WingRole	getWingRoleSwitchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒初始化访问器
 c com/fs/starfarer/combat/ai/FighterAI$1 com/fs/starfarer/combat/ai/FighterAI$1
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+	f	ÔO0000	outer	Lcom/fs/starfarer/combat/ai/FighterAI;
+		c javap 字节码取证 | 高 | 匿名类外部类引用（outer 先例 p001）
+	f	ÕO0000	systemAI	Lcom/fs/starfarer/combat/ai/system/SystemAI;
+		c javap 字节码取证 | 高 | 构造存参；advance 委托 systemAI.o00000(F,V2f,V2f,Ship)
+	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 中 | systemAI instanceof PhaseCloakSystem 时返回其 shieldAI.getEval()，否则 null
+	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | FighterAI.advance 调用点（OOoO 接口），委托 systemAI 同参方法
 c com/fs/starfarer/combat/ai/FighterAI$o com/fs/starfarer/combat/ai/FighterAttackState
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#fighterai-o-fighter-attack-state
 	f	Ó00000	ATTACK_RUN	Lcom/fs/starfarer/combat/ai/FighterAI$o;
 	f	Ò00000	RESETTING	Lcom/fs/starfarer/combat/ai/FighterAI$o;
+	f	super	enumValues	[Lcom/fs/starfarer/combat/ai/FighterAttackState;
+		c javap 字节码取证 | 高 | private static final FighterAttackState[]，values() 返回
 c com/fs/starfarer/combat/ai/FighterWingFormation com/fs/starfarer/combat/ai/FighterWingFormation
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
 c com/fs/starfarer/combat/ai/FighterWingLeaderAI com/fs/starfarer/combat/ai/FighterWingLeaderAI
@@ -44,6 +152,8 @@ c com/fs/starfarer/combat/ai/FighterWingLeaderAI$o com/fs/starfarer/combat/ai/Fi
 	f	class	TURN_TO_RUN_DIRECTION	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
 	f	Ö00000	EXECUTE_ATTACK_RUN	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
 	f	new	NO_VALID_TARGETS	Lcom/fs/starfarer/combat/ai/FighterWingLeaderAI$o;
+	f	o00000	enumValues	[Lcom/fs/starfarer/combat/ai/FighterWingLeaderTask;
+		c javap 字节码取证 | 高 | private static final FighterWingLeaderTask[]，values() 返回
 c com/fs/starfarer/combat/ai/FindAndFollowTargetAI com/fs/starfarer/combat/ai/FindAndFollowTargetAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
 c com/fs/starfarer/combat/ai/FindAndFollowTargetAI$o com/fs/starfarer/combat/ai/FollowCourse
@@ -52,24 +162,176 @@ c com/fs/starfarer/combat/ai/FindAndFollowTargetAI$o com/fs/starfarer/combat/ai/
 	f	Õ00000	DECELERATING	Lcom/fs/starfarer/combat/ai/FindAndFollowTargetAI$o;
 	f	Ò00000	ACQUIRING_TARGET	Lcom/fs/starfarer/combat/ai/FindAndFollowTargetAI$o;
 	f	Ô00000	SEEKING_TARGET	Lcom/fs/starfarer/combat/ai/FindAndFollowTargetAI$o;
+	f	o00000	VALUES	[Lcom/fs/starfarer/combat/ai/FollowCourse;
+		c javap 字节码取证 | 中 | private static final 枚举值数组（javap <clinit> 填充后 putstatic）
 c com/fs/starfarer/combat/ai/GuidedProximityFuseAI com/fs/starfarer/combat/ai/GuidedProximityFuseAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
 c com/fs/starfarer/combat/ai/H com/fs/starfarer/combat/ai/FakeWeapon
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#h-fake-weapon
+	f	øÒõo00	aimTracker	Lcom/fs/starfarer/combat/entities/ship/trackers/AimTracker;
+		c javap 字节码取证 | 高 | 构造以威胁角/弧创建，getAimTracker 返回
+	f	ÒÓõo00	system	Lcom/fs/starfarer/combat/systems/F;
+		c javap 字节码取证 | 高 | 构造存参，getSpec/getChargeLevel 等数据源
+	f	öÒõo00	systemSpec	Lcom/fs/starfarer/loading/specs/ShipSystemSpec;
+		c javap 字节码取证 | 高 | system.getSpec()，各 getXxx 数据源
+	f	ÔÓõo00	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造存参，getPivotFacing/Location 数据源
+	f	ÕÓõo00	slot	Lcom/fs/starfarer/loading/specs/WeaponSlot;
+		c javap 字节码取证 | 高 | 构造新建 "fake" SYSTEM 槽，computePosition/distanceFromArc
+	f	oÓõo00	damage	Lcom/fs/starfarer/combat/o0OO/Damage;
+		c javap 字节码取证 | 高 | 构造按 spec 伤害/EMP 创建，getDamage 返回
+	f	for.null$interface	derivedStats	Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$DerivedWeaponStats;
+		c javap 字节码取证 | 高 | 构造填充 dps/emp/rof 等，getDerivedStats 返回
+	f	public.null$interface	custom	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | getCustom/setCustom 后备对象
 c com/fs/starfarer/combat/ai/J com/fs/starfarer/combat/ai/OmniShieldAngleAI
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#j-omni-shield-angle-ai
+	f	Òo0000	unused	F
+		c javap 字节码取证 | 中 | private static final float，类内无任何 getstatic/putstatic 引用，死代码常量
+	f	öO0000	shieldRaiseDelay	F
+		c javap 字节码取证 | 中 | 初始 3.0f 后 = hullSize.ordinal()*1.0f；timeSinceShieldToggle 超过它才开盾（开盾延迟阈值）
+	f	Object.super	timeSinceShieldToggle	F
+		c javap 字节码取证 | 中 | advance 中 += 时间，触发开/关盾时清零
+	f	this.super	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器写入；getShield/getLocation/getEnergy 等大量读取
+	f	return.super	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造器写入；DO_NOT_USE_SHIELDS/KEEP_SHIELDS_ON/DO_NOT_USE_FLUX 读取
+	f	oo0000	eval	Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 构造器 new FiringSolutionEval(ship,aiFlags)；advance/isShieldFacingOk 委托
+	f	int.super	shieldUnfoldTime	F
+		c javap 字节码取证 | 中 | 构造器 = shield.getChargeTracker().ÖO0000()；与 bestTimeToHit 比较判断能否及时开盾
+	f	ôO0000	shieldsOn	Z
+		c javap 字节码取证 | 中 | o00000() 返回；开/关盾决策各处读写（真时盾已启用/正在启用）
+	f	Ôo0000	collisionAnalysisModule	Lcom/fs/starfarer/combat/ai/collisions/CollisionAnalysisModule;
+		c javap 字节码取证 | 中 | o00000(CollisionAnalysisModule) 写入；advance 中碰撞威胁判定时读取
+	f	ØO0000	timeSinceShieldHit	F
+		c javap 字节码取证 | 中 | advance 中 += 时间，盾受击/方案有效时清零；用于连续受击后的强制决策
+	m	o00000	isShieldOn	()Z
+		c javap 字节码取证 | 高 | 直接返回 shieldsOn 字段（ShieldAI 接口方法）
+	m	o00000	setCollisionAnalysisModule	(Lcom/fs/starfarer/combat/ai/collisions/CollisionAnalysisModule;)V
+		c javap 字节码取证 | 高 | 直接写 collisionAnalysisModule 字段
+	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/O0OO;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | ShieldAI 主逻辑：过载/指令/威胁目标选择分支，委托 eval，计算最佳盾角度并 giveCommand
+	m	Ø00000	unused	()V
+		c javap 字节码取证 | 中 | 空方法体直接 return，无引用，死代码
+	m	Ó00000	isShieldFacingOk	()Z
+		c javap 字节码取证 | 中 | 委托 eval.isShieldFacingOk()（ShieldAI 接口方法）
+	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 直接返回 eval 字段（ShieldAI 接口方法）
 c com/fs/starfarer/combat/ai/K com/fs/starfarer/combat/ai/ShipCommandReceiver
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#k-ship-command-receiver
 c com/fs/starfarer/combat/ai/L com/fs/starfarer/combat/ai/BehaviorModule
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#l-behavior-module
+	f	Ò00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造存参，行为判断数据源
+	f	ô00000	threatEvalAI	Lcom/fs/starfarer/combat/ai/ThreatEvalAI;
+		c javap 字节码取证 | 高 | 构造存参；advance 中 threatEvalAI.new() 威胁评估结果
+	f	super	flockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
+		c javap 字节码取证 | 高 | 构造存参；super.class() 机动目标点判断
+	f	Õ00000	maneuverAPI	Lcom/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI;
+		c javap 字节码取证 | 高 | 构造存参；getEval/getAttackAI 查询
+	f	Ö00000	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 0.25/0.75 间隔，advance 门控
+	f	Ó00000	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造经 maneuverAPI.getAIFlags() 获取
+	f	õ00000	phaseCheeseEverDetectedKey	Ljava/lang/String;
+		c javap 字节码取证 | 高 | clinit "phase_cheese_ever_detected"，customData 键
+	f	String	phaseCheeseRecentlyDetectedKey	Ljava/lang/String;
+		c javap 字节码取证 | 高 | clinit "phase_cheese_recently_detected"，TimeoutTrackerMap 键
+	f	void	phaseCheeseOngoingKey	Ljava/lang/String;
+		c javap 字节码取证 | 高 | clinit "phase_cheese_ongoing"，TimeoutTrackerMap 键
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 主行为循环：DO_NOT_USE_SHIELDS/相位cheese/vent/DO_NOT_BACK_OFF/载机管理
+	m	Ô00000	isPhaseCheeseEverDetected	()Z
+		c javap 字节码取证 | 高 | customData.containsKey(phaseCheeseEverDetectedKey)
+	m	Ò00000	isPhaseCheeseOngoing	()Z
+		c javap 字节码取证 | 高 | customDataWithTimeout.contains(phaseCheeseOngoingKey)
+	m	o00000	getEnemyShipsForFighterManagement	()Ljava/util/List;
+		c javap 字节码取证 | 中 | 遍历敌舰队部署舰（跳机队/撤退/非战斗/航母），4000 内威胁舰列表
+	m	Ò00000	isPhaseShipMenace	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 相位驱逐判定：isPhaseShip+CR+任务目标非战术点+距目标点远近
+	m	o00000	getCampLocation	(Lorg/lwjgl/util/vector/Vector2f;)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 舰载机营地定位：地图边缘/最近战术点(<3000)
+	m	o00000	canFightersEngage	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 各机队射程/速度/拦截时间判定能否攻击敌舰（true→不后撤）
+	m	Ò00000	shouldPullBack	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 撤退决策：相位判定+敌 CR+相对速度/距离
+	m	o00000	selectEscortTarget	(Ljava/util/List;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 候选列表选护航目标（主力舰优先，检查是否有更近接敌者）
+	m	Object	manageCarrierFighters	()V
+		c javap 字节码取证 | 中 | 载机管理：全面突击判定/舰队质心/CAMP_LOCATION/ESCORT_OTHER_SHIP 旗标
+	m	o00000	getCurrentTarget	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | shipTarget→MANEUVER_TARGET custom→getNearestEnemy 链
+	m	o00000	getThreat	(Lcom/fs/starfarer/combat/ai/ThreatEvalAI;Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | BasicShipAI 走 attackAI 威胁值，否则 threatEvalAI 评估
 c com/fs/starfarer/combat/ai/M com/fs/starfarer/combat/ai/FighterWing
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#m-fighter-wing
+	f	õ00000	spec	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+		c javap 字节码取证 | 高 | 构造存参，getSpec/getWingId/getRange 数据源
+	f	new.super	members	Ljava/util/List;
+		c javap 字节码取证 | 高 | 成员舰列表，getMembers/addMember/updateMembers
+	f	Ø00000	leader	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 机队领队（编队锚点），getLeader/setLeader/getDesiredLocationFor
+	f	interface	sampleFighter	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | getSampleFighter 返回
+	f	õO0000	engine	Lcom/fs/starfarer/combat/CombatEngine;
+		c javap 字节码取证 | 高 | 构造 CombatEngine.getInstance()
+	f	new	formation	Lcom/fs/starfarer/combat/ai/FighterWingFormation;
+		c javap 字节码取证 | 高 | 构造按 spec.getFormation 创建，getDesiredLocationFor 编队定位
+	f	ÖO0000	order	Lcom/fs/starfarer/combat/ai/FighterWingMode;
+		c javap 字节码取证 | 高 | 机队指令模式，getOrder/setOrder/cancelOrderAndFollowLeader
+	f	float	wingOwner	I
+		c javap 字节码取证 | 高 | 构造存参，getWingOwner/setWingOwner
+	f	Ö00000	launchCR	F
+		c javap 字节码取证 | 高 | final 构造四舍五入，getLaunchCR 返回
+	f	null	variant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | 构造经 SpecStore 按 variantId 加载，getVariant 返回
+	f	Ô00000	timeWithNoFighters	F
+		c javap 字节码取证 | 中 | 成员/返回/机队全空时累加，isDestroyed 阈值 0.25
+	f	class	source	Lcom/fs/starfarer/combat/entities/ship/A/FighterLaunchBay;
+		c javap 字节码取证 | 高 | 发射舱，getSource/getSourceShip
+	f	ÔO0000	dfm	Lcom/fs/starfarer/combat/DeployedFleetMember;
+		c javap 字节码取证 | 高 | getDfm/setDfm
+	f	o00000	sourceShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | getSourceShip/setSourceShip
+	f	while	leaderThreatEval	Lcom/fs/starfarer/combat/ai/ThreatEvalAI;
+		c javap 字节码取证 | 高 | getLeaderThreatEval/setLeaderThreatEval
+	f	oO0000	leaderFlockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
+		c javap 字节码取证 | 高 | getLeaderFlockingAI/setLeaderFlockingAI
+	f	öO0000	advanceIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 0.25/0.75，advance/fighterNeedsRefit 中使用
+	f	OO0000	unusedIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 中 | 仅构造 putfield，全类无 getfield，死字段（unused 纪律）
+	f	ö00000	retreated	Z
+		c javap 字节码取证 | 高 | isRetreated/setRetreated
+	f	ÓO0000	returning	Ljava/util/List;
+		c javap 字节码取证 | 高 | 返航战机列表，getReturning/orderReturn/stopReturning
+	f	Ó00000	wingMembers	Ljava/util/List;
+		c javap 字节码取证 | 高 | M$Oo 机队成员包装列表，advance 清理
+	f	ØO0000	customData	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getCustomData 返回
+	m	o00000	isMemberAlive	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | engine.isShipAlive 包装，成员列表清理谓词
+	m	Ò00000	aiNeedsRefit	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | getShipAI().needsRefit()，返航战机过滤谓词
 c com/fs/starfarer/combat/ai/M$Oo com/fs/starfarer/combat/ai/FighterWingMember
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#m-oo-fighter-wing-member
+	f	Ó00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造存参；M.advance 中 isHulk/isAlive 检查
+	f	Õ00000	bay	Lcom/fs/starfarer/combat/entities/ship/A/FighterLaunchBay;
+		c javap 字节码取证 | 高 | 构造存参；canRequestReplacement 检查
+	f	String	wing	Lcom/fs/starfarer/combat/ai/FighterWing;
+		c javap 字节码取证 | 高 | 构造存参；所属机队
+	f	super	removeRequested	Z
+		c javap 字节码取证 | 中 | 发射舱侧 ship 死亡/补位完成置位；M.advance 置位即移除
+	f	Ò00000	replacementRequested	Z
+		c javap 字节码取证 | 中 | 发射舱请求补位时置位；补位条件满足后触发 removeRequested
 c com/fs/starfarer/combat/ai/M$o com/fs/starfarer/combat/ai/FighterWingMode
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#m-o-fighter-wing-mode
 	f	Ò00000	FOLLOW_LEADER	Lcom/fs/starfarer/combat/ai/M$o;
 	f	super	RETURN_TO_CARRIER	Lcom/fs/starfarer/combat/ai/M$o;
+	f	Ó00000	enumValues	[Lcom/fs/starfarer/combat/ai/FighterWingMode;
+		c javap 字节码取证 | 高 | private static final FighterWingMode[]，values() 返回
 c com/fs/starfarer/combat/ai/O com/fs/starfarer/combat/ai/O
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#o-family-legacy
 c com/fs/starfarer/combat/ai/O$Oo com/fs/starfarer/combat/ai/O$Oo
@@ -81,16 +343,148 @@ c com/fs/starfarer/combat/ai/O$o com/fs/starfarer/combat/ai/MovementBehavior
 	f	Ó00000	HOVER	Lcom/fs/starfarer/combat/ai/O$o;
 	f	Ò00000	BACK_AWAY	Lcom/fs/starfarer/combat/ai/O$o;
 	f	Õ00000	PURSUE	Lcom/fs/starfarer/combat/ai/O$o;
+	f	super	VALUES	[Lcom/fs/starfarer/combat/ai/MovementBehavior;
+		c javap 字节码取证 | 中 | private static final 枚举值数组（javap <clinit> 填充后 putstatic）
 c com/fs/starfarer/combat/ai/O$oo com/fs/starfarer/combat/ai/O$oo
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#o-family-legacy
+	f	super	movementBehavior	Lcom/fs/starfarer/combat/ai/MovementBehavior;
+		c javap 字节码取证 | 中 | 字段类型即语义（MovementBehavior 枚举引用），无读写点
 c com/fs/starfarer/combat/ai/O0OO com/fs/starfarer/combat/ai/ThreatEvalAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#o0oo-threat-eval-ai
+	f	ô00000	evalIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造函数 new IntervalTracker(0.25f,0.5f)+randomize；advance 中 advance/intervalElapsed 控制威胁评估周期
+	f	o00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造函数 aload_1 putfield，本 AI 所属舰船
+	f	int	threatMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | Ship→ThreatData 当前帧威胁表；updateThreats 重建、getThreatData/new 查询
+	f	return	totalThreat	F
+		c javap 字节码取证 | 高 | updateThreats 中累加各舰威胁值；getTotalThreat 返回其/threatDivisor
+	f	ÔO0000	threatDivisor	F
+		c javap 字节码取证 | 中 | 威胁归一化除数：computeThreatDivisor 按舰队有效生命累加，getTotalThreat/getThreat 作分母
+	f	ØO0000	maneuverAPI	Lcom/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI;
+		c javap 字节码取证 | 高 | 构造函数 putfield；getAIFlags 供 FiringSolutionEval 构造与威胁评估
+	f	ÒO0000	flockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
+		c javap 字节码取证 | 高 | 构造函数 putfield，传入的集群 AI 引用
+	f	ø00000	threatThreshold	F
+		c javap 字节码取证 | 中 | 初始 7.0f；initThreatThresholds 依 bravery 调整为 2+bravery；isThreatHigh/isThreatLow/isThreatHigh(Ship) 比较基准
+	f	this.super	unusedBraveryModifier	F
+		c javap 字节码取证 | 中 | 初始 0.5f，initThreatThresholds 依 bravery 增减（>=5 时 +0.1*(b-5)，否则 -0.03*b）；类内除该处读改写外无任何消费点，死字段
+	f	Ò00000	firingSolutionEval	Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 构造函数 new (Ship, getAIFlags) 并 putfield；射击解算器
+	f	public	threatCache	Ljava/util/Map;
+		c javap 字节码取证 | 中 | 跨评估周期缓存 Ship→ThreatData；advance 开头 clear，fillThreatData 从缓存复制旧值做平滑
+	f	Ø00000	prevFluxLevel	F
+		c javap 字节码取证 | 中 | advance 中记录上一帧 fluxLevel，供幅能变化率判定（dFlux/interval>0.25 时放大威胁）
+	f	Õ00000	shieldHit	Z
+		c javap 字节码取证 | 中 | advance 中 shield.wasHit() 置位，配合幅能急升将当前威胁值放大 3 倍后复位
+	f	ÕO0000	timeSinceLastManeuver	F
+		c javap 字节码取证 | 中 | advance 累加 elapsed；超过 22.0f 且符合转向条件时重置 Math.random()*10 并返回转向机动
+	f	Object	allThreatsActive	Z
+		c javap 字节码取证 | 中 | updateThreats 中与各 ThreatData.Õ00000 求与；isAllThreatsActive 直接返回
+	f	ôO0000	weaponSizeScores	[I
+		c javap 字节码取证 | 高 | getWeaponSizeScores 懒初始化 WeaponSize→威胁分表（LARGE=3/MEDIUM=2/SMALL=1）
+	m	ö00000	getEvalIntervalTracker	()Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 直接返回 evalIntervalTracker 的 getter
+	m	o00000	initThreatThresholds	()V
+		c javap 字节码取证 | 中 | 从 CombatFleetManager 取 personality.getBravery，调整 threatThreshold 与 unusedBraveryModifier
+	m	Ó00000	advance	(F)Lcom/fs/starfarer/combat/ai/O0OO$o;
+		c javap 字节码取证 | 高 | Profiler "ThreatEvaluationAndResponse"；主循环：累计时间、查盾击、周期更新威胁表、按威胁状态返回转向/撤退机动
+	m	null	getTotalThreat	()F
+		c javap 字节码取证 | 高 | 返回 totalThreat/threatDivisor（归一化总威胁）
+	m	õ00000	isAllThreatsActive	()Z
+		c javap 字节码取证 | 中 | 返回 allThreatsActive 缓存标志
+	m	Ô00000	isThreatHigh	()Z
+		c javap 字节码取证 | 中 | getTotalThreat() > threatThreshold*0.5
+	m	Ó00000	isThreatLow	()Z
+		c javap 字节码取证 | 中 | getTotalThreat() > threatThreshold*0.1
+	m	new	getThreat	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 高 | 单舰归一化威胁：threatMap.get(ship).Ø00000/threatDivisor；无效条目返回 0
+	m	o00000	isThreatHigh	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 单舰威胁 return/threatDivisor > threatThreshold*0.25
+	m	Ó00000	getThreatData	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/ai/ThreatData;
+		c javap 字节码取证 | 高 | threatMap.get(ship) 直接返回（null 安全）
+	m	new	getMaxThreatData	()Lcom/fs/starfarer/combat/ai/ThreatData;
+		c javap 字节码取证 | 中 | 遍历 threatMap.values 取 Ø00000（威胁值）最大者
+	m	Ø00000	getAllThreatData	()Ljava/util/Collection;
+		c javap 字节码取证 | 高 | 返回 threatMap.values()
+	m	Ö00000	isAllThreatsValid	()Z
+		c javap 字节码取证 | 中 | 遍历 ThreatData 验证全部 Õ00000 有效（实时版，与 isAllThreatsActive 等价）
+	m	class	countInactiveThreats	()I
+		c javap 字节码取证 | 中 | 统计 threatMap 中 Õ00000==false 的条目数
+	m	o00000	getNearestThreatData	(Lorg/lwjgl/util/vector/Vector2f;)Lcom/fs/starfarer/combat/ai/ThreatData;
+		c javap 字节码取证 | 中 | 遍历威胁表取距输入点最近者
+	m	o00000	isDominantThreat	(Lcom/fs/starfarer/combat/ai/ThreatData;)Z
+		c javap 字节码取证 | 中 | 私有：其它条目威胁值均 < 输入者一半（输入者为主威胁）时返回 true
+	m	o00000	computeFleetStrengthRatio	(Lcom/fs/starfarer/combat/entities/Ship;FLcom/fs/starfarer/combat/ai/ThreatEvalAI;)F
+		c javap 字节码取证 | 中 | 静态：统计半径内双方 deployed 成员/机队强度，返回 敌/（敌+我）比值
+	m	new	computeThreatDivisor	(F)V
+		c javap 字节码取证 | 中 | 私有：战机时按机队成员累加 computeShipDefense，否则取自身值，写入 threatDivisor
+	m	o00000	computeShipDefense	(Lcom/fs/starfarer/combat/entities/Ship;F)F
+		c javap 字节码取证 | 中 | 私有：盾幅能余量+2×船体+装甲 求和，×5.0E-4×(2.5-参数) 得归一化防御值
+	m	o00000	updateThreats	(F)V
+		c javap 字节码取证 | 高 | 私有：清空 threatMap，遍历异 owner 敌舰（距离/非战斗过滤）逐舰评估并入表，维护 totalThreat 与 allThreatsActive
+	m	class	computeThreatData	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/ai/ThreatData;
+		c javap 字节码取证 | 高 | 新建 ThreatData 并经 fillThreatData（缓存复制或核心评估）填充后返回
+	m	o00000	fillThreatData	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/ai/ThreatData;)V
+		c javap 字节码取证 | 中 | 私有：threatCache 命中时复制旧值到新对象，否则委托 evaluateShipThreat 核心计算
+	m	new	evaluateShipThreat	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/ai/ThreatData;)V
+		c javap 字节码取证 | 高 | Profiler "Computing ship threat"；核心：系统威胁范围/武器组 7 组遍历评估，写 ThreatData 各字段并缓存到 threatCache
+	m	float	getWeaponSizeScores	()[I
+		c javap 字节码取证 | 高 | weaponSizeScores 懒初始化（WeaponSize ordinal→1..3 分）
 c com/fs/starfarer/combat/ai/O0OO$Oo com/fs/starfarer/combat/ai/ThreatData
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#o0oo-oo-threat-data
+	f	ô00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 威胁来源舰；getShip 返回
+	f	Ò00000	maxDamagePerShot	F
+		c javap 字节码取证 | 高 | ThreatEvalAI 计算中取武器 damagePerShot*armorMult 最大值；getMaxDamagePerShot 返回
+	f	Ø00000	threatLevel	F
+		c javap 字节码取证 | 高 | 威胁等级（hullSize 加权/系统威胁累加）；getThreatValue 返回，new()F 归一化比值
+	f	return	systemThreat	F
+		c javap 字节码取证 | 高 | 各武器/系统威胁值总和；getSystemThreat 返回
+	f	o00000	threatRange	F
+		c javap 字节码取证 | 高 | 威胁射程（武器射程/系统威胁射程/碰撞半径最大值，最低 300）；getThreatRange 返回
+	f	Ô00000	beamThreatRange	F
+		c javap 字节码取证 | 高 | beam 武器威胁射程（射程/追踪系数）；getBeamThreatRange 返回
+	f	Õ00000	isThreat	Z
+		c javap 字节码取证 | 高 | 是否构成威胁（可命中/非低威胁）；ThreatEvalAI 聚合判断
+	f	Object	minTimeToHit	F
+		c javap 字节码取证 | 高 | 各武器弹道飞行时间最小值（默认 1000f）；getMinTimeToHit/setMinTimeToHit
+	m	new	getThreatLevel	()F
+		c javap 字节码取证 | 高 | systemThreat!=0 时返回 threatLevel/systemThreat 归一化比值
+	m	o00000	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 返回 ship
+	m	class	getThreatRange	()F
+		c javap 字节码取证 | 高 | 返回 threatRange
+	m	Ô00000	isThreat	()Z
+		c javap 字节码取证 | 高 | 返回 isThreat
+	m	null	getThreatValue	()F
+		c javap 字节码取证 | 高 | 返回 threatLevel 原始值
+	m	Ø00000	getSystemThreat	()F
+		c javap 字节码取证 | 高 | 返回 systemThreat
+	m	õ00000	getMinTimeToHit	()F
+		c javap 字节码取证 | 高 | 返回 minTimeToHit
+	m	new	setMinTimeToHit	(F)V
+		c javap 字节码取证 | 高 | 写 minTimeToHit
+	m	Ö00000	getBeamThreatRange	()F
+		c javap 字节码取证 | 高 | 返回 beamThreatRange
+	m	Ó00000	getMaxDamagePerShot	()F
+		c javap 字节码取证 | 高 | 返回 maxDamagePerShot
+	m	o00000	setMaxDamagePerShot	(F)V
+		c javap 字节码取证 | 高 | 写 maxDamagePerShot
 c com/fs/starfarer/combat/ai/O0OO$o com/fs/starfarer/combat/ai/O0OO$o
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#o0oo-o-threat-response
+	f	o00000	maneuver	Lcom/fs/starfarer/combat/ai/movement/maneuvers/Maneuver;
+		c javap 字节码取证 | 中 | 构造器第一参数直写；字段类型即语义（机动对象）
 c com/fs/starfarer/combat/ai/OOoO com/fs/starfarer/combat/ai/ShieldAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#oooo-shield-ai
+	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | ShieldAI 接口主推进方法；BasicShipAI/OmniShieldControlAI/FighterAI 调用
+	m	Ó00000	hasFiringSolution	()Z
+		c javap 字节码取证 | 高 | 各实现均委托 FiringSolutionEval.Õ00000()（有射击方案）；VentModule 据此不散热
+	m	o00000	shouldKeepShieldOn	()Z
+		c javap 字节码取证 | 高 | 各实现：盾系返回护盾朝向标志，PhaseCloakShieldAI 恒 false
+	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 返回评估器；BasicShipAI$1/FighterAI$1 桥接转发
 c com/fs/starfarer/combat/ai/OmniShieldControlAI com/fs/starfarer/combat/ai/OmniShieldControlAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
 c com/fs/starfarer/combat/ai/ProximityFuseAI com/fs/starfarer/combat/ai/ProximityFuseAI
@@ -99,63 +493,1237 @@ c com/fs/starfarer/combat/ai/ProximityFuseAI$o com/fs/starfarer/combat/ai/FusePr
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#proximityfuseai-o-fuse-projectile
 c com/fs/starfarer/combat/ai/R com/fs/starfarer/combat/ai/SpreadAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#r-spread-ai
+	f	Ö00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造参数1；getOriginalOwner/getLocation/isLeader 判断
+	f	ô00000	wing	Lcom/fs/starfarer/combat/ai/FighterWing;
+		c javap 字节码取证 | 高 | 构造 ship.getWing()；isLeader/getSpec/isInterceptor 散布依据
+	f	Õ00000	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造 new IntervalTracker(0.25,0.5)；advance 节流散布计算
+	f	Ò00000	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造参数2；FINISHED_SPREADING/MANEUVER_TARGET 读写
+	f	super	threatEvalAI	Lcom/fs/starfarer/combat/ai/ThreatEvalAI;
+		c javap 字节码取证 | 高 | 构造参数3 final；getThreatEvaluator 相关
+	f	void	spreading	Z
+		c javap 字节码取证 | 高 | 散布进行中标志；FINISHED_SPREADING/散布完成时复位
+	f	Ó00000	spreadDirection	F
+		c javap 字节码取证 | 高 | 计算出的散布方向角；getSpreadDirection 返回
+	f	String	spreadWeight	F
+		c javap 字节码取证 | 高 | 各友方机队散布权重最大值；getSpreadWeight 返回
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 遍历友方机队/拦截机 MANEUVER_TARGET 计算散布点与权重，设置 aiFlags 并加随机扰动
+	m	new	getSpreadDirection	()F
+		c javap 字节码取证 | 高 | 返回 spreadDirection
+	m	o00000	isSpreading	()Z
+		c javap 字节码取证 | 高 | 返回 spreading
+	m	Ó00000	getSpreadWeight	()F
+		c javap 字节码取证 | 高 | 返回 spreadWeight
 c com/fs/starfarer/combat/ai/attack/A com/fs/starfarer/combat/ai/attack/AttackingGroup
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#attack-a-attacking-group
+	f	Ò00000	weaponGroupIndex	I
+		c javap 字节码取证 | 高 | AttackAIModule: ship.getWeaponGroup(A.õ00000()) 取武器组；创建时 super(I)V 赋值
+	f	ÒO0000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | AttackAIModule: void()Ship 传入 setShipTarget 作攻击目标；Ó00000(Ship)V 设置
+	f	ô00000	isStrikeGroup	Z
+		c javap 字节码取证 | 高 | AttackAIModule 3107-3112: 组内有 STRIKE AIHint 武器时 String(Z)V 置 1；与 DELAY_STRIKE_FIRE 配合延迟开火
+	f	ÕO0000	missilesAimable	Z
+		c javap 字节码取证 | 中 | super(int,Ship) 2450: 侧面槽 GUIDED_POOR/DO_NOT_AIM 导弹置 0；火控里据此清零瞄准误差
+	f	this.super	canFireSafely	Z
+		c javap 字节码取证 | 中 | super(int,Ship) 2625-2628: 非友伤碰撞类（RAY_FIGHTER/PROJECTILE_*_NO_FF 等）置 1；ÓO0000()Z 为真才进入火控计算
+	f	ÔO0000	hasAimableWeapons	Z
+		c javap 字节码取证 | 中 | super(int,Ship) 6114-6121: 有 hardpoint 且非 DO_NOT_AIM 武器置 1；AttackAIModule.if() 用 OO0000()Z 判组是否可用
+	f	ø00000	hasUniformWeapons	Z
+		c javap 字节码取证 | 中 | super(int,Ship) 2634-2640: 组内武器 id 不一致置 0；isAlternating 时按 private()Z 随机暂停开火
+	f	Ø00000	usesFlux	Z
+		c javap 字节码取证 | 中 | super(int,Ship) 2598-1205: 组内有 getFluxCostToFire>0 武器置 1；目标相位且自舰 flux 高时 Ö00000()Z 阻止开火
+	f	o00000	currentWeaponIndex	I
+		c javap 字节码取证 | 高 | AttackAIModule 1125-1143: isAlternating 时 group.setCurrentActive(A.Ó00000())；构造器初始 -1
+	f	return	checkInterval	F
+		c javap 字节码取证 | 高 | AttackAIModule 942-955: OÒ0000 累计计时 < A.ÖO0000() 则跳过攻击决策（节流间隔）
+	f	oO0000	range	F
+		c javap 字节码取证 | 中 | AttackAIModule 531/1339: if()F 作为 while.super(Ship,B,F,Z,F) 瞄准点计算的射程参数
+	f	int	totalAmmo	F
+		c javap 字节码取证 | 高 | do()F/ô00000(F)V：组内 usesAmmo 武器 getAmmo 求和；Ó00000(Ship)V 计算后写入
+	f	ØO0000	ammoThreshold	F
+		c javap 字节码取证 | 中 | 构造器初始 Float.MAX_VALUE；super(Ship)Z 中 int-totalAmmo >= ØO0000 判定弹药不足
+	f	ö00000	evaluationInterval	F
+		c javap 字节码取证 | 中 | super(int,Ship) 2885-2952: 按武器权重/威胁置 0.01~1.0；1005 行 elapsedTime>= 该值触发重新评估武器组
+	f	Object	elapsedTime	F
+		c javap 字节码取证 | 中 | AttackAIModule 985-998: 每帧 += amount 累计；与 evaluationInterval 比较决定是否重建攻击任务
+	f	ôO0000	distance	F
+		c javap 字节码取证 | 高 | super(int,Ship) 2098-2099: 创建时 String(F)V 写入目标舰与本舰距离
+	f	public	burstDuration	F
+		c javap 字节码取证 | 中 | super(int,Ship) 2690: Ö00000(F)V 写入组内武器最大 burstFireDuration
+	m	super	hasEnoughAmmo	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 累加武器组弹药后 int-total >= ammoThreshold 判定是否需补充
+	m	Ó00000	computeTotalAmmo	(Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 累加 usesAmmo 武器 getAmmo 写入 totalAmmo 字段
+	m	do	getTotalAmmo	()F
+		c javap 字节码取证 | 高 | 读 totalAmmo 字段
+	m	ô00000	setTotalAmmo	(F)V
+		c javap 字节码取证 | 高 | 写 totalAmmo 字段
+	m	super	getAmmoThreshold	()F
+		c javap 字节码取证 | 中 | 读 ammoThreshold 字段
+	m	Ó00000	setAmmoThreshold	(F)V
+		c javap 字节码取证 | 中 | 写 ammoThreshold 字段
+	m	ÕO0000	getBurstDuration	()F
+		c javap 字节码取证 | 中 | 读 burstDuration 字段
+	m	Ö00000	setBurstDuration	(F)V
+		c javap 字节码取证 | 中 | 写 burstDuration 字段
+	m	Ó00000	getCurrentWeaponIndex	()I
+		c javap 字节码取证 | 高 | 读 currentWeaponIndex 字段
+	m	Ò00000	setCurrentWeaponIndex	(I)V
+		c javap 字节码取证 | 高 | 写 currentWeaponIndex 字段
+	m	private	hasUniformWeapons	()Z
+		c javap 字节码取证 | 中 | 读 hasUniformWeapons 字段
+	m	Õ00000	setHasUniformWeapons	(Z)V
+		c javap 字节码取证 | 中 | 写 hasUniformWeapons 字段
+	m	void	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 读 ship 字段
+	m	Ò00000	setShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 写 ship 字段
+	m	õ00000	getWeaponGroupIndex	()I
+		c javap 字节码取证 | 高 | 读 weaponGroupIndex 字段
+	m	super	setWeaponGroupIndex	(I)V
+		c javap 字节码取证 | 高 | 写 weaponGroupIndex 字段；创建 A 时 super(I)V 调用
+	m	ÖO0000	getCheckInterval	()F
+		c javap 字节码取证 | 高 | 读 checkInterval 字段
+	m	void	setCheckInterval	(F)V
+		c javap 字节码取证 | 高 | 写 checkInterval 字段
+	m	if	getRange	()F
+		c javap 字节码取证 | 中 | 读 range 字段
+	m	super	setRange	(F)V
+		c javap 字节码取证 | 中 | 写 range 字段
+	m	ø00000	isStrikeGroup	()Z
+		c javap 字节码取证 | 高 | 读 isStrikeGroup 字段
+	m	String	setStrikeGroup	(Z)V
+		c javap 字节码取证 | 高 | 写 isStrikeGroup 字段
+	m	Ò00000	missilesAimable	()Z
+		c javap 字节码取证 | 中 | 读 missilesAimable 字段
+	m	super	setMissilesAimable	(Z)V
+		c javap 字节码取证 | 中 | 写 missilesAimable 字段
+	m	ÓO0000	canFireSafely	()Z
+		c javap 字节码取证 | 中 | 读 canFireSafely 字段
+	m	Ö00000	setCanFireSafely	(Z)V
+		c javap 字节码取证 | 中 | 写 canFireSafely 字段
+	m	super.super	getDistance	()F
+		c javap 字节码取证 | 高 | 读 distance 字段
+	m	String	setDistance	(F)V
+		c javap 字节码取证 | 高 | 写 distance 字段；创建 A 时写入目标距离
+	m	void	setHasAimableWeapons	(Z)V
+		c javap 字节码取证 | 中 | 写 hasAimableWeapons 字段
+	m	OO0000	hasAimableWeapons	()Z
+		c javap 字节码取证 | 中 | 读 hasAimableWeapons 字段
+	m	Ö00000	usesFlux	()Z
+		c javap 字节码取证 | 中 | 读 usesFlux 字段
+	m	Ò00000	setUsesFlux	(Z)V
+		c javap 字节码取证 | 中 | 写 usesFlux 字段
+	m	Õ00000	getEvaluationInterval	()F
+		c javap 字节码取证 | 中 | 读 evaluationInterval 字段
+	m	Ò00000	setEvaluationInterval	(F)V
+		c javap 字节码取证 | 中 | 写 evaluationInterval 字段
+	m	ôO0000	getElapsedTime	()F
+		c javap 字节码取证 | 中 | 读 elapsedTime 字段
+	m	õ00000	setElapsedTime	(F)V
+		c javap 字节码取证 | 中 | 写 elapsedTime 字段
 c com/fs/starfarer/combat/ai/attack/AttackAIModule com/fs/starfarer/combat/ai/attack/AttackAIModule
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+	f	null	fighterExtraRange	F
+		c javap 字节码取证 | 高 | <clinit> 设 500.0f；EXTRA_RANGE_ON_FIGHTER 武器射程加成
+	f	Ôo0000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造函数 putfield，攻击模块所属舰船
+	f	new.new	attackState	Lcom/fs/starfarer/combat/ai/attack/AttackState;
+		c javap 字节码取证 | 高 | 攻击状态机（搜索/攻击/停止）；advance 中按计时切换
+	f	ØO0000	stateTimer	F
+		c javap 字节码取证 | 中 | advance 累加 elapsed，超过 stateDuration 时驱动状态切换并重置
+	f	oo0000	stateDuration	F
+		c javap 字节码取证 | 中 | 当前状态持续时间（初始 2.0f；切换时设 0.1/1/3+攻击时间）
+	f	Óo0000	maxRange	F
+		c javap 字节码取证 | 中 | initWeaponGroupEvaluations 中取全部武器最大射程；selectAttackTarget 距离过滤用
+	f	oÒ0000	attackingGroup	Lcom/fs/starfarer/combat/ai/attack/AttackingGroup;
+		c javap 字节码取证 | 高 | 当前攻击组（selectAttackTarget 选最佳写入）
+	f	OO0000	bestWeaponGroup	Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 中 | initWeaponGroupEvaluations 中按武器评分选出的最优组
+	f	class.super	bestGroupRange	F
+		c javap 字节码取证 | 中 | 最优组（评分最高）的有效射程
+	f	oO0000	bestWeaponGroupEvaluation	Lcom/fs/starfarer/combat/ai/attack/WeaponGroupEvaluation;
+		c javap 字节码取证 | 中 | 非纯导弹组中评分最优的评估对象（isBestGroupStrike 查询）
+	f	Ô00000	attackRange	F
+		c javap 字节码取证 | 中 | 当前攻击评估有效射程（初始 -1；getAttackRange 负值时回落 bestGroupRange）
+	f	class	nonMissileMaxRange	F
+		c javap 字节码取证 | 中 | 非导弹武器最大射程
+	f	õ00000	minMissileRange	F
+		c javap 字节码取证 | 中 | 导弹武器最小射程（初始 Float.MAX_VALUE）
+	f	ÔO0000	minRange	F
+		c javap 字节码取证 | 中 | 排除小型 PD 后的全武器最小射程
+	f	new.super	maxThreatRange	F
+		c javap 字节码取证 | 中 | 含舰船系统/相位威胁范围的最大射程
+	f	Ø00000	weaponGroupEvaluations	Ljava/util/Map;
+		c javap 字节码取证 | 高 | WeaponGroup→WeaponGroupEvaluation 映射（构造函数 LinkedHashMap，AutofireManager 共享）
+	f	interface	autofireManager	Lcom/fs/starfarer/combat/ai/attack/AutofireManager;
+		c javap 字节码取证 | 高 | 构造函数按 fighter/drone 选 AutofireManagerV2 或 D（Object）实现
+	f	õO0000	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造函数 putfield；IN_ATTACK_RUN/DO_NOT_AUTOFIRE 等旗标读写
+	f	Ó00000	fleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+		c javap 字节码取证 | 中 | 构造函数按 getOriginalOwner 取；isWeaponOnStandingOrders 查询常备指令
+	f	while.super	hasNonSmallPD	Z
+		c javap 字节码取证 | 中 | initWeaponGroupEvaluations 中发现 PD 且非 SMALL 尺寸武器时置位
+	f	float.super	hasNonMissileWeapon	Z
+		c javap 字节码取证 | 中 | initWeaponGroupEvaluations 中发现非导弹武器时置位
+	f	Øo0000	hasNonPDWeapon	Z
+		c javap 字节码取证 | 中 | evaluateAttackGroup 中发现非 PD 武器时置位（评估中过滤）
+	f	while	pendingAttackRuns	Ljava/util/List;
+		c javap 字节码取证 | 中 | 攻击执行记录列表（组索引+剩余时间）；advance 递减超时移除，executeAttackRun 追加
+	f	õo0000	timeOnTarget	F
+		c javap 字节码取证 | 中 | 持续瞄准同一目标累计时间（advance 中 firingAtTarget 分支累加）
+	f	interface.super	timeSinceTargetChange	F
+		c javap 字节码取证 | 中 | 目标切换后经过时间（>3.0f 时重置目标实体）
+	f	Oo0000	targetEntity	Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | 当前瞄准目标实体（advance 中与攻击组目标同步，超时清空）
+	f	öO0000	timeInAttackRun	F
+		c javap 字节码取证 | 中 | 攻击冲刺累计时间；非 IN_ATTACK_RUN/POST_ATTACK_RUN 状态归零
+	f	ÓO0000	averageCooldown	F
+		c javap 字节码取证 | 中 | 武器组平均冷却（初始 -1；computeAverageCooldown 更新；getAverageCooldown 负数返回 MAX_VALUE）
+	f	ÖO0000	firing	Z
+		c javap 字节码取证 | 中 | executeAttackRun 下达开火指令时置位
+	f	float	firingAtTarget	Z
+		c javap 字节码取证 | 中 | 正在向目标连射标志；advance 中决定 timeOnTarget/timeSinceTargetChange 累计分支
+	f	OÒ0000	burstTimer	F
+		c javap 字节码取证 | 中 | 连发计时（executeAttackRun 中累计，超过攻击组连发时长后重置）
+	f	öo0000	burstInterval	F
+		c javap 字节码取证 | 中 | 交替连发间隔（初始 0.1+random*0.1；耗尽后重置 0.2+random*0.1）
+	f	Öo0000	suppressFire	Z
+		c javap 字节码取证 | 中 | 高幅能强制停火：fluxLevel>=0.7 持续超过 fluxSuppressDelay 时置位，置 DO_NOT_AUTOFIRE_NON_ESSENTIAL_GROUPS
+	f	null.super	timeAtHighFlux	F
+		c javap 字节码取证 | 中 | advance 中累计 elapsed，与 fluxSuppressDelay 比较驱动 suppressFire
+	f	new	fluxSuppressDelay	F
+		c javap 字节码取证 | 中 | 幅能停火延迟阈值（3.0f）
+	f	Ö00000	aimPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 攻击瞄准点（executeAttackRun 计算写入；renderAimLine 绘制）
+	f	o00000	weaponSizeScores	[I
+		c javap 字节码取证 | 高 | getWeaponSizeScores 懒初始化 WeaponSize→分表
+	f	ö00000	hullSizeScores	[I
+		c javap 字节码取证 | 高 | getHullSizeScores 懒初始化 HullSize→分表（CAPITAL=6..FIGHTER=2, DEFAULT=1）
+	m	ÖO0000	getAIFlags	()Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 直接返回 aiFlags
+	m	Ó00000	getBestGroupRange	()F
+		c javap 字节码取证 | 中 | 返回 bestGroupRange
+	m	Òo0000	getAttackingGroup	()Lcom/fs/starfarer/combat/ai/attack/AttackingGroup;
+		c javap 字节码取证 | 高 | 返回 attackingGroup
+	m	Ò00000	getAttackTarget	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 攻击组存在且目标有效时返回其目标舰，否则 null
+	m	void.super	getAverageCooldown	()F
+		c javap 字节码取证 | 中 | 返回 averageCooldown；<0 时返回 Float.MAX_VALUE
+	m	ÒO0000	computeAverageCooldown	()V
+		c javap 字节码取证 | 中 | 遍历武器组加权计算平均冷却写入 averageCooldown（总评分>0.5 否则 MAX_VALUE）
+	m	super	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 攻击模块主循环：状态计时/目标同步/常备指令/按状态执行搜索或攻击冲刺/冷却列表推进
+	m	ôO0000	stopAttack	()V
+		c javap 字节码取证 | 中 | 包装：以 2.0f 调 stopAttackRun
+	m	super	stopAttackRun	(F)V
+		c javap 字节码取证 | 中 | 私有：清理瞄准点/攻击组、切 attackState 至停止态、清 shipTarget
+	m	super	executeAttackRun	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;)V
+		c javap 字节码取证 | 高 | 攻击冲刺执行：设 shipTarget、计算瞄准点、武器覆盖检查、交替武器切换、下达开火指令、记录攻击执行
+	m	super	addAttackCooldown	(IFF)V
+		c javap 字节码取证 | 中 | 私有：按组索引加入 pendingAttackRuns（已存在同索引则忽略），时间 fload_2+random*fload_3
+	m	String.super	canAttackTarget	()Z
+		c javap 字节码取证 | 中 | 攻击组/目标/武器检查：瞄准点非空、相对速度与选定武器组覆盖判定
+	m	do	getMaxRange	()F
+		c javap 字节码取证 | 中 | 返回 maxRange
+	m	super	selectAttackTarget	(Lcom/fs/starfarer/combat/ai/ThreatEvalAI;)V
+		c javap 字节码取证 | 高 | 私有：遍历可见敌舰逐组评估生成候选攻击组，Collections.sort 排序取最佳写入 attackingGroup
+	m	ô00000	selectWeaponGroup	()V
+		c javap 字节码取证 | 中 | 私有：按武器评分（firingAtWill 加权）选最优组并下达武器组切换指令
+	m	super	isWeaponOnStandingOrders	(Lcom/fs/starfarer/combat/systems/Weapon;)Z
+		c javap 字节码取证 | 中 | 私有：fleetManager 为空或常备指令集合含该武器时返回 true
+	m	if	hasActiveAttackGroup	()Z
+		c javap 字节码取证 | 中 | attackingGroup 非空且未完成（!OO0000()）时返回 true
+	m	Õ00000	isBestGroupStrike	()Z
+		c javap 字节码取证 | 中 | bestWeaponGroupEvaluation 非空且其 STRIKE 标志置位
+	m	super	evaluateAttackGroup	(ILcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/ai/attack/AttackingGroup;
+		c javap 字节码取证 | 高 | 私有：按武器组索引构造 AttackingGroup 并逐武器评估（射程/角度/伤害/弹药），写回评估字段
+	m	Ö00000	isCurrentTargetValid	()Z
+		c javap 字节码取证 | 中 | 私有：攻击组目标非 hulk、仍在对象列表且可见时返回 true
+	m	super	getWeaponGroupEvaluation	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)Lcom/fs/starfarer/combat/ai/attack/WeaponGroupEvaluation;
+		c javap 字节码取证 | 高 | weaponGroupEvaluations.get(group)
+	m	super	isAttackGroupReady	()Z
+		c javap 字节码取证 | 中 | 当前攻击组的武器组空闲（评估未置忙）时返回 true
+	m	ø00000	initWeaponGroupEvaluations	()V
+		c javap 字节码取证 | 高 | 私有：遍历 7 组武器构造 WeaponGroupEvaluation（DPS/幅能/射程/类型统计），选最优组；含系统/相位威胁范围
+	m	String	getMinMissileRange	()F
+		c javap 字节码取证 | 中 | 返回 minMissileRange
+	m	void	hasNonSmallPD	()Z
+		c javap 字节码取证 | 中 | 返回 hasNonSmallPD
+	m	ÕO0000	hasNonMissileWeapon	()Z
+		c javap 字节码取证 | 中 | 返回 hasNonMissileWeapon
+	m	Oo0000	getNonMissileMaxRange	()F
+		c javap 字节码取证 | 中 | 返回 nonMissileMaxRange
+	m	private	getMinRange	()F
+		c javap 字节码取证 | 中 | 返回 minRange
+	m	super.super	getMaxThreatRange	()F
+		c javap 字节码取证 | 中 | 返回 maxThreatRange
+	m	õ00000	getAttackRange	()F
+		c javap 字节码取证 | 中 | attackRange<0 时回落 bestGroupRange
+	m	õO0000	getBestWeaponGroup	()Lcom/fs/starfarer/combat/systems/WeaponGroup;
+		c javap 字节码取证 | 中 | 返回 bestWeaponGroup
+	m	ÓO0000	renderAimLine	()V
+		c javap 字节码取证 | 高 | GL11 调试绘制：瞄准点至舰船位置画线（glPointSize/glColor3f/glBegin/glVertex2f）
+	m	super	getAimAngleForShip	(FLcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | 沿朝向取 0.65×距离-碰撞半径 的瞄准点，调 computeWeaponScoreAtPoint 求最佳角
+	m	super	getAimAngleForPoint	(Lorg/lwjgl/util/vector/Vector2f;F)F
+		c javap 字节码取证 | 中 | 包装：以距离调 getBestAimAngle
+	m	super	getBestAimAngle	(FF)F
+		c javap 字节码取证 | 中 | 0-360° 步进 10° 扫描调 computeWeaponScoreAtPoint，返回评分最高的相对方位角
+	m	Ò00000	computeWeaponScoreAtPoint	(Lorg/lwjgl/util/vector/Vector2f;F)F
+		c javap 字节码取证 | 中 | 私有：对 7 组武器计算目标点覆盖评分（尺寸分求和，硬点/导弹加成）
+	m	super	isAttackWorthwhile	(Lcom/fs/starfarer/combat/ai/attack/AttackingGroup;)Z
+		c javap 字节码取证 | 中 | 目标过载/散热/战机、盾朝向、个性（reckless..timid）与幅能余量综合判定攻击价值
+	m	øO0000	getWeaponSizeScores	()[I
+		c javap 字节码取证 | 高 | weaponSizeScores 懒初始化（LARGE=3/MEDIUM=2/SMALL=1）
+	m	OO0000	getHullSizeScores	()[I
+		c javap 字节码取证 | 高 | hullSizeScores 懒初始化（CAPITAL=6/CRUISER=5/DESTROYER=4/FRIGATE=3/FIGHTER=2/DEFAULT=1）
 c com/fs/starfarer/combat/ai/attack/AttackAIModule$1 com/fs/starfarer/combat/ai/attack/AttackAIModule$1
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+	f	this$0	outer	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule;
+		c javap 字节码取证 | 高 | 匿名内部类外部引用
+	m	o00000	compare	(Lcom/fs/starfarer/combat/ai/attack/AttackingGroup;Lcom/fs/starfarer/combat/ai/attack/AttackingGroup;)I
+		c javap 字节码取证 | 高 | Comparator.compare 实现（按攻击组评分排序）
 c com/fs/starfarer/combat/ai/attack/AttackAIModule$Oo com/fs/starfarer/combat/ai/attack/AttackState
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#attackaimodule-oo-attack-state
 	f	Ó00000	PICKING_TARGET	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule$Oo;
 	f	Ò00000	FIRING	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule$Oo;
 	f	String	WAITING	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule$Oo;
+	f	super	values	[Lcom/fs/starfarer/combat/ai/attack/AttackState;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组
 c com/fs/starfarer/combat/ai/attack/AttackAIModule$o com/fs/starfarer/combat/ai/attack/AttackAIModule$o
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#attackaimodule-o-internal-data
+	f	Ò00000	groupIndex	I
+		c javap 字节码取证 | 高 | 武器组索引（executeAttackRun/addAttackCooldown 写入，selectAttackTarget 检查重复）
+	f	super	timeRemaining	F
+		c javap 字节码取证 | 高 | 剩余时间：advance 中递减，<=0 移除
 c com/fs/starfarer/combat/ai/attack/AutofireManagerV2 com/fs/starfarer/combat/ai/attack/AutofireManagerV2
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#identity-classes
+	f	Õ00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器 aload_1 赋值；advance 中大量 getFluxLevel/getShield 等自舰查询
+	f	Ö00000	weaponGroupEvaluations	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 构造器 putfield 传入 Map<WeaponGroup,B>；advance 遍历 values() 逐组决策
+	f	Ó00000	autofireIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造器 new IntervalTracker(0.4f,0.7f)；advance 中 intervalElapsed() 控制评估频率
+	f	Ò00000	flags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | final 字段；advance 中 hasFlag(DO_NOT_USE_FLUX / DO_NOT_AUTOFIRE_NON_ESSENTIAL_GROUPS)
+	f	super	fleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+		c javap 字节码取证 | 高 | 构造器 CombatEngine.getFleetManager(ship.getOriginalOwner()) 写入
+	f	String	weaponSizeScores	[I
+		c javap 字节码取证 | 高 | static volatile 懒加载缓存：WeaponSize ordinal → 1/2/4 分数；super()[I 初始化
+	m	super	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 接口 D 实现：advance(IntervalTracker)、isHoldFire 时 giveCommand、逐组 flux/弹药/射程评估后 toggleOn/toggleOff
+	m	super	isWeaponGroupUsable	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)Z
+		c javap 字节码取证 | 高 | 统计组内可用武器权重 vs 不可用（STRIKE 无弹药/PD/导弹侧面槽等），可用权重 >= 不可用且 >0 返回真
+	m	super	weaponSizeScores	()[I
+		c javap 字节码取证 | 高 | static 懒加载：LARGE=4/MEDIUM=2/SMALL=1（含 NoSuchFieldError 兜底）
 c com/fs/starfarer/combat/ai/attack/AutofireManagerV2$1 com/fs/starfarer/combat/ai/attack/AutofireManagerV2$1
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#identity-anonymous-classes
+	f	this$0	outer	Lcom/fs/starfarer/combat/ai/attack/AutofireManagerV2;
+		c javap 字节码取证 | 高 | 非静态内部类持有的外层实例引用
+	m	super	compareByFluxPerSecond	(Lcom/fs/starfarer/combat/ai/attack/WeaponGroupEvaluation;Lcom/fs/starfarer/combat/ai/attack/WeaponGroupEvaluation;)I
+		c javap 字节码取证 | 高 | Math.signum(B.õ00000()-B.õ00000()) 升序比较
 c com/fs/starfarer/combat/ai/attack/B com/fs/starfarer/combat/ai/attack/WeaponGroupEvaluation
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#attack-b-weapon-group-evaluation
+	f	ô00000	isPDGroup	Z
+		c javap 字节码取证 | 高 | ø00000() 评估 6034-6039: 组内有 PD AIHint 武器时 super(Z)V 置 1
+	f	Õ00000	isStrikeGroup	Z
+		c javap 字节码取证 | 高 | ø00000() 评估 5727-5732: 组内有 STRIKE AIHint 武器置 1
+	f	ÒO0000	usesEnergy	Z
+		c javap 字节码取证 | 高 | ø00000() 评估 6011-6016: 组内有 usesEnergy 武器置 1；DO_NOT_USE_FLUX 时关闭该组
+	f	String	ammoLow	Z
+		c javap 字节码取证 | 中 | ø00000() 评估 5713-5725: 组内有弹药非无限且 ammoPerSecond<=0 的武器置 1（弹药需节省）
+	f	Ó00000	isAllMissiles	Z
+		c javap 字节码取证 | 高 | ø00000() 评估 5733-5738: 组内武器全为导弹保持 1，非导弹置 0
+	f	õ00000	weaponCount	I
+		c javap 字节码取证 | 高 | ø00000() 评估 5797: iinc 12,1 计数，super(I)V 写入
+	f	if	turretCount	I
+		c javap 字节码取证 | 高 | ø00000() 评估 5803-5807/5811-5817: turret 槽计数写入
+	f	OO0000	hardpointCount	I
+		c javap 字节码取证 | 高 | ø00000() 评估 5799-5802: hardpoint 槽计数写入
+	f	ø00000	hasAimableWeapons	Z
+		c javap 字节码取证 | 高 | ø00000() 评估 6134: 有 hardpoint 非 DO_NOT_AIM 武器置 1；StrafeTargetManeuverV2 据此保持朝向
+	f	do	weaponGroupIndex	I
+		c javap 字节码取证 | 高 | ø00000() 评估 6160-6163: 组索引 0..7 写入；AutofireManagerV2 用 super()I 取武器组
+	f	Ö00000	minRange	F
+		c javap 字节码取证 | 高 | ø00000() 评估 6025-6032: 组内武器最小射程；构造器初始 Float.MAX_VALUE
+	f	Ò00000	maxRange	F
+		c javap 字节码取证 | 高 | ø00000() 评估 6019-6024: 组内武器最大射程；构造器初始 0.0f
+	f	super	fluxPerSecond	F
+		c javap 字节码取证 | 高 | ø00000() 评估 6146-6147: 组内武器每秒辐能消耗累计；AutofireManagerV2 排序/预算依据
+	f	ÓO0000	dps	F
+		c javap 字节码取证 | 高 | ø00000() 评估 6149-6150: 组内武器 DPS 累计写入
+	m	do	isPDGroup	()Z
+		c javap 字节码取证 | 高 | 读 isPDGroup 字段
+	m	super	setPDGroup	(Z)V
+		c javap 字节码取证 | 高 | 写 isPDGroup 字段
+	m	Ö00000	usesEnergy	()Z
+		c javap 字节码取证 | 高 | 读 usesEnergy 字段
+	m	Ò00000	setUsesEnergy	(Z)V
+		c javap 字节码取证 | 高 | 写 usesEnergy 字段
+	m	Õ00000	getMinRange	()F
+		c javap 字节码取证 | 高 | 读 minRange 字段
+	m	Ó00000	setMinRange	(F)V
+		c javap 字节码取证 | 高 | 写 minRange 字段
+	m	ÒO0000	getMaxRange	()F
+		c javap 字节码取证 | 高 | 读 maxRange 字段
+	m	Ò00000	setMaxRange	(F)V
+		c javap 字节码取证 | 高 | 写 maxRange 字段
+	m	ÓO0000	getWeaponCount	()I
+		c javap 字节码取证 | 高 | 读 weaponCount 字段
+	m	super	setWeaponCount	(I)V
+		c javap 字节码取证 | 高 | 写 weaponCount 字段
+	m	OO0000	getTurretCount	()I
+		c javap 字节码取证 | 高 | 读 turretCount 字段
+	m	Ò00000	setTurretCount	(I)V
+		c javap 字节码取证 | 高 | 写 turretCount 字段
+	m	String	getHardpointCount	()I
+		c javap 字节码取证 | 高 | 读 hardpointCount 字段
+	m	String	setHardpointCount	(I)V
+		c javap 字节码取证 | 高 | 写 hardpointCount 字段
+	m	super	getWeaponGroupIndex	()I
+		c javap 字节码取证 | 高 | 读 weaponGroupIndex 字段
+	m	Ó00000	setWeaponGroupIndex	(I)V
+		c javap 字节码取证 | 高 | 写 weaponGroupIndex 字段
+	m	if	isAmmoLow	()Z
+		c javap 字节码取证 | 中 | 读 ammoLow 字段
+	m	void	setAmmoLow	(Z)V
+		c javap 字节码取证 | 中 | 写 ammoLow 字段
+	m	ô00000	isStrikeGroup	()Z
+		c javap 字节码取证 | 高 | 读 isStrikeGroup 字段
+	m	Ó00000	setStrikeGroup	(Z)V
+		c javap 字节码取证 | 高 | 写 isStrikeGroup 字段
+	m	Ò00000	isAllMissiles	()Z
+		c javap 字节码取证 | 高 | 读 isAllMissiles 字段
+	m	String	setAllMissiles	(Z)V
+		c javap 字节码取证 | 高 | 写 isAllMissiles 字段
+	m	Ó00000	hasAimableWeapons	()Z
+		c javap 字节码取证 | 高 | 读 hasAimableWeapons 字段
+	m	Ö00000	setHasAimableWeapons	(Z)V
+		c javap 字节码取证 | 高 | 写 hasAimableWeapons 字段
+	m	õ00000	getFluxPerSecond	()F
+		c javap 字节码取证 | 高 | 读 fluxPerSecond 字段
+	m	String	setFluxPerSecond	(F)V
+		c javap 字节码取证 | 高 | 写 fluxPerSecond 字段
+	m	void	getDps	()F
+		c javap 字节码取证 | 高 | 读 dps 字段
+	m	super	setDps	(F)V
+		c javap 字节码取证 | 高 | 写 dps 字段
 c com/fs/starfarer/combat/ai/attack/D com/fs/starfarer/combat/ai/attack/AutofireManager
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#attack-d-autofire-manager
+	m	super	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | AutofireManagerV2/FighterAutofireManager 实现体：advance(IntervalTracker) 后逐武器组决策 toggleOn/toggleOff
 c com/fs/starfarer/combat/ai/attack/Object com/fs/starfarer/combat/ai/attack/FighterAutofireManager
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#attack-object-fighter-autofire-manager
+	f	ø00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器 aload_1 赋值；advance 中自舰查询
+	f	OO0000	weaponGroupEvaluations	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 构造器 putfield 传入 Map<WeaponGroup,B>
+	f	õ00000	autofireIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造器 new IntervalTracker(0.4f,0.7f)
+	f	ô00000	flags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | final 字段；advance 中 hasFlag(DO_NOT_USE_FLUX / DO_NOT_AUTOFIRE_NON_ESSENTIAL_GROUPS)
+	f	void	fleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+		c javap 字节码取证 | 高 | 构造器 CombatEngine.getFleetManager(ship.getOriginalOwner()) 写入
+	f	if	weaponSizeScores	[I
+		c javap 字节码取证 | 高 | static volatile 懒加载缓存 WeaponSize→分数
+	m	super	unusedIsWeaponAutofirable	(Lcom/fs/starfarer/combat/systems/Weapon;)Z
+		c javap 字节码取证 | 高 | 恒 true 死代码：iconst_1 ireturn，类内无任何调用点，unused 前缀标记
+	m	Ó00000	isWeaponGroupAutofirable	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)Z
+		c javap 字节码取证 | 中 | 恒 true 桩：对应 V2 版武器组可用判断的简化占位
+	m	super	getThreatFactor	(Lcom/fs/starfarer/combat/ai/ThreatEvalAI;)F
+		c javap 字节码取证 | 中 | 按盾牌/船体尺寸差/速度差计算目标威胁因子，返回 1-评估值
+	m	super	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 接口 D 实现：战机版自动开火主循环
+	m	Ò00000	isWeaponGroupUsable	(Lcom/fs/starfarer/combat/systems/WeaponGroup;)Z
+		c javap 字节码取证 | 高 | 统计组内可用/不可用武器权重（STRIKE/无弹药/PD/导弹槽检查），可用权重优先返回真
+	m	Ò00000	weaponSizeScores	()[I
+		c javap 字节码取证 | 高 | static 懒加载 WeaponSize→分数数组
 c com/fs/starfarer/combat/ai/int com/fs/starfarer/combat/ai/OrderResponseModule
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#int-order-response-module
+	f	Ô00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造参数1；getAIFlags/getLocation/getWing 等全类主要操作对象
+	f	Object	flockingAI	Lcom/fs/starfarer/combat/ai/movement/FlockingAI;
+		c javap 字节码取证 | 高 | 构造参数2；传入 EscortTargetManeuverV3/RetreatManeuver 构造
+	f	oO0000	maneuverAPI	Lcom/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI;
+		c javap 字节码取证 | 高 | 构造参数4；机动构造与 getThreatEvaluator/setMaxTargetRange
+	f	Ø00000	unusedFlag	Z
+		c javap 字节码取证 | 高 | 仅构造 putfield false，类内无任何 getfield 读取，死字段
+	f	ÒO0000	isCarrier	Z
+		c javap 字节码取证 | 高 | updateFleetMember 中 set = fleetMember.getMember().isCarrier()
+	f	ø00000	fleetMember	Lcom/fs/starfarer/combat/DeployedFleetMember;
+		c javap 字节码取证 | 高 | updateFleetMember 懒加载 getDeployedFleetMember 缓存；getFleetMember 返回
+	f	o00000	taskManager	Lcom/fs/starfarer/combat/tasks/CombatTaskManager;
+		c javap 字节码取证 | 高 | 构造赋值；getOrders 经其 getOrdersForFleetMember
+	f	return	fleetManager	Lcom/fs/starfarer/combat/CombatFleetManager;
+		c javap 字节码取证 | 高 | 构造 CombatEngine.getFleetManager(owner) 赋值；updateFleetMember/getOrderResponseForOrders 使用
+	f	ô00000	attackModule	Lcom/fs/starfarer/combat/ai/attack/AttackAIModule;
+		c javap 字节码取证 | 高 | 构造参数3 final；EscortTargetManeuverV3 构造传入
+	f	Õ00000	engaged	Z
+		c javap 字节码取证 | 高 | getOrderResponse 中多处置位；isEngaged() getter 直接返回；BasicShipAI.isEngaged 转发
+	f	ö00000	unusedFlag2	Z
+		c javap 字节码取证 | 高 | 仅构造与 getOrderResponseForOrders 距离>1500 分支写 false，无任何读取，死字段
+	f	Ò00000	orderTypeWeights	[I
+		c javap 字节码取证 | 高 | getOrderTypeWeights 懒加载 C$o.ordinal→权重(1..5)，if() 用 tableswitch 分支
+	f	int	combatTaskTypeWeights	[I
+		c javap 字节码取证 | 高 | getCombatTaskTypeWeights 懒加载 CombatTaskType.ordinal→权重(1..20) tableswitch
+	m	Õ00000	getFleetMember	()Lcom/fs/starfarer/combat/DeployedFleetMember;
+		c javap 字节码取证 | 高 | 调 updateFleetMember 后返回 fleetMember 字段
+	m	void	updateFleetMember	()V
+		c javap 字节码取证 | 高 | 懒加载 getDeployedFleetMember 缓存 + 设 isCarrier（构造与 getFleetMember 调用）
+	m	Ò00000	isRetreating	()Z
+		c javap 字节码取证 | 高 | getOrders().getType()==C$o.RETREAT；BasicShipAI.canObeyOrders 取反使用
+	m	Ò00000	unusedFindClosestWingMember	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 遍历 getWing().getMembers() 找最近非残骸成员；类内无调用点且外部无引用，死方法
+	m	Ó00000	getOrders	()Lcom/fs/starfarer/combat/tasks/DirectOrders;
+		c javap 字节码取证 | 高 | taskManager.getOrdersForFleetMember(fleetMember)；BasicShipAI.getOrders 转发
+	m	Ö00000	hasOrders	()Z
+		c javap 字节码取证 | 高 | getOrders().getType()!=C$o.NO_ORDERS；BasicShipAI.hasOrders 转发
+	m	if	getOrderResponse	()Lcom/fs/starfarer/combat/ai/int$o;
+		c javap 字节码取证 | 高 | 主入口：按 IGNORES_ORDERS/ESCORT_OTHER_SHIP/CAMP_LOCATION 与订单类型生成机动响应（int$o=机动+权重）；BasicShipAI.pickManeuver 调用
+	m	String	getNoOrderResponse	()Lcom/fs/starfarer/combat/ai/int$o;
+		c javap 字节码取证 | 高 | 返回 null；getOrderResponse 的 SEARCH_AND_DESTROY/NO_ORDERS 分支调用（无命令不响应）
+	m	super	isEngaged	()Z
+		c javap 字节码取证 | 高 | 返回 engaged 字段；BasicShipAI.isEngaged() 直接转发
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 空方法体；BasicShipAI.advance/FighterAI.advance 每帧调用（预留推进钩子）
+	m	super	setMovementDestination	(Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 参数非 null 时 setFlag MOVEMENT_DEST，null 时 unsetFlag
+	m	super	setMovementDestinationForTask	(Lcom/fs/starfarer/combat/tasks/CombatTask;)V
+		c javap 字节码取证 | 高 | 按任务类型（AVOID/IGNORE 或距离<2000 清除，否则设任务位置）委托 setMovementDestination
+	m	super	getOrderResponseForOrders	(Lcom/fs/starfarer/combat/tasks/DirectOrders;)Lcom/fs/starfarer/combat/ai/int$o;
+		c javap 字节码取证 | 高 | 按 C$o 类型建 Escort/Retreat/GoTo 机动响应；getOrderResponse 的 CARRY_OUT_COMBAT_TASK 分支调用
+	m	super	unusedIsShipActive	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 检查 Ship 非 hulk 且在 CombatEngine.getObjects 列表；类内无调用点且外部无引用，死方法
+	m	õ00000	getOrderTypeWeights	()[I
+		c javap 字节码取证 | 高 | C$o→权重映射懒加载（volatile 缓存 + NoSuchFieldError 容错）
+	m	ô00000	getCombatTaskTypeWeights	()[I
+		c javap 字节码取证 | 高 | CombatTaskType→权重映射懒加载（20 项）
 c com/fs/starfarer/combat/ai/int$o com/fs/starfarer/combat/ai/int$o
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#int-o-order-response-data
+	f	new	maneuver	Lcom/fs/starfarer/combat/ai/movement/maneuvers/Maneuver;
+		c javap 字节码取证 | 高 | 字段类型 Maneuver，机动指令引用
+	f	Ô00000	unusedFloat	F
+		c javap 字节码取证 | 高 | 类内仅构造器，无任何读写，死代码 unused 前缀
+	f	Ó00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 目标舰引用
+	f	o00000	outer	Lcom/fs/starfarer/combat/ai/OrderResponseModule;
+		c javap 字节码取证 | 高 | final 外层类引用（int 的 named 名 OrderResponseModule）
 c com/fs/starfarer/combat/ai/new com/fs/starfarer/combat/ai/ArmorAngleTracker
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#new-armor-angle-tracker
+	f	Ô00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造存参，getArmorGrid/getFacing 数据源
+	f	class	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 0.2/0.4 间隔，advance 里 intervalElapsed 门控更新
+	f	Ó00000	armorByAngle	[F
+		c javap 字节码取证 | 高 | 18 槽角度桶，updateArmorState 累计各角度护甲分数后归一
+	f	new	randomValue	F
+		c javap 字节码取证 | 中 | 构造 Math.random()，getBestArmorAngle 中 >0.5 决定扫描方向
+	f	Ö00000	cellAngleCache	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getCellAngle 的 Pair(x,y)→角度 懒缓存
+	f	o00000	cellKeyPair	Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 高 | 复用的缓存查询键（Pair.one/two 写入）
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | IntervalTracker.advance + intervalElapsed 时调 updateArmorState
+	m	Ò00000	getBestArmorAngle	(FF)F
+		c javap 字节码取证 | 高 | STR "Finding good armor angle to use"；±10° 候选取 getArmorInArc(angle,30f) 最大者
+	m	o00000	getCellAngle	(II)F
+		c javap 字节码取证 | 高 | 格坐标→角度，cellAngleCache 懒缓存
+	m	o00000	updateArmorState	()V
+		c javap 字节码取证 | 高 | STR "Updating armor state"；遍历装甲格按角度桶累计护甲分数
+	m	o00000	getArmorInArc	(FF)F
+		c javap 字节码取证 | 高 | 依 ship.facing+弧宽计算桶内平均护甲分数
+	m	o00000	unusedMain	([Ljava/lang/String;)V
+		c javap 字节码取证 | 中 | 遗留 main：仅写入局部常量后返回，无类内引用（unused 纪律）
 c com/fs/starfarer/combat/ai/o00O com/fs/starfarer/combat/ai/FrontShieldAI
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#o00o-front-shield-ai
+	f	Øo0000	unused	F
+		c javap 字节码取证 | 中 | private static final float，类内无任何 getstatic/putstatic 引用，死代码常量
+	f	Õo0000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器写入；getFluxTracker/getShield/giveCommand 大量读取
+	f	this.new	hitpoints	F
+		c javap 字节码取证 | 中 | 构造器 = ship.getHitpoints() 初始值
+	f	public.super	fluxCapacity	F
+		c javap 字节码取证 | 中 | 构造器 = ship.getFluxCapacity()；flux 过低判定阈值
+	f	oÒ0000	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造器写入；DO_NOT_USE_SHIELDS/KEEP_SHIELDS_ON/SAFE_FROM_DANGER_TIME 读取
+	f	ÒÒ0000	eval	Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 构造器 new FiringSolutionEval(ship,aiFlags)；advance/isShieldFacingOk/伤害评估委托
+	f	Object.new	shieldUnfoldTime	F
+		c javap 字节码取证 | 中 | 构造器 = shield.getChargeTracker().ÖO0000()；与 bestTimeToHit 比较判断能否及时开盾
+	f	øo0000	timeSinceShieldToggle	F
+		c javap 字节码取证 | 中 | advance 中 += 时间，超过阈值后触发开盾并清零
+	f	ôo0000	shieldHitTolerance	F
+		c javap 字节码取证 | 中 | 盾受击持续时间的允许阈值（初值 3.0f，威胁时重设 0.5f）
+	f	öo0000	shieldHitTime	F
+		c javap 字节码取证 | 中 | shield.isOn 期间累计受击时间，超过 shieldHitTolerance 关盾
+	f	for.super	shieldsOn	Z
+		c javap 字节码取证 | 中 | o00000() 返回；开/关盾决策各处读写（真时盾已启用/正在启用）
+	m	o00000	isShieldOn	()Z
+		c javap 字节码取证 | 高 | 直接返回 shieldsOn 字段（ShieldAI 接口方法）
+	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/O0OO;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | ShieldAI 主逻辑：过载/指令/DO_NOT_USE_SHIELDS 分支，委托 eval，giveCommand 开/关盾
+	m	null	unused	()V
+		c javap 字节码取证 | 中 | 空方法体直接 return，无引用，死代码
+	m	Ó00000	isShieldFacingOk	()Z
+		c javap 字节码取证 | 中 | 委托 eval.isShieldFacingOk()（ShieldAI 接口方法）
+	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 直接返回 eval 字段（ShieldAI 接口方法）
 c com/fs/starfarer/combat/ai/oOoO com/fs/starfarer/combat/ai/PhaseCloakShieldAI
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#oooo-phase-cloak-shield-ai
+	f	Object	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造参数1；相位状态/速度/flux/护甲等全类操作对象
+	f	for	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造参数2；IN_CRITICAL_DPS_DANGER/PHASE_ATTACK_RUN_FROM_BEHIND_DIST_CRITICAL 等标志设置
+	f	ÒO0000	eval	Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 构造 new FiringSolutionEval(ship,aiFlags,5000f)；hasFiringSolution/getEval 委托
+	f	ö00000	maneuverAPI	Lcom/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI;
+		c javap 字节码取证 | 高 | 构造参数3；getAIFlags/getAttackAI（相位攻击跑判定）
+	f	ø00000	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造 new IntervalTracker(0.1,0.2)；advance 中 intervalElapsed 节流重评估
+	f	o00000	usePhaseCloak	Z
+		c javap 字节码取证 | 高 | doActivatePhase 按它选 getPhaseCloak() 或 getSystem() 激活；BasicShipAI 对 O0Oo 系统 AI 置 true
+	f	Ò00000	phaseCloakSystem	Lcom/fs/starfarer/combat/systems/PhaseCloakSystem;
+		c javap 字节码取证 | 高 | 构造 getPhaseCloak()!=null 用之否则 getSystem() checkcast；isOn/cooldown/fluxPerSecond
+	f	public	phaseBrawler	Z
+		c javap 字节码取证 | 高 | 构造遍历 hullmods 检测 phase_brawler tag 置 true；相位摔跤手船体模组
+	f	Ø00000	unusedTime	F
+		c javap 字节码取证 | 高 | 构造 2.0f；仅 advance 自增与归零，无任何消费读取，死字段
+	f	int	phaseActiveTime	F
+		c javap 字节码取证 | 高 | 相位 IN/ACTIVE 时累计；小于 minPhaseActiveTime 时 advance 提前返回
+	f	return	minPhaseActiveTime	F
+		c javap 字节码取证 | 高 | 默认 0.01f；未相位时重置；phaseActiveTime 的最小阈值
+	f	oO0000	activationCooldown	F
+		c javap 字节码取证 | 高 | 构造 1.0f 随 advance 累计；doActivatePhase 中 <0.5f 拒绝激活并归零
+	f	ô00000	timeSinceDecision	F
+		c javap 字节码取证 | 高 | 构造 100.0f（开局立即决策）；advance 累计；大于 decisionInterval 触发相位决策
+	f	Õ00000	decisionInterval	F
+		c javap 字节码取证 | 高 | 构造 10+rand*10；决策后重置 2+rand*6 的随机间隔
+	f	Ô00000	wantsToPhase	Z
+		c javap 字节码取证 | 高 | flux 足够持续 4s 时置 true、不足置 false；驱动 activatePhase（相位攻击跑请求）
+	m	o00000	shouldKeepShieldOn	()Z
+		c javap 字节码取证 | 高 | 恒返回 false；ShieldAI 接口实现，相位无盾不需保持
+	m	o00000	advance	(FLcom/fs/starfarer/combat/ai/ThreatEvalAI;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | ShieldAI 接口主方法：状态机决定相位开关、设置 STAY_PHASED/PHASE_ATTACK_RUN 等标志
+	m	Ö00000	activatePhase	()V
+		c javap 字节码取证 | 高 | 委托 doActivatePhase(false)；各"决定开相位"分支调用
+	m	new	doActivatePhase	(Z)V
+		c javap 字节码取证 | 高 | 冷却检查后激活 chargeTracker 并 giveCommand 切换相位系统（参数未使用）
+	m	class	unusedEmptyMethod	()V
+		c javap 字节码取证 | 高 | 空方法体且类内无调用、外部无引用，死方法
+	m	Ó00000	hasFiringSolution	()Z
+		c javap 字节码取证 | 高 | 委托 eval.Õ00000()（FiringSolutionEval 评估出有效射击方案）；VentModule 据此不散热
+	m	new	getEval	()Lcom/fs/starfarer/combat/ai/FiringSolutionEval;
+		c javap 字节码取证 | 高 | 返回 eval；ShieldAI 接口 getEval，BasicShipAI$1 等桥接使用
+	m	Ô00000	isUsingPhaseCloak	()Z
+		c javap 字节码取证 | 高 | 返回 usePhaseCloak 字段
+	m	o00000	setUsePhaseCloak	(Z)V
+		c javap 字节码取证 | 高 | 写 usePhaseCloak；BasicShipAI/FighterAI 对 O0Oo 系统 AI 置 true
 c com/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/starfarer/combat/ai/FiringSolutionEval
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#long-eval-firing-solution-eval
+	f	new	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器写入；getStats/getShield/getLocation/getVelocity 等大量读取，评估对象为本舰
+	f	null	recomputeInterval	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造器 new IntervalTracker(0.05f,0.1f)；advance(float)+intervalElapsed 定期触发方案重算
+	f	Oo0000	shieldFacingOk	Z
+		c javap 字节码取证 | 中 | updateShieldState 依据护盾朝向/威胁评估置位；ÕO0000() 读取；真时置 NEEDS_HELP
+	f	while	hasSolution	Z
+		c javap 字节码取证 | 高 | computeSolution 中 hasFiringSolution(F,$o,FFF) 返回 true 时置 true；Õ00000() 返回
+	f	OO0000	bestTimeToHit	F
+		c javap 字节码取证 | 中 | computeSolution 中 = $o.minTimeToImpact；ø00000() 返回（FrontShieldAI 里与盾展开时间比较）
+	f	oo0000	hasIncomingDamage	Z
+		c javap 字节码取证 | 高 | computeIncomingDamage 末尾按总伤害设 HAS_INCOMING_DAMAGE flag；String() 返回
+	f	float	assumeFiring	Z
+		c javap 字节码取证 | 中 | computeIncomingWeaponDamage 中 `if assumeFiring || weapon.isFiring()` 将未开火武器计入评估
+	f	ÔO0000	useBurstDps	Z
+		c javap 字节码取证 | 中 | computeIncomingWeaponDamage 中开启时用 burstDamage/burst 时长折算 DPS
+	f	null.super	nonCombat	Z
+		c javap 字节码取证 | 高 | 构造器 = ship.isNonCombat(true)；computeIncomingWeaponDamage 中非战斗舰威胁权重减半
+	f	ö00000	aiFlags	Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 构造器写入；HAS_INCOMING_DAMAGE/NEEDS_HELP flag 设置
+	f	Ø00000	maxRange	F
+		c javap 字节码取证 | 中 | 构造器参数（默认 2500f）；>0 时作为方案评估距离上限
+	f	Óo0000	assessingIncomingDamage	Z
+		c javap 字节码取证 | 中 | computeIncomingDamage 开头置 true、advance 周期开头复位，评估进行中标志
+	f	õO0000	maxWeaponDamage	F
+		c javap 字节码取证 | 中 | computeSolution 中 = $o.maxDamagePerShot（所有武器单发伤害最大值）
+	f	new.super	armorDamage	F
+		c javap 字节码取证 | 高 | 按 DamageType.getArmorMult 加权汇总；void() 返回
+	f	Ö00000	hullDamage	F
+		c javap 字节码取证 | 高 | 按 DamageType.getHullMult 加权汇总；do() 返回
+	f	Ó00000	shieldDamage	F
+		c javap 字节码取证 | 中 | shieldMult*fluxPerPointOfDamage 折算；super() 返回
+	f	Ô00000	incomingDamageSources	Ljava/util/List;
+		c javap 字节码取证 | 中 | computeIncomingDamage 开头 clear；accumulateDamage 中对本舰伤害>500 的来袭实体 add
+	f	ÖO0000	evaluationWindow	F
+		c javap 字节码取证 | 中 | Ò00000(F) 写入；computeIncomingWeaponDamage 作为武器冷却/散热时间窗口（初值 1.0f）
+	f	oO0000	minTimeToFire	F
+		c javap 字节码取证 | 中 | computeIncomingWeaponDamage 记录各武器最早可开火时间的最小值；ô00000() 返回
+	f	class.super	considerMissiles	Z
+		c javap 字节码取证 | 中 | computeIncomingWeaponDamage 中为 false 时跳过 MISSILE 类型武器
+	f	class	useWeaponPositions	Z
+		c javap 字节码取证 | 中 | computeIncomingWeaponDamage 中开启时用 slot.computePosition 精确位置判断命中
+	f	õ00000	damageTypeToIndex	[I
+		c javap 字节码取证 | 高 | static Ò00000() 惰性填充 DamageType.ordinal→1..5 索引表（ENERGY=4,FRAG=3,HE=2,KINETIC=1,OTHER=5）
+	m	OO0000	isUsingBurstDps	()Z
+		c javap 字节码取证 | 高 | 直接返回 useBurstDps 字段
+	m	ô00000	setUseBurstDps	(Z)V
+		c javap 字节码取证 | 高 | 直接写 useBurstDps 字段
+	m	ÒO0000	isAssumingFiring	()Z
+		c javap 字节码取证 | 高 | 直接返回 assumeFiring 字段
+	m	Õ00000	setAssumeFiring	(Z)V
+		c javap 字节码取证 | 高 | 直接写 assumeFiring 字段
+	m	Õ00000	hasSolution	()Z
+		c javap 字节码取证 | 高 | 直接返回 hasSolution 字段
+	m	super	advance	(FLcom/fs/starfarer/combat/ai/O0OO;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | 转发调 5 参 advance（Force=false）；ShieldAI 接口同构方法
+	m	super	advance	(FLcom/fs/starfarer/combat/ai/O0OO;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Z)V
+		c javap 字节码取证 | 高 | 主周期：推进 recomputeInterval，到期重置 assessingIncomingDamage 并调 updateShieldState/computeSolution
+	m	void	getArmorDamage	()F
+		c javap 字节码取证 | 高 | 直接返回 armorDamage 字段
+	m	do	getHullDamage	()F
+		c javap 字节码取证 | 高 | 直接返回 hullDamage 字段
+	m	super	getShieldDamage	()F
+		c javap 字节码取证 | 高 | 直接返回 shieldDamage 字段（FrontShieldAI 中与 0 比较判断威胁）
+	m	Ö00000	getMaxWeaponDamage	()F
+		c javap 字节码取证 | 高 | 直接返回 maxWeaponDamage 字段
+	m	if	resetSolution	()V
+		c javap 字节码取证 | 中 | 单行调用 computeSolution(1000000f)——极大角度使方案失效，用于清空当前方案
+	m	super	computeSolution	(F)V
+		c javap 字节码取证 | 高 | 核心：构造 $o，hasFiringSolution(F,$o,0,360,F) 置 hasSolution，computeSolutionArc 计算伤害并同步 bestTimeToHit/maxWeaponDamage
+	m	ø00000	getBestTimeToHit	()F
+		c javap 字节码取证 | 高 | 直接返回 bestTimeToHit 字段
+	m	String	hasIncomingDamage	()Z
+		c javap 字节码取证 | 高 | 直接返回 hasIncomingDamage 字段
+	m	super	updateShieldState	(Lcom/fs/starfarer/combat/ai/O0OO;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 中 | 评估护盾朝向/flux 与威胁：shieldFacingOk 判定、hasSolution 更新，决定是否维持盾朝向
+	m	ÕO0000	isShieldFacingOk	()Z
+		c javap 字节码取证 | 中 | 直接返回 shieldFacingOk 字段（ShieldAI.Ó00000() 委托点）
+	m	super	hasFiringSolution	(FLcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)Z
+		c javap 字节码取证 | 高 | 包转：以 0..360 全弧与 1000000 距离调 5 参变体
+	m	super	hasFiringSolution	(FLcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;FFF)Z
+		c javap 字节码取证 | 高 | 核心：指定角度/弧/距离下调 computeIncomingDamage 判断是否存在有效射击方案（伤害阈值判定）
+	m	õ00000	getIncomingDamageSources	()Ljava/util/List;
+		c javap 字节码取证 | 高 | 直接返回 incomingDamageSources 字段
+	m	super	getSolutionScore	(FLcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;FF)F
+		c javap 字节码取证 | 中 | 包转：以 1000000 距离调 computeIncomingDamage，返回方案得分（总威胁伤害）
+	m	super	computeIncomingDamage	(FLcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;FFFZ)F
+		c javap 字节码取证 | 高 | STR "Assessing incoming missiles"：遍历 AI 网格来袭导弹/炮弹/射线，按伤害类型累计到 $o，返回总威胁伤害并设 HAS_INCOMING_DAMAGE
+	m	super	accumulateDamage	(Lcom/fs/starfarer/combat/o0OO/B;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/o0OO/Damage;FLcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;FFLcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;FZ)V
+		c javap 字节码取证 | 中 | 私有：单个来袭实体距离/弧线/水雷判定后按 DamageType tableswitch 累计到评估与汇总 $o
+	m	Ò00000	setEvaluationWindow	(F)V
+		c javap 字节码取证 | 中 | 直接写 evaluationWindow 字段
+	m	ô00000	getMinTimeToFire	()F
+		c javap 字节码取证 | 中 | 直接返回 minTimeToFire 字段
+	m	õ00000	setConsiderMissiles	(Z)V
+		c javap 字节码取证 | 中 | 直接写 considerMissiles 字段
+	m	super	setUseWeaponPositions	(Z)V
+		c javap 字节码取证 | 中 | 直接写 useWeaponPositions 字段
+	m	super	computeIncomingWeaponDamage	(FFFLcom/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
+		c javap 字节码取证 | 高 | STR "Computing incoming weapon damage (by type)"：遍历敌方舰船武器组，按射程/冷却/弹速折算 DPS 累计到 $o
+	m	Ò00000	getDamageTypeToIndex	()[I
+		c javap 字节码取证 | 高 | static：懒初始化 damageTypeToIndex 查找表（DamageType ordinal→索引，NoSuchFieldError 兜底）
 c com/fs/starfarer/combat/ai/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o com/fs/starfarer/combat/ai/FiringSolutionEval$o
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#long-eval-o-eval-data
+	f	Õ00000	maxDamagePerShot	F
+		c javap 字节码取证 | 中 | computeIncomingWeaponDamage 中取各武器 damagePerShot 最大值
+	f	void	kineticDamage	F
+		c javap 字节码取证 | 高 | DamageType.KINETIC 分支累计
+	f	õ00000	fragmentationDamage	F
+		c javap 字节码取证 | 高 | DamageType.FRAGMENTATION 分支累计
+	f	ô00000	highExplosiveDamage	F
+		c javap 字节码取证 | 高 | DamageType.HIGH_EXPLOSIVE 分支累计
+	f	Ö00000	energyDamage	F
+		c javap 字节码取证 | 高 | DamageType.ENERGY 非光束分支累计
+	f	Ò00000	beamDamage	F
+		c javap 字节码取证 | 高 | DamageType.ENERGY 光束分支累计（按 DPS）
+	f	Ó00000	empDamage	F
+		c javap 字节码取证 | 高 | getFluxComponent 累计（EMP/flux 分量）
+	f	super	burstFireTimeRemaining	F
+		c javap 字节码取证 | 中 | "fires_one_burst" 且开火中时取 max(getBurstFireTimeRemaining)
+	f	String	minTimeToImpact	F
+		c javap 字节码取证 | 中 | 构造器初值 1000.0f；accumulateDamage 中取最小命中时间（ETA）
 c com/fs/starfarer/combat/ai/private com/fs/starfarer/combat/ai/PointDefenseAutofireAI
 	c javap取证 | 高 | .dev/mapping-evidence/combat-ai-core.md#private-point-defense-autofire-ai
+	f	Ö00000	weapon	Lcom/fs/starfarer/combat/systems/Weapon;
+		c javap 字节码取证 | 高 | 构造参数；isFiring/isDisabled/getAmmo/getRange 等全类操作
+	f	Ó00000	reEvalTimer	F
+		c javap 字节码取证 | 高 | advance 累计；>= reEvalInterval 触发 reEvalTarget 后归零
+	f	ÔO0000	reEvalInterval	F
+		c javap 字节码取证 | 高 | 随机 0.05~0.1 或 0.5~1.0 再乘 reEvalIntervalMult；目标重评估间隔
+	f	õ00000	state	Lcom/fs/starfarer/combat/ai/AutofireState;
+		c javap 字节码取证 | 高 | WAITING/TRACKING/FIRING 状态机；shouldFire 仅 FIRING 时开火
+	f	o00000	reEvalIntervalMult	F
+		c javap 字节码取证 | 高 | 构造按 SMALL/PD=0.25、MEDIUM=0.5、LARGE=1.0 设；缩放重评估间隔
+	f	null	target	Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 高 | 当前目标；setTarget/forceOff 写入，getTargetShip/getTargetMissile 读取
+	f	class	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造 weapon.getShip()；getShipTarget/owner/flux 判断
+	f	oO0000	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造 new IntervalTracker(0.25,0.5)；advance 中 intervalElapsed 触发 updateBlockedState
+	f	OO0000	blocked	Z
+		c javap 字节码取证 | 高 | updateBlockedState 中弹道遮挡检查为真时置 true；shouldFire 否决开火
+	f	while	ffDanger	Z
+		c javap 字节码取证 | 高 | updateBlockedState 中 FF 危险评估>0.1 置 true；shouldFire 否决开火
+	f	interface	ammoOk	Z
+		c javap 字节码取证 | 高 | updateAmmoOk 按弹药余量/USE_LESS_VS_SHIELDS/PD 策略维护；true 才允许进入 FIRING
+	f	ö00000	timeFiring	F
+		c javap 字节码取证 | 高 | weapon.isFiring 时累计；>3s 未开火重置；getTargetLeadTime 的 PD 提前量参数
+	f	Ô00000	timeSinceLastFire	F
+		c javap 字节码取证 | 高 | 未开火时累计、开火时清零；>3f 重置 timeFiring
+	f	Ø00000	previousTarget	Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 高 | 目标切换检测缓存；target 变化时重置射击计时
+	m	ô00000	updateAmmoOk	()V
+		c javap 字节码取证 | 高 | USE_LESS_VS_SHIELDS/PD/ammoPerSecond 逻辑维护 ammoOk
+	m	o00000	setTarget	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)V
+		c javap 字节码取证 | 高 | 写 target 并调 updateBlockedState；forceOff 以 null 调用
+	m	int	reEvalTarget	()V
+		c javap 字节码取证 | 高 | 综合目标重评估：舰船目标优先，调 findShipTarget/findMissileTarget，随机选取
+	m	Ò00000	unusedAlwaysFalse	()Z
+		c javap 字节码取证 | 高 | 恒返回 false 且类内无调用点，死方法
+	m	Ô00000	getAutofireAccuracyBonus	()F
+		c javap 字节码取证 | 高 | 返回 weapon.getSpec().getAutofireAccBonus()
+	m	return	getTargetLeadTime	()F
+		c javap 字节码取证 | 高 | PD/PD_ONLY 无 STRIKE 时返回 timeFiring；pd_best_target_leading>=1 返回 10000
+	m	o00000	findShipTarget	()V
+		c javap 字节码取证 | 高 | 遍历 aiGridShips 找可命中敌舰（射程/角度/目标优先级）；PD_ALSO 时另调 findMissileTarget
+	m	o00000	canFireAtTarget	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 计算弹道命中点与武器弧/射程判定是否可开火
+	m	Õ00000	findMissileTarget	()V
+		c javap 字节码取证 | 高 | 遍历 aiGridMissiles 找可拦截导弹（pd_ignores_flares/IGNORES_FLARES 过滤）
+	m	Object	isTargetValid	()Z
+		c javap 字节码取证 | 高 | 目标非 hulk/未移除/异阵营/可见且未过期检查，过期自动清空 target
+	m	Ø00000	updateBlockedState	()V
+		c javap 字节码取证 | 高 | 弹道遮挡（hulks in the way）与 FF 危险两项检查更新 blocked/ffDanger
+	m	o00000	canHitTarget	(F)Z
+		c javap 字节码取证 | 高 | 目标在武器弧+射程内且命中点可达（角度余量参数）
 c com/fs/starfarer/combat/ai/private$o com/fs/starfarer/combat/ai/AutofireState
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#private-o-autofire-state
 	f	String	WAITING	Lcom/fs/starfarer/combat/ai/private$o;
 	f	Ó00000	TRACKING	Lcom/fs/starfarer/combat/ai/private$o;
 	f	Ò00000	FIRING	Lcom/fs/starfarer/combat/ai/private$o;
+	f	super	enumValues	[Lcom/fs/starfarer/combat/ai/AutofireState;
+		c javap 字节码取证 | 高 | private static final AutofireState[]，values() 返回
 c com/fs/starfarer/combat/ai/super/A com/fs/starfarer/combat/ai/super/A
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#super-a-super-b-unresolved
+	m	o00000	evaluate	()V
+		c javap 字节码取证 | 高 | super/B 实现体遍历装甲网格与武器组计算两个评估标志
 c com/fs/starfarer/combat/ai/super/B com/fs/starfarer/combat/ai/super/B
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#super-a-super-b-unresolved
+	f	Ó00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器 aload_1 赋值；class()Z/Ô00000()Ship 读取
+	f	new	armorStripped	Z
+		c javap 字节码取证 | 高 | evaluate() 95-98: 装甲平均 fraction < 0.5 置 1
+	f	o00000	forwardFirepowerDominant	Z
+		c javap 字节码取证 | 中 | evaluate() 268-270: 前向武器权重*2 >= 非前向权重置 1
+	m	class	isShieldOn	()Z
+		c javap 字节码取证 | 高 | getShield()!=null && isOn() 返回
+	m	o00000	evaluate	()V
+		c javap 字节码取证 | 高 | 遍历 ArmorGrid 算平均装甲覆盖率；遍历 7 武器组算前向/非前向权重；构造器调用
+	m	Ô00000	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 读 ship 字段
+	m	new	isArmorStripped	()Z
+		c javap 字节码取证 | 高 | 读 armorStripped 字段
+	m	Ó00000	hasForwardFirepower	()Z
+		c javap 字节码取证 | 中 | 读 forwardFirepowerDominant 字段
 c com/fs/starfarer/combat/ai/while com/fs/starfarer/combat/ai/AIUtils
 	c javap取证 | 中 | .dev/mapping-evidence/combat-ai-core.md#while-ai-utils
+	f	o00000	unusedInt	I
+		c javap 字节码取证 | 高 | private static final int，类内无任何 getstatic/putstatic 引用，死代码
+	f	Ò00000	blockingShips	Ljava/util/List;
+		c javap 字节码取证 | 高 | areHulksInTheWay 懒加载缓存（残骸/不可攻击舰列表）；两个 ()V 方法置 null 清缓存
+	f	Ø00000	aimErrorOffset1	F
+		c javap 字节码取证 | 中 | getAimPoint 包装器 putstatic 写入、getInterceptPoint 读取（瞄准误差偏移1）
+	f	Ô00000	aimErrorOffset2	F
+		c javap 字节码取证 | 中 | getAimPoint 包装器 putstatic 写入、getInterceptPoint 读取（瞄准误差偏移2）
+	f	Õ00000	aimErrorDivisor	F
+		c javap 字节码取证 | 中 | 常量 15.0f，拦截计算中作偏移归一化除数（offset/15.0 修正弹速）
+	f	int	hullSizeScores	[I
+		c javap 字节码取证 | 高 | HullSize→分数(1..6)查找表缓存，getHullSizeScores() 懒初始化
+	f	return	weaponSizeScores	[I
+		c javap 字节码取证 | 高 | WeaponSize→分数(1..3)查找表缓存，getWeaponSizeScores() 懒初始化
+	m	Óo0000	isFighterBeingReplaced	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 战机召回/换装判定：isPullBackFighters、共享补充率、机队人数 vs 规格
+	m	super	getFluxScore	(Lcom/fs/starfarer/combat/entities/Ship;ZLcom/fs/starfarer/combat/entities/Ship;Z)F
+		c javap 字节码取证 | 中 | 由两舰 fluxLevel 与 hullSize.ordinal 取 min 计算
+	m	if	getOrderable	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/ai/Orderable;
+		c javap 字节码取证 | 高 | 返回 Ship.getAI() 的 Orderable 视图
+	m	Õo0000	getTimeToRecover	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 高 | 散热/过载状态剩余时间（isVenting+timeToVent / isOverloaded+overloadTimeRemaining）
+	m	õ00000	getCarrierWingRange	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | 按航母 launch bays、机队规格（拦截/护航/支援）与 CR 计算有效射程
+	m	super	getClosestPointOnMapBorder	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/CombatMap;)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | CombatMap 四角线段求交，返回距输入点最近的边界点
+	m	Ó00000	isShipEnemy	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 任务系统敌对判定：b 有 AVOID 任务、a 方无护航该目标指令、a 未撤退
+	m	super	getShipScore	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;F)F
+		c javap 字节码取证 | 中 | 综合散热/过载/系统冷却/弹药/速度/相位计算目标舰战斗评分
+	m	ôO0000	getNearestCarrier	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 最近有 launch bays、非 hulk、同 owner、未被 controlsLocked 的舰
+	m	õ00000	getNearestEnemyMissile	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Missile;
+		c javap 字节码取证 | 高 | 包装：调 getNearestEnemyMissile(Ship,float)
+	m	super	getNearestEnemyMissile	(Lcom/fs/starfarer/combat/entities/Ship;F)Lcom/fs/starfarer/combat/entities/Missile;
+		c javap 字节码取证 | 高 | 包装：以 ship.getLocation 调 (Ship,Vector2f,float) 变体
+	m	super	getNearestEnemyMissile	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;F)Lcom/fs/starfarer/combat/entities/Missile;
+		c javap 字节码取证 | 高 | 遍历 Missile：owner 不同、距离<=F 取最近
+	m	super	getNearestWaypoint	(Lorg/lwjgl/util/vector/Vector2f;I)Lcom/fs/starfarer/combat/entities/BattlefieldWaypoint;
+		c javap 字节码取证 | 高 | 遍历 BattlefieldWaypoint：同 owner、距离取最近
+	m	Ò00000	getNearestTarget	(Lorg/lwjgl/util/vector/Vector2f;I)Lcom/fs/starfarer/combat/tasks/CombatTaskTarget;
+		c javap 字节码取证 | 高 | 遍历航点+目标点取最近，返回 CombatTaskTarget
+	m	Ò00000	getClosingSpeed	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)F
+		c javap 字节码取证 | 高 | 两 CollisionEntity 相对接近速率：调 4 向量变体
+	m	Ò00000	getClosingSpeed	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)F
+		c javap 字节码取证 | 高 | 4 向量核心：归一化位置差 · 相对速度
+	m	super	computeDanger	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFF)F
+		c javap 字节码取证 | 高 | STR "Computing FF danger"；遍历敌舰/友军/火力线计算危险度
+	m	String	isSameStationOrShip	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | getParentStation 链比较：同舰/同站/互为父子站
+	m	Ò00000	clearBlockingShips	()V
+		c javap 字节码取证 | 高 | blockingShips=null 清缓存
+	m	super	resetBlockingShips	()V
+		c javap 字节码取证 | 高 | blockingShips=null 清缓存（重复方法）
+	m	super	areHulksInTheWay	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)Z
+		c javap 字节码取证 | 高 | 包装：调 (Ship,B,Vector2f,Vector2f,Z) 变体 false
+	m	super	areHulksInTheWay	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Z)Z
+		c javap 字节码取证 | 高 | STR "Checking if ship hulks are in the way"；火力线是否被 hulk/不可攻击舰阻挡
+	m	super	getClosestPointOnBounds	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/o0OO/Bounds;)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 遍历 Bounds.segments 求线段交点取最近
+	m	String.super	getNearestEnemy	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 包装：getNearestEnemy(ship,false)
+	m	String	getNearestEnemy	(Lcom/fs/starfarer/combat/entities/Ship;Z)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 包装：getNearestEnemy(ship,bool,1000000f)
+	m	super	getNearestEnemy	(Lcom/fs/starfarer/combat/entities/Ship;ZF)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 核心迭代：跳过 fighter/hulk/穿梭舱/被忽略/不可攻击，可选任务判定，距离最近
+	m	ÒO0000	getNearestEnemyCruiserOrCapital	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 跳过 fighter/frigate/destroyer，仅巡洋+，任务判定
+	m	String	getNearestEnemyDestroyerOrBigger	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 包装：getNearestEnemy(ship,false)（跳过 fighter+frigate 变体）
+	m	super	getNearestEnemyDestroyerOrBigger	(Lcom/fs/starfarer/combat/entities/Ship;Z)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 核心：跳过 fighter 与 frigate（保留驱逐+），可选任务判定
+	m	void	isShipEnemyTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 任务敌对判定变体：无撤退检查，含护航指令/当前任务目标检查
+	m	Ó00000	getNearestEnemyExcludingDrones	(Lcom/fs/starfarer/combat/entities/Ship;Z)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 跳过 drone，保留 fighter；可选任务判定
+	m	super	getNearestEnemyOfMinHullSizeInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 包装：以 ship.getLocation 调 4 参变体
+	m	super	getNearestEnemyOfMinHullSizeInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 核心：s.hullSize.ordinal>=参数，owner 不同，距离<=F
+	m	Ó00000	getNearestEnemyOfMaxHullSizeInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | s.hullSize.ordinal<=参数（与 43 相反）
+	m	Ò00000	getNearestEnemyWithMinHullSizeInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 与 43 方法体逐字节相同（重复方法）
+	m	super	getNearestEnemyInArcRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FFLcom/fs/starfarer/api/combat/ShipAPI$HullSize;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | min-hull-size 过滤 + Misc.isInArc 弧内检查
+	m	super	getNearestShip	(ILorg/lwjgl/util/vector/Vector2f;Z)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 按 owner(int) 找最近舰：跳过 shuttlePod/被忽略/hulk/不可攻击/fighter
+	m	ø00000	getNearestEnemyInRangeIncludingFighters	(Lcom/fs/starfarer/combat/entities/Ship;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 经 49 的 (Ship,float,boolean) 变体（含 fighter、跳过 drone）
+	m	Ó00000	getNearestEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;FZ)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | getNearestEnemyExcludingDrones 结果 + 距离<=F 检查
+	m	Õ00000	getNearestEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 包装：调 (Ship,float) 变体
+	m	õ00000	getNearestEnemyInRangeNoFighters	(Lcom/fs/starfarer/combat/entities/Ship;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 调用 (Ship,Vector2f,F,Z) 变体 false
+	m	Ó00000	getNearestEnemyInRangeNoFighters	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 调用 (Ship,Vector2f,F,Z) 变体
+	m	super	getNearestEnemyInRangeNoFighters	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FZ)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 核心：跳过所有 fighter，任务判定，距离<=F
+	m	super	getNearestEnemyEntity	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;[Lcom/fs/starfarer/api/combat/CollisionClass;)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | 包装：B.getLocation+owner 调 (Vector2f,I,[CollisionClass) 变体
+	m	Ò00000	getNearestEnemyEntity	(Lorg/lwjgl/util/vector/Vector2f;I[Lcom/fs/starfarer/api/combat/CollisionClass;)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | 核心：按碰撞类+迷雾+owner+可见性找最近实体
+	m	super	getInterceptPoint	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FZ)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 包装：位置/速度调 (B,Vector2f,Vector2f,F,ZZ) 变体
+	m	Ò00000	computeInterceptPoint	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FZ)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 与 56 相同包装（重复方法）
+	m	super	getInterceptPoint	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FZZ)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 核心拦截点计算：目标速度/弹速/提前量
+	m	super	getPredictedDistance	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)F
+		c javap 字节码取证 | 中 | 包装：B.getLocation+velocity 调 4 向量变体
+	m	super	getPredictedDistance	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;)F
+		c javap 字节码取证 | 中 | 4 向量核心：距离+点积项（预计接近距离）
+	m	super	getNearestEnemyEntity	(Ljava/lang/Object;ZLorg/lwjgl/util/vector/Vector2f;[Lcom/fs/starfarer/api/combat/CollisionClass;)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | 排除 DamagingExplosion/Missile/CustomCombatEntity/EmpArc 类型，按碰撞类
+	m	super	getNearestEnemyShipAPI	(Ljava/lang/Object;ZLorg/lwjgl/util/vector/Vector2f;)Lcom/fs/starfarer/api/combat/ShipAPI;
+		c javap 字节码取证 | 中 | 遍历 CombatEngine.getShips（API 视图）取最近
+	m	super	getNearestEnemyEntityByCollisionClass	(Lorg/lwjgl/util/vector/Vector2f;I[Lcom/fs/starfarer/api/combat/CollisionClass;)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | Arrays.asList.contains 碰撞类过滤 + 可见性 + owner
+	m	super	getNearestEnemyEntityInRange	(Lorg/lwjgl/util/vector/Vector2f;IF[Lcom/fs/starfarer/api/combat/CollisionClass;)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | 用 AI 网格 getCheckIterator + 半径 + 碰撞类过滤
+	m	super	getNearestEnemyEntity	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lorg/lwjgl/util/vector/Vector2f;[Lcom/fs/starfarer/api/combat/CollisionClass;)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | 按碰撞类+可见性+owner 找最近实体
+	m	super	indexOfCollisionClass	(Lcom/fs/starfarer/api/combat/CollisionClass;[Lcom/fs/starfarer/api/combat/CollisionClass;)I
+		c javap 字节码取证 | 高 | 私有：在 CollisionClass[] 中查下标
+	m	super	turnToFace	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Z)F
+		c javap 字节码取证 | 高 | 依目标点角度+速度给 TURN_LEFT/TURN_RIGHT 指令
+	m	super	turnToFace	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;)F
+		c javap 字节码取证 | 高 | 依目标点角度给转向指令
+	m	Ó00000	giveSpeedCommand	(Lcom/fs/starfarer/combat/entities/Ship;F)F
+		c javap 字节码取证 | 中 | 依当前速度与 maxSpeed 给加速/减速指令（Ship$oo.Ò00000）
+	m	ø00000	turnToTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 中 | 依选中武器弧与射程向目标转向（Ship$oo.do）
+	m	super	turnToFace	(Lcom/fs/starfarer/combat/ai/ShipCommandReceiver;Lorg/lwjgl/util/vector/Vector2f;)Z
+		c javap 字节码取证 | 高 | ShipCommandReceiver 转向包装：调 (K,Vector2f,F) 变体
+	m	super	turnToFace	(Lcom/fs/starfarer/combat/ai/ShipCommandReceiver;Lorg/lwjgl/util/vector/Vector2f;F)Z
+		c javap 字节码取证 | 高 | 包装：调 (K,Vector2f,FF) 变体
+	m	super	turnToFace	(Lcom/fs/starfarer/combat/ai/ShipCommandReceiver;Lorg/lwjgl/util/vector/Vector2f;FF)Z
+		c javap 字节码取证 | 高 | 计算方位角后调 (K,FFF) 核心
+	m	super	turnToFace	(Lcom/fs/starfarer/combat/ai/ShipCommandReceiver;FF)Z
+		c javap 字节码取证 | 高 | 包装：调 (K,FFF) 核心
+	m	super	turnToFace	(Lcom/fs/starfarer/combat/ai/ShipCommandReceiver;FFF)Z
+		c javap 字节码取证 | 高 | 核心：角速度/转向减速度/signum 判定并给 TURN_LEFT/TURN_RIGHT
+	m	Ò00000	giveMoveCommands	(Lcom/fs/starfarer/combat/ai/ShipCommandReceiver;FF)V
+		c javap 字节码取证 | 高 | 运动指令包装：调 (K,FF)V 核心
+	m	Ó00000	setMoveCommands	(Lcom/fs/starfarer/combat/ai/ShipCommandReceiver;FF)V
+		c javap 字节码取证 | 高 | 运动指令核心：鼠标目标/heading，ACCELERATE/STRAFE/DECELERATE 调试输出
+	m	super	computeMovementScore	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FF)F
+		c javap 字节码取证 | 中 | 私有：向量缩放/加/点积，供运动指令决策
+	m	super	isWeaponReady	(Lcom/fs/starfarer/combat/systems/Weapon;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)Z
+		c javap 字节码取证 | 中 | 脉冲武器充能检查：isPulse/requiresFullCharge/chargeLevel
+	m	Ò00000	getNearestEnemyNotInArc	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;FZ)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 目标方位弧外最近敌舰（150° 弧排除，可选含 fighter）
+	m	super	isShipInRangeOf	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 包装：以目标舰碰撞半径调 (Ship,Vector2f,Vector2f,F) 变体
+	m	super	isPointInRangeOf	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;F)Z
+		c javap 字节码取证 | 中 | 距离/弧组合判定：loc1 是否在 loc2 可达范围内
+	m	Ö00000	getNearestEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 经 84/85/86 链（wing leader 战机可计入，任务判定）
+	m	Ò00000	getNearestEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 调用 (Ship,Vector2f,F,Ship) 变体
+	m	super	getNearestEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FLcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 调用 (Ship,Vector2f,F,Ship,Z) 变体
+	m	super	getNearestEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FLcom/fs/starfarer/combat/entities/Ship;Z)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 核心：wing leader 战机过滤 + 任务判定 + 距离<=F
+	m	ô00000	getNearestEnemyInRangeNoTaskCheck	(Lcom/fs/starfarer/combat/entities/Ship;F)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 无任务判定、无 fighter 过滤的原始迭代
+	m	Ò00000	isAnyEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;F)Z
+		c javap 字节码取证 | 中 | 范围内是否存在敌舰（同 87 过滤集，返回 boolean）
+	m	Ò00000	getNumberOfAlliesInRangeOfPoint	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;F)I
+		c javap 字节码取证 | 中 | 同 owner、距 loc 更近于距 a、距离<range 计数
+	m	super	getNumberOfAlliesEscortingTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;F)I
+		c javap 字节码取证 | 中 | 包装：以 HullSize.FIGHTER 调 5 参变体
+	m	super	getNumberOfAlliesEscortingTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FLcom/fs/starfarer/api/combat/ShipAPI$HullSize;)I
+		c javap 字节码取证 | 中 | 核心：hull>=参数 且 isEscortTargetOf(s,b)（正在护航 b 的友军）计数
+	m	do	getBestManeuverTarget	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/ai/while$O0;
+		c javap 字节码取证 | 中 | 包装：默认标准调 (Ship,while$oo,Z) 变体
+	m	super	getBestManeuverTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/ai/while$oo;Z)Lcom/fs/starfarer/combat/ai/while$O0;
+		c javap 字节码取证 | 中 | 包装：调 (Ship,while$oo,Z,Ship) 核心 null
+	m	super	getBestManeuverTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/ai/while$oo;ZLcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/ai/while$O0;
+		c javap 字节码取证 | 中 | 核心：MANEUVER_TARGET/任务/威胁/距离综合评分，返回 while$O0 评估结果
+	m	øO0000	getRetreatScore	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | 四方向 RetreatManeuver.o00000 分数求和
+	m	void	getRetreatDestinations	(Lcom/fs/starfarer/combat/entities/Ship;F)Ljava/util/List;
+		c javap 字节码取证 | 中 | 按四方向撤退分数计算地图边缘 12 个候选撤退点
+	m	super	createPointEntity	(FF)Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 中 | 私有：构造 Asteroid 作为网格查询点位
+	m	Ò00000	getAngleToEntity	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)F
+		c javap 字节码取证 | 中 | 包装：调 (Ship,B,Z) 变体
+	m	super	getAngleToEntity	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Z)F
+		c javap 字节码取证 | 中 | 舰朝向到实体方位角差（含转向方向）
+	m	Ò00000	getCenterOfEnemies	(Lcom/fs/starfarer/combat/entities/Ship;)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 敌舰加权质心（Misc.getSizeNum 权重）
+	m	Ò00000	getDistance	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | 舰间距离+两侧威胁修正
+	m	if	getNumberOfAlliesInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)I
+		c javap 字节码取证 | 中 | a-b 距离椭圆内同 owner 舰计数
+	m	super	getNumberOfAlliesInLineOfFire	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;FZ)I
+		c javap 字节码取证 | 中 | 目标后方 30° 锥内、超出目标距离的同 owner 舰计数
+	m	Ò00000	getNumberOfEnemiesInLineOfFire	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;F)I
+		c javap 字节码取证 | 中 | 目标后方 60° 锥内、超出目标距离的敌舰计数
+	m	if	getNumberOfAlliesInRange	(Lcom/fs/starfarer/combat/entities/Ship;F)I
+		c javap 字节码取证 | 高 | 同 owner、非无效目标、距离<F 计数
+	m	super	getNumberOfAlliesInRange	(Lcom/fs/starfarer/combat/entities/Ship;FZ)I
+		c javap 字节码取证 | 高 | 同 105 + 排除护航对象 + 可选排除 fighter
+	m	super	isEscortTargetOf	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 包装：调 (Ship,Ship,I) 递归核心深度 0
+	m	õO0000	hasEscortOrder	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 当前指令/任务是否为 LIGHT/DESTROYER/FULL_ESCORT
+	m	ÒO0000	isShipTaskTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 任务管理器是否存在指向该舰的任务
+	m	super	isEscortTargetOf	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;I)Z
+		c javap 字节码取证 | 高 | 私有递归：护航链（EscortTargetManeuverV3）深度<2 是否指向目标
+	m	void.super	isEscorting	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | BasicShipAI 当前机动 instanceof EscortTargetManeuverV3
+	m	if.super	isShipBeingEscorted	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 任务列表中该舰有护航任务且参与者非空
+	m	super	isEngaged	(Lcom/fs/starfarer/combat/DeployedFleetMember;)Z
+		c javap 字节码取证 | 高 | DeployedFleetMember 舰船 AI.isEngaged（BasicShipAI/FighterAI）
+	m	Ö00000	isEscortManeuverActive	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 同 111 但含 FighterAI 分支
+	m	Oo0000	getEscortTarget	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 当前护航机动目标转 Ship（无则 null）
+	m	super.super	getAIFlags	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/api/combat/ShipwideAIFlags;
+		c javap 字节码取证 | 高 | 按 AI 类型取 ShipwideAIFlags；非 AI 舰用 customData "nonAI_SAIF_" 缓存
+	m	ô00000	isNotValidTarget	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 战机非队长/残骸/穿梭舱/无人机/空间站模块/自身→true（应跳过）
+	m	Òo0000	findAutoEscortTarget	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 包装：调 (Ship,boolean,AssignmentInfo) 核心
+	m	super	findAutoEscortTarget	(Lcom/fs/starfarer/combat/entities/Ship;ZLcom/fs/starfarer/api/combat/CombatFleetManagerAPI$AssignmentInfo;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | STR "Finding auto-escort target"；航母自动护航目标搜索
+	m	ÓO0000	isShipInTrouble	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 过载/引擎损毁/幅能>0.9/船体<0.25/主力舰/NEEDS_HELP 旗标
+	m	Ó00000	getNearestAllyNotInTrouble	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 最近未遇险友舰（更小/等大、距离<1000+半径、非遇险）
+	m	Õ00000	getAlliedShips	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Ljava/util/List;
+		c javap 字节码取证 | 中 | 同 owner、非同站、非护航对象舰列表
+	m	Ö00000	getNumberOfAllies	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)I
+		c javap 字节码取证 | 中 | 同 122 过滤集的计数
+	m	super	getNumberOfEnemiesInArcRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FFLcom/fs/starfarer/api/combat/ShipAPI$HullSize;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)I
+		c javap 字节码取证 | 中 | 轰炸机 facing 弧特判 + hull>=参数 + 距离+半径 + in-arc 计数
+	m	super	getNumberOfEnemiesInArcRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FF)I
+		c javap 字节码取证 | 中 | 战机需维修/危险武器(STRIKE/DANGEROUS) + in-arc 计数
+	m	super	countEnemiesInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FFFLcom/fs/starfarer/combat/ai/while$o;)I
+		c javap 字节码取证 | 中 | while$o 谓词过滤 + 距离/弧 计数
+	m	Ò00000	isEnemyInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;)Z
+		c javap 字节码取证 | 中 | 包装：匿名谓词 while$1 + 30° 弧调 6 参计数，>0 返回 true
+	m	super	getSmallerHullSize	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+		c javap 字节码取证 | 高 | HullSize→小一级映射（无更小则自身）
+	m	Ò00000	getLargerHullSize	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+		c javap 字节码取证 | 高 | HullSize→大一级映射（无更大则自身）
+	m	super	getNumberOfEnemiesInArcRange	(Lcom/fs/starfarer/combat/entities/Ship;FFF)I
+		c javap 字节码取证 | 中 | 核心：wing leader 可计 + 尺寸分层过滤 + 距离/弧 计数
+	m	Ó00000	getNumberOfEnemiesInArcRangeExcludingFighters	(Lcom/fs/starfarer/combat/entities/Ship;FFF)I
+		c javap 字节码取证 | 中 | 委托 (Ship,FFFZZ) 核心 (true,true)
+	m	super	getNumberOfEnemiesInArcRange	(Lcom/fs/starfarer/combat/entities/Ship;FFFZZ)I
+		c javap 字节码取证 | 中 | 核心：可选跳过 fighter + 尺寸分层 + 距离/弧 计数
+	m	Ò00000	getNumberOfHostileMissilesInArcRange	(Lcom/fs/starfarer/combat/entities/Ship;FFF)I
+		c javap 字节码取证 | 中 | 导弹计数：伤害(碎片×0.33)>=200、制导目标匹配、距离/弧
+	m	Õ00000	getNumberOfIncomingMissiles	(Lcom/fs/starfarer/combat/entities/Ship;F)I
+		c javap 字节码取证 | 中 | 来袭导弹计数：伤害阈值、闭合速度、ETA<=range
+	m	String	getAngleToIncomingMissile	(Lcom/fs/starfarer/combat/entities/Ship;F)F
+		c javap 字节码取证 | 中 | ETA<=range 导弹中偏角最大者的方位角
+	m	String	getNumberOfIncomingMissilesInArcRange	(Lcom/fs/starfarer/combat/entities/Ship;FFF)I
+		c javap 字节码取证 | 中 | 导弹计数：伤害>=200、发动机位置、闭合速度、距离/弧
+	m	super	getTotalThreatInRange	(Lcom/fs/starfarer/combat/entities/Ship;FFFZ)F
+		c javap 字节码取证 | 中 | 包装：以 ship.getLocation、null 排除调 7 参核心
+	m	super	getTotalThreatInRangeExcludingShip	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FFFLcom/fs/starfarer/combat/entities/Ship;Z)F
+		c javap 字节码取证 | 中 | 威胁求和核心：过滤 + 距离/弧 + 排除指定舰
+	m	Ò00000	getMaxThreatInRange	(Lcom/fs/starfarer/combat/entities/Ship;FZ)F
+		c javap 字节码取证 | 中 | 范围内逐舰 getThreat 取最大
+	m	super	getThreat	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 高 | 包装：getThreat(ship,true)
+	m	Ò00000	getThreat	(Lcom/fs/starfarer/combat/entities/Ship;Z)F
+		c javap 字节码取证 | 高 | HullSize 威胁分表（DroneAI=0.1、非战斗×0.25、无人机×0.1）
+	m	Ò00000	getTotalThreatInRange	(Lcom/fs/starfarer/combat/entities/Ship;FFFZZ)F
+		c javap 字节码取证 | 中 | 包装：以 ship.getLocation 调 6 参核心
+	m	super	getTotalThreatInRange	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FFFZZ)F
+		c javap 字节码取证 | 中 | 威胁求和核心：过滤 + 距离/弧
+	m	super	getAsteroidThreat	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;FFF)F
+		c javap 字节码取证 | 中 | 环外小行星质量求和（距离/弧内）
+	m	super	getAimPoint	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FZFF)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 包装：设 aimErrorOffset1/2 调 (Ship,B,F,Z) 核心
+	m	super	getAimPoint	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FZF)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 包装：设 aimErrorOffset1 调核心
+	m	super	getAimPoint	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FZ)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 核心：ship.getAimAccuracy 调 (B,F,B,F,Z) 拦截点
+	m	super	getInterceptPoint	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FLcom/fs/starfarer/combat/o0OO/CollisionEntity;F)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 包装：目标位置/速度/半径调 7 参核心 false
+	m	super	getInterceptPoint	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FLcom/fs/starfarer/combat/o0OO/CollisionEntity;FZ)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 包装：布尔变体
+	m	super	getInterceptPoint	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;FLorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FFZ)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 核心：提前量/弹速/目标速度计算拦截点
+	m	super	isShipWorthAttacking	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/ai/movement/maneuvers/ManeuverAPI;)Z
+		c javap 字节码取证 | 高 | 机动威胁评估器：hull 差距<=2 且威胁分>0 且非战斗舰
+	m	super	isShipAboutToBeHit	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)Z
+		c javap 字节码取证 | 中 | 实体接近速度/距离判定（含空间站半径修正）
+	m	do	hasEnoughFirepower	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 全武器组威胁分(尺寸值)之和 >= 目标 hullSize 阈值
+	m	super	getWeaponSizeValue	(Lcom/fs/starfarer/combat/systems/Weapon;)F
+		c javap 字节码取证 | 高 | WeaponSize→威胁分：LARGE=7/MEDIUM=3/SMALL=1
+	m	super	getDistanceToEntity	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)F
+		c javap 字节码取证 | 中 | 实体表面距离+碰撞半径
+	m	super	getDistanceToEntity	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;)F
+		c javap 字节码取证 | 中 | 点→实体表面距离+碰撞半径
+	m	ÖO0000	getManeuverTarget	(Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | MANEUVER_TARGET AI 旗标 custom 目标（无则 getShipTarget）
+	m	super	getDistanceToEntitySurface	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Z)F
+		c javap 字节码取证 | 中 | 点→实体表面距离（盾弧/贴图尺寸感知）
+	m	Ò00000	isShipVisible	(ILcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 迷雾可见性：本体或任一机队 leader 可见
+	m	super	hasSeenEnemy	(ILcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 舰队 getSeenEnemies 记录包含该舰
+	m	super	isEntityVisible	(ILcom/fs/starfarer/combat/o0OO/CollisionEntity;)Z
+		c javap 字节码取证 | 高 | 迷雾可见性泛型（非 Ship 直接查迷雾）
+	m	ÓO0000	getPersonality	(Lcom/fs/starfarer/combat/entities/Ship;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | Ship.getPersonality + BasicShipAI config personalityOverride
+	m	ø00000	hasInterceptTask	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 订单响应模块当前任务类型 INTERCEPT
+	m	void	hasStrikeTask	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 订单响应模块当前任务类型 STRIKE
+	m	ô00000	getCRMult	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | CR 有效乘数：峰值时间剩余/个性（cautious/timid×0.5）
+	m	private	isShipOrderedToAttack	(Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 全面突击/拦截/突击(非航母)/鲁莽个性 且 非 timid/非战斗
+	m	ÕO0000	getMaxSpeed	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 中 | 巡航速度 + 相位 cloak(<0.2 幅能×2) + 系统 AIHints 加成
+	m	OO0000	getPhaseCloakMaxSpeed	(Lcom/fs/starfarer/combat/entities/Ship;)F
+		c javap 字节码取证 | 高 | 相位速度：PhaseCloakStats 幅能修正 MIN_SPEED_MULT
+	m	Ó00000	getHullSizeScores	()[I
+		c javap 字节码取证 | 高 | HullSize→分数表懒初始化（CAPITAL=6..FIGHTER=2, DEFAULT=1）
+	m	String	getWeaponSizeScores	()[I
+		c javap 字节码取证 | 高 | WeaponSize→分数表懒初始化（LARGE=3/MEDIUM=2/SMALL=1）
 c com/fs/starfarer/combat/ai/while$1 com/fs/starfarer/combat/ai/while$1
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	f	o00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | final 基准舰引用
+	m	o00000	isFriendly	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 高 | 入参舰 == 基准舰 或 owner 相同返回真
 c com/fs/starfarer/combat/ai/while$O0 com/fs/starfarer/combat/ai/while$O0
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	f	Ó00000	isOrbitWithStation	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | getfield Ô00000 的纯 getter
+	f	class	otherShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 中 | 双目标记录中的次舰；getter Ò00000()/setter Ò00000(Ship) 成对
+	f	new	heading	F
+		c javap 字节码取证 | 中 | 朝向角值：站模块时为父站角速度符号，否则 Utils.new(FF) 角度差；getter Õ00000()
+	f	Ô00000	orbitWithStation	Z
+		c javap 字节码取证 | 中 | 目标舰有父站时为 true，用于以父站角速度绕行；getter Ó00000()/setter super(Z)
+	f	o00000	location	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 目标点位置；getter super()/setter super(Vector2f)
+	m	String	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | getfield Ó00000 的纯 getter
+	m	Õ00000	getHeading	()F
+		c javap 字节码取证 | 高 | getfield new 的纯 getter
+	m	Ò00000	setOtherShip	()Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | putfield class 的纯 setter (Ship)
+	m	Ó00000	isOrbitWithStation	()Z
+		c javap 字节码取证 | 高 | getfield Ô00000 的纯 getter
+	m	super	setShip	(Z)V
+		c javap 字节码取证 | 高 | putfield Ó00000 的纯 setter (Ship)
+	m	super	setShip	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | putfield Ó00000 的纯 setter (Ship)
+	m	super	setShip	(Lorg/lwjgl/util/vector/Vector2f;)V
+		c javap 字节码取证 | 高 | putfield Ó00000 的纯 setter (Ship)
+	m	super	setShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | putfield Ó00000 的纯 setter (Ship)
+	m	Ò00000	setOtherShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | putfield class 的纯 setter (Ship)
 c com/fs/starfarer/combat/ai/while$Oo com/fs/starfarer/combat/ai/while$Oo
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	f	Õ00000	minHullSize	Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+		c javap 字节码取证 | 高 | 默认 FIGHTER；目标 hullSize.ordinal 小于该值且非站/站模块则拒绝
+	f	Object	includeHulks	Z
+		c javap 字节码取证 | 高 | isHulk 目标是否计入（false 时拒绝残骸）
+	f	Ò00000	includeNeutral	Z
+		c javap 字节码取证 | 高 | owner==100 的中立目标是否计入
+	f	Ô00000	includeSelf	Z
+		c javap 字节码取证 | 高 | 与参考舰相同目标是否计入
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 目标舰资格判定（非长机战机/过小体型/残骸/穿梭舱/自身/中立过滤）；实现 while$o 接口
 c com/fs/starfarer/combat/ai/while$o com/fs/starfarer/combat/ai/while$o
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	m	o00000	isShipValid	(Lcom/fs/starfarer/combat/entities/Ship;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)Z
+		c javap 字节码取证 | 中 | 接口唯一方法；(Ship,Vector2f,Ship)Z 目标舰资格判定，countEnemiesInRange 与 RetreatPositionEvaluator 使用
 c com/fs/starfarer/combat/ai/while$oo com/fs/starfarer/combat/ai/while$oo
 	c javap取证 | 低 | .dev/mapping-evidence/combat-ai-core.md#while-inner-classes
+	f	Ó00000	POSITIVE	Lcom/fs/starfarer/combat/ai/while$oo;
+		c javap 字节码取证 | 高 | 枚举常量字符串 POSITIVE
+	f	Ô00000	NEGATIVE	Lcom/fs/starfarer/combat/ai/while$oo;
+		c javap 字节码取证 | 高 | 枚举常量字符串 NEGATIVE
+	f	new	EITHER	Lcom/fs/starfarer/combat/ai/while$oo;
+		c javap 字节码取证 | 高 | 枚举常量字符串 EITHER
+	f	o00000	$VALUES	[Lcom/fs/starfarer/combat/ai/while$oo;
+		c javap 字节码取证 | 高 | values() 返回的枚举数组

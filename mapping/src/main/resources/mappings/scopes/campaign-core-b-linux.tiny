@@ -839,6 +839,14 @@ c	com/fs/starfarer/campaign/F	com/fs/starfarer/campaign/EntityTooltipManager
 		c 来源(javap取证) | 置信度(高) | 证据(new F$1(token) 匿名 tooltip 工厂)
 	m	o00000	getFactionRelationshipText	(Lcom/fs/starfarer/api/campaign/FactionAPI;)Ljava/lang/String;
 		c 来源(字符串常量) | 置信度(高) | 证据(比较 RepLevel 返回 Hostile/Friendly/Neutral)
+	f	Ó00000	tooltipVisible	Z
+		c javap 字节码取证 | 高 | advance 中 tooltip 存在且时间>0 时置 true；clearTooltip 置 false
+	f	Ò00000	relationshipSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成缓存数组（FRIEND/ENEMY/NEUTRAL ordinal→分支号）
+	m	Object	clearTooltip	()V
+		c javap 字节码取证 | 高 | 清空 tooltipVisible=false、tooltip/entity 置 null
+	m	o00000	getRelationshipSwitchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成访问器，懒初始化 int[]（FRIEND/ENEMY/NEUTRAL）
 c	com/fs/starfarer/campaign/F$1	com/fs/starfarer/campaign/EntityTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(extends StandardTooltipV2Expandable；"Under your control"；F.createEntityTooltip new 的匿名 tooltip)
 	f	ÒÒõO00	entityToken	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
@@ -858,12 +866,22 @@ c	com/fs/starfarer/campaign/Faction$2	com/fs/starfarer/campaign/Faction$FactionR
 	m	isAtWorst	isAtWorst	(Lcom/fs/starfarer/api/campaign/RepLevel;)Z
 	m	isAtBest	isAtBest	(Lcom/fs/starfarer/api/campaign/RepLevel;)Z
 	m	getRelColor	getRelColor	(Lcom/fs/starfarer/api/campaign/RepLevel;)Ljava/awt/Color;
+	f	Ò00000	relationshipTarget	Lcom/fs/starfarer/api/characters/RelationshipAPI$RelationshipTarget;
+		c javap 字节码取证 | 高 | getTarget/setTarget 读写字段
+	f	this$0	outer	Lcom/fs/starfarer/campaign/Faction;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 Faction 的合成引用
+	f	o00000	faction	Lcom/fs/starfarer/api/campaign/FactionAPI;
+		c javap 字节码取证 | 高 | 捕获的目标派系接口；关系方法委托给其 FactionAPI 操作
 c	com/fs/starfarer/campaign/Faction$o	com/fs/starfarer/campaign/Faction$ShipSizeFPData
 	c 来源(javap取证) | 置信度(中) | 证据(approximateMaxFPPerFleet 计算中按 HullSize 的 FP 数据容器：HullSize+2 float+比例计算)
 	f	super	hullSize	Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
 		c 来源(javap取证) | 置信度(中) | 证据(构造参数 HullSize)
 	m	o00000	getFPRatio	()F
 		c 来源(javap取证) | 置信度(中) | 证据(Ò00000/max(Ó00000,0.001f) 比值计算)
+	f	Ò00000	weightSum	F
+		c javap 字节码取证 | 高 | 权重累加：Faction 生成里逐舰累加 doctrine 权重；o00000() 作分母
+	f	Ó00000	weightedFP	F
+		c javap 字节码取证 | 高 | 加权舰队点数累加：Σ fleetPoints × 权重；o00000() 返回 weightedFP/weightSum
 c	com/fs/starfarer/campaign/int	com/fs/starfarer/campaign/CampaignFreeLookPanel
 	c 来源(字符串常量) | 置信度(高) | 证据("Free look on"/"Free look off"/campaignMaxPan；extends ui.z；isAutoReset/getXOff/getYOff/reset 未混淆)
 	f	TOGGLE_MODE	TOGGLE_MODE	Z
@@ -872,6 +890,20 @@ c	com/fs/starfarer/campaign/int	com/fs/starfarer/campaign/CampaignFreeLookPanel
 	m	getXOff	getXOff	()F
 	m	getYOff	getYOff	()F
 	m	reset	reset	()V
+	f	ØÔOo00	currentXOff	F
+		c javap 字节码取证 | 高 | 当前 X 偏移（advance 中向 targetXOff 插值；有对话框时直接复制）
+	f	ÔÔOo00	currentYOff	F
+		c javap 字节码取证 | 高 | 当前 Y 偏移（advance 中向 targetYOff 插值）
+	f	ÕÔOo00	targetXOff	F
+		c javap 字节码取证 | 高 | 目标 X 偏移（getXOff 返回；RMB 拖动时按增量更新）
+	f	for.Object$do	targetYOff	F
+		c javap 字节码取证 | 高 | 目标 Y 偏移（getYOff 返回）
+	f	int.Object$do	freeLookActive	Z
+		c javap 字节码取证 | 高 | 自由视角激活标志：RMB down 置 true 显示 "Free look on"，up 置 false
+	f	ôÔOo00	autoReset	Z
+		c javap 字节码取证 | 高 | isAutoReset/setAutoReset 读写字段
+	m	ÔÕO000	getZoomMult	()F
+		c javap 字节码取证 | 高 | 返回 1.5f × Sector.getCampaignUI().getZoomFactor()
 c	com/fs/starfarer/campaign/null	com/fs/starfarer/campaign/CampaignUITabs
 	c 来源(字符串常量) | 置信度(高) | 证据(Character/Fleet/Refit/Cargo/Officers/Outposts/Map 标签；extends ui.z；getCharacter 等未混淆)
 	m	getCharacter	getCharacter	()Lcom/fs/starfarer/ui/n;
@@ -881,104 +913,280 @@ c	com/fs/starfarer/campaign/null	com/fs/starfarer/campaign/CampaignUITabs
 	m	getOfficers	getOfficers	()Lcom/fs/starfarer/ui/n;
 	m	getOutposts	getOutposts	()Lcom/fs/starfarer/ui/n;
 	m	getMap	getMap	()Lcom/fs/starfarer/ui/n;
+	f	Object.Object$do	characterButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getCharacter 返回的 tab 按钮（文本 "Character"）
+	f	oÔOo00	fleetButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getFleet 返回的 tab 按钮（文本 "Fleet"）
+	f	this.Object$do	refitButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getRefit 返回的 tab 按钮（文本 "Refit"）
+	f	ÔÓOo00	cargoButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getCargo 返回的 tab 按钮（文本 "Cargo"）
+	f	ÒÔOo00	officersButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getOfficers 返回的 tab 按钮（文本 "Officers"）
+	f	ÕÓOo00	outpostsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getOutposts 返回的 tab 按钮（文本 "Outposts"）
+	f	public.new$do	mapButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getMap 返回的 tab 按钮（文本 "Map"）
+	f	ôÓOo00	tabBarYOffset	F
+		c javap 字节码取证 | 高 | 构造器置 10.0f；renderImpl 中 tab 条顶边 y = 容器 y + 本值 - 2
+	f	öÓOo00	tabBarHeight	F
+		c javap 字节码取证 | 高 | 构造器置 20.0f；renderImpl 中 tab 条底边 y = 顶边 + 本值
+	f	øÓOo00	tabSpacing	F
+		c javap 字节码取证 | 高 | 构造器置 6.0f；与 tabSegmentWidth 相加得每格间距，段内指示条宽 本值-4
+	f	return.Object$do	tabSegmentWidth	F
+		c javap 字节码取证 | 高 | renderImpl 置 125.0f；每段起点 x = x + (本值 + tabSpacing) * i + 2
+	f	ØÓOo00	tabIndicatorHeight	F
+		c javap 字节码取证 | 高 | renderImpl 置 20.0f；与 tabSegmentWidth 一起 setSize 作 tab 热区高
 c	com/fs/starfarer/campaign/o0OO	com/fs/starfarer/campaign/SensorRangeIndicator
 	c 来源(引用关系) | 置信度(高) | 证据(CampaignFleet.sensorRangeIndicator 字段持有；fleet 可见性检查+Fader 淡入淡出+line8x8.png 渲染)
+	f	õ00000	RENDER_PADDING	F
+		c javap 字节码取证 | 高 | 常量 400.0f：距离超出 传感器范围±400 时跳过弧线绘制
+	f	do	ARC_ANGLE_SCALE	F
+		c javap 字节码取证 | 高 | 常量 500.0f：弧宽角度 = 500/传感器范围（弧度转度数系数）
+	f	ø00000	unusedConstant	F
+		c javap 字节码取证 | 中 | 常量 5.0f：类内无任何引用（可能供外部/模组使用），语义不明，保守命名
+	f	Ò00000	PHASE_ADVANCE_SPEED	F
+		c javap 字节码取证 | 高 | 常量 50.0f：advance 中 phase += 50.0f × dt
+	f	OO0000	MAX_ARC_ANGLE	F
+		c javap 字节码取证 | 高 | 常量 150.0f：弧宽角度上限（限幅 150°）兼相位模（phase %= 150）
+	f	Õ00000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 渲染颜色：render 里取 fleet.getIndicator().getColor()
+	f	if	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c javap 字节码取证 | 高 | 所属舰队（构造器参数），可见性/位置/范围判断用
+	f	Ö00000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 淡入淡出：可见时 fadeIn，不可见 fadeOut，getBrightness 控制透明度
+	f	super	phase	F
+		c javap 字节码取证 | 高 | 动画相位：advance 中 += 50.0f×dt，% 150.0f；渲染时叠加弧线偏移
+	f	ô00000	texture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 弧线纹理（构造器经 graphics 工厂加载）
+	f	String	glListToken	Lcom/fs/graphics/util/GLListToken;
+		c javap 字节码取证 | 高 | GL 显示列表 token：beginList/callList 缓存弧线绘制
+	f	void	arcAngle	F
+		c javap 字节码取证 | 高 | 当前弧段起始角（舰队-玩家连线角 + 相位偏移），渲染坐标计算用
+	f	Ó00000	unusedArcParam	F
+		c javap 字节码取证 | 中 | 仅 render 中置 5.0f 一次，全类无 getfield 读取（死字段）
+	m	new	advance	(F)V
+		c javap 字节码取证 | 高 | 可见性判断 → fader fadeIn/Out → phase 推进（50×dt，%150）
+	m	o00000	render	(F)V
+		c javap 字节码取证 | 高 | 主渲染：取色/算弧宽角/循环 3 段调 renderArc，tooltip 特判
+	m	o00000	renderArc	(FFFFF)V
+		c javap 字节码取证 | 高 | 渲染单段弧线：alpha=fader 亮度×参数，转发 renderers/o0OO 绘制
+	m	o00000	renderArcSegments	(FFFFLjava/awt/Color;)V
+		c javap 字节码取证 | 高 | 细分弧线绘制：按弧宽算段数（最少 72），逐段画四边形
+	m	o00000	endArcList	(Z)V
+		c javap 字节码取证 | 高 | 收尾：false 时 endList()，恒 popMatrix()
+	m	o00000	renderArcCached	(FFFFZ)Z
+		c javap 字节码取证 | 高 | 带 GL 列表缓存的弧线绘制：callList 命中返回 true，否则 beginList 重建返回 false
 c	com/fs/starfarer/campaign/oOoO	com/fs/starfarer/campaign/CampaignListener
 	c 来源(引用关系) | 置信度(高) | 证据(接口；CampaignEngine 以 listener 字段持有并 setListener/getListener；saveGame/loadGame 传参)
 	m	startEncounterInvolvingPlayerFleet	startEncounterInvolvingPlayerFleet	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/campaign/BaseCampaignEntity;)V
 	m	reportCurrentLocationChanged	reportCurrentLocationChanged	(Lcom/fs/starfarer/api/campaign/LocationAPI;Lcom/fs/starfarer/api/campaign/LocationAPI;)V
 c	com/fs/starfarer/campaign/oOOO	com/fs/starfarer/campaign/SimulationMissionSetup
 	c 来源(字符串常量+引用关系) | 置信度(高) | 证据(static 方法布置模拟遭遇：两舰队+FleetGoal+背景图+nav_buoy/comm_relay/sensor_array 实体；操作 MissionDefinitionAPI)
+	m	o00000	setupSimulationMap	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/title/MissionDefinition;)V
+		c javap 字节码取证 | 高 | initMap(16000,16000)+15 星云+小行星场+setRandomBackground，数舰队 300 内小行星数
+	m	o00000	setRandomBackground	(Lcom/fs/starfarer/title/MissionDefinition;)V
+		c javap 字节码取证 | 高 | 4 张 background 随机 setBackgroundSpriteName
+	m	o00000	setupSimulationMapWithObjectives	(Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/api/fleet/FleetGoal;Lcom/fs/starfarer/campaign/fleet/CampaignFleet;Lcom/fs/starfarer/api/fleet/FleetGoal;Lcom/fs/starfarer/title/MissionDefinition;)V
+		c javap 字节码取证 | 高 | 按舰队规模/目标计算地图尺寸并 addMissionObjectives，含 ATTACK/ESCAPE 间距调整
+	m	o00000	addMissionObjectives	(Lcom/fs/starfarer/title/MissionDefinition;FFI)V
+		c javap 字节码取证 | 高 | 按 tier 分支添加 comm_relay/nav_buoy/sensor_array 目标点（addObjective 调用）
+	m	o00000	addObjective	(Lcom/fs/starfarer/title/MissionDefinition;Ljava/lang/String;FFZZ)V
+		c javap 字节码取证 | 高 | addObjective(x+偏移,y+偏移,name)，60% 概率追加星云
+	m	new	pickCommRelayOrSensorArray	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | random<0.5 → comm_relay 否则 sensor_array
+	m	Ó00000	pickNavBuoyOrSensorArray	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | random<0.5 → nav_buoy 否则 sensor_array
+	m	o00000	pickRandomObjectiveName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 三选一：nav_buoy(0.33)/sensor_array(0.67)/comm_relay
 c	com/fs/starfarer/campaign/StarSystem$1	com/fs/starfarer/campaign/StarSystem$AutogenJumpPointComparator
 	c 来源(javap取证) | 置信度(高) | 证据(implements Comparator<StarSystem$o>；按跳点/行星到星系中心距离排序，autogen 跳点生成用)
 	m	o00000	compare	(Lcom/fs/starfarer/campaign/StarSystem$o;Lcom/fs/starfarer/campaign/StarSystem$o;)I
 		c 来源(javap取证) | 置信度(高) | 证据(Comparator 比较方法)
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/StarSystem;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用（javac 标准名 this$0），仅构造器写入
 c	com/fs/starfarer/campaign/StarSystem$o	com/fs/starfarer/campaign/StarSystem$AutogenJumpPointData
 	c 来源(javap取证) | 置信度(高) | 证据(StarSystem autogen 跳点数据：JumpPoint/CampaignPlanet/boolean；autogeneratedJumpPointsInHyper 生成循环)
 	f	o00000	jumpPoint	Lcom/fs/starfarer/campaign/JumpPoint;
 		c 来源(javap取证) | 置信度(高) | 证据(autogen 跳点字段)
 	f	new	planet	Lcom/fs/starfarer/campaign/CampaignPlanet;
 		c 来源(javap取证) | 置信度(高) | 证据(autogen 关联行星字段)
+	f	Ó00000	isPlanetJumpPoint	Z
+		c javap 字节码取证 | 高 | 创建 data 时置 true；读取处 data.planet!=null && 该标志 才创建 NascentGravityWell
 c	com/fs/starfarer/campaign/ModAndPluginData$1	com/fs/starfarer/campaign/ModAndPluginData$ReputationActionResponsePluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickReputationActionResponsePlugin(Object,String) 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickReputationActionResponsePlugin)
+	f	ôÒ0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	öÒ0000	source	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 捕获的声誉调整触发源，透传给 pickReputationActionResponsePlugin 第一参
+	f	int.new	factionId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 捕获的目标派系 id，透传给 pickReputationActionResponsePlugin 第二参（adjustPlayerReputation 与 "player" 比较）
 c	com/fs/starfarer/campaign/ModAndPluginData$2	com/fs/starfarer/campaign/ModAndPluginData$ReputationActionResponsePluginPickerForPerson
 	c 来源(引用关系) | 置信度(高) | 证据(pickReputationActionResponsePlugin(Object,PersonAPI) 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickReputationActionResponsePlugin)
+	f	ÕÒ0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	ØÒ0000	source	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 捕获的声誉调整触发源，透传给 pickReputationActionResponsePlugin 第一参
+	f	return.new	person	Lcom/fs/starfarer/api/characters/PersonAPI;
+		c javap 字节码取证 | 高 | 捕获的目标人物，透传给 pickReputationActionResponsePlugin 第二参
 c	com/fs/starfarer/campaign/ModAndPluginData$3	com/fs/starfarer/campaign/ModAndPluginData$BattleAutoresolverPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickAutoresolver 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickAutoresolver)
+	f	ÔÒ0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	Object.new	battle	Lcom/fs/starfarer/api/campaign/BattleAPI;
+		c javap 字节码取证 | 高 | 捕获的战斗，透传给 pickBattleAutoresolverPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$4	com/fs/starfarer/campaign/ModAndPluginData$ImmigrationPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickImmigrationPlugin 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickImmigrationPlugin)
+	f	oÒ0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	ÒÒ0000	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c javap 字节码取证 | 高 | 捕获的市场，透传给 pickImmigrationPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$5	com/fs/starfarer/campaign/ModAndPluginData$AICoreAdminPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickAICoreAdminPlugin 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickAICoreAdminPlugin)
+	f	øo0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	this.new	aiCoreId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 捕获的 AI 核心商品 id，透传给 pickAICoreAdminPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$6	com/fs/starfarer/campaign/ModAndPluginData$AICoreOfficerPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickAICoreOfficerPlugin 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickAICoreOfficerPlugin)
+	f	public.super	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	öo0000	aiCoreId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 捕获的 AI 核心商品 id，透传给 pickAICoreOfficerPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$7	com/fs/starfarer/campaign/ModAndPluginData$FleetInflaterPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickFleetInflater 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickFleetInflater)
+	f	Øo0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	for.super	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队，透传给 pickFleetInflater
+	f	ôo0000	context	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 捕获的上下文对象，透传给 pickFleetInflater 第二参
 c	com/fs/starfarer/campaign/ModAndPluginData$8	com/fs/starfarer/campaign/ModAndPluginData$FleetStubConverterPluginPickerForFleet
 	c 来源(引用关系) | 置信度(高) | 证据(pickStubConverter(CampaignFleetAPI) 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickStubConverter)
+	f	Õo0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	Ôo0000	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队，透传给 pickStubConverter
 c	com/fs/starfarer/campaign/ModAndPluginData$9	com/fs/starfarer/campaign/ModAndPluginData$FleetStubConverterPluginPickerForStub
 	c 来源(引用关系) | 置信度(高) | 证据(pickStubConverter(FleetStubAPI) 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickStubConverter)
+	f	Òo0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	int.super	stub	Lcom/fs/starfarer/api/campaign/FleetStubAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队存根，透传给 pickStubConverter
 c	com/fs/starfarer/campaign/ModAndPluginData$10	com/fs/starfarer/campaign/ModAndPluginData$AutofitPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickAutofitPlugin 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickAutofitPlugin)
+	f	return.super	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	oo0000	fleetMember	Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队成员，透传给 pickAutofitPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$11	com/fs/starfarer/campaign/ModAndPluginData$RespawnPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickRespawnPlugin 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickRespawnPlugin)
+	f	øO0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
 c	com/fs/starfarer/campaign/ModAndPluginData$12	com/fs/starfarer/campaign/ModAndPluginData$InteractionDialogPluginPickerForToken
 	c 来源(引用关系) | 置信度(高) | 证据(pickInteractionDialogPlugin(SectorEntityToken) 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickInteractionDialogPlugin)
+	f	Object.super	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	öO0000	token	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c javap 字节码取证 | 高 | 捕获的实体 token，透传给 pickInteractionDialogPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$13	com/fs/starfarer/campaign/ModAndPluginData$InteractionDialogPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickInteractionDialogPlugin(Object,SectorEntityToken) 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickInteractionDialogPlugin)
+	f	this.super	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	ôO0000	source	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 捕获的对话框源对象，透传给 pickInteractionDialogPlugin 第一参
+	f	ØO0000	token	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c javap 字节码取证 | 高 | 捕获的实体 token，透传给 pickInteractionDialogPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$14	com/fs/starfarer/campaign/ModAndPluginData$BattleCreationPluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickBattleCreationPlugin 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickBattleCreationPlugin)
+	f	ÔO0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	ÕO0000	token	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c javap 字节码取证 | 高 | 捕获的战斗触发 token，透传给 pickBattleCreationPlugin
 c	com/fs/starfarer/campaign/ModAndPluginData$15	com/fs/starfarer/campaign/ModAndPluginData$AssignmentAIModulePicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickAssignmentAIModule 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickAssignmentAIModule)
+	f	ÒO0000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	oO0000	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队，透传给 pickAssignmentAIModule
+	f	public	fleetAI	Lcom/fs/starfarer/api/campaign/ai/ModularFleetAIAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队 AI，透传给 pickAssignmentAIModule
 c	com/fs/starfarer/campaign/ModAndPluginData$16	com/fs/starfarer/campaign/ModAndPluginData$StrategicAIModulePicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickStrategicAIModule 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickStrategicAIModule)
+	f	ø00000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	ö00000	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队，透传给 pickStrategicAIModule
+	f	for	fleetAI	Lcom/fs/starfarer/api/campaign/ai/ModularFleetAIAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队 AI，透传给 pickStrategicAIModule
 c	com/fs/starfarer/campaign/ModAndPluginData$17	com/fs/starfarer/campaign/ModAndPluginData$TacticalAIModulePicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickTacticalAIModule 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickTacticalAIModule)
+	f	ô00000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	Ø00000	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队，透传给 pickTacticalAIModule
+	f	int	fleetAI	Lcom/fs/starfarer/api/campaign/ai/ModularFleetAIAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队 AI，透传给 pickTacticalAIModule
 c	com/fs/starfarer/campaign/ModAndPluginData$18	com/fs/starfarer/campaign/ModAndPluginData$NavigationAIModulePicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickNavigationAIModule 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickNavigationAIModule)
+	f	Õ00000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	Ô00000	fleet	Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队，透传给 pickNavigationAIModule
+	f	return	fleetAI	Lcom/fs/starfarer/api/campaign/ai/ModularFleetAIAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队 AI，透传给 pickNavigationAIModule
 c	com/fs/starfarer/campaign/ModAndPluginData$19	com/fs/starfarer/campaign/ModAndPluginData$AbilityAIPicker
 	c 来源(引用关系) | 置信度(高) | 证据(pickAbilityAI 转发适配器)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(转发 CampaignPlugin.pickAbilityAI)
+	f	o00000	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
+	f	Object	ability	Lcom/fs/starfarer/api/characters/AbilityPlugin;
+		c javap 字节码取证 | 高 | 捕获的能力插件，透传给 pickAbilityAI
+	f	Ò00000	fleetAI	Lcom/fs/starfarer/api/campaign/ai/ModularFleetAIAPI;
+		c javap 字节码取证 | 高 | 捕获的舰队 AI，透传给 pickAbilityAI
 c	com/fs/starfarer/campaign/ModAndPluginData$20	com/fs/starfarer/campaign/ModAndPluginData$PluginPickPriorityComparator
 	c 来源(javap取证) | 置信度(高) | 证据(implements Comparator<PluginPick>；getPriorityPlugin 中按 PickPriority 排序)
 	m	o00000	compare	(Lcom/fs/starfarer/api/PluginPick;Lcom/fs/starfarer/api/PluginPick;)I
 		c 来源(javap取证) | 置信度(高) | 证据(比较 PluginPick.priority 枚举 ordinal)
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ModAndPluginData;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 ModAndPluginData 的合成引用
 c	com/fs/starfarer/campaign/ModAndPluginData$o	com/fs/starfarer/campaign/ModAndPluginData$PluginPicker
 	c 来源(引用关系) | 置信度(高) | 证据(泛型插件选择接口，$1..$19 各 pick 适配器共同实现)
 	m	o00000	pick	(Lcom/fs/starfarer/api/campaign/CampaignPlugin;)Lcom/fs/starfarer/api/PluginPick;

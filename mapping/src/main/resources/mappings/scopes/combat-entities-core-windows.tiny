@@ -26,6 +26,8 @@ c com/fs/starfarer/combat/entities/BallisticProjectile com/fs/starfarer/combat/e
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/BaseEntity com/fs/starfarer/combat/entities/BaseEntity
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#base-entity
+	f	ai	ai	Lcom/fs/starfarer/combat/ai/AI;
+		c javap 字节码取证 | 高 | getAI/setAI 直接存取；protected 字段
 c com/fs/starfarer/combat/entities/BattlefieldWaypoint com/fs/starfarer/combat/entities/BattlefieldWaypoint
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/BattleObjective com/fs/starfarer/combat/entities/BattleObjective
@@ -34,6 +36,8 @@ c com/fs/starfarer/combat/entities/BeamWeaponRay com/fs/starfarer/combat/entitie
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/Billboard com/fs/starfarer/combat/entities/Billboard
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	bg	background	Lcom/fs/starfarer/E/PanelBorderRenderer;
+		c javap 字节码取证 | 高 | 构造器 new PanelBorderRenderer("ui_border3",w,h)；render 中多次绘制背景边框
 c com/fs/starfarer/combat/entities/C com/fs/starfarer/combat/entities/DamageParamHolder
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#c-damage-param-holder
 c com/fs/starfarer/combat/entities/ContrailEmitter com/fs/starfarer/combat/entities/ContrailEmitter
@@ -62,8 +66,22 @@ c com/fs/starfarer/combat/entities/ContrailEngine com/fs/starfarer/combat/entiti
 		c javap取证（调试入口，打印 "here"） | 高 | .dev/mapping-evidence/combat-entities-effects.md#contrail-engine-members
 c com/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode com/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	ENUM$VALUES	$VALUES	[Lcom/fs/starfarer/combat/entities/ContrailEngine$ContrailWidthMode;
+		c javap 字节码取证 | 高 | 枚举 values 缓存数组（values() 引用）
 c com/fs/starfarer/combat/entities/ContrailEngine$Oo com/fs/starfarer/combat/entities/ContrailEngine$Oo
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	Ö00000	dir	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 上一段到本段的归一化方向（ContrailEngine 中 sub 后 normalize 写入）
+	f	ö00000	vel	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 引擎速度向量（addSegment 参数复制）
+	f	oO0000	width	F
+		c javap 字节码取证 | 中 | addSegment 中由 $o.Ò00000（尾迹宽度）赋值
+	f	null	length	F
+		c javap 字节码取证 | 中 | 本段长度（两段位置差 length）；advance 中用于纹理滚动
+	f	new	textureOffset	F
+		c javap 字节码取证 | 中 | 纹理滚动累计：advance 中 +=length/256（对应 linux 未列占位字段同逻辑）
+	f	õ00000	contrailEngine	Lcom/fs/starfarer/combat/entities/ContrailEngine;
+		c javap 字节码取证 | 高 | 内部类外部引用（构造器注入 this）
 c com/fs/starfarer/combat/entities/ContrailEngine$o com/fs/starfarer/combat/entities/ContrailEngine$o
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 	f	o00000	key	Ljava/lang/Object;
@@ -102,18 +120,82 @@ c com/fs/starfarer/combat/entities/E com/fs/starfarer/combat/entities/ShipBreakd
 	m	o00000	isDepleted	()Z
 	m	o00000	consume	(F)V
 	m	new	advance	(F)V
+	f	Ó00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器参数注入；advance 中对其施放爆炸伤害、随机禁用组件
+	f	Ò00000	decayRate	F
+		c javap 字节码取证 | 中 | 构造 remaining*0.1f；advance 中作每秒衰减量（remaining 已在 combat-entities-core 命名）
+	f	String	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造 new IntervalTracker(0.5,1.5)；advance 中 intervalElapsed 时随机禁用组件
+	m	new	unusedNoop	()V
+		c javap 字节码取证 | 中 | 空实现：getStationSlot 后 pop return，无任何副作用，死代码
+	m	Ó00000	disableRandomComponent	()V
+		c javap 字节码取证 | 高 | WeightedRandomPicker 收集未禁用/可伤害引擎与模块（去装饰位），随机 disable(true)
 c com/fs/starfarer/combat/entities/EmitterFactory com/fs/starfarer/combat/entities/EmitterFactory
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	m	o00000	createHitGlowParticles	(FLorg/lwjgl/util/vector/Vector2f;Lcom/fs/graphics/particle/DynamicParticleGroup;)V
+		c javap 字节码取证 | 高 | 生成 15 个 GenericTextureParticle("graphics/fx/hit_glow.png",橙(255,75,25)) 随机散射入 group
+	m	o00000	createSmoothParticles	(FLorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/graphics/particle/DynamicParticleGroup;)V
+		c javap 字节码取证 | 高 | 生成 15 个 SmoothParticle 从位置向 vel 方向飞散入 group
+	m	o00000	createExplosion	(FFLorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/graphics/particle/DynamicParticleGroup;)V
+		c javap 字节码取证 | 高 | 创建 EmitterFactory$1 爆炸动画（delay,loc,size,vel）addAnimation
+	m	o00000	createDebrisEmitter	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lcom/fs/graphics/particle/DynamicParticleGroup;)Lcom/fs/graphics/particle/BaseParticleEmitter;
+		c javap 字节码取证 | 高 | 创建 EmitterFactory$2（val$ship 船体碎片发射器）
+	m	o00000	createSparkEmitter	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/graphics/particle/DynamicParticleGroup;)Lcom/fs/graphics/particle/BaseParticleEmitter;
+		c javap 字节码取证 | 高 | 创建 EmitterFactory$3（val$hit 火花发射器）
+	m	o00000	createSparkEmitter	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/graphics/particle/DynamicParticleGroup;I)Lcom/fs/graphics/particle/BaseParticleEmitter;
+		c javap 字节码取证 | 高 | 创建 EmitterFactory$4（val$hit,val$numSparks）
+	m	o00000	createSparkEmitter	(Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/graphics/particle/DynamicParticleGroup;IFLjava/awt/Color;FFF)Lcom/fs/graphics/particle/BaseParticleEmitter;
+		c javap 字节码取证 | 高 | 创建 EmitterFactory$5（完整参数：hit,sizeMin,sizeRange,scatter,numSparks,color,duration）
 c com/fs/starfarer/combat/entities/EmitterFactory$1 com/fs/starfarer/combat/entities/EmitterFactory$1
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+	f	val$delay	delay	F
+		c javap 字节码取证 | 高 | 匿名类捕获参数：爆炸延迟
+	f	val$loc	loc	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：爆炸位置
+	f	val$size	size	F
+		c javap 字节码取证 | 高 | 匿名类捕获参数：爆炸尺寸
+	f	val$vel	vel	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：爆炸速度
+	f	val$group	group	Lcom/fs/graphics/particle/DynamicParticleGroup;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子组
 c com/fs/starfarer/combat/entities/EmitterFactory$2 com/fs/starfarer/combat/entities/EmitterFactory$2
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+	f	val$ship	ship	Lcom/fs/starfarer/combat/o0OO/CollisionEntity;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：碎片来源舰
+	f	val$group	group	Lcom/fs/graphics/particle/DynamicParticleGroup;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子组
 c com/fs/starfarer/combat/entities/EmitterFactory$3 com/fs/starfarer/combat/entities/EmitterFactory$3
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+	f	val$hit	hit	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：命中点
+	f	val$group	group	Lcom/fs/graphics/particle/DynamicParticleGroup;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子组
 c com/fs/starfarer/combat/entities/EmitterFactory$4 com/fs/starfarer/combat/entities/EmitterFactory$4
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+	f	val$hit	hit	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：命中点
+	f	val$numSparks	numSparks	I
+		c javap 字节码取证 | 高 | 匿名类捕获参数：火花数量
+	f	val$group	group	Lcom/fs/graphics/particle/DynamicParticleGroup;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子组
 c com/fs/starfarer/combat/entities/EmitterFactory$5 com/fs/starfarer/combat/entities/EmitterFactory$5
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#emitter-factory-anonymous
+	f	val$hit	hit	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：命中点
+	f	val$sizeMin	sizeMin	F
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子最小尺寸
+	f	val$sizeRange	sizeRange	F
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子尺寸范围
+	f	val$scatter	scatter	F
+		c javap 字节码取证 | 高 | 匿名类捕获参数：散射程度
+	f	val$numSparks	numSparks	I
+		c javap 字节码取证 | 高 | 匿名类捕获参数：火花数量
+	f	val$color	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子颜色
+	f	val$duration	duration	F
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子持续时间
+	f	val$group	group	Lcom/fs/graphics/particle/DynamicParticleGroup;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：粒子组
 c com/fs/starfarer/combat/entities/F com/fs/starfarer/combat/entities/DamagingProjectile
 	c 继承关系 | 高 | .dev/mapping-evidence/combat-entities-core.md#return-damaging-projectile
 c com/fs/starfarer/combat/entities/F$o com/fs/starfarer/combat/entities/ProjectileHitMode
@@ -121,6 +203,8 @@ c com/fs/starfarer/combat/entities/F$o com/fs/starfarer/combat/entities/Projecti
 	f	Ô00000	REWIND_TO_LAST_FRAME	Lcom/fs/starfarer/combat/entities/F$o;
 	f	Ò00000	PASS_THROUGH	Lcom/fs/starfarer/combat/entities/F$o;
 	f	o00000	EXPLODE	Lcom/fs/starfarer/combat/entities/F$o;
+	f	Object	$VALUES	[Lcom/fs/starfarer/combat/entities/ProjectileHitMode;
+		c javap 字节码取证 | 高 | 枚举 values 缓存数组（常量 REWIND_TO_LAST_FRAME/PASS_THROUGH/EXPLODE 未列占位）
 c com/fs/starfarer/combat/entities/float com/fs/starfarer/combat/entities/BaseBeam
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#o0oo-base-beam
 	f	void	from	Lorg/lwjgl/util/vector/Vector2f;
@@ -128,6 +212,20 @@ c com/fs/starfarer/combat/entities/float com/fs/starfarer/combat/entities/BaseBe
 	f	super	source	Lcom/fs/starfarer/combat/entities/Ship;
 	f	String	damage	Lcom/fs/starfarer/combat/E/F;
 	f	Ö00000	velocity	Lorg/lwjgl/util/vector/Vector2f;
+	f	Ò00000	impactMass	F
+		c javap 字节码取证 | 高 | getImpactMass/setImpactMass 直接存取；构造器 0f
+	f	õ00000	collisionClass	Lcom/fs/starfarer/api/combat/CollisionClass;
+		c javap 字节码取证 | 高 | getCollisionClass/setCollisionClass 直接存取；构造器 RAY
+	f	Õ00000	ai	Lcom/fs/starfarer/combat/ai/AI;
+		c javap 字节码取证 | 高 | getAI/setAI 直接存取；构造器 null
+	f	OO0000	ghost	Z
+		c javap 字节码取证 | 高 | isGhost/setGhost 直接存取；构造器 false
+	f	Ó00000	piercedClasses	Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | addPierced 中 add、pierces 中 contains；构造器 noneOf
+	f	ø00000	texturedLine	Lcom/fs/graphics/particle/TexturedLine;
+		c javap 字节码取证 | 中 | 构造器 new 并设颜色(255,70,70)/宽 7f；render 中 preBatch/setFrom/setTo/renderFixed
+	f	if	customData	Ljava/util/Map;
+		c javap 字节码取证 | 高 | setCustomData/removeCustomData/getCustomData 懒初始化 LinkedHashMap
 c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
 	f	Ôo0000	MAX_FLAME_LEVEL	F
@@ -232,6 +330,12 @@ c com/fs/starfarer/combat/entities/G com/fs/starfarer/combat/entities/Engine
 		c javap取证（H.showDecelerating 调用，开启 glow 补亮） | 高 | .dev/mapping-evidence/combat-entities-effects.md#engine-members
 c com/fs/starfarer/combat/entities/G$Oo com/fs/starfarer/combat/entities/EngineState
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
+	f	Ô00000	prevThrust	F
+		c javap 字节码取证 | 中 | Engine 中与当前推力值（win class 字段）交换；构造器 0f
+	f	Ó00000	active	Z
+		c javap 字节码取证 | 中 | 引擎点火标志：Engine 中 emit 时置 true、停用置 false
+	f	o00000	engine	Lcom/fs/starfarer/combat/entities/Engine;
+		c javap 字节码取证 | 高 | 内部类外部引用（构造器注入 this）
 c com/fs/starfarer/combat/entities/G$o com/fs/starfarer/combat/entities/EngineGlowType
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#g-engine-family
 	f	o00000	SMOOTH	Lcom/fs/starfarer/combat/entities/EngineGlowType;
@@ -244,6 +348,22 @@ c com/fs/starfarer/combat/entities/H com/fs/starfarer/combat/entities/BreakingAn
 	m	o00000	hasPieces	()Z
 	m	o00000	advance	(F)V
 	m	new	isStation	()Z
+	f	Ö00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器参数赋值；buildPieces/advanceSplit 中取 hullSize/判定 station 模块
+	f	Ò00000	done	Z
+		c javap 字节码取证 | 高 | 构造器多分支置 true；advance 若 true 提前 return；isDone 返回
+	f	void	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造器 new IntervalTracker(0.2,0.4) 或按碎片数动态；advance 驱动分裂
+	f	Õ00000	numPieces	I
+		c javap 字节码取证 | 高 | 构造器 getNormalRandom(minPieces,maxPieces) 取整、可选(2,3)、再 -1
+	f	Ó00000	piecesDone	I
+		c javap 字节码取证 | 高 | advanceSplit 每次分裂 +1，>=numPieces 置 done
+	m	Ô00000	buildPieces	()V
+		c javap 字节码取证 | 高 | 用 Tesselator 从 ship 边界生成碎片数据（Tesselator$Oo 列表）
+	m	Ó00000	advanceSplit	()V
+		c javap 字节码取证 | 高 | 选最大碎片船→splitShip→piecesDone++→完成判断
+	m	new	splitShip	(Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 中 | 单步：Tesselator 生成两半、Ship.splitShip 拆分、add 到 pieces
 c com/fs/starfarer/combat/entities/I com/fs/starfarer/combat/entities/ShipStatistics
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#int-ship-statistics
 	f	o00000	hullLevelHistory	Lcom/fs/starfarer/combat/entities/A;
@@ -263,6 +383,24 @@ c com/fs/starfarer/combat/entities/I com/fs/starfarer/combat/entities/ShipStatis
 	m	Ò00000	getDistanceToEnemyHistory	()Lcom/fs/starfarer/combat/entities/A;
 	m	super	getBackingOffHistory	()Lcom/fs/starfarer/combat/entities/A;
 	m	Ö00000	getHullArmorDamageHistory	()Lcom/fs/starfarer/combat/entities/A;
+	f	Ó00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 构造器参数注入；advance 中经它读 hullLevel/armorGrid/fluxLevel 等
+	f	Ö00000	damageDealtTotalTracker	Lcom/fs/starfarer/combat/entities/ValueTrendTracker;
+		c javap 字节码取证 | 中 | 记录 recordDamageDealt 列表的 (hull+shield+armor) 总计趋势；getDamageDealtTracker 返回其 getter
+	f	õ00000	intervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | 构造 new IntervalTracker(0.75,1.25)；advance 中 intervalElapsed 驱动各趋势采样
+	f	Ô00000	damageTakenList	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造 ArrayList；recordDamageTaken 添加、advance 采样后 clear（本舰受击记录）
+	f	OO0000	damageDealtList	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造 ArrayList；recordDamageDealt 添加、advance 采样后 clear（本舰造成伤害记录）
+	m	Ò00000	recordDamageTaken	(Lcom/fs/starfarer/combat/entities/ship/ApplyDamageResult;)V
+		c javap 字节码取证 | 高 | Ship.applyDamageInner 受击时调用；add 到 damageTakenList
+	m	super	recordDamageDealt	(Lcom/fs/starfarer/combat/entities/ship/ApplyDamageResult;)V
+		c javap 字节码取证 | 高 | 对目标 Ship 造成伤害时调用；add 到 damageDealtList
+	m	if	getDamageTakenTracker	()Lcom/fs/starfarer/combat/entities/ValueTrendTracker;
+		c javap 字节码取证 | 中 | getter：返回 damageTakenList 总量趋势 tracker
+	m	õ00000	getDamageDealtTracker	()Lcom/fs/starfarer/combat/entities/ValueTrendTracker;
+		c javap 字节码取证 | 中 | getter：返回 damageDealtTotalTracker
 c com/fs/starfarer/combat/entities/if com/fs/starfarer/combat/entities/BeamEntity
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#o0oo-beam-entity
 c com/fs/starfarer/combat/entities/L com/fs/starfarer/combat/entities/RayExtender
@@ -276,12 +414,46 @@ c com/fs/starfarer/combat/entities/L com/fs/starfarer/combat/entities/RayExtende
 	m	ô00000	isFading	()Z
 	m	Ò00000	hasHit	()Z
 	m	Ø00000	getFadeFactor	()F
+	f	ô00000	start	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造器参数1；advance 中沿方向推进的位置（射线起点）；getStart 返回
+	f	õ00000	end	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造器参数2；advance 非追踪分支中 += currentPoint*dt 跟随（射线终点）；getEnd 返回
+	f	Ó00000	maxDistance	F
+		c javap 字节码取证 | 高 | 构造器参数3；advance 中 dist+1>=maxDistance 时置 active=false（射线最大长度）
+	f	Ö00000	speed	F
+		c javap 字节码取证 | 高 | 构造器参数4；advance 中 speed*dt 为单帧推进位移
+	f	void	distanceTravelled	F
+		c javap 字节码取证 | 高 | 构造器 0；advance 中 += 单帧位移；getDistanceTravelled 返回；与 progressStartDistance 比较控制进度推进
+	f	Ò00000	progressStartDistance	F
+		c javap 字节码取证 | 中 | 构造器参数5；advance 中 distanceTravelled>=它（或 boolean 参数）时 progress 开始累加
+	f	Õ00000	progress	F
+		c javap 字节码取证 | 高 | 构造器 0；advance 中 += dt/duration 并 clamp 1；getProgress 返回、isDone 判定
+	f	if	duration	F
+		c javap 字节码取证 | 高 | 构造器参数6；advance 中作 progress 累加的分母（总淡出时长）
+	f	super	velocity	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造器参数7 复制；advance 中位置额外 += dt*velocity（漂移速度）；getVelocity 返回
+	f	ø00000	active	Z
+		c javap 字节码取证 | 高 | 构造器 true；advance 中到达 maxDistance 置 false；isActive 返回
+	f	String	currentPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 构造器 new；advance 中 = 方向*单帧位移/dt + velocity（射线当前端点）；getCurrentPoint 返回
+	m	Object	getVelocity	()Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | getter：返回 velocity
+	m	Õ00000	getDistanceTravelled	()F
+		c javap 字节码取证 | 高 | getter：返回 distanceTravelled
 c com/fs/starfarer/combat/entities/Missile com/fs/starfarer/combat/entities/Missile
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipCommand	shipCommandSwitchTable	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表缓存（懒初始化，ShipCommand ordinal→1..7）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipCommand	getShipCommandSwitchTable	()[I
+		c javap 字节码取证 | 高 | 懒初始化合成方法；tableswitch 处使用
 c com/fs/starfarer/combat/entities/Missile$GuidedMissileAIWrapper com/fs/starfarer/combat/entities/Missile$GuidedMissileAIWrapper
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	ai	ai	Lcom/fs/starfarer/api/combat/MissileAIPlugin;
+		c javap 字节码取证 | 高 | 构造器注入；advance 转发、getAI 返回
 c com/fs/starfarer/combat/entities/Missile$MissileAIWrapper com/fs/starfarer/combat/entities/Missile$MissileAIWrapper
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	ai	ai	Lcom/fs/starfarer/api/combat/MissileAIPlugin;
+		c javap 字节码取证 | 高 | 构造器注入；advance 转发（null 检查）、getAI 返回
 c com/fs/starfarer/combat/entities/MovingRay com/fs/starfarer/combat/entities/MovingRay
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/O0OO com/fs/starfarer/combat/entities/DamageProvider
@@ -289,6 +461,16 @@ c com/fs/starfarer/combat/entities/O0OO com/fs/starfarer/combat/entities/DamageP
 	m	o00000	getDamage	()Lcom/fs/starfarer/combat/E/F;
 c com/fs/starfarer/combat/entities/Oo0O com/fs/starfarer/combat/entities/SpriteWarpUtils
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#sprite-warp-utils
+	f	o00000	unusedConstant	I
+		c javap 字节码取证 | 中 | private static final int，无 <clinit> 赋值、类内无任何 getstatic 引用，死代码
+	m	o00000	renderWarpedSprite	(FFLcom/fs/graphics/Sprite;)V
+		c javap 字节码取证 | 高 | 构建 11x11 权重网格、GL 光照设置、glBegin(GL_QUADS) 按权重网格渲染精灵（扭曲渲染）
+	m	o00000	getWarpPoint	([[FFFFF)Lorg/lwjgl/util/vector/Vector3f;
+		c javap 字节码取证 | 高 | 从权重数组取格点值缩放 50/11 生成 Vector3f，越界返回 null（网格采样）
+	m	o00000	getWarpNormal	([[FFF)Lorg/lwjgl/util/vector/Vector3f;
+		c javap 字节码取证 | 高 | 四邻点叉积法线求和后归一化取反（网格法线计算）
+	m	o00000	main	([Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | static main 调试残留：System.out 打印 getWarpNormal(3,3)，死代码
 c com/fs/starfarer/combat/entities/OoOO com/fs/starfarer/combat/entities/TrailExtender
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#b-trail-extender
 	f	super	target	Lorg/lwjgl/util/vector/Vector2f;
@@ -304,18 +486,46 @@ c com/fs/starfarer/combat/entities/OoOO com/fs/starfarer/combat/entities/TrailEx
 	m	void	isDone	()Z
 	m	Ö00000	getTailPos	()Lorg/lwjgl/util/vector/Vector2f;
 	m	Ó00000	getDistanceTravelled	()F
+	f	Ö00000	speed	F
+		c javap 字节码取证 | 高 | 构造器参数4；advance 中 speed*dt 为单帧推进位移
+	f	Õ00000	progressStartTime	F
+		c javap 字节码取证 | 中 | 构造器参数5；advance 中 elapsed>=它（或 boolean 参数）时 progress 开始累加
+	f	Ò00000	distanceRatio	F
+		c javap 字节码取证 | 中 | advance 中 = dist/maxDistance（无界时 1）；super() 返回 (1-progress)*distanceRatio
+	f	õ00000	active	Z
+		c javap 字节码取证 | 高 | 构造器 true；advance 中 dist+1>maxDistance 时置 false
+	m	Õ00000	getProgressStartTime	()F
+		c javap 字节码取证 | 中 | getter：返回 progressStartTime
 c com/fs/starfarer/combat/entities/oO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO com/fs/starfarer/combat/entities/CombatEntity
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#oo0o-combat-entity
 c com/fs/starfarer/combat/entities/PlasmaShot com/fs/starfarer/combat/entities/PlasmaShot
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/PlasmaShot$o com/fs/starfarer/combat/entities/PlasmaShot$o
 	c javap取证 | 低 | .dev/mapping-evidence/combat-entities-core.md#plasma-shot-inner
+	f	Ô00000	angle	F
+		c javap 字节码取证 | 高 | 射线角度：构造 i*360/6（或 /5）；advance 中 +=angularVel*dt*(launchPower*0.5+0.5)
+	f	Ò00000	angularVel	F
+		c javap 字节码取证 | 高 | 角速度：构造 160f 或 -160f（反向射线）
+	f	Object	size	F
+		c javap 字节码取证 | 高 | 尺寸：构造 random*0.25+0.75；render updateSpriteSize(size)
+	f	o00000	plasmaShot	Lcom/fs/starfarer/combat/entities/PlasmaShot;
+		c javap 字节码取证 | 高 | 内部类外部引用（构造器注入）
 c com/fs/starfarer/combat/entities/Ship com/fs/starfarer/combat/entities/Ship
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
 c com/fs/starfarer/combat/entities/Ship$1 com/fs/starfarer/combat/entities/Ship$1
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#ship-inner-classes
+	f	this$0	outerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 匿名内部类外部引用（构造器注入）
+	m	o00000	compareByRenderOrder	(Lcom/fs/starfarer/combat/entities/ship/A/ShipSlotEntity;Lcom/fs/starfarer/combat/entities/ship/A/ShipSlotEntity;)I
+		c javap 字节码取证 | 高 | Comparator 实现：按 getRenderOrder 比较；同序且双方为 Q（WeaponSlot）时按 slot.getId() 字典序
 c com/fs/starfarer/combat/entities/Ship$2 com/fs/starfarer/combat/entities/Ship$2
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#ship-inner-classes
+	f	this$0	outerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 匿名内部类外部引用（构造器注入）；perform 中经其取 velocity
+	f	val$loc	loc	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 匿名类捕获参数：爆炸位置；perform 中传给 spawnExplosion
+	f	val$size	size	F
+		c javap 字节码取证 | 高 | 匿名类捕获参数：爆炸尺寸；perform 中传给 spawnExplosion
 c com/fs/starfarer/combat/entities/Ship$o com/fs/starfarer/combat/entities/ShipAfterimage
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#ship-o-afterimage
 	f	class	color	Ljava/awt/Color;
@@ -323,10 +533,38 @@ c com/fs/starfarer/combat/entities/Ship$o com/fs/starfarer/combat/entities/ShipA
 	m	o00000	advance	(F)V
 	m	o00000	isExpired	()Z
 	m	new	getAlphaMult	()F
+	f	float	velocity	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | addAfterimage 参数 (velX,velY) set；advance 无目标时按速度线性移动
+	f	oO0000	targetAnchor	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 构造 null；advance 目标分支中与当前位置相加求指向 targetLocation 的方向（外部未见赋值，预留功能）
+	f	OO0000	targetLocation	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 中 | 构造 null；advance 中非空时残影改向它移动（外部未见赋值，预留功能）
+	f	Ô00000	moveSpeed	F
+		c javap 字节码取证 | 中 | 构造 0；advance 目标分支中 dir*moveSpeed*dt 逼近 targetLocation（外部未见赋值，预留功能）
+	f	null	location	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | addAfterimage 参数 (locX,locY) set；advance 推进、render 作为绘制位置
+	f	Ó00000	jitterAmount	F
+		c javap 字节码取证 | 中 | addAfterimage 参数6；render 中作 JitterRenderer.render 第5参（抖动量）
+	f	new	tintWithAverageColor	Z
+		c javap 字节码取证 | 中 | addAfterimage 参数11；render 中 true 时用 sprite 平均色与残影色混合再着色
+	f	õ00000	renderLayer	Z
+		c javap 字节码取证 | 中 | addAfterimage 参数12；render 中仅绘制 renderLayer==layer 的残影（分层残影）
+	f	while	elapsed	F
+		c javap 字节码取证 | 高 | 构造 0；advance 中 += dt；getAlpha 用它与 fadeInTime/holdTime/fadeOutTime 计算透明度
+	f	ö00000	fadeInTime	F
+		c javap 字节码取证 | 高 | addAfterimage 参数7；getAlpha 渐入阶段 elapsed/fadeInTime
+	f	o00000	holdTime	F
+		c javap 字节码取证 | 高 | addAfterimage 参数8；getAlpha 保持阶段（elapsed<fadeInTime+holdTime 时 alpha=1）
+	f	Ö00000	fadeOutTime	F
+		c javap 字节码取证 | 高 | addAfterimage 参数9；getAlpha 渐出阶段 1-(elapsed-fadeInTime-holdTime)/fadeOutTime
 c com/fs/starfarer/combat/entities/Ship$Oo com/fs/starfarer/combat/entities/ShipCommandItem
 	c javap取证 | 中 | .dev/mapping-evidence/combat-entities-core.md#ship-oo-command-item
 	f	Ò00000	command	Lcom/fs/starfarer/combat/entities/Ship$oo;
 	f	Ó00000	param	Ljava/lang/Object;
+	f	String	groupIndex	I
+		c javap 字节码取证 | 中 | 构造器默认 -1 或参数3；Ship 处理 SELECT_GROUP 命令时作 groups 列表索引
+	f	super	isForced	Z
+		c javap 字节码取证 | 中 | 构造器默认 false 或参数3；命令被 blockedCommands 屏蔽时若 true 保留（强制命令）
 c com/fs/starfarer/combat/entities/Ship$oo com/fs/starfarer/combat/entities/ShipCommand
 	c 字符串常量 | 高 | .dev/mapping-evidence/combat-entities-core.md#ship-oo-ship-command
 	f	for	TURN_LEFT	Lcom/fs/starfarer/combat/entities/Ship$oo;
@@ -347,5 +585,9 @@ c com/fs/starfarer/combat/entities/Ship$oo com/fs/starfarer/combat/entities/Ship
 	f	ÒO0000	HOLD_FIRE	Lcom/fs/starfarer/combat/entities/Ship$oo;
 	f	public	PULL_BACK_FIGHTERS	Lcom/fs/starfarer/combat/entities/Ship$oo;
 	f	Õ00000	USE_SYSTEM	Lcom/fs/starfarer/combat/entities/Ship$oo;
+	f	Ô00000	$VALUES	[Lcom/fs/starfarer/combat/entities/ShipCommand;
+		c javap 字节码取证 | 高 | 枚举 values 缓存数组（static{} 18 常量后生成，values() 引用）
 c com/fs/starfarer/combat/entities/Ship$ShipAIWrapper com/fs/starfarer/combat/entities/Ship$ShipAIWrapper
 	c javap取证 | 高 | .dev/mapping-evidence/combat-entities-core.md#identity-classes
+	f	ai	ai	Lcom/fs/starfarer/api/combat/ShipAIPlugin;
+		c javap 字节码取证 | 高 | 构造器注入；advance/getAI/needsRefit/getAIFlags 等方法全部转发到它

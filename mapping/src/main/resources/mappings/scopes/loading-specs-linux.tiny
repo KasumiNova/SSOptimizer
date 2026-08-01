@@ -165,13 +165,177 @@ c	com/fs/starfarer/loading/specs/BaseWeaponSpec	com/fs/starfarer/loading/specs/B
 	m	setWeaponGroupTag	setWeaponGroupTag	(Ljava/lang/String;)V
 	m	setWeaponName	setWeaponName	(Ljava/lang/String;)V
 	m	usesAmmo	usesAmmo	()Z
+	f	ôÔ0000	type	Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;
+		c javap 字节码取证 | 高 | getType/setType 直接读写；getOrdnancePointCost 按 type+size 查 dynamic 修正
+	f	Öo0000	mountType	Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;
+		c javap 字节码取证 | 高 | getMountType/setMountType 直接读写
+	f	private	size	Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponSize;
+		c javap 字节码取证 | 高 | getSize/setSize 直接读写；getOrdnancePointCost 按 size 分派 OP 修正
+	f	ÖÔ0000	hardpointSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getHardpointSpriteName/setHardpointSpriteName 直接读写
+	f	ÒÓ0000	turretSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTurretSpriteName/setTurretSpriteName 直接读写
+	f	Õ00000	hardpointUnderSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getHardpointUnderSpriteName/setHardpointUnderSpriteName 直接读写
+	f	OÓ0000	turretUnderSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTurretUnderSpriteName/setTurretUnderSpriteName 直接读写
+	f	do.new	primaryRoleStr	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getPrimaryRoleStr/setPrimaryRoleStr 直接读写
+	f	ÓO0000	speedStr	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getSpeedStr/setSpeedStr 直接读写
+	f	ôo0000	trackingStr	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTrackingStr/setTrackingStr 直接读写
+	f	private.super	turnRateStr	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTurnRateStr/setTurnRateStr 直接读写
+	f	ÕÒ0000	accuracyStr	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getAccuracyStr/setAccuracyStr 直接读写
+	f	OÔ0000	customPrimary	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCustomPrimary/setCustomPrimary 直接读写
+	f	ôÒ0000	customPrimaryHL	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCustomPrimaryHL/setCustomPrimaryHL 读写；setter 将 "\{x\}" 替换为 "×"
+	f	ÒÔ0000	customAncillary	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCustomAncillary/setCustomAncillary 直接读写
+	f	ÖÒ0000	customAncillaryHL	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCustomAncillaryHL/setCustomAncillaryHL 读写；setter 将 "\{x\}" 替换为 "×"
+	f	OO0000	noDPSInTooltip	Z
+		c javap 字节码取证 | 高 | isNoDPSInTooltip/setNoDPSInTooltip 直接读写
+	f	øÓ0000	ordnancePointCost	F
+		c javap 字节码取证 | 高 | getOrdnancePointCost 核心直接读；setOrdnancePointCost 直接写
+	f	ÓÒ0000	autofireAccBonus	F
+		c javap 字节码取证 | 高 | getAutofireAccBonus/setAutofireAccBonus 直接读写
+	f	ôÓ0000	extraArcForAI	F
+		c javap 字节码取证 | 高 | getExtraArcForAI/setExtraArcForAI 直接读写
+	f	if.new	turnRate	F
+		c javap 字节码取证 | 高 | getTurnRate/setTurnRate 直接读写；getTurnRateDisplayName 按阈值分段读（Can't turn/Very Slow/...）
+	f	private.new	maxRange	F
+		c javap 字节码取证 | 高 | getMaxRange/setMaxRange 直接读写
+	f	ÓÔ0000	weaponId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器入参写入；getWeaponId 直接读
+	f	ÕÔ0000	weaponName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getWeaponName/setWeaponName 直接读写
+	f	String	manufacturer	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getManufacturer/setManufacturer 直接读写
+	f	Ö00000	hardpointFireOffsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | getHardpointFireOffsets 返回；addHardpointFireOffset/getHardpointFireOffset(int) 操作；clone 深拷贝
+	f	øO0000	turretFireOffsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | getTurretFireOffsets 返回；addTurretFireOffset/getTurretFireOffset(int) 操作；clone 深拷贝
+	f	Ò00000	turretAngleOffsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | getTurretAngleOffsets 返回；getTurretAngleOffset(int)/addTurretAngleOffset 操作
+	f	ÒÒ0000	hardpointAngleOffsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | getHardpointAngleOffsets 返回；getHardpointAngleOffset(int)/addHardpointAngleOffset 操作
+	f	õO0000	hiddenFireOffsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | getHiddenFireOffsets 返回；getHiddenFireOffset(int) 读取；addTurretFireOffset 同步写入 0.5 倍偏移
+	f	õ00000	hiddenAngleOffsets	Ljava/util/List;
+		c javap 字节码取证 | 高 | getHiddenAngleOffsets 返回；getHiddenAngleOffset(int) 读取；addTurretAngleOffset 同步写入
+	f	String.new	displayArcRadius	F
+		c javap 字节码取证 | 高 | getDisplayArcRadius/setDisplayArcRadius 直接读写；构造器默认 250.0f
+	f	void.Object	specialWeaponGlowWidth	F
+		c javap 字节码取证 | 高 | getSpecialWeaponGlowWidth/setSpecialWeaponGlowWidth 直接读写；构造器默认 -1f
+	f	ÓÓ0000	specialWeaponGlowHeight	F
+		c javap 字节码取证 | 高 | getSpecialWeaponGlowHeight/setSpecialWeaponGlowHeight 直接读写；构造器默认 -1f
+	f	String.super	damageType	Lcom/fs/starfarer/api/combat/DamageType;
+		c javap 字节码取证 | 高 | getDamageType/setDamageType 直接读写
+	f	Ó00000	aiHints	Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | getAIHints 直接返回；构造器 EnumSet.noneOf(AIHints)；getOrdnancePointCost 检查 PD hint
+	f	void	derivedStats	Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$DerivedWeaponStats;
+		c javap 字节码取证 | 高 | getDerivedStats/setDerivedStats 直接读写
+	f	Õo0000	playFullFireSoundOne	Z
+		c javap 字节码取证 | 高 | isPlayFullFireSoundOne/setPlayFullFireSoundOne 直接读写；构造器默认 false
+	f	super.new	fireSoundOne	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getFireSoundOne/setFireSoundOne 直接读写
+	f	String.Object	fireSoundTwo	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getFireSoundTwo/setFireSoundTwo 直接读写
+	f	if.super	tier	I
+		c javap 字节码取证 | 高 | getTier/setTier 直接读写
+	f	Óo0000	baseValue	F
+		c javap 字节码取证 | 高 | getBaseValue/setBaseValue 直接读写
+	f	õÓ0000	maxAmmo	I
+		c javap 字节码取证 | 高 | getMaxAmmo/setMaxAmmo 直接读写；usesAmmo 判 !=Integer.MAX_VALUE；构造器默认 MAX_VALUE
+	f	øÒ0000	ammoPerSecond	F
+		c javap 字节码取证 | 高 | getAmmoPerSecond/setAmmoPerSecond 直接读写；构造器默认 0f
+	f	ÒO0000	reloadSize	F
+		c javap 字节码取证 | 高 | getReloadSize/setReloadSize 直接读写；构造器默认 0f
+	f	ôO0000	numFrames	I
+		c javap 字节码取证 | 高 | getNumFrames/setNumFrames 直接读写；构造器默认 1
+	f	ÖÓ0000	frameRate	F
+		c javap 字节码取证 | 高 | getFrameRate/setFrameRate 直接读写；构造器默认 1f
+	f	õÒ0000	alwaysAnimate	Z
+		c javap 字节码取证 | 高 | isAlwaysAnimate/setAlwaysAnimate 直接读写；构造器默认 false
+	f	super.super	renderBelowAllWeapons	Z
+		c javap 字节码取证 | 高 | isRenderBelowAllWeapons/setRenderBelowAllWeapons 直接读写
+	f	õo0000	renderAboveAllWeapons	Z
+		c javap 字节码取证 | 高 | isRenderAboveAllWeapons/setRenderAboveAllWeapons 直接读写
+	f	ÕÓ0000	showDamageWhenDecorative	Z
+		c javap 字节码取证 | 高 | isShowDamageWhenDecorative/setShowDamageWhenDecorative 直接读写
+	f	Òo0000	animateWhileFiring	Z
+		c javap 字节码取证 | 高 | isAnimateWhileFiring/setAnimateWhileFiring 直接读写
+	f	ø00000	stopPreviousFireSound	Z
+		c javap 字节码取证 | 高 | isStopPreviousFireSound/setStopPreviousFireSound 直接读写
+	f	if.Object	fadePreviousFireSound	F
+		c javap 字节码取证 | 高 | getFadePreviousFireSound/setFadePreviousFireSound 直接读写
+	f	ô00000	unaffectedByProjectileSpeedBonuses	Z
+		c javap 字节码取证 | 高 | isUnaffectedByProjectileSpeedBonuses/setUnaffectedByProjectileSpeedBonuses 直接读写
+	f	Oo0000	restrictToSpecifiedMountType	Z
+		c javap 字节码取证 | 高 | isRestrictToSpecifiedMountType/setRestrictToSpecifiedMountType 直接读写
+	f	OÒ0000	noImpactSounds	Z
+		c javap 字节码取证 | 高 | isNoImpactSounds/setNoImpactSounds 直接读写
+	f	if	noShieldImpactSounds	Z
+		c javap 字节码取证 | 高 | isNoShieldImpactSounds/setNoShieldImpactSounds 直接读写
+	f	øo0000	noNonShieldImpactSounds	Z
+		c javap 字节码取证 | 高 | isNoNonShieldImpactSounds/setNoNonShieldImpactSounds 直接读写
+	f	ÖO0000	everyFrameClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getEveryFrameClassName/setEveryFrameClassName 直接读写；getEveryFrameEffect 经 ScriptStore.new 实例化
+	f	do	renderHints	Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | addRenderHint/hasHint 直接操作；构造器 EnumSet.noneOf(BaseWeaponSpec$o)；clone 深拷贝
+	f	super.Object	rarity	F
+		c javap 字节码取证 | 高 | getRarity/setRarity 直接读写；构造器默认 1f
+	f	void.new	tags	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getTags/addTag/hasTag 直接操作；构造器 new LinkedHashSet；getAutofitCategory 迭代此集合
+	f	void.super	weaponGroupTag	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getWeaponGroupTag/setWeaponGroupTag 直接读写
+	f	ÕO0000	autofitCategory	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getAutofitCategory 懒加载缓存：遍历 tags 取 getLevel 最高者的 getCategory，无则 ""
+	f	do.super	autofitCategories	Ljava/util/List;
+		c javap 字节码取证 | 高 | getAutofitCategoriesInPriorityOrder 懒加载缓存：遍历 tags 过滤 level>=0，Collections.sort(Comparator)
+	f	do.Object	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | getSourceMod 直接读；setSourceMod 按 modId 经 SpecStore 查 ModSpec 写入
+	f	super	weaponSizeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 方法懒初始化缓存：WeaponSize ordinal→1/2/3
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$WeaponAPI$WeaponSize	getWeaponSizeSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化：LARGE→3/MEDIUM→2/SMALL→1，静态缓存 super
 c	com/fs/starfarer/loading/specs/BaseWeaponSpec$1	com/fs/starfarer/loading/specs/BaseWeaponSpec$AutofitCategoryComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<String>，getAutofitCategoriesInPriorityOrder 内按 getLevel 排序 autofit 分类)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	this$0	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+		c javap 字节码取证 | 高 | 合成外部类引用，构造器写入；compareByLevel 经它调用外层 getLevel
+	m	o00000	compareByLevel	(Ljava/lang/String;Ljava/lang/String;)I
+		c javap 字节码取证 | 高 | getLevel(b)-getLevel(a) 取 signum——按自动装配等级降序；compare(Object,Object) 委托
 c	com/fs/starfarer/loading/specs/BaseWeaponSpec$o	com/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint
 	c 来源(javap取证) | 置信度(高) | 证据(枚举常量 NEVER_RENDER_IN_CAMPAIGN/RENDER_ADDITIVE/RENDER_BARREL_BELOW/RENDER_LOADED_MISSILES/SUSPEND_RECOIL，addRenderHint/hasHint 的 EnumSet)
+	f	return	RENDER_BARREL_BELOW	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "RENDER_BARREL_BELOW" 构造（枚举常量）
+	f	Ø00000	RENDER_LOADED_MISSILES	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "RENDER_LOADED_MISSILES" 构造（枚举常量）
+	f	Ô00000	RENDER_LOADED_MISSILES_UNLESS_HIDDEN	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "RENDER_LOADED_MISSILES_UNLESS_HIDDEN" 构造（枚举常量）
+	f	Object	RENDER_ADDITIVE	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "RENDER_ADDITIVE" 构造（枚举常量）
+	f	Õ00000	SUSPEND_RECOIL	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "SUSPEND_RECOIL" 构造（枚举常量）
+	f	o00000	NEVER_RENDER_IN_CAMPAIGN	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "NEVER_RENDER_IN_CAMPAIGN" 构造（枚举常量）
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/loading/specs/BaseWeaponSpec$WeaponRenderHint;
+		c javap 字节码取证 | 高 | <clinit> 依声明序组 6 元素数组；values() 拷贝返回
 c	com/fs/starfarer/loading/specs/EngineSlot$o	com/fs/starfarer/loading/specs/EngineSlot$ContrailMode
 	c 来源(javap取证) | 置信度(高) | 证据(枚举常量 NONE/PARTICLES/QUAD_STRIP，EngineSlot.getContrailMode 返回类型)
+	f	Ô00000	NONE	Lcom/fs/starfarer/loading/specs/EngineSlot$ContrailMode;
+		c javap 字节码取证 | 高 | clinit ldc 'NONE' 枚举常量
+	f	Object	PARTICLES	Lcom/fs/starfarer/loading/specs/EngineSlot$ContrailMode;
+		c javap 字节码取证 | 高 | clinit ldc 'PARTICLES' 枚举常量
+	f	o00000	QUAD_STRIP	Lcom/fs/starfarer/loading/specs/EngineSlot$ContrailMode;
+		c javap 字节码取证 | 高 | clinit ldc 'QUAD_STRIP' 枚举常量
+	f	Ò00000	VALUES	[Lcom/fs/starfarer/loading/specs/EngineSlot$ContrailMode;
+		c javap 字节码取证 | 高 | private static final 枚举值缓存数组（values() 读取）
 c	com/fs/starfarer/loading/specs/F	com/fs/starfarer/loading/specs/ProjectileSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements BaseProjectileSpec(newsuper)+ProjectileSpecAPI，getSpawnType 分发 BEAM/BALLISTIC/PLASMA)
 	m	clone	clone	()Lcom/fs/starfarer/loading/specs/ProjectileSpec;
@@ -254,6 +418,80 @@ c	com/fs/starfarer/loading/specs/F	com/fs/starfarer/loading/specs/ProjectileSpec
 	m	setTextureScrollSpeed	setTextureScrollSpeed	(F)V
 	m	setTextureType	setTextureType	(Lcom/fs/starfarer/renderers/OO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;)V
 	m	setWidth	setWidth	(F)V
+	f	OÔ0000	passThroughMissiles	Z
+		c javap 字节码取证 | 高 | isPassThroughMissiles/setPassThroughMissiles 读写
+	f	öÔ0000	passThroughFighters	Z
+		c javap 字节码取证 | 高 | isPassThroughFighters/setPassThroughFighters 读写
+	f	new.Object	passThroughFightersOnlyWhenDestroyed	Z
+		c javap 字节码取证 | 高 | isPassThroughFightersOnlyWhenDestroyed/setPassThroughFightersOnlyWhenDestroyed 读写
+	f	õÒ0000	applyOnHitEffectWhenPassThrough	Z
+		c javap 字节码取证 | 高 | isApplyOnHitEffectWhenPassThrough/setApplyOnHitEffectWhenPassThrough 读写
+	f	öÒ0000	impactMass	F
+		c javap 字节码取证 | 高 | getImpactMass/setImpactStrength 读写（同一字段）
+	f	ÔÓ0000	collisionClass	Lcom/fs/starfarer/api/combat/CollisionClass;
+		c javap 字节码取证 | 高 | getCollisionClass/setCollisionClass 读写
+	f	ØÒ0000	collisionClassIfByFighter	Lcom/fs/starfarer/api/combat/CollisionClass;
+		c javap 字节码取证 | 高 | getCollisionClassIfByFighter/setCollisionClassIfByFighter 读写
+	f	õÔ0000	damage	Lcom/fs/starfarer/combat/o0OO/Damage;
+		c javap 字节码取证 | 高 | getDamage/setDamage 读写
+	f	while.new	length	F
+		c javap 字节码取证 | 高 | getLength/setLength 读写
+	f	null.Object	maxRange	F
+		c javap 字节码取证 | 高 | getMaxRange/setMaxRange 读写
+	f	new.new	moveSpeed	F
+		c javap 字节码取证 | 高 | getMoveSpeed/setMoveSpeed 读写（getMoveSpeed 按武器类型乘倍率）
+	f	while.Object	fadeTime	F
+		c javap 字节码取证 | 高 | getFadeTime/setFadeTime 读写
+	f	ÔÒ0000	hitGlowRadius	F
+		c javap 字节码取证 | 高 | getHitGlowRadius/setHitGlowRadius 读写
+	f	class.new	spawnType	Lcom/fs/starfarer/api/loading/ProjectileSpawnType;
+		c javap 字节码取证 | 高 | getSpawnType/setSpawnType 读写
+	f	OÒ0000	width	F
+		c javap 字节码取证 | 高 | getWidth/setWidth 读写
+	f	float.new	fringeColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getFringeColor/setFringeColor 读写
+	f	öÓ0000	coreColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getCoreColor/setCoreColor 读写
+	f	OÕ0000	darkCore	Z
+		c javap 字节码取证 | 高 | isDarkCore/setDarkCore 读写
+	f	class.Object	darkCoreIter	I
+		c javap 字节码取证 | 高 | getDarkCoreIter/setDarkCoreIter 读写
+	f	õÓ0000	darkFringeIter	I
+		c javap 字节码取证 | 高 | getDarkFringeIter/setDarkFringeIter 读写
+	f	interface.new	coreWidthMult	F
+		c javap 字节码取证 | 高 | getCoreWidthMult/setCoreWidthMult 读写
+	f	ÖÒ0000	textureType	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | getTextureType/setTextureType 读写
+	f	ÔÔ0000	fringeTex	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getFringeTex/setFringeTex 读写
+	f	ØÔ0000	coreTex	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCoreTex/setCoreTex 读写
+	f	interface.Object	textureScrollSpeed	F
+		c javap 字节码取证 | 高 | getTextureScrollSpeed/setTextureScrollSpeed 读写
+	f	OÓ0000	pixelsPerTexel	F
+		c javap 字节码取证 | 高 | getPixelsPerTexel/setPixelsPerTexel 读写
+	f	ÖÔ0000	bulletSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getBulletSpriteName/setBulletSpriteName 读写
+	f	oÔ0000	glowRadius	F
+		c javap 字节码取证 | 高 | getGlowRadius/setGlowRadius 读写
+	f	oÓ0000	glowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getGlowColor/setGlowColor 读写
+	f	null.new	maxHealth	F
+		c javap 字节码取证 | 高 | getMaxHealth/setMaxHealth 读写
+	f	ØÓ0000	behaviorSpec	Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec;
+		c javap 字节码取证 | 高 | getBehaviorSpec/setBehaviorSpec 读写
+	f	ÓÔ0000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | final 字段，getId 直读，构造器参数1直存
+	f	oÒ0000	onHitClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getOnHitClassName/setOnHitClassName 读写
+	f	float.Object	onFireClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getOnFireClassName/setOnFireClassName 读写
+	f	ÖÓ0000	noImpactSounds	Z
+		c javap 字节码取证 | 高 | isNoImpactSounds/setNoImpactSounds 读写
+	f	ÓÒ0000	noShieldImpactSounds	Z
+		c javap 字节码取证 | 高 | isNoShieldImpactSounds/setNoShieldImpactSounds 读写
+	f	ÓÓ0000	noNonShieldImpactSounds	Z
+		c javap 字节码取证 | 高 | isNoNonShieldImpactSounds/setNoNonShieldImpactSounds 读写
 c	com/fs/starfarer/loading/specs/FactionDoctrine	com/fs/starfarer/loading/specs/FactionDoctrine
 	c 来源(javap取证) | 置信度(高) | 证据(DoNotObfuscate+implements FactionDoctrineAPI)
 	f	aggression	aggression	I
@@ -385,6 +623,8 @@ c	com/fs/starfarer/loading/specs/FactionProduction$ItemInProduction	com/fs/starf
 	m	setSpecId	setSpecId	(Ljava/lang/String;)V
 	m	setTimeInterrupted	setTimeInterrupted	(F)V
 	m	setType	setType	(Lcom/fs/starfarer/api/campaign/FactionProductionAPI$ProductionItemType;)V
+	m	$SWITCH_TABLE$com$fs$starfarer$api$campaign$FactionProductionAPI$ProductionItemType	getProductionItemTypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | javac 合成：懒初始化 ProductionItemType→1..3 映射，getBaseCost 的 tableswitch 使用
 c	com/fs/starfarer/loading/specs/FighterWingSpec	com/fs/starfarer/loading/specs/FighterWingSpec
 	c 来源(javap取证) | 置信度(高) | 证据(DoNotObfuscate+implements FighterWingSpecAPI)
 	f	attackPositionOffset	attackPositionOffset	F
@@ -458,6 +698,10 @@ c	com/fs/starfarer/loading/specs/FighterWingSpec	com/fs/starfarer/loading/specs/
 c	com/fs/starfarer/loading/specs/FighterWingSpec$1	com/fs/starfarer/loading/specs/FighterWingSpec$Comparator
 	c 来源(javap取证) | 置信度(中) | 证据(Comparator<String>，按名称排序战斗机（内部比较器）)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	this$0	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+		c javap 字节码取证 | 高 | 合成外类引用，构造器 putfield
+	m	o00000	compareByLevel	(Ljava/lang/String;Ljava/lang/String;)I
+		c javap 字节码取证 | 高 | getLevel(a)-getLevel(b) signum，按战机等级排序
 c	com/fs/starfarer/loading/specs/G	com/fs/starfarer/loading/specs/ArmorSpec
 	c 来源(javap取证) | 置信度(高) | 证据(ShipHullSpec.setArmorSpec(G)，字段来自 hull CSV armor rating/hitpoints)
 	f	new	armorRating	F
@@ -467,6 +711,8 @@ c	com/fs/starfarer/loading/specs/G	com/fs/starfarer/loading/specs/ArmorSpec
 	m	super	getHitpoints	()F
 	m	Ò00000	setArmorRating	(F)V
 	m	super	setHitpoints	(F)V
+	m	Ò00000	clone	()Lcom/fs/starfarer/loading/specs/ArmorSpec;
+		c javap 字节码取证 | 高 | 包装 Object.clone() 后 checkcast；public clone() 委托此方法
 c	com/fs/starfarer/loading/specs/H	com/fs/starfarer/loading/specs/IndustrySpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements IndustrySpecAPI，SpecStore Loading industries)
 	m	addTag	addTag	(Ljava/lang/String;)V
@@ -506,6 +752,38 @@ c	com/fs/starfarer/loading/specs/H	com/fs/starfarer/loading/specs/IndustrySpec
 	m	setSourceMod	setSourceMod	(Lorg/json/JSONObject;)V
 	m	setUpgrade	setUpgrade	(Ljava/lang/String;)V
 	m	setUpkeep	setUpkeep	(F)V
+	f	Ò00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "id"，getId/getNewPluginInstance 读取
+	f	o00000	name	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "name"，getName/setName
+	f	public	pluginClass	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "plugin"，getPluginClass/getNewPluginInstance 经 ScriptStore.new
+	f	ö00000	desc	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "desc"，getDesc/setDesc
+	f	ÒO0000	upgrade	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "upgrade"（空串归 null），getUpgrade/getUpgradePluginInstance
+	f	oO0000	downgrade	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "downgrade"（空串归 null），getDowngrade/getDowngradePluginInstance
+	f	int	data	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "data"（空串归 null），getData/setData
+	f	ÔO0000	tags	Ljava/util/Set;
+		c javap 字节码取证 | 高 | JSON "tags" 逗号拆分，getTags/addTag/hasTag
+	f	return	cost	F
+		c javap 字节码取证 | 高 | JSON "cost mult"，乘 creditsPerCostUnit/industryBuildCostMult，getCost/setCost
+	f	ô00000	buildTime	F
+		c javap 字节码取证 | 高 | JSON "build time"，getBuildTime/setBuildTime
+	f	Ô00000	upkeep	F
+		c javap 字节码取证 | 高 | JSON "upkeep"，乘 creditsPerCostUnit/industryUpkeepMult，getUpkeep/setUpkeep
+	f	ø00000	income	F
+		c javap 字节码取证 | 高 | JSON "income"，乘 creditsPerCostUnit/industryIncomeMult，getIncome/setIncome
+	f	Õ00000	order	I
+		c javap 字节码取证 | 高 | JSON "order" optInt(10000)，getOrder/setOrder
+	f	for	imageName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "image"，getImageName/setImageName
+	f	Ø00000	disruptDanger	Lcom/fs/starfarer/api/impl/campaign/rulecmd/salvage/MarketCMD$RaidDangerLevel;
+		c javap 字节码取证 | 高 | JSON "disruptDanger" 默认 MEDIUM，getDisruptDanger/setDisruptDanger
+	f	Object	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | getSourceMod 直读，setSourceMod 经 SpecStore 解析 JSON modId
 c	com/fs/starfarer/loading/specs/HullVariantSpec	com/fs/starfarer/loading/specs/HullVariantSpec
 	c 来源(javap取证) | 置信度(高) | 证据(DoNotObfuscate+implements ShipVariantAPI)
 	f	ALT	ALT	I
@@ -684,12 +962,56 @@ c	com/fs/starfarer/loading/specs/HullVariantSpec	com/fs/starfarer/loading/specs/
 c	com/fs/starfarer/loading/specs/HullVariantSpec$1	com/fs/starfarer/loading/specs/HullVariantSpec$VariantWeaponComparator
 	c 来源(javap取证) | 置信度(中) | 证据(Comparator<HullVariantSpec$o>，variant 武器排序)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	this$0	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | 合成外类引用，构造器 putfield
+	m	o00000	compareWeaponPriority	(Lcom/fs/starfarer/loading/specs/HullVariantSpec$VariantWeapon;Lcom/fs/starfarer/loading/specs/HullVariantSpec$VariantWeapon;)I
+		c javap 字节码取证 | 高 | 按维度分数排序：PD*1000、NO_MANUAL_FIRE*10000 罚分、空 weaponGroupTag -100
 c	com/fs/starfarer/loading/specs/HullVariantSpec$o	com/fs/starfarer/loading/specs/HullVariantSpec$VariantWeapon
 	c 来源(javap取证) | 置信度(高) | 证据(构造(Y武器槽, BaseWeaponSpec, WeaponSize)，variant 内已挂载武器条目)
+	f	Ô00000	dimensionWeights	[F
+		c javap 字节码取证 | 高 | clinit 按 HullVariantSpec 维度常量填权重（RANGE 0.025/PD 7.0/LINKED 20.0 等），differenceTo 加权
+	f	Ó00000	dimensionValues	[F
+		c javap 字节码取证 | 高 | 构造器按维度特征填值（KINETIC/PD/FRONT/BIGGEST/RANGE/ROCKET/MISSILE/LINKED/ALT/BEAM/NO_MANUAL_FIRE）
+	f	new	mounts	Ljava/util/List;
+		c javap 字节码取证 | 高 | Y(挂载槽) 列表，构造器 add，mergeFrom addAll
+	f	o00000	weapons	Ljava/util/List;
+		c javap 字节码取证 | 高 | BaseWeaponSpec 列表，构造器 add，mergeFrom addAll
+	f	class	weaponGroupTag	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器取 getWeaponGroupTag 直存（null 置 ""），分组/比较用
+	m	Ò00000	mergeFrom	(Lcom/fs/starfarer/loading/specs/HullVariantSpec$VariantWeapon;)V
+		c javap 字节码取证 | 高 | 合并另一组：mounts/weapons addAll、特征值按组大小加权平均、非空 weaponGroupTag 覆盖
+	m	o00000	differenceTo	(Lcom/fs/starfarer/loading/specs/HullVariantSpec$VariantWeapon;)F
+		c javap 字节码取证 | 高 | 组差异分数：weaponGroupTag 不同 +100000，各维度 |Δ|*dimensionWeights 求和
+	m	o00000	isAlternatingGroup	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)Z
+		c javap 字节码取证 | 高 | HullVariantSpec 调用点 770：true→WeaponGroupType.ALTERNATING，false→LINKED
 c	com/fs/starfarer/loading/specs/K	com/fs/starfarer/loading/specs/SoundSet
 	c 来源(javap取证) | 置信度(高) | 证据(data/config/sounds.json Loading sound sets，按 tag/船体尺寸过滤声音并调整音高音量)
+	f	new	entryMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	soundSpecs	Ljava/util/List;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	parseEntry	(Lorg/json/JSONObject;)Lcom/fs/starfarer/loading/specs/SoundSet$Entry;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	addSoundSpec	(Lcom/fs/starfarer/loading/specs/SoundSpec;)V
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	new	getRandomSoundSpec	()Lcom/fs/starfarer/loading/specs/SoundSpec;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	getSoundSpec	(Lcom/fs/starfarer/loading/specs/HullStyle;Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)Lcom/fs/starfarer/loading/specs/SoundSpec;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	getSoundSpec	(Ljava/lang/String;Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)Lcom/fs/starfarer/loading/specs/SoundSpec;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	getSoundSpecs	()Ljava/util/List;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/loading/specs/K$o	com/fs/starfarer/loading/specs/SoundSet$Entry
 	c 来源(javap取证) | 置信度(中) | 证据(SoundSet 内 Map 值：声音列表+音高/音量倍率（按 tag/HullSize 键）)
+	f	Ô00000	soundSpecs	Ljava/util/List;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Object	pitchMultiplier	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ò00000	volumeMultiplier	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	outerSoundSet	Lcom/fs/starfarer/loading/specs/SoundSet;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/loading/specs/M	com/fs/starfarer/loading/specs/ShipSystemSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements ShipSystemSpecAPI，SpecStore Loading ship system)
 	m	addTag	addTag	(Ljava/lang/String;)V
@@ -849,24 +1171,452 @@ c	com/fs/starfarer/loading/specs/M	com/fs/starfarer/loading/specs/ShipSystemSpec
 	m	setVentingAllowed	setVentingAllowed	(Z)V
 	m	setWeaponId	setWeaponId	(Ljava/lang/String;)V
 	m	usesAmmo	usesAmmo	()Z
+	f	interface.super	aiHints	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIHints;
+		c javap 字节码取证 | 高 | 构造 new SystemAIHints(json) 写入；getAIHints 直读；getThreatRange/Amount/Arc/Angle 委托其字段
+	f	ÓÒ0000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 id 写入；getId/setId 直读写
+	f	ÔÔ0000	name	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getName/setName 直读写
+	f	ØÔ0000	weaponDataId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 weaponDataId 写入；getWeaponId/setWeaponId 直读写
+	f	while.new	type	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 构造 JSON 键 type 解析枚举写入；getType/setType 直读写；createSystem 按类型 switch 分发
+	f	new	aiType	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 构造 JSON 键 aiType 解析枚举写入；getAiType/setAiType 直读写；createSystemAI 按类型 switch 分发
+	f	float.Object	fluxPerSecond	F
+		c javap 字节码取证 | 高 | getFluxPerSecond/setFluxPerSecond 直读写（构造默认 0.0f）
+	f	ÓÖ0000	fluxPerSecondBaseRate	F
+		c javap 字节码取证 | 高 | get/setFluxPerSecondBaseRate 直读写
+	f	ÖÕ0000	fluxPerSecondBaseCap	F
+		c javap 字节码取证 | 高 | get/setFluxPerSecondBaseCap 直读写
+	f	null.super	fluxPerUse	F
+		c javap 字节码取证 | 高 | get/setFluxPerUse 直读写
+	f	oo0000	fluxPerUseBaseRate	F
+		c javap 字节码取证 | 高 | get/setFluxPerUseBaseRate 直读写
+	f	oÕ0000	fluxPerUseBaseCap	F
+		c javap 字节码取证 | 高 | get/setFluxPerUseBaseCap 直读写
+	f	ÔÒ0000	crPerUse	F
+		c javap 字节码取证 | 高 | get/setCrPerUse 直读写
+	f	õØ0000	phaseChargedownVulnerabilityFraction	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 phaseChargedownVulnerabilityFraction 写入；get/setPhaseChargedownVulnerabilityFraction 直读写
+	f	öÔ0000	maxUses	I
+		c javap 字节码取证 | 高 | 构造默认 2147483647；getMaxUses 叠加 SystemUsesBonus；usesAmmo 判 != MAX_VALUE
+	f	OÒ0000	in	F
+		c javap 字节码取证 | 高 | getIn/setIn 直读写
+	f	OÓ0000	active	F
+		c javap 字节码取证 | 高 | getActive/setActive 直读写
+	f	oØ0000	out	F
+		c javap 字节码取证 | 高 | getOut/setOut 直读写
+	f	ÖÔ0000	cooldown	F
+		c javap 字节码取证 | 高 | getCooldown 叠加 SystemCooldownBonus（相位则 PhaseCloakCooldownBonus）；setCooldown 直写
+	f	ÔØ0000	regen	F
+		c javap 字节码取证 | 高 | getRegen 叠加 SystemRegenBonus；setRegen 直写
+	f	öÓ0000	toggle	Z
+		c javap 字节码取证 | 高 | isToggle/setToggle 直读写
+	f	oÖ0000	turningAllowed	Z
+		c javap 字节码取证 | 高 | is/setTurningAllowed 直读写（构造默认 true）
+	f	OÕ0000	strafeAllowed	Z
+		c javap 字节码取证 | 高 | is/setStrafeAllowed 直读写（构造默认 true）
+	f	interface.Object	shieldAllowed	Z
+		c javap 字节码取证 | 高 | is/setShieldAllowed 直读写（构造默认 true）
+	f	öÕ0000	accelerateAllowed	Z
+		c javap 字节码取证 | 高 | is/setAccelerateAllowed 直读写（构造默认 true）
+	f	while.Object	firingAllowed	Z
+		c javap 字节码取证 | 高 | is/setFiringAllowed 直读写（构造默认 true）
+	f	ØO0000	dissipationAllowed	Z
+		c javap 字节码取证 | 高 | is/setDissipationAllowed 直读写（构造默认 true）
+	f	null.class	generatesHardFlux	Z
+		c javap 字节码取证 | 高 | generatesHardFlux/setGeneratesHardFlux 直读写（构造默认 false）
+	f	Oo0000	ventingAllowed	Z
+		c javap 字节码取证 | 高 | is/setVentingAllowed 直读写（构造默认 true）
+	f	oÓ0000	phaseCloak	Z
+		c javap 字节码取证 | 高 | is/setPhaseCloak 直读写（构造默认 true）；getCooldown 依此选 PhaseCloakCooldownBonus
+	f	new.class	blockActionsWhileChargingDown	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 blockActionsWhileChargingDown 写入；isBlockActionsWhileChargingDown 直读
+	f	ÖÖ0000	requiresZeroFluxBoost	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 requiresZeroFluxBoost 写入；is/setRequiresZeroFluxBoost 直读写
+	f	new.String	canNotCauseOverload	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 canNotCauseOverload 写入；is/setCanNotCauseOverload 直读写
+	f	ØØ0000	canUseWhileRightClickSystemOn	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 canUseWhileRightClickSystemOn 写入；is/setCanUseWhileRightClickSystemOn 直读写
+	f	OÖ0000	alwaysAccelerate	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 alwaysAccelerate 写入；isAlwaysAccelerate 直读；构造末尾 MANEUVERING_JETS 冲突检查
+	f	interface.String	triggersExtraEngines	Z
+		c javap 字节码取证 | 高 | is/setTriggersExtraEngines 直读写（构造默认 false）
+	f	õÕ0000	hardDissipationAllowed	Z
+		c javap 字节码取证 | 高 | is/setHardDissipationAllowed 直读写（构造默认 true）
+	f	oÒ0000	clampTurnRateAfter	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 clampTurnRateAfter 写入；isClampTurnRateAfter 直读
+	f	new.super	clampMaxSpeedAfter	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 clampMaxSpeedAfter 写入；isClampMaxSpeedAfter 直读
+	f	new.new	fadeActivationSoundOnChargedown	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 fadeActivationSoundOnChargedown 写入；isFadeActivationSoundOnChargedown 直读
+	f	öo0000	engineGlowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 engineGlowColor 写入（white 归一 null）；getEngineGlowColor 直读；affectsEngineFlameVisuals 判非 null
+	f	Ö00000	engineGlowContrailColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 engineGlowContrailColor 写入（white 归一 null）；getEngineGlowContrailColor 直读
+	f	Øo0000	effectColor1	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 effectColor1 写入；getEffectColor1 直读
+	f	float.super	effectColor2	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 effectColor2 写入；getEffectColor2 直读
+	f	float.new	engineActivateHiddenNozzles	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 engineActivateHiddenNozzles 写入；isEngineActivateHiddenNozzles 直读
+	f	null	engineGlowLengthMult	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 engineGlowLengthMult 写入；getEngineGlowLengthMult 直读；affectsEngineFlameVisuals 判 !=1
+	f	while.super	engineGlowMaxBlend	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 engineGlowMaxBlend 写入；getEngineGlowMaxBlend 直读
+	f	Ô00000	engineGlowWidthMult	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 engineGlowWidthMult 写入；getEngineGlowWidthMult 直读；affectsEngineFlameVisuals 判 !=1
+	f	class	engineGlowGlowMult	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 engineGlowGlowMult 写入；getEngineGlowGlowMult 直读；affectsEngineFlameVisuals 判 !=1
+	f	class.Object	shieldRingColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 shieldRingColor 写入（white 归一 null）；getShieldRingColor 直读
+	f	while.class	shieldInnerColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 shieldInnerColor 写入（white 归一 null）；getShieldInnerColor 直读
+	f	ÓÓ0000	weaponGlowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 weaponGlowColor 写入（white 归一 null）；getWeaponGlowColor 直读
+	f	ØÕ0000	shieldThicknessMult	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 shieldThicknessMult 写入；getShieldThicknessMult 直读
+	f	Ø00000	shieldFluctuationMult	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 shieldFluctuationMult 写入；getShieldFluctuationMult 直读
+	f	interface.new	jitterColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterColor 写入（white 归一 null）；getJitterEffectColor 直读
+	f	ØÒ0000	jitterCopies	I
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterCopies 写入；getJitterCopies 直读
+	f	while.String	jitterMinRange	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterMinRange 写入；getJitterMinRange 直读
+	f	Ó00000	jitterRange	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterRange 写入；getJitterRange 直读
+	f	õo0000	jitterRangeRadiusFraction	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterRangeRadiusFraction 写入；getJitterRangeRadiusFraction 直读
+	f	ÖÓ0000	jitterUnderColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterUnderColor 写入（white 归一 null）；getJitterUnderEffectColor 直读
+	f	class.super	jitterUnderCopies	I
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterUnderCopies 写入；getJitterUnderCopies 直读
+	f	while	jitterUnderMinRange	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterUnderMinRange 写入；getJitterUnderMinRange 直读
+	f	õÖ0000	jitterUnderRange	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterUnderRange 写入；getJitterUnderRange 直读
+	f	Ôo0000	jitterUnderRangeRadiusFraction	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 jitterUnderRangeRadiusFraction 写入；getJitterUnderRangeRadiusFraction 直读
+	f	Óo0000	weaponTypes	Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | 构造 JSON 键 weaponTypes 数组解析为 EnumSet<WeaponType> 写入（缺省不写）；getWeaponTypes 直读
+	f	ÓÕ0000	minFractionToReload	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 minFractionToReload 写入；getMinFractionToReload 直读
+	f	interface	reloadBaseAmmoAmountOnly	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 reloadBaseAmmoAmountOnly 写入；is/setReloadBaseAmmoAmountOnly 直读写
+	f	ÔÕ0000	flameoutOnImpactChance	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 flameoutOnImpactChance 写入；getFlameoutOnImpactChance 直读
+	f	ÔO0000	allowFlameoutOnImpactWithFriendly	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 allowFlameoutOnImpactWithFriendly 写入；is/setAllowFlameoutOnImpactWithFriendly 直读写
+	f	Öo0000	range	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 range 写入；getRange 叠加 SystemRangeBonus
+	f	float	randomRange	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 randomRange 写入；getRandomRange 直读
+	f	OØ0000	launchSpeed	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 launchSpeed 写入；getLaunchSpeed 直读
+	f	ÓØ0000	vulnerableChargeup	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 vulnerableChargeup 写入；isVulnerableChargeup 直读
+	f	float.String	vulnerableChargedown	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 vulnerableChargedown 写入；isVulnerableChargedown 直读
+	f	null.new	renderCopyDuringTeleport	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 renderCopyDuringTeleport 写入；isRenderCopyDuringTeleport 直读
+	f	öÒ0000	allowFreeRoam	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 allowFreeRoam 写入；isAllowFreeRoam 直读
+	f	öÖ0000	droneVariant	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 droneVariant 写入；getDroneVariant 直读
+	f	ÔÓ0000	maxDrones	I
+		c javap 字节码取证 | 高 | 构造 JSON 键 maxDrones 写入（默认 10）；getMaxDrones 直读
+	f	null.String	launchDelay	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 launchDelay 写入；getLaunchDelay 直读
+	f	class.class	droneBehavior	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneBehavior;
+		c javap 字节码取证 | 高 | 构造仅当 JSON 有 droneBehavior 键时 new DroneBehavior(json) 写入；getDroneBehavior 直读
+	f	OO0000	empDamage	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 empDamage 写入；getEmpDamage 直读
+	f	ØÖ0000	damage	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 damage 写入；getDamage 直读
+	f	ÓÔ0000	damageType	Lcom/fs/starfarer/api/combat/DamageType;
+		c javap 字节码取证 | 高 | 构造 JSON 键 damageType 解析枚举写入（默认 ENERGY）；getDamageType 直读
+	f	õ00000	useSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 useSound 写入；getUseSound/setUseSound 直读写
+	f	ÖO0000	outOfUsesSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 outOfUsesSound 写入；getOutOfUsesSound/setOutOfUsesSound 直读写
+	f	ö00000	deactivateSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 deactivateSound 写入；getDeactivateSound 直读
+	f	öO0000	loopSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 loopSound 写入；getLoopSound 直读
+	f	ÖÒ0000	impactSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 impactSound 写入；getImpactSound 直读
+	f	class.new	phaseHighlight	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 phaseHighlight 写入；getPhaseHighlight 直读；getPhaseHighlightSpriteName 拼接 sprite 路径
+	f	o00000	phaseDiffuse	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 phaseDiffuse 写入；getPhaseDiffuse 直读；getPhaseDiffuseSpriteName 拼接 sprite 路径
+	f	oO0000	soundFilterType	Lcom/fs/starfarer/O0OO/SoundFilter$FilterType;
+		c javap 字节码取证 | 高 | 构造 JSON 键 soundFilterType 解析枚举写入；getSoundFilterType 直读
+	f	õO0000	soundFilterGain	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 soundFilterGain 写入；getFilterGain 直读
+	f	ØÓ0000	soundFilterGainLF	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 soundFilterGainLF 写入；getFilterGainLF 直读
+	f	ÓO0000	soundFilterGainHF	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 soundFilterGainHF 写入；getFilterGainHF 直读
+	f	ÔÖ0000	shipAlpha	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 shipAlpha 写入；getShipAlpha 直读
+	f	õÒ0000	runScriptWhilePaused	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 runScriptWhilePaused 写入；isRunScriptWhilePaused 直读
+	f	OÔ0000	runScriptWhileIdle	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 runScriptWhileIdle 写入；isRunScriptWhileIdle 直读
+	f	õÔ0000	tags	Ljava/util/Set;
+		c javap 字节码取证 | 高 | 构造 new LinkedHashSet 写入；getTags/addTag/hasTag 直接操作
+	f	new.Object	specJson	Lorg/json/JSONObject;
+		c javap 字节码取证 | 高 | 构造保存构造入参 JSONObject 引用；getSpecJson 直读
+	f	null.Object	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | getSourceMod 直读；setSourceMod 按 modId 经 SpecStore 查 ModSpec 写入
+	f	class.String	statsScript	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 statsScript 写入；getStatsScriptClassName 直读；getStatsScript 经 ScriptStore 加载类实例
+	f	oÔ0000	aiScript	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 JSON 键 aiScript 写入；getAIScriptClassName 直读；getAIScript 经 ScriptStore 加载类实例
+	f	float.class	iconSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getIconSpriteName/setIconSpriteName 直读写
+	f	õÓ0000	systemTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ShipSystemType 懒初始化缓存（ordinal→switch 分支号）
+	f	ÖØ0000	systemAITypeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ShipSystemAIType 懒初始化缓存（ordinal→switch 分支号）
+	m	$SWITCH_TABLE$com$fs$starfarer$loading$specs$ShipSystemSpec$ShipSystemType	getSystemTypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化：11 个 SystemType 常量 ordinal→1..11，createSystem 依赖
+	m	$SWITCH_TABLE$com$fs$starfarer$loading$specs$ShipSystemSpec$ShipSystemAIType	getSystemAITypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化：33 个 SystemAIType 常量 ordinal→1..33，createSystemAI 依赖
 c	com/fs/starfarer/loading/specs/M$1	com/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIScriptAdapter
 	c 来源(javap取证) | 置信度(中) | 证据(匿名内部类 implements combat.ai.system.do(SystemAI)，包装 ShipSystemAIScript)
+	f	ôõO000	outerShipSystemSpec	Lcom/fs/starfarer/loading/specs/ShipSystemSpec;
+		c javap 字节码取证 | 高 | 外部 ShipSystemSpec 引用（适配器持有外围实例）
+	f	õõO000	aiScript	Lcom/fs/starfarer/api/combat/ShipSystemAIScript;
+		c javap 字节码取证 | 高 | 被适配的 ShipSystemAIScript 委托对象
+	m	o00000	advance	(FLorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 实现 combat/ai/system 接口 o00000，转发 ShipSystemAIScript.advance(...)
 c	com/fs/starfarer/loading/specs/M$O0	com/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType
 	c 来源(javap取证) | 置信度(高) | 证据(枚举 aiType：BURN_DRIVE/DAMPER_FIELD/FORTRESS_SHIELD/FLARE_JAMMER 等系统 AI 脚本类型)
+	f	õo0000	FLARE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 FLARE（<clinit> ldc "FLARE"）
+	f	float	FLARE_JAMMER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 FLARE_JAMMER（<clinit> ldc "FLARE_JAMMER"）
+	f	Øo0000	CANISTER_FLAK	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 CANISTER_FLAK（<clinit> ldc "CANISTER_FLAK"）
+	f	Ôo0000	BURN_DRIVE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 BURN_DRIVE（<clinit> ldc "BURN_DRIVE"）
+	f	ØO0000	BURN_DRIVE_TOGGLE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 BURN_DRIVE_TOGGLE（<clinit> ldc "BURN_DRIVE_TOGGLE"）
+	f	OO0000	MANEUVERING_JETS	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 MANEUVERING_JETS（<clinit> ldc "MANEUVERING_JETS"）
+	f	oO0000	FAST_RELOAD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 FAST_RELOAD（<clinit> ldc "FAST_RELOAD"）
+	f	öo0000	AMMO_RELOAD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 AMMO_RELOAD（<clinit> ldc "AMMO_RELOAD"）
+	f	Óo0000	FORTRESS_SHIELD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 FORTRESS_SHIELD（<clinit> ldc "FORTRESS_SHIELD"）
+	f	null	DAMPER_FIELD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 DAMPER_FIELD（<clinit> ldc "DAMPER_FIELD"）
+	f	Öo0000	HIGH_ENERGY_FOCUS	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 HIGH_ENERGY_FOCUS（<clinit> ldc "HIGH_ENERGY_FOCUS"）
+	f	õ00000	PHASE_TELEPORTER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 PHASE_TELEPORTER（<clinit> ldc "PHASE_TELEPORTER"）
+	f	Oo0000	PHASE_TELEPORTER_2	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 PHASE_TELEPORTER_2（<clinit> ldc "PHASE_TELEPORTER_2"）
+	f	o00000	PHASE_DISPLACER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 PHASE_DISPLACER（<clinit> ldc "PHASE_DISPLACER"）
+	f	null.super	DRONE_LAUNCHER_PD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 DRONE_LAUNCHER_PD（<clinit> ldc "DRONE_LAUNCHER_PD"）
+	f	new	DRONE_LAUNCHER_STANDARD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 DRONE_LAUNCHER_STANDARD（<clinit> ldc "DRONE_LAUNCHER_STANDARD"）
+	f	while.super	WEAPON_BOOST	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 WEAPON_BOOST（<clinit> ldc "WEAPON_BOOST"）
+	f	ö00000	DYNAMIC_STABILIZER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 DYNAMIC_STABILIZER（<clinit> ldc "DYNAMIC_STABILIZER"）
+	f	Ø00000	LIDAR_ARRAY	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 LIDAR_ARRAY（<clinit> ldc "LIDAR_ARRAY"）
+	f	õO0000	TEMPORAL_SHELL	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 TEMPORAL_SHELL（<clinit> ldc "TEMPORAL_SHELL"）
+	f	interface	ACAUSAL_DISRUPTOR	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 ACAUSAL_DISRUPTOR（<clinit> ldc "ACAUSAL_DISRUPTOR"）
+	f	Ö00000	MOTE_ATTRACTOR	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 MOTE_ATTRACTOR（<clinit> ldc "MOTE_ATTRACTOR"）
+	f	float.super	ENTROPY_AMPLIFIER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 ENTROPY_AMPLIFIER（<clinit> ldc "ENTROPY_AMPLIFIER"）
+	f	new.super	INTERDICTOR	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 INTERDICTOR（<clinit> ldc "INTERDICTOR"）
+	f	ÓO0000	MINE_STRIKE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 MINE_STRIKE（<clinit> ldc "MINE_STRIKE"）
+	f	Ô00000	DRONE_STRIKE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 DRONE_STRIKE（<clinit> ldc "DRONE_STRIKE"）
+	f	class.super	EMP	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 EMP（<clinit> ldc "EMP"）
+	f	while	PHASE_CLOAK	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 PHASE_CLOAK（<clinit> ldc "PHASE_CLOAK"）
+	f	ÔO0000	NONE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 NONE（<clinit> ldc "NONE"）
+	f	oo0000	TARGETING_FEED	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 TARGETING_FEED（<clinit> ldc "TARGETING_FEED"）
+	f	öO0000	RESERVE_DEPLOYMENT	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 RESERVE_DEPLOYMENT（<clinit> ldc "RESERVE_DEPLOYMENT"）
+	f	ÖO0000	RECALL_DEVICE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 RECALL_DEVICE（<clinit> ldc "RECALL_DEVICE"）
+	f	Ó00000	CUSTOM	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | 枚举常量 CUSTOM（<clinit> ldc "CUSTOM"）
+	f	class	$VALUES	[Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIType;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成字段）
 c	com/fs/starfarer/loading/specs/M$OOo	com/fs/starfarer/loading/specs/ShipSystemSpec$SystemTargetType
 	c 来源(javap取证) | 置信度(高) | 证据(枚举 FIGHTER/MISSILE/SHIP/SHIP_TARGET，系统可影响目标类型)
+	f	Ô00000	MISSILE	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemTargetType;
+		c javap 字节码取证 | 高 | 枚举常量 MISSILE（<clinit> ldc "MISSILE"）
+	f	Õ00000	FIGHTER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemTargetType;
+		c javap 字节码取证 | 高 | 枚举常量 FIGHTER（<clinit> ldc "FIGHTER"）
+	f	Object	SHIP	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemTargetType;
+		c javap 字节码取证 | 高 | 枚举常量 SHIP（<clinit> ldc "SHIP"）
+	f	Ò00000	SHIP_TARGET	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemTargetType;
+		c javap 字节码取证 | 高 | 枚举常量 SHIP_TARGET（<clinit> ldc "SHIP_TARGET"）
+	f	o00000	$VALUES	[Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemTargetType;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成字段）
 c	com/fs/starfarer/loading/specs/M$Oo	com/fs/starfarer/loading/specs/ShipSystemSpec$DroneBehavior
 	c 来源(javap取证) | 置信度(高) | 证据(getDroneBehavior 返回，JSON 键 droneBehavior：按无人机索引的 Map<Integer,M$oOo>)
+	f	o00000	droneBehaviorMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 构造从 JSON 键 droneBehavior 数组读，按每项 DroneBehaviorData.getDroneIndexes() 建立 Integer→Data 的 HashMap
+	m	o00000	getDroneBehaviorMap	()Ljava/util/Map;
+		c javap 字节码取证 | 高 | 直读 droneBehaviorMap 字段
 c	com/fs/starfarer/loading/specs/M$o	com/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode
 	c 来源(javap取证) | 置信度(高) | 证据(枚举 MATCH_SHIP_HEADING/MATCH_DRONE_HEADING/AWAY_FROM_SHIP/MATCH_SHIP_FACING)
+	f	Ó00000	MATCH_DRONE_HEADING	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 中 ldc "MATCH_DRONE_HEADING"
+	f	Ò00000	MATCH_SHIP_HEADING	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 中 ldc "MATCH_SHIP_HEADING"
+	f	Õ00000	MATCH_SHIP_FACING	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 中 ldc "MATCH_SHIP_FACING"
+	f	String	AWAY_FROM_SHIP	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode;
+		c javap 字节码取证 | 高 | 枚举常量，clinit 中 ldc "AWAY_FROM_SHIP"
+	f	super	$VALUES	[Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode;
+		c javap 字节码取证 | 高 | 编译器生成枚举常量数组，values() 拷贝源
 c	com/fs/starfarer/loading/specs/M$o0	com/fs/starfarer/loading/specs/ShipSystemSpec$SystemAIHints
 	c 来源(javap取证) | 置信度(高) | 证据(getAIHints 返回，JSON 键 aiHints：threatRange/threatAmount/averageSpeedMult 等)
+	f	ö00000	weaponAssignmentSuitability	Ljava/util/Map;
+		c javap 字节码取证 | 高 | <init> 解析 JSON 键 weaponAssignmentSuitability 的 CombatTaskType→MultFlatModifier 映射
+	f	return	averageSpeedIncrease	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 averageSpeedIncrease
+	f	for	averageSpeedMult	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 averageSpeedMult
+	f	Ô00000	activeSpeedIncrease	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 activeSpeedIncrease
+	f	o00000	burstMovementPotential	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 burstMovementPotential
+	f	Ò00000	threatRange	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 threatRange
+	f	Object	threatAmount	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 threatAmount
+	f	Ø00000	threatArc	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 threatArc
+	f	ø00000	threatAngle	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 threatAngle
+	f	Õ00000	threatDamage	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 threatDamage
+	f	int	threatSpeed	F
+		c javap 字节码取证 | 高 | <init>(JSONObject) 读 JSON 键 threatSpeed
+	f	ô00000	threatOnlyWhenCloseToActive	Z
+		c javap 字节码取证 | 高 | <init> 读 JSON 键 threatOnlyWhenCloseToActive（optBoolean 默认 false）
+	m	String	getThreatDamage	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	Ó00000	getThreatSpeed	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	if	getActiveSpeedIncrease	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	Ö00000	getBurstMovementPotential	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	Ò00000	getAverageSpeedMult	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	Õ00000	getAverageSpeedIncrease	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	õ00000	getThreatRange	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	void	getThreatAmount	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	ô00000	getThreatArc	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	super	getThreatAngle	()F
+		c javap 字节码取证 | 高 | getter：直接 getfield 对应威胁/AI 提示字段
+	m	super	getWeaponAssignmentSuitability	(Lcom/fs/starfarer/combat/tasks/CombatTaskType;)Lcom/fs/starfarer/loading/specs/ShipSystemSpec$MultFlatModifier;
+		c javap 字节码取证 | 高 | getWeaponAssignmentSuitability(CombatTaskType)：weaponAssignmentSuitability Map.get
+	m	ø00000	isThreatOnlyWhenCloseToActive	()Z
+		c javap 字节码取证 | 高 | 直读 threatOnlyWhenCloseToActive 字段
 c	com/fs/starfarer/loading/specs/M$o0$o	com/fs/starfarer/loading/specs/ShipSystemSpec$MultFlatModifier
 	c 来源(javap取证) | 置信度(中) | 证据(aiHints 内 mult/flat 倍率对（2 个 public float）)
+	f	o00000	mult	F
+		c javap 字节码取证 | 中 | 构造默认 1.0f，与 flat 配对（mult/flat 倍率修正对）
+	f	Ò00000	flat	F
+		c javap 字节码取证 | 中 | 构造默认 0.0f，与 mult 配对（mult/flat 倍率修正对）
 c	com/fs/starfarer/loading/specs/M$oOo	com/fs/starfarer/loading/specs/ShipSystemSpec$DroneBehaviorData
 	c 来源(javap取证) | 置信度(高) | 证据(JSON 键 droneBehavior 子项：orbitRadius/orbitSpeed/targetPriority/defaultFacing 等单无人机行为)
+	f	Ó00000	droneIndexes	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造 JSON 键 droneIndex 数组逐个装箱写入 ArrayList；getDroneIndexes 直读
+	f	class	targetPriority	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造 JSON 键 targetPriority 数组解析枚举写入；getTargetPriority 直读
+	f	new	defaultFacing	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode;
+		c javap 字节码取证 | 高 | 构造 JSON 键 defaultFacing 解析枚举写入（默认 MATCH_DRONE_HEADING）；getDefaultFacing 直读
+	f	Ô00000	faceEnemy	Z
+		c javap 字节码取证 | 高 | 构造 JSON 键 faceEnemy 写入（默认 true）；isFaceEnemy 直读
+	f	õ00000	holdRoamRange	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 holdRoamRange 写入；getHoldRoamRange 直读
+	f	Ø00000	freeRoamRange	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 freeRoamRange 写入；getFreeRoamRange 直读
+	f	ö00000	orbitRadius	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 orbitRadius 写入；getOrbitRadius 直读
+	f	Ö00000	orbitDir	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 orbitDir 写入；getOrbitDir 直读
+	f	null	orbitSpeed	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 orbitSpeed 写入；getOrbitSpeed 直读
+	f	o00000	initialOrbitAngle	F
+		c javap 字节码取证 | 高 | 构造 JSON 键 initialOrbitAngle 写入；getInitialOrbitAngle 直读
+	m	new	getHoldRoamRange	()F
+		c javap 字节码取证 | 高 | 直读 holdRoamRange 字段
+	m	Ø00000	getFreeRoamRange	()F
+		c javap 字节码取证 | 高 | 直读 freeRoamRange 字段
+	m	o00000	getInitialOrbitAngle	()F
+		c javap 字节码取证 | 高 | 直读 initialOrbitAngle 字段
+	m	ö00000	getDroneIndexes	()Ljava/util/List;
+		c javap 字节码取证 | 高 | 直读 droneIndexes 字段；DroneBehavior 构造依此建 Map
+	m	null	getTargetPriority	()Ljava/util/List;
+		c javap 字节码取证 | 高 | 直读 targetPriority 字段
+	m	class	getDefaultFacing	()Lcom/fs/starfarer/loading/specs/ShipSystemSpec$DroneHeadingMode;
+		c javap 字节码取证 | 高 | 直读 defaultFacing 字段
+	m	Ó00000	isFaceEnemy	()Z
+		c javap 字节码取证 | 高 | 直读 faceEnemy 字段
+	m	õ00000	getOrbitRadius	()F
+		c javap 字节码取证 | 高 | 直读 orbitRadius 字段
+	m	Ö00000	getOrbitDir	()F
+		c javap 字节码取证 | 高 | 直读 orbitDir 字段
+	m	Ô00000	getOrbitSpeed	()F
+		c javap 字节码取证 | 高 | 直读 orbitSpeed 字段
 c	com/fs/starfarer/loading/specs/M$oo	com/fs/starfarer/loading/specs/ShipSystemSpec$SystemType
 	c 来源(javap取证) | 置信度(高) | 证据(枚举 type：WEAPON/PHASE_CLOAK/TELEPORTER/DRONE_LAUNCHER 等系统类型)
+	f	return	WEAPON	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 WEAPON（<clinit> ldc "WEAPON"）
+	f	Object	ENGINE_MOD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 ENGINE_MOD（<clinit> ldc "ENGINE_MOD"）
+	f	Ø00000	SHIELD_MOD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 SHIELD_MOD（<clinit> ldc "SHIELD_MOD"）
+	f	ô00000	STAT_MOD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 STAT_MOD（<clinit> ldc "STAT_MOD"）
+	f	ø00000	FAST_RELOAD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 FAST_RELOAD（<clinit> ldc "FAST_RELOAD"）
+	f	Ò00000	AMMO_RELOAD	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 AMMO_RELOAD（<clinit> ldc "AMMO_RELOAD"）
+	f	o00000	TELEPORTER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 TELEPORTER（<clinit> ldc "TELEPORTER"）
+	f	for	PHASE_CLOAK	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 PHASE_CLOAK（<clinit> ldc "PHASE_CLOAK"）
+	f	Õ00000	DISPLACER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 DISPLACER（<clinit> ldc "DISPLACER"）
+	f	ö00000	DRONE_LAUNCHER	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 DRONE_LAUNCHER（<clinit> ldc "DRONE_LAUNCHER"）
+	f	int	EMP	Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | 枚举常量 EMP（<clinit> ldc "EMP"）
+	f	Ô00000	$VALUES	[Lcom/fs/starfarer/loading/specs/ShipSystemSpec$SystemType;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成字段）
 c	com/fs/starfarer/loading/specs/N	com/fs/starfarer/loading/specs/ProjectileWeaponSpec
 	c 来源(javap取证) | 置信度(高) | 证据(extends BaseWeaponSpec implements ProjectileWeaponSpecAPI，specClass=projectile)
 	m	clone	clone	()Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec;
@@ -925,10 +1675,84 @@ c	com/fs/starfarer/loading/specs/N	com/fs/starfarer/loading/specs/ProjectileWeap
 	m	setTurretGlowSpriteName	setTurretGlowSpriteName	(Ljava/lang/String;)V
 	m	setTurretGunSpriteName	setTurretGunSpriteName	(Ljava/lang/String;)V
 	m	setVisualRecoil	setVisualRecoil	(F)V
+	f	OÖ0000	mode	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponMode;
+		c javap 字节码取证 | 高 | getMode/setMode 读写
+	f	øÔ0000	chargeTime	F
+		c javap 字节码取证 | 高 | getChargeTime/setChargeTime 读写
+	f	void.String	refireDelay	F
+		c javap 字节码取证 | 高 | getRefireDelay/setRefireDelay 读写
+	f	ÒÕ0000	burstSize	I
+		c javap 字节码取证 | 高 | getBurstSize/setBurstSize 读写
+	f	ÕÕ0000	burstDelay	F
+		c javap 字节码取证 | 高 | getBurstDelay/setBurstDelay 读写
+	f	ÓÕ0000	interruptibleBurst	Z
+		c javap 字节码取证 | 高 | isInterruptibleBurst/setInterruptibleBurst 读写
+	f	private.String	energyPerShot	F
+		c javap 字节码取证 | 高 | getEnergyPerShot/setEnergyPerShot 读写
+	f	ÖÕ0000	energyPerSecond	F
+		c javap 字节码取证 | 高 | getEnergyPerSecond/setEnergyPerSecond 读写
+	f	super.String	minSpread	F
+		c javap 字节码取证 | 高 | getMinSpread 直读，setSpreadParams 写入
+	f	private.Object	maxSpread	F
+		c javap 字节码取证 | 高 | getMaxSpread 直读，setSpreadParams 写入
+	f	super.class	spreadBuildup	F
+		c javap 字节码取证 | 高 | getSpreadBuildup 直读，setSpreadParams 写入
+	f	ÖÖ0000	spreadDecayRate	F
+		c javap 字节码取证 | 高 | getSpreadDecayRate 直读，setSpreadParams 写入
+	f	ÓÖ0000	projectileSpec	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | getProjectileSpec/setProjectileSpec 读写（ProjectileSpec 或 MissileSpec）
+	f	ÕÖ0000	animationType	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType;
+		c javap 字节码取证 | 高 | getAnimationType/setAnimationType 读写
+	f	do.String	visualRecoil	F
+		c javap 字节码取证 | 高 | getVisualRecoil/setVisualRecoil 读写
+	f	String.class	glowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getGlowColor/setGlowColor 读写
+	f	õÔ0000	turretGlowSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTurretGlowSpriteName/setTurretGlowSpriteName 读写
+	f	õÕ0000	hardpointGlowSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getHardpointGlowSpriteName/setHardpointGlowSpriteName 读写
+	f	OÕ0000	turretGunSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTurretGunSpriteName/setTurretGunSpriteName 读写
+	f	String.String	hardpointGunSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getHardpointGunSpriteName/setHardpointGunSpriteName 读写
+	f	ôÕ0000	muzzleFlashSpec	Lcom/fs/starfarer/api/loading/MuzzleFlashSpec;
+		c javap 字节码取证 | 高 | getMuzzleFlashSpec/setMuzzleFlashSpec 读写
+	f	ÒÖ0000	smokeSpec	Lcom/fs/starfarer/loading/specs/SmokeSpec;
+		c javap 字节码取证 | 高 | getSmokeSpec/setSmokeSpec 读写
+	f	õÖ0000	autoCharge	Z
+		c javap 字节码取证 | 高 | isAutoCharge/setAutoCharge 读写
+	f	if.String	requiresFullCharge	Z
+		c javap 字节码取证 | 高 | isRequiresFullCharge/setRequiresFullCharge 读写
+	f	øÕ0000	separateRecoilForLinkedBarrels	Z
+		c javap 字节码取证 | 高 | isSeparateRecoilForLinkedBarrels/setSeparateRecoilForLinkedBarrels 读写
+	f	ôÖ0000	projectileSpeed	F
+		c javap 字节码取证 | 高 | getProjectileSpeed 读取（按武器类型乘倍率）
 c	com/fs/starfarer/loading/specs/N$Oo	com/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType
 	c 来源(javap取证) | 置信度(高) | 证据(getAnimationType 返回，枚举 GLOW/GLOW_AND_FLASH/MUZZLE_FLASH/NONE/SMOKE)
+	f	Ö00000	NONE	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType;
+		c javap <clinit> | 高 | ldc "NONE"
+	f	Ó00000	GLOW	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType;
+		c javap <clinit> | 高 | ldc "GLOW"
+	f	Ô00000	MUZZLE_FLASH	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType;
+		c javap <clinit> | 高 | ldc "MUZZLE_FLASH"
+	f	o00000	GLOW_AND_FLASH	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType;
+		c javap <clinit> | 高 | ldc "GLOW_AND_FLASH"
+	f	class	SMOKE	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType;
+		c javap <clinit> | 高 | ldc "SMOKE"
+	f	new	enumValues	[Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponAnimationType;
+		c javap <clinit> | 高 | javac 合成的枚举常量数组，values() 返回
 c	com/fs/starfarer/loading/specs/N$o	com/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponMode
 	c 来源(javap取证) | 置信度(高) | 证据(getMode 返回，枚举 ALTERNATING/ALTERNATING_BURST/DUAL/LINKED（武器 CSV mode 列）)
+	f	Ô00000	ALTERNATING	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponMode;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "ALTERNATING" 构造（枚举常量）
+	f	Ò00000	ALTERNATING_BURST	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponMode;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "ALTERNATING_BURST" 构造（枚举常量）
+	f	Object	DUAL	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponMode;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "DUAL" 构造（枚举常量）
+	f	Õ00000	LINKED	Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponMode;
+		c javap 字节码取证 | 高 | <clinit> 以字符串 "LINKED" 构造（枚举常量）
+	f	o00000	$VALUES	[Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec$WeaponMode;
+		c javap 字节码取证 | 高 | <clinit> 依声明序组 4 元素数组；values() 拷贝返回
 c	com/fs/starfarer/loading/specs/O	com/fs/starfarer/loading/specs/HullModSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements HullModSpecAPI，SpecStore Loading hull mods)
 	m	addTag	addTag	(Ljava/lang/String;)V
@@ -984,13 +1808,201 @@ c	com/fs/starfarer/loading/specs/O	com/fs/starfarer/loading/specs/HullModSpec
 	m	setSpriteName	setSpriteName	(Ljava/lang/String;)V
 	m	setTier	setTier	(I)V
 	m	toString	toString	()Ljava/lang/String;
+	f	String	displayName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDisplayName 直读
+	f	ÒO0000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getId/toString 直读
+	f	private	descriptionFormat	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDescriptionFormat 直读，getDescription 中 String.format 模板
+	f	õO0000	sModEffectFormat	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getSModDescription 中 format 模板，getSModEffectFormat 直读
+	f	Ò00000	shortDesc	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getShortDesc 直读
+	f	do	frigateCost	I
+		c javap 字节码取证 | 高 | getCostFor(HullSize) FRIGATE 分支返回
+	f	Õ00000	destroyerCost	I
+		c javap 字节码取证 | 高 | getCostFor(HullSize) DESTROYER 分支返回
+	f	ÖO0000	cruiserCost	I
+		c javap 字节码取证 | 高 | getCostFor(HullSize) CRUISER 分支返回
+	f	ÓO0000	capitalCost	I
+		c javap 字节码取证 | 高 | getCostFor(HullSize) CAPITAL 分支返回
+	f	Ö00000	tier	I
+		c javap 字节码取证 | 高 | getTier 直读
+	f	Oo0000	baseValue	F
+		c javap 字节码取证 | 高 | getBaseValue 直读
+	f	øO0000	effectClass	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getEffectClass 直读，getEffect 经 ScriptStore.new 实例化 HullModEffect
+	f	ô00000	spriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getSpriteName 直读
+	f	Òo0000	manufacturer	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getManufacturer 直读
+	f	super.super	alwaysUnlocked	Z
+		c javap 字节码取证 | 高 | isAlwaysUnlocked/setAlwaysUnlocked 读写
+	f	Ó00000	hidden	Z
+		c javap 字节码取证 | 高 | isHidden/setHidden 读写
+	f	super	hiddenEverywhere	Z
+		c javap 字节码取证 | 高 | isHiddenEverywhere/setHiddenEverywhere 读写
+	f	ôO0000	rarity	F
+		c javap 字节码取证 | 高 | getRarity/setRarity 读写（构造器默认 1.0f）
+	f	ø00000	tags	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getTags/addTag/hasTag 操作（构造器初始 HashSet）
+	f	void.super	uiTags	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getUITags/addUITag/hasUITag 操作
+	f	õ00000	effectInitPending	Z
+		c javap 字节码取证 | 高 | getEffect 中缓存标志：为 true 才尝试 ScriptStore.new，尝试后置 false（初始 true）
+	f	OO0000	effect	Lcom/fs/starfarer/api/combat/HullModEffect;
+		c javap 字节码取证 | 高 | getEffect 懒加载缓存并 init
+	f	ÕO0000	fleetEffectInitPending	Z
+		c javap 字节码取证 | 高 | getFleetEffect 中缓存标志，与 effectInitPending 同模式
+	f	void	fleetEffect	Lcom/fs/starfarer/api/combat/HullModFleetEffect;
+		c javap 字节码取证 | 高 | getFleetEffect 懒加载缓存
+	f	if	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | getSourceMod 直读，setSourceMod 经 SpecStore 解析 JSON modId
+	f	String.super	hullSizeSwitchTable	[I
+		c javap 字节码取证 | 高 | 合成字段，getHullSizeSwitchTable 懒加载缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	getHullSizeSwitchTable	()[I
+		c javap 字节码取证 | 高 | javac 合成：HullSize→1..6 映射，getCostFor 的 tableswitch 使用
 c	com/fs/starfarer/loading/specs/O0OO	com/fs/starfarer/loading/specs/ShipEngineSlot
 	c 来源(javap取证) | 置信度(高) | 证据(ShipHullSpec.getEngineSlots 返回，Ô00000() 转换为 EngineSlot（内部引擎槽数据）)
 	m	clone	clone	()Ljava/lang/Object;
+	f	void	slotNode	Lcom/fs/starfarer/loading/specs/SlotNode;
+		c javap 字节码取证 | 高 | 构造器入参写入；getSlotNode 直接读；toEngineSlot 用它构造 EngineSlot(id, slotNode, name)
+	f	Ó00000	styleType	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | 构造器入参写入；getStyleType/setStyleType 直接读写；toEngineSlot 按它分派 glow/contrail 参数
+	f	Õ00000	glowWidth	F
+		c javap 字节码取证 | 高 | toEngineSlot 中传给 setGlowParams(glowWidth, glowLength, 90, 1) 与 setContrailWidth
+	f	Ö00000	glowLength	F
+		c javap 字节码取证 | 高 | toEngineSlot 中传给 setGlowParams(glowWidth, glowLength, 90, 1)（对应 EngineSlot.getLength）
+	f	ô00000	angle	F
+		c javap 字节码取证 | 高 | toEngineSlot 中传给 EngineSlot.setAngle
+	f	Ò00000	style	Lcom/fs/starfarer/loading/specs/EngineStyle;
+		c javap 字节码取证 | 高 | loadStyleFromJson 构造 EngineStyle(JSONObject,String) 写入；setStyle 直接写
+	f	super	systemActivated	Z
+		c javap 字节码取证 | 高 | toEngineSlot 读取并传给 EngineSlot.setSystemActivated
+	f	String	slotIdCounter	I
+		c javap 字节码取证 | 高 | toEngineSlot 以 "ES%05d" 格式化 ++slotIdCounter 生成槽 ID
+	m	class	clone	()Lcom/fs/starfarer/loading/specs/ShipEngineSlot;
+		c javap 字节码取证 | 高 | 包装 Object.clone() 后 checkcast 返回 null（CloneNotSupported 时）
+	m	o00000	isSystemActivated	()Z
+		c javap 字节码取证 | 高 | getfield systemActivated 直接返回
+	m	new	setSystemActivated	(Z)V
+		c javap 字节码取证 | 高 | putfield systemActivated
+	m	o00000	loadStyleFromJson	(Lorg/json/JSONObject;Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | new EngineStyle(json, key) 后写入 style 字段
+	m	o00000	setStyle	(Lcom/fs/starfarer/loading/specs/EngineStyle;)V
+		c javap 字节码取证 | 高 | putfield style
+	m	Ô00000	toEngineSlot	()Lcom/fs/starfarer/loading/specs/EngineSlot;
+		c javap 字节码取证 | 高 | 委托 toEngineSlot(false)
+	m	o00000	toEngineSlot	(Z)Lcom/fs/starfarer/loading/specs/EngineSlot;
+		c javap 字节码取证 | 高 | 生成 ID、按 styleType 设置颜色/glow/contrail/纹理，构造并配置 EngineSlot
+	m	null	getSlotNode	()Lcom/fs/starfarer/loading/specs/SlotNode;
+		c javap 字节码取证 | 高 | getfield slotNode 直接返回
+	m	Ó00000	getStyleType	()Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | getfield styleType 直接返回
+	m	õ00000	getGlowWidth	()F
+		c javap 字节码取证 | 高 | getfield glowWidth 直接返回
+	m	new	getGlowLength	()F
+		c javap 字节码取证 | 高 | getfield glowLength 直接返回
+	m	Ö00000	getAngle	()F
+		c javap 字节码取证 | 高 | getfield angle 直接返回
+	m	o00000	setStyleType	(Lcom/fs/starfarer/loading/specs/EngineStyleType;)V
+		c javap 字节码取证 | 高 | putfield styleType
+	m	o00000	setGlowWidth	(F)V
+		c javap 字节码取证 | 高 | putfield glowWidth
+	m	Ó00000	setGlowLength	(F)V
+		c javap 字节码取证 | 高 | putfield glowLength
+	m	new	setAngle	(F)V
+		c javap 字节码取证 | 高 | putfield angle
 c	com/fs/starfarer/loading/specs/O0OO$Oo	com/fs/starfarer/loading/specs/EngineStyle
 	c 来源(javap取证) | 置信度(高) | 证据(data/config/engine_styles.json Loading engine style data)
+	f	ÓO0000	engineColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON key engineColor
+	f	Ö00000	contrailColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON key contrailColor
+	f	ÔO0000	engineCampaignColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON key engineCampaignColor（缺省=engineColor）
+	f	õO0000	contrailCampaignColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON key contrailCampaignColor（缺省=contrailColor）
+	f	ö00000	contrailWidthMult	F
+		c javap 字节码取证 | 中 | 双模式复用：PARTICLES=contrailParticleSizeMult / QUAD_STRIP=contrailWidthMult
+	f	o00000	contrailDuration	F
+		c javap 字节码取证 | 中 | 双模式复用：PARTICLES=contrailParticleDuration / QUAD_STRIP=contrailDuration
+	f	ØO0000	contrailEndWidthFraction	F
+		c javap 字节码取证 | 中 | 双模式复用：PARTICLES=contrailParticleFinalSizeMult / QUAD_STRIP=contrailWidthAddedFractionAtEnd
+	f	null	contrailMaxSpeedMult	F
+		c javap 字节码取证 | 高 | JSON key contrailMaxSpeedMult
+	f	õ00000	contrailAngularVelocityMult	F
+		c javap 字节码取证 | 高 | JSON key contrailAngularVelocityMult
+	f	while	contrailMinSeg	F
+		c javap 字节码取证 | 高 | JSON key contrailMinSeg（QUAD_STRIP）
+	f	class	unusedFloat	F
+		c javap 字节码取证 | 中 | private float：构造/方法体无任何 getfield/putfield，死代码
+	f	ÖO0000	contrailSpawnDistMult	F
+		c javap 字节码取证 | 高 | JSON key contrailSpawnDistMult（QUAD_STRIP）
+	f	OO0000	blendMode	Lcom/fs/starfarer/loading/specs/EngineSlot$BlendMode;
+		c javap 字节码取证 | 高 | JSON key type → EngineSlot$BlendMode 枚举
+	f	Ó00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造第二参数写入；getter o00000() 读取
+	f	Ø00000	glowSprite	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON key glowSprite；getter Object() 读取
+	f	oO0000	glowOutline	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON key glowOutline；getter Ò00000() 读取
+	f	interface	withSpread	Z
+		c javap 字节码取证 | 高 | JSON key withSpread，默认 true
+	f	Ô00000	contrailMode	Lcom/fs/starfarer/loading/specs/EngineSlot$ContrailMode;
+		c javap 字节码取证 | 高 | JSON key mode → EngineSlot$ContrailMode，默认 PARTICLES
+	f	new	glowSizeMult	F
+		c javap 字节码取证 | 高 | JSON key glowSizeMult
+	f	float	glowAlternateColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON key glowAlternateColor
+	f	new.super	flickerWhenMissileFlamedOut	Z
+		c javap 字节码取证 | 高 | JSON key flickerWhenMissileFlamedOut
+	f	öO0000	omegaMode	Z
+		c javap 字节码取证 | 高 | JSON key omegaMode
+	m	o00000	getId	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | o00000() 读 id 字段
+	m	Object	getGlowSprite	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | Object() 读 glowSprite 字段
+	m	Ò00000	getGlowOutline	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | Ò00000() 读 glowOutline 字段
 c	com/fs/starfarer/loading/specs/O0OO$o	com/fs/starfarer/loading/specs/EngineStyleType
 	c 来源(javap取证) | 置信度(中) | 证据(引擎槽 style 枚举：LOW_TECH/MIDLINE/HIGH_TECH/ONSLAUGHT_MKI/TORPEDO_ATROPOS 等引擎火焰风格)
+	f	ÖO0000	LOW_TECH	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'LOW_TECH' 枚举常量
+	f	class	MIDLINE	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'MIDLINE' 枚举常量
+	f	while	HIGH_TECH	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'HIGH_TECH' 枚举常量
+	f	ÓO0000	COBRA_BOMBER	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'COBRA_BOMBER' 枚举常量
+	f	float	ATTACK_SWARM	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'ATTACK_SWARM' 枚举常量
+	f	õ00000	THREAT	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'THREAT' 枚举常量
+	f	OO0000	ONSLAUGHT_MKI	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'ONSLAUGHT_MKI' 枚举常量
+	f	new	MISSILE_LOW_TECH	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'MISSILE_LOW_TECH' 枚举常量
+	f	interface	MISSILE_MIDLINE	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'MISSILE_MIDLINE' 枚举常量
+	f	oO0000	MISSILE_HIGH_TECH	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'MISSILE_HIGH_TECH' 枚举常量
+	f	ö00000	LOW_TECH_FIGHTER	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'LOW_TECH_FIGHTER' 枚举常量
+	f	null	TORPEDO	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'TORPEDO' 枚举常量
+	f	Ô00000	TORPEDO_ATROPOS	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'TORPEDO_ATROPOS' 枚举常量
+	f	o00000	ROCKET_LOW_TECH	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'ROCKET_LOW_TECH' 枚举常量
+	f	Ø00000	OMEGA	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'OMEGA' 枚举常量
+	f	ÔO0000	DWELLER	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'DWELLER' 枚举常量
+	f	Ó00000	CUSTOM	Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | clinit ldc 'CUSTOM' 枚举常量
+	f	Ö00000	VALUES	[Lcom/fs/starfarer/loading/specs/EngineStyleType;
+		c javap 字节码取证 | 高 | private static final 枚举值缓存数组（values() 读取）
 c	com/fs/starfarer/loading/specs/OOO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/loading/specs/ShotBehaviorSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements ShotBehaviorSpecAPI)
 	m	getBehavor	getBehavor	()Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec$ShotBehaviorType;
@@ -1004,8 +2016,24 @@ c	com/fs/starfarer/loading/specs/OOO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	setOnExplosionClassName	setOnExplosionClassName	(Ljava/lang/String;)V
 	m	setOnHitClassName	setOnHitClassName	(Ljava/lang/String;)V
 	m	setParams	setParams	(Lorg/json/JSONObject;)V
+	f	o00000	behavior	Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec$ShotBehaviorType;
+		c javap 字节码取证 | 高 | getBehavor/getBehavorString 直读（ShotBehaviorType 枚举）
+	f	Ô00000	params	Lorg/json/JSONObject;
+		c javap 字节码取证 | 高 | getParams/setParams 直读（弹道行为参数 JSON）
+	f	Object	onExplosionClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getOnExplosionClassName/getOnHitClassName 直读；<init> 从 onHitEffect/onExplosionEffect 键填值
+	f	Ò00000	onHitClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getOnExplosionClassName/getOnHitClassName 直读；<init> 从 onHitEffect/onExplosionEffect 键填值
 c	com/fs/starfarer/loading/specs/OOO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/loading/specs/ShotBehaviorSpec$ShotBehaviorType
 	c 来源(javap取证) | 置信度(中) | 证据(枚举 CUSTOM/MIRV/PROXIMITY_FUSE，射击行为类型)
+	f	Ò00000	PROXIMITY_FUSE	Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec$ShotBehaviorType;
+		c javap 字节码取证 | 高 | 枚举常量 PROXIMITY_FUSE（<clinit> ldc "PROXIMITY_FUSE"）
+	f	String	MIRV	Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec$ShotBehaviorType;
+		c javap 字节码取证 | 高 | 枚举常量 MIRV（<clinit> ldc "MIRV"）
+	f	Ó00000	CUSTOM	Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec$ShotBehaviorType;
+		c javap 字节码取证 | 高 | 枚举常量 CUSTOM（<clinit> ldc "CUSTOM"）
+	f	super	$VALUES	[Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec$ShotBehaviorType;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成字段）
 c	com/fs/starfarer/loading/specs/OOOo	com/fs/starfarer/loading/specs/ShieldSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements ShipHullSpecAPI$ShieldSpecAPI)
 	m	clone	clone	()Lcom/fs/starfarer/loading/specs/ShieldSpec;
@@ -1032,6 +2060,28 @@ c	com/fs/starfarer/loading/specs/OOOo	com/fs/starfarer/loading/specs/ShieldSpec
 	m	setRingColor	setRingColor	(Ljava/awt/Color;)V
 	m	setType	setType	(Lcom/fs/starfarer/api/combat/ShieldAPI$ShieldType;)V
 	m	setUpkeepCost	setUpkeepCost	(F)V
+	f	Ø00000	type	Lcom/fs/starfarer/api/combat/ShieldAPI$ShieldType;
+		c javap 字节码取证 | 高 | getType/setType 直接读写该字段
+	f	o00000	upkeepCost	F
+		c javap 字节码取证 | 高 | getUpkeepCost/setUpkeepCost 直接读写
+	f	null	fluxPerDamageAbsorbed	F
+		c javap 字节码取证 | 高 | getFluxPerDamageAbsorbed/setFluxPerDamageAbsorbed 直接读写
+	f	new	arc	F
+		c javap 字节码取证 | 高 | getArc/setArc 直接读写
+	f	Ö00000	radius	F
+		c javap 字节码取证 | 高 | getRadius/setRadius 直接读写
+	f	Ô00000	centerX	F
+		c javap 字节码取证 | 高 | getCenterX/setCenterX 直接读写
+	f	Ó00000	centerY	F
+		c javap 字节码取证 | 高 | getCenterY/setCenterY 直接读写
+	f	float	ringColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getRingColor/setRingColor 直接读写
+	f	ö00000	innerColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getInnerColor/setInnerColor 直接读写
+	f	class	phaseCost	F
+		c javap 字节码取证 | 高 | getPhaseCost/setPhaseCost 直接读写；构造器默认 0f
+	f	õ00000	phaseUpkeep	F
+		c javap 字节码取证 | 高 | getPhaseUpkeep/setPhaseUpkeep 直接读写；构造器默认 0f
 c	com/fs/starfarer/loading/specs/Object	com/fs/starfarer/loading/specs/BeamWeaponSpec
 	c 来源(javap取证) | 置信度(高) | 证据(extends BaseWeaponSpec implements BeamWeaponSpecAPI)
 	m	addPierced	addPierced	(Lcom/fs/starfarer/api/combat/CollisionClass;)V
@@ -1118,8 +2168,246 @@ c	com/fs/starfarer/loading/specs/Object	com/fs/starfarer/loading/specs/BeamWeapo
 	m	setTurretGlowSpriteName	setTurretGlowSpriteName	(Ljava/lang/String;)V
 	m	setUseGlowColorForHitGlow	setUseGlowColorForHitGlow	(Z)V
 	m	setWidth	setWidth	(F)V
+	f	Óõ0000	beamSpeed	F
+		c javap 字节码取证 | 高 | getBeamSpeed/setBeamSpeed 读写
+	f	øô0000	fluxPerSecond	F
+		c javap 字节码取证 | 高 | getFluxPerSecond/getEnergyPerSecond 读写
+	f	super.void	damagePerSecond	F
+		c javap 字节码取证 | 高 | getDamagePerSecond/setDamagePerSecond 读写
+	f	õõ0000	fluxDamageComponent	F
+		c javap 字节码取证 | 高 | getFluxDamageComponent/getEMPPerSecond 读写
+	f	do.class	chargeupTime	F
+		c javap 字节码取证 | 高 | getChargeupTime/setChargeupTime 读写
+	f	Òõ0000	chargedownTime	F
+		c javap 字节码取证 | 高 | getChargedownTime/setChargedownTime 读写
+	f	Õõ0000	hitGlowBrightenDuration	F
+		c javap 字节码取证 | 高 | getHitGlowBrightenDuration/set 读写
+	f	ÒØ0000	hitGlowRadius	F
+		c javap 字节码取证 | 高 | getHitGlowRadius/setHitGlowRadius 读写
+	f	Öõ0000	burstDuration	F
+		c javap 字节码取证 | 高 | getBurstDuration/setBurstDuration 读写
+	f	private.class	burstCooldown	F
+		c javap 字节码取证 | 高 | getBurstCooldown/setBurstCooldown 读写
+	f	if.return	burstBeam	Z
+		c javap 字节码取证 | 高 | isBurstBeam/setBurstBeam 读写
+	f	String.return	useGlowColorForHitGlow	Z
+		c javap 字节码取证 | 高 | isUseGlowColorForHitGlow/set 读写
+	f	OØ0000	randomizeTextureOffset	Z
+		c javap 字节码取证 | 高 | isRandomizeTextureOffset/set 读写
+	f	õØ0000	fringeColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getFringeColor/setFringeColor 读写
+	f	Öô0000	coreColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getCoreColor/setCoreColor 读写
+	f	øõ0000	darkCore	Z
+		c javap 字节码取证 | 高 | isDarkCore/setDarkCore 读写
+	f	void.return	beamFireOnlyOnFullCharge	Z
+		c javap 字节码取证 | 高 | isBeamFireOnlyOnFullCharge/set 读写
+	f	Oô0000	glowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getGlowColor/setGlowColor 读写
+	f	øÖ0000	width	F
+		c javap 字节码取证 | 高 | getWidth/setWidth 读写
+	f	ôØ0000	impactMass	F
+		c javap 字节码取证 | 高 | getImpactMass/setImpactMass 读写
+	f	if.class	textureType	Lcom/fs/starfarer/renderers/BeamRenderer$BeamTextureType;
+		c javap 字节码取证 | 高 | getTextureType/setTextureType 读写（BeamRenderer$BeamTextureType）
+	f	private.return	fringeTex	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getFringeTex/setFringeTex 读写
+	f	ôõ0000	coreTex	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCoreTex/setCoreTex 读写
+	f	String.void	textureScrollSpeed	F
+		c javap 字节码取证 | 高 | getTextureScrollSpeed/set 读写
+	f	Òô0000	fringeScrollSpeedMult	F
+		c javap 字节码取证 | 高 | getFringeScrollSpeedMult/set 读写
+	f	øØ0000	pixelsPerTexel	F
+		c javap 字节码取证 | 高 | getPixelsPerTexel/setPixelsPerTexel 读写
+	f	õô0000	pierceSet	Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | getPierceSet/addPierced/setStandardPiercing 操作（CollisionClass EnumSet）
+	f	ÕØ0000	turretGlowSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTurretGlowSpriteName/set 读写
+	f	ÓØ0000	hardpointGlowSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getHardpointGlowSpriteName/set 读写
+	f	Oõ0000	skipIdleFrameIfZeroBurstDelay	Z
+		c javap 字节码取证 | 高 | isSkipIdleFrameIfZeroBurstDelay/set 读写
+	f	void.class	convergeOnPoint	Z
+		c javap 字节码取证 | 高 | isConvergeOnPoint/setConvergeOnPoint 读写
+	f	do.return	effectClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getEffectClassName/set 读写；getBeamEffect 经 ScriptStore.new 实例化
+	f	Õô0000	darkFringeIter	I
+		c javap 字节码取证 | 高 | getDarkFringeIter/setDarkFringeIter 读写
+	f	ôô0000	darkCoreIter	I
+		c javap 字节码取证 | 高 | getDarkCoreIter/setDarkCoreIter 读写
+	f	Óô0000	coreWidthMult	F
+		c javap 字节码取证 | 高 | getCoreWidthMult/setCoreWidthMult 读写
+	f	super.return	collisionClass	Lcom/fs/starfarer/api/combat/CollisionClass;
+		c javap 字节码取证 | 高 | getCollisionClass/setCollisionClass 读写
+	f	ÖØ0000	collisionClassIfByFighter	Lcom/fs/starfarer/api/combat/CollisionClass;
+		c javap 字节码取证 | 高 | getCollisionClassIfByFighter/set 读写
 c	com/fs/starfarer/loading/specs/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/loading/specs/HullStyle
 	c 来源(javap取证) | 置信度(高) | 证据(data/config/hull_styles.json Loading hull style data，JSON 键 engineLoopSet/explosionShipSet/损伤贴图等)
+	f	if.super	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数1直存，getId 直读
+	f	if	hyperspaceJitterColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "hyperspaceJitterColor"
+	f	Ö00000	baseCampaignExplosionColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "baseCampaignExplosionColor"
+	f	Õo0000	baseCombatExplosionColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "baseCombatExplosionColor"
+	f	super.super	combatExplosionNonFlashColorOverride	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON has("combatExplosionNonFlashColorOverride") 条件赋值，getter/setter 成对
+	f	private	campaignEngineGlowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "campaignEngineGlowColor"，getter/setter 成对
+	f	Oo0000	campaignEngineTrailColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "campaignEngineTrailColor"，getter/setter 成对
+	f	ÓO0000	fighterRepairFlickerColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "fighterRepairFlickerColor"
+	f	do	weaponDisabledExplosionColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "weaponDisabledExplosionColor"
+	f	Ò00000	shieldRingColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "shieldRingColor"
+	f	ÕO0000	shieldInnerColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "shieldInnerColor"
+	f	Õ00000	fluxVentCoreColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "fluxVentCoreColor"
+	f	OÒ0000	fluxVentFringeColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "fluxVentFringeColor"
+	f	String	fighterChipIconColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "fighterChipIconColor" 默认 fighterRepairFlickerColor
+	f	super	overloadColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | JSON "overloadColor"
+	f	ÒÒ0000	engineLoopSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "engineLoopSet" 默认 "engine_loop"
+	f	õo0000	engineAccelerateSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "engineAccelerateSet" 默认 "engine_accelerate"
+	f	ÖO0000	empLoopSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "empLoopSet" 默认 "emp_loop"
+	f	ôO0000	fluxLoopSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "fluxLoopSet" 默认 "flux_loop"
+	f	ôo0000	ventFluxSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "ventFluxSet" 默认 "vent_flux"
+	f	OO0000	shieldBurnoutSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "shieldBurnoutSet" 默认 "shield_burnout"
+	f	String.super	shieldLowerSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "shieldLowerSet" 默认 "shield_lower"
+	f	øO0000	shieldRaiseSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "shieldRaiseSet" 默认 "shield_raise"
+	f	super.new	explosionShipSet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "explosionShipSet" 默认 "explosion_ship"
+	f	õO0000	damageDecalSheet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "damageDecalSheet" 默认 graphics/damage/damage_decal_sheet_base.png
+	f	øo0000	damageDecalGlowSheet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "damageDecalGlowSheet" 默认 graphics/damage/damage_decal_sheet_glow.png
+	f	private.super	slotCoverSmallTurret	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "slotCoverSmallTurret"
+	f	do.super	slotCoverSmallHardpoint	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "slotCoverSmallHardpoint"
+	f	Óo0000	slotCoverMediumTurret	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "slotCoverMediumTurret"
+	f	Ó00000	slotCoverMediumHardpoint	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "slotCoverMediumHardpoint"
+	f	ô00000	slotCoverLargeTurret	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "slotCoverLargeTurret"
+	f	Öo0000	slotCoverLargeHardpoint	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "slotCoverLargeHardpoint"
+	f	void	dHullOverlayLight	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "dHullOverlayLight"
+	f	õ00000	dHullOverlayMedium	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "dHullOverlayMedium"
+	f	Òo0000	dHullOverlayHeavy	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "dHullOverlayHeavy"
+	f	ø00000	fluxVentTextureSheet	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "fluxVentTextureSheet"
+	f	ÒO0000	fluxVentRadialTexture	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "fluxVentRadialTexture"，getter/setter 成对
+	f	ÓÒ0000	coversColorShiftAmount	F
+		c javap 字节码取证 | 高 | JSON "coversColorShiftAmount" optDouble(0.0)
+	f	void.super	coversMatchShipBrightness	Z
+		c javap 字节码取证 | 高 | JSON "coversMatchShipBrightness" optBoolean(true)
+	m	ÒÒ0000	getSlotCoverSmallTurret	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 slotCoverSmallTurret
+	m	Õo0000	getFluxVentRadialTexture	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 fluxVentRadialTexture
+	m	o00000	setFluxVentRadialTexture	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter 直写 fluxVentRadialTexture
+	m	Object.super	getFluxVentTextureSheet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 fluxVentTextureSheet
+	m	oO0000	getDHullOverlayLight	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 dHullOverlayLight
+	m	öO0000	getDHullOverlayMedium	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 dHullOverlayMedium
+	m	Ô00000	getDHullOverlayHeavy	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 dHullOverlayHeavy
+	m	ÒO0000	getFighterChipIconColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 fighterChipIconColor
+	m	ôo0000	getCoversColorShiftAmount	()F
+		c javap 字节码取证 | 高 | getter 直读 coversColorShiftAmount
+	m	public	isCoversMatchShipBrightness	()Z
+		c javap 字节码取证 | 高 | getter 直读 coversMatchShipBrightness
+	m	Òo0000	getSlotCoverSmallHardpoint	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 slotCoverSmallHardpoint
+	m	ø00000	getSlotCoverMediumTurret	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 slotCoverMediumTurret
+	m	Õ00000	getSlotCoverMediumHardpoint	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 slotCoverMediumHardpoint
+	m	ô00000	getSlotCoverLargeTurret	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 slotCoverLargeTurret
+	m	for.super	getSlotCoverLargeHardpoint	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 slotCoverLargeHardpoint
+	m	o00000	getId	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 id
+	m	public.super	getWeaponDisabledExplosionColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 weaponDisabledExplosionColor
+	m	Ôo0000	getHyperspaceJitterColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 hyperspaceJitterColor
+	m	Object	getBaseCampaignExplosionColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 baseCampaignExplosionColor
+	m	ÔO0000	getBaseCombatExplosionColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 baseCombatExplosionColor
+	m	Ø00000	getFighterRepairFlickerColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 fighterRepairFlickerColor
+	m	Øo0000	getShieldRingColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 shieldRingColor
+	m	this.new	getShieldInnerColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 shieldInnerColor
+	m	oÒ0000	getFluxVentCoreColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 fluxVentCoreColor
+	m	ÕO0000	getFluxVentFringeColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 fluxVentFringeColor
+	m	this.super	getEngineLoopSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 engineLoopSet
+	m	int	getEngineAccelerateSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 engineAccelerateSet
+	m	oo0000	getEmpLoopSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 empLoopSet
+	m	øo0000	getFluxLoopSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 fluxLoopSet
+	m	øO0000	getVentFluxSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 ventFluxSet
+	m	öo0000	getShieldBurnoutSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 shieldBurnoutSet
+	m	return	getShieldLowerSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 shieldLowerSet
+	m	int.super	getShieldRaiseSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 shieldRaiseSet
+	m	ö00000	getExplosionShipSet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 explosionShipSet
+	m	for	getDamageDecalSheet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 damageDecalSheet
+	m	Object.new	getDamageDecalGlowSheet	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 直读 damageDecalGlowSheet
+	m	ØO0000	getCampaignEngineGlowColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 campaignEngineGlowColor
+	m	Object	setCampaignEngineGlowColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | setter 直写 campaignEngineGlowColor
+	m	return.super	getCampaignEngineTrailColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 campaignEngineTrailColor
+	m	Ò00000	setCampaignEngineTrailColor	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | setter 直写 campaignEngineTrailColor
+	m	ôO0000	getCombatExplosionNonFlashColorOverride	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 combatExplosionNonFlashColorOverride
+	m	o00000	setCombatExplosionNonFlashColorOverride	(Ljava/awt/Color;)V
+		c javap 字节码取证 | 高 | setter 直写 combatExplosionNonFlashColorOverride
+	m	Ò00000	getOverloadColor	()Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getter 直读 overloadColor
 c	com/fs/starfarer/loading/specs/Oooo	com/fs/starfarer/loading/specs/EngineSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements ShipHullSpecAPI$EngineSpecAPI（转向/加减速/最高航速）)
 	m	clone	clone	()Lcom/fs/starfarer/loading/specs/EngineSpec;
@@ -1135,6 +2423,16 @@ c	com/fs/starfarer/loading/specs/Oooo	com/fs/starfarer/loading/specs/EngineSpec
 	m	setMaxSpeed	setMaxSpeed	(F)V
 	m	setMaxTurnRate	setMaxTurnRate	(F)V
 	m	setTurnAcceleration	setTurnAcceleration	(F)V
+	f	Ò00000	turnAcceleration	F
+		c javap 字节码取证 | 高 | getTurnAcceleration/set 读写
+	f	o00000	maxTurnRate	F
+		c javap 字节码取证 | 高 | getMaxTurnRate/set 读写
+	f	Ô00000	acceleration	F
+		c javap 字节码取证 | 高 | getAcceleration/set 读写
+	f	Object	deceleration	F
+		c javap 字节码取证 | 高 | getDeceleration/set 读写
+	f	Õ00000	maxSpeed	F
+		c javap 字节码取证 | 高 | getMaxSpeed/set 读写
 c	com/fs/starfarer/loading/specs/PlanetSpec	com/fs/starfarer/loading/specs/PlanetSpec
 	c 来源(javap取证) | 置信度(高) | 证据(DoNotObfuscate+implements PlanetSpecAPI，data/config/planets.json)
 	f	aOrAn	aOrAn	Ljava/lang/String;
@@ -1276,6 +2574,36 @@ c	com/fs/starfarer/loading/specs/Q	com/fs/starfarer/loading/specs/ShipSpriteSpec
 	m	o00000	setCenter	(FF)V
 	m	Ò00000	setSize	(FF)V
 	m	o00000	setSpriteName	(Ljava/lang/String;)V
+	f	String	width	F
+		c javap 字节码取证 | 高 | 经 Sprite.setSize(width, height) 应用；getWidth 直接读
+	f	super	height	F
+		c javap 字节码取证 | 高 | 经 Sprite.setSize(width, height) 应用
+	f	void	centerX	F
+		c javap 字节码取证 | 高 | 经 Sprite.setCenter(centerX, centerY) 应用
+	f	Ö00000	centerY	F
+		c javap 字节码取证 | 高 | 经 Sprite.setCenter(centerX, centerY) 应用
+	f	Ò00000	collisionRadius	F
+		c javap 字节码取证 | 高 | 经 Ship.setCollisionRadius 应用；getCollisionRadius 直接读
+	f	Õ00000	bounds	Lcom/fs/starfarer/combat/o0OO/Bounds;
+		c javap 字节码取证 | 高 | 经 Ship.setBounds(clone) 应用；clone 深拷贝本字段
+	m	return	clone	()Lcom/fs/starfarer/loading/specs/ShipSpriteSpec;
+		c javap 字节码取证 | 高 | 包装 Object.clone() 并深拷贝 bounds；public clone() 委托
+	m	Ô00000	getCollisionRadius	()F
+		c javap 字节码取证 | 高 | getfield collisionRadius 直接返回
+	m	o00000	setCollisionRadius	(F)V
+		c javap 字节码取证 | 高 | putfield collisionRadius
+	m	Ø00000	getBounds	()Lcom/fs/starfarer/combat/o0OO/Bounds;
+		c javap 字节码取证 | 高 | getfield bounds 直接返回
+	m	o00000	setBounds	(Lcom/fs/starfarer/combat/o0OO/Bounds;)V
+		c javap 字节码取证 | 高 | putfield bounds
+	m	ô00000	getWidth	()F
+		c javap 字节码取证 | 高 | getfield width 直接返回
+	m	o00000	getHeight	()F
+		c javap 字节码取证 | 高 | getfield height 直接返回
+	m	Õ00000	getCenterX	()F
+		c javap 字节码取证 | 高 | getfield centerX 直接返回
+	m	Ò00000	getCenterY	()F
+		c javap 字节码取证 | 高 | getfield centerY 直接返回
 c	com/fs/starfarer/loading/specs/Stringsuper	com/fs/starfarer/loading/specs/TerrainSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements TerrainSpecAPI，SpecStore Loading terrain)
 	m	addTag	addTag	(Ljava/lang/String;)V
@@ -1294,6 +2622,24 @@ c	com/fs/starfarer/loading/specs/Stringsuper	com/fs/starfarer/loading/specs/Terr
 	m	setId	setId	(Ljava/lang/String;)V
 	m	setPluginClass	setPluginClass	(Ljava/lang/String;)V
 	m	setSourceMod	setSourceMod	(Lorg/json/JSONObject;)V
+	f	Ò00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	õ00000	pluginClass	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ö00000	loopOne	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ô00000	loopTwo	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	String	loopThree	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	void	loopFour	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	super	custom	Lorg/json/JSONObject;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Õ00000	musicSuppression	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ó00000	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/loading/specs/W	com/fs/starfarer/loading/specs/SlotNode
 	c 来源(javap取证) | 置信度(高) | 证据((String id+Vector2f 位置)：WeaponSlot.setNode/getNode/addLaunchPoint 与 EngineSlot.getNode 的节点/发射点数据)
 	f	Ò00000	id	Ljava/lang/String;
@@ -1314,6 +2660,38 @@ c	com/fs/starfarer/loading/specs/X	com/fs/starfarer/loading/specs/ChannelSpec
 	f	OO0000	sound	Ljava/lang/String;
 	f	if	subChannelOf	Ljava/lang/String;
 	f	ô00000	type	Ljava/lang/String;
+	m	Ò00000	getSubChannelOf	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 if 字段（JSON key subChannelOf）
+	m	Ö00000	getSound	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 OO0000 字段（JSON key sound）
+	m	if	getFaction	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 Ó00000 字段（JSON key faction）
+	m	Ó00000	getType	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 ô00000 字段（JSON key type）
+	m	super	getShortType	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 Ö00000 字段（JSON key shortType）
+	m	Õ00000	setFaction	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter 写 Ó00000 字段
+	m	ô00000	getId	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 Ò00000 字段（构造参数 id）
+	m	Ó00000	setId	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter 写 Ò00000 字段
+	m	Õ00000	getLogo	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 Õ00000 字段（JSON key logo）
+	m	Ö00000	setLogo	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter 写 Õ00000 字段
+	m	String	getIcon	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 õ00000 字段（JSON key icon）
+	m	String	setIcon	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter 写 õ00000 字段
+	m	void	getName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 super 字段（JSON key name）
+	m	Ò00000	setName	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter 写 super 字段
+	m	õ00000	getImage	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter 读 String 字段（JSON key image）
+	m	super	setImage	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter 写 String 字段
 c	com/fs/starfarer/loading/specs/Y	com/fs/starfarer/loading/specs/WeaponSlot
 	c 来源(javap取证) | 置信度(高) | 证据(implements WeaponSlotAPI，getAllWeaponSlots 返回)
 	m	addLaunchPoint	addLaunchPoint	(Lcom/fs/starfarer/loading/specs/SlotNode;)V
@@ -1362,10 +2740,64 @@ c	com/fs/starfarer/loading/specs/Y	com/fs/starfarer/loading/specs/WeaponSlot
 	m	setSlotType	setSlotType	(Lcom/fs/starfarer/loading/specs/WeaponSlotType;)V
 	m	setWeaponType	setWeaponType	(Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;)V
 	m	weaponFits	weaponFits	(Lcom/fs/starfarer/api/loading/WeaponSpecAPI;)Z
+	f	return	weaponType	Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ö00000	slotType	Lcom/fs/starfarer/loading/specs/WeaponSlotType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ô00000	slotSize	Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponSize;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	ô00000	displayPosition	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Object	node	Lcom/fs/starfarer/loading/specs/SlotNode;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Õ00000	angle	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ò00000	arc	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ø00000	renderOrderMod	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	int	launchPoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/loading/specs/Y$o	com/fs/starfarer/loading/specs/WeaponSlotType
 	c 来源(javap取证) | 置信度(高) | 证据(枚举 TURRET/HARDPOINT/HIDDEN（含 CSV 简写 H/T），getSlotType 返回)
+	f	class	TURRET	Lcom/fs/starfarer/loading/specs/WeaponSlotType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ó00000	HARDPOINT	Lcom/fs/starfarer/loading/specs/WeaponSlotType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	Ô00000	HIDDEN	Lcom/fs/starfarer/loading/specs/WeaponSlotType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	new	displayName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	o00000	$VALUES	[Lcom/fs/starfarer/loading/specs/WeaponSlotType;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	o00000	getDisplayName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/loading/specs/a	com/fs/starfarer/loading/specs/ProjectileFactory
 	c 来源(javap取证) | 置信度(中) | 证据(静态工厂：按 ProjectileSpawnType 创建 MovingRay/BallisticProjectile/PlasmaShot/Missile/DamagingExplosion)
+	f	super	behaviorProjectileTypeMap	[I
+		c javap 字节码取证 | 高 | 懒加载 BehaviorType→类型 int 映射表，getBehaviorProjectileTypeMap 返回
+	m	o00000	spawnProjectile	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/systems/Weapon;Ljava/lang/Object;Lorg/lwjgl/util/vector/Vector2f;FLorg/lwjgl/util/vector/Vector2f;)Ljava/lang/Object;
+		c javap 字节码取证 | 高 | instanceof 按 ProjectileSpec/MissileSpec/DamagingExplosionSpec 分发创建
+	m	o00000	spawnExplosion	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/systems/Weapon;Lcom/fs/starfarer/api/loading/DamagingExplosionSpec;Lorg/lwjgl/util/vector/Vector2f;FLorg/lwjgl/util/vector/Vector2f;Z)Ljava/lang/Object;
+		c javap 字节码取证 | 高 | new DamagingExplosion 设置位置/朝向/速度并 addObject
+	m	o00000	spawnMissile	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/systems/Weapon;Lcom/fs/starfarer/loading/specs/MissileSpec;Lorg/lwjgl/util/vector/Vector2f;FLorg/lwjgl/util/vector/Vector2f;)Lcom/fs/starfarer/combat/entities/Missile;
+		c javap 字节码取证 | 高 | new Missile，按 type 挂 MissileAI（HeatseekerAI/RocketAI/FlareAI 等）
+	m	o00000	computeVelocity	(Lorg/lwjgl/util/vector/Vector2f;FF)Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | Utils 朝向单位向量*speed 叠加到基础速度，生成发射速度向量
+	m	new	spawnBeam	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/systems/Weapon;Lcom/fs/starfarer/loading/specs/ProjectileSpec;Lorg/lwjgl/util/vector/Vector2f;FLorg/lwjgl/util/vector/Vector2f;F)Lcom/fs/starfarer/combat/entities/MovingRay;
+		c javap 字节码取证 | 高 | new MovingRay 设置碰撞类/from/to，按行为挂 ProximityFuseAI
+	m	o00000	spawnBallisticProjectile	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/systems/Weapon;Lcom/fs/starfarer/loading/specs/ProjectileSpec;Lorg/lwjgl/util/vector/Vector2f;FLorg/lwjgl/util/vector/Vector2f;)Lcom/fs/starfarer/combat/entities/BallisticProjectile;
+		c javap 字节码取证 | 高 | new BallisticProjectile，computeVelocity 计算弹速
+	m	o00000	spawnPlasmaShot	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/systems/Weapon;Lcom/fs/starfarer/loading/specs/ProjectileSpec;Lorg/lwjgl/util/vector/Vector2f;FLorg/lwjgl/util/vector/Vector2f;F)Lcom/fs/starfarer/combat/entities/PlasmaShot;
+		c javap 字节码取证 | 高 | new PlasmaShot 并调用 spawnEntity 初始化
+	m	o00000	spawnPlasmaShot	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/loading/specs/ProjectileSpec;Lcom/fs/starfarer/combat/systems/Weapon;Lorg/lwjgl/util/vector/Vector2f;FLorg/lwjgl/util/vector/Vector2f;F)Lcom/fs/starfarer/combat/entities/PlasmaShot;
+		c javap 字节码取证 | 高 | new PlasmaShot（参数顺序不同但同语义）
+	m	o00000	spawnEntity	(Lcom/fs/starfarer/combat/o0OO/CollisionEntity;Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FF)V
+		c javap 字节码取证 | 高 | 设置实体速度/位置/朝向并 addObject 到 CombatEngine
+	m	o00000	getBehaviorProjectileTypeMap	()[I
+		c javap 字节码取证 | 高 | 懒初始化返回 behaviorProjectileTypeMap
 c	com/fs/starfarer/loading/specs/c	com/fs/starfarer/loading/specs/EventSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements EventSpecAPI，SpecStore data/campaign/events.json)
 	m	getId	getId	()Ljava/lang/String;
@@ -1379,8 +2811,46 @@ c	com/fs/starfarer/loading/specs/c	com/fs/starfarer/loading/specs/EventSpec
 	m	setMaxOngoing	setMaxOngoing	(I)V
 	m	setPluginClass	setPluginClass	(Ljava/lang/String;)V
 	m	setProbabilityMult	setProbabilityMult	(F)V
+	f	Õ00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数1直存，getId/getNewPluginInstance 读取（事件 ID）
+	f	o00000	pluginClass	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "script"，getPluginClass/getNewPluginInstance 经 ScriptStore.new 实例化插件
+	f	Ô00000	image	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "image" optString(null)，getImage 直读
+	f	Ò00000	probabilityMult	F
+		c javap 字节码取证 | 高 | JSON "probabilityMult" optDouble(1.0)，getProbabilityMult 直读
+	f	Object	maxOngoing	I
+		c javap 字节码取证 | 高 | JSON "maxOngoing" optInt(-1)，getMaxOngoing 直读
 c	com/fs/starfarer/loading/specs/class	com/fs/starfarer/loading/specs/MissionSpec
 	c 来源(javap取证) | 置信度(高) | 证据(JSON 键 pluginScript/eventScript/image，创建 CampaignMissionPlugin/CampaignEventPlugin（data/missions）)
+	f	Ô00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数1直存，createEventPlugin 的 CampaignEventPlugin.init 首参
+	f	o00000	pluginScript	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 JSON "pluginScript" 直存
+	f	Object	eventScript	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 JSON "eventScript" 直存，createEventPlugin 经 ScriptStore.new 实例化
+	f	Ò00000	image	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 JSON "image" optString(null) 直存
+	m	super	createMissionPlugin	(Ljava/lang/Object;)Lcom/fs/starfarer/api/campaign/CampaignMissionPlugin;
+		c javap 字节码取证 | 中 | 与 createEventPlugin 对应的 mission 插件工厂，体仅 return null（stub）
+	m	super	createEventPlugin	(Lcom/fs/starfarer/api/campaign/events/CampaignEventTarget;)Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+		c javap 字节码取证 | 高 | eventScript 经 ScriptStore.new 实例化并 init(id, target)
+	m	Ó00000	getId	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 直读 id 字段
+	m	Ó00000	setId	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 直写 id 字段
+	m	super	getPluginScript	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 直读 pluginScript 字段
+	m	String	setPluginScript	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 直写 pluginScript 字段
+	m	String	getImage	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 直读 image 字段
+	m	Ò00000	setImage	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 直写 image 字段
+	m	Ò00000	getEventScript	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 直读 eventScript 字段
+	m	super	setEventScript	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 直写 eventScript 字段
 c	com/fs/starfarer/loading/specs/d	com/fs/starfarer/loading/specs/SmokeSpec
 	c 来源(javap取证) | 置信度(高) | 证据(WeaponSpecLoader JSON 键 smokeSpec 解析，粒子云+后喷粒子参数)
 	f	o00000	blowbackDuration	F
@@ -1404,6 +2874,8 @@ c	com/fs/starfarer/loading/specs/d	com/fs/starfarer/loading/specs/SmokeSpec
 	m	o00000	getParticleColor	()Ljava/awt/Color;
 	m	Ø00000	getParticleSizeMin	()F
 	m	class	getParticleSizeRange	()F
+	m	float	clone	()Lcom/fs/starfarer/loading/specs/SmokeSpec;
+		c javap 字节码取证 | 高 | 调用 Object.clone() 返回 SmokeSpec；clone() 委托此方法
 c	com/fs/starfarer/loading/specs/e	com/fs/starfarer/loading/specs/SoundSpec
 	c 来源(javap取证) | 置信度(高) | 证据(JSON 键 file/pitch/volume 单个声音条目，SoundSet 成员)
 	f	o00000	file	Ljava/lang/String;
@@ -1411,6 +2883,12 @@ c	com/fs/starfarer/loading/specs/e	com/fs/starfarer/loading/specs/SoundSpec
 	m	o00000	getFile	()Ljava/lang/String;
 	m	Object	getPitch	()F
 	m	Ò00000	getVolume	()F
+	f	Ó00000	volume	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	f	new	pitch	F
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
+	m	Ô00000	getSoundFile	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 详见 mapping-evidence/wave3-p086.md
 c	com/fs/starfarer/loading/specs/floatsuper	com/fs/starfarer/loading/specs/MusicTrackSpec
 	c 来源(javap取证) | 置信度(高) | 证据(sounds.json music 段：id+WeightedRandomPicker 曲目池)
 	f	Ò00000	id	Ljava/lang/String;
@@ -1419,6 +2897,8 @@ c	com/fs/starfarer/loading/specs/floatsuper	com/fs/starfarer/loading/specs/Music
 	m	super	getTracks	()Lcom/fs/starfarer/api/util/WeightedRandomPicker;
 	m	Ò00000	pick	()Lcom/fs/starfarer/loading/oooO;
 	m	super	pickOtherThan	(Lcom/fs/starfarer/loading/oooO;)Lcom/fs/starfarer/loading/oooO;
+	f	o00000	trackPicker	Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+		c javap 字节码取证 | 高 | 构造器 new WeightedRandomPicker 直存，pick/getItems/add 方法均操作它
 c	com/fs/starfarer/loading/specs/for	com/fs/starfarer/loading/specs/ReactorSpec
 	c 来源(javap取证) | 置信度(高) | 证据(ShipHullSpec.setReactorSpec，字段 flux dissipation/max flux)
 	f	super	fluxDissipation	F
@@ -1428,6 +2908,8 @@ c	com/fs/starfarer/loading/specs/for	com/fs/starfarer/loading/specs/ReactorSpec
 	m	super	getMaxFlux	()F
 	m	super	setFluxDissipation	(F)V
 	m	Ò00000	setMaxFlux	(F)V
+	m	Ó00000	clone	()Lcom/fs/starfarer/loading/specs/ReactorSpec;
+		c javap 字节码取证 | 高 | 包装 Object.clone() 后 checkcast；public clone() 委托此方法
 c	com/fs/starfarer/loading/specs/g	com/fs/starfarer/loading/specs/ShipHullSpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements ShipHullSpecAPI)
 	m	addBuiltInMod	addBuiltInMod	(Ljava/lang/String;)V
@@ -1585,13 +3067,171 @@ c	com/fs/starfarer/loading/specs/g	com/fs/starfarer/loading/specs/ShipHullSpec
 	m	setSuppliesPerMonth	setSuppliesPerMonth	(F)V
 	m	setSuppliesToRecover	setSuppliesToRecover	(F)V
 	m	setTravelDriveId	setTravelDriveId	(Ljava/lang/String;)V
+	f	Øo0000	collisionClass	Lcom/fs/starfarer/api/combat/CollisionClass;
+		c javap 字节码取证 | 高 | getCollisionClass/setCollisionClass 直接读写；构造器默认 CollisionClass.SHIP
+	f	int.new	mass	F
+		c javap 字节码取证 | 高 | getMass/setMass 直接读写
+	f	oÒ0000	hullSize	Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
+		c javap 字节码取证 | 高 | getHullSize/setHullSize 直接读写；构造器默认 HullSize.DEFAULT
+	f	ôÒ0000	weaponSlots	Ljava/util/List;
+		c javap 字节码取证 | 高 | getAllWeaponSlots 返回；addWeaponSlot/getWeaponSlot 操作
+	f	oO0000	engineSlots	Ljava/util/List;
+		c javap 字节码取证 | 高 | getEngineSlots 返回；addEngineSlot 追加
+	f	ö00000	spriteSpec	Lcom/fs/starfarer/loading/specs/ShipSpriteSpec;
+		c javap 字节码取证 | 高 | getSpriteSpec/setSpriteSpec 直接读写；getSpriteName/getCollisionRadius 经它取
+	f	for	shieldSpec	Lcom/fs/starfarer/loading/specs/ShieldSpec;
+		c javap 字节码取证 | 高 | getShieldSpec/setShieldSpec 直接读写；getShieldType 经它取
+	f	return.super	engineSpec	Lcom/fs/starfarer/loading/specs/EngineSpec;
+		c javap 字节码取证 | 高 | getEngineSpec/setEngineSpec 直接读写
+	f	ôO0000	reactorSpec	Lcom/fs/starfarer/loading/specs/ReactorSpec;
+		c javap 字节码取证 | 高 | getReactorSpec/setReactorSpec 直接读写
+	f	ÔÒ0000	armorSpec	Lcom/fs/starfarer/loading/specs/ArmorSpec;
+		c javap 字节码取证 | 高 | getArmorSpec/setArmorSpec 直接读写
+	f	øo0000	capacity	Lcom/fs/starfarer/loading/specs/ShipCapacitySpec;
+		c javap 字节码取证 | 高 | getCapacity 直接返回；getMinCrew/getMaxCrew/getCargo/getFuel/getFuelPerLY 经它取
+	f	ø00000	moduleAnchor	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | getModuleAnchor/setModuleAnchor 直接读写；构造器默认 null
+	f	Ø00000	hullStyle	Lcom/fs/starfarer/loading/specs/HullStyle;
+		c javap 字节码取证 | 高 | getHullStyle/setHullStyle 直接读写；getHyperspaceJitterColor 从它取色
+	f	ô00000	maxViewOffset	F
+		c javap 字节码取证 | 高 | getMaxViewOffset/setMaxViewOffset 直接读写；构造器默认 76.0f
+	f	this.new	hullId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getHullId/setHullId 直接读写；构造器入参写入
+	f	ØÒ0000	hullName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getHullName/setHullName 直接读写
+	f	Ôo0000	designation	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDesignation/setDesignation 直接读写
+	f	Õ00000	manufacturer	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getManufacturer/setManufacturer 直接读写
+	f	return.new	fighterBays	I
+		c javap 字节码取证 | 高 | getFighterBays/setFighterBays 直接读写
+	f	Òo0000	fleetPoints	I
+		c javap 字节码取证 | 高 | getFleetPoints/setFleetPoints 直接读写
+	f	Ô00000	ordnancePoints	I
+		c javap 字节码取证 | 高 | getOrdnancePoints/setOrdnancePoints 直接读写
+	f	ØO0000	baseValue	F
+		c javap 字节码取证 | 高 | getBaseValue/setBaseValue 直接读写
+	f	ÕO0000	shipSystemId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getShipSystemId/setShipSystemId 直接读写
+	f	public.super	shipDefenseId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getShipDefenseId/setShipDefenseId 直接读写
+	f	public	travelDriveId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getTravelDriveId/setTravelDriveId 直接读写
+	f	ÔÓ0000	logisticsNAReason	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getLogisticsNAReason/setLogisticsNAReason 直接读写
+	f	public.new	codexVariantId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCodexVariantId/setCodexVariantId 直接读写
+	f	oÓ0000	builtInWeapons	Ljava/util/HashMap;
+		c javap 字节码取证 | 高 | getBuiltInWeapons 返回；addBuiltInWeapon/isBuiltIn 操作
+	f	return	builtInMods	Ljava/util/List;
+		c javap 字节码取证 | 高 | getBuiltInMods 返回；addBuiltInMod/isBuiltInMod 操作
+	f	ôo0000	builtInWings	Ljava/util/List;
+		c javap 字节码取证 | 高 | getBuiltInWings 返回；addBuiltInWing/isBuiltInWing 操作
+	f	ÒÒ0000	maxBurn	F
+		c javap 字节码取证 | 高 | getMaxBurn/setMaxBurn 直接读写
+	f	Ò00000	suppliesToRecover	F
+		c javap 字节码取证 | 高 | getSuppliesToRecover/setSuppliesToRecover 直接读写
+	f	Õo0000	suppliesPerMonth	F
+		c javap 字节码取证 | 高 | getSuppliesPerMonth/setSuppliesPerMonth 直接读写
+	f	this.super	repairPercentPerDay	F
+		c javap 字节码取证 | 高 | getRepairPercentPerDay/setRepairPercentPerDay 直接读写
+	f	oo0000	crToDeploy	F
+		c javap 字节码取证 | 高 | getCRToDeploy/setCRToDeploy 直接读写
+	f	ÒÓ0000	noCrLossSeconds	F
+		c javap 字节码取证 | 高 | getNoCRLossSeconds/setNoCRLossSeconds 直接读写
+	f	ÒO0000	crLossPerSecond	F
+		c javap 字节码取证 | 高 | getCRLossPerSecond/setCRLossPerSecond 直接读写；computeCRLossPerSecond 按 stats 修正
+	f	ÕÒ0000	compatibleWithBase	Z
+		c javap 字节码取证 | 高 | isCompatibleWithBase/setCompatibleWithBase 直接读写
+	f	öO0000	restoreToBase	Z
+		c javap 字节码取证 | 高 | isRestoreToBase/setRestoreToBase 直接读写
+	f	øÒ0000	descriptionPrefix	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDescriptionPrefix/setDescriptionPrefix 直接读写
+	f	int.super	coversColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getCoversColor/setCoversColor 直接读写
+	f	int	breakProb	F
+		c javap 字节码取证 | 高 | getBreakProb/setBreakProb 直接读写
+	f	Object.super	minPieces	F
+		c javap 字节码取证 | 高 | getMinPieces/setMinPieces 直接读写
+	f	Object.new	maxPieces	F
+		c javap 字节码取证 | 高 | getMaxPieces/setMaxPieces 直接读写
+	f	öÒ0000	rarity	F
+		c javap 字节码取证 | 高 | getRarity/setRarity 直接读写
+	f	öo0000	tags	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getTags 返回；addTag/hasTag 操作
+	f	øO0000	shipFilePath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getShipFilePath/setShipFilePath 直接读写
+	f	for.new	hints	Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | getHints 直接返回；isDHull 等按 hint 判定
+	f	for.super	descriptionId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDescriptionId/setDescriptionId 直接读写
+	f	Object	baseHullId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getBaseHullId/setBaseHullId 直接读写
+	f	ÔO0000	dParentHullId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDParentHullId/setDParentHullId 直接读写
+	f	ÕÓ0000	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | getSourceMod 直接读；setSourceMod 按 JSON modId 查 ModSpec 写入
+	f	o00000	weaponSizeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 方法懒初始化缓存：WeaponSize ordinal→switch 分支号
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$WeaponAPI$WeaponSize	getWeaponSizeSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化：LARGE→3/MEDIUM→2/SMALL→1，静态缓存 o00000
 c	com/fs/starfarer/loading/specs/g$Oo	com/fs/starfarer/loading/specs/ShipCapacitySpec
 	c 来源(javap取证) | 置信度(高) | 证据(ShipHullSpec.getCapacity 返回，cargo/fuel/fuelPerLY/minCrew/maxCrew 5 值)
 	m	clone	clone	()Ljava/lang/Object;
+	f	Ô00000	cargo	F
+		c javap 字节码取证 | 高 | 经 ShipHullSpec.getCargo 委托本字段 getter 读取
+	f	class	fuel	F
+		c javap 字节码取证 | 高 | 经 ShipHullSpec.getFuel 委托本字段 getter 读取
+	f	o00000	fuelPerLY	F
+		c javap 字节码取证 | 高 | 经 ShipHullSpec.getFuelPerLY 委托本字段 getter 读取
+	f	new	minCrew	F
+		c javap 字节码取证 | 高 | 经 ShipHullSpec.getMinCrew 委托本字段 getter 读取
+	f	Ó00000	maxCrew	F
+		c javap 字节码取证 | 高 | 经 ShipHullSpec.getMaxCrew 委托本字段 getter 读取
+	m	Ò00000	clone	()Lcom/fs/starfarer/loading/specs/ShipCapacitySpec;
+		c javap 字节码取证 | 高 | 包装 Object.clone() 后 checkcast；public clone() 委托此方法
+	m	Õ00000	getCargo	()F
+		c javap 字节码取证 | 高 | getfield cargo 直接返回
+	m	Õ00000	setCargo	(F)V
+		c javap 字节码取证 | 高 | putfield cargo
+	m	return	getFuel	()F
+		c javap 字节码取证 | 高 | getfield fuel 直接返回
+	m	o00000	setFuel	(F)V
+		c javap 字节码取证 | 高 | putfield fuel
+	m	Ô00000	getFuelPerLY	()F
+		c javap 字节码取证 | 高 | getfield fuelPerLY 直接返回
+	m	Ô00000	setFuelPerLY	(F)V
+		c javap 字节码取证 | 高 | putfield fuelPerLY
+	m	Ø00000	getMinCrew	()F
+		c javap 字节码取证 | 高 | getfield minCrew 直接返回
+	m	Object	setMinCrew	(F)V
+		c javap 字节码取证 | 高 | putfield minCrew
+	m	Object	getMaxCrew	()F
+		c javap 字节码取证 | 高 | getfield maxCrew 直接返回
+	m	Ò00000	setMaxCrew	(F)V
+		c javap 字节码取证 | 高 | putfield maxCrew
+	m	o00000	getFuelRange	()F
+		c javap 字节码取证 | 高 | fuelPerLY==0 返回 MAX_VALUE，否则 fuel/fuelPerLY（可航行光年数）
 c	com/fs/starfarer/loading/specs/if	com/fs/starfarer/loading/specs/PulseWeaponSpec
 	c 来源(javap取证) | 置信度(中) | 证据(WeaponSpecLoader specClass=pulse 时 new，extends ProjectileWeaponSpec(N/Oo0O))
 c	com/fs/starfarer/loading/specs/intsuper	com/fs/starfarer/loading/specs/ShipFactory
 	c 来源(javap取证) | 置信度(高) | 证据(静态方法从 HullVariantSpec+人员创建 combat Ship（含 fake 武器/船体字符串）)
+	m	super	createShip	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/rpg/Person;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 便捷重载：委托 createShip(spec, true, person1, person2, null)
+	m	super	createShip	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 便捷重载：委托 createShip(spec, true, person1, person2, fm)
+	m	super	createShip	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 便捷重载：委托 createShip(spec, s1, s2, true, true, p1, p2, fm)
+	m	super	createShip	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;ZLcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 便捷重载：委托 createShip(spec, null, null, b, true, p1, p2, fm)
+	m	super	createShip	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Ljava/lang/String;Ljava/lang/String;ZZLcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/rpg/Person;Lcom/fs/starfarer/campaign/fleet/FleetMember;)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 主实现：ship/E.create 创建 Ship，设 FleetMember/技能/buff，装配武器与护盾
+	m	super	computeSlotPositions	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/loading/specs/WeaponSlot;Lcom/fs/starfarer/loading/specs/WeaponSlot;)V
+		c javap 字节码取证 | 高 | 以 ship 朝向 computeRelativePosition 计算两个武器槽相对位置（结果仅存局部变量）
+	m	super	spawnStationModules	(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;)V
+		c javap 字节码取证 | 高 | 遍历 variant station modules，为每个模块建 FleetMember+Ship 并 setParentStation/setStationSlot 挂载
+	m	super	createWeaponSlotEntity	(Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/loading/specs/WeaponSlot;Lcom/fs/starfarer/combat/entities/Ship;)Lcom/fs/starfarer/combat/entities/ship/A/ShipSlotEntity;
+		c javap 字节码取证 | 高 | 按 spec 类型分派：Ballistic/Energy/Missile 对应不同 ShipSlotEntity 子类
 c	com/fs/starfarer/loading/specs/intsuper$o	com/fs/starfarer/loading/specs/ShipFleetMember
 	c 来源(javap取证) | 置信度(中) | 证据(implements FleetMemberAPI，包装 combat 船实体 E 的舰队成员视图)
 	m	canBeDeployedForCombat	canBeDeployedForCombat	()Z
@@ -1674,6 +3314,8 @@ c	com/fs/starfarer/loading/specs/intsuper$o	com/fs/starfarer/loading/specs/ShipF
 	m	setUseSpriteOverrideActualSize	setUseSpriteOverrideActualSize	(Ljava/lang/Boolean;)V
 	m	setVariant	setVariant	(Lcom/fs/starfarer/api/combat/ShipVariantAPI;ZZ)V
 	m	updateStats	updateStats	()V
+	f	super	shipStats	Lcom/fs/starfarer/combat/entities/ship/ShipStats;
+		c javap 字节码取证 | 高 | 构造器入参写入；getStats() 直接返回；其余 API 方法恒 null/0 空实现
 c	com/fs/starfarer/loading/specs/newsuper	com/fs/starfarer/loading/specs/BaseProjectileSpec
 	c 来源(javap取证) | 置信度(高) | 证据(接口 extends Cloneable，ProjectileWeaponSpec.setProjectileSpec 参数类型，ProjectileSpec/MissileSpec 共同基类)
 	m	clone	clone	()Ljava/lang/Object;
@@ -1759,8 +3401,114 @@ c	com/fs/starfarer/loading/specs/o00o	com/fs/starfarer/loading/specs/MissileSpec
 	m	setUseHitGlowWhenDealingDamage	setUseHitGlowWhenDealingDamage	(Z)V
 	m	setUseHitGlowWhenDestroyed	setUseHitGlowWhenDestroyed	(Z)V
 	m	setUseProjectileRangeCalculation	setUseProjectileRangeCalculation	(Z)V
+	f	null	type	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap 字节码取证 | 高 | getType/getTypeString 直读（导弹类型枚举）
+	f	ÓO0000	hullSpec	Lcom/fs/starfarer/loading/specs/ShipHullSpec;
+		c javap 字节码取证 | 高 | getHullSpec 直读，getSpeedDisplayName 读其 EngineSpec
+	f	Öo0000	damage	Lcom/fs/starfarer/combat/o0OO/Damage;
+		c javap 字节码取证 | 高 | getDamage 直读
+	f	ØO0000	launchSpeed	F
+		c javap 字节码取证 | 高 | getLaunchSpeed/setLaunchSpeed 读写
+	f	oo0000	maxFlightTime	F
+		c javap 字节码取证 | 高 | getMaxFlightTime/setMaxFlightTime 读写
+	f	Ø00000	impactStrength	F
+		c javap 字节码取证 | 高 | getImpactStrength/setImpactStrength 读写
+	f	interface	glowSpriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getGlowSpriteName/setGlowSpriteName 读写
+	f	while.super	glowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getGlowColor/setGlowColor 读写
+	f	õo0000	glowRadius	F
+		c javap 字节码取证 | 高 | getGlowRadius/setGlowRadius 读写
+	f	float	behaviorSpec	Lcom/fs/starfarer/loading/specs/ShotBehaviorSpec;
+		c javap 字节码取证 | 高 | getBehaviorSpec 直读，getBehaviorJSON 取 getParams
+	f	Øo0000	explosionColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getExplosionColor/setExplosionColor 读写
+	f	ÖO0000	destroyedExplosionColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getDestroyedExplosionColor/setDestroyedExplosionColor 读写，isDefaultDestroyedExplosionColor 比对
+	f	float.super	explosionRadius	F
+		c javap 字节码取证 | 高 | getExplosionRadius/setExplosionRadius 读写
+	f	OO0000	explosionSpec	Lcom/fs/starfarer/api/loading/DamagingExplosionSpec;
+		c javap 字节码取证 | 高 | getExplosionSpec/setExplosionSpec 读写
+	f	Óo0000	armingTime	F
+		c javap 字节码取证 | 高 | getArmingTime/setArmingTime 读写
+	f	class.super	passThroughMissiles	Z
+		c javap 字节码取证 | 高 | isPassThroughMissiles/setPassThroughMissiles 读写
+	f	new.super	passThroughFighters	Z
+		c javap 字节码取证 | 高 | isPassThroughFighters/setPassThroughFighters 读写
+	f	class	applyOnHitEffectWhenPassThrough	Z
+		c javap 字节码取证 | 高 | isApplyOnHitEffectWhenPassThrough/setApplyOnHitEffectWhenPassThrough 读写
+	f	while	passThroughFightersOnlyWhenDestroyed	Z
+		c javap 字节码取证 | 高 | isPassThroughFightersOnlyWhenDestroyed/setPassThroughFightersOnlyWhenDestroyed 读写
+	f	ÔO0000	useProjectileRangeCalculation	Z
+		c javap 字节码取证 | 高 | isUseProjectileRangeCalculation/setUseProjectileRangeCalculation 读写
+	f	oO0000	alwaysAccelerate	Z
+		c javap 字节码取证 | 高 | isAlwaysAccelerate/setAlwaysAccelerate 读写
+	f	öo0000	reduceDamageWhileFading	Z
+		c javap 字节码取证 | 高 | isReduceDamageWhileFading/setReduceDamageWhileFading 读写
+	f	Oo0000	noCollisionWhileFading	Z
+		c javap 字节码取证 | 高 | isNoCollisionWhileFading/setNoCollisionWhileFading 读写
+	f	o00000	useHitGlowWhenDealingDamage	Z
+		c javap 字节码取证 | 高 | isUseHitGlowWhenDealingDamage/setUseHitGlowWhenDealingDamage 读写
+	f	õO0000	fizzleOnReachingWeaponRange	Z
+		c javap 字节码取证 | 高 | isFizzleOnReachingWeaponRange/setFizzleOnReachingWeaponRange 读写
+	f	öO0000	useHitGlowWhenDestroyed	Z
+		c javap 字节码取证 | 高 | isUseHitGlowWhenDestroyed/setUseHitGlowWhenDestroyed 读写
+	f	new	renderTargetIndicator	Z
+		c javap 字节码取证 | 高 | isRenderTargetIndicator/setRenderTargetIndicator 读写
+	f	Ó00000	noDebrisWhenDestroyed	Z
+		c javap 字节码取证 | 高 | isNoDebrisWhenDestroyed/setNoDebrisWhenDestroyed 读写
+	f	ö00000	dudProbabilityOnFlameout	F
+		c javap 字节码取证 | 高 | getDudProbabilityOnFlameout/setDudProbabilityOnFlameout 读写
+	f	Ö00000	flameoutTime	F
+		c javap 字节码取证 | 高 | getFlameoutTime/setFlameoutTime 读写
+	f	Ôo0000	noEngineGlowTime	F
+		c javap 字节码取证 | 高 | getNoEngineGlowTime/setNoEngineGlowTime 读写
+	f	õ00000	fadeTime	F
+		c javap 字节码取证 | 高 | getFadeTime/setFadeTime 读写
+	f	null.super	afterFlameoutCollisionClass	Lcom/fs/starfarer/api/combat/CollisionClass;
+		c javap 字节码取证 | 高 | getAfterFlameoutCollisionClass/setAfterFlameoutCollisionClass 读写
+	f	Ô00000	onHitClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getOnHitClassName/setOnHitClassName 读写
+	f	interface.super	onFireClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getOnFireClassName/setOnFireClassName 读写
 c	com/fs/starfarer/loading/specs/o00o$o	com/fs/starfarer/loading/specs/MissileType
 	c 来源(javap取证) | 置信度(高) | 证据(getType 返回，枚举 HEATSEEKER/MIRV/ROCKET/BOMB 等导弹类型)
+	f	interface	FLARE	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "FLARE"
+	f	Ó00000	FLARE_SEEKER	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "FLARE_SEEKER"
+	f	null	MOTE	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "MOTE"
+	f	ö00000	FLARE_JAMMER	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "FLARE_JAMMER"
+	f	while	ROCKET	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "ROCKET"
+	f	oO0000	MISSILE	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "MISSILE"
+	f	OO0000	MISSILE_TWO_STAGE_SECOND_UNGUIDED	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "MISSILE_TWO_STAGE_SECOND_UNGUIDED"
+	f	ÓO0000	HEATSEEKER	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "HEATSEEKER"
+	f	ÔO0000	CIRCLE_TARGET	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "CIRCLE_TARGET"
+	f	ÖO0000	MIRV	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "MIRV"
+	f	õ00000	TORPEDO	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "TORPEDO"
+	f	float	BOMB	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "BOMB"
+	f	new	BOMB_WITH_SLOW	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "BOMB_WITH_SLOW"
+	f	Ö00000	BOMB_WITH_ACCEL	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "BOMB_WITH_ACCEL"
+	f	Ô00000	PHASE_CHARGE	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "PHASE_CHARGE"
+	f	Ø00000	PHASE_MINE	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "PHASE_MINE"
+	f	o00000	NO_AI	Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | ldc "NO_AI"
+	f	class	enumValues	[Lcom/fs/starfarer/loading/specs/MissileType;
+		c javap <clinit> | 高 | javac 合成的枚举常量数组，values() 返回
 c	com/fs/starfarer/loading/specs/oOOO	com/fs/starfarer/loading/specs/AbilitySpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements AbilitySpecAPI，SpecStore Loading abilities)
 	m	addTag	addTag	(Ljava/lang/String;)V
@@ -1801,10 +3549,222 @@ c	com/fs/starfarer/loading/specs/oOOO	com/fs/starfarer/loading/specs/AbilitySpec
 	m	setSortOrder	setSortOrder	(I)V
 	m	setSourceMod	setSourceMod	(Lorg/json/JSONObject;)V
 	m	setUnlockedAtStart	setUnlockedAtStart	(Z)V
+	f	ÔO0000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getId/setId 直接读写该字段；构造器存 Spec 的 id
+	f	øO0000	name	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "name" 键写入；getName 直接读
+	f	ö00000	pluginClass	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "plugin" 键；getPluginClass/setPluginClass 直接读写
+	f	Ø00000	aiPluginClass	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "ai" 键；getAIPluginClass 直接读；getNewAIPluginInstance 用它 ScriptStore.new 实例化
+	f	ÕO0000	unlockedAtStart	Z
+		c javap 字节码取证 | 高 | loadFromCSV "unlockedAtStart" 键；isUnlockedAtStart/setUnlockedAtStart 直接读写
+	f	ø00000	defaultForAIFleet	Z
+		c javap 字节码取证 | 高 | loadFromCSV "defaultForAIFleet" 键；isAIDefault 直接读
+	f	this.super	sortOrder	I
+		c javap 字节码取证 | 高 | loadFromCSV "sortOrder" 键；getSortOrder/setSortOrder 直接读写
+	f	Object	musicSuppression	F
+		c javap 字节码取证 | 高 | loadFromCSV "musicSuppression" 键；getMusicSuppression 直接读
+	f	ØO0000	worldOn	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "worldOn" 键；getWorldOn 直接读
+	f	Ò00000	worldOff	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "worldOff" 键；getWorldOff 直接读
+	f	Object.super	worldLoop	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "worldLoop" 键；getWorldLoop 直接读
+	f	Ô00000	uiOn	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "uiOn" 键；getUIOn 直接读
+	f	Õ00000	uiOff	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "uiOff" 键；getUIOff 直接读
+	f	int	uiLoop	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "uiLoop" 键；getUILoop 直接读
+	f	return	shortDesc	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "desc" 键；getShortDesc 直接读
+	f	ÒO0000	tags	Ljava/util/Set;
+		c javap 字节码取证 | 高 | loadFromCSV "tags" 逗号拆分 addTag；getTags/addTag/hasTag 直接操作
+	f	öO0000	activationDays	F
+		c javap 字节码取证 | 高 | loadFromCSV "activationDays" 键；getActivationDays 直接读
+	f	o00000	activationCooldown	F
+		c javap 字节码取证 | 高 | loadFromCSV "activationCooldown" 键；getActivationCooldown 直接读
+	f	for	durationDays	F
+		c javap 字节码取证 | 高 | loadFromCSV "durationDays" 键；getDurationDays 直接读
+	f	ôO0000	deactivationDays	F
+		c javap 字节码取证 | 高 | loadFromCSV "deactivationDays" 键；getDeactivationDays 直接读
+	f	public	deactivationCooldown	F
+		c javap 字节码取证 | 高 | loadFromCSV "deactivationCooldown" 键；getDeactivationCooldown 直接读
+	f	ô00000	iconName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | loadFromCSV "icon" 键；getIconName 直接读
+	f	oO0000	sourceMod	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | getSourceMod 直接读；setSourceMod 按 modId 经 SpecStore 查 ModSpec 写入
 c	com/fs/starfarer/loading/specs/oOOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/loading/specs/BattleObjectiveSpec
 	c 来源(javap取证) | 置信度(高) | 证据(data/config/battle_objectives.json，JSON 键 captureTime/battleSizeFractionBonus/effectClass)
+	f	super	name	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 "name" 键写入；getName/setName 直接读写
+	f	ô00000	iconName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 "icon" 键写入；getIconName/setIconName 直接读写
+	f	Ò00000	spriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 "sprite" 键写入；getSpriteName/setSpriteName 直接读写
+	f	Ó00000	spriteScale	F
+		c javap 字节码取证 | 高 | 构造器 "spriteScale" 键写入；getSpriteScale/setSpriteScale 直接读写
+	f	Õ00000	captureTime	F
+		c javap 字节码取证 | 高 | 构造器 "captureTime" 键写入；getCaptureTime/setCaptureTime 直接读写
+	f	String	battleSizeFractionBonus	F
+		c javap 字节码取证 | 高 | 构造器 "battleSizeFractionBonus" 键写入；getBattleSizeFractionBonus/setBattleSizeFractionBonus 直接读写
+	f	void	effectClass	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 "effectClass" 键写入；getEffectClass/setEffectClass 直接读写；getBattleObjectiveEffect 经 ScriptStore.new 实例化
+	f	Ö00000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器第一入参写入（final）；getId 直接读
+	m	ô00000	getBattleSizeFractionBonus	()F
+		c javap 字节码取证 | 高 | getfield battleSizeFractionBonus 直接返回
+	m	Ò00000	setBattleSizeFractionBonus	(F)V
+		c javap 字节码取证 | 高 | putfield battleSizeFractionBonus
+	m	int	getId	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getfield id 直接返回
+	m	return	getCaptureTime	()F
+		c javap 字节码取证 | 高 | getfield captureTime 直接返回
+	m	Object	setCaptureTime	(F)V
+		c javap 字节码取证 | 高 | putfield captureTime
+	m	Ø00000	getName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getfield name 直接返回
+	m	Ô00000	setName	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | putfield name
+	m	Ò00000	getIconName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getfield iconName 直接返回
+	m	o00000	setIconName	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | putfield iconName
+	m	Õ00000	getSpriteName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getfield spriteName 直接返回
+	m	Ò00000	setSpriteName	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | putfield spriteName
+	m	Object	getSpriteScale	()F
+		c javap 字节码取证 | 高 | getfield spriteScale 直接返回
+	m	o00000	setSpriteScale	(F)V
+		c javap 字节码取证 | 高 | putfield spriteScale
+	m	o00000	getEffectClass	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getfield effectClass 直接返回
+	m	Object	setEffectClass	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | putfield effectClass
+	m	Ô00000	getBattleObjectiveEffect	()Lcom/fs/starfarer/api/combat/BattleObjectiveEffect;
+		c javap 字节码取证 | 高 | effectClass 非空时 ScriptStore.new 实例化并 checkcast 返回
 c	com/fs/starfarer/loading/specs/oo0o	com/fs/starfarer/loading/specs/SimulationFleetData
 	c 来源(javap取证) | 置信度(中) | 证据(静态初始化注册模拟战默认船体(Sunder/Talon/SRM)与大量默认变体，CombatState 启动加载)
+	m	ÔÓ0000	createAllVariants	()V
+		c javap 字节码取证 | 高 | 调度方法：依序调用全部 createVariantXxx 构建模拟舰队船体变体
+	m	ÖÓ0000	createVariantOmen1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("omen1",...)+addWeapon/addWeaponGroup 注册变体
+	m	o00000	createVariantCondor1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("condor1",...)+addWeapon/addWeaponGroup 注册变体
+	m	null.super	createVariantCondor2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("condor2",...)+addWeapon/addWeaponGroup 注册变体
+	m	Ö00000	createVariantGemini1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("gemini1",...)+addWeapon/addWeaponGroup 注册变体
+	m	ØO0000	createVariantEnforcer1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("enforcer1",...)+addWeapon/addWeaponGroup 注册变体
+	m	ØÒ0000	createVariantEnforcer2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("enforcer2",...)+addWeapon/addWeaponGroup 注册变体
+	m	õO0000	createVariantHammerhead1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("hammerhead1",...)+addWeapon/addWeaponGroup 注册变体
+	m	õÒ0000	createVariantHammerhead2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("hammerhead2",...)+addWeapon/addWeaponGroup 注册变体
+	m	ÓÓ0000	createVariantWolf1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("wolf1",...)+addWeapon/addWeaponGroup 注册变体
+	m	ÔÒ0000	createVariantHound1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("hound1",...)+addWeapon/addWeaponGroup 注册变体
+	m	Ôo0000	createVariantTempest1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("tempest1",...)+addWeapon/addWeaponGroup 注册变体
+	m	new.new	createVariantVenture1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("venture1",...)+addWeapon/addWeaponGroup 注册变体
+	m	Ô00000	createVariantConquest1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("conquest1",...)+addWeapon/addWeaponGroup 注册变体
+	m	float.super	createVariantShuttle1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("shuttle1",...)+addWeapon/addWeaponGroup 注册变体
+	m	oo0000	createVariantHyperion1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("hyperion1",...)+addWeapon/addWeaponGroup 注册变体
+	m	oÓ0000	createVariantFalcon1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("falcon1",...)+addWeapon/addWeaponGroup 注册变体
+	m	ÔO0000	createVariantFalcon2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("falcon2",...)+addWeapon/addWeaponGroup 注册变体
+	m	oO0000	createVariantEagle1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("eagle1",...)+addWeapon/addWeaponGroup 注册变体
+	m	OÒ0000	createVariantEagle2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("eagle2",...)+addWeapon/addWeaponGroup 注册变体
+	m	new.Object	createVariantEagle3	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("eagle3",...)+addWeapon/addWeaponGroup 注册变体
+	m	ÓÒ0000	unusedCreateVariantLasher1	()V
+		c javap 字节码取证 | 中 | new HullVariantSpec("lasher1",...)（annihilator 负载）；全 jar 无调用点，死代码
+	m	class	createVariantLasher1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("lasher1",...)+addWeapon/addWeaponGroup 注册变体
+	m	interface	createVariantDagger1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("dagger1",...)+addWeapon/addWeaponGroup 注册变体
+	m	Ó00000	createVariantTrident1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("trident1",...)+addWeapon/addWeaponGroup 注册变体
+	m	õ00000	createVariantPiranha1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("piranha1",...)+addWeapon/addWeaponGroup 注册变体
+	m	ÖO0000	createVariantWolf2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("wolf2",...)+addWeapon/addWeaponGroup 注册变体
+	m	class.new	createVariantWolf3	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("wolf3",...)+addWeapon/addWeaponGroup 注册变体
+	m	null	createVariantWolf4	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("wolf4",...)+addWeapon/addWeaponGroup 注册变体
+	m	Öo0000	createVariantWolf5	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("wolf5",...)+addWeapon/addWeaponGroup 注册变体
+	m	float	createVariantAstral1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("astral1",...)+addWeapon/addWeaponGroup 注册变体
+	m	ÖÒ0000	createVariantOnslaught1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught1",...)+addWeapon/addWeaponGroup 注册变体
+	m	ö00000	createVariantOnslaught2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught2",...)+addWeapon/addWeaponGroup 注册变体
+	m	Øo0000	createVariantOnslaught3	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught3",...)+addWeapon/addWeaponGroup 注册变体
+	m	ØÓ0000	createVariantOnslaught4	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught4",...)+addWeapon/addWeaponGroup 注册变体
+	m	new.super	createVariantOnslaught5	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught5",...)+addWeapon/addWeaponGroup 注册变体
+	m	null.new	createVariantOnslaught6	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught6",...)+addWeapon/addWeaponGroup 注册变体
+	m	OO0000	createVariantOnslaught7	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught7",...)+addWeapon/addWeaponGroup 注册变体
+	m	interface.super	createVariantOnslaught8	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("onslaught8",...)+addWeapon/addWeaponGroup 注册变体
+	m	class.super	createVariantSunder1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("sunder1",...)+addWeapon/addWeaponGroup 注册变体
+	m	float.new	createVariantSunder2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("sunder2",...)+addWeapon/addWeaponGroup 注册变体
+	m	while	createVariantSunder3	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("sunder3",...)+addWeapon/addWeaponGroup 注册变体
+	m	oÒ0000	createVariantSunder4	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("sunder4",...)+addWeapon/addWeaponGroup 注册变体
+	m	new	createVariantSunder5	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("sunder5",...)+addWeapon/addWeaponGroup 注册变体
+	m	Óo0000	createVariantSunder6	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("sunder6",...)+addWeapon/addWeaponGroup 注册变体
+	m	while.new	createVariantSunder7	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("sunder7",...)+addWeapon/addWeaponGroup 注册变体
+	m	while.super	createSunderHullSpec	()Lcom/fs/starfarer/loading/specs/ShipHullSpec;
+		c javap 字节码取证 | 高 | 手工构建 SUNDER 船体：sprite/武器槽/护盾/引擎/装甲 + 引擎槽
+	m	new	addEngineSlotMidline	(Ljava/lang/String;Lcom/fs/starfarer/loading/specs/SlotNode;Lcom/fs/starfarer/loading/specs/ShipHullSpec;F)V
+		c javap 字节码取证 | 高 | 创建 O0OO(ShipEngineSlot) 并 addEngineSlot（样式 MIDLINE(16x64)）
+	m	öÒ0000	createVariantTalon1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("talon1",...)+addWeapon/addWeaponGroup 注册变体
+	m	Ø00000	createVariantWasp1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("wasp1",...)+addWeapon/addWeaponGroup 注册变体
+	m	õo0000	createVariantXyphos1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("xyphos1",...)+addWeapon/addWeaponGroup 注册变体
+	m	interface.new	createVariantBroadsword1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("broadsword1",...)+addWeapon/addWeaponGroup 注册变体
+	m	öo0000	createVariantTalon2	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("talon2",...)+addWeapon/addWeaponGroup 注册变体
+	m	OÓ0000	createVariantBuffalo1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("buffalo1",...)+addWeapon/addWeaponGroup 注册变体
+	m	Oo0000	createVariantAtlas1	()V
+		c javap 字节码取证 | 高 | new HullVariantSpec("atlas1",...)+addWeapon/addWeaponGroup 注册变体
+	m	öO0000	createTalonHullSpec	()Lcom/fs/starfarer/loading/specs/ShipHullSpec;
+		c javap 字节码取证 | 高 | 手工构建 TALON 船体：sprite/武器槽/护盾/引擎/装甲 + 引擎槽
+	m	Ó00000	addEngineSlotLowTechFighter	(Ljava/lang/String;Lcom/fs/starfarer/loading/specs/SlotNode;Lcom/fs/starfarer/loading/specs/ShipHullSpec;F)V
+		c javap 字节码取证 | 高 | 创建 O0OO(ShipEngineSlot) 并 addEngineSlot（样式 LOW_TECH_FIGHTER(6x24)）
+	m	ÓO0000	createSrmHullSpec	()Lcom/fs/starfarer/loading/specs/ShipHullSpec;
+		c javap 字节码取证 | 高 | 手工构建 SRM 船体：sprite/武器槽/护盾/引擎/装甲 + 引擎槽
+	m	o00000	addEngineSlotMissileMidline	(Ljava/lang/String;Lcom/fs/starfarer/loading/specs/SlotNode;Lcom/fs/starfarer/loading/specs/ShipHullSpec;F)V
+		c javap 字节码取证 | 高 | 创建 O0OO(ShipEngineSlot) 并 addEngineSlot（样式 MISSILE_MIDLINE(4x20)）
 c	com/fs/starfarer/loading/specs/oooO	com/fs/starfarer/loading/specs/CustomEntitySpec
 	c 来源(javap取证) | 置信度(高) | 证据(implements CustomEntitySpecAPI，data/config/custom_entities.json)
 	m	clone	clone	()Lcom/fs/starfarer/loading/specs/CustomEntitySpec;
@@ -1876,3 +3836,83 @@ c	com/fs/starfarer/loading/specs/oooO	com/fs/starfarer/loading/specs/CustomEntit
 	m	setSpriteHeight	setSpriteHeight	(F)V
 	m	setSpriteName	setSpriteName	(Ljava/lang/String;)V
 	m	setSpriteWidth	setSpriteWidth	(F)V
+	f	Ó00000	defaultName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDefaultName/set；JSON key defaultName，默认 'defaultName not set'
+	f	private.super	nameInText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getNameInText；JSON key nameInText
+	f	õO0000	shortName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getShortName；JSON key shortName
+	f	if	aOrAn	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getAOrAn；JSON key aOrAn，默认 'a'
+	f	String.new	isOrAre	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getIsOrAre；JSON key isOrAre，默认 'is'
+	f	void.super	iconName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getIconName/setIconName；JSON key icon
+	f	Ö00000	spriteName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getSpriteName/setSpriteName；JSON key sprite
+	f	õo0000	sheetName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getSheetName；JSON key sheet
+	f	Öo0000	sheetCellSize	F
+		c javap 字节码取证 | 高 | getSheetCellSize；JSON key sheetCellSize
+	f	ôO0000	tags	Ljava/util/List;
+		c javap 字节码取证 | 高 | getTags；JSON key tags 数组
+	f	Oo0000	layers	Ljava/util/List;
+		c javap 字节码取证 | 高 | getLayers；JSON key layers（CampaignEngineLayers）
+	f	øO0000	pluginClassName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getPluginClassName/getPlugin；JSON key pluginClass
+	f	ôo0000	customDescriptionId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCustomDescriptionId；JSON key customDescriptionId
+	f	do	interactionImage	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getInteractionImage/set；JSON key interactionImage
+	f	String.super	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getId/setId；构造参数
+	f	õ00000	iconWidth	F
+		c javap 字节码取证 | 高 | getIconWidth/setIconWidth；JSON key iconWidth
+	f	ÓO0000	iconHeight	F
+		c javap 字节码取证 | 高 | getIconHeight/setIconHeight；JSON key iconHeight
+	f	ÒO0000	spriteWidth	F
+		c javap 字节码取证 | 高 | getSpriteWidth/setSpriteWidth；JSON key spriteWidth
+	f	String	spriteHeight	F
+		c javap 字节码取证 | 高 | getSpriteHeight/setSpriteHeight；JSON key spriteHeight
+	f	ÕO0000	showIconOnMap	Z
+		c javap 字节码取证 | 高 | isShowIconOnMap/set；JSON key showIconOnMap
+	f	Õo0000	showNameOnMap	Z
+		c javap 字节码取证 | 高 | isShowNameOnMap/set；JSON key showNameOnMap
+	f	ÖO0000	showInCampaign	Z
+		c javap 字节码取证 | 高 | isShowInCampaign/set；JSON key showInCampaign
+	f	øo0000	scaleNameWithZoom	Z
+		c javap 字节码取证 | 高 | isScaleNameWithZoom/set；JSON key scaleNameWithZoom
+	f	ø00000	scaleIconWithZoom	Z
+		c javap 字节码取证 | 高 | isScaleIconWithZoom；JSON key scaleIconWithZoom
+	f	ô00000	renderShadow	Z
+		c javap 字节码取证 | 高 | isRenderShadow；JSON key renderShadow
+	f	Ò00000	useLightColor	Z
+		c javap 字节码取证 | 高 | isUseLightColor；JSON key useLightColor
+	f	OO0000	interactable	Z
+		c javap 字节码取证 | 高 | isInteractable；JSON key interactable
+	f	OÒ0000	renderCircleIndicator	Z
+		c javap 字节码取证 | 高 | isRenderCircleIndicator；JSON key renderCircleIndicator
+	f	private	renderCircleIndicatorSelectionFlash	Z
+		c javap 字节码取证 | 高 | isRenderCircleIndicatorSelectionFlash；JSON key 同名
+	f	Òo0000	scaleIconSizeBasedOnDefaultRadius	Z
+		c javap 字节码取证 | 高 | isScaleIconSizeBasedOnDefaultRadius；JSON key 同名
+	f	do.super	discoverable	Z
+		c javap 字节码取证 | 高 | isDiscoverable/set；JSON key discoverable
+	f	ÒÒ0000	discoveryXP	F
+		c javap 字节码取证 | 高 | getDiscoveryXP/set；JSON key discoveryXP
+	f	void	nameFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getNameFont/set；JSON key nameFont，默认 graphics/fonts/orbitron20aabold.fnt
+	f	super.new	nameFontScale	F
+		c javap 字节码取证 | 高 | getNameFontScale/set；JSON key nameFontScale
+	f	ÓÒ0000	nameAngle	F
+		c javap 字节码取证 | 高 | getNameAngle/set；JSON key nameAngle
+	f	Õ00000	nameColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getNameColor/set；JSON key nameColor
+	f	if.super	nameShadowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getNameShadowColor/set；JSON key nameShadowColor
+	f	Óo0000	iconColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getIconColor/set；JSON key iconColor
+	f	super	defaultRadius	F
+		c javap 字节码取证 | 高 | getDefaultRadius/set；JSON key defaultRadius
+	f	super.super	detectionRange	F
+		c javap 字节码取证 | 高 | getDetectionRange/set；JSON key detectionRange

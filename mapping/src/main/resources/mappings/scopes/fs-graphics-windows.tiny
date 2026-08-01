@@ -17,6 +17,14 @@ c	com/fs/graphics/O0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	o00000	setAlphaMult	(F)V
 	m	Object	multiplyChannels	(F)V
 	m	Ò00000	setColorMult	(F)V
+	f	String	red	B
+		c javap 字节码取证 | 高 | applyColor 第 1 参
+	f	Ó00000	green	B
+		c javap 字节码取证 | 高 | applyColor 第 2 参
+	f	super	blue	B
+		c javap 字节码取证 | 高 | applyColor 第 3 参
+	f	Ò00000	alpha	B
+		c javap 字节码取证 | 高 | applyColor 第 4 参；alpha-only 缩放方法只改它并夹到 255
 c	com/fs/graphics/o0oO	com/fs/graphics/LWJGL2DInitializer
 	c 来源(字符串常量) | 置信度(高) | 证据("Attempted to call LWJGL2DInitializer twice"/"Unable to set display mode")
 	m	Ó00000	getModeName	()Ljava/lang/String;
@@ -30,6 +38,48 @@ c	com/fs/graphics/o0oO	com/fs/graphics/LWJGL2DInitializer
 	m	Ò00000	createDisplay	(ZII)V
 	m	super	tryCreateDisplay	(ZII)Z
 	m	Õ00000	checkStencilSupport	()V
+	f	ö00000	modeName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getModeName()/setModeName() 已命名；Display.setTitle
+	f	ø00000	fullscreen	Z
+		c javap 字节码取证 | 高 | isFullscreen()/setFullscreen() 已命名；Display.setFullscreen
+	f	int	mouseGrabbed	Z
+		c javap 字节码取证 | 高 | isMouseGrabbed()/setMouseGrabbed()；Mouse.setGrabbed
+	f	ô00000	vsyncEnabled	Z
+		c javap 字节码取证 | 高 | isVsyncEnabled()/setVsyncEnabled()；Display.setVSyncEnabled
+	f	Object	width	I
+		c javap 字节码取证 | 高 | 静态默认 1024；getWidth()/setWidth() 已命名
+	f	for	height	I
+		c javap 字节码取证 | 高 | 静态默认 768；getHeight()/setHeight() 已命名
+	f	Õ00000	logger	Lorg/apache/log4j/Logger;
+		c javap 字节码取证 | 高 | "Unable to set display mode" 等日志
+	f	o00000	initialized	Z
+		c javap 字节码取证 | 高 | 构造置 true，createDisplay 置 false 且二次调用抛异常
+	f	Ø00000	unusedConfig	I
+		c javap 字节码取证 | 中 | 构造默认 32，仅 setter 写入、全类无读取点（dead 配置）
+	f	return	samples	I
+		c javap 字节码取证 | 高 | PixelFormat(bpp,8,24,8,samples) 第 5 参；getSamples()/setSamples()
+	f	Ô00000	refreshRate	I
+		c javap 字节码取证 | 高 | 默认 60；tryCreateDisplay 用桌面刷新率覆盖，setRefreshRate()
+	f	Ò00000	refreshRateOverride	I
+		c javap 字节码取证 | 高 | 默认 0，>0 时覆盖 refreshRate，setRefreshRateOverride()
+	m	Ò00000	getSamples	()I
+		c javap 字节码取证 | 高 | getter：getfield samples
+	m	Ò00000	setSamples	(I)V
+		c javap 字节码取证 | 高 | setter：putfield samples
+	m	super	setUnusedConfig	(I)V
+		c javap 字节码取证 | 中 | setter：putfield unusedConfig（全类唯一写入点）
+	m	String	setRefreshRate	(I)V
+		c javap 字节码取证 | 高 | setter：putfield refreshRate
+	m	Ö00000	setRefreshRateOverride	(I)V
+		c javap 字节码取证 | 高 | setter：putfield refreshRateOverride
+	m	Ó00000	setMouseGrabbed	(Z)V
+		c javap 字节码取证 | 高 | setter：putfield mouseGrabbed
+	m	ô00000	isMouseGrabbed	()Z
+		c javap 字节码取证 | 高 | getter：getfield mouseGrabbed
+	m	String	isVsyncEnabled	()Z
+		c javap 字节码取证 | 高 | getter：getfield vsyncEnabled
+	m	super	setVsyncEnabled	(Z)V
+		c javap 字节码取证 | 高 | setter：putfield vsyncEnabled
 c	com/fs/graphics/F	com/fs/graphics/SpriteBatch
 	c 来源(javap取证) | 置信度(高) | 证据(VBO 四边形批渲染器：GL_QUADS + glDrawArrays + 顶点/颜色/纹理指针)
 	m	o00000	setBlendFunc	(II)V
@@ -42,6 +92,98 @@ c	com/fs/graphics/F	com/fs/graphics/SpriteBatch
 	m	Ø00000	isUsingVBO	()Z
 	m	oO0000	flush	()V
 	m	float	destroy	()V
+	f	ØO0000	texture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | render 中 textureEnabled 时绑定，否则禁用纹理
+	f	ö00000	blendSrcFactor	I
+		c javap 字节码取证 | 高 | 默认 770(GL_SRC_ALPHA)；render 里 glBlendFunc 第 1 参
+	f	ÓO0000	blendDstFactor	I
+		c javap 字节码取证 | 高 | 默认 771(GL_ONE_MINUS_SRC_ALPHA)；render 里 glBlendFunc 第 2 参
+	f	ÖO0000	vboId	I
+		c javap 字节码取证 | 高 | glGenBuffersARB/glDeleteBuffersARB；useVbo 时绑定
+	f	OO0000	useVbo	Z
+		c javap 字节码取证 | 高 | isUsingVBO()/setUseVBO() 已命名；无 VBO 扩展或构造第 3 参 false 时置 false
+	f	while	quads	Ljava/util/List;
+		c javap 字节码取证 | 高 | 活动 BatchQuad 列表；createQuad 追加、removeQuad 移除、getQuadCount() 返回其 size
+	f	float	drawing	Z
+		c javap 字节码取证 | 高 | isDrawing()/setDrawing()；render 开头 isDrawing() 时先 flushAllQuads
+	f	null	quadCount	I
+		c javap 字节码取证 | 高 | createQuad 递增/removeQuad 递减；达到 maxQuads 时 growCapacity
+	f	Ö00000	maxQuads	I
+		c javap 字节码取证 | 高 | 构造第 2 参；缓冲区尺寸与扩容判定基准
+	f	Ó00000	oldMaxQuads	I
+		c javap 字节码取证 | 高 | growCapacity 中先存旧容量：maxQuads += oldMaxQuads 后 oldMaxQuads = maxQuads
+	f	interface	vertexOffset	I
+		c javap 字节码取证 | 高 | getVertexOffset()；VBO 顶点数据偏移（glVertexPointer 用）
+	f	öO0000	texcoordOffset	I
+		c javap 字节码取证 | 高 | getTexcoordOffset()；VBO 纹理坐标偏移（glTexCoordPointer 用）
+	f	õ00000	colorOffset	I
+		c javap 字节码取证 | 高 | getColorOffset()；VBO 颜色偏移（glColorPointer 用）
+	f	oo0000	vertexBuffer	Ljava/nio/FloatBuffer;
+		c javap 字节码取证 | 高 | 非 VBO 模式顶点缓冲
+	f	Ø00000	texcoordBuffer	Ljava/nio/FloatBuffer;
+		c javap 字节码取证 | 高 | 非 VBO 模式纹理坐标缓冲
+	f	õO0000	colorBuffer	Ljava/nio/ByteBuffer;
+		c javap 字节码取证 | 高 | 非 VBO 模式颜色缓冲（RGBA 每顶点 4 字节）
+	f	Oo0000	textureEnabled	Z
+		c javap 字节码取证 | 高 | setTextureEnabled() 已命名；render 中决定 glEnable/glDisable(GL_TEXTURE_2D)
+	f	class	pendingQuads	Ljava/util/List;
+		c javap 字节码取证 | 高 | LinkedList：addPendingQuad 入队、flush 迭代写出后清空
+	f	Ô00000	scratchFloatBuffer	Ljava/nio/FloatBuffer;
+		c javap 字节码取证 | 高 | getScratchFloatBuffer 按需扩容/复用的临时 FloatBuffer
+	f	oO0000	scratchByteBuffer	Ljava/nio/ByteBuffer;
+		c javap 字节码取证 | 高 | getScratchByteBuffer 按需扩容/复用的临时 ByteBuffer
+	f	new	DEFAULT_WIDTH	I
+		c javap 字节码取证 | 高 | 静态常量 640；与 setupDisplayMode 的 640x480 对应
+	f	class.super	DEFAULT_HEIGHT	I
+		c javap 字节码取证 | 高 | 静态常量 480；与 setupDisplayMode 的 640x480 对应
+	f	new.super	lastFrameTime	J
+		c javap 字节码取证 | 高 | main 里每帧记录 getTimeMillis；logFps 用它算帧间隔
+	f	o00000	elapsedTime	J
+		c javap 字节码取证 | 高 | logFps 累计帧间隔，超过 1000ms 打印 "FPS:" 并重置
+	f	ÔO0000	frameCount	I
+		c javap 字节码取证 | 高 | logFps 每帧递增，每秒重置
+	m	õ00000	allocateBuffers	()V
+		c javap 字节码取证 | 高 | 私有：useVbo 时建 VBO 并算三个偏移，否则建 3 个 client 缓冲
+	m	new	addPendingQuad	(Lcom/fs/graphics/BatchQuad;)V
+		c javap 字节码取证 | 高 | 公有：quad 入 pendingQuads 并 setDrawing(true)
+	m	new	flushAllQuads	()V
+		c javap 字节码取证 | 高 | 私有：遍历全部 quads 写位置/颜色/纹理数据
+	m	Ô00000	getScratchFloatBuffer	(I)Ljava/nio/FloatBuffer;
+		c javap 字节码取证 | 高 | 私有：容量不足重建 scratchFloatBuffer 否则复位 position/limit
+	m	Ó00000	getScratchByteBuffer	(I)Ljava/nio/ByteBuffer;
+		c javap 字节码取证 | 高 | 私有：同上的 ByteBuffer 版
+	m	new	writeVertexPositions	(ILjava/util/List;)V
+		c javap 字节码取证 | 高 | 私有：quad.Ò00000 写 2 float/顶点（偏移 base=vertexOffset）
+	m	Ó00000	writeVertexTexCoords	(ILjava/util/List;)V
+		c javap 字节码取证 | 高 | 私有：quad.super 写纹理坐标（偏移 base=texcoordOffset）
+	m	o00000	writeVertexColors	(ILjava/util/List;)V
+		c javap 字节码取证 | 高 | 私有：VBO 模式 4 float/顶点，client 模式 4 字节/顶点（偏移 base=colorOffset）
+	m	while	growCapacity	()V
+		c javap 字节码取证 | 高 | 私有：quad 索引重排+全部置脏，maxQuads 翻倍后 allocateBuffers
+	m	Ö00000	isDrawing	()Z
+		c javap 字节码取证 | 高 | getter：getfield drawing
+	m	new	setDrawing	(Z)V
+		c javap 字节码取证 | 高 | setter：putfield drawing
+	m	class	getVertexOffset	()I
+		c javap 字节码取证 | 高 | getter：getfield vertexOffset
+	m	Ó00000	getTexcoordOffset	()I
+		c javap 字节码取证 | 高 | getter：getfield texcoordOffset
+	m	o00000	getColorOffset	()I
+		c javap 字节码取证 | 高 | getter：getfield colorOffset
+	m	new	createFloatBuffer	(I)Ljava/nio/FloatBuffer;
+		c javap 字节码取证 | 高 | 私有静态：allocateDirect 原生字节序转 FloatBuffer
+	m	o00000	createByteBuffer	(I)Ljava/nio/ByteBuffer;
+		c javap 字节码取证 | 高 | 私有静态：allocateDirect 原生字节序 ByteBuffer
+	m	o00000	main	([Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 静态测试入口（VBO 性能测试 main）
+	m	ÓO0000	setupDisplayMode	()V
+		c javap 字节码取证 | 高 | 私有静态：getAvailableDisplayModes(640,480,...) 后 setDisplayMode
+	m	o00000	logFps	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 私有静态：每秒打印 "FPS: <n> <label>"
+	m	null	getTimeMillis	()J
+		c javap 字节码取证 | 高 | 私有静态：Sys.getTime()/getTimerResolution()*1000
+	m	OO0000	resetFpsCounter	()V
+		c javap 字节码取证 | 高 | 私有静态：清零 elapsedTime/frameCount
 c	com/fs/graphics/F$o	com/fs/graphics/BatchQuad
 	c 来源(javap取证) | 置信度(高) | 证据(SpriteBatch 的四边形槽位：位置/纹理区域/颜色/角度)
 	m	private	getX	()F
@@ -59,14 +201,88 @@ c	com/fs/graphics/F$o	com/fs/graphics/BatchQuad
 	m	do	getAngle	()F
 	m	super	setIndex	(I)V
 	m	Ò00000	getIndex	()I
+	f	ÒO0000	batch	Lcom/fs/graphics/SpriteBatch;
+		c javap 字节码取证 | 高 | 构造器参数，F.Ò00000(F$o) 注册刷新
+	f	int	bufferOffset	I
+		c javap 字节码取证 | 中 | getter Ò00000()/setter super(I)；F 刷新时作 buffer 偏移
+	f	Ò00000	width	F
+		c javap 字节码取证 | 高 | writeVertices 顶点计算 -w/2*cos
+	f	ÔO0000	height	F
+		c javap 字节码取证 | 高 | writeVertices 顶点计算 -h/2*sin
+	f	Object	rotation	F
+		c javap 字节码取证 | 高 | writeVertices toRadians 旋转角
+	f	oO0000	centerX	F
+		c javap 字节码取证 | 高 | writeVertices 顶点 X 中心
+	f	for	centerY	F
+		c javap 字节码取证 | 高 | writeVertices 顶点 Y 中心
+	f	return	u	F
+		c javap 字节码取证 | 高 | writeUVs UV 原点 X
+	f	Õ00000	v	F
+		c javap 字节码取证 | 高 | writeUVs UV 原点 Y
+	f	ô00000	uWidth	F
+		c javap 字节码取证 | 高 | writeUVs UV 宽度
+	f	o00000	vHeight	F
+		c javap 字节码取证 | 高 | writeUVs UV 高度
+	f	Ô00000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | super(Color)/Ó00000()；writeColors 分量来源
+	f	Ø00000	alpha	F
+		c javap 字节码取证 | 高 | super(float)/if()；颜色分量乘数
+	f	ø00000	verticesDirty	Z
+		c javap 字节码取证 | 高 | F 刷新时 get+clear，写顶点 buffer
+	f	ö00000	colorsDirty	Z
+		c javap 字节码取证 | 高 | F 刷新时 get+clear，写颜色 buffer
+	f	public	uvsDirty	Z
+		c javap 字节码取证 | 高 | F 刷新时 get+clear，写 UV buffer
+	m	super	setAlpha	(F)V
+		c javap 字节码取证 | 高 | Ø00000 setter
+	m	if	getAlpha	()F
+		c javap 字节码取证 | 高 | Ø00000 getter
+	m	super	setDirtyFlags	(ZZZ)V
+		c javap 字节码取证 | 高 | 设 vertices/colors/uvsDirty 并通知 batch
+	m	super	setUvsDirty	(Z)V
+		c javap 字节码取证 | 高 | public setter
+	m	Ò00000	setVerticesDirty	(Z)V
+		c javap 字节码取证 | 高 | ø00000 setter
+	m	Ó00000	setColorsDirty	(Z)V
+		c javap 字节码取证 | 高 | ö00000 setter
+	m	OO0000	isVerticesDirty	()Z
+		c javap 字节码取证 | 高 | ø00000 getter
+	m	Ö00000	isColorsDirty	()Z
+		c javap 字节码取证 | 高 | ö00000 getter
+	m	ø00000	isUvsDirty	()Z
+		c javap 字节码取证 | 高 | public getter
+	m	ô00000	clearVerticesDirty	()V
+		c javap 字节码取证 | 高 | ø00000=false
+	m	void	clearColorsDirty	()V
+		c javap 字节码取证 | 高 | ö00000=false
+	m	Õ00000	clearUvsDirty	()V
+		c javap 字节码取证 | 高 | public=false
+	m	Ò00000	writeVertices	(ILjava/nio/FloatBuffer;)V
+		c javap 字节码取证 | 高 | 旋转 4 顶点坐标写入 FloatBuffer
+	m	Ó00000	writeColors	(ILjava/nio/FloatBuffer;)V
+		c javap 字节码取证 | 高 | 颜色×alpha 写 FloatBuffer（16 浮点）
+	m	super	writeColorsByte	(ILjava/nio/ByteBuffer;)V
+		c javap 字节码取证 | 高 | 颜色×alpha 写 ByteBuffer（16 字节）
+	m	super	writeUVs	(ILjava/nio/FloatBuffer;)V
+		c javap 字节码取证 | 高 | 4 顶点 UV 坐标写 FloatBuffer
 c	com/fs/graphics/DisplayManager	com/fs/graphics/DisplayManager
 	c 来源(未混淆类名) | 置信度(高) | 证据(LWJGL DisplayMode 管理单例)
 	m	Ó00000	getInstance	()Lcom/fs/graphics/DisplayManager;
 	m	Ò00000	getAvailableDisplayModes	()Ljava/util/List;
 	m	super	checkStencilSupport	()V
+	f	o00000	instance	Lcom/fs/graphics/DisplayManager;
+		c javap 字节码取证 | 高 | static 单例，getInstance 懒加载
+	f	new	log	Lorg/apache/log4j/Logger;
+		c javap 字节码取证 | 高 | 构造器 getLogger，debug/error 输出
+	f	Ó00000	maxWidth	I
+		c javap 字节码取证 | 高 | static；getAvailableDisplayModes 遍历取宽度 max（初值 -1）
+	f	Ô00000	maxHeight	I
+		c javap 字节码取证 | 高 | static；getAvailableDisplayModes 遍历取高度 max（初值 -1）
 c	com/fs/graphics/DisplayManager$1	com/fs/graphics/DisplayModeComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<DisplayMode> 按 DisplayMode.toString 宽度排序)
 	m	super	compare	(Lorg/lwjgl/opengl/DisplayMode;Lorg/lwjgl/opengl/DisplayMode;)I
+	f	this$0	outer	Lcom/fs/graphics/DisplayManager;
+		c javap 字节码取证 | 高 | 匿名类合成外类引用，构造器 putfield
 c	com/fs/graphics/J	com/fs/graphics/TextureScreenshotExporter
 	c 来源(javap取证) | 置信度(高) | 证据(FBO 渲染纹理后 glReadPixels 读回像素并 ImageIO 写 png)
 	m	o00000	exportTexture	(Lcom/fs/graphics/Object;Ljava/lang/String;)V
@@ -80,6 +296,38 @@ c	com/fs/graphics/H	com/fs/graphics/FrameBufferObject
 	m	Ö00000	deleteFramebuffer	()V
 	m	String	isSupported	()Z
 	m	Õ00000	getSprite	()Lcom/fs/graphics/Sprite;
+	f	õ00000	sprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | getSprite() 返回；bindFramebuffer 销毁时由 colorTexture 构造
+	f	Ò00000	fboSupported	Z
+		c javap 字节码取证 | 高 | 构造器取 GL_EXT_framebuffer_object 能力；createFramebuffer/bindFramebuffer 均判断
+	f	String	fboCreated	Z
+		c javap 字节码取证 | 高 | createFramebuffer 成功置 true/异常置 false；bindFramebuffer 用它决定 glPopAttrib
+	f	Õ00000	colorTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | createFramebuffer 附着为颜色纹理；bindFramebuffer 转 sprite
+	f	ô00000	depthTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 中 | bindFramebuffer 中 glDeleteTextures 的第二个纹理槽；本构建从未赋值（vestigial）
+	f	Ó00000	logger	Lorg/apache/log4j/Logger;
+		c javap 字节码取证 | 高 | getClass() 取 Logger，FBO 错误日志
+	f	ø00000	renderingToFbo	Z
+		c javap 字节码取证 | 高 | 静态渲染标志：createFramebuffer 置 true，bindFramebuffer 置 false
+	f	super	fboId	I
+		c javap 字节码取证 | 高 | glGenFramebuffersEXT 生成，绑定/删除/检查均按它操作
+	f	Ö00000	mipmaps	Z
+		c javap 字节码取证 | 高 | createFramebuffer 末参保存；bindFramebuffer 中为 true 时 glGenerateMipmapEXT
+	f	void	depthRenderbufferId	I
+		c javap 字节码取证 | 中 | deleteRenderbuffers 中先删的 renderbuffer 句柄；本构建从未赋非零值（vestigial）
+	f	if	stencilRenderbufferId	I
+		c javap 字节码取证 | 中 | deleteRenderbuffers 中后删的 renderbuffer 句柄；本构建从未赋非零值（vestigial）
+	m	Ó00000	deleteRenderbuffers	()V
+		c javap 字节码取证 | 高 | 私有：glDeleteRenderbuffersEXT 删除两个句柄并清零
+	m	super	checkFramebufferStatus	(I)V
+		c javap 字节码取证 | 高 | glCheckFramebufferStatusEXT 后按状态抛 RuntimeException
+	m	Ò00000	nextPowerOfTwo	(I)I
+		c javap 字节码取证 | 高 | 私有：循环乘 2 求 2 的幂
+	m	super	setup2DProjection	(IIIII)V
+		c javap 字节码取证 | 高 | 静态：glOrtho/关深度与光照，FBO 内 2D 渲染准备
+	m	super	restore2DProjection	()V
+		c javap 字节码取证 | 高 | 静态：弹回矩阵/属性，与 setup2DProjection 配对
 c	com/fs/graphics/super	com/fs/graphics/ColorTransformer
 	c 来源(javap取证) | 置信度(高) | 证据(TextureScreenshotExporter 导出时逐像素调用的颜色变换接口)
 	m	super	transform	(Ljava/awt/Color;)Ljava/awt/Color;
@@ -99,6 +347,14 @@ c	com/fs/graphics/LayeredRenderer$o	com/fs/graphics/LayerType
 	c 来源(字符串常量) | 置信度(高) | 证据(枚举 A/B/C 图层)
 	m	values	values	()[Lcom/fs/graphics/LayeredRenderer$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/LayeredRenderer$o;
+	f	super	LAYER_A	Lcom/fs/graphics/LayerType;
+		c javap 字节码取证 | 高 | 枚举常量 0（"A"）
+	f	String	LAYER_B	Lcom/fs/graphics/LayerType;
+		c javap 字节码取证 | 高 | 枚举常量 1（"B"）
+	f	Ó00000	LAYER_C	Lcom/fs/graphics/LayerType;
+		c javap 字节码取证 | 高 | 枚举常量 2（"C"）
+	f	Ò00000	$VALUES	[Lcom/fs/graphics/LayerType;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成）
 c	com/fs/graphics/LayeredRenderer$1	com/fs/graphics/EmptyLayeredRenderable
 	c 来源(javap取证) | 置信度(中) | 证据(空实现 LayeredRenderable 的匿名内部类)
 c	com/fs/graphics/anim/Animation	com/fs/graphics/anim/Animation
@@ -173,6 +429,8 @@ c	com/fs/graphics/anim/OoOO	com/fs/graphics/anim/SpriteAnimationLoader
 	c 来源(字符串常量) | 置信度(高) | 证据(properties 键 prefix/frames/duration/looping + "SAS_" 前缀加载 SpriteAnimation)
 	m	super	loadAnimation	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	m	super	getSpriteAnimation	(Ljava/lang/String;)Lcom/fs/graphics/anim/SpriteAnimation;
+	f	Ò00000	animationMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | <clinit> 建 HashMap；loadAnimation 按名 put、getSpriteAnimation 按名 get
 c	com/fs/graphics/anim/super	com/fs/graphics/anim/AnimationGroup
 	c 来源(javap取证) | 置信度(高) | 证据(Animation 列表容器：advance/加动画/空判断/前后置任务)
 	m	super	advance	(F)V
@@ -180,6 +438,12 @@ c	com/fs/graphics/anim/super	com/fs/graphics/anim/AnimationGroup
 	m	super	addAnimation	(Lcom/fs/graphics/anim/Animation;)V
 	m	Ò00000	finished	()V
 	m	Ó00000	started	()V
+	f	Ó00000	animations	Ljava/util/List;
+		c javap 字节码取证 | 高 | Animation 列表；addAnimation 追加、advance 逐个推进
+	f	o00000	beforeTask	Lcom/fs/graphics/util/GenericTask;
+		c javap 字节码取证 | 高 | Ó00000()（started）中 perform 的前置任务
+	f	new	afterTask	Lcom/fs/graphics/util/GenericTask;
+		c javap 字节码取证 | 高 | Ò00000()（finished）中 perform 的后置任务
 c	com/fs/graphics/particle/BaseParticle	com/fs/graphics/particle/BaseParticle
 	c 来源(未混淆类名) | 置信度(高) | 证据(粒子基类：年龄/位置/速度/旋转/亮度)
 	m	advance	advance	(F)V
@@ -203,6 +467,18 @@ c	com/fs/graphics/particle/BaseParticle	com/fs/graphics/particle/BaseParticle
 	m	setBrightnessOverride	setBrightnessOverride	(F)V
 	m	setBrightnessMult	setBrightnessMult	(F)V
 	m	getNewness	getNewness	()F
+	f	x	x	F
+		c javap 字节码取证 | 高 | getX()/setX()/setPos/advance 读写
+	f	y	y	F
+		c javap 字节码取证 | 高 | getY()/setY()/setPos/advance 读写
+	f	dx	dx	F
+		c javap 字节码取证 | 高 | setVel 写入；advance 中 x += dx*dt
+	f	dy	dy	F
+		c javap 字节码取证 | 高 | setVel 写入；advance 中 y += dy*dt
+	f	b	brightness	F
+		c javap 字节码取证 | 高 | getBrightness() 读：<0 时按 newness/cutoff/brightnessMult 计算
+	f	bm	brightnessMult	F
+		c javap 字节码取证 | 高 | getBrightness()/getBrightnessMult() 读取，setBrightnessMult 写入
 c	com/fs/graphics/particle/BaseParticleEmitter	com/fs/graphics/particle/BaseParticleEmitter
 	c 来源(未混淆类名) | 置信度(高) | 证据(粒子发射器基类：间隔发射)
 	m	advance	advance	(F)V
@@ -224,6 +500,16 @@ c	com/fs/graphics/particle/GenericTextureParticle	com/fs/graphics/particle/Gener
 	c 来源(未混淆类名) | 置信度(高) | 证据(通用纹理粒子)
 c	com/fs/graphics/particle/NebulaParticle	com/fs/graphics/particle/NebulaParticle
 	c 来源(未混淆类名) | 置信度(高) | 证据(星云纹理粒子)
+	f	tw	textureWidth	F
+		c javap 字节码取证 | 中 | 构造时取纹理宽存入；本类内无读取点（vestigial）
+	f	th	textureHeight	F
+		c javap 字节码取证 | 中 | 构造时取纹理高存入；本类内无读取点（vestigial）
+	f	i	tileX	I
+		c javap 字节码取证 | 高 | 随机 0..3；render 里选 4x4 瓦片列
+	f	j	tileY	I
+		c javap 字节码取证 | 高 | 随机 0..3；render 里纹理瓦片行
+	f	w	tileCols	I
+		c javap 字节码取证 | 高 | 默认 4；rerollTile 存列数，render 中 w==2 时步长 0.5 否则 0.25
 c	com/fs/graphics/particle/NegativeParticle	com/fs/graphics/particle/NegativeParticle
 	c 来源(未混淆类名) | 置信度(高) | 证据(负空间/反向粒子，particlealpha64linear.png)
 c	com/fs/graphics/particle/PointParticle	com/fs/graphics/particle/PointParticle
@@ -234,36 +520,266 @@ c	com/fs/graphics/particle/SmoothParticle	com/fs/graphics/particle/SmoothParticl
 	c 来源(未混淆类名) | 置信度(高) | 证据(平滑粒子，particlealpha32sq.png)
 c	com/fs/graphics/particle/TexturedLine	com/fs/graphics/particle/TexturedLine
 	c 来源(未混淆类名) | 置信度(高) | 证据(纹理线段粒子，particleline32ln/sq.png)
+	f	x1	x1	F
+		c javap 字节码取证 | 高 | DoNotObfuscate 可读名；setFrom 写入、render/glVertex2f 读取
+	f	y1	y1	F
+		c javap 字节码取证 | 高 | 同 x1
+	f	x2	x2	F
+		c javap 字节码取证 | 高 | DoNotObfuscate 可读名；setTo 写入
+	f	y2	y2	F
+		c javap 字节码取证 | 高 | 同 x2
 c	com/fs/graphics/particle/TexturedLine$o	com/fs/graphics/particle/TexturedLineType
 	c 来源(字符串常量) | 置信度(高) | 证据(枚举 LINEAR/SQUARE 线段形状)
 	m	values	values	()[Lcom/fs/graphics/particle/TexturedLine$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/particle/TexturedLine$o;
+	f	super	LINEAR	Lcom/fs/graphics/particle/TexturedLineType;
+		c javap 字节码取证 | 高 | <clinit> ldc "LINEAR" 序 0
+	f	Ó00000	SQUARE	Lcom/fs/graphics/particle/TexturedLineType;
+		c javap 字节码取证 | 高 | <clinit> ldc "SQUARE" 序 1
+	f	Ò00000	$VALUES	[Lcom/fs/graphics/particle/TexturedLineType;
+		c javap 字节码取证 | 高 | 合成枚举值数组（values() 读取）
 c	com/fs/graphics/particle/A	com/fs/graphics/particle/StaticParticleGroup
 	c 来源(字符串常量) | 置信度(高) | 证据("Error loading StaticParticleGroup textures"；FBO 批量静态粒子)
 	m	o00000	addParticle	(FFLjava/awt/Color;I)V
 	m	o00000	setShapeType	(Lcom/fs/graphics/particle/A$O0;)V
 	m	Ô00000	getShapeType	()Lcom/fs/graphics/particle/A$O0;
 	m	ô00000	render	()V
+	f	ÒO0000	tileSize	I
+		c javap 字节码取证 | 高 | 构造 512；maxTextureSize 下限钳制；FBO 瓦片步长（null() 中 行×tileSize 偏移）
+	f	super	particlesBySize	Ljava/util/Map;
+		c javap 字节码取证 | 高 | addParticle 按 size 分桶：size>maxPointSize 且非 CIRCLE_FADE 时存入 Map<Integer,List<ParticleData>>；createDisplayList 按桶 glPointSize 绘制
+	f	Ö00000	particles	Ljava/util/List;
+		c javap 字节码取证 | 中高 | 未分桶的普通粒子列表（addParticle else 分支；createDisplayList 逐一绘制）
+	f	ÓO0000	spriteParticles	Ljava/util/List;
+		c javap 字节码取证 | 高 | FBO 烘焙出的 SpriteParticleData 列表（null() 生成、render 分支绘制、new() 清纹理）
+	f	do	maxPointSize	I
+		c javap 字节码取证 | 高 | GL_ALIASED_POINT_SIZE_RANGE 上限（glGetInteger 2834 第二值）；addParticle 分桶阈值
+	f	ÕO0000	maxTextureSize	I
+		c javap 字节码取证 | 高 | GL_MAX_TEXTURE_SIZE（glGetInteger 3379）
+	f	OO0000	shapeType	Lcom/fs/graphics/particle/ParticleShapeType;
+		c javap 字节码取证 | 高 | setShapeType/getShapeType 读写；createDisplayList 按形状分支绑定纹理/绘制方式；构造默认 CIRCLE_FADE
+	f	Õ00000	circleTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | fs.common/graphics/circle_32_aa.png；CIRCLE 形状分支绑定
+	f	if	squareTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | fs.common/graphics/particlealpha32sq.png；CIRCLE_FADE 分支绑定
+	f	ÖO0000	disableFbo	Z
+		c javap 字节码取证 | 中 | null() 中 !this.super && OooO.Ô00000() 才走 FBO 烘焙；setter o00000(Z)
+	f	ô00000	logger	Lorg/apache/log4j/Logger;
+		c javap 字节码取证 | 高 | getLogger(getClass())；FBO 失败 Logger.warn
+	f	void	unusedCircleTextureId	Ljava/lang/String;
+		c javap 字节码取证 | 中 | static final String；类内无 getstatic/putstatic 引用（混淆器内联），按 TexturedLine 的 TEXTURE_ID/FILE 模式与声明顺序推断为 circle 纹理 ID
+	f	ø00000	unusedCircleTextureFile	Ljava/lang/String;
+		c javap 字节码取证 | 中 | static final String；同上，推断为 circle 纹理文件路径
+	f	Ó00000	fboReady	Z
+		c javap 字节码取证 | 高 | null() 烘焙成功后置 true；class() 返回；render(FF) 分支：true 绘制 spriteParticles、false glCallList
+	f	private	updating	Z
+		c javap 字节码取证 | 中 | null() 重入保护（true 时直接返回；addParticle 复位 false）
+	f	Ò00000	displayListId	I
+		c javap 字节码取证 | 高 | 初始 -1；Ó00000() glGenLists 生成、Ø00000() glDeleteLists 释放、render glCallList
+	m	o00000	setTileSize	(I)V
+		c javap 字节码取证 | 高 | 写入 tileSize 并向下钳制到 maxTextureSize
+	m	o00000	renderAtPosition	(FF)V
+		c javap 字节码取证 | 中高 | glPushMatrix+translate(x,y)：fboReady 时逐一渲染 spriteParticles，否则 glCallList(displayListId)
+	m	return	getFboTexture	()Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 中 | 返回 spriteParticles.get(0).sprite.getTexture()：FBO 烘焙纹理
+	m	o00000	renderFirstSprite	(II)V
+		c javap 字节码取证 | 中低 | translate(x,y) 后渲染 spriteParticles.get(0)（sprite.render(x,y)）
+	m	o00000	renderFirstSpriteWithSize	(IIII)V
+		c javap 字节码取证 | 中低 | translate 后对 spriteParticles.get(0) setSize(w,h) 再渲染
+	m	Object	createDisplayList	()V
+		c javap 字节码取证 | 高 | glGenLists/glNewList：按 size 桶 glPointSize+GL_POINTS，绑定形状纹理，逐粒子绘制，glEndList
+	m	o00000	computeBounds	()Lcom/fs/graphics/particle/ParticleBounds;
+		c javap 字节码取证 | 高 | new ParticleBounds 遍历分桶+普通粒子 extendBounds，最后回填宽高
+	m	o00000	extendBounds	(Lcom/fs/graphics/particle/ParticleBounds;Lcom/fs/graphics/particle/ParticleData;)V
+		c javap 字节码取证 | 中高 | 粒子中心±size/2 扩展包围盒 min/max
+	m	Ø00000	deleteDisplayList	()V
+		c javap 字节码取证 | 高 | glDeleteLists（≠-1 且 ≠0 时）
+	m	Ò00000	deleteSpriteTextures	()V
+		c javap 字节码取证 | 中高 | 遍历 spriteParticles glDeleteTextures 并 clear 列表
+	m	o00000	drawTexturedParticle	(Lcom/fs/graphics/particle/ParticleData;)V
+		c javap 字节码取证 | 中 | glColor4ub(粒子色) + translate 到中心 + 带 glTexCoord2f 的四边形
+	m	Object	drawSolidParticle	(Lcom/fs/graphics/particle/ParticleData;)V
+		c javap 字节码取证 | 中 | 无纹理纯色四边形（SQUARE 分支用）
+	m	Ò00000	unusedDrawParticleQuad	(Lcom/fs/graphics/particle/ParticleData;)V
+		c javap 字节码取证 | 中 | 带 texcoord 的粒子四边形绘制，类内无调用点（死代码，unused 前缀）
+	m	Õ00000	isFboReady	()Z
+		c javap 字节码取证 | 中高 | 直接返回 fboReady
+	m	o00000	setDisableFbo	(Z)V
+		c javap 字节码取证 | 中 | 写入 disableFbo
 c	com/fs/graphics/particle/A$O0	com/fs/graphics/particle/ParticleShapeType
 	c 来源(字符串常量) | 置信度(高) | 证据(枚举 SQUARE/CIRCLE/CIRCLE_FADE 粒子形状)
 	m	values	values	()[Lcom/fs/graphics/particle/A$O0;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/particle/A$O0;
+	f	Ó00000	SQUARE	Lcom/fs/graphics/particle/ParticleShapeType;
+		c javap 字节码取证 | 高 | 枚举常量 0（字符串 "SQUARE"）
+	f	new	CIRCLE	Lcom/fs/graphics/particle/ParticleShapeType;
+		c javap 字节码取证 | 高 | 枚举常量 1（字符串 "CIRCLE"）
+	f	Ô00000	CIRCLE_FADE	Lcom/fs/graphics/particle/ParticleShapeType;
+		c javap 字节码取证 | 高 | 枚举常量 2（字符串 "CIRCLE_FADE"）
+	f	o00000	$VALUES	[Lcom/fs/graphics/particle/ParticleShapeType;
+		c javap 字节码取证 | 高 | values() 返回的枚举值数组（javac 合成）
 c	com/fs/graphics/particle/A$o	com/fs/graphics/particle/ParticleData
 	c 来源(javap取证) | 置信度(高) | 证据(静态粒子组单粒子数据：位置/颜色/尺寸)
+	f	Ô00000	size	I
+		c javap 字节码取证 | 高 | 构造第 5 参；包围盒计算用 x±size/2
+	f	Ò00000	x	F
+		c javap 字节码取证 | 高 | 构造第 2 参（x 坐标）
+	f	Õ00000	y	F
+		c javap 字节码取证 | 高 | 构造第 3 参（y 坐标）
+	f	Object	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造第 4 参
+	f	o00000	group	Lcom/fs/graphics/particle/StaticParticleGroup;
+		c javap 字节码取证 | 高 | 外层 StaticParticleGroup 引用（编译器合成）
 c	com/fs/graphics/particle/A$oo	com/fs/graphics/particle/SpriteParticleData
 	c 来源(javap取证) | 置信度(中) | 证据(静态粒子组中带 Sprite 的粒子数据)
+	f	Ò00000	x	F
+		c javap 字节码取证 | 高 | SPG.render 中 Sprite.render(x,y) 第一参；null() 烘焙时 = 瓦片 x+包围盒偏移
+	f	String	y	F
+		c javap 字节码取证 | 高 | Sprite.render(x,y) 第二参（y 坐标）
+	f	Ó00000	sprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | FBO 烘焙出的 Sprite（OooO.Õ00000() 生成）
+	f	super	outer	Lcom/fs/graphics/particle/StaticParticleGroup;
+		c javap 字节码取证 | 中高 | 内部类合成外围引用（仅构造器写入），p019 先例命名 outer
 c	com/fs/graphics/particle/A$Oo	com/fs/graphics/particle/ParticleBounds
 	c 来源(javap取证) | 置信度(中) | 证据(粒子包围盒：min/max 初值 Integer.MAX/MIN_VALUE)
+	f	Ó00000	minX	I
+		c javap 字节码取证 | 高 | 初值 MAX_VALUE；取 x-size/2 的最小值
+	f	Ø00000	minY	I
+		c javap 字节码取证 | 高 | 初值 MAX_VALUE；取 y-size/2 的最小值
+	f	Ö00000	maxX	I
+		c javap 字节码取证 | 高 | 初值 MIN_VALUE；取 x+size/2 的最大值
+	f	class	maxY	I
+		c javap 字节码取证 | 高 | 初值 MIN_VALUE；取 y+size/2 的最大值
+	f	Ô00000	width	I
+		c javap 字节码取证 | 高 | 包围盒宽 = maxX - minX（遍历后计算）
+	f	new	height	I
+		c javap 字节码取证 | 高 | 包围盒高 = maxY - minY
+	f	o00000	group	Lcom/fs/graphics/particle/StaticParticleGroup;
+		c javap 字节码取证 | 高 | 外层 StaticParticleGroup 引用（编译器合成）
 c	com/fs/graphics/particle/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/graphics/particle/ParticleTextureGenerator
 	c 来源(字符串常量) | 置信度(中) | 证据("PTMImage" 前缀上传程序化生成粒子纹理并转 Sprite)
 	m	ÒO0000	createSprite	(Ljava/awt/image/BufferedImage;)Lcom/fs/graphics/Sprite;
+	m	ö00000	createSmokeTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中 | class(I) 空白 + Ó00000(img,1,1) 分形 + o00000(img,0,1)/o00000(img,0.6,1) 两次 alpha 电平重映射 + o00000(img,白) 着色：烟云状纹理
+	m	o00000	createSmokeTexture	()Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中 | 固定 64px 的 createSmokeTexture 重载：同 pipeline + 末尾 null(img) 清顶边
+	m	ô00000	clearTopBorder	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | raster 遍历：仅 x∈[2,w-3]、y∈{0,1} 两行写 Color(0,0,0,0)，把顶部中段清为全透明
+	m	o00000	applyAlphaBands	(Ljava/awt/image/BufferedImage;IF)V
+		c javap 字节码取证 | 中低 | 按 count 个环带：alpha∈[i*step+i*fade, +step] 的像素 alpha 置为带末端，形成壳状分带
+	m	o00000	createRingTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中 | class(I) + ö00000(img) 环形衰减 + Ø00000(img) alpha 归一化
+	m	oO0000	createSparkTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中低 | class(I) + o00000(img) 左→右渐隐 + oO0000(img) sqrt 径向 + 归一化：单侧扫光粒子
+	m	return	createTopFadeTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中低 | class(I) + float(img) 顶部渐隐 + 归一化：纵向渐变纹理
+	m	Ø00000	createQuadraticTopFadeTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中低 | class(I) + OO0000(img) 平方顶部渐隐 + 归一化
+	m	Object	createFlameTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中低 | class(I) + class(img) 三角掩码 + Ó00000(img,1,0.75) 分形 + 归一化：火焰形（三角+噪声）
+	m	for	createFractalTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中 | class(I) + new(img,1,0.75) 分形 alpha + 归一化：纯分形噪声纹理
+	m	Ò00000	generateFractalAlpha	(Ljava/awt/image/BufferedImage;FF)V
+		c javap 字节码取证 | 中 | diamond-square：float[w][h] 填 -1→四角随机种子→o00000([[FIIIIIIIF) 扰动→o00000([[F)) 归一化→清空 raster→alpha=矩阵值×宽 逐像素写
+	m	Ô00000	createSpectrumTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中低 | class(I) + Ó00000(img,1,0.66) 分形 + 归一化 + Ó00000(img) alpha→光谱色 + Ö00000(img) 模糊
+	m	Ô00000	copyImage	(Ljava/awt/image/BufferedImage;)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 高 | new BufferedImage(同尺寸,TYPE_6) + copyData(raster)：图像复制
+	m	return	applyBlur	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中 | 逐像素：r/g/b 各取 3×3 邻域均值（o00000(Raster,IIIII)）写回，255 不透明
+	m	o00000	sampleAverage	(Ljava/awt/image/Raster;IIIII)I
+		c javap 字节码取证 | 中高 | Raster.getSampleFloat 对 (x,y) 邻域最多 3×3 点按 band 求和取均值
+	m	Object	colorizeByAlpha	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中 | alpha/255 分三段（<0.33 蓝 / <0.66 绿 / 其余红）映射 100..255 通道并 clamp
+	m	o00000	clampColorChannel	(F)F
+		c javap 字节码取证 | 中高 | >255 返 255，<0 返 0：颜色通道钳制
+	m	ø00000	createRandomNoiseTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中高 | size×size TYPE_6，逐像素 Color(4×Math.random)
+	m	ô00000	createRadialGradientTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中 | class(I) + õ00000(img) 径向渐隐 + 归一化
+	m	Ò00000	createSoftGlowTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中 | class(I) + new(img) 软径向 (1-dist/max)² + 归一化
+	m	int	createCloudTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中低 | class(I) + new(img) 软径向 + Ó00000(img,1,0.25) 弱分形 + 归一化
+	m	o00000	addRandomAlphaNoise	(Ljava/awt/image/BufferedImage;F)V
+		c javap 字节码取证 | 中 | alpha ×= 1 - Math.random()×f（clamp 0..1）：随机噪点
+	m	Object	multiplyFractalAlpha	(Ljava/awt/image/BufferedImage;FF)V
+		c javap 字节码取证 | 中 | 同 generateFractalAlpha 的矩阵生成，但 alpha ×= 1 - f1×矩阵[i][j]（保留原 alpha）
+	m	o00000	normalizeNoiseField	([[F)V
+		c javap 字节码取证 | 中 | 场 min→max 归一到 0..1；-1 哨兵点用邻居或 0.5 回填
+	m	o00000	subdivideNoiseField	([[FIIIIIF)V
+		c javap 字节码取证 | 中 | diamond-square 递归细分：按中点分四块递归 o00000([[FIIIIIIIF)
+	m	o00000	perturbNoiseCell	([[FIIIIIIIF)V
+		c javap 字节码取证 | 中 | 单点 diamond/square 平均 + Math.pow(h,exp)×(rand-0.5) 扰动
+	m	int	applyRadialFade	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中高 | alpha ×= 1 - dist(x,y,中心)/最大距离：中心→边缘线性渐隐
+	m	ø00000	applyTopFade	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | alpha ×= 1 - |1-y|/(w/2-0.5)：顶部两行起渐隐
+	m	for	applyQuadraticTopFade	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | 同 applyTopFade 但 (1-t)²
+	m	o00000	applyLeftToRightFade	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | alpha ×= 1 - x/w：左→右线性渐隐，灰度 155
+	m	Õ00000	applyTriangleMask	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | |y-h/2| < h/2-x/2 内 alpha=1 外=0：随 x 收窄的三角亮区
+	m	ö00000	applyQuadraticRingFalloff	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | alpha ×= (dist/max)²：中心与边缘透明、中环不透明
+	m	public	applyLinearRingFalloff	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | alpha ×= dist/max：线性环形衰减（中心透明边缘不透明）
+	m	Ò00000	applySoftRadialFade	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中 | alpha ×= (1-dist/max)²：中心最亮软径向渐隐
+	m	oO0000	applySqrtRadialFade	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 中低 | alpha ×= sqrt(1-dist/max)：亮核大衰减慢的径向渐隐
+	m	o00000	distance	(FFFF)F
+		c javap 字节码取证 | 高 | sqrt((a-c)²+(b-d)²)：两点欧氏距离
+	m	Ø00000	normalizeAlpha	(Ljava/awt/image/BufferedImage;)V
+		c javap 字节码取证 | 高 | alpha=(a-min)/(max-min)×255：alpha 全幅归一化
+	m	o00000	remapAlphaLevels	(Ljava/awt/image/BufferedImage;FF)V
+		c javap 字节码取证 | 中高 | alpha=(a-min)/(max-min)×255×(f2-f1)+f1×255：alpha 电平区间重映射
+	m	o00000	tint	(Ljava/awt/image/BufferedImage;Ljava/awt/Color;)V
+		c javap 字节码取证 | 中 | 逐像素 alpha/255×color.rgb 写回：按颜色着色
+	m	o00000	setPixel	(Ljava/awt/image/WritableRaster;IILjava/awt/Color;)V
+		c javap 字节码取证 | 高 | raster.setPixel(x,y,[r,g,b,a])：写单个像素
+	m	Õ00000	createBlankTexture	(I)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中高 | size×size TYPE_6 全不透明白底
+	m	o00000	createBlankTexture	(II)Ljava/awt/image/BufferedImage;
+		c javap 字节码取证 | 中高 | w×h TYPE_6 全不透明白底（重载）
 c	com/fs/graphics/A/OoOO	com/fs/graphics/font/FontPage
 	c 来源(javap取证) | 置信度(中) | 证据(BitmapFontManager 解析 BMFont 时创建的页面定义：名字+两个整数)
+	f	Ó00000	unusedValue	I
+		c javap 字节码取证 | 中 | 解析时恒置 0，全库无读取点，视为 dead
+	f	new	pageId	I
+		c javap 字节码取证 | 高 | BitmapFontManager 解析 "page" 行时 setPageId(解析值)，new()I getter 对应
+	f	o00000	fileName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | BMFont 页文件路径；BitmapFont 拼贴图路径时取 getFileName
+	m	o00000	getFileName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | getter：getfield fileName
+	m	o00000	setFileName	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | setter：putfield fileName
+	m	new	getPageId	()I
+		c javap 字节码取证 | 高 | getter：getfield pageId
+	m	o00000	setPageId	(I)V
+		c javap 字节码取证 | 高 | setter：putfield pageId
+	m	Ó00000	getUnusedValue	()I
+		c javap 字节码取证 | 中 | getter：getfield unusedValue（无调用方）
+	m	new	setUnusedValue	(I)V
+		c javap 字节码取证 | 中 | setter：putfield unusedValue（解析时恒传 0）
 c	com/fs/graphics/A/class	com/fs/graphics/font/FontGlyph
 	c 来源(javap取证) | 置信度(中) | 证据(BitmapFont 按字符 id 索引的 glyph 数据：id/x/y)
 	m	Ó00000	getId	()I
 	m	super	getX	()I
 	m	Ò00000	getY	()I
+	f	Ó00000	x	I
+		c javap 字节码取证 | 高 | getX()/setX() 对应
+	f	o00000	y	I
+		c javap 字节码取证 | 高 | getY()/setY() 对应
+	f	new	id	I
+		c javap 字节码取证 | 高 | getId()/setId() 对应，字符码索引
+	m	Ò00000	setId	(I)V
+		c javap 字节码取证 | 高 | setter：putfield id
+	m	Ó00000	setX	(I)V
+		c javap 字节码取证 | 高 | setter：putfield x
+	m	super	setY	(I)V
+		c javap 字节码取证 | 高 | setter：putfield y
 c	com/fs/graphics/util/GenericTask	com/fs/graphics/util/GenericTask
 	c 来源(未混淆类名) | 置信度(高) | 证据(无参任务回调接口 perform())
 	m	perform	perform	()V
@@ -280,15 +796,41 @@ c	com/fs/graphics/util/Fader$State	com/fs/graphics/util/Fader$State
 	c 来源(字符串常量) | 置信度(高) | 证据(枚举 IDLE/IN/OUT 淡入淡出状态)
 	m	values	values	()[Lcom/fs/graphics/util/Fader$State;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/util/Fader$State;
+	f	IN	IN	Lcom/fs/graphics/util/Fader$State;
+		c javap 字节码取证 | 高 | DoNotObfuscate 可读枚举常量
+	f	ENUM$VALUES	ENUM$VALUES	[Lcom/fs/graphics/util/Fader$State;
+		c javap 字节码取证 | 高 | 合成枚举值数组，保持可读名（先例）
 c	com/fs/graphics/util/ooOO	com/fs/graphics/util/Blinker
 	c 来源(javap取证) | 置信度(高) | 证据(周期闪烁控制器，状态 IDLE/ON/OFF，回调 blinkOn/blinkOff)
 	m	o00000	advance	(F)V
 	m	Ò00000	blinkOn	()V
 	m	o00000	isDone	()Z
+	f	Ò00000	onDuration	F
+		c javap 字节码取证 | 高 | 构造 arg1（fload_1→new）；advance 相位边界
+	f	void	blinkCount	I
+		c javap 字节码取证 | 高 | 构造 arg3；isDone() 比较 blinksDone≥blinkCount
+	f	String	callback	Lcom/fs/graphics/util/BlinkCallback;
+		c javap 字节码取证 | 高 | 构造 arg4；blinkOn/blinkOff 回调触发点
+	f	Õ00000	state	Lcom/fs/graphics/util/BlinkState;
+		c javap 字节码取证 | 高 | 当前状态（初始 IDLE；new()/advance 置 ON/OFF）
+	f	Ó00000	cycleDuration	F
+		c javap 字节码取证 | 高 | 构造 onDuration+offDuration 之和
+	f	Ö00000	blinksDone	I
+		c javap 字节码取证 | 中高 | state→OFF 时自增；isDone() 读数
+	f	super	elapsedTime	F
+		c javap 字节码取证 | 高 | fconst_0 初始；advance 累加 dt
 c	com/fs/graphics/util/ooOO$o	com/fs/graphics/util/BlinkState
 	c 来源(字符串常量) | 置信度(高) | 证据(枚举 IDLE/ON/OFF 闪烁状态)
 	m	values	values	()[Lcom/fs/graphics/util/ooOO$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/graphics/util/ooOO$o;
+	f	String	IDLE	Lcom/fs/graphics/util/BlinkState;
+		c javap 字节码取证 | 高 | <clinit> ldc "IDLE" 序 0；Blinker 构造初始状态
+	f	Ò00000	ON	Lcom/fs/graphics/util/BlinkState;
+		c javap 字节码取证 | 高 | <clinit> ldc "ON" 序 1
+	f	Ó00000	OFF	Lcom/fs/graphics/util/BlinkState;
+		c javap 字节码取证 | 高 | <clinit> ldc "OFF" 序 2
+	f	super	$VALUES	[Lcom/fs/graphics/util/BlinkState;
+		c javap 字节码取证 | 高 | 合成枚举值数组
 c	com/fs/graphics/util/ooOO$Oo	com/fs/graphics/util/BlinkCallback
 	c 来源(javap取证) | 置信度(高) | 证据(闪烁回调接口 blinkOn/blinkOff)
 	m	blinkOn	blinkOn	()V
@@ -296,10 +838,36 @@ c	com/fs/graphics/util/ooOO$Oo	com/fs/graphics/util/BlinkCallback
 c	com/fs/graphics/util/A	com/fs/graphics/util/FPSDisplay
 	c 来源(字符串常量) | 置信度(高) | 证据("FPS: %3d, Idle: %3d%%"/"Error loading font in FPSDisplay")
 	m	super	setText	(Ljava/lang/String;)V
+	f	Õ00000	fontRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 构造 new BitmapFontRenderer("FPS: 0",font)，setColor(255,255,255,175)；getter super() 返回
+	f	Ö00000	fps	I
+		c javap 字节码取证 | 高 | 每秒末 frameCount 快照；render 格式化 "FPS: %3d, Idle: %3d%%" 用
+	f	Ò00000	idlePercent	I
+		c javap 字节码取证 | 高 | 每秒末 idle 百分比 (int)(idleTime×100)；render 用
+	f	void	frameCount	I
+		c javap 字节码取证 | 高 | 每帧 +1
+	f	super	elapsedTime	J
+		c javap 字节码取证 | 高 | 毫秒累加器，≥1000 时结算
+	f	Ó00000	lastFrameTime	J
+		c javap 字节码取证 | 高 | Sys.getTime() 帧时刻；delta=now-last
+	f	String	idleTime	F
+		c javap 字节码取证 | 中 | 帧内空闲时长累加
+	m	super	getFontRenderer	()Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 直接返回 fontRenderer
+	m	Ò00000	getTextWidth	()F
+		c javap 字节码取证 | 中高 | 读取文本对象当前字符串并测量宽度（oO0000()→Õ00000(String)F）
+	m	super	render	(FF)V
+		c javap 字节码取证 | 中高 | format FPS 文本→setText→draw（BitmapFontRenderer 绘制）
+	m	super	update	(F)V
+		c javap 字节码取证 | 中高 | 累计帧时间，每秒刷新 fps/idlePercent 并清零
 c	com/fs/graphics/test/BasicGraphicsTest	com/fs/graphics/test/BasicGraphicsTest
 	c 来源(未混淆类名) | 置信度(高) | 证据(图形库演示/自测 main，anim.properties/arial20bold)
 	m	o00000	main	([Ljava/lang/String;)V
 c	com/fs/graphics/test/BasicGraphicsTest$1	com/fs/graphics/test/ParticleTestEmitter
 	c 来源(javap取证) | 置信度(中) | 证据(测试用粒子发射器，向 DynamicParticleGroup 发射)
+	f	val$dpg	particleGroup	Lcom/fs/graphics/particle/DynamicParticleGroup;
+		c javap 字节码取证 | 中高 | 匿名类捕获局部（javac val$dpg）；emit() 中 group.add(粒子)
 c	com/fs/graphics/test/BasicGraphicsTest$2	com/fs/graphics/test/LineTestEmitter
 	c 来源(javap取证) | 置信度(中) | 证据(测试用线段粒子发射器，val$lines 指向粒子组)
+	f	val$lines	particleGroup	Lcom/fs/graphics/particle/DynamicParticleGroup;
+		c javap 字节码取证 | 中高 | 匿名类捕获局部（javac val$lines）；emit() 中 group.add(粒子)

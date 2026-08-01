@@ -109,18 +109,28 @@ c	com/fs/starfarer/codex/CodexData$19	com/fs/starfarer/codex/CodexData$CapitalHu
 c	com/fs/starfarer/codex/CodexData$20	com/fs/starfarer/codex/CodexData$FighterWingComparator
 	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<FighterWingSpec>，按 variantId/hullName 排序）)
 	m	super	compareWings	(Lcom/fs/starfarer/loading/specs/FighterWingSpec;Lcom/fs/starfarer/loading/specs/FighterWingSpec;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex/CodexData;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层 CodexData 引用
 c	com/fs/starfarer/codex/CodexData$21	com/fs/starfarer/codex/CodexData$HullVariantComparator
 	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<HullVariantSpec>，按 hullName 排序）)
 	m	o00000	compareVariants	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex/CodexData;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层 CodexData 引用
 c	com/fs/starfarer/codex/CodexData$22	com/fs/starfarer/codex/CodexData$ShipHullComparator
 	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<ShipHullSpec>，按 hullName 排序）)
 	m	super	compareHulls	(Lcom/fs/starfarer/loading/specs/g;Lcom/fs/starfarer/loading/specs/g;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex/CodexData;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层 CodexData 引用
 c	com/fs/starfarer/codex/CodexData$23	com/fs/starfarer/codex/CodexData$WeaponComparator
 	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<BaseWeaponSpec>，按名称排序）)
 	m	super	compareWeapons	(Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex/CodexData;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层 CodexData 引用
 c	com/fs/starfarer/codex/CodexData$24	com/fs/starfarer/codex/CodexData$ShipSystemComparator
 	c 来源(javap取证) | 置信度(高) | 证据(codex-data-comparators（Comparator<ShipSystemSpec>，按名称排序）)
 	m	o00000	compareSystems	(Lcom/fs/starfarer/loading/specs/do;Lcom/fs/starfarer/loading/specs/do;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex/CodexData;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层 CodexData 引用
 c	com/fs/starfarer/codex/E	com/fs/starfarer/codex/CodexEntry
 	c 来源(javap取证) | 置信度(高) | 证据(codex-entry（E(4 String, Object) 构造；数据/标题/副标题/显示名/父类别；CodexData 中按数据对象查找）)
 	f	Ò00000	title	Ljava/lang/String;
@@ -188,6 +198,8 @@ c	com/fs/starfarer/codex/ui/new	com/fs/starfarer/codex/ui/HullWingInfoPanel
 	f	ôoÕo00	wingSpec	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
 	f	ÖoÕo00	scroller	Lcom/fs/starfarer/ui/g;
 	f	super.int$public	fontPath	Ljava/lang/String;
+	f	øoÕo00	shipHoloRenderer	Lcom/fs/starfarer/title/ShipHoloRenderer;
+		c javap 字节码取证 | 高 | createUI 建 ShipHoloRenderer，setVariant/overrideVariant/setWingSpec/setShowBorder
 c	com/fs/starfarer/codex/ui/ooOO	com/fs/starfarer/codex/ui/CodexListItem
 	c 来源(javap取证) | 置信度(高) | 证据(codex-list-item（列表行：条目 + 按钮；category 行用 CutStyle.TL_BR 背景）)
 	f	ÓÓÕo00	item	Lcom/fs/starfarer/codex/Object;
@@ -209,17 +221,47 @@ c	com/fs/starfarer/codex/ui/VariantStatsPanel	com/fs/starfarer/codex/ui/VariantS
 	c 来源(javap取证) | 置信度(高) | 证据(variant-stats-panel（未混淆原名；Flux capacitors/Flux vents/Hull Modifications/Weapon Group 字符串）)
 	m	while.super	formatStatFloat	(F)Ljava/lang/String;
 	m	class	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+	f	OÓÕo00	variant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | 构造器保存 HullVariantSpec，统计行取值源
+	f	ÖÒÕo00	panelBorderRenderer	Lcom/fs/starfarer/E/PanelBorderRenderer;
+		c javap 字节码取证 | 高 | 构造器建 PanelBorderRenderer("ui_border4")，renderImpl 绘制边框
+	f	private.int$public	fontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 行标签字体（StarfarerSettings 默认字体），createHeading/行文本用
+	f	ÒÒÕo00	titleFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 标题字体（orbitron20aa），面板标题 label 用
+	f	õÒÕo00	contentWidth	F
+		c javap 字节码取证 | 高 | 内容宽度 320，标题/行 setSize 用
+	f	ôÒÕo00	unusedFloat	F
+		c javap 字节码取证 | 中 | 仅构造器 putfield 80.0f，无任何 getfield，死字段
+	f	if.int$public	labelWidth	F
+		c javap 字节码取证 | 高 | = contentWidth，StatRow 构造器宽度参数
+	f	ÓÒÕo00	unusedHalfWidth	F
+		c javap 字节码取证 | 中 | 仅构造器 putfield (contentWidth-3)/2，无 getfield，死字段
+	f	void.int$public	unusedFloat2	F
+		c javap 字节码取证 | 中 | 全类无读写点，死字段
 c	com/fs/starfarer/codex/ui/VariantStatsPanel$1	com/fs/starfarer/codex/ui/VariantStatsPanel$SlotCountComparator
 	c 来源(javap取证) | 置信度(高) | 证据(variant-stats-panel-inner（Comparator<String>，按 val$slotCount 计数排序武器槽）)
 	m	o00000	compareBySlotCount	(Ljava/lang/String;Ljava/lang/String;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex/ui/VariantStatsPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
+	f	val$slotCount	slotCounts	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 槽位计数 map，compare 中 map.get 比较
 c	com/fs/starfarer/codex/ui/VariantStatsPanel$o	com/fs/starfarer/codex/ui/VariantStatsPanel$StatRow
 	c 来源(javap取证) | 置信度(高) | 证据(variant-stats-panel-inner（ctor(outer,文本,数值,字体,宽度)，双标签统计行，同 WeaponStatsPanel$StatRow 模式）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex/ui/VariantStatsPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
 c	com/fs/starfarer/codex/ui/null	com/fs/starfarer/codex/ui/CodexListItemRenderer
 	c 来源(javap取证) | 置信度(高) | 证据(codex-list-item-renderer（实现 ButtonRenderer，渲染 CodexListItem 的标题/副标题双字体）)
 	f	õø0000	itemRow	Lcom/fs/starfarer/codex/ui/ooOO;
 	f	class.null	titleFont	Lcom/fs/graphics/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
 	f	Øø0000	subtitleFont	Lcom/fs/graphics/A/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
 	m	super	renderButton	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
+	f	Öø0000	unusedDefaultColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 仅 <clinit> 赋 Color(125,125,125,255)，渲染无读取，死字段
+	f	null.null	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 渲染中与白色混合表现选中态的文字色（构造器参数）
+	f	öø0000	bgColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 渲染中随选中加深的背景色（构造器参数）
 c	com/fs/starfarer/codex/ui/class	com/fs/starfarer/codex/ui/CodexBrowserPanel
 	c 来源(javap取证) | 置信度(高) | 证据(codex-browser-panel（主浏览面板：类别/过滤器/条目列表/面包屑，showFleetMemberVariant 等真实名；PAD/LIST_WIDTH 等常量）)
 	f	õÔÕo00	scroller	Lcom/fs/starfarer/ui/g;
@@ -233,6 +275,18 @@ c	com/fs/starfarer/codex/ui/class	com/fs/starfarer/codex/ui/CodexBrowserPanel
 	m	o00000	setCategory	(Lcom/fs/starfarer/codex/OoOO;)V
 	m	o00000	showEntryDetail	(Lcom/fs/starfarer/codex/E;)V
 	m	Ö00000	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+	f	String.float$public	titlePanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 右侧详情区顶部标题面板（orbitron24 大标题 label 居左）
+	f	super.float$public	detailPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 右侧详情内容面板（按条目类型放 WeaponInfoPanel/HullWingInfoPanel/ShipSystemInfoPanel）
+	f	ÖÔÕo00	exitButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI 建 "Exit" 按钮，actionPerformed 中 dismiss 对话框
+	f	do.if$public	entryWidth	F
+		c javap 字节码取证 | 高 | 列表条目宽度（width-310-9），getter getEntryWidth 返回
+	f	øÓÕo00	entryHeight	F
+		c javap 字节码取证 | 高 | 列表条目高度（height-30-25-15-25），getter getEntryHeight 返回
+	f	ÒÔÕo00	listHeight	F
+		c javap 字节码取证 | 高 | 左侧滚动列表高度（height-12-30-140），Scroller setSize 用
 c	com/fs/starfarer/codex/ui/oOoO	com/fs/starfarer/codex/ui/WeaponInfoPanel
 	c 来源(javap取证) | 置信度(高) | 证据(weapon-info-panel（ctor(BaseWeaponSpec)，Description$Type.WEAPON 描述 + 滚动面板）)
 	f	ÕöõO00	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
@@ -241,15 +295,39 @@ c	com/fs/starfarer/codex/ui/oOoO	com/fs/starfarer/codex/ui/WeaponInfoPanel
 c	com/fs/starfarer/codex/ui/oooO$O0	com/fs/starfarer/codex/ui/WeaponStatsPanel$DamageTypeIconRow
 	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（DamageType switch 加载 icon_energy/icon_kinetic 等 sprite + Damage type/DPS 统计行）)
 	f	private.float$public	damageTypeSprite	Lcom/fs/graphics/Sprite;
+	f	this$0	this$0	Lcom/fs/starfarer/codex/ui/WeaponStatsPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
+	f	øÕÕo00	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$DamageType 懒加载缓存数组（javac 合成）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$DamageType	switchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$DamageType() 唯一读写（static volatile 懒建 int[]）
 c	com/fs/starfarer/codex/ui/oooO$Oo	com/fs/starfarer/codex/ui/WeaponStatsPanel$WeaponIconRow
 	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（ctor 创建 WeaponIconRenderer，renderImpl 按 WeaponSize switch 旋转绘制）)
 	f	ÒÕÕo00	iconRenderer	Lcom/fs/starfarer/renderers/M;
+	f	ÓÕÕo00	weaponIconRenderer	Lcom/fs/starfarer/ui/super/WeaponIconRenderer;
+		c javap 字节码取证 | 高 | 构造器 new WeaponIconRenderer(spec, 临时Y, white, true)，renderImpl 旋转绘制
+	f	this$0	this$0	Lcom/fs/starfarer/codex/ui/WeaponStatsPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
+	f	if.float$public	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$WeaponSize 懒加载缓存数组（javac 合成）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$WeaponAPI$WeaponSize	switchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$WeaponSize() 唯一读写（static volatile 懒建 int[]）
 c	com/fs/starfarer/codex/ui/oooO$o	com/fs/starfarer/codex/ui/WeaponStatsPanel$StatRow
 	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（ctor(outer,名称,数值,字体,宽度)，左右双标签统计行）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex/ui/WeaponStatsPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
 c	com/fs/starfarer/codex/ui/oooO$oo	com/fs/starfarer/codex/ui/WeaponStatsPanel$AnimatedWeaponIcon
 	c 来源(javap取证) | 置信度(高) | 证据(weapon-stats-panel-inner（ANIMATE_WEAPON 静态开关 + ShipSlotEntity + advanceImpl，动画武器图标）)
 	f	do.float$public	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
 	f	ÕÕÕo00	slotEntity	Lcom/fs/starfarer/combat/entities/ship/A/OooO;
+	f	ÖÕÕo00	weaponMountRenderer	Lcom/fs/starfarer/renderers/WeaponMountRenderer;
+		c javap 字节码取证 | 高 | 构造器 new WeaponMountRenderer(mountType, size, w/2, 3.5)，renderImpl 绘制
+	f	ôÕÕo00	weaponIconRenderer	Lcom/fs/starfarer/ui/super/WeaponIconRenderer;
+		c javap 字节码取证 | 高 | 构造器 new WeaponIconRenderer(spec, 临时Y, white, true)，renderImpl 旋转绘制
+	f	õÕÕo00	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$WeaponSize 懒加载缓存数组（javac 合成）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$WeaponAPI$WeaponSize	switchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$WeaponSize() 唯一读写（static volatile 懒建 int[]），先例 util-io resourceTypeSwitchMap
 c	com/fs/starfarer/codex/ui/oooO	com/fs/starfarer/codex/ui/WeaponStatsPanel
 	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(weapon-stats-panel（Damage/EMP damage/Ammo / clip/Burst damage/Flux / second 等武器数值面板，ctor(BaseWeaponSpec,CharacterStats,ShipStats,FFZZ)）)
 	f	OøõO00	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
@@ -258,6 +336,28 @@ c	com/fs/starfarer/codex/ui/oooO	com/fs/starfarer/codex/ui/WeaponStatsPanel
 	f	super.if$float	isBeam	Z
 	m	while	formatStatFloat	(F)Ljava/lang/String;
 	m	Ô00000	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
+	f	ôöõO00	panelBorderRenderer	Lcom/fs/starfarer/E/PanelBorderRenderer;
+		c javap 字节码取证 | 高 | 构造器建 PanelBorderRenderer("ui_border4")，renderImpl 绘制边框
+	f	õøõO00	description	Lcom/fs/starfarer/api/loading/Description;
+		c javap 字节码取证 | 高 | 构造器 SpecStore 取武器 Description（WEAPON 类型）
+	f	ôøõO00	fontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 行标签字体（StarfarerSettings 默认字体）
+	f	if.int$float	titleFont	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 标题字体（orbitron20aa），武器名标题用
+	f	do.int$float	contentWidth	F
+		c javap 字节码取证 | 高 | 内容宽度（宽-2*边距），标题/行 setSize 用
+	f	private.int$float	rowHeight	F
+		c javap 字节码取证 | 高 | 行高 80，WeaponIconRow/图标 setSize 用
+	f	void.int$float	rowWidth	F
+		c javap 字节码取证 | 高 | 行宽（contentWidth-80-6），StatRow 构造器宽度参数
+	f	øöõO00	halfWidth	F
+		c javap 字节码取证 | 高 | (contentWidth-3)/2，大量布局用
+	f	õöõO00	unusedFloat	F
+		c javap 字节码取证 | 中 | 全类无读写点，死字段
+	f	ÖøõO00	unusedWidth	F
+		c javap 字节码取证 | 中 | 仅构造器保存宽度参数，无 getfield，死字段
+	f	ÒøõO00	unusedPad	F
+		c javap 字节码取证 | 中 | 仅构造器保存边距参数，无 getfield，死字段
 c	com/fs/starfarer/codex/ui/A	com/fs/starfarer/codex/ui/ShipSystemInfoPanel
 	c 来源(javap取证) | 置信度(高) | 证据(ship-system-info-panel（ctor(ShipSystemSpec)，Description$Type.SHIP_SYSTEM 描述 + 滚动面板）)
 	f	OöõO00	systemSpec	Lcom/fs/starfarer/loading/specs/do;
@@ -265,19 +365,53 @@ c	com/fs/starfarer/codex/ui/A	com/fs/starfarer/codex/ui/ShipSystemInfoPanel
 	f	øõõO00	fontPath	Ljava/lang/String;
 c	com/fs/starfarer/codex2/CodexDetailPanel	com/fs/starfarer/codex2/CodexDetailPanel
 	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel（未混淆原名；Hull size/Base value: %s per unit/Demand/Combat readiness 等详情 tooltip 构造）)
+	f	private.public$return	headingLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造器 createHeading 面板标题，showDetail 中 setText 条目标题
+	f	õÒOO00	galleryImage	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | showDetail 中 Gallery 条目建 ImagePanel(sprite)，缩放至 480x300 内
+	f	do.public$return	modIconButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器建 mod_info 图标按钮（禁用/透明），有 mod 时显示并挂 mod tooltip
+	f	ôÒOO00	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$PersonnelRank 懒加载缓存数组（javac 合成）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$impl$PlayerFleetPersonnelTracker$PersonnelRank	switchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$PersonnelRank() 唯一读写（static volatile 懒建 int[]）
+	m	new	getHullmodSellFrequency	(Lcom/fs/starfarer/api/campaign/FactionSpecAPI;)Ljava/util/Map;
+		c javap 字节码取证 | 高 | 直接返回 factionSpec.getHullmodSellFrequency()
+	m	o00000	getWeaponSellFrequency	(Lcom/fs/starfarer/api/campaign/FactionSpecAPI;)Ljava/util/Map;
+		c javap 字节码取证 | 高 | 直接返回 factionSpec.getWeaponSellFrequency()
 c	com/fs/starfarer/codex2/CodexDetailPanel$1	com/fs/starfarer/codex2/CodexDetailPanel$1
 	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：Color 背景面板）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDetailPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
+	f	ÖÒOO00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器保存渲染颜色，renderImpl 绘制背景用
 c	com/fs/starfarer/codex2/CodexDetailPanel$2	com/fs/starfarer/codex2/CodexDetailPanel$2
 	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：ModSpecAPI 模组信息 tooltip 段）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDetailPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
+	f	ÒõôO00	modSpec	Lcom/fs/starfarer/api/ModSpecAPI;
+		c javap 字节码取证 | 高 | 构造器保存 ModSpecAPI，createImpl 中 getName()
 c	com/fs/starfarer/codex2/CodexDetailPanel$3	com/fs/starfarer/codex2/CodexDetailPanel$3
 	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：Comparator<FactionSpecAPI>，val$mapper 映射值排序）)
 	m	o00000	compareByMappedValue	(Lcom/fs/starfarer/api/campaign/FactionSpecAPI;Lcom/fs/starfarer/api/campaign/FactionSpecAPI;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDetailPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
+	f	val$mapper	mapper	Ljava/util/function/Function;
+		c javap 字节码取证 | 高 | 派系→售出频率 map 的函数，compare 中 apply
+	f	val$thingId	thingId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 商品/物品 id，compare 中 map.get
 c	com/fs/starfarer/codex2/CodexDetailPanel$4	com/fs/starfarer/codex2/CodexDetailPanel$4
 	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：字符串 tooltip 段）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDetailPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
+	f	void.interface$if	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器保存提示文本，createImpl 中 addPara
 c	com/fs/starfarer/codex2/CodexDetailPanel$5	com/fs/starfarer/codex2/CodexDetailPanel$5
 	c 来源(javap取证) | 置信度(高) | 证据(codex-detail-panel-inner（匿名：空态面板，LabelImpl+ImagePanel）)
 	f	øøÒO00	emptyLabel	Lcom/fs/starfarer/ui/d;
 	f	String.Object$null	emptyIcon	Lcom/fs/starfarer/ui/ooO0;
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDetailPanel;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层面板引用
 c	com/fs/starfarer/codex2/CodexDialog	com/fs/starfarer/codex2/CodexDialog
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog（未混淆原名；条目表格/搜索/标签/历史快照；nav_up 等导航按钮）)
 	f	ÒØÓ000	upButton	Lcom/fs/starfarer/ui/n;
@@ -288,21 +422,81 @@ c	com/fs/starfarer/codex2/CodexDialog	com/fs/starfarer/codex2/CodexDialog
 	f	øØÓ000	searchField	Lcom/fs/starfarer/ui/new;
 	f	String.String$new	currentCategory	Lcom/fs/starfarer/api/impl/codex/CodexEntryPlugin;
 	f	õØÓ000	detailPanel	Lcom/fs/starfarer/codex2/CodexDetailPanel;
+	f	ÖØÓ000	isShowing	Z
+		c javap 字节码取证 | 高 | static 对话框打开标记：show 置 true，关闭清 TEMP_ENTRIES 后置 false
+	f	do.String$new	headerPanel	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | createUI 建表格头部（addColumn "Item"），CodexListRow 构造用
+	f	ÒôÓ000	table	LUITable;
+		c javap 字节码取证 | 高 | createUI 建条目列表表格（setEmptyText "No matching entries"），updateList addRow
+	f	ÓôÓ000	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | createUI createHeading 对话框标题 label
+	f	void.String$new	navPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | createNavButtons 建导航按钮容器面板（up/back/forward/random）
+	f	ÓØÓ000	showingList	Z
+		c javap 字节码取证 | 中 | 列表模式标记：构造器/updateList 置 true，processInput 与 getGoUpCategory 依据它分派
+	f	ÕØÓ000	searchText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 搜索关键字：updateList 按长度过滤，输入/清除时更新
+	f	ôØÓ000	history	Ljava/util/List;
+		c javap 字节码取证 | 高 | 浏览历史列表（MAX_HISTORY_SIZE 相关），takeHistorySnapshot 读写
+	m	ÓÖ0000	createUI	()V
+		c javap 字节码取证 | 高 | 构造器调用的 UI 组装（表/详情面板/标签/导航布局）
+	m	while.String	createNavButtons	()V
+		c javap 字节码取证 | 高 | 建 nav_up/nav_back/nav_forward/nav_random 四个图标按钮与快捷键/tooltip
 c	com/fs/starfarer/codex2/CodexDialog$1	com/fs/starfarer/codex2/CodexDialog$1
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：DismissListener，恢复 FocusedComponent 焦点）)
 	f	ÕõØo00	overlayHost	Lcom/fs/starfarer/ooOO;
 	f	if.do$private	focusedComponent	Lcom/fs/starfarer/ui/supersuper;
 c	com/fs/starfarer/codex2/CodexDialog$2	com/fs/starfarer/codex2/CodexDialog$2
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip，Go up a level 提示）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDialog;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层对话框引用
+	f	OöôO00	width	F
+		c javap 字节码取证 | 高 | 构造器保存 tooltip 宽度参数，createImpl addPara 用
+	f	ÒöôO00	grayColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第 5 参（Misc.getGrayColor），addPara 文字色
+	f	super.this$float	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第 6 参（Misc.getHighlightColor），addPara 高亮色
 c	com/fs/starfarer/codex2/CodexDialog$3	com/fs/starfarer/codex2/CodexDialog$3
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDialog;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层对话框引用
+	f	õõôO00	width	F
+		c javap 字节码取证 | 高 | 构造器保存 tooltip 宽度参数，createImpl addPara 用
+	f	øõôO00	grayColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第 5 参（Misc.getGrayColor），addPara 文字色
+	f	private.interface$if	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第 6 参（Misc.getHighlightColor），addPara 高亮色
 c	com/fs/starfarer/codex2/CodexDialog$4	com/fs/starfarer/codex2/CodexDialog$4
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDialog;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层对话框引用
+	f	ÖõôO00	width	F
+		c javap 字节码取证 | 高 | 构造器保存 tooltip 宽度参数，createImpl addPara 用
+	f	ôõôO00	grayColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第 5 参（Misc.getGrayColor），addPara 文字色
+	f	do.interface$if	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器第 6 参（Misc.getHighlightColor），addPara 高亮色
 c	com/fs/starfarer/codex2/CodexDialog$5	com/fs/starfarer/codex2/CodexDialog$5
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：快捷键提示 tooltip）)
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDialog;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用（javac 标准名 this$0），仅构造器写入
+	f	ÓõôO00	shortcutsParaFontSize	F
+		c javap 字节码取证 | 中 | 构造第4参（调用点 fload_3）；createImpl 中 "Shortcuts: [%s]" 段 addPara 的字号
+	f	ÕõôO00	shortcutsParaColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造第5参 = Misc.getGrayColor()，addPara 正文色
+	f	if.interface$if	shortcutsParaHighlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造第6参 = Misc.getHighlightColor()，addPara 高亮色（快捷键 "R"）
 c	com/fs/starfarer/codex2/CodexDialog$6	com/fs/starfarer/codex2/CodexDialog$6
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-inner（匿名：Comparator<TableRowPanel>，val$cache 缓存排序）)
 	m	o00000	compareRows	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+	f	this$0	this$0	Lcom/fs/starfarer/codex2/CodexDialog;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用（javac 标准名 this$0），仅构造器写入
+	f	val$id	sortId	Ljava/lang/Object;
+		c javap 字节码取证 | 中 | 排序模式标识：compare 中与 CodexDialog$o.o00000（枚举 ITEM）比较决定分支；tableGetComparator 第2参传入
+	f	val$cache	lockedCache	Ljava/util/Map;
+		c javap 字节码取证 | 高 | compare 中对 CodexListRow.plugin.isLocked() 结果的缓存（containsKey/get/put Boolean）
+	f	val$isRelatedEntriesTable	isRelatedEntriesTable	Z
+		c javap 字节码取证 | 高 | 为 true 时按 plugin.getCategorySortTierForRelatedEntries 排序（相关条目表）
 c	com/fs/starfarer/codex2/CodexDialog$Oo	com/fs/starfarer/codex2/CodexDialog$HistorySnapshot
 	c 来源(javap取证) | 置信度(高) | 证据(codex-dialog-history-snapshot（浏览历史快照：类别/详情条目/选中行/三处 scroller 偏移/标签/搜索文本/isCurrent）)
 	f	void	detailEntry	Lcom/fs/starfarer/api/impl/codex/CodexEntryPlugin;
@@ -322,6 +516,10 @@ c	com/fs/starfarer/codex2/CodexDialog$o	com/fs/starfarer/codex2/CodexDialog$Colu
 c	com/fs/starfarer/codex2/B	com/fs/starfarer/codex2/CodexListRow
 	c 来源(javap取证) | 置信度(高) | 证据(codex-list-row（表格行：icon/name/plugin/iconButton/mode/isGoUpOption/vignetteVisual；createRow 建 tooltip，Locked entry 锁定态）)
 	f	if.super$int	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	f	ÒöÔO00	contentComponent	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | createRow 按 mode 多次赋值的行内容组件（CargoStackView 等），renderImpl 中渲染与 vignette 绘制
+	f	ÓöÔO00	modErrorShown	Z
+		c javap 字节码取证 | 高 | createRow/renderImpl 捕获 Throwable 后重建 "Mod error" 标签并置 true，防重复重建
 c	com/fs/starfarer/codex2/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/codex2/ShipSystemTooltipFactory
 	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(ship-system-tooltip-factory（静态方法由 ShipSystemSpec+ShipStats 构造系统 tooltip；Active duration/Cooldown/Base flux / second 等）)
 	m	o00000	createSystemTooltip	(Lcom/fs/starfarer/loading/specs/do;Lcom/fs/starfarer/combat/entities/ship/o0OO;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;

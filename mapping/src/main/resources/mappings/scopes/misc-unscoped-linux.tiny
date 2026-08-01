@@ -1,0 +1,237 @@
+tiny	2	0	obf	named
+c	com/fs/starfarer/OoOO	com/fs/starfarer/C_3170a236
+	c javap 反编译 | 中 | 顶层常量/静态工具类：16 个 static final 常量 + 5 个静态方法；全库无调用点（常量可能被 javac 内联或为外部 mod 保留），语义不明，保守 unused 命名
+	f	Ó00000	unusedBoolean	Z
+		c javap 字节码取证 | 中 | static final true：类内无任何引用，语义不明
+	f	if	unusedBoolean2	Z
+		c javap 字节码取证 | 中 | static final false：类内无任何引用，语义不明
+	f	ø00000	unusedBoolean3	Z
+		c javap 字节码取证 | 中 | static final true：类内无任何引用，语义不明
+	f	void	unusedFloat	F
+		c javap 字节码取证 | 中 | static final 3500.0f：类内无任何引用，语义不明
+	f	OO0000	unusedFloat2	F
+		c javap 字节码取证 | 中 | static final 25.0f：类内无任何引用，语义不明
+	f	ô00000	unusedFloat3	F
+		c javap 字节码取证 | 中 | static final 360.0f：类内无任何引用，语义不明
+	f	private	unusedFloat4	F
+		c javap 字节码取证 | 中 | static final 360.0f：类内无任何引用，语义不明
+	f	ÓO0000	unusedFloat5	F
+		c javap 字节码取证 | 中 | static final 5.0f：类内无任何引用，语义不明
+	f	Õ00000	unusedFloat6	F
+		c javap 字节码取证 | 中 | static final 0.25f：类内无任何引用，语义不明
+	f	do	unusedFloat7	F
+		c javap 字节码取证 | 中 | static final 0.5f：类内无任何引用，语义不明
+	f	ÒO0000	unusedFloat8	F
+		c javap 字节码取证 | 中 | static final 0.25f：类内无任何引用，语义不明
+	f	String	unusedFloat9	F
+		c javap 字节码取证 | 中 | static final 0.5f：类内无任何引用，语义不明
+	f	super	unusedFloat10	F
+		c javap 字节码取证 | 中 | static final 0.5f：类内无任何引用，语义不明
+	f	Ò00000	unusedFloat11	F
+		c javap 字节码取证 | 中 | static final 600.0f：类内无任何引用，语义不明
+	f	Ö00000	unusedInt	I
+		c javap 字节码取证 | 中 | static final 100：类内无任何引用，语义不明
+	f	õ00000	unusedInt2	I
+		c javap 字节码取证 | 中 | static final 0：类内无任何引用，语义不明
+	m	o00000	unusedGetConstant	()F
+		c javap 字节码取证 | 中 | 返回固定 0.8f：全库无调用点（invokestatic 未命中），语义不明
+	m	new	unusedGetConstant2	()F
+		c javap 字节码取证 | 中 | 返回固定 0.9f：全库无调用点（invokestatic 未命中），语义不明
+	m	Ó00000	unusedGetConstant3	()F
+		c javap 字节码取证 | 中 | 返回固定 0.1f：全库无调用点（invokestatic 未命中），语义不明
+	m	o00000	unusedGetHullFractionMin	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)F
+		c javap 字节码取证 | 中 | min(hullFraction, 1-0.8)：FleetMember.getStatus().getHullFraction 截断计算；全库无调用点，语义不明
+	m	new	unusedGetHullFractionRatio	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)F
+		c javap 字节码取证 | 中 | max(0,(0.75-hullFraction)/0.75)*0.1：基于船体完整度的比例计算；全库无调用点，语义不明
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$4	com/fs/starfarer/campaign/command/C_1a567876
+	c javap 反编译 | 高 | CommodityOnMarketAPI 比较器：compare 按 getExportIncome 差值 signum 降序
+	m	o00000	compareExportIncome	(Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;Lcom/fs/starfarer/api/campaign/econ/CommodityOnMarketAPI;)I
+		c javap 字节码取证 | 高 | Math.signum(getExportIncome(b)-getExportIncome(a)) 转 int；Comparator 桥接方法 compare 转发
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$5	com/fs/starfarer/campaign/command/C_47182b40_3
+	c javap 反编译 | 高 | 增长速率 tooltip（extends StandardTooltipV2Expandable，标题 "Growth Rate"，读 getIncoming/getImmigrationPlugin）
+	f	ööôO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c javap 字节码取证 | 高 | 构造参数 3 写入；createImpl 全程经它取 getFaction/getIncoming/isPlayerOwned/getSize
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$6	com/fs/starfarer/campaign/command/C_47182b40_4
+	c javap 反编译 | 高 | 殖民地规模 tooltip（extends StandardTooltipV2Expandable，标题 "Colony Size"，读 getPopulation/getSize）
+	f	int.this$float	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
+		c javap 字节码取证 | 高 | 构造参数 3 写入；createImpl 全程经它取 getFaction/getPopulation/getSize/getPrimaryEntity
+c	com/fs/starfarer/campaign/command/MarketTooltipFactory$5$1	com/fs/starfarer/campaign/command/C_f7010075
+	c javap 反编译 | 高 | StatModValueGetter 匿名实现：getFlatValue 加 "+" 前缀、getModColor 按 value 正负取色
+	f	this$1	outer	Lcom/fs/starfarer/campaign/command/C_47182b40_3;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 MarketTooltipFactory$5 的合成引用（先例命名 outer）
+c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$O0	com/fs/starfarer/campaign/comms/C_d7844033
+	c javap 反编译 | 中 | IntelCategoryFilter$oo 分类插件空实现：super() 空、Ò00000() 返回 null；全库无 new 构造点（死实现，保守命名）
+	f	Ò00000	categoryId	Ljava/lang/String;
+		c javap 字节码取证 | 中 | 构造参数 2 写入；对照有构造点的 $o：同参传入 $Oo.ô00000（分类 id），语义为分类标识
+	f	o00000	outer	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter;
+		c javap 字节码取证 | 中 | 构造参数 1 写入的外部类合成引用（先例命名 outer）
+	m	super	refresh	()V
+		c javap 字节码取证 | 中 | 空实现；接口方法在 IntelCategoryFilter.actionPerformed 点击分类时调用后 update(true)，语义为刷新回调
+	m	Ò00000	getCategoryItems	()Ljava/util/List;
+		c javap 字节码取证 | 中 | 返回 null；接口方法在 expandTo/ExpandableCategory.update 中取分类消息行列表，语义为分类条目
+c	com/fs/starfarer/campaign/comms/IntelCategoryFilter$o	com/fs/starfarer/campaign/comms/C_d7844033_2
+	c javap 反编译 | 中 | IntelCategoryFilter$oo 分类插件空实现：super() 空、Ò00000() 返回 null；在 o00000(CampaignEventCategory) 中 new 构造
+	f	Ô00000	categoryId	Ljava/lang/String;
+		c javap 字节码取证 | 中 | 构造参数 2 写入；构造点传 $Oo.ô00000（分类 id），语义为分类标识
+	f	Object	outer	Lcom/fs/starfarer/campaign/comms/IntelCategoryFilter;
+		c javap 字节码取证 | 中 | 构造参数 1 写入的外部类合成引用（先例命名 outer）
+	m	super	refresh	()V
+		c javap 字节码取证 | 中 | 空实现；接口方法在 IntelCategoryFilter.actionPerformed 点击分类时调用后 update(true)，语义为刷新回调
+	m	Ò00000	getCategoryItems	()Ljava/util/List;
+		c javap 字节码取证 | 中 | 返回 null；接口方法在 expandTo/ExpandableCategory.update 中取分类消息行列表，语义为分类条目
+c	com/fs/starfarer/campaign/ui/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/campaign/ui/C_1ce5743a
+	c javap 反编译 | 高 | Runnable：按外层 TradePanelV2 按钮位置与 tooltip 尺寸调整 tooltip 锚点（setTooltipPositionRelativeToAnchor）
+	f	super	outer	Lcom/fs/starfarer/campaign/ui/TradePanelV2;
+		c javap 字节码取证 | 高 | 构造参数 1 写入的外部类合成引用；run() 经它访问外层按钮 ÕÖõ000（先例命名 outer）
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 构造参数 2 写入；run() 取 getPosition().getHeight() 作为偏移来源
+c	com/fs/starfarer/campaign/ui/ooO0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/C_8f2ab67e
+	c javap 反编译 | 中 | extends ui.z（面板容器）、implements 空接口 f：构造器为空，两字段全类无 getfield，判定未使用
+	f	ØoOo00	unusedTransferListener	LTransferListener;
+		c javap 字节码取证 | 中 | 构造器外无任何读写；字段类型 com.fs.starfarer.campaign.ui.M（TransferListener 接口），未使用
+	f	for.super$do	unusedPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 中 | 构造器外无任何读写；字段类型 com.fs.starfarer.ui.z（面板基类），未使用
+c	com/fs/starfarer/campaign/ui/oOoO$1	com/fs/starfarer/campaign/ui/C_94412609
+	c javap 反编译 | 高 | extends ui.z 的覆盖矩形渲染层：renderImpl 按外层 CargoDisplayV2 的容器位置画半透明矩形
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/CargoDisplayV2;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 oOoO（CargoDisplayV2）的合成引用；renderImpl 经它取 return.return$for 位置（先例命名 outer）
+c	com/fs/starfarer/campaign/ui/voidsuper$1	com/fs/starfarer/campaign/ui/C_fcbeaae1
+	c javap 反编译 | 高 | 列头 tooltip：createImpl 委托 TooltipCreator.createTooltip 生成内容（extends StandardTooltipV2Expandable）
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 voidsuper（TableColumnHeaderPanel）的合成引用（先例命名 outer）
+	f	return.Object$float	tooltipCreator	Lcom/fs/starfarer/api/ui/TooltipMakerAPI$TooltipCreator;
+		c javap 字节码取证 | 高 | 构造参数 4 写入；createImpl 调 createTooltip(this, wide, null)
+c	com/fs/starfarer/campaign/ui/voidsuper$2	com/fs/starfarer/campaign/ui/C_bafe2453
+	c javap 反编译 | 高 | 列头文本 tooltip：createImpl 将字符串 addPara 展示（extends StandardTooltipV2Expandable）
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 voidsuper（TableColumnHeaderPanel）的合成引用（先例命名 outer）
+	f	øoõO00	tooltipText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数 4 写入；createImpl addPara(text, 0)
+c	com/fs/starfarer/campaign/ui/voidsuper$3	com/fs/starfarer/campaign/ui/C_bafe2453_2
+	c javap 反编译 | 高 | 列头文本 tooltip（setTooltipBelow(int,String) 构造）：createImpl addPara 展示
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 voidsuper（TableColumnHeaderPanel）的合成引用（先例命名 outer）
+	f	öoõO00	tooltipText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数 4 写入；createImpl addPara(text, 0)
+c	com/fs/starfarer/campaign/ui/voidsuper$4	com/fs/starfarer/campaign/ui/C_bafe2453_3
+	c javap 反编译 | 高 | 列头文本 tooltip（setTooltipAbove(int,String) 构造）：createImpl addPara 展示
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 voidsuper（TableColumnHeaderPanel）的合成引用（先例命名 outer）
+	f	Object.Object$float	tooltipText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数 4 写入；createImpl addPara(text, 0)
+c	com/fs/starfarer/campaign/ui/voidsuper$5	com/fs/starfarer/campaign/ui/C_bafe2453_4
+	c javap 反编译 | 高 | 列头文本 tooltip（setTooltipRight(int,String) 构造）：createImpl addPara 展示
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 voidsuper（TableColumnHeaderPanel）的合成引用（先例命名 outer）
+	f	ôoõO00	tooltipText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数 4 写入；createImpl addPara(text, 0)
+c	com/fs/starfarer/campaign/ui/voidsuper$6	com/fs/starfarer/campaign/ui/C_bafe2453_5
+	c javap 反编译 | 高 | 列头文本 tooltip（setTooltipLeft(int,String) 构造）：createImpl addPara 展示
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 voidsuper（TableColumnHeaderPanel）的合成引用（先例命名 outer）
+	f	ØoõO00	tooltipText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数 4 写入；createImpl addPara(text, 0)
+c	com/fs/starfarer/campaign/ui/fleet/class$1	com/fs/starfarer/campaign/ui/fleet/C_0579d5ef
+	c javap 反编译 | 高 | Runnable：按 tooltip 尺寸给 FleetMemberView 设置 tooltip 居中偏移（setTooltipOffsetFromCenter）
+	f	new	outer	Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberGrid;
+		c javap 字节码取证 | 高 | 构造参数 1 写入的外部类 class（FleetMemberGrid）合成引用（先例命名 outer）
+	f	o00000	memberView	Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberView;
+		c javap 字节码取证 | 高 | 构造参数 2 写入；run() 调 setTooltipOffsetFromCenter
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 构造参数 3 写入；run() 取 getPosition().getWidth()/getHeight() 计算偏移
+c	com/fs/starfarer/campaign/ui/super/G$1	com/fs/starfarer/campaign/ui/super/C_2c777f21
+	c javap 反编译 | 高 | Runnable：按外层 StarData 尺寸设置 tooltip 相对锚点位置
+	f	o00000	outer	Lcom/fs/starfarer/campaign/ui/super/StarData;
+		c javap 字节码取证 | 高 | 构造参数 1 写入的外部类 G（StarData）合成引用；run() 用 G.size 计算偏移（先例命名 outer）
+c	com/fs/starfarer/campaign/ui/super/return$1	com/fs/starfarer/campaign/ui/super/C_9e2172b9
+	c javap 反编译 | 高 | extends ui.Stringnew$Oo 的辉光渲染层：按外层 MapPositionIndicator 的舰队阵营色画 glow
+	f	this$0	outer	Lcom/fs/starfarer/campaign/ui/super/MapPositionIndicator;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 return（MapPositionIndicator）的合成引用；renderImpl 用 outer.ÔoøO00 取舰队与阵营色（先例命名 outer）
+c	com/fs/starfarer/combat/entities/ship/I	com/fs/starfarer/combat/entities/ship/C_1133709d
+	c javap 反编译 | 低 | 死接口：5 个抽象方法全返回 MutableStat，全库（obf/api/common/sound jar）无实现类、无调用点，语义无法取证，宁缺毋滥省略成员
+c	com/fs/starfarer/combat/entities/ship/A/D$Oo	com/fs/starfarer/combat/entities/ship/A/C_025f0cbc
+	c javap 反编译 | 高 | 武器伤害火花发生器：按 IntervalTracker 间隔生成 D$oo 火花并推进移除；isDone=数量达标且列表空
+	f	Ó00000	sparks	Ljava/util/List;
+		c javap 字节码取证 | 高 | ArrayList：o00000(F) 生成 add D$oo、完成时 iterator.remove；o00000(Vector2f,F) 遍历转发
+	f	String	spawnInterval	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | new IntervalTracker(0.05f, 0.15f)；advance 后 intervalElapsed 才生成下一火花
+	f	Õ00000	spawnedCount	F
+		c javap 字节码取证 | 高 | 初始 0；每次生成 +1；isDone 比较 >= totalCount
+	f	Ò00000	totalCount	F
+		c javap 字节码取证 | 高 | 构造中 5.0f + random*D.ô00000/3；isDone 与 advance 判定上限
+	f	super	outer	Lcom/fs/starfarer/combat/entities/ship/A/WeaponDamageEffect;
+		c javap 字节码取证 | 高 | 外部类 D（WeaponDamageEffect）合成引用；取 D.ô00000 尺寸生成随机位置
+	m	o00000	isDone	()Z
+		c javap 字节码取证 | 高 | spawnedCount >= totalCount 且 sparks 为空
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | spawnInterval.advance + intervalElapsed 时生成 D$oo、推进并移除完成者
+	m	o00000	renderSparks	(Lorg/lwjgl/util/vector/Vector2f;F)V
+		c javap 字节码取证 | 高 | 遍历 sparks 调 spark.o00000(Vector2f,F)（火花位置/尺寸渲染入口）
+c	com/fs/starfarer/combat/entities/ship/A/D$o	com/fs/starfarer/combat/entities/ship/A/C_29f1f4e6
+	c javap 反编译 | 高 | EMP 电弧精灵渲染器：持有 emp_arcs.png Sprite + Flicker 闪烁器，render/advance/getAlpha
+	f	Ó00000	empArcSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | new Sprite("graphics/fx/emp_arcs.png")，setSize(70,70)/setColor(150,150,255)/setBlendFunc(770,1)
+	f	Ò00000	flicker	Lcom/fs/starfarer/renderers/damage/Flicker;
+		c javap 字节码取证 | 高 | new Flicker()；o00000(F) advance、o00000() 取亮度系数、ô00000() 取角度
+	f	super	outer	Lcom/fs/starfarer/combat/entities/ship/A/WeaponDamageEffect;
+		c javap 字节码取证 | 高 | 外部类 D（WeaponDamageEffect）合成引用
+	m	o00000	render	(FFFF)V
+		c javap 字节码取证 | 高 | glPushMatrix/glRotatef(angle-90,0,0,1)/Sprite.renderAtCenter(0,0)/glPopMatrix
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 转发 flicker.Object(F) 推进闪烁
+	m	o00000	getAlpha	()F
+		c javap 字节码取证 | 高 | 返回 flicker.o00000() 亮度
+c	com/fs/starfarer/combat/entities/ship/A/D$oo	com/fs/starfarer/combat/entities/ship/A/C_6d670ca7
+	c javap 反编译 | 高 | 冲击波环火花粒子：Fader 淡入淡出 + 按船朝向旋转的 Sprite 渲染
+	f	Ô00000	position	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造参数 2 写入；render 中经 Utils 旋转计算相对船朝向的位置
+	f	Object	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | new Fader(0,0,0.2f)，setBounceDown(true) + fadeIn()；advance 推进、isFadedOut 判定
+	f	Ò00000	size	F
+		c javap 字节码取证 | 高 | 构造参数 3 写入；render 中 Sprite.setSize(size*2, size*2) 与 *0.5 双环
+	f	o00000	outer	Lcom/fs/starfarer/combat/entities/ship/A/WeaponDamageEffect;
+		c javap 字节码取证 | 高 | 外部类 D（WeaponDamageEffect）合成引用；取 D.ÕO0000 精灵与 D.super 朝向
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | 转发 fader.advance(F)
+	m	o00000	render	(Lorg/lwjgl/util/vector/Vector2f;F)V
+		c javap 字节码取证 | 高 | 按 D.super.getFacing() 旋转位置，Sprite.setAlphaMult/setSize/setColor + renderAtCenter 双环
+	m	o00000	isFadedOut	()Z
+		c javap 字节码取证 | 高 | 返回 fader.isFadedOut()
+c	com/fs/starfarer/loading/specs/ooOo	com/fs/starfarer/loading/specs/C_4b858a81
+	c javap 反编译 | 高 | 武器 spec 子类：持有发射点列表（getLaunchPoints/addLaunchPoint 直接访问）
+	f	ø00000	launchPoints	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造中 new ArrayList；getLaunchPoints 返回、addLaunchPoint add
+c	com/fs/starfarer/loading/specs/g$o	com/fs/starfarer/loading/specs/C_ec11d12d
+	c javap 反编译 | 高 | 舰船技术等级枚举：LOW_TECH/MIDLINE/HIGH_TECH/OMEGA/THREAT/DWELLER
+	f	Ô00000	LOW_TECH	Lcom/fs/starfarer/loading/specs/C_ec11d12d;
+		c javap 字节码取证 | 高 | clinit 首个枚举常量 "LOW_TECH"
+	f	return	MIDLINE	Lcom/fs/starfarer/loading/specs/C_ec11d12d;
+		c javap 字节码取证 | 高 | clinit 第二枚举常量 "MIDLINE"
+	f	Object	HIGH_TECH	Lcom/fs/starfarer/loading/specs/C_ec11d12d;
+		c javap 字节码取证 | 高 | clinit 第三枚举常量 "HIGH_TECH"
+	f	Ø00000	OMEGA	Lcom/fs/starfarer/loading/specs/C_ec11d12d;
+		c javap 字节码取证 | 高 | clinit 第四枚举常量 "OMEGA"
+	f	Õ00000	THREAT	Lcom/fs/starfarer/loading/specs/C_ec11d12d;
+		c javap 字节码取证 | 高 | clinit 第五枚举常量 "THREAT"
+	f	o00000	DWELLER	Lcom/fs/starfarer/loading/specs/C_ec11d12d;
+		c javap 字节码取证 | 高 | clinit 第六枚举常量 "DWELLER"
+	f	Ò00000	values	[Lcom/fs/starfarer/loading/specs/C_ec11d12d;
+		c javap 字节码取证 | 高 | clinit 组装 6 元素数组；values() 返回（javac 合成 $VALUES，先例命名 values）
+c	com/fs/starfarer/ui/O0OO$o	com/fs/starfarer/ui/C_6aa7e347
+	c javap 反编译 | 高 | AnimatedPath 路径节点：位置 + 前后节点指针（双向链）
+	f	String	position	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造中 new Vector2f；addToPath 里 set(x,y) 写入
+	f	Ó00000	prev	Lcom/fs/starfarer/ui/C_6aa7e347;
+		c javap 字节码取证 | 高 | 构造置 null；addToPath 把新节点链到上一节点（作为前一指针）
+	f	Ò00000	next	Lcom/fs/starfarer/ui/C_6aa7e347;
+		c javap 字节码取证 | 高 | addToPath 上一节点.next = 新节点；advance 沿 next 移动
+	f	super	outer	Lcom/fs/starfarer/ui/AnimatedPath;
+		c javap 字节码取证 | 高 | 外部类 O0OO（AnimatedPath）合成引用
+c	com/fs/starfarer/ui/O0OO$Oo	com/fs/starfarer/ui/C_8c806b39
+	c javap 反编译 | 高 | AnimatedPath 沿路径移动对象：当前节点 + 实时位置
+	f	Ò00000	currentNode	Lcom/fs/starfarer/ui/C_6aa7e347;
+		c javap 字节码取证 | 高 | 构造置 null；advance 中沿节点 next 切换、循环回起点（环路）
+	f	Object	position	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 构造中 new Vector2f；advance 沿 currentNode.position 差值逐帧推进
+	f	o00000	outer	Lcom/fs/starfarer/ui/AnimatedPath;
+		c javap 字节码取证 | 高 | 外部类 O0OO（AnimatedPath）合成引用；取路径点列表与速度参数

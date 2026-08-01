@@ -10,6 +10,10 @@ c	com/fs/starfarer/campaign/save/A	com/fs/starfarer/campaign/save/NewGameStatsDi
 	m	advanceImpl	advanceImpl	(F)V
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	øøÓ000	unusedFloat	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final），先例 unusedFloat
+	f	void.void$new	unusedFloat2	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final）
 c	com/fs/starfarer/campaign/save/B	com/fs/starfarer/campaign/save/CampaignSaveProgressDialog
 	c 来源(人工表+字符串常量) | 置信度(高) | 证据(CampaignSaveProgressDialog（B）)
 	f	for	progressText	Ljava/lang/String;
@@ -69,17 +73,37 @@ c	com/fs/starfarer/campaign/save/CampaignGameManager	com/fs/starfarer/campaign/s
 	m	o00000	waitForFileDeletion	(Ljava/io/File;)V
 	m	o00000	renameSaveFile	(Ljava/io/File;Ljava/io/File;)V
 	f	OO0000	OO0000	Ljava/util/HashSet;
+	f	ø00000	isCreatingNewGame	Z
+		c javap 字节码取证 | 高 | startNewGame 流程开头置 true、结束时置 false（与 linux 同字节码）
+	f	ô00000	saveLoadErrorOccurred	Z
+		c javap 字节码取证 | 中 | 保存/加载失败 catch 路径置 true；类内无读取
+	f	super	canSkipTutorial	Ljava/lang/Boolean;
+		c javap 字节码取证 | 高 | 懒加载缓存；引用字符串 "canSkipTutorial"
+	f	Ò00000	unmarkedSerializedClassNames	Ljava/util/HashSet;
+		c javap 字节码取证 | 高 | HashSet<String>；报告 "Found N serliazed classes not marked with DoNotObfuscate" 使用
+	m	o00000	giveDebugStartItems	(Lcom/fs/starfarer/campaign/CampaignEngine;)V
+		c javap 字节码取证 | 中 | 给玩家舰队加隐藏 hullmod、fighter chip 与 buffalo_Standard 船
 c	com/fs/starfarer/campaign/save/CampaignGameManager$1	com/fs/starfarer/campaign/save/SectorGenProgressCallback
 	c 来源(继承关系) | 置信度(高) | 证据(CampaignGameManager内部类)
 	m	render	render	(Ljava/lang/String;F)V
+	f	o00000	progressDialog	Lcom/fs/starfarer/campaign/save/CampaignSaveProgressDialog;
+		c javap 字节码取证 | 高 | final；render 委托其显示进度文本
 c	com/fs/starfarer/campaign/save/CampaignGameManager$2	com/fs/starfarer/campaign/save/EconomyUpdateCallback
 	c 来源(继承关系) | 置信度(高) | 证据(CampaignGameManager内部类)
+	f	super	progressDialog	Lcom/fs/starfarer/campaign/save/CampaignSaveProgressDialog;
+		c javap 字节码取证 | 高 | 外部类引用（this$0），回调中调其 update 显示 "Stabilizing economy..."
+	m	super	updateProgress	(II)V
+		c javap 字节码取证 | 高 | (done,total) 参数；每 2 帧更新一次进度百分比
 c	com/fs/starfarer/campaign/save/CampaignGameManager$3	com/fs/starfarer/campaign/save/ModSortOrderComparator
 	c 来源(javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	m	o00000	compareBySortOrder	(Lcom/fs/starfarer/loading/specs/AbilitySpec;Lcom/fs/starfarer/loading/specs/AbilitySpec;)I
+		c javap 字节码取证 | 高 | 两参数 getSortOrder() 相减返回
 c	com/fs/starfarer/campaign/save/CampaignGameManager$4	com/fs/starfarer/campaign/save/SaveDataDateComparator
 	c 来源(javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	m	o00000	compare	(Lcom/fs/starfarer/campaign/save/SaveGameData;Lcom/fs/starfarer/campaign/save/SaveGameData;)I
+		c javap 字节码取证 | 高 | 比较 getSaveDate
 c	com/fs/starfarer/campaign/save/CampaignGameManager$5	com/fs/starfarer/campaign/save/SaveXMLDriver
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
 	m	createWriter	createWriter	(Ljava/io/OutputStream;)Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;
@@ -90,12 +114,16 @@ c	com/fs/starfarer/campaign/save/CampaignGameManager$6	com/fs/starfarer/campaign
 c	com/fs/starfarer/campaign/save/CampaignGameManager$6$1	com/fs/starfarer/campaign/save/SaveMapperWrapper
 	c 来源(继承关系+javap取证) | 置信度(高) | 证据(CampaignGameManager内部类)
 	m	shouldSerializeMember	shouldSerializeMember	(Ljava/lang/Class;Ljava/lang/String;)Z
+	f	this$1	outer	Lcom/fs/starfarer/campaign/save/SaveXStream;
+		c javap 字节码取证 | 高 | 匿名 MapperWrapper 外部类引用
 c	com/fs/starfarer/campaign/save/CampaignGameManager$o	com/fs/starfarer/campaign/save/InterfacePassthroughConverter
 	c 来源(javap取证) | 置信度(中) | 证据(CampaignGameManager内部类)
 	m	canConvert	canConvert	(Ljava/lang/Class;)Z
 	m	processInterfaces	processInterfaces	(Ljava/lang/Class;Ljava/util/Set;)V
 	m	marshal	marshal	(Ljava/lang/Object;Lcom/thoughtworks/xstream/io/HierarchicalStreamWriter;Lcom/thoughtworks/xstream/converters/MarshallingContext;)V
 	m	unmarshal	unmarshal	(Lcom/thoughtworks/xstream/io/HierarchicalStreamReader;Lcom/thoughtworks/xstream/converters/UnmarshallingContext;)Ljava/lang/Object;
+	m	o00000	getClassHierarchy	(Ljava/lang/Class;)Ljava/util/Set;
+		c javap 字节码取证 | 高 | 遍历 getSuperclass 并 processInterfaces 收集类及其接口到 Set
 c	com/fs/starfarer/campaign/save/E	com/fs/starfarer/campaign/save/ColorConverter
 	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
 	m	canConvert	canConvert	(Ljava/lang/Class;)Z
@@ -127,6 +155,20 @@ c	com/fs/starfarer/campaign/save/O0oO	com/fs/starfarer/campaign/save/SaveAsDialo
 	m	charTyped	charTyped	(Lcom/fs/starfarer/ui/new;C)V
 	m	charTypeFailed	charTypeFailed	(Lcom/fs/starfarer/ui/new;C)V
 	m	tabPressed	tabPressed	(Lcom/fs/starfarer/ui/new;Lcom/fs/starfarer/util/A/C;)V
+	f	øÔÓ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Cancel" 按钮
+	f	if.new$new	makeSaveCurrentCheckbox	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Make new save slot current for quicksaving" 复选框按钮；getMakeCurrent 返回
+	f	ÖÔÓ000	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Confirm" 按钮
+	f	String.new$new	saveCurrentGame	Z
+		c javap 字节码取证 | 高 | 为 true 时标题/按钮显示 "Save current game"
+	f	OÕÓ000	descriptionText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 第二构造传入的说明文本，标题栏下标签
+	f	õÔÓ000	deleteMode	Z
+		c javap 字节码取证 | 高 | 为 true 时显示 "Delete saved game"、需输入 DELETE 确认
+	f	ÓÔÓ000	descriptionHintLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Optional description..." 灰色提示标签；输入为空时显示
 c	com/fs/starfarer/campaign/save/LoadGameDialog	com/fs/starfarer/campaign/save/LoadGameDialog
 	c 来源(未混淆类名) | 置信度(高) | 证据(LoadGameDialog)
 	f	Ö0Ô000	log	Lorg/apache/log4j/Logger;
@@ -152,33 +194,83 @@ c	com/fs/starfarer/campaign/save/LoadGameDialog	com/fs/starfarer/campaign/save/L
 	m	tableGetComparator	tableGetComparator	(Lcom/fs/starfarer/campaign/ui/UITable;Ljava/lang/Object;)Ljava/util/Comparator;
 	m	tableSortFinished	tableSortFinished	(Lcom/fs/starfarer/campaign/ui/UITable;Lcom/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
 	m	renderImpl	renderImpl	(F)V
+	f	private.void$new	tableWidth	F
+		c javap 字节码取证 | 高 | 构造 = 内宽-20；addColumn 传作 "Savegame" 列宽
+	f	Ò0Ô000	rowHeight	F
+		c javap 字节码取证 | 高 | 构造 68.0f；UITable(8000, rowHeight) 行高
+	f	Ó0Ô000	loadSaveButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Load"/"Save"；advanceImpl 动态改文本 "Overwrite"，主操作按钮
+	f	OOÔ000	deleteButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Delete"；actionPerformed 弹删除确认
+	f	ÒOÔ000	goBackButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Go Back"；actionPerformed dismiss(1)
 c	com/fs/starfarer/campaign/save/LoadGameDialog$1	com/fs/starfarer/campaign/save/SaveDateComparator
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outer	Lcom/fs/starfarer/campaign/save/LoadGameDialog;
+		c javap 字节码取证 | 高 | 匿名比较器外部类引用
+	m	o00000	compare	(Lcom/fs/starfarer/campaign/save/SaveGameData;Lcom/fs/starfarer/campaign/save/SaveGameData;)I
+		c javap 字节码取证 | 高 | 先比兼容级别 ordinal 再比 getSlotCreationTimestamp
 c	com/fs/starfarer/campaign/save/LoadGameDialog$2	com/fs/starfarer/campaign/save/SlotTooltipBeforeShowRunnable
 	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialog内部类)
 	m	run	run	()V
+	f	super	outer	Lcom/fs/starfarer/campaign/save/LoadGameDialog;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其宽高定位
 c	com/fs/starfarer/campaign/save/LoadGameDialog$3	com/fs/starfarer/campaign/save/SaveSlotTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	Lcom/fs/starfarer/campaign/save/LoadGameDialog;
+		c javap 字节码取证 | 高 | 内部类外部引用
+	f	private.this$float	saveGameData	Lcom/fs/starfarer/campaign/save/SaveGameData;
+		c javap 字节码取证 | 高 | final；createImpl 读其数据
 c	com/fs/starfarer/campaign/save/LoadGameDialog$3$1	com/fs/starfarer/campaign/save/ModCheckRowComparator
 	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialog内部类)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	saveSlotTooltip	Lcom/fs/starfarer/campaign/save/SaveSlotTooltip;
+		c javap 字节码取证 | 高 | 外部类引用（this$1），构造参数1
+	m	o00000	compare	(Lcom/fs/starfarer/campaign/save/ModCheckRow;Lcom/fs/starfarer/campaign/save/ModCheckRow;)I
+		c javap 字节码取证 | 高 | 按 isCriticalMissing*100+isUtilityMissing*10 打分，平局按 modSpec.getName 字典序
 c	com/fs/starfarer/campaign/save/LoadGameDialog$3$2	com/fs/starfarer/campaign/save/ModRowTooltipBeforeShowRunnable
 	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialog内部类)
 	m	run	run	()V
+	f	Ó00000	saveSlotTooltip	Lcom/fs/starfarer/campaign/save/SaveSlotTooltip;
+		c javap 字节码取证 | 高 | 外部类引用（this$0），构造参数1
+	f	o00000	row	Lcom/fs/starfarer/campaign/save/ModCheckRow;
+		c javap 字节码取证 | 高 | run() 中读取 modSpec/各布尔/compatLevel 构建各列
+	f	new	rowPanel	Lcom/fs/starfarer/ui/impl/LabelTableRowPanel;
+		c javap 字节码取证 | 高 | run() 中 getCol(0..3) 添加 label/checkmark
 c	com/fs/starfarer/campaign/save/LoadGameDialog$O0	com/fs/starfarer/campaign/save/DialogState
 	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$O0;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$O0;
+	f	Object	DELETE	Lcom/fs/starfarer/campaign/save/DialogState;
+		c javap 字节码取证 | 高 | static{} 顺序第 0 个 "DELETE"
+	f	Ò00000	SAVE_AS	Lcom/fs/starfarer/campaign/save/DialogState;
+		c javap 字节码取证 | 高 | static{} 顺序第 1 个 "SAVE_AS"
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/save/DialogState;
+		c javap 字节码取证 | 高 | values() 返回的私有枚举数组（javac 合成），先例 $VALUES
 c	com/fs/starfarer/campaign/save/LoadGameDialog$OOo	com/fs/starfarer/campaign/save/SortKey
 	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$OOo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$OOo;
+	f	Ò00000	NAME	Lcom/fs/starfarer/campaign/save/SortKey;
+		c javap 字节码取证 | 高 | 枚举常量 "NAME"
+	f	super	$VALUES	[Lcom/fs/starfarer/campaign/save/SortKey;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组
 c	com/fs/starfarer/campaign/save/LoadGameDialog$Oo	com/fs/starfarer/campaign/save/DialogType
 	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$Oo;
+	f	new	LOAD	Lcom/fs/starfarer/campaign/save/DialogType;
+		c javap 字节码取证 | 高 | static{} 顺序第 0 个 "LOAD"
+	f	Ó00000	SAVE_AS	Lcom/fs/starfarer/campaign/save/DialogType;
+		c javap 字节码取证 | 高 | static{} 顺序第 1 个 "SAVE_AS"
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/save/DialogType;
+		c javap 字节码取证 | 高 | values() 返回的私有枚举数组（javac 合成），先例 $VALUES
 c	com/fs/starfarer/campaign/save/LoadGameDialog$o	com/fs/starfarer/campaign/save/SaveRowPanel
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
 	f	icon	icon	Lcom/fs/starfarer/ui/ooO0;
@@ -195,10 +287,30 @@ c	com/fs/starfarer/campaign/save/LoadGameDialog$o	com/fs/starfarer/campaign/save
 c	com/fs/starfarer/campaign/save/LoadGameDialog$o0	com/fs/starfarer/campaign/save/ModCheckRow
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialog内部类)
 	f	super	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+	f	String	hasBeenEnabled	Z
+		c javap 字节码取证 | 中 | getAllModsEverEnabled 遍历时置 true；tooltip 列1 checkmark
+	f	Õ00000	enabledInSave	Z
+		c javap 字节码取证 | 中 | getEnabledMods 遍历时置 true；tooltip 列2 checkmark/版本
+	f	Ö00000	currentlyEnabled	Z
+		c javap 字节码取证 | 中 | ModManager.getEnabledMods 遍历时置 true；tooltip 列3 当前版本
+	f	Ó00000	isUtilityMissing	Z
+		c javap 字节码取证 | 中 | 存档需要但未启用且为 utility mod；排序 +10、tooltip 黄色
+	f	Ò00000	isCriticalMissing	Z
+		c javap 字节码取证 | 中 | 存档需要但未启用且非 utility / isTc；排序 +100、tooltip 红色
+	f	void	compatLevel	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c javap 字节码取证 | 高 | getCompatLevel 计算结果；tooltip 按级别着色；构造默认 ModManager$oo.Ö00000
 c	com/fs/starfarer/campaign/save/LoadGameDialog$oo	com/fs/starfarer/campaign/save/Compatibility
 	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialog内部类)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialog$oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialog$oo;
+	f	Ô00000	NORMAL	Lcom/fs/starfarer/campaign/save/Compatibility;
+		c javap 字节码取证 | 高 | static{} 顺序第 0 个 "NORMAL"
+	f	o00000	WARNING	Lcom/fs/starfarer/campaign/save/Compatibility;
+		c javap 字节码取证 | 高 | static{} 顺序第 1 个 "WARNING"
+	f	Object	ERROR	Lcom/fs/starfarer/campaign/save/Compatibility;
+		c javap 字节码取证 | 高 | static{} 顺序第 2 个 "ERROR"
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/campaign/save/Compatibility;
+		c javap 字节码取证 | 高 | values() 返回的私有枚举数组（javac 合成），先例 $VALUES
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld	com/fs/starfarer/campaign/save/LoadGameDialogOld
 	c 来源(未混淆类名) | 置信度(高) | 证据(LoadGameDialogOld)
 	m	getRowData	getRowData	(Ljava/util/List;Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$O0;
@@ -207,36 +319,126 @@ c	com/fs/starfarer/campaign/save/LoadGameDialogOld	com/fs/starfarer/campaign/sav
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 	m	getCompatibility	getCompatibility	(Lcom/fs/starfarer/campaign/save/SaveGameData;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$oo;
+	f	ÖÒÔ000	unusedFloat	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final），先例 unusedFloat
+	f	ÓÒÔ000	unusedFloat2	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final）
+	f	õoÔ000	unusedFloat3	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final）
+	f	if.int$new	dialogState	Lcom/fs/starfarer/campaign/save/OldDialogState;
+		c javap 字节码取证 | 高 | DELETE 确认框显示时置 DELETE，dismiss 后清空
+	f	øoÔ000	scrollList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | 构造 w(1,listWidth,rowHeight,3f)；addItem 存档行
+	f	ÕÒÔ000	loadButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Load"；actionPerformed dismiss(0)
+	f	ôÒÔ000	deleteButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Delete"；actionPerformed 调 showDeleteConfirmation
+	f	do.int$new	goBackButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Go Back"；actionPerformed dismiss(1)
+	f	ÒÒÔ000	listWidth	F
+		c javap 字节码取证 | 高 | 构造 = 内宽-20；ScrollingList 构造参数
+	f	String.int$new	rowHeight	F
+		c javap 字节码取证 | 高 | 构造 102.0f；ScrollingList 构造参数
+	f	OÒÔ000	selectedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | getSelectedGame 通过它 getData 取存档；actionPerformed 中选中行时写入
+	m	new	createTooltip	(Lcom/fs/starfarer/campaign/save/SaveGameData;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | new LoadGameDialogOld$3(420f,false,data) 返回展开 tooltip
+	m	ÖÖ0000	showDeleteConfirmation	()V
+		c javap 字节码取证 | 高 | 创建 Y 输入框（"Type \"DELETE\" to confirm..."）并置 dialogState=DELETE
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$1	com/fs/starfarer/campaign/save/OldSaveDateComparator
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outer	Lcom/fs/starfarer/campaign/save/LoadGameDialogOld;
+		c javap 字节码取证 | 高 | 匿名比较器外部类引用
+	m	o00000	compare	(Lcom/fs/starfarer/campaign/save/SaveGameData;Lcom/fs/starfarer/campaign/save/SaveGameData;)I
+		c javap 字节码取证 | 高 | 先比兼容级别 ordinal 再比 getSaveDate
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$2	com/fs/starfarer/campaign/save/OldSlotTooltipBeforeShowRunnable
 	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialogOld内部类)
 	m	run	run	()V
+	f	o00000	outer	Lcom/fs/starfarer/campaign/save/LoadGameDialogOld;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | run() 对其 setTooltipPositionRelativeToAnchor
+	f	new	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 读其宽高定位
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$3	com/fs/starfarer/campaign/save/OldSaveSlotTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
 	m	createImpl	createImpl	(Z)V
+	f	this$0	outer	Lcom/fs/starfarer/campaign/save/LoadGameDialogOld;
+		c javap 字节码取证 | 高 | 内部类外部引用
+	f	ÕøôO00	saveGameData	Lcom/fs/starfarer/campaign/save/SaveGameData;
+		c javap 字节码取证 | 高 | final；createImpl 读其 getAllModsEverEnabled
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$3$1	com/fs/starfarer/campaign/save/OldModCheckRowComparator
 	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialogOld内部类)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$1	outer	Lcom/fs/starfarer/campaign/save/OldSaveSlotTooltip;
+		c javap 字节码取证 | 高 | 匿名比较器外部类引用
+	m	o00000	compare	(Lcom/fs/starfarer/campaign/save/OldModCheckRow;Lcom/fs/starfarer/campaign/save/OldModCheckRow;)I
+		c javap 字节码取证 | 高 | 按严重度权重(100/10)+ModSpec 名排序
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$3$2	com/fs/starfarer/campaign/save/OldModRowTooltipBeforeShowRunnable
 	c 来源(javap取证) | 置信度(中) | 证据(LoadGameDialogOld内部类)
 	m	run	run	()V
+	f	Ó00000	outer	Lcom/fs/starfarer/campaign/save/OldSaveSlotTooltip;
+		c javap 字节码取证 | 高 | 匿名 Runnable 外部类引用
+	f	o00000	modRow	Lcom/fs/starfarer/campaign/save/OldModCheckRow;
+		c javap 字节码取证 | 高 | 绑定的一行 mod 检查数据；run() 读其 ModSpec/标志位渲染 tooltip
+	f	new	tableRowPanel	Lcom/fs/starfarer/ui/impl/LabelTableRowPanel;
+		c javap 字节码取证 | 高 | run() 经 getCol(0) 获取列宽计算文本换行
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$O0	com/fs/starfarer/campaign/save/OldModCheckRow
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
 	f	o00000	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
+	f	Ô00000	inSaveMods	Z
+		c javap 字节码取证 | 高 | 遍历存档曾启用 mod 列表时置 true；tooltip 显示 checkmark 图标
+	f	Õ00000	isCurrentlyEnabled	Z
+		c javap 字节码取证 | 高 | 第二个循环（当前启用 mod）置 true；tooltip 显示 checkmark 图标
+	f	return	isDisabled	Z
+		c javap 字节码取证 | 高 | 当前启用列表无此项时置 true；tooltip 显示未勾选图标
+	f	Object	hasMinorIssue	Z
+		c javap 字节码取证 | 高 | 未启用但为 utility mod 时置 true；比较器权重 10、tooltip 高亮色
+	f	Ò00000	hasCriticalIssue	Z
+		c javap 字节码取证 | 高 | 未启用且非 utility 或 TC 专属时置 true；比较器权重 100、tooltip 负高亮色
+	f	Ø00000	compatLevel	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c javap 字节码取证 | 高 | 兼容级别；构造初始化默认值，tooltip 依级别着色
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$Oo	com/fs/starfarer/campaign/save/OldDialogState
 	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialogOld内部类)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$Oo;
+	f	Ò00000	DELETE	Lcom/fs/starfarer/campaign/save/OldDialogState;
+		c javap 字节码取证 | 高 | static{} "DELETE"
+	f	super	$VALUES	[Lcom/fs/starfarer/campaign/save/OldDialogState;
+		c javap 字节码取证 | 高 | values() 返回的私有枚举数组（javac 合成），先例 $VALUES
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$o	com/fs/starfarer/campaign/save/OldSaveRowPanel
 	c 来源(javap取证) | 置信度(高) | 证据(LoadGameDialogOld内部类)
 	m	advanceImpl	advanceImpl	(F)V
 	m	renderImpl	renderImpl	(F)V
+	f	do.return$null	saveGameData	Lcom/fs/starfarer/campaign/save/SaveGameData;
+		c javap 字节码取证 | 高 | 构造参数；各标签从其实取数据
+	f	OÔÓO00	saveDateLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Save date:" 格式化日期标签
+	f	if.return$null	characterNameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getCharacterName 创建的角色名标签
+	f	ÓÔÓO00	portraitPanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | getPortraitName 创建的头像面板
+	f	øÓÓO00	crewEliteIconPanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | icon_crew_elite 图标面板
+	f	ÒÔÓO00	levelLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Level %d" 徽章标签
+	f	õÓÓO00	unusedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 中 | 仅声明，无任何读写点
+	f	this$0	outer	Lcom/fs/starfarer/campaign/save/LoadGameDialogOld;
+		c javap 字节码取证 | 高 | 内部类外部引用
 c	com/fs/starfarer/campaign/save/LoadGameDialogOld$oo	com/fs/starfarer/campaign/save/OldCompatibility
 	c 来源(字符串常量) | 置信度(高) | 证据(LoadGameDialogOld内部类)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/LoadGameDialogOld$oo;
+	f	String	NORMAL	Lcom/fs/starfarer/campaign/save/OldCompatibility;
+		c javap 字节码取证 | 高 | static{} 顺序第 0 个 "NORMAL"
+	f	super	WARNING	Lcom/fs/starfarer/campaign/save/OldCompatibility;
+		c javap 字节码取证 | 高 | static{} 顺序第 1 个 "WARNING"
+	f	Ó00000	ERROR	Lcom/fs/starfarer/campaign/save/OldCompatibility;
+		c javap 字节码取证 | 高 | static{} 顺序第 2 个 "ERROR"
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/campaign/save/OldCompatibility;
+		c javap 字节码取证 | 高 | values() 返回的私有枚举数组（javac 合成），先例 $VALUES
 c	com/fs/starfarer/campaign/save/N	com/fs/starfarer/campaign/save/CrewCompositionConverter
 	c 来源(javap取证) | 置信度(高) | 证据(xstream转换器)
 	m	canConvert	canConvert	(Ljava/lang/Class;)Z
@@ -330,10 +532,86 @@ c	com/fs/starfarer/campaign/save/null	com/fs/starfarer/campaign/save/NewGameOpti
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
 	m	updateGameData	updateGameData	()V
+	f	õôoO00	unusedFloat	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final），先例 unusedFloat
+	f	void.int$void	unusedFloat2	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final）
+	f	øÖoO00	portraitButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 肖像预览按钮（128×128）；点击打开姓名选择对话框
+	f	private.if$void	portraitPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 随机肖像路径；dialogDismissed/updateGameData 使用
+	f	ÒôoO00	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Initializing Domain Ident Chip" 标题标签
+	f	ÓØoO00	factionSuffixLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | advanceImpl 显示 "luddic: walker/brother/sister"
+	f	ÕôoO00	ironModeButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Iron mode" 复选框；updateGameData setIronMode(isChecked)
+	f	õØoO00	helpPopupsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Help popups" 复选框；updateGameData setCampaignHelpEnabled(isChecked)
+	f	private.int$void	progressText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 初始 " Initializing Domain Ident Chip"；advanceImpl 加 "." 动画写标题 renderer
+	f	if.if$void	progressSteps	I
+		c javap 字节码取证 | 高 | 每 0.2s 递增并 %15；控制动画与 updateGameData 节奏
+	f	ôÖoO00	progressTimer	F
+		c javap 字节码取证 | 高 | advanceImpl 累加 delta，>0.2f 时 -0.2f 并递增 progressSteps
+	f	øôoO00	panelWidth	F
+		c javap 字节码取证 | 高 | 构造 800.0f；setSize 与 autoSizeToWidth 基准
+	f	do.if$void	panelHeight	F
+		c javap 字节码取证 | 高 | 构造 400.0f；setSize 基准
+	f	õÖoO00	unusedWidth	F
+		c javap 字节码取证 | 中 | 构造时 = panelWidth 副本，之后全类无 getfield（只写不读）
+	f	ÒØoO00	unusedHeight	F
+		c javap 字节码取证 | 中 | 构造时 = panelHeight 副本，之后全类无 getfield（只写不读）
+	f	String.int$void	unusedPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 getfield/putfield（未使用），先例 unusedTable
+	f	super.if$void	parentPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 构造参数2（final）；姓名选择对话框以此作为父面板
+	f	øØoO00	sectorOfOriginLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Sector of origin" 标签
+	f	OôoO00	seedField	Lcom/fs/starfarer/ui/TextFieldImpl;
+		c javap 字节码取证 | 高 | 构造后 setText(getSeedText()) 且 setEnabled(false)
+	f	OõoO00	oldButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Sector Age "Old" 单选钮；getSeedText 前缀 "O"，置 StarAge.OLD
+	f	do.int$void	averageButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Sector Age "Average" 单选钮；getSeedText 前缀 "A"，置 StarAge.AVERAGE
+	f	ÖØoO00	mixedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Sector Age "Mixed" 单选钮；置 StarAge.ANY
+	f	ÒõoO00	youngButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Sector Age "Young" 单选钮；getSeedText 前缀 "Y"，置 StarAge.YOUNG
+	f	void.if$void	normalButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Sector Size "Normal" 单选钮；置 sectorSize "normal"
+	f	String.if$void	smallButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Sector Size "Small" 单选钮；置 sectorSize "small"
+	f	ÖÖoO00	generateButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Generate" 按钮；点击随机生成姓名写入 nameField
+	f	ôØoO00	randomButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Pick Random" 按钮；actionPerformed 打开姓名选择对话框
+	f	super.int$void	seed	J
+		c javap 字节码取证 | 高 | 构造 = |Misc.genRandomSeed()|；updateGameData setSeed
+	f	ÕõoO00	copyButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Copy" 按钮；getSeedText 写入系统剪贴板
+	f	ÓõoO00	pasteButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Paste" 按钮；读剪贴板，合法则 updateFromSeedString 否则弹无效提示
+	f	ÕØoO00	honorificSelect	Lcom/fs/starfarer/ui/DropdownSelect;
+		c javap 字节码取证 | 高 | 称谓下拉（SIR/MAAM/CAPTAIN）；updateGameData 同步性别并 setHonorific
+	f	ÓôoO00	$SWITCH_TABLE$com$fs$starfarer$campaign$save$NewGameOptionsPanel$DialogType	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 惰性缓存数组（javac 合成），dialogDismissed 的 switch 用，先例保留原名
+	m	class.if	showNameDialog	()V
+		c javap 字节码取证 | 高 | 创建 oooO 姓名选择对话框并 show，置 DialogType 状态
+	m	null	showInvalidSeedDialog	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 剪贴板 seed 非法/超长时弹 "There is no sector generation seed in the clipboard..."
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$save$NewGameOptionsPanel$DialogType	$SWITCH_TABLE$com$fs$starfarer$campaign$save$NewGameOptionsPanel$DialogType	()[I
+		c javap 字节码取证 | 高 | static volatile 懒建 int[]（javac 合成），先例保留原名
 c	com/fs/starfarer/campaign/save/null$o	com/fs/starfarer/campaign/save/OptionsDialogType
 	c 来源(字符串常量) | 置信度(高) | 证据(NewGameOptionsPanel（OooO）)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/null$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/null$o;
+	f	Ó00000	PORTRAIT_PICKER	Lcom/fs/starfarer/campaign/save/OptionsDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 "PORTRAIT_PICKER"
+	f	new	INVALID_SEED	Lcom/fs/starfarer/campaign/save/OptionsDialogType;
+		c javap 字节码取证 | 高 | 枚举常量 "INVALID_SEED"
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/save/OptionsDialogType;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组
 c	com/fs/starfarer/campaign/save/SaveGameData	com/fs/starfarer/campaign/save/SaveGameData
 	c 来源(未混淆类名) | 置信度(高) | 证据(SaveGameData)
 	f	characterName	characterName	Ljava/lang/String;
@@ -389,13 +667,53 @@ c	com/fs/starfarer/campaign/save/O0OO	com/fs/starfarer/campaign/save/CampaignMen
 	m	advanceImpl	advanceImpl	(F)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	do.null$new	unusedFloat	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final），先例 unusedFloat
+	f	ÕOÔ000	unusedFloat2	F
+		c javap 字节码取证 | 高 | 全类仅声明处出现，无 putstatic/getstatic（未使用 static final）
+	f	õOÔ000	returnToGameButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Return to Game"；actionPerformed dismiss(0)
+	f	øOÔ000	saveButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Save"；点击弹 CONFIRM_SAVE 确认框
+	f	ôOÔ000	saveAsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Save As"；点击 dismiss 后 cmdSaveCopy
+	f	ÓoÔ000	loadGameButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Load Game"；点击 dismiss 后 cmdLoad
+	f	OoÔ000	codexButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Codex"；点击 dismiss 后 cmdCodex
+	f	ÖOÔ000	settingsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Settings"；点击 dismiss 后 cmdSettings
+	f	void.null$new	saveAndExitButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Save & Exit"；点击弹 CONFIRM_SAVE_AND_EXIT 确认框
+	f	if.null$new	exitButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造 "Exit"；点击弹 CONFIRM_EXIT 确认框
+	f	ÓOÔ000	$SWITCH_TABLE$com$fs$starfarer$campaign$save$CampaignMenuDialog$DialogType	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 惰性缓存数组（javac 合成），dialogDismissed 的 switch 用，先例保留原名
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$save$CampaignMenuDialog$DialogType	$SWITCH_TABLE$com$fs$starfarer$campaign$save$CampaignMenuDialog$DialogType	()[I
+		c javap 字节码取证 | 高 | static volatile 懒建 int[]（javac 合成），先例保留原名
 c	com/fs/starfarer/campaign/save/O0OO$1	com/fs/starfarer/campaign/save/CampaignMenuTooltipRunnable
 	c 来源(javap取证) | 置信度(中) | 证据(CampaignMenuDialog（String）)
 	m	run	run	()V
+	f	super	dialog	Lcom/fs/starfarer/campaign/save/CampaignMenuDialog;
+		c javap 字节码取证 | 高 | 外部类引用（this$0），构造参数1
+	f	Ò00000	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | run() 中 setTooltipOffsetFromCenter 的接收者
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | run() 中 getPosition().getWidth/Height 计算偏移量来源
 c	com/fs/starfarer/campaign/save/O0OO$Oo	com/fs/starfarer/campaign/save/ConfirmDialogType
 	c 来源(字符串常量) | 置信度(高) | 证据(CampaignMenuDialog（String）)
 	m	values	values	()[Lcom/fs/starfarer/campaign/save/O0OO$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/save/O0OO$Oo;
+	f	o00000	CONFIRM_SAVE	Lcom/fs/starfarer/campaign/save/ConfirmDialogType;
+		c javap 字节码取证 | 高 | static{} 顺序第 0 个 "CONFIRM_SAVE"
+	f	Ô00000	CONFIRM_SAVE_AND_EXIT	Lcom/fs/starfarer/campaign/save/ConfirmDialogType;
+		c javap 字节码取证 | 高 | static{} 顺序第 1 个 "CONFIRM_SAVE_AND_EXIT"
+	f	Ó00000	CONFIRM_SAVE_AND_COPY	Lcom/fs/starfarer/campaign/save/ConfirmDialogType;
+		c javap 字节码取证 | 高 | static{} 顺序第 2 个 "CONFIRM_SAVE_AND_COPY"
+	f	class	CONFIRM_EXIT	Lcom/fs/starfarer/campaign/save/ConfirmDialogType;
+		c javap 字节码取证 | 高 | static{} 顺序第 3 个 "CONFIRM_EXIT"
+	f	new	$VALUES	[Lcom/fs/starfarer/campaign/save/ConfirmDialogType;
+		c javap 字节码取证 | 高 | values() 返回的私有枚举数组（javac 合成），先例 $VALUES
 c	com/fs/starfarer/campaign/save/O0OO$o	com/fs/starfarer/campaign/save/CampaignMenuCallback
 	c 来源(字符串常量) | 置信度(高) | 证据(CampaignMenuDialog（String）)
 	m	cmdSave	cmdSave	()Z
@@ -430,6 +748,10 @@ c	com/fs/starfarer/campaign/save/I	com/fs/starfarer/campaign/save/RandomNameDial
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	renderImpl	renderImpl	(F)V
 	m	getPickedGender	getPickedGender	()Lcom/fs/starfarer/api/characters/FullName$Gender;
+	f	ÖoÔ000	PAD	F
+		c javap 常量池 | 高 | static final float=3.0f 布局间距
+	f	ôoÔ000	OPAD	F
+		c javap 常量池 | 高 | static final float=10.0f 布局间距
 c	com/fs/starfarer/campaign/save/I$o	com/fs/starfarer/campaign/save/NameEntry
 	c 来源(javap取证) | 置信度(高) | 证据(RandomNameDialog（oooO）)
 	f	o00000	name	Ljava/lang/String;

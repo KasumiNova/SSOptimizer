@@ -11,6 +11,14 @@ c	com/fs/starfarer/launcher/oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
 	m	super	main	([Ljava/lang/String;)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(main 入口)
+	f	Õ00000	serialVersionUID	J
+		c javap 字节码取证 | 高 | 静态常量 1（JPanel 序列化 UID）
+	f	Ò00000	showLaunchButton	Z
+		c javap 字节码取证 | 高 | paintComponent 按此绘制 launch_button_bg.png（190,216）
+	m	super	setShowLaunchButton	(Z)V
+		c javap 字节码取证 | 高 | 写 showLaunchButton
+	m	super	unusedEmptyMethod	()V
+		c javap 字节码取证 | 中 | 空方法体（仅 return）；全 jar 扫描无调用点，无 synthetic/bridge 标志，判定遗留空实现
 c	com/fs/starfarer/launcher/ModManager	com/fs/starfarer/launcher/ModManager
 	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(ModManager 实现 com.fs.util.DoNotObfuscate)
 	f	MODS_KEY	MODS_KEY	Ljava/lang/String;
@@ -71,30 +79,60 @@ c	com/fs/starfarer/launcher/ModManager$1	com/fs/starfarer/launcher/ModManager$Mo
 	c 来源(javap取证) | 置信度(高) | 证据(FileFilter，mods 目录过滤)
 	m	accept	accept	(Ljava/io/File;)Z
 		c 来源(未混淆方法名) | 置信度(高) | 证据(FileFilter.accept)
+	f	o00000	modManager	Lcom/fs/starfarer/launcher/ModManager;
+		c javap 字节码取证 | 高 | 内部类持有的外部 ModManager 引用；accept 中 loadModSpec/availableMods
 c	com/fs/starfarer/launcher/ModManager$2	com/fs/starfarer/launcher/ModManager$ModNameComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<ModSpec>，按 getName() 比较)
 	m	o00000	compareMods	(Lcom/fs/starfarer/launcher/ModManager$ModSpec;Lcom/fs/starfarer/launcher/ModManager$ModSpec;)I
 		c 来源(javap取证) | 置信度(高) | 证据(按 getName() 比较)
+	f	this$0	modManager	Lcom/fs/starfarer/launcher/ModManager;
+		c javap 字节码取证 | 高 | 内部类持有的外部 ModManager 引用
 c	com/fs/starfarer/launcher/ModManager$3	com/fs/starfarer/launcher/ModManager$AutofireAIPluginPicker
 	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<AutofireAIPlugin>，pickWeaponAIPlugin 实现)
 	m	o00000	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+	f	ø00000	modManager	Lcom/fs/starfarer/launcher/ModManager;
+		c javap 字节码取证 | 高 | 内部类持有的外部 ModManager 引用
+	f	for	weapon	Lcom/fs/starfarer/api/combat/WeaponAPI;
+		c javap 字节码取证 | 高 | pickWeaponAutofireAI(weapon) 传入
 c	com/fs/starfarer/launcher/ModManager$4	com/fs/starfarer/launcher/ModManager$ShipAIPluginPicker
 	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<ShipAIPlugin>(FleetMember,ShipAPI)，pickShipAIPlugin 实现)
 	m	o00000	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+	f	ô00000	modManager	Lcom/fs/starfarer/launcher/ModManager;
+		c javap 字节码取证 | 高 | 内部类持有的外部 ModManager 引用
+	f	int	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | pickShipAI(fleetMember, ship) 第 1 参
+	f	ö00000	ship	Lcom/fs/starfarer/api/combat/ShipAPI;
+		c javap 字节码取证 | 高 | 目标舰；pickShipAI 第 2 参
 c	com/fs/starfarer/launcher/ModManager$5	com/fs/starfarer/launcher/ModManager$DroneAIPluginPicker
 	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<ShipAIPlugin>(ShipAPI,ShipAPI,DroneLauncherShipSystemAPI)，pickDroneAIPlugin 实现)
 	m	o00000	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+	f	Ô00000	modManager	Lcom/fs/starfarer/launcher/ModManager;
+		c javap 字节码取证 | 高 | 内部类持有的外部 ModManager 引用
+	f	return	drone	Lcom/fs/starfarer/api/combat/ShipAPI;
+		c javap 字节码取证 | 高 | 构造第 2 参=新建无人机（oO0O 中 setDrone(true)）；pickDroneAI 第 1 参
+	f	Õ00000	ship	Lcom/fs/starfarer/api/combat/ShipAPI;
+		c javap 字节码取证 | 高 | 构造第 3 参=母舰（oO0O.ship）；pickDroneAI 第 2 参
+	f	Ø00000	droneShipSystem	Lcom/fs/starfarer/api/combat/DroneLauncherShipSystemAPI;
+		c javap 字节码取证 | 高 | 构造第 4 参=发射系统自身；pickDroneAI 第 3 参
 c	com/fs/starfarer/launcher/ModManager$6	com/fs/starfarer/launcher/ModManager$MissileAIPluginPicker
 	c 来源(javap取证) | 置信度(高) | 证据(PluginPicker<MissileAIPlugin>(MissileAPI,ShipAPI)，pickMissileAIOverride 实现)
 	m	o00000	pick	(Lcom/fs/starfarer/api/ModPlugin;)Lcom/fs/starfarer/api/PluginPick;
 		c 来源(javap取证) | 置信度(高) | 证据(PluginPicker 回调)
+	f	o00000	modManager	Lcom/fs/starfarer/launcher/ModManager;
+		c javap 字节码取证 | 高 | 内部类持有的外部 ModManager 引用
+	f	Ò00000	missile	Lcom/fs/starfarer/api/combat/MissileAPI;
+		c javap 字节码取证 | 高 | pickMissileAI(missile, ship) 第 1 参
+	f	Object	ship	Lcom/fs/starfarer/api/combat/ShipAPI;
+		c javap 字节码取证 | 高 | 发射舰；pickMissileAI 第 2 参
 c	com/fs/starfarer/launcher/ModManager$7	com/fs/starfarer/launcher/ModManager$PluginPickComparator
 	c 来源(javap取证) | 置信度(高) | 证据(Comparator<PluginPick<T>>)
 	m	o00000	comparePicks	(Lcom/fs/starfarer/api/PluginPick;Lcom/fs/starfarer/api/PluginPick;)I
 		c 来源(javap取证) | 置信度(高) | 证据(PluginPick 排序比较)
+	f	this$0	modManager	Lcom/fs/starfarer/launcher/ModManager;
+		c javap 字节码取证 | 高 | 内部类持有的外部 ModManager 引用
 c	com/fs/starfarer/launcher/ModManager$ModDependency	com/fs/starfarer/launcher/ModManager$ModDependency
 	c 来源(未混淆类名+DoNotObfuscate) | 置信度(高) | 证据(实现 ModDependencyAPI)
 	f	id	id	Ljava/lang/String;
@@ -251,6 +289,8 @@ c	com/fs/starfarer/launcher/ModManager$oo	com/fs/starfarer/launcher/ModManager$C
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	o00000	$VALUES	[Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
+		c javap 字节码取证 | 高 | enum $VALUES 数组，values() 返回
 c	com/fs/starfarer/launcher/ModManager$Oo	com/fs/starfarer/launcher/ModManager$ModCompatibilityCheck
 	c 来源(javap取证) | 置信度(高) | 证据(按 ModSpec 校验游戏版本+依赖兼容级别，GLModPickerV2 使用)
 	f	Ò00000	gameVersionLevel	Lcom/fs/starfarer/launcher/ModManager$CompatLevel;
@@ -319,30 +359,52 @@ c	com/fs/starfarer/launcher/B	com/fs/starfarer/launcher/ModPickerDialog
 		c 来源(javap取证) | 置信度(中) | 证据(Toolkit 屏幕尺寸 + setLocation)
 	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	Ò00000	serialVersionUID	J
+		c javap ConstantValue=1l | 高 | Swing 类 serialVersionUID
+	f	Object	font	Ljava/awt/Font;
+		c javap 字节码取证 | 高 | lte50549.ttf 创建并 deriveFont(18.0f)（同 linux Ó00000）
+	f	Ô00000	borderColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | createMatteBorder 边框色（同 linux String）
+	f	ô00000	selectedBackgroundColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 渲染器选中行 setBackground（同 linux ô00000）
+	f	o00000	selectedForegroundColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 渲染器选中行 setForeground（同 linux super）
 c	com/fs/starfarer/launcher/B$1	com/fs/starfarer/launcher/ModPickerDialog$ModDescriptionArea
 	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 JTextArea，展示选中模组描述)
 	m	paint	paint	(Ljava/awt/Graphics;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	super	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类外层对话框引用
 c	com/fs/starfarer/launcher/B$2	com/fs/starfarer/launcher/ModPickerDialog$ModList
 	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 JList，模组列表)
 	m	paint	paint	(Ljava/awt/Graphics;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类外层对话框引用
 c	com/fs/starfarer/launcher/B$3	com/fs/starfarer/launcher/ModPickerDialog$ModListMouseAdapter
 	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 MouseAdapter)
 	m	mouseClicked	mouseClicked	(Ljava/awt/event/MouseEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类外层对话框引用
 c	com/fs/starfarer/launcher/B$4	com/fs/starfarer/launcher/ModPickerDialog$ModSelectionListener
 	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 ListSelectionListener)
 	m	valueChanged	valueChanged	(Ljavax/swing/event/ListSelectionEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类外层对话框引用
 c	com/fs/starfarer/launcher/B$5	com/fs/starfarer/launcher/ModPickerDialog$ModListKeyListener
 	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 KeyListener)
 	m	keyPressed	keyPressed	(Ljava/awt/event/KeyEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类外层对话框引用
 c	com/fs/starfarer/launcher/B$6	com/fs/starfarer/launcher/ModPickerDialog$ComponentsKeyListener
 	c 来源(javap取证) | 置信度(中) | 证据(ModPickerDialog 内部 KeyListener，随 o00000(JComponent...) 注册到各组件)
 	m	keyPressed	keyPressed	(Ljava/awt/event/KeyEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类外层对话框引用
 c	com/fs/starfarer/launcher/B$o	com/fs/starfarer/launcher/ModPickerDialog$ModSelection
 	c 来源(javap取证) | 置信度(高) | 证据(ModPickerDialog 内部 (enabled, ModSpec) 选择记录)
 	f	Ò00000	enabled	Z
@@ -357,10 +419,16 @@ c	com/fs/starfarer/launcher/B$o	com/fs/starfarer/launcher/ModPickerDialog$ModSel
 		c 来源(javap取证) | 置信度(高) | 证据(返回 spec)
 	m	toString	toString	()Ljava/lang/String;
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	super	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 匿名内部类外层对话框引用
 c	com/fs/starfarer/launcher/B$Oo	com/fs/starfarer/launcher/ModPickerDialog$ModListCellRenderer
 	c 来源(javap取证) | 置信度(高) | 证据(JCheckBox+ListCellRenderer，模组行渲染)
 	m	getListCellRendererComponent	getListCellRendererComponent	(Ljavax/swing/JList;Ljava/lang/Object;IZZ)Ljava/awt/Component;
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	new	serialVersionUID	J
+		c javap ConstantValue=1l | 高 | serialVersionUID
+	f	o00000	parentDialog	Lcom/fs/starfarer/launcher/ModPickerDialog;
+		c javap 字节码取证 | 高 | 外层对话框引用（取字体/选中颜色）
 c	com/fs/starfarer/launcher/ooOO	com/fs/starfarer/launcher/LauncherSettings
 	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(Preferences 单例，键集 serial/resolution/fullscreen/sound/memory 等)
 	f	new.super	SERIAL	Ljava/lang/String;
@@ -467,6 +535,30 @@ c	com/fs/starfarer/launcher/ooOO	com/fs/starfarer/launcher/LauncherSettings
 		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
 	m	o00000	main	([Ljava/lang/String;)V
 		c 来源(javap取证) | 置信度(高) | 证据(方法体经字符串键/Preferences 调用逐一定位)
+	f	oO0000	firstGameRun	Z
+		c javap 字节码取证 | 高 | isFirstGameRun 缓存 getBoolean("firstGameRun",true) 结果
+	f	ÖO0000	booleanSettings	Ljava/util/List;
+		c javap 字节码取证 | 高 | clinit 装入 fullscreen/sound/canSkipTutorial/firstGameRun/memoryAuto/memoryDisabled/memoryCustom；get/set 布尔键校验
+	f	OO0000	stringSettings	Ljava/util/List;
+		c javap 字节码取证 | 高 | clinit 装入 gameplaySettings/controlsVersion/controls1/controls2/enabled_mods/resolution/continue/numAASamples/screenScale/memory；get/set 字符串键校验
+	f	float	serial	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 安装序列号；loadSerial/saveSerial 读写 Preferences "serial"
+	f	ö00000	preferences	Ljava/util/prefs/Preferences;
+		c javap 字节码取证 | 高 | 构造 userRoot().node("/com/fs/starfarer")；全部设置读写目标
+	f	öO0000	instance	Lcom/fs/starfarer/launcher/LauncherSettings;
+		c javap 字节码取证 | 高 | 静态懒加载单例
+	f	interface	launchingFile	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 常量 ".launching"；isLaunching/createLaunchingFile/removeLaunchingFile 用
+	m	new	loadSerial	()V
+		c javap 字节码取证 | 高 | 私有：Preferences.get("serial")→serial；构造器调用
+	m	oo0000	saveSerial	()V
+		c javap 字节码取证 | 高 | 私有：serial 非空则 Preferences.put("serial")；setSerial 后调用
+	m	class	saveGameplaySettings	()V
+		c javap 字节码取证 | 高 | 收集 StarfarerSettings 各值入 JSONObject 存 Preferences "gameplaySettings"
+	m	class.super	loadGameplaySettings	()V
+		c javap 字节码取证 | 高 | 读 "gameplaySettings" JSON 回填 StarfarerSettings
+	m	null	resetToDefaults	()V
+		c javap 字节码取证 | 高 | 将 StarfarerSettings 各值复位为默认
 c	com/fs/starfarer/launcher/opengl/OoOO	com/fs/starfarer/launcher/opengl/TextButton
 	c 来源(javap取证) | 置信度(高) | 证据(ButtonBase 子类，setText/getText，用作分辨率按钮与 AA 采样显示)
 	m	setText	setText	(Ljava/lang/String;)V
@@ -475,6 +567,8 @@ c	com/fs/starfarer/launcher/opengl/OoOO	com/fs/starfarer/launcher/opengl/TextBut
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	renderImpl	renderImpl	(F)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	O0ÓO00	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 文本标签（同 linux return.Object$null）
 c	com/fs/starfarer/launcher/opengl/class	com/fs/starfarer/launcher/opengl/MessageDialog
 	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(Dialog+Ok 按钮，展示 GLLauncher 各警告文案)
 	m	show	show	(FF)V
@@ -487,6 +581,8 @@ c	com/fs/starfarer/launcher/opengl/class	com/fs/starfarer/launcher/opengl/Messag
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	ÒÖØ000	okButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Ok" 确认按钮
 c	com/fs/starfarer/launcher/opengl/F	com/fs/starfarer/launcher/opengl/LauncherWindow
 	c 来源(javap取证) | 置信度(高) | 证据(启动器窗口接口：switchToLaunch/focusOnResComboBox/getResolution/isFullscreen/isSoundOn)
 	m	getWidth	getWidth	()I
@@ -719,16 +815,32 @@ c	com/fs/starfarer/launcher/opengl/GLLauncher	com/fs/starfarer/launcher/opengl/G
 		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
 	m	tabPressed	tabPressed	(Lcom/fs/starfarer/ui/new;Lcom/fs/starfarer/util/A/C;)V
 		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	$SWITCH_TABLE$com$fs$starfarer$launcher$opengl$GLLauncher$DialogType	$SWITCH_TABLE$com$fs$starfarer$launcher$opengl$GLLauncher$DialogType	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表
+	m	$SWITCH_TABLE$com$fs$starfarer$launcher$opengl$GLLauncher$DialogType	$SWITCH_TABLE$com$fs$starfarer$launcher$opengl$GLLauncher$DialogType	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表初始化方法
 c	com/fs/starfarer/launcher/opengl/GLLauncher$1	com/fs/starfarer/launcher/opengl/GLLauncher$LaunchButtonPanel
 	c 来源(javap取证) | 置信度(中) | 证据(createLaunchButtonPanel 创建，play_button0/1.png 启动按钮)
 	m	advanceImpl	advanceImpl	(F)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	renderImpl	renderImpl	(F)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	void.Object$null	initialized	Z
+		c javap 字节码取证 | 高 | 首次初始化完成标志
+	f	Ó0ÓO00	normalIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | play_button0.png（同 linux int.Object$null）
+	f	Ò0ÓO00	hoverIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | play_button1.png
+	f	this$0	outerLauncher	Lcom/fs/starfarer/launcher/opengl/GLLauncher;
+		c javap 字节码取证 | 高 | 外层启动器引用
+	m	oÒO000	initIcons	()V
+		c javap 字节码取证 | 高 | 首次初始化图标尺寸/透明度
 c	com/fs/starfarer/launcher/opengl/GLLauncher$2	com/fs/starfarer/launcher/opengl/GLLauncher$GameLaunchRunnable
 	c 来源(javap取证) | 置信度(中) | 证据(Thread 体，Fatal:/exit 游戏进程启动逻辑)
 	m	run	run	()V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(Runnable.run)
+	f	o00000	outerLauncher	Lcom/fs/starfarer/launcher/opengl/GLLauncher;
+		c javap 字节码取证 | 高 | 外层启动器引用
 c	com/fs/starfarer/launcher/opengl/GLLauncher$o	com/fs/starfarer/launcher/opengl/GLLauncher$DialogType
 	c 来源(SWITCH_TABLE残留类名+字符串常量) | 置信度(高) | 证据($SWITCH_TABLE$...GLLauncher$DialogType，枚举 RESOLUTION/MODS/SETTINGS/.../SCALE_WARNING)
 	f	Ø00000	RESOLUTION	Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
@@ -749,6 +861,8 @@ c	com/fs/starfarer/launcher/opengl/GLLauncher$o	com/fs/starfarer/launcher/opengl
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	Ó00000	$VALUES	[Lcom/fs/starfarer/launcher/opengl/GLLauncher$DialogType;
+		c javap 字节码取证 | 高 | javac 合成枚举值数组
 c	com/fs/starfarer/launcher/opengl/GLModPickerV2	com/fs/starfarer/launcher/opengl/GLModPickerV2
 	c 来源(未混淆类名) | 置信度(高) | 证据(OpenGL 模组选择对话框)
 	f	DOUBLE_CLICK_DELAY	DOUBLE_CLICK_DELAY	F
@@ -767,10 +881,24 @@ c	com/fs/starfarer/launcher/opengl/GLModPickerV2	com/fs/starfarer/launcher/openg
 		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 		c 来源(未混淆成员名) | 置信度(高) | 证据(real name)
+	f	super.new$String	descriptionTextPanel	Lcom/fs/starfarer/ui/newui/TextPanelImpl;
+		c javap 字节码取证 | 高 | 模组描述文本面板（同 linux oÖØ000）
+	f	õÕØ000	modList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | 模组滚动列表（同 linux public.super$String）
+	f	private.super$String	saveButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Save" 按钮
+	f	OÖØ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Cancel" 按钮（同 linux this.new$String）
+	f	ôÕØ000	disableAllButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Disable all" 按钮
+	f	øÕØ000	enableAllButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Enable all" 按钮
 c	com/fs/starfarer/launcher/opengl/GLModPickerV2$1	com/fs/starfarer/launcher/opengl/GLModPickerV2$CompatLevelComparator
 	c 来源(javap取证) | 置信度(中) | 证据(Comparator<CompatLevel>，模组排序)
 	m	o00000	compareLevels	(Lcom/fs/starfarer/launcher/ModManager$CompatLevel;Lcom/fs/starfarer/launcher/ModManager$CompatLevel;)I
 		c 来源(javap取证) | 置信度(高) | 证据(CompatLevel 排序比较)
+	f	this$0	outerModPicker	Lcom/fs/starfarer/launcher/opengl/GLModPickerV2;
+		c javap 字节码取证 | 高 | 外层选择面板引用
 c	com/fs/starfarer/launcher/opengl/GLModPickerV2$o	com/fs/starfarer/launcher/opengl/GLModPickerV2$ModRowPanel
 	c 来源(javap取证) | 置信度(高) | 证据(ModSpec+getCheckbox+getReqs+unselectable 的模组行)
 	f	String.private$return	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
@@ -789,10 +917,20 @@ c	com/fs/starfarer/launcher/opengl/GLModPickerV2$o	com/fs/starfarer/launcher/ope
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	ÕÓOO00	rowButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 行标题按钮（模组名+版本）
+	f	ÒÓOO00	checkboxButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 行首复选框按钮
+	f	ÖÓOO00	doubleClickTimer	F
+		c javap 字节码取证 | 高 | 双击检测计时器（同 linux return.private$return）
+	f	this$0	outerModPicker	Lcom/fs/starfarer/launcher/opengl/GLModPickerV2;
+		c javap 字节码取证 | 高 | 外层选择面板引用
 c	com/fs/starfarer/launcher/opengl/GLModPickerV2$o$1	com/fs/starfarer/launcher/opengl/GLModPickerV2$ModRowButtonRenderer
 	c 来源(javap取证) | 置信度(中) | 证据(实现 ButtonBackgroundRenderer 的模组行按钮渲染)
 	m	super	render	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
 		c 来源(javap取证) | 置信度(中) | 证据(ButtonBackgroundRenderer.render 实现)
+	f	ØÓ0000	rowPanel	Lcom/fs/starfarer/launcher/opengl/GLModPickerV2$ModRowPanel;
+		c javap 字节码取证 | 高 | 外层行面板引用
 c	com/fs/starfarer/launcher/opengl/D	com/fs/starfarer/launcher/opengl/ResolutionDropdown
 	c 来源(javap取证) | 置信度(高) | 证据(GLLauncher.showResolutionDialog 实例化，分辨率列表下拉)
 	f	do.super$String	anchor	Lcom/fs/starfarer/ui/c;
@@ -873,10 +1011,70 @@ c	com/fs/starfarer/launcher/opengl/ooOO	com/fs/starfarer/launcher/opengl/GLSetti
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	valueChanged	valueChanged	(Lcom/fs/starfarer/coreui/refit/K;II)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	if.for$String	unusedTextPanel	Lcom/fs/starfarer/ui/newui/TextPanelImpl;
+		c javap 反编译 | 中 | 类内及跨类均无读取点，判定未使用（同 linux öôô000）
+	f	Òôô000	applyButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Apply"：保存设置（同 linux Òôô000）
+	f	ÖØô000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Cancel"：恢复分辨率（同 linux for.float$String）
+	f	øØô000	useRecommendedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Use recommended settings"（同 linux øØô000）
+	f	void.for$String	antialiasingButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Antialiasing" 主按钮（同 linux Øôô000）
+	f	do.for$String	uiScaleBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | "UI Scaling" 进度条（同 linux oõô000）
+	f	Õôô000	memoryBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | 内存进度条
+	f	super.for$String	aaSamples	I
+		c javap 字节码取证 | 高 | AA 采样数（同 linux oôô000）
+	f	Oõô000	uiScaleMult	F
+		c javap 字节码取证 | 高 | UI 缩放倍率（同 linux for.for$String）
+	f	String.for$String	memoryMB	I
+		c javap 字节码取证 | 高 | 内存 MB 值（同 linux Ôôô000）
+	f	OØô000	memoryAuto	Z
+		c javap 字节码取证 | 高 | memoryAuto 标志（同 linux return.float$String）
+	f	if.float$String	memoryDisabled	Z
+		c javap 字节码取证 | 高 | memoryDisabled 标志（同 linux ÔØô000）
+	f	void.float$String	memoryCustom	Z
+		c javap 字节码取证 | 高 | memoryCustom 标志（同 linux oØô000）
+	f	ôØô000	resolutionString	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 分辨率快照（Cancel 恢复）
+	f	private.float$String	autoMemoryButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Automatic..." 按钮（同 linux öØô000）
+	f	do.float$String	memoryDisabledButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Disabled (fixed at...)" 按钮（同 linux ØØô000）
+	f	ÒØô000	memoryCustomButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Custom..." 按钮
+	f	ÓØô000	noRestartWarningLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 不重启内存设置不生效警告（同 linux int.float$String）
+	f	øÖô000	restartLauncherWarningLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Applying these settings will restart the launcher"（同 linux øÖô000）
+	f	ôôô000	lowMemoryWarningLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 低内存警告（同 linux ôôô000）
+	f	ÕØô000	launcher	Lcom/fs/starfarer/launcher/opengl/GLLauncher;
+		c javap 字节码取证 | 高 | 外层启动器引用
+	f	øôô000	warningLabels	Ljava/util/List;
+		c javap 字节码取证 | 高 | 警告标签集合
+	f	õØô000	memoryUnavailableWarningShown	Z
+		c javap 字节码取证 | 高 | 内存不可用提示已加入标志（同 linux public.float$String）
+	f	Óôô000	recreateLauncher	Z
+		c javap 字节码取证 | 高 | Apply 触发重启变更标志（同 linux Object.for$String）
+	f	õôô000	$SWITCH_TABLE$com$fs$starfarer$launcher$opengl$GLSettings$DialogType	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表
+	m	o00000	setHighlightedLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | 高亮单个警告标签
+	m	öõ0000	hasSettingsChanged	()Z
+		c javap 字节码取证 | 高 | 设置变更检查
+	m	õõ0000	showAASamplesDropdown	()V
+		c javap 字节码取证 | 高 | 显示 AA 采样下拉
+	m	$SWITCH_TABLE$com$fs$starfarer$launcher$opengl$GLSettings$DialogType	$SWITCH_TABLE$com$fs$starfarer$launcher$opengl$GLSettings$DialogType	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表初始化方法
 c	com/fs/starfarer/launcher/opengl/ooOO$1	com/fs/starfarer/launcher/opengl/GLSettings$MemoryTooltip
 	c 来源(javap取证) | 置信度(高) | 证据(StandardTooltipV2Expandable，内存提示)
 	m	createImpl	createImpl	(Z)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	this$0	outerSettings	Lcom/fs/starfarer/launcher/opengl/GLSettings;
+		c javap 字节码取证 | 高 | 外层设置面板引用
 c	com/fs/starfarer/launcher/opengl/ooOO$o	com/fs/starfarer/launcher/opengl/GLSettings$DialogType
 	c 来源(字符串常量) | 置信度(高) | 证据(枚举 AA_SAMPLES/WARNING)
 	f	Ó00000	AA_SAMPLES	Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
@@ -887,6 +1085,8 @@ c	com/fs/starfarer/launcher/opengl/ooOO$o	com/fs/starfarer/launcher/opengl/GLSet
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	new	$VALUES	[Lcom/fs/starfarer/launcher/opengl/GLSettings$DialogType;
+		c javap 字节码取证 | 高 | javac 合成枚举值数组
 c	com/fs/starfarer/launcher/opengl/oOOO	com/fs/starfarer/launcher/opengl/ModPickerPanel
 	c 来源(javap取证+字符串常量) | 置信度(高) | 证据(modsEnabledWhenDialogWasShown+setSelected+Enable all/Clear/Save；结构与 GLModPickerV2 相同的旧版模组选择面板，未被引用)
 	f	modsEnabledWhenDialogWasShown	modsEnabledWhenDialogWasShown	Ljava/util/List;
@@ -903,6 +1103,18 @@ c	com/fs/starfarer/launcher/opengl/oOOO	com/fs/starfarer/launcher/opengl/ModPick
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	ÕÕØ000	descriptionTextPanel	Lcom/fs/starfarer/ui/newui/TextPanelImpl;
+		c javap 字节码取证 | 高 | 模组描述文本面板（同 linux ÕÕØ000）
+	f	void.super$String	modList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | 模组滚动列表（同 linux oÕØ000）
+	f	ÒÕØ000	saveButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Save" 按钮
+	f	if.super$String	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Cancel" 按钮（同 linux ÔÕØ000）
+	f	OÕØ000	clearButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Clear" 按钮（同 linux return.super$String）
+	f	ÓÕØ000	enableAllButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Enable all" 按钮（同 linux int.super$String）
 c	com/fs/starfarer/launcher/opengl/oOOO$o	com/fs/starfarer/launcher/opengl/ModPickerPanel$ModRowPanel
 	c 来源(javap取证) | 置信度(高) | 证据(ModSpec+getCheckbox 的模组行)
 	f	OÓOO00	modSpec	Lcom/fs/starfarer/launcher/ModManager$ModSpec;
@@ -915,18 +1127,88 @@ c	com/fs/starfarer/launcher/opengl/oOOO$o	com/fs/starfarer/launcher/opengl/ModPi
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 		c 来源(未混淆方法名) | 置信度(高) | 证据(real name)
+	f	øÒOO00	checkboxButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 行首复选框按钮（Q.o00000 渲染 + highlightBrightness）
+	f	this$0	outerPanel	Lcom/fs/starfarer/launcher/opengl/ModPickerPanel;
+		c javap 字节码取证 | 高 | 外层选择面板引用
 c	com/fs/starfarer/launcher/opengl/oOOO$o$1	com/fs/starfarer/launcher/opengl/ModPickerPanel$ModRowButtonRenderer
 	c 来源(javap取证) | 置信度(中) | 证据(实现 ButtonBackgroundRenderer 的模组行按钮渲染)
 	m	super	render	(Lcom/fs/starfarer/ui/OO0O;FFZZLcom/fs/starfarer/ui/int$Oo;)V
 		c 来源(javap取证) | 置信度(中) | 证据(ButtonBackgroundRenderer.render 实现)
+	f	ÖÓ0000	rowPanel	Lcom/fs/starfarer/launcher/opengl/ModPickerPanel$ModRowPanel;
+		c javap 字节码取证 | 高 | 外层行面板引用
 c	com/fs/starfarer/launcher/StarfarerLauncherUI	com/fs/starfarer/launcher/StarfarerLauncherUI
 	c 来源(未混淆类名) | 置信度(高) | 证据(旧 Swing 启动器主界面，持有 LauncherBackgroundPanel)
+	f	Ó00000	WINDOW_WIDTH	I
+		c javap ConstantValue=597 | 高 | 主窗口宽度常量
+	f	OO0000	WINDOW_HEIGHT	I
+		c javap ConstantValue=373 | 高 | 主窗口高度常量
+	f	Ö00000	FOREGROUND_COLOR	Ljava/awt/Color;
+		c javap ConstantValue Color(147,203,251,255) | 高 | 统一前景色
+	f	class	HOVER_COLOR	Ljava/awt/Color;
+		c javap ConstantValue Color(216,240,255,255) | 高 | hover 前景色
+	f	ö00000	resolutionOptionsPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$ResolutionOptionsPanel;
+		c javap 字节码取证 | 高 | 静态设置面板引用
+	f	float	topBarWrapperPanel	Ljavax/swing/JPanel;
+		c javap 字节码取证 | 高 | wrapInPanel(TopBarPanel) 包装面板
+	f	ÓO0000	topBarContainer	Ljavax/swing/JPanel;
+		c javap 字节码取证 | 高 | North 面板（顶栏容器）
+	f	õ00000	topBarPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$TopBarPanel;
+		c javap 字节码取证 | 高 | 顶栏面板实例
+	f	o00000	frame	Ljavax/swing/JFrame;
+		c javap 字节码取证 | 高 | 主窗口
+	f	null	backgroundPanel	Lcom/fs/starfarer/launcher/LauncherBackgroundPanel;
+		c javap 字节码取证 | 高 | 背景面板（Center 区）
+	f	Ô00000	skipSettingsInit	Z
+		c javap 字节码取证 | 中 | createLauncherWindow 参数存储；ResolutionOptionsPanel 据其跳过 LauncherSettings 初始化
+	f	new	font	Ljava/awt/Font;
+		c javap 字节码取证 | 高 | orbitron-light.ttf 派生 20f
+	f	while	resolutionPresetString	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 分辨率串，非空时作为组合框首项
+	f	oO0000	screenAspectRatio	F
+		c javap 字节码取证 | 高 | 屏幕宽高比，写入 StarfarerSettings
+	m	o00000	styleLabels	([Ljavax/swing/JLabel;)V
+		c javap 字节码取证 | 高 | 批量样式化 JLabel
+	m	Ó00000	styleComponents	([Ljavax/swing/JComponent;)V
+		c javap 字节码取证 | 高 | 批量样式化组件（同 linux Object）
+	m	o00000	styleTextFields	([Ljavax/swing/JTextField;)V
+		c javap 字节码取证 | 高 | 批量样式化文本框
+	m	o00000	styleButtons	([Ljavax/swing/JButton;)V
+		c javap 字节码取证 | 高 | 批量样式化按钮
+	m	o00000	wrapInPanel	(Ljavax/swing/JComponent;)Ljavax/swing/JPanel;
+		c javap 字节码取证 | 高 | GridBagLayout 面板包裹组件
+	m	new	wrapInPanelAnchored	(Ljavax/swing/JComponent;)Ljavax/swing/JPanel;
+		c javap 字节码取证 | 高 | GridBagLayout+anchor 包裹组件（同 linux Ò00000）
+	m	new	addTextFieldFocusListeners	([Ljavax/swing/JTextField;)V
+		c javap 字节码取证 | 高 | 给文本框加聚焦全选监听（同 linux Ò00000）
+	m	new	addKeyListeners	([Ljavax/swing/JComponent;)V
+		c javap 字节码取证 | 高 | 给组件加 ESC 退出监听（同 linux Ò00000）
+	m	Ö00000	getClipboardText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 读取剪贴板文本（同 linux return）
+	m	Ô00000	showResolutionOptions	()V
+		c javap 字节码取证 | 高 | 切换设置界面
+	m	Ó00000	buildResolutionComboBox	()Ljavax/swing/JComboBox;
+		c javap 字节码取证 | 高 | 构建分辨率组合框（同 linux Object）
+	m	o00000	filterDisplayModes	(Ljava/util/List;)Ljava/util/List;
+		c javap 字节码取证 | 高 | 过滤/去重/排序分辨率
+	m	o00000	makeComponentsTransparent	([Ljavax/swing/JComponent;)V
+		c javap 字节码取证 | 高 | 批量透明化组件
+	m	class	getResolutionOptionsPanel	()Lcom/fs/starfarer/launcher/StarfarerLauncherUI$ResolutionOptionsPanel;
+		c javap 字节码取证 | 高 | 返回设置面板（同 linux Õ00000）
+	m	o00000	createLauncherWindow	(Ljava/awt/event/ActionListener;ZLjava/lang/String;F)Lcom/fs/starfarer/launcher/opengl/LauncherWindow;
+		c javap 字节码取证 | 高 | 构建主窗口
+	m	new	focusOnKeyBindingsInput	()V
+		c javap 字节码取证 | 高 | 聚焦按键绑定输入框（同 linux Ò00000）
+	m	o00000	focusOnResolutionComboBox	()V
+		c javap 字节码取证 | 高 | 聚焦分辨率组合框
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$1	com/fs/starfarer/launcher/StarfarerLauncherUI$ComponentHoverListener
 	c 来源(javap取证) | 置信度(中) | 证据(MouseAdapter，组件悬停)
 	m	mouseEntered	mouseEntered	(Ljava/awt/event/MouseEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
 	m	mouseExited	mouseExited	(Ljava/awt/event/MouseEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	hoverComponent	Ljavax/swing/JComponent;
+		c javap 字节码取证 | 高 | hover 前景色切换目标（同 linux super）
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$10	com/fs/starfarer/launcher/StarfarerLauncherUI$LauncherWindowAdapter
 	c 来源(javap取证) | 置信度(高) | 证据(实现 LauncherWindow，桥接 Swing UI 到启动器窗口接口)
 	m	switchToLaunch	switchToLaunch	()V
@@ -967,12 +1249,16 @@ c	com/fs/starfarer/launcher/StarfarerLauncherUI$2	com/fs/starfarer/launcher/Star
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
 	m	mouseExited	mouseExited	(Ljava/awt/event/MouseEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	button	Ljavax/swing/JButton;
+		c javap 字节码取证 | 高 | hover 前景色切换目标
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$3	com/fs/starfarer/launcher/StarfarerLauncherUI$TextFieldFocusListener
 	c 来源(javap取证) | 置信度(中) | 证据(FocusListener，文本域焦点)
 	m	focusGained	focusGained	(Ljava/awt/event/FocusEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
 	m	focusLost	focusLost	(Ljava/awt/event/FocusEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	super	textField	Ljavax/swing/JTextField;
+		c javap 字节码取证 | 高 | 目标文本框（同 linux o00000）
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$4	com/fs/starfarer/launcher/StarfarerLauncherUI$EscapeKeyListener
 	c 来源(javap取证) | 置信度(中) | 证据(KeyListener，ESC 退出)
 	m	keyPressed	keyPressed	(Ljava/awt/event/KeyEvent;)V
@@ -1007,20 +1293,66 @@ c	com/fs/starfarer/launcher/StarfarerLauncherUI$9	com/fs/starfarer/launcher/Star
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$o	com/fs/starfarer/launcher/StarfarerLauncherUI$KeyBindingsPanel
 	c 来源(javap取证) | 置信度(中) | 证据(JPanel，多组 JTextField 键位绑定输入)
+	f	ô00000	serialVersionUID	J
+		c javap ConstantValue=1l | 高 | serialVersionUID
+	f	Ø00000	keyField1	Ljavax/swing/JTextField;
+		c javap 字节码取证 | 高 | setKeys split[0] 键输入框
+	f	return	keyField2	Ljavax/swing/JTextField;
+		c javap 字节码取证 | 高 | setKeys split[1] 键输入框
+	f	Õ00000	keyField3	Ljavax/swing/JTextField;
+		c javap 字节码取证 | 高 | setKeys split[2] 键输入框
+	f	Object	keyField4	Ljavax/swing/JTextField;
+		c javap 字节码取证 | 高 | setKeys split[3] 键输入框
+	f	Ô00000	separatorLabel1	Ljavax/swing/JLabel;
+		c javap 字节码取证 | 高 | 键输入框间 "-" 分隔标签
+	f	Ò00000	separatorLabel2	Ljavax/swing/JLabel;
+		c javap 字节码取证 | 高 | 键输入框间 "-" 分隔标签
+	f	o00000	separatorLabel3	Ljavax/swing/JLabel;
+		c javap 字节码取证 | 高 | 键输入框间 "-" 分隔标签
+	m	super	setKeys	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 按 "-" 拆分填充四个输入框
+	m	super	getKeys	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 拼接 "%s-%s-%s-%s"
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$o0	com/fs/starfarer/launcher/StarfarerLauncherUI$TopBarPanel
 	c 来源(javap取证) | 置信度(中) | 证据(JPanel 加入 A 的 North 区)
+	f	Ø00000	serialVersionUID	J
+		c javap ConstantValue=1l | 高 | serialVersionUID
+	f	class	keyBindingsPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$KeyBindingsPanel;
+		c javap 字节码取证 | 高 | 按键绑定面板（同 linux Õ00000）
+	f	Ö00000	pasteCodeButton	Ljavax/swing/JButton;
+		c javap 字节码取证 | 高 | "click here to paste code" 按钮
+	f	Ô00000	activateButton	Ljavax/swing/JButton;
+		c javap 字节码取证 | 高 | "Activate!" 按钮（同 linux String）
+	f	Ó00000	messageLabel1	Ljavax/swing/JLabel;
+		c javap 字节码取证 | 高 | 序列号校验消息第 1 行
+	f	new	messageLabel2	Ljavax/swing/JLabel;
+		c javap 字节码取证 | 高 | 序列号校验消息第 2 行
+	f	o00000	messageLabel3	Ljavax/swing/JLabel;
+		c javap 字节码取证 | 高 | 序列号校验消息第 3 行
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$O0	com/fs/starfarer/launcher/StarfarerLauncherUI$LimitedLengthDocument
 	c 来源(javap取证) | 置信度(中) | 证据(PlainDocument+insertString，限制长度文本域文档)
 	m	insertString	insertString	(ILjava/lang/String;Ljavax/swing/text/AttributeSet;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	Ô00000	serialVersionUID	J
+		c javap ConstantValue=1l | 高 | serialVersionUID
+	f	o00000	maxLength	I
+		c javap 字节码取证 | 高 | 长度上限
+	f	Object	uppercase	Z
+		c javap 字节码取证 | 高 | 大写标志（同 linux Ó00000）
+	f	Ò00000	nextComponent	Ljavax/swing/JComponent;
+		c javap 字节码取证 | 高 | 满长后聚焦的下一个组件（同 linux new）
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$o0$1	com/fs/starfarer/launcher/StarfarerLauncherUI$TopBarButtonListener
 	c 来源(javap取证) | 置信度(中) | 证据(TopBarPanel 内部 ActionListener)
 	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	topBarPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$TopBarPanel;
+		c javap 字节码取证 | 高 | 外层顶栏面板引用
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$o0$2	com/fs/starfarer/launcher/StarfarerLauncherUI$TopBarButtonListener2
 	c 来源(javap取证) | 置信度(中) | 证据(TopBarPanel 内部 ActionListener)
 	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	super	topBarPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$TopBarPanel;
+		c javap 字节码取证 | 高 | 外层顶栏面板引用
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$oo	com/fs/starfarer/launcher/StarfarerLauncherUI$StyledButton
 	c 来源(javap取证) | 置信度(中) | 证据(JButton 子类，自定义 paint)
 	m	paint	paint	(Ljava/awt/Graphics;)V
@@ -1033,6 +1365,26 @@ c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo	com/fs/starfarer/launcher/St
 	c 来源(javap取证) | 置信度(中) | 证据(JPanel+JComboBox+JCheckBox+按钮，加入 A 的 Center 区；分辨率/全屏/声音选项)
 	m	actionPerformed	actionPerformed	(Ljava/awt/event/ActionEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	void	serialVersionUID	J
+		c javap ConstantValue=1l | 高 | serialVersionUID
+	f	Ò00000	resolutionComboBox	Ljavax/swing/JComboBox;
+		c javap 字节码取证 | 高 | 分辨率下拉（同 linux new）
+	f	String	fullscreenCheckBox	Ljavax/swing/JCheckBox;
+		c javap 字节码取证 | 高 | "fullscreen" 复选框
+	f	Õ00000	soundCheckBox	Ljavax/swing/JCheckBox;
+		c javap 字节码取证 | 高 | "sound" 复选框
+	f	Ö00000	saveSettingsButton	Ljavax/swing/JButton;
+		c javap 字节码取证 | 高 | 空文本启动按钮：保存设置
+	f	super	exitButton	Ljavax/swing/JButton;
+		c javap 字节码取证 | 高 | "X" 退出按钮（同 linux o00000）
+	f	Ó00000	modsButton	Ljavax/swing/JButton;
+		c javap 字节码取证 | 高 | "Mods..." 按钮
+	m	Ò00000	getResolutionComboBox	()Ljavax/swing/JComboBox;
+		c javap 字节码取证 | 高 | 返回分辨率下拉（同 linux new）
+	m	super	getFullscreenCheckBox	()Ljavax/swing/JCheckBox;
+		c javap 字节码取证 | 高 | 返回全屏复选框（同 linux o00000）
+	m	Ó00000	getSoundCheckBox	()Ljavax/swing/JCheckBox;
+		c javap 字节码取证 | 高 | 返回声音复选框
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$OOo	com/fs/starfarer/launcher/StarfarerLauncherUI$StyledTextField
 	c 来源(javap取证) | 置信度(中) | 证据(JTextField 子类，自定义 paint)
 	m	paint	paint	(Ljava/awt/Graphics;)V
@@ -1041,13 +1393,23 @@ c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo$1	com/fs/starfarer/launcher/
 	c 来源(javap取证) | 置信度(中) | 证据(oOo 内部自定义 paint 组件)
 	m	paint	paint	(Ljava/awt/Graphics;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	o00000	parentPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$ResolutionOptionsPanel;
+		c javap 字节码取证 | 高 | 外层设置面板引用
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo$2	com/fs/starfarer/launcher/StarfarerLauncherUI$ResOptionsCustomPaint2
 	c 来源(javap取证) | 置信度(中) | 证据(oOo 内部自定义 paint 组件)
 	m	paint	paint	(Ljava/awt/Graphics;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	super	parentPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$ResolutionOptionsPanel;
+		c javap 字节码取证 | 高 | 外层设置面板引用
 c	com/fs/starfarer/launcher/StarfarerLauncherUI$oOo$3	com/fs/starfarer/launcher/StarfarerLauncherUI$ResOptionsHoverListener
 	c 来源(javap取证) | 置信度(中) | 证据(oOo 内部 MouseAdapter，ImageIcon 悬停切换)
 	m	mouseEntered	mouseEntered	(Ljava/awt/event/MouseEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
 	m	mouseExited	mouseExited	(Ljava/awt/event/MouseEvent;)V
 		c 来源(未混淆覆盖方法) | 置信度(高) | 证据(real name)
+	f	Ó00000	parentPanel	Lcom/fs/starfarer/launcher/StarfarerLauncherUI$ResolutionOptionsPanel;
+		c javap 字节码取证 | 高 | 外层设置面板引用
+	f	new	hoverIcon	Ljavax/swing/ImageIcon;
+		c javap 字节码取证 | 高 | mouseEntered 设置的图标
+	f	o00000	defaultIcon	Ljavax/swing/ImageIcon;
+		c javap 字节码取证 | 高 | mouseExited 恢复的图标

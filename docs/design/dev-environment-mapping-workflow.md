@@ -14,10 +14,11 @@
 
 ## 生成 / 合并 / 报告流程
 
-- `./gradlew :mapping:generateFullMappings`：扫描 `game-jars/{platform}/` 下的混淆 jar（`*_obf.jar`），对 linux / windows 各生成一份全量表与报告。生成是确定性的（同一输入两次运行字节一致），有测试锁定。
+- `./gradlew :mapping:generateFullMappings`：扫描 `game-jars/{platform}/` 下的混淆 jar（`*_obf.jar`），对 linux / windows 各生成一份全量表与报告。生成是确定性的（同一输入两次运行字节一致），有测试锁定。运行输出含**语义覆盖率**行（非占位成员 / 成员总数），是批量命名进度的机械验收指标。
 - `remapGameClasspathToNamed` 依赖 `generateFullMappings` 并通过 `--mapping=` 消费全量表；tiny 源或 game-jars 变更会触发重跑。
 - 占位名规则：保留原包前缀，类名 `C_<结构指纹8>`，成员 `f_<指纹8>` / `m_<指纹8>`（成员指纹含描述符，重载天然区分）；同作用域指纹冲突按内部名排序追加 `_2`/`_3`。构造方法与 `<clinit>` 不生成映射；同类同名字段组无法按名消歧，整组保持混淆名。
 - 成员名提升：混淆器未改写的原始成员名（如 `ship`、`render`、`MAX_RANGE`）在生成时直接作为 named 名（重载方法同名提升，保持 Java 重载语义），不再落哈希占位；o0 字典垃圾名（连零串 / 纯 oO0 堆叠）、Java 关键字/字面量/常见 JDK 类型名、编译器合成名（含 `$`）仍落哈希占位，交由后续语义命名处理。判定逻辑见 `IntermediaryNameGenerator.isPromotableObfuscatedName`。
+- 机械预命名：零歧义字段在生成时直接派生 named 名——实现 `Serializable` 且唯一的 `static final long` → `serialVersionUID`；带 ConstantValue 的 `static final String` 常量字段按值派生 camelCase（末尾 3 token）；`static` log4j Logger 字段 → `logger`。派生名冲突按声明顺序追加 `_2`/`_3`。
 - 结构指纹 = 父类 + 接口(排序) + 字段描述符多重集 + 方法(desc+access)多重集（剔除 `<clinit>`），SHA-256 截前 8 hex。结构相同的类跨平台指纹一致，是双平台同步命名的锚点。
 - 报告（`mapping/build/reports/`，不入库）：
   - `mapping-drift-{platform}.txt`：人工条目在 jar 当前结构中找不到对应类/成员（name+desc 精确匹配）的清单，正常应为 0 条；
@@ -74,6 +75,17 @@ Tiny v2 注释行（类行下 `\tc <注释>`、成员行下 `\t\tc <注释>`）�
   - 同 obf 类重复 → 留覆盖全 / 证据足的一方，并合并双方独有成员；
   - 不同类同名 → 证据弱方改更具体名（BaseToggleButton、FleetwideCombatReadinessTooltip、DesignDisplay、FighterPickerItem、AptitudePanelCopy、AptitudeSkillRow）；
   - a/b/c 边界 → 以边界类名 + 码点序（`LC_ALL=C sort`）实测切分。
+
+## 成员级批量命名工作流（第三波，语义覆盖率 61.5% → 99%+）
+
+第三波把存量占位成员（`f_/m_<指纹8>`）一波清完，linux 语义覆盖率 99.2%（剩余占位 331，均为有意留白的疑难/死代码成员）。与类级命名（第一/二波）的差异：
+
+- **分区按类原子切分**：工作清单按"含占位成员的类"贪心打包（每区 ≤150 成员），类不跨区，结构上杜绝跨代理冲突；既有 scope 已声明的类，代理产出"成员扩展片段"（类行 obf+named 与归属 scope 逐字一致），合入时由脚本把成员行迁入归属 scope（`.dev/wave3/merge_wave3.py`），无归属类聚成新 scope。
+- **质量门前置到代理侧**：每个代理交活前必须自跑 `./gradlew :mapping:validateScopeFragment -Pfragment=<片段>`（`ScopeFragmentCli --check`：格式、与既有片段冲突——成员扩展自动豁免、jar 一致性），通过才交活；编排侧 merge 后 `mergeScopeFragments` 复核应为 0 问题。
+- **机械预命名先行**：零歧义字段不落占位直接派生（`IntermediaryNameGenerator`：唯一 static final long 且实现 Serializable → serialVersionUID；static final String 常量按值派生；static log4j Logger → logger），减少代理浪费在死代码上的精力。
+- **协调靠词汇表不靠通信**：全部代理共用一份命名纪律文件（`.dev/wave3/naming-glossary.md`，含命名规范、双平台取证纪律、输出契约、自校验命令），保证 100+ 并发代理风格一致。
+- **单轮并发上限**：AgentSwarm 单轮 121 个代理曾把客户端打到 OOM；实际安全水位约 ≤60/轮，超量拆轮次。
+- **崩溃恢复套路**：批量校验全部产出（通过的保留）→ 缺失分区重跑 → 校验失败分区派修复代理（带具体错误明细，多为缩进格式 / 类行 named 未照抄 / obf 名跨平台误抄三类，修复成本远低于重跑）。
 
 ## 双平台取证纪律
 

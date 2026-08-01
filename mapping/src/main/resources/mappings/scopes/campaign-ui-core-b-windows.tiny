@@ -7,6 +7,8 @@ c	com/fs/starfarer/campaign/ui/Oo0o	com/fs/starfarer/campaign/ui/DateTimePanel
 	f	do.this$do	cycleValue	Lcom/fs/starfarer/ui/d;
 	f	ø0Oo00	daySeparator	Lcom/fs/starfarer/ui/d;
 	f	if.this$do	textColor	Ljava/awt/Color;
+	f	õ0Oo00	fontLineHeight	F
+		c javap 字节码取证 | 高 | 构造以 orbitron20aa 字体行高存入；各日期 label setSize 高度统一用它
 c	com/fs/starfarer/campaign/ui/i	com/fs/starfarer/campaign/ui/PriceDisplayWidget
 	c 来源(结构同构+$SWITCH_TABLE) | 置信度(高) | 证据(win i ↔ linux i：PriceUpdatePlugin 字段与 renderPrice 一致)
 	f	ô0ÖO00	priceUpdatePlugin	Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin$PriceUpdatePlugin;
@@ -15,6 +17,16 @@ c	com/fs/starfarer/campaign/ui/i	com/fs/starfarer/campaign/ui/PriceDisplayWidget
 	f	Ò0ÖO00	typeIconDown	Lcom/fs/starfarer/campaign/ui/marketinfo/f$o;
 	m	renderPrice	renderPrice	(F)V
 	m	renderGlow	renderGlow	(F)V
+	f	Ó0ÖO00	alwaysRenderPrice	Z
+		c javap 字节码取证 | 高 | 构造参数2；renderPrice 中 true=跳过 glow 门控且 alpha 强制 1
+	f	õ0ÖO00	initialized	Z
+		c javap 字节码取证 | 高 | sizeChanged 懒建组件标志（首帧 createComponents 后置 true）
+	f	if.float$int	commodityIconGroup	Lcom/fs/starfarer/campaign/ui/marketinfo/CommodityIconGroup;
+		c javap 字节码取证 | 高 | createComponents 中 new C(commodity, mode) 存入；render 中 setMode/render
+	f	Ö0ÖO00	priceTypeSwitchMap	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$PriceType() 唯一读写（static volatile 懒建），先例 util-io resourceTypeSwitchMap
+	m	OÓO000	createComponents	()V
+		c javap 字节码取证 | 高 | 按 PriceType switch 选图标模式，建 CommodityIconGroup + 价格 label；sizeChanged 懒调
 c	com/fs/starfarer/campaign/ui/privatesuper	com/fs/starfarer/campaign/ui/GlowPanel
 	c 来源(结构同构) | 置信度(高) | 证据(win privatesuper ↔ linux interfacesuper：构造(Color)+create 生命周期一致)
 	f	O0ÖO00	glowColor	Ljava/awt/Color;
@@ -36,11 +48,61 @@ c	com/fs/starfarer/campaign/ui/Stringnew	com/fs/starfarer/campaign/ui/FleetMembe
 	m	getConfirmButton	getConfirmButton	()Lcom/fs/starfarer/ui/n;
 	m	getResetButton	getResetButton	()Lcom/fs/starfarer/ui/n;
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	OÓOo00	elementGap	F
+		c javap 字节码取证 | 高 | clinit 3.0f；组件 inTR/inTL/inBL 布局间距
+	f	õÒOo00	buttonOffset	F
+		c javap 字节码取证 | 高 | clinit 10.0f；按钮 inBR(offset+15, offset) 定位
+	f	private.super$do	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Abort" 按钮；getCancelButton()
+	f	OÒOo00	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Confirm Transaction" 按钮；getConfirmButton()；confirmTransaction 入口
+	f	øÒOo00	resetButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Abort" 按钮；getResetButton()
+	f	void.new$do	receiveLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "You will receive:" label
+	f	ÕÒOo00	creditsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "0 credits" label
+	f	ÒÒOo00	mothballedFleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
+		c javap 字节码取证 | 高 | 构造 getMothballedShips() 存入；购买数据源，confirmTransaction 中 clear 并回填
+	f	super.new$do	fightersButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Fighters" 分类按钮
+	f	ÓÒOo00	frigatesButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Frigates" 分类按钮
+	f	ôÒOo00	destroyersButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Destroyers" 分类按钮
+	f	õoOo00	cruisersButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Cruisers" 分类按钮
+	f	String.new$do	capitalButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Capital" 分类按钮
+	f	ÒÓOo00	hullSizeFleetDataMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | HashMap<HullSize,FleetData>；构造按 5 种 HullSize 填 filterFleetDataByHullSize 结果；actionPerformed 切分类用
+	m	oO0000	createCategoryButton	(Ljava/lang/String;)Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 私有：创建 110x20 分类按钮（orbitron20aa、CutStyle.TOP、高亮 1.0）
+	m	o00000	removeFleetMemberFromCategory	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+		c javap 字节码取证 | 高 | map.get(hullSize).removeFleetMemberAndCollapseSlot(member)（从分类购买列表移除）
+	m	o00000	restoreMembersToMothballed	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;)V
+		c javap 字节码取证 | 高 | 分类 FleetData 全部成员 addFleetMember 回 mothballed；confirmTransaction 后清空回填未买舰
+	m	o00000	filterFleetDataByHullSize	(Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;Lcom/fs/starfarer/campaign/fleet/FleetData;)Lcom/fs/starfarer/campaign/fleet/FleetData;
+		c javap 字节码取证 | 高 | 新建 FleetData，过滤 hullSize 匹配成员，sort 后返回；构造中为每类建购买数据
 c	com/fs/starfarer/campaign/ui/k	com/fs/starfarer/campaign/ui/RuleMemoryProvider
 	c 来源(字符串常量) | 置信度(高) | 证据(win k ↔ linux newnew：$sourceMarket/faction/global/local/market/player 全匹配)
 	f	o00000	dialog	Lcom/fs/starfarer/api/campaign/InteractionDialogAPI;
 	f	new	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
 	f	Ó00000	memories	Ljava/util/Map;
+	f	Ô00000	textPanel	Lcom/fs/starfarer/ui/newui/TextPanelImpl;
+		c javap 字节码取证 | 高 | init 存参数2；无参 getter 返回
+	m	super	init	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;Lcom/fs/starfarer/ui/newui/TextPanelImpl;)V
+		c javap 字节码取证 | 高 | 两构造器共用初始化
+	m	Ó00000	populateMemoryMap	()V
+		c javap 字节码取证 | 高 | 填充 local/faction/global/player/market/sourceMarket 记忆
+	m	super	fireRule	(Ljava/lang/String;)Z
+		c javap 字节码取证 | 高 | FireBest.fire(规则id, dialog, memories)
+	m	super	getTextPanel	()Lcom/fs/starfarer/ui/newui/TextPanelImpl;
+		c javap 字节码取证 | 高 | 返回 textPanel
+	m	Ò00000	getEntityToken	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c javap 字节码取证 | 高 | 返回实体 token
+	m	String	getMemories	()Ljava/util/Map;
+		c javap 字节码取证 | 高 | 返回记忆 Map
 c	com/fs/starfarer/campaign/ui/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/QuantityAdjustPanel
 	c 来源(结构同构+字符串常量) | 置信度(高) | 证据(win 长名 ↔ linux null：+/-/> 字符串与 setQuantity 一致)
 	f	do.if$for	quantityLabel	Lcom/fs/starfarer/ui/d;
@@ -49,6 +111,8 @@ c	com/fs/starfarer/campaign/ui/OooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	setQuantity	setQuantity	(Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;I)V
 	m	getCurrQuantity	getCurrQuantity	()I
 	m	getCommodity	getCommodity	()Lcom/fs/starfarer/campaign/econ/CommodityOnMarket;
+	f	Óo0o00	commodityIconGroup	LCommodityIconGroup;
+		c javap 字节码取证 | 高 | sizeChanged 创建 marketinfo/ooO0（同 linux null）
 c	com/fs/starfarer/campaign/ui/interface	com/fs/starfarer/campaign/ui/FleetInfoRow
 	c 来源(结构同构+字符串常量) | 置信度(高) | 证据(win interface ↔ linux o00O：Fleets/icon_fleet0-3/combat_fleet_size_mult 一致)
 	f	ôÖÕO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
@@ -56,6 +120,30 @@ c	com/fs/starfarer/campaign/ui/interface	com/fs/starfarer/campaign/ui/FleetInfoR
 	f	ÒØÕO00	sizeIcons	Ljava/util/List;
 	m	getImagePad	getImagePad	()F
 	m	setImagePad	setImagePad	(F)V
+	f	õÖÕO00	baseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 getFaction().getBaseUIColor() 存入；舰队图标 setColor
+	f	do.void$int	initialized	Z
+		c javap 字节码取证 | 高 | sizeChanged 懒建组件标志（首次调 createComponents 后置 true）
+	f	private.void$int	unusedBoolean	Z
+		c javap 字节码取证 | 中 | 仅构造写 false，类内零读取，死字段（unused 前缀纪律）
+	f	String.null$int	brightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 getBrightUIColor() 存入；标题/数值 label 主色
+	f	ÓØÕO00	darkColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 getDarkUIColor() 存入
+	f	ÕØÕO00	imagePad	F
+		c javap 字节码取证 | 高 | getImagePad/setImagePad 直接读写
+	f	øÖÕO00	dmodMaxBar	Lcom/fs/starfarer/coreui/CellProgressBar;
+		c javap 字节码取证 | 高 | 5 段进度条，updateFleetIndicators 中恒 setCurr(5)（DMod 上限段）
+	f	ÖÖÕO00	dmodCountBar	Lcom/fs/starfarer/coreui/CellProgressBar;
+		c javap 字节码取证 | 高 | 5 段进度条，setCurr(5-dmodCount)（按 shipQuality/qualityPerDMod 计算剩余段）
+	f	super.null$int	fleetSizePercentLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 显示 combat_fleet_size_mult*100% 文本；updateFleetIndicators 刷新
+	f	ÕÖÕO00	fleetIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | systemMap/icon_fleet3 图标；按 shipQuality 换 icon_fleet0/1/2
+	m	ÓÒO000	createComponents	()V
+		c javap 字节码取证 | 高 | 创建质量% label、"Fleets" 标题、两条 DMod 进度条、舰队图标并布局；sizeChanged 懒调
+	m	ÔÒO000	updateFleetIndicators	()V
+		c javap 字节码取证 | 高 | 刷新规模%文本、DMod 进度条 curr、舰队图标；advanceImpl 每帧调
 c	com/fs/starfarer/campaign/ui/class	com/fs/starfarer/campaign/ui/TradePanelV2
 	c 来源($SWITCH_TABLE+字符串常量) | 置信度(高) | 证据(win class ↔ linux 长名：$SWITCH_TABLE TradePanelV2 与 Back to colony list 字符串一致)
 	f	do.super$class	mode	Lcom/fs/starfarer/campaign/ui/class$o;
@@ -109,6 +197,60 @@ c	com/fs/starfarer/campaign/ui/class	com/fs/starfarer/campaign/ui/TradePanelV2
 	m	isGeneratePods	isGeneratePods	()Z
 	m	setGeneratePods	setGeneratePods	(Z)V
 	m	getFactionTitle	getFactionTitle	()Lcom/fs/starfarer/ui/c;
+	f	private.super$class	transactionSummaryPanel	LTransactionSummaryPanel;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÓÖõ000	marketInfoRow	LMarketInfoRow;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	if.new$class	entityMarket	Lcom/fs/starfarer/campaign/econ/Market;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	super.super$class	tradeMarket	Lcom/fs/starfarer/campaign/econ/Market;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	OØõ000	marketNameButton	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	õØõ000	factionNameButton	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	void.new$class	transactionHost	Lcom/fs/starfarer/ui/ActionListener;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	õÕõ000	submarketPicker	LSubmarketPickerWidget;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÖÖõ000	coreUIHost	Lcom/fs/starfarer/coreui/CoreUIHost;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÒØõ000	salvageImagePanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÕØõ000	showMarketInfo	Z
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ôÖõ000	lootCargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	if.super$class	pickerCargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	Oôõ000	pickerSourceCargo	Lcom/fs/starfarer/campaign/fleet/CargoData;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ôØõ000	pickerSourceTitle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ôÕõ000	pickerTitle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	OÖõ000	title	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÖÕõ000	colonyInfoButtonDisabled	Z
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	do.new$class	reportPlayerDidNotTakeCargo	Z
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	super.new$class	skipConfirm	Z
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÓØõ000	revealMode	Z
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÕÕõ000	canLeavePersonnel	Z
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	String.new$class	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$TradePanelV2$TradePanelMode	[I
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	f	ÒÖõ000	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$TradePanelV2$DialogType	[I
+		c javap 字节码取证 | 高 | 与 linux o0OO… 同构，字段位次/访问器逐一核对
+	m	oö0000	createFakeEntity	()Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c javap 字节码取证 | 高 | 无实体时建 fake 轨道站+市场返回 token（同 linux）
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$TradePanelV2$TradePanelMode	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$TradePanelV2$TradePanelMode	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表
+	m	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$TradePanelV2$DialogType	$SWITCH_TABLE$com$fs$starfarer$campaign$ui$TradePanelV2$DialogType	()[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表
 c	com/fs/starfarer/campaign/ui/class$2	com/fs/starfarer/campaign/ui/TradePanelV2$FakeInteractionDialog
 	c 来源(结构同构) | 置信度(高) | 证据(win class$2 ↔ linux $2：implements InteractionDialogAPI)
 	f	o00000	textPanel	Lcom/fs/starfarer/api/campaign/TextPanelAPI;
@@ -128,10 +270,26 @@ c	com/fs/starfarer/campaign/ui/class$Oo	com/fs/starfarer/campaign/ui/TradePanelV
 	c 来源(字符串常量) | 置信度(高) | 证据(win class$Oo ↔ linux $Oo：CARGO/CARGO_WITH_MARKET_INFO/LOOT/MARKET)
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/class$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/class$Oo;
+	f	class	MARKET	Lcom/fs/starfarer/campaign/ui/TradePanelV2$TradePanelMode;
+		c javap 字节码取证 | 高 | <clinit> ldc MARKET
+	f	Ô00000	CARGO	Lcom/fs/starfarer/campaign/ui/TradePanelV2$TradePanelMode;
+		c javap 字节码取证 | 高 | <clinit> ldc CARGO
+	f	o00000	CARGO_WITH_MARKET_INFO	Lcom/fs/starfarer/campaign/ui/TradePanelV2$TradePanelMode;
+		c javap 字节码取证 | 高 | <clinit> ldc CARGO_WITH_MARKET_INFO
+	f	Ó00000	LOOT	Lcom/fs/starfarer/campaign/ui/TradePanelV2$TradePanelMode;
+		c javap 字节码取证 | 高 | <clinit> ldc LOOT
+	f	new	$VALUES	[Lcom/fs/starfarer/campaign/ui/TradePanelV2$TradePanelMode;
+		c javap 字节码取证 | 高 | values() 枚举值数组（javac 合成）
 c	com/fs/starfarer/campaign/ui/class$o	com/fs/starfarer/campaign/ui/TradePanelV2$DialogType
 	c 来源(字符串常量) | 置信度(高) | 证据(win class$o ↔ linux $o：FACTION_CONFIG/RENAME_MARKET)
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/class$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/class$o;
+	f	Ó00000	FACTION_CONFIG	Lcom/fs/starfarer/campaign/ui/TradePanelV2$DialogType;
+		c javap 字节码取证 | 高 | <clinit> ldc FACTION_CONFIG
+	f	new	RENAME_MARKET	Lcom/fs/starfarer/campaign/ui/TradePanelV2$DialogType;
+		c javap 字节码取证 | 高 | <clinit> ldc RENAME_MARKET
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/ui/TradePanelV2$DialogType;
+		c javap 字节码取证 | 高 | values() 枚举值数组（javac 合成）
 c	com/fs/starfarer/campaign/ui/oOO0	com/fs/starfarer/campaign/ui/EntityMapMarker
 	c 来源(结构同构) | 置信度(高) | 证据(win oOO0 ↔ linux oOO0：SectorEntityToken+Fader 字段与方法集一致)
 	f	o00000	color	Ljava/awt/Color;
@@ -140,6 +298,10 @@ c	com/fs/starfarer/campaign/ui/oOO0	com/fs/starfarer/campaign/ui/EntityMapMarker
 	m	o00000	getFader	()Lcom/fs/graphics/util/Fader;
 	m	new	getColor	()Ljava/awt/Color;
 	m	o00000	setColor	(Ljava/awt/Color;)V
+	m	new	advance	(F)V
+		c javap 字节码取证 | 高 | 非玩家舰队悬停 fader.fadeIn；fader.advance(amount) 推进
+	m	o00000	unusedAdvance	(F)V
+		c javap 字节码取证 | 中 | 空方法体（仅 return），无任何效果，死代码（unused 前缀纪律）
 c	com/fs/starfarer/campaign/ui/G	com/fs/starfarer/campaign/ui/CargoDisplayV2
 	c 来源($SWITCH_TABLE+字符串常量) | 置信度(高) | 证据(win G ↔ linux oOoO：$SWITCH_TABLE CargoDisplayV2 与 All/Eject/Sort 一致)
 	f	void.String$for	cargoDataView	Lcom/fs/starfarer/campaign/ui/trade/CargoDataGridView;
@@ -175,10 +337,50 @@ c	com/fs/starfarer/campaign/ui/G	com/fs/starfarer/campaign/ui/CargoDisplayV2
 	m	preventPickup	preventPickup	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)Z
 	m	setOtherRevealing	setOtherRevealing	(Lcom/fs/starfarer/campaign/ui/G;)V
 	m	getMode	getMode	()Lcom/fs/starfarer/campaign/ui/G$o;
+	f	õÔøO00	allButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | recreate "All" 按钮；getAll() 返回
+	f	ôÔøO00	weaponsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | recreate "Ship weapons" 按钮；getWeapons() 返回
+	f	ôÕøO00	commoditiesButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | recreate "Resources" 按钮；getCommodities() 返回
+	f	if.String$for	specialButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | recreate "Other" 按钮；getSpecial() 返回
+	f	OÖøO00	sortButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | recreate "Sort" 按钮；actionPerformed 分发排序
+	f	ÒÖøO00	ejectButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | recreate 用 ejectButtonLabel("Eject") 文案；仅 SINGLE_TAB 模式显示
+	f	øÕøO00	scroller	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | getScroller() 返回；承载 CargoDataGridView，addToOverlay/removeFromOverlay
+	f	String.class$for	gridContentHeight	F
+		c javap 字节码取证 | 高 | recreate 计算 rows*100+1 存入；updateGridSize 中作 grid 内容高度
+	f	void.class$for	rowCount	I
+		c javap 字节码取证 | 高 | getMinRows/setMinRows 直接读写；updateGridSize 中 setRows 依据
+	f	ÖÕøO00	columnCount	I
+		c javap 字节码取证 | 高 | 构造参数2（列数）；advanceImpl 以 getCols() 回写
+	f	õÕøO00	ejectButtonLabel	Ljava/lang/String;
+		c javap 字节码取证 | 高 | eject 按钮文案，null 时默认 "Eject"；recreate 创建按钮用
+	f	do.String$for	transferAnimator	LCargoTransferAnimator;
+		c javap 字节码取证 | 高 | setRevealMode 构造 CargoTransferAnimator 存入；processInputImpl/advanceImpl 推进并取消
+	f	ÓÕøO00	invalidDropOverlay	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | setInvalidDropTarget 懒建 G$1 覆盖层并 addToOverlay，flashRed 触发；isInvalidDropTarget 判非空
+	f	ÕÕøO00	tabMirror	Lcom/fs/starfarer/campaign/ui/CargoDisplayV2;
+		c javap 字节码取证 | 高 | setTabMirror 写入；actionPerformed 中同步高亮/分类按钮
+	f	OÕøO00	otherRevealing	Lcom/fs/starfarer/campaign/ui/CargoDisplayV2;
+		c javap 字节码取证 | 高 | setOtherRevealing 写入；processInputImpl 中对方有 transferAnimator 时阻塞输入
+	f	øÔøO00	modeSwitchMap	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$Mode() 唯一读写（static volatile 懒建 int[]），先例 util-io resourceTypeSwitchMap
 c	com/fs/starfarer/campaign/ui/G$o	com/fs/starfarer/campaign/ui/CargoDisplayV2$Mode
 	c 来源(字符串常量) | 置信度(高) | 证据(win G$o ↔ linux oOoO$o：CARGO_ENTITY/CARGO_PLAYER/SINGLE_TAB)
 	m	values	values	()[Lcom/fs/starfarer/campaign/ui/G$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ui/G$o;
+	f	Ô00000	CARGO_PLAYER	Lcom/fs/starfarer/campaign/ui/CargoDisplayV2$Mode;
+		c javap 字节码取证 | 高 | clinit 字符串 "CARGO_PLAYER" 直接给出
+	f	new	CARGO_ENTITY	Lcom/fs/starfarer/campaign/ui/CargoDisplayV2$Mode;
+		c javap 字节码取证 | 高 | clinit 字符串 "CARGO_ENTITY" 直接给出
+	f	Ó00000	SINGLE_TAB	Lcom/fs/starfarer/campaign/ui/CargoDisplayV2$Mode;
+		c javap 字节码取证 | 高 | clinit 字符串 "SINGLE_TAB" 直接给出
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/ui/CargoDisplayV2$Mode;
+		c javap 字节码取证 | 高 | 标准枚举 values 数组，命名 $VALUES
 c	com/fs/starfarer/campaign/ui/ooOO	com/fs/starfarer/campaign/ui/TitleBarPanel
 	c 来源(结构同构) | 置信度(中) | 证据(win ooOO ↔ linux ooOO：同名混淆 + 构造(String,String,Color,Color,Color))
 	f	øÕÕO00	title	Ljava/lang/String;
@@ -187,6 +389,16 @@ c	com/fs/starfarer/campaign/ui/ooOO	com/fs/starfarer/campaign/ui/TitleBarPanel
 	m	create	create	()V
 	m	setText	setText	(Lcom/fs/starfarer/ui/n;Ljava/lang/String;)V
 	m	renderGlow	renderGlow	(F)V
+	f	õÕÕO00	borderColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器参数3；边框/禁用混色（同 linux）
+	f	if.void$int	created	Z
+		c javap 字节码取证 | 高 | create() 置位；sizeChanged/advanceImpl 检查
+	f	void.void$int	backgroundPanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | create() 背景 ImagePanel
+	f	OÖÕO00	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器参数4；标题 Label 颜色
+	f	ÓÖÕO00	glowColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器参数5；glow 颜色
 c	com/fs/starfarer/campaign/ui/ifsuper	com/fs/starfarer/campaign/ui/MarketConditionRow
 	c 来源(结构同构) | 置信度(高) | 证据(win ifsuper ↔ linux oooo：MarketConditionAPI 双构造与 getImagePad 一致)
 	f	øõÕO00	condition	Lcom/fs/starfarer/api/campaign/econ/MarketConditionAPI;
@@ -194,6 +406,22 @@ c	com/fs/starfarer/campaign/ui/ifsuper	com/fs/starfarer/campaign/ui/MarketCondit
 	f	ÒöÕO00	iconButton	Lcom/fs/starfarer/ui/n;
 	m	getImagePad	getImagePad	()F
 	m	setImagePad	setImagePad	(F)V
+	f	ôõÕO00	iconColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 构造参数2 主色；renderImpl 作填充/描边色
+	f	do.int$int	initialized	Z
+		c javap 字节码取证 | 高 | sizeChanged 懒建组件标志；advanceImpl 据此门控
+	f	õõÕO00	unusedBoolean	Z
+		c javap 字节码取证 | 中 | 仅构造写 false，类内零读取，死字段（unused 前缀纪律）
+	f	private.int$int	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造参数3（可 null）；非 null 时 createComponents 建文本按钮
+	f	super.if$int	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 构造参数5；Q 按钮创建时第一颜色参数（文字色）
+	f	OöÕO00	textHighlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 构造参数4；Q 按钮创建时第二颜色参数（高亮色）
+	f	ÓöÕO00	imagePad	F
+		c javap 字节码取证 | 高 | getImagePad/setImagePad 直接读写；图标面板内边距
+	m	new.float	createComponents	()V
+		c javap 字节码取证 | 高 | 按 getIconName 建条件图标面板，text 非 null 时建文本按钮并布局；sizeChanged 懒调
 c	com/fs/starfarer/campaign/ui/oOOO	com/fs/starfarer/campaign/ui/CargoTransferDialog
 	c 来源(结构同构+字符串常量) | 置信度(高) | 证据(win oOOO ↔ linux super：credits/Confirm/You have to pay 字符串一致)
 	f	if.null$for	transferHandler	Lcom/fs/starfarer/campaign/ui/trade/F;
@@ -212,11 +440,55 @@ c	com/fs/starfarer/campaign/ui/oOOO	com/fs/starfarer/campaign/ui/CargoTransferDi
 	m	getContButton	getContButton	()Lcom/fs/starfarer/ui/n;
 	m	getPlayerFleet	getPlayerFleet	()Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 	m	getOtherCargo	getOtherCargo	()Lcom/fs/starfarer/campaign/fleet/CargoData;
+	f	do.null$for	buttonWidth	F
+		c javap 字节码取证 | 高 | clinit 250.0f；sizeChanged 中按钮 setSize 宽
+	f	OøøO00	buttonHeight	F
+		c javap 字节码取证 | 高 | clinit 25.0f；sizeChanged 中按钮 setSize 高
+	f	if.int$for	elementGap	F
+		c javap 字节码取证 | 高 | clinit 3.0f；组件 belowMid/belowLeft 布局间距
+	f	O00o00	unusedFloat	F
+		c javap 字节码取证 | 中 | clinit 10.0f；private static 类内零读取，死常量（unused 前缀纪律）
+	f	super.int$for	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Confirm" 按钮；getConfirmButton()；advanceImpl 依交易可用性 enable/disable
+	f	Ó00o00	resetButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Abort" 按钮；getResetButton()；cancelTransaction 入口
+	f	Ò00o00	takeAllButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Take All" 按钮；getTakeAllButton()
+	f	ÒøøO00	continueButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Continue" 按钮；getContButton()；仅 multiRoundMode 显示
+	f	String.int$for	receiveLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "You will receive:" label；advanceImpl 按交易值改 "You have to pay:"
+	f	õøøO00	creditsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "0 credits" label；advanceImpl 更新金额文本与颜色
+	f	øöøO00	hidePaymentSummary	Z
+		c javap 字节码取证 | 中 | 构造参数5；sizeChanged 中 false 时显示 receiveLabel/creditsLabel（true=隐藏收支摘要）
+	f	ôøøO00	otherCargoTitle	Ljava/lang/String;
+		c javap 字节码取证 | 中 | 构造参数4；传入 trade/F 构造作另一侧货物表格标题
+	f	øøøO00	multiRoundMode	Z
+		c javap 字节码取证 | 中 | 构造参数7；true=显示 Continue+Take All，false=显示 Abort+Confirm（多轮交易模式）
 c	com/fs/starfarer/campaign/ui/OOOo	com/fs/starfarer/campaign/ui/MarketAccessRow
 	c 来源(结构同构+字符串常量) | 置信度(中) | 证据(win OOOo ↔ linux thissuper：Access+combat_fleet_size_mult 一致)
 	f	õØÕO00	market	Lcom/fs/starfarer/api/campaign/econ/MarketAPI;
 	f	OôÕO00	labels	Ljava/util/List;
 	f	do.null$int	icons	Ljava/util/List;
+	f	if.null$int	baseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 getBaseUIColor() 存入；renderImpl 画边框
+	f	ôØÕO00	initialized	Z
+		c javap 字节码取证 | 高 | sizeChanged 懒建组件标志
+	f	øØÕO00	unusedBoolean	Z
+		c javap 字节码取证 | 中 | 仅构造写 false，类内零读取，死字段（unused 前缀纪律）
+	f	ÓôÕO00	brightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 getBrightUIColor() 存入；数值 label 主色
+	f	ÒôÕO00	darkColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 构造先写 getDarkUIColor()，随后被 bright 覆盖；renderImpl 作填充色
+	f	void.null$int	accessibilityLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | accessibility mod*100% 数值 label（insignia21LTaa）
+	f	ÖØÕO00	accessIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 拉伸 sprite 图标面板（Access 行图标）
+	m	interface.if	createComponents	()V
+		c javap 字节码取证 | 高 | 创建数值 label、"Access" 标题、图标并布局；sizeChanged 懒调
+	m	ÖÒO000	updateAccessibilityLabel	()V
+		c javap 字节码取证 | 高 | 刷新 accessibility% 文本，<=0 时标红；advanceImpl 每帧调
 c	com/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/TableColumnHeaderPanel
 	c 来源(结构同构) | 置信度(高) | 证据(win 长名 ↔ linux voidsuper：UITable+addColumn+getColumns 一致)
 	f	if.interface$for	baseColor	Ljava/awt/Color;
@@ -237,12 +509,20 @@ c	com/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	getColor	getColor	()Ljava/awt/Color;
 	m	getDark	getDark	()Ljava/awt/Color;
 	m	getBright	getBright	()Ljava/awt/Color;
+	f	Óø0o00	nextColumnX	F
+		c javap 字节码取证 | 高 | addColumn 中 inTL(x,0) 并累加列宽+3（同 linux voidsuper）
 c	com/fs/starfarer/campaign/ui/oOooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/campaign/ui/TableColumnHeaderPanel$ColumnData
 	c 来源(结构同构) | 置信度(中) | 证据(win 长名$o ↔ linux voidsuper$o：列数据字段同构)
 	f	Ø00000	width	F
 	f	new	height	F
 	f	Ö00000	key	Ljava/lang/Object;
 	f	Ó00000	headerButton	Lcom/fs/starfarer/ui/n;
+	f	o00000	titleButton	Lcom/fs/starfarer/campaign/ui/intel/ColumnTitleButton;
+		c javap 字节码取证 | 高 | addColumn 创建标题按钮存入（同 linux）
+	f	Ô00000	sortAscending	Z
+		c javap 字节码取证 | 高 | UITable.sort 切换升/降序（同 linux）
+	f	class	sortable	Z
+		c javap 字节码取证 | 高 | 列头点击仅当 true 触发 sort（同 linux）
 c	com/fs/starfarer/campaign/ui/N	com/fs/starfarer/campaign/ui/ProgressBar
 	c 来源(结构同构+字符串常量) | 置信度(高) | 证据(win N ↔ linux while：%d / %d 与 setProgress 方法一致)
 	m	getBonusColor	getBonusColor	()Ljava/awt/Color;
@@ -274,6 +554,104 @@ c	com/fs/starfarer/campaign/ui/N	com/fs/starfarer/campaign/ui/ProgressBar
 	m	getMax	getMax	()F
 	m	setMax	setMax	(F)V
 	m	forceSync	forceSync	()V
+	f	Oô0o00	rangeMin	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	private.do$for	rangeMax	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	void.while$for	shownRangeMax	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÓØ0o00	progress	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÓÕ0o00	shownProgress	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	Óô0o00	min	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	øÕ0o00	max	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÒÕ0o00	shownMax	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ôØ0o00	shownMin	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	do.while$for	potentialDecreaseAmount	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	Õô0o00	shownPotentialDecreaseAmount	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	super.while$for	shownShowNotchOnIfBelowProgress	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	if.public$for	showNotchOnIfBelowProgress	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÖØ0o00	valueLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	õÕ0o00	barTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÖÖ0o00	text	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	Òô0o00	barHighlightFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	String.while$for	userAdjustable	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	String.do$for	barColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÓÖ0o00	barColorOverflow	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	õØ0o00	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ôÔ0o00	textValueColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	OÕ0o00	bonusColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÕØ0o00	bonusAmount	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	String.public$for	shownValuesNeedUpdate	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	õÔ0o00	flashOnOverflowFraction	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	øÔ0o00	overflowFlashFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	void.public$for	quadRenderer	Lcom/fs/starfarer/E/QuadRenderer;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	OÖ0o00	showNoText	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	void.do$for	showValueOnly	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	õÖ0o00	clampCurrToMax	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÕÕ0o00	showDecimalForValueOnlyMode	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÖÕ0o00	renderListToken	Lcom/fs/graphics/util/GLListToken;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	øÖ0o00	numSubdivisions	I
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	private.while$for	lineUpTextOnCenter	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÖÔ0o00	lineUpTextOffset	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ôÕ0o00	showPercent	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	do.do$for	showPercentAndTitle	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ôÖ0o00	scrollSpeed	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	super.public$for	showLabelOnly	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	super.do$for	roundBarValue	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÕÖ0o00	roundingIncrement	I
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	øØ0o00	widgetColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÒØ0o00	showAdjustableIndicator	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	if.while$for	highlightBrightnessOverrideActive	Z
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	ÒÖ0o00	highlightBrightnessOverride	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	OØ0o00	lastRenderAmount	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	f	if.do$for	lastRenderBrightness	F
+		c javap 字节码取证 | 高 | 与 linux while 同构，getter/setter 与常量池位次逐一核对
+	m	Ö00000	updateProgressFromDrag	(Lcom/fs/starfarer/util/InputEvent;)F
+		c javap 字节码取证 | 高 | processInputImpl 拖拽事件→由鼠标 x 计算并 setProgress+forceSync（同 linux）
 c	com/fs/starfarer/campaign/ui/fleet/A	com/fs/starfarer/campaign/ui/fleet/FleetMemberTransferHandler
 	c 来源(结构同构+字符串常量) | 置信度(高) | 证据(win fleet/A ↔ linux fleet/A：Can't sell or mothball 与 computeBuyCost 一致)
 	f	void.float$void	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
@@ -296,14 +674,34 @@ c	com/fs/starfarer/campaign/ui/fleet/A	com/fs/starfarer/campaign/ui/fleet/FleetM
 	m	getGridOne	getGridOne	()Lcom/fs/starfarer/campaign/ui/fleet/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
 	m	getGridTwo	getGridTwo	()Lcom/fs/starfarer/campaign/ui/fleet/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;
 	m	getBought	getBought	()Ljava/util/Set;
+	f	øõoO00	dragSourceIndex	I
+		c javap 字节码取证 | 高 | 拖拽源索引（同 linux）
+	f	ôõoO00	playerGrid	Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberGrid;
+		c javap 字节码取证 | 高 | 构造器参数1（禁卖最后一艘船）
+	f	OöoO00	noCost	Z
+		c javap 字节码取证 | 高 | isNoCost
+	f	String.float$void	allowLastShipTransferFromGridOne	Z
+		c javap 字节码取证 | 高 | setAllowLastShipTransferFromGridOne
+	m	float	cancelDrag	(Z)V
+		c javap 字节码取证 | 高 | 拖拽取消：成员放回源索引
+	m	ÖoO000	resetDragState	()V
+		c javap 字节码取证 | 高 | 清空拖拽状态
+	m	o00000	toggleTransferMembership	(Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberGrid;Lcom/fs/starfarer/campaign/ui/fleet/FleetMemberGrid;Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+		c javap 字节码取证 | 高 | 转移集合归属记账（同 linux）
 c	com/fs/starfarer/campaign/ui/fleet/O0OO	com/fs/starfarer/campaign/ui/fleet/DropdownList
 	c 来源(结构同构) | 置信度(高) | 证据(win fleet/O0OO ↔ linux fleet/D：primeWithTarget 一致)
 	f	ôøoO00	label	Lcom/fs/starfarer/ui/d;
 	f	if.for$void	itemProvider	Lcom/fs/starfarer/campaign/ui/fleet/O0OO$o;
 	f	õøoO00	listener	Lcom/fs/starfarer/campaign/ui/fleet/O0OO$Oo;
 	m	primeWithTarget	primeWithTarget	(Ljava/lang/String;Lcom/fs/starfarer/campaign/ui/fleet/O0OO$o;)V
+	m	ØoO000	cancelSelection	()V
+		c javap 字节码取证 | 高 | RMB/ESC/空白：通知 selectionCancelled 并清目标（同 linux）
 c	com/fs/starfarer/campaign/ui/fleet/O0OO$Oo	com/fs/starfarer/campaign/ui/fleet/DropdownList$SelectionListener
 	c 来源(继承关系) | 置信度(中) | 证据(win fleet/O0OO$Oo ↔ linux fleet/D$Oo)
+	m	o00000	selectionCancelled	()V
+		c javap 字节码取证 | 高 | 取消选择回调
+	m	o00000	itemSelected	(Ljava/lang/Object;Lcom/fs/starfarer/campaign/ui/fleet/DropdownList;Lcom/fs/starfarer/campaign/ui/fleet/DropdownList$ItemProvider;)V
+		c javap 字节码取证 | 高 | 点击条目选中回调
 c	com/fs/starfarer/campaign/ui/fleet/O0OO$o	com/fs/starfarer/campaign/ui/fleet/DropdownList$ItemProvider
 	c 来源(继承关系) | 置信度(中) | 证据(win fleet/O0OO$o ↔ linux fleet/D$o：getSelectedItem)
 	m	getSelectedItem	getSelectedItem	(Lcom/fs/starfarer/util/A/C;)Ljava/lang/Object;
@@ -380,6 +778,18 @@ c	com/fs/starfarer/campaign/ui/fleet/B	com/fs/starfarer/campaign/ui/fleet/GridVi
 	m	setListener	setListener	(Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo;)V
 	m	getListener	getListener	()Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent$Oo;
 	m	getGrid	getGrid	()Lcom/fs/starfarer/campaign/ui/fleet/GenericGridViewContent;
+	f	ôöoO00	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | getScroller
+	f	OøoO00	contentHeight	F
+		c javap 字节码取证 | 高 | setContentSize 内容高（同 linux 位次）
+	f	ÕöoO00	numRows	I
+		c javap 字节码取证 | 高 | sizeChanged ceil
+	f	øöoO00	numColumns	I
+		c javap 字节码取证 | 高 | sizeChanged floor
+	f	do.float$void	cellWidth	F
+		c javap 字节码取证 | 高 | 构造器参数1
+	f	õöoO00	cellHeight	F
+		c javap 字节码取证 | 高 | 构造器参数2
 c	com/fs/starfarer/campaign/ui/fleet/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/fleet/FleetMemberGrid
 	c 来源(结构同构) | 置信度(高) | 证据(win fleet/长名 ↔ linux fleet/class：FleetData+getViewGrid 一致)
 	f	Ò0ÒO00	data	Lcom/fs/starfarer/campaign/fleet/FleetData;
@@ -409,6 +819,14 @@ c	com/fs/starfarer/campaign/ui/fleet/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	setFilter	setFilter	(Lcom/fs/starfarer/campaign/ui/fleet/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;)V
 	m	getSelectedItem	getSelectedItem	(Lcom/fs/starfarer/util/A/C;)Ljava/lang/Object;
 	m	getMousedOverFleetMember	getMousedOverFleetMember	()Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	do.for$void	cellWidth	F
+		c javap 字节码取证 | 高 | getCellWidth（同 linux）
+	f	Õ0ÒO00	cellHeight	F
+		c javap 字节码取证 | 高 | getCellHeight（同 linux）
+	f	Ó0ÒO00	showStatus	Z
+		c javap 字节码取证 | 高 | setShowStatus/showStatus
+	f	O0ÒO00	showRank	Z
+		c javap 字节码取证 | 高 | setShowRank/showRank
 c	com/fs/starfarer/campaign/ui/fleet/o0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/campaign/ui/fleet/FleetMemberFilter
 	c 来源(继承关系) | 置信度(中) | 证据(win fleet/长名$o ↔ linux fleet/class$o：FleetMember 过滤接口)
 	m	o00000	accept	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)Z
@@ -419,6 +837,14 @@ c	com/fs/starfarer/campaign/ui/fleet/Object	com/fs/starfarer/campaign/ui/fleet/F
 	f	ÕøoO00	fleetData	Lcom/fs/starfarer/campaign/fleet/FleetData;
 	m	setStatusText	setStatusText	(Ljava/lang/String;Ljava/awt/Color;)V
 	m	setStatusText	setStatusText	(Ljava/lang/String;Ljava/awt/Color;Z)V
+	f	ÒøoO00	statusTextLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | setStatusText 底部状态标签（同 linux 位次）
+	f	ÖøoO00	centerLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 中部锚点标签（inMid），文本从未设置
+	f	super.for$void	upperLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 上方标签（aboveMid），文本从未设置
+	f	String.for$void	hasCustomStatusText	Z
+		c javap 字节码取证 | 高 | setStatusText 第三参；不覆盖 Not enough crew
 c	com/fs/starfarer/campaign/ui/oOOO/B	com/fs/starfarer/campaign/ui/super/MapRouteLine
 	c 来源(结构同构) | 置信度(中) | 证据(win oOOO/B ↔ linux super/A：Vector2f+fleet+line32x32 字段同构)
 	f	øøöO00	start	Lorg/lwjgl/util/vector/Vector2f;
@@ -426,9 +852,21 @@ c	com/fs/starfarer/campaign/ui/oOOO/B	com/fs/starfarer/campaign/ui/super/MapRout
 	f	void.this$for	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 	f	ôøöO00	texture	Lcom/fs/graphics/Object;
 	f	if.this$for	lineWidth	F
+	f	ÕøöO00	withBackground	Z
+		c javap 字节码取证 | 高 | renderImpl 若 true 画黑色半透明背景+舰队暗色边框
+	f	ÖøöO00	endPoint	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | sizeChanged 计算路线终点（与起点 midpoint 连线的另一端），renderImpl 作线段终点
+	m	ÓÔO000	loadLineTexture	()V
+		c javap 字节码取证 | 高 | STR "graphics/hud/line32x32.png"；加载连线贴图
+	m	new	renderRouteLine	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 计算归一化方向、箭头缩放后调 Ô00000 画两段折线
+	m	Ô00000	renderLine	(FFFFFFLjava/awt/Color;FFF)V
+		c javap 字节码取证 | 高 | 用 line32x32 贴图渲染 3 条平行线段（+0.5/-0.5 偏移）
 c	com/fs/starfarer/campaign/ui/oOOO/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/campaign/ui/super/MinimapLegend
 	c 来源(结构同构) | 置信度(中) | 证据(win oOOO/长名 ↔ linux super/C：final E 字段+生命周期方法)
 	f	do.this$for	map	Lcom/fs/starfarer/campaign/ui/oOOO/E;
+	f	O0øO00	lightYearPixels	F
+		c javap 字节码取证 | 中 | unitsPerLightYear/config.float*宽度；比例尺线段长度，最小 10f
 c	com/fs/starfarer/campaign/ui/oOOO/E	com/fs/starfarer/campaign/ui/super/SectorMap
 	c 来源(结构同构+字符串常量) | 置信度(高) | 证据(win oOOO/E ↔ linux super/E：intelMapSectorWidth+addConnection 等一致)
 	f	Ö0øO00	config	Lcom/fs/starfarer/campaign/ui/oOOO/E$o;
@@ -469,11 +907,39 @@ c	com/fs/starfarer/campaign/ui/oOOO/E	com/fs/starfarer/campaign/ui/super/SectorM
 	m	createDefaultConfig	createDefaultConfig	()Lcom/fs/starfarer/campaign/ui/oOOO/E$o;
 	m	createMinimapConfig	createMinimapConfig	(Lcom/fs/starfarer/api/campaign/LocationAPI;ZFF)Lcom/fs/starfarer/campaign/ui/oOOO/E$o;
 	m	getDelegate	getDelegate	()Lcom/fs/starfarer/campaign/ui/oOOO/E$Oo;
+	f	String.super$for	scrollable	Z
+		c javap 字节码取证 | 高 | sync 中 true 时创建 ScrollPanel(g) 并启用缩放（scale=max 宽高比），false 时 scale=1
+	m	ÔO0000	renderPlayerMarker	(F)V
+		c javap 字节码取证 | 高 | renderImpl 在 config.o00000 时调用；取玩家舰队超空间/星系锚点位置画十字标记
 c	com/fs/starfarer/campaign/ui/oOOO/E$Oo	com/fs/starfarer/campaign/ui/super/SectorMap$PlanetClickListener
 	c 来源(继承关系) | 置信度(中) | 证据(win oOOO/E$Oo ↔ linux super/E$Oo：PlanetAPI 回调)
 	m	o00000	planetClicked	(Lcom/fs/starfarer/api/campaign/PlanetAPI;)V
 c	com/fs/starfarer/campaign/ui/oOOO/E$o	com/fs/starfarer/campaign/ui/super/SectorMap$Config
 	c 来源(结构同构) | 置信度(中) | 证据(win oOOO/E$o ↔ linux super/E$o：配置字段集)
+	f	class	zoomMult	F
+		c javap 字节码取证 | 高 | 默认 1.62f；createDefaultConfig 中乘到 xRange/visibleXRange
+	f	o00000	showPlayerMarker	Z
+		c javap 字节码取证 | 高 | 默认 true；renderImpl 中决定是否调 E.ÔO0000 画玩家位置标记
+	f	Ö00000	xMin	F
+		c javap 字节码取证 | 高 | 默认 -22000f；地图左边界（createDefaultConfig=-width/2*zoomMult）
+	f	Ô00000	yMin	F
+		c javap 字节码取证 | 高 | 默认 -22000f；地图下边界
+	f	ö00000	xRange	F
+		c javap 字节码取证 | 高 | 默认 44000f；世界坐标→像素的 x 映射范围
+	f	new	yRange	F
+		c javap 字节码取证 | 高 | 默认 44000f；世界坐标→像素的 y 映射范围
+	f	float	visibleXRange	F
+		c javap 字节码取证 | 高 | 默认 44000f；与 visibleYRange 相除得缩放比；MinimapLegend 比例尺也用它
+	f	Ó00000	visibleYRange	F
+		c javap 字节码取证 | 高 | 默认 44000f；y 方向可视范围
+	f	ÔO0000	showStarNames	Z
+		c javap 字节码取证 | 高 | sync 中 true 时对跳点/星系统调 showName
+	f	Ø00000	showBorder	Z
+		c javap 字节码取证 | 高 | 默认 true；renderImpl 中决定是否画边框
+	f	while	showLegend	Z
+		c javap 字节码取证 | 高 | sync 中 true 时创建 MinimapLegend（200x35 右下角）
+	f	oO0000	planetClickListener	Lcom/fs/starfarer/campaign/ui/super/SectorMap$PlanetClickListener;
+		c javap 字节码取证 | 高 | getDelegate() 直接返回；行星点击回调
 c	com/fs/starfarer/campaign/ui/oOOO/oOoO	com/fs/starfarer/campaign/ui/super/StarData
 	c 来源(未混淆类名) | 置信度(高) | 证据(win oOOO/oOoO ↔ linux super/G：highlighted/star/sprite 未混淆字段一致)
 	f	highlighted	highlighted	Z
@@ -511,6 +977,16 @@ c	com/fs/starfarer/campaign/ui/oOOO/oOOO	com/fs/starfarer/campaign/ui/super/Star
 	f	Ô00000	starFrom	Lcom/fs/starfarer/campaign/ui/oOOO/oOoO;
 	f	Ó00000	starTo	Lcom/fs/starfarer/campaign/ui/oOOO/oOoO;
 	f	o00000	color	Ljava/awt/Color;
+	m	super	show	()V
+		c javap 字节码取证 | 高 | class=true、fader.setBounce(true,true)+forceOut；高亮连线（SectorMap.highlightConnection 调用）
+	m	Ó00000	hide	()V
+		c javap 字节码取证 | 高 | fader.setBounce(false,true)、class=false；取消高亮（unhighlightConnection 调用）
+	m	Ò00000	isVisible	()Z
+		c javap 字节码取证 | 高 | 返回 class 字段
+	m	Ò00000	advance	(F)V
+		c javap 字节码取证 | 高 | fader.advance(t) 推进淡入淡出（SectorMap.advanceImpl 遍历调用）
+	m	super	render	(F)V
+		c javap 字节码取证 | 高 | 两端星 getCenterX/Y + iconColor，调 renderers/o0OO 画线；亮度>0 画增亮线
 c	com/fs/starfarer/campaign/ui/oOOO/OooO	com/fs/starfarer/campaign/ui/super/ConnectionLine
 	c 来源(结构同构) | 置信度(高) | 证据(win oOOO/OooO ↔ linux super/OooOOO：getAnchor/getLineWidth 一致)
 	f	do.new$for	fader	Lcom/fs/graphics/util/Fader;
@@ -544,3 +1020,43 @@ c	com/fs/starfarer/campaign/ui/oOOO/F	com/fs/starfarer/campaign/ui/super/MapPosi
 	m	setShowClickToOpenMapText	setShowClickToOpenMapText	(Z)V
 	m	setCenterMapOnEntity	setCenterMapOnEntity	(Lcom/fs/starfarer/api/campaign/SectorEntityToken;)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	if.super$for	starIcon	Lcom/fs/starfarer/coreui/PlanetSurveyDataIcon;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ÖOøO00	hoverFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ÒOøO00	infoTable	Lcom/fs/starfarer/ui/TablePanel;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ôOøO00	openMapLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	super.new$for	lineLength	F
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	do.super$for	unusedSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ÒoøO00	targetLocation	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ôoøO00	mapMode	Lcom/fs/starfarer/coreui/SectorMapMode;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ÓoøO00	mapData	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	øOøO00	dataTriggerPosition	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	private.super$for	showClickToOpenMapText	Z
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	OoøO00	lineTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ÖoøO00	lineStart	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	ÕOøO00	lineEnd	Lorg/lwjgl/util/vector/Vector2f;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	f	void.super$for	destinationLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 与 linux super/return 同构，访问器/位次逐一核对
+	m	class.for	initTexture	()V
+		c javap 字节码取证 | 高 | 加载 line32x32.png
+	m	ÔÔO000	computeStarRadius	()F
+		c javap 字节码取证 | 高 | 恒星半径归一化尺寸
+	m	Ó00000	drawIndicatorLine	(Lorg/lwjgl/util/vector/Vector2f;Lorg/lwjgl/util/vector/Vector2f;FLjava/awt/Color;F)V
+		c javap 字节码取证 | 高 | 主指示线绘制
+	m	o00000	unusedRenderLine	(FFFFLjava/awt/Color;FFF)V
+		c javap 字节码取证 | 高 | 私有绘制助手，无调用点，死方法
+	m	class	renderLine	(FFFFFFLjava/awt/Color;FFF)V
+		c javap 字节码取证 | 高 | 低层线段渲染

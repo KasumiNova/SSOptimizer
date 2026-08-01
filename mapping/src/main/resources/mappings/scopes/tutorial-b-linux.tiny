@@ -1,14 +1,34 @@
 tiny	2	0	obf	named
 c	com/fs/starfarer/tutorial/OoOO$5	com/fs/starfarer/tutorial/AdvancedCombatTutorialScript$WaitForEnforcerDamaged
 	c	javap取证 | 低 | OoOO 高级战斗教程匿名步骤：D$oo 条件回调，ENFORCER 船 HP < max-100 或船已不存在（OoOO$5）
+	f	public	script	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，isDone 中 getfield 调 getShip(ENFORCER)
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo TutorialTrigger 回调实现：getShip 为空或 hitpoints < maxHitpoints-100（tutorial-a 已命名接口方法 isDone）
 c	com/fs/starfarer/tutorial/OoOO$6	com/fs/starfarer/tutorial/AdvancedCombatTutorialScript$WaitForEnforcerLowHull
 	c	javap取证 | 低 | OoOO 高级战斗教程匿名步骤：D$oo 条件回调，ENFORCER 船 HP < 1000（OoOO$6）
+	f	ÒO0000	script	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，isDone 中 getfield 调 getShip(ENFORCER)
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：getShip 为空或 hitpoints < 1000（tutorial-a 已命名接口方法 isDone）
 c	com/fs/starfarer/tutorial/OoOO$7	com/fs/starfarer/tutorial/AdvancedCombatTutorialScript$WaitForEnforcerPresent
 	c	javap取证 | 低 | OoOO 高级战斗教程匿名步骤：D$oo 条件回调，ENFORCER 船存在（OoOO$7）
+	f	for	script	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，isDone 中 getfield 调 getShip(ENFORCER)
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：getShip 非空即 true（tutorial-a 已命名接口方法 isDone）
 c	com/fs/starfarer/tutorial/OoOO$8	com/fs/starfarer/tutorial/AdvancedCombatTutorialScript$ShowWeaponGroup3Arrow
 	c	javap取证 | 低 | OoOO 高级战斗教程匿名步骤：D$OOo 动作回调，findLabelContainingText("3.") + showArrow 指向武器组 3 标签（OoOO$8）
+	f	ØO0000	script	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层高级战斗教程脚本引用，run 中 getfield 调 showArrow/findLabelContainingText
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo TutorialAction 回调实现：向 "3." 标签显示 SHORT_UP 箭头（tutorial-a 已命名接口方法 run）
 c	com/fs/starfarer/tutorial/OoOO$9	com/fs/starfarer/tutorial/AdvancedCombatTutorialScript$RemoveShipHulks
 	c	javap取证 | 低 | OoOO 高级战斗教程匿名步骤：D$OOo 动作回调，遍历 Ship 移除 hulk/piece 残骸（OoOO$9）
+	f	ÕO0000	outer	Lcom/fs/starfarer/tutorial/TutorialAdvancedCombatScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存外层 OoOO 引用（匿名类 this$0）
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | 实现 D$OOo.o00000（接口已命名 run）：遍历 Ship 移除 isHulk&&(isDestroyer||isPiece)
 c	com/fs/starfarer/tutorial/OooO	com/fs/starfarer/tutorial/TutorialStepBase
 	c	继承关系+javap取证 | 中 | 教程步骤抽象基类 implements TutorialStep(class$Oo)：Fader 渐显 + 持有教程脚本引用，转发 getObjective/getTaskForObjective/getTaskOfType/getDeployedCount/isObjectiveOwnedBy 辅助（OooO）
 	m	super	attachScript	(Lcom/fs/starfarer/tutorial/class;)V
@@ -20,6 +40,14 @@ c	com/fs/starfarer/tutorial/OooO	com/fs/starfarer/tutorial/TutorialStepBase
 	m	Ò00000	getTaskForObjective	(Ljava/lang/String;)Lcom/fs/starfarer/combat/tasks/CombatTask;
 	m	super	getTaskOfType	(Lcom/fs/starfarer/combat/tasks/CombatTask$CombatTaskType;)Lcom/fs/starfarer/combat/tasks/CombatTask;
 	m	Ò00000	fadeIn	(F)V
+	f	ÓÒ0000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | fadeIn 懒创建 Fader(0,dt)+fadeIn，advance/isComplete 委托 Fader.advance/isFadedIn
+	f	ÒÒ0000	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript putfield、getScript getfield 返回同一字段
+	f	String.new	instantFadeIn	Z
+		c javap 字节码取证 | 中 | public static boolean，fadeIn 中为 true 时 dt=0 即时渐显；类内仅 clinit 写 false，外部可能置位，语义按用法命名
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | TutorialStep 接口 isComplete 实现：fader != null && fader.isFadedIn
 c	com/fs/starfarer/tutorial/class	com/fs/starfarer/tutorial/TutorialTaskScript
 	c	字符串常量+javap取证 | 中 | 教程任务脚本：静态方法创建 3 个教程任务定义（基础战斗 super / 高级战斗 OoOO / 舰队指挥 F），实例管理 List<TutorialStep> 步骤推进 + 创建舰船/目标/公告板（class）
 	m	Óo0000	createBasicCombatTutorial	()Lcom/fs/starfarer/title/Object/OO0O;
@@ -33,6 +61,38 @@ c	com/fs/starfarer/tutorial/class	com/fs/starfarer/tutorial/TutorialTaskScript
 	m	Ö00000	createShip	(Ljava/lang/String;IFF)Lcom/fs/starfarer/combat/entities/Ship;
 	m	Ó00000	createShip	(Ljava/lang/String;IFFZ)Lcom/fs/starfarer/combat/entities/Ship;
 	m	void.super	getEngine	()Lcom/fs/starfarer/combat/CombatEngine;
+	f	this.new	tutorialType	Lcom/fs/starfarer/tutorial/TutorialTaskScript$TutorialType;
+		c javap 字节码取证 | 高 | 构造器 putfield 保存 TutorialType 参数，init 中据此分支（FLEET 时关闭部署对话框）
+	f	ôo0000	steps	Ljava/util/List;
+		c javap 字节码取证 | 高 | 构造器 new ArrayList 初始化，addStep List.add、advance 出队 remove(0)
+	f	Øo0000	currentStep	Lcom/fs/starfarer/tutorial/TutorialTaskScript$TutorialStep;
+		c javap 字节码取证 | 高 | advance 中步骤出队赋值并推进，完成后置 null
+	f	øo0000	lastStep	Lcom/fs/starfarer/tutorial/TutorialTaskScript$TutorialStep;
+		c javap 字节码取证 | 高 | advance 中 currentStep 完成移交于此，下步消息拼接其 getCompleteText
+	f	public.super	initialized	Z
+		c javap 字节码取证 | 高 | 静态懒初始化守卫：三个静态工厂与构造器均 if(!initialized){createTutorialHullVariants(); initialized=true}
+	f	öo0000	engine	Lcom/fs/starfarer/combat/CombatEngine;
+		c javap 字节码取证 | 高 | init putfield CombatEngine.getInstance()，getEngine getfield 返回
+	m	super	addStep	(Lcom/fs/starfarer/tutorial/TutorialTaskScript$TutorialStep;)V
+		c javap 字节码取证 | 高 | 私有：steps.add(step) + step.attachScript(this)；构造器逐个 new 步骤后调用
+	m	super	init	(Lcom/fs/starfarer/combat/CombatMap;)V
+		c javap 字节码取证 | 高 | engine=CombatEngine.getInstance()、setDoNotEndCombat(true)、FLEET 时关部署对话框、关失败对话框
+	m	if.super	isShowingDialog	()Z
+		c javap 字节码取证 | 高 | 包装 engine.getCombatUI().isShowingDialog()；advance 两处 if 早退依赖
+	m	Õo0000	clearCombatEntities	()V
+		c javap 字节码取证 | 高 | 遍历 ObjectRepository.getList(CombatEntity) 移除除玩家船外全部实体；各步骤 startStep 前置清理
+	m	õO0000	createTutorialHullVariants	()V
+		c javap 字节码取证 | 高 | 私有静态聚合：依次调 5 个 createXxxTutorialVariant（hammerhead/tempest/lasher/eagle/gemini）
+	m	ôO0000	createLasherTutorialVariant	()V
+		c javap 字节码取证 | 高 | 私有静态：HullVariantSpec "lasher_tutorial"（Point Defense，lightdualac×2/lightmg×3/swarmer×2）
+	m	String.super	createGeminiTutorialVariant	()V
+		c javap 字节码取证 | 高 | 私有静态：HullVariantSpec "gemini_tutorial"（Fire Support，dualflak×2/pilum）
+	m	øO0000	createEagleTutorialVariant	()V
+		c javap 字节码取证 | 高 | 私有静态：HullVariantSpec "eagle_tutorial"（Assault，chaingun×3/harpoon×2/autopulse×3/lrpdlaser×5）
+	m	super.super	createTempestTutorialVariant	()V
+		c javap 字节码取证 | 高 | 私有静态：HullVariantSpec "tempest_Tutorial2"（Attack，pulselaser/gravitonbeam/harpoon）
+	m	Oo0000	createHammerheadTutorialVariant	()V
+		c javap 字节码取证 | 高 | 私有静态：HullVariantSpec "hammerhead_Tutorial2"（Standard，missleracks/advancedoptics，chaingun×2/sabot×2/ioncannon×4）
 c	com/fs/starfarer/tutorial/class$Oo	com/fs/starfarer/tutorial/TutorialTaskScript$TutorialStep
 	c	javap取证 | 中 | 教程步骤接口：getText 步骤文本 + startStep 执行 + advance 推进 + isComplete 完成判定 + attachScript 绑定教程脚本（class$Oo）
 	m	Ò00000	getText	()Ljava/lang/String;
@@ -40,46 +100,344 @@ c	com/fs/starfarer/tutorial/class$Oo	com/fs/starfarer/tutorial/TutorialTaskScrip
 	m	super	advance	(F)V
 	m	super	isComplete	()Z
 	m	super	attachScript	(Lcom/fs/starfarer/tutorial/class;)V
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 步骤完成文本：class.advance 换步时拼在 nextStep.getText 前（AutofireStep "That was easy enough..." 等三处实现佐证）
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 高 | 步骤完成钩子：class.advance 中 isComplete 为真时调用；战斗步骤实现均为空
 c	com/fs/starfarer/tutorial/class$o	com/fs/starfarer/tutorial/TutorialTaskScript$TutorialType
 	c	字符串常量 | 高 | 教程类型枚举：COMBAT 战斗教程 / FLEET 舰队指挥教程（class$o）
 	f	new	COMBAT	Lcom/fs/starfarer/tutorial/class$o;
 	f	Ó00000	FLEET	Lcom/fs/starfarer/tutorial/class$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/tutorial/TutorialTaskScript$TutorialType;
+		c javap 字节码取证 | 高 | 枚举 javac 合成 $VALUES 数组，values() 返回（codex/loading-core-b 先例保留 $VALUES）
 c	com/fs/starfarer/tutorial/combat/B	com/fs/starfarer/tutorial/combat/KineticOverloadStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：动能伤害 vs 护盾 + 过载教学（Assault Chainguns/Sabot 导弹，Press 1/2 切换武器组）（combat/B）
+	f	void	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript 写入、startStep/advance 使用
+	f	ø00000	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 中 getPlayerShip 赋值并复位速度/位置
+	f	õ00000	enemyShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 用 script.createShip 生成 tempest_tutorial + ShieldsUpAI + 通量 nerf
+	f	if	billboard	Lcom/fs/starfarer/combat/entities/Billboard;
+		c javap 字节码取证 | 高 | startStep 创建"Press 2 to switch to Sabot missiles"公告板；advance 中 setText
+	f	OO0000	overloadFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 敌方护盾关+flux>0.9 时 fadeIn，亮度==1 后显示过载提示文本
+	f	Ö00000	overloadMessageShown	Z
+		c javap 字节码取证 | 高 | 过载提示文本只显示一次的标记（亮度==1 且未显示时置 true）
+	f	ô00000	completeFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 敌舰 HP<=0 时 fadeIn，isComplete 检查其亮度==1
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 推进过载触发逻辑与两个 Fader
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 动能伤害教学文本（KINETIC damage vs shields）
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | completeFader 亮度==1
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 复位玩家船、生成 tempest 敌舰、创建公告板
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | 保存教程脚本引用
 c	com/fs/starfarer/tutorial/combat/C	com/fs/starfarer/tutorial/combat/LiveFireTrainingStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：实弹训练 + 护盾开关教学（Press RMB toggle shields）（combat/C）
+	f	do	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript 写入、startStep/advance 使用
+	f	private	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 中 getPlayerShip 赋值并复位速度/位置
+	f	ÓO0000	enemyShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 生成 lasher_tutorial 敌舰 + 速度 nerf（tutorial_nerf）
+	f	ÒO0000	completeFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 敌舰 HP<=0 时 fadeIn，isComplete 检查亮度==1
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 敌舰 HP<=0 触发 completeFader 并推进
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本："Great work!"
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 实弹训练教学文本（live-fire + RMB 护盾）
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | completeFader 亮度==1
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 复位玩家船、生成 lasher 敌舰
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | 保存教程脚本引用
 c	com/fs/starfarer/tutorial/combat/E	com/fs/starfarer/tutorial/combat/TutorialCompleteStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：完成教程（Congratulations + ESCAPE 返回主菜单 + 小行星带）（combat/E）
+	f	õO0000	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript 写入、startStep 使用（创建公告板）
+	f	String.super	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 中 getPlayerShip 赋值并减速/复位
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 空实现（立即完成）
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 祝贺文本（Congratulations, you've completed...）
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | 恒 true（isComplete 立即完成）
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 减速玩家船、添加小行星带（combat/oOOO/E）、创建 3 个公告板
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | 保存教程脚本引用
 c	com/fs/starfarer/tutorial/combat/G	com/fs/starfarer/tutorial/combat/FragmentationDamageStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：碎片伤害类型教学（FRAGMENTATION vs hull/missiles）（combat/G）
+	f	Òo0000	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript 写入、startStep 调 script 推进教程（tutorial/class 混淆名）
+	f	Óo0000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 构造 new Fader(0,2)，advance 推进、isComplete 检查 brightness==1
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 实现 TutorialStep.advance：fader.advance（与既有 tutorial-b 接口命名一致）
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 实现 TutorialStep 钩子：isComplete 后由脚本调用，本类为空实现
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 上一步骤完成后追加显示文本（TutorialTaskScript 将上个 step 的此文本拼进对话框），本类返回 null
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 步骤主教学文本（与既有 tutorial-b 接口命名一致）
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | fader 亮度==1 判定步骤完成（与既有 tutorial-b 接口命名一致）
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 步骤开始：fader.fadeIn（与既有 tutorial-b 接口命名一致）
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | 保存教程脚本引用（与既有 tutorial-b 接口命名一致）
 c	com/fs/starfarer/tutorial/combat/OOoO	com/fs/starfarer/tutorial/combat/VentFluxStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：排放通量教学（Press V to vent flux）（combat/OOoO）
+	f	øO0000	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript 写入、startStep 使用（创建公告板）
+	f	void.super	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 中 getPlayerShip 赋值并复位
+	f	Oo0000	vented	Z
+		c javap 字节码取证 | 高 | advance 中玩家船 isVenting 时置 true；isComplete 检查 vented && flux==0
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | flux<0.75 时 forceMaxOutFlux 逼玩家排放；isVenting 置 vented
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本："Good."
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 通量排放教学文本（Press V to vent）
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | vented 且 flux==0
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 复位玩家船、创建"Press V to vent"公告板
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | 保存教程脚本引用
 c	com/fs/starfarer/tutorial/combat/ShieldsUpAI	com/fs/starfarer/tutorial/combat/ShieldsUpAI
 	c	继承关系+javap取证 | 高 | 护盾开启 AI（未混淆名保留）：implements combat.ai.AI，advance 持续开启护盾（ShieldsUpAI）
 	m	advance	advance	(F)V
 	m	render	render	()V
 c	com/fs/starfarer/tutorial/combat/String	com/fs/starfarer/tutorial/combat/FireWeaponsStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：武器射击教学（fire guns + Press R 目标覆盖 + Press ~ 武器射角显示）（combat/String）
+	f	ÕO0000	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript putfield、startStep 经其调 clearCombatEntities/createShip/createBillboard
+	f	super.super	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 中 engine.getPlayerShip() 保存，速度/位置归零
+	f	ÖO0000	targetShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 经 script.createShip("lasher_tutorial",1,...) 创建并 setAI(null)；advance 对速度×0.99/血量判毁
+	f	ôO0000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 构造器 Fader(0,2) 创建，advance 推进，isComplete 读亮度
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | TutorialStep.advance 实现：targetShip 速度×0.99、hitpoints<=0 时 fader.fadeIn
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 高 | TutorialStep.endStep 实现，空（无清理）
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 完成文本："Very good! The Assault Chainguns you were firing..."
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 步骤文本："...there's a Lasher-class frigate nearby - ...Go blow it up!"
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | TutorialStep.isComplete 实现：fader.getBrightness()==1
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | TutorialStep.startStep 实现：script.clearCombatEntities + 玩家船复位 + 两个公告板 + lasher_tutorial 靶船
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | TutorialStep.attachScript 实现：putfield script
 c	com/fs/starfarer/tutorial/combat/null	com/fs/starfarer/tutorial/combat/AutofireStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：自动开火教学（SHIFT-3 开启 PD 激光自动开火 + talon 机群来袭）（combat/null）
+	f	do.super	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript putfield、startStep/getCompleteText 经其调 clearCombatEntities/createFighterWing/createBillboard
+	f	private.super	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 中 engine.getPlayerShip() 保存，速度/位置归零
+	f	õo0000	fighterWing	Lcom/fs/starfarer/combat/ai/FighterWing;
+		c javap 字节码取证 | 高 | startStep 经 script.createFighterWing("talon_wing",1,...) 创建；advance 遍历成员减速/存活判定
+	f	Õo0000	elapsed	F
+		c javap 字节码取证 | 高 | advance 累加 dt，>12 秒后触发 wingNerfed 一次性减速
+	f	Öo0000	wingNerfed	Z
+		c javap 字节码取证 | 高 | elapsed>12 时置 true 并给机队成员 maxSpeed 挂 "tutorial_nerf" -75% 修正，防重复
+	f	ôo0000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 构造器 Fader(0,2) 创建，advance 推进，isComplete 读亮度
+	f	if.super	fightersEscaped	Z
+		c javap 字节码取证 | 中 | 私有 boolean 仅 getCompleteText 读取：true 时返回 "Looks like some of them got away..."；类内无写入点（恒 false 分支），语义按字符串判定
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | TutorialStep.advance 实现：elapsed 累加/机队减速/存活判定后 fader.fadeIn
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 高 | TutorialStep.endStep 实现，空（无清理）
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 完成文本："That was easy enough..."（fightersEscaped 分支 "got away"）
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 步骤文本："...let's set group 3 on autofire. Press SHIFT-3..."
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | TutorialStep.isComplete 实现：fader.getBrightness()==1
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | TutorialStep.startStep 实现：script.clearCombatEntities + 玩家船复位 + 两个公告板 + talon_wing 机群
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | TutorialStep.attachScript 实现：putfield script
 c	com/fs/starfarer/tutorial/combat/oooO	com/fs/starfarer/tutorial/combat/IntroMoveStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：欢迎 + 移动教学（Welcome to Starfarer combat tutorial + Move away from billboard WASD）（combat/oooO）
+	f	øo0000	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript 写入、startStep 调 script 创建舰船/公告板
+	f	super.new	billboard	Lcom/fs/starfarer/combat/entities/Billboard;
+		c javap 字节码取证 | 高 | startStep 用 script.createBillboard 创建"Move away from this billboard"公告板
+	f	OÒ0000	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 创建 hammerhead_tutorial 船并 setPlayerShip；isComplete 检查其与公告板距离
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 空实现（与既有 tutorial-b 接口命名一致）
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | isComplete 后脚本调用的步骤结束钩子，空实现
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 上一步骤完成后的追加文本，返回 null
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 欢迎文本（Welcome to the Starfarer combat tutorial）
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | 玩家船与公告板距离 > 700 判定完成
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 创建玩家船、设为玩家、创建公告板
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | 保存教程脚本引用
 c	com/fs/starfarer/tutorial/combat/super	com/fs/starfarer/tutorial/combat/CaptureObjectiveStep
 	c	字符串常量+javap取证 | 中 | 战斗教程步骤：目标捕获教学（capture nav buoy，Hold C 减速停靠）（combat/super）
+	f	super	script	Lcom/fs/starfarer/tutorial/TutorialTaskScript;
+		c javap 字节码取证 | 高 | attachScript putfield、startStep 经其调 clearCombatEntities/createObjective/createBillboard
+	f	String	billboard	Lcom/fs/starfarer/combat/entities/Billboard;
+		c javap 字节码取证 | 高 | startStep 经 script.createBillboard 创建（"Hold C to slow down..." 提示板）
+	f	Ó00000	playerShip	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | startStep 中 engine.getPlayerShip() 保存，速度×0.25/位置归零
+	f	Ò00000	objective	Lcom/fs/starfarer/api/combat/BattleObjectiveAPI;
+		c javap 字节码取证 | 高 | startStep 经 script.createObjective("nav_buoy") 创建；advance 比对 owner 判定占领
+	f	Õ00000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 构造器 Fader(0,2) 创建，advance 推进，isComplete 读亮度
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | TutorialStep.advance 实现：playerShip.owner==objective.owner 时 fader.fadeIn
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 高 | TutorialStep.endStep 实现，空（无清理）
+	m	Õ00000	getCompleteText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 完成文本："Good work. Nav buoys give your ships..."
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 步骤文本："...let's go capture an objective... nav buoy..."
+	m	super	isComplete	()Z
+		c javap 字节码取证 | 高 | TutorialStep.isComplete 实现：fader.getBrightness()==1
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | TutorialStep.startStep 实现：script.clearCombatEntities + 玩家船减速复位 + nav_buoy 目标 + 提示公告板
+	m	super	attachScript	(Lcom/fs/starfarer/tutorial/TutorialTaskScript;)V
+		c javap 字节码取证 | 高 | TutorialStep.attachScript 实现：putfield script
 c	com/fs/starfarer/tutorial/oOOO/C	com/fs/starfarer/tutorial/oOOO/RallyStrikeForceStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：集结打击力量（Rally Strike Force waypoint + 撤退拦截机）（oOOO/C）
+	f	ôÒ0000	rallyHintShown	Z
+		c javap 字节码取证 | 高 | elapsedTime>5 且未显示时显示"Rally Strike Force"提示并置 true
+	f	void.new	carrierGroupHintShown	Z
+		c javap 字节码取证 | 高 | STRIKE_FORCE 任务存在且已推进时显示"Rally Carrier Group"提示并置 true
+	f	if.new	interceptorHintShown	Z
+		c javap 字节码取证 | 高 | CARRIER_GROUP 任务存在时显示拦截机 Retreat 提示并置 true
+	f	õÒ0000	deployedFleetMember	Lcom/fs/starfarer/combat/DeployedFleetMember;
+		c javap 字节码取证 | 高 | startStep 部署预备舰队后 getDeployedFleetMember 存入，移动其船并清 AI
+	f	ÖÒ0000	elapsedTime	F
+		c javap 字节码取证 | 高 | advance 中每帧累加（fload_1），>5.0f 触发 rallyHintShown
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 累加计时、三阶段提示推进、统计任务内舰船距离达标时基类 fadeIn
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 添加 nav_buoy 目标、部署预备舰队、移动旗舰、打开 warroom 居中
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 集结打击力量教学文本（Sensor Array 附近敌巡洋舰）
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/E	com/fs/starfarer/tutorial/oOOO/DeployRemainingFleetStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：部署剩余舰队（Reinforcements 按钮部署全部）（oOOO/E）
+	f	OÓ0000	hintShown	Z
+		c javap 字节码取证 | 高 | advance 中 hammerhead/dagger/gemini 部署数达标时显示提示并置 true
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 检查部署数达标触发提示 + fadeIn(10)，委托基类 advance
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 空实现
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 部署剩余舰队教学文本（Reinforcements 按钮）
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/F	com/fs/starfarer/tutorial/oOOO/CaptureCommRelayStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：捕获通讯中继（capture Comm Relay 增加舰队点）（oOOO/F）
+	f	do.new	hintShown	Z
+		c javap 字节码取证 | 高 | advance 中 comm_relay 任务为 CAPTURE 时显示提示并置 true（只显示一次）
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 检查 comm_relay 捕获任务并触发提示，委托基类 advance + 条件完成 fadeIn
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 空实现
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 捕获 Comm Relay 教学文本
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/String	com/fs/starfarer/tutorial/oOOO/CaptureSensorArrayStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：捕获传感器阵列（capture Sensor Array 消除战争迷雾）（oOOO/String）
+	f	øÒ0000	unusedHintShown	Z
+		c javap 字节码取证 | 中 | 死字段：仅构造器 putfield false，类内无任何 getfield，从未参与逻辑（同族 hintShown 预留）
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | sensor_array 目标被捕获时基类 fadeIn 完成，委托基类 advance
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 复位玩家船速度
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 捕获 Sensor Array 教学文本（含按键名格式化）
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/new	com/fs/starfarer/tutorial/oOOO/StrikeOrderStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：打击命令（order a strike on enemy cruiser，Dagger 轰炸机）（oOOO/new）
+	f	ÕÒ0000	hintShown	Z
+		c javap 字节码取证 | 高 | advance 中已部署清空 + whiteout 结束时显示轰炸机说明提示并置 true
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | hintShown 后持续 fadeIn(5)；条件满足显示提示
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 空实现
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 打击命令教学文本（Strike 上下文菜单）
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/oOoO	com/fs/starfarer/tutorial/oOOO/DeployInterceptorStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：部署拦截机（deploy Wasp interceptor wing）（oOOO/oOoO）
+	f	ÒÓ0000	deployDialogShown	Z
+		c javap 字节码取证 | 高 | advance 中首次 showDeployDialog 后置 true；endStep 解除暂停
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | 委托基类 advance；未显示过时弹部署对话框；wasp_wing 部署数==1 时基类 fadeIn
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 设置舰队上限 4、打开 warroom 并居中
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 高 | 取消暂停（setPaused(false)）
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 部署 Wasp 拦截机教学文本
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/oOOO/oOOO	com/fs/starfarer/tutorial/oOOO/TransferCommandStep
 	c	字符串常量+javap取证 | 中 | 舰队指挥教程步骤：转移指挥权 + 完成教程（transfer command to Gemini + 祝贺文案）（oOOO/oOOO）
+	f	ÓÓ0000	hintShown	Z
+		c javap 字节码取证 | 高 | advance 中玩家船 hullId 为 gemini 时显示完成提示并置 true
+	m	super	advance	(F)V
+		c javap 字节码取证 | 高 | hintShown 后持续 fadeIn(5)；玩家切换 gemini 时显示提示
+	m	String	startStep	()V
+		c javap 字节码取证 | 高 | 空实现
+	m	Ó00000	endStep	()V
+		c javap 字节码取证 | 中 | 步骤结束钩子，空实现
+	m	Ò00000	getText	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 转移指挥教学文本（Transfer Command 菜单）
+	m	Õ00000	getCompletionText	()Ljava/lang/String;
+		c javap 字节码取证 | 中 | 完成追加文本，返回 null
 c	com/fs/starfarer/tutorial/super	com/fs/starfarer/tutorial/BasicCombatTutorialScript
 	c	字符串常量+javap取证 | 高 | 基础战斗教程脚本 extends TutorialScript(D)：移动/转向/武器/护盾/通量/过载/排放/自动开火/舰船系统教学，ENFORCER 常量 = enforcer_Tutorial 敌舰变体（super）
 	f	ENFORCER	ENFORCER	Ljava/lang/String;
@@ -87,78 +445,228 @@ c	com/fs/starfarer/tutorial/super	com/fs/starfarer/tutorial/BasicCombatTutorialS
 	m	createScript	createScript	()V
 c	com/fs/starfarer/tutorial/super$1	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainEnforcerShip
 	c	javap取证 | 低 | 基础战斗教程步骤：D$O0 每帧动作，保持 ENFORCER 船存活（低血量修复）+ 复位位置/命令（super$1）
+	f	Õ00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，advance 中 getfield 调 getShip(ENFORCER)
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：hullLevel<0.2 时 setHitpoints(max) 修复，位置/速度复位 + 全命令 blockCommandForOneFrame
 c	com/fs/starfarer/tutorial/super$2	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ShowWeaponGroupArrows
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，向武器组 1/2/3 标签显示箭头（"1."/"2."/"3."）（super$2）
+	f	ø00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，run 中 getfield 调 findLabelContainingText
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：连续三组 findLabelContainingText + showArrow
 c	com/fs/starfarer/tutorial/super$3	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForEnforcerTargeted
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$oo 条件，玩家目标船 hullId 含 enforcer（super$3）
+	f	Ø00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：getShipTarget().getHullSpec().getHullId() contains "enforcer"
 c	com/fs/starfarer/tutorial/super$4	com/fs/starfarer/tutorial/BasicCombatTutorialScript$TogglePlayerShieldOff
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，关闭玩家护盾（super$4）
+	f	ö00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：getPlayerShip().getShield().toggleOff
 c	com/fs/starfarer/tutorial/super$5	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForShieldActive
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家护盾开启且弧 > 150（super$5）
+	f	Õ00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：shield.isOn && activeArc > 150
 c	com/fs/starfarer/tutorial/super$6	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ShowFluxArrow
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，向 flux 标签显示箭头（super$6）
+	f	ô00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，run 中 getfield 调 findLabelContainingText("flux")
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：findLabelContainingText("flux") + showArrow
 c	com/fs/starfarer/tutorial/super$7	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ResetPlayerShip
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，玩家船速度/位置/朝向复位（super$7）
+	f	Ø00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：getPlayerShip 速度/位置/朝向复位
 c	com/fs/starfarer/tutorial/super$8	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ShowShieldMessage
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，护盾关闭时显示开启护盾提示消息（含按键名）（super$8）
+	f	Ô00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	f	Õ00000	keyName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器参数保存的按键名，String.format("%s to turn on your shields.", keyName) 与 showMessage 第三参
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：isOff 时格式化提示消息并 showMessage
 c	com/fs/starfarer/tutorial/super$9	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForShieldFront
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家护盾开启且弧 > 150（与 super$5 同逻辑，属不同教学阶段）（super$9）
+	f	Object	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：shield.isOn && activeArc > 150
 c	com/fs/starfarer/tutorial/super$10	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ResetEnforcerShieldAndFlux
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，ENFORCER 护盾关闭 + 通量重置（super$10）
+	f	for	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：getShip(ENFORCER) 护盾 toggleOff + setFluxLevel(0)
 c	com/fs/starfarer/tutorial/super$11	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainEnforcerPosition
 	c	javap取证 | 低 | 基础战斗教程步骤：D$O0 每帧动作，ENFORCER 位置复位 + 阻断命令（super$11）
+	f	Ö00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层基础战斗教程脚本引用，advance 中 getfield 调 getShip(ENFORCER)
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 ConcurrentStep 回调实现：getShip 定位 ENFORCER、位置/速度复位、blockCommandForOneFrame（tutorial-a 已命名接口方法 advance）
 c	com/fs/starfarer/tutorial/super$12	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForHighFlux
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家通量 > 0.5（super$12）
+	f	int	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：playerShip.getFluxLevel() > 0.5
 c	com/fs/starfarer/tutorial/super$13	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainEnforcerPosition2
 	c	javap取证 | 低 | 基础战斗教程步骤：D$O0 每帧动作，ENFORCER 位置复位 + 停火/阻断命令（super$13）
+	f	String	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：ENFORCER 位置/速度复位 + setHoldFireOneFrame + blockCommandForOneFrame
 c	com/fs/starfarer/tutorial/super$14	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForLowFlux
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家通量 < 0.2（super$14）
+	f	ô00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：playerShip.getFluxLevel() < 0.2
 c	com/fs/starfarer/tutorial/super$15	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForShieldForward
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家护盾开启且弧 > 150（与 super$5/9 同逻辑，属过载教学前段）（super$15）
+	f	return	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：shield.isOn && activeArc > 150
 c	com/fs/starfarer/tutorial/super$16	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ResetEnforcerShieldAndFlux2
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，ENFORCER 护盾关闭 + 通量重置（与 super$10 同逻辑）（super$16）
+	f	int	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：ENFORCER 护盾 toggleOff + 通量重置
 c	com/fs/starfarer/tutorial/super$17	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainEnforcerPosition3
 	c	javap取证 | 低 | 基础战斗教程步骤：D$O0 每帧动作，ENFORCER 位置复位 + 阻断命令（super$17）
+	f	Ó00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：ENFORCER 位置复位 + blockCommandForOneFrame
 c	com/fs/starfarer/tutorial/super$18	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForOverload
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家舰船过载（isOverloaded）（super$18）
+	f	Ô00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：playerShip.isOverloaded
 c	com/fs/starfarer/tutorial/super$19	com/fs/starfarer/tutorial/BasicCombatTutorialScript$TriggerOverload
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，设置过载时长 7 秒演示过载（super$19）
+	f	return	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：setOverloadTime(7) 演示过载
 c	com/fs/starfarer/tutorial/super$20	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainEnforcerPosition4
 	c	javap取证 | 低 | 基础战斗教程步骤：D$O0 每帧动作，ENFORCER 位置复位 + 停火/阻断命令（super$20）
+	f	Ò00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：ENFORCER 位置/速度复位 + setHoldFireOneFrame + blockCommandForOneFrame
 c	com/fs/starfarer/tutorial/super$21	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForOverloadEnd
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$oo 条件，玩家舰船非过载（等待过载结束）（super$21）
+	f	Ò00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：!playerShip.isOverloaded
 c	com/fs/starfarer/tutorial/super$22	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ModifyFluxDissipation
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，increaseFlux + 通量消散倍率 0.1（tutorial 标识）（super$22）
+	f	Object	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo TutorialAction 回调实现：increaseFlux + 通量消散倍率 0.1
 c	com/fs/starfarer/tutorial/super$23	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForVenting
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家舰船排放通量中（isVenting）（super$23）
+	f	o00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：playerShip.isVenting
 c	com/fs/starfarer/tutorial/super$24	com/fs/starfarer/tutorial/BasicCombatTutorialScript$RestoreFluxDissipation
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，unmodify 通量消散（tutorial 标识还原）（super$24）
+	f	Ò00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：unmodify 通量消散倍率还原
 c	com/fs/starfarer/tutorial/super$25	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForVentingEnd
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家舰船未排放通量（super$25）
+	f	öÒ0000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：!playerShip.isVenting
 c	com/fs/starfarer/tutorial/super$26	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ResetPlayerShip2
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，玩家船速度/位置/朝向复位（与 super$7 同逻辑）（super$26）
+	f	o00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：getPlayerShip 速度/位置/朝向复位
 c	com/fs/starfarer/tutorial/super$27	com/fs/starfarer/tutorial/BasicCombatTutorialScript$RemoveEnforcerShip
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，移除 ENFORCER 船（super$27）
+	f	ÔÓ0000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：getShip(ENFORCER) 后 engine.removeObject
 c	com/fs/starfarer/tutorial/super$28	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ReduceLasherMissileDamage
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$O0 每帧动作，lasher_PD 导弹伤害倍率 0.25 + 位置控制（super$28）
+	f	super	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，advance 中 getfield 调 getShip(lasher_PD)
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：lasher_PD 导弹伤害倍率 0.25 + 位置控制
 c	com/fs/starfarer/tutorial/super$29	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainLasherPosition
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$O0 每帧动作，lasher_PD 位置对称控制（super$29）
+	f	ÓO0000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，advance 中 getfield 调 getShip(lasher_PD)
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：lasher_PD 位置对称复位
 c	com/fs/starfarer/tutorial/super$30	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainLasherPosition2
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$O0 每帧动作，lasher_PD 位置控制 + 停火（super$30）
+	f	ô00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：lasher_PD 位置控制 + setHoldFireOneFrame
 c	com/fs/starfarer/tutorial/super$31	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ShowWeaponGroup3Arrow
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，向武器组 3 标签显示箭头（"3."）（super$31）
+	f	ÔO0000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用，run 中 getfield 调 findLabelContainingText("3.")
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：findLabelContainingText("3.") + showArrow
 c	com/fs/starfarer/tutorial/super$32	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForAutofireOnGroup2
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，武器组 2 自动开火且未选中（super$32）
+	f	ø00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：武器组 2 isAutofireOn 且非当前选中组
 c	com/fs/starfarer/tutorial/super$33	com/fs/starfarer/tutorial/BasicCombatTutorialScript$MaintainLasherPosition3
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$O0 每帧动作，lasher_PD 位置对称控制（与 super$29 同逻辑）（super$33）
+	f	void	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	advance	(F)V
+		c javap 字节码取证 | 高 | D$O0 回调实现：lasher_PD 位置对称复位
 c	com/fs/starfarer/tutorial/super$34	com/fs/starfarer/tutorial/BasicCombatTutorialScript$RemoveLasherShips
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，移除两艘 lasher_PD 船（super$34）
+	f	public	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：getShip(lasher_PD) 移除两艘
 c	com/fs/starfarer/tutorial/super$35	com/fs/starfarer/tutorial/BasicCombatTutorialScript$ShowSystemMessage
 	c	字符串常量+javap取证 | 中 | 基础战斗教程步骤：D$OOo 动作，显示舰船系统教学消息（Accelerated Ammo Feeder）（super$35）
+	f	ÒO0000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：showMessage 系统教学文本
 c	com/fs/starfarer/tutorial/super$36	com/fs/starfarer/tutorial/BasicCombatTutorialScript$WaitForSystemActive
 	c	javap取证 | 低 | 基础战斗教程步骤：D$oo 条件，玩家舰船系统激活中（isActive）（super$36）
+	f	ö00000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	super	isDone	(F)Z
+		c javap 字节码取证 | 高 | D$oo 回调实现：playerShip.getSystem().isActive
 c	com/fs/starfarer/tutorial/super$37	com/fs/starfarer/tutorial/BasicCombatTutorialScript$RegisterCombatTrigger
 	c	javap取证 | 低 | 基础战斗教程步骤：D$OOo 动作，向 CombatEngine 注册 super$37$1 战斗触发器（super$37）
+	f	oO0000	script	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层脚本引用
+	m	o00000	run	()V
+		c javap 字节码取证 | 高 | D$OOo 回调实现：new super$37$1(this) 后 engine.addTrigger 注册监听器
 c	com/fs/starfarer/tutorial/super$37$1	com/fs/starfarer/tutorial/BasicCombatTutorialScript$CombatEventListener
 	c	继承关系+javap取证 | 中 | 战斗事件监听器：实现战斗监听接口（shipDisabled/shipDestroyed/orderGiven 等 8 回调）（super$37$1）
 	m	shipDisabled	shipDisabled	(Lcom/fs/starfarer/combat/entities/Ship;)V
@@ -169,6 +677,12 @@ c	com/fs/starfarer/tutorial/super$37$1	com/fs/starfarer/tutorial/BasicCombatTuto
 	m	fleetMemberDeployed	fleetMemberDeployed	(Lcom/fs/starfarer/combat/CombatFleetManager$O0;)V
 	m	fleetMemberCaptured	fleetMemberCaptured	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
 	m	fighterWingDestroyed	fighterWingDestroyed	(Lcom/fs/starfarer/combat/ai/M;)V
+	f	ÒÔoo00	trigger	Lcom/fs/starfarer/tutorial/BasicCombatTutorialScript$RegisterCombatTrigger;
+		c javap 字节码取证 | 高 | 构造器 putfield 外层 RegisterCombatTrigger 实例（super$37），事件回调所属触发器
+	m	õÖO000	isEventPending	()Z
+		c javap 字节码取证 | 高 | combat/D/CombatEventListener 接口同名成员已在 combat-obf-b scope 命名 isEventPending，本实现恒返 true
+	m	while.do	getEventId	()I
+		c javap 字节码取证 | 高 | 同上接口成员已命名 getEventId，本实现恒返 0
 c	com/fs/starfarer/tutorial/void	com/fs/starfarer/tutorial/TutorialOverlay
 	c	$SWITCH_TABLE$残留类名+外部引用 | 高 | 教程消息/箭头覆盖层 extends ui.z：残留方法 $SWITCH_TABLE$TutorialOverlay$MessageLocation，被 CombatEngine 以 tutorialOverlay 字段引用（void）
 	f	Object.interface$return	message	Lcom/fs/starfarer/tutorial/C;
@@ -183,7 +697,13 @@ c	com/fs/starfarer/tutorial/void	com/fs/starfarer/tutorial/TutorialOverlay
 	m	renderImpl	renderImpl	(F)V
 	m	advanceImpl	advanceImpl	(F)V
 	m	shouldTurnOffMousePan	shouldTurnOffMousePan	()Z
+	f	ØÔOO00	messageLocationSwitchMap	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成字段：setMessage 经 getMessageLocationSwitchMap 对 MessageLocation.ordinal 取表后 tableswitch 定位消息（fs-misc-sound 先例 resourceTypeSwitchMap）
+	m	$SWITCH_TABLE$com$fs$starfarer$tutorial$TutorialOverlay$MessageLocation	getMessageLocationSwitchMap	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 合成访问器（残留原始类名），懒初始化 int[] 消息位置 switch 表（fs-misc-sound 先例 getResourceTypeSwitchMap）
 c	com/fs/starfarer/tutorial/void$o	com/fs/starfarer/tutorial/TutorialOverlay$MessageLocation
 	c	字符串常量 | 高 | 消息位置枚举：UPPER_LEFT / LOWER_LEFT（void$o）
 	f	super	UPPER_LEFT	Lcom/fs/starfarer/tutorial/void$o;
 	f	Ó00000	LOWER_LEFT	Lcom/fs/starfarer/tutorial/void$o;
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/tutorial/TutorialOverlay$MessageLocation;
+		c javap 字节码取证 | 高 | 枚举 javac 合成 $VALUES 数组，values() 返回（codex/loading-core-b 先例保留 $VALUES）

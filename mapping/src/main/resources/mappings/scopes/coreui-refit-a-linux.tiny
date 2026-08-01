@@ -32,8 +32,82 @@ c	com/fs/starfarer/coreui/refit/A	com/fs/starfarer/coreui/refit/ShipDisplayPanel
 	m	getOpDisplay	getOpDisplay	()Lcom/fs/starfarer/coreui/refit/V;
 	m	getCoreUIAPI	getCoreUIAPI	()Lcom/fs/starfarer/api/campaign/CoreUIAPI;
 	m	getModuleButtons	getModuleButtons	()Ljava/util/List;
+	f	this.do	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+		c javap 字节码取证 | 高 | CombatViewport(-200,-200,400,400)，渲染舰船各层
+	f	øÓO000	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | 当前舰队成员（setFleetMember 保存），updateFromCurrentVariant 重建舰船
+	f	ôÓO000	ship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 当前显示的舰船实体（getShip 返回），渲染与交互核心
+	f	ØÔO000	currentVariant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | 当前变体（getCurrentVariant 返回），插槽/模块/统计驱动
+	f	ÔÕO000	coreUI	Lcom/fs/starfarer/coreui/CoreUIHost;
+		c javap 字节码取证 | 高 | 核心 UI 宿主（getCoreUI 返回），子对话框父级
+	f	ÕÔO000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | 外部改装界面引用（构造参数2，final）
+	f	ôÕO000	weaponSlotButtons	Ljava/util/List;
+		c javap 字节码取证 | 高 | 武器槽按钮列表，setFleetMember 后按 getAllWeaponSlots 重建，缩放/渲染遍历
+	f	ÔÔO000	moduleButtons	Ljava/util/List;
+		c javap 字节码取证 | 高 | 模块按钮列表（getModuleButtons 返回），updateModules 重建
+	f	int.for	minZoom	F
+		c javap 字节码取证 | 高 | 缩放下限 1.0f（构造器），processInputImpl 滚轮 clamp
+	f	öÔO000	maxZoom	F
+		c javap 字节码取证 | 高 | 缩放上限 1.5f（构造器），processInputImpl 滚轮 clamp
+	f	oÕO000	currentZoom	F
+		c javap 字节码取证 | 高 | 当前缩放系数，advanceImpl 向 targetZoom 插值，按钮定位/渲染使用
+	f	öÕO000	targetZoom	F
+		c javap 字节码取证 | 高 | 目标缩放（滚轮设置），advanceImpl 平滑逼近
+	f	this.for	zoomStep	F
+		c javap 字节码取证 | 高 | 滚轮单步缩放增量 0.25f（构造器）
+	f	public.float	lineDivider	Lcom/fs/starfarer/coreui/refit/LineDivider;
+		c javap 字节码取证 | 高 | 面板分隔线组件（renderImpl 中 setPos 后渲染）
+	f	for.for	shipFacing	F
+		c javap 字节码取证 | 高 | 舰船朝向（getShipFacing/setShipFacing），节点/模块位置旋转
+	f	øÕO000	shipOffsetX	F
+		c javap 字节码取证 | 高 | 舰船 sprite 中心 X 偏移，updateFromCurrentVariant 由 sprite 尺寸计算
+	f	ôÔO000	shipOffsetY	F
+		c javap 字节码取证 | 高 | 舰船 sprite 中心 Y 偏移，updateFromCurrentVariant 由 sprite 尺寸计算
+	f	ØÕO000	suppressMessages	Z
+		c javap 字节码取证 | 高 | 抑制消息标记（isSuppressMessages/setSuppressMessages），插槽操作间跳过提示
+	f	Object.for	slottedWeapons	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 槽位 id → 武器条目映射（getSlottedWeapons 返回），insertInSlot/clearSlot 维护
+	f	öÓO000	slottedFighters	Ljava/util/Map;
+		c javap 字节码取证 | 高 | 槽位 id → 战机条目映射（getSlottedFighters 返回），insertInFighterSlot/clearFighterSlot 维护
+	f	oÔO000	mainModuleButtons	Ljava/util/Set;
+		c javap 字节码取证 | 高 | 主模块按钮集合，renderSubComponents 跳过（主模块单独渲染）
+	f	return.for	underParentModuleButtons	Ljava/util/Set;
+		c javap 字节码取证 | 高 | UNDER_PARENT 提示模块按钮集合，renderSubComponents 按标记过滤
+	f	ÒÔO000	showingDialog	Z
+		c javap 字节码取证 | 高 | 子对话框显示中（isShowingDialog/setShowingDialog），弹武器选择器时置位
+	f	Object.do	previousWeaponPicked	Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$AvailableWeapon;
+		c javap 字节码取证 | 高 | 上次选中的武器条目（getPreviousWeaponPicked 返回），Shift 高亮/连装
+	f	public.for	previousFighterPicked	Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$FighterItem;
+		c javap 字节码取证 | 高 | 上次选中的战机条目（getPreviousFighterPicked 返回）
+	f	ÒÕO000	parentMemberData	Lcom/fs/starfarer/coreui/refit/RefitTab$MemberDisplayData;
+		c javap 字节码取证 | 高 | 父成员显示数据（getRefitTab().getParentData()），模块按钮回退与显示
+	f	øÔO000	mainModuleButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 主模块按钮（renderImpl 单独渲染，advanceImpl 中特殊处理）
+	f	ÕÕO000	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 惰性缓存数组（javac 合成，$SWITCH_TABLE 方法懒建）
+	m	interface.new	syncRefitScreen	()V
+		c javap 字节码取证 | 高 | 私有：转发 refitScreen.syncWithCurrentVariant()，setNumVents/setNumCapacitors 后调用
+	m	o00000	rebuildModuleButtons	(Lcom/fs/starfarer/campaign/fleet/FleetMember;)V
+		c javap 字节码取证 | 高 | 私有：清空并按父数据/station modules 重建模块按钮（updateModules 委托）
+	m	new	renderSubComponents	(ZF)V
+		c javap 字节码取证 | 高 | 私有：渲染 getCopy() 子组件（主模块跳过，UNDER_PARENT 按标记过滤），isClipping 裁剪
+	m	new	toWeaponSlot	(Ljava/lang/Object;)Lcom/fs/starfarer/loading/specs/WeaponSlot;
+		c javap 字节码取证 | 高 | 私有：按钮 → 武器槽（buttonPanel 为 o00O 取 getSlot，renderer 为 classsuper 取 Ö00000）
+	m	o00000	getWeaponSlotRenderer	(Lcom/fs/starfarer/ui/Button;)Lcom/fs/starfarer/coreui/refit/WeaponSlotButtonRenderer;
+		c javap 字节码取证 | 高 | 私有：从按钮 renderer 提取 WeaponSlotButtonRenderer（renderImpl 调用）
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	switchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒建方法（javac 合成），返回缓存 int[]
 c	com/fs/starfarer/coreui/refit/A$1	com/fs/starfarer/coreui/refit/ShipDisplayPanel$ModuleSlotUpdateTask
 	c	javap取证 | 低 | 匿名 Runnable：槽位 id 非 "temp" 时把模块变体应用回 FleetMember（A$1）
+	f	o00000	outer	Lcom/fs/starfarer/coreui/refit/ShipDisplayPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	Object	slot	Lcom/fs/starfarer/loading/specs/WeaponSlot;
+		c javap 字节码取证 | 高 | 模块槽（非 "temp" 时取对应模块变体）
+	f	Ò00000	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | 模块成员，run() 中 setVariant 应用模块变体
 c	com/fs/starfarer/coreui/refit/C	com/fs/starfarer/coreui/refit/ShipStatsPanel
 	c	javap取证(字符串) | 高 | 舰船属性统计面板：armor/flux capacity/top speed/weapon flux/sec/Vents/Capacitors 各行 + tooltip + getColorFor 按状态着色（C）
 	m	addTooltips	addTooltips	()V
@@ -48,45 +122,173 @@ c	com/fs/starfarer/coreui/refit/C	com/fs/starfarer/coreui/refit/ShipStatsPanel
 	m	getColorFor	getColorFor	(Lcom/fs/starfarer/api/combat/MutableStat;Z)Ljava/awt/Color;
 	m	getColorFor	getColorFor	(Lcom/fs/starfarer/api/combat/StatBonus;FZ)Ljava/awt/Color;
 	m	getColorForStat	getColorForStat	(ZZZ)Ljava/awt/Color;
+	f	Õøô000	rowGap	F
+		c javap 字节码取证 | 高 | 静态行间距 3.0f（<clinit>），构造器行间布局
+	f	this.while$String	ventsStepper	Lcom/fs/starfarer/coreui/refit/ValueStepper;
+		c javap 字节码取证 | 高 | Vents 数值步进器（getVents 返回），valueChanged 经 ShipDisplayPanel.setNumVents 应用
+	f	øõô000	capacitorsStepper	Lcom/fs/starfarer/coreui/refit/ValueStepper;
+		c javap 字节码取证 | 高 | Capacitors 数值步进器（getCapacitors 返回），valueChanged 经 setNumCapacitors 应用
+	f	oöô000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | 外部改装界面引用（构造参数，final）
+	f	öõô000	mods	Lcom/fs/starfarer/coreui/refit/ModWidget;
+		c javap 字节码取证 | 高 | 插件小部件（getMods 返回），syncWithVariant 委托同步
+	f	ööô000	hullButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | hull 属性行按钮（new for("hull") 后 createRowButton）
+	f	Õöô000	armorButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | armor 属性行按钮
+	f	oøô000	topSpeedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | top speed 属性行按钮
+	f	Òöô000	fluxCapacityButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | flux capacity 属性行按钮
+	f	ôöô000	fluxDissipationButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | flux dissipation 属性行按钮
+	f	Ôõô000	weaponFluxButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | weapon flux/sec 属性行按钮
+	f	public.do$String	shieldFluxButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | shield flux/sec 属性行按钮
+	f	ôøô000	shieldArcButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | shield arc 属性行按钮
+	f	return.do$String	shieldFluxDamButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | shield flux/dam 属性行按钮
+	f	int.do$String	cloakButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | cloak activation 属性行按钮
+	f	for.do$String	flightDecksButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | flight decks 属性行按钮
+	f	Òøô000	hullRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | hull 属性行（syncWithVariant 设舰船最大结构值）
+	f	Øöô000	armorRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | armor 属性行（装甲评级值）
+	f	public.for$String	topSpeedRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | top speed 属性行（最大航速）
+	f	Øøô000	fluxCapacityRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | flux capacity 属性行（最大通量）
+	f	Ôöô000	fluxDissipationRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | flux dissipation 属性行（散热率）
+	f	return.while$String	weaponFluxRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | weapon flux/sec 属性行（全武器持续通量之和）
+	f	Òõô000	shieldFluxRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | shield flux/sec 属性行（护盾维持通量，相位船改为 cloak flux/sec）
+	f	ôõô000	shieldArcRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | shield arc 属性行（护盾弧角，无盾显示 ---）
+	f	Øõô000	shieldFluxDamRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | shield flux/dam 属性行（护盾效率，无盾显示 ---）
+	f	øöô000	cloakRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | cloak activation 属性行（相位激活通量，非相位船清空）
+	f	Õõô000	flightDecksRow	LLabelValueRow;
+		c javap 字节码取证 | 高 | flight decks 属性行（构造顺序第4，布局于右上区）
+	f	Object.while$String	delegate	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel$VariantChangeListener;
+		c javap 字节码取证 | 高 | 变体变更回调（getDelegate/setDelegate），valueChanged 时通知
+	f	this.do$String	ventsLabel	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Vents" 文本标签按钮（a.wrap），挂 Vents tooltip
+	f	Object.do$String	capacitorsLabel	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Capacitors" 文本标签按钮（a.wrap），挂 Capacitors tooltip
+	f	Ôøô000	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 惰性缓存数组（javac 合成，$SWITCH_TABLE 方法懒建）
+	m	o00000	createRowButton	(LLabelValueRow;)Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 私有：LabelValueRow.createButton 包装并 setSize
+	m	new	createLabel	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;Ljava/awt/Color;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 私有：构造 LabelImpl 并设置 renderer/颜色/对齐/autoSize
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	switchTable	()[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$ 懒建方法（javac 合成），syncWithVariant 按船体尺寸取 vent/capacitor 上限
 c	com/fs/starfarer/coreui/refit/C$1	com/fs/starfarer/coreui/refit/ShipStatsPanel$DebugTooltip
 	c	javap取证 | 低 | 调试 tooltip：createImpl 仅添加 "Testing" 段落（C$1）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$2	com/fs/starfarer/coreui/refit/ShipStatsPanel$FluxCapacityTooltip
 	c	javap取证(字符串) | 中 | Flux capacity 说明 tooltip：描述装填/散热关系（C$2）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$3	com/fs/starfarer/coreui/refit/ShipStatsPanel$FluxDissipationTooltip
 	c	javap取证(字符串) | 中 | Flux dissipation 说明 tooltip：散热效率/主动通风双倍散热（C$3）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$4	com/fs/starfarer/coreui/refit/ShipStatsPanel$VentsTooltip
 	c	javap取证(字符串) | 中 | Vents 说明 tooltip：每个 vent 成本与散热收益、Hull size 上限（C$4）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	ÔôôO00	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造捕获的高亮色（Misc.getHighlightColor），addPara 高亮数值
 c	com/fs/starfarer/coreui/refit/C$5	com/fs/starfarer/coreui/refit/ShipStatsPanel$CapacitorsTooltip
 	c	javap取证(字符串) | 中 | Capacitors 说明 tooltip：每个 capacitor 成本与容量收益、Hull size 上限（C$5）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	public.private$if	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造捕获的高亮色（Misc.getHighlightColor），addPara 高亮数值
 c	com/fs/starfarer/coreui/refit/C$6	com/fs/starfarer/coreui/refit/ShipStatsPanel$TopSpeedTooltip
 	c	javap取证(字符串) | 中 | Top speed 说明 tooltip：零通量引擎加成 zeroFluxEngineBoost（C$6）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	ÒôôO00	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造捕获的高亮色（Misc.getHighlightColor），addPara 高亮数值
 c	com/fs/starfarer/coreui/refit/C$7	com/fs/starfarer/coreui/refit/ShipStatsPanel$HullTooltip
 	c	javap取证(字符串) | 中 | Hull 说明 tooltip：结构损伤/系统损坏/船员伤亡（C$7）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$8	com/fs/starfarer/coreui/refit/ShipStatsPanel$ArmorTooltip
 	c	javap取证(字符串) | 中 | Armor 说明 tooltip：减伤百分比/剥甲机制/最小有效装甲（C$8）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	oôôO00	highlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造捕获的高亮色（Misc.getHighlightColor），addPara 高亮数值
 c	com/fs/starfarer/coreui/refit/C$9	com/fs/starfarer/coreui/refit/ShipStatsPanel$WeaponFluxTooltip
 	c	javap取证(字符串) | 中 | Weapon flux/sec 说明 tooltip：全武器持续开火通量（C$9）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$10	com/fs/starfarer/coreui/refit/ShipStatsPanel$ShieldArcTooltip
 	c	javap取证(字符串) | 中 | Shield arc 说明 tooltip：护盾最大弧角/展开机制/无盾提示（C$10）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$11	com/fs/starfarer/coreui/refit/ShipStatsPanel$CloakTooltip
 	c	javap取证(字符串) | 中 | 相位 cloak 说明 tooltip：开启产生硬通量/抑制零通量加速（C$11）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$12	com/fs/starfarer/coreui/refit/ShipStatsPanel$CloakTooltip2
 	c	javap取证(字符串) | 低 | 相位 cloak 开启提示 tooltip：开启相位斗篷产生硬通量（C$12）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$13	com/fs/starfarer/coreui/refit/ShipStatsPanel$ShieldTooltip
 	c	javap取证(字符串) | 中 | Shield 说明 tooltip：护盾承伤效率/硬通量机制/过载（C$13）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/C$14	com/fs/starfarer/coreui/refit/ShipStatsPanel$TooltipUpdater
 	c	javap取证 | 低 | 匿名 Runnable：把 tooltip 挂到 oO00 组件并更新位置（C$14）
+	f	super	outer	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 匿名内部类对外部面板的引用（编译器合成）
+	f	Ò00000	tooltipHost	Lcom/fs/starfarer/ui/TooltipHost;
+		c javap 字节码取证 | 高 | tooltip 宿主组件（oO00），run() 中定位
+	f	String	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 捕获的 tooltip，取其宽高计算偏移
+	f	Ó00000	anchor	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | 位置锚点组件（OP 进度条），run() 中取高度
 c	com/fs/starfarer/coreui/refit/C$Oo	com/fs/starfarer/coreui/refit/ShipStatsPanel$StatRow
 	c	javap取证 | 中 | 属性行：标签 + 数值（int/String），orbitron20aabold 字体（C$Oo）
 	m	setLabel	setLabel	(Ljava/lang/String;)V
 	m	setValue	setValue	(I)V
 	m	setValue	setValue	(Ljava/lang/String;)V
+	f	öÖO000	valueLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "0" 起始的数值标签（orbitron20aabold/BMID），setValue 改写
+	f	public.do	label	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 行名标签（victor10 字体，构造传文本），setLabel 改写
 c	com/fs/starfarer/coreui/refit/C$o	com/fs/starfarer/coreui/refit/ShipStatsPanel$VariantChangeListener
 	c	javap取证 | 中 | 变体变更回调接口：notifyRefitVariantChanged（C$o）
 	m	notifyRefitVariantChanged	notifyRefitVariantChanged	()V
 c	com/fs/starfarer/coreui/refit/E	com/fs/starfarer/coreui/refit/WeaponPlacementHint
 	c	javap取证(字符串) | 中 | 武器放置提示条：syncWithVariant 时显示武器信息 + "Shift-click to place another"（E）
 	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	f	ÒOõ000	screen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | 构造入参存入；advanceImpl 中取其 getShipDisplay().getCurrentVariant/getPreviousWeaponPicked
+	f	ÕOõ000	font	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造中初始化为 graphics/fonts/orbitron12condensed.fnt，两 label 与字号计算引用
+	f	ÔOõ000	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造中以文字色常量初始化，作为两 label 初始颜色
+	f	ôOõ000	hintLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | advanceImpl 中 setText("Shift-click to place another")，随 currentWeapon 存在 fadeIn/fadeOut
+	f	ØOõ000	weaponNameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | advanceImpl 中 setText(currentWeapon.getWeaponName())，与 hintLabel 同步淡入淡出
+	f	int.public$String	fontHeight	F
+		c javap 字节码取证 | 高 | 构造中=字体高度 i2f，作为两 label 的 setSize(300, fontHeight) 高度
+	f	for.public$String	currentWeapon	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+		c javap 字节码取证 | 高 | 构造置 null；advanceImpl 中与 getPreviousWeaponPicked() 引用比较后更新，控制提示显示
 c	com/fs/starfarer/coreui/refit/FighterPickerDialog	com/fs/starfarer/coreui/refit/FighterPickerDialog
 	c	javap取证(字符串) | 高 | 战机选择对话框：拦截/轰炸/自有/合法/黑市筛选 + cargo 列表 + CLEAR_SLOT_TOKEN，字符串 Show interceptors/Buy Legal/Buy Illegal（FighterPickerDialog）
 	f	UNINSTALLABLE_OP	UNINSTALLABLE_OP	I
@@ -102,13 +304,61 @@ c	com/fs/starfarer/coreui/refit/FighterPickerDialog	com/fs/starfarer/coreui/refi
 	m	getPickedFighterInfo	getPickedFighterInfo	()Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
 	m	getSlotButton	getSlotButton	()Lcom/fs/starfarer/ui/n;
 	m	notifyFilterChanged	notifyFilterChanged	()V
+	f	return.super$super	fighterList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | updateUI 创建 ScrollingList，addItem 填充可选机翼按钮
+	f	ôoo000	slotButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | final 触发本对话框的槽位按钮；getSlotButton 返回
+	f	Õoo000	background	Lcom/fs/starfarer/ui/MenuPanel$Background;
+		c javap 字节码取证 | 高 | class(float) 中随 fader 亮度设置位置/尺寸绘制背景
+	f	ÒÒo000	contentWidth	F
+		c javap 字节码取证 | 高 | updateUI 累加内容宽度，class(float) 中定位背景
+	f	oÒo000	contentHeight	F
+		c javap 字节码取证 | 高 | updateUI 累加内容高度（78*rows），class(float) 中参与计算
+	f	Object.super$super	shipDisplay	Lcom/fs/starfarer/coreui/refit/ShipDisplayPanel;
+		c javap 字节码取证 | 高 | 构造器 = refitScreen.getShipDisplay()
+	f	øoo000	clearSlotButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 当前已安装槽位按钮；Ó00000 中命中即返回 CLEAR_SLOT_TOKEN
+	f	for.super$super	playerStats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c javap 字节码取证 | 高 | 构造器 = plugin.getPlayerStats()
+	f	int.super$super	wingIndex	I
+		c javap 字节码取证 | 高 | final 目标机翼槽位索引；getWingIndex 返回
+	f	Øoo000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | final 外部 RefitScreen，构造器 putfield
+	f	öoo000	filterList	Lcom/fs/starfarer/coreui/refit/CheckboxFilterList;
+		c javap 字节码取证 | 高 | updateUI 创建 6 项过滤器（Interceptors/Fighters/Bombers/Owned/Buy Legal/Buy Illegal）
+	f	this.super$super	isFirstShow	Z
+		c javap 字节码取证 | 高 | 首次打开时默认勾选前三个过滤器；updateUI 中置 false
+	f	ÕÒo000	anchorPosition	Lcom/fs/starfarer/ui/PositionImpl;
+		c javap 字节码取证 | 高 | 触发按钮位置；updateYPosition 依据其 centerY 摆放对话框
+	f	ÔÒo000	pickedFighter	Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$FighterItem;
+		c javap 字节码取证 | 高 | actionPerformed 保存选中项；getPickedFighterInfo 返回
+	m	o00000	filterAvailableFighters	(Ljava/util/List;)Ljava/util/List;
+		c javap 字节码取证 | 高 | 按 filterList 6 项勾选状态 + 自动化标签过滤可选机翼
+	m	class	renderBackground	(F)V
+		c javap 字节码取证 | 高 | renderImpl 调用的背景/边框绘制（黑色矩形 + fader）
+	m	Ó00000	resolveFighterItem	(Ljava/lang/Object;)Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$FighterItem;
+		c javap 字节码取证 | 高 | 从事件源解析 FighterItem（clearSlotButton→CLEAR_SLOT_TOKEN，按钮 customData）
 c	com/fs/starfarer/coreui/refit/FighterPickerDialog$1	com/fs/starfarer/coreui/refit/FighterPickerDialog$FighterSorter
 	c	javap取证 | 低 | 战机条目比较器：按 FighterPickerDialog$o 排序（FighterPickerDialog$1）
 	m	o00000	compareFighters	(Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;)I
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/FighterPickerDialog;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/FighterPickerDialog$2	com/fs/starfarer/coreui/refit/FighterPickerDialog$TooltipUpdater
 	c	javap取证 | 低 | 匿名 Runnable：刷新 tooltip 位置（FighterPickerDialog$2）
+	f	o00000	outer	Lcom/fs/starfarer/coreui/refit/FighterPickerDialog;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
+	f	Ó00000	slotButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | final 关联的槽位按钮，构造 putfield
+	f	new	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | final 关联的 tooltip，构造 putfield
 c	com/fs/starfarer/coreui/refit/FighterPickerDialog$3	com/fs/starfarer/coreui/refit/FighterPickerDialog$TooltipUpdater2
 	c	javap取证 | 低 | 匿名 Runnable：刷新 tooltip 位置（FighterPickerDialog$3）
+	f	o00000	outer	Lcom/fs/starfarer/coreui/refit/FighterPickerDialog;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
+	f	Object	slotButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | final 关联的机翼按钮，构造 putfield
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | final 关联的 tooltip，构造 putfield
 c	com/fs/starfarer/coreui/refit/FighterPickerDialog$o	com/fs/starfarer/coreui/refit/FighterPickerDialog$FighterItem
 	c	javap取证 | 中 | 战机条目：数量/来源 CargoAPI/机翼 spec/来源文本/价格/子市场 + clone（FighterPickerDialog$o）
 	f	quantity	quantity	I
@@ -118,30 +368,134 @@ c	com/fs/starfarer/coreui/refit/FighterPickerDialog$o	com/fs/starfarer/coreui/re
 	f	price	price	F
 	f	submarket	submarket	Lcom/fs/starfarer/campaign/econ/Submarket;
 	m	clone	clone	()Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
+	f	super	coreUI	Lcom/fs/starfarer/api/campaign/CoreUIAPI;
+		c javap 字节码取证 | 高 | final 保存的 CoreUIAPI，构造 putfield
 c	com/fs/starfarer/coreui/refit/L	com/fs/starfarer/coreui/refit/HullmodListRow
 	c	javap取证(字符串) | 中 | ModPickerDialogV3 的 hullmod 列表行：Built-in/Dock/checkmark 状态 + isBuiltIn + 渲染（L）
 	m	getSpec	getSpec	()Lcom/fs/starfarer/loading/specs/O;
 	m	isBuiltIn	isBuiltIn	(Lcom/fs/starfarer/loading/specs/O;Lcom/fs/starfarer/combat/entities/Ship;)Z
 	m	createRow	createRow	()V
 	m	processInput	processInput	(Lcom/fs/starfarer/util/super/B;)V
+	f	öõÔO00	hullmodIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | createRow 用 hullmod spriteName 创建图标
+	f	ØõÔO00	checkmarkIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | "ui/checkmark" 精灵
+	f	ôõÔO00	checkmarkLockedIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | "ui/checkmark_locked" 精灵
+	f	oöÔO00	checkmarkUnlockedIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | "ui/checkmark_unlocked" 精灵
+	f	ÕõÔO00	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getDisplayName 文本 label（截断适配列宽）
+	f	return.super$int	spec	Lcom/fs/starfarer/loading/specs/HullModSpec;
+		c javap 字节码取证 | 高 | final 行对应的 HullModSpec；getSpec 返回
+	f	Object.super$int	dialog	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3;
+		c javap 字节码取证 | 高 | final 宿主 ModPickerDialogV3，构造 putfield
+	f	this.super$int	costLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getCostFor 成本 label（不可用时 "n / a"）
+	f	øõÔO00	builtInLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "Built-in" 静态 label（列宽不足时隐藏）
 c	com/fs/starfarer/coreui/refit/M	com/fs/starfarer/coreui/refit/WeaponButton
 	c	继承关系+javap取证 | 中 | 武器按钮内容：implements ui.n$Oo，CharacterStats + ship + BaseWeaponSpec + M$o 回调，多 sprite 绘制（M）
 	m	super	getWeaponSpec	()Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+	f	Ô00000	listener	Lcom/fs/starfarer/coreui/refit/WeaponButton$WeaponButtonListener;
+		c javap 字节码取证 | 高 | 武器按钮监听回调（构造参数4，渲染末尾转发）
+	f	public	weaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+		c javap 字节码取证 | 高 | 武器 spec（getWeaponSpec 返回），驱动名称/成本/伤害类型
+	f	ö00000	iconRenderer	Lcom/fs/starfarer/ui/super/WeaponIconRenderer;
+		c javap 字节码取证 | 高 | 武器图标渲染器（白色/refit 模式构造）
+	f	Ø00000	mountRenderer	Lcom/fs/starfarer/renderers/WeaponMountRenderer;
+		c javap 字节码取证 | 高 | 挂架渲染器（类型/尺寸/54/2/3 构造）
+	f	ø00000	weaponNameRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 武器名文本渲染器（weaponName x N），setCount 改写
+	f	return	opCostRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | OP 成本文本渲染器（getOrdnancePointCost 计算）
+	f	Õ00000	descriptionRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 描述文本渲染器（Description.getText2）
+	f	o00000	damageTypeRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 伤害类型文本渲染器（DamageType.getDisplayName）
+	f	ô00000	countRenderer	Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 数量文本渲染器（起始 "0"）
+	f	Object	nameFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 武器名字体路径 "graphics/fonts/orbitron12condensed.fnt"
+	f	Ò00000	textFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 描述/伤害/数量字体路径 "graphics/fonts/orbitron12condensed.fnt"
+	f	oO0000	opCostFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | OP 成本字体路径 "graphics/fonts/orbitron20aa.fnt"
+	f	int	iconSize	F
+		c javap 字节码取证 | 高 | 图标尺寸 54.0f（构造器），挂架/图标渲染尺寸
+	f	ÒO0000	textHeight	F
+		c javap 字节码取证 | 高 | 文本行高（由 textFontPath 字体高度计算），描述/伤害类型定位
+	f	for	unusedGrayColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | static 灰色 Color(125,125,125,255) 仅 <clinit> 赋值无读点，判定未使用
+	m	super	setCount	(I)V
+		c javap 字节码取证 | 高 | 设置武器数量：weaponNameRenderer 文本改为 "name x N"
+	m	super	createTextRenderer	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)Lcom/fs/graphics/font/BitmapFontRenderer;
+		c javap 字节码取证 | 高 | 私有：构造 BitmapFontRenderer 并设颜色/关闭 highlight
+	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+		c javap 字节码取证 | 高 | 渲染主方法：背景/图标/挂架/各文本渲染器，末尾转发 listener
+	m	super	setListener	(Lcom/fs/starfarer/coreui/refit/WeaponButton$WeaponButtonListener;)V
+		c javap 字节码取证 | 高 | 设置武器按钮监听回调
 c	com/fs/starfarer/coreui/refit/M$o	com/fs/starfarer/coreui/refit/WeaponButton$WeaponButtonListener
 	c	继承关系+javap取证 | 低 | 空标记接口 extends ui.n$Oo，M 的监听回调类型（M$o）
 c	com/fs/starfarer/coreui/refit/ManageVariantsDialog	com/fs/starfarer/coreui/refit/ManageVariantsDialog
 	c	javap取证(字符串) | 高 | 变体管理对话框：Enter new variant name/Export Current/删除确认（ManageVariantsDialog）
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	dialogDismissed	dialogDismissed	(Lcom/fs/starfarer/ui/oo0O;I)V
+	f	Ô0o000	currentVariant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | final 当前编辑的 HullVariantSpec，构造 putfield
+	f	Ò0o000	variantNameTextField	Lcom/fs/starfarer/ui/TextFieldImpl;
+		c javap 字节码取证 | 高 | 构造器创建；actionPerformed getText 作为导出新名
+	f	public.interface	exportCurrentButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Export Current" 按钮（OP 超限时禁用）
+	f	ø0o000	unusedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 全类仅字段声明，无任何 getfield/putfield，死代码
+	f	oOo000	unusedButton2	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 全类仅字段声明，无任何 getfield/putfield，死代码
+	f	ÒOo000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Cancel" 按钮；actionPerformed 直接 dismiss
+	f	int.interface	unusedButton3	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 全类仅字段声明，无任何 getfield/putfield，死代码
+	f	Ø0o000	variantList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | new.Object 清空并填充可用变体行
+	f	o0o000	fontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 "graphics/fonts/orbitron20aa.fnt"
+	f	ô0o000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | final 外部 RefitScreen，构造 putfield
+	f	this.this$super	rowHeight	F
+		c javap 字节码取证 | 高 | 构造器 = 字体高度+5，行布局间距
+	f	ö0o000	currentAction	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$Action;
+		c javap 字节码取证 | 高 | 当前子对话框动作（RENAME/DELETE），actionPerformed/dialogDismissed 读写
+	f	Õ0o000	existingVariantNames	Ljava/util/Set;
+		c javap 字节码取证 | 高 | 可用变体 displayName 集合，导出时避免重名（追加序号）
+	f	return.interface	newVariantName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 新名字（导出默认名/输入名），actionPerformed 写 setVariantDisplayName
+	f	for.interface	targetVariant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | 正在重命名/删除的目标变体
+	m	new.Object	refreshVariantList	()V
+		c javap 字节码取证 | 高 | 清空列表，按 hull 兼容性筛选 availableVariants 并填充 VariantRow
+	m	o00000	createLabel	(Ljava/lang/String;Ljava/lang/String;Ljava/awt/Color;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | LabelImpl 构造辅助（LMID 对齐、白描边）
 c	com/fs/starfarer/coreui/refit/ManageVariantsDialog$1	com/fs/starfarer/coreui/refit/ManageVariantsDialog$VariantSorter
 	c	javap取证 | 低 | 变体比较器：按 HullVariantSpec 排序（ManageVariantsDialog$1）
 	m	super	compareVariants	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/ManageVariantsDialog$Oo	com/fs/starfarer/coreui/refit/ManageVariantsDialog$VariantRow
 	c	javap取证(字符串) | 中 | 变体行：custom/stock 标记 + Load/Rename/Delete 按钮（ManageVariantsDialog$Oo）
 	m	getRename	getRename	()Lcom/fs/starfarer/ui/n;
 	m	getLoad	getLoad	()Lcom/fs/starfarer/ui/n;
 	m	getVariant	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
 	m	getDelete	getDelete	()Lcom/fs/starfarer/ui/n;
+	f	ÕÓO000	variant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | final 行变体；getVariant 返回
+	f	ÔÓO000	renameButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Rename" 按钮；getRename 返回；stock 变体禁用
+	f	for.float	loadButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Load" 按钮；getLoad 返回
+	f	ØÓO000	deleteButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Delete" 按钮；getDelete 返回；stock 变体禁用
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/ManageVariantsDialog$o	com/fs/starfarer/coreui/refit/ManageVariantsDialog$Action
 	c	字符串常量 | 高 | 动作枚举 CONFIRM_DELETE/CONFIRM_LOAD/RENAME（ManageVariantsDialog$o）
 	f	Ô00000	CONFIRM_DELETE	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
@@ -149,6 +503,8 @@ c	com/fs/starfarer/coreui/refit/ManageVariantsDialog$o	com/fs/starfarer/coreui/r
 	f	new	RENAME	Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
 	m	values	values	()[Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/coreui/refit/ManageVariantsDialog$Action;
+		c javap 字节码取证 | 高 | 枚举 values() 私有缓存数组
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3	com/fs/starfarer/coreui/refit/ModPickerDialogV3
 	c	javap取证(字符串) | 高 | hullmod 选择对话框 V3：All designs/types 筛选 + built-in 上限 + OP 成本，表格 UI（ModPickerDialogV3）
 	f	ALL_TECHS	ALL_TECHS	Ljava/lang/String;
@@ -182,25 +538,97 @@ c	com/fs/starfarer/coreui/refit/ModPickerDialogV3	com/fs/starfarer/coreui/refit/
 	m	switchToPermMode	switchToPermMode	()V
 	m	switchToNormalMode	switchToNormalMode	()V
 	m	getCurrPermanentMods	getCurrPermanentMods	(Lcom/fs/starfarer/combat/entities/Ship;)I
+	f	public.public$super	goBackButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | createUI "Go back" 按钮（Esc 快捷键），actionPerformed 关闭
+	f	ÒøÒ000	table	LUITable;
+		c javap 字节码取证 | 高 | createUI 创建的 UITable，updateTable 填充行
+	f	this.private$super	tableHeader	Lcom/fs/starfarer/campaign/ui/TableColumnHeaderPanel;
+		c javap 字节码取证 | 高 | createUI 创建，Hullmod/Design type/OP/Installed 四列
+	f	ÕøÒ000	unusedButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 全类仅字段声明，无任何 getfield/putfield，死代码
+	f	ÔöÒ000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | final 外部 RefitScreen，构造 putfield
+	f	int.public$super	opDisplay	Lcom/fs/starfarer/coreui/refit/OPDisplay;
+		c javap 字节码取证 | 高 | createUI new OPDisplay(refitScreen)；syncUIWithVariant 同步
+	f	ôöÒ000	shipStatsPanel	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | createUI 创建；syncUIWithVariant 同步
+	f	Object.private$super	permaModInfoWidget	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget;
+		c javap 字节码取证 | 高 | perm 模式新增的常驻 mod 信息控件，createUI putfield
+	f	ÔøÒ000	permMode	Z
+		c javap 字节码取证 | 高 | 构造参数/switchToPermMode 设置；isPermMode 返回
+	f	for.public$super	originalFluxVents	I
+		c javap 字节码取证 | 高 | perm 模式进入时保存 getNumFluxVents；oÕ0000 恢复
+	f	ØöÒ000	originalFluxCapacitors	I
+		c javap 字节码取证 | 高 | perm 模式进入时保存 getNumFluxCapacitors；oÕ0000 恢复
+	f	øöÒ000	permChangesReverted	Z
+		c javap 字节码取证 | 高 | dismiss 时置位，防止重复调用 oÕ0000
+	f	ÕöÒ000	sortType	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$SortType;
+		c javap 字节码取证 | 高 | tagsChanged 中传给 UITable.sort 的排序列
+	m	ÓÕ0000	getPanel	()Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | areturn this，Panel 接口实现
+	m	new.String	isCampaignPlugin	()Z
+		c javap 字节码取证 | 高 | coreUI.getPlugin() instanceof CampaignState
+	m	o00000	createLabel	(Ljava/lang/String;Ljava/lang/String;Lcom/fs/starfarer/api/ui/Alignment;Ljava/awt/Color;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | LabelImpl 构造辅助（描边/上色/对齐/autoSize）
+	m	oÕ0000	revertPermModChanges	()V
+		c javap 字节码取证 | 高 | 恢复 flux 原值、移除新增 permaMods、恢复 sModBuiltIns、syncUI
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$1	com/fs/starfarer/coreui/refit/ModPickerDialogV3$Tooltip
 	c	javap取证(字符串) | 低 | tooltip 创建器：描述 built-in/可移除/需求满足等状态（ModPickerDialogV3$1）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3;
+		c javap 字节码取证 | 高 | 匿名内部类对外部对话框的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$2	com/fs/starfarer/coreui/refit/ModPickerDialogV3$ShipProvider
 	c	javap取证 | 中 | 舰船信息提供接口：getShip/getFleetMemberAPI/getVariant（ModPickerDialogV3$2）
 	m	Ó00000	getShip	()Lcom/fs/starfarer/combat/entities/Ship;
 	m	Ò00000	getFleetMember	()Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
 	m	super	getVariant	()Lcom/fs/starfarer/api/combat/ShipVariantAPI;
+	f	Ô00000	outer	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$3	com/fs/starfarer/coreui/refit/ModPickerDialogV3$TagSorter
 	c	javap取证 | 低 | 表格行比较器：按 campaign.ui.B 排序（ModPickerDialogV3$3）
 	m	super	compareByTag	(Lcom/fs/starfarer/campaign/ui/B;Lcom/fs/starfarer/campaign/ui/B;)I
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
+	f	val$id	sortColumnId	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | final 排序列 id（构造器参数），compare 按列取值
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget
 	c	javap取证(字符串) | 高 | 永久 mod 信息组件：Built-in hullmods 数量/故事点消耗/确认取消，字符串 ui_char_spent_story_point_technology（ModPickerDialogV3$PermaModInfoWidget）
+	f	oøö000	storyPointsButton	Lcom/fs/starfarer/campaign/ui/marketinfo/LabelValueButton;
+		c javap 字节码取证 | 高 | 构造器 "Story points remaining" 信息按钮，advanceImpl 更新值
+	f	Object.do$class	builtInModsLabelValueButton	Lcom/fs/starfarer/campaign/ui/marketinfo/LabelValueButton;
+		c javap 字节码取证 | 高 | 构造器 "Built-in hullmods" 信息按钮，advanceImpl 更新 curr/max
+	f	Õöö000	bonusExperienceButton	Lcom/fs/starfarer/campaign/ui/marketinfo/LabelValueButton;
+		c javap 字节码取证 | 高 | 构造器 "Bonus experience" 信息按钮（附带 tooltip）
+	f	ööö000	playerStats	Lcom/fs/starfarer/api/characters/MutableCharacterStatsAPI;
+		c javap 字节码取证 | 高 | 构造器 = Global.getSector().getPlayerStats()
+	f	this.do$class	confirmTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 构造器创建，文本 "Once confirmed, these changes can not be undone."
+	f	ôöö000	sModEffectsTooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+		c javap 字节码取证 | 高 | 新增 s-mod 效果说明 tooltip（addSModSection 填充），动态创建于滚动面板
+	f	return.do$class	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Cancel" 按钮
+	f	Ôöö000	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Confirm" 按钮（story point 音效）
+	f	Øöö000	builtInModsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | Built-in hullmods 信息行的点击按钮（createButton 生成）
+	f	øöö000	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | 构造器创建的滚动面板，sModEffectsTooltip 挂载其中
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
+	m	access$0	getOuterDialog	(Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget;)Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3;
+		c javap 字节码取证 | 高 | 合成访问器，直接返回 outer
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$1	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$BonusExperienceTooltip
 	c	javap取证(字符串) | 低 | Bonus experience 说明 tooltip（PermaModInfoWidget$1）
+	f	this$1	outer	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$2	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$PermaModsTooltip
 	c	javap取证(字符串) | 低 | Built-in hullmods 说明 tooltip：故事点消耗/hull size 加成（PermaModInfoWidget$2）
+	f	this$1	outer	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$3	com/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget$HullmodSorter
 	c	javap取证 | 低 | HullModSpec 比较器（PermaModInfoWidget$3）
 	m	o00000	compareHullmods	(Lcom/fs/starfarer/api/loading/HullModSpecAPI;Lcom/fs/starfarer/api/loading/HullModSpecAPI;)I
+	f	this$1	outer	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$PermaModInfoWidget;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$o	com/fs/starfarer/coreui/refit/ModPickerDialogV3$SortType
 	c	字符串常量 | 高 | 排序枚举 DESIGN/INSTALLED/NAME/OP_COST（ModPickerDialogV3$o）
 	f	Õ00000	DESIGN	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
@@ -209,6 +637,8 @@ c	com/fs/starfarer/coreui/refit/ModPickerDialogV3$o	com/fs/starfarer/coreui/refi
 	f	o00000	OP_COST	Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
 	m	values	values	()[Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$o;
+	f	Object	$VALUES	[Lcom/fs/starfarer/coreui/refit/ModPickerDialogV3$SortType;
+		c javap 字节码取证 | 高 | 枚举 values() 私有缓存数组
 c	com/fs/starfarer/coreui/refit/ModWidget	com/fs/starfarer/coreui/refit/ModWidget
 	c	javap取证(字符串) | 高 | 船体插件小部件：Hull features & mods + Add/Build in 按钮 + 已装 mod 列表（ModWidget）
 	f	WIDTH	WIDTH	F
@@ -222,15 +652,61 @@ c	com/fs/starfarer/coreui/refit/ModWidget	com/fs/starfarer/coreui/refit/ModWidge
 	m	getAdd	getAdd	()Lcom/fs/starfarer/ui/n;
 	m	setAdd	setAdd	(Lcom/fs/starfarer/ui/n;)V
 	m	getPerm	getPerm	()Lcom/fs/starfarer/ui/n;
+	f	o0õ000	buttonFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器初始化为 "graphics/fonts/orbitron20aa.fnt"，Add/Build in 按钮字体（ModRow 内临时复用为行标签字体）
+	f	for.while$String	rowFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器初始化为 "graphics/fonts/orbitron24aa.fnt"，行高字体（D.Ò00000 取高度）与 "-" 移除按钮字体
+	f	ô0õ000	fontHeight	F
+		c javap 字节码取证 | 高 | 构造器由 rowFontPath 字体高度计算，ModRow 布局用于尺寸计算
+	f	øøô000	rowHeight	F
+		c javap 字节码取证 | 高 | 行高（fontHeight+6，后固定 34.0f）；ModRow 构造 setSize 高度取自 ModWidget.øøô000
+	f	public.while$String	rowTextColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 插件行文本颜色，ModRow 构造按状态（普通/故事点/dmod）反复改写
+	f	Object.public$String	addButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 文本 "Add" 的按钮（Q.o00000 创建），getAdd/setAdd 访问
+	f	Ô0õ000	list	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | 插件行滚动列表容器，addItem/removeItem/getItems 操作
+	f	this.public$String	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | 外部改装界面引用（构造参数1）
+	f	Ø0õ000	hoverFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 鼠标悬停淡入淡出（processInputImpl 中 fadeIn/fadeOut），advance 更新
+	f	Õ0õ000	statsPanel	Lcom/fs/starfarer/coreui/refit/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 外部统计面板引用（构造参数2），移除插件后经其 delegate 通知变体变更
+	f	Ò0õ000	buildInButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 文本 "Build in" 的按钮（getPerm 返回），带快捷键与 tooltip
+	m	Oö0000	isInCampaign	()Z
+		c javap 字节码取证 | 高 | 检查核心 UI 插件是否为 CampaignState，决定 Build in 按钮布局
+	m	o00000	addModRow	(Ljava/lang/String;Z)V
+		c javap 字节码取证 | 高 | 创建 ModRow 加入列表；syncWithCurrentVariant 按排序后批量调用，addMod 委托
+	m	Ó00000	removeMod	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 按插件 id 移除对应 ModRow 并调用 variant.removeMod，随后通知 delegate
+	m	class.void	updateListSize	()V
+		c javap 字节码取证 | 高 | 按行数与行高重算 ScrollingList 尺寸（min(行数,10) 行高），并 pack
 c	com/fs/starfarer/coreui/refit/ModWidget$1	com/fs/starfarer/coreui/refit/ModWidget$Tooltip
 	c	javap取证(字符串) | 低 | tooltip 创建器：built-in 加成/惩罚与故事点说明（ModWidget$1）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ModWidget;
+		c javap 字节码取证 | 高 | 匿名内部类对外部小部件的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/ModWidget$2	com/fs/starfarer/coreui/refit/ModWidget$ModSorter
 	c	javap取证 | 低 | mod 名称比较器（ModWidget$2）
 	m	o00000	compareMods	(Ljava/lang/String;Ljava/lang/String;)I
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ModWidget;
+		c javap 字节码取证 | 高 | 匿名内部类对外部小部件的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/ModWidget$o	com/fs/starfarer/coreui/refit/ModWidget$ModRow
 	c	javap取证(字符串) | 中 | 单个 mod 行：图标/名称/dmod 标记渲染（ModWidget$o）
+	f	int.while$String	removeButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 文本 "-" 的按钮，点击经 ModWidget.actionPerformed 触发 removeMod
+	f	öøô000	hullModSpec	Lcom/fs/starfarer/loading/specs/HullModSpec;
+		c javap 字节码取证 | 高 | SpecStore 按 id 加载的插件 spec，驱动名称/图标/成本/tooltip
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/ModWidget;
+		c javap 字节码取证 | 高 | 匿名内部类对外部小部件的引用（编译器合成）
 c	com/fs/starfarer/coreui/refit/N	com/fs/starfarer/coreui/refit/LabelShapePanel
 	c	javap取证 | 低 | 形状标签面板：sprite + 双标签 + GL 绘制形状，implements renderers.public$Oo，无引用者（N）
+	f	øÓö000	iconPanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 构造器 new ImagePanel(iconName)，96x96 左上
+	f	öÓö000	fontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 "graphics/fonts/orbitron12condensed.fnt"
+	f	int.null$class	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造器 StarfarerSettings.ø00000 文本色
 c	com/fs/starfarer/coreui/refit/O	com/fs/starfarer/coreui/refit/CheckboxFilterList
 	c	继承关系+javap取证 | 中 | 复选框筛选列表：addItem/isChecked/setChecked/setEnabled，FighterPickerDialog 筛选使用（O）
 	m	addItem	addItem	(Ljava/lang/Object;Ljava/lang/String;Ljava/awt/Color;Ljava/lang/String;)V
@@ -239,8 +715,16 @@ c	com/fs/starfarer/coreui/refit/O	com/fs/starfarer/coreui/refit/CheckboxFilterLi
 	m	setChecked	setChecked	(Ljava/lang/Object;Z)V
 	m	setEnabled	setEnabled	(Ljava/lang/Object;Z)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	ÔÔö000	columns	I
+	f	public.null$class	rows	I
+	f	for.null$class	items	Ljava/util/List;
+	f	ÒÔö000	buttons	Ljava/util/List;
+	f	oÔö000	filterChangeListener	Lcom/fs/starfarer/coreui/refit/CheckboxFilterList$FilterChangeListener;
+	m	o00000	createItemButton	(Lcom/fs/starfarer/coreui/refit/CheckboxFilterList$FilterItem;)Lcom/fs/starfarer/ui/Button;
 c	com/fs/starfarer/coreui/refit/O$1	com/fs/starfarer/coreui/refit/CheckboxFilterList$Tooltip
 	c	javap取证 | 低 | tooltip 创建器（O$1）
+	f	this$0	filterList	Lcom/fs/starfarer/coreui/refit/CheckboxFilterList;
+	f	ÕôôO00	filterItem	Lcom/fs/starfarer/coreui/refit/CheckboxFilterList$FilterItem;
 c	com/fs/starfarer/coreui/refit/O$Oo	com/fs/starfarer/coreui/refit/CheckboxFilterList$FilterChangeListener
 	c	javap取证 | 中 | 筛选变更回调接口：notifyFilterChanged（O$Oo）
 	m	notifyFilterChanged	notifyFilterChanged	()V
@@ -255,16 +739,66 @@ c	com/fs/starfarer/coreui/refit/O$o	com/fs/starfarer/coreui/refit/CheckboxFilter
 c	com/fs/starfarer/coreui/refit/O0OO	com/fs/starfarer/coreui/refit/CreditsDisplay
 	c	javap取证(字符串) | 中 | 货币显示：Credits: + syncWithVariant 更新（O0OO）
 	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+	f	ö0õ000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+	f	return.public$String	creditsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+	f	ø0õ000	creditsLabelWidth	F
+	f	oOõ000	unusedWeaponSpec	Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
 c	com/fs/starfarer/coreui/refit/OOoo	com/fs/starfarer/coreui/refit/LineDivider
 	c	javap取证(字符串) | 中 | 分割线组件：graphics/hud/line4x4.png 渲染（OOoo）
+	f	ôøö000	lineTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 构造器 "graphics/hud/line4x4.png" 线段纹理
+	f	public.do$class	capTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 高 | 构造器取自 renderers 端点纹理，粗 3.0f 画交叉点
+	f	for.do$class	listToken	Lcom/fs/graphics/util/GLListToken;
+		c javap 字节码取证 | 高 | GLListManager 显示列表缓存；sizeChanged/变色时 invalidateList
+	f	int.do$class	xCount	I
+		c javap 字节码取证 | 高 | sizeChanged = width/25+2 水平段数
+	f	Øøö000	yCount	I
+		c javap 字节码取证 | 高 | sizeChanged = height/25+2 垂直段数
+	f	Õøö000	xOffset	F
+		c javap 字节码取证 | 高 | sizeChanged 计算的 x 居中偏移
+	f	Òøö000	yOffset	F
+		c javap 字节码取证 | 高 | sizeChanged 计算的 y 居中偏移
+	f	Ôøö000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | renderImpl 缓存的渲染色（fader 亮度着色后缓存）
 c	com/fs/starfarer/coreui/refit/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/coreui/refit/FighterPickerItem
 	c	javap取证(字符串) | 中 | 战机选择条目（FighterPickerDialog 列表项，与 WeaponItem 同构；FightersDisplay 内的槽位按钮为 coreui-refit-b 的 FighterSlotButton）：isMounted/getPrice/getInfo(FighterPickerDialog$o) + Click to uninstall/Unmount for a credit refund（OoOO..长名）
 	m	isMounted	isMounted	()Z
 	m	getPrice	getPrice	()F
 	m	getInfo	getInfo	()Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$o;
 	m	setDisabled	setDisabled	(Z)V
+	f	ØÖO000	wingIconRenderer	Lcom/fs/starfarer/ui/super/FighterWingIconRenderer;
+		c javap 字节码取证 | 高 | 构造器 new FighterWingIconRenderer(FleetMember) 并关闭各装饰
+	f	oÖO000	fighterInfo	Lcom/fs/starfarer/coreui/refit/FighterPickerDialog$FighterItem;
+		c javap 字节码取证 | 高 | final 条目信息；getInfo 返回
+	f	for.do	textYOffset	F
+		c javap 字节码取证 | 高 | 构造器 = 高度-6，文本区顶部 y 偏移
+	f	ôÖO000	disabled	Z
+		c javap 字节码取证 | 高 | setDisabled 操作的禁用标志
+	f	return.do	hullNameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造器 hullName+displayName 文本 label
+	f	ÔÖO000	opCostLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | OP 成本数字 label（不可装时 "not installable" 红字）
+	f	int.do	mounted	Z
+		c javap 字节码取证 | 高 | final 已安装标志；isMounted 返回
+	f	ÒÖO000	price	F
+		c javap 字节码取证 | 高 | final 价格；getPrice 返回
+	f	ÕÖO000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | final 外部 RefitScreen，构造 putfield
 c	com/fs/starfarer/coreui/refit/P	com/fs/starfarer/coreui/refit/WeaponItemHighlight
 	c	javap取证 | 低 | WeaponItem(T) 背景着色层：implements ui.n$Oo，按 mounted/价格/子市场派系色渲染底色（P）
+	f	ÕO0000	item	Lcom/fs/starfarer/coreui/refit/WeaponItem;
+		c javap 字节码取证 | 高 | 构造入参存入，getter Ò00000 返回；super 渲染中调用其 getInfo/isMounted/getPrice/getPosition/setDisabled/render
+	f	ØO0000	topHighlightHeight	F
+		c javap 字节码取证 | 高 | final float；>0 时在 item 顶边画黑色横条(getX, getY-topHighlightHeight, getWidth)
+	f	ÔO0000	bottomHighlightHeight	F
+		c javap 字节码取证 | 高 | final float；>0 时在 item 底边(getY+getHeight)画横条与两处角线(o0OO.o00000)
+	f	this.super	unusedHighlightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | static 块 new Color(255,0,0,255) 红色；全类方法体无 getstatic 读取点，判定未使用
+	m	super	render	(Lcom/fs/starfarer/ui/PositionImpl;FFZZLcom/fs/starfarer/ui/ButtonMouseButtonState;)V
+		c javap 字节码取证 | 高 | 带按钮状态参数的渲染回调：画黑色底+按 mounted/价格/高亮强度调色，同步 item 位置、setDisabled 后渲染 item
+	m	Ò00000	getItem	()Lcom/fs/starfarer/coreui/refit/WeaponItem;
+		c javap 字节码取证 | 高 | 方法体仅 getfield item 返回，标准 getter
 c	com/fs/starfarer/coreui/refit/R	com/fs/starfarer/coreui/refit/DesignDisplay
 	c	javap取证(字符串) | 高 | 改装界面设计面板（RefitScreen(ooOo).getDesignDisplay() 返回；改装主屏幕为 coreui-refit-b 的 RefitScreen）：Save/Undo/Manage/Groups/Autofit/Simulation/Restore + 舰船名/变体名输入 + 随机名（R）
 	m	getVariantFieldWidth	getVariantFieldWidth	()F
@@ -282,12 +816,76 @@ c	com/fs/starfarer/coreui/refit/R	com/fs/starfarer/coreui/refit/DesignDisplay
 	m	getRunSimulationButton	getRunSimulationButton	()Lcom/fs/starfarer/ui/n;
 	m	createMaxSkillPerson	createMaxSkillPerson	()Lcom/fs/starfarer/rpg/Person;
 	m	instantiateForSimulation	instantiateForSimulation	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)Lcom/fs/starfarer/combat/entities/Ship;
+	f	ÒÖö000	buttonGap	F
+		c javap 字节码取证 | 高 | static 常量 3.0f，布局中作 rightOfMid/aboveLeft 按钮间距
+	f	øÕö000	saveButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Save" 按钮；getSaveButton 返回
+	f	oÖö000	weaponGroupsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Weapon groups..." 按钮；getGroupsButton 返回
+	f	öÔö000	autofitButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Autofit..." 按钮；getManageButton 返回；actionPerformed 打开 WeaponGroupDialogV2
+	f	ÔÕö000	stripButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Strip" 按钮；actionPerformed 触发清空武器
+	f	Object.if$class	undoButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Undo" 按钮；getUndoButton 返回；actionPerformed 调 undo()
+	f	öÕö000	restoreButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Restore..." 按钮；actionPerformed 弹修复确认框
+	f	Object.int$class	runSimulationButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造器 "Run simulation" 按钮；getRunSimulationButton 返回
+	f	int.int$class	currentDialog	Lcom/fs/starfarer/coreui/refit/DesignDisplay$Tab;
+		c javap 字节码取证 | 高 | 当前弹出的子对话框类型（R$o 枚举），actionPerformed/dialogDismissed 读写
+	f	ôÔö000	fontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造器 "graphics/fonts/orbitron20aa.fnt"，全部按钮创建共用
+	f	return.int$class	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | final 外部 RefitScreen，构造器 putfield
+	f	oÕö000	shipNameTextField	Lcom/fs/starfarer/ui/TextFieldImpl;
+		c javap 字节码取证 | 高 | getShipNameTextField 返回；actionPerformed 处理舰船改名
+	f	øÔö000	variantNameTextField	Lcom/fs/starfarer/ui/TextFieldImpl;
+		c javap 字节码取证 | 高 | getVariantTextField 返回；actionPerformed 写 setVariantDisplayName
+	f	ÔÖö000	hullTypeLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 舰船类型 label（hullNameWithDashClass / fighter 完整 designation）
+	f	ØÔö000	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | setFleetMember 参数保存的当前 FleetMember
+	f	ØÕö000	designationFirstPartLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getFirstPartOfDesignation 文本 label
+	f	for.int$class	designationLastPartLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | getLastPartOfDesignation 文本 label
+	f	ÕÕö000	shipNameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 名字不可编辑时 getShipName 静态 label
+	f	this.if$class	randomNameButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | generate_ship_name 精灵按钮；actionPerformed 触发随机舰船名
+	f	ÒÕö000	autoSaveRefitChanges	Z
+		c javap 字节码取证 | 高 | advanceImpl 中 = plugin.autoSaveRefitChanges()，决定 Save 按钮显隐
+	f	public.int$class	goalVariantButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Core variant" 勾选按钮，syncWithVariant 中 setChecked(isGoalVariant)
+	f	ôÕö000	playerMaxSkillsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Player max skills" 勾选；runSimulation 中 setMaxSkills(0)
+	f	ÕÔö000	enemyMaxSkillsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Enemy max skills" 勾选；runSimulation 中 setMaxSkills(1)
+	f	this.int$class	nextWithFreeOpButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Next w/ free OP" 按钮；actionPerformed 遍历舰队找可用 OP 舰船
+	m	oø0000	stripVariant	()V
+		c javap 字节码取证 | 高 | Strip 动作：武器放回货舱、clear variant、清武器组、移除不可装 mods、sync
+	m	new.null	runSimulation	()V
+		c javap 字节码取证 | 高 | "Run simulation" 动作：建 MissionDefinition、切 CombatState、装配模拟舰队
+	m	Oø0000	createSimulationMission	()Lcom/fs/starfarer/title/MissionDefinition;
+		c javap 字节码取证 | 高 | 构造 MissionDefinition：initMap/initFleet/背景/星云/小行星带
+	m	o00000	createSimulationShip	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/loading/specs/HullVariantSpec;IFFZ)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | instantiateForSimulation + 注册 deployed + 设置位置/AI，返回 Ship
+	m	o00000	createSimulationWing	(Ljava/lang/String;IFF)Lcom/fs/starfarer/combat/ai/FighterWing;
+		c javap 字节码取证 | 高 | 由 FighterWingSpec 生成 FighterWing，逐个生成战机并 addMember
 c	com/fs/starfarer/coreui/refit/R$1	com/fs/starfarer/coreui/refit/DesignDisplay$RestoreDockTooltip
 	c	javap取证(字符串) | 中 | 恢复 tooltip：必须在市场停靠才能恢复（R$1）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/DesignDisplay;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/R$2	com/fs/starfarer/coreui/refit/DesignDisplay$RestoreUnavailableTooltip
 	c	javap取证(字符串) | 中 | 恢复 tooltip：该舰船无法恢复（R$2）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/DesignDisplay;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/R$3	com/fs/starfarer/coreui/refit/DesignDisplay$RandomNameTooltip
 	c	javap取证(字符串) | 中 | 随机名 tooltip：生成随机舰船名/更新派系前缀（R$3）
+	f	this$0	outer	Lcom/fs/starfarer/coreui/refit/DesignDisplay;
+		c javap 字节码取证 | 高 | final 合成外部类引用，构造 putfield
 c	com/fs/starfarer/coreui/refit/R$o	com/fs/starfarer/coreui/refit/DesignDisplay$Tab
 	c	字符串常量 | 高 | 界面页签枚举 GROUPS/MANAGE/RESTORE/RESTORE_NOT_ENOUGH/STRIP/UNDO（R$o）
 	f	Õ00000	GROUPS	Lcom/fs/starfarer/coreui/refit/R$o;
@@ -298,12 +896,32 @@ c	com/fs/starfarer/coreui/refit/R$o	com/fs/starfarer/coreui/refit/DesignDisplay$
 	f	String	UNDO	Lcom/fs/starfarer/coreui/refit/R$o;
 	m	values	values	()[Lcom/fs/starfarer/coreui/refit/R$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/coreui/refit/R$o;
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/coreui/refit/DesignDisplay$Tab;
+		c javap 字节码取证 | 高 | 枚举 values() 私有缓存数组
 c	com/fs/starfarer/coreui/refit/T	com/fs/starfarer/coreui/refit/WeaponItem
 	c	javap取证(字符串) | 中 | 武器选择条目：isMounted/getPrice/getInfo(WeaponPickerDialog$o) + Click to unmount/ordnance points/range（T）
 	m	isMounted	isMounted	()Z
 	m	getPrice	getPrice	()F
 	m	getInfo	getInfo	()Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$o;
 	m	setDisabled	setDisabled	(Z)V
+	f	öØö000	mountRenderer	Lcom/fs/starfarer/renderers/WeaponMountRenderer;
+		c javap 字节码取证 | 高 | 构造中以 spec.getMountType/getSize 与 iconWidth/2 构建，renderImpl 中按 disabled 全量/半透明绘制
+	f	return.float$class	iconRenderer	Lcom/fs/starfarer/ui/super/WeaponIconRenderer;
+		c javap 字节码取证 | 高 | 构造中以 spec+WeaponSpecData+Color.white 构建，renderImpl 中 glTranslatef 后调 Ó00000 渲染
+	f	this.float$class	info	Lcom/fs/starfarer/coreui/refit/WeaponPickerDialog$AvailableWeapon;
+		c javap 字节码取证 | 高 | 构造入参存入，getInfo() 直接返回；sourceString/quantity 均取自它
+	f	øØö000	iconWidth	F
+		c javap 字节码取证 | 高 | 构造中=尺寸参数-6；名称/来源 label 均以 iconWidth+13 为 x 左边界，安装渲染器以 iconWidth/2 居中
+	f	oôö000	disabled	Z
+		c javap 字节码取证 | 高 | setDisabled 读写它；renderImpl 中为 true 时图标半透明渲染(alpha*0.5)
+	f	ÕØö000	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造中以 getWeaponName 文本+LMID 对齐创建，autoSize 后 inTL(iconWidth+13,3) 定位
+	f	Object.float$class	ordnanceCostLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造中文本为或点数/"not installable"(按 UNINSTALLABLE_OP 比较)，orbitron24 字体，aboveRight 定位并 setColor
+	f	ôØö000	mounted	Z
+		c javap 字节码取证 | 高 | 构造入参(iload 9)存入，isMounted() 直接返回
+	f	ØØö000	price	F
+		c javap 字节码取证 | 高 | 构造入参(fload 6)存入，getPrice() 直接返回
 c	com/fs/starfarer/coreui/refit/V	com/fs/starfarer/coreui/refit/OPDisplay
 	c	javap取证(字符串) | 高 | OP 显示组件：setOPs/isWithinOPLimit/computeAvailableOP + 进度条 getBar + fleetScreen 标记（V）
 	m	setOPs	setOPs	(II)V
@@ -311,27 +929,91 @@ c	com/fs/starfarer/coreui/refit/V	com/fs/starfarer/coreui/refit/OPDisplay
 	m	computeAvailableOP	computeAvailableOP	(Lcom/fs/starfarer/loading/specs/Y;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
 	m	syncWithVariant	syncWithVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
 	m	getBar	getBar	()Lcom/fs/starfarer/campaign/ui/while;
+	f	øõö000	unusedFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 中 | 构造器赋 "graphics/fonts/orbitron24aabold.fnt" 后无任何读点，判定未使用
+	f	Òöö000	unusedLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 中 | 全类无读写点，判定未使用（死字段）
+	f	öõö000	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | 外部改装界面引用（构造参数，final），OP 计算取 stats/member
+	f	public.for$class	opBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | OP 进度条（getBar 返回），setOPs/syncWithVariant 设置范围与进度
+	f	oöö000	currentVariant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | 当前同步的变体（syncWithVariant 末尾保存）
+	f	for.for$class	infoButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "icon_more_info" 信息按钮（带快捷键），打开舰队成员统计详情
 c	com/fs/starfarer/coreui/refit/V$1	com/fs/starfarer/coreui/refit/OPDisplay$ActionListener
 	c	javap取证 | 低 | 匿名 ui.ooOo 动作监听（V$1）
+	f	ØõÖo00	outer	Lcom/fs/starfarer/coreui/refit/OPDisplay;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 OP 显示的引用（编译器合成）
+	f	ôõÖo00	refitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 高 | 外部改装界面引用（构造参数2），取成员与 CR 显示
 c	com/fs/starfarer/coreui/refit/V$2	com/fs/starfarer/coreui/refit/OPDisplay$TooltipProvider
 	c	javap取证 | 低 | tooltip 提供者：返回当前 HullVariantSpec（V$2）
 	m	o00000	getVariant	()Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+	f	o00000	outer	Lcom/fs/starfarer/coreui/refit/OPDisplay;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 OP 显示的引用（编译器合成）
+	f	Ò00000	member	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | 构造捕获的舰队成员，o00000() 经其取当前变体
 c	com/fs/starfarer/coreui/refit/V$3	com/fs/starfarer/coreui/refit/OPDisplay$TooltipUpdater
 	c	javap取证 | 低 | 匿名 Runnable：更新 tooltip（V$3）
+	f	o00000	outer	Lcom/fs/starfarer/coreui/refit/OPDisplay;
+		c javap 字节码取证 | 高 | 匿名内部类对外部 OP 显示的引用（编译器合成）
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 构造捕获的 tooltip，run() 设置偏移
 c	com/fs/starfarer/coreui/refit/WeaponGroupDialog	com/fs/starfarer/coreui/refit/WeaponGroupDialog
 	c	javap取证(字符串) | 高 | 武器组分配对话框：Weapon group 1-7/Auto + Capacity/Dissipation + Shift-click to assign all（WeaponGroupDialog；createLabel/assignWeaponToGroup 合并自 coreui-refit-b 重复块）
 	m	o00000	createLabel	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/d;
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/super/B;)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	o00000	assignWeaponToGroup	(Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;Lcom/fs/starfarer/loading/specs/Y;I)V
+	f	int.this$super	unusedFloat1	F
+		c javap 字节码取证 | 中 | static final float 全类无任何 getstatic/putstatic 读写
+	f	ôOo000	unusedFloat2	F
+		c javap 字节码取证 | 中 | static final float 全类无任何 getstatic/putstatic 读写
+	f	Òoo000	unusedFloat3	F
+		c javap 字节码取证 | 中 | static final float 全类无任何 getstatic/putstatic 读写
+	f	ÔOo000	unusedFloat4	F
+		c javap 字节码取证 | 中 | static final float 全类无任何 getstatic/putstatic 读写
+	f	ÕOo000	smallFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | <init> 赋 graphics/fonts/orbitron12condensed.fnt，供组行构造按钮用
+	f	Object.this$super	mainFontPath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 赋 orbitron20aa.fnt 作主字体，Ok/Auto/标题/统计标签全部经它
+	f	return.this$super	variant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | final；getWeaponGroups/getGroup/autoGenerateWeaponGroups 全部经它
+	f	ooo000	okButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Ok" 按钮；actionPerformed 中比对相等后 dismiss(0)
+	f	public.this$super	autoButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | "Auto" 按钮；actionPerformed 触发 autoGenerateWeaponGroups
+	f	Ôoo000	weaponSlotRows	Ljava/util/List;
+		c javap 字节码取证 | 高 | List<WeaponGroupDialog$o> 武器槽行；processInputImpl 遍历 hover 高亮
+	f	for.this$super	unusedLineTexture	Lcom/fs/graphics/TextureObject;
+		c javap 字节码取证 | 中 | 仅 <init> 用 graphics/hud/line4x4.png 创建并 putfield，全文无 getfield
+	f	öOo000	weaponGroupRows	Ljava/util/List;
+		c javap 字节码取证 | 高 | List<WeaponGroupDialog$oo> 组行；o00000/actionPerformed 遍历调 update()
+	f	øOo000	unusedRefitScreen	Lcom/fs/starfarer/coreui/refit/RefitScreen;
+		c javap 字节码取证 | 中 | final 仅 <init> putfield 参数；getShipDisplay 直接用参数不读字段
+	f	ØOo000	autofireRow	Lcom/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponGroupRow;
+		c javap 字节码取证 | 高 | new WeaponGroupDialog$Oo 加入 UI；actionPerformed 调其 updateCheckboxes
 c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$1	com/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponSlotSorter
 	c	javap取证 | 中 | 槽位比较器：按 built-in/WeaponSize/WeaponType/SlotType/名称排序（WeaponGroupDialog$1）
 	m	o00000	compareWeaponSlots	(Ljava/lang/String;Ljava/lang/String;)I
+	f	this$0	this$0	Lcom/fs/starfarer/coreui/refit/WeaponGroupDialog;
+		c javap 字节码取证 | 高 | 合成外围引用，<init> 中 putfield
 c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$2	com/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponSlotSorter2
 	c	javap取证 | 低 | 槽位比较器：与 WeaponGroupDialog$1 同构（WeaponGroupDialog$2）
 	m	super	compareWeaponSlots	(Ljava/lang/String;Ljava/lang/String;)I
+	f	this$0	this$0	Lcom/fs/starfarer/coreui/refit/WeaponGroupDialog;
+		c javap 字节码取证 | 高 | 合成外围引用，<init> 中 putfield
 c	com/fs/starfarer/coreui/refit/WeaponGroupDialog$Oo	com/fs/starfarer/coreui/refit/WeaponGroupDialog$WeaponGroupRow
 	c	javap取证(字符串) | 中 | 武器组行：组号/自动开火状态复选框 updateCheckboxes + 高亮 Fader（WeaponGroupDialog$Oo）
 	m	updateCheckboxes	updateCheckboxes	()V
 	m	getHighlightFader	getHighlightFader	()Lcom/fs/graphics/util/Fader;
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	return.private$String	groupButtons	[Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | new Button[7] 建 7 个组按钮；getGroups() 返回、updateCheckboxes 设勾选
+	f	Øoõ000	unusedColor	Ljava/awt/Color;
+		c javap 字节码取证 | 中 | 仅 <init> putfield 一次静态色，全文无 getfield
+	f	ôoõ000	highlightFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | new Fader(0,0.05f,0.25f)；advanceImpl 中 advance、getHighlightFader 返回
+	f	this$0	this$0	Lcom/fs/starfarer/coreui/refit/WeaponGroupDialog;
+		c javap 字节码取证 | 高 | 合成外围引用，<init> 中 putfield

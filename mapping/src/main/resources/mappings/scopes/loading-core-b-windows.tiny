@@ -6,12 +6,16 @@ c	com/fs/starfarer/loading/SpecStore$24	com/fs/starfarer/loading/SpecStore$Prior
 	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 	m	o00000	add	(Ljava/lang/String;)V
 
+	f	Ó00000	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
+		c javap 字节码取证 | 高 | o00000(String) 中 getPriorityWeapons().add() 的目标 faction
 c	com/fs/starfarer/loading/SpecStore$25	com/fs/starfarer/loading/SpecStore$KnownHullModsLoader
 	c	来源(javap取证) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$25
 	m	o00000	getList	()Ljava/util/List;
 	m	o00000	matches	(Ljava/lang/String;Ljava/lang/String;)Z
 	m	o00000	add	(Ljava/lang/String;)V
 
+	f	Ò00000	factionSpec	Lcom/fs/starfarer/loading/FactionSpec;
+		c javap 字节码取证 | 高 | o00000(String) 中 getKnownHullMods().add() 的目标 faction
 c	com/fs/starfarer/loading/SpecStore$26	com/fs/starfarer/loading/SpecStore$SpecOrderComparator
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/SpecStore$26
 	m	o00000	compare	(Ljava/lang/String;Ljava/lang/String;)I
@@ -71,6 +75,10 @@ c	com/fs/starfarer/loading/StarfarerStrings	com/fs/starfarer/loading/StarfarerSt
 	m	Ò00000	getTooltip	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/loading/StarfarerStrings$o;
 	m	Ó00000	hasTooltip	(Ljava/lang/String;Ljava/lang/String;)Z
 
+	f	Ó00000	tooltips	Lorg/json/JSONObject;
+		c javap 字节码取证 | 高 | super() 中加载 data/strings/tooltips.json；Ò00000(String,String)/super(String,String) 读取
+	f	o00000	strings	Lorg/json/JSONObject;
+		c javap 字节码取证 | 高 | super() 中加载 data/strings/strings.json；super(String)/String(String,String)/Ó00000 读取
 c	com/fs/starfarer/loading/StarfarerStrings$o	com/fs/starfarer/loading/StarfarerStrings$Tooltip
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/StarfarerStrings$o
 	f	Ò00000	title	Ljava/lang/String;
@@ -117,6 +125,10 @@ c	com/fs/starfarer/loading/O0Oo	com/fs/starfarer/loading/ShipRoles
 	m	new	getRoles	()Ljava/util/Map;
 	m	o00000	getShipRole	(Ljava/lang/String;)Lcom/fs/starfarer/loading/O0Oo$oo;
 
+	f	o00000	variantIdsByHullId	Lcom/fs/starfarer/api/util/ListMap;
+		c javap 字节码取证 | 高 | o00000() getter 返回；JSON 解析时 getList/add 填充（Misc.getHullIdForVariantId 索引）
+	m	o00000	getVariantIdsByHullId	()Lcom/fs/starfarer/api/util/ListMap;
+		c javap 字节码取证 | 高 | 直接返回 variantIdsByHullId 字段
 c	com/fs/starfarer/loading/O0Oo$Oo	com/fs/starfarer/loading/ShipRoles$RoleWeight
 	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0Oo$Oo
 	f	o00000	variantId	Ljava/lang/String;
@@ -150,12 +162,16 @@ c	com/fs/starfarer/loading/O0Oo$oo	com/fs/starfarer/loading/ShipRoles$ShipRole
 	m	Ó00000	getFallback	()Lcom/fs/starfarer/loading/O0Oo$Oo;
 	m	Ô00000	getFallback2	()Lcom/fs/starfarer/loading/O0Oo$Oo;
 
+	m	new	setFallback	(Lcom/fs/starfarer/loading/ShipRoles$RoleWeight;)V
+		c javap 字节码取证 | 高 | JSON "fallback" 键调用；写入 fallback 字段
 c	com/fs/starfarer/loading/o0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/loading/ReportDataLoader
 	c	来源(字符串常量) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/o0OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	super	getReports	(Ljava/lang/String;)Ljava/util/List;
 	m	super	getReports	(Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
 	m	super	load	(Lcom/fs/starfarer/loading/ResourceLoaderState;)V
 
+	f	super	reportsByEventType	Ljava/util/Map;
+		c javap 字节码取证 | 高 | clinit new HashMap；super(String) get-or-put、super(ResourceLoaderState) 解析 reports.csv 后 add
 c	com/fs/starfarer/loading/WeaponSpecLoader	com/fs/starfarer/loading/WeaponSpecLoader
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/WeaponSpecLoader
 	m	o00000	loadProjectiles	()V
@@ -173,6 +189,10 @@ c	com/fs/starfarer/loading/WeaponSpreadsheetLoader	com/fs/starfarer/loading/Weap
 	m	super	createDerivedStats	(Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponSize;Lcom/fs/starfarer/api/combat/WeaponAPI$WeaponType;)Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$o;
 	m	super	sanitizeString	(Lorg/json/JSONObject;Ljava/lang/String;)Ljava/lang/String;
 
+	f	Ò00000	weaponSizeScores	[I
+		c javap 字节码取证 | 高 | static volatile int[]；Ó00000() 懒初始化（LARGE=3/MEDIUM=2/SMALL=1，NoSuchFieldError 容错）
+	m	Ó00000	getWeaponSizeScores	()[I
+		c javap 字节码取证 | 高 | weaponSizeScores 懒初始化 getter
 c	com/fs/starfarer/loading/WeaponSpreadsheetLoader$1	com/fs/starfarer/loading/WeaponSpreadsheetLoader$WeaponStatsComparator
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/WeaponSpreadsheetLoader$1
 	m	o00000	compare	(Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$o;Lcom/fs/starfarer/loading/WeaponSpreadsheetLoader$o;)I
@@ -326,6 +346,132 @@ c	com/fs/starfarer/loading/O0oO	com/fs/starfarer/loading/FactionSpec
 	m	getAllPortraits	getAllPortraits	(Lcom/fs/starfarer/api/characters/FullName$Gender;)Ljava/util/List;
 	m	getAllPortraits	getAllPortraits	(Lcom/fs/starfarer/loading/O0oO$o;Lcom/fs/starfarer/api/characters/FullName$Gender;)Ljava/util/List;
 
+	f	ÕÒ0000	id	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getId/setId 读写该字段
+	f	ÓÒ0000	displayName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDisplayName/setDisplayName 读写该字段
+	f	Oo0000	displayNameWithArticle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDisplayNameWithArticle/setDisplayNameWithArticle
+	f	ôÓ0000	displayNameLong	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDisplayNameLong/setDisplayNameLong
+	f	if.super	displayNameLongWithArticle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDisplayNameLongWithArticle/setDisplayNameLongWithArticle
+	f	void.super	entityNamePrefix	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getEntityNamePrefix/setEntityNamePrefix
+	f	do.super	personNamePrefix	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getPersonNamePrefix/setPersonNamePrefix
+	f	OÔ0000	personNamePrefixAOrAn	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getPersonNamePrefixAOrAn/setPersonNamePrefixAOrAn
+	f	super	displayNameIsOrAre	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getDisplayNameIsOrAre/setDisplayNameIsOrAre
+	f	String	barSound	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getBarSound/setBarSound
+	f	õÒ0000	showInIntelTab	Z
+		c javap 字节码取证 | 高 | isShowInIntelTab/setShowInIntelTab；clinit 默认 true
+	f	ÖÓ0000	nameCategories	Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+		c javap 字节码取证 | 高 | getNameCategories 直接返回；clinit new WeightedRandomPicker
+	f	Õ00000	malePortraits	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getPortraits/ getAllPortraits 中 MALE/ANY 分支读取、getMalePortraits
+	f	if	femalePortraits	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getPortraits/getAllPortraits 中 FEMALE 分支读取、getFemalePortraits
+	f	ÒÓ0000	shipNamePrefix	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getShipNamePrefix/setShipNamePrefix；clinit 默认 "ISS"
+	f	super.super	shipNameSources	Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+		c javap 字节码取证 | 高 | getShipNameSources 直接返回
+	f	õo0000	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getColor/setColor；clinit 默认 Color.white
+	f	Ò00000	baseUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getBaseUIColor/setBaseUIColor；clinit 默认 Color.white
+	f	void.Object	darkUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getDarkUIColor/setDarkUIColor；clinit 默认 Color.white
+	f	Òo0000	gridUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getGridUIColor/setGridUIColor；clinit 默认 Color.white
+	f	øÓ0000	brightUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getBrightUIColor/setBrightUIColor；null 时由 baseUIColor 派生（B 混合 0.35）
+	f	ÒÒ0000	secondaryUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | getSecondaryUIColor/setSecondaryUIColor；clinit null
+	f	ôo0000	secondarySegments	I
+		c javap 字节码取证 | 高 | getSecondarySegments/setSecondarySegments；clinit 默认 8
+	f	if.new	captainPersonalities	Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+		c javap 字节码取证 | 高 | getCaptainPersonalities/addCaptainPersonality；pickPersonality 从中 pick 默认 "steady"
+	f	super.Object	stockFleets	Ljava/util/Map;
+		c javap 字节码取证 | 高 | addStockFleet/getStockFleet/getStockFleets（"Fleet id [%s] not found" 异常）
+	f	øÒ0000	illegalCommodities	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getIllegalCommodities 直接返回
+	f	ôO0000	musicMap	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getMusicMap 直接返回
+	f	ôÒ0000	logo	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getLogo/setLogo
+	f	do	crest	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getCrest/setCrest
+	f	OÓ0000	internalCommsChannel	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getInternalCommsChannel/setInternalCommsChannel
+	f	String.new	shipRoles	Lcom/fs/starfarer/loading/ShipRoles;
+		c javap 字节码取证 | 高 | getShipRoles/setShipRoles；getAllVariantsForRole 遍历其角色表
+	f	String.Object	fleetNames	Lcom/fs/starfarer/loading/FleetTypeNameMap;
+		c javap 字节码取证 | 高 | getFleetNames/setFleetNames
+	f	void.new	ranksAndPosts	Lcom/fs/starfarer/loading/RankAndPostNameMap;
+		c javap 字节码取证 | 高 | getRanksAndPosts/setRanksAndPosts
+	f	ÖO0000	tariffFraction	F
+		c javap 字节码取证 | 高 | getTariffFraction/setTariffFraction；clinit 默认 0.3f
+	f	OO0000	tollFraction	F
+		c javap 字节码取证 | 高 | getTollFraction/setTollFraction；clinit 默认 0.1f
+	f	Öo0000	fineFraction	F
+		c javap 字节码取证 | 高 | getFineFraction/setFineFraction；clinit 默认 0.25f
+	f	øo0000	defaultShipRoles	Lcom/fs/starfarer/loading/ShipRoles;
+		c javap 字节码取证 | 高 | static getDefaultShipRoles/setDefaultShipRoles；clinit new ShipRoles
+	f	ô00000	defaultFleetNames	Lcom/fs/starfarer/loading/FleetTypeNameMap;
+		c javap 字节码取证 | 高 | static getDefaultFleetNames/setDefaultFleetNames；clinit null
+	f	ÓO0000	defaultRanks	Lcom/fs/starfarer/loading/RankAndPostNameMap;
+		c javap 字节码取证 | 高 | static getDefaultRanks/setDefaultRanks；clinit null
+	f	Õo0000	custom	Lorg/json/JSONObject;
+		c javap 字节码取证 | 高 | getCustom/setCustom；clinit null
+	f	øO0000	flags	Ljava/util/List;
+		c javap 字节码取证 | 高 | getFlags 直接返回；clinit new ArrayList
+	f	ÓÔ0000	crests	Ljava/util/List;
+		c javap 字节码取证 | 高 | getCrests 直接返回；clinit new ArrayList
+	f	Ó00000	shipsWhenImporting	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getShipsWhenImporting 直接返回；clinit LinkedHashSet
+	f	õÓ0000	knownShips	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getKnownShips 直接返回
+	f	private.new	knownWeapons	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getKnownWeapons 直接返回
+	f	ÒO0000	knownFighters	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getKnownFighters 直接返回
+	f	ÓÓ0000	knownIndustries	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getKnownIndustries 直接返回
+	f	ÕO0000	knownHullMods	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getKnownHullMods 直接返回；SpecStore$25.o00000(String) 向其 add
+	f	Óo0000	priorityShips	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getPriorityShips 直接返回
+	f	String.super	priorityWeapons	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getPriorityWeapons 直接返回；SpecStore$24.o00000(String) 向其 add
+	f	super.new	priorityFighters	Ljava/util/Set;
+		c javap 字节码取证 | 高 | getPriorityFighters 直接返回
+	f	ÒÔ0000	hullFrequency	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getHullFrequency/setHullFrequency；clinit LinkedHashMap
+	f	ÖÒ0000	tagFrequency	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getTagFrequency/setTagFrequency；clinit LinkedHashMap
+	f	if.Object	variantOverrides	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getVariantOverrides 直接返回；clinit LinkedHashMap
+	f	OÒ0000	overriddenHulls	Ljava/util/LinkedHashSet;
+		c javap 字节码取证 | 高 | getOverriddenHulls 直接返回；clinit LinkedHashSet
+	f	void	doctrine	Lcom/fs/starfarer/loading/specs/FactionDoctrine;
+		c javap 字节码取证 | 高 | getDoctrine/getFactionDoctrine 返回；clinit new FactionDoctrine
+	f	private	voicePickerLow	Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+		c javap 字节码取证 | 高 | getVoicePickerLow 直接返回
+	f	ÕÓ0000	voicePickerMedium	Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+		c javap 字节码取证 | 高 | getVoicePickerMedium 直接返回
+	f	õ00000	voicePickerHigh	Lcom/fs/starfarer/api/util/WeightedRandomPicker;
+		c javap 字节码取证 | 高 | getVoicePickerHigh 直接返回
+	f	do.new	weaponSellFrequency	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getWeaponSellFrequency 直接返回；clinit LinkedHashMap
+	f	õO0000	fighterSellFrequency	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getFighterSellFrequency 直接返回
+	f	private.super	hullmodSellFrequency	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getHullmodSellFrequency 直接返回
+	f	Ö00000	shipSellFrequency	Ljava/util/Map;
+		c javap 字节码取证 | 高 | getShipSellFrequency 直接返回
 c	com/fs/starfarer/loading/O0oO$o	com/fs/starfarer/loading/FactionSpec$PortraitCategory
 	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/O0oO$o
 	f	new	STANDARD	Lcom/fs/starfarer/loading/O0oO$o;
@@ -344,6 +490,18 @@ c	com/fs/starfarer/loading/B	com/fs/starfarer/loading/HullVariantSpecStore
 	m	new	removeVariant	(Ljava/lang/String;)V
 	m	Ô00000	containsVariant	(Ljava/lang/String;)Z
 
+	f	Object	hullVariants	Ljava/util/Map;
+		c javap 字节码取证 | 高 | clinit new HashMap；各静态方法 put/get/remove，"Ship hull variant [%s] already exists/not found!"
+	f	o00000	wendigoReplaceEnabled	Z
+		c javap 字节码取证 | 高 | clinit true；getVariant(String,Z) 中 wendigo→grendel replaceFirst 开关
+	m	o00000	getMissionShipVariantId	(Lcom/fs/starfarer/title/MissionSpec;I)Ljava/lang/String;
+		c javap 字节码取证 | 高 | 拼接 "mission_" + mission + "_ship_" + i 生成任务舰变体 id
+	m	o00000	createMissionVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/title/MissionSpec;IZ)Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | clone 变体、递归 station modules、设 mission id/source、写 /missions/ 文件并入库
+	m	o00000	saveVariant	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | clone、setSource(STOCK)、toJSONObject 写文件
+	m	o00000	deleteMissionVariants	(Lcom/fs/starfarer/title/MissionSpec;)V
+		c javap 字节码取证 | 高 | "Looking in ... for mission variants to delete" 删除任务目录 variant 文件并清 500 条 mission id
 c	com/fs/starfarer/loading/B$1	com/fs/starfarer/loading/HullVariantSpecStore$VariantFilenameFilter
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/B$1
 	m	accept	accept	(Ljava/io/File;Ljava/lang/String;)Z
@@ -356,6 +514,26 @@ c	com/fs/starfarer/loading/Q	com/fs/starfarer/loading/WeaponSpecStore
 	m	Õ00000	getProjectileSpec	(Ljava/lang/String;)Ljava/lang/Object;
 	m	Ò00000	clear	()V
 
+	f	new	weaponSpecs	Ljava/util/Map;
+		c javap 字节码取证 | 高 | clinit new HashMap；String(String) 抛 "Weapon spec [%s] not found!" 查询、super(String,BaseWeaponSpec) put
+	f	o00000	projectileSpecs	Ljava/util/Map;
+		c javap 字节码取证 | 高 | clinit new HashMap；super(String,Object) put 抛 "Projectile spec [%s] already exists"
+	m	Ò00000	getProjectileWeaponSpec	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/ProjectileWeaponSpec;
+		c javap 字节码取证 | 高 | String(String) 查询后 checkcast specs/Oo0O
+	m	ô00000	getPulseWeaponSpec	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/PulseWeaponSpec;
+		c javap 字节码取证 | 高 | String(String) 查询后 checkcast specs/J
+	m	Ö00000	getBeamWeaponSpec	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/BeamWeaponSpec;
+		c javap 字节码取证 | 高 | String(String) 查询后 checkcast specs/Object
+	m	Ó00000	isWeaponSpec	(Ljava/lang/String;)Z
+		c javap 字节码取证 | 高 | weaponSpecs.containsKey 判定
+	m	void	getWeaponSpecOrNull	(Ljava/lang/String;)Lcom/fs/starfarer/loading/specs/BaseWeaponSpec;
+		c javap 字节码取证 | 高 | weaponSpecs.get 直接返回（不抛异常，可能 null）
+	m	super	removeWeaponSpec	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | weaponSpecs.remove
+	m	super	getProjectileSpecIds	()Ljava/util/Collection;
+		c javap 字节码取证 | 高 | projectileSpecs.keySet 返回
+	m	Ó00000	getWeaponSpecIds	()Ljava/util/Collection;
+		c javap 字节码取证 | 高 | weaponSpecs.keySet 返回
 c	com/fs/starfarer/loading/K	com/fs/starfarer/loading/FighterWingSpecStore
 	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/K
 	m	o00000	clear	()V
@@ -365,6 +543,8 @@ c	com/fs/starfarer/loading/K	com/fs/starfarer/loading/FighterWingSpecStore
 	m	Ò00000	getFighterWingIds	()Ljava/util/List;
 	m	Ò00000	containsFighterWingSpec	(Ljava/lang/String;)Z
 
+	f	o00000	wingSpecs	Ljava/util/Map;
+		c javap 字节码取证 | 高 | clinit new HashMap；o00000() clear、o00000(String,FighterWingSpec) put 校验、"Fighter wing spec [%s] already exists/not found"
 c	com/fs/starfarer/loading/G	com/fs/starfarer/loading/CSVParser
 	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/G
 	m	o00000	parseCsv	(Ljava/lang/String;)Lorg/json/JSONArray;
@@ -386,6 +566,12 @@ c	com/fs/starfarer/loading/Objectsuper$1	com/fs/starfarer/loading/ScriptSourceFi
 	m	lastModified	lastModified	()J
 	m	getFileName	getFileName	()Ljava/lang/String;
 
+	f	this$0	this$0	Lcom/fs/starfarer/loading/ScriptSourceFinder;
+		c javap 字节码取证 | 中 | 编译器生成外部类引用（仅构造写入），保持原名
+	f	Ò00000	sourceCode	Ljava/lang/String;
+		c javap 字节码取证 | 高 | open() 中 getBytes("UTF-8") 作为源码流
+	f	o00000	fileName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | lastModified() 查磁盘文件时间、getFileName() 返回
 c	com/fs/starfarer/loading/int	com/fs/starfarer/loading/MusicSpec
 	c	来源(字符串常量) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/int
 	m	ô00000	getVolume	()F
@@ -393,10 +579,42 @@ c	com/fs/starfarer/loading/int	com/fs/starfarer/loading/MusicSpec
 	m	int	getFiles	()Ljava/util/List;
 	m	Ø00000	openSound	()Lsound/O;
 
+	f	o00000	file	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "file" getString；ö00000() getter 返回；null 时用 files 列表
+	f	Ö00000	source	Ljava/lang/String;
+		c javap 字节码取证 | 高 | JSON "source" getString；Õ00000() getter 返回
+	f	Ô00000	files	Ljava/util/List;
+		c javap 字节码取证 | 高 | JSON "files" JSONArray 循环 add；int() getter 返回
+	f	class	randomStart	Z
+		c javap 字节码取证 | 高 | JSON "randomStart" optBoolean(默认 true)；Ò00000() getter；播放时 Math.random 选起始
+	f	new	shuffle	Z
+		c javap 字节码取证 | 高 | JSON "shuffle" optBoolean(默认 false)；Object() getter
+	f	Ø00000	musicBin	Z
+		c javap 字节码取证 | 高 | 构造时 source.contains("music.bin")；Ô00000() getter 返回
+	f	Ó00000	volume	F
+		c javap 字节码取证 | 高 | JSON "volume" optDouble(默认 1.0)；ô00000() getter / o00000(float) setter；O.Ó00000(F) 设音量
+	m	o00000	play	()V
+		c javap 字节码取证 | 高 | StarfarerSettings 音乐开关检查后调 createMusicStream 并 O.if() 播放
+	m	return	getMusic	()Lsound/Music;
+		c javap 字节码取证 | 高 | 包装 createMusicStream() 抛 IOException 为 RuntimeException
+	m	Ô00000	isMusicBin	()Z
+		c javap 字节码取证 | 高 | 返回 musicBin 字段（source 是否 music.bin 格式）
+	m	Õ00000	getSource	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 返回 source 字段
+	m	ö00000	getFile	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 返回 file 字段（单文件路径，可 null）
+	m	Ò00000	isRandomStart	()Z
+		c javap 字节码取证 | 高 | 返回 randomStart 字段
+	m	Object	isShuffle	()Z
+		c javap 字节码取证 | 高 | 返回 shuffle 字段
 c	com/fs/starfarer/loading/int$1	com/fs/starfarer/loading/MusicSpec$MusicStreamProvider
 	c	来源(内容复核) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/int$1
 	m	super	openStream	()Ljava/io/InputStream;
 
+	f	Ô00000	outerMusicSpec	Lcom/fs/starfarer/loading/MusicSpec;
+		c javap 字节码取证 | 中 | 编译器生成外部类引用（仅构造写入）
+	f	Õ00000	filePath	Ljava/lang/String;
+		c javap 字节码取证 | 高 | source + "/" + 文件名 拼接路径；super() 中打开 InputStream
 c	com/fs/starfarer/loading/P	com/fs/starfarer/loading/SectorGenPluginLoader
 	c	来源(javap取证) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/P
 	f	super	pluginClassNames	Ljava/util/List;
@@ -431,6 +649,36 @@ c	com/fs/starfarer/loading/scripts/ScriptStore	com/fs/starfarer/loading/scripts/
 	m	int	startLoadingThread	()V
 	m	Ø00000	getJaninoClassLoader	()Lorg/codehaus/janino/JavaSourceClassLoader;
 
+	f	ø00000	sourceClassLoader	Lorg/codehaus/janino/JavaSourceClassLoader;
+		c javap 字节码取证 | 高 | volatile；o00000(ClassLoader) 创建（JavaSourceClassLoader/CachingJavaSourceClassLoader）、Ø00000() getter
+	f	if	scriptClassLoader	Lcom/fs/starfarer/loading/scripts/ScriptClassLoader;
+		c javap 字节码取证 | 高 | volatile；o00000()/ô00000() 中 new ScriptClassLoader 写入、Object() getter
+	f	Õ00000	objectRepository	Lcom/fs/util/container/repo/ObjectRepository;
+		c javap 字节码取证 | 高 | clinit new；getList/add/clear 脚本对象仓库
+	f	do	scriptNames	Ljava/util/List;
+		c javap 字节码取证 | 中 | synchronizedList；Object(String) 注册脚本时 add（另一份待处理名单）
+	f	õ00000	scriptsToCompile	Ljava/util/List;
+		c javap 字节码取证 | 高 | synchronizedList；o00000() 中 "Compiling script [" 遍历编译
+	f	Ò00000	jarFiles	Ljava/util/List;
+		c javap 字节码取证 | 高 | volatile；Õ00000() getter 返回；o00000() 中 "Getting ready to load jar file [" 遍历转 URL
+	f	void	classCache	Ljava/util/Map;
+		c javap 字节码取证 | 高 | public static Map<String,Class>；Ò00000(String) 中 Class.forName 结果缓存
+	f	String	loadException	Ljava/lang/Exception;
+		c javap 字节码取证 | 高 | Ô00000() 等待完成后若有异常则抛出；clinit null
+	f	super	scriptLoadThread	Ljava/lang/Thread;
+		c javap 字节码取证 | 高 | int() new Thread(ScriptStore$3).start、Ô00000() join
+	f	Ó00000	scriptClassNames	Ljava/util/Set;
+		c javap 字节码取证 | 高 | final Set；Ò00000() getter 返回；ö00000() 扫描 data/scripts/plugins+world 填充、o00000() contains 后实例化入仓库
+	f	ô00000	scriptsLoaded	Z
+		c javap 字节码取证 | 高 | volatile；return() getter 返回（clinit false，加载线程完成置 true）
+	f	OO0000	waitingForScripts	Z
+		c javap 字节码取证 | 高 | volatile；Ô00000() 置 true 表示等待加载完成（then join）
+	m	o00000	createSourceClassLoader	(Ljava/lang/ClassLoader;)V
+		c javap 字节码取证 | 高 | 依 enableScriptCaching 设置创建 JavaSourceClassLoader/Caching 变体并 setDebuggingInfo
+	m	o00000	getCacheDirForScript	(Ljava/lang/String;)Ljava/io/File;
+		c javap 字节码取证 | 高 | 返回 <dir>/cache/<class→source 名> 目录（mkdir）
+	m	Ô00000	classToSourceName	(Ljava/lang/String;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | ".class" 后缀替换为 ".java"
 c	com/fs/starfarer/loading/scripts/ScriptStore$1	com/fs/starfarer/loading/scripts/ScriptStore$ScriptCacheReader
 	c	来源(继承关系) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/ScriptStore$1
 	m	findResource	findResource	(Ljava/lang/String;)Lorg/codehaus/janino/util/resource/Resource;
@@ -441,6 +689,10 @@ c	com/fs/starfarer/loading/scripts/ScriptStore$1$1	com/fs/starfarer/loading/scri
 	m	lastModified	lastModified	()J
 	m	getFileName	getFileName	()Ljava/lang/String;
 
+	f	this$1	this$1	Lcom/fs/starfarer/loading/scripts/ScriptStore$ScriptCacheReader;
+		c javap 字节码取证 | 中 | 编译器生成外部类引用（仅构造写入），保持原名
+	f	o00000	cacheFileName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | open()/lastModified()/getFileName() 中 new File(缓存目录, 该名) 访问缓存文件
 c	com/fs/starfarer/loading/scripts/ScriptStore$2	com/fs/starfarer/loading/scripts/ScriptStore$ScriptCacheWriter
 	c	来源(继承关系) | 置信度(中) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/scripts/ScriptStore$2
 	m	createResource	createResource	(Ljava/lang/String;)Ljava/io/OutputStream;
@@ -458,3 +710,5 @@ c	com/fs/starfarer/loading/S	com/fs/starfarer/loading/StarSystemLocations
 	c	来源(字符串常量) | 置信度(高) | 证据(.dev/mapping-evidence/loading-core-b.md) windows对应 com/fs/starfarer/loading/S
 	m	o00000	load	(Ljava/lang/String;)V
 	m	Ò00000	getLocation	(Ljava/lang/String;)Lorg/lwjgl/util/vector/Vector2f;
+	f	o00000	starSystemLocations	Lorg/json/JSONObject;
+		c javap 字节码取证 | 高 | o00000(String) 中 putstatic 加载 "starSystemLocations" 节点；Ò00000(String) 读取坐标

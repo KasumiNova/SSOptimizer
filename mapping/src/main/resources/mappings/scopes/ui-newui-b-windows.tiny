@@ -1,16 +1,27 @@
 tiny 2 0 obf named
 c	com/fs/starfarer/ui/newui/G	com/fs/starfarer/ui/newui/ShipPreviewPanel
 	c	javap取证 | 高 | 舰船预览面板：舰船渲染 + 舰名/船体名 + DMod 列表（Lasting damage:），tooltip 用 createFleetMemberTooltipPreDeploy（linux oOoO）
+	f	õØÒo00	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+	f	ôØÒo00	showTooltip	Z
 c	com/fs/starfarer/ui/newui/G$1	com/fs/starfarer/ui/newui/ShipPreviewPanel$TooltipPositioner
 	c	javap取证 | 中 | Runnable：设置舰船 tooltip 居中位置（400x200 锚点）（linux oOoO$1）
 	m	run	run	()V
+	f	super	this$0	Lcom/fs/starfarer/ui/newui/ShipPreviewPanel;
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	f	Ó00000	button	Lcom/fs/starfarer/ui/Button;
 c	com/fs/starfarer/ui/newui/L$9	com/fs/starfarer/ui/newui/CoreUIV2$WeaponGroupsWarningCheck
 	c	javap取证 | 高 | 实现 oOOo$o 确认回调：refitPanel.isEditedSinceSave() && getGroupsButton().getFlashFader()!=null 判定是否弹武器组未保存警告（CoreUIV2 匿名类）
 	m	o00000	isWeaponGroupsWarningNeeded	()Z
+	f	õ00000	outerCoreUIV2	LCoreUIV2;
+		c javap 字节码取证 | 高 | 匿名类外围 CoreUIV2 引用（混淆重命名），仅构造器写入
+	f	null	refitTab	Lcom/fs/starfarer/coreui/refit/RefitTab;
+		c javap 字节码取证 | 高 | 构造第2参，super() 中 getRefitPanel()/getDesignDisplay() 检查编辑状态
 c	com/fs/starfarer/ui/newui/L$o	com/fs/starfarer/ui/newui/CoreUIV2$RefitUnsavedDialogType
 	c	字符串常量 | 高 | 枚举值 REFIT_UNSAVED_CHANGING_TABS / REFIT_UNSAVED_CLOSING_UI 由 static{} 字符串常量直接给出
 	f	Ó00000	REFIT_UNSAVED_CHANGING_TABS	Lcom/fs/starfarer/ui/newui/L$o;
 	f	Ò00000	REFIT_UNSAVED_CLOSING_UI	Lcom/fs/starfarer/ui/newui/L$o;
+	f	super	values	[Lcom/fs/starfarer/ui/newui/CoreUIV2$RefitUnsavedDialogType;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（javac 标准 values() 返回它）
 c	com/fs/starfarer/ui/newui/M	com/fs/starfarer/ui/newui/NoiseBackgroundDialog
 	c	javap取证 | 高 | 对话框基类：extends ui.oo0O，构造创建 newui.d 噪声背景、setBackgroundDimAmount(0.75)，dismiss 时 hideDoodads/fadeOut/flickerNoise；InteractionDialog(o0Oo) 继承之
 	f	ÒÒô000	background	Lcom/fs/starfarer/ui/newui/d;
@@ -18,21 +29,128 @@ c	com/fs/starfarer/ui/newui/M	com/fs/starfarer/ui/newui/NoiseBackgroundDialog
 c	com/fs/starfarer/ui/newui/N	com/fs/starfarer/ui/newui/FleetStatusListPanel
 	c	javap取证 | 高 | 战况舰队状态列表面板：字符串 Held in reserve / Deployed in last engagement / Retreated from last engagement / Disabled or destroyed / Completely destroyed，FleetEncounterContextPlugin + List<campaign.ui.S>
 	m	getAllLists	getAllLists	()Ljava/util/List;
+	f	õøÒo00	context	Lcom/fs/starfarer/api/campaign/FleetEncounterContextPlugin;
+		c javap 字节码取证 | 高 | 构造第3参，getDataFor(fleet) 取战果数据
+	f	O0Óo00	iconType	LFleetMemberIconType;
+		c javap 字节码取证 | 高 | 构造第6参，传给 S 构造（图标类型）
+	f	private.void$while	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造第5参，标题 label 用色
+	f	Ó0Óo00	width	F
+		c javap 字节码取证 | 高 | 构造第4参，列表宽度（S 每行图标数 = width/iconRowHeight）
+	f	super.null$while	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c javap 字节码取证 | 高 | 构造第2参，getFleetData 取成员
+	f	Õ0Óo00	currYOffset	F
+		c javap 字节码取证 | 高 | 布局累加 y，setSize 总高
+	f	øøÒo00	groupTitle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 分组标题（默认 "Held in reserve"），addList 中标题 label
+	f	String.null$while	iconRowHeight	F
+		c javap 字节码取证 | 高 | 默认 56.0f，图标行高（width/iconRowHeight = 每行数）
+	f	Ö0Óo00	recoveryMode	Z
+		c javap 字节码取证 | 高 | 构造第9参；S.setRecoveryMode(recoveryMode)
+	f	Ò0Óo00	lists	Ljava/util/List;
+		c javap 字节码取证 | 高 | getAllLists() 返回；setVisibleArea 遍历设可见区
+	m	o00000	addList	(Ljava/lang/String;Ljava/util/List;Z)V
+		c javap 字节码取证 | 高 | 私有方法：按分组名建标题 + S 图标列表，传入成员与 fighter 过滤
 c	com/fs/starfarer/ui/newui/O0Oo	com/fs/starfarer/ui/newui/CommPanel
 	c	javap取证 | 高 | 通讯面板：字符串 Missions -/Comm Directory - + Available missions/Personnel listings/No available postings/OpenCDE，CommDirectory + 双列表(coreui.v) + Dismiss/Back（linux Stringsuper）
+	f	øÔÖ000	width	F
+		c javap 字节码取证 | 高 | 构造 fload5（默认 600），sizeToInner/setSize 用
+	f	super.if$Object	orgListingsList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | 目录页 "Organizational & aggregate listings" 列表（addItem 组织条目）
+	f	õÔÖ000	personnelListingsList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | 目录页 "Personnel listings" 列表（addItem PERSON 条目按钮）
+	f	ÓÕÖ000	directoryDismissButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 目录页创建文本 "Dismiss"，actionPerformed dismiss(0)
+	f	super.float$Object	missionsDismissButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 任务页创建文本 "Dismiss"，actionPerformed dismiss(0)
+	f	String.if$Object	missionsBackButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 任务页创建文本 "Back"，actionPerformed 重建目录页并切换 fader
+	f	if.if$Object	unusedBorderLines	Lcom/fs/starfarer/title/BorderLines;
+		c javap 字节码取证 | 中 | 全类仅声明无读写（javap 全文检索），判定未使用
+	f	OÕÖ000	directory	Lcom/fs/starfarer/campaign/CommDirectory;
+		c javap 字节码取证 | 高 | 构造第1参，目录页取 getEntries()
+	f	void.if$Object	entity	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
+		c javap 字节码取证 | 高 | 构造第2参，任务 availableAt.contains(entity) 过滤
+	f	ÓÔÖ000	market	Lcom/fs/starfarer/campaign/econ/Market;
+		c javap 字节码取证 | 高 | 构造 = entity.getMarket()，取名称/派系
+	f	øÓÖ000	faction	Lcom/fs/starfarer/campaign/Faction;
+		c javap 字节码取证 | 高 | 构造 = market.getFaction()，配色与任务按钮
+	f	private.if$Object	baseUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = faction.getBaseUIColor()
+	f	private.int$Object	darkUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = faction.getDarkUIColor()
+	f	õÓÖ000	gridUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = faction.getGridUIColor()
+	f	ÖÕÖ000	brightUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = faction.getBrightUIColor()
+	f	õÕÖ000	directoryTitleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 目录页标题 "Comm Directory - <market>"
+	f	ÕÕÖ000	directoryPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 目录页容器（new z() 重建），Back 时 forceIn
+	f	ÖÔÖ000	missionsPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 任务页容器（new z() 重建），构造末尾 forceOut
+	f	ôÕÖ000	missionsList	Lcom/fs/starfarer/coreui/ScrollingList;
+		c javap 字节码取证 | 高 | 任务页任务列表（addItem 任务按钮，数据 MissionAvailability）
+	f	OÔÖ000	currentAvailability	Lcom/fs/starfarer/campaign/MissionBoard$MissionAvailability;
+		c javap 字节码取证 | 高 | o00000(MissionAvailability) 写入，决定显示的 missionEntryPanel
+	f	ôÔÖ000	missionEntryPanel	Lcom/fs/starfarer/ui/newui/MissionEntryPanel;
+		c javap 字节码取证 | 高 | o00000 中 new MissionEntryPanel(availability, faction) 重建
+	f	ÒÕÖ000	missionsTitleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 任务页标题 "Missions - <market>"
+	f	ÒÔÖ000	noAvailablePostingsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "No available postings"，advance 按 missionsList 空置切 opacity
+	f	do.if$Object	noOrgListingsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "No available listings"（组织列表空提示），advance 按 orgListingsList 空置
+	f	ÕÔÖ000	noPersonnelListingsLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | "No available listings"（人员列表空提示），advance 按 personnelListingsList 空置
+	m	õØ0000	createMissionsPanel	()V
+		c javap 字节码取证 | 高 | 私有方法：重建 missionsPanel（标题/列表/Dismiss/Back）
+	m	o00000	setAvailability	(Lcom/fs/starfarer/campaign/MissionBoard$MissionAvailability;)V
+		c javap 字节码取证 | 高 | 私有方法：写入 currentAvailability 并重建 missionEntryPanel
+	m	öØ0000	createDirectoryPanel	()V
+		c javap 字节码取证 | 高 | 私有方法：重建 directoryPanel（标题/组织与人员列表/Dismiss）
 c	com/fs/starfarer/ui/newui/O0oo	com/fs/starfarer/ui/newui/CommDirectoryEntryButton
 	c	javap取证 | 高 | 通讯录条目按钮：持有 CommDirectoryEntry + SectorEntityToken + Faction（extends m$Oo 按钮基类）
 	f	private.for$int	entry	Lcom/fs/starfarer/campaign/CommDirectoryEntry;
 	f	OoÖO00	target	Lcom/fs/starfarer/api/campaign/SectorEntityToken;
 	f	øOÖO00	faction	Lcom/fs/starfarer/campaign/Faction;
+	f	if.for$int	baseColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = Faction.getBaseUIColor()，文字/图标基色
+	f	ÒoÖO00	darkColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = Faction.getDarkUIColor()，renderImpl 背景辉光色
+	f	õOÖO00	gridColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = Faction.getGridUIColor()
+	f	ÖoÖO00	brightColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = Faction.getBrightUIColor()
+	f	ÓoÖO00	unusedSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 中 | 全类仅声明无读写（javap 全文检索），判定未使用
+	f	do.for$int	missionImportantIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 构造 new ImagePanel("misc","mission_important")；advanceImpl 按 $missionImportant 记忆调透明度
+	f	ÕoÖO00	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 = String."do.super"（默认灰），其余 label 的初始色
 c	com/fs/starfarer/ui/newui/OOoO	com/fs/starfarer/ui/newui/CustomVisualDialog
 	c	继承关系+javap取证 | 高 | 实现 CustomVisualDialogDelegate$DialogCallbacks 的自定义视觉对话框，委托 CustomVisualDialogDelegate + CustomPanelImpl(int) + panelFader
 	f	ÓÓÖ000	delegate	Lcom/fs/starfarer/api/campaign/CustomVisualDialogDelegate;
 	f	ÒÓÖ000	customPanel	Lcom/fs/starfarer/ui/newui/int;
 	m	dismissDialog	dismissDialog	()V
 	m	getPanelFader	getPanelFader	()Lcom/fs/starfarer/api/util/FaderUtil;
+	f	if.int$Object	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 确认后 fadeIn；advance 中 brightness==1 时 dismiss(0)
 c	com/fs/starfarer/ui/newui/Objectsuper	com/fs/starfarer/ui/newui/PreBattleJoinInfoPanel
 	c	javap取证 | 高 | 战前加入信息面板：双方舰队名 + FleetEncounterContextPlugin + 每方一个 FleetStatusListPanel(N)（InteractionDialog.showPreBattleJoinInfo 创建），字符串 Your forces（linux ooOo-long）
+	f	if.if$while	playerFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	ÕÒÓo00	width	F
+	f	do.if$while	height	F
+	f	OÓÓo00	unusedStaticFloat	F
+		c javap | high | static final 声明，无 <clinit> 初始化、无任何引用
+	f	øÒÓo00	yourForcesTitle	Ljava/lang/String;
+	f	ÖÒÓo00	encounterContext	Lcom/fs/starfarer/api/campaign/FleetEncounterContextPlugin;
+	f	void.if$while	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+	f	õÒÓo00	fleetOneName	Ljava/lang/String;
+	f	ôÒÓo00	fleetOne	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	f	String.if$while	fleetTwoName	Ljava/lang/String;
+	f	ÓÒÓo00	fleetTwo	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+	m	öôO000	layoutPanel	()V
 c	com/fs/starfarer/ui/newui/OoOO	com/fs/starfarer/ui/newui/OptionPanelImpl
 	c	继承关系+javap取证 | 高 | 实现 OptionPanelAPI 的选项面板，按钮→选项数据 map + 选择器 + 滚动条；InteractionDialog(o0Oo).getOptionPanel() 返回该类型
 	f	ÖÓØO00	delegate	Lcom/fs/starfarer/ui/newui/OoOO$O0;
@@ -78,8 +196,22 @@ c	com/fs/starfarer/ui/newui/OoOO	com/fs/starfarer/ui/newui/OptionPanelImpl
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	mouseEnter	mouseEnter	(Lcom/fs/starfarer/util/A/C;Lcom/fs/starfarer/ui/c;)V
 	m	mouseLeave	mouseLeave	(Lcom/fs/starfarer/util/A/C;Lcom/fs/starfarer/ui/c;)V
+	f	private.String$if	width	F
+	f	do.String$if	optionHeight	F
+	f	øÒØO00	optionSpacing	F
+	f	õÒØO00	buttonFont	Ljava/lang/String;
+	f	OÓØO00	lastOptionComponent	Lcom/fs/starfarer/ui/UIComponent;
+	f	super.class$if	mouseLeft	Z
+	f	if.String$if	mouseEntered	Z
+	m	o00000	setOptionTooltip	(Ljava/lang/String;Lcom/fs/starfarer/ui/UIComponentBase;)V
+	m	o00000	setOptionTooltip	(Ljava/lang/String;ZLcom/fs/starfarer/ui/UIComponentBase;)V
+	m	float.float	updateSize	()V
+	m	ÖÓO000	computeOptionsHeight	()F
 c	com/fs/starfarer/ui/newui/OoOO$1	com/fs/starfarer/ui/newui/OptionPanelImpl$OptionTooltip
 	c	javap取证 | 中 | extends StandardTooltipV2Expandable：按 getButtonToItemMap 查 OptionData 渲染标题与高亮（setParaSmallInsignia + setHighlight + OptionTooltipCreator.createTooltip）
+	f	this$0	this$0	Lcom/fs/starfarer/ui/newui/OptionPanelImpl;
+	f	ÕôõO00	optionButton	Lcom/fs/starfarer/ui/UIComponentBase;
+	f	ÖôõO00	tooltipText	Ljava/lang/String;
 c	com/fs/starfarer/ui/newui/OoOO$O0	com/fs/starfarer/ui/newui/OptionPanelImpl$OptionListener
 	c	继承关系+javap取证 | 高 | 选项回调接口：选项选中/悬停/确认三回调，InteractionDialog(o0Oo$1) 实现并转发到 InteractionDialogPlugin.optionSelected/optionMousedOver
 	m	o00000	optionSelected	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
@@ -101,6 +233,11 @@ c	com/fs/starfarer/ui/newui/OoOO$o	com/fs/starfarer/ui/newui/OptionPanelImpl$Opt
 	f	super	tradeMode	Lcom/fs/starfarer/api/campaign/CampaignUIAPI$CoreUITradeMode;
 	m	o00000	getId	()Ljava/lang/String;
 	m	new	getData	()Ljava/lang/Object;
+	f	Ó00000	storyOptionData	Lcom/fs/starfarer/ui/newui/OptionPanelImpl$StoryOptionData;
+	f	ø00000	confirmText	Ljava/lang/String;
+	f	Õ00000	yesText	Ljava/lang/String;
+	f	õ00000	noText	Ljava/lang/String;
+	f	if	isRuleCommand	Z
 c	com/fs/starfarer/ui/newui/OoOO$oo	com/fs/starfarer/ui/newui/OptionPanelImpl$TextHighlightData
 	c	javap取证 | 中 | tooltip 文本高亮数据：高亮文本串 + 颜色数组（getTHD 返回）
 	f	new	texts	[Ljava/lang/String;
@@ -114,11 +251,65 @@ c	com/fs/starfarer/ui/newui/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	advance	advance	(F)V
 	m	dismiss	dismiss	(I)V
 	m	fleetMemberClicked	fleetMemberClicked	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/ui/B/new;Lcom/fs/starfarer/util/A/C;)V
+	f	Ö0Ö000	memberIconList	LFleetMemberIconList;
+		c javap 字节码取证 | 高 | createMemberIconList 中 new S(cols,0,iconSize) 并逐成员 addIconFor
+	f	ô0Ö000	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造第1参标题
+	f	O0Ö000	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造第2参文本；actionPerformed 收集选中成员后 fadeIn 关闭
+	f	ÖøÕ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造第3参文本；actionPerformed dismiss(1)
+	f	Ó0Ö000	defaultFontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 = StarfarerSettings.øÒ0000，用于求字号
+	f	ÕøÕ000	buttonFontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 = "graphics/fonts/orbitron20aa.fnt"，按钮字体
+	f	do.return$Object	fontHeight	F
+		c javap 字节码取证 | 高 | 构造 = 默认字体高度，布局用
+	f	øøÕ000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 确认后 fadeIn 触发 pickedFleetMembers
+	f	ôøÕ000	rows	I
+		c javap 字节码取证 | 高 | 构造第4参；高度计算 fload6*iload4（iconSize*行数）
+	f	if.return$Object	cols	I
+		c javap 字节码取证 | 高 | 构造第5参；createMemberIconList 中 S 构造第1参（每行图标数）
+	f	super.void$Object	iconSize	F
+		c javap 字节码取证 | 高 | 构造第6参；S 构造第3参（图标尺寸）
+	f	void.return$Object	allowDisabledSelection	Z
+		c javap 字节码取证 | 高 | 构造第7参；S.setAllowClicksOnDisabled；fleetMemberClicked 中控制不可部署成员选择
+	f	õøÕ000	allowMultipleSelection	Z
+		c javap 字节码取证 | 高 | 构造第8参；fleetMemberClicked 中 false 时清除其它选择（单选）
+	f	Õ0Ö000	selectedMembers	Ljava/util/List;
+		c javap 字节码取证 | 高 | actionPerformed 中 new ArrayList 收集被选成员（图标 group != -1），advance 中传给 listener
+	m	null.class	createMemberIconList	()V
+		c javap 字节码取证 | 高 | 私有方法：构建 memberIconList 并逐成员配置图标/编号/tooltip
 c	com/fs/starfarer/ui/newui/OoOoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$1	com/fs/starfarer/ui/newui/FleetMemberPickerDialog$TooltipPositioner
 	c	javap取证 | 中 | Runnable：设置成员 tooltip 相对面板背景图位置（linux newsuper$1）
 	m	run	run	()V
+	f	o00000	outerDialog	Lcom/fs/starfarer/ui/newui/FleetMemberPickerDialog;
+		c javap 字节码取证 | 高 | 匿名类外围引用（混淆重命名），run() 中取 borderLines 定位
+	f	Ó00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c javap 字节码取证 | 高 | 构造第2参，run() 中按 tooltip 尺寸与按钮锚点 setTooltipPositionRelativeToAnchor
+	f	new	anchorButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造第3参，tooltip 相对锚点按钮
 c	com/fs/starfarer/ui/newui/P	com/fs/starfarer/ui/newui/MissionBoardEntryButton
 	c	javap取证 | 高 | 任务板条目按钮：MissionBoard$MissionAvailability + CampaignMissionPlugin + CampaignEventPlugin（extends m$Oo 按钮基类，linux Q）
+	f	ÓOÖO00	unusedFaction	Lcom/fs/starfarer/campaign/Faction;
+		c javap | high | 构造器参数2写入，全类无 getfield
+	f	super.for$int	baseUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getBaseUIColor 初始化，sizeChanged 使用
+	f	String.for$int	darkUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getDarkUIColor 初始化，renderImpl 使用
+	f	private.float$int	unusedGridUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getGridUIColor 初始化，全类无 getfield
+	f	ôOÖO00	unusedBrightUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getBrightUIColor 初始化，全类无 getfield
+	f	ÖOÖO00	missionAvailability	Lcom/fs/starfarer/campaign/MissionBoard$MissionAvailability;
+	f	ÕOÖO00	missionPlugin	Lcom/fs/starfarer/api/campaign/CampaignMissionPlugin;
+	f	ø0ÖO00	eventPlugin	Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	f	ÒOÖO00	eventReport	Lcom/fs/starfarer/loading/EventReport;
+	f	OOÖO00	unusedEventSpec	Lcom/fs/starfarer/loading/specs/EventSpec;
+		c javap | high | SpecStore 按 eventType 加载后仅 putfield，全类无 getfield
+	f	void.for$int	unusedDefaultColor	Ljava/awt/Color;
+		c javap | high | 构造器置 O0OO."do.super"，全类无 getfield
 c	com/fs/starfarer/ui/newui/Q	com/fs/starfarer/ui/newui/PlanetInfoPanel
 	c	javap取证 | 高 | 行星信息面板：字符串 Hazard rating:/%/lava + scanline11 纹理，CampaignPlanet + 行星实体渲染 + PlanetInfoParams（linux P）
 	f	ÖOÓo00	planet	Lcom/fs/starfarer/campaign/CampaignPlanet;
@@ -126,6 +317,29 @@ c	com/fs/starfarer/ui/newui/Q	com/fs/starfarer/ui/newui/PlanetInfoPanel
 	m	getGraphics	getGraphics	()Lcom/fs/starfarer/combat/entities/terrain/Planet;
 	m	updateLightSourceInfo	updateLightSourceInfo	()V
 	m	removeNameLabel	removeNameLabel	()V
+	f	øOÓo00	graphics	Lcom/fs/starfarer/combat/entities/terrain/Planet;
+	f	ÒoÓo00	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+	f	do.int$while	scaleFactor	F
+	f	ÕOÓo00	minDimension	F
+	f	OoÓo00	scanlineRenderer	Lcom/fs/starfarer/E/QuadRenderer;
+	f	String.int$while	showName	Z
+	f	if.int$while	interactive	Z
+	f	ÖoÓo00	planetInfoParams	Lcom/fs/starfarer/api/ui/TooltipMakerAPI$PlanetInfoParams;
+	f	ø0Óo00	width	F
+	f	super.int$while	height	F
+	f	ÕoÓo00	minPlanetRadius	F
+	f	if.null$while	maxPlanetRadius	F
+	f	ÓoÓo00	minScale	F
+	f	ôOÓo00	minMult	F
+	f	õOÓo00	dragRotating	Z
+	f	void.int$while	surveyDataIcon	Lcom/fs/starfarer/coreui/PlanetSurveyDataIcon;
+	f	do.null$while	renderStarHalo	Z
+	f	ÒOÓo00	rmbDragging	Z
+	f	private.null$while	rotationSpeed	F
+	f	ÓOÓo00	unusedDragDeltaY	F
+		c javap | high | processInputImpl 写鼠标 DY，全类无 getfield
+	f	OOÓo00	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+	m	o00000	init	(Lcom/fs/starfarer/campaign/CampaignPlanet;FFLcom/fs/starfarer/api/ui/TooltipMakerAPI$PlanetInfoParams;)V
 c	com/fs/starfarer/ui/newui/String	com/fs/starfarer/ui/newui/TextPanelImpl
 	c	继承关系+javap取证 | 高 | 实现 TextPanelAPI 的文本面板，InteractionDialog(o0Oo).getTextPanel() 返回该类型（字符串 ACTIVE PERSON:，linux Object）
 	f	ÖÖÒo00	scrollBar	Lcom/fs/starfarer/ui/g;
@@ -150,10 +364,42 @@ c	com/fs/starfarer/ui/newui/String	com/fs/starfarer/ui/newui/TextPanelImpl
 	m	highlightLastInLastPara	highlightLastInLastPara	(Ljava/lang/String;Ljava/awt/Color;)V
 	m	setHighlightColorsInLastPara	setHighlightColorsInLastPara	([Ljava/awt/Color;)V
 	m	setFontOrbitronUnnecessarilyLarge	setFontOrbitronUnnecessarilyLarge	()V
+	f	void.String$while	contentWidth	F
+	f	ÒÖÒo00	width	F
+	f	if.String$while	height	F
+	f	ÓÖÒo00	font	Ljava/lang/String;
+	f	õÖÒo00	unusedOrbitronLargeMode	Z
+		c javap | high | setFontOrbitronUnnecessarilyLarge 置 true，全类无 getfield
+	f	String.String$while	orbitronMode	Z
+	f	øÖÒo00	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2Expandable;
+	m	ØôO000	rebuildScrollPanel	()V
+	m	ÖôO000	updateScrollPanelSize	()V
 c	com/fs/starfarer/ui/newui/X	com/fs/starfarer/ui/newui/AbilitySlotsPanel
 	c	javap取证 | 高 | 能力槽栏设置面板：字符串 abilities/holder/empty + set 1..5/prev/next 按钮 + Lock 按钮；actionPerformed 操作 CampaignUIPersistentData.getAbilitySlots().setLocked/setCurrBarIndex（linux OOoo）
 	f	OÔÓo00	lockButton	Lcom/fs/starfarer/ui/n;
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	String.float$while	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c javap 字节码取证 | 高 | 构造第1参直接存，createAbilitySlot 传参
+	f	øÓÓo00	set1Button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造文本 "set 1"，actionPerformed setCurrBarIndex(0)
+	f	ôÓÓo00	set2Button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造文本 "set 2"，actionPerformed setCurrBarIndex(1)
+	f	super.float$while	set3Button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造文本 "set 3"，actionPerformed setCurrBarIndex(2)
+	f	ÖÓÓo00	set4Button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造文本 "set 4"，actionPerformed setCurrBarIndex(3)
+	f	ÕÓÓo00	set5Button	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造文本 "set 5"，actionPerformed setCurrBarIndex(4)
+	f	ÒÓÓo00	prevButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造文本 "prev"，actionPerformed 中 getCurrBarIndex()-1（回绕 5）
+	f	ÓÓÓo00	nextButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造文本 "next"，actionPerformed 中 getCurrBarIndex()+1（%5）
+	f	õÓÓo00	holderSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 构造 StarfarerSettings("abilities","holder")，renderImpl 中 render 背景
+	f	private.if$while	emptyLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造文本 "empty" 的 LabelImpl（空技能位提示）
+	m	new	makeButton	(Ljava/lang/String;Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 私有按钮工厂：Q.o00000 创建按钮并 setShortcutNoHighlight
 c	com/fs/starfarer/ui/newui/Y	com/fs/starfarer/ui/newui/TabClosedListener
 	c	javap取证 | 高 | tab 关闭回调接口，方法名 tabClosed 未混淆
 	m	tabClosed	tabClosed	()V
@@ -168,9 +414,29 @@ c	com/fs/starfarer/ui/newui/_	com/fs/starfarer/ui/newui/CargoPickerDialog
 	m	advance	advance	(F)V
 	m	dismiss	dismiss	(I)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	õØÖ000	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 构造用标题字符串建 LabelImpl，布局到顶部
+	f	ôØÖ000	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造第2参文本；actionPerformed confirmTransaction 后 fadeIn 关闭；advance 按货物空置启停用
+	f	øØÖ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造第3参文本；actionPerformed dismiss(1)（取消）
+	f	ÓØÖ000	defaultFontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 = StarfarerSettings.øÒ0000（默认字体名），用于求字号
+	f	OØÖ000	titleFontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造 = "graphics/fonts/orbitron20aa.fnt"，按钮/标题字体
+	f	if.for$Object	fontHeight	F
+		c javap 字节码取证 | 高 | 构造 = 默认字体高度（D.Ò00000(defaultFontName).float()），布局用
+	f	øÖÖ000	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 确认后 fadeIn 触发 dismiss（advance 检查 brightness==1）
+	f	OôÖ000	borderLines	Lcom/fs/starfarer/title/BorderLines;
+		c javap 字节码取证 | 高 | 构造 new BorderLines(color)，作为分隔线加入布局
+	f	ÖØÖ000	showTooltip	Z
+		c javap 字节码取证 | 中 | 构造 fload5>0 时创建 StandardTooltipV2Expandable 并加入；决定扩展提示面板
 c	com/fs/starfarer/ui/newui/_$1	com/fs/starfarer/ui/newui/CargoPickerDialog$RecreateTextPanelTooltip
 	c	javap取证 | 中 | extends StandardTooltipV2Expandable：createImpl 合并 CargoData + 已拾取货物栈后回调 CargoPickerListener.recreateTextPanel
 	m	createImpl	createImpl	(Z)V
+	f	this$0	this$0	Lcom/fs/starfarer/ui/newui/CargoPickerDialog;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用（javac 标准名 this$0），仅构造器写入
 c	com/fs/starfarer/ui/newui/b	com/fs/starfarer/ui/newui/SpriteButton
 	c	javap取证 | 高 | 精灵按钮：正常纹理 + 发光纹理双 Sprite，disabled 半透明 + getGlowAmount 叠加发光（extends m$Oo 按钮基类，linux d）
 	f	super.do$int	buttonSprite	Lcom/fs/graphics/Sprite;
@@ -185,12 +451,41 @@ c	com/fs/starfarer/ui/newui/c	com/fs/starfarer/ui/newui/MissionEntryPanel
 	m	getAccept	getAccept	()Lcom/fs/starfarer/ui/n;
 	m	flash	flash	()V
 	m	isFlashStarted	isFlashStarted	()Z
+	f	øÕÓo00	unusedFaction	Lcom/fs/starfarer/campaign/Faction;
+		c javap | high | 构造器参数2写入，全类无 getfield
+	f	õÕÓo00	baseUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getBaseUIColor 初始化，renderImpl 使用
+	f	ÒÖÓo00	darkUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getDarkUIColor 初始化，renderImpl 使用
+	f	ÓÕÓo00	unusedGridUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getGridUIColor 初始化，全类无 getfield
+	f	ÖÖÓo00	unusedBrightUIColor	Ljava/awt/Color;
+		c javap | high | Faction.getBrightUIColor 初始化，全类无 getfield
+	f	private.for$while	missionAvailability	Lcom/fs/starfarer/campaign/MissionBoard$MissionAvailability;
+	f	String.for$while	eventPlugin	Lcom/fs/starfarer/api/campaign/events/CampaignEventPlugin;
+	f	if.for$while	eventReport	Lcom/fs/starfarer/loading/EventReport;
+	f	ôÕÓo00	unusedEventSpec	Lcom/fs/starfarer/loading/specs/EventSpec;
+		c javap | high | SpecStore 按 eventType 加载后仅 putfield，全类无 getfield
+	f	ÖÕÓo00	actionListener	Lcom/fs/starfarer/ui/ActionListener;
+	f	OÖÓo00	flashFader	Lcom/fs/graphics/util/Fader;
+	f	ÕÕÓo00	flashStarted	Z
+	f	ÕÖÓo00	unusedDefaultColor	Ljava/awt/Color;
+		c javap | high | 构造器置 O0OO."do.super"，全类无 getfield
+	f	do.for$while	faction	Lcom/fs/starfarer/campaign/Faction;
 c	com/fs/starfarer/ui/newui/c$1	com/fs/starfarer/ui/newui/MissionEntryPanel$AcceptTooltipDecorator
 	c	javap取证 | 中 | implements StandardTooltipV2$OOo：o00000(label) 应用 CampaignMissionPlugin.getAcceptTooltipHighlights 高亮接受按钮 tooltip（linux b$1）
 	m	o00000	decorateAcceptLabel	(Lcom/fs/starfarer/ui/d;)V
+	f	class	this$0	Lcom/fs/starfarer/ui/newui/MissionEntryPanel;
+	f	Ö00000	missionPlugin	Lcom/fs/starfarer/api/campaign/CampaignMissionPlugin;
+	m	o00000	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
+	m	o00000	transformText	(Ljava/lang/String;)Ljava/lang/String;
+	m	Ò00000	onLabelCreated	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap | high | TextTooltipModifier 钩子，c$1 空实现
 c	com/fs/starfarer/ui/newui/c$2	com/fs/starfarer/ui/newui/MissionEntryPanel$AcceptTooltipPositioner
 	c	javap取证 | 中 | Runnable：设置接受按钮 tooltip 相对锚点位置（tooltip 高度取负偏移）（linux b$2）
 	m	run	run	()V
+	f	super	this$0	Lcom/fs/starfarer/ui/newui/MissionEntryPanel;
+	f	Ò00000	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
 c	com/fs/starfarer/ui/newui/d	com/fs/starfarer/ui/newui/NoiseBackground
 	c	javap取证 | 高 | 噪声背景：4 个 tripad 角(topleft/topright/botleft/botright) + noise 层的 SlidingSprite(ooOO-long) + 粒子噪声，renderNoise/flickerNoise/fadeOut（linux c）
 	f	void.do$while	noiseParticles	Lcom/fs/starfarer/class/G;
@@ -200,6 +495,16 @@ c	com/fs/starfarer/ui/newui/d	com/fs/starfarer/ui/newui/NoiseBackground
 	m	renderNoise	renderNoise	(F)V
 	m	flickerNoise	flickerNoise	(FF)V
 	m	fadeOut	fadeOut	()V
+	f	ÓØÓo00	topLeftSprite	Lcom/fs/starfarer/ui/newui/SlidingSprite;
+	f	super.do$while	bottomLeftSprite	Lcom/fs/starfarer/ui/newui/SlidingSprite;
+	f	String.do$while	topRightSprite	Lcom/fs/starfarer/ui/newui/SlidingSprite;
+	f	ÒØÓo00	bottomRightSprite	Lcom/fs/starfarer/ui/newui/SlidingSprite;
+	f	ôÖÓo00	fadeFader	Lcom/fs/graphics/util/Fader;
+	f	øÖÓo00	noiseFader	Lcom/fs/graphics/util/Fader;
+	f	õÖÓo00	unusedSpriteOffset	F
+		c javap | high | 构造器赋 50.0f 后全类无 getfield
+	f	OØÓo00	unusedRenderDoodads	Z
+		c javap | high | 仅 setRenderDoodads 写入，全类无 getfield
 c	com/fs/starfarer/ui/newui/nullsuper	com/fs/starfarer/ui/newui/PersonInfoPanel
 	c	javap取证 | 高 | 人物信息面板：字符串 Name:/Rank:/Post:/None，getPerson/isMinimalMode/isWithRelBar（InteractionDialog.showPersonInfo 使用，linux Z）
 	m	getPerson	getPerson	()Lcom/fs/starfarer/rpg/Person;
@@ -213,6 +518,27 @@ c	com/fs/starfarer/ui/newui/nullsuper	com/fs/starfarer/ui/newui/PersonInfoPanel
 	m	hideThird	hideThird	()V
 	m	hideRankNamePost	hideRankNamePost	()V
 	m	unhideRankNamePost	unhideRankNamePost	()V
+	f	ÖÔÓo00	portrait	LPersonPortrait;
+	f	ÒÔÓo00	factionLogoPanel	Lcom/fs/starfarer/ui/ImagePanel;
+	f	ÒÕÓo00	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap | high | renderImpl 内 person.getName 文本
+	f	õÔÓo00	rankLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap | high | renderImpl 内 person.getRank 文本
+	f	void.float$while	person	Lcom/fs/starfarer/rpg/Person;
+	f	øÔÓo00	minimalMode	Z
+	f	private.float$while	withRelBar	Z
+	f	ÓÔÓo00	nameCaptionLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap | high | renderImpl 内 "Name:" 文本
+	f	if.float$while	rankCaptionLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap | high | renderImpl 内 "Rank:" 文本
+	f	ôÔÓo00	postCaptionLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap | high | renderImpl 内 "Post:" 文本
+	f	super.for$while	factionLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap | high | renderImpl 内 faction.getDisplayName 文本
+	f	do.float$while	postLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap | high | renderImpl 内 person.getPost 文本
+	f	OÕÓo00	playerRelationshipPanel	Lcom/fs/starfarer/campaign/ui/intel/RelationshipDisplayPanel;
+	f	ÕÔÓo00	factionRelationshipPanel	Lcom/fs/starfarer/campaign/ui/intel/RelationshipDisplayPanel;
 c	com/fs/starfarer/ui/newui/o0OO	com/fs/starfarer/ui/newui/TabPanelContainer
 	c	javap取证 | 高 | CoreUIV2 的 tab 内容面板容器：包裹面板 + 滑入动画 + 边框 inset（L.currentTab 字段类型，linux class）
 	f	ÒØÒo00	panel	Lcom/fs/starfarer/ui/interfacenew;
@@ -222,6 +548,13 @@ c	com/fs/starfarer/ui/newui/o0OO	com/fs/starfarer/ui/newui/TabPanelContainer
 	m	setBorderInsetRight	setBorderInsetRight	(F)V
 	m	setBorderInsetTop	setBorderInsetTop	(F)V
 	m	setBorderInsetBottom	setBorderInsetBottom	(F)V
+	f	do.String$while	renderBorder	Z
+	f	private.String$while	borderInsetLeft	F
+	f	ÕØÒo00	borderInsetRight	F
+	f	ÖØÒo00	borderInsetTop	F
+	f	super.class$while	borderInsetBottom	F
+	f	ÓØÒo00	scanlineRenderer	Lcom/fs/starfarer/E/QuadRenderer;
+	f	OØÒo00	backgroundComponent	Lcom/fs/starfarer/ui/UIComponent;
 c	com/fs/starfarer/ui/newui/o0Oo	com/fs/starfarer/ui/newui/InteractionDialog
 	c	继承关系+javap取证 | 高 | 实现 InteractionDialogAPI + VisualPanelAPI 的交互对话框主类：文本面板+选项面板+视觉面板+对话插件（extends NoiseBackgroundDialog(M)）
 	f	øÒô000	plugin	Lcom/fs/starfarer/api/campaign/InteractionDialogPlugin;
@@ -263,14 +596,60 @@ c	com/fs/starfarer/ui/newui/o0Oo	com/fs/starfarer/ui/newui/InteractionDialog
 	m	dismiss	dismiss	(I)V
 	m	flickerStatic	flickerStatic	(FF)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	ÕÓô000	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | createContent 中 new g()，文本面板滚动区
+	f	void.int$String	promptLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | setPromptText 同步 setText；"---" 提示线绘制
+	f	OÔô000	planetBackground	LPlanetBackground;
+		c javap 字节码取证 | 高 | 3dPlanetBGInInteractionDialog 时 new PlanetBackground(planet) 加入
+	f	õÒô000	textWidth	F
+		c javap 字节码取证 | 高 | getTextWidth/setTextWidth；setTextWidth 同步 optionPanel 尺寸与 X 偏移
+	f	ÓÒô000	textHeight	F
+		c javap 字节码取证 | 高 | getTextHeight/setTextHeight；同步 optionPanel setSize
+	f	super.int$String	yOffset	F
+		c javap 字节码取证 | 高 | getYOffset/setYOffset；setYAlignOffset
+	f	ÖÔô000	xOffset	F
+		c javap 字节码取证 | 高 | getXOffset/setXOffset；setXAlignOffset
+	f	void.null$String	promptText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | getPromptText/setPromptText；默认 "You decide to..."
+	f	õÓô000	optionOnEscape	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | setOptionOnEscape 第2参；dismiss(10) 时 optionSelected(text,obj)
+	f	ÓÔô000	optionOnEscapeText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setOptionOnEscape 第1参（选项文本）
+	f	ôÓô000	optionOnConfirm	Ljava/lang/Object;
+		c javap 字节码取证 | 高 | setOptionOnConfirm 第2参；dismiss(0) 时 optionSelected(text,obj)
+	f	ÓÓô000	optionOnConfirmText	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setOptionOnConfirm 第1参（选项文本）
+	f	do.int$String	initDone	Z
+		c javap 字节码取证 | 高 | createContent 末尾置 true 并调 plugin.init；防重复初始化
+	f	øÓô000	currentOptionHadAConfirm	Z
+		c javap 字节码取证 | 高 | isCurrentOptionHadAConfirm/setCurrentOptionHadAConfirm 直读直写
+	f	OÓô000	visualFadeInDuration	F
+		c javap 字节码取证 | 高 | setVisualFade 第1参；showFleetInfo 等 setDurationIn
+	f	ÕÒô000	visualFadeOutDuration	F
+		c javap 字节码取证 | 高 | setVisualFade 第2参；fadeVisualOut 等 setDurationOut
+	f	ÒÔô000	coreUI	LCoreUIV2;
+		c javap 字节码取证 | 高 | getCoreUI() 返回；showCoreInternal 中 new CoreUIV2 后存入
+	f	private.null$String	inputBlocked	Z
+		c javap 字节码取证 | 高 | dismiss() 置 true；processInputImpl 开头 true 直接 return
+	f	if.int$String	dismissCode	I
+		c javap 字节码取证 | 高 | dismissAsCancel 置 1；advanceImpl 中 M.dismiss(dismissCode)
+	m	Ôõ0000	createContent	()V
+		c javap 字节码取证 | 高 | 私有方法：重建文本/选项/滚动面板、星球背景并调 plugin.init
 c	com/fs/starfarer/ui/newui/o0Oo$1	com/fs/starfarer/ui/newui/InteractionDialog$OptionListener
 	c	继承关系+javap取证 | 高 | implements OptionPanelImpl$OptionListener(OoOO$O0)：把选项事件转发到 InteractionDialogPlugin.optionSelected/optionMousedOver，确认路径调 showOptionConfirmDialog
 	m	o00000	optionSelected	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
 	m	Object	optionMousedOver	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
 	m	Ò00000	confirmOption	(Lcom/fs/starfarer/ui/newui/OoOO$o;)V
+	f	o00000	outerDialog	Lcom/fs/starfarer/ui/newui/InteractionDialog;
+		c javap 字节码取证 | 高 | 匿名类外围引用（混淆重命名），仅构造器写入
 c	com/fs/starfarer/ui/newui/o0Oo$2	com/fs/starfarer/ui/newui/InteractionDialog$CoreUIDismissedListener
 	c	javap取证 | 中 | implements CoreInteractionListener：coreUIDismissed 时恢复背景/文本面板淡入、CoreUI 淡出、RuleBasedDialog.updateMemory 并转发委托
 	m	coreUIDismissed	coreUIDismissed	()V
+	f	this$0	this$0	Lcom/fs/starfarer/ui/newui/InteractionDialog;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用（javac 标准名 this$0），仅构造器写入
+	f	o00000	listener	Lcom/fs/starfarer/api/campaign/CoreInteractionListener;
+		c javap 字节码取证 | 高 | 构造第2参；coreUIDismissed() 末尾转发（非空时）
 c	com/fs/starfarer/ui/newui/o0Oo$o	com/fs/starfarer/ui/newui/InteractionDialog$DialogType
 	c	字符串常量 | 高 | 交互对话框类型枚举，12 个值由 static{} 字符串常量直接给出
 	f	Ó00000	COMM_DIRECTORY	Lcom/fs/starfarer/ui/newui/o0Oo$o;
@@ -285,16 +664,50 @@ c	com/fs/starfarer/ui/newui/o0Oo$o	com/fs/starfarer/ui/newui/InteractionDialog$D
 	f	OO0000	GROUND_RAID_TARGET_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
 	f	ø00000	CUSTOM_PROD_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
 	f	super	CAMPAIGN_ENTITY_PICKER	Lcom/fs/starfarer/ui/newui/o0Oo$o;
+	f	String	values	[Lcom/fs/starfarer/ui/newui/InteractionDialog$DialogType;
+		c javap 字节码取证 | 高 | 枚举 $VALUES 缓存数组（javac 标准 values() 返回它）
 c	com/fs/starfarer/ui/newui/o0oO	com/fs/starfarer/ui/newui/FleetInfoPanel
 	c	javap取证 | 高 | 舰队信息面板：两舰队名+舰队对峙渲染，按派系关系着色（InteractionDialog.showFleetInfo 创建），字符串 Your forces
+	f	ÓøÒo00	leftFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c javap 字节码取证 | 高 | 构造第2参（左侧舰队），createContent 传入第一个 N
+	f	OøÒo00	rightFleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
+		c javap 字节码取证 | 高 | 构造第4参（右侧舰队），空时只建左列表
+	f	String.void$while	width	F
+		c javap 字节码取证 | 高 | 构造 500→400，setSize 宽
+	f	ÖøÒo00	height	F
+		c javap 字节码取证 | 高 | 构造 128→400，setSize 高
+	f	ÕøÒo00	unusedWidth	F
+		c javap 字节码取证 | 中 | static final，全类仅声明无读写（javap 全文检索），判定未使用
+	f	if.void$while	leftTitle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造第1参，缺省 "Your forces"
+	f	void.void$while	rightTitle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造第3参，为空时用敌方舰队名
+	f	øöÒo00	context	Lcom/fs/starfarer/api/campaign/FleetEncounterContextPlugin;
+		c javap 字节码取证 | 高 | 构造第5参，传给两个 N 显示战果
+	f	ÒøÒo00	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | createContent 中 new g()，两个 N 加入并 setVisibleArea
+	f	do.void$while	recoveryMode	Z
+		c javap 字节码取证 | 高 | 构造第6参，传给 N 构造的 recoveryMode 布尔
+	m	õôO000	createContent	()V
+		c javap 字节码取证 | 高 | 私有方法：clearChildren 后重建两个 FleetStatusListPanel 与滚动区
 c	com/fs/starfarer/ui/newui/oOOo	com/fs/starfarer/ui/newui/ConfirmDialog
 	c	javap取证 | 高 | 确认对话框：静态 showIfNeeded 入口 + Don't show this again（doNotShowAgain），campaignHelp 文本前缀
 	m	showIfNeeded	showIfNeeded	(Ljava/lang/String;Lcom/fs/starfarer/ui/interfacenew;Lcom/fs/starfarer/ui/newui/oOOo$o;Lcom/fs/starfarer/ui/oo0O$o;)Z
 	m	showIfNeeded	showIfNeeded	(Ljava/lang/String;Lcom/fs/starfarer/ui/interfacenew;Lcom/fs/starfarer/ui/newui/oOOo$o;Lcom/fs/starfarer/ui/oo0O$o;[Ljava/lang/String;)Z
 	m	doNotShowAgain	doNotShowAgain	()Z
+	f	do.int$Object	dismissButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造第4参（dismiss 文案）按钮，optionMap key=1 确认关闭
+	f	ÖÓÖ000	actionButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 构造第3参（action 文案）非空时创建，optionMap key=0
+	f	ÕÓÖ000	doNotShowAgainButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 文本 "Don't show this again"，doNotShowAgain() 读其 isChecked()
+	f	ôÓÖ000	helpId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 构造第1参，dismiss 时 CampaignHelpManager.setDoNotShow(helpId)
 c	com/fs/starfarer/ui/newui/oOOo$1	com/fs/starfarer/ui/newui/ConfirmDialog$ButtonListener
 	c	javap取证 | 中 | implements ui.U 的按钮监听，actionPerformed 空实现（确认对话框 Dismiss 按钮绑定）
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	OøÖo00	outerDialog	Lcom/fs/starfarer/ui/newui/ConfirmDialog;
+		c javap 字节码取证 | 高 | 匿名类外围引用（混淆重命名，非标准 this$0），仅构造器写入
 c	com/fs/starfarer/ui/newui/oOOo$o	com/fs/starfarer/ui/newui/ConfirmDialog$ConfirmCallback
 	c	javap取证 | 高 | 确认回调接口，boolean 方法表示是否确认（CoreUIV2 各警告确认回调实现恒 true/false）
 	m	o00000	confirm	()Z
@@ -304,22 +717,40 @@ c	com/fs/starfarer/ui/newui/ooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	show	show	()V
 	m	hide	hide	()V
 	m	getSlideInFader	getSlideInFader	()Lcom/fs/graphics/util/Fader;
+	f	super.String$while	imagePanel	Lcom/fs/starfarer/ui/ImagePanel;
+	f	øÕÒo00	slideXDistance	F
+	f	private.Object$while	slideYDistance	F
+	f	õÕÒo00	slideInFader	Lcom/fs/graphics/util/Fader;
+	f	OÖÒo00	idleFrameCount	I
 c	com/fs/starfarer/ui/newui/public	com/fs/starfarer/ui/newui/TerrainInfoPanel
 	c	javap取证 | 高 | 行星地表面板：Map<String,CampaignTerrain> + 地形按钮→CampaignTerrainPlugin，静态 createTerrainTooltip（CoreUIV2.terrainInfo 字段类型）
 	f	void.null$while	terrains	Ljava/util/Map;
 	f	õ0Óo00	terrainButtons	Ljava/util/Map;
 	m	recreate	recreate	()V
 	m	createTerrainTooltip	createTerrainTooltip	(Lcom/fs/starfarer/api/campaign/CampaignTerrainPlugin;)Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+	f	ô0Óo00	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
 c	com/fs/starfarer/ui/newui/public$1	com/fs/starfarer/ui/newui/TerrainInfoPanel$TooltipPositioner
 	c	javap取证 | 中 | Runnable：设置地形 tooltip 相对锚点位置（isTooltipExpandable 分支偏移不同）
 	m	run	run	()V
+	f	super	this$0	Lcom/fs/starfarer/ui/newui/TerrainInfoPanel;
+	f	Ó00000	terrainPlugin	Lcom/fs/starfarer/api/campaign/CampaignTerrainPlugin;
+	f	Ò00000	button	Lcom/fs/starfarer/ui/Button;
 c	com/fs/starfarer/ui/newui/public$2	com/fs/starfarer/ui/newui/TerrainInfoPanel$TerrainTooltip
 	c	javap取证 | 中 | extends StandardTooltipV2Expandable：createImpl 调 CampaignTerrainPlugin.createTooltip
 	m	createImpl	createImpl	(Z)V
+	f	õôõO00	terrainPlugin	Lcom/fs/starfarer/api/campaign/CampaignTerrainPlugin;
 c	com/fs/starfarer/ui/newui/super	com/fs/starfarer/ui/newui/CustomDialog
 	c	继承关系+javap取证 | 高 | 实现 CustomDialogDelegate$CustomDialogCallback 的自定义对话框，Confirm/Cancel 按钮 + CustomDialogDelegate 委托（extends ui.impl.o0OO）
 	f	OÓÖ000	delegate	Lcom/fs/starfarer/api/campaign/CustomDialogDelegate;
 	m	dismissCustomDialog	dismissCustomDialog	(I)V
+	f	õÒÖ000	customPanel	LCustomPanelImpl;
+		c javap 字节码取证 | 高 | 构造 new CustomPanelImpl(w,h,plugin) 并加入；createCustomDialog 回调传入
+	f	String.int$Object	confirmButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 文本 delegate.getConfirmText() 缺省 "Confirm"，actionPerformed fadeIn 关闭
+	f	øÒÖ000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | 文本 delegate.getCancelText() 缺省 "Cancel"，actionPerformed dismiss(1)
+	f	void.int$Object	fader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | 确认后 fadeIn；advance 中 brightness==1 时 dismiss(0)
 c	com/fs/starfarer/ui/newui/thissuper	com/fs/starfarer/ui/newui/CoreUITabButtonRow
 	c	javap取证 | 高 | CoreUIV2 tab 按钮行：addButton/getButtons/getTabId + tripad_button_cap_left/right/holder 纹理（CoreUIV2.buttons 字段类型）
 	f	øoÓo00	buttons	Ljava/util/Map;
@@ -327,3 +758,15 @@ c	com/fs/starfarer/ui/newui/thissuper	com/fs/starfarer/ui/newui/CoreUITabButtonR
 	m	getButton	getButton	(Ljava/lang/Object;)Lcom/fs/starfarer/ui/n;
 	m	getButtons	getButtons	()Ljava/util/Map;
 	m	getTabId	getTabId	(Lcom/fs/starfarer/ui/n;)Ljava/lang/Object;
+	f	ôoÓo00	leftCapIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 构造 StarfarerSettings("ui","tripad_button_cap_left")
+	f	ÒÒÓo00	rightCapIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 构造 StarfarerSettings("ui","tripad_button_cap_right")
+	f	OÒÓo00	holderIcon	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | 构造 StarfarerSettings("ui","tripad_button_holder")
+	f	õoÓo00	lastButton	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | addButton 中记录上一按钮做 rightOfMid 锚点，并更新自身
+	f	private.int$while	currXOffset	F
+		c javap 字节码取证 | 高 | addButton 中累加按钮宽度+间距，setSize 宽度
+	f	super.if$while	tabIdsByButton	Ljava/util/Map;
+		c javap 字节码取证 | 高 | button→tabId 映射，getTabId(button) 直接返回

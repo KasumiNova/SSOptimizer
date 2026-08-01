@@ -75,6 +75,14 @@ c	com/fs/starfarer/title/TitleScreenState	com/fs/starfarer/title/TitleScreenStat
 	m	isShowingCodex	isShowingCodex	()Z
 	m	getViewMouseOffset	getViewMouseOffset	()Lcom/fs/starfarer/combat/L;
 	m	getEntityToFollow	getEntityToFollow	()Lcom/fs/starfarer/combat/new/OoOO$o;
+	f	$SWITCH_TABLE$com$fs$starfarer$title$MainMenuWidget$MainMenuActionDelegate$MenuAction	menuActionSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$MenuAction 缓存字段
+	f	$SWITCH_TABLE$com$fs$starfarer$title$TitleScreenState$CurrentDialogType	dialogTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$CurrentDialogType 缓存字段
+	m	$SWITCH_TABLE$com$fs$starfarer$title$MainMenuWidget$MainMenuActionDelegate$MenuAction	getMenuActionSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化
+	m	$SWITCH_TABLE$com$fs$starfarer$title$TitleScreenState$CurrentDialogType	getDialogTypeSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化
 c	com/fs/starfarer/title/TitleScreenState$o	com/fs/starfarer/title/TitleScreenState$CurrentDialogType
 	c 来源(switch表名残留 $SWITCH_TABLE$TitleScreenState$CurrentDialogType) | 置信度(高)
 	f	OO0000	NEW_GAME	Lcom/fs/starfarer/title/TitleScreenState$o;
@@ -90,6 +98,8 @@ c	com/fs/starfarer/title/TitleScreenState$o	com/fs/starfarer/title/TitleScreenSt
 	f	ö00000	SETTINGS	Lcom/fs/starfarer/title/TitleScreenState$o;
 	m	values	values	()[Lcom/fs/starfarer/title/TitleScreenState$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/TitleScreenState$o;
+	f	Ô00000	$VALUES	[Lcom/fs/starfarer/title/TitleScreenState$CurrentDialogType;
+		c javap 字节码取证 | 高 | private static final 枚举常量缓存数组
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/title/TitleWidget
 	c 来源(starsector_title_alpha.png 标题图 + getMainMenu() 返回 MainMenuWidget) | 置信度(高)
 	m	getMainMenu	getMainMenu	()Lcom/fs/starfarer/title/C;
@@ -97,6 +107,20 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	advanceImpl	advanceImpl	(F)V
 	m	show	show	()V
 	m	hide	hide	()V
+	f	ÕÖÖo00	tipsPanel	Lcom/fs/starfarer/E/HoloPanel;
+		c javap 字节码取证 | 高 | 450x150 HoloPanel；setNext 到 TipsWidget
+	f	super.Object$private	mainMenuPanel	Lcom/fs/starfarer/E/HoloPanel;
+		c javap 字节码取证 | 高 | 250x400 HoloPanel、inRMid；setNext 到 MainMenuWidget
+	f	ôÖÖo00	titleSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | graphics/ui/starsector_title_alpha.png；renderImpl 渲染
+	f	ÖÖÖo00	unusedFont	Lcom/fs/starfarer/util/BitmapFont;
+		c javap 字节码取证 | 高 | 全类无读写，死代码字段
+	f	String.Object$private	preloadLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | STR "Preloading..." 闪烁 label
+	f	õÖÖo00	showPreloadIndicator	Z
+		c javap 字节码取证 | 高 | static；static{} true，构造显示后置 false
+	f	private.new$private	mainMenuWidget	Lcom/fs/starfarer/title/MainMenuWidget;
+		c javap 字节码取证 | 高 | getMainMenu 返回；show 调 updateContinueButtonState
 c	com/fs/starfarer/title/C	com/fs/starfarer/title/MainMenuWidget
 	c 来源(菜单项 New Game/Load Game/Missions/Edit Variants/Combat/Continue/Credits/Quit + goToMain/goToTutorial + switch表 MainMenuWidget$Mode) | 置信度(高)
 	m	updateContinueButtonState	updateContinueButtonState	()V
@@ -106,6 +130,68 @@ c	com/fs/starfarer/title/C	com/fs/starfarer/title/MainMenuWidget
 	m	goToMain	goToMain	()V
 	m	goToTutorial	goToTutorial	()V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	ÕØÖo00	panelBorderRenderer	Lcom/fs/starfarer/E/PanelBorderRenderer;
+		c  javap 字节码取证 | 高 | 构造 new class/o0oO("ui_border1", w, h) 边框渲染器，主/训两菜单共用
+	f	ÒØÖo00	continueButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Continue"；updateContinueButtonState 按存档存在性 enable/disable
+	f	õØÖo00	tutorialsButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Tutorials"；actionPerformed 相等时 goToTutorial
+	f	do.Object$private	missionsButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Missions"
+	f	if.Object$private	newGameButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "New Game"
+	f	String.String$private	loadGameButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Load Game"
+	f	õôÖo00	quitButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Quit"
+	f	OõÖo00	settingsButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Settings"
+	f	private.Object$private	creditsButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Credits"
+	f	void.String$private	codexButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Codex"
+	f	void.Object$private	combatBasicButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Combat (Basic)"；训练菜单首按钮
+	f	OØÖo00	combatAdvancedButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Combat (Advanced)"；训练菜单第二按钮
+	f	ÖØÖo00	fleetCommandButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Fleet Command"；训练菜单第三按钮
+	f	ÓôÖo00	backButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Back"；actionPerformed 相等时 goToMain 返回主菜单
+	f	ÕôÖo00	editVariantsButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Edit Variants"；仅 StarfarerSettings 调试开关开启时创建
+	f	ÖôÖo00	actionDelegate	Lcom/fs/starfarer/title/MainMenuWidget$MainMenuActionDelegate;
+		c  javap 字节码取证 | 高 | 构造 arg3；actionPerformed 末尾 menuItemSelected(menuAction)
+	f	ôØÖo00	mainMenuPanel	Lcom/fs/starfarer/ui/Panel;
+		c  javap 字节码取证 | 高 | setupMainMenu 创建，容纳全部主菜单按钮；getCurrentPanel mode=MAIN 返回
+	f	øôÖo00	trainingMenuPanel	Lcom/fs/starfarer/ui/Panel;
+		c  javap 字节码取证 | 高 | setupTrainingMenu 创建，容纳训练按钮；getCurrentPanel mode=TUTORIAL 返回
+	f	ôôÖo00	buttonWidth	F
+		c  javap 字节码取证 | 高 | 构造 w-30；所有按钮 setSize(buttonWidth, buttonHeight)
+	f	ÓØÖo00	buttonHeight	F
+		c  javap 字节码取证 | 高 | 构造 30.0f；按钮统一高度
+	f	if.String$private	buttonSpacing	F
+		c  javap 字节码取证 | 高 | 构造 4.0f；按钮 belowMid 纵向间距
+	f	øØÖo00	buttonFont	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 字体路径：主菜单 orbitron24aabold，训练菜单 orbitron20aabold
+	f	ÒôÖo00	panelWidth	F
+		c  javap 字节码取证 | 高 | final；构造 arg1 面板宽，派生 buttonWidth
+	f	OôÖo00	panelHeight	F
+		c  javap 字节码取证 | 高 | final；构造 arg2 面板高
+	f	do.String$private	currentMode	Lcom/fs/starfarer/title/MainMenuWidget$Mode;
+		c  javap 字节码取证 | 高 | 构造置 MAIN；advanceImpl 面板淡出后从 pendingMode 落定；getMode 兜底返回
+	f	øÖÖo00	pendingMode	Lcom/fs/starfarer/title/MainMenuWidget$Mode;
+		c  javap 字节码取证 | 高 | goToMain/goToTutorial 写入目标模式并 fadeOut 当前面板；advanceImpl 淡出完成后置 null
+	f	super.String$private	modeSwitchTable	[I
+		c  javap 字节码取证 | 高 | static volatile；$SWITCH_TABLE$Mode 懒初始化缓存
+	m	new.private	setupTrainingMenu	()V
+		c  javap 字节码取证 | 高 | 清子节点后建 trainingMenuPanel，创建 Combat(Basic/Advanced)/Fleet Command/Back 按钮
+	m	oöO000	setupMainMenu	()V
+		c  javap 字节码取证 | 高 | 清子节点后建 mainMenuPanel，创建 Continue/Tutorials/Missions/New Game/Load Game/Codex/Settings/Credits/Quit(/Edit Variants) 按钮
+	m	OöO000	getCurrentPanel	()Lcom/fs/starfarer/ui/Panel;
+		c  javap 字节码取证 | 高 | mode==MAIN 返回 mainMenuPanel，TUTORIAL 返回 trainingMenuPanel，否则 null
+	m	$SWITCH_TABLE$com$fs$starfarer$title$MainMenuWidget$Mode	getModeSwitchTable	()[I
+		c  javap 字节码取证 | 高 | switch 表懒初始化（NoSuchFieldError 容错）
 c	com/fs/starfarer/title/C$o	com/fs/starfarer/title/MainMenuWidget$MainMenuActionDelegate
 	c 来源(switch表 MainMenuWidget$MainMenuActionDelegate + menuItemSelected 回调接口) | 置信度(高)
 	m	menuItemSelected	menuItemSelected	(Lcom/fs/starfarer/title/C$o$o;)V
@@ -126,20 +212,92 @@ c	com/fs/starfarer/title/C$o$o	com/fs/starfarer/title/MainMenuWidget$MainMenuAct
 	f	Õ00000	QUIT	Lcom/fs/starfarer/title/C$o$o;
 	m	values	values	()[Lcom/fs/starfarer/title/C$o$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/C$o$o;
+	f	String	$VALUES	[Lcom/fs/starfarer/title/MainMenuWidget$MainMenuActionDelegate$MenuAction;
+		c  javap 字节码取证 | 高 | private static final 枚举常量缓存数组（values() 使用）
 c	com/fs/starfarer/title/C$Oo	com/fs/starfarer/title/MainMenuWidget$Mode
 	c 来源(switch表 MainMenuWidget$Mode，枚举 MAIN/TUTORIAL) | 置信度(高)
 	f	Object	MAIN	Lcom/fs/starfarer/title/C$Oo;
 	f	Ò00000	TUTORIAL	Lcom/fs/starfarer/title/C$Oo;
 	m	values	values	()[Lcom/fs/starfarer/title/C$Oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/C$Oo;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/title/MainMenuWidget$Mode;
+		c  javap 字节码取证 | 高 | private static final 枚举常量缓存数组
 c	com/fs/starfarer/title/String	com/fs/starfarer/title/TipsWidget
 	c 来源(data/strings/tips.json + Welcome to Starsector 提示，loadTips/pickTipText) | 置信度(高)
 	m	loadTips	loadTips	()V
 	m	sizeChanged	sizeChanged	(FF)V
 	m	pickTipText	pickTipText	()Ljava/lang/String;
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	private.String$private	nextTipButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | STR "next tip"；actionPerformed 调 showNextTip
+	f	ÕõÖo00	tipLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | showNextTip setText(pickTipText())
+	f	ÖõÖo00	holoPanel	Lcom/fs/starfarer/E/HoloPanel;
+		c javap 字节码取证 | 高 | 构造 arg1；showNextTip flickerNoise
+	f	ÓõÖo00	lastTipIndex	I
+		c javap 字节码取证 | 高 | static；pickTipText 避免连续重复
+	f	ÒõÖo00	showWelcomeTip	Z
+		c javap 字节码取证 | 高 | static；首次显示欢迎语
+	m	ÓöO000	showNextTip	()V
+		c javap 字节码取证 | 高 | pickTipText 设文本并 flickerNoise
 c	com/fs/starfarer/title/oOOO	com/fs/starfarer/title/TitleScreenBackgroundBattle
 	c 来源(舰船/武器名列表 + WS 编号创建演示战斗，implements combat.oOOO.return) | 置信度(中)
+	f	oo0000	unusedFloat	F
+		c javap 字节码取证 | 高 | 仅构造/cleanup putfield，无 getfield
+	f	ôO0000	unusedFloat2	F
+		c javap 字节码取证 | 高 | 仅构造 putfield，无 getfield
+	f	Òo0000	unusedFloat3	F
+		c javap 字节码取证 | 高 | 仅构造/cleanup putfield，无 getfield
+	f	Ôo0000	unusedFloat4	F
+		c javap 字节码取证 | 高 | 仅构造 putfield，无 getfield
+	f	øO0000	unusedFloat5	F
+		c javap 字节码取证 | 高 | 仅构造 putfield，无 getfield
+	f	for.super	flagship	Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 创建的首舰；advance 中 null/远离时重建场景
+	f	Õo0000	timeElapsed	F
+		c javap 字节码取证 | 高 | advance 累加 t，createBattleScene 清零
+	f	int.super	spawnIntervalTracker	Lcom/fs/starfarer/util/IntervalTracker;
+		c javap 字节码取证 | 高 | new IntervalTracker(1,1)；控制刷怪间隔
+	f	öO0000	initialFleetSpawned	Z
+		c javap 字节码取证 | 高 | 构造 true；createBattleScene 生成初始舰队后置 false
+	f	return.super	unusedFlag	Z
+		c javap 字节码取证 | 高 | static；仅 static{} 置 false，无引用
+	m	o00000	advance	(FLcom/fs/starfarer/util/InputEventList;)V
+		c javap 字节码取证 | 高 | 累加时间、推进 tracker、flagship 空/远离时重建
+	m	class	createBattleScene	()V
+		c javap 字节码取证 | 高 | cleanup 后按 viewport 随机建主角舰+僚机+初始舰队
+	m	õ00000	cleanupOffscreenShips	()V
+		c javap 字节码取证 | 高 | 遍历 Ship，isNearViewport 为假则 removeObject
+	m	Ó00000	createFighterWing	(Ljava/lang/String;IFF)Lcom/fs/starfarer/combat/ai/FighterWing;
+		c javap 字节码取证 | 高 | 按 FighterWingSpec 建 wing+成员，addMember/setLeader
+	m	Ô00000	createShip	(Ljava/lang/String;IFF)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 委托 5 参版本
+	m	new	createShip	(Ljava/lang/String;IFFZ)Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | 建舰、setOwner/Facing、可选 setShipAI、addObject
+	m	o00000	unusedMapSync	(Lcom/fs/starfarer/combat/CombatMap;)V
+		c javap 字节码取证 | 高 | 方法体为空，死代码方法
+	m	Ø00000	unusedCreateAstralTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 astral_title 变体；类内无调用
+	m	interface	unusedCreateAtlasTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 atlas_title 变体；类内无调用
+	m	ÓO0000	unusedCreateBuffaloTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 buffalo_title 变体；类内无调用
+	m	OO0000	unusedCreateEnforcerTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 enforcer_title 变体；类内无调用
+	m	ÔO0000	unusedCreateEagleTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 eagle_title 变体；类内无调用
+	m	ö00000	unusedCreateHammerheadTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 hammerhead_title 变体；类内无调用
+	m	while	unusedCreateVentureTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 venture_title 变体；类内无调用
+	m	Ö00000	unusedCreateWolfTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 wolf_title 变体；类内无调用
+	m	null	unusedCreateOnslaughtTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 onslaught_title 变体；类内无调用
+	m	float	unusedCreateConquestTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 conquest_title 变体；类内无调用
+	m	oO0000	unusedCreateCondorTitleVariant	()V
+		c javap 字节码取证 | 高 | 构建 condor_title 变体；类内无调用
 c	com/fs/starfarer/title/dev/StockVariantEditorPlugin	com/fs/starfarer/title/dev/StockVariantEditorPlugin
 	c 来源(未混淆类名保留，dev 工具：stock variants 编辑器插件) | 置信度(高)
 	m	areShipNamesEditable	areShipNamesEditable	()Z
@@ -156,17 +314,113 @@ c	com/fs/starfarer/title/dev/StockVariantEditorPlugin	com/fs/starfarer/title/dev
 	m	isCampaign	isCampaign	()Z
 	m	isStockVariantEditor	isStockVariantEditor	()Z
 	m	getSavedVariantData	getSavedVariantData	()Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData;
+	f	ÕoÓ000	fleet	Lcom/fs/starfarer/combat/CombatFleet;
+		c javap 字节码取证 | 高 | 构造 new CombatFleet(0) 逐 stock variant 加 FleetMember
+	f	ÖoÓ000	playerStats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c javap 字节码取证 | 高 | 构造 new CharacterStats()；getPlayerStats 返回
+	m	o00000	unusedStringAction	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 方法体为空，接口 no-op
+	m	new	unusedSaveAction	(Ljava/lang/String;Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | 方法体为空，接口 no-op
+	m	o00000	unusedVariantAction	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;)V
+		c javap 字节码取证 | 高 | 方法体为空，接口 no-op
 c	com/fs/starfarer/title/dev/StockVariantEditorPlugin$1	com/fs/starfarer/title/dev/StockVariantEditorPlugin$VariantNameComparator
 	c 来源(Comparator<HullVariantSpec> 按 getHullName 排序) | 置信度(中)
 	m	compare	compare	(Ljava/lang/Object;Ljava/lang/Object;)I
+	f	this$0	outerPlugin	Lcom/fs/starfarer/title/dev/StockVariantEditorPlugin;
+		c javap 字节码取证 | 高 | 匿名比较器外围引用
+	m	o00000	compare	(Lcom/fs/starfarer/loading/specs/HullVariantSpec;Lcom/fs/starfarer/loading/specs/HullVariantSpec;)I
+		c javap 字节码取证 | 高 | 按 hullSpec.getHullName() compareTo
 c	com/fs/starfarer/title/A/oOOO	com/fs/starfarer/title/CreditsDialog
 	c 来源(制作人员名单 Alex Mosolov/David Baumgart + Dismiss 按钮) | 置信度(高)
 	m	advanceImpl	advanceImpl	(F)V
+	f	ÓôÖ000	fontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	super.do$Object	dialogWidth	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	do.for$Object	dialogHeight	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÒôÖ000	unusedTimer	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÖôÖ000	memorialLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÕôÖ000	bannerXFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	private.for$Object	bannerYFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ôôÖ000	bannerPanel	Lcom/fs/starfarer/ui/ImagePanel;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ó00000	createCreditRow	(Ljava/lang/String;Ljava/lang/String;)Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/A/oOOO$1	com/fs/starfarer/title/CreditsDialog$DismissButtonListener
 	c 来源(匿名 actionPerformed -> dialog.dismiss(0)) | 置信度(中)
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	super.void$private	outer	Lcom/fs/starfarer/title/CreditsDialog;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/title/ControlsConfig
 	c 来源(Control key [ 校验 + JSON 读写按键绑定配置) | 置信度(高)
+	f	Õ00000	unusedString	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	super	unusedInt1	I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	void	unusedInt2	I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ö00000	unusedInt3	I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ò00000	mappingsByAction	Ljava/util/Map;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ó00000	actionsByKeyCode	Ljava/util/Map;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	getEventKeyCode	(Lcom/fs/starfarer/util/InputEvent;)I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	new	rebuildCategoryIndex	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	indexKeyMapping	(Lcom/fs/starfarer/title/KeyMapping;Ljava/util/EnumSet;)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	findActionsForKeyAndCategories	(Lcom/fs/starfarer/title/ControlAction;ILjava/util/EnumSet;)Ljava/util/List;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	getKeyMappingsForAction	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ö00000	getPrimaryKeyMapping	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	null	getSecondaryKeyMapping	(Lcom/fs/starfarer/title/ControlAction;)Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	isEventForAction	(Lcom/fs/starfarer/util/InputEvent;Lcom/fs/starfarer/title/MouseButtonEvent;Lcom/fs/starfarer/title/ControlAction;)Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ø00000	isActionKeyDown	(Lcom/fs/starfarer/title/ControlAction;)Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ó00000	isActionKeyPressed	(Lcom/fs/starfarer/title/ControlAction;)Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	class	isLegacyVersion	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ó00000	load	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	save	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ô00000	buildSaveJSON	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	loadFromJSON	(Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	õ00000	initUnsetMappings	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ö00000	setupDefaultBindings	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	null	ensureMappingsForAllActions	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	new	setPrimaryKeyBinding	(Lcom/fs/starfarer/title/ControlAction;IZZZ)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	setSecondaryKeyBinding	(Lcom/fs/starfarer/title/ControlAction;IZZZ)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ø00000	getAllKeyBindings	()Ljava/util/Map;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	class	getPrimaryKeyCode	(Lcom/fs/starfarer/title/ControlAction;)I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	new	getSecondaryKeyCode	(Lcom/fs/starfarer/title/ControlAction;)I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ô00000	getKeyNameForAction	(Lcom/fs/starfarer/title/ControlAction;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	getKeyName	(Lcom/fs/starfarer/title/KeyMapping;)Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0	com/fs/starfarer/title/ControlsCategory
 	c 来源(枚举 GENERAL/FLIGHT/C2/C2_WAYPOINT/C2_FRIENDLY/C2_HOSTILE/CAMPAIGN/UNCONFIGURABLE) | 置信度(高)
 	f	int	GENERAL	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
@@ -179,6 +433,12 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	f	ö00000	UNCONFIGURABLE	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
 	m	values	values	()[Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$O0;
+	f	ô00000	displayName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	o00000	$VALUES	[Lcom/fs/starfarer/title/ControlsCategory;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	getDisplayName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o	com/fs/starfarer/title/MouseButtonEvent
 	c 来源(枚举 BUTTON_DOWN/BUTTON_UP/OTHER 输入事件类型) | 置信度(中)
 	f	Ô00000	BUTTON_DOWN	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
@@ -186,6 +446,8 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	f	o00000	OTHER	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
 	m	values	values	()[Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$o;
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/title/MouseButtonEvent;
+		c javap 字节码取证 | 高 | private static final 枚举常量缓存数组
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo	com/fs/starfarer/title/ControlAction
 	c 来源(枚举 169 个按键动作 GENERAL_PAUSE/QUICK_LOAD/CMENU_*) | 置信度(高)
 	f	super.new	GENERAL_PAUSE	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
@@ -359,11 +621,81 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	f	if.int	CMENU_SEARCH_AND_DESTROY	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
 	m	values	values	()[Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	Oø0000	category	Lcom/fs/starfarer/title/ControlsCategory;
+		c javap 字节码取证 | 高 | 私有构造第 1 个 vararg 分类；o00000() 返回
+	f	do	categories	Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | 构造默认 EnumSet.noneOf 后 addAll(全部 vararg 分类)；new() 返回，o00000(ControlAction) 遍历
+	f	void.new	displayName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | 私有构造第 3 参；Ó00000() 返回
+	f	õÒ0000	VALUES	[Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | clinit 填 169 个枚举常量后 putstatic；values() 拷贝返回
+	m	o00000	getCategory	()Lcom/fs/starfarer/title/ControlsCategory;
+		c javap 字节码取证 | 高 | 返回 category
+	m	Ó00000	getDisplayName	()Ljava/lang/String;
+		c javap 字节码取证 | 高 | 返回 displayName
+	m	new	getCategories	()Ljava/util/EnumSet;
+		c javap 字节码取证 | 高 | 返回 categories
+	m	o00000	sharesCategoryWith	(Lcom/fs/starfarer/title/ControlAction;)Z
+		c javap 字节码取证 | 高 | 遍历自身 categories 与目标 getCategories 求交；目标含 ANY 且自身名 CMENU_* 前缀也判 true
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo	com/fs/starfarer/title/KeyMapping
 	c 来源(No mapping found for code [ 键码+修饰符映射对象 Cloneable) | 置信度(高)
 	m	hashCode	hashCode	()I
 	m	equals	equals	(Ljava/lang/Object;)Z
 	m	clone	clone	()Ljava/lang/Object;
+	f	Ó00000	keyCode	I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	super	shift	Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ö00000	alt	Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	String	ctrl	Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Õ00000	controlAction	Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ò00000	mouseButtonEventKinds	[I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	OO0000	clone	()Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	class	getKeyCode	()I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	setKeyCode	(I)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ö00000	isShift	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	new	setShift	(Z)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	null	isAlt	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	setAlt	(Z)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	ÓO0000	isCtrl	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ó00000	setCtrl	(Z)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	oO0000	unset	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	float	hasModifiers	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	õ00000	isUnset	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ó00000	isKeyboardKey	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	ö00000	isMouseButton	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	new	isMouseScroll	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	matchesEvent	(Lcom/fs/starfarer/util/InputEvent;Lcom/fs/starfarer/title/MouseButtonEvent;)Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	matchesInputEvent	(Lcom/fs/starfarer/util/InputEvent;)Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	while	getControlAction	()Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ø00000	isDown	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	o00000	isPressed	()Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ô00000	getMouseButtonEventKinds	()[I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/D	com/fs/starfarer/title/ControlsSettingsPanel
 	c 来源(Mapping one/two for %s unbound + syncWithCurrentControls，implements SettingsTab) | 置信度(高)
 	m	syncWithCurrentControls	syncWithCurrentControls	()V
@@ -375,6 +707,36 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	changesPending	changesPending	()Z
 	m	rollbackChanges	rollbackChanges	()V
 	m	controlUnset	controlUnset	(Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/C;)V
+	f	ø0Öo00	unusedFloat	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ô0Öo00	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	if.private$public	contentHeight	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Õ0Öo00	fontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	OOÖo00	fontHeight	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	void.private$public	editedBindings	Ljava/util/Map;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	String.private$public	changedActions	Ljava/util/List;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÒOÖo00	rows	Ljava/util/List;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ö0Öo00	settingsDialog	Lcom/fs/starfarer/title/SettingsDialog;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	õ0Öo00	isCapturingKey	Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	do.private$public	capturingRow	Lcom/fs/starfarer/title/ControlRow;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ó0Öo00	capturingMapping	Lcom/fs/starfarer/title/KeyMapping;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	new.super	createCategoryLabel	(Ljava/lang/String;)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ó00000	unbindConflictingMappings	(Lcom/fs/starfarer/title/ControlAction;)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	öõO000	endKeyCapture	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/C	com/fs/starfarer/title/ControlRow
 	c 来源(<press a key>/Alt-/Ctrl-/Shift-，getControl/getName 单行按键控件) | 置信度(高)
 	m	renderImpl	renderImpl	(F)V
@@ -388,6 +750,28 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
 	m	getHeight	getHeight	()F
 	m	getControl	getControl	()Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$oo;
+	f	øõÕo00	actionLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	do.while$public	keyButtonOne	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	if.while$public	keyButtonTwo	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	õõÕo00	controlAction	Lcom/fs/starfarer/title/ControlAction;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	OöÕo00	keyMappings	Lcom/fs/util/container/Pair;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ôõÕo00	fontName	Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÕöÕo00	rowHeight	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	private.while$public	listener	Lcom/fs/starfarer/title/ControlChangeListener;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	void.while$public	showBG	Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÓöÕo00	flashingButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÒöÕo00	flashTimer	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/C$o	com/fs/starfarer/title/ControlChangeListener
 	c 来源(controlChangeRequested/controlUnset 按键变更监听接口) | 置信度(高)
 	m	controlChangeRequested	controlChangeRequested	(Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/C;Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$Oo;)V
@@ -402,6 +786,52 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	advanceImpl	advanceImpl	(F)V
 	m	sync	sync	()V
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
+	f	void.public$public	shipExplosionWhiteoutButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÕøÕo00	showDamageFloatingTextButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	private.public$public	showOtherFloatingTextButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	Ò0Öo00	invertCommandButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÓøÕo00	commandToggleButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	super.public$public	uiStaticNoiseButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ôøÕo00	pauseAfterBattleButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	øöÕo00	pauseOnMapOpenButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	õøÕo00	speedUpToggleButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	O0Öo00	musicVolumeBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	OøÕo00	soundVolumeBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	if.public$public	battleSizeBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	õöÕo00	tooltipDelayBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÖøÕo00	autosaveButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	String.public$public	autosaveIntervalBar	Lcom/fs/starfarer/campaign/ui/ProgressBar;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	do.public$public	baseUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ôöÕo00	darkUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	øøÕo00	brightUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÖöÕo00	unusedGridUIColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	super.private$public	changesPending	Z
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÒøÕo00	tooltipDelayLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ö00000	createSettingLabel	(Ljava/lang/String;F)Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	ØO0000	createSettingButton	(Ljava/lang/String;)Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/G	com/fs/starfarer/title/SettingsDialog
 	c 来源(switch表 settings.SettingsDialog$DialogType 残留 + Save/Cancel/Defaults) | 置信度(高)
 	m	setMessage	setMessage	(Ljava/lang/String;)V
@@ -410,14 +840,66 @@ c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	m	rollbackChanges	rollbackChanges	()V
 	m	dismiss	dismiss	(I)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	private.if$String	unusedFloat	F
+		c javap 字节码取证 | 高 | static final 3.0f；类内无引用，死代码常量
+	f	super.float$String	controlsPanel	Lcom/fs/starfarer/title/ControlsSettingsPanel;
+		c javap 字节码取证 | 高 | setupControlsTab 重建并 setContentsForTab("Controls")
+	f	ôÖô000	settingsPanel	Lcom/fs/starfarer/title/GameplaySettingsPanel;
+		c javap 字节码取证 | 高 | setupSettingsTab 重建并 setContentsForTab("Settings")
+	f	øÕô000	messageLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | setMessage 设文本并 fadeIn
+	f	ÓÖô000	saveButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | STR "Save"；actionPerformed 遍历 commitChanges 后 dismiss
+	f	do.if$String	defaultsButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | STR "Defaults"；actionPerformed 调 confirmResetDefaults
+	f	ÖÖô000	cancelButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | STR "Cancel"；changesPending 时 confirmDismiss 否则 dismiss
+	f	ÕÖô000	dialogType	Lcom/fs/starfarer/title/SettingsDialog$DialogType;
+		c javap 字节码取证 | 高 | 确认对话框类型（reset/dismiss），dialogDismissed 按类型处理
+	f	String.float$String	parentPanel	Lcom/fs/starfarer/ui/Panel;
+		c javap 字节码取证 | 高 | 构造 arg1 宿主；创建确认对话框 ui/impl/E 使用
+	f	OÖô000	settingsPanels	Ljava/util/ArrayList;
+		c javap 字节码取证 | 高 | Controls+Settings panel 列表；changesPending/rollback/Save 遍历
+	f	ÒÖô000	tabsPanel	Lcom/fs/starfarer/ui/TabsPanel;
+		c javap 字节码取证 | 高 | 构造 new 1024x743 TabsPanel；setContentsForTab 两 tab
+	f	õÖô000	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$DialogType 懒初始化缓存字段
+	m	Öõ0000	setupControlsTab	()V
+		c javap 字节码取证 | 高 | 重建 ControlsSettingsPanel 注册 "Controls" tab
+	m	Øõ0000	setupSettingsTab	()V
+		c javap 字节码取证 | 高 | 重建 GameplaySettingsPanel 注册 "Settings" tab
+	m	interface.return	confirmResetDefaults	()V
+		c javap 字节码取证 | 高 | STR "Really reset ALL settings..." 确认对话框
+	m	new.void	confirmDismiss	()V
+		c javap 字节码取证 | 高 | STR "Are you sure? You'll lose any changes..." 确认对话框
+	m	$SWITCH_TABLE$com$fs$starfarer$title$settings$SettingsDialog$DialogType	getSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/G$o	com/fs/starfarer/title/SettingsDialog$DialogType
 	c 来源(switch表名残留，枚举 CANCEL_CHANGES/DEFAULTS) | 置信度(高)
 	f	new	DEFAULTS	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/G$o;
 	f	Ó00000	CANCEL_CHANGES	Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/G$o;
 	m	values	values	()[Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/G$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/G$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/title/SettingsDialog$DialogType;
+		c javap 字节码取证 | 高 | private static final 枚举常量缓存数组
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/oOOO	com/fs/starfarer/title/KeyUtil
 	c 来源(Key:/KEY_/MOUSE%d/Left click/Right click 键码名称工具) | 置信度(高)
+	f	Object	keyCodesByName	Ljava/util/Map;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	o00000	keyNamesByCode	Ljava/util/Map;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	super	initKeyMaps	()V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	super	registerKey	(Ljava/lang/String;I)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	super	getKeyCode	(Ljava/lang/String;)I
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ò00000	getKeyName	(I)Ljava/lang/String;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	super	main	([Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	super	printKeyName	(I)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/OoOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO/class	com/fs/starfarer/title/SettingsTab
 	c 来源(接口 changesPending/commitChanges/rollbackChanges 设置页签) | 置信度(高)
 	m	changesPending	changesPending	()Z
@@ -433,16 +915,54 @@ c	com/fs/starfarer/title/Object/super	com/fs/starfarer/title/BorderPanel
 	m	setBorderColor	setBorderColor	(Ljava/awt/Color;)V
 	m	getBorderColor	getBorderColor	()Ljava/awt/Color;
 	m	renderImpl	renderImpl	(F)V
+	f	ÖOÖo00	panelBorderRenderer	Lcom/fs/starfarer/E/PanelBorderRenderer;
+		c javap 字节码取证 | 高 | 构造 new E/K("ui_border4")；sizeChanged 与 renderImpl 中 super(x,y,w,h)
+	f	ÕOÖo00	scanlineRenderer	Lcom/fs/starfarer/E/QuadRenderer;
+		c javap 字节码取证 | 高 | 构造 new E/F(StarfarerSettings("ui","scanline11"))；adjustOverlay 设渐变、renderImpl 先绘
+	f	ÓOÖo00	showBorder	Z
+		c javap 字节码取证 | 高 | 构造默认 true；setShowBorder 写入，renderImpl 中 if 控制边框分支
+	f	private.private$public	showNewBorder	Z
+		c javap 字节码取证 | 高 | 构造默认 false；setShowNewBorder 写入，renderImpl 中选择九宫格渲染
+	f	super.interface$public	borderColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 默认 String.ÖO0000；setBorderColor/getBorderColor 读写，新边框渲染传色
 c	com/fs/starfarer/title/Object/new	com/fs/starfarer/title/ShipStatsPanel
 	c 来源(armor/hull/flux capacity/top speed 舰船数据面板 getHolo) | 置信度(高)
 	m	finalize	finalize	()V
 	m	getHolo	getHolo	()Lcom/fs/starfarer/title/Object/do;
 	m	renderImpl	renderImpl	(F)V
+	f	ÖÓÖo00	textColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 构造 arg2；setLabelColors/StatRow 使用
+	f	ôÓÖo00	holoRenderer	Lcom/fs/starfarer/title/ShipHoloRenderer;
+		c javap 字节码取证 | 高 | getHolo 返回；finalize 清理
+	f	super.super$private	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$WeaponSize 缓存字段
+	m	o00000	createStatRow	(FLcom/fs/starfarer/ui/LabelImpl;)Lcom/fs/starfarer/title/ShipStatsPanel$StatRow;
+		c javap 字节码取证 | 高 | 委托 3 参版本
+	m	o00000	createStatRow	(FLcom/fs/starfarer/ui/LabelImpl;Z)Lcom/fs/starfarer/title/ShipStatsPanel$StatRow;
+		c javap 字节码取证 | 高 | clamp/pow/round 建 StatRow
+	m	new	setStatLabelLayout	([Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | 遍历设 130 宽+RMID 对齐
+	m	o00000	setLabelColors	([Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | 遍历设前景色 textColor
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$WeaponAPI$WeaponSize	getSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化
 c	com/fs/starfarer/title/Object/new$o	com/fs/starfarer/title/ShipStatsPanel$StatRow
 	c 来源(继承关系 面板行构造 (ShipStatsPanel,int,float,Color)) | 置信度(中)
 	m	advanceImpl	advanceImpl	(F)V
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	renderImpl	renderImpl	(F)V
+	f	õoØo00	segmentCount	F
+		c javap 字节码取证 | 高 | static final 10.0f；renderImpl 画 10 段状态条
+	f	ôoØo00	segmentSpacing	F
+		c javap 字节码取证 | 高 | static final 2.0f；renderImpl 条间距
+	f	void.null$private	filledColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final；构造 arg4；已填段颜色
+	f	if.null$private	emptyColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | final；B.new(color,50) 变暗；空段颜色
+	f	ÖoØo00	valueTenths	I
+		c javap 字节码取证 | 高 | final；构造 arg2（10*value round）；填满段数
+	f	this$0	outerPanel	Lcom/fs/starfarer/title/ShipStatsPanel;
+		c javap 字节码取证 | 高 | 内部类外围引用
 c	com/fs/starfarer/title/Object/E	com/fs/starfarer/title/MissionWidget
 	c 来源(Back to Menu/Play Mission 任务选择 widget) | 置信度(高)
 	m	getMissionDetail	getMissionDetail	()Lcom/fs/starfarer/title/Object/ooOO;
@@ -450,6 +970,20 @@ c	com/fs/starfarer/title/Object/E	com/fs/starfarer/title/MissionWidget
 	m	show	show	()V
 	m	hide	hide	()V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	øÔÖo00	missionListPanel	Lcom/fs/starfarer/E/HoloPanel;
+		c javap 字节码取证 | 高 | 320x768 左栏面板，setNext(MissionList)，foldOut/foldIn 动画
+	f	ÖÔÖo00	detailPanel	Lcom/fs/starfarer/E/HoloPanel;
+		c javap 字节码取证 | 高 | 700x728 右栏面板，MissionDetailPanel 与按钮所在
+	f	ÕÔÖo00	missionList	Lcom/fs/starfarer/title/MissionList;
+		c javap 字节码取证 | 高 | MissionList 组件
+	f	õÔÖo00	missionDetailPanel	Lcom/fs/starfarer/title/MissionDetailPanel;
+		c javap 字节码取证 | 高 | actionPerformed 中 getPreview 传给 callback.missionAccepted
+	f	private.super$private	backToMenuButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | STR "Back to Menu"；actionPerformed 调 callback.backToMenu()
+	f	do.super$private	playMissionButton	Lcom/fs/starfarer/ui/Button;
+		c javap 字节码取证 | 高 | STR "Play Mission"；actionPerformed 调 missionAccepted(getPreview())
+	f	ôÔÖo00	callback	Lcom/fs/starfarer/title/MissionWidgetCallback;
+		c javap 字节码取证 | 高 | 构造 arg1；backToMenu/missionAccepted 回调
 c	com/fs/starfarer/title/Object/E$o	com/fs/starfarer/title/MissionWidgetCallback
 	c 来源(missionAccepted/backToMenu 任务回调接口) | 置信度(高)
 	m	missionAccepted	missionAccepted	(Lcom/fs/starfarer/title/Object/L;)V
@@ -463,6 +997,14 @@ c	com/fs/starfarer/title/Object/G	com/fs/starfarer/title/BorderPanelWithVisibili
 	m	notiftyHidden	notiftyHidden	()V
 	m	notifyShown	notifyShown	()V
 	m	beforeShown	beforeShown	()V
+	f	String.if$float	panelBorderRenderer	Lcom/fs/starfarer/E/PanelBorderRenderer;
+		c javap 字节码取证 | 高 | 构造 new E/K("ui_border4")；sizeChanged/renderImpl 中 super(x,y,w,h)
+	f	Ó0öO00	scanlineRenderer	Lcom/fs/starfarer/E/QuadRenderer;
+		c javap 字节码取证 | 高 | 构造 new E/F("ui","scanline11")，渐变 (0,0,0,0)-(0,0,0,225)/(0,0,0,175)
+	f	Õ0öO00	targetComponent	Lcom/fs/starfarer/ui/UIComponent;
+		c javap 字节码取证 | 高 | final，构造第 1 参；尺寸取它并 add 进面板；notiftyHidden 中清理其全息舰船
+	f	Ò0öO00	showBorder	Z
+		c javap 字节码取证 | 高 | 构造默认 true；setShowBorder 写入，renderImpl 中控制边框
 c	com/fs/starfarer/title/Object/I	com/fs/starfarer/title/MissionListRow
 	c 来源(Best score/Difficulty + updateScore/setSelected/setHotspot 任务行) | 置信度(高)
 	m	updateScore	updateScore	(I)V
@@ -470,19 +1012,45 @@ c	com/fs/starfarer/title/Object/I	com/fs/starfarer/title/MissionListRow
 	m	setSelected	setSelected	(Z)V
 	m	setHotspot	setHotspot	(Lcom/fs/starfarer/ui/Object/OoOO;)V
 	m	renderImpl	renderImpl	(F)V
+	f	ÖÕÖo00	missionSpec	Lcom/fs/starfarer/title/MissionSpec;
+		c  javap 字节码取证 | 高 | 构造 arg3；getSpec 返回；selectMission 按 spec.getId 匹配
+	f	ÕÕÖo00	bestScoreLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c  javap 字节码取证 | 高 | 构造 "Best score: 0%"；updateScore 中 setText("Best score: " + i + "%")
+	f	ôÕÖo00	hotspot	Lcom/fs/starfarer/ui/Hotspot;
+		c  javap 字节码取证 | 高 | setHotspot 写入；点击命中触发选中
+	f	void.new$private	selected	Z
+		c  javap 字节码取证 | 高 | isSelected/setSelected；renderImpl 按选中态渲染高亮
 c	com/fs/starfarer/title/Object/I$1	com/fs/starfarer/title/MissionListRow$HotspotListener
 	c 来源(implements ui.C$o 热点点击回调) | 置信度(低)
+	f	øÓØo00	outerRow	Lcom/fs/starfarer/title/MissionListRow;
+		c  javap 字节码取证 | 高 | final 外部类引用；构造 arg1
+	f	private.int$private	sprite	Lcom/fs/graphics/Sprite;
+		c  javap 字节码取证 | 高 | final；构造 arg2 任务图标 sprite；回调中动画
+	m	new	renderIcon	(Lcom/fs/starfarer/ui/PositionImpl;F)V
+		c  javap 字节码取证 | 高 | 热点悬停回调：sprite.setAlphaMult(alpha) 并按热点中心 renderAtCenter 渲染任务图标
 c	com/fs/starfarer/title/Object/O0oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	com/fs/starfarer/title/MissionList
 	c 来源(ui_noise_static 背景 + updateScores/selectMission/notifyHotspotClicked) | 置信度(高)
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	updateScores	updateScores	()V
 	m	selectMission	selectMission	(Ljava/lang/String;)V
 	m	notifyHotspotClicked	notifyHotspotClicked	(Lcom/fs/starfarer/ui/Object/OoOO;Lcom/fs/starfarer/ui/c;)V
+	f	ôÕÒo00	rowSpacing	F
+		c  javap 字节码取证 | 高 | static final 15.0f；编译期内联进任务行 belowLeft 间距（javap 无 getstatic 引用）
+	f	ÖÕÒo00	rows	Ljava/util/List;
+		c  javap 字节码取证 | 高 | MissionListRow 列表；构造逐任务创建并 add；updateScores/selectMission 遍历
+	f	do.Object$while	detailPanel	Lcom/fs/starfarer/title/MissionDetailPanel;
+		c  javap 字节码取证 | 高 | 构造 arg3；selectMission 中 setMission 显示任务详情
+	f	ÕÕÒo00	holoPanel	Lcom/fs/starfarer/E/HoloPanel;
+		c  javap 字节码取证 | 高 | 构造 arg4；selectMission 中 flickerNoise 切换动画
+	f	if.Object$while	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c  javap 字节码取证 | 高 | 构造 new ScrollPanelImpl() 并 add 全部任务行；setContentSize
 c	com/fs/starfarer/title/Object/float	com/fs/starfarer/title/ColoredPanel
 	c 来源(Color 构造简单着色面板) | 置信度(低)
 	m	advanceImpl	advanceImpl	(F)V
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	renderImpl	renderImpl	(F)V
+	f	private.null$private	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 默认 String.void；renderImpl 中 o0OO.o00000(x,cy,x,cy+h,1,color,0,alpha,0) 填充
 c	com/fs/starfarer/title/Object/do	com/fs/starfarer/title/ShipHoloRenderer
 	c 来源(swarm_fighter + getShips/setShowFighters/isSchematicMode 舰船全息渲染) | 置信度(高)
 	m	getShips	getShips	()[Lcom/fs/starfarer/combat/entities/Ship;
@@ -519,6 +1087,86 @@ c	com/fs/starfarer/title/Object/do	com/fs/starfarer/title/ShipHoloRenderer
 	m	renderImpl	renderImpl	(F)V
 	m	updateWithStatus	updateWithStatus	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMemberStatus;)V
 	m	makeLookDisabled	makeLookDisabled	()V
+	f	øÒÖo00	unusedSprite	Lcom/fs/graphics/Sprite;
+		c javap 字节码取证 | 高 | 仅构造 putfield null、全类只读，死代码字段
+	f	void.interface$public	ships	[Lcom/fs/starfarer/combat/entities/Ship;
+		c javap 字节码取证 | 高 | getShips 返回；createShips 填充；cleanup/render 遍历
+	f	super.this$private	moduleWeaponSlots	[Lcom/fs/starfarer/loading/specs/WeaponSlot;
+		c javap 字节码取证 | 高 | 模块武器槽；renderModuleShip 读取定位
+	f	õÒÖo00	viewport	Lcom/fs/starfarer/combat/CombatViewport;
+		c javap 字节码取证 | 高 | 构造 new CombatViewport；渲染传 ship.render(layer, viewport)
+	f	ÒÓÖo00	scale	F
+		c javap 字节码取证 | 高 | getScale 返回；computeScale 计算并 clamp
+	f	ÕÓÖo00	nameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | createShips setText(ship.getName())
+	f	String.this$private	hullNameLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | setText(getHullNameWithDashClass())
+	f	if.this$private	designationLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | setText(getFullDesignationForShip())
+	f	private.interface$public	captain	Lcom/fs/starfarer/rpg/Person;
+		c javap 字节码取证 | 高 | FleetMember getCaptain 填充
+	f	ÓÒÖo00	fleetCommander	Lcom/fs/starfarer/rpg/Person;
+		c javap 字节码取证 | 高 | FleetMember getFleetCommander 填充
+	f	ÓoÖo00	labelsEnabled	Z
+		c javap 字节码取证 | 高 | final；mode!=Object 时 true，决定 label 创建/设置
+	f	OÓÖo00	showDestroyedFighters	Z
+		c javap 字节码取证 | 高 | isShow/setShowDestroyedFighters
+	f	String.interface$public	fleetMember	Lcom/fs/starfarer/campaign/fleet/FleetMember;
+		c javap 字节码取证 | 高 | FleetMember 构造与 updateWithStatus 写入
+	f	do.this$private	labelColor	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | setLabelColor 写入；setupLabel 设前景色
+	f	ÓÓÖo00	holoMode	Lcom/fs/starfarer/title/ShipHoloRenderer$HoloMode;
+		c javap 字节码取证 | 高 | 构造 arg1；决定 label 布局/对齐
+	f	OÒÖo00	fightersButtonRow	Lcom/fs/starfarer/coreui/refit/VariantRow$ButtonRow;
+		c javap 字节码取证 | 高 | isShowFighters 判空；setShowFighters 创建/移除
+	f	ôÒÖo00	schematicMode	Z
+		c javap 字节码取证 | 高 | isSchematicMode/setSchematicMode
+	f	õoÖo00	variantId	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setVariant(String,..) arg1；prepareShip SpecStore 加载
+	f	øoÖo00	weaponGroup	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setVariant arg2；createShips 传 ShipFactory
+	f	if.interface$public	engineStyle	Ljava/lang/String;
+		c javap 字节码取证 | 高 | setVariant arg3；createShips 传 ShipFactory
+	f	do.interface$public	variant	Lcom/fs/starfarer/loading/specs/HullVariantSpec;
+		c javap 字节码取证 | 高 | getVariant/setVariant/overrideVariant
+	f	ôOÖo00	unusedFrameBuffer	Lcom/fs/graphics/FrameBufferObject;
+		c javap 字节码取证 | 高 | static；仅 static{} putstatic null，死代码字段
+	f	õOÖo00	scissorEnabled	Z
+		c javap 字节码取证 | 高 | setScissor；render 中 K.super 设置/恢复 scissor
+	f	øOÖo00	scaleDownMagnitude	F
+		c javap 字节码取证 | 高 | setScaleDownSmallerShipsMagnitude；getScaleDownFactor 判 1 短路
+	f	ÒoÖo00	highlightFader	Lcom/fs/graphics/util/Fader;
+		c javap 字节码取证 | 高 | getHighlight 返回；highlight/unhighlight fade
+	f	OoÖo00	highlightBrightness	F
+		c javap 字节码取证 | 高 | get/setHighlightBrightness；renderImpl 亮度乘数
+	f	ÖÒÖo00	wingSpec	Lcom/fs/starfarer/loading/specs/FighterWingSpec;
+		c javap 字节码取证 | 高 | setWingSpec；render 战斗机阵型
+	f	ôoÖo00	glListToken	Lcom/fs/graphics/util/GLListToken;
+		c javap 字节码取证 | 高 | beginList/callList/invalidateList 令牌
+	f	private.this$private	lastRenderedAdditive	Z
+		c javap 字节码取证 | 高 | render 缓存上次 additive，变化时 invalidateList
+	f	ÖoÖo00	lastRenderedAlpha	F
+		c javap 字节码取证 | 高 | render 缓存上次 alphaMult
+	f	ÕoÖo00	lastRenderedWidth	F
+		c javap 字节码取证 | 高 | render 缓存上次宽
+	f	ÒÒÖo00	lastRenderedHeight	F
+		c javap 字节码取证 | 高 | render 缓存上次高
+	f	ÕÒÖo00	fleetMemberStatus	Lcom/fs/starfarer/campaign/fleet/FleetMemberStatus;
+		c javap 字节码取证 | 高 | updateWithStatus 写入；applyToShip/getStatus
+	f	void.this$private	switchTable	[I
+		c javap 字节码取证 | 高 | $SWITCH_TABLE$HullSize 缓存字段
+	m	new	setupLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | 按 holoMode 设 alignment/前景色
+	m	o00000	createShips	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+		c javap 字节码取证 | 高 | SpecStore 取 variant、建主舰+模块舰、设三个 label
+	m	o00000	computeScale	(Lcom/fs/graphics/Sprite;FF)V
+		c javap 字节码取证 | 高 | 按 sprite 宽高算 min 比例 clamp 1
+	m	interface.public	getScaleDownFactor	()F
+		c javap 字节码取证 | 高 | scaleDownMagnitude==1 或 ships 空返回 1；否则按 HullSize
+	m	o00000	renderModuleShip	(ILjava/util/EnumSet;)V
+		c javap 字节码取证 | 高 | 渲染 UNDER_PARENT 模块舰：按 slot 定位、逐 layer
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	getSwitchTable	()[I
+		c javap 字节码取证 | 高 | switch 表懒初始化
 c	com/fs/starfarer/title/Object/do$o	com/fs/starfarer/title/ShipHoloRenderer$HoloMode
 	c 来源(枚举 MINI/NORMAL/NONE) | 置信度(高)
 	f	Object	NONE	Lcom/fs/starfarer/title/Object/do$o;
@@ -526,6 +1174,8 @@ c	com/fs/starfarer/title/Object/do$o	com/fs/starfarer/title/ShipHoloRenderer$Hol
 	f	Ô00000	MINI	Lcom/fs/starfarer/title/Object/do$o;
 	m	values	values	()[Lcom/fs/starfarer/title/Object/do$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/Object/do$o;
+	f	o00000	$VALUES	[Lcom/fs/starfarer/title/ShipHoloRenderer$HoloMode;
+		c javap 字节码取证 | 高 | private static final 枚举常量缓存数组
 c	com/fs/starfarer/title/Object/OooO	com/fs/starfarer/title/BorderLines
 	c 来源(getShortenAmount/getBMid/getBLeft/getBRight 可缩短边框线) | 置信度(中)
 	m	getShortenAmount	getShortenAmount	()F
@@ -541,6 +1191,16 @@ c	com/fs/starfarer/title/Object/OooO	com/fs/starfarer/title/BorderLines
 	m	advanceImpl	advanceImpl	(F)V
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	renderImpl	renderImpl	(F)V
+	f	ÒÒØo00	color	Ljava/awt/Color;
+		c javap 字节码取证 | 高 | 默认 String.void；getColor/setColor 读写，renderImpl 中传入 o0OO.o00000
+	f	do.null$private	midAlpha	F
+		c javap 字节码取证 | 高 | getBMid/setBMid 操作（getfield #24），渲染三段透明度中段
+	f	ÓÒØo00	leftAlpha	F
+		c javap 字节码取证 | 高 | getBLeft/setBLeft 操作（getfield #26），渲染左段
+	f	OÒØo00	rightAlpha	F
+		c javap 字节码取证 | 高 | getBRight/setBRight 操作（getfield #28），渲染右段
+	f	øoØo00	shortenAmount	F
+		c javap 字节码取证 | 高 | getShortenAmount/setShortenAmount 操作，渲染宽=width-shorten、起点 x+shorten/2
 c	com/fs/starfarer/title/Object/P	com/fs/starfarer/title/FlagshipPanel
 	c 来源(Your Flagship + setVariant 旗舰展示面板) | 置信度(高)
 	m	sizeChanged	sizeChanged	(FF)V
@@ -549,8 +1209,74 @@ c	com/fs/starfarer/title/Object/P	com/fs/starfarer/title/FlagshipPanel
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
 	m	renderImpl	renderImpl	(F)V
 	m	actionPerformed	actionPerformed	(Ljava/lang/Object;Ljava/lang/Object;)V
+	f	ÓÖÖo00	unusedFloat	F
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	do.new$private	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	OÖÖo00	shipHoloRenderer	Lcom/fs/starfarer/title/ShipHoloRenderer;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	f	ÒÖÖo00	missionDetailPanel	Lcom/fs/starfarer/title/MissionDetailPanel;
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
+	m	Ö00000	centerLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | windows 独立 javap 对应成员（与 linux 同名语义一致）
 c	com/fs/starfarer/title/Object/Oo0O	com/fs/starfarer/title/MissionSpec
 	c 来源(任务规格数据类 getID/难度 getter) | 置信度(中)
+	f	ô00000	iconSpriteName	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | getIconSpriteName 返回；MissionListRow 构造 new Sprite 任务图标
+	f	int	title	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | getTitle 返回；MissionDetailPanel "Mission: "+标题、MissionListRow 任务名 label
+	f	ö00000	description	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | getDescription 返回；MissionDetailPanel typer.setText 任务介绍正文
+	f	Õ00000	difficulty	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | getDifficulty 返回；MissionListRow "Difficulty: "+难度
+	f	Ò00000	briefingItems	Ljava/util/List;
+		c  javap 字节码取证 | 高 | getBriefingItems 返回；构造 new ArrayList 简报条目
+	f	return	tagline	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | getTagline 返回；构造 ""，任务宣传语
+	f	Ô00000	subtitle	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | getSubtitle 返回；构造 ""，任务副标题
+	f	Ø00000	missionName	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | getName 返回；MissionDefinition 构造存为背景图名
+	f	Object	pluginClassName	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | setPluginClassName 写入；getMissionDefinitionPlugin 经 ScriptStore 实例化
+	f	o00000	id	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 构造 arg1；getId 返回；MissionList.updateScores 按 id 查分
+	m	Õ00000	getId	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 id 字段
+	m	Object	getName	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 missionName 字段
+	m	ô00000	setName	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 missionName 字段
+	m	ö00000	getTagline	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 tagline 字段
+	m	Ø00000	setTagline	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 tagline 字段
+	m	Ò00000	getSubtitle	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 subtitle 字段
+	m	Object	setSubtitle	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 subtitle 字段
+	m	Ô00000	getIconSpriteName	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 iconSpriteName 字段
+	m	Õ00000	setIconSpriteName	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 iconSpriteName 字段
+	m	o00000	getDifficulty	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 difficulty 字段
+	m	o00000	setDifficulty	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 difficulty 字段
+	m	Ø00000	getTitle	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 title 字段
+	m	Ò00000	setTitle	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 title 字段
+	m	int	getDescription	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | 读 description 字段
+	m	return	setDescription	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 description 字段
+	m	ô00000	getMissionDefinitionPlugin	()Lcom/fs/starfarer/api/mission/MissionDefinitionPlugin;
+		c  javap 字节码取证 | 高 | ScriptStore 按 pluginClassName 实例化插件
+	m	Ô00000	setPluginClassName	(Ljava/lang/String;)V
+		c  javap 字节码取证 | 高 | 写 pluginClassName 字段
+	m	return	getBriefingItems	()Ljava/util/List;
+		c  javap 字节码取证 | 高 | 读 briefingItems 字段
 c	com/fs/starfarer/title/Object/Oo0O$o	com/fs/starfarer/title/MissionSpec$Difficulty
 	c 来源(枚举 EASY/MEDIUM/HARD) | 置信度(高)
 	f	String	EASY	Lcom/fs/starfarer/title/Object/Oo0O$o;
@@ -558,6 +1284,8 @@ c	com/fs/starfarer/title/Object/Oo0O$o	com/fs/starfarer/title/MissionSpec$Diffic
 	f	Ó00000	HARD	Lcom/fs/starfarer/title/Object/Oo0O$o;
 	m	values	values	()[Lcom/fs/starfarer/title/Object/Oo0O$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/Object/Oo0O$o;
+	f	super	$VALUES	[Lcom/fs/starfarer/title/MissionSpec$Difficulty;
+		c  javap 字节码取证 | 高 | private static final 枚举常量缓存数组
 c	com/fs/starfarer/title/Object/L	com/fs/starfarer/title/MissionDefinition
 	c 来源(implements MissionDefinitionAPI load/getContext/getSpec) | 置信度(高)
 	m	load	load	()V
@@ -603,10 +1331,68 @@ c	com/fs/starfarer/title/Object/L	com/fs/starfarer/title/MissionDefinition
 	m	finishRefitOnAllShips	finishRefitOnAllShips	()V
 	m	setHyperspaceMode	setHyperspaceMode	(Z)V
 	m	addPlugin	addPlugin	(Lcom/fs/starfarer/api/combat/EveryFrameCombatPlugin;)V
+	f	Õ00000	battleContext	Lcom/fs/starfarer/api/combat/BattleCreationContext;
+		c  javap 字节码取证 | 高 | 两构造 new BattleCreationContext(null×4)；load 中 CombatEngine.setContext
+	f	do	backgroundGlowColor	Ljava/awt/Color;
+		c  javap 字节码取证 | 高 | setBackgroundGlowColor 写入；load 中 CombatEngine.setBackgroundGlowColor
+	f	Ö00000	fleetData	Ljava/util/Map;
+		c  javap 字节码取证 | 高 | Map<FleetSide, FleetData>；getFleet/getGoal/getDefaultCommander/setCrashMothballed 按 side 查
+	f	ô00000	briefingItems	Ljava/util/List;
+		c  javap 字节码取证 | 高 | getBriefingItems 返回；addBriefingItem 追加
+	f	ÓO0000	spec	Lcom/fs/starfarer/title/MissionSpec;
+		c  javap 字节码取证 | 高 | getSpec 返回；构造 arg1 写入并 defineMission
+	f	String	backgroundSpriteName	Ljava/lang/String;
+		c  javap 字节码取证 | 高 | setBackgroundSpriteName 写入；load 中 replaceBackground；构造从 spec.getName 取任务名
+	f	ø00000	planetBgWidth	F
+		c  javap 字节码取证 | 高 | 构造 2048.0f；setPlanetBgSize 写入；load 中 setPlanetBgWidth
+	f	if	planetBgHeight	F
+		c  javap 字节码取证 | 高 | 构造 2048.0f；setPlanetBgSize 写入；load 中 setPlanetBgHeight
+	f	Ó00000	map	Lcom/fs/starfarer/combat/CombatMap;
+		c  javap 字节码取证 | 高 | 构造 new A/B()；getMap 返回；addNebula/setNebulaTex/addTrigger 经 map 注册
+	f	Ò00000	hasNebula	Z
+		c  javap 字节码取证 | 高 | addNebula 置 true；hasNebula 返回
+	f	OO0000	mapTriggers	Ljava/util/List;
+		c  javap 字节码取证 | 高 | getMapTriggers 返回；defeatOnShipLoss 添加失败触发器；load 中注册到 CombatEngine
+	f	void	triggers	Ljava/util/List;
+		c  javap 字节码取证 | 高 | addTrigger 追加；load 中逐条 map.super 注册到地图
+	f	super	aiWantsToFight	Z
+		c  javap 字节码取证 | 高 | setAIWantsToFight 写入；注册舰队时 setAIWillingToEngage
+	f	ÒO0000	hyperspaceMode	Z
+		c  javap 字节码取证 | 高 | setHyperspaceMode 写入；load 中 setHyperspaceMode/replaceBackground 分支
+	m	o00000	registerFleets	()V
+		c  javap 字节码取证 | 高 | 遍历 fleetData：CombatEngine.addFleet、AdmiralAI、命令点数 bonus、默认指挥官；load 调用
 c	com/fs/starfarer/title/Object/L$o	com/fs/starfarer/title/MissionDefinition$FleetData
 	c 来源(内部数据类 FleetGoal/FleetMemberAPI 列表/Person 字段) | 置信度(低)
+	f	Object	fleet	Lcom/fs/starfarer/combat/CombatFleet;
+		c  javap 字节码取证 | 高 | registerFleets 中 CombatEngine.addFleet；getFleet 返回
+	f	Ô00000	goal	Lcom/fs/starfarer/api/fleet/FleetGoal;
+		c  javap 字节码取证 | 高 | addFleet 时传给 CombatEngine；getGoal 返回
+	f	Ò00000	usesAdmiralAI	Z
+		c  javap 字节码取证 | 高 | 构造置 false；registerFleets 分支：true 时 AdmiralAI(mgr,false)，false 时 AdmiralAI(mgr,true)
+	f	return	playerCommandPoints	I
+		c  javap 字节码取证 | 高 | registerFleets 中 command_rating_mission_bonus modifyFlat 玩家侧（getTaskManager(false)）
+	f	ô00000	crashMothballed	Ljava/util/List;
+		c  javap 字节码取证 | 高 | 构造 new ArrayList；setCrashMothballed add；registerFleets 中 getCrashMothballed().addAll
+	f	Ø00000	enemyCommandPoints	I
+		c  javap 字节码取证 | 高 | registerFleets 中 command_rating_mission_bonus modifyFlat 敌方侧（getTaskManager(true)）
+	f	Õ00000	defaultCommander	Lcom/fs/starfarer/rpg/Person;
+		c  javap 字节码取证 | 高 | 构造 new Person()；registerFleets 中 setDefaultCommander；getDefaultCommander 返回
+	f	o00000	outerDefinition	Lcom/fs/starfarer/title/MissionDefinition;
+		c  javap 字节码取证 | 高 | final 外部类引用
 c	com/fs/starfarer/title/Object/L$Oo	com/fs/starfarer/title/MissionDefinition$PluginAdapter
 	c 来源(implements combat.oOOO.return 包装 EveryFrameCombatPlugin) | 置信度(中)
+	f	ØO0000	plugin	Lcom/fs/starfarer/api/combat/EveryFrameCombatPlugin;
+		c  javap 字节码取证 | 高 | 构造 arg1 存根；全部方法转发给该插件
+	m	o00000	advance	(FLcom/fs/starfarer/util/InputEventList;)V
+		c  javap 字节码取证 | 高 | 把输入列表拷成 unmodifiableList 后 plugin.advance
+	m	o00000	renderInUICoords	(Lcom/fs/starfarer/api/combat/ViewportAPI;)V
+		c  javap 字节码取证 | 高 | 直接转发 plugin.renderInUICoords
+	m	new	renderInWorldCoords	(Lcom/fs/starfarer/api/combat/ViewportAPI;)V
+		c  javap 字节码取证 | 高 | 直接转发 plugin.renderInWorldCoords
+	m	o00000	init	(Lcom/fs/starfarer/combat/CombatMap;)V
+		c  javap 字节码取证 | 高 | CombatEngine.getInstance() 后 plugin.init(engine)
+	m	Ô00000	getPlugin	()Lcom/fs/starfarer/api/combat/EveryFrameCombatPlugin;
+		c  javap 字节码取证 | 高 | 返回包装的插件实例
 c	com/fs/starfarer/title/Object/F	com/fs/starfarer/title/MissionFleetWidget
 	c 来源(Adding ships to fleet widget + implements FleetGrid$o + update(MissionDefinition,FleetSide)) | 置信度(高)
 	m	sizeChanged	sizeChanged	(FF)V
@@ -615,15 +1401,55 @@ c	com/fs/starfarer/title/Object/F	com/fs/starfarer/title/MissionFleetWidget
 	m	fleetMemberIconClicked	fleetMemberIconClicked	(Lcom/fs/starfarer/ui/impl/FleetGrid;Lcom/fs/starfarer/ui/Ooo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;Lcom/fs/starfarer/ui/B/new;Lcom/fs/util/D;Lcom/fs/starfarer/util/A/C;)V
 	m	fleetMemberMousedOver	fleetMemberMousedOver	(Lcom/fs/starfarer/ui/impl/FleetGrid;Lcom/fs/starfarer/ui/Ooo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;Lcom/fs/starfarer/ui/B/new;)V
 	m	noFleetMemberMousedOver	noFleetMemberMousedOver	(Lcom/fs/starfarer/ui/impl/FleetGrid;Lcom/fs/starfarer/ui/Ooo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO;Lcom/fs/starfarer/ui/B/new;)V
+	f	ÓÕÖo00	borderPanel	Lcom/fs/starfarer/title/BorderPanel;
+		c  javap 字节码取证 | 高 | 构造 new BorderPanel() 并 add、inBL(0,0) 边框
+	f	super.new$private	fleetGrid	Lcom/fs/starfarer/ui/impl/FleetGrid;
+		c  javap 字节码取证 | 高 | 构造 new FleetGrid(13, sideIndex, 27, 27, 3, this)；update 中 clear/add 成员
+	f	String.new$private	goalLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c  javap 字节码取证 | 高 | 空 label；update 按 FleetGoal switch 设 "Attacking"/"Escaping"；构造 alignLabelToBR
+	f	ÒÕÖo00	fleetIndex	I
+		c  javap 字节码取证 | 高 | final；构造 arg1 侧索引（2=玩家/3=敌舰）；update 上限 13*index-3
+	f	OÕÖo00	goalSwitchTable	[I
+		c  javap 字节码取证 | 高 | static volatile；$SWITCH_TABLE$FleetGoal 懒初始化缓存
+	m	Ô00000	alignLabelToBR	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c  javap 字节码取证 | 高 | setAlignment(BR) + renderer 右对齐，列 label 工具方法
+	m	$SWITCH_TABLE$com$fs$starfarer$api$fleet$FleetGoal	getGoalSwitchTable	()[I
+		c  javap 字节码取证 | 高 | switch 表懒初始化（NoSuchFieldError 容错）
 c	com/fs/starfarer/title/Object/F$1	com/fs/starfarer/title/MissionFleetWidget$TooltipRunnable
 	c 来源(Runnable 舰队成员 tooltip 延迟显示) | 置信度(低)
 	m	run	run	()V
+	f	o00000	outerWidget	Lcom/fs/starfarer/title/MissionFleetWidget;
+		c  javap 字节码取证 | 高 | final 外部类引用；构造 arg1
+	f	Object	tooltip	Lcom/fs/starfarer/ui/impl/StandardTooltipV2;
+		c  javap 字节码取证 | 高 | 构造 arg2；run 中 getPosition 参考
+	f	Ò00000	button	Lcom/fs/starfarer/ui/BaseButton;
+		c  javap 字节码取证 | 高 | 构造 arg3；run 中 setTooltip(scale)
 c	com/fs/starfarer/title/Object/A/ooOO	com/fs/starfarer/title/MissionScores
 	c 来源(静态工厂 super() 返回 MissionScoreData 单例) | 置信度(中)
+	f	o00000	instance	Lcom/fs/starfarer/title/MissionScoreData;
+		c  javap 字节码取证 | 高 | static 单例；static{} 置 null；getInstance 懒加载 new MissionScoreStorage
+	m	super	getInstance	()Lcom/fs/starfarer/title/MissionScoreData;
+		c  javap 字节码取证 | 高 | 单例懒初始化并返回
 c	com/fs/starfarer/title/Object/A/B	com/fs/starfarer/title/MissionScoreStorage
 	c 来源(mission_scores.json 读写 implements MissionScoreData) | 置信度(高)
+	f	new	scores	Lorg/json/JSONObject;
+		c  javap 字节码取证 | 高 | JSONObject 分数存储；load 中从文件读或 new，save 中写入
+	m	o00000	getScore	(Ljava/lang/String;)I
+		c  javap 字节码取证 | 高 | JSONObject.getInt，异常返回 0
+	m	o00000	setScore	(Ljava/lang/String;I)V
+		c  javap 字节码取证 | 高 | JSONObject.put 后 saveScores
+	m	Object	loadScores	()V
+		c  javap 字节码取证 | 高 | 文件存在时 LoadingUtils 读 JSONObject，否则 new；异常记日志
+	m	Ò00000	saveScores	()V
+		c  javap 字节码取证 | 高 | toString(2) 经 FileOutputStream UTF-8 写回文件；异常记日志
+	m	o00000	getScoreFilePath	()Ljava/lang/String;
+		c  javap 字节码取证 | 高 | StarfarerSettings 目录 + "mission_scores.json"
 c	com/fs/starfarer/title/Object/A/super	com/fs/starfarer/title/MissionScoreData
 	c 来源(接口 getScore/setScore 任务得分存取) | 置信度(中)
+	m	o00000	saveScore	(Ljava/lang/String;I)V
+		c  javap 字节码取证 | 高 | 接口方法：按任务 id 记录分数
+	m	o00000	getScore	(Ljava/lang/String;)I
+		c  javap 字节码取证 | 高 | 接口方法：按任务 id 读取分数
 c	com/fs/starfarer/title/Object/O0OO	com/fs/starfarer/title/MissionFleetPanel
 	c 来源(Order of Battle + getRefit/getReset/getPlayerFleet/getEnemyFleet 任务舰队面板) | 置信度(高)
 	m	getRefit	getRefit	()Lcom/fs/starfarer/ui/n;
@@ -633,10 +1459,38 @@ c	com/fs/starfarer/title/Object/O0OO	com/fs/starfarer/title/MissionFleetPanel
 	m	sizeChanged	sizeChanged	(FF)V
 	m	renderImpl	renderImpl	(F)V
 	m	update	update	(Lcom/fs/starfarer/title/Object/L;)V
+	f	OÔÖo00	topPadding	F
+		c  javap 字节码取证 | 高 | static final 4.0f；编译期内联进列 label inTL(0,4) 顶距（javap 无 getstatic 引用）
+	f	ÓÔÖo00	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c  javap 字节码取证 | 高 | 构造 new LabelImpl("Order of Battle", orbitron20aa)，MID 对齐标题
+	f	if.super$private	playerTaglineLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c  javap 字节码取证 | 高 | 空文本 label；update 中 setText(PLAYER 阵营 tagline)
+	f	ÒÔÖo00	enemyTaglineLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c  javap 字节码取证 | 高 | 空文本 label；update 中 setText(ENEMY 阵营 tagline)
+	f	øÓÖo00	playerFleetWidget	Lcom/fs/starfarer/title/MissionFleetWidget;
+		c  javap 字节码取证 | 高 | 构造 new MissionFleetWidget(2)；getPlayerFleet 返回；update 按 PLAYER 侧更新
+	f	String.super$private	enemyFleetWidget	Lcom/fs/starfarer/title/MissionFleetWidget;
+		c  javap 字节码取证 | 高 | 构造 new MissionFleetWidget(3)；getEnemyFleet 返回；update 按 ENEMY 侧更新
+	f	õÓÖo00	refitButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Refit"；getRefit 返回；MissionDetailPanel.actionPerformed 打开改装对话框
+	f	void.super$private	resetButton	Lcom/fs/starfarer/ui/Button;
+		c  javap 字节码取证 | 高 | STR "Reset"；getReset 返回；MissionDetailPanel.actionPerformed 弹重置确认
+	m	Ó00000	alignLabelToBR	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c  javap 字节码取证 | 高 | setAlignment(BR) 并 renderer 右对齐，列 label 工具方法
+	m	o00000	updateFleetWidget	(Lcom/fs/starfarer/title/MissionDefinition;I)V
+		c  javap 字节码取证 | 高 | side==0 更新 playerFleetWidget(PLAYER)，否则 enemyFleetWidget(ENEMY)
 c	com/fs/starfarer/title/Object/O	com/fs/starfarer/title/TacticalBriefingPanel
 	c 来源(Tactical Briefing 战术简报面板 update(MissionDefinition)) | 置信度(高)
 	m	update	update	(Lcom/fs/starfarer/title/Object/L;)V
 	m	sizeChanged	sizeChanged	(FF)V
+	f	õÕÖo00	labelSpacing	F
+		c javap 字节码取证 | 高 | static final 5.0f；行 label belowLeft 间距
+	f	øÕÖo00	titleLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | STR "Tactical Briefing" 标题
+	f	if.new$private	briefingLabels	[Lcom/fs/starfarer/ui/LabelImpl;
+		c javap 字节码取证 | 高 | 5 个空 label；update setText("- "+item)
+	m	class	unusedSetupLabel	(Lcom/fs/starfarer/ui/LabelImpl;)V
+		c javap 字节码取证 | 高 | 方法体为空，死代码方法
 c	com/fs/starfarer/title/Object/ooOO	com/fs/starfarer/title/MissionDetailPanel
 	c 来源(Mission:/Text & typer/This will reset your fleet + setMission/getPreview/resetTyper) | 置信度(高)
 	m	processInputImpl	processInputImpl	(Lcom/fs/starfarer/util/A/new;)V
@@ -664,9 +1518,41 @@ c	com/fs/starfarer/title/Object/ooOO	com/fs/starfarer/title/MissionDetailPanel
 	m	isCampaign	isCampaign	()Z
 	m	isStockVariantEditor	isStockVariantEditor	()Z
 	m	getSavedVariantData	getSavedVariantData	()Lcom/fs/starfarer/coreui/refit/auto/SavedVariantData;
+	f	ÖÒÓ000	labelOffset	F
+		c  javap 字节码取证 | 高 | static final 17.0f；构造中 missionLabel inTL(17,17) 定位
+	f	øoÓ000	panelOffset	F
+		c  javap 字节码取证 | 高 | static final 7.0f；flagshipPanel inBL(7,7)、fleetPanel inBR(7,7)
+	f	ôÒÓ000	typewriterText	Lcom/fs/starfarer/ui/impl/TypewriterText;
+		c  javap 字节码取证 | 高 | 构造 new TypewriterText("", 默认字体)；setMission setText 任务介绍；processInput/advanceImpl/resetTyper 打字控制
+	f	ÒÒÓ000	scrollPanel	Lcom/fs/starfarer/ui/ScrollPanelImpl;
+		c  javap 字节码取证 | 高 | 构造 new ScrollPanelImpl()；resetTyper resetOffset；setMission setContentSize
+	f	ÕÒÓ000	missionLabel	Lcom/fs/starfarer/ui/LabelImpl;
+		c  javap 字节码取证 | 高 | 构造 new LabelImpl("", orbitron20aa)；setMission setText("Mission: " + 任务名)
+	f	void.this$new	flagshipPanel	Lcom/fs/starfarer/title/FlagshipPanel;
+		c  javap 字节码取证 | 高 | 构造 new FlagshipPanel(this)；setMission 按玩家旗舰 setVariant；淡入淡出动画
+	f	String.super$new	fleetPanel	Lcom/fs/starfarer/title/MissionFleetPanel;
+		c  javap 字节码取证 | 高 | 构造 new MissionFleetPanel(...)；setMission update(definition)；getRefit/getReset 按钮出口
+	f	if.this$new	briefingPanel	Lcom/fs/starfarer/title/TacticalBriefingPanel;
+		c  javap 字节码取证 | 高 | 构造 new TacticalBriefingPanel()；setMission update(definition)；淡入淡出动画
+	f	õÒÓ000	missionSpec	Lcom/fs/starfarer/title/MissionSpec;
+		c  javap 字节码取证 | 高 | 构造置 null；setMission arg1；dialogDismissed CONFIRM_RESET 时重新加载
+	f	ÓÒÓ000	preview	Lcom/fs/starfarer/title/MissionDefinition;
+		c  javap 字节码取证 | 高 | setMission new MissionDefinition(spec)；getPreview 返回；actionPerformed 传预览
+	f	ôoÓ000	outerWidget	Lcom/fs/starfarer/title/MissionWidget;
+		c  javap 字节码取证 | 高 | final；构造 arg1；actionPerformed 中 hide、notifyCoreUIDismissed 中 show
+	f	super.super$new	dialogType	Lcom/fs/starfarer/title/MissionDetailPanel$DialogType;
+		c  javap 字节码取证 | 高 | actionPerformed 置 REFIT/CONFIRM_RESET；dialogDismissed 按类型处理（reset 重载 / refit 更新旗舰）
+	f	do.this$new	detailsFadedIn	Z
+		c  javap 字节码取证 | 高 | advanceImpl 打字完成后置 true 并 fadeIn 三面板（仅一次）；resetTyper 清 false
+	f	private.this$new	unusedPreviewError	Z
+		c  javap 字节码取证 | 高 | setMission 异常路径置 true、成功/开头置 false；全类无 getfield 读取，死代码字段
+	f	OÒÓ000	playerStats	Lcom/fs/starfarer/campaign/CharacterStats;
+		c  javap 字节码取证 | 高 | 构造 new CharacterStats()；getPlayerStats 返回
 c	com/fs/starfarer/title/Object/ooOO$o	com/fs/starfarer/title/MissionDetailPanel$DialogType
 	c 来源(枚举 CONFIRM_RESET/REFIT) | 置信度(中)
 	f	Object	CONFIRM_RESET	Lcom/fs/starfarer/title/Object/ooOO$o;
 	f	o00000	REFIT	Lcom/fs/starfarer/title/Object/ooOO$o;
 	m	values	values	()[Lcom/fs/starfarer/title/Object/ooOO$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/title/Object/ooOO$o;
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/title/MissionDetailPanel$DialogType;
+		c  javap 字节码取证 | 高 | private static final 枚举常量缓存数组

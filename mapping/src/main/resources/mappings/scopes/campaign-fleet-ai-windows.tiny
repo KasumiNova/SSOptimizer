@@ -22,6 +22,9 @@ c	com/fs/starfarer/campaign/ai/AssignmentModule	com/fs/starfarer/campaign/ai/Ass
 	m	clearAssignments	clearAssignments	()V
 	m	resupplyAndRestoreFightingStrength	resupplyAndRestoreFightingStrength	()V
 
+	f	$SWITCH_TABLE$com$fs$starfarer$api$campaign$FleetAssignment	fleetAssignmentSwitchTable	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$campaign$FleetAssignment	getFleetAssignmentSwitchTable	()[I
 c	com/fs/starfarer/campaign/ai/CampaignFleetAI	com/fs/starfarer/campaign/ai/CampaignFleetAI
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(CampaignFleetAI 舰队 AI：任务分配/跳跃计划/追击回避模块，implements CampaignFleetAIAPI)
 	f	fleet	fleet	Lcom/fs/starfarer/campaign/fleet/CampaignFleet;
@@ -86,6 +89,9 @@ c	com/fs/starfarer/campaign/ai/CampaignFleetAI	com/fs/starfarer/campaign/ai/Camp
 	m	removeAssignment	removeAssignment	(Lcom/fs/starfarer/api/campaign/ai/FleetAssignmentDataAPI;)V
 	m	isMaintainingContact	isMaintainingContact	()Z
 
+	f	$SWITCH_TABLE$com$fs$starfarer$api$campaign$FleetAssignment	fleetAssignmentSwitchTable	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$campaign$FleetAssignment	getFleetAssignmentSwitchTable	()[I
 c	com/fs/starfarer/campaign/ai/CampaignFleetAI$1	com/fs/starfarer/campaign/ai/CampaignFleetAI$JumpPointCandidateComparator
 	c 来源(javap取证) | 置信度(高) | 证据(CampaignFleetAI 匿名 Comparator<CampaignFleetAI$o>：先比 numUnsafeFleets 再比 distanceTo)
 	m	super	compare	(Lcom/fs/starfarer/campaign/ai/CampaignFleetAI$o;Lcom/fs/starfarer/campaign/ai/CampaignFleetAI$o;)I
@@ -99,6 +105,8 @@ c	com/fs/starfarer/campaign/ai/CampaignFleetAI$3	com/fs/starfarer/campaign/ai/Ca
 	c 来源(javap取证) | 置信度(高) | 证据(CampaignFleetAI 匿名 Comparator<CampaignPlanet>：按到舰队距离排序行星)
 	m	o00000	compare	(Lcom/fs/starfarer/campaign/CampaignPlanet;Lcom/fs/starfarer/campaign/CampaignPlanet;)I
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/ai/CampaignFleetAI;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
 c	com/fs/starfarer/campaign/ai/CampaignFleetAI$FleetAssignmentData	com/fs/starfarer/campaign/ai/CampaignFleetAI$FleetAssignmentData
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(CampaignFleetAI$FleetAssignmentData 任务数据，implements FleetAssignmentDataAPI)
 	f	assignment	assignment	Lcom/fs/starfarer/api/campaign/FleetAssignment;
@@ -294,6 +302,9 @@ c	com/fs/starfarer/campaign/ai/StrategicModule	com/fs/starfarer/campaign/ai/Stra
 	m	getNumUnsafeFleetsAround	getNumUnsafeFleetsAround	(Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;Lcom/fs/starfarer/api/campaign/SectorEntityToken;F)I
 	m	dumpExcessCargoIfNeeded	dumpExcessCargoIfNeeded	()V
 
+	f	$SWITCH_TABLE$com$fs$starfarer$api$campaign$FleetAssignment	fleetAssignmentSwitchTable	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$campaign$FleetAssignment	getFleetAssignmentSwitchTable	()[I
 c	com/fs/starfarer/campaign/ai/StrategicModule$1	com/fs/starfarer/campaign/ai/StrategicModule$JumpPointCandidateComparator
 	c 来源(javap取证) | 置信度(高) | 证据(StrategicModule 匿名 Comparator<StrategicModule$Oo>：先比 numUnsafeFleets 再比 distanceTo)
 	m	super	compare	(Lcom/fs/starfarer/campaign/ai/StrategicModule$Oo;Lcom/fs/starfarer/campaign/ai/StrategicModule$Oo;)I
@@ -390,6 +401,8 @@ c	com/fs/starfarer/campaign/ai/TacticalModule$o	com/fs/starfarer/campaign/ai/Tac
 	m	values	values	()[Lcom/fs/starfarer/campaign/ai/TacticalModule$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/ai/TacticalModule$o;
 
+	f	Ò00000	$VALUES	[Lcom/fs/starfarer/campaign/ai/TacticalModule$CRLevel;
+		c javap 字节码取证 | 高 | 标准枚举 $VALUES 数组
 c	com/fs/starfarer/campaign/fleet/Battle	com/fs/starfarer/campaign/fleet/Battle
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(Battle 战役：双阵营舰队快照/自动战斗回合，implements BattleAPI)
 	f	sideOne	sideOne	Ljava/util/List;
@@ -493,6 +506,8 @@ c	com/fs/starfarer/campaign/fleet/Battle$1	com/fs/starfarer/campaign/fleet/Battl
 	c 来源(javap取证) | 置信度(中) | 证据(Battle.addFlash 创建的匿名 BaseAnimation：finished() 随机选舰队生成爆炸粒子)
 	m	finished	finished	()V
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/fleet/Battle;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
 c	com/fs/starfarer/campaign/fleet/CampaignFleet	com/fs/starfarer/campaign/fleet/CampaignFleet
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(CampaignFleet 战役舰队实体：舰队数据/移动/后勤/战斗，implements CampaignFleetAPI)
 	f	reportedSpawned	reportedSpawned	Ljava/lang/Boolean;
@@ -731,6 +746,9 @@ c	com/fs/starfarer/campaign/fleet/CampaignFleet	com/fs/starfarer/campaign/fleet/
 	m	getFlagship	getFlagship	()Lcom/fs/starfarer/api/fleet/FleetMemberAPI;
 	m	getCommander	getCommander	()Lcom/fs/starfarer/api/characters/PersonAPI;
 
+	f	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	hullSizeSwitchTable	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$combat$ShipAPI$HullSize	getHullSizeSwitchTable	()[I
 c	com/fs/starfarer/campaign/fleet/CampaignFleetMemberView$DelayedFlash	com/fs/starfarer/campaign/fleet/CampaignFleetMemberView$DelayedFlash
 	c 来源(类名未混淆) | 置信度(高) | 证据(CampaignFleetMemberView 内部延迟闪光：finished() 触发成员视图闪烁)
 	f	size	size	F
@@ -789,14 +807,20 @@ c	com/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$1	com/fs/starfarer/camp
 	c 来源(javap取证) | 置信度(高) | 证据(匿名 Comparator<SlotData>：按 width 降序，readResolve 反序列化后重排 slots)
 	m	o00000	compare	(Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData;Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData;)I
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
 c	com/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$2	com/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotOffsetYComparator
 	c 来源(javap取证) | 置信度(高) | 证据(匿名 Comparator<SlotData>：按 offset.y 排序，computeClusters 聚类前使用)
 	m	super	compare	(Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData;Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData;)I
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
 c	com/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$3	com/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotWidthComparator
 	c 来源(javap取证) | 置信度(高) | 证据(匿名 Comparator<SlotData>：按 width 降序，构造器无引擎槽分支合成槽排序；与 $1 字节码相同)
 	m	o00000	compare	(Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData;Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData;)I
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/fleet/CampaignShipEngineGlow;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
 c	com/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData	com/fs/starfarer/campaign/fleet/CampaignShipEngineGlow$SlotData
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(CampaignShipEngineGlow$SlotData 引擎槽位数据：角度/基础长度/辉光尺寸/宽度/权重/偏移)
 	f	angle	angle	F
@@ -934,6 +958,11 @@ c	com/fs/starfarer/campaign/fleet/CargoData$1	com/fs/starfarer/campaign/fleet/Ca
 	f	val$action	action	Lcom/fs/starfarer/api/campaign/SubmarketPlugin$TransferAction;
 	m	o00000	compare	(Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;Lcom/fs/starfarer/campaign/ui/trade/CargoItemStack;)I
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/fleet/CargoData;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
+	f	$SWITCH_TABLE$com$fs$starfarer$api$campaign$CargoAPI$CargoItemType	cargoItemTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表缓存
+	m	o00000	getCargoItemTypeSwitchTable	()[I
 c	com/fs/starfarer/campaign/fleet/ContrailEngineV2$Contrail	com/fs/starfarer/campaign/fleet/ContrailEngineV2$Contrail
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(ContrailEngineV2$Contrail implements com.fs.util.DoNotObfuscate，成员保持原名)
 	f	tex	tex	Lcom/fs/graphics/Object;
@@ -1133,11 +1162,15 @@ c	com/fs/starfarer/campaign/fleet/FleetData$1	com/fs/starfarer/campaign/fleet/Fl
 	c 来源(javap取证) | 置信度(高) | 证据(匿名 Comparator<FleetMember>：按 getHullSpec().getHullSize().ordinal() 排序，syncMemberLists 用)
 	m	super	compare	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/fleet/FleetData;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
 c	com/fs/starfarer/campaign/fleet/FleetData$2	com/fs/starfarer/campaign/fleet/FleetData$FleetMemberSortComparator
 	c 来源(javap取证) | 置信度(中) | 证据(匿名 Comparator<FleetMember>：sort(HullSize) 用，mothballed 排后、putFirst 船体尺寸优先)
 	f	val$putFirst	putFirst	Lcom/fs/starfarer/api/combat/ShipAPI$HullSize;
 	m	o00000	compare	(Lcom/fs/starfarer/campaign/fleet/FleetMember;Lcom/fs/starfarer/campaign/fleet/FleetMember;)I
 
+	f	this$0	this$0	Lcom/fs/starfarer/campaign/fleet/FleetData;
+		c javap 字节码取证 | 高 | 匿名类合成外围引用
 c	com/fs/starfarer/campaign/fleet/FleetMember	com/fs/starfarer/campaign/fleet/FleetMember
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(FleetMember 舰队成员：规格/舰名/船长/船员/状态，implements FleetMemberAPI)
 	f	owner	owner	I
@@ -1281,6 +1314,9 @@ c	com/fs/starfarer/campaign/fleet/FleetMember	com/fs/starfarer/campaign/fleet/Fl
 	m	getFleetCommander	getFleetCommander	()Lcom/fs/starfarer/api/characters/PersonAPI;
 	m	getRepairTracker	getRepairTracker	()Lcom/fs/starfarer/api/fleet/RepairTrackerAPI;
 
+	f	$SWITCH_TABLE$com$fs$starfarer$api$fleet$FleetMemberType	fleetMemberTypeSwitchTable	[I
+		c javap 字节码取证 | 高 | javac 合成 switch 表缓存
+	m	$SWITCH_TABLE$com$fs$starfarer$api$fleet$FleetMemberType	getFleetMemberTypeSwitchTable	()[I
 c	com/fs/starfarer/campaign/fleet/FleetMemberStatus	com/fs/starfarer/campaign/fleet/FleetMemberStatus
 	c 来源(类名未混淆 DoNotObfuscate) | 置信度(高) | 证据(FleetMemberStatus 成员战损状态：各舰船状态数组/伤害/修理，implements FleetMemberStatusAPI)
 	f	status	status	[Lcom/fs/starfarer/campaign/fleet/FleetMemberStatus$ShipStatus;
@@ -1480,6 +1516,8 @@ c	com/fs/starfarer/campaign/fleet/LogisticsModule$o	com/fs/starfarer/campaign/fl
 	m	values	values	()[Lcom/fs/starfarer/campaign/fleet/LogisticsModule$o;
 	m	valueOf	valueOf	(Ljava/lang/String;)Lcom/fs/starfarer/campaign/fleet/LogisticsModule$o;
 
+	f	o00000	$VALUES	[Lcom/fs/starfarer/campaign/fleet/LogisticsModule$SupplyCostCategory;
+		c javap 字节码取证 | 高 | 标准枚举 $VALUES 数组
 c	com/fs/starfarer/campaign/fleet/LogisticsModule$Oo	com/fs/starfarer/campaign/fleet/LogisticsModule$ShipSupplyCostFunction
 	c 来源(javap取证) | 置信度(低) | 证据(LogisticsModule 内部回调接口，单方法 (FleetMember, float)；全 jar 未见引用，疑为未使用)
 	m	o00000	computeShipSupplyCost	(Lcom/fs/starfarer/campaign/fleet/FleetMember;F)V
