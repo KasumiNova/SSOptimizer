@@ -38,6 +38,16 @@ import java.util.stream.Stream;
  * 存在冲突或不一致项时以非零退出码失败。
  */
 public final class ScopeFragmentCli {
+    /**
+     * named 类名长度上限（Windows 路径组件限制 255 字符，保留包/文件名余量）。
+     * <p>
+     * 混淆 jar 中存在超长垃圾类名（数百个 oO 堆叠），这类 obf 名作为 jar 事实源
+     * 允许出现在片段 obf 列，但 named 列若保持该超长名，named jar / 反编译产物在
+     * Windows 上无法落盘（{@code FileSystemException: 文件名、目录名或卷标语法不正确}）。
+     * 因此片段校验对 named 类名超长直接报错，强制命名者改为语义名或短占位名。
+     */
+    private static final int MAX_NAMED_CLASS_NAME_LENGTH = 200;
+
     private ScopeFragmentCli() {
     }
 
@@ -101,6 +111,13 @@ public final class ScopeFragmentCli {
                     if (entry.isClass()) {
                         mappedClasses++;
                         scopePackages.add(packageOf(entry.obfuscatedName()));
+                        if (entry.namedName().length() > MAX_NAMED_CLASS_NAME_LENGTH) {
+                            String msg = "[scope '" + fragment.scope() + "'] named 类名超长（" + entry.namedName().length()
+                                    + " 字符，上限 " + MAX_NAMED_CLASS_NAME_LENGTH + "），Windows 工具链无法落盘: "
+                                    + entry.namedName();
+                            report.add("超长名: " + msg);
+                            problems.add("[" + platform.id() + "]" + msg);
+                        }
                     }
                 }
                 int scopeTotalClasses = 0;
@@ -173,6 +190,13 @@ public final class ScopeFragmentCli {
             }
         }
         List<String> problems = new ArrayList<>(ScopeFragments.extensionAwareConflictLines(others, fragment));
+        for (MappingEntry entry : fragment.entries()) {
+            if (entry.isClass() && entry.namedName().length() > MAX_NAMED_CLASS_NAME_LENGTH) {
+                problems.add("named 类名超长（" + entry.namedName().length()
+                        + " 字符，上限 " + MAX_NAMED_CLASS_NAME_LENGTH + "），Windows 工具链无法落盘: "
+                        + entry.namedName());
+            }
+        }
 
         List<ScopeFragments.ScopeFragment> contextFragments = new ArrayList<>(others);
         contextFragments.add(fragment);

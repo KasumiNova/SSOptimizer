@@ -379,7 +379,7 @@ c	com/fs/starfarer/ui/impl/oo0OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 	f	ô0Òo00	standingOrdersButton	Lcom/fs/starfarer/ui/Button;
 	f	øOÒo00	searchDestroyButton	Lcom/fs/starfarer/ui/Button;
 	f	Õ0Òo00	fullRetreatButton	Lcom/fs/starfarer/ui/Button;
-	f	bg	backgroundRenderer	Lcom/fs/starfarer/E/OoOO/ScanlineBackgroundRenderer;
+	f	bg	backgroundRenderer	Lcom/fs/starfarer/E/CombatHudPanels/ScanlineBackgroundRenderer;
 	f	return.super$while	defaultFontPath	Ljava/lang/String;
 	f	for.interface$do	unusedOrbitron24BoldFontPath	Ljava/lang/String;
 	f	ÒOÒo00	orbitron24FontPath	Ljava/lang/String;

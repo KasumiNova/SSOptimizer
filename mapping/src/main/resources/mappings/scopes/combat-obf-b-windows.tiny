@@ -787,7 +787,7 @@ c	com/fs/starfarer/combat/new/H$o	com/fs/starfarer/combat/warroom/ShipStatusBar
 	c javap取证 | 中 | .dev/mapping-evidence/combat-obf-b.md#null-o-ship-status-bar
 	f	o00000	ship	Lcom/fs/starfarer/combat/entities/Ship;
 		c javap 反编译 | 高 | 构造参数；advance 读取 HP/flux
-	f	null	hullSchematic	Lcom/fs/starfarer/E/OoOO/HullSchematicWidget;
+	f	null	hullSchematic	Lcom/fs/starfarer/E/CombatHudPanels/HullSchematicWidget;
 		c javap 反编译 | 高 | 构造 new HullSchematicWidget(size,size) 并 setShip/缩放/颜色
 	f	new	fluxBar	Lcom/fs/starfarer/renderers/FluxBarWidget;
 		c javap 反编译 | 高 | setShowMinimum(true)；advance update(fluxLevel,minFlux)
@@ -852,7 +852,7 @@ c	com/fs/starfarer/combat/new/H	com/fs/starfarer/combat/warroom/ShipInfoPanel
 		c javap 反编译 | 高 | graphics/fonts/victor14.fnt；createLabel 用
 	f	ÒõOo00	fontHeight	F
 		c javap 反编译 | 高 | 构造取 victor14 字体高度
-	f	ÖôOo00	backgroundRenderer	Lcom/fs/starfarer/E/OoOO/ScanlineBackgroundRenderer;
+	f	ÖôOo00	backgroundRenderer	Lcom/fs/starfarer/E/CombatHudPanels/ScanlineBackgroundRenderer;
 		c javap 反编译 | 高 | 构造 new ScanlineBackgroundRenderer()
 	f	ÓôOo00	member	Lcom/fs/starfarer/combat/DeployedFleetMember;
 		c javap 反编译 | 高 | final 构造参数；数据源

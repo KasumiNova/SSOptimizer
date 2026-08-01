@@ -23,7 +23,7 @@ c	com/fs/starfarer/tutorial/C	com/fs/starfarer/tutorial/TutorialMessage
 		c javap 字节码取证 | 高 | 构造器以 "Continue" 创建；actionPerformed 匹配后置 continuePressed
 	f	ÒÔOO00	partIndex	I
 		c javap 字节码取证 | 高 | 构造器 0 初始化；actionPerformed Prev/Next 增减并夹取边界
-	f	øÓOO00	backgroundRenderer	Lcom/fs/starfarer/E/OoOO/ScanlineBackgroundRenderer;
+	f	øÓOO00	backgroundRenderer	Lcom/fs/starfarer/E/CombatHudPanels/ScanlineBackgroundRenderer;
 		c javap 字节码取证 | 高 | 构造器 new ScanlineBackgroundRenderer 保存（扫描线背景）
 	f	ÔÔOO00	continueMode	Z
 		c javap 字节码取证 | 高 | 构造器 CONTINUE_MODE 标志置 true；isContinueMode 直接读
