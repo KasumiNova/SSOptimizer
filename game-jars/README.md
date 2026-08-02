@@ -11,12 +11,20 @@ game-jars/
 │   ├── fs.sound_obf.jar
 │   ├── starfarer.api.jar
 │   └── starfarer_obf.jar
-└── windows/      # Windows 版混淆 jar
-    ├── fs.common_obf.jar
-    ├── fs.sound_obf.jar
-    ├── starfarer.api.jar
-    └── starfarer_obf.jar
+├── windows/      # Windows 版混淆 jar
+│   ├── fs.common_obf.jar
+│   ├── fs.sound_obf.jar
+│   ├── starfarer.api.jar
+│   └── starfarer_obf.jar
+└── third-party/  # 游戏侧第三方 jar（与游戏运行时版本对齐）
+    └── xstream-1.4.21_miko.jar
 ```
+
+`third-party/` 存放**游戏运行时的第三方 jar**：miko 补丁版 XStream 是 Starsector 0.98a-RC8
+实际携带的实现，与 Maven 原版 `com.thoughtworks.xstream:xstream:1.4.10` 存在内部签名差异
+（如 `FieldAliasingMapper` 改用 `core.util.MemberStore`）。`app` 模块编译/测试期通过
+`gameThirdParty` 配置以 `files(...)` 形式引用该 jar，保证 SSOptimizer 源码与 Mixin 注入
+的目标类签名对齐游戏运行时版本。该 jar 不打进 coremod 产物，运行时由游戏 classpath 提供。
 
 ## 来源
 

@@ -125,8 +125,16 @@ dependencies {
     testImplementation("org.ow2.asm:asm-tree:9.8")
     testImplementation("org.ow2.asm:asm-util:9.8")
     testImplementation("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7")
-    // DCR 执行集成测试中，SerializationManager 夹具的 getSerializer() 返回真实 XStream（与 DCR 同版本）
-    testImplementation("com.thoughtworks.xstream:xstream:1.4.10")
+    // DCR 执行集成测试中，SerializationManager 夹具的 getSerializer() 返回真实 XStream（与 DCR 同版本）；
+    // 使用与 gameThirdParty 相同的 miko 补丁版 jar 文件：既保证测试行为与游戏运行时一致，
+    // 也避免测试 classpath 上同时出现 miko 版与原版两个 XStream 导致的重复类冲突。
+    // 无参 new XStream()（XppDriver）构造/反序列化需要 XML Pull 实现，而 miko jar 文件不携带
+    // （原版 Maven 坐标通过 xmlpull 传递依赖提供 API 类，MXParser 实现需 xpp3）；游戏官方
+    // 序列化路径使用 StaxDriver（见 CampaignGameManager.getXStream），不需要 xpp3，
+    // 故仅测试运行期补齐，gameThirdParty 编译期不引入。
+    testImplementation(files("../game-jars/third-party/xstream-1.4.21_miko.jar"))
+    testRuntimeOnly("xmlpull:xmlpull:1.1.3.1")
+    testRuntimeOnly("xpp3:xpp3_min:1.1.4c")
 
     // named 游戏本体 jar（模块依赖，来自 SourceSector 本地仓库；附带 -sources.jar 供 IDE 索引）
     namedGameJarBaseNames.forEach { baseName ->
@@ -137,7 +145,9 @@ dependencies {
     // 游戏运行时第三方依赖（对齐 Starsector 0.98a-RC8，compileOnly + testImplementation 继承）
     gameThirdParty("org.lwjgl.lwjgl:lwjgl:2.9.3")
     gameThirdParty("org.lwjgl.lwjgl:lwjgl_util:2.9.3")
-    gameThirdParty("com.thoughtworks.xstream:xstream:1.4.10")
+    // XStream：游戏实际携带 miko 补丁版（FieldAliasingMapper 等内部签名与 Maven 原版不同），
+    // 编译期以文件形式对齐游戏运行时 API，避免 Mixin 注入目标类签名不匹配
+    gameThirdParty(files("../game-jars/third-party/xstream-1.4.21_miko.jar"))
     gameThirdParty("org.codehaus.janino:janino:2.7.8")
     gameThirdParty("org.codehaus.janino:commons-compiler:2.7.8")
     gameThirdParty("org.codehaus.janino:commons-compiler-jdk:2.7.8")
