@@ -1,32 +1,47 @@
 package github.kasuminova.ssoptimizer;
 
+import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * 发布元数据契约测试。
+ * <p>
+ * mod_info.json 由 SDG 插件从 :app 的 sdg {} DSL 生成（唯一事实源，不手写），
+ * 本测试直接校验生成产物（test 任务已 dependsOn modProduction）。
+ */
 class ModInfoJsonTest {
+
+    private static Path generatedModInfo() {
+        return Path.of(System.getProperty("project.rootDir"),
+                "app", "build", "mod_production", "mod_info.json");
+    }
+
     @Test
-    void modInfoJsonExists() {
-        Path modInfo = Path.of(System.getProperty("project.rootDir"), "mod_info.json");
-        assertTrue(Files.exists(modInfo), "mod_info.json must exist at project root");
+    void modInfoJsonGenerated() {
+        assertTrue(Files.exists(generatedModInfo()),
+                "mod_info.json must be generated into app/build/mod_production by SDG");
     }
 
     @Test
     void modInfoJsonContainsRequiredFields() throws Exception {
-        Path modInfo = Path.of(System.getProperty("project.rootDir"), "mod_info.json");
-        String content = Files.readString(modInfo);
+        JSONObject info = new JSONObject(Files.readString(generatedModInfo()));
         assertAll(
-                () -> assertTrue(content.contains("\"id\""), "must have id field"),
-                () -> assertTrue(content.contains("\"name\""), "must have name field"),
-                () -> assertTrue(content.contains("\"version\""), "must have version field"),
-                () -> assertTrue(content.contains("\"gameVersion\""), "must have gameVersion field"),
-                () -> assertTrue(content.contains("\"jars\""), "must have jars field"),
-                () -> assertTrue(content.contains("\"modPlugin\""), "must have modPlugin field"),
-                () -> assertTrue(content.contains("\"jars\": [\"jars/SSOptimizer.jar\"]"), "must point runtime jar to canonical SSOptimizer.jar")
+                () -> assertEquals("ssoptimizer", info.getString("id"), "must have id field"),
+                () -> assertEquals("SSOptimizer", info.getString("name"), "must have name field"),
+                () -> assertFalse(info.getString("version").isBlank(), "must have version field"),
+                () -> assertEquals("0.98a-RC8", info.getString("gameVersion"), "must have gameVersion field"),
+                () -> assertEquals("github.kasuminova.ssoptimizer.SSOptimizerModPlugin",
+                        info.getString("modPlugin"), "must have modPlugin field"),
+                () -> assertEquals("jars/SSOptimizer.jar", info.getJSONArray("jars").getString(0),
+                        "must point runtime jar to canonical SSOptimizer.jar")
         );
     }
 }

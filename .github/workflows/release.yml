@@ -37,6 +37,17 @@ jobs:
         working-directory: NanoForge
         run: ./gradlew publishToMavenLocal --console=plain
 
+      # SDG 插件（io.github.nanoforged.sdg.*）以 SNAPSHOT 发布在 mavenLocal，CI 需现场发布
+      - name: Checkout SectorDevGradle
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/SectorDevGradle
+          path: SectorDevGradle
+
+      - name: Publish SDG plugins to mavenLocal
+        working-directory: SectorDevGradle
+        run: ./gradlew publishToMavenLocal --console=plain
+
       # named 游戏 jar 依赖已切换为 SourceSector 本地 maven 仓，CI 现场发布 windows 仓
       - name: Checkout SourceSector
         uses: actions/checkout@v4
@@ -48,9 +59,9 @@ jobs:
         working-directory: SourceSector
         run: ./gradlew :mapping:publishNamedGameJars --console=plain
 
-      - name: Build app jar
+      - name: Build app jar and mod metadata
         run: |
-          ./gradlew :app:jar \
+          ./gradlew :app:modProduction \
             -Pstarsector.gameDir= \
             -Pstarsector.platform=${{ matrix.platform }} \
             -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows \
@@ -63,11 +74,18 @@ jobs:
             -Pstarsector.platform=${{ matrix.platform }} \
             -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows
 
+      - name: Stage release artifacts
+        run: |
+          mkdir -p app/build/release-stage
+          cp app/build/libs/SSOptimizer.jar app/build/release-stage/
+          cp app/build/mod_production/mod_info.json app/build/release-stage/
+          cp app/build/mod_production/nanoforge.mod.toml app/build/release-stage/
+
       - name: Upload app jar
         uses: actions/upload-artifact@v4
         with:
           name: app-jar-${{ matrix.platform }}
-          path: app/build/libs/SSOptimizer.jar
+          path: app/build/release-stage/
 
   build-native-linux:
     name: Build Native (Linux)
@@ -235,8 +253,8 @@ jobs:
             cp "$f" "${WINDOWS_MOD_STAGE}/native/windows/" 2>/dev/null || true
           done
 
-          cp mod_info.json README.md "${LINUX_MOD_STAGE}/"
-          cp mod_info.json README.md "${WINDOWS_MOD_STAGE}/"
+          cp artifacts/app-jar-linux/mod_info.json artifacts/app-jar-linux/nanoforge.mod.toml README.md "${LINUX_MOD_STAGE}/"
+          cp artifacts/app-jar-windows/mod_info.json artifacts/app-jar-windows/nanoforge.mod.toml README.md "${WINDOWS_MOD_STAGE}/"
           cp log4j.properties "${LINUX_STAGE}/log4j.properties"
           cp log4j.properties "${WINDOWS_STAGE}/starsector-core/log4j.properties"
           cp game-fonts/ttf/* "${LINUX_MOD_STAGE}/fonts/"

@@ -1,5 +1,3 @@
-import groovy.json.JsonOutput
-import groovy.json.JsonSlurper
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.Zip
@@ -9,12 +7,11 @@ plugins {
 }
 
 group = "github.kasuminova.ssoptimizer"
-version = "0.1.9-SNAPSHOT"
+version = "0.1.10-SNAPSHOT"
 
-@Suppress("UNCHECKED_CAST")
-val modInfo = JsonSlurper().parse(rootProject.file("mod_info.json")) as Map<String, Any?>
-val modId = modInfo["id"]?.toString() ?: "ssoptimizer"
-val modReleaseVersion = modInfo["version"]?.toString() ?: project.version.toString()
+// 模组元数据的唯一事实源在 :app 的 sdg {} DSL；此处仅保留打包所需的常量
+val modId = "ssoptimizer"
+val modReleaseVersion = project.version.toString()
 
 fun hostPlatformId(): String {
     val osName = System.getProperty("os.name", "").lowercase()
@@ -171,7 +168,7 @@ val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
 tasks.register<Sync>("stageUserMod") {
     group = "distribution"
     description = "Stage an end-user ready mod layout under build/user-package"
-    dependsOn(":app:jar", ":native:assembleRelease")
+    dependsOn(":app:modProduction", ":native:assembleRelease")
 
     from(appJarFile) {
         into("jars")
@@ -199,7 +196,10 @@ tasks.register<Sync>("stageUserMod") {
     from(packagedFontTtfDir) {
         into("fonts")
     }
-    from(rootProject.file("mod_info.json"))
+    // 元数据由 SDG 生成（mod_info.json + nanoforge.mod.toml，与部署产物同源）
+    from(project(":app").layout.buildDirectory.dir("mod_production")) {
+        include("mod_info.json", "nanoforge.mod.toml")
+    }
     from(rootProject.file("README.md"))
 
     into(userModStageDir)
@@ -397,24 +397,13 @@ tasks.register("runTrace") {
     }
 }
 
-tasks.register<Copy>("installDevMod") {
+tasks.register<Copy>("installNativeRuntime") {
     group = "dev workflow"
-    description = "Deploy the built mod into the Starsector mods directory"
-    dependsOn(":app:jar")
-
+    description = "Deploy native runtime libraries into the deployed mod directory"
     if (targetPlatformProvider.get() == "linux") {
         dependsOn(":native:assembleRelease")
     }
 
-    // NanoForge coremod 入口：mods/coremods/ 由 NanoForge 发现装配
-    val appJar = project(":app").tasks.named<Jar>("jar").flatMap { it.archiveFile }
-    from(appJar) {
-        into("../coremods")
-    }
-    // 游戏原生 mod 双轨：modPlugin 类随同一 jar 进 mods/ssoptimizer/jars/
-    from(appJar) {
-        into("jars")
-    }
     from(project.provider {
         val platform = targetPlatformProvider.get()
         val nativeFile = if (platform == "windows") nativeWindowsLibraryFile.get().asFile else nativeLinuxLibraryFile.get().asFile
@@ -430,9 +419,11 @@ tasks.register<Copy>("installDevMod") {
     }) {
         into("native/${targetPlatformProvider.get()}")
     }
-    from(rootProject.file("mod_info.json"))
 
     into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
+
+    // SDG deployMod 的 Sync 会清掉 native/，必须在其之后落位
+    mustRunAfter(":app:deployMod")
 
     doFirst {
         check(configuredGameDirProvider.isPresent) {
@@ -443,35 +434,22 @@ tasks.register<Copy>("installDevMod") {
     doLast {
         val platform = targetPlatformProvider.get()
         val nativeFile = if (platform == "windows") nativeWindowsLibraryFile.get().asFile else nativeLinuxLibraryFile.get().asFile
-        println("[installDevMod] Mod deployed to ${configuredGameDirProvider.get()}/mods/$modId")
+        println("[installNativeRuntime] Native runtime deployed to ${configuredGameDirProvider.get()}/mods/$modId")
         if (!nativeFile.isFile) {
-            println("[installDevMod] Native runtime not available for $platform; Java fallbacks will be used")
-        }
-
-        val enabledModsFile = file(configuredGameDirProvider.get()).resolve("mods/enabled_mods.json")
-        if (enabledModsFile.exists()) {
-            val parsed = JsonSlurper().parse(enabledModsFile)
-            if (parsed is MutableMap<*, *>) {
-                @Suppress("UNCHECKED_CAST")
-                val mutableJson = parsed as MutableMap<String, Any?>
-                val enabledMods = (mutableJson["enabledMods"] as? List<*>)
-                    ?.map { it.toString() }
-                    ?.toMutableList()
-                    ?: mutableListOf()
-                if (!enabledMods.contains(modId)) {
-                    enabledMods.add(modId)
-                    mutableJson["enabledMods"] = enabledMods
-                    enabledModsFile.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(mutableJson)))
-                    println("[installDevMod] Added $modId to enabled_mods.json")
-                }
-            }
+            println("[installNativeRuntime] Native runtime not available for $platform; Java fallbacks will be used")
         }
     }
 }
 
 tasks.register("deployMod") {
     group = "dev workflow"
-    description = "Compatibility alias for installDevMod"
-    dependsOn("installDevMod")
+    description = "Deploy mod metadata/jars (SDG :app:deployMod) plus native runtime"
+    dependsOn(":app:deployMod", "installNativeRuntime")
+}
+
+tasks.register("installDevMod") {
+    group = "dev workflow"
+    description = "Compatibility alias for deployMod"
+    dependsOn("deployMod")
 }
 

@@ -1,5 +1,6 @@
 plugins {
     application
+    id("io.github.nanoforged.sdg.nanoforge") version "0.1.0-SNAPSHOT"
 }
 
 java {
@@ -7,13 +8,6 @@ java {
         languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
-
-/**
- * SourceSector named 游戏 jar 本地 maven 仓（windows 仓，含 -sources.jar）。
- * 默认取同级的 SourceSector 检出；CI 用 -Psourcesector.namedRepo=<路径> 覆盖。
- */
-val sourceSectorNamedRepo = providers.gradleProperty("sourcesector.namedRepo")
-    .orElse(providers.provider { rootProject.file("../SourceSector/build/named-game-repo/windows").absolutePath })
 
 /** 游戏本体 jar 基名——与 SourceSector 发布的本地仓库 artifactId 一一对应。 */
 val namedGameJarBaseNames = listOf("starfarer_obf", "starfarer.api", "fs.common_obf", "fs.sound_obf")
@@ -43,15 +37,10 @@ configurations.testImplementation {
 }
 
 repositories {
-    // NanoForge coremod API（publishToMavenLocal 产物）
-    mavenLocal()
     // RFB / LaunchWrapper（IClassTransformer 编译期依赖）
+    // （mavenLocal / mavenCentral / SourceSector named 仓由 SDG 插件统一注册）
     maven {
         url = uri("https://nexus.gtnewhorizons.com/repository/releases/")
-    }
-    // named 游戏 jar 本地仓库（SourceSector :mapping:publishNamedGameJars 发布，附带 -sources.jar）
-    maven {
-        url = uri(sourceSectorNamedRepo.get())
     }
 }
 
@@ -72,6 +61,32 @@ tasks.named<JavaCompile>("compileJava") {
 
 application {
     mainClass.set("github.kasuminova.ssoptimizer.App")
+}
+
+// ---- SDG：模组元数据唯一事实源（mod_info.json / nanoforge.mod.toml / coremod.toml 均由此派生） ----
+sdg {
+    modId.set("ssoptimizer")
+    modName.set("SSOptimizer")
+    author.set("Hikari_Nova")
+    description.set("Starsector rendering & performance optimizer")
+    gameVersion.set("0.98a-RC8")
+    modPlugin.set("github.kasuminova.ssoptimizer.SSOptimizerModPlugin")
+    // 游戏目录：-Pstarsector.gameDir 或 SSOPTIMIZER_GAME_DIR；空白视为未设置（CI 不部署）
+    gameDir.set(layout.dir(providers.gradleProperty("starsector.gameDir")
+        .orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR"))
+        .filter { it.isNotBlank() }
+        .map { file(it) }))
+    manageEnabledMods.set(true)
+    // SourceSector named 仓路径覆盖（默认取同级 SourceSector 检出；CI 用 -Psourcesector.namedRepo 指定）
+    providers.gradleProperty("sourcesector.namedRepo").orNull?.let { sourceRepo.set(file(it)) }
+}
+
+nanoforge {
+    coremod.set(true)
+    pluginClass.set("github.kasuminova.ssoptimizer.bootstrap.SSOptimizerCorePlugin")
+    authors.set(listOf("kasuminova"))
+    asmTransformers.set(listOf("github.kasuminova.ssoptimizer.bootstrap.HybridWeaverTransformer"))
+    mixinConfigs.set(listOf("mixins.ssoptimizer.json"))
 }
 
 dependencies {
@@ -137,8 +152,8 @@ dependencies {
     testRuntimeOnly("xpp3:xpp3_min:1.1.4c")
 
     // named 游戏本体 jar（模块依赖，来自 SourceSector 本地仓库；附带 -sources.jar 供 IDE 索引）
+    // compileOnly 声明由 SDG 插件统一装配（NAMED_REPO 模式），此处仅补齐测试 classpath
     namedGameJarBaseNames.forEach { baseName ->
-        compileOnly("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
         testImplementation("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
     }
 
@@ -158,16 +173,11 @@ dependencies {
     gameThirdParty("net.java.jinput:jinput:2.0.7")
 }
 
-tasks.processResources {
-    // coremod.toml 的版本号随项目版本走，避免两处维护
-    filesMatching("coremod.toml") {
-        expand("projectVersion" to project.version.toString())
-    }
-}
-
 tasks.test {
     useJUnitPlatform()
     dependsOn(tasks.named("jar"))
+    // ModInfoJsonTest 校验 SDG 生成的发布元数据，需要完整产物布局
+    dependsOn("modProduction")
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
     // DCR 执行集成测试中的 XStream 夹具在 JDK 25 上需与游戏运行期相同的模块开放（见 launch_nanoforge_ss.sh）
     jvmArgs(
