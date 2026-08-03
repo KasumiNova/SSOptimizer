@@ -131,9 +131,9 @@ public static void ssoptimizer$flush() {                    // onGameLoad return
 
 L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.compress` 自动走 L2，二层一致。L2 仅改 `CompressionUtil`（独立于 L1 改的 SerializationManager/plugin），故各处理器目标类互不相同、**无需 CompositeAsmClassProcessor**。
 
-子开关：`-Dssoptimizer.disable.dcrzstd=true` 时 `DcrModOptimizer.processors()` 不纳入 `CompressionUtil` 处理器 → DCR 原生 Deflater 路径不变。
+实现方式：`CompressionUtil` 的这两个方法体由 Mixin（`mixin.modopt.dcr.DcrCompressionUtilMixin`，@Overwrite）整体替换为委派 `modopt.dcr.DcrCompressionHelper`（不再经 `DcrModOptimizer.processors()` 注册，原 `-Dssoptimizer.disable.dcrzstd` 子开关随之移除）。
 
-**权衡（默认开，用户已确认）**：压缩串经游戏 XStream 落入存档文件；卸载 SSOptimizer（或开此子开关）后 DCR 原生 `Inflater` 无法解已迁移的 Zstd 串 → 判 `dataIsCorrupt` → 清空战报历史。README 须注明。
+**权衡（默认开，用户已确认）**：压缩串经游戏 XStream 落入存档文件；卸载 SSOptimizer（或迁移前已存档）后 DCR 原生 `Inflater` 无法解已迁移的 Zstd 串 → 判 `dataIsCorrupt` → 清空战报历史。README 须注明。
 
 ## L3 —【未来，结构性】消除每场战后的全史重序列化
 
@@ -152,7 +152,7 @@ L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.co
    - L1：fixture 模拟「N 次调用 saveCombatResult」的循环 + 一个可观测的「序列化计数器」，断言注入后序列化仅发生 1 次、最终列表与 store 内容等价。
    - L1 synth：断言注入后 SerializationManager 含 `ssoptimizer$collect/flush` 且行为正确。
    - L2：`DcrCompressionHelper` 往返（Zstd 写→读、旧 Deflater 串→读）、前缀识别、迁移；参考 `TerrainTileCompressionHelperTest`。
-   - SPI：`ServiceLoader` 能发现 `DcrModOptimizer`，`processors()` 键覆盖两个目标类，`disable.dcrzstd` 生效。
+   - SPI：`ServiceLoader` 能发现 `DcrModOptimizer`，`processors()` 键覆盖两个目标类（压缩内核已迁移为 Mixin，不在集合内）。
 2. **jmh**（参考 `SaveXmlWriterQueueBenchmark`）：N=上限的列表，对比「逐条重写 vs 合并一次」「Deflate-9 vs Zstd」吞吐。
 3. **游戏烟测**（pure 装 `/mnt/windows_data/Games/Starsector098-linux-pure`）：
    - `SSOPTIMIZER_GAME_DIR=<pure> ./gradlew deployMod` 部署新 jar；

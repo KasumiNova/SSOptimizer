@@ -95,8 +95,9 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
      * 注册外部模组性能优化处理器（当前为 DetailedCombatResults 的 DCR 优化集合）。
      * <p>
      *  javaagent 时代经 ServiceLoader SPI 发现；coremod 化后源码已收编进主模块，
-     * 此处直接实例化注册。总开关 {@code -Dssoptimizer.disable.dcr=true} 与
-     * {@code -Dssoptimizer.disable.dcrzstd=true} 子开关保持不变。
+     * 此处直接实例化注册。总开关 {@code -Dssoptimizer.disable.dcr=true} 保持不变；
+     * 压缩内核（L2）已迁移为 Mixin（{@code mixin.modopt.dcr.DcrCompressionUtilMixin}），
+     * 不再经本集合注册，原 {@code -Dssoptimizer.disable.dcrzstd} 子开关随之移除。
      *
      * @param registrator 处理器注册接收器
      */
