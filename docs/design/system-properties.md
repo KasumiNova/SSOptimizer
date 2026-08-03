@@ -92,7 +92,6 @@
 | `ssoptimizer.texturecomposition.reportintervalmillis` | `5000` | 纹理组成报告输出周期 | `common/loading/LazyTextureManager.java:369` |
 | `ssoptimizer.texturemanager.logintervalmillis` | `15000` | 纹理管理器汇总日志周期 | `common/loading/LazyTextureManager.java:375` |
 | `ssoptimizer.texturecomposition.reportfile` | `"ssoptimizer-texture-composition.tsv"` | 纹理组成报告文件路径 | `common/loading/LazyTextureManager.java:288` |
-| `ssoptimizer.runtimegl.logintervalmillis` | `15000` | 运行时 GL 资源汇总日志周期 | `common/loading/RuntimeGlResourceTracker.java:238` |
 | `ssoptimizer.loading.workerClass` | `github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadWorker` | 自定义延迟图片预加载 worker 类（须实现 `Runnable` 且有无参构造） | `common/loading/ParallelImagePreloadCoordinator.java:57` |
 | `ssoptimizer.loading.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 延迟图片预加载并行度 | `common/loading/ParallelImagePreloadCoordinator.java:77` |
 | `ssoptimizer.disable.parallelpreload` | `false` | 禁用并行图片预加载（并行度降为 1） | `common/loading/ParallelImagePreloadCoordinator.java:73` |

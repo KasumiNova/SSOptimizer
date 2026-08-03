@@ -1,9 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.Gl11TextureTrackingProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.Gl12TextureTrackingProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.Gl30RenderbufferTrackingProcessor;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.objectweb.asm.ClassReader;
@@ -19,8 +16,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * 已注册 ASM 处理器的真实字节码转换测试。
  * <p>
- * 目标：覆盖 coremod onLoad 真正会注册的处理器集合，以及少量尚未挂到注册表、
- * 但已有真实目标类的 GL 跟踪处理器，确保“给到真实 class bytes 时至少能稳定完成一次转换”。
+ * 目标：覆盖 coremod onLoad 真正会注册的处理器集合，确保“给到真实 class bytes 时至少能稳定完成一次转换”。
+ * 该集合随 ASM→Mixin 迁移批次自动缩小，充当迁移哨兵（迁移后同步移除对应用例）。
  */
 class RegisteredAsmTransformationIntegrationTest {
     @TestFactory
@@ -37,26 +34,6 @@ class RegisteredAsmTransformationIntegrationTest {
                     assertNotNull(transformed, () -> "Processor should modify its registered target class: " + entry.getKey());
                     assertDoesNotThrow(() -> new ClassReader(transformed),
                             () -> "Transformed bytecode should remain parsable: " + entry.getKey());
-                }));
-    }
-
-    @TestFactory
-    Stream<DynamicTest> standaloneOpenGlProcessorsTransformRuntimeClasses() {
-        final Map<String, AsmClassProcessor> processors = new LinkedHashMap<>();
-        processors.put(Gl11TextureTrackingProcessor.TARGET_CLASS, new Gl11TextureTrackingProcessor());
-        processors.put(Gl12TextureTrackingProcessor.TARGET_CLASS, new Gl12TextureTrackingProcessor());
-        processors.put(Gl30RenderbufferTrackingProcessor.TARGET_CLASS, new Gl30RenderbufferTrackingProcessor());
-
-        return processors.entrySet().stream()
-                .map(entry -> DynamicTest.dynamicTest(entry.getKey() + "#standalone", () -> {
-                    byte[] original = loadClassBytes(entry.getKey());
-                    assumeTrue(original != null, () -> "OpenGL runtime class not on test classpath: " + entry.getKey());
-
-                    byte[] transformed = assertDoesNotThrow(() -> entry.getValue().process(original),
-                            () -> "Standalone OpenGL processor should not throw for " + entry.getKey());
-                    assertNotNull(transformed, () -> "Standalone OpenGL processor should modify " + entry.getKey());
-                    assertDoesNotThrow(() -> new ClassReader(transformed),
-                            () -> "Standalone transformed bytecode should remain parsable: " + entry.getKey());
                 }));
     }
 

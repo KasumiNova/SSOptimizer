@@ -132,30 +132,6 @@ class RealBytecodeIntegrationTest {
     }
 
     @Test
-    void deferredLoaderRewritesRealParallelWorkerLifecycle() {
-        var processor = new github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor();
-        byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.TARGET_CLASS);
-        assumeTrue(original != null, "Deferred image loader class not on classpath");
-
-        byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "Parallel preload processor should handle real com.fs.graphics.ParallelImagePreloader bytecode");
-        assertNotNull(rewritten, "Processor should rewrite com.fs.graphics.ParallelImagePreloader lifecycle methods");
-
-        int startCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.HELPER_OWNER,
-                "startWorkers", "()V");
-        int stopCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.HELPER_OWNER,
-                "stopWorkers", "()V");
-        int decodeCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.DECODE_HELPER_OWNER,
-                "decode", github.kasuminova.ssoptimizer.asm.loading.ParallelImagePreloadProcessor.DECODE_HELPER_DESC);
-        assertTrue(startCalls > 0, "Rewritten deferred loader should call ParallelImagePreloadCoordinator.startWorkers");
-        assertTrue(stopCalls > 0, "Rewritten deferred loader should call ParallelImagePreloadCoordinator.stopWorkers");
-        assertTrue(decodeCalls > 0, "Rewritten deferred loader should call FastResourceImageDecoder.decode");
-    }
-
-    @Test
     void loadingUtilsRewritesRealTextReadBytecode() {
         var processor = new github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor();
         byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor.TARGET_CLASS);
