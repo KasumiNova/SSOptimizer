@@ -6,11 +6,10 @@ package github.kasuminova.ssoptimizer.mapping;
  * 职责：为必须使用编译期常量的 {@code @Mixin(targets=...)}、{@code @Inject(method=...)}、
  * {@code @Shadow(aliases=...)} 等注解参数提供统一入口，避免在 {@code app} 模块中继续散落混淆类名、
  * 字段名和方法描述符字面量。<br>
- * 设计动机：{@link GameClassNames} / {@link GameMemberNames} 适合运行时查表，但注解参数要求编译期常量，
- * 因此需要在 {@code mapping} 模块集中维护一份桥接签名表。<br>
- * 兼容性策略：所有常量都必须与平台化 mapping 资源（{@code ssoptimizer-linux.tiny} /
- * {@code ssoptimizer-windows.tiny}）中的 named 命名保持语义一致；若运行时签名变化，
- * 必须同时更新映射表、该常量表和相应测试。
+ * 设计动机：{@link GameClassNames} / {@link GameMemberNames} 提供成员名常量，但注解参数要求编译期常量，
+ * 因此集中维护一份 Mixin 签名桥接表（成员名与描述符拼接为完整签名）。<br>
+ * 兼容性策略：所有常量都必须与 SourceSector 全量表（named 命名空间）保持语义一致；
+ * 若运行时签名变化，必须同时更新 SourceSector 映射表、该常量表和相应测试。
  */
 public final class GameMixinSignatures {
     private GameMixinSignatures() {
