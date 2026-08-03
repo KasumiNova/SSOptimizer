@@ -155,7 +155,7 @@ L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.co
    - SPI：`ServiceLoader` 能发现 `DcrModOptimizer`，`processors()` 键覆盖两个目标类，`disable.dcrzstd` 生效。
 2. **jmh**（参考 `SaveXmlWriterQueueBenchmark`）：N=上限的列表，对比「逐条重写 vs 合并一次」「Deflate-9 vs Zstd」吞吐。
 3. **游戏烟测**（pure 装 `/mnt/windows_data/Games/Starsector098-linux-pure`）：
-   - `SSOPTIMIZER_GAME_DIR=<pure> ./gradlew installDevMod` 部署新 jar；
+   - `SSOPTIMIZER_GAME_DIR=<pure> ./gradlew deployMod` 部署新 jar；
    - `cp -r .../Starsector098-linux/mods/DetailedCombatResults <pure>/mods/` 并加入 `enabled_mods.json`（DCR 标 RC5 / install RC8，必要时改 mod_info gameVersion）；
    - 拷有战史存档（`save_Dev_3782943583724635391`，328 markers，19 MB，最快）；
    - `tools/smoke_test_game_launch.sh <pure> 120 game` 进主菜单后**手动** Continue/Load（仓库无读档自动化）；
@@ -167,5 +167,5 @@ L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.co
 2. `:app`：`settings.gradle.kts` include；`build.gradle.kts` 加 `implementation(:agent-api)` + `runtimeOnly(:mod-optimizations)`；修 28 改 + 4 加 import；`SSOptimizerAgent` 加 ServiceLoader 装配。
 3. `:mod-optimizations`：建模块 + build.gradle；三个目标类各一处理器——`DcrBatchSaveSynthProcessor`（SerializationManager：注入 `ssoptimizer$collect/flush` + `ssoptimizer$dirty`）、`DcrOnGameLoadProcessor`（plugin：redirect+inject）、`DcrCompressionProcessor`（CompressionUtil：改写 compress/decompress 体委派 helper）；`DcrCompressionHelper`、`DcrModOptimizer` + `META-INF/services`。注入用帧中立编辑 + asm-tree + COMPUTE_MAXS（flush 仅一处 `F_SAME` 帧），避免对复杂既有方法跑 COMPUTE_FRAMES。
 4. TDD + jmh。
-5. `./gradlew :app:jar` 构建；`installDevMod` 部署 pure；烟测取数。
+5. `./gradlew :app:jar` 构建；`deployMod` 部署 pure；烟测取数。
 6. README 增 L2 卸载权衡说明。

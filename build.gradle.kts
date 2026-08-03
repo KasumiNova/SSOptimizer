@@ -9,7 +9,7 @@ plugins {
 group = "github.kasuminova.ssoptimizer"
 version = "0.1.10-SNAPSHOT"
 
-// 模组元数据的唯一事实源在 :app 的 sdg {} DSL；此处仅保留打包所需的常量
+// 模组元数据的唯一事实源在 :app 的 starsector {} DSL；此处仅保留打包所需的常量
 val modId = "ssoptimizer"
 val modReleaseVersion = project.version.toString()
 
@@ -71,7 +71,7 @@ tasks.register("docsCheck") {
 tasks.register("bootstrapDev") {
     group = "dev workflow"
     description = "Initialize and verify development environment"
-    dependsOn("doctor", "docsCheck")
+    dependsOn("doctor", "docsCheck", ":app:genIdeaRuns", ":app:decompileDependencies")
     doLast {
         println("✓ Development environment bootstrap complete")
     }
@@ -92,15 +92,6 @@ tasks.register("devCycle") {
     dependsOn("qualityGateLocal", ":app:classes")
     doLast {
         println("✓ Dev cycle complete — ready to run")
-    }
-}
-
-tasks.register("releasePrepLocal") {
-    group = "dev workflow"
-    description = "Pre-release local validation (quality gates)"
-    dependsOn("qualityGateLocal")
-    doLast {
-        println("✓ Local release preparation complete")
     }
 }
 
@@ -326,30 +317,8 @@ tasks.register("packageReleaseZips") {
 
 tasks.register("runClient") {
     group = "dev workflow"
-    description = "Run the Starsector client with the deployed mod"
-    dependsOn("installDevMod")
-
-    doLast {
-        println("[runClient] Mod deployed — launch the game via the NanoForge launch script")
-    }
-}
-
-tasks.register("runSafe") {
-    group = "dev workflow"
-    description = "Run game with all injections disabled (safe profile)"
-    dependsOn(":app:classes")
-    doLast {
-        println("[runSafe] Safe profile — not yet wired to game launch")
-    }
-}
-
-tasks.register("runTrace") {
-    group = "dev workflow"
-    description = "Run game with verbose tracing enabled (trace profile)"
-    dependsOn(":app:classes")
-    doLast {
-        println("[runTrace] Trace profile — not yet wired to game launch")
-    }
+    description = "Launch the Starsector client with the deployed mod"
+    dependsOn(":app:runGame")
 }
 
 tasks.register<Copy>("installNativeRuntime") {
@@ -427,11 +396,5 @@ tasks.register("deployMod") {
     group = "dev workflow"
     description = "Deploy mod metadata/jars (SDG :app:deployMod) plus native runtime and font resources"
     dependsOn(":app:deployMod", "installNativeRuntime", "installFontResources")
-}
-
-tasks.register("installDevMod") {
-    group = "dev workflow"
-    description = "Compatibility alias for deployMod"
-    dependsOn("deployMod")
 }
 

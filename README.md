@@ -106,7 +106,7 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 ./gradlew :native:build -Pstarsector.platform=windows -Pssoptimizer.native.windows.triplet=x64-mingw-static
 
 # 部署到游戏目录（开发用）
-./gradlew installDevMod
+./gradlew deployMod
 
 # 烟测：启动器模式（默认使用游戏根目录的 launch_nanoforge_ss.sh，
 # 可用 SSOPTIMIZER_SMOKE_LAUNCH_SCRIPT 环境变量覆盖启动脚本名）

@@ -34,7 +34,6 @@
 - `./gradlew docsCheck`
 - `./gradlew bootstrapDev`
 - `./gradlew devCycle`
-- `./gradlew releasePrepLocal`
 - `./gradlew runClient`
 
 ## 4. 运行配置（Run Profiles）
