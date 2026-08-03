@@ -24,7 +24,7 @@ public final class SpriteRenderHelper {
 
     /**
      * Render a textured quad with full matrix/state setup.
-     * Called from ASM-rewritten {@code Sprite.render} / {@code Sprite.renderNoBind}.
+     * Called from Mixin-rewritten {@code Sprite.render} / {@code Sprite.renderNoBind}.
      */
     public static void renderSprite(
             float posX, float posY,

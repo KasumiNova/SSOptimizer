@@ -10,10 +10,12 @@ import java.nio.FloatBuffer;
 /**
  * Batches axis-aligned and rotated textured quads into NIO buffers.
  * <p>
- * {@link EngineSmoothParticleProcessor} uses the delayed buffers but flushes them
- * via immediate mode to preserve the original compatibility-sensitive semantics.
- * {@link EngineDetailedSmokeProcessor} and {@link EngineGenericTextureParticleProcessor}
- * still flush via client arrays / {@code glDrawArrays}.
+ * {@link github.kasuminova.ssoptimizer.mixin.render.SmoothParticleMixin} uses the delayed
+ * buffers but flushes them via immediate mode to preserve the original
+ * compatibility-sensitive semantics.
+ * {@link github.kasuminova.ssoptimizer.mixin.render.DetailedSmokeParticleMixin} and
+ * {@link github.kasuminova.ssoptimizer.mixin.render.GenericTextureParticleMixin} still
+ * flush via client arrays / {@code glDrawArrays}.
  */
 public final class ParticleBatchHelper {
     static final         int MAX_PARTICLES = 16384;

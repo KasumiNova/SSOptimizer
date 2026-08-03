@@ -7,7 +7,7 @@ import org.lwjgl.opengl.GL11;
  * 在已打开的 {@code glBegin(GL_QUADS)} 块内输出单个 BitmapFont 字形 quad，
  * 并在需要时附带阴影扩展 pass。
  * <p>
- * ASM 改写会先把字形度量、纹理坐标和阴影参数一次性解包，再统一转发到本 helper，
+ * Mixin 改写会先把字形度量、纹理坐标和阴影参数一次性解包，再统一转发到本 helper，
  * 从而把热路径里的多次 Java 侧 GL 调用折叠成一次 helper/native 调用。
  */
 public final class BitmapFontRendererHelper {
