@@ -3,16 +3,13 @@ package github.kasuminova.ssoptimizer.bootstrap;
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.api.CompositeAsmClassProcessor;
 import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
-import github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor;
-import github.kasuminova.ssoptimizer.asm.render.*;
+import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.modopt.dcr.DcrModOptimizer;
 import io.github.nanoforged.api.CoreModContext;
@@ -77,21 +74,10 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
      * @param registrator 处理器注册接收器
      */
     static void registerEngineProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
-        registerIf(registrator, "sprite", GameClassNames.SPRITE, new EngineSpriteProcessor());
-        registerIf(registrator, "bitmapfontrenderer", GameClassNames.BITMAP_FONT_RENDERER, new EngineBitmapFontRendererProcessor());
-        registerIf(registrator, "texturedstrip", GameClassNames.TEXTURED_STRIP_RENDERER, new EngineTexturedStripRendererProcessor());
-        registerIf(registrator, "contrailengine", GameClassNames.CONTRAIL_ENGINE, new EngineContrailEngineProcessor());
-        registerIf(registrator, "aigridquery", GameClassNames.COLLISION_GRID_QUERY, new CollisionGridQueryProcessor());
-        registrator.accept(GameClassNames.COMBAT_STATE, new CombatStateProcessor());
-        registerIf(registrator, "smoothparticle", GameClassNames.SMOOTH_PARTICLE, new EngineSmoothParticleProcessor());
-        registerIf(registrator, "detailedsmoke", GameClassNames.DETAILED_SMOKE_PARTICLE, new EngineDetailedSmokeProcessor());
-        registerIf(registrator, "generictextureparticle", GameClassNames.GENERIC_TEXTURE_PARTICLE, new EngineGenericTextureParticleProcessor());
         registerIf(registrator, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
         registerIf(registrator, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
-        registerIf(registrator, "textureobject", GameClassNames.TEXTURE_OBJECT, new TextureObjectBindProcessor());
-        registerIf(registrator, "loadingtext", GameClassNames.LOADING_UTILS, new LoadingUtilsTextProcessor());
+        registrator.accept(GameClassNames.COMBAT_STATE, new CombatStateProcessor());
         registerIf(registrator, "linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
-        registerIf(registrator, "linuxeventime", GameClassNames.LINUX_EVENT, new LinuxEventImeProcessor());
         registerIf(registrator, "linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
         registerIf(registrator, "astdautomation", ASTDAutomationCombatPluginProcessor.TARGET_CLASS, new ASTDAutomationCombatPluginProcessor());
         registerIf(registrator, "windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());

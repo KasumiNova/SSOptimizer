@@ -9,6 +9,7 @@ package github.kasuminova.ssoptimizer.mapping;
  */
 public final class GameClassNames {
     public static final String SPRITE                              = "com/fs/graphics/Sprite";
+    public static final String SPRITE_DOTTED                       = "com.fs.graphics.Sprite";
     public static final String ENGINE                              = "com/fs/starfarer/combat/entities/Engine";
     public static final String ENGINE_STATE                        = "com/fs/starfarer/combat/entities/EngineState";
     public static final String ENGINE_GLOW_TYPE                    = "com/fs/starfarer/combat/entities/EngineGlowType";
@@ -26,17 +27,24 @@ public final class GameClassNames {
     public static final String CONTRAIL_GROUP_DOTTED               = "com.fs.starfarer.combat.entities.ContrailEngine$o";
     public static final String CONTRAIL_SEGMENT_DOTTED             = "com.fs.starfarer.combat.entities.ContrailEngine$Oo";
     public static final String BITMAP_FONT_RENDERER                = "com/fs/graphics/font/BitmapFontRenderer";
+    public static final String BITMAP_FONT_RENDERER_DOTTED         = "com.fs.graphics.font.BitmapFontRenderer";
     public static final String BITMAP_GLYPH                        = "com/fs/graphics/font/BitmapGlyph";
     public static final String BITMAP_FONT                         = "com/fs/graphics/font/BitmapFont";
     public static final String BITMAP_FONT_MANAGER                 = "com/fs/graphics/font/BitmapFontManager";
     public static final String TEXTURED_STRIP_RENDERER             = "com/fs/starfarer/renderers/TexturedStripRenderer";
+    public static final String TEXTURED_STRIP_RENDERER_DOTTED      = "com.fs.starfarer.renderers.TexturedStripRenderer";
     public static final String CONTRAIL_ENGINE                     = "com/fs/starfarer/combat/entities/ContrailEngine";
+    public static final String CONTRAIL_ENGINE_DOTTED              = "com.fs.starfarer.combat.entities.ContrailEngine";
     public static final String COLLISION_GRID_QUERY                = "com/fs/starfarer/combat/CollisionGridQuery";
+    public static final String COLLISION_GRID_QUERY_DOTTED         = "com.fs.starfarer.combat.CollisionGridQuery";
     public static final String COMBAT_STATE                        = "com/fs/starfarer/combat/CombatState";
     public static final String SMOOTH_PARTICLE                     = "com/fs/graphics/particle/SmoothParticle";
+    public static final String SMOOTH_PARTICLE_DOTTED              = "com.fs.graphics.particle.SmoothParticle";
     public static final String BASE_PARTICLE                       = "com/fs/graphics/particle/BaseParticle";
     public static final String DETAILED_SMOKE_PARTICLE             = "com/fs/starfarer/renderers/fx/DetailedSmokeParticle";
+    public static final String DETAILED_SMOKE_PARTICLE_DOTTED      = "com.fs.starfarer.renderers.fx.DetailedSmokeParticle";
     public static final String GENERIC_TEXTURE_PARTICLE            = "com/fs/graphics/particle/GenericTextureParticle";
+    public static final String GENERIC_TEXTURE_PARTICLE_DOTTED     = "com.fs.graphics.particle.GenericTextureParticle";
     public static final String STARFARER_LAUNCHER                  = "com/fs/starfarer/StarfarerLauncher";
     public static final String FOCUSED_COMPONENT_TRACKER           = "com/fs/starfarer/ui/FocusedComponentTracker";
     public static final String FOCUSED_COMPONENT                   = "com/fs/starfarer/ui/FocusedComponent";
@@ -47,11 +55,13 @@ public final class GameClassNames {
     public static final String TEXTURE_MANAGER_DOTTED              = "com.fs.graphics.TextureManager";
     public static final String TEXTURE_LOADER                      = "com/fs/graphics/TextureLoader";
     public static final String TEXTURE_OBJECT                      = "com/fs/graphics/TextureObject";
+    public static final String TEXTURE_OBJECT_DOTTED               = "com.fs.graphics.TextureObject";
     public static final String SOUND_MANAGER                       = "sound/SoundManager";
     public static final String SOUND_MANAGER_DOTTED                = "sound.SoundManager";
     public static final String RENDER_STATE_UTILS                  = "com/fs/graphics/util/RenderStateUtils";
     public static final String RENDER_STATE_UTILS_DOTTED           = "com.fs.graphics.util.RenderStateUtils";
     public static final String LOADING_UTILS                       = "com/fs/starfarer/loading/LoadingUtils";
+    public static final String LOADING_UTILS_DOTTED                = "com.fs.starfarer.loading.LoadingUtils";
     public static final String STARFARER_SETTINGS                  = "com/fs/starfarer/settings/StarfarerSettings";
     public static final String STARFARER_SETTINGS_DOTTED           = "com.fs.starfarer.settings.StarfarerSettings";
     public static final String BASE_TILED_TERRAIN                  = "com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain";
@@ -70,6 +80,7 @@ public final class GameClassNames {
     public static final String CAMPAIGN_LOCATION_MAP_CANVAS_DOTTED = "com.fs.starfarer.coreui.CampaignLocationMapCanvas";
     public static final String LINUX_DISPLAY                       = "org/lwjgl/opengl/LinuxDisplay";
     public static final String LINUX_EVENT                         = "org/lwjgl/opengl/LinuxEvent";
+    public static final String LINUX_EVENT_DOTTED                  = "org.lwjgl.opengl.LinuxEvent";
     public static final String LINUX_KEYBOARD                      = "org/lwjgl/opengl/LinuxKeyboard";
     public static final String STANDARD_TOOLTIP_V2_EXPANDABLE      = "com/fs/starfarer/ui/impl/StandardTooltipV2Expandable";
     public static final String STARFARER_SETTINGS_TEXT_FIELD_OWNER = "com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory";

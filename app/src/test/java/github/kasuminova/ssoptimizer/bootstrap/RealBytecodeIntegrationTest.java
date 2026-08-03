@@ -1,8 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.asm.combat.CollisionGridQueryProcessor;
-import github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -22,40 +20,6 @@ class RealBytecodeIntegrationTest {
      */
     private byte[] loadClassBytes(String internalName) {
         return RuntimeViewFixtures.readRuntimeNamedBytes(internalName);
-    }
-
-    @Test
-    void texturedStripRendererRewritesRealRendererBytecode() {
-        byte[] original = loadClassBytes(EngineTexturedStripRendererProcessor.TARGET_CLASS);
-        assumeTrue(original != null, "TexturedStripRenderer not on classpath");
-
-        var processor = new github.kasuminova.ssoptimizer.asm.render.EngineTexturedStripRendererProcessor();
-        byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "Textured strip renderer processor should handle real renderer bytecode");
-        assertNotNull(rewritten, "Processor should rewrite the targeted renderTexturedStrip overload");
-
-        boolean[] helperCall = {false};
-        new ClassReader(rewritten).accept(new ClassVisitor(Opcodes.ASM9) {
-            @Override
-            public MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] ex) {
-                if (!GameMemberNames.TexturedStripRenderer.RENDER_TEXTURED_STRIP.equals(name)
-                        || !EngineTexturedStripRendererProcessor.TARGET_DESC.equals(desc)) {
-                    return null;
-                }
-                return new MethodVisitor(Opcodes.ASM9) {
-                    @Override
-                    public void visitMethodInsn(int opcode, String owner, String methodName, String methodDesc, boolean itf) {
-                        if (owner.equals(EngineTexturedStripRendererProcessor.HELPER_OWNER)
-                                && "renderTexturedStrip".equals(methodName)
-                                && EngineTexturedStripRendererProcessor.HELPER_DESC.equals(methodDesc)) {
-                            helperCall[0] = true;
-                        }
-                    }
-                };
-            }
-        }, 0);
-
-        assertTrue(helperCall[0], "Real TexturedStripRenderer bytecode should call the textured strip helper after rewrite");
     }
 
     @Test
@@ -129,23 +93,6 @@ class RealBytecodeIntegrationTest {
                 github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.TARGET_DESC);
         assertTrue(helperCalls > 0,
                 "Rewritten resource loader should consult OriginalGameFontOverrides.openStream before default resource lookup");
-    }
-
-    @Test
-    void loadingUtilsRewritesRealTextReadBytecode() {
-        var processor = new github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor();
-        byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor.TARGET_CLASS);
-        assumeTrue(original != null, "LoadingUtils not on classpath");
-
-        byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "LoadingUtils text processor should handle real LoadingUtils bytecode");
-        assertNotNull(rewritten, "Processor should rewrite LoadingUtils InputStream text reads");
-
-        int helperCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor.HELPER_OWNER,
-                github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor.HELPER_METHOD,
-                github.kasuminova.ssoptimizer.asm.loading.LoadingUtilsTextProcessor.TARGET_DESC);
-        assertTrue(helperCalls > 0, "Rewritten LoadingUtils should call LoadingTextResourceReader.read");
     }
 
     @Test
@@ -234,29 +181,6 @@ class RealBytecodeIntegrationTest {
                 "Remapped TextureLoader should route BufferedImage.getWidth() into TextureObject.setImageWidth(int)");
         assertTrue(heightMappedToHeightSetter[0],
                 "Remapped TextureLoader should route BufferedImage.getHeight() into TextureObject.setImageHeight(int)");
-    }
-
-    @Test
-    void textureObjectRewritesRealBindBytecode() {
-        var processor = new github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor();
-        byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.TARGET_CLASS);
-        assumeTrue(original != null, "Texture object not on classpath");
-
-        byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "Texture object bind processor should handle real com.fs.graphics.TextureObject bytecode");
-        assertNotNull(rewritten, "Processor should rewrite the texture-object bind method");
-
-        int bindCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_OWNER,
-                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_METHOD,
-                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_DESC);
-        assertTrue(bindCalls > 0, "Rewritten texture object should route bind through LazyTextureManager.bindTexture");
-
-        int getterCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_OWNER,
-                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_ID_METHOD,
-                github.kasuminova.ssoptimizer.asm.loading.TextureObjectBindProcessor.HELPER_ID_DESC);
-        assertTrue(getterCalls > 0, "Rewritten texture object should route texture id reads through LazyTextureManager.getTextureId");
     }
 
     @Test
