@@ -18,9 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 「patch 成功」证明：对 <b>真实</b> DCR 字节运行三个处理器，断言——
+ * 「patch 成功」证明：对 <b>真实</b> DCR 字节运行处理器，断言——
  * (1) 处理器匹配并修改了目标类（patch 应用）；(2) 产物经 {@link CheckClassAdapter} 结构校验合法（可加载）；
- * (3) 关键结构注入到位（合成方法 / redirect / inject / 体替换）。
+ * (3) 关键结构注入到位（合成方法 / redirect / inject）。
+ * <p>
+ * 压缩内核处理器已迁移为 Mixin（{@code mixin.modopt.dcr.DcrCompressionUtilMixin}），其行为由
+ * {@link DcrCompressionHelperTest} 覆盖，不再经本测试验证。
  * <p>
  * 真实 DCR 类字节随仓库 vendored 于 {@code src/test/resources/dcr/}（MIT 许可，见该目录 README），
  * 故本测试 <b>始终运行</b>（含 CI），不依赖本机游戏安装。栈帧合法性由 {@link DcrBatchSaveIntegrationTest}
@@ -31,8 +34,6 @@ class DcrRealBytecodePatchTest {
 
     private static final String SM = "data/scripts/combatanalytics/SerializationManager";
     private static final String PLUGIN = "data/scripts/combatanalytics/DetailedCombatResultsModPlugin";
-    private static final String COMPRESSION_UTIL = "data/scripts/combatanalytics/util/CompressionUtil";
-    private static final String HELPER = "github/kasuminova/ssoptimizer/modopt/dcr/DcrCompressionHelper";
 
     @Test
     void synthProcessorPatchesRealSerializationManager() throws IOException {
@@ -56,15 +57,6 @@ class DcrRealBytecodePatchTest {
                 "真实 onGameLoad 应恰有一处 ssoptimizer$collect");
         assertTrue(staticCalls(onGameLoad, SM, "ssoptimizer$flush") >= 1,
                 "真实 onGameLoad 应注入 ssoptimizer$flush");
-    }
-
-    @Test
-    void compressionProcessorPatchesRealCompressionUtil() throws IOException {
-        final ClassNode node = patch(COMPRESSION_UTIL, new DcrCompressionProcessor());
-        final MethodNode compress = method(node, "compress", "(Ljava/lang/String;)[B");
-        final MethodNode decompress = method(node, "decompress", "([B)Ljava/lang/String;");
-        assertTrue(delegatesTo(compress, HELPER, "compress"), "真实 compress 应委派 helper");
-        assertTrue(delegatesTo(decompress, HELPER, "decompress"), "真实 decompress 应委派 helper");
     }
 
     /** 读真实类字节 → 运行处理器 → 断言修改 + CheckClassAdapter 结构合法 → 返回解析后的 ClassNode。 */
@@ -94,13 +86,6 @@ class DcrRealBytecodePatchTest {
                         && mi.getOpcode() == Opcodes.INVOKESTATIC
                         && mi.owner.equals(owner) && mi.name.equals(name))
                 .count();
-    }
-
-    private static boolean delegatesTo(final MethodNode m, final String owner, final String name) {
-        return m != null && Arrays.stream(m.instructions.toArray())
-                .anyMatch(i -> i instanceof MethodInsnNode mi
-                        && mi.getOpcode() == Opcodes.INVOKESTATIC
-                        && mi.owner.equals(owner) && mi.name.equals(name));
     }
 
     private static MethodNode method(final ClassNode node, final String name, final String desc) {

@@ -16,42 +16,32 @@
 
 ## ASM 处理器开关
 
-所有引擎级 ASM 处理器与外部模组优化集合都支持 `-Dssoptimizer.disable.<key>=true` 单独禁用，读取点在 `bootstrap/SSOptimizerCorePlugin.java`（`registerIf` 第 133 行、`registerCompositeIf` 第 145 行、外部模组第 120 行）。**`combatstate` 处理器没有开关，直接注册**（第 85 行）。
+所有引擎级 ASM 处理器与外部模组优化集合都支持 `-Dssoptimizer.disable.<key>=true` 单独禁用，读取点在 `bootstrap/SSOptimizerCorePlugin.java`（`registerIf` 第 117 行、`registerCompositeIf` 第 126 行、外部模组第 103 行）。**`combatstate` 处理器没有开关，直接注册**（第 79 行）。
 
-引擎级 key（对应处理器，均在 `SSOptimizerCorePlugin.java:80-105` 注册）：
+引擎级 key（对应处理器，均在 `SSOptimizerCorePlugin.java:76-86` 注册）：
 
 | 属性 | 对应处理器 | 作用 |
 |---|---|---|
-| `ssoptimizer.disable.sprite` | `EngineSpriteProcessor` | 跳过 Sprite 渲染优化 |
-| `ssoptimizer.disable.bitmapfontrenderer` | `EngineBitmapFontRendererProcessor` | 跳过位图字体渲染优化 |
-| `ssoptimizer.disable.texturedstrip` | `EngineTexturedStripRendererProcessor` | 跳过贴图条渲染优化 |
-| `ssoptimizer.disable.contrailengine` | `EngineContrailEngineProcessor` | 跳过尾迹引擎渲染优化 |
-| `ssoptimizer.disable.aigridquery` | `CollisionGridQueryProcessor` | 跳过碰撞网格 AI 查询优化 |
-| `ssoptimizer.disable.smoothparticle` | `EngineSmoothParticleProcessor` | 跳过平滑粒子渲染优化 |
-| `ssoptimizer.disable.detailedsmoke` | `EngineDetailedSmokeProcessor` | 跳过详细烟雾粒子渲染优化 |
-| `ssoptimizer.disable.generictextureparticle` | `EngineGenericTextureParticleProcessor` | 跳过通用贴图粒子渲染优化 |
 | `ssoptimizer.disable.launcherdirectstart` | `LauncherDirectStartProcessor` | 跳过启动器直启注入（配套运行时属性见「启动器」节） |
 | `ssoptimizer.disable.textureloader` | `TextureLoaderPixelProcessor` | 跳过 TextureLoader 像素转换优化 |
-| `ssoptimizer.disable.textureobject` | `TextureObjectBindProcessor` | 跳过 TextureObject 绑定优化 |
-| `ssoptimizer.disable.loadingtext` | `LoadingUtilsTextProcessor` | 跳过加载界面文字优化 |
 | `ssoptimizer.disable.linuxdisplayime` | `LinuxDisplayImeProcessor` | 跳过 Linux 显示层 IME 注入 |
-| `ssoptimizer.disable.linuxeventime` | `LinuxEventImeProcessor` | 跳过 Linux 事件层 IME 注入 |
 | `ssoptimizer.disable.linuxkeyboardime` | `LinuxKeyboardImeProcessor` | 跳过 Linux 键盘 IME 注入 |
 | `ssoptimizer.disable.astdautomation` | `ASTDAutomationCombatPluginProcessor` | 跳过 ASTD 自动化战斗插件注入（配套属性见「自动化」节） |
 | `ssoptimizer.disable.windowsdisplayime` | `WindowsDisplayImeProcessor` | 跳过 Windows 显示层 IME 注入 |
 | `ssoptimizer.disable.tooltiptextfieldime` | `TooltipTextFieldFactoryProcessor` | 跳过提示框文本域 IME 注入 |
 | `ssoptimizer.disable.settingstextfieldime` | `SettingsTextFieldFactoryProcessor` | 跳过设置页文本域 IME 注入 |
 | `ssoptimizer.disable.textfieldimplime` | `TextFieldImplementationProcessor` | 跳过文本域实现 IME 注入 |
-| `ssoptimizer.disable.originalfontstream` | `OriginalFontResourceStreamProcessor` | 跳过原版字体资源流替换（Composite，第 101-105 行） |
+| `ssoptimizer.disable.originalfontstream` | `OriginalFontResourceStreamProcessor` | 跳过原版字体资源流替换（Composite，第 87-91 行） |
 | `ssoptimizer.disable.resourcefilecache` | `ResourceLoaderFileAccessProcessor` | 跳过 ResourceLoader 文件访问替换（Composite） |
 | `ssoptimizer.disable.caseinsensitiveresource` | `CaseInsensitiveResourceFallbackProcessor` | 跳过大小写不敏感资源回退替换（Composite） |
+
+> 注：批次 1 已把 Sprite/BitmapFontRenderer/TexturedStrip/ContrailEngine/CollisionGridQuery/粒子三件套/TextureObject/LoadingUtils/LinuxEvent 的处理器迁移为 Mixin（`mixins.ssoptimizer.json` 对应条目），相关 `ssoptimizer.disable.*` 开关随 ASM 注册一并移除，不再可配置。
 
 ## DCR（DetailedCombatResults）优化
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.disable.dcr` | `false` | 为 true 时跳过 DCR 优化集合整体注册（key 取自 `DcrModOptimizer.featureKey()`） | `modopt/dcr/DcrModOptimizer.java:26`，`bootstrap/SSOptimizerCorePlugin.java:120` |
-| `ssoptimizer.disable.dcrzstd` | `false` | 为 true 时 DCR 优化集合不纳入 L2 Zstd 压缩处理器，保留 DCR 原生 Deflater | `modopt/dcr/DcrModOptimizer.java:29,41` |
+| `ssoptimizer.disable.dcr` | `false` | 为 true 时跳过 DCR 优化集合整体注册（key 取自 `DcrModOptimizer.featureKey()`） | `modopt/dcr/DcrModOptimizer.java:25`，`bootstrap/SSOptimizerCorePlugin.java:103` |
 
 ## 字体
 
