@@ -37,7 +37,7 @@ jobs:
         working-directory: NanoForge
         run: ./gradlew publishToMavenLocal --console=plain
 
-      # SDG 插件（io.github.nanoforged.sdg.*）以 SNAPSHOT 发布在 mavenLocal，CI 需现场发布
+      # SDG 插件（io.github.nanoforged.sectordevgradle.*）以 SNAPSHOT 发布在 mavenLocal，CI 需现场发布
       - name: Checkout SectorDevGradle
         uses: actions/checkout@v4
         with:
@@ -63,7 +63,6 @@ jobs:
         run: |
           ./gradlew :app:modProduction \
             -Pstarsector.gameDir= \
-            -Pstarsector.platform=${{ matrix.platform }} \
             -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows \
             -x :native:assemble
 
@@ -71,7 +70,6 @@ jobs:
         run: |
           ./gradlew test \
             -Pstarsector.gameDir= \
-            -Pstarsector.platform=${{ matrix.platform }} \
             -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows
 
       - name: Stage release artifacts
@@ -115,8 +113,7 @@ jobs:
       - name: Build native library
         run: |
           ./gradlew :native:assembleRelease \
-            -Pstarsector.gameDir= \
-            -Pstarsector.platform=linux
+            -Pstarsector.gameDir=
 
       - name: Collect runtime dependencies
         run: |
@@ -165,7 +162,6 @@ jobs:
         run: |
           gradlew.bat :native:assembleRelease ^
             -Pstarsector.gameDir= ^
-            -Pstarsector.platform=windows ^
             -Pssoptimizer.native.windows.vcpkgRoot=%VCPKG_INSTALLATION_ROOT% ^
             -Pssoptimizer.native.windows.triplet=x64-windows
 

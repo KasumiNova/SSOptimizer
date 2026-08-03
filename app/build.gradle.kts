@@ -1,6 +1,6 @@
 plugins {
     application
-    id("io.github.nanoforged.sdg.nanoforge") version "0.1.0-SNAPSHOT"
+    id("io.github.nanoforged.sectordevgradle.nanoforge") version "0.1.0-SNAPSHOT"
 }
 
 java {
@@ -13,14 +13,6 @@ java {
 val namedGameJarBaseNames = listOf("starfarer_obf", "starfarer.api", "fs.common_obf", "fs.sound_obf")
 
 /**
- * 游戏运行时的第三方依赖（编译/测试 classpath 视图）——与 Starsector 0.98a-RC8 运行时版本对齐。
- * 不打进 coremod jar：运行时由游戏 classpath 提供。
- */
-val gameThirdParty = configurations.create("gameThirdParty") {
-    isCanBeConsumed = false
-}
-
-/**
  * 需要 shade 进 coremod jar 的额外依赖（log4j 1.2 API 桥接层）。
  * 游戏自带 log4j-1.2.9.jar 已被 NanoForge 启动脚本排除，源码使用的 org.apache.log4j API
  * 由 log4j-1.2-api 桥接到 NanoForge 运行时提供的 log4j2。
@@ -29,11 +21,20 @@ val shade = configurations.create("shade") {
     isCanBeConsumed = false
 }
 
-configurations.compileOnly {
-    extendsFrom(gameThirdParty)
-}
-configurations.testImplementation {
-    extendsFrom(gameThirdParty)
+// SDG wireGameLibraries（starsector.game:*）在插件 afterEvaluate 阶段才创建 gameLibraries
+// 配置，本块的 exclude / extendsFrom 同样推迟到 afterEvaluate（届时配置已就绪）。
+// xstream-1.4.10 是游戏安装目录的残留文件——游戏实际运行时 classpath 只用 miko 补丁版
+// （xstream-1.4.21_miko，FieldAliasingMapper 等内部 API 与 Maven 原版不同），两者类重复且
+// API 不兼容，显式排除 1.4.10，确保编译/测试 classpath 上只有 miko 版生效。
+project.afterEvaluate {
+    configurations.named("gameLibraries") {
+        exclude(group = "starsector.game", module = "xstream-1.4.10")
+    }
+    // 测试运行期（JUnit）没有游戏 classpath：DCR 集成测试的 XStream 夹具会真实 new XStream()，
+    // 将 SDG 供给的游戏第三方 jar 一并纳入 testRuntimeClasspath（xstream-1.4.10 已在上方排除）。
+    configurations.testRuntimeClasspath {
+        extendsFrom(configurations.named("gameLibraries").get())
+    }
 }
 
 repositories {
@@ -64,7 +65,7 @@ application {
 }
 
 // ---- SDG：模组元数据唯一事实源（mod_info.json / nanoforge.mod.toml / coremod.toml 均由此派生） ----
-sdg {
+starsector {
     modId.set("ssoptimizer")
     modName.set("SSOptimizer")
     author.set("Hikari_Nova")
@@ -135,14 +136,12 @@ dependencies {
     testImplementation("org.ow2.asm:asm-tree:9.8")
     testImplementation("org.ow2.asm:asm-util:9.8")
     testImplementation("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7")
-    // DCR 执行集成测试中，SerializationManager 夹具的 getSerializer() 返回真实 XStream（与 DCR 同版本）；
-    // 使用与 gameThirdParty 相同的 miko 补丁版 jar 文件：既保证测试行为与游戏运行时一致，
-    // 也避免测试 classpath 上同时出现 miko 版与原版两个 XStream 导致的重复类冲突。
-    // 无参 new XStream()（XppDriver）构造/反序列化需要 XML Pull 实现，而 miko jar 文件不携带
+    // DCR 执行集成测试中，XStream 夹具会真实 new XStream()（与 DCR 同版本）；运行时 XStream
+    // 类由 SDG wireGameLibraries 供给（见上方 gameLibraries 的 testRuntimeClasspath 扩展）。
+    // 无参 new XStream()（XppDriver）构造/反序列化需要 XML Pull 实现，miko jar 不携带
     // （原版 Maven 坐标通过 xmlpull 传递依赖提供 API 类，MXParser 实现需 xpp3）；游戏官方
     // 序列化路径使用 StaxDriver（见 CampaignGameManager.getXStream），不需要 xpp3，
-    // 故仅测试运行期补齐，gameThirdParty 编译期不引入。
-    testImplementation(files("../game-jars/third-party/xstream-1.4.21_miko.jar"))
+    // 故仅测试运行期补齐。
     testRuntimeOnly("xmlpull:xmlpull:1.1.3.1")
     testRuntimeOnly("xpp3:xpp3_min:1.1.4c")
 
@@ -151,21 +150,6 @@ dependencies {
     namedGameJarBaseNames.forEach { baseName ->
         testImplementation("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
     }
-
-    // 游戏运行时第三方依赖（对齐 Starsector 0.98a-RC8，compileOnly + testImplementation 继承）
-    gameThirdParty("org.lwjgl.lwjgl:lwjgl:2.9.3")
-    gameThirdParty("org.lwjgl.lwjgl:lwjgl_util:2.9.3")
-    // XStream：游戏实际携带 miko 补丁版（FieldAliasingMapper 等内部签名与 Maven 原版不同），
-    // 编译期以文件形式对齐游戏运行时 API，避免 Mixin 注入目标类签名不匹配
-    gameThirdParty(files("../game-jars/third-party/xstream-1.4.21_miko.jar"))
-    gameThirdParty("org.codehaus.janino:janino:2.7.8")
-    gameThirdParty("org.codehaus.janino:commons-compiler:2.7.8")
-    gameThirdParty("org.codehaus.janino:commons-compiler-jdk:2.7.8")
-    gameThirdParty("org.json:json:20231013")
-    gameThirdParty("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
-    gameThirdParty("org.glassfish.jaxb:txw2:3.0.2")
-    gameThirdParty("org.sejda.imageio:webp-imageio:0.1.6")
-    gameThirdParty("net.java.jinput:jinput:2.0.7")
 }
 
 tasks.test {

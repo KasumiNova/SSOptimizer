@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 发布元数据契约测试。
  * <p>
- * mod_info.json 由 SDG 插件从 :app 的 sdg {} DSL 生成（唯一事实源，不手写），
+ * mod_info.json 由 SDG 插件从 :app 的 starsector {} DSL 生成（唯一事实源，不手写），
  * 本测试直接校验生成产物（test 任务已 dependsOn modProduction）。
  */
 class ModInfoJsonTest {
