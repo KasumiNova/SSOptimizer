@@ -98,11 +98,6 @@ dependencies {
     testImplementation("log4j:log4j:1.2.17")
 
     // ---- 打进 coremod jar 的运行时依赖（NanoForge 未提供） ----
-    // :mapping 提供 GameMemberNames 运行期查表（TinyV2 仓库 + 人工映射表资源），与旧 agent jar 同款 shade；
-    // 排除其 ASM 传递依赖——编译/运行期 ASM 统一对齐 NanoForge 提供的 9.8
-    implementation(project(":mapping")) {
-        exclude(group = "org.ow2.asm")
-    }
     implementation("it.unimi.dsi:fastutil:8.5.18")
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("com.github.luben:zstd-jni:1.5.7-3")

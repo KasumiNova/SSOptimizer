@@ -16,9 +16,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class WindowsOverlayDistributionContractTest {
 
+    private static Path repositoryRoot() {
+        Path current = Path.of("").toAbsolutePath().normalize();
+        while (current != null) {
+            if (current.resolve("settings.gradle.kts").toFile().isFile()
+                    && current.resolve("build.gradle.kts").toFile().isFile()
+                    && current.resolve("app").toFile().isDirectory()) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        throw new IllegalStateException("未能定位 SSOptimizer 仓库根目录");
+    }
+
     @Test
     void repositoryKeepsWindowsOverlayInstallerArtifacts() throws Exception {
-        Path repoRoot = MappingTaskContractTest.repositoryRoot();
+        Path repoRoot = repositoryRoot();
         Path buildScript = repoRoot.resolve("build.gradle.kts");
         Path releaseWorkflow = repoRoot.resolve(".github/workflows/release.yml");
         Path readme = repoRoot.resolve("README.md");

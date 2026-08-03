@@ -104,51 +104,6 @@ tasks.register("releasePrepLocal") {
     }
 }
 
-tasks.register<Sync>("prepareDeobfWorkspace") {
-    group = "mapping"
-    description = "Prepare deobfuscated workspace (download mappings + remap)"
-    val remappedWorkspaceDir = layout.buildDirectory.dir("remapped-workspace")
-    val starsectorGameDir = providers.gradleProperty("starsector.gameDir").orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR")).orNull
-    val mappingPlatform = providers.gradleProperty("starsector.platform")
-        .orElse(providers.provider { detectRuntimePlatform(starsectorGameDir?.let(::file)) })
-
-    dependsOn(":mapping:remapGameClasspathToNamed")
-
-    into(remappedWorkspaceDir)
-
-    from(project(":app").projectDir.resolve("src/main/java")) {
-        into("app/src/main/java")
-    }
-    from(project(":app").projectDir.resolve("src/main/resources")) {
-        into("app/src/main/resources")
-    }
-    from(project(":mapping").projectDir.resolve("src/main/java")) {
-        into("mapping/src/main/java")
-    }
-    from(project(":mapping").projectDir.resolve("src/main/resources")) {
-        into("mapping/src/main/resources")
-    }
-    from(layout.buildDirectory.dir("named-game-jars/${mappingPlatform.get()}")) {
-        into("game-jars/named")
-    }
-}
-
-tasks.register("remapToNamed") {
-    group = "mapping"
-    description = "Remap obfuscated classes to named (development) namespace"
-    dependsOn("prepareDeobfWorkspace")
-    val remappedWorkspaceMarker = layout.buildDirectory.file("remapped-workspace/.remap-complete")
-
-    outputs.file(remappedWorkspaceMarker)
-
-    doLast {
-        val markerFile = remappedWorkspaceMarker.get().asFile
-        markerFile.parentFile.mkdirs()
-        markerFile.writeText("remapped\n")
-        println("[remapToNamed] Remapped workspace written to ${layout.buildDirectory.dir("remapped-workspace").get().asFile}")
-    }
-}
-
 val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/main/release/libnative.so")
 val nativeWindowsLibraryFile = project(":native").layout.buildDirectory.file("lib/main/release/native.dll")

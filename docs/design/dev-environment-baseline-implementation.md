@@ -62,11 +62,13 @@
 
 ## 6. 混淆映射（Mapping）工作流
 
-1. 从热点图确认优先级
-2. 对目标类执行反编译定位
-3. 建立 `obf -> named` 映射
-4. 追加证据链（热点、签名、调用链）
-5. 提交审查并版本化
+Mapping 工作流已迁移至 **SourceSector 仓**（`NanoForged/SourceSector` 的 `:mapping` 模块）：
+
+1. 映射生成 / scope 片段 / 全量表合并 / named 游戏 jar 发布全部在 SourceSector 仓进行
+2. SourceSector 仓执行 `./gradlew :mapping:publishNamedGameJars` 发布 `starsector.named:*` 到本地 Maven 仓
+3. 本仓以模块依赖消费 named 游戏 jar（`-Psourcesector.namedRepo=...`），成员名以 named 名直书（`GameMemberNames` 已字面量化）
+4. 新增游戏成员引用时，先在 SourceSector 全量表确认 named 名，再登记 app 侧常量表
+5. 版本升级导致的映射漂移由 SourceSector 仓流程处理，本仓同步更新常量表
 
 ## 7. Mixin/ASM 注入开发规范
 

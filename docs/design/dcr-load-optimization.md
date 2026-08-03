@@ -51,11 +51,11 @@
   └─ modopt.dcr.*  （DCR 处理器 + Zstd helper + DcrModOptimizer，经 ServiceLoader 注册）
 :app                  implementation(:agent-api) + runtimeOnly(:mod-optimizations)
                       SSOptimizerAgent 经 ServiceLoader 装配，-Dssoptimizer.disable.<featureKey> 网关
-(:native, :mapping    不变)
+(:native    不变)
 (未来 :mod-automation  ASTD 自动化——自动化不属于优化，另开模块)
 ```
 
-为何不让模块 `implementation(project(":app"))`：`:app` 的 `jar` 任务是手工胖 agent jar（合并整个 `runtimeClasspath` 的 `zipTree`，`DuplicatesStrategy.EXCLUDE`，写 `Premain-Class`），依赖它会拖整包并成环。故引入中立的 `:agent-api`。`runtimeOnly(:mod-optimizations)` 即可让其类 + `META-INF/services` 并入 `SSOptimizer.jar`（`implementation(project(":mapping"))` 已证此打包路径）。
+为何不让模块 `implementation(project(":app"))`：`:app` 的 `jar` 任务是手工胖 agent jar（合并整个 `runtimeClasspath` 的 `zipTree`，`DuplicatesStrategy.EXCLUDE`，写 `Premain-Class`），依赖它会拖整包并成环。故引入中立的 `:agent-api`。`runtimeOnly(:mod-optimizations)` 即可让其类 + `META-INF/services` 并入 `SSOptimizer.jar`（模块依赖经 runtimeClasspath 并入胖 jar 的打包路径已有多模块先例验证）。
 
 `ExternalModOptimizer` SPI：
 
@@ -81,7 +81,7 @@ for (ExternalModOptimizer opt : ServiceLoader.load(ExternalModOptimizer.class, E
 
 已证（workflow 验证）：
 - `SSOptimizer.jar` 仅经 `-javaagent` 加载 → JVM 自动并入 system/app classloader；mod 类加载器父委派可解析 `github/kasuminova/...`。ASTD（Janino loader）与 DCR（jar loader）皆走标准父委派，技术等价。
-- `HybridWeaverTransformer` 是全局 `ClassFileTransformer`，按内部名精确匹配注册表；`BytecodeRemapper` 仅改 Tiny v2 表中的 `com/fs|sound` 名，DCR 名不在表中 → 对 DCR 是 no-op，不会损坏字节码。
+- `HybridWeaverTransformer` 是全局 `ClassFileTransformer`，按内部名精确匹配注册表；运行期 remap 由 NanoForge（`NanoRemapTransformer`，消费 SourceSector 全量表）承担，DCR 名不在映射表中 → 对 DCR 是 no-op，不会损坏字节码。
 - `SanitizingTransformer`/`ReflectionSanitizingTransformer` 对 DCR 均 no-op（仅改非法标识符/反射调用点）；`MixinBridgeTransformer` 跳过非 `com/fs/` 且非显式第三方目标的类（DCR 被跳过）。
 - premain 在 `StarfarerLauncher.main` 前装好全部 transformer，早于 DCR 类加载。
 - 注入须用 `COMPUTE_FRAMES` + override `getCommonSuperClass→java/lang/Object`；JDK 25 下 retransform 返回非 null 会强制校验，帧必须正确。
