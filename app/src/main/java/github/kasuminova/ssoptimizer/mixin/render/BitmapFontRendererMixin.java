@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * BitmapFontRenderer 文本绘制路径的 Mixin 重写。
@@ -43,7 +44,7 @@ public abstract class BitmapFontRendererMixin {
      * @reason 原 ASM 处理器在 render()V 入口插入字体缩放换字体逻辑，迁移为等价的 @Inject(HEAD)。
      */
     @Inject(method = "render", at = @At("HEAD"), remap = false)
-    private void ssoptimizer$resolveScaledFontAtRenderHead() {
+    private void ssoptimizer$resolveScaledFontAtRenderHead(CallbackInfo ci) {
         ssoptimizer$font = (BitmapFont) RuntimeScaledFontCache.resolveScaledFont(
                 ssoptimizer$font, ssoptimizer$requestedFontSize);
         ssoptimizer$requestedFontSize = RuntimeScaledFontCache.adjustRequestedFontSize(

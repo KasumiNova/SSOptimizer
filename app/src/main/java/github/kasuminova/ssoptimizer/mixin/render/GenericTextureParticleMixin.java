@@ -57,29 +57,11 @@ public abstract class GenericTextureParticleMixin {
     @Shadow(remap = false, aliases = "renderCount")
     private int ssoptimizer$renderCount;
 
-    @Shadow(remap = false, aliases = "fullyFadedIn")
-    private boolean ssoptimizer$fullyFadedIn;
+    @Shadow(remap = false)
+    boolean fullyFadedIn;
 
     @Shadow(remap = false, aliases = "fullBrightnessFraction")
     private float ssoptimizer$fullBrightnessFraction;
-
-    @Shadow(remap = false)
-    public abstract float getBrightness();
-
-    @Shadow(remap = false)
-    public abstract float getAge();
-
-    @Shadow(remap = false)
-    public abstract float getMaxAge();
-
-    @Shadow(remap = false)
-    public abstract float getX();
-
-    @Shadow(remap = false)
-    public abstract float getY();
-
-    @Shadow(remap = false)
-    public abstract float getAngle();
 
     /**
      * 建立 GL 状态并开始通用贴图粒子批次。
@@ -103,12 +85,13 @@ public abstract class GenericTextureParticleMixin {
      */
     @Overwrite(remap = false)
     public void render() {
-        float brightness = getBrightness();
+        com.fs.graphics.particle.BaseParticle base = (com.fs.graphics.particle.BaseParticle) (Object) this;
+        float brightness = base.getBrightness();
         if (brightness >= 1.0f) {
-            ssoptimizer$fullyFadedIn = true;
+            fullyFadedIn = true;
         }
-        if (ssoptimizer$fullyFadedIn && ssoptimizer$fullBrightnessFraction > 0.0f) {
-            brightness = getAge() / getMaxAge();
+        if (fullyFadedIn && ssoptimizer$fullBrightnessFraction > 0.0f) {
+            brightness = base.getAge() / base.getMaxAge();
             if (brightness > ssoptimizer$fullBrightnessFraction) {
                 brightness = 1.0f - (brightness - ssoptimizer$fullBrightnessFraction)
                         / (1.0f - ssoptimizer$fullBrightnessFraction);
@@ -120,7 +103,7 @@ public abstract class GenericTextureParticleMixin {
                 ssoptimizer$color.getRed(), ssoptimizer$color.getGreen(), ssoptimizer$color.getBlue(),
                 (int) (ssoptimizer$color.getAlpha() * brightness),
                 ssoptimizer$src, ssoptimizer$dst,
-                getX(), getY(), getAngle(),
+                base.getX(), base.getY(), base.getAngle(),
                 ssoptimizer$offsetX, ssoptimizer$offsetY,
                 ssoptimizer$width, ssoptimizer$height,
                 ssoptimizer$tw, ssoptimizer$th,

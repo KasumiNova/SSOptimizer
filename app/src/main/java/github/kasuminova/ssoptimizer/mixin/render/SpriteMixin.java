@@ -23,56 +23,56 @@ import java.awt.Color;
 @Mixin(targets = GameClassNames.SPRITE_DOTTED)
 public abstract class SpriteMixin {
 
-    @Shadow(remap = false, aliases = "texture")
-    private TextureObject ssoptimizer$texture;
+    @Shadow(remap = false)
+    protected TextureObject texture;
 
-    @Shadow(remap = false, aliases = "texClamp")
-    private boolean ssoptimizer$texClamp;
+    @Shadow(remap = false)
+    private boolean texClamp;
 
-    @Shadow(remap = false, aliases = "offsetX")
-    private int ssoptimizer$offsetX;
+    @Shadow(remap = false)
+    private int offsetX;
 
-    @Shadow(remap = false, aliases = "offsetY")
-    private int ssoptimizer$offsetY;
+    @Shadow(remap = false)
+    private int offsetY;
 
-    @Shadow(remap = false, aliases = "width")
-    private float ssoptimizer$width;
+    @Shadow(remap = false)
+    protected float width;
 
-    @Shadow(remap = false, aliases = "height")
-    private float ssoptimizer$height;
+    @Shadow(remap = false)
+    protected float height;
 
-    @Shadow(remap = false, aliases = "centerX")
-    private float ssoptimizer$centerX;
+    @Shadow(remap = false)
+    private float centerX;
 
-    @Shadow(remap = false, aliases = "centerY")
-    private float ssoptimizer$centerY;
+    @Shadow(remap = false)
+    private float centerY;
 
-    @Shadow(remap = false, aliases = "angle")
-    private float ssoptimizer$angle;
+    @Shadow(remap = false)
+    protected float angle;
 
-    @Shadow(remap = false, aliases = "color")
-    private Color ssoptimizer$color;
+    @Shadow(remap = false)
+    protected Color color;
 
-    @Shadow(remap = false, aliases = "alphaMult")
-    private float ssoptimizer$alphaMult;
+    @Shadow(remap = false)
+    private float alphaMult;
 
-    @Shadow(remap = false, aliases = "blendSrc")
-    private int ssoptimizer$blendSrc;
+    @Shadow(remap = false)
+    private int blendSrc;
 
-    @Shadow(remap = false, aliases = "blendDest")
-    private int ssoptimizer$blendDest;
+    @Shadow(remap = false)
+    private int blendDest;
 
-    @Shadow(remap = false, aliases = "texX")
-    private float ssoptimizer$texX;
+    @Shadow(remap = false)
+    protected float texX;
 
-    @Shadow(remap = false, aliases = "texY")
-    private float ssoptimizer$texY;
+    @Shadow(remap = false)
+    protected float texY;
 
-    @Shadow(remap = false, aliases = "texWidth")
-    private float ssoptimizer$texWidth;
+    @Shadow(remap = false)
+    protected float texWidth;
 
-    @Shadow(remap = false, aliases = "texHeight")
-    private float ssoptimizer$texHeight;
+    @Shadow(remap = false)
+    protected float texHeight;
 
     /**
      * 带纹理绑定的精灵渲染。
@@ -84,23 +84,23 @@ public abstract class SpriteMixin {
      */
     @Overwrite(remap = false)
     public void render(float x, float y) {
-        if (ssoptimizer$texture == null) {
+        if (texture == null) {
             return;
         }
-        ssoptimizer$texture.bind();
-        if (ssoptimizer$texClamp) {
+        texture.bind();
+        if (texClamp) {
             RenderStateUtils.enableTextureClamp();
         }
         SpriteRenderHelper.renderSprite(
-                x + ssoptimizer$offsetX, y + ssoptimizer$offsetY,
-                ssoptimizer$width, ssoptimizer$height,
-                ssoptimizer$centerX, ssoptimizer$centerY,
-                ssoptimizer$angle,
-                ssoptimizer$color.getRed(), ssoptimizer$color.getGreen(), ssoptimizer$color.getBlue(),
-                (int) (ssoptimizer$color.getAlpha() * ssoptimizer$alphaMult),
-                ssoptimizer$blendSrc, ssoptimizer$blendDest,
-                ssoptimizer$texX, ssoptimizer$texY, ssoptimizer$texWidth, ssoptimizer$texHeight);
-        if (ssoptimizer$texClamp) {
+                x + offsetX, y + offsetY,
+                width, height,
+                centerX, centerY,
+                angle,
+                color.getRed(), color.getGreen(), color.getBlue(),
+                (int) (color.getAlpha() * alphaMult),
+                blendSrc, blendDest,
+                texX, texY, texWidth, texHeight);
+        if (texClamp) {
             RenderStateUtils.restoreTextureClamp();
         }
     }
@@ -115,22 +115,22 @@ public abstract class SpriteMixin {
      */
     @Overwrite(remap = false)
     public void renderNoBind(float x, float y) {
-        if (ssoptimizer$texture == null) {
+        if (texture == null) {
             return;
         }
-        if (ssoptimizer$texClamp) {
+        if (texClamp) {
             RenderStateUtils.enableTextureClamp();
         }
         SpriteRenderHelper.renderSprite(
-                x + ssoptimizer$offsetX, y + ssoptimizer$offsetY,
-                ssoptimizer$width, ssoptimizer$height,
-                ssoptimizer$centerX, ssoptimizer$centerY,
-                ssoptimizer$angle,
-                ssoptimizer$color.getRed(), ssoptimizer$color.getGreen(), ssoptimizer$color.getBlue(),
-                (int) (ssoptimizer$color.getAlpha() * ssoptimizer$alphaMult),
-                ssoptimizer$blendSrc, ssoptimizer$blendDest,
-                ssoptimizer$texX, ssoptimizer$texY, ssoptimizer$texWidth, ssoptimizer$texHeight);
-        if (ssoptimizer$texClamp) {
+                x + offsetX, y + offsetY,
+                width, height,
+                centerX, centerY,
+                angle,
+                color.getRed(), color.getGreen(), color.getBlue(),
+                (int) (color.getAlpha() * alphaMult),
+                blendSrc, blendDest,
+                texX, texY, texWidth, texHeight);
+        if (texClamp) {
             RenderStateUtils.restoreTextureClamp();
         }
     }

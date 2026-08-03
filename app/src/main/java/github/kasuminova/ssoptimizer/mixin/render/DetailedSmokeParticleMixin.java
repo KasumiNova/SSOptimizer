@@ -37,18 +37,6 @@ public abstract class DetailedSmokeParticleMixin {
     @Shadow(remap = false, aliases = "texture")
     private static TextureObject ssoptimizer$texture;
 
-    @Shadow(remap = false)
-    public abstract float getBrightness();
-
-    @Shadow(remap = false)
-    public abstract float getX();
-
-    @Shadow(remap = false)
-    public abstract float getY();
-
-    @Shadow(remap = false)
-    public abstract float getAngle();
-
     /**
      * 建立 GL 状态并开始烟雾粒子批次。
      *
@@ -72,10 +60,11 @@ public abstract class DetailedSmokeParticleMixin {
      */
     @Overwrite(remap = false)
     public void render() {
+        com.fs.graphics.particle.BaseParticle base = (com.fs.graphics.particle.BaseParticle) (Object) this;
         ParticleBatchHelper.addSmokeParticle(
                 ssoptimizer$color.getRed(), ssoptimizer$color.getGreen(), ssoptimizer$color.getBlue(),
-                (int) (ssoptimizer$color.getAlpha() * getBrightness()),
-                getX(), getY(), getAngle(),
+                (int) (ssoptimizer$color.getAlpha() * base.getBrightness()),
+                base.getX(), base.getY(), base.getAngle(),
                 ssoptimizer$offsetX, ssoptimizer$offsetY, ssoptimizer$size);
     }
 

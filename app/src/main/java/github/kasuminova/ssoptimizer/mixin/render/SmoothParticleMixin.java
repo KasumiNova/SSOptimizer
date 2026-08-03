@@ -18,7 +18,8 @@ import java.awt.Color;
  * 注入动机：原版每粒子渲染产生 9 次 GL/JNI 调用（颜色 + 4×tex + 4×vert）；
  * 通过整体替换为 {@link ParticleBatchHelper} 的延迟缓冲批次，flush 时一次性输出。<br>
  * 注入效果：preBatch 建立 GL 状态并 beginBatch，render 在 Java 侧缓冲顶点（零 GL 调用），
- * postBatch 统一 flush 并复位纹理状态。
+ * postBatch 统一 flush 并复位纹理状态。基类 {@code BaseParticle} 的公开 getter 经
+ * {@code (BaseParticle)(Object)this} 调用（Mixin @Shadow 方法不解析父类成员）。
  */
 @Mixin(targets = GameClassNames.SMOOTH_PARTICLE_DOTTED)
 public abstract class SmoothParticleMixin {
@@ -40,21 +41,6 @@ public abstract class SmoothParticleMixin {
 
     @Shadow(remap = false, aliases = "texture")
     private static TextureObject ssoptimizer$texture;
-
-    @Shadow(remap = false)
-    public abstract float getBrightness();
-
-    @Shadow(remap = false)
-    public abstract float getBrightnessOverride();
-
-    @Shadow(remap = false)
-    public abstract float getBrightnessMult();
-
-    @Shadow(remap = false)
-    public abstract float getX();
-
-    @Shadow(remap = false)
-    public abstract float getY();
 
     /**
      * 建立 GL 状态并开始平滑粒子批次。
@@ -83,13 +69,14 @@ public abstract class SmoothParticleMixin {
      */
     @Overwrite(remap = false)
     public void render() {
-        if (getBrightnessOverride() == 0.0f || getBrightnessMult() == 0.0f) {
+        com.fs.graphics.particle.BaseParticle base = (com.fs.graphics.particle.BaseParticle) (Object) this;
+        if (base.getBrightnessOverride() == 0.0f || base.getBrightnessMult() == 0.0f) {
             return;
         }
-        Color adjustedColor = ParticleBatchHelper.adjustBrightness(ssoptimizer$color, getBrightness());
+        Color adjustedColor = ParticleBatchHelper.adjustBrightness(ssoptimizer$color, base.getBrightness());
         ParticleBatchHelper.addSmoothParticle(
                 adjustedColor.getRed(), adjustedColor.getGreen(), adjustedColor.getBlue(), adjustedColor.getAlpha(),
-                getX(), getY(), ssoptimizer$offsetX, ssoptimizer$offsetY, ssoptimizer$size);
+                base.getX(), base.getY(), ssoptimizer$offsetX, ssoptimizer$offsetY, ssoptimizer$size);
     }
 
     /**
