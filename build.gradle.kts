@@ -441,10 +441,37 @@ tasks.register<Copy>("installNativeRuntime") {
     }
 }
 
+tasks.register<Copy>("installFontResources") {
+    group = "dev workflow"
+    description = "Deploy TTF font resources into the deployed mod directory (runtime font generator source)"
+
+    from(packagedFontTtfDir) {
+        into("fonts")
+    }
+
+    into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
+
+    // SDG deployMod 的 Sync 会清掉 fonts/，必须在其之后落位
+    mustRunAfter(":app:deployMod")
+
+    doFirst {
+        check(configuredGameDirProvider.isPresent) {
+            "Missing Starsector directory. Pass -Pstarsector.gameDir=/path/to/Starsector or set SSOPTIMIZER_GAME_DIR."
+        }
+        check(packagedFontTtfDir.isDirectory) {
+            "未找到字体资源目录: $packagedFontTtfDir"
+        }
+    }
+
+    doLast {
+        println("[installFontResources] Font resources deployed to ${configuredGameDirProvider.get()}/mods/$modId/fonts")
+    }
+}
+
 tasks.register("deployMod") {
     group = "dev workflow"
-    description = "Deploy mod metadata/jars (SDG :app:deployMod) plus native runtime"
-    dependsOn(":app:deployMod", "installNativeRuntime")
+    description = "Deploy mod metadata/jars (SDG :app:deployMod) plus native runtime and font resources"
+    dependsOn(":app:deployMod", "installNativeRuntime", "installFontResources")
 }
 
 tasks.register("installDevMod") {
