@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.accessor;
 
-import com.fs.starfarer.combat.systems.F;
+import com.fs.starfarer.combat.systems.ShipSystemBase;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
@@ -15,5 +15,5 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Mixin(targets = GameClassNames.SHIP_DOTTED)
 public interface ShipAccessor {
     @Invoker(value = "getSystem", remap = false)
-    F ssoptimizer$getSystem();
+    ShipSystemBase ssoptimizer$getSystem();
 }
