@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 引擎尾焰轨迹组（ContrailGroup）的 Mixin Accessor。
  *
- * <p>注入目标：{@code com.fs.starfarer.combat.entities.ContrailEngine$o}<br>
+ * <p>注入目标：{@code com.fs.starfarer.combat.entities.ContrailEngine$ContrailGroup}<br>
  * 注入动机：原始类字段为混淆名称，无法直接访问；需要读取轨迹段列表、纹理、尾部位置、
  * 颜色和混合模式等属性以实现自定义渲染管线。<br>
  * 注入效果：暴露 5 个只读访问器，供 {@code ContrailGroupRunner} 等渲染优化类使用。</p>
