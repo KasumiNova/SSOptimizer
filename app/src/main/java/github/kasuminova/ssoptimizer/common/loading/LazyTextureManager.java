@@ -189,6 +189,12 @@ public final class LazyTextureManager {
             return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath, resourcePath), resourcePath);
         }
 
+        // worker 预备管线：读源/解码/像素转换已在后台完成，这里直接消费结果
+        final TexturePreparationRegistry.Prepared prepared = TexturePreparationRegistry.await(effectivePath);
+        if (prepared != null) {
+            return loadPreparedTexture(textureCache, resourcePath, effectivePath, prepared);
+        }
+
         final SourceSnapshot source = readSource(effectivePath, resourcePath);
         final LazyTextureMetadata metadata = buildMetadata(effectivePath, source);
         if (metadata == null) {
@@ -488,6 +494,18 @@ public final class LazyTextureManager {
                 cached.hasAlpha(),
                 result));
 
+        uploadConverted(texture, target, entry.resourcePath, cached);
+    }
+
+    /**
+     * 用已完成的像素转换结果执行纯 GL 上传（gen/bind/参数/texImage2D）。
+     * 调用方必须持有 OpenGL 上下文。
+     */
+    private static void uploadConverted(final com.fs.graphics.TextureObject texture,
+                                        final int target,
+                                        final String resourcePath,
+                                        final TextureConversionCache.CachedTextureData cached) {
+        final TexturePixelConversionResult result = cached.conversionResult();
         int textureId = readTextureId(texture, -1);
         if (textureId == -1) {
             final IntBuffer ids = BufferUtils.createIntBuffer(1);
@@ -497,14 +515,14 @@ public final class LazyTextureManager {
         }
 
         GL11.glBindTexture(target, textureId);
-        final boolean generateMipmaps = shouldGenerateMipmaps(entry.resourcePath, cached.imageWidth(), cached.imageHeight());
+        final boolean generateMipmaps = shouldGenerateMipmaps(resourcePath, cached.imageWidth(), cached.imageHeight());
         if (generateMipmaps) {
             GL11.glTexParameteri(target, 10241, FILTER_LINEAR_MIPMAP_LINEAR);
-            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(entry.resourcePath));
+            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(resourcePath));
             GL11.glTexParameteri(TARGET_2D, GENERATE_MIPMAP, 1);
         } else {
-            GL11.glTexParameteri(target, 10241, minFilterForResourcePath(entry.resourcePath));
-            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(entry.resourcePath));
+            GL11.glTexParameteri(target, 10241, minFilterForResourcePath(resourcePath));
+            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(resourcePath));
             GL11.glTexParameteri(target, GENERATE_MIPMAP, 0);
         }
 
@@ -560,6 +578,41 @@ public final class LazyTextureManager {
         } catch (IllegalAccessException e) {
             throw new IOException("Unable to invoke TextureLoader eager load for " + requestedPath, e);
         }
+    }
+
+    /**
+     * 消费 worker 预备结果：defer 贴图只登记元数据；eager 贴图直接纯 GL 上传，
+     * 不再走 {@code ssoptimizer$loadTextureEager} 的原版读图/转换路径。
+     */
+    private static com.fs.graphics.TextureObject loadPreparedTexture(final HashMap<String, com.fs.graphics.TextureObject> textureCache,
+                                                                     final String requestedPath,
+                                                                     final String effectivePath,
+                                                                     final TexturePreparationRegistry.Prepared prepared) {
+        final LazyTextureMetadata metadata = LazyTextureMetadata.from(effectivePath,
+                prepared.data().imageWidth(),
+                prepared.data().imageHeight(),
+                prepared.data().hasAlpha(),
+                prepared.data().conversionResult());
+        final int sourceBytes = (int) Math.min(Integer.MAX_VALUE, Math.max(0L, prepared.sourceByteLength()));
+        final boolean defer = shouldDefer(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
+        final boolean trackResidency = shouldTrackResidency(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
+        final long now = System.nanoTime();
+
+        final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, effectivePath);
+        applyMetadata(texture, metadata);
+
+        if (trackResidency && defer) {
+            cacheTexture(textureCache, requestedPath, effectivePath, texture);
+            MANAGED_TEXTURES.put(texture, ManagedTextureEntry.pending(effectivePath, prepared.sourceHash(), metadata, now, true));
+            return markTextureLoadedInCurrentContext(texture, effectivePath);
+        }
+
+        uploadConverted(texture, TARGET_2D, effectivePath, prepared.data());
+        cacheTexture(textureCache, requestedPath, effectivePath, texture);
+        if (trackResidency) {
+            MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(effectivePath, prepared.sourceHash(), metadata, now, true));
+        }
+        return markTextureLoadedInCurrentContext(texture, effectivePath);
     }
 
     private static void cacheTexture(final HashMap<String, com.fs.graphics.TextureObject> textureCache,

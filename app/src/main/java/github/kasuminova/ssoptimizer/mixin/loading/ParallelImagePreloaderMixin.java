@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.loading;
 import github.kasuminova.ssoptimizer.common.loading.FastResourceImageDecoder;
 import github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadCoordinator;
 import github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadQueueTracker;
+import github.kasuminova.ssoptimizer.common.loading.TexturePreparationRegistry;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -67,6 +68,7 @@ public abstract class ParallelImagePreloaderMixin {
     public static void shutdown() {
         ParallelImagePreloadCoordinator.stopWorkers();
         ParallelImagePreloadQueueTracker.clearPending();
+        TexturePreparationRegistry.clear();
         ssoptimizer$imageResults.clear();
         ssoptimizer$byteResults.clear();
         ssoptimizer$imageQueue.clear();
@@ -78,10 +80,12 @@ public abstract class ParallelImagePreloaderMixin {
      *
      * @param path 资源路径
      * @author GitHub Copilot
-     * @reason 通过路径计数跟踪器维护待处理项，避免主线程反复对同步列表做 contains 扫描。
+     * @reason 通过路径计数跟踪器维护待处理项，避免主线程反复对同步列表做 contains 扫描；
+     * 同时在 TexturePreparationRegistry 登记，供 worker 发布预备结果。
      */
     @Overwrite(remap = false)
     public static void enqueueImage(final String path) {
+        TexturePreparationRegistry.track(path);
         ParallelImagePreloadQueueTracker.enqueueImage(ssoptimizer$imageQueue, path);
     }
 

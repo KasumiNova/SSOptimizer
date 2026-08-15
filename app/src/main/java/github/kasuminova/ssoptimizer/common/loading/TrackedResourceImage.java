@@ -142,6 +142,16 @@ final class TrackedResourceImage extends BufferedImage {
         return sourceFingerprint;
     }
 
+    /**
+     * 源文件字节数（指纹或已读源字节推导），无法确定时返回 -1。
+     */
+    long sourceByteLength() {
+        if (sourceFingerprint != null) {
+            return sourceFingerprint.byteLength();
+        }
+        return sourceBytes != null ? sourceBytes.length : -1L;
+    }
+
     @Override
     public int getWidth() {
         return imageWidth;

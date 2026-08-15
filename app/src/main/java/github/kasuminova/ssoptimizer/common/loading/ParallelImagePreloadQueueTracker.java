@@ -4,15 +4,16 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 /**
- * Tracks pending deferred image/byte preload requests using concurrent path
- * counters so callers can avoid O(n) synchronized list scans while preserving
- * the base game's queue/result-map protocol.
+ * Tracks pending deferred image/byte preload requests using per-path latches
+ * so callers block without polling while preserving the base game's
+ * queue/result-map protocol.
  */
 public final class ParallelImagePreloadQueueTracker {
-    private static final Map<String, Integer> PENDING_IMAGE_COUNTS = new ConcurrentHashMap<>();
-    private static final Map<String, Integer> PENDING_BYTE_COUNTS  = new ConcurrentHashMap<>();
+    private static final Map<String, CountDownLatch> PENDING_IMAGE_LATCHES = new ConcurrentHashMap<>();
+    private static final Map<String, CountDownLatch> PENDING_BYTE_LATCHES  = new ConcurrentHashMap<>();
 
     private ParallelImagePreloadQueueTracker() {
     }
@@ -23,7 +24,7 @@ public final class ParallelImagePreloadQueueTracker {
         }
 
         synchronized (queue) {
-            increment(PENDING_IMAGE_COUNTS, path);
+            PENDING_IMAGE_LATCHES.putIfAbsent(path, new CountDownLatch(1));
             queue.add(path);
         }
     }
@@ -34,7 +35,7 @@ public final class ParallelImagePreloadQueueTracker {
         }
 
         synchronized (queue) {
-            increment(PENDING_BYTE_COUNTS, path);
+            PENDING_BYTE_LATCHES.putIfAbsent(path, new CountDownLatch(1));
             queue.add(path);
         }
     }
@@ -46,21 +47,21 @@ public final class ParallelImagePreloadQueueTracker {
             return null;
         }
 
-        while (isPending(PENDING_IMAGE_COUNTS, path) || resultMap.containsKey(path)) {
-            BufferedImage image = resultMap.get(path);
-            if (image != null && image != sentinel) {
-                resultMap.remove(path);
-                return image;
-            }
-
+        final CountDownLatch latch = PENDING_IMAGE_LATCHES.get(path);
+        if (latch != null) {
             try {
-                Thread.sleep(10L);
-            } catch (InterruptedException ignored) {
+                latch.await();
+            } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return null;
             }
         }
 
+        final BufferedImage image = resultMap.get(path);
+        if (image != null && image != sentinel) {
+            resultMap.remove(path);
+            return image;
+        }
         return null;
     }
 
@@ -71,22 +72,41 @@ public final class ParallelImagePreloadQueueTracker {
             return null;
         }
 
-        while (isPending(PENDING_BYTE_COUNTS, path) || resultMap.containsKey(path)) {
-            byte[] bytes = resultMap.get(path);
-            if (bytes != null && bytes != sentinel) {
-                resultMap.remove(path);
-                return bytes;
-            }
-
+        final CountDownLatch latch = PENDING_BYTE_LATCHES.get(path);
+        if (latch != null) {
             try {
-                Thread.sleep(10L);
-            } catch (InterruptedException ignored) {
+                latch.await();
+            } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return null;
             }
         }
 
+        final byte[] bytes = resultMap.get(path);
+        if (bytes != null && bytes != sentinel) {
+            resultMap.remove(path);
+            return bytes;
+        }
         return null;
+    }
+
+    /**
+     * worker 完成（或跳过）某路径的加载后唤醒等待方。无论结果是否写入
+     * resultMap 都必须调用，否则 {@link #awaitImage}/{@link #awaitBytes} 会一直阻塞。
+     */
+    public static void completeImage(final String path) {
+        final CountDownLatch latch = PENDING_IMAGE_LATCHES.remove(path);
+        if (latch != null) {
+            latch.countDown();
+        }
+    }
+
+    /** 字节队列版本的 {@link #completeImage}。 */
+    public static void completeBytes(final String path) {
+        final CountDownLatch latch = PENDING_BYTE_LATCHES.remove(path);
+        if (latch != null) {
+            latch.countDown();
+        }
     }
 
     static String dequeueImage(final List<String> queue,
@@ -103,7 +123,6 @@ public final class ParallelImagePreloadQueueTracker {
 
             String path = queue.remove(0);
             resultMap.put(path, sentinel);
-            decrement(PENDING_IMAGE_COUNTS, path);
             return path;
         }
     }
@@ -122,25 +141,18 @@ public final class ParallelImagePreloadQueueTracker {
 
             String path = queue.remove(0);
             resultMap.put(path, sentinel);
-            decrement(PENDING_BYTE_COUNTS, path);
             return path;
         }
     }
 
     public static void clearPending() {
-        PENDING_IMAGE_COUNTS.clear();
-        PENDING_BYTE_COUNTS.clear();
-    }
-
-    private static boolean isPending(final Map<String, Integer> pendingCounts, final String path) {
-        return pendingCounts.containsKey(path);
-    }
-
-    private static void increment(final Map<String, Integer> pendingCounts, final String path) {
-        pendingCounts.merge(path, 1, Integer::sum);
-    }
-
-    private static void decrement(final Map<String, Integer> pendingCounts, final String path) {
-        pendingCounts.computeIfPresent(path, (ignored, count) -> count > 1 ? count - 1 : null);
+        for (final CountDownLatch latch : PENDING_IMAGE_LATCHES.values()) {
+            latch.countDown();
+        }
+        for (final CountDownLatch latch : PENDING_BYTE_LATCHES.values()) {
+            latch.countDown();
+        }
+        PENDING_IMAGE_LATCHES.clear();
+        PENDING_BYTE_LATCHES.clear();
     }
 }

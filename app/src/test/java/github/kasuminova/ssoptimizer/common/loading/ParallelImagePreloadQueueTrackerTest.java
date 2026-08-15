@@ -30,6 +30,8 @@ class ParallelImagePreloadQueueTrackerTest {
         String first = ParallelImagePreloadQueueTracker.dequeueImage(queue, results, sentinel);
         assertEquals("graphics/test.png", first);
         results.put(first, actual);
+        // worker 处理完毕，唤醒等待方
+        ParallelImagePreloadQueueTracker.completeImage(first);
 
         BufferedImage awaited = ParallelImagePreloadQueueTracker.awaitImage(results, "graphics/test.png", sentinel);
         assertNotNull(awaited);
@@ -37,6 +39,8 @@ class ParallelImagePreloadQueueTrackerTest {
         String second = ParallelImagePreloadQueueTracker.dequeueImage(queue, results, sentinel);
         assertEquals("graphics/test.png", second);
         results.remove(second);
+        // 重复条目处理完毕但结果已被消费，等待方应拿到 null 而非阻塞
+        ParallelImagePreloadQueueTracker.completeImage(second);
 
         assertNull(ParallelImagePreloadQueueTracker.awaitImage(results, "graphics/test.png", sentinel));
     }
@@ -51,6 +55,8 @@ class ParallelImagePreloadQueueTrackerTest {
         String dequeued = ParallelImagePreloadQueueTracker.dequeueBytes(queue, results, sentinel);
         assertEquals("data/test.bin", dequeued);
         results.remove(dequeued);
+        // worker 处理完毕但结果已被消费，等待方应拿到 null 而非阻塞
+        ParallelImagePreloadQueueTracker.completeBytes(dequeued);
 
         assertNull(ParallelImagePreloadQueueTracker.awaitBytes(results, dequeued, sentinel));
     }
