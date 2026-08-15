@@ -89,6 +89,10 @@ class ResourceIndexTest {
 
         assertEquals(1, ResourceIndex.children(root.toFile(), "data/hulls/skins").size());
         assertTrue(ResourceIndex.children(root.toFile(), "data/missing").isEmpty());
+
+        // 尾斜杠目录参数必须与无尾斜杠等价（原版 File 语义对尾斜杠透明）
+        assertEquals(2, ResourceIndex.children(root.toFile(), "data/hulls/").size());
+        assertEquals(2, ResourceIndex.children(root.toFile(), "/data/hulls/").size());
     }
 
     @Test

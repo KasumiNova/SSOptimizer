@@ -164,6 +164,10 @@ public final class ResourceIndex {
         while (normalized.startsWith("/")) {
             normalized = normalized.substring(1);
         }
+        // 目录参数允许以 / 结尾（原版 File 语义对此透明），快照键不带尾斜杠
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
         return normalized;
     }
 
