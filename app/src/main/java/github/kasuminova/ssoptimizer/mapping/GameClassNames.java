@@ -88,6 +88,8 @@ public final class GameClassNames {
     public static final String TEXT_FIELD_API                      = "com/fs/starfarer/api/ui/TextFieldAPI";
     public static final String RESOURCE_LOADER                     = "com/fs/util/ResourceLoader";
     public static final String RESOURCE_LOADER_DOTTED              = "com.fs.util.ResourceLoader";
+    public static final String RESOURCE_LOADER_STATE_DOTTED        = "com.fs.starfarer.loading.ResourceLoaderState";
+    public static final String SPEC_STORE_DOTTED                   = "com.fs.starfarer.loading.SpecStore";
     public static final String CAMPAIGN_ENGINE                     = "com/fs/starfarer/campaign/CampaignEngine";
     public static final String CAMPAIGN_ENGINE_DOTTED              = "com.fs.starfarer.campaign.CampaignEngine";
     public static final String TITLE_SCREEN_STATE                  = "com/fs/starfarer/title/TitleScreenState";
