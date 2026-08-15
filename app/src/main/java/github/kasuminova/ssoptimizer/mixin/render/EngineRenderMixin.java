@@ -2,8 +2,8 @@ package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.Sprite;
 import com.fs.graphics.util.Fader;
-import com.fs.starfarer.combat.entities.EngineState;
-import com.fs.starfarer.combat.entities.ship.EngineOwner;
+import com.fs.starfarer.combat.entities.Engine.EngineState;
+import com.fs.starfarer.combat.entities.ship.ShipEngineController.EngineOwner;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import com.fs.starfarer.util.ColorShifter;
 import com.fs.starfarer.util.ValueShifter;

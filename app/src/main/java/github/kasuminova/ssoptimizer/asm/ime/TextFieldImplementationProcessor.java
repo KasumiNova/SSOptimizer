@@ -8,7 +8,7 @@ import org.objectweb.asm.*;
 /**
  * 文本框实现类的 ASM 处理器，在构造函数末尾注册 IME、在焦点丢失回调中通知 IME。
  *
- * <p>注入目标：{@code com.fs.starfarer.ui.B}（文本框实现类）<br>
+ * <p>注入目标：{@code com.fs.starfarer.ui.TextFieldImpl}（文本框实现类）<br>
  * 注入动机：文本框类为混淆名称，Mixin 虽可匹配但构造函数末尾注入和焦点回调的
  * 精确插入点更适合 ASM 控制；需要在每次文本框创建时自动注册到 {@code ImeService}，
  * 并在焦点丢失时通知 IME 服务。<br>

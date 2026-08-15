@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.accessor;
 
-import com.fs.starfarer.combat.entities.EngineGlowType;
+import com.fs.starfarer.combat.entities.Engine.EngineGlowType;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.lwjgl.util.vector.Vector2f;
 import org.spongepowered.asm.mixin.Mixin;
