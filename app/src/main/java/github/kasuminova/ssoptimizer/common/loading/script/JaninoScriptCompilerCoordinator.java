@@ -5,20 +5,28 @@ import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.JavaSourceIClassLoader;
 import org.codehaus.janino.util.resource.DirectoryResourceFinder;
 import org.codehaus.janino.util.resource.MultiResourceFinder;
+import org.codehaus.janino.util.resource.Resource;
+import org.codehaus.janino.util.resource.ResourceFinder;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,15 +51,25 @@ import java.util.stream.Stream;
  *     <li>把 {@link JavaSourceClassLoader} 生成的 class 字节码落盘缓存，后续优先从缓存读取；</li>
  *     <li>在首次脚本类加载时后台并行预编译同一 source path 下的其他脚本，降低后续串行卡顿。</li>
  * </ul>
+ * <p>
+ * 缓存有效性以脚本源码内容哈希（SHA-256）判定：读取时经 loader 上的
+ * {@link ResourceFinder} 取回（可能被剥离注解后的）源码字节并计算哈希，
+ * 与缓存文件头部存储的哈希比对。游戏的 {@code ScriptSourceFinder} 并非目录型
+ * finder，基于目录 mtime 的校验对它永远失效（缓存只写不读），故统一采用内容哈希。
+ * 缓存文件格式为 {@code [32B 源码哈希][class 字节码]}，目录版本 v2。
  */
 public final class JaninoScriptCompilerCoordinator {
     public static final String CACHE_DIR_PROPERTY       = "ssoptimizer.scriptcache.dir";
     public static final String DISABLE_CACHE_PROPERTY   = "ssoptimizer.disable.scriptcache";
     public static final String DISABLE_PREWARM_PROPERTY = "ssoptimizer.disable.scriptprewarm";
     public static final String PARALLELISM_PROPERTY     = "ssoptimizer.scriptcompile.parallelism";
+    public static final String DEBUG_PROPERTY           = "ssoptimizer.debug.scriptcache";
     public static final String ORIGINAL_METHOD_NAME     = "ssoptimizer$generateBytecodesOriginal";
 
     private static final Logger LOGGER = Logger.getLogger(JaninoScriptCompilerCoordinator.class);
+
+    /** 缓存文件头部源码哈希长度（SHA-256）。 */
+    private static final int HASH_BYTES = 32;
 
     private static final Field ICLASS_LOADER_FIELD    = resolveField(JavaSourceClassLoader.class, "iClassLoader");
     private static final Field SOURCE_FINDER_FIELD    = resolveField(JavaSourceIClassLoader.class, "sourceFinder");
@@ -86,6 +104,10 @@ public final class JaninoScriptCompilerCoordinator {
 
     /**
      * 尝试从磁盘缓存读取指定脚本类的字节码。
+     * <p>
+     * 通过 loader 上的 {@link ResourceFinder} 取回源码并计算内容哈希，
+     * 与缓存文件头部的哈希比对，一致才视为命中；不依赖目录型 source root，
+     * 因此对游戏的 {@code ScriptSourceFinder} 同样有效。
      *
      * @param loader    Janino 脚本类加载器
      * @param className 脚本类名
@@ -103,25 +125,38 @@ public final class JaninoScriptCompilerCoordinator {
             return Map.of(className, inMemory);
         }
 
-        final List<File> sourceRoots = resolveSourceRoots(loader);
-        if (sourceRoots.isEmpty()) {
+        final ResourceFinder sourceFinder = resolveSourceFinder(loader);
+        if (sourceFinder == null) {
+            debugLog(className, "sourceFinder 解析失败");
             return null;
         }
 
-        final Path sourceFile = resolveSourceFile(sourceRoots, className);
-        if (sourceFile == null) {
+        final byte[] sourceHash = hashSource(sourceFinder, className);
+        if (sourceHash == null) {
+            debugLog(className, "源码不可定位/不可读");
             return null;
         }
 
-        final byte[] cachedBytes = loadCachedClassFile(cacheFile(className), sourceFile);
+        final byte[] cachedBytes = loadCachedClassFile(cacheFile(className), sourceHash);
         if (cachedBytes == null) {
+            debugLog(className, "磁盘缓存缺失或哈希不匹配, 读取侧哈希=" + HexFormat.of().formatHex(sourceHash));
             return null;
         }
+        debugLog(className, "磁盘缓存命中");
         return Map.of(className, cachedBytes);
+    }
+
+    private static void debugLog(final String className, final String verdict) {
+        if (Boolean.getBoolean(DEBUG_PROPERTY)) {
+            LOGGER.info("[SSOptimizer][ScriptCache] " + className + ": " + verdict);
+        }
     }
 
     /**
      * 将 Janino 原始编译结果写入磁盘缓存。
+     * <p>
+     * 磁盘缓存以源码内容哈希为有效性凭据；若此时无法取回源码
+     * （理论上刚编译过必然可读），记录告警并只保留内存缓存。
      *
      * @param loader     Janino 脚本类加载器
      * @param className  脚本类名
@@ -138,7 +173,12 @@ public final class JaninoScriptCompilerCoordinator {
                 || Boolean.getBoolean(DISABLE_CACHE_PROPERTY)) {
             return;
         }
-        storeCachedBytecodes(bytecodes);
+
+        final ResourceFinder sourceFinder = resolveSourceFinder(loader);
+        if (sourceFinder == null) {
+            LOGGER.warn("[SSOptimizer] 无法解析脚本源码查找器 " + className + "，字节码仅写入内存缓存");
+        }
+        storeCachedBytecodes(sourceFinder, bytecodes);
     }
 
     /**
@@ -233,27 +273,52 @@ public final class JaninoScriptCompilerCoordinator {
         }
     }
 
+    /**
+     * 读取并校验磁盘缓存文件。
+     *
+     * @param cacheFile    缓存文件路径
+     * @param expectedHash 当前源码的内容哈希
+     * @return 哈希一致时返回 class 字节码，否则返回 {@code null}
+     */
     private static byte[] loadCachedClassFile(final Path cacheFile,
-                                              final Path sourceFile) {
-        if (!Files.isRegularFile(cacheFile) || !Files.isRegularFile(sourceFile)) {
+                                              final byte[] expectedHash) {
+        if (!Files.isRegularFile(cacheFile)) {
             return null;
         }
 
         try {
-            if (Files.getLastModifiedTime(cacheFile).toMillis() < Files.getLastModifiedTime(sourceFile).toMillis()) {
+            final byte[] stored = Files.readAllBytes(cacheFile);
+            if (stored.length <= HASH_BYTES) {
                 return null;
             }
-            return Files.readAllBytes(cacheFile);
-        } catch (IOException ignored) {
+            if (!Arrays.equals(stored, 0, HASH_BYTES, expectedHash, 0, HASH_BYTES)) {
+                return null;
+            }
+            return Arrays.copyOfRange(stored, HASH_BYTES, stored.length);
+        } catch (IOException e) {
+            LOGGER.debug("[SSOptimizer] 读取脚本缓存失败: " + cacheFile, e);
             return null;
         }
     }
 
-    private static void storeCachedBytecodes(final Map<String, byte[]> bytecodes) {
+    /**
+     * 将编译产物写入内存与磁盘缓存。
+     * <p>
+     * 游戏定制版 Janino 的 {@code generateBytecodes} 会累积编译所有已排队的
+     * 编译单元并一次性返回批量结果，因此 {@code bytecodes} 中可能包含与本次
+     * 请求类无关的其他脚本类。每个条目必须以其<strong>自身顶层类</strong>的
+     * 源码内容哈希为有效性凭据，否则批量写入会用错误哈希污染全部缓存文件，
+     * 导致后续启动永远无法命中。
+     */
+    private static void storeCachedBytecodes(final ResourceFinder sourceFinder,
+                                             final Map<String, byte[]> bytecodes) {
         if (bytecodes == null || bytecodes.isEmpty()) {
             return;
         }
 
+        // 同一顶层类的嵌套类共享源文件，哈希只算一次；null 哈希表示源码不可读，跳过磁盘写入
+        final Map<String, byte[]> hashByTopLevel = new HashMap<>();
+        int stored = 0;
         for (Map.Entry<String, byte[]> entry : bytecodes.entrySet()) {
             final String className = entry.getKey();
             final byte[] bytes = entry.getValue();
@@ -264,17 +329,101 @@ public final class JaninoScriptCompilerCoordinator {
             // 同时写入内存缓存，使主线程可直接取用而无需再走磁盘
             IN_MEMORY_CACHE.put(className, bytes);
 
+            if (sourceFinder == null) {
+                continue;
+            }
+
+            final String topLevel = topLevelClassName(className);
+            if (hashByTopLevel.containsKey(topLevel)) {
+                // 已判定过：null 表示源码不可读
+            } else {
+                hashByTopLevel.put(topLevel, hashSource(sourceFinder, topLevel));
+            }
+            final byte[] sourceHash = hashByTopLevel.get(topLevel);
+            if (sourceHash == null) {
+                continue;
+            }
+
             final Path cacheFile = cacheFile(className);
             try {
                 Files.createDirectories(cacheFile.getParent());
+                final byte[] storedBytes = Arrays.copyOf(sourceHash, HASH_BYTES + bytes.length);
+                System.arraycopy(bytes, 0, storedBytes, HASH_BYTES, bytes.length);
                 Files.write(cacheFile,
-                        bytes,
+                        storedBytes,
                         StandardOpenOption.CREATE,
                         StandardOpenOption.TRUNCATE_EXISTING,
                         StandardOpenOption.WRITE);
-            } catch (IOException ignored) {
+                stored++;
+            } catch (IOException e) {
+                LOGGER.debug("[SSOptimizer] 写入脚本缓存失败: " + cacheFile, e);
             }
         }
+        debugLog("batch", "写入磁盘缓存 " + stored + "/" + bytecodes.size() + " 个类");
+    }
+
+    /** 取类名的顶层类（嵌套类 {@code Outer$Inner} 归一到 {@code Outer}）。 */
+    private static String topLevelClassName(final String className) {
+        final int nested = className.indexOf('$');
+        return nested < 0 ? className : className.substring(0, nested);
+    }
+
+    /**
+     * 从 loader 的 {@code iClassLoader.sourceFinder} 解析出 {@link ResourceFinder}。
+     *
+     * @return 解析失败时返回 {@code null}
+     */
+    private static ResourceFinder resolveSourceFinder(final JavaSourceClassLoader loader) {
+        if (loader == null || ICLASS_LOADER_FIELD == null || SOURCE_FINDER_FIELD == null) {
+            return null;
+        }
+
+        try {
+            final Object iClassLoader = ICLASS_LOADER_FIELD.get(loader);
+            if (iClassLoader == null) {
+                return null;
+            }
+            final Object sourceFinder = SOURCE_FINDER_FIELD.get(iClassLoader);
+            return sourceFinder instanceof ResourceFinder resourceFinder ? resourceFinder : null;
+        } catch (IllegalAccessException e) {
+            LOGGER.debug("[SSOptimizer] 无法访问 Janino sourceFinder", e);
+            return null;
+        }
+    }
+
+    /**
+     * 通过 {@link ResourceFinder} 取回脚本源码并计算 SHA-256。
+     * <p>
+     * 对嵌套类名（{@code Outer$Inner}）逐级回退到顶层类名查找源文件，
+     * 与 Janino 的资源命名约定（{@code pkg/Outer.java}）一致。
+     *
+     * @return 源码内容哈希；源码不可定位或不可读时返回 {@code null}
+     */
+    private static byte[] hashSource(final ResourceFinder sourceFinder,
+                                     final String className) {
+        for (final String candidate : sourceFileCandidates(className)) {
+            final Resource resource;
+            try {
+                resource = sourceFinder.findResource(candidate.replace('.', '/') + ".java");
+            } catch (RuntimeException e) {
+                LOGGER.debug("[SSOptimizer] 查找脚本源码失败: " + candidate, e);
+                return null;
+            }
+            if (resource == null) {
+                continue;
+            }
+
+            try (InputStream stream = resource.open()) {
+                if (stream == null) {
+                    continue;
+                }
+                return MessageDigest.getInstance("SHA-256").digest(stream.readAllBytes());
+            } catch (IOException | NoSuchAlgorithmException e) {
+                LOGGER.debug("[SSOptimizer] 读取脚本源码失败: " + candidate, e);
+                return null;
+            }
+        }
+        return null;
     }
 
     private static Map<String, byte[]> invokeOriginalGenerate(final JavaSourceClassLoader loader,
@@ -318,21 +467,17 @@ public final class JaninoScriptCompilerCoordinator {
     }
 
     private static List<File> resolveSourceRoots(final JavaSourceClassLoader loader) {
-        if (loader == null || ICLASS_LOADER_FIELD == null || SOURCE_FINDER_FIELD == null) {
+        final ResourceFinder sourceFinder = resolveSourceFinder(loader);
+        if (sourceFinder == null) {
             return List.of();
         }
 
         try {
-            final Object iClassLoader = ICLASS_LOADER_FIELD.get(loader);
-            if (iClassLoader == null) {
-                return List.of();
-            }
-
-            final Object sourceFinder = SOURCE_FINDER_FIELD.get(iClassLoader);
             final LinkedHashSet<File> roots = new LinkedHashSet<>();
             collectSourceRoots(sourceFinder, roots);
             return new ArrayList<>(roots);
         } catch (IllegalAccessException e) {
+            LOGGER.debug("[SSOptimizer] 无法遍历 Janino sourceFinder", e);
             return List.of();
         }
     }
@@ -386,23 +531,6 @@ public final class JaninoScriptCompilerCoordinator {
         return new ArrayList<>(classNames);
     }
 
-    private static Path resolveSourceFile(final List<File> sourceRoots,
-                                          final String className) {
-        for (File sourceRoot : sourceRoots) {
-            if (sourceRoot == null) {
-                continue;
-            }
-            final Path sourceRootPath = sourceRoot.toPath().toAbsolutePath().normalize();
-            for (String candidateClassName : sourceFileCandidates(className)) {
-                final Path sourceFile = sourceRootPath.resolve(candidateClassName.replace('.', File.separatorChar) + ".java");
-                if (Files.isRegularFile(sourceFile)) {
-                    return sourceFile;
-                }
-            }
-        }
-        return null;
-    }
-
     private static List<String> sourceFileCandidates(final String className) {
         final List<String> candidates = new ArrayList<>();
         String current = className;
@@ -425,7 +553,7 @@ public final class JaninoScriptCompilerCoordinator {
                       .resolve("cache")
                       .resolve("scripts")
                       .resolve("janino")
-                      .resolve("v1")
+                      .resolve("v2")
                       .toAbsolutePath()
                       .normalize();
     }
