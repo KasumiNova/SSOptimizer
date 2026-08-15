@@ -238,6 +238,12 @@ public abstract class SpecStoreMixin {
                     throw e;
                 }
                 if (spec != null) {
+                    // containsVariant 跳过语义必须在串行注册阶段判定：
+                    // 并行解析领先于注册，同 id 的覆盖文件可能在先注册变体尚未
+                    // 入账时就通过检查，导致重复注册（"already exists"）。
+                    if (HullVariantSpecStore.containsVariant(spec.getHullVariantId())) {
+                        continue;
+                    }
                     HullVariantSpecStore.registerVariant(spec, false);
                 }
             }
@@ -253,10 +259,6 @@ public abstract class SpecStoreMixin {
     private static HullVariantSpec ssoptimizer$parseVariant(final String path) throws IOException, JSONException {
         ssoptimizer$logger.info("Loading variant [" + path + "]");
         final JSONObject json = LoadingUtils.readJSON(path);
-        final String variantId = json.getString("variantId");
-        if (HullVariantSpecStore.containsVariant(variantId)) {
-            return null;
-        }
         if (StarfarerSettings.hasTotalConversionMod()) {
             final String hullId = json.getString("hullId");
             if (!ShipHullSpecStore.has(hullId)) {
