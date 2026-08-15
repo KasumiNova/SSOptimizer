@@ -51,7 +51,9 @@ public final class CaseInsensitiveResourceFallback {
      * 尝试以大小写不敏感方式查找资源并返回输入流。
      * <p>
      * 本方法从异常消息中解析出资源根目录列表，对每个根目录逐段做大小写不敏感匹配。
-     * 首次匹配成功时记录告警并缓存结果，后续相同路径直接走缓存。
+     * 异常消息不含游戏根目录（ABSOLUTE_AND_CWD 规格不写根路径），故无条件追加
+     * 游戏工作目录作为最低优先级根目录。首次匹配成功时记录告警并缓存结果，
+     * 后续相同路径直接走缓存。
      *
      * @param resourcePath 原始请求的资源路径（如 {@code graphics/ships/foo.png}）
      * @param exception    原始加载抛出的 {@link RuntimeException}，用于提取根目录列表
@@ -87,6 +89,13 @@ public final class CaseInsensitiveResourceFallback {
                 return null;
             }
             roots.addAll(fallbackRoots);
+        }
+
+        // 游戏根目录（ABSOLUTE_AND_CWD 规格）不会出现在异常消息的根目录列表里，
+        // 但基础游戏资源恰恰由它提供；模组根目录优先于游戏根目录，保持原版覆盖语义。
+        final Path gameDir = Path.of(System.getProperty("user.dir", ".")).toAbsolutePath().normalize();
+        if (!roots.contains(gameDir)) {
+            roots.add(gameDir);
         }
 
         // 逐个根目录尝试大小写不敏感解析
