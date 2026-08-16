@@ -2,7 +2,6 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 
 import java.awt.*;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,15 +31,11 @@ public final class EngineInstanceCollector {
 
     /** VBO 模式的单顶点字节数：x,y,u,v（float×4）+ r,g,b,a（ubyte×4）。 */
     public static final int VERTEX_BYTES = 20;
-    /** 实例属性打包长度（float 数）。 */
-    public static final int STRIP_INSTANCE_FLOATS = 20;
-    public static final int CORE_INSTANCE_FLOATS  = 12;
-    public static final int GLOW_INSTANCE_FLOATS  = 16;
 
     private EngineInstanceCollector() {
     }
 
-    /** 渲染阶段：决定着色器程序与 flush 顺序。 */
+    /** 渲染阶段：决定纹理分组与 flush 顺序。 */
     public enum Stage {
         /** 尾焰条带（glow 纹理，按 primary/secondary 纹理再分组）。 */
         FLAME_STRIP,
@@ -558,34 +553,6 @@ public final class EngineInstanceCollector {
      */
     public static int glColorByte(float value) {
         return ((byte) (int) value) & 0xFF;
-    }
-
-    // ---------------------------------------------------------------------
-    // INSTANCED 模式：实例属性打包（字段直拷，顶点着色器内展开几何）
-    // ---------------------------------------------------------------------
-
-    /** 打包尾焰条带实例（20 float，5×vec4 属性）。 */
-    public static void packStripInstance(StripInstance in, FloatBuffer out) {
-        out.put(in.posX()).put(in.posY()).put(in.angle()).put(in.rotation1());
-        out.put(in.rotation2()).put(in.translateX()).put(in.scaleX()).put(in.scaleY());
-        out.put(in.halfWidth()).put(in.innerLength()).put(in.stripLength()).put(in.texU());
-        out.put(in.texSpan()).put(in.texAdvance()).put(in.alphaStart()).put(in.alphaMid());
-        out.put(in.red()).put(in.green()).put(in.blue()).put(0.0f);
-    }
-
-    /** 打包火焰核心实例（12 float，3×vec4 属性）。 */
-    public static void packCoreInstance(CoreInstance in, FloatBuffer out) {
-        out.put(in.posX()).put(in.posY()).put(in.angle()).put(in.coreRotation());
-        out.put(in.omegaRotation()).put(in.stripLength()).put(in.halfWidth()).put(in.alpha());
-        out.put(in.red()).put(in.green()).put(in.blue()).put(0.0f);
-    }
-
-    /** 打包辉光精灵实例（16 float，4×vec4 属性：位置旋转 / 缩放尺寸 alpha / 纹理区间 / 颜色）。 */
-    public static void packGlowInstance(GlowInstance in, FloatBuffer out) {
-        out.put(in.posX()).put(in.posY()).put(in.angle()).put(in.coreRotation());
-        out.put(in.scaleX()).put(in.size()).put(in.alpha()).put(0.0f);
-        out.put(in.texU0()).put(in.texV0()).put(in.texU1()).put(in.texV1());
-        out.put(in.red()).put(in.green()).put(in.blue()).put(0.0f);
     }
 
     // ---------------------------------------------------------------------

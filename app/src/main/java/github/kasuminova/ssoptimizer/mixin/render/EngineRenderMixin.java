@@ -159,9 +159,9 @@ public abstract class EngineRenderMixin implements EngineBridge {
     /**
      * @author GitHub Copilot
      * @reason Replace per-slot immediate-mode engine rendering with a per-ship
-     * collect-and-flush batch path (instanced shader expansion with automatic
-     * downgrade to VBO batch / immediate mode), covering both ship and fighter
-     * formulas while preserving the original visual math.
+     * collect-and-flush batch path (VBO batch with automatic downgrade to
+     * immediate mode), covering both ship and fighter formulas while
+     * preserving the original visual math.
      */
     @Overwrite(remap = false)
     public void render(float alphaScale) {

@@ -18,11 +18,14 @@ Profiler 采样（大规模战斗）显示四类热点：
 
 - **Mixin**：`render/EngineRenderMixin`（`@Overwrite Engine.render(float)`）→ `EngineBatch`；`renderFighter` 由合批器内建战机公式接管。
 - **管线**：每舰被渲染时对本舰全部引擎槽「收集 → 按 阶段×纹理ID 分组 → 立即 flush」，每舰最多 4 个 drawcall（strip-primary / strip-secondary / core / glow）。
-- **三档模式**：`-Dssoptimizer.render.shipengine.mode=instanced|vbo|immediate`（默认 instanced）。
-  - INSTANCED：`#version 330 compatibility` 着色器（3 个 program），`gl_VertexID` 模板展开 + `glDrawArraysInstanced`；矩阵用 compat 内建 `gl_ModelViewProjectionMatrix`。
+- **两档模式**：`-Dssoptimizer.render.shipengine.mode=vbo|immediate`（默认 vbo）。
   - VBO_BATCH：CPU 展开三角形 + 环形 VBO（孤儿化 + glBufferSubData）+ 固定管线 glDrawElements。
   - IMMEDIATE：回退 `EngineRenderHelper`。
-  - 运行时探测 `GLContext.getCapabilities()`（游戏为 LWJGL2 兼容 profile，Linux 桌面驱动暴露 GL33+），探测/降级均打日志。
+  - 运行时探测 `GLContext.getCapabilities()`（游戏为 LWJGL2 兼容 profile），探测/降级均打日志。
+  - 【已废弃】INSTANCED 档（per-instance 属性 + `#version 330 compatibility` 着色器 +
+    `gl_VertexID` 模板展开）：独立复现工程（同驱动同着色器同打包）渲染正确，但游戏上下文内
+    实例属性获取异常——几何错乱（全屏巨型四边形），逐级二分（纯色片元 → 单属性点绘制）
+    均不收敛，判定投入产出失衡，整体移除；相关着色器/打包/诊断代码已一并删除。
 - **等价性**：引擎渲染全部 additive（770/1），舰内跨槽重排严格等价；alpha 的 int 截断用 `(int)`/`(byte)` 低 8 位逐位复现；display list 编译期（`GLListManager.buildingList`）检测并退回立即模式（实测舰船 display list 编译区间确实包含引擎渲染调用，该路径真实存在）。
 - **立即模式口径**：`EngineRenderHelper`（IMMEDIATE 档 / display list 回退）已与原版逐行校准——修正了 widthFactor 非增压分支（`max(0.09, level-0.8)/0.2`）、条带逐层 scaleX/scaleY（`0.5+0.5*(p+1)/n`、`(n-p)/n`）、glowSize 两分支（未偏移 `var24*(2+var19)`、偏移分支 `var23*widthShifter.getCurr()`）、glow 火焰强度恒用重置后的 1.0F；maxSpread==0 除零保护作为防御性偏差保留。
 
@@ -62,7 +65,7 @@ Profiler 采样（大规模战斗）显示四类热点：
 | 属性 | 默认值 | 作用 |
 |---|---|---|
 | `ssoptimizer.render.shipengine.enable` | `true`（本轮由 false 改为默认开启） | 引擎合批总开关 |
-| `ssoptimizer.render.shipengine.mode` | `instanced` | 合批模式：instanced / vbo / immediate |
+| `ssoptimizer.render.shipengine.mode` | `vbo` | 合批模式：vbo / immediate |
 | `ssoptimizer.render.shipengine.stats` | `false` | 引擎合批周期统计日志（每 300 次渲染；首个非空批次无条件输出一次摘要） |
 | `ssoptimizer.render.warroomtasks.enable` | `true` | 指挥界面任务连线帧内合批（剔除全透明残留图标的条带渲染） |
 | `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关 |
@@ -73,7 +76,7 @@ Profiler 采样（大规模战斗）显示四类热点：
 ## 验证记录
 
 - 单测：`./gradlew :app:test` 全绿（含引擎实例打包逐位对比、护盾 264 参数化用例、耳切含真实船体语料、BVH fuzz 对比）。
-- E2E：headless 启动冒烟（GL33 探测、INSTANCED 启用、护盾 helper 初始化日志正常）；ASTD 自动化战斗场景（arc_flare_aod7_basic）验证战斗内渲染与碰撞行为。
+- E2E：headless 启动冒烟（GL15 探测、VBO_BATCH 启用、护盾 helper 初始化日志正常）；ASTD 自动化战斗场景（arc_flare_aod7_basic）验证战斗内渲染与碰撞行为；用户手工实测 VBO/IMMEDIATE 两档引擎渲染视觉正常。
 
 ## 后续方向
 
@@ -81,10 +84,11 @@ Profiler 采样（大规模战斗）显示四类热点：
 - raycast 对照算法去留（当前实测劣于 recurrence 约 8 倍）。
 - 引擎 over 层跨舰延迟 flush（layer 级 2 drawcall，近似等价，需独立开关评估）。
 - wasp/paragon 类非简单轮廓的 winding-aware 三角化（消除 GLU 降级残留热点）。
-- 【记录待评估】舰船/武器整体 instanced 渲染：舰船与武器基本是固定贴图、几何不变，
-  可将船体 sprite + 各武器槽 sprite 打包为 instanced quad 批次（每舰 1 实例，
-  武器随槽位变换），配合 display list 使用场景评估收益；注意与受击 jitter、
-  涂装/损伤贴图切换、GraphicsLib 等光影模组的兼容性。
+- 【记录待评估】舰船/武器整体合批渲染：舰船与武器基本是固定贴图、几何不变，
+  可将船体 sprite + 各武器槽 sprite 按纹理分组做 CPU 展开 + 环形 VBO 合批
+  （沿用引擎合批的 VBO 路径；不再考虑 instanced 方案——已在引擎合批中实测
+  游戏上下文内 per-instance 属性获取异常并整体移除）；注意 display list 编译区间
+  需回退立即模式，以及受击 jitter、涂装/损伤贴图切换、GraphicsLib 等光影模组的兼容性。
 - 【已答疑】display list 回退必要性：`GLListManager.beginList` 使用 `GL_COMPILE_AND_EXECUTE`，
   list 会跨帧 `glCallList` 重放；VBO/着色器路径重放时指向已被后续帧覆盖的环形 VBO 偏移，
   语义错误，故编译区间内必须走立即模式（与原版录制行为一致）。游戏内 list 使用点：

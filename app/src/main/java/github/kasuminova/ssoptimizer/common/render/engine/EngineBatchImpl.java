@@ -21,19 +21,12 @@ import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.ShipAccessor;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
-import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL33;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.awt.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,15 +34,15 @@ import java.util.List;
  * 引擎渲染合批实现：{@code Engine.render(float)} / {@code renderFighter(float)} 的替换路径。
  * <p>
  * 工作流程：收集（{@link EngineInstanceCollector}，纯 CPU）→ 按 阶段×纹理ID 分组 →
- * 按当前生效模式 flush（INSTANCED 着色器展开 / VBO_BATCH CPU 展开 / IMMEDIATE 回退
+ * 按当前生效模式 flush（VBO_BATCH CPU 展开 / IMMEDIATE 回退
  * {@link EngineRenderHelper}）。每次 flush 在当前矩阵栈内进行（Ship push/pop 栈内被调，
- * 不缓存矩阵），结束后完整恢复 blend / 纹理绑定 / VBO 绑定 / client state / 着色器程序。
+ * 不缓存矩阵），结束后完整恢复 blend / 纹理绑定 / VBO 绑定 / client state。
  * <p>
  * 开关：
  * <ul>
  *   <li>{@code -Dssoptimizer.render.shipengine.enable}（默认 true，false 时退回立即模式等价路径）</li>
- *   <li>{@code -Dssoptimizer.render.shipengine.mode=instanced|vbo|immediate}（默认 instanced，
- *       按 GL 能力自动降级；着色器编译失败记 ERROR 并运行时降级）</li>
+ *   <li>{@code -Dssoptimizer.render.shipengine.mode=vbo|immediate}（默认 vbo，
+ *       按 GL 能力自动降级）</li>
  *   <li>{@code -Dssoptimizer.render.shipengine.stats=true}（默认 false，每 300 次渲染输出一次
  *       实例数与 display list 回退计数；首个非空批次无条件输出一次摘要）</li>
  * </ul>
@@ -66,26 +59,21 @@ public final class EngineBatchImpl implements EngineBatch {
 
     private static final EngineBatchImpl INSTANCE = new EngineBatchImpl();
 
-    private static final int INSTANCE_VBO_CAPACITY = 256 * 1024;
     private static final int VERTEX_VBO_CAPACITY   = 512 * 1024;
     private static final int INDEX_VBO_CAPACITY    = 128 * 1024;
-    private static final int MAX_INSTANCE_ATTRIBS  = 5;
 
     private final boolean enabled;
     private final boolean statsEnabled;
     private final GlCapability.Mode requestedMode;
 
-    /** 实际生效模式（渲染线程惰性探测后确定）；着色器失败时可运行时降级。 */
+    /** 实际生效模式（渲染线程惰性探测后确定）。 */
     private volatile GlCapability.Mode activeMode;
 
-    private DynamicVbo      instanceVbo;
     private DynamicVbo      vertexVbo;
     private DynamicVbo      indexVbo;
-    private EngineGlProgram program;
 
     private ByteBuffer vertexScratch;
     private ByteBuffer indexScratch;
-    private ByteBuffer instanceScratch;
 
     private boolean buildingListLogged;
     private int  displayListFallbacks;
@@ -97,12 +85,12 @@ public final class EngineBatchImpl implements EngineBatch {
         this.enabled = !"false".equalsIgnoreCase(rawEnable.trim());
         this.statsEnabled = Boolean.parseBoolean(System.getProperty(STATS_PROPERTY, "false"));
 
-        String rawMode = System.getProperty(MODE_PROPERTY, "instanced");
+        String rawMode = System.getProperty(MODE_PROPERTY, "vbo");
         GlCapability.Mode parsed = GlCapability.parseConfiguredMode(rawMode);
         if (parsed == null) {
             LOGGER.warn(String.format(
-                    "[SSOptimizer] 无法识别的引擎合批模式 '%s'，使用默认 instanced", rawMode));
-            parsed = GlCapability.Mode.INSTANCED;
+                    "[SSOptimizer] 无法识别的引擎合批模式 '%s'，使用默认 vbo", rawMode));
+            parsed = GlCapability.Mode.VBO_BATCH;
         }
         this.requestedMode = parsed;
     }
@@ -149,16 +137,7 @@ public final class EngineBatchImpl implements EngineBatch {
         if (batch.isEmpty()) {
             return;
         }
-        if (mode == GlCapability.Mode.INSTANCED) {
-            if (!flushInstanced(batch)) {
-                // 着色器编译失败（ERROR 已记）：运行时降级到 VBO_BATCH
-                LOGGER.warn("[SSOptimizer] 引擎合批 INSTANCED 模式不可用，降级为 VBO_BATCH");
-                activeMode = GlCapability.Mode.VBO_BATCH;
-                flushVboBatch(batch);
-            }
-        } else {
-            flushVboBatch(batch);
-        }
+        flushVboBatch(batch);
     }
 
     // ---------------------------------------------------------------------
@@ -303,261 +282,6 @@ public final class EngineBatchImpl implements EngineBatch {
         CollectedBatch batch = new CollectedBatch();
         EngineInstanceCollector.collect(frame, slots, batch);
         return batch;
-    }
-
-    // ---------------------------------------------------------------------
-    // 诊断：INSTANCED 首绘 GL 状态一次性转储（定位"绘制执行但不可见"用）
-    // ---------------------------------------------------------------------
-
-    private boolean instancedDiagDumped;
-    private int     diagPreError;
-    private int     diagSkippedGroups;
-    private final float[] diagMv = new float[16];
-    private final float[] diagPj = new float[16];
-    private final int[]   diagViewport = new int[4];
-
-    /**
-     * 在实例列表中找第一个投影后落在视野内的条带，返回其屏幕坐标。
-     * 同时把当前 mv/pj/viewport 快照到 diag 字段供转储使用。
-     *
-     * @return int[]{screenX, screenY}；无视野内实例返回 null
-     */
-    private int[] findInViewStripScreenPos(List<StripInstance> instances) {
-        FloatBuffer mv = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mv);
-        FloatBuffer pj = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pj);
-        IntBuffer viewport = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
-        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
-        for (int i = 0; i < 16; i++) {
-            diagMv[i] = mv.get(i);
-            diagPj[i] = pj.get(i);
-        }
-        for (int i = 0; i < 4; i++) {
-            diagViewport[i] = viewport.get(i);
-        }
-
-        for (StripInstance instance : instances) {
-            float viewX = instance.posX() * diagMv[0] + instance.posY() * diagMv[4] + diagMv[12];
-            float viewY = instance.posX() * diagMv[1] + instance.posY() * diagMv[5] + diagMv[13];
-            float ndcX = viewX * diagPj[0] + diagPj[12];
-            float ndcY = viewY * diagPj[5] + diagPj[13];
-            if (Math.abs(ndcX) <= 0.9f && Math.abs(ndcY) <= 0.9f) {
-                return new int[]{
-                        diagViewport[0] + Math.round((ndcX + 1.0f) * 0.5f * diagViewport[2]),
-                        diagViewport[1] + Math.round((ndcY + 1.0f) * 0.5f * diagViewport[3])};
-            }
-        }
-        return null;
-    }
-
-    /** 回读屏幕 (x,y) 处 5x5 区域的红色通道亮度总和。 */
-    private static int readLuminance5x5(int screenX, int screenY) {
-        ByteBuffer pixels = ByteBuffer.allocateDirect(5 * 5 * 4).order(ByteOrder.nativeOrder());
-        GL11.glReadPixels(screenX - 2, screenY - 2, 5, 5, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
-        int luminance = 0;
-        for (int i = 0; i < 25; i++) {
-            luminance += pixels.get(i * 4) & 0xFF;
-        }
-        return luminance;
-    }
-
-    /** 视野内条带绘制前后的完整状态转储（只触发一次）。 */
-    private void dumpInstancedDiag(int drawnInstances, int textureId,
-                                   int screenX, int screenY, int preLum, int postLum) {
-        int postErr = GL11.glGetError();
-        int activeTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE) - GL13.GL_TEXTURE0;
-        int textureBinding = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
-        int currentProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        int framebuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
-        // 纹理完整性：level0 尺寸为 0 表示内容从未上传；mipmap 过滤器下 level1 为 0 表示链不完整
-        int texWidth = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
-        int texHeight = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
-        int texL1Width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 1, GL11.GL_TEXTURE_WIDTH);
-        int minFilter = GL11.glGetTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER);
-
-        LOGGER.info(String.format(
-                "[SSOptimizer] INSTANCED 首绘诊断：drawn=%d tex=%d preErr=%d postErr=%d activeTexUnit=%d "
-                        + "texBinding=%d texSize=%dx%d l1w=%d minFilter=%d "
-                        + "program=%d fbo=%d viewport=%d,%d,%d,%d "
-                        + "tests[depth=%b stencil=%b alpha=%b scissor=%b cull=%b clip0=%b] polyMode=%d "
-                        + "screen=(%d,%d) 绘制前亮度=%d 绘制后亮度=%d（差值>0 即光栅化落屏） "
-                        + "mv[0]=%.3f mv[1]=%.3f mv[4]=%.3f mv[5]=%.3f mv[12]=%.3f mv[13]=%.3f "
-                        + "pj[0]=%.6f pj[5]=%.6f pj[12]=%.6f pj[13]=%.6f",
-                drawnInstances, textureId, diagPreError, postErr, activeTexture,
-                textureBinding, texWidth, texHeight, texL1Width, minFilter,
-                currentProgram, framebuffer,
-                diagViewport[0], diagViewport[1], diagViewport[2], diagViewport[3],
-                GL11.glGetBoolean(GL11.GL_DEPTH_TEST),
-                GL11.glGetBoolean(GL11.GL_STENCIL_TEST),
-                GL11.glGetBoolean(GL11.GL_ALPHA_TEST),
-                GL11.glGetBoolean(GL11.GL_SCISSOR_TEST),
-                GL11.glGetBoolean(GL11.GL_CULL_FACE),
-                GL11.glGetBoolean(GL11.GL_CLIP_PLANE0),
-                GL11.glGetInteger(GL11.GL_POLYGON_MODE),
-                screenX, screenY, preLum, postLum,
-                diagMv[0], diagMv[1], diagMv[4], diagMv[5], diagMv[12], diagMv[13],
-                diagPj[0], diagPj[5], diagPj[12], diagPj[13]));
-    }
-
-    // ---------------------------------------------------------------------
-    // INSTANCED flush：实例属性写入环形 VBO，着色器内展开几何
-    // ---------------------------------------------------------------------
-
-    /** @return false 表示着色器程序不可用（调用方降级） */
-    private boolean flushInstanced(CollectedBatch batch) {
-        if (program == null) {
-            program = EngineGlProgram.create();
-            if (program == null) {
-                return false;
-            }
-        }
-        if (instanceVbo == null) {
-            instanceVbo = new DynamicVbo(GL15.GL_ARRAY_BUFFER, INSTANCE_VBO_CAPACITY);
-        }
-
-        int prevProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        int prevArrayBuffer = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
-        boolean prevProgramPointSize = GL11.glGetBoolean(GL20.GL_VERTEX_PROGRAM_POINT_SIZE);
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
-                | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
-        try {
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
-            GL11.glEnable(GL11.GL_BLEND);
-            GL11.glBlendFunc(770, 1);
-            // debugpoints：三类 pass 全部替换为实例位置点绘制（只用 location 0）
-            boolean debugPoints = program.hasPoints();
-            if (debugPoints) {
-                GL11.glEnable(GL20.GL_VERTEX_PROGRAM_POINT_SIZE);
-            }
-
-            for (StripGroup group : batch.strips) {
-                int count = group.instances().size();
-                FloatBuffer view = instanceView(count * EngineInstanceCollector.STRIP_INSTANCE_FLOATS);
-                for (StripInstance instance : group.instances()) {
-                    EngineInstanceCollector.packStripInstance(instance, view);
-                }
-                int base = uploadInstances(view);
-
-                if (debugPoints) {
-                    program.usePoints();
-                    bindInstanceAttribs(5, EngineInstanceCollector.STRIP_INSTANCE_FLOATS * 4, base);
-                    GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 1, count);
-                    continue;
-                }
-                program.useStrip();
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
-                bindInstanceAttribs(5, EngineInstanceCollector.STRIP_INSTANCE_FLOATS * 4, base);
-                // 诊断：找到视野内条带后做绘制前后回读对比；全部屏外时持续跳过，600 组后报一次系统性偏差
-                int[] diagPos = null;
-                int diagPreLum = 0;
-                if (!instancedDiagDumped) {
-                    diagPos = findInViewStripScreenPos(group.instances());
-                    if (diagPos != null) {
-                        diagPreError = GL11.glGetError();
-                        diagPreLum = readLuminance5x5(diagPos[0], diagPos[1]);
-                    }
-                }
-                GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 12, count);
-                if (diagPos != null) {
-                    instancedDiagDumped = true;
-                    dumpInstancedDiag(count, group.textureId(), diagPos[0], diagPos[1],
-                            diagPreLum, readLuminance5x5(diagPos[0], diagPos[1]));
-                } else if (!instancedDiagDumped && ++diagSkippedGroups == 600) {
-                    instancedDiagDumped = true;
-                    LOGGER.warn("[SSOptimizer] INSTANCED 诊断：连续 600 组条带全部投影到屏幕外，"
-                            + "坐标口径可能存在系统性偏差");
-                }
-            }
-
-            for (CoreGroup group : batch.cores) {
-                int count = group.instances().size();
-                FloatBuffer view = instanceView(count * EngineInstanceCollector.CORE_INSTANCE_FLOATS);
-                for (CoreInstance instance : group.instances()) {
-                    EngineInstanceCollector.packCoreInstance(instance, view);
-                }
-                int base = uploadInstances(view);
-
-                if (debugPoints) {
-                    program.usePoints();
-                    bindInstanceAttribs(3, EngineInstanceCollector.CORE_INSTANCE_FLOATS * 4, base);
-                    GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 1, count);
-                    continue;
-                }
-                program.useCore();
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
-                bindInstanceAttribs(3, EngineInstanceCollector.CORE_INSTANCE_FLOATS * 4, base);
-                GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, count);
-            }
-
-            for (GlowGroup group : batch.glows) {
-                int count = group.instances().size();
-                FloatBuffer view = instanceView(count * EngineInstanceCollector.GLOW_INSTANCE_FLOATS);
-                for (GlowInstance instance : group.instances()) {
-                    EngineInstanceCollector.packGlowInstance(instance, view);
-                }
-                int base = uploadInstances(view);
-
-                if (debugPoints) {
-                    program.usePoints();
-                    bindInstanceAttribs(4, EngineInstanceCollector.GLOW_INSTANCE_FLOATS * 4, base);
-                    GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 1, count);
-                    continue;
-                }
-                program.useGlow();
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
-                bindInstanceAttribs(4, EngineInstanceCollector.GLOW_INSTANCE_FLOATS * 4, base);
-                GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, count);
-            }
-        } finally {
-            for (int loc = 0; loc < MAX_INSTANCE_ATTRIBS; loc++) {
-                GL33.glVertexAttribDivisor(loc, 0);
-                GL20.glDisableVertexAttribArray(loc);
-            }
-            GL20.glUseProgram(prevProgram);
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, prevArrayBuffer);
-            GL11.glPopAttrib();
-            // GL_VERTEX_PROGRAM_POINT_SIZE 不在 glPushAttrib 范围内，手动按原状恢复
-            if (!prevProgramPointSize) {
-                GL11.glDisable(GL20.GL_VERTEX_PROGRAM_POINT_SIZE);
-            }
-        }
-        return true;
-    }
-
-    /** 绑定 per-instance 属性：前 count 个位置设为 divisor=1 并指向实例数据，其余位置关闭，
-     * 避免前一阶段（条带 5 属性）残留的 attrib 数组被后续程序误读。 */
-    private void bindInstanceAttribs(int count, int stride, int base) {
-        for (int loc = 0; loc < MAX_INSTANCE_ATTRIBS; loc++) {
-            if (loc < count) {
-                GL20.glEnableVertexAttribArray(loc);
-                GL20.glVertexAttribPointer(loc, 4, GL11.GL_FLOAT, false, stride, base + loc * 16L);
-                GL33.glVertexAttribDivisor(loc, 1);
-            } else {
-                GL33.glVertexAttribDivisor(loc, 0);
-                GL20.glDisableVertexAttribArray(loc);
-            }
-        }
-    }
-
-    /** 上传一组实例数据到环形 VBO，返回起始字节偏移（VBO 保持绑定供属性指针使用）。 */
-    private int uploadInstances(FloatBuffer view) {
-        view.flip();
-        ByteBuffer bytes = (ByteBuffer) instanceScratch.duplicate().clear()
-                                                            .limit(view.remaining() * 4);
-        bytes.asFloatBuffer().put(view);
-        int base = instanceVbo.write(bytes);
-        instanceVbo.bind();
-        return base;
-    }
-
-    private FloatBuffer instanceView(int floatCount) {
-        int capacity = floatCount * 4;
-        if (instanceScratch == null || instanceScratch.capacity() < capacity) {
-            int newCapacity = Math.max(64 * 1024, Integer.highestOneBit(capacity - 1) << 1);
-            instanceScratch = ByteBuffer.allocateDirect(newCapacity).order(ByteOrder.nativeOrder());
-        }
-        return (FloatBuffer) instanceScratch.asFloatBuffer().clear().limit(floatCount);
     }
 
     // ---------------------------------------------------------------------
