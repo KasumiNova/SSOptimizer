@@ -83,9 +83,9 @@ public final class SpriteBatchImpl implements SpriteBatch {
     private int  pendingQuads;
     private int  lastR, lastG, lastB, lastA;
 
-    /** 扩展状态捕获期 alpha ref 读取缓冲（渲染线程复用）。 */
+    /** 扩展状态捕获期 alpha ref 读取缓冲（渲染线程复用；LWJGL2 glGetFloat 强制要求剩余容量 ≥16）。 */
     private final FloatBuffer alphaRefBuf =
-            ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+            ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
 
     private SpriteBatchImpl() {
         String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
