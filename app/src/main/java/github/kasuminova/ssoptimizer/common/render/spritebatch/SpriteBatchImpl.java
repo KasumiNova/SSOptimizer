@@ -5,6 +5,7 @@ import github.kasuminova.ssoptimizer.common.render.engine.DynamicVbo;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL30;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,10 +14,10 @@ import java.nio.FloatBuffer;
 /**
  * {@link SpriteBatch} 实现：流式严格保序合批。
  * <p>
- * 收集期把 quad 顶点用收集时刻的 modelview 矩阵烘焙到观察空间，累积进固定容量
+ * 收集期把 quad 顶点用收集时刻的 MVP 矩阵烘焙到裁剪空间，累积进固定容量
  * scratch（单 run 上限 {@link SpriteQuadPacker#MAX_QUADS_PER_DRAW}，超出即先 flush）；
  * flush 时绑定 run 的 (纹理, blend) 状态，以单位 modelview 绘制环形 VBO 中的顶点
- * （顶点已是观察空间，避免重复变换），随后完整恢复 blend / 纹理绑定 / VBO 绑定 /
+ * （顶点已是裁剪空间，flush 时投影/模型视图均置单位矩阵），随后完整恢复 blend / 纹理绑定 / VBO 绑定 /
  * client state / 矩阵 / 当前颜色（glColor4ub 恢复为该 run 最后一个 sprite 的颜色，
  * 与原版逐 sprite 设置的残留语义一致）。
  * <p>
@@ -46,7 +47,13 @@ public final class SpriteBatchImpl implements SpriteBatch {
     /** 收集期 modelview 读取缓冲（渲染线程复用）。 */
     private final FloatBuffer mvBuf =
             ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
-    private final float[] mv = new float[16];
+    /** 收集期 projection 读取缓冲（渲染线程复用）。 */
+    private final FloatBuffer pjBuf =
+            ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
+    private final float[] mv  = new float[16];
+    private final float[] pj  = new float[16];
+    /** 合成后的 MVP 2D 仿射（只用槽位 0/1/4/5/12/13）。 */
+    private final float[] mvp = new float[16];
 
     // 当前 run 状态
     private long currentKey = -1;
@@ -80,8 +87,11 @@ public final class SpriteBatchImpl implements SpriteBatch {
                 || GLListManager.buildingList
                 || GL11.glGetInteger(GL11.GL_MATRIX_MODE) != GL11.GL_MODELVIEW
                 || GL11.glGetBoolean(GL11.GL_STENCIL_TEST)
-                || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)) {
-            // 拒绝收集：先 flush 已有批次，保证后续原版绘制的相对顺序不变
+                || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)
+                || GL30.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) != 0) {
+            // 拒绝收集：先 flush 已有批次，保证后续原版绘制的相对顺序不变。
+            // FBO 绑定非 0 表示模组/游戏的离屏 pass（GraphicsLib 法线/材质图等），
+            // 其投影与渲染目标均不同，必须走原版立即路径
             flushPending();
             return false;
         }
@@ -107,7 +117,20 @@ public final class SpriteBatchImpl implements SpriteBatch {
         for (int i = 0; i < 16; i++) {
             mv[i] = mvBuf.get(i);
         }
-        SpriteQuadPacker.packQuad(vertexScratch, indexScratch, pendingQuads * 4, mv,
+        pjBuf.clear();
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pjBuf);
+        for (int i = 0; i < 16; i++) {
+            pj[i] = pjBuf.get(i);
+        }
+        // 合成投影×模型视图的 2D 仿射（列主序槽位 0/1/4/5/12/13），
+        // 顶点直接烘焙到裁剪空间，flush 时两个矩阵均置单位矩阵，与矩阵栈完全解耦
+        mvp[0] = pj[0] * mv[0] + pj[4] * mv[1];
+        mvp[1] = pj[1] * mv[0] + pj[5] * mv[1];
+        mvp[4] = pj[0] * mv[4] + pj[4] * mv[5];
+        mvp[5] = pj[1] * mv[4] + pj[5] * mv[5];
+        mvp[12] = pj[0] * mv[12] + pj[4] * mv[13] + pj[12];
+        mvp[13] = pj[1] * mv[12] + pj[5] * mv[13] + pj[13];
+        SpriteQuadPacker.packQuad(vertexScratch, indexScratch, pendingQuads * 4, mvp,
                 posX, posY, width, height, centerX, centerY, angle,
                 r, g, b, a, texX, texY, texWidth, texHeight);
         pendingQuads++;
@@ -150,7 +173,10 @@ public final class SpriteBatchImpl implements SpriteBatch {
             GL11.glBlendFunc(currentBlendSrc, currentBlendDest);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, currentTexture);
 
-            // 顶点已烘焙到观察空间：以单位 modelview 绘制，避免 flush 时刻矩阵栈的二次变换
+            // 顶点已烘焙到裁剪空间：投影与模型视图均置单位矩阵，与 flush 时刻的矩阵栈完全解耦
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glPushMatrix();
+            GL11.glLoadIdentity();
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glPushMatrix();
             GL11.glLoadIdentity();
@@ -166,9 +192,9 @@ public final class SpriteBatchImpl implements SpriteBatch {
             GL11.glDrawElements(GL11.GL_TRIANGLES, pendingQuads * 6, GL11.GL_UNSIGNED_SHORT, indexBase);
 
             GL11.glPopMatrix();
-            if (prevMatrixMode != GL11.GL_MODELVIEW) {
-                GL11.glMatrixMode(prevMatrixMode);
-            }
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glPopMatrix();
+            GL11.glMatrixMode(prevMatrixMode);
         } finally {
             GL11.glPopClientAttrib();
             GL11.glPopAttrib();

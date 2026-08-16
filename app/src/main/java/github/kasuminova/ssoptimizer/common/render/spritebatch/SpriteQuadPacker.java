@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
  * Sprite quad 的 CPU 顶点打包器（纯逻辑，不触碰 GL）。
  * <p>
  * 顶点几何公式与 {@code SpriteRenderHelper.fallbackRenderSprite} 逐行一致
- * （枢轴/旋转/四角顺序），再左乘收集时刻的 modelview 矩阵把顶点烘焙到观察空间，
+ * （枢轴/旋转/四角顺序），再左乘收集时刻的 MVP 矩阵（projection×modelview 的 2D 仿射）把顶点烘焙到裁剪空间，
  * 使延迟 flush 时无需依赖当时的矩阵栈。顶点格式与引擎合批 VBO 路径一致：
  * x,y,u,v（float×4）+ r,g,b,a（ubyte×4），20 字节/顶点；每 quad 6 索引（0,1,2 / 0,2,3）。
  */
@@ -22,12 +22,12 @@ public final class SpriteQuadPacker {
     }
 
     /**
-     * 向顶点/索引缓冲追加一个烘焙到观察空间的 quad。
+     * 向顶点/索引缓冲追加一个烘焙到裁剪空间的 quad。
      *
      * @param verts     顶点缓冲（position 处写入 80 字节）
      * @param indices   索引缓冲（position 处写入 6 个 short）
      * @param baseVertex 本 quad 的起始顶点下标（quad 序号 × 4）
-     * @param mv        收集时刻的 modelview 矩阵（列主序 16 元素，只用 2D 仿射分量）
+     * @param mv        收集时刻的 MVP 2D 仿射矩阵（列主序 16 元素，只用槽位 0/1/4/5/12/13）
      * @param posX      sprite 左下角 X（已含 offsetX）
      * @param posY      sprite 左下角 Y（已含 offsetY）
      * @param width     sprite 宽
@@ -83,7 +83,7 @@ public final class SpriteQuadPacker {
         indices.putShort((short) (baseVertex + 3));
     }
 
-    /** 局部角点旋转 + 平移到原点 + 左乘 modelview 2D 仿射，结果写入 out（观察空间 x, y）。 */
+    /** 局部角点旋转 + 平移到原点 + 左乘 MVP 2D 仿射，结果写入 out（裁剪空间 x, y）。 */
     private static void transform(float[] out, float originX, float originY, float localX, float localY,
                                   float sinA, float cosA,
                                   float m0, float m1, float m4, float m5, float m12, float m13) {

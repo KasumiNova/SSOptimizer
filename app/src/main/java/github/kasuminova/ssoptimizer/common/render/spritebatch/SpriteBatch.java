@@ -6,7 +6,7 @@ package github.kasuminova.ssoptimizer.common.render.spritebatch;
  * 动机：原版 {@code Sprite.render} 每 sprite 一次纹理绑定 + 矩阵栈操作 + 一组
  * 立即模式 quad（P0 实测战斗帧均值 2238 次绘制、严格保序 run 1002 个）。
  * 本接口把「战斗作用域内连续同组（纹理×blend）的 sprite 绘制」合并为单次
- * VBO drawcall：收集时读取 modelview 矩阵把顶点烘焙到观察空间，
+ * VBO drawcall：收集时读取 MVP 矩阵把顶点烘焙到裁剪空间，
  * 组切换 / 禁区 / 已知非 sprite 绘制边界 / 作用域结束时立即 flush，
  * 绘制相对顺序与原版逐位一致。
  * <p>
