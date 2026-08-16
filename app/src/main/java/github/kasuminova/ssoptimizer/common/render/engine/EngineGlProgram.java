@@ -152,10 +152,12 @@ public final class EngineGlProgram {
     public static EngineGlProgram create() {
         // 调试开关：-Dssoptimizer.render.shipengine.debugsolid=true 时片元输出恒定红色，
         // 若红色可见说明问题在片元/纹理侧，不可见说明在顶点/光栅化侧
-        String fragmentSrc = Boolean.parseBoolean(
-                System.getProperty("ssoptimizer.render.shipengine.debugsolid", "false"))
-                ? FRAGMENT_SRC_DEBUG_SOLID
-                : FRAGMENT_SRC;
+        boolean debugSolid = Boolean.parseBoolean(
+                System.getProperty("ssoptimizer.render.shipengine.debugsolid", "false"));
+        if (debugSolid) {
+            LOGGER.info("[SSOptimizer] 引擎合批 debugsolid 已启用：片元输出恒定红色");
+        }
+        String fragmentSrc = debugSolid ? FRAGMENT_SRC_DEBUG_SOLID : FRAGMENT_SRC;
         int strip = link("strip", STRIP_VERTEX_SRC, fragmentSrc);
         int core = link("core", CORE_VERTEX_SRC, fragmentSrc);
         int glow = link("glow", GLOW_VERTEX_SRC, fragmentSrc);
