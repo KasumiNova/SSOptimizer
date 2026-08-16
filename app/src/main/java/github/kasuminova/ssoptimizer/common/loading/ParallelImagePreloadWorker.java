@@ -172,10 +172,10 @@ public final class ParallelImagePreloadWorker implements Runnable {
     }
 
     /**
-     * 处理单张图片：预备管线启用且非字体覆盖路径时，worker 直接完成
-     * 解码 + 像素转换并发布到 {@link TexturePreparationRegistry}，不再向原版
-     * imageResults 回写（避免 defer 贴图的解码结果在堆内滞留）；其余情况保持
-     * 原版队列协议。
+     * 处理单张图片：预备管线启用且非字体覆盖路径时，worker 完成读源/哈希/
+     * 磁盘缓存写入（未命中时含逐像素转换），但发布到 {@link TexturePreparationRegistry}
+     * 的只有元数据；像素始终保持 Zstd 压缩形态，直到主线程真正执行 GL 上传时
+     * 才解压到 DirectBuffer。其余情况保持原版队列协议。
      */
     private void processImage(final String path) throws ReflectiveOperationException {
         if (!TexturePreparationRegistry.isEnabled() || isFontOverridePath(path)) {
@@ -196,13 +196,23 @@ public final class ParallelImagePreloadWorker implements Runnable {
             return;
         }
 
-        // 磁盘缓存命中时 convert 零成本返回既有结果；未命中时在 worker 线程完成
-        // 逐像素转换并写入磁盘缓存，主线程消费时不再承担这部分 CPU。
+        // 磁盘缓存命中：像素仍保持压缩形态，只发布元数据。
+        final TextureConversionCache.CachedTextureMetadata cachedMetadata = tracked.cachedMetadata();
+        if (cachedMetadata != null) {
+            TexturePreparationRegistry.complete(path, new TexturePreparationRegistry.Prepared(
+                    tracked.sourceHash(),
+                    tracked.sourceByteLength(),
+                    cachedMetadata));
+            return;
+        }
+
+        // 未命中：worker 线程完成逐像素转换并写入磁盘缓存；转换产生的
+        // DirectBuffer 随方法返回即失去引用，不会随结果滞留。
         final TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
         TexturePreparationRegistry.complete(path, new TexturePreparationRegistry.Prepared(
                 tracked.sourceHash(),
                 tracked.sourceByteLength(),
-                new TextureConversionCache.CachedTextureData(
+                TextureConversionCache.CachedTextureMetadata.of(
                         tracked.getWidth(),
                         tracked.getHeight(),
                         tracked.getColorModel().hasAlpha(),

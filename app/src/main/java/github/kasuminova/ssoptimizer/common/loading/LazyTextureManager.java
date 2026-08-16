@@ -189,10 +189,10 @@ public final class LazyTextureManager {
             return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath, resourcePath), resourcePath);
         }
 
-        // worker 预备管线：读源/解码/像素转换已在后台完成，这里直接消费结果
+        // worker 预备管线：读源/哈希/缓存写入已在后台完成，这里直接消费元数据
         final TexturePreparationRegistry.Prepared prepared = TexturePreparationRegistry.await(effectivePath);
         if (prepared != null) {
-            return loadPreparedTexture(textureCache, resourcePath, effectivePath, prepared);
+            return loadPreparedTexture(loader, textureCache, resourcePath, effectivePath, prepared);
         }
 
         final SourceSnapshot source = readSource(effectivePath, resourcePath);
@@ -581,18 +581,17 @@ public final class LazyTextureManager {
     }
 
     /**
-     * 消费 worker 预备结果：defer 贴图只登记元数据；eager 贴图直接纯 GL 上传，
-     * 不再走 {@code ssoptimizer$loadTextureEager} 的原版读图/转换路径。
+     * 消费 worker 预备结果：defer 贴图只登记元数据；eager 贴图在此时才把像素
+     * 从 Zstd 缓存解压到 DirectBuffer 并执行纯 GL 上传，不再走
+     * {@code ssoptimizer$loadTextureEager} 的原版读图/转换路径。
      */
-    private static com.fs.graphics.TextureObject loadPreparedTexture(final HashMap<String, com.fs.graphics.TextureObject> textureCache,
+    private static com.fs.graphics.TextureObject loadPreparedTexture(final TextureLoader loader,
+                                                                     final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                                                      final String requestedPath,
                                                                      final String effectivePath,
-                                                                     final TexturePreparationRegistry.Prepared prepared) {
-        final LazyTextureMetadata metadata = LazyTextureMetadata.from(effectivePath,
-                prepared.data().imageWidth(),
-                prepared.data().imageHeight(),
-                prepared.data().hasAlpha(),
-                prepared.data().conversionResult());
+                                                                     final TexturePreparationRegistry.Prepared prepared) throws IOException {
+        final TextureConversionCache.CachedTextureMetadata preparedMetadata = prepared.metadata();
+        final LazyTextureMetadata metadata = LazyTextureMetadata.from(effectivePath, preparedMetadata);
         final int sourceBytes = (int) Math.min(Integer.MAX_VALUE, Math.max(0L, prepared.sourceByteLength()));
         final boolean defer = shouldDefer(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
         final boolean trackResidency = shouldTrackResidency(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
@@ -607,7 +606,15 @@ public final class LazyTextureManager {
             return markTextureLoadedInCurrentContext(texture, effectivePath);
         }
 
-        uploadConverted(texture, TARGET_2D, effectivePath, prepared.data());
+        final TextureConversionCache.CachedTextureData pixels = TextureConversionCache.load(prepared.sourceHash());
+        if (pixels == null) {
+            LOGGER.warn("[SSOptimizer] Prepared texture cache entry missing for "
+                    + effectivePath + ", falling back to eager load");
+            return markTextureLoadedInCurrentContext(
+                    eagerLoad(loader, textureCache, effectivePath, requestedPath), effectivePath);
+        }
+
+        uploadConverted(texture, TARGET_2D, effectivePath, pixels);
         cacheTexture(textureCache, requestedPath, effectivePath, texture);
         if (trackResidency) {
             MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(effectivePath, prepared.sourceHash(), metadata, now, true));
@@ -641,12 +648,13 @@ public final class LazyTextureManager {
             }
         }
         if (sourceFingerprint != null) {
-            final TextureConversionCache.ResourceCacheHit resourceCacheHit = TextureConversionCache.loadByResourcePath(normalizedPath, sourceFingerprint);
-            if (resourceCacheHit != null) {
+            final TextureConversionCache.ResourceMetadataHit metadataHit =
+                    TextureConversionCache.probeMetadataByResourcePath(normalizedPath, sourceFingerprint);
+            if (metadataHit != null) {
                 return SourceSnapshot.cached(
-                        resourceCacheHit.sourceHash(),
-                        resourceCacheHit.sourceByteLength(),
-                        resourceCacheHit.cachedData(),
+                        metadataHit.sourceHash(),
+                        metadataHit.sourceByteLength(),
+                        metadataHit.metadata(),
                         sourceFingerprint
                 );
             }
@@ -843,21 +851,13 @@ public final class LazyTextureManager {
 
     private static LazyTextureMetadata buildMetadata(final String resourcePath,
                                                      final SourceSnapshot source) throws IOException {
-        if (source.cachedData() != null) {
-            return LazyTextureMetadata.from(resourcePath,
-                    source.cachedData().imageWidth(),
-                    source.cachedData().imageHeight(),
-                    source.cachedData().hasAlpha(),
-                    source.cachedData().conversionResult());
+        if (source.cachedMetadata() != null) {
+            return LazyTextureMetadata.from(resourcePath, source.cachedMetadata());
         }
 
-        final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(source.sourceHash);
+        final TextureConversionCache.CachedTextureMetadata cached = TextureConversionCache.loadMetadata(source.sourceHash);
         if (cached != null) {
-            return LazyTextureMetadata.from(resourcePath,
-                    cached.imageWidth(),
-                    cached.imageHeight(),
-                    cached.hasAlpha(),
-                    cached.conversionResult());
+            return LazyTextureMetadata.from(resourcePath, cached);
         }
 
         final BufferedImage decoded = FastResourceImageDecoder.decodeUntracked(source.sourceBytes);
@@ -1576,7 +1576,7 @@ public final class LazyTextureManager {
     private record SourceSnapshot(byte[] sourceBytes,
                                   String sourceHash,
                                   int sourceByteLength,
-                                  TextureConversionCache.CachedTextureData cachedData,
+                                  TextureConversionCache.CachedTextureMetadata cachedMetadata,
                                   TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         private static SourceSnapshot loaded(final byte[] sourceBytes,
                                              final String sourceHash,
@@ -1590,12 +1590,12 @@ public final class LazyTextureManager {
 
         private static SourceSnapshot cached(final String sourceHash,
                                              final int sourceByteLength,
-                                             final TextureConversionCache.CachedTextureData cachedData,
+                                             final TextureConversionCache.CachedTextureMetadata cachedMetadata,
                                              final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
             return new SourceSnapshot(null,
                     sourceHash,
                     sourceByteLength,
-                    cachedData,
+                    cachedMetadata,
                     sourceFingerprint);
         }
     }
@@ -1708,6 +1708,25 @@ public final class LazyTextureManager {
                                        Color upperHalfColor,
                                        Color lowerHalfColor,
                                        long estimatedGpuBytes) {
+        private static LazyTextureMetadata from(final String resourcePath,
+                                                final TextureConversionCache.CachedTextureMetadata metadata) {
+            return new LazyTextureMetadata(
+                    metadata.imageWidth(),
+                    metadata.imageHeight(),
+                    metadata.hasAlpha(),
+                    metadata.textureWidth(),
+                    metadata.textureHeight(),
+                    metadata.averageColor(),
+                    metadata.upperHalfColor(),
+                    metadata.lowerHalfColor(),
+                    estimateTextureGpuBytes(resourcePath,
+                            metadata.imageWidth(),
+                            metadata.imageHeight(),
+                            metadata.textureWidth(),
+                            metadata.textureHeight())
+            );
+        }
+
         private static LazyTextureMetadata from(final String resourcePath,
                                                 final int imageWidth,
                                                 final int imageHeight,

@@ -70,13 +70,53 @@ class TextureConversionCacheTest {
 
         assertNotNull(fingerprint);
 
-        final TextureConversionCache.ResourceCacheHit cached = TextureConversionCache.loadByResourcePath(sourceFile.toString(), fingerprint);
+        final TextureConversionCache.ResourceMetadataHit hit =
+                TextureConversionCache.probeMetadataByResourcePath(sourceFile.toString(), fingerprint);
 
-        assertNotNull(cached, "Resource-path lookup should resolve the persisted zstd texture cache");
-        assertEquals(sourceHash, cached.sourceHash());
-        assertEquals(sourceBytes.length, cached.sourceByteLength());
-        assertEquals(2, cached.cachedData().imageWidth());
-        assertEquals(2, cached.cachedData().imageHeight());
+        assertNotNull(hit, "Resource-path lookup should resolve the persisted zstd texture cache");
+        assertEquals(sourceHash, hit.sourceHash());
+        assertEquals(sourceBytes.length, hit.sourceByteLength());
+        assertEquals(2, hit.metadata().imageWidth());
+        assertEquals(2, hit.metadata().imageHeight());
+    }
+
+    @Test
+    void metadataSurvivesWithoutPixelPayload() throws Exception {
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, tempDir.toString());
+        System.setProperty(TextureConversionCache.MEMORY_MAX_BYTES_PROPERTY, "0");
+
+        final String sourceHash = seedTrackedConversion("graphics/portraits/test_metadata.png", new byte[]{5, 6, 7, 8});
+        Files.delete(findCacheFile(sourceHash));
+
+        assertNull(TextureConversionCache.load(sourceHash),
+                "Without memory budget and disk entry, pixel payload should be unreadable");
+
+        final TextureConversionCache.CachedTextureMetadata metadata = TextureConversionCache.loadMetadata(sourceHash);
+        assertNotNull(metadata, "Metadata index should survive independent of the pixel payload");
+        assertEquals(2, metadata.imageWidth());
+        assertEquals(2, metadata.imageHeight());
+        assertTrue(metadata.hasAlpha());
+        assertEquals(metadata.textureWidth() * metadata.textureHeight() * 4, metadata.bufferLength());
+    }
+
+    @Test
+    void metadataMatchesFullyDecodedEntry() throws Exception {
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, tempDir.toString());
+
+        final String sourceHash = seedTrackedConversion("graphics/portraits/test_consistency.png", new byte[]{1, 1, 2, 3});
+
+        final TextureConversionCache.CachedTextureMetadata metadata = TextureConversionCache.loadMetadata(sourceHash);
+        final TextureConversionCache.CachedTextureData decoded = TextureConversionCache.load(sourceHash);
+
+        assertNotNull(metadata);
+        assertNotNull(decoded);
+        assertEquals(decoded.imageWidth(), metadata.imageWidth());
+        assertEquals(decoded.imageHeight(), metadata.imageHeight());
+        assertEquals(decoded.hasAlpha(), metadata.hasAlpha());
+        assertEquals(decoded.conversionResult().textureWidth(), metadata.textureWidth());
+        assertEquals(decoded.conversionResult().textureHeight(), metadata.textureHeight());
+        assertEquals(decoded.conversionResult().averageColor().getRGB(), metadata.averageColor().getRGB());
+        assertEquals(decoded.conversionResult().buffer().capacity(), metadata.bufferLength());
     }
 
     @Test
@@ -96,7 +136,7 @@ class TextureConversionCacheTest {
 
         final TextureConversionCache.TextureSourceFingerprint changedFingerprint = TextureConversionCache.probeFingerprint(sourceFile.toString());
         assertNotNull(changedFingerprint);
-        assertNull(TextureConversionCache.loadByResourcePath(sourceFile.toString(), changedFingerprint),
+        assertNull(TextureConversionCache.probeMetadataByResourcePath(sourceFile.toString(), changedFingerprint),
                 "Changed source file metadata should invalidate the resource-path index entry");
     }
 

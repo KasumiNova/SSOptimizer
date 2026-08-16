@@ -10,8 +10,10 @@ import java.util.concurrent.ExecutionException;
 /**
  * 贴图预备结果注册表。
  * <p>
- * 预加载 worker 在后台线程完成「读源 + 哈希 + 磁盘缓存命中/解码 + 像素转换」，
- * 主线程加载贴图时通过 {@link #await} 直接取回转换结果，只剩纯 GL 上传；
+ * 预加载 worker 在后台线程完成「读源 + 哈希 + 磁盘缓存写入/命中」，
+ * 发布的结果仅含元数据（尺寸/alpha/直方图颜色），像素始终保持 Zstd 压缩形态
+ * 滞留在磁盘/堆内压缩缓存中，直到主线程真正执行 GL 上传时才解压到
+ * DirectBuffer，避免全部贴图预先解压吃满直接内存。
  * 被延迟（defer）的贴图也不再向原版 imageResults 回写解码图，避免大量
  * BufferedImage 在堆内滞留到加载阶段结束。
  * <p>
@@ -34,11 +36,11 @@ public final class TexturePreparationRegistry {
      *
      * @param sourceHash 源字节 SHA-256
      * @param sourceByteLength 源文件字节数
-     * @param data 尺寸/alpha/像素转换结果（含直方图颜色）
+     * @param metadata 尺寸/alpha/直方图颜色等元数据（不含像素缓冲区）
      */
     public record Prepared(String sourceHash,
                            long sourceByteLength,
-                           TextureConversionCache.CachedTextureData data) {
+                           TextureConversionCache.CachedTextureMetadata metadata) {
     }
 
     /** 预备管线是否启用。 */

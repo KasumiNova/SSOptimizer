@@ -28,6 +28,11 @@ import java.util.stream.Stream;
  * <p>
  * 将解码后的 ARGB 像素数据经 Zstd 压缩缓存到磁盘，避免每次启动都重新解码和像素转换。
  * 缓存文件经 MD5 hash 校验，源文件变更后自动失效。
+ * <p>
+ * 读取分两级：{@link #loadMetadata} 仅解析头部元数据（尺寸/alpha/直方图颜色），
+ * 不解压像素 payload，供预备管线和延迟贴图登记使用；{@link #load} 才会把像素
+ * 解压到 DirectBuffer，仅在真正执行 GL 上传时调用，避免全部贴图预先解压吃满
+ * 直接内存。
  */
 public final class TextureConversionCache {
     static final String DISABLE_PROPERTY          = "ssoptimizer.disable.texturecache";
@@ -46,6 +51,7 @@ public final class TextureConversionCache {
     private static final Map<String, Object>           LOCKS                    = new ConcurrentHashMap<>();
     private static final Object                        MEMORY_CACHE_LOCK        = new Object();
     private static final LinkedHashMap<String, byte[]> MEMORY_CACHE             = new LinkedHashMap<>(16, 0.75f, true);
+    private static final Map<String, CachedTextureMetadata> METADATA_CACHE      = new ConcurrentHashMap<>();
     private static final Map<String, ResourceIndexEntry> RESOURCE_INDEX_CACHE   = new ConcurrentHashMap<>();
     private static final AtomicBoolean                 WARMUP_STARTED           = new AtomicBoolean(false);
     private static volatile CompletableFuture<Void>    warmupFuture             = null;
@@ -58,12 +64,72 @@ public final class TextureConversionCache {
         return !Boolean.getBoolean(DISABLE_PROPERTY);
     }
 
+    /**
+     * 完整读取缓存条目：解压像素 payload 到 DirectBuffer。
+     * <p>
+     * 仅在真正执行 GL 上传时调用；只需要尺寸/颜色等元数据时使用 {@link #loadMetadata}。
+     */
     static CachedTextureData load(final String sourceHash) {
+        final byte[] compressedBytes = loadCompressedBytes(sourceHash);
+        if (compressedBytes == null) {
+            return null;
+        }
+
+        synchronized (lockFor(sourceHash)) {
+            try {
+                return decodeCompressed(sourceHash, compressedBytes);
+            } catch (IOException | RuntimeException ignored) {
+                final Path cacheFile = cacheFile(sourceHash);
+                deleteQuietly(cacheFile);
+                forgetCompressed(sourceHash);
+                return null;
+            }
+        }
+    }
+
+    /**
+     * 仅读取缓存条目的元数据（尺寸/alpha/直方图颜色/payload 长度），不解压像素。
+     * <p>
+     * 元数据常驻小内存索引，首次读取时从压缩流头部解析（Zstd 按需解压，
+     * 只触及首个数据块）。
+     */
+    static CachedTextureMetadata loadMetadata(final String sourceHash) {
         if (!isEnabled()) {
             return null;
         }
 
-        final CachedTextureData inMemory = loadFromMemory(sourceHash);
+        final CachedTextureMetadata cached = METADATA_CACHE.get(sourceHash);
+        if (cached != null) {
+            return cached;
+        }
+
+        final byte[] compressedBytes = loadCompressedBytes(sourceHash);
+        if (compressedBytes == null) {
+            return null;
+        }
+
+        synchronized (lockFor(sourceHash)) {
+            try {
+                final CachedTextureMetadata metadata = decodeHeader(sourceHash, compressedBytes);
+                METADATA_CACHE.put(sourceHash, metadata);
+                return metadata;
+            } catch (IOException | RuntimeException ignored) {
+                deleteQuietly(cacheFile(sourceHash));
+                forgetCompressed(sourceHash);
+                return null;
+            }
+        }
+    }
+
+    /**
+     * 取出缓存条目的压缩字节：优先内存缓存，未命中时读盘并回填内存缓存。
+     */
+    private static byte[] loadCompressedBytes(final String sourceHash) {
+        if (!isEnabled()) {
+            return null;
+        }
+
+        final byte[] inMemory = lookupCompressed(sourceHash);
         if (inMemory != null) {
             return inMemory;
         }
@@ -74,7 +140,7 @@ public final class TextureConversionCache {
         }
 
         synchronized (lockFor(sourceHash)) {
-            final CachedTextureData cachedInMemory = loadFromMemory(sourceHash);
+            final byte[] cachedInMemory = lookupCompressed(sourceHash);
             if (cachedInMemory != null) {
                 return cachedInMemory;
             }
@@ -84,9 +150,8 @@ public final class TextureConversionCache {
 
             try {
                 final byte[] compressedBytes = Files.readAllBytes(cacheFile);
-                final CachedTextureData cached = decodeCompressed(sourceHash, compressedBytes);
                 rememberCompressed(sourceHash, compressedBytes);
-                return cached;
+                return compressedBytes;
             } catch (IOException | RuntimeException ignored) {
                 deleteQuietly(cacheFile);
                 forgetCompressed(sourceHash);
@@ -95,8 +160,11 @@ public final class TextureConversionCache {
         }
     }
 
-    static ResourceCacheHit loadByResourcePath(final String resourcePath,
-                                               final TextureSourceFingerprint sourceFingerprint) {
+    /**
+     * 按资源路径 + 源文件指纹解析缓存，仅返回元数据，不解压像素 payload。
+     */
+    static ResourceMetadataHit probeMetadataByResourcePath(final String resourcePath,
+                                                           final TextureSourceFingerprint sourceFingerprint) {
         if (!isEnabled() || resourcePath == null || resourcePath.isBlank() || sourceFingerprint == null) {
             return null;
         }
@@ -107,14 +175,14 @@ public final class TextureConversionCache {
             return null;
         }
 
-        final CachedTextureData cached = load(indexEntry.sourceHash());
-        if (cached == null) {
+        final CachedTextureMetadata metadata = loadMetadata(indexEntry.sourceHash());
+        if (metadata == null) {
             RESOURCE_INDEX_CACHE.remove(normalizedPath);
             deleteQuietly(indexFile(normalizedPath));
             return null;
         }
 
-        return new ResourceCacheHit(indexEntry.sourceHash(), sourceFingerprint.byteLength(), cached);
+        return new ResourceMetadataHit(indexEntry.sourceHash(), sourceFingerprint.byteLength(), metadata);
     }
 
     static TextureSourceFingerprint probeFingerprint(final String resourcePath) {
@@ -162,6 +230,11 @@ public final class TextureConversionCache {
                         StandardOpenOption.TRUNCATE_EXISTING,
                         StandardOpenOption.WRITE);
                 rememberCompressed(image.sourceHash(), compressedBytes);
+                METADATA_CACHE.put(image.sourceHash(), CachedTextureMetadata.of(
+                        image.getWidth(),
+                        image.getHeight(),
+                        image.getColorModel().hasAlpha(),
+                        result));
                 storeResourceIndex(image);
             } catch (IOException | RuntimeException ignored) {
                 deleteQuietly(cacheFile);
@@ -175,6 +248,7 @@ public final class TextureConversionCache {
             MEMORY_CACHE.clear();
             memoryCacheBytes = 0L;
         }
+        METADATA_CACHE.clear();
         RESOURCE_INDEX_CACHE.clear();
     }
 
@@ -303,20 +377,6 @@ public final class TextureConversionCache {
         return LOCKS.computeIfAbsent(sourceHash, ignored -> new Object());
     }
 
-    private static CachedTextureData loadFromMemory(final String sourceHash) {
-        final byte[] compressed = lookupCompressed(sourceHash);
-        if (compressed == null) {
-            return null;
-        }
-
-        try {
-            return decodeCompressed(sourceHash, compressed);
-        } catch (IOException | RuntimeException ignored) {
-            forgetCompressed(sourceHash);
-            return null;
-        }
-    }
-
     private static Path cacheFile(final String sourceHash) {
         final String prefix = sourceHash.substring(0, 2);
         return cacheDirectory().resolve(prefix).resolve(sourceHash + FILE_EXTENSION);
@@ -411,31 +471,61 @@ public final class TextureConversionCache {
         }
     }
 
+    /**
+     * 解析压缩流头部，返回元数据。Zstd 按需解压，只触及容纳头部的首个数据块，
+     * 不会解压像素 payload。
+     */
+    private static CachedTextureMetadata decodeHeader(final String sourceHash,
+                                                      final byte[] compressedBytes) throws IOException {
+        try (DataInputStream input = new DataInputStream(new BufferedInputStream(
+                new ZstdInputStream(new ByteArrayInputStream(compressedBytes))))) {
+            return readHeader(input, sourceHash);
+        }
+    }
+
+    private static CachedTextureMetadata readHeader(final DataInputStream input,
+                                                    final String sourceHash) throws IOException {
+        final String magic = input.readUTF();
+        final int version = input.readInt();
+        final String storedHash = input.readUTF();
+        input.readUTF();
+
+        if (!MAGIC.equals(magic) || version != VERSION || !sourceHash.equals(storedHash)) {
+            throw new IOException("Texture cache header mismatch");
+        }
+
+        final int imageWidth = input.readInt();
+        final int imageHeight = input.readInt();
+        final boolean hasAlpha = input.readBoolean();
+        final int textureWidth = input.readInt();
+        final int textureHeight = input.readInt();
+        final int averageColor = input.readInt();
+        final int upperHalfColor = input.readInt();
+        final int lowerHalfColor = input.readInt();
+        final int bufferLength = input.readInt();
+        if (bufferLength < 0) {
+            throw new IOException("Texture cache buffer length is negative");
+        }
+
+        return new CachedTextureMetadata(
+                imageWidth,
+                imageHeight,
+                hasAlpha,
+                textureWidth,
+                textureHeight,
+                new Color(averageColor, true),
+                new Color(upperHalfColor, true),
+                new Color(lowerHalfColor, true),
+                bufferLength
+        );
+    }
+
     private static CachedTextureData decodeCompressed(final String sourceHash,
                                                       final byte[] compressedBytes) throws IOException {
         try (DataInputStream input = new DataInputStream(new BufferedInputStream(
                 new ZstdInputStream(new ByteArrayInputStream(compressedBytes))))) {
-            final String magic = input.readUTF();
-            final int version = input.readInt();
-            final String storedHash = input.readUTF();
-            input.readUTF();
-
-            if (!MAGIC.equals(magic) || version != VERSION || !sourceHash.equals(storedHash)) {
-                throw new IOException("Texture cache header mismatch");
-            }
-
-            final int imageWidth = input.readInt();
-            final int imageHeight = input.readInt();
-            final boolean hasAlpha = input.readBoolean();
-            final int textureWidth = input.readInt();
-            final int textureHeight = input.readInt();
-            final int averageColor = input.readInt();
-            final int upperHalfColor = input.readInt();
-            final int lowerHalfColor = input.readInt();
-            final int bufferLength = input.readInt();
-            if (bufferLength < 0) {
-                throw new IOException("Texture cache buffer length is negative");
-            }
+            final CachedTextureMetadata metadata = readHeader(input, sourceHash);
+            final int bufferLength = metadata.bufferLength();
 
             final byte[] bytes = input.readNBytes(bufferLength);
             if (bytes.length != bufferLength) {
@@ -446,16 +536,16 @@ public final class TextureConversionCache {
             buffer.put(bytes);
             buffer.flip();
             return new CachedTextureData(
-                    imageWidth,
-                    imageHeight,
-                    hasAlpha,
+                    metadata.imageWidth(),
+                    metadata.imageHeight(),
+                    metadata.hasAlpha(),
                     new TexturePixelConversionResult(
                             buffer,
-                            textureWidth,
-                            textureHeight,
-                            new Color(averageColor, true),
-                            new Color(upperHalfColor, true),
-                            new Color(lowerHalfColor, true)
+                            metadata.textureWidth(),
+                            metadata.textureHeight(),
+                            metadata.averageColor(),
+                            metadata.upperHalfColor(),
+                            metadata.lowerHalfColor()
                     )
             );
         }
@@ -580,15 +670,46 @@ public final class TextureConversionCache {
         }
     }
 
+    /**
+     * 缓存条目元数据：尺寸/alpha/纹理尺寸/直方图颜色/payload 字节数。
+     * 不持有像素缓冲区，可常驻内存。
+     */
+    record CachedTextureMetadata(int imageWidth,
+                                 int imageHeight,
+                                 boolean hasAlpha,
+                                 int textureWidth,
+                                 int textureHeight,
+                                 Color averageColor,
+                                 Color upperHalfColor,
+                                 Color lowerHalfColor,
+                                 int bufferLength) {
+        static CachedTextureMetadata of(final int imageWidth,
+                                        final int imageHeight,
+                                        final boolean hasAlpha,
+                                        final TexturePixelConversionResult result) {
+            return new CachedTextureMetadata(
+                    imageWidth,
+                    imageHeight,
+                    hasAlpha,
+                    result.textureWidth(),
+                    result.textureHeight(),
+                    result.averageColor(),
+                    result.upperHalfColor(),
+                    result.lowerHalfColor(),
+                    result.buffer().capacity()
+            );
+        }
+    }
+
     record CachedTextureData(int imageWidth,
                              int imageHeight,
                              boolean hasAlpha,
                              TexturePixelConversionResult conversionResult) {
     }
 
-    record ResourceCacheHit(String sourceHash,
-                            int sourceByteLength,
-                            CachedTextureData cachedData) {
+    record ResourceMetadataHit(String sourceHash,
+                               int sourceByteLength,
+                               CachedTextureMetadata metadata) {
     }
 
     record TextureSourceFingerprint(String resolvedSourcePath,

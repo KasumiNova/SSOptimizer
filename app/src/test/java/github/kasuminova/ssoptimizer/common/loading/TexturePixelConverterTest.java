@@ -100,43 +100,6 @@ class TexturePixelConverterTest {
     }
 
     @Test
-    void reusesPersistedTextureConversionResultForTrackedImages() throws IOException {
-        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, tempDir.toString());
-
-        BufferedImage source = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
-        source.setRGB(0, 0, new Color(10, 20, 30, 255).getRGB());
-
-        TexturePixelConversionResult first = TexturePixelConverter.convert(
-                TrackedResourceImage.wrap(
-                        "graphics/test.png",
-                        TrackedResourceImage.computeSourceHash(new byte[]{1, 2, 3, 4}),
-                        source)
-        );
-
-        BufferedImage mutated = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
-        mutated.setRGB(0, 0, new Color(200, 210, 220, 255).getRGB());
-
-        TexturePixelConversionResult second = TexturePixelConverter.convert(
-                TrackedResourceImage.wrap(
-                        "graphics/test.png",
-                        TrackedResourceImage.computeSourceHash(new byte[]{1, 2, 3, 4}),
-                        mutated)
-        );
-
-        assertEquals(first.textureWidth(), second.textureWidth());
-        assertEquals(first.textureHeight(), second.textureHeight());
-        assertEquals(first.averageColor().getRGB(), second.averageColor().getRGB());
-        assertEquals(Byte.toUnsignedInt(first.buffer().get(0)), Byte.toUnsignedInt(second.buffer().get(0)));
-        assertEquals(Byte.toUnsignedInt(first.buffer().get(1)), Byte.toUnsignedInt(second.buffer().get(1)));
-        assertEquals(Byte.toUnsignedInt(first.buffer().get(2)), Byte.toUnsignedInt(second.buffer().get(2)));
-        assertEquals(Byte.toUnsignedInt(first.buffer().get(3)), Byte.toUnsignedInt(second.buffer().get(3)));
-        assertEquals(10, Byte.toUnsignedInt(second.buffer().get(0)));
-        assertEquals(20, Byte.toUnsignedInt(second.buffer().get(1)));
-        assertEquals(30, Byte.toUnsignedInt(second.buffer().get(2)));
-        assertTrue(containsCacheFile(tempDir), "Tracked conversion should persist a zstd cache file");
-    }
-
-    @Test
     void canDisableTextureCacheForLiveReconversion() throws IOException {
         System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, tempDir.toString());
         System.setProperty(TextureConversionCache.DISABLE_PROPERTY, "true");
