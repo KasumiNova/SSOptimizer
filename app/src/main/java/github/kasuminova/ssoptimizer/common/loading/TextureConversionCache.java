@@ -236,7 +236,8 @@ public final class TextureConversionCache {
                         image.getColorModel().hasAlpha(),
                         result));
                 storeResourceIndex(image);
-            } catch (IOException | RuntimeException ignored) {
+            } catch (IOException | RuntimeException e) {
+                LOGGER.error("[SSOptimizer] Failed to write texture cache entry for " + image.resourcePath(), e);
                 deleteQuietly(cacheFile);
                 forgetCompressed(image.sourceHash());
             }

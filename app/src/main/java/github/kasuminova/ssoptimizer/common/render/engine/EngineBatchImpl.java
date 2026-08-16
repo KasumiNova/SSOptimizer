@@ -33,6 +33,7 @@ import java.awt.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -312,7 +313,7 @@ public final class EngineBatchImpl implements EngineBatch {
     private int     diagPreError;
 
     /** 首个条带组绘制后转储一次关键 GL 状态与错误码（无条件 INFO，只触发一次）。 */
-    private void dumpInstancedDiagOnce(int drawnInstances, int textureId) {
+    private void dumpInstancedDiagOnce(int drawnInstances, int textureId, StripInstance sample) {
         if (instancedDiagDumped) {
             return;
         }
@@ -324,36 +325,48 @@ public final class EngineBatchImpl implements EngineBatch {
         int currentProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
         int matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
         int framebuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
-        // 纹理完整性：level0 尺寸为 0 表示内容从未上传（incomplete，着色器采样黑色）
+        // 纹理完整性：level0 尺寸为 0 表示内容从未上传；mipmap 过滤器下 level1 为 0 表示链不完整
         int texWidth = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
         int texHeight = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+        int texL1Width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 1, GL11.GL_TEXTURE_WIDTH);
         int minFilter = GL11.glGetTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER);
-        int magFilter = GL11.glGetTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER);
 
         FloatBuffer mv = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mv);
         FloatBuffer pj = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pj);
+        IntBuffer viewport = ByteBuffer.allocateDirect(16).order(ByteOrder.nativeOrder()).asIntBuffer();
+        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
+
+        // 把样本条带中心投影到屏幕坐标，回读 5x5 像素验证光栅化是否真实落屏
+        float viewX = sample.posX() * mv.get(0) + sample.posY() * mv.get(4) + mv.get(12);
+        float viewY = sample.posX() * mv.get(1) + sample.posY() * mv.get(5) + mv.get(13);
+        float ndcX = viewX * pj.get(0) + pj.get(12);
+        float ndcY = viewY * pj.get(5) + pj.get(13);
+        int screenX = viewport.get(0) + Math.round((ndcX + 1.0f) * 0.5f * viewport.get(2));
+        int screenY = viewport.get(1) + Math.round((ndcY + 1.0f) * 0.5f * viewport.get(3));
+        ByteBuffer pixels = ByteBuffer.allocateDirect(5 * 5 * 4).order(ByteOrder.nativeOrder());
+        GL11.glReadPixels(screenX - 2, screenY - 2, 5, 5, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
+        int readErr = GL11.glGetError();
+        int luminance = 0;
+        for (int i = 0; i < 25; i++) {
+            luminance += pixels.get(i * 4) & 0xFF;
+        }
 
         LOGGER.info(String.format(
                 "[SSOptimizer] INSTANCED 首绘诊断：drawn=%d tex=%d preErr=%d postErr=%d activeTexUnit=%d "
-                        + "texBinding=%d texSize=%dx%d minFilter=%d magFilter=%d "
-                        + "program=%d fbo=%d matrixMode=%d clientArrays[vtx=%b tex=%b col=%b] "
-                        + "tests[depth=%b stencil=%b alpha=%b func=%d] blend=%b "
-                        + "mv[0]=%.3f mv[5]=%.3f mv[12]=%.3f mv[13]=%.3f pj[0]=%.6f pj[5]=%.6f pj[10]=%.3f",
+                        + "texBinding=%d texSize=%dx%d l1w=%d minFilter=%d "
+                        + "program=%d fbo=%d viewport=%d,%d,%d,%d "
+                        + "tests[depth=%b stencil=%b alpha=%b] "
+                        + "样本pos=(%.1f,%.1f) ndc=(%.3f,%.3f) screen=(%d,%d) 回读亮度=%d readErr=%d",
                 drawnInstances, textureId, diagPreError, postErr, activeTexture,
-                textureBinding, texWidth, texHeight, minFilter, magFilter,
-                currentProgram, framebuffer, matrixMode,
-                GL11.glGetBoolean(GL11.GL_VERTEX_ARRAY),
-                GL11.glGetBoolean(GL11.GL_TEXTURE_COORD_ARRAY),
-                GL11.glGetBoolean(GL11.GL_COLOR_ARRAY),
+                textureBinding, texWidth, texHeight, texL1Width, minFilter,
+                currentProgram, framebuffer,
+                viewport.get(0), viewport.get(1), viewport.get(2), viewport.get(3),
                 GL11.glGetBoolean(GL11.GL_DEPTH_TEST),
                 GL11.glGetBoolean(GL11.GL_STENCIL_TEST),
                 GL11.glGetBoolean(GL11.GL_ALPHA_TEST),
-                GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC),
-                GL11.glGetBoolean(GL11.GL_BLEND),
-                mv.get(0), mv.get(5), mv.get(12), mv.get(13),
-                pj.get(0), pj.get(5), pj.get(10)));
+                sample.posX(), sample.posY(), ndcX, ndcY, screenX, screenY, luminance, readErr));
     }
 
     // ---------------------------------------------------------------------
@@ -396,7 +409,7 @@ public final class EngineBatchImpl implements EngineBatch {
                     diagPreError = GL11.glGetError();
                 }
                 GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 12, count);
-                dumpInstancedDiagOnce(count, group.textureId());
+                dumpInstancedDiagOnce(count, group.textureId(), group.instances().get(0));
             }
 
             for (CoreGroup group : batch.cores) {

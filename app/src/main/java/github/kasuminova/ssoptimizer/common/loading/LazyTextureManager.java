@@ -477,16 +477,19 @@ public final class LazyTextureManager {
     private static void uploadDeferredTexture(final com.fs.graphics.TextureObject texture,
                                               final int target,
                                               final ManagedTextureEntry entry) throws IOException {
-        TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(entry.sourceHash);
-        if (cached == null) {
-            final SourceSnapshot source = readSource(entry.resourcePath, entry.resourcePath);
-            buildMetadata(entry.resourcePath, source);
-            cached = TextureConversionCache.load(entry.sourceHash);
-            if (cached == null) {
-                throw new IOException("Texture cache miss after deferred rebuild: " + entry.resourcePath);
-            }
+        final ResolvedDeferredTexture resolved = resolveDeferredTextureData(entry.resourcePath, entry.sourceHash);
+        if (resolved == null) {
+            uploadFallbackPixelTexture(texture, target, entry);
+            return;
         }
 
+        if (!resolved.sourceHash().equals(entry.sourceHash)) {
+            // 重建后实际源哈希与登记键不一致（如 worker 与主线程读源路径不同）：
+            // 同步 entry 键，保证后续绑定（闲置卸载后再上传）直接命中缓存。
+            entry.updateSourceHash(resolved.sourceHash());
+        }
+
+        final TextureConversionCache.CachedTextureData cached = resolved.data();
         final TexturePixelConversionResult result = cached.conversionResult();
         applyMetadata(texture, LazyTextureMetadata.from(entry.resourcePath,
                 cached.imageWidth(),
@@ -495,6 +498,98 @@ public final class LazyTextureManager {
                 result));
 
         uploadConverted(texture, target, entry.resourcePath, cached);
+    }
+
+    /**
+     * 解析延迟上传所需的像素数据。
+     * <p>
+     * 优先按登记的 {@code registeredSourceHash} 命中压缩缓存；未命中时立即重建：
+     * 直接重读源字节并解码/转换为像素，同时尝试回写磁盘缓存（回写失败不阻塞本次上传）。
+     * 重建结果直接返回，不再依赖第二次缓存读取——旧实现中 {@code buildMetadata} 可能走
+     * 元数据短路（索引与数据文件不同步时成为空操作）、缓存写入失败被静默吞掉或重建哈希
+     * 与登记键不一致，都会导致重建后再次 miss，最终以 IOException 失败并黑采样。
+     *
+     * @return 像素数据与实际使用的源哈希；源不可读或解码失败时返回 null（调用方走 1x1 兜底上传）
+     */
+    static ResolvedDeferredTexture resolveDeferredTextureData(final String resourcePath,
+                                                              final String registeredSourceHash) {
+        final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(registeredSourceHash);
+        if (cached != null) {
+            return new ResolvedDeferredTexture(cached, registeredSourceHash);
+        }
+
+        LOGGER.warn("[SSOptimizer] Deferred texture cache miss for " + resourcePath
+                + " (hash=" + registeredSourceHash + "), rebuilding by immediate decode");
+
+        final byte[] sourceBytes = readRebuildSourceBytes(resourcePath);
+        if (sourceBytes == null) {
+            LOGGER.error("[SSOptimizer] Deferred texture cache miss and source unreadable: " + resourcePath);
+            return null;
+        }
+
+        final BufferedImage decoded;
+        try {
+            decoded = FastResourceImageDecoder.decodeUntracked(sourceBytes);
+        } catch (IOException e) {
+            LOGGER.error("[SSOptimizer] Failed to decode texture for deferred rebuild: " + resourcePath, e);
+            return null;
+        }
+        if (decoded == null) {
+            LOGGER.error("[SSOptimizer] Texture decode produced no image for deferred rebuild: " + resourcePath);
+            return null;
+        }
+
+        final String rebuiltHash = TrackedResourceImage.computeSourceHash(sourceBytes);
+        if (!rebuiltHash.equals(registeredSourceHash)) {
+            LOGGER.warn("[SSOptimizer] Deferred texture cache key mismatch for " + resourcePath
+                    + ": registered=" + registeredSourceHash + ", rebuilt=" + rebuiltHash);
+        }
+
+        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint =
+                TextureConversionCache.probeFingerprint(resourcePath);
+        final BufferedImage tracked = TrackedResourceImage.wrap(resourcePath, rebuiltHash, decoded, sourceFingerprint);
+        final TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
+        return new ResolvedDeferredTexture(
+                new TextureConversionCache.CachedTextureData(
+                        decoded.getWidth(),
+                        decoded.getHeight(),
+                        decoded.getColorModel().hasAlpha(),
+                        result),
+                rebuiltHash);
+    }
+
+    /**
+     * 延迟重建时重读源字节。缓存未命中后不再走资源索引指纹短路（索引与数据文件不同步时
+     * 该路径可能空转），直接从资源流读取原始字节。
+     */
+    private static byte[] readRebuildSourceBytes(final String resourcePath) {
+        try (InputStream input = openStream(resourcePath, resourcePath)) {
+            if (input == null) {
+                return null;
+            }
+            return input.readAllBytes();
+        } catch (IOException e) {
+            LOGGER.error("[SSOptimizer] Failed to read texture source for deferred rebuild: " + resourcePath, e);
+            return null;
+        }
+    }
+
+    /**
+     * 源不可读/解码失败时上传 1x1 白色像素贴图，避免 GL 以未生成纹理 id 的不完整纹理
+     * 采样产生黑块；同时输出 ERROR 日志便于排查。白色对 normal map 是合法非零扰动，
+     * 对颜色贴图是可见占位，均优于黑采样。
+     */
+    private static void uploadFallbackPixelTexture(final com.fs.graphics.TextureObject texture,
+                                                   final int target,
+                                                   final ManagedTextureEntry entry) {
+        LOGGER.error("[SSOptimizer] Deferred texture data unavailable for " + entry.resourcePath
+                + ", uploading 1x1 white fallback texture");
+        final BufferedImage white = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+        white.setRGB(0, 0, 0xFFFFFFFF);
+        final TexturePixelConversionResult result = TexturePixelConverter.convert(white);
+        applyMetadata(texture, LazyTextureMetadata.from(entry.resourcePath, 1, 1, true, result));
+        uploadConverted(texture, target, entry.resourcePath,
+                new TextureConversionCache.CachedTextureData(1, 1, true, result));
     }
 
     /**
@@ -1600,13 +1695,20 @@ public final class LazyTextureManager {
         }
     }
 
+    /**
+     * 延迟上传解析结果：像素数据 + 实际生效的源哈希（重建后可能与登记键不同）。
+     */
+    record ResolvedDeferredTexture(TextureConversionCache.CachedTextureData data,
+                                   String sourceHash) {
+    }
+
     private record ContextBoundTextureEntry(String resourcePath,
                                             long contextGeneration) {
     }
 
     private static final class ManagedTextureEntry {
         private final    String  resourcePath;
-        private final    String  sourceHash;
+        private volatile String  sourceHash;
         private final    int     imageWidth;
         private final    int     imageHeight;
         private final    int     textureWidth;
@@ -1688,6 +1790,14 @@ public final class LazyTextureManager {
 
         void markNonEvictable() {
             evictable = false;
+        }
+
+        /**
+         * 延迟重建后同步实际源哈希（重建键与登记键不一致时调用），
+         * 使后续绑定可直接命中缓存。仅在持 entry 锁时调用。
+         */
+        void updateSourceHash(final String sourceHash) {
+            this.sourceHash = sourceHash;
         }
     }
 
