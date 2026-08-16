@@ -10,6 +10,7 @@ import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallback
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
+import github.kasuminova.ssoptimizer.common.logging.VanillaLogNoiseConfigurator;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.modopt.dcr.DcrModOptimizer;
 import io.github.nanoforged.api.CoreModContext;
@@ -29,8 +30,10 @@ import java.util.function.BiConsumer;
  * 时序上 onLoad 早于任何游戏类加载，weaver 的 {@code transform} 只在游戏类加载时懒读
  * 注册表，故「onLoad 写、transform 读」是安全模式。
  * <p>
- * 本插件只接管字节码注入；ImageIO 配置、日志降噪、纹理缓存等运行时组件仍由游戏原生
- * {@code SSOptimizerModPlugin.onApplicationLoad} 负责（双轨保留）。
+ * 本插件只接管字节码注入；ImageIO 配置、纹理缓存等运行时组件仍由游戏原生
+ * {@code SSOptimizerModPlugin.onApplicationLoad} 负责（双轨保留）。日志降噪按产生时机
+ * 分流：原版加载期噪音（早于任何游戏类加载）在 {@link #onLoad} 内处理；Mod 自身运行期
+ * 噪音（如 LunaLib）仍在 {@code onApplicationLoad} 处理。
  */
 public final class SSOptimizerCorePlugin implements INanoCorePlugin {
     private static final Logger LOGGER = Logger.getLogger(SSOptimizerCorePlugin.class);
@@ -42,12 +45,14 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
     }
 
     /**
-     * coremod 装配完成回调：注册全部引擎级与外部模组 ASM 处理器。
+     * coremod 装配完成回调：先压住原版加载期日志噪音（须早于游戏数据加载，否则
+     * 「Loading ...」类 INFO 日志已刷屏），再注册全部引擎级与外部模组 ASM 处理器。
      *
      * @param context NanoForge 运行上下文（当前不使用，路径均按既有系统属性约定解析）
      */
     @Override
     public void onLoad(CoreModContext context) {
+        VanillaLogNoiseConfigurator.configure();
         registerAllProcessors(HybridWeaverTransformer::registerProcessor);
         LOGGER.info("[SSOptimizer] CoreMod loaded — Engine + AI + loading repair phase active, "
                 + HybridWeaverTransformer.getProcessorCount() + " processor registrations");

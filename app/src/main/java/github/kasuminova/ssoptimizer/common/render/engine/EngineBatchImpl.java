@@ -21,8 +21,10 @@ import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.ShipAccessor;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.util.vector.Vector2f;
@@ -303,6 +305,50 @@ public final class EngineBatchImpl implements EngineBatch {
     }
 
     // ---------------------------------------------------------------------
+    // 诊断：INSTANCED 首绘 GL 状态一次性转储（定位"绘制执行但不可见"用）
+    // ---------------------------------------------------------------------
+
+    private boolean instancedDiagDumped;
+
+    /** 首个条带组绘制后转储一次关键 GL 状态与错误码（无条件 INFO，只触发一次）。 */
+    private void dumpInstancedDiagOnce(int drawnInstances, int textureId) {
+        if (instancedDiagDumped) {
+            return;
+        }
+        instancedDiagDumped = true;
+
+        int err = GL11.glGetError();
+        int activeTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE) - GL13.GL_TEXTURE0;
+        int textureBinding = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+        int currentProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        int matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
+        int framebuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
+
+        FloatBuffer mv = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mv);
+        FloatBuffer pj = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pj);
+
+        LOGGER.info(String.format(
+                "[SSOptimizer] INSTANCED 首绘诊断：drawn=%d tex=%d err=%d activeTexUnit=%d texBinding=%d "
+                        + "program=%d fbo=%d matrixMode=%d clientArrays[vtx=%b tex=%b col=%b] "
+                        + "tests[depth=%b stencil=%b alpha=%b func=%d] blend=%b "
+                        + "mv[0]=%.3f mv[5]=%.3f mv[12]=%.3f mv[13]=%.3f pj[0]=%.6f pj[5]=%.6f pj[10]=%.3f",
+                drawnInstances, textureId, err, activeTexture, textureBinding,
+                currentProgram, framebuffer, matrixMode,
+                GL11.glGetBoolean(GL11.GL_VERTEX_ARRAY),
+                GL11.glGetBoolean(GL11.GL_TEXTURE_COORD_ARRAY),
+                GL11.glGetBoolean(GL11.GL_COLOR_ARRAY),
+                GL11.glGetBoolean(GL11.GL_DEPTH_TEST),
+                GL11.glGetBoolean(GL11.GL_STENCIL_TEST),
+                GL11.glGetBoolean(GL11.GL_ALPHA_TEST),
+                GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC),
+                GL11.glGetBoolean(GL11.GL_BLEND),
+                mv.get(0), mv.get(5), mv.get(12), mv.get(13),
+                pj.get(0), pj.get(5), pj.get(10)));
+    }
+
+    // ---------------------------------------------------------------------
     // INSTANCED flush：实例属性写入环形 VBO，着色器内展开几何
     // ---------------------------------------------------------------------
 
@@ -339,6 +385,7 @@ public final class EngineBatchImpl implements EngineBatch {
                 GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
                 bindInstanceAttribs(5, EngineInstanceCollector.STRIP_INSTANCE_FLOATS * 4, base);
                 GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 12, count);
+                dumpInstancedDiagOnce(count, group.textureId());
             }
 
             for (CoreGroup group : batch.cores) {
