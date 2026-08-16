@@ -14,20 +14,20 @@ class SSOptimizerMixinConfigPluginTest {
     }
 
     @Test
-    void skipsEngineRenderMixinByDefault() {
+    void appliesEngineRenderMixinByDefault() {
         SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
 
-        assertFalse(plugin.shouldApplyMixin(
+        assertTrue(plugin.shouldApplyMixin(
                 "com.fs.starfarer.combat.entities.Engine",
                 "github.kasuminova.ssoptimizer.mixin.render.EngineRenderMixin"));
     }
 
     @Test
-    void appliesEngineRenderMixinWhenExplicitlyEnabled() {
-        System.setProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY, "true");
+    void skipsEngineRenderMixinWhenExplicitlyDisabled() {
+        System.setProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY, "false");
         SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
 
-        assertTrue(plugin.shouldApplyMixin(
+        assertFalse(plugin.shouldApplyMixin(
                 "com.fs.starfarer.combat.entities.Engine",
                 "github.kasuminova.ssoptimizer.mixin.render.EngineRenderMixin"));
     }

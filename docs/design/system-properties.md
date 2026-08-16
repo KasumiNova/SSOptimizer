@@ -122,9 +122,19 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.render.allowFinish` | `false` | 战斗渲染循环中强制调用 `glFinish()`（调试用 GPU 同步） | `common/render/CombatStateTraversalHook.java:20` |
-| `ssoptimizer.render.shipengine.enable` | `false` | 启用舰船引擎火焰渲染优化（默认关闭，须显式开启） | `common/render/ShipEngineRenderOptimizationToggle.java:21` |
+| `ssoptimizer.render.shipengine.enable` | `true` | 舰船引擎火焰合批渲染总开关（设 `false` 回退立即模式等价路径） | `common/render/ShipEngineRenderOptimizationToggle.java:21` |
+| `ssoptimizer.render.shipengine.mode` | `"instanced"` | 引擎合批模式：`instanced` / `vbo` / `immediate`（GL 能力不足自动降级） | `common/render/engine/GlCapability.java`，`EngineBatchImpl.java` |
+| `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关（旋转递推 + 顶点缓存 + 合批） | `common/render/shield/ShieldRenderHelper.java` |
+| `ssoptimizer.render.shield.algo` | `"recurrence"` | 护盾顶点算法：`recurrence` / `raycast`（对照实现，实测约 8 倍劣化） | `common/render/shield/ShieldArcGeometry.java` |
+| `ssoptimizer.render.shipmasktess.enable` | `true` | Ship 蒙版三角化缓存开关（耳切 + WeakHashMap 缓存；false 走原 GLU 路径） | `common/render/tessellation/ShipMaskTessellationToggle.java` |
 | `ssoptimizer.textdiagnostics.enable` | `false` | 启用位图文本渲染诊断统计（glyph 四边形聚合） | `common/render/engine/TextRenderDiagnostics.java:117`，`TextLayoutDiagnostics.java:42` |
 | `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextRenderDiagnostics.java:121`，`TextLayoutDiagnostics.java:98` |
+
+## 战斗逻辑
+
+| 属性 | 默认值 | 作用 | 读取位置 |
+|---|---|---|---|
+| `ssoptimizer.collisionGridBvh` | `true` | CollisionGrid 扁平 BVH 查询优化（false 回退 fastutil 网格收集路径） | `common/combat/ai/grid/CollisionGridBvhImpl.java` |
 
 ## IME 输入法
 
