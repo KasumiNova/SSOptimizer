@@ -17,7 +17,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   <li>{@code CustomCombatEntity.render(CombatEngineLayers, CombatViewport)} ——
  *       模组层渲染插件（GraphicsLib 等）边界；</li>
  *   <li>{@code DecalRenderer.render(Sprite, float)} —— 舰船损伤 decal 的 stencil 区域边界；</li>
- *   <li>{@code WeaponDamageEffect#beginDamageRender(FFF)} —— 武器损伤渲染的 stencil 区域边界。</li>
+ *   <li>{@code WeaponDamageEffect#beginDamageRender(FFF)} —— 武器损伤渲染的 stencil 区域边界；</li>
+ *   <li>{@code WeaponDamageEffect#renderDamageDecals(FFFF)} —— 武器损伤贴花绘制前边界
+ *       （内部切换 stencil func/op 且夹有非 sprite 暗化矩形）。</li>
  * </ul>
  * 引擎（EngineBatchImpl）、护盾（ShieldRenderHelper）、船体剪裁（ShipMaskMeshCache）
  * 边界由各自实现类内部直接调用，不经过本 Mixin。
@@ -74,6 +76,19 @@ public final class SpriteBatchBoundaryMixins {
     @Mixin(targets = GameClassNames.WEAPON_DAMAGE_EFFECT_DOTTED)
     public abstract static class WeaponDamageBoundary {
         @Inject(method = "beginDamageRender(FFF)V", at = @At("HEAD"), remap = false)
+        private void ssoptimizer$flushSpriteBatch(CallbackInfo ci) {
+            SpriteBatch.getInstance().flushPending();
+        }
+    }
+
+    /**
+     * @author GitHub Copilot
+     * @reason 武器损伤贴花绘制前 flush：renderDamageDecals 内部会切换 stencil func/op
+     * 并夹有非 sprite 的暗化矩形（ShapeRenderer），必须先落盘已收集的武器 sprite 批次。
+     */
+    @Mixin(targets = GameClassNames.WEAPON_DAMAGE_EFFECT_DOTTED)
+    public abstract static class WeaponDamageDecalBoundary {
+        @Inject(method = "renderDamageDecals(FFFF)V", at = @At("HEAD"), remap = false)
         private void ssoptimizer$flushSpriteBatch(CallbackInfo ci) {
             SpriteBatch.getInstance().flushPending();
         }

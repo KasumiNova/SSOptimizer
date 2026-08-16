@@ -13,13 +13,17 @@ extern "C" {
 #define github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_RESULT_EQUATION_MISMATCH -2L
 #undef github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_RESULT_INVALID_BUFFER
 #define github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_RESULT_INVALID_BUFFER -3L
+#undef github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_RESULT_EXTENDED_STATE
+#define github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_RESULT_EXTENDED_STATE -4L
+#undef github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_RESULT_STATE_MISMATCH
+#define github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_RESULT_STATE_MISMATCH -5L
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative
  * Method:    nativeSubmit
- * Signature: (Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIFFFFFFFIIIIFFFF)I
+ * Signature: (Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIFFFFFFFIIIIFFFF)I
  */
 JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeSubmit
-  (JNIEnv *, jclass, jobject, jobject, jint, jint, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jobject, jobject, jint, jint, jint, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jfloat, jfloat, jfloat);
 
 #ifdef __cplusplus
 }

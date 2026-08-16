@@ -41,6 +41,7 @@
     "render.SpriteBatchBoundaryMixins$CombatPluginBoundary",
     "render.SpriteBatchBoundaryMixins$DecalBoundary",
     "render.SpriteBatchBoundaryMixins$WeaponDamageBoundary",
+    "render.SpriteBatchBoundaryMixins$WeaponDamageDecalBoundary",
     "render.SpriteMixin",
     "render.TesselatorMixin",
     "render.TexturedStripRendererMixin",

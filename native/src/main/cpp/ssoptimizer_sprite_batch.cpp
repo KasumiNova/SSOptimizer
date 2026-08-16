@@ -18,6 +18,8 @@ namespace {
 constexpr jint RESULT_GUARD_REJECTED    = -1;
 constexpr jint RESULT_EQUATION_MISMATCH = -2;
 constexpr jint RESULT_INVALID_BUFFER    = -3;
+constexpr jint RESULT_EXTENDED_STATE    = -4;
+constexpr jint RESULT_STATE_MISMATCH    = -5;
 
 /** 单 quad 顶点字节数（4 顶点 × 20 字节）与索引字节数（6 × uint16）。 */
 constexpr size_t QUAD_VERTEX_BYTES = 80;
@@ -30,7 +32,7 @@ extern "C" {
 JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeSubmit(
         JNIEnv* env, jclass,
         jobject verts, jobject indices,
-        jint pendingQuads, jint expectedBlendEquation,
+        jint pendingQuads, jint expectedBlendEquation, jint requireExtendedState,
         jfloat posX, jfloat posY,
         jfloat width, jfloat height,
         jfloat centerX, jfloat centerY,
@@ -38,19 +40,29 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         jint colorR, jint colorG, jint colorB, jint colorA,
         jfloat texX, jfloat texY, jfloat texWidth, jfloat texHeight) {
 
-    // guard 与 Java 路径同序：矩阵模式 → stencil → scissor → FBO
+    // guard 与 Java 路径同序：矩阵模式 → scissor → FBO
     GLint matrixMode = 0;
     glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
     if (matrixMode != GL_MODELVIEW) {
         return RESULT_GUARD_REJECTED;
     }
-    if (glIsEnabled(GL_STENCIL_TEST) || glIsEnabled(GL_SCISSOR_TEST)) {
+    if (glIsEnabled(GL_SCISSOR_TEST)) {
         return RESULT_GUARD_REJECTED;
     }
     GLint fboBinding = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fboBinding);
     if (fboBinding != 0) {
         return RESULT_GUARD_REJECTED;
+    }
+
+    // stencil / alpha test 构成扩展状态区：状态捕获与打包转交 Java 侧处理，
+    // 此处只判定区域归属并保证不向状态不一致的 run 写入
+    const bool extendedState = glIsEnabled(GL_STENCIL_TEST) || glIsEnabled(GL_ALPHA_TEST);
+    if (extendedState) {
+        return RESULT_EXTENDED_STATE;
+    }
+    if (requireExtendedState != 0) {
+        return RESULT_STATE_MISMATCH;
     }
 
     GLint blendEquation = GL_FUNC_ADD;
