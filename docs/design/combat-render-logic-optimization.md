@@ -77,7 +77,16 @@ Profiler 采样（大规模战斗）显示四类热点：
 
 ## 后续方向
 
-- 统一 `EngineRenderHelper`（IMMEDIATE 档）与原版公式的 7 处口径差异。
+- ~~统一 `EngineRenderHelper`（IMMEDIATE 档）与原版公式的 7 处口径差异。~~（已完成：逐行校准，仅保留 maxSpread==0 除零保护一项防御性偏差）
 - raycast 对照算法去留（当前实测劣于 recurrence 约 8 倍）。
 - 引擎 over 层跨舰延迟 flush（layer 级 2 drawcall，近似等价，需独立开关评估）。
 - wasp/paragon 类非简单轮廓的 winding-aware 三角化（消除 GLU 降级残留热点）。
+- 【记录待评估】舰船/武器整体 instanced 渲染：舰船与武器基本是固定贴图、几何不变，
+  可将船体 sprite + 各武器槽 sprite 打包为 instanced quad 批次（每舰 1 实例，
+  武器随槽位变换），配合 display list 使用场景评估收益；注意与受击 jitter、
+  涂装/损伤贴图切换、GraphicsLib 等光影模组的兼容性。
+- 【已答疑】display list 回退必要性：`GLListManager.beginList` 使用 `GL_COMPILE_AND_EXECUTE`，
+  list 会跨帧 `glCallList` 重放；VBO/着色器路径重放时指向已被后续帧覆盖的环形 VBO 偏移，
+  语义错误，故编译区间内必须走立即模式（与原版录制行为一致）。游戏内 list 使用点：
+  Ship 受击 jitter（Ship.java:3101/3146/3754/3799）、EMP 电弧/环、行星、环带、
+  位图字体缓存、refit 界面 ShipSpriteRenderer 等。

@@ -175,6 +175,7 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.logging.lunalib.level` | `"WARN"` | LunaLib 日志阈值（默认压制 INFO/DEBUG 噪音，设 `DEBUG` 恢复完整日志） | `common/logging/LogNoiseFilterConfigurator.java:51` |
+| `ssoptimizer.logging.vanilla.level` | `"WARN"` | 原版启动/加载期 INFO 噪音日志阈值（默认压制资源/规则/脚本/纹理/声音加载等 17 个高频原版 logger，WARN/ERROR 与 SSOptimizer 自身日志不受影响；设 `INFO`/`DEBUG` 恢复完整原版加载日志） | `common/logging/VanillaLogNoiseConfigurator.java:69` |
 
 ## 已移除属性
 

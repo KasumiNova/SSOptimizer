@@ -309,6 +309,7 @@ public final class EngineBatchImpl implements EngineBatch {
     // ---------------------------------------------------------------------
 
     private boolean instancedDiagDumped;
+    private int     diagPreError;
 
     /** 首个条带组绘制后转储一次关键 GL 状态与错误码（无条件 INFO，只触发一次）。 */
     private void dumpInstancedDiagOnce(int drawnInstances, int textureId) {
@@ -317,12 +318,17 @@ public final class EngineBatchImpl implements EngineBatch {
         }
         instancedDiagDumped = true;
 
-        int err = GL11.glGetError();
+        int postErr = GL11.glGetError();
         int activeTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE) - GL13.GL_TEXTURE0;
         int textureBinding = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
         int currentProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
         int matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
         int framebuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
+        // 纹理完整性：level0 尺寸为 0 表示内容从未上传（incomplete，着色器采样黑色）
+        int texWidth = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+        int texHeight = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+        int minFilter = GL11.glGetTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER);
+        int magFilter = GL11.glGetTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER);
 
         FloatBuffer mv = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mv);
@@ -330,11 +336,13 @@ public final class EngineBatchImpl implements EngineBatch {
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pj);
 
         LOGGER.info(String.format(
-                "[SSOptimizer] INSTANCED 首绘诊断：drawn=%d tex=%d err=%d activeTexUnit=%d texBinding=%d "
+                "[SSOptimizer] INSTANCED 首绘诊断：drawn=%d tex=%d preErr=%d postErr=%d activeTexUnit=%d "
+                        + "texBinding=%d texSize=%dx%d minFilter=%d magFilter=%d "
                         + "program=%d fbo=%d matrixMode=%d clientArrays[vtx=%b tex=%b col=%b] "
                         + "tests[depth=%b stencil=%b alpha=%b func=%d] blend=%b "
                         + "mv[0]=%.3f mv[5]=%.3f mv[12]=%.3f mv[13]=%.3f pj[0]=%.6f pj[5]=%.6f pj[10]=%.3f",
-                drawnInstances, textureId, err, activeTexture, textureBinding,
+                drawnInstances, textureId, diagPreError, postErr, activeTexture,
+                textureBinding, texWidth, texHeight, minFilter, magFilter,
                 currentProgram, framebuffer, matrixMode,
                 GL11.glGetBoolean(GL11.GL_VERTEX_ARRAY),
                 GL11.glGetBoolean(GL11.GL_TEXTURE_COORD_ARRAY),
@@ -384,6 +392,9 @@ public final class EngineBatchImpl implements EngineBatch {
                 program.useStrip();
                 GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
                 bindInstanceAttribs(5, EngineInstanceCollector.STRIP_INSTANCE_FLOATS * 4, base);
+                if (!instancedDiagDumped) {
+                    diagPreError = GL11.glGetError();
+                }
                 GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 12, count);
                 dumpInstancedDiagOnce(count, group.textureId());
             }
