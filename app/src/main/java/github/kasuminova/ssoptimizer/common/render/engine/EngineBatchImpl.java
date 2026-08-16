@@ -313,7 +313,7 @@ public final class EngineBatchImpl implements EngineBatch {
     private int     diagPreError;
 
     /** 首个条带组绘制后转储一次关键 GL 状态与错误码（无条件 INFO，只触发一次）。 */
-    private void dumpInstancedDiagOnce(int drawnInstances, int textureId, StripInstance sample) {
+    private void dumpInstancedDiagOnce(int drawnInstances, int textureId, List<StripInstance> instances) {
         if (instancedDiagDumped) {
             return;
         }
@@ -323,7 +323,6 @@ public final class EngineBatchImpl implements EngineBatch {
         int activeTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE) - GL13.GL_TEXTURE0;
         int textureBinding = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
         int currentProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        int matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
         int framebuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
         // 纹理完整性：level0 尺寸为 0 表示内容从未上传；mipmap 过滤器下 level1 为 0 表示链不完整
         int texWidth = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
@@ -338,19 +337,40 @@ public final class EngineBatchImpl implements EngineBatch {
         IntBuffer viewport = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
         GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
 
-        // 把样本条带中心投影到屏幕坐标，回读 5x5 像素验证光栅化是否真实落屏
-        float viewX = sample.posX() * mv.get(0) + sample.posY() * mv.get(4) + mv.get(12);
-        float viewY = sample.posX() * mv.get(1) + sample.posY() * mv.get(5) + mv.get(13);
-        float ndcX = viewX * pj.get(0) + pj.get(12);
-        float ndcY = viewY * pj.get(5) + pj.get(13);
-        int screenX = viewport.get(0) + Math.round((ndcX + 1.0f) * 0.5f * viewport.get(2));
-        int screenY = viewport.get(1) + Math.round((ndcY + 1.0f) * 0.5f * viewport.get(3));
-        ByteBuffer pixels = ByteBuffer.allocateDirect(5 * 5 * 4).order(ByteOrder.nativeOrder());
-        GL11.glReadPixels(screenX - 2, screenY - 2, 5, 5, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
-        int readErr = GL11.glGetError();
-        int luminance = 0;
-        for (int i = 0; i < 25; i++) {
-            luminance += pixels.get(i * 4) & 0xFF;
+        // 挑第一个落在视野内的条带实例做屏幕回读（战斗中有屏外舰船，屏外样本回读无意义）
+        StripInstance inView = null;
+        int inViewCount = 0;
+        float inViewNdcX = 0.0f;
+        float inViewNdcY = 0.0f;
+        for (StripInstance instance : instances) {
+            float viewX = instance.posX() * mv.get(0) + instance.posY() * mv.get(4) + mv.get(12);
+            float viewY = instance.posX() * mv.get(1) + instance.posY() * mv.get(5) + mv.get(13);
+            float ndcX = viewX * pj.get(0) + pj.get(12);
+            float ndcY = viewY * pj.get(5) + pj.get(13);
+            if (Math.abs(ndcX) <= 0.9f && Math.abs(ndcY) <= 0.9f) {
+                inViewCount++;
+                if (inView == null) {
+                    inView = instance;
+                    inViewNdcX = ndcX;
+                    inViewNdcY = ndcY;
+                }
+            }
+        }
+
+        int luminance = -1;
+        int readErr = 0;
+        int screenX = -1;
+        int screenY = -1;
+        if (inView != null) {
+            screenX = viewport.get(0) + Math.round((inViewNdcX + 1.0f) * 0.5f * viewport.get(2));
+            screenY = viewport.get(1) + Math.round((inViewNdcY + 1.0f) * 0.5f * viewport.get(3));
+            ByteBuffer pixels = ByteBuffer.allocateDirect(5 * 5 * 4).order(ByteOrder.nativeOrder());
+            GL11.glReadPixels(screenX - 2, screenY - 2, 5, 5, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
+            readErr = GL11.glGetError();
+            luminance = 0;
+            for (int i = 0; i < 25; i++) {
+                luminance += pixels.get(i * 4) & 0xFF;
+            }
         }
 
         LOGGER.info(String.format(
@@ -358,7 +378,9 @@ public final class EngineBatchImpl implements EngineBatch {
                         + "texBinding=%d texSize=%dx%d l1w=%d minFilter=%d "
                         + "program=%d fbo=%d viewport=%d,%d,%d,%d "
                         + "tests[depth=%b stencil=%b alpha=%b] "
-                        + "样本pos=(%.1f,%.1f) ndc=(%.3f,%.3f) screen=(%d,%d) 回读亮度=%d readErr=%d",
+                        + "视野内=%d/%d 样本ndc=(%.3f,%.3f) screen=(%d,%d) 回读亮度=%d readErr=%d "
+                        + "mv[0]=%.3f mv[1]=%.3f mv[4]=%.3f mv[5]=%.3f mv[12]=%.3f mv[13]=%.3f "
+                        + "pj[0]=%.6f pj[5]=%.6f pj[12]=%.6f pj[13]=%.6f",
                 drawnInstances, textureId, diagPreError, postErr, activeTexture,
                 textureBinding, texWidth, texHeight, texL1Width, minFilter,
                 currentProgram, framebuffer,
@@ -366,7 +388,10 @@ public final class EngineBatchImpl implements EngineBatch {
                 GL11.glGetBoolean(GL11.GL_DEPTH_TEST),
                 GL11.glGetBoolean(GL11.GL_STENCIL_TEST),
                 GL11.glGetBoolean(GL11.GL_ALPHA_TEST),
-                sample.posX(), sample.posY(), ndcX, ndcY, screenX, screenY, luminance, readErr));
+                inViewCount, instances.size(), inViewNdcX, inViewNdcY, screenX, screenY,
+                luminance, readErr,
+                mv.get(0), mv.get(1), mv.get(4), mv.get(5), mv.get(12), mv.get(13),
+                pj.get(0), pj.get(5), pj.get(12), pj.get(13)));
     }
 
     // ---------------------------------------------------------------------
@@ -409,7 +434,7 @@ public final class EngineBatchImpl implements EngineBatch {
                     diagPreError = GL11.glGetError();
                 }
                 GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 12, count);
-                dumpInstancedDiagOnce(count, group.textureId(), group.instances().get(0));
+                dumpInstancedDiagOnce(count, group.textureId(), group.instances());
             }
 
             for (CoreGroup group : batch.cores) {
