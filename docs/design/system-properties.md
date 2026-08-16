@@ -124,6 +124,8 @@
 | `ssoptimizer.render.allowFinish` | `false` | 战斗渲染循环中强制调用 `glFinish()`（调试用 GPU 同步） | `common/render/CombatStateTraversalHook.java:20` |
 | `ssoptimizer.render.shipengine.enable` | `true` | 舰船引擎火焰合批渲染总开关（设 `false` 回退立即模式等价路径） | `common/render/ShipEngineRenderOptimizationToggle.java:21` |
 | `ssoptimizer.render.shipengine.mode` | `"instanced"` | 引擎合批模式：`instanced` / `vbo` / `immediate`（GL 能力不足自动降级） | `common/render/engine/GlCapability.java`，`EngineBatchImpl.java` |
+| `ssoptimizer.render.shipengine.stats` | `false` | 引擎合批周期统计日志（每 300 次渲染输出实例数与 display list 回退计数） | `common/render/engine/EngineBatchImpl.java` |
+| `ssoptimizer.render.warroomtasks.enable` | `true` | 指挥界面任务连线帧内合批（`TaskIconManager.render` 边界收集，单次提交） | `common/render/warroom/WarroomTaskLineBatch.java` |
 | `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关（旋转递推 + 顶点缓存 + 合批） | `common/render/shield/ShieldRenderHelper.java` |
 | `ssoptimizer.render.shield.algo` | `"recurrence"` | 护盾顶点算法：`recurrence` / `raycast`（对照实现，实测约 8 倍劣化） | `common/render/shield/ShieldArcGeometry.java` |
 | `ssoptimizer.render.shipmasktess.enable` | `true` | Ship 蒙版三角化缓存开关（耳切 + WeakHashMap 缓存；false 走原 GLU 路径） | `common/render/tessellation/ShipMaskTessellationToggle.java` |

@@ -47,16 +47,19 @@ import java.util.List;
  *   <li>{@code -Dssoptimizer.render.shipengine.enable}（默认 true，false 时退回立即模式等价路径）</li>
  *   <li>{@code -Dssoptimizer.render.shipengine.mode=instanced|vbo|immediate}（默认 instanced，
  *       按 GL 能力自动降级；着色器编译失败记 ERROR 并运行时降级）</li>
+ *   <li>{@code -Dssoptimizer.render.shipengine.stats=true}（默认 false，每 300 次渲染输出一次
+ *       实例数与 display list 回退计数；首个非空批次无条件输出一次摘要）</li>
  * </ul>
- * display list 说明：经核实引擎渲染调用点（Ship under/over、Missile）均不在
- * {@code GLListManager.beginList} 区间内，引擎 glow 不会被编进 display list；
- * 仍防御性检测 {@link GLListManager#buildingList}，命中时退回立即模式（记一次日志）。
+ * display list 说明：舰船 display list 编译区间会包含引擎渲染调用，命中
+ * {@link GLListManager#buildingList} 时退回立即模式等价路径（{@link EngineRenderHelper}，
+ * 公式已与原版逐行校准），首次命中记一次日志。
  */
 public final class EngineBatchImpl implements EngineBatch {
     private static final Logger LOGGER = Logger.getLogger(EngineBatchImpl.class);
 
     public static final String ENABLE_PROPERTY = "ssoptimizer.render.shipengine.enable";
     public static final String MODE_PROPERTY   = "ssoptimizer.render.shipengine.mode";
+    public static final String STATS_PROPERTY  = "ssoptimizer.render.shipengine.stats";
 
     private static final EngineBatchImpl INSTANCE = new EngineBatchImpl();
 
@@ -66,6 +69,7 @@ public final class EngineBatchImpl implements EngineBatch {
     private static final int MAX_INSTANCE_ATTRIBS  = 5;
 
     private final boolean enabled;
+    private final boolean statsEnabled;
     private final GlCapability.Mode requestedMode;
 
     /** 实际生效模式（渲染线程惰性探测后确定）；着色器失败时可运行时降级。 */
@@ -81,10 +85,14 @@ public final class EngineBatchImpl implements EngineBatch {
     private ByteBuffer instanceScratch;
 
     private boolean buildingListLogged;
+    private int  displayListFallbacks;
+    private int  framesSinceStatsLog;
+    private boolean firstBatchLogged;
 
     private EngineBatchImpl() {
         String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
         this.enabled = !"false".equalsIgnoreCase(rawEnable.trim());
+        this.statsEnabled = Boolean.parseBoolean(System.getProperty(STATS_PROPERTY, "false"));
 
         String rawMode = System.getProperty(MODE_PROPERTY, "instanced");
         GlCapability.Mode parsed = GlCapability.parseConfiguredMode(rawMode);
@@ -116,6 +124,7 @@ public final class EngineBatchImpl implements EngineBatch {
         }
         if (GLListManager.buildingList) {
             // display list 编译区间内禁止使用 VBO/着色器路径（glBufferSubData 等不会被记录且语义错乱）
+            displayListFallbacks++;
             if (!buildingListLogged) {
                 buildingListLogged = true;
                 LOGGER.info("[SSOptimizer] 检测到 display list 编译，引擎合批退回立即模式");
@@ -132,6 +141,8 @@ public final class EngineBatchImpl implements EngineBatch {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(770, 1);
 
+        logBatchStats(mode, batch);
+
         if (batch.isEmpty()) {
             return;
         }
@@ -144,6 +155,46 @@ public final class EngineBatchImpl implements EngineBatch {
             }
         } else {
             flushVboBatch(batch);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // 诊断：首批次一次性摘要（无条件 INFO）+ 周期统计（stats 开关）
+    // ---------------------------------------------------------------------
+
+    private void logBatchStats(GlCapability.Mode mode, CollectedBatch batch) {
+        int stripCount = 0;
+        for (StripGroup group : batch.strips) {
+            stripCount += group.instances().size();
+        }
+        int coreCount = 0;
+        for (CoreGroup group : batch.cores) {
+            coreCount += group.instances().size();
+        }
+        int glowCount = 0;
+        for (GlowGroup group : batch.glows) {
+            glowCount += group.instances().size();
+        }
+
+        if (!firstBatchLogged && !batch.isEmpty()) {
+            firstBatchLogged = true;
+            String sample = "无条带样本";
+            if (!batch.strips.isEmpty() && !batch.strips.get(0).instances().isEmpty()) {
+                StripInstance s = batch.strips.get(0).instances().get(0);
+                sample = String.format(
+                        "样本[pos=(%.1f,%.1f) len=%.2f halfW=%.2f alphaMid=%d tex=%d]",
+                        s.posX(), s.posY(), s.stripLength(), s.halfWidth(), s.alphaMid(), s.textureId());
+            }
+            LOGGER.info(String.format(
+                    "[SSOptimizer] 引擎合批首批次：mode=%s strips=%d cores=%d glows=%d %s",
+                    mode, stripCount, coreCount, glowCount, sample));
+        }
+
+        if (statsEnabled && ++framesSinceStatsLog >= 300) {
+            framesSinceStatsLog = 0;
+            LOGGER.info(String.format(
+                    "[SSOptimizer] 引擎合批统计：mode=%s strips=%d cores=%d glows=%d displayList回退=%d",
+                    mode, stripCount, coreCount, glowCount, displayListFallbacks));
         }
     }
 

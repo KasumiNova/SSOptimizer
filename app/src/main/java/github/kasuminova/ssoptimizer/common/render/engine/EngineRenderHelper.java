@@ -113,7 +113,7 @@ public final class EngineRenderHelper {
             lengthFactor = Math.max(0.0f, adjustedLevel - 0.8f) / 0.19999999f;
             lengthFactor *= lengthFactor;
         } else {
-            widthFactor = 0.09f + Math.max(0.0f, adjustedLevel - 0.8f) / 0.19999999f;
+            widthFactor = Math.max(0.09f, adjustedLevel - 0.8f) / 0.19999999f;
             lengthFactor = Math.max(0.0f, adjustedLevel - 0.8f) / 0.19999999f;
         }
 
@@ -176,7 +176,7 @@ public final class EngineRenderHelper {
                 red, green, blue, coreAlpha, exactAlphaPath);
 
         renderGlowSprite(engine, owner, slotAccessor, state, position, angle,
-            flameLevel, primaryBrightness, edgeAlpha, spread, maxSpread,
+                primaryBrightness, edgeAlpha, spread, maxSpread,
                 innerWidth, stripWidth, color, alphaScale);
     }
 
@@ -186,7 +186,6 @@ public final class EngineRenderHelper {
                                          EngineStateAccessor state,
                                          Vector2f position,
                                          float angle,
-                         float flameLevel,
                                          float primaryBrightness,
                                          float edgeAlpha,
                                          float spread,
@@ -205,11 +204,11 @@ public final class EngineRenderHelper {
         if (engine.ssoptimizer$getLengthShifter().isShifted()
                 || engine.ssoptimizer$getWidthShifter().isShifted()
                 || engine.ssoptimizer$getGlowShifter().isShifted()) {
-            float extraWidth = (stripWidth - innerWidth) * 2.0f;
+            float extraWidth = (stripWidth - innerWidth * engine.ssoptimizer$getWidthShifter().getCurr()) * 2.0f;
             glowSize = extraWidth + extraWidth * 0.5f * primaryBrightness;
             glowSize += extraWidth * engine.ssoptimizer$getGlowShifter().getCurr();
         } else {
-            glowSize = stripWidth * 2.0f * (1.0f + primaryBrightness);
+            glowSize = stripWidth * (2.0f + primaryBrightness);
         }
 
         float glowAlphaBase = 0.0f;
@@ -218,7 +217,7 @@ public final class EngineRenderHelper {
         }
         glowAlphaBase = Math.max(glowAlphaBase, glowBrightness);
 
-        float glowAlpha = computeGlowAlpha(glowAlphaBase, flameLevel, edgeAlpha, alphaScale);
+        float glowAlpha = computeGlowAlpha(glowAlphaBase, edgeAlpha, alphaScale);
 
         if (owner.ssoptimizer$isMissile()) {
             glowSize *= 2.0f;
@@ -412,8 +411,8 @@ public final class EngineRenderHelper {
         float halfPassCount = passCount / 2.0f;
         float rotation2 = ((halfPassCount - phase - 1.0f) / halfPassCount) * direction * 2.0f * spreadRotation;
         float translateX = ((passCount - passIndexF - 1.0f) * innerLength) / (passCount * 2.0f);
-        float scaleX = 0.5f + ((passIndexF + 1.0f) / passCount);
-        float scaleY = 1.0f - ((passCount - passIndexF) / passCount);
+        float scaleX = 0.5f + 0.5f * (passIndexF + 1.0f) / passCount;
+        float scaleY = (passCount - passIndexF) / passCount;
         float halfWidth = stripWidth * 0.5f;
 
         float[] vertices = new float[12];
@@ -452,10 +451,10 @@ public final class EngineRenderHelper {
     }
 
     static float computeGlowAlpha(float glowAlphaBase,
-                                  float flameLevel,
                                   float edgeAlpha,
                                   float alphaScale) {
-        float glowAlpha = Math.max(glowAlphaBase, flameLevel - 0.4f) * 0.75f * alphaScale;
+        // 原版在 glow 前将火焰强度变量重置为 1.0F：Math.max(var59, 1.0F - 0.4F)
+        float glowAlpha = Math.max(glowAlphaBase, 0.6f) * 0.75f * alphaScale;
         return Math.min(edgeAlpha, glowAlpha);
     }
 

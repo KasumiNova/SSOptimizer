@@ -23,8 +23,8 @@ Profiler 采样（大规模战斗）显示四类热点：
   - VBO_BATCH：CPU 展开三角形 + 环形 VBO（孤儿化 + glBufferSubData）+ 固定管线 glDrawElements。
   - IMMEDIATE：回退 `EngineRenderHelper`。
   - 运行时探测 `GLContext.getCapabilities()`（游戏为 LWJGL2 兼容 profile，Linux 桌面驱动暴露 GL33+），探测/降级均打日志。
-- **等价性**：引擎渲染全部 additive（770/1），舰内跨槽重排严格等价；alpha 的 int 截断用 `(int)`/`(byte)` 低 8 位逐位复现；display list 编译期（`GLListManager.buildingList`）检测并退回立即模式（已核实引擎 glow 不在游戏任何 display list 编译区间内，该检测为防御性）。
-- **已知偏差**：`EngineRenderHelper`（IMMEDIATE 档）与当前反编译原版存在 7 处公式差异（helper 历史实现口径），合批路径全部按原版逐位实现；次轮统一口径。
+- **等价性**：引擎渲染全部 additive（770/1），舰内跨槽重排严格等价；alpha 的 int 截断用 `(int)`/`(byte)` 低 8 位逐位复现；display list 编译期（`GLListManager.buildingList`）检测并退回立即模式（实测舰船 display list 编译区间确实包含引擎渲染调用，该路径真实存在）。
+- **立即模式口径**：`EngineRenderHelper`（IMMEDIATE 档 / display list 回退）已与原版逐行校准——修正了 widthFactor 非增压分支（`max(0.09, level-0.8)/0.2`）、条带逐层 scaleX/scaleY（`0.5+0.5*(p+1)/n`、`(n-p)/n`）、glowSize 两分支（未偏移 `var24*(2+var19)`、偏移分支 `var23*widthShifter.getCurr()`）、glow 火焰强度恒用重置后的 1.0F；maxSpread==0 除零保护作为防御性偏差保留。
 
 ## 任务 B：护盾渲染优化
 
@@ -63,6 +63,8 @@ Profiler 采样（大规模战斗）显示四类热点：
 |---|---|---|
 | `ssoptimizer.render.shipengine.enable` | `true`（本轮由 false 改为默认开启） | 引擎合批总开关 |
 | `ssoptimizer.render.shipengine.mode` | `instanced` | 合批模式：instanced / vbo / immediate |
+| `ssoptimizer.render.shipengine.stats` | `false` | 引擎合批周期统计日志（每 300 次渲染；首个非空批次无条件输出一次摘要） |
+| `ssoptimizer.render.warroomtasks.enable` | `true` | 指挥界面任务连线帧内合批（剔除全透明残留图标的条带渲染） |
 | `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关 |
 | `ssoptimizer.render.shield.algo` | `recurrence` | 护盾顶点算法：recurrence / raycast（对照） |
 | `ssoptimizer.render.shipmasktess.enable` | `true` | 蒙版三角化缓存开关 |

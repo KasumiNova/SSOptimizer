@@ -221,8 +221,8 @@ inline void computeStripPassVertices(const float posX, const float posY,
     const float halfPassCount = passCount / 2.0f;
     const float rotation2 = ((halfPassCount - phase - 1.0f) / halfPassCount) * direction * 2.0f * spreadRotation;
     const float translateX = ((passCount - passIndexF - 1.0f) * innerLength) / (passCount * 2.0f);
-    const float scaleX = 0.5f + ((passIndexF + 1.0f) / passCount);
-    const float scaleY = 1.0f - ((passCount - passIndexF) / passCount);
+    const float scaleX = 0.5f + 0.5f * (passIndexF + 1.0f) / passCount;
+    const float scaleY = (passCount - passIndexF) / passCount;
     const float scaledHalfWidth = (stripWidth * 0.5f) * scaleY;
     const float lengths[3] = {0.0f, innerLength, stripLength};
 
