@@ -47,6 +47,17 @@ public final class EngineGlProgram {
             + "}\n";
 
     /**
+     * 调试点绘制顶点着色器：只用 location 0 的实例位置画固定大小点，
+     * 不依赖 gl_VertexID 模板与其余属性，用于二分实例属性获取是否正常。
+     */
+    private static final String DEBUG_POINTS_VERTEX_SRC = GLSL_HEADER
+            + "layout(location = 0) in vec4 aPosRot;\n"
+            + "void main() {\n"
+            + "    gl_Position = gl_ModelViewProjectionMatrix * vec4(aPosRot.xy, 0.0, 1.0);\n"
+            + "    gl_PointSize = 20.0;\n"
+            + "}\n";
+
+    /**
      * 尾焰条带顶点着色器：6 顶点 quad-strip 模板按 12 索引展开为 4 三角形。
      * 矩阵等价链：T(pos)·R(angle)·R(rotation1)·R(rotation2)·T(translateX)·S(scaleX,scaleY)。
      */
@@ -137,11 +148,14 @@ public final class EngineGlProgram {
     private final int stripProgram;
     private final int coreProgram;
     private final int glowProgram;
+    /** debugpoints 调试点绘制程序；未启用时为 0。 */
+    private final int pointsProgram;
 
-    private EngineGlProgram(int stripProgram, int coreProgram, int glowProgram) {
+    private EngineGlProgram(int stripProgram, int coreProgram, int glowProgram, int pointsProgram) {
         this.stripProgram = stripProgram;
         this.coreProgram = coreProgram;
         this.glowProgram = glowProgram;
+        this.pointsProgram = pointsProgram;
     }
 
     /**
@@ -167,7 +181,31 @@ public final class EngineGlProgram {
             GL20.glDeleteProgram(glow);
             return null;
         }
-        return new EngineGlProgram(strip, core, glow);
+        // 调试开关：-Dssoptimizer.render.shipengine.debugpoints=true 时三类 pass 全部替换为
+        // 仅使用 location 0 实例位置的点绘制，用于二分实例属性获取是否正常
+        int points = 0;
+        if (Boolean.parseBoolean(
+                System.getProperty("ssoptimizer.render.shipengine.debugpoints", "false"))) {
+            LOGGER.info("[SSOptimizer] 引擎合批 debugpoints 已启用：实例位置点绘制");
+            points = link("debugpoints", DEBUG_POINTS_VERTEX_SRC, FRAGMENT_SRC_DEBUG_SOLID);
+            if (points == 0) {
+                GL20.glDeleteProgram(strip);
+                GL20.glDeleteProgram(core);
+                GL20.glDeleteProgram(glow);
+                return null;
+            }
+        }
+        return new EngineGlProgram(strip, core, glow, points);
+    }
+
+    /** @return debugpoints 调试点绘制程序是否可用。 */
+    public boolean hasPoints() {
+        return pointsProgram != 0;
+    }
+
+    /** 激活调试点绘制程序。 */
+    public void usePoints() {
+        GL20.glUseProgram(pointsProgram);
     }
 
     /** 激活尾焰条带程序并绑定纹理单元 0。 */
@@ -190,6 +228,7 @@ public final class EngineGlProgram {
         GL20.glDeleteProgram(stripProgram);
         GL20.glDeleteProgram(coreProgram);
         GL20.glDeleteProgram(glowProgram);
+        GL20.glDeleteProgram(pointsProgram);
     }
 
     private void use(int program) {

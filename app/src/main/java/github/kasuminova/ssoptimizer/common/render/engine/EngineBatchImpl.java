@@ -418,12 +418,18 @@ public final class EngineBatchImpl implements EngineBatch {
 
         int prevProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
         int prevArrayBuffer = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
+        boolean prevProgramPointSize = GL11.glGetBoolean(GL20.GL_VERTEX_PROGRAM_POINT_SIZE);
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
                 | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
         try {
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(770, 1);
+            // debugpoints：三类 pass 全部替换为实例位置点绘制（只用 location 0）
+            boolean debugPoints = program.hasPoints();
+            if (debugPoints) {
+                GL11.glEnable(GL20.GL_VERTEX_PROGRAM_POINT_SIZE);
+            }
 
             for (StripGroup group : batch.strips) {
                 int count = group.instances().size();
@@ -433,6 +439,12 @@ public final class EngineBatchImpl implements EngineBatch {
                 }
                 int base = uploadInstances(view);
 
+                if (debugPoints) {
+                    program.usePoints();
+                    bindInstanceAttribs(5, EngineInstanceCollector.STRIP_INSTANCE_FLOATS * 4, base);
+                    GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 1, count);
+                    continue;
+                }
                 program.useStrip();
                 GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
                 bindInstanceAttribs(5, EngineInstanceCollector.STRIP_INSTANCE_FLOATS * 4, base);
@@ -466,6 +478,12 @@ public final class EngineBatchImpl implements EngineBatch {
                 }
                 int base = uploadInstances(view);
 
+                if (debugPoints) {
+                    program.usePoints();
+                    bindInstanceAttribs(3, EngineInstanceCollector.CORE_INSTANCE_FLOATS * 4, base);
+                    GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 1, count);
+                    continue;
+                }
                 program.useCore();
                 GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
                 bindInstanceAttribs(3, EngineInstanceCollector.CORE_INSTANCE_FLOATS * 4, base);
@@ -480,6 +498,12 @@ public final class EngineBatchImpl implements EngineBatch {
                 }
                 int base = uploadInstances(view);
 
+                if (debugPoints) {
+                    program.usePoints();
+                    bindInstanceAttribs(4, EngineInstanceCollector.GLOW_INSTANCE_FLOATS * 4, base);
+                    GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 1, count);
+                    continue;
+                }
                 program.useGlow();
                 GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
                 bindInstanceAttribs(4, EngineInstanceCollector.GLOW_INSTANCE_FLOATS * 4, base);
@@ -493,6 +517,10 @@ public final class EngineBatchImpl implements EngineBatch {
             GL20.glUseProgram(prevProgram);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, prevArrayBuffer);
             GL11.glPopAttrib();
+            // GL_VERTEX_PROGRAM_POINT_SIZE 不在 glPushAttrib 范围内，手动按原状恢复
+            if (!prevProgramPointSize) {
+                GL11.glDisable(GL20.GL_VERTEX_PROGRAM_POINT_SIZE);
+            }
         }
         return true;
     }
