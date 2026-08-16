@@ -4,6 +4,7 @@ import com.fs.graphics.util.GLListManager;
 import github.kasuminova.ssoptimizer.common.render.engine.DynamicVbo;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 
@@ -16,7 +17,7 @@ import java.nio.FloatBuffer;
  * <p>
  * 收集期把 quad 顶点用收集时刻的 MVP 矩阵烘焙到裁剪空间，累积进固定容量
  * scratch（单 run 上限 {@link SpriteQuadPacker#MAX_QUADS_PER_DRAW}，超出即先 flush）；
- * flush 时绑定 run 的 (纹理, blend) 状态，以单位 modelview 绘制环形 VBO 中的顶点
+ * flush 时绑定 run 的 (纹理, blend, 混合方程) 状态，以单位 modelview 绘制环形 VBO 中的顶点
  * （顶点已是裁剪空间，flush 时投影/模型视图均置单位矩阵），随后完整恢复 blend / 纹理绑定 / VBO 绑定 /
  * client state / 矩阵 / 当前颜色（glColor4ub 恢复为该 run 最后一个 sprite 的颜色，
  * 与原版逐 sprite 设置的残留语义一致）。
@@ -60,6 +61,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
     private int  currentTexture;
     private int  currentBlendSrc;
     private int  currentBlendDest;
+    private int  currentBlendEquation;
     private int  pendingQuads;
     private int  lastR, lastG, lastB, lastA;
 
@@ -97,12 +99,17 @@ public final class SpriteBatchImpl implements SpriteBatch {
         }
 
         long key = SpriteGroupStats.key(textureId, blendSrc, blendDest);
-        if (key != currentKey) {
+        // 混合方程也是 run 分组键的一部分：CombatEntityPluginWithParticles 的暗色层
+        // （现实干扰器弹体等负片粒子）会用 GL14.glBlendEquation(GL_FUNC_REVERSE_SUBTRACT)
+        // 包裹整段渲染，延迟 flush 时必须按收集时刻的方程绘制，否则暗色粒子退化为加法发光
+        int blendEquation = GL11.glGetInteger(GL14.GL_BLEND_EQUATION);
+        if (key != currentKey || blendEquation != currentBlendEquation) {
             flushPending();
             currentKey = key;
             currentTexture = textureId;
             currentBlendSrc = blendSrc;
             currentBlendDest = blendDest;
+            currentBlendEquation = blendEquation;
         }
         if (pendingQuads >= SpriteQuadPacker.MAX_QUADS_PER_DRAW) {
             flushPending();
@@ -171,6 +178,8 @@ public final class SpriteBatchImpl implements SpriteBatch {
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(currentBlendSrc, currentBlendDest);
+            // 恢复收集时刻的混合方程（GL_COLOR_BUFFER_BIT 的 popAttrib 负责复原调用方方程）
+            GL14.glBlendEquation(currentBlendEquation);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, currentTexture);
 
             // 顶点已烘焙到裁剪空间：投影与模型视图均置单位矩阵，与 flush 时刻的矩阵栈完全解耦
