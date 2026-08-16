@@ -57,6 +57,9 @@ public final class GameClassNames {
     public static final String DETAILED_SMOKE_PARTICLE_DOTTED      = "com.fs.starfarer.renderers.fx.DetailedSmokeParticle";
     public static final String GENERIC_TEXTURE_PARTICLE            = "com/fs/graphics/particle/GenericTextureParticle";
     public static final String GENERIC_TEXTURE_PARTICLE_DOTTED     = "com.fs.graphics.particle.GenericTextureParticle";
+    public static final String SMOKE_PARTICLE_DOTTED               = "com.fs.graphics.particle.SmokeParticle";
+    public static final String NEBULA_PARTICLE_DOTTED              = "com.fs.graphics.particle.NebulaParticle";
+    public static final String NEGATIVE_PARTICLE_DOTTED            = "com.fs.graphics.particle.NegativeParticle";
     public static final String STARFARER_LAUNCHER                  = "com/fs/starfarer/StarfarerLauncher";
     public static final String FOCUSED_COMPONENT_TRACKER           = "com/fs/starfarer/ui/FocusedComponentTracker";
     public static final String FOCUSED_COMPONENT                   = "com/fs/starfarer/ui/FocusedComponent";

@@ -16,6 +16,9 @@ import java.nio.FloatBuffer;
  * {@link github.kasuminova.ssoptimizer.mixin.render.DetailedSmokeParticleMixin} and
  * {@link github.kasuminova.ssoptimizer.mixin.render.GenericTextureParticleMixin} still
  * flush via client arrays / {@code glDrawArrays}.
+ * {@link github.kasuminova.ssoptimizer.mixin.render.NebulaParticleMixin} and
+ * {@link github.kasuminova.ssoptimizer.mixin.render.NegativeParticleMixin} flush via
+ * client arrays as well; the nebula batch additionally flushes on blend-mode changes.
  */
 public final class ParticleBatchHelper {
     static final         int MAX_PARTICLES = 16384;
@@ -24,6 +27,8 @@ public final class ParticleBatchHelper {
     private static final BatchContext SMOOTH_BATCH          = new BatchContext();
     private static final BatchContext SMOKE_BATCH           = new BatchContext();
     private static final BatchContext GENERIC_TEXTURE_BATCH = new BatchContext();
+    private static final BatchContext NEBULA_BATCH          = new BatchContext();
+    private static final BatchContext NEGATIVE_BATCH        = new BatchContext();
 
     private ParticleBatchHelper() {
     }
@@ -62,6 +67,14 @@ public final class ParticleBatchHelper {
         beginBatch(GENERIC_TEXTURE_BATCH, true);
     }
 
+    public static void beginNebulaBatch() {
+        beginBatch(NEBULA_BATCH, true);
+    }
+
+    public static void beginNegativeBatch() {
+        beginBatch(NEGATIVE_BATCH, false);
+    }
+
     /**
      * Add an axis-aligned (non-rotated) particle quad.
      * Used by SmoothParticle.
@@ -75,24 +88,23 @@ public final class ParticleBatchHelper {
             flushSmoothBatch();
         }
 
-        final byte rb = (byte) r, gb = (byte) g, bb = (byte) b, ab = (byte) a;
-        for (int i = 0; i < 4; i++) {
-            batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
+        putAxisAlignedQuad(batch, (byte) r, (byte) g, (byte) b, (byte) a, x, y, offsetX, offsetY, size);
+    }
+
+    /**
+     * Add an axis-aligned (non-rotated) particle quad to the negative batch.
+     * Used by NegativeParticle.
+     */
+    public static void addNegativeParticle(
+            int r, int g, int b, int a,
+            float x, float y,
+            float offsetX, float offsetY, float size) {
+        BatchContext batch = NEGATIVE_BATCH;
+        if (batch.numVertices + 4 > MAX_VERTICES) {
+            flushNegativeBatch();
         }
 
-        batch.texCoordBuf.put(0).put(0);
-        batch.texCoordBuf.put(0).put(1);
-        batch.texCoordBuf.put(1).put(1);
-        batch.texCoordBuf.put(1).put(0);
-
-        final float vx = x + offsetX;
-        final float vy = y + offsetY;
-        batch.vertexBuf.put(vx).put(vy);
-        batch.vertexBuf.put(vx).put(vy + size);
-        batch.vertexBuf.put(vx + size).put(vy + size);
-        batch.vertexBuf.put(vx + size).put(vy);
-
-        batch.numVertices += 4;
+        putAxisAlignedQuad(batch, (byte) r, (byte) g, (byte) b, (byte) a, x, y, offsetX, offsetY, size);
     }
 
     /**
@@ -176,38 +188,42 @@ public final class ParticleBatchHelper {
                 flushGenericTextureBatch();
             }
 
-            // Local-space corners (before rotation)
-            final float lx0 = offsetX + i;
-            final float ly0 = offsetY;
-            final float lx1 = offsetX + i;
-            final float ly1 = offsetY + height;
-            final float lx2 = offsetX + i + width;
-            final float ly2 = offsetY + height;
-            final float lx3 = offsetX + i + width;
-            final float ly3 = offsetY;
-
-            // Rotate + translate to world space
-            batch.vertexBuf.put(x + lx0 * cosA - ly0 * sinA);
-            batch.vertexBuf.put(y + lx0 * sinA + ly0 * cosA);
-            batch.vertexBuf.put(x + lx1 * cosA - ly1 * sinA);
-            batch.vertexBuf.put(y + lx1 * sinA + ly1 * cosA);
-            batch.vertexBuf.put(x + lx2 * cosA - ly2 * sinA);
-            batch.vertexBuf.put(y + lx2 * sinA + ly2 * cosA);
-            batch.vertexBuf.put(x + lx3 * cosA - ly3 * sinA);
-            batch.vertexBuf.put(y + lx3 * sinA + ly3 * cosA);
-
-            batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
-            batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
-            batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
-            batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
-
-            batch.texCoordBuf.put(0).put(0);
-            batch.texCoordBuf.put(0).put(th);
-            batch.texCoordBuf.put(tw).put(th);
-            batch.texCoordBuf.put(tw).put(0);
-
-            batch.numVertices += 4;
+            putRotatedQuad(batch, rb, gb, bb, ab, x, y, cosA, sinA,
+                    offsetX + i, offsetY, width, height, 0, 0, tw, th);
         }
+    }
+
+    /**
+     * Add a rotated particle quad with per-particle blend mode and custom texture coords.
+     * Used by NebulaParticle (texture atlas tiles: uv passed in explicitly).
+     */
+    public static void addNebulaParticle(
+            int r, int g, int b, int a,
+            int blendSrc, int blendDst,
+            float x, float y, float angle,
+            float offsetX, float offsetY,
+            float width, float height,
+            float u0, float v0, float u1, float v1) {
+        BatchContext batch = NEBULA_BATCH;
+
+        // Flush on blend-mode change
+        if (blendSrc != batch.currentBlendSrc || blendDst != batch.currentBlendDst) {
+            if (batch.numVertices > 0) {
+                flushNebulaBatch();
+            }
+            GL11.glBlendFunc(blendSrc, blendDst);
+            batch.currentBlendSrc = blendSrc;
+            batch.currentBlendDst = blendDst;
+        }
+
+        if (batch.numVertices + 4 > MAX_VERTICES) {
+            flushNebulaBatch();
+        }
+
+        final float rad = (float) Math.toRadians(angle);
+        putRotatedQuad(batch, (byte) r, (byte) g, (byte) b, (byte) a, x, y,
+                (float) Math.cos(rad), (float) Math.sin(rad),
+                offsetX, offsetY, width, height, u0, v0, u1, v1);
     }
 
     public static void flushSmoothBatch() {
@@ -222,9 +238,77 @@ public final class ParticleBatchHelper {
         flushArrayBatch(GENERIC_TEXTURE_BATCH);
     }
 
+    public static void flushNebulaBatch() {
+        flushArrayBatch(NEBULA_BATCH);
+    }
+
+    public static void flushNegativeBatch() {
+        flushArrayBatch(NEGATIVE_BATCH);
+    }
+
     private static int scaleColorComponent(final int component,
                                            final float brightness) {
         return clampColorComponent(Math.round(component * brightness));
+    }
+
+    /** 写入一个轴对齐 quad 的 4 个顶点（颜色 / 全幅 UV / 顶点）。 */
+    private static void putAxisAlignedQuad(BatchContext batch, byte rb, byte gb, byte bb, byte ab,
+                                           float x, float y, float offsetX, float offsetY, float size) {
+        for (int i = 0; i < 4; i++) {
+            batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
+        }
+
+        batch.texCoordBuf.put(0).put(0);
+        batch.texCoordBuf.put(0).put(1);
+        batch.texCoordBuf.put(1).put(1);
+        batch.texCoordBuf.put(1).put(0);
+
+        final float vx = x + offsetX;
+        final float vy = y + offsetY;
+        batch.vertexBuf.put(vx).put(vy);
+        batch.vertexBuf.put(vx).put(vy + size);
+        batch.vertexBuf.put(vx + size).put(vy + size);
+        batch.vertexBuf.put(vx + size).put(vy);
+
+        batch.numVertices += 4;
+    }
+
+    /** 写入一个绕 (x, y) 旋转的 quad 的 4 个顶点（cosA/sinA 为 angle 的预计算三角值）。 */
+    private static void putRotatedQuad(BatchContext batch, byte rb, byte gb, byte bb, byte ab,
+                                       float x, float y, float cosA, float sinA,
+                                       float offsetX, float offsetY, float width, float height,
+                                       float u0, float v0, float u1, float v1) {
+        // Local-space corners (before rotation)
+        final float lx0 = offsetX;
+        final float ly0 = offsetY;
+        final float lx1 = offsetX;
+        final float ly1 = offsetY + height;
+        final float lx2 = offsetX + width;
+        final float ly2 = offsetY + height;
+        final float lx3 = offsetX + width;
+        final float ly3 = offsetY;
+
+        // Rotate + translate to world space
+        batch.vertexBuf.put(x + lx0 * cosA - ly0 * sinA);
+        batch.vertexBuf.put(y + lx0 * sinA + ly0 * cosA);
+        batch.vertexBuf.put(x + lx1 * cosA - ly1 * sinA);
+        batch.vertexBuf.put(y + lx1 * sinA + ly1 * cosA);
+        batch.vertexBuf.put(x + lx2 * cosA - ly2 * sinA);
+        batch.vertexBuf.put(y + lx2 * sinA + ly2 * cosA);
+        batch.vertexBuf.put(x + lx3 * cosA - ly3 * sinA);
+        batch.vertexBuf.put(y + lx3 * sinA + ly3 * cosA);
+
+        batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
+        batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
+        batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
+        batch.colorBuf.put(rb).put(gb).put(bb).put(ab);
+
+        batch.texCoordBuf.put(u0).put(v0);
+        batch.texCoordBuf.put(u0).put(v1);
+        batch.texCoordBuf.put(u1).put(v1);
+        batch.texCoordBuf.put(u1).put(v0);
+
+        batch.numVertices += 4;
     }
 
     private static int clampColorComponent(final int component) {
@@ -331,7 +415,8 @@ public final class ParticleBatchHelper {
     }
 
     static int getNumVertices() {
-        return SMOOTH_BATCH.numVertices + SMOKE_BATCH.numVertices + GENERIC_TEXTURE_BATCH.numVertices;
+        return SMOOTH_BATCH.numVertices + SMOKE_BATCH.numVertices + GENERIC_TEXTURE_BATCH.numVertices
+                + NEBULA_BATCH.numVertices + NEGATIVE_BATCH.numVertices;
     }
 
     private static native void nativeRenderImmediateQuads(
