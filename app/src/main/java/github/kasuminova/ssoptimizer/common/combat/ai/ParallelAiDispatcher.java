@@ -1,0 +1,97 @@
+package github.kasuminova.ssoptimizer.common.combat.ai;
+
+import com.fs.starfarer.combat.ai.AI;
+import com.fs.starfarer.combat.ai.BasicShipAI;
+import com.fs.starfarer.combat.ai.FighterAI;
+import org.apache.log4j.Logger;
+
+/**
+ * 并行舰船 AI 调度门面，供织入 {@code CombatEngine.advanceInner} 的 ASM 字节码直接调用。
+ * <p>
+ * 织入效果：原版 AI 循环中的 {@code AI.advance(float)} 调用被替换为
+ * {@link #dispatch(AI, float)}，循环结束（"Advancing entities" 段之前）插入
+ * {@link #awaitAll()} 帧内屏障。
+ * <p>
+ * 白名单策略：仅精确类型为 {@link BasicShipAI} / {@link FighterAI} 的原版舰船 AI
+ * 入队并行；其余 AI（导弹引信 AI、以及 AI Tweaks 等模组注入的自定义 ShipAIPlugin）
+ * 在调用点内联串行执行，行为与原版完全一致——模组兼容由精确类型匹配保证，
+ * 模组即便继承/替换原版 AI 也只会落到内联路径。
+ * <p>
+ * 战机编队约束：{@link FighterAI} 经 ASM 实现 {@link WingKeyProvider}，同编队
+ * （共享 {@code FighterWing}）的战机任务固定到同一工作线程串行执行。
+ * <p>
+ * 开关：{@code -Dssoptimizer.ai.parallel=false} 运行期整体关闭（全部内联串行）；
+ * {@code -Dssoptimizer.ai.parallel.threads=N} 指定工作线程数，
+ * 默认 {@code min(4, cores-1)}，下限 1。
+ */
+public final class ParallelAiDispatcher {
+    public static final String ENABLED_PROPERTY = "ssoptimizer.ai.parallel";
+    public static final String THREADS_PROPERTY = "ssoptimizer.ai.parallel.threads";
+
+    private static final Logger LOGGER = Logger.getLogger(ParallelAiDispatcher.class);
+
+    private static final boolean ENABLED = Boolean.parseBoolean(
+            System.getProperty(ENABLED_PROPERTY, "true"));
+    private static final AiParallelExecutor EXECUTOR = ENABLED ? createExecutor() : null;
+
+    private ParallelAiDispatcher() {
+    }
+
+    /**
+     * AI 循环织入点：白名单内 AI 投递到线程池，其余内联执行。
+     * 栈签名与 {@code AI.advance(F)V} 调用点完全一致（{@code (AI, F) -> void}）。
+     */
+    public static void dispatch(AI ai, float amount) {
+        AiParallelExecutor executor = EXECUTOR;
+        if (executor == null || executor.isWorkerThread() || !isVanillaShipAi(ai)) {
+            ai.advance(amount);
+            return;
+        }
+        Object stripeKey = ai instanceof WingKeyProvider provider ? provider.ssoptimizer$getWingKey() : null;
+        executor.submit(() -> ai.advance(amount), stripeKey);
+    }
+
+    /**
+     * 帧内屏障织入点：等待本帧全部并行 AI 任务完成，推进线程本地帧号，
+     * 并汇总任务异常在主线程重新抛出。
+     */
+    public static void awaitAll() {
+        AiParallelExecutor executor = EXECUTOR;
+        if (executor == null) {
+            return;
+        }
+        try {
+            executor.awaitAll();
+        } finally {
+            AiThreadLocals.nextFrame();
+        }
+    }
+
+    /**
+     * @return 当前线程是否为 AI 工作线程（Profiler 等共享静态状态据此守卫）
+     */
+    public static boolean isWorkerThread() {
+        AiParallelExecutor executor = EXECUTOR;
+        return executor != null && executor.isWorkerThread();
+    }
+
+    /**
+     * 白名单判断：仅原版舰船 AI 的精确类型（子类与模组实现一律内联）。
+     */
+    private static boolean isVanillaShipAi(AI ai) {
+        Class<?> type = ai.getClass();
+        return type == BasicShipAI.class || type == FighterAI.class;
+    }
+
+    private static AiParallelExecutor createExecutor() {
+        int cores = Runtime.getRuntime().availableProcessors();
+        int threads = Integer.parseInt(
+                System.getProperty(THREADS_PROPERTY, String.valueOf(Math.max(1, Math.min(4, cores - 1)))));
+        if (threads < 1) {
+            LOGGER.warn("[SSOptimizer] Invalid " + THREADS_PROPERTY + "=" + threads + ", falling back to 1");
+            threads = 1;
+        }
+        LOGGER.info("[SSOptimizer] Parallel ship AI enabled with " + threads + " worker thread(s)");
+        return new AiParallelExecutorImpl(threads);
+    }
+}

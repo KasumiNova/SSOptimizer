@@ -112,6 +112,14 @@ public final class GameClassNames {
     public static final String TITLE_SCREEN_STATE_DOTTED           = "com.fs.starfarer.title.TitleScreenState";
     public static final String TASK_ICON_MANAGER                   = "com/fs/starfarer/combat/warroom/TaskIconManager";
     public static final String TASK_ICON_MANAGER_DOTTED            = "com.fs.starfarer.combat.warroom.TaskIconManager";
+    public static final String PROFILER                            = "com/fs/profiler/Profiler";
+    public static final String AI_INTERFACE                        = "com/fs/starfarer/combat/ai/AI";
+    public static final String AI_UTILS                            = "com/fs/starfarer/combat/ai/AIUtils";
+    public static final String BASIC_SHIP_AI                       = "com/fs/starfarer/combat/ai/BasicShipAI";
+    public static final String FIGHTER_AI                          = "com/fs/starfarer/combat/ai/FighterAI";
+    public static final String ATTACK_AI_MODULE                    = "com/fs/starfarer/combat/ai/attack/AttackAIModule";
+    public static final String SHIPWIDE_AI_FLAGS                   = "com/fs/starfarer/api/combat/ShipwideAIFlags";
+    public static final String TIMEOUT_TRACKER_MAP                 = "com/fs/starfarer/api/util/TimeoutTrackerMap";
 
     private GameClassNames() {
     }
