@@ -311,14 +311,60 @@ public final class EngineBatchImpl implements EngineBatch {
 
     private boolean instancedDiagDumped;
     private int     diagPreError;
+    private int     diagSkippedGroups;
+    private final float[] diagMv = new float[16];
+    private final float[] diagPj = new float[16];
+    private final int[]   diagViewport = new int[4];
 
-    /** 首个条带组绘制后转储一次关键 GL 状态与错误码（无条件 INFO，只触发一次）。 */
-    private void dumpInstancedDiagOnce(int drawnInstances, int textureId, List<StripInstance> instances) {
-        if (instancedDiagDumped) {
-            return;
+    /**
+     * 在实例列表中找第一个投影后落在视野内的条带，返回其屏幕坐标。
+     * 同时把当前 mv/pj/viewport 快照到 diag 字段供转储使用。
+     *
+     * @return int[]{screenX, screenY}；无视野内实例返回 null
+     */
+    private int[] findInViewStripScreenPos(List<StripInstance> instances) {
+        FloatBuffer mv = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mv);
+        FloatBuffer pj = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pj);
+        IntBuffer viewport = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
+        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
+        for (int i = 0; i < 16; i++) {
+            diagMv[i] = mv.get(i);
+            diagPj[i] = pj.get(i);
         }
-        instancedDiagDumped = true;
+        for (int i = 0; i < 4; i++) {
+            diagViewport[i] = viewport.get(i);
+        }
 
+        for (StripInstance instance : instances) {
+            float viewX = instance.posX() * diagMv[0] + instance.posY() * diagMv[4] + diagMv[12];
+            float viewY = instance.posX() * diagMv[1] + instance.posY() * diagMv[5] + diagMv[13];
+            float ndcX = viewX * diagPj[0] + diagPj[12];
+            float ndcY = viewY * diagPj[5] + diagPj[13];
+            if (Math.abs(ndcX) <= 0.9f && Math.abs(ndcY) <= 0.9f) {
+                return new int[]{
+                        diagViewport[0] + Math.round((ndcX + 1.0f) * 0.5f * diagViewport[2]),
+                        diagViewport[1] + Math.round((ndcY + 1.0f) * 0.5f * diagViewport[3])};
+            }
+        }
+        return null;
+    }
+
+    /** 回读屏幕 (x,y) 处 5x5 区域的红色通道亮度总和。 */
+    private static int readLuminance5x5(int screenX, int screenY) {
+        ByteBuffer pixels = ByteBuffer.allocateDirect(5 * 5 * 4).order(ByteOrder.nativeOrder());
+        GL11.glReadPixels(screenX - 2, screenY - 2, 5, 5, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
+        int luminance = 0;
+        for (int i = 0; i < 25; i++) {
+            luminance += pixels.get(i * 4) & 0xFF;
+        }
+        return luminance;
+    }
+
+    /** 视野内条带绘制前后的完整状态转储（只触发一次）。 */
+    private void dumpInstancedDiag(int drawnInstances, int textureId,
+                                   int screenX, int screenY, int preLum, int postLum) {
         int postErr = GL11.glGetError();
         int activeTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE) - GL13.GL_TEXTURE0;
         int textureBinding = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
@@ -330,68 +376,24 @@ public final class EngineBatchImpl implements EngineBatch {
         int texL1Width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 1, GL11.GL_TEXTURE_WIDTH);
         int minFilter = GL11.glGetTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER);
 
-        FloatBuffer mv = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mv);
-        FloatBuffer pj = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pj);
-        IntBuffer viewport = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
-        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
-
-        // 挑第一个落在视野内的条带实例做屏幕回读（战斗中有屏外舰船，屏外样本回读无意义）
-        StripInstance inView = null;
-        int inViewCount = 0;
-        float inViewNdcX = 0.0f;
-        float inViewNdcY = 0.0f;
-        for (StripInstance instance : instances) {
-            float viewX = instance.posX() * mv.get(0) + instance.posY() * mv.get(4) + mv.get(12);
-            float viewY = instance.posX() * mv.get(1) + instance.posY() * mv.get(5) + mv.get(13);
-            float ndcX = viewX * pj.get(0) + pj.get(12);
-            float ndcY = viewY * pj.get(5) + pj.get(13);
-            if (Math.abs(ndcX) <= 0.9f && Math.abs(ndcY) <= 0.9f) {
-                inViewCount++;
-                if (inView == null) {
-                    inView = instance;
-                    inViewNdcX = ndcX;
-                    inViewNdcY = ndcY;
-                }
-            }
-        }
-
-        int luminance = -1;
-        int readErr = 0;
-        int screenX = -1;
-        int screenY = -1;
-        if (inView != null) {
-            screenX = viewport.get(0) + Math.round((inViewNdcX + 1.0f) * 0.5f * viewport.get(2));
-            screenY = viewport.get(1) + Math.round((inViewNdcY + 1.0f) * 0.5f * viewport.get(3));
-            ByteBuffer pixels = ByteBuffer.allocateDirect(5 * 5 * 4).order(ByteOrder.nativeOrder());
-            GL11.glReadPixels(screenX - 2, screenY - 2, 5, 5, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
-            readErr = GL11.glGetError();
-            luminance = 0;
-            for (int i = 0; i < 25; i++) {
-                luminance += pixels.get(i * 4) & 0xFF;
-            }
-        }
-
         LOGGER.info(String.format(
                 "[SSOptimizer] INSTANCED 首绘诊断：drawn=%d tex=%d preErr=%d postErr=%d activeTexUnit=%d "
                         + "texBinding=%d texSize=%dx%d l1w=%d minFilter=%d "
                         + "program=%d fbo=%d viewport=%d,%d,%d,%d "
                         + "tests[depth=%b stencil=%b alpha=%b] "
-                        + "视野内=%d/%d 样本ndc=(%.3f,%.3f) screen=(%d,%d) 回读亮度=%d readErr=%d "
+                        + "screen=(%d,%d) 绘制前亮度=%d 绘制后亮度=%d（差值>0 即光栅化落屏） "
                         + "mv[0]=%.3f mv[1]=%.3f mv[4]=%.3f mv[5]=%.3f mv[12]=%.3f mv[13]=%.3f "
                         + "pj[0]=%.6f pj[5]=%.6f pj[12]=%.6f pj[13]=%.6f",
                 drawnInstances, textureId, diagPreError, postErr, activeTexture,
                 textureBinding, texWidth, texHeight, texL1Width, minFilter,
                 currentProgram, framebuffer,
-                viewport.get(0), viewport.get(1), viewport.get(2), viewport.get(3),
+                diagViewport[0], diagViewport[1], diagViewport[2], diagViewport[3],
                 GL11.glGetBoolean(GL11.GL_DEPTH_TEST),
                 GL11.glGetBoolean(GL11.GL_STENCIL_TEST),
                 GL11.glGetBoolean(GL11.GL_ALPHA_TEST),
-                inViewCount, instances.size(), inViewNdcX, inViewNdcY, screenX, screenY,
-                luminance, readErr,
-                mv.get(0), mv.get(1), mv.get(4), mv.get(5), mv.get(12), mv.get(13),
-                pj.get(0), pj.get(5), pj.get(12), pj.get(13)));
+                screenX, screenY, preLum, postLum,
+                diagMv[0], diagMv[1], diagMv[4], diagMv[5], diagMv[12], diagMv[13],
+                diagPj[0], diagPj[5], diagPj[12], diagPj[13]));
     }
 
     // ---------------------------------------------------------------------
@@ -430,11 +432,26 @@ public final class EngineBatchImpl implements EngineBatch {
                 program.useStrip();
                 GL11.glBindTexture(GL11.GL_TEXTURE_2D, group.textureId());
                 bindInstanceAttribs(5, EngineInstanceCollector.STRIP_INSTANCE_FLOATS * 4, base);
+                // 诊断：找到视野内条带后做绘制前后回读对比；全部屏外时持续跳过，600 组后报一次系统性偏差
+                int[] diagPos = null;
+                int diagPreLum = 0;
                 if (!instancedDiagDumped) {
-                    diagPreError = GL11.glGetError();
+                    diagPos = findInViewStripScreenPos(group.instances());
+                    if (diagPos != null) {
+                        diagPreError = GL11.glGetError();
+                        diagPreLum = readLuminance5x5(diagPos[0], diagPos[1]);
+                    }
                 }
                 GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 12, count);
-                dumpInstancedDiagOnce(count, group.textureId(), group.instances());
+                if (diagPos != null) {
+                    instancedDiagDumped = true;
+                    dumpInstancedDiag(count, group.textureId(), diagPos[0], diagPos[1],
+                            diagPreLum, readLuminance5x5(diagPos[0], diagPos[1]));
+                } else if (!instancedDiagDumped && ++diagSkippedGroups == 600) {
+                    instancedDiagDumped = true;
+                    LOGGER.warn("[SSOptimizer] INSTANCED 诊断：连续 600 组条带全部投影到屏幕外，"
+                            + "坐标口径可能存在系统性偏差");
+                }
             }
 
             for (CoreGroup group : batch.cores) {
