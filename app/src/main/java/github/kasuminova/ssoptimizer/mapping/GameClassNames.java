@@ -42,6 +42,8 @@ public final class GameClassNames {
     public static final String TESSELATOR                          = "com/fs/starfarer/util/Tesselator";
     public static final String TESSELATOR_DOTTED                   = "com.fs.starfarer.util.Tesselator";
     public static final String COMBAT_STATE                        = "com/fs/starfarer/combat/CombatState";
+    public static final String COMBAT_ENGINE                       = "com/fs/starfarer/combat/CombatEngine";
+    public static final String COMBAT_ENGINE_DOTTED                = "com.fs.starfarer.combat.CombatEngine";
     public static final String SMOOTH_PARTICLE                     = "com/fs/graphics/particle/SmoothParticle";
     public static final String SMOOTH_PARTICLE_DOTTED              = "com.fs.graphics.particle.SmoothParticle";
     public static final String BASE_PARTICLE                       = "com/fs/graphics/particle/BaseParticle";

@@ -14,6 +14,7 @@
     "automation.TitleScreenAutomationMixin",
     "campaign.CampaignEngineBattleReportMixin",
     "combat.CollisionGridQueryMixin",
+    "combat.CombatEngineScopeMixin",
     "combat.ShieldRenderMixin",
     "econ.CommodityOnMarketMixin",
     "econ.MarketMixin",

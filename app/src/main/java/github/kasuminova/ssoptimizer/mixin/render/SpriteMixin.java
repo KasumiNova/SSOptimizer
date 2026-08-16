@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.graphics.TextureObject;
 import com.fs.graphics.util.RenderStateUtils;
 import github.kasuminova.ssoptimizer.common.render.engine.SpriteRenderHelper;
+import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatchStats;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -87,6 +88,9 @@ public abstract class SpriteMixin {
         if (texture == null) {
             return;
         }
+        if (SpriteBatchStats.isEnabled()) {
+            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, false);
+        }
         texture.bind();
         if (texClamp) {
             RenderStateUtils.enableTextureClamp();
@@ -117,6 +121,9 @@ public abstract class SpriteMixin {
     public void renderNoBind(float x, float y) {
         if (texture == null) {
             return;
+        }
+        if (SpriteBatchStats.isEnabled()) {
+            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, true);
         }
         if (texClamp) {
             RenderStateUtils.enableTextureClamp();
