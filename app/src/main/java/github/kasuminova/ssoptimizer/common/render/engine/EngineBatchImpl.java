@@ -15,6 +15,7 @@ import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollecto
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.SlotInput;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.StripGroup;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.StripInstance;
+import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
@@ -75,6 +76,11 @@ public final class EngineBatchImpl implements EngineBatch {
 
     private ByteBuffer vertexScratch;
     private ByteBuffer indexScratch;
+    private ByteBuffer flattenScratch;
+
+    /** native 环形写入偏移（仅 isGlReady 路径使用；DynamicVbo 内部偏移仅 Java 回退路径使用）。 */
+    private int nativeVertexWriteOffset;
+    private int nativeIndexWriteOffset;
 
     private boolean buildingListLogged;
     private int  displayListFallbacks;
@@ -296,6 +302,10 @@ public final class EngineBatchImpl implements EngineBatch {
             vertexVbo = new DynamicVbo(GL15.GL_ARRAY_BUFFER, VERTEX_VBO_CAPACITY);
             indexVbo = new DynamicVbo(GL15.GL_ELEMENT_ARRAY_BUFFER, INDEX_VBO_CAPACITY);
         }
+        if (NativeRuntime.isGlReady()) {
+            flushVboBatchNative(batch);
+            return;
+        }
 
         int prevArrayBuffer = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
         int prevElementBuffer = GL11.glGetInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING);
@@ -334,6 +344,38 @@ public final class EngineBatchImpl implements EngineBatch {
             GL11.glPopClientAttrib();
             GL11.glPopAttrib();
         }
+    }
+
+    /**
+     * native flush：扁平化批次后单次 JNI 完成顶点展开、环形 VBO 写入与逐组绘制。
+     * VBO 绑定全程在 native 内恢复，不经 LWJGL（StateTracker 无失配风险）。
+     */
+    private void flushVboBatchNative(CollectedBatch batch) {
+        int requiredBytes = EngineInstanceCollector.flattenedBytes(batch);
+        ByteBuffer commandBuffer = flattenScratch(requiredBytes);
+        int commandCount = EngineInstanceCollector.flatten(batch, commandBuffer);
+
+        // native 环形写入不扩容，容量预检在 Java 侧完成（扩容后 native 偏移同步清零）
+        if (vertexVbo.ensureCapacity(EngineInstanceCollector.expandedVertexBytes(batch))) {
+            nativeVertexWriteOffset = 0;
+        }
+        if (indexVbo.ensureCapacity(EngineInstanceCollector.expandedIndexBytes(batch))) {
+            nativeIndexWriteOffset = 0;
+        }
+
+        long packed = EngineBatchNative.nativeFlushBatch(commandBuffer, commandCount,
+                vertexVbo.getBufferId(), vertexVbo.getCapacityBytes(), nativeVertexWriteOffset,
+                indexVbo.getBufferId(), indexVbo.getCapacityBytes(), nativeIndexWriteOffset);
+        nativeVertexWriteOffset = (int) (packed >>> 32);
+        nativeIndexWriteOffset = (int) packed;
+    }
+
+    private ByteBuffer flattenScratch(int required) {
+        if (flattenScratch == null || flattenScratch.capacity() < required) {
+            int newCapacity = Math.max(64 * 1024, Integer.highestOneBit(required - 1) << 1);
+            flattenScratch = ByteBuffer.allocateDirect(newCapacity).order(ByteOrder.nativeOrder());
+        }
+        return (ByteBuffer) flattenScratch.clear().limit(required);
     }
 
     private interface VertexExpander {

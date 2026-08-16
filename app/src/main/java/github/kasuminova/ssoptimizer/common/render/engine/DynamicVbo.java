@@ -73,6 +73,24 @@ public final class DynamicVbo {
         return bufferId;
     }
 
+    /** 当前容量（字节）。 */
+    public int getCapacityBytes() {
+        return capacityBytes;
+    }
+
+    /**
+     * 确保容量至少为 requiredBytes（不足时整体扩容）。
+     *
+     * @return true 表示发生了扩容（写入指针已重置，native 侧偏移必须同步清零）
+     */
+    public boolean ensureCapacity(int requiredBytes) {
+        if (requiredBytes <= capacityBytes) {
+            return false;
+        }
+        grow(requiredBytes);
+        return true;
+    }
+
     /** 解绑本 VBO 目标。 */
     public void unbind() {
         GL15.glBindBuffer(target, 0);

@@ -32,6 +32,27 @@ public final class EngineInstanceCollector {
     /** VBO 模式的单顶点字节数：x,y,u,v（float×4）+ r,g,b,a（ubyte×4）。 */
     public static final int VERTEX_BYTES = 20;
 
+    // ---------------------------------------------------------------------
+    // native flush 扁平化布局（与 ssoptimizer_engine_batch.cpp 的结构体一一对应，
+    // 修改任一字段必须同步修改 C++ 侧；全部小端/nativeOrder 写入）
+    // ---------------------------------------------------------------------
+
+    /** 阶段：尾焰条带（6 顶点/实例，12 索引/实例）。 */
+    public static final int STAGE_STRIP = 0;
+    /** 阶段：火焰核心（4 顶点/实例，6 索引/实例）。 */
+    public static final int STAGE_CORE  = 1;
+    /** 阶段：辉光精灵（4 顶点/实例，6 索引/实例）。 */
+    public static final int STAGE_GLOW  = 2;
+
+    /** 绘制命令记录字节数：stage / textureId / instanceCount / dataOffset 各 4 字节。 */
+    public static final int COMMAND_BYTES = 16;
+    /** 条带实例字节数：14 float + r/g/b/alphaStart/alphaMid 5 字节 + 3 字节对齐填充。 */
+    public static final int STRIP_INSTANCE_BYTES = 64;
+    /** 核心实例字节数：7 float + rgba 4 字节。 */
+    public static final int CORE_INSTANCE_BYTES = 32;
+    /** 辉光实例字节数：10 float + rgba 4 字节。 */
+    public static final int GLOW_INSTANCE_BYTES = 44;
+
     private EngineInstanceCollector() {
     }
 
@@ -146,24 +167,46 @@ public final class EngineInstanceCollector {
             int textureId) {
     }
 
+    /** 分组公共视图：native 扁平化统计实例数用。 */
+    public interface EngineGroup {
+        int textureId();
+
+        int instanceCount();
+    }
+
     /** 尾焰条带分组（同纹理一批绘制）。 */
-    public record StripGroup(int textureId, List<StripInstance> instances) {
+    public record StripGroup(int textureId, List<StripInstance> instances) implements EngineGroup {
         public GroupKey key() {
             return new GroupKey(Stage.FLAME_STRIP, textureId);
+        }
+
+        @Override
+        public int instanceCount() {
+            return instances.size();
         }
     }
 
     /** 火焰核心分组。 */
-    public record CoreGroup(int textureId, List<CoreInstance> instances) {
+    public record CoreGroup(int textureId, List<CoreInstance> instances) implements EngineGroup {
         public GroupKey key() {
             return new GroupKey(Stage.FLAME_CORE, textureId);
+        }
+
+        @Override
+        public int instanceCount() {
+            return instances.size();
         }
     }
 
     /** 辉光精灵分组。 */
-    public record GlowGroup(int textureId, List<GlowInstance> instances) {
+    public record GlowGroup(int textureId, List<GlowInstance> instances) implements EngineGroup {
         public GroupKey key() {
             return new GroupKey(Stage.GLOW_SPRITE, textureId);
+        }
+
+        @Override
+        public int instanceCount() {
+            return instances.size();
         }
     }
 
@@ -622,6 +665,149 @@ public final class EngineInstanceCollector {
 
             putVertex(out, in.posX() + p[0], in.posY() + p[1], u, v, in.red(), in.green(), in.blue(), in.alpha());
         }
+    }
+
+    // ---------------------------------------------------------------------
+    // native flush：批次扁平化（命令表 + 定长实例数组，单次 JNI 传入）
+    // ---------------------------------------------------------------------
+
+    /**
+     * 将一个批次扁平化到 direct ByteBuffer（必须 nativeOrder）：
+     * 头部为 commandCount 条 {@link #COMMAND_BYTES} 字节的命令记录
+     * （stage / textureId / instanceCount / dataOffset），随后依次是条带、核心、
+     * 辉光三个阶段的定长实例数组；命令的 dataOffset 指向对应实例数组起点。
+     *
+     * @param batch 收集结果（允许为空批次，产出 0 条命令）
+     * @param out   输出缓冲（容量必须 ≥ {@link #flattenedBytes(CollectedBatch)}）
+     * @return 命令条数
+     */
+    public static int flatten(CollectedBatch batch, ByteBuffer out) {
+        int commandCount = batch.strips.size() + batch.cores.size() + batch.glows.size();
+        int stripPos = commandCount * COMMAND_BYTES;
+        int corePos = stripPos + instanceCount(batch.strips) * STRIP_INSTANCE_BYTES;
+        int glowPos = corePos + instanceCount(batch.cores) * CORE_INSTANCE_BYTES;
+
+        int commandPos = 0;
+        for (StripGroup group : batch.strips) {
+            putCommand(out, commandPos, STAGE_STRIP, group.textureId(),
+                    group.instances().size(), stripPos);
+            commandPos += COMMAND_BYTES;
+            for (StripInstance in : group.instances()) {
+                putStripInstance(out, stripPos, in);
+                stripPos += STRIP_INSTANCE_BYTES;
+            }
+        }
+        for (CoreGroup group : batch.cores) {
+            putCommand(out, commandPos, STAGE_CORE, group.textureId(),
+                    group.instances().size(), corePos);
+            commandPos += COMMAND_BYTES;
+            for (CoreInstance in : group.instances()) {
+                putCoreInstance(out, corePos, in);
+                corePos += CORE_INSTANCE_BYTES;
+            }
+        }
+        for (GlowGroup group : batch.glows) {
+            putCommand(out, commandPos, STAGE_GLOW, group.textureId(),
+                    group.instances().size(), glowPos);
+            commandPos += COMMAND_BYTES;
+            for (GlowInstance in : group.instances()) {
+                putGlowInstance(out, glowPos, in);
+                glowPos += GLOW_INSTANCE_BYTES;
+            }
+        }
+        return commandCount;
+    }
+
+    /** 扁平化一个批次所需的总字节数（命令表 + 全部实例数据）。 */
+    public static int flattenedBytes(CollectedBatch batch) {
+        int commandCount = batch.strips.size() + batch.cores.size() + batch.glows.size();
+        return commandCount * COMMAND_BYTES
+                + instanceCount(batch.strips) * STRIP_INSTANCE_BYTES
+                + instanceCount(batch.cores) * CORE_INSTANCE_BYTES
+                + instanceCount(batch.glows) * GLOW_INSTANCE_BYTES;
+    }
+
+    /** 一个批次展开后的顶点字节总数（native 环形 VBO 容量预检用）。 */
+    public static int expandedVertexBytes(CollectedBatch batch) {
+        return (instanceCount(batch.strips) * 6
+                + instanceCount(batch.cores) * 4
+                + instanceCount(batch.glows) * 4) * VERTEX_BYTES;
+    }
+
+    /** 一个批次展开后的索引字节总数（native 环形 VBO 容量预检用）。 */
+    public static int expandedIndexBytes(CollectedBatch batch) {
+        return (instanceCount(batch.strips) * 12
+                + instanceCount(batch.cores) * 6
+                + instanceCount(batch.glows) * 6) * 2;
+    }
+
+    private static int instanceCount(List<? extends EngineGroup> groups) {
+        int total = 0;
+        for (EngineGroup group : groups) {
+            total += group.instanceCount();
+        }
+        return total;
+    }
+
+    private static void putCommand(ByteBuffer out, int pos, int stage, int textureId,
+                                   int instanceCount, int dataOffset) {
+        out.putInt(pos, stage);
+        out.putInt(pos + 4, textureId);
+        out.putInt(pos + 8, instanceCount);
+        out.putInt(pos + 12, dataOffset);
+    }
+
+    private static void putStripInstance(ByteBuffer out, int pos, StripInstance in) {
+        out.putFloat(pos, in.posX());
+        out.putFloat(pos + 4, in.posY());
+        out.putFloat(pos + 8, in.angle());
+        out.putFloat(pos + 12, in.rotation1());
+        out.putFloat(pos + 16, in.rotation2());
+        out.putFloat(pos + 20, in.translateX());
+        out.putFloat(pos + 24, in.scaleX());
+        out.putFloat(pos + 28, in.scaleY());
+        out.putFloat(pos + 32, in.halfWidth());
+        out.putFloat(pos + 36, in.innerLength());
+        out.putFloat(pos + 40, in.stripLength());
+        out.putFloat(pos + 44, in.texU());
+        out.putFloat(pos + 48, in.texSpan());
+        out.putFloat(pos + 52, in.texAdvance());
+        out.put(pos + 56, (byte) in.red());
+        out.put(pos + 57, (byte) in.green());
+        out.put(pos + 58, (byte) in.blue());
+        out.put(pos + 59, (byte) in.alphaStart());
+        out.put(pos + 60, (byte) in.alphaMid());
+    }
+
+    private static void putCoreInstance(ByteBuffer out, int pos, CoreInstance in) {
+        out.putFloat(pos, in.posX());
+        out.putFloat(pos + 4, in.posY());
+        out.putFloat(pos + 8, in.angle());
+        out.putFloat(pos + 12, in.coreRotation());
+        out.putFloat(pos + 16, in.omegaRotation());
+        out.putFloat(pos + 20, in.stripLength());
+        out.putFloat(pos + 24, in.halfWidth());
+        out.put(pos + 28, (byte) in.red());
+        out.put(pos + 29, (byte) in.green());
+        out.put(pos + 30, (byte) in.blue());
+        out.put(pos + 31, (byte) in.alpha());
+    }
+
+    private static void putGlowInstance(ByteBuffer out, int pos, GlowInstance in) {
+        out.putFloat(pos, in.posX());
+        out.putFloat(pos + 4, in.posY());
+        out.putFloat(pos + 8, in.angle());
+        out.putFloat(pos + 12, in.coreRotation());
+        out.putFloat(pos + 16, in.scaleX());
+        out.putFloat(pos + 20, in.size());
+        out.putFloat(pos + 24, in.texU0());
+        out.putFloat(pos + 28, in.texV0());
+        out.putFloat(pos + 32, in.texU1());
+        out.putFloat(pos + 36, in.texV1());
+        out.put(pos + 40, (byte) in.red());
+        out.put(pos + 41, (byte) in.green());
+        out.put(pos + 42, (byte) in.blue());
+        out.put(pos + 43, (byte) in.alpha());
     }
 
     // ---------------------------------------------------------------------
