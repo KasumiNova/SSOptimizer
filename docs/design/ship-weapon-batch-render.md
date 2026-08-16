@@ -37,9 +37,22 @@
    CombatEngineLayers 上，可在任意层边界插入自己的 shader/FBO/混合状态。
    → 合批的 flush 边界必须收缩在**单层内部**：层结束（或层间切换）时无条件 flush，
    绝不跨层携带未绘制的顶点。
-4. **blend 多样性**：船体普通 alpha（770/771），jitter 残影 additive（770/1），
+   已实证原版渲染为 **layer-major**（LayeredRenderer.java:35-41：外层按层枚举序、
+   内层按注册序逐实体 `render(layer, viewport)`，一艘舰的完整内部序列在一次调用内
+   完成），因此按层收集、层末 flush 天然可行。
+4. **层内 painter's algorithm**：船体/武器为普通 alpha（770/771），叠放次序敏感；
+   原版层内顺序是 舰A(船体→武器) → 舰B(船体→武器)。按「纹理×blend」分组重排
+   flush 会改变不同贴图舰船重叠处的遮挡关系。两种策略由开关切换：
+   - 严格保序（默认）：仅连续同组 quad 并批，视觉逐位等价；
+   - 分组重排（近似等价，独立开关）：alpha≈1 的不透明像素顺序无关，仅半透明边缘/
+     decal 交界叠放次序可能变化，需截图对照验证后决定是否可用。
+5. **blend 多样性**：船体普通 alpha（770/771），jitter 残影 additive（770/1），
    引擎 additive。→ 分组键 = (textureId, blendSrc, blendDst)；组内 quad 顺序保持
    收集序（additive 交换律宽松，普通 alpha 需保持次序，组内天然有序）。
+   注意：贴图不重样的场景下（用户实测预判：舰船/武器贴图几乎不重样，仅少量武器
+   重复），收益主体是消除每 sprite 的 pushMatrix/rotate/glBegin/glEnd 十余次
+   JNI 调用（CPU 烘焙替代），与是否分组无关；P0 统计需同时量化「平均每组 quad 数」
+   以评估分组重排的边际价值。
 5. **矩阵捕获**：Sprite 的位移/旋转在 GL 矩阵栈里。收集时读取当前 modelview
    一次（glGetFloat 1 次 JNI）并 CPU 烘焙进顶点，替代原 pushMatrix/rotate。
    可在 Ship.render 级别缓存（一船所有 sprite 共享船体平移），进一步摊薄。
@@ -90,14 +103,19 @@ SpriteBatch（新，common/render/spritebatch/）
 ### 3.3 开关
 
 - `ssoptimizer.render.spritebatch.enable`（默认 true，false 全部透传原逻辑）
+- `ssoptimizer.render.spritebatch.reorder`（默认 false）：false=严格保序并批
+  （仅连续同组 quad 合并，视觉逐位等价）；true=按 (纹理×blend) 分组重排，
+  近似等价，需截图对照验证
 - `ssoptimizer.render.spritebatch.stats`（默认 false，每 300 帧输出组数/quad 数/drawcall 节省量）
-- 预计收益口径：drawcall 数从「每 sprite 1 次」降到「每层每 (纹理×blend) 1 次」，
-  大混战（数十艘同型舰 + 同型武器）下船体/武器 drawcall 可降一个数量级。
+- 收益口径：贴图不重样时主要为消除每 sprite 的矩阵栈 + glBegin/glEnd JNI 开销；
+  存在重复纹理（同型舰、同 id 武器、decal sheet）时分组重排可额外把 drawcall 降到
+  「每层每 (纹理×blend) 1 次」。
 
 ## 4. 分阶段实施
 
-- **P0 量化（先行）**：只加统计不加绘制——统计战斗帧内 sprite 绘制的纹理分布、
-  可合并比例、禁区（stencil/buildingList）命中率，用数据决定分组键与容量参数。
+- **P0 量化（先行，条件已确认）**：只加统计不加绘制——统计战斗帧内 sprite 绘制的
+  纹理分布、平均每组 quad 数（用户预判贴图几乎不重样，需实测坐实）、
+  禁区（stencil/buildingList）命中率，用数据决定保序/重排默认策略与容量参数。
 - **P1 核心管线**：SpriteBatchImpl + DynamicVbo 复用 + render/renderAtCenter 拦截 +
   层边界 flush + 禁区透传；视觉等价性对照（同场景截图对比 / 回读校验）。
 - **P2 收益扩展**：Ship 级矩阵缓存、武器 charge/glow sprite 变体纳入、
