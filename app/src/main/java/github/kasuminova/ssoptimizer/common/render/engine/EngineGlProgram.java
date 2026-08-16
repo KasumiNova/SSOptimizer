@@ -38,6 +38,14 @@ public final class EngineGlProgram {
             + "    gl_FragColor = texture(uTex, vUV) * vColor;\n"
             + "}\n";
 
+    /** 调试片元着色器：恒定不透明红色，用于区分顶点/光栅化侧与片元/纹理侧问题。 */
+    private static final String FRAGMENT_SRC_DEBUG_SOLID = GLSL_HEADER
+            + "in vec2 vUV;\n"
+            + "in vec4 vColor;\n"
+            + "void main() {\n"
+            + "    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+            + "}\n";
+
     /**
      * 尾焰条带顶点着色器：6 顶点 quad-strip 模板按 12 索引展开为 4 三角形。
      * 矩阵等价链：T(pos)·R(angle)·R(rotation1)·R(rotation2)·T(translateX)·S(scaleX,scaleY)。
@@ -142,9 +150,15 @@ public final class EngineGlProgram {
      * @return 成功返回实例；任一程序失败记 ERROR 并返回 null（调用方降级）
      */
     public static EngineGlProgram create() {
-        int strip = link("strip", STRIP_VERTEX_SRC);
-        int core = link("core", CORE_VERTEX_SRC);
-        int glow = link("glow", GLOW_VERTEX_SRC);
+        // 调试开关：-Dssoptimizer.render.shipengine.debugsolid=true 时片元输出恒定红色，
+        // 若红色可见说明问题在片元/纹理侧，不可见说明在顶点/光栅化侧
+        String fragmentSrc = Boolean.parseBoolean(
+                System.getProperty("ssoptimizer.render.shipengine.debugsolid", "false"))
+                ? FRAGMENT_SRC_DEBUG_SOLID
+                : FRAGMENT_SRC;
+        int strip = link("strip", STRIP_VERTEX_SRC, fragmentSrc);
+        int core = link("core", CORE_VERTEX_SRC, fragmentSrc);
+        int glow = link("glow", GLOW_VERTEX_SRC, fragmentSrc);
         if (strip == 0 || core == 0 || glow == 0) {
             GL20.glDeleteProgram(strip);
             GL20.glDeleteProgram(core);
@@ -181,12 +195,12 @@ public final class EngineGlProgram {
         GL20.glUniform1i(GL20.glGetUniformLocation(program, "uTex"), 0);
     }
 
-    private static int link(String name, String vertexSrc) {
+    private static int link(String name, String vertexSrc, String fragmentSrc) {
         int vertexShader = compile(GL20.GL_VERTEX_SHADER, vertexSrc, name + ".vert");
         if (vertexShader == 0) {
             return 0;
         }
-        int fragmentShader = compile(GL20.GL_FRAGMENT_SHADER, FRAGMENT_SRC, name + ".frag");
+        int fragmentShader = compile(GL20.GL_FRAGMENT_SHADER, fragmentSrc, name + ".frag");
         if (fragmentShader == 0) {
             GL20.glDeleteShader(vertexShader);
             return 0;

@@ -380,7 +380,7 @@ public final class EngineBatchImpl implements EngineBatch {
                 "[SSOptimizer] INSTANCED 首绘诊断：drawn=%d tex=%d preErr=%d postErr=%d activeTexUnit=%d "
                         + "texBinding=%d texSize=%dx%d l1w=%d minFilter=%d "
                         + "program=%d fbo=%d viewport=%d,%d,%d,%d "
-                        + "tests[depth=%b stencil=%b alpha=%b] "
+                        + "tests[depth=%b stencil=%b alpha=%b scissor=%b cull=%b clip0=%b] polyMode=%d "
                         + "screen=(%d,%d) 绘制前亮度=%d 绘制后亮度=%d（差值>0 即光栅化落屏） "
                         + "mv[0]=%.3f mv[1]=%.3f mv[4]=%.3f mv[5]=%.3f mv[12]=%.3f mv[13]=%.3f "
                         + "pj[0]=%.6f pj[5]=%.6f pj[12]=%.6f pj[13]=%.6f",
@@ -391,6 +391,10 @@ public final class EngineBatchImpl implements EngineBatch {
                 GL11.glGetBoolean(GL11.GL_DEPTH_TEST),
                 GL11.glGetBoolean(GL11.GL_STENCIL_TEST),
                 GL11.glGetBoolean(GL11.GL_ALPHA_TEST),
+                GL11.glGetBoolean(GL11.GL_SCISSOR_TEST),
+                GL11.glGetBoolean(GL11.GL_CULL_FACE),
+                GL11.glGetBoolean(GL11.GL_CLIP_PLANE0),
+                GL11.glGetInteger(GL11.GL_POLYGON_MODE),
                 screenX, screenY, preLum, postLum,
                 diagMv[0], diagMv[1], diagMv[4], diagMv[5], diagMv[12], diagMv[13],
                 diagPj[0], diagPj[5], diagPj[12], diagPj[13]));
