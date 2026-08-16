@@ -88,7 +88,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
                 || GL11.glGetInteger(GL11.GL_MATRIX_MODE) != GL11.GL_MODELVIEW
                 || GL11.glGetBoolean(GL11.GL_STENCIL_TEST)
                 || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)
-                || GL30.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) != 0) {
+                || GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) != 0) {
             // 拒绝收集：先 flush 已有批次，保证后续原版绘制的相对顺序不变。
             // FBO 绑定非 0 表示模组/游戏的离屏 pass（GraphicsLib 法线/材质图等），
             // 其投影与渲染目标均不同，必须走原版立即路径
