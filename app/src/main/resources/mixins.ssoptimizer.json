@@ -12,6 +12,8 @@
     "accessor.ShipAccessor",
     "accessor.Txw2DelegatingXmlStreamWriterAccessor",
     "automation.TitleScreenAutomationMixin",
+    "bench.CombatStateBenchmarkMixin",
+    "bench.TitleScreenBenchmarkMixin",
     "campaign.CampaignEngineBattleReportMixin",
     "combat.CollisionGridQueryMixin",
     "combat.CombatEngineScopeMixin",

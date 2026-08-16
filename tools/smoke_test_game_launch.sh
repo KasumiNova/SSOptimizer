@@ -4,7 +4,8 @@ set -euo pipefail
 # Smoke test: launch Starsector with SSOptimizer as a NanoForge coremod, check for fatal errors.
 GAME_DIR="${1:-/mnt/store/Games/Starsector098-linux}"
 TIMEOUT_SEC="${2:-15}"
-MODE="${3:-launcher}"
+# 默认进入真实游戏（autostart 跳过启动器）；launcher 模式会永久卡在启动器 UI
+MODE="${3:-game}"
 LAUNCH_SCRIPT="${SSOPTIMIZER_SMOKE_LAUNCH_SCRIPT:-launch_nanoforge_ss.sh}"
 LOG_FILE="$GAME_DIR/starsector.log"
 PROCESS_LOG_FILE="$GAME_DIR/ssoptimizer-smoke-process.log"

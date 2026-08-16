@@ -4,9 +4,6 @@ import com.fs.starfarer.api.combat.CombatEngineAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.combat.WeaponAPI;
 import org.apache.log4j.Logger;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.GL11;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -14,7 +11,6 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -218,28 +214,7 @@ public final class AutomationScreenshotHelper {
     }
 
     private static BufferedImage captureFramebuffer() throws IOException {
-        final int width = Display.getWidth();
-        final int height = Display.getHeight();
-        if (width <= 0 || height <= 0) {
-            throw new IOException("Display size is invalid: " + width + "x" + height);
-        }
-
-        final ByteBuffer pixels = BufferUtils.createByteBuffer(width * height * 4);
-        GL11.glReadBuffer(GL11.GL_BACK);
-        GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
-
-        final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                final int index = (x + width * y) * 4;
-                final int r = pixels.get(index) & 0xFF;
-                final int g = pixels.get(index + 1) & 0xFF;
-                final int b = pixels.get(index + 2) & 0xFF;
-                final int a = pixels.get(index + 3) & 0xFF;
-                image.setRGB(x, height - y - 1, (a << 24) | (r << 16) | (g << 8) | b);
-            }
-        }
-        return image;
+        return github.kasuminova.ssoptimizer.common.bench.FramebufferCapture.capture();
     }
 
     private static void writeJpeg(final BufferedImage source, final Path path) throws IOException {

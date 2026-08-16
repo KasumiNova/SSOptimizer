@@ -102,6 +102,8 @@ dependencies {
     implementation("it.unimi.dsi:fastutil:8.5.18")
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("com.github.luben:zstd-jni:1.5.7-3")
+    // async-profiler：API + 内嵌各平台 libasyncProfiler native（基准测试采样接口）
+    implementation("tools.profiler:async-profiler:4.5")
     shade("org.apache.logging.log4j:log4j-1.2-api:2.25.2")
 
     // ---- 运行时由 NanoForge 提供，编译期对齐其版本 ----
