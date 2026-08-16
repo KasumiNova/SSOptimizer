@@ -50,7 +50,8 @@
     "save.XStreamFieldDictionaryMixin",
     "save.XStreamFieldsMixin",
     "save.XStreamObjectIdDictionaryMixin",
-    "save.XStreamPathTrackerMixin"
+    "save.XStreamPathTrackerMixin",
+    "warroom.TaskIconManagerMixin"
   ],
   "client": [],
   "injectors": {
