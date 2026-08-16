@@ -129,6 +129,11 @@ public final class SpriteBatchImpl implements SpriteBatch {
             LOGGER.info("[SSOptimizer] Sprite 合批 VBO 已初始化");
         }
 
+        // 必须先捕获调用方原始绑定：DynamicVbo.write 会绑定自身 VBO 且不解除
+        int prevMatrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
+        int prevArrayBuffer = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
+        int prevElementBuffer = GL11.glGetInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING);
+
         vertexScratch.flip();
         indexScratch.flip();
         int vertexBase = vertexVbo.write(vertexScratch);
@@ -136,9 +141,6 @@ public final class SpriteBatchImpl implements SpriteBatch {
         vertexScratch.clear();
         indexScratch.clear();
 
-        int prevMatrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
-        int prevArrayBuffer = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
-        int prevElementBuffer = GL11.glGetInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING);
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
                 | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
