@@ -124,7 +124,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
         // alpha test 同理入键（扩展状态区），flush 时回放；stencil 区一律透传
         int blendEquation;
         boolean extendedState;
-        if (NativeRuntime.isLoaded()) {
+        if (NativeRuntime.isGlReady()) {
             int expected = pendingQuads > 0 ? currentBlendEquation : -1;
             int requireExtended = pendingQuads > 0 && currentExtendedState ? 1 : 0;
             int result = SpriteBatchNative.nativeSubmit(vertexScratch, indexScratch,
@@ -224,6 +224,19 @@ public final class SpriteBatchImpl implements SpriteBatch {
         int indexBase = indexVbo.write(indexScratch);
         vertexScratch.clear();
         indexScratch.clear();
+
+        if (NativeRuntime.isGlReady()) {
+            // native 单次 JNI 完成状态回放 + 绘制 + 恢复（约 25 次 LWJGL 调用折叠为一次跨界）
+            SpriteBatchNative.nativeFlush(vertexVbo.getBufferId(), vertexBase,
+                    indexVbo.getBufferId(), indexBase, pendingQuads,
+                    currentTexture, currentBlendSrc, currentBlendDest, currentBlendEquation,
+                    currentExtendedState, currentAlphaFunc, currentAlphaRef,
+                    lastR, lastG, lastB, lastA,
+                    prevMatrixMode, prevArrayBuffer, prevElementBuffer);
+            pendingQuads = 0;
+            currentKey = -1;
+            return;
+        }
 
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
                 | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);

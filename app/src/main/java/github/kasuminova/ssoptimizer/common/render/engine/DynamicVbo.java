@@ -68,6 +68,11 @@ public final class DynamicVbo {
         GL15.glBindBuffer(target, bufferId);
     }
 
+    /** GL 缓冲对象 ID（供 native flush 直接绑定）。 */
+    public int getBufferId() {
+        return bufferId;
+    }
+
     /** 解绑本 VBO 目标。 */
     public void unbind() {
         GL15.glBindBuffer(target, 0);

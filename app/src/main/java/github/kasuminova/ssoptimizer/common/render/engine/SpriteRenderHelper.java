@@ -19,7 +19,7 @@ public final class SpriteRenderHelper {
     }
 
     public static boolean isNativeLoaded() {
-        return NativeRuntime.isLoaded();
+        return NativeRuntime.isGlReady();
     }
 
     /**
@@ -34,7 +34,7 @@ public final class SpriteRenderHelper {
             int colorR, int colorG, int colorB, int colorA,
             int blendSrc, int blendDest,
             float texX, float texY, float texWidth, float texHeight) {
-        if (NativeRuntime.isLoaded()) {
+        if (NativeRuntime.isGlReady()) {
             nativeRenderSprite(posX, posY, width, height, centerX, centerY, angle,
                     colorR, colorG, colorB, colorA, blendSrc, blendDest,
                     texX, texY, texWidth, texHeight);

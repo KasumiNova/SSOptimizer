@@ -138,4 +138,70 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
     return blendEquation;
 }
 
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeFlush(
+        JNIEnv*, jclass,
+        jint vertexVbo, jlong vertexBase,
+        jint indexVbo, jlong indexBase,
+        jint quadCount,
+        jint texture, jint blendSrc, jint blendDest, jint blendEquation,
+        jboolean alphaTestEnabled, jint alphaFunc, jfloat alphaRef,
+        jint colorR, jint colorG, jint colorB, jint colorA,
+        jint prevMatrixMode, jint prevArrayBuffer, jint prevElementBuffer) {
+
+    // prev* 由 Java 侧在 DynamicVbo.write 前捕获（write 会绑定自身 VBO 且不解除，
+    // 此处再读只能拿到合批器自己的 VBO）；glGet 捕获因此保留在 Java 侧
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_CURRENT_BIT);
+    glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
+
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(static_cast<GLenum>(blendSrc), static_cast<GLenum>(blendDest));
+    glBlendEquation(static_cast<GLenum>(blendEquation));
+    // stencil 区一律透传不参与合批，但 flush 可能由 stencil 区内的 guard 拒绝触发
+    // （落在调用方 stencil 开启区间），必须显式关闭避免波及当前 run
+    glDisable(GL_STENCIL_TEST);
+    if (alphaTestEnabled == JNI_TRUE) {
+        glEnable(GL_ALPHA_TEST);
+        glAlphaFunc(static_cast<GLenum>(alphaFunc), alphaRef);
+    } else {
+        glDisable(GL_ALPHA_TEST);
+    }
+    glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture));
+
+    // 顶点已烘焙到裁剪空间：投影与模型视图均置单位矩阵，与 flush 时刻的矩阵栈完全解耦
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER, static_cast<GLuint>(vertexVbo));
+    const auto* vertexPtr = reinterpret_cast<const void*>(static_cast<uintptr_t>(vertexBase));
+    glVertexPointer(2, GL_FLOAT, 20, vertexPtr);
+    glTexCoordPointer(2, GL_FLOAT, 20, reinterpret_cast<const void*>(static_cast<uintptr_t>(vertexBase) + 8));
+    glColorPointer(4, GL_UNSIGNED_BYTE, 20, reinterpret_cast<const void*>(static_cast<uintptr_t>(vertexBase) + 16));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLuint>(indexVbo));
+    glDrawElements(GL_TRIANGLES, quadCount * 6, GL_UNSIGNED_SHORT,
+            reinterpret_cast<const void*>(static_cast<uintptr_t>(indexBase)));
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(static_cast<GLenum>(prevMatrixMode));
+
+    glPopClientAttrib();
+    glPopAttrib();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLuint>(prevElementBuffer));
+    glBindBuffer(GL_ARRAY_BUFFER, static_cast<GLuint>(prevArrayBuffer));
+    // 原版逐 sprite glColor4ub 的残留语义：当前颜色 = 最后一个 sprite 的颜色
+    glColor4ub(static_cast<GLubyte>(colorR & 0xFF),
+               static_cast<GLubyte>(colorG & 0xFF),
+               static_cast<GLubyte>(colorB & 0xFF),
+               static_cast<GLubyte>(colorA & 0xFF));
+}
+
 } // extern "C"

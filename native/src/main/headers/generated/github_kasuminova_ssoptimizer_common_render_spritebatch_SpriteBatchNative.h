@@ -25,6 +25,14 @@ extern "C" {
 JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeSubmit
   (JNIEnv *, jclass, jobject, jobject, jint, jint, jint, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jfloat, jfloat, jfloat);
 
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative
+ * Method:    nativeFlush
+ * Signature: (IJIJIIIIIZIFIIIIIII)V
+ */
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeFlush
+  (JNIEnv *, jclass, jint, jlong, jint, jlong, jint, jint, jint, jint, jint, jboolean, jint, jfloat, jint, jint, jint, jint, jint, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif
