@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.render.spritebatch;
 
 import com.fs.graphics.util.GLListManager;
 import github.kasuminova.ssoptimizer.common.render.engine.DynamicVbo;
+import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -24,6 +25,9 @@ import java.nio.FloatBuffer;
  * <p>
  * 开关：{@code -Dssoptimizer.render.spritebatch.enable}（默认 true，false 时
  * {@link #submitIfActive} 仅一次布尔判断直接放行原版路径）。
+ * <p>
+ * 收集路径优先走 {@link SpriteBatchNative} 的单次 JNI（guard + 矩阵读取 + 打包合一），
+ * native 库缺失时回退 Java 打包路径，两者语义一致。
  */
 public final class SpriteBatchImpl implements SpriteBatch {
     private static final Logger LOGGER = Logger.getLogger(SpriteBatchImpl.class);
@@ -85,31 +89,16 @@ public final class SpriteBatchImpl implements SpriteBatch {
         if (!enabled) {
             return false;
         }
-        if (!SpriteBatchStats.isInCombatScope() || texClamp
-                || GLListManager.buildingList
-                || GL11.glGetInteger(GL11.GL_MATRIX_MODE) != GL11.GL_MODELVIEW
-                || GL11.glGetBoolean(GL11.GL_STENCIL_TEST)
-                || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)
-                || GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) != 0) {
-            // 拒绝收集：先 flush 已有批次，保证后续原版绘制的相对顺序不变。
-            // FBO 绑定非 0 表示模组/游戏的离屏 pass（GraphicsLib 法线/材质图等），
-            // 其投影与渲染目标均不同，必须走原版立即路径
+        // 免费检查先行；GL 状态检查由 native 单次 JNI 完成（native 缺失时走 Java 路径）
+        if (!SpriteBatchStats.isInCombatScope() || texClamp || GLListManager.buildingList) {
+            // 拒绝收集：先 flush 已有批次，保证后续原版绘制的相对顺序不变
             flushPending();
             return false;
         }
 
         long key = SpriteGroupStats.key(textureId, blendSrc, blendDest);
-        // 混合方程也是 run 分组键的一部分：CombatEntityPluginWithParticles 的暗色层
-        // （现实干扰器弹体等负片粒子）会用 GL14.glBlendEquation(GL_FUNC_REVERSE_SUBTRACT)
-        // 包裹整段渲染，延迟 flush 时必须按收集时刻的方程绘制，否则暗色粒子退化为加法发光
-        int blendEquation = GL11.glGetInteger(GL14.GL_BLEND_EQUATION);
-        if (key != currentKey || blendEquation != currentBlendEquation) {
+        if (key != currentKey) {
             flushPending();
-            currentKey = key;
-            currentTexture = textureId;
-            currentBlendSrc = blendSrc;
-            currentBlendDest = blendDest;
-            currentBlendEquation = blendEquation;
         }
         if (pendingQuads >= SpriteQuadPacker.MAX_QUADS_PER_DRAW) {
             flushPending();
@@ -119,27 +108,77 @@ public final class SpriteBatchImpl implements SpriteBatch {
             indexScratch = ByteBuffer.allocateDirect(INDEX_SCRATCH_BYTES).order(ByteOrder.nativeOrder());
         }
 
-        mvBuf.clear();
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mvBuf);
-        for (int i = 0; i < 16; i++) {
-            mv[i] = mvBuf.get(i);
+        // 混合方程也是 run 分组键的一部分：CombatEntityPluginWithParticles 的暗色层
+        // （现实干扰器弹体等负片粒子）会用 GL14.glBlendEquation(GL_FUNC_REVERSE_SUBTRACT)
+        // 包裹整段渲染，延迟 flush 时必须按收集时刻的方程绘制，否则暗色粒子退化为加法发光
+        int blendEquation;
+        if (NativeRuntime.isLoaded()) {
+            int expected = pendingQuads > 0 ? currentBlendEquation : -1;
+            int result = SpriteBatchNative.nativeSubmit(vertexScratch, indexScratch, pendingQuads, expected,
+                    posX, posY, width, height, centerX, centerY, angle,
+                    r, g, b, a, texX, texY, texWidth, texHeight);
+            if (result == SpriteBatchNative.RESULT_EQUATION_MISMATCH) {
+                // 方程切换：flush 后空 run 重试（不检查方程）
+                flushPending();
+                result = SpriteBatchNative.nativeSubmit(vertexScratch, indexScratch, 0, -1,
+                        posX, posY, width, height, centerX, centerY, angle,
+                        r, g, b, a, texX, texY, texWidth, texHeight);
+            }
+            if (result == SpriteBatchNative.RESULT_INVALID_BUFFER) {
+                throw new IllegalStateException("SpriteBatch scratch 必须是 direct ByteBuffer");
+            }
+            if (result < 0) {
+                // FBO 绑定非 0 表示模组/游戏的离屏 pass（GraphicsLib 法线/材质图等），
+                // 其投影与渲染目标均不同，必须走原版立即路径
+                flushPending();
+                return false;
+            }
+            blendEquation = result;
+            vertexScratch.position(vertexScratch.position() + 4 * SpriteQuadPacker.VERTEX_BYTES);
+            indexScratch.position(indexScratch.position() + 12);
+        } else {
+            if (GL11.glGetInteger(GL11.GL_MATRIX_MODE) != GL11.GL_MODELVIEW
+                    || GL11.glGetBoolean(GL11.GL_STENCIL_TEST)
+                    || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)
+                    || GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) != 0) {
+                flushPending();
+                return false;
+            }
+            blendEquation = GL11.glGetInteger(GL14.GL_BLEND_EQUATION);
+            if (pendingQuads > 0 && blendEquation != currentBlendEquation) {
+                flushPending();
+            }
+
+            mvBuf.clear();
+            GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mvBuf);
+            for (int i = 0; i < 16; i++) {
+                mv[i] = mvBuf.get(i);
+            }
+            pjBuf.clear();
+            GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pjBuf);
+            for (int i = 0; i < 16; i++) {
+                pj[i] = pjBuf.get(i);
+            }
+            // 合成投影×模型视图的 2D 仿射（列主序槽位 0/1/4/5/12/13），
+            // 顶点直接烘焙到裁剪空间，flush 时两个矩阵均置单位矩阵，与矩阵栈完全解耦
+            mvp[0] = pj[0] * mv[0] + pj[4] * mv[1];
+            mvp[1] = pj[1] * mv[0] + pj[5] * mv[1];
+            mvp[4] = pj[0] * mv[4] + pj[4] * mv[5];
+            mvp[5] = pj[1] * mv[4] + pj[5] * mv[5];
+            mvp[12] = pj[0] * mv[12] + pj[4] * mv[13] + pj[12];
+            mvp[13] = pj[1] * mv[12] + pj[5] * mv[13] + pj[13];
+            SpriteQuadPacker.packQuad(vertexScratch, indexScratch, pendingQuads * 4, mvp,
+                    posX, posY, width, height, centerX, centerY, angle,
+                    r, g, b, a, texX, texY, texWidth, texHeight);
         }
-        pjBuf.clear();
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pjBuf);
-        for (int i = 0; i < 16; i++) {
-            pj[i] = pjBuf.get(i);
+        if (pendingQuads == 0) {
+            // 新 run 开始：记录组键状态
+            currentKey = key;
+            currentTexture = textureId;
+            currentBlendSrc = blendSrc;
+            currentBlendDest = blendDest;
+            currentBlendEquation = blendEquation;
         }
-        // 合成投影×模型视图的 2D 仿射（列主序槽位 0/1/4/5/12/13），
-        // 顶点直接烘焙到裁剪空间，flush 时两个矩阵均置单位矩阵，与矩阵栈完全解耦
-        mvp[0] = pj[0] * mv[0] + pj[4] * mv[1];
-        mvp[1] = pj[1] * mv[0] + pj[5] * mv[1];
-        mvp[4] = pj[0] * mv[4] + pj[4] * mv[5];
-        mvp[5] = pj[1] * mv[4] + pj[5] * mv[5];
-        mvp[12] = pj[0] * mv[12] + pj[4] * mv[13] + pj[12];
-        mvp[13] = pj[1] * mv[12] + pj[5] * mv[13] + pj[13];
-        SpriteQuadPacker.packQuad(vertexScratch, indexScratch, pendingQuads * 4, mvp,
-                posX, posY, width, height, centerX, centerY, angle,
-                r, g, b, a, texX, texY, texWidth, texHeight);
         pendingQuads++;
         lastR = r;
         lastG = g;
