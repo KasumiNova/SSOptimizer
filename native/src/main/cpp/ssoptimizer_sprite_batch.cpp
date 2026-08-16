@@ -146,10 +146,7 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         jint texture, jint blendSrc, jint blendDest, jint blendEquation,
         jboolean alphaTestEnabled, jint alphaFunc, jfloat alphaRef,
         jint colorR, jint colorG, jint colorB, jint colorA,
-        jint prevMatrixMode, jint prevArrayBuffer, jint prevElementBuffer) {
-
-    // prev* 由 Java 侧在 DynamicVbo.write 前捕获（write 会绑定自身 VBO 且不解除，
-    // 此处再读只能拿到合批器自己的 VBO）；glGet 捕获因此保留在 Java 侧
+        jint prevMatrixMode) {
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_CURRENT_BIT);
     glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
 
@@ -195,8 +192,8 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
 
     glPopClientAttrib();
     glPopAttrib();
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLuint>(prevElementBuffer));
-    glBindBuffer(GL_ARRAY_BUFFER, static_cast<GLuint>(prevArrayBuffer));
+    // VBO 绑定恢复由 Java 侧经 LWJGL 完成：LWJGL2 的 Buffer 校验基于 StateTracker
+    // 跟踪值，此处经 glad 恢复不会更新 tracker，必须由 Java 侧重绑保持两者一致
     // 原版逐 sprite glColor4ub 的残留语义：当前颜色 = 最后一个 sprite 的颜色
     glColor4ub(static_cast<GLubyte>(colorR & 0xFF),
                static_cast<GLubyte>(colorG & 0xFF),

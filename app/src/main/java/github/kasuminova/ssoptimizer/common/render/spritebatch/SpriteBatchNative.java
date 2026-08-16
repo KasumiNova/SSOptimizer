@@ -69,9 +69,14 @@ public final class SpriteBatchNative {
 
     /**
      * 单次 JNI 完成一个 run 的全部 flush 绘制（约 25 次 LWJGL 调用折叠为一次跨界）：
-     * 状态保存（pushAttrib/pushClientAttrib + 矩阵模式与 VBO 绑定捕获）、run 状态回放
+     * 状态保存（pushAttrib/pushClientAttrib）、run 状态回放
      * （纹理/blend/混合方程/alpha test，stencil 显式关闭）、单位矩阵化、
-     * VBO 顶点指针设置与 glDrawElements、完整状态恢复。
+     * VBO 顶点指针设置与 glDrawElements、矩阵与属性恢复。
+     * <p>
+     * 注意：本方法返回时两个 VBO 目标仍绑定在合批器自身缓冲上，且恢复绑定的职责在
+     * Java 侧（必须经 LWJGL 重绑）。LWJGL2 的 glColorPointer 等 Buffer 校验读取的是
+     * StateTracker 跟踪值而非真实 GL 状态，native（glad）恢复绑定不会更新 tracker，
+     * 若不在 Java 侧重绑会导致后续 LWJGL Buffer 绘制误判 "Array Buffer Object is enabled"。
      *
      * @param vertexVboId       顶点 VBO ID（数据已由 Java 侧 DynamicVbo.write 上传）
      * @param vertexBase        本 run 顶点在 VBO 中的起始字节偏移
@@ -90,8 +95,6 @@ public final class SpriteBatchNative {
      * @param b                 颜色 B
      * @param a                 颜色 A
      * @param prevMatrixMode    调用方矩阵模式（VBO 上传前捕获）
-     * @param prevArrayBuffer   调用方 GL_ARRAY_BUFFER 绑定（VBO 上传前捕获）
-     * @param prevElementBuffer 调用方 GL_ELEMENT_ARRAY_BUFFER 绑定（VBO 上传前捕获）
      */
     static native void nativeFlush(int vertexVboId, long vertexBase,
                                    int indexVboId, long indexBase,
@@ -99,5 +102,5 @@ public final class SpriteBatchNative {
                                    int textureId, int blendSrc, int blendDest, int blendEquation,
                                    boolean alphaTestEnabled, int alphaFunc, float alphaRef,
                                    int r, int g, int b, int a,
-                                   int prevMatrixMode, int prevArrayBuffer, int prevElementBuffer);
+                                   int prevMatrixMode);
 }

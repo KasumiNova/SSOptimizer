@@ -232,7 +232,12 @@ public final class SpriteBatchImpl implements SpriteBatch {
                     currentTexture, currentBlendSrc, currentBlendDest, currentBlendEquation,
                     currentExtendedState, currentAlphaFunc, currentAlphaRef,
                     lastR, lastG, lastB, lastA,
-                    prevMatrixMode, prevArrayBuffer, prevElementBuffer);
+                    prevMatrixMode);
+            // VBO 绑定必须经 LWJGL 恢复：DynamicVbo.write 经 LWJGL 绑定（StateTracker 已记录
+            // 合批 VBO），native 经 glad 的恢复不会更新 tracker，不重绑会导致后续 LWJGL
+            // Buffer 绘制（如 Contrail/Particle 的 glColorPointer）误判数组 VBO 仍启用
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, prevElementBuffer);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, prevArrayBuffer);
             pendingQuads = 0;
             currentKey = -1;
             return;

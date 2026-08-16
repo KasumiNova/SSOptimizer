@@ -28,10 +28,10 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative
  * Method:    nativeFlush
- * Signature: (IJIJIIIIIZIFIIIIIII)V
+ * Signature: (IJIJIIIIIZIFIIIII)V
  */
 JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeFlush
-  (JNIEnv *, jclass, jint, jlong, jint, jlong, jint, jint, jint, jint, jint, jboolean, jint, jfloat, jint, jint, jint, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jint, jlong, jint, jlong, jint, jint, jint, jint, jint, jboolean, jint, jfloat, jint, jint, jint, jint, jint);
 
 #ifdef __cplusplus
 }
