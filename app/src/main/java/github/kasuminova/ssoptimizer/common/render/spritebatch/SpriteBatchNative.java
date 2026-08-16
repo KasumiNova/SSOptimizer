@@ -13,13 +13,13 @@ import java.nio.ByteBuffer;
  * native 库缺失时由 {@link SpriteBatchImpl} 回退到 Java 打包路径。
  */
 public final class SpriteBatchNative {
-    /** guard 拒绝（矩阵模式非 MODELVIEW / scissor / FBO 绑定），未写入任何数据。 */
+    /** guard 拒绝（矩阵模式非 MODELVIEW / stencil / scissor / FBO 绑定），未写入任何数据。 */
     public static final int RESULT_GUARD_REJECTED    = -1;
     /** 当前 run 已有内容且混合方程与期望不一致，未写入；调用方 flush 后以 expected=-1 重试。 */
     public static final int RESULT_EQUATION_MISMATCH = -2;
     /** 传入缓冲不是 direct ByteBuffer（Java 侧契约错误，不应发生）。 */
     public static final int RESULT_INVALID_BUFFER    = -3;
-    /** stencil 或 alpha test 已启用（扩展状态区），未写入；调用方走 Java 扩展状态捕获路径。 */
+    /** alpha test 已启用（扩展状态区），未写入；调用方走 Java 扩展状态捕获路径。 */
     public static final int RESULT_EXTENDED_STATE    = -4;
     /** 当前 run 处于扩展状态区但本次提交不在（要求扩展状态而未满足），未写入；调用方 flush 后重试。 */
     public static final int RESULT_STATE_MISMATCH    = -5;

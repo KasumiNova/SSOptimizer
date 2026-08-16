@@ -40,13 +40,15 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         jint colorR, jint colorG, jint colorB, jint colorA,
         jfloat texX, jfloat texY, jfloat texWidth, jfloat texHeight) {
 
-    // guard 与 Java 路径同序：矩阵模式 → scissor → FBO
+    // guard 与 Java 路径同序：矩阵模式 → stencil → scissor → FBO
     GLint matrixMode = 0;
     glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
     if (matrixMode != GL_MODELVIEW) {
         return RESULT_GUARD_REJECTED;
     }
-    if (glIsEnabled(GL_SCISSOR_TEST)) {
+    // stencil 区拒绝合批：stencil 缓冲是跨绘制共享的读改写状态，
+    // 蒙版写入（NEVER/INCR 等）与读取和 sprite 绘制交错，延迟 flush 无法保证顺序
+    if (glIsEnabled(GL_STENCIL_TEST) || glIsEnabled(GL_SCISSOR_TEST)) {
         return RESULT_GUARD_REJECTED;
     }
     GLint fboBinding = 0;
@@ -55,9 +57,9 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         return RESULT_GUARD_REJECTED;
     }
 
-    // stencil / alpha test 构成扩展状态区：状态捕获与打包转交 Java 侧处理，
+    // alpha test 构成扩展状态区：状态捕获与打包转交 Java 侧处理，
     // 此处只判定区域归属并保证不向状态不一致的 run 写入
-    const bool extendedState = glIsEnabled(GL_STENCIL_TEST) || glIsEnabled(GL_ALPHA_TEST);
+    const bool extendedState = glIsEnabled(GL_ALPHA_TEST) != GL_FALSE;
     if (extendedState) {
         return RESULT_EXTENDED_STATE;
     }

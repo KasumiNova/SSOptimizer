@@ -41,8 +41,6 @@ public final class SpriteBatchImpl implements SpriteBatch {
     private static final int INDEX_SCRATCH_BYTES  = SpriteQuadPacker.MAX_QUADS_PER_DRAW * 6 * 2;
     private static final int VERTEX_VBO_CAPACITY  = 1024 * 1024;
     private static final int INDEX_VBO_CAPACITY   = 256 * 1024;
-    /** LWJGL2 GL11 未暴露的 attrib 位：0x0400（保存/恢复 stencil func/op/mask 等状态）。 */
-    private static final int GL_STENCIL_TEST_BIT  = 0x0400;
 
     private final boolean enabled;
 
@@ -68,16 +66,10 @@ public final class SpriteBatchImpl implements SpriteBatch {
     private int  currentBlendSrc;
     private int  currentBlendDest;
     private int  currentBlendEquation;
-    /** 当前 run 是否处于扩展状态区（stencil / alpha test），以及捕获的状态快照。 */
+    /** 当前 run 是否处于扩展状态区（alpha test），以及捕获的状态快照。
+     *  注意 stencil 区不参与合批：stencil 缓冲是跨绘制共享的读改写状态，
+     *  蒙版写入（NEVER/INCR 等）与读取与 sprite 绘制交错，延迟 flush 无法保证顺序，一律透传。 */
     private boolean currentExtendedState;
-    private boolean currentStencilEnabled;
-    private int     currentStencilFunc;
-    private int     currentStencilRef;
-    private int     currentStencilMask;
-    private int     currentStencilOpSfail;
-    private int     currentStencilOpDpfail;
-    private int     currentStencilOpDppass;
-    private boolean currentAlphaEnabled;
     private int     currentAlphaFunc;
     private float   currentAlphaRef;
     private int  pendingQuads;
@@ -129,8 +121,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
         // 混合方程也是 run 分组键的一部分：CombatEntityPluginWithParticles 的暗色层
         // （现实干扰器弹体等负片粒子）会用 GL14.glBlendEquation(GL_FUNC_REVERSE_SUBTRACT)
         // 包裹整段渲染，延迟 flush 时必须按收集时刻的方程绘制，否则暗色粒子退化为加法发光。
-        // stencil / alpha test 同理构成扩展状态区（武器损伤渲染 beginDamageRender 等），
-        // 状态快照入 run 键，flush 时回放
+        // alpha test 同理入键（扩展状态区），flush 时回放；stencil 区一律透传
         int blendEquation;
         boolean extendedState;
         if (NativeRuntime.isLoaded()) {
@@ -152,18 +143,18 @@ public final class SpriteBatchImpl implements SpriteBatch {
                 throw new IllegalStateException("SpriteBatch scratch 必须是 direct ByteBuffer");
             }
             if (result == SpriteBatchNative.RESULT_EXTENDED_STATE) {
-                // stencil/alpha 区（低频）：native 未写入，Java 侧捕获状态快照并打包
+                // alpha test 区（低频）：native 未写入，Java 侧捕获状态快照并打包
                 blendEquation = GL11.glGetInteger(GL14.GL_BLEND_EQUATION);
                 if (pendingQuads > 0 && blendEquation != currentBlendEquation) {
                     flushPending();
                 }
-                captureExtendedState();
+                captureAlphaState();
                 packQuadJava(posX, posY, width, height, centerX, centerY, angle,
                         r, g, b, a, texX, texY, texWidth, texHeight);
                 extendedState = true;
             } else if (result < 0) {
-                // FBO 绑定非 0 表示模组/游戏的离屏 pass（GraphicsLib 法线/材质图等），
-                // 其投影与渲染目标均不同，必须走原版立即路径
+                // stencil 区（蒙版读写交错，不可延迟）与 FBO 离屏 pass
+                // （GraphicsLib 法线/材质图等，投影与渲染目标均不同）必须走原版立即路径
                 flushPending();
                 return false;
             } else {
@@ -174,6 +165,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
             }
         } else {
             if (GL11.glGetInteger(GL11.GL_MATRIX_MODE) != GL11.GL_MODELVIEW
+                    || GL11.glGetBoolean(GL11.GL_STENCIL_TEST)
                     || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)
                     || GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) != 0) {
                 flushPending();
@@ -183,9 +175,9 @@ public final class SpriteBatchImpl implements SpriteBatch {
             if (pendingQuads > 0 && blendEquation != currentBlendEquation) {
                 flushPending();
             }
-            extendedState = GL11.glGetBoolean(GL11.GL_STENCIL_TEST) || GL11.glGetBoolean(GL11.GL_ALPHA_TEST);
+            extendedState = GL11.glGetBoolean(GL11.GL_ALPHA_TEST);
             if (extendedState) {
-                captureExtendedState();
+                captureAlphaState();
             } else if (pendingQuads > 0 && currentExtendedState) {
                 // 离开扩展状态区：普通 sprite 不能并入扩展 run
                 flushPending();
@@ -234,7 +226,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
         indexScratch.clear();
 
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
-                | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT | GL_STENCIL_TEST_BIT);
+                | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
         try {
             GL11.glEnable(GL11.GL_TEXTURE_2D);
@@ -242,16 +234,11 @@ public final class SpriteBatchImpl implements SpriteBatch {
             GL11.glBlendFunc(currentBlendSrc, currentBlendDest);
             // 恢复收集时刻的混合方程（GL_COLOR_BUFFER_BIT 的 popAttrib 负责复原调用方方程）
             GL14.glBlendEquation(currentBlendEquation);
-            // 回放收集时刻的 stencil / alpha 状态快照（扩展状态区 run）；
-            // 普通 run 显式关闭，避免 flush 落在调用方 stencil/alpha 开启区间内时被波及
-            if (currentStencilEnabled) {
-                GL11.glEnable(GL11.GL_STENCIL_TEST);
-                GL11.glStencilFunc(currentStencilFunc, currentStencilRef, currentStencilMask);
-                GL11.glStencilOp(currentStencilOpSfail, currentStencilOpDpfail, currentStencilOpDppass);
-            } else {
-                GL11.glDisable(GL11.GL_STENCIL_TEST);
-            }
-            if (currentAlphaEnabled) {
+            // stencil 区一律透传不参与合批，但 flush 可能由 stencil 区内的 guard 拒绝触发
+            // （落在调用方 stencil 开启区间），必须显式关闭避免波及当前 run
+            GL11.glDisable(GL11.GL_STENCIL_TEST);
+            // 回放收集时刻的 alpha test 状态快照（扩展状态区 run）
+            if (currentExtendedState) {
                 GL11.glEnable(GL11.GL_ALPHA_TEST);
                 GL11.glAlphaFunc(currentAlphaFunc, currentAlphaRef);
             } else {
@@ -295,47 +282,19 @@ public final class SpriteBatchImpl implements SpriteBatch {
     }
 
     /**
-     * 捕获收集时刻的 stencil / alpha test 状态快照；若与当前 run 不一致则先 flush。
+     * 捕获收集时刻的 alpha test 状态快照；若与当前 run 不一致则先 flush。
      * 仅扩展状态区（低频）调用。
      */
-    private void captureExtendedState() {
-        boolean stencil = GL11.glGetBoolean(GL11.GL_STENCIL_TEST);
-        boolean alpha = GL11.glGetBoolean(GL11.GL_ALPHA_TEST);
-        int sFunc = 0, sRef = 0, sMask = 0, sOpSfail = 0, sOpDpfail = 0, sOpDppass = 0;
-        int aFunc = 0;
-        float aRef = 0.0f;
-        if (stencil) {
-            sFunc = GL11.glGetInteger(GL11.GL_STENCIL_FUNC);
-            sRef = GL11.glGetInteger(GL11.GL_STENCIL_REF);
-            sMask = GL11.glGetInteger(GL11.GL_STENCIL_VALUE_MASK);
-            sOpSfail = GL11.glGetInteger(GL11.GL_STENCIL_FAIL);
-            sOpDpfail = GL11.glGetInteger(GL11.GL_STENCIL_PASS_DEPTH_FAIL);
-            sOpDppass = GL11.glGetInteger(GL11.GL_STENCIL_PASS_DEPTH_PASS);
-        }
-        if (alpha) {
-            aFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC);
-            alphaRefBuf.clear();
-            GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF, alphaRefBuf);
-            aRef = alphaRefBuf.get(0);
-        }
+    private void captureAlphaState() {
+        int aFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC);
+        alphaRefBuf.clear();
+        GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF, alphaRefBuf);
+        float aRef = alphaRefBuf.get(0);
         if (pendingQuads > 0 && (!currentExtendedState
-                || stencil != currentStencilEnabled
-                || sFunc != currentStencilFunc || sRef != currentStencilRef || sMask != currentStencilMask
-                || sOpSfail != currentStencilOpSfail || sOpDpfail != currentStencilOpDpfail
-                || sOpDppass != currentStencilOpDppass
-                || alpha != currentAlphaEnabled
                 || aFunc != currentAlphaFunc || aRef != currentAlphaRef)) {
-            // 扩展状态切换（如武器损伤渲染中 ALWAYS/INCR → EQUAL/KEEP）：flush 后开启新 run
+            // alpha 状态切换：flush 后开启新 run
             flushPending();
         }
-        currentStencilEnabled = stencil;
-        currentStencilFunc = sFunc;
-        currentStencilRef = sRef;
-        currentStencilMask = sMask;
-        currentStencilOpSfail = sOpSfail;
-        currentStencilOpDpfail = sOpDpfail;
-        currentStencilOpDppass = sOpDppass;
-        currentAlphaEnabled = alpha;
         currentAlphaFunc = aFunc;
         currentAlphaRef = aRef;
     }
