@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.graphics.TextureObject;
 import com.fs.graphics.util.RenderStateUtils;
 import github.kasuminova.ssoptimizer.common.render.engine.SpriteRenderHelper;
+import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatchStats;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
@@ -91,6 +92,13 @@ public abstract class SpriteMixin {
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, false);
         }
+        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+                x + offsetX, y + offsetY, width, height, centerX, centerY, angle,
+                color.getRed(), color.getGreen(), color.getBlue(),
+                (int) (color.getAlpha() * alphaMult), blendSrc, blendDest,
+                texX, texY, texWidth, texHeight, texClamp)) {
+            return;
+        }
         texture.bind();
         if (texClamp) {
             RenderStateUtils.enableTextureClamp();
@@ -124,6 +132,13 @@ public abstract class SpriteMixin {
         }
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, true);
+        }
+        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+                x + offsetX, y + offsetY, width, height, centerX, centerY, angle,
+                color.getRed(), color.getGreen(), color.getBlue(),
+                (int) (color.getAlpha() * alphaMult), blendSrc, blendDest,
+                texX, texY, texWidth, texHeight, texClamp)) {
+            return;
         }
         if (texClamp) {
             RenderStateUtils.enableTextureClamp();

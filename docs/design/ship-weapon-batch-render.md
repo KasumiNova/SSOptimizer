@@ -62,64 +62,84 @@
    renderAtCenterWithCornerColors 等（Sprite.java:200-426）UV 与顶点色逻辑各异。
    → 初版只拦截最高频的 `render(x,y)` / `renderAtCenter(x,y)`，其余透传。
 
+## 2.5 P0 实测结论（25200 战斗帧均值，2026-08-16）
+
+- quads=2238.5/帧（noBind≈0），distinct 组=259.2，**平均每组 8.64 quad**——
+  贴图重复度并不低（top1 tex 为 additive 组、每帧约 125 quad，弹道/导弹/辉光类
+  共享贴图主导），合批收益成立。
+- **保序 run=1002/帧**：严格保序（视觉逐位等价）即可削减约 55% 绘制调用；
+  分组重排理论上限 259 组/帧（约 88%），但有 painter's algorithm 风险，暂不上线。
+- **禁区=821.8/帧（约 37%）**：以武器/船体损伤 decal 的 stencil 区域为主
+  （profile 对照：WeaponDamageEffect.renderDamageDecals、DecalRenderer 内的
+  stencil 操作），初版透传，后续评估「stencil 状态一致区域内合批」。
+- 前提变化：`Sprite.render/renderNoBind` 此前已被 SpriteMixin 整体替换为单次
+  native 调用，立即模式 JNI 开销已消除；P1 的剩余收益 = 纹理绑定去重 + drawcall 削减。
+
 ## 3. 方案设计（VBO quad 合批，明确不用 instanced）
 
 > instanced 方案已在引擎合批中实测废弃（游戏上下文内 per-instance 属性获取异常，
 > 见 combat-render-logic-optimization.md 任务 A）。本方案统一走 CPU 展开 + 环形 VBO。
 
-### 3.1 架构
+### 3.1 架构（P1 已实现：流式严格保序）
 
 ```
-SpriteBatch（新，common/render/spritebatch/）
-├── SpriteBatch        接口：begin() / submit(quad) / flush() / isActive()
-├── SpriteBatchImpl    实现：分组装桶 + CPU 矩阵烘焙 + 环形 VBO + glDrawElements
-├── SpriteRenderMixin  @Overwrite Sprite.render/renderAtCenter：
-│                      激活且不在禁区（buildingList/stencil/scissor）→ 收集；否则走原逻辑
-└── CombatBatchScope   Mixin 钩 CombatEngine.render / LayeredRenderer 层循环：
-                       进入舰船相关层 begin()，层结束 flush()，异常路径 finally flush
+SpriteBatch（common/render/spritebatch/）
+├── SpriteBatch          接口：submitIfActive(...) / flushPending()
+├── SpriteBatchImpl      流式合批器：组切换/禁区/边界即 flush，环形 VBO + glDrawElements
+├── SpriteQuadPacker     纯逻辑顶点打包（几何公式同 SpriteRenderHelper，可单测）
+├── SpriteBatchStats     P0 统计门面 + 战斗作用域标记
+├── SpriteGroupStats     P0 统计纯逻辑
+└── Mixin 接线
+    ├── SpriteMixin（已有 @Overwrite render/renderNoBind）→ submitIfActive 接管或透传
+    ├── CombatEngineScopeMixin（CombatEngine.render(Z) 头尾：作用域 + 帧末 flush）
+    └── SpriteBatchBoundaryMixins（非 sprite 绘制边界 flush）：
+        Ship.render 入口 / CustomCombatEntity.render（模组插件）/
+        DecalRenderer.render / WeaponDamageEffect.beginDamageRender
+        + 内部类直接调用：EngineBatchImpl.render、ShieldRenderHelper.render、
+          ShipMaskMeshCache.render（clipToBounds 掩码）
 ```
 
-- **收集条目**：(textureId, blendSrc, blendDst, 4×(x,y,u,v), 4×rgba)——与引擎合批
-  VBO 顶点格式一致（20 字节/顶点），索引用静态模板（每 quad 6 索引，16 位分块）。
-- **分组装桶**：`LinkedHashMap<GroupKey, GrowableBuffer>` 保持收集序；层内同一纹理的
-  多艘同型舰船自然并入一组。flush 时按组写环形 VBO，每组 1 个 drawcall。
-- **烘焙**：submit 时 `glGetFloat(GL_MODELVIEW_MATRIX)` + 4 顶点 CPU 变换
-  （每顶点 4 乘 6 加）。Ship 级缓存：Mixin 可在 Ship.render 入口记录「船平移矩阵」，
-  sprite 的 setAngle 旋转在 CPU 侧合成，避免每 sprite 一次 glGetFloat（优化项，
-  初版可先每 sprite 一次，profile 后再收）。
-- **fallback 判定**（每次 submit 入口检查，任一命中即透传原逻辑）：
-  `GLListManager.buildingList` / stencil test 开启 / scissor 开启 / 非战斗作用域 /
-  当前矩阵模式非 MODELVIEW。
+- **流式严格保序**：连续同组（纹理×blend）的 sprite 合并为一个 run；组切换、
+  禁区提交、非 sprite 绘制边界、作用域结束都会先 flush 已累积 run 再放行后续绘制，
+  因此绘制相对顺序与原版逐位一致（分组重排开关不上线）。
+- **烘焙**：submit 时 `glGetFloat(GL_MODELVIEW_MATRIX)` 一次 + 4 顶点 CPU 变换；
+  flush 时以单位 modelview 绘制（顶点已是观察空间），与 flush 时刻的矩阵栈解耦。
+- **边界插桩的动机**：延迟 flush 会打乱 sprite 与非 sprite 绘制（引擎、护盾、
+  stencil 掩码/decal）的相对顺序——例如船体 quad 若延迟到 stencil 掩码写入之后才画，
+  会把 decal 盖住。所有已知交错入口均插桩 flush；漏网边界（模组在层内直接画 GL）
+  只可能造成局部重排，`enable` 开关可整体回退。
+- **fallback 判定**（submit 入口检查，任一命中即先 flush 再透传原逻辑）：
+  总开关关闭 / 非战斗作用域 / texClamp / `GLListManager.buildingList` /
+  stencil test 开启 / scissor 开启 / 矩阵模式非 MODELVIEW。
+- **状态恢复**：flush 后恢复 blend / 纹理绑定 / VBO 绑定 / client state / 矩阵模式，
+  并以 run 内最后一个 sprite 的颜色执行 glColor4ub（复刻原版逐 sprite 设置
+  当前颜色的残留语义）。
 
 ### 3.2 与引擎合批的差异
 
 | 项 | 引擎合批 | 本方案 |
 |---|---|---|
 | 拦截点 | Engine.render（语义参数已知） | Sprite.render（通用 quad，需读矩阵烘焙） |
-| 分组 | 阶段×纹理 | 纹理×blend |
-| flush 时机 | 每舰末尾（矩阵栈内） | 层边界（需在收集时烘焙世界坐标） |
-| 顶点格式 | 复用 20B | 同左，直接共用 DynamicVbo/索引模板 |
+| 分组 | 阶段×纹理 | 连续同组 run（纹理×blend），严格保序 |
+| flush 时机 | 每舰末尾（矩阵栈内） | 组切换/禁区/边界/帧末（顶点烘焙观察空间） |
+| 顶点格式 | 20B（x,y,u,v+rgba） | 同左，索引模板 0,1,2/0,2,3 |
 
 ### 3.3 开关
 
 - `ssoptimizer.render.spritebatch.enable`（默认 true，false 全部透传原逻辑）
-- `ssoptimizer.render.spritebatch.reorder`（默认 false）：false=严格保序并批
-  （仅连续同组 quad 合并，视觉逐位等价）；true=按 (纹理×blend) 分组重排，
-  近似等价，需截图对照验证
-- `ssoptimizer.render.spritebatch.stats`（默认 false，每 300 帧输出组数/quad 数/drawcall 节省量）
-- 收益口径：贴图不重样时主要为消除每 sprite 的矩阵栈 + glBegin/glEnd JNI 开销；
-  存在重复纹理（同型舰、同 id 武器、decal sheet）时分组重排可额外把 drawcall 降到
-  「每层每 (纹理×blend) 1 次」。
+- `ssoptimizer.render.spritebatch.stats`（默认 false，每 300 战斗帧输出
+  组数/quad 数/保序 run/禁区命中率）
+- 收益口径（P0 实测）：保序 run 1002 vs quads 2238 → drawcall 削减约 55%，
+  另附纹理绑定去重（每 run 1 次 bind 替代每 sprite 1 次）。
 
 ## 4. 分阶段实施
 
-- **P0 量化（先行，条件已确认）**：只加统计不加绘制——统计战斗帧内 sprite 绘制的
-  纹理分布、平均每组 quad 数（用户预判贴图几乎不重样，需实测坐实）、
-  禁区（stencil/buildingList）命中率，用数据决定保序/重排默认策略与容量参数。
-- **P1 核心管线**：SpriteBatchImpl + DynamicVbo 复用 + render/renderAtCenter 拦截 +
-  层边界 flush + 禁区透传；视觉等价性对照（同场景截图对比 / 回读校验）。
-- **P2 收益扩展**：Ship 级矩阵缓存、武器 charge/glow sprite 变体纳入、
-  renderNoBind 系列评估；按 P0 数据决定是否覆盖战机发射辉光等边角。
+- **P0 量化（已完成）**：统计管线 + 实测，结论见 2.5 节。
+- **P1 核心管线（已实现，待视觉验证）**：流式严格保序合批 + 边界插桩 flush +
+  禁区透传；视觉等价性由用户手工实测（对照开关 `-Dssoptimizer.render.spritebatch.enable=false`）。
+- **P2 收益扩展**：Ship 级矩阵缓存（避免每 sprite 一次 glGetFloat）、
+  武器 charge/glow sprite 变体纳入、renderNoBind 系列评估、
+  stencil 状态一致区域（decal）内合批评估、分组重排开关的截图对照实验。
 - **不做（初版）**：纹理图集重打包（改资源加载层，动静大，留作后续独立评估）；
   UI 场景合批；renderRegion*/renderWithCorners 变体；跨层合并（模组兼容性红线）。
 

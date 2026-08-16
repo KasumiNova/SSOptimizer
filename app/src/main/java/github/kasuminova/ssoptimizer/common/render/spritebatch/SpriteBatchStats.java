@@ -35,6 +35,11 @@ public final class SpriteBatchStats {
         return ENABLED;
     }
 
+    /** @return 当前是否处于战斗渲染作用域（渲染线程独占标记）。 */
+    public static boolean isInCombatScope() {
+        return combatScope;
+    }
+
     /** 进入 CombatEngine.render。 */
     public static void beginCombatScope() {
         combatScope = true;

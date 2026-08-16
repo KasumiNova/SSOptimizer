@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.combat;
 
+import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatchStats;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,6 +36,8 @@ public abstract class CombatEngineScopeMixin {
      */
     @Inject(method = "render(Z)V", at = @At("RETURN"), remap = false)
     private void ssoptimizer$spriteBatchScopeEnd(boolean innerRender, CallbackInfo ci) {
+        // 战斗帧渲染结束：flush 残余批次（必须在作用域关闭前，保持层末尾顺序）
+        SpriteBatch.getInstance().flushPending();
         SpriteBatchStats.endCombatScope();
     }
 }

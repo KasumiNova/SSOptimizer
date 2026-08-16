@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.common.render.tessellation;
 
 import com.fs.starfarer.combat.Bounds;
+import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
@@ -51,6 +52,8 @@ public final class ShipMaskMeshCache {
      * 耳切失败时限频 WARN 并降级 GLU 路径。
      */
     public static void render(Bounds bounds, float r, float g, float b) {
+        // Sprite 合批顺序边界：clipToBounds 掩码绘制前 flush 已累积批次
+        SpriteBatch.getInstance().flushPending();
         INSTANCE.renderInternal(bounds, r, g, b);
     }
 

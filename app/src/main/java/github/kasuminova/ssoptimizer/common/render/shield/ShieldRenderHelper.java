@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.render.shield;
 
 import com.fs.graphics.TextureObject;
 import com.fs.graphics.util.RenderStateUtils;
+import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -133,6 +134,8 @@ public final class ShieldRenderHelper {
      */
     public static void render(final Params p) {
         // 原版：if (!this.skipRendering) { ... }
+        // Sprite 合批顺序边界：护盾（非 sprite 绘制）前 flush 已累积批次
+        SpriteBatch.getInstance().flushPending();
         float arcDeg = (p.arc + 10.0F) * p.chargeLevel;
         if (arcDeg <= 0.0F) {
             return;

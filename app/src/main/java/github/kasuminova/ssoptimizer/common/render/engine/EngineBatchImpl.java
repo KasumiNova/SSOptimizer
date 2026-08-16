@@ -15,6 +15,7 @@ import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollecto
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.SlotInput;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.StripGroup;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.StripInstance;
+import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
@@ -101,6 +102,8 @@ public final class EngineBatchImpl implements EngineBatch {
 
     @Override
     public void render(Object engineObject, float alphaScale) {
+        // Sprite 合批顺序边界：引擎（非 sprite 绘制）前 flush 已累积批次
+        SpriteBatch.getInstance().flushPending();
         if (!enabled) {
             EngineRenderHelper.renderEngines(engineObject, alphaScale);
             return;

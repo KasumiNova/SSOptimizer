@@ -127,6 +127,7 @@
 | `ssoptimizer.render.shipengine.stats` | `false` | 引擎合批周期统计日志（每 300 次渲染输出实例数与 display list 回退计数） | `common/render/engine/EngineBatchImpl.java` |
 | `ssoptimizer.render.warroomtasks.enable` | `true` | 指挥界面任务连线帧内合批（`TaskIconManager.render` 边界收集，单次提交） | `common/render/warroom/WarroomTaskLineBatch.java` |
 | `ssoptimizer.render.spritebatch.stats` | `false` | Sprite 合批 P0 量化统计（只统计不改绘制）：战斗作用域内每 300 帧输出 quad 数/分组数/保序 run/禁区命中率 | `common/render/spritebatch/SpriteBatchStats.java`，`SpriteGroupStats.java` |
+| `ssoptimizer.render.spritebatch.enable` | `true` | Sprite 流式保序合批总开关（false 全部透传原版 `SpriteRenderHelper` 路径） | `common/render/spritebatch/SpriteBatchImpl.java`，`SpriteBatch.java` |
 | `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关（旋转递推 + 顶点缓存 + 合批） | `common/render/shield/ShieldRenderHelper.java` |
 | `ssoptimizer.render.shield.algo` | `"recurrence"` | 护盾顶点算法：`recurrence` / `raycast`（对照实现，实测约 8 倍劣化） | `common/render/shield/ShieldArcGeometry.java` |
 | `ssoptimizer.render.shipmasktess.enable` | `true` | Ship 蒙版三角化缓存开关（耳切 + WeakHashMap 缓存；false 走原 GLU 路径） | `common/render/tessellation/ShipMaskTessellationToggle.java` |
