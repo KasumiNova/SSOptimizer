@@ -84,11 +84,8 @@ Profiler 采样（大规模战斗）显示四类热点：
 - raycast 对照算法去留（当前实测劣于 recurrence 约 8 倍）。
 - 引擎 over 层跨舰延迟 flush（layer 级 2 drawcall，近似等价，需独立开关评估）。
 - wasp/paragon 类非简单轮廓的 winding-aware 三角化（消除 GLU 降级残留热点）。
-- 【记录待评估】舰船/武器整体合批渲染：舰船与武器基本是固定贴图、几何不变，
-  可将船体 sprite + 各武器槽 sprite 按纹理分组做 CPU 展开 + 环形 VBO 合批
-  （沿用引擎合批的 VBO 路径；不再考虑 instanced 方案——已在引擎合批中实测
-  游戏上下文内 per-instance 属性获取异常并整体移除）；注意 display list 编译区间
-  需回退立即模式，以及受击 jitter、涂装/损伤贴图切换、GraphicsLib 等光影模组的兼容性。
+- 【已立项】舰船/武器整体合批渲染：方案见 ship-weapon-batch-render.md
+  （CPU 展开 + 环形 VBO quad 合批，层边界 flush，instanced 方案弃用）。
 - 【已答疑】display list 回退必要性：`GLListManager.beginList` 使用 `GL_COMPILE_AND_EXECUTE`，
   list 会跨帧 `glCallList` 重放；VBO/着色器路径重放时指向已被后续帧覆盖的环形 VBO 偏移，
   语义错误，故编译区间内必须走立即模式（与原版录制行为一致）。游戏内 list 使用点：
