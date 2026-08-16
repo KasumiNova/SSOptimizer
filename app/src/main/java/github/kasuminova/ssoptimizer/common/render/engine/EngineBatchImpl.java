@@ -335,7 +335,7 @@ public final class EngineBatchImpl implements EngineBatch {
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, mv);
         FloatBuffer pj = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, pj);
-        IntBuffer viewport = ByteBuffer.allocateDirect(16).order(ByteOrder.nativeOrder()).asIntBuffer();
+        IntBuffer viewport = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
         GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
 
         // 把样本条带中心投影到屏幕坐标，回读 5x5 像素验证光栅化是否真实落屏
