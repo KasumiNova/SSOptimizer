@@ -147,6 +147,20 @@ if grep -q "基准测试结果" "$LOG_FILE" 2>/dev/null; then
     grep -A 10 "基准测试结果" "$LOG_FILE" | tail -12
 fi
 
+# collapsed 采样转主线程火焰图 SVG（浏览器打开，可搜索/缩放）
+FLAMEGRAPH_PL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/flamegraph.pl"
+COLLAPSED_FILE="$OUTPUT_DIR/bench-profile.collapsed.txt"
+if [[ -f "$COLLAPSED_FILE" && -f "$FLAMEGRAPH_PL" ]]; then
+    MAIN_COLLAPSED="$OUTPUT_DIR/.main-thread.collapsed"
+    grep -F "com/fs/state/AppDriver.begin" "$COLLAPSED_FILE" > "$MAIN_COLLAPSED" || true
+    if [[ -s "$MAIN_COLLAPSED" ]]; then
+        perl "$FLAMEGRAPH_PL" --title "SSOptimizer ${MISSION} ${DURATION_SEC}s main thread" \
+            --width 1800 "$MAIN_COLLAPSED" > "$OUTPUT_DIR/main-thread-flamegraph.svg"
+        echo "Flamegraph: $OUTPUT_DIR/main-thread-flamegraph.svg"
+    fi
+    rm -f "$MAIN_COLLAPSED"
+fi
+
 echo ""
 echo "Artifacts:"
 ls -R "$OUTPUT_DIR" 2>/dev/null || true
