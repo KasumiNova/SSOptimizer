@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.common.loading;
 import com.fs.graphics.TextureLoader;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides;
+import github.kasuminova.ssoptimizer.common.render.atlas.ShipWeaponAtlas;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
@@ -110,6 +111,9 @@ public final class LazyTextureManager {
     private static volatile long                                                         nextSweepNanos                      = 0L;
     private static volatile long                                                         nextCompositionReportNanos          = 0L;
     private static volatile long                                                         nextManagementLogNanos              = 0L;
+    private static final    AtomicLong                                                   BIND_STATS_TOTAL                     = new AtomicLong();
+    private static final    AtomicLong                                                   BIND_STATS_ATLAS                     = new AtomicLong();
+    private static volatile long                                                         nextBindStatsLogNanos                = 0L;
     private static volatile Object                                                       lastOpenGlContextToken              = null;
     private static volatile long                                                         currentOpenGlContextGeneration      = 0L;
 
@@ -228,11 +232,15 @@ public final class LazyTextureManager {
             // 已入舰船/武器图集：直接绑定图集纹理，原始贴图不再上传
             GL11.glBindTexture(target, atlasRegion.textureId());
             noteCurrentBoundTexture(texture);
+            BIND_STATS_ATLAS.incrementAndGet();
+            maybeLogBindStats();
             return;
         }
         if (isContextReloadInProgress(texture)) {
             GL11.glBindTexture(target, Math.max(readTextureId(texture, -1), 0));
             noteCurrentBoundTexture(texture);
+            BIND_STATS_TOTAL.incrementAndGet();
+            maybeLogBindStats();
             return;
         }
 
@@ -242,6 +250,8 @@ public final class LazyTextureManager {
         final int textureId = readTextureId(texture, -1);
         GL11.glBindTexture(target, Math.max(textureId, 0));
         noteCurrentBoundTexture(texture);
+        BIND_STATS_TOTAL.incrementAndGet();
+        maybeLogBindStats();
         maybeSweepIdleTextures(texture, now);
         maybeEmitTextureDiagnostics(now);
     }
@@ -260,6 +270,11 @@ public final class LazyTextureManager {
         if (texture == null) {
             return currentTextureId;
         }
+        final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
+        if (atlasRegion != null) {
+            // 已入舰船/武器图集：返回图集纹理 id（合批与绑定共用同一出口）
+            return atlasRegion.textureId();
+        }
         if (isContextReloadInProgress(texture)) {
             return currentTextureId;
         }
@@ -270,6 +285,20 @@ public final class LazyTextureManager {
         maybeSweepIdleTextures(texture, now);
         maybeEmitTextureDiagnostics(now);
         return ensuredTextureId >= 0 ? ensuredTextureId : currentTextureId;
+    }
+
+    /**
+     * 纹理绑定计数日志：每 10 秒输出一次 glBindTexture 实际调用数与其中图集页命中数，
+     * 用于基准对照图集的 bind 开销削减效果。
+     */
+    private static void maybeLogBindStats() {
+        final long now = System.nanoTime();
+        if (now < nextBindStatsLogNanos) {
+            return;
+        }
+        nextBindStatsLogNanos = now + 10_000_000_000L;
+        LOGGER.info("[SSOptimizer] texture binds: total=" + BIND_STATS_TOTAL.get()
+                + " atlas=" + BIND_STATS_ATLAS.get());
     }
 
     static boolean isTextureEvictable(final com.fs.graphics.TextureObject texture) {
