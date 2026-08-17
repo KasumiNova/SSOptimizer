@@ -20,18 +20,18 @@ extern "C" {
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative
  * Method:    nativeSubmit
- * Signature: (Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIFFFFFFFIIIIFFFF)I
+ * Signature: (Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/IntBuffer;IIIFFFFFFFIIIIFFFF)I
  */
 JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeSubmit
-  (JNIEnv *, jclass, jobject, jobject, jint, jint, jint, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jobject, jobject, jobject, jint, jint, jint, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jfloat, jfloat, jfloat);
 
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative
  * Method:    nativeFlush
- * Signature: (IJIJIIIIIZIFIIIII)V
+ * Signature: (IJIJIIIIIIIIIIZIFIIIII)V
  */
 JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spritebatch_SpriteBatchNative_nativeFlush
-  (JNIEnv *, jclass, jint, jlong, jint, jlong, jint, jint, jint, jint, jint, jboolean, jint, jfloat, jint, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jint, jlong, jint, jlong, jint, jint, jint, jint, jint, jint, jint, jint, jint, jint, jboolean, jint, jfloat, jint, jint, jint, jint, jint);
 
 #ifdef __cplusplus
 }

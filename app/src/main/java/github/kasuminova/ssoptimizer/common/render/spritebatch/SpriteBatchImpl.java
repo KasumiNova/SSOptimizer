@@ -12,16 +12,23 @@ import org.lwjgl.opengl.GL30;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 /**
  * {@link SpriteBatch} 实现：流式严格保序合批。
  * <p>
  * 收集期把 quad 顶点用收集时刻的 MVP 矩阵烘焙到裁剪空间，累积进固定容量
  * scratch（单 run 上限 {@link SpriteQuadPacker#MAX_QUADS_PER_DRAW}，超出即先 flush）；
- * flush 时绑定 run 的 (纹理, blend, 混合方程) 状态，以单位 modelview 绘制环形 VBO 中的顶点
+ * flush 时绑定 run 的 (纹理, blend, 混合方程, 渲染目标) 状态，以单位 modelview 绘制环形 VBO 中的顶点
  * （顶点已是裁剪空间，flush 时投影/模型视图均置单位矩阵），随后完整恢复 blend / 纹理绑定 / VBO 绑定 /
  * client state / 矩阵 / 当前颜色（glColor4ub 恢复为该 run 最后一个 sprite 的颜色，
  * 与原版逐 sprite 设置的残留语义一致）。
+ * <p>
+ * 渲染目标（GL_FRAMEBUFFER_BINDING + GL_VIEWPORT）纳入 run 状态键：FBO 离屏 pass
+ * （GraphicsLib 光照 renderForeground/drawNormalMaps 等）内的 sprite 不再被拒收，
+ * 目标切换触发 flush 开新 run；flush 绘制前绑定收集时刻捕获的 FBO 与 viewport
+ * （而非 flush 时刻上下文），绘制后恢复 flush 入口处的绑定与 viewport，
+ * 保证延迟到 pass 切换之后的 flush 仍落在正确的渲染目标上。
  * <p>
  * 开关：{@code -Dssoptimizer.render.spritebatch.enable}（默认 true，false 时
  * {@link #submitIfActive} 仅一次布尔判断直接放行原版路径）。
@@ -72,12 +79,25 @@ public final class SpriteBatchImpl implements SpriteBatch {
     private boolean currentExtendedState;
     private int     currentAlphaFunc;
     private float   currentAlphaRef;
+    /** 当前 run 的渲染目标（收集时刻捕获）：FBO 绑定（0 = 默认帧缓冲）与 viewport。 */
+    private int currentFbo;
+    private int currentVpX;
+    private int currentVpY;
+    private int currentVpW;
+    private int currentVpH;
     private int  pendingQuads;
     private int  lastR, lastG, lastB, lastA;
 
     /** 扩展状态捕获期 alpha ref 读取缓冲（渲染线程复用；LWJGL2 glGetFloat 强制要求剩余容量 ≥16）。 */
     private final FloatBuffer alphaRefBuf =
             ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asFloatBuffer();
+
+    /** native 收集路径的 run 渲染目标进出缓冲（[0]=FBO，[1..4]=viewport；渲染线程复用）。 */
+    private final IntBuffer runTargetBuf =
+            ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
+    /** Java 回退路径的 viewport 读取缓冲（渲染线程复用；LWJGL2 glGetInteger 要求剩余容量 ≥16）。 */
+    private final IntBuffer vpBuf =
+            ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
 
     private SpriteBatchImpl() {
         String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
@@ -121,21 +141,30 @@ public final class SpriteBatchImpl implements SpriteBatch {
         // 混合方程也是 run 分组键的一部分：CombatEntityPluginWithParticles 的暗色层
         // （现实干扰器弹体等负片粒子）会用 GL14.glBlendEquation(GL_FUNC_REVERSE_SUBTRACT)
         // 包裹整段渲染，延迟 flush 时必须按收集时刻的方程绘制，否则暗色粒子退化为加法发光。
-        // alpha test 同理入键（扩展状态区），flush 时回放；stencil 区一律透传
+        // alpha test 同理入键（扩展状态区），flush 时回放；stencil 区一律透传。
+        // 渲染目标（FBO + viewport）同样入键：native 在 pendingQuads>0 时与 runTargetBuf
+        // 中的期望值比较，不一致返回 RESULT_STATE_MISMATCH 走 flush 重试
         int blendEquation;
         boolean extendedState;
+        int submitFbo;
+        int submitVpX;
+        int submitVpY;
+        int submitVpW;
+        int submitVpH;
         if (NativeRuntime.isGlReady()) {
             int expected = pendingQuads > 0 ? currentBlendEquation : -1;
             int requireExtended = pendingQuads > 0 && currentExtendedState ? 1 : 0;
-            int result = SpriteBatchNative.nativeSubmit(vertexScratch, indexScratch,
+            int result = SpriteBatchNative.nativeSubmit(vertexScratch, indexScratch, runTargetBuf,
                     pendingQuads, expected, requireExtended,
                     posX, posY, width, height, centerX, centerY, angle,
                     r, g, b, a, texX, texY, texWidth, texHeight);
             if (result == SpriteBatchNative.RESULT_EQUATION_MISMATCH
                     || result == SpriteBatchNative.RESULT_STATE_MISMATCH) {
-                // 方程/扩展状态切换：flush 后空 run 重试（不检查方程与扩展状态）
+                // 方程/扩展状态/渲染目标切换：flush 后空 run 重试（不检查方程与扩展状态，
+                // native 重新捕获渲染目标写入 runTargetBuf）
                 flushPending();
-                result = SpriteBatchNative.nativeSubmit(vertexScratch, indexScratch, 0, -1, 0,
+                result = SpriteBatchNative.nativeSubmit(vertexScratch, indexScratch, runTargetBuf,
+                        0, -1, 0,
                         posX, posY, width, height, centerX, centerY, angle,
                         r, g, b, a, texX, texY, texWidth, texHeight);
             }
@@ -153,8 +182,8 @@ public final class SpriteBatchImpl implements SpriteBatch {
                         r, g, b, a, texX, texY, texWidth, texHeight);
                 extendedState = true;
             } else if (result < 0) {
-                // stencil 区（蒙版读写交错，不可延迟）与 FBO 离屏 pass
-                // （GraphicsLib 法线/材质图等，投影与渲染目标均不同）必须走原版立即路径
+                // stencil/scissor 区（蒙版读写与 sprite 绘制交错，不可延迟）
+                // 与矩阵模式非常规时必须走原版立即路径
                 flushPending();
                 return false;
             } else {
@@ -163,13 +192,33 @@ public final class SpriteBatchImpl implements SpriteBatch {
                 indexScratch.position(indexScratch.position() + 12);
                 extendedState = false;
             }
+            // 收集时刻的渲染目标由 native 写入 runTargetBuf
+            // （pendingQuads>0 时已与 run 比较一致，值与当前 run 相同）
+            submitFbo = runTargetBuf.get(0);
+            submitVpX = runTargetBuf.get(1);
+            submitVpY = runTargetBuf.get(2);
+            submitVpW = runTargetBuf.get(3);
+            submitVpH = runTargetBuf.get(4);
         } else {
             if (GL11.glGetInteger(GL11.GL_MATRIX_MODE) != GL11.GL_MODELVIEW
                     || GL11.glGetBoolean(GL11.GL_STENCIL_TEST)
-                    || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)
-                    || GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) != 0) {
+                    || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)) {
                 flushPending();
                 return false;
+            }
+            // FBO 离屏 pass 不再拒绝：捕获渲染目标入 run 状态键，flush 时回放
+            submitFbo = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
+            vpBuf.clear();
+            GL11.glGetInteger(GL11.GL_VIEWPORT, vpBuf);
+            submitVpX = vpBuf.get(0);
+            submitVpY = vpBuf.get(1);
+            submitVpW = vpBuf.get(2);
+            submitVpH = vpBuf.get(3);
+            if (pendingQuads > 0 && (submitFbo != currentFbo
+                    || submitVpX != currentVpX || submitVpY != currentVpY
+                    || submitVpW != currentVpW || submitVpH != currentVpH)) {
+                // 渲染目标切换（进入/离开 FBO 离屏 pass）：flush 后开启新 run
+                flushPending();
             }
             blendEquation = GL11.glGetInteger(GL14.GL_BLEND_EQUATION);
             if (pendingQuads > 0 && blendEquation != currentBlendEquation) {
@@ -186,13 +235,18 @@ public final class SpriteBatchImpl implements SpriteBatch {
                     r, g, b, a, texX, texY, texWidth, texHeight);
         }
         if (pendingQuads == 0) {
-            // 新 run 开始：记录组键状态
+            // 新 run 开始：记录组键状态与渲染目标
             currentKey = key;
             currentTexture = textureId;
             currentBlendSrc = blendSrc;
             currentBlendDest = blendDest;
             currentBlendEquation = blendEquation;
             currentExtendedState = extendedState;
+            currentFbo = submitFbo;
+            currentVpX = submitVpX;
+            currentVpY = submitVpY;
+            currentVpW = submitVpW;
+            currentVpH = submitVpH;
         }
         pendingQuads++;
         lastR = r;
@@ -235,10 +289,13 @@ public final class SpriteBatchImpl implements SpriteBatch {
         indexScratch.clear();
 
         if (NativeRuntime.isGlReady()) {
-            // native 单次 JNI 完成状态回放 + 绘制 + 恢复（约 25 次 LWJGL 调用折叠为一次跨界）
+            // native 单次 JNI 完成状态回放 + 绘制 + 恢复（约 25 次 LWJGL 调用折叠为一次跨界）；
+            // FBO 绑定与 viewport 的保存/回放/恢复同样在 native 内完成（LWJGL2 StateTracker
+            // 不跟踪这两项，native 恢复 flush 入口值即保证真实 GL 状态正确）
             SpriteBatchNative.nativeFlush(vertexVbo.getBufferId(), vertexBase,
                     indexVbo.getBufferId(), indexBase, pendingQuads,
                     currentTexture, currentBlendSrc, currentBlendDest, currentBlendEquation,
+                    currentFbo, currentVpX, currentVpY, currentVpW, currentVpH,
                     currentExtendedState, currentAlphaFunc, currentAlphaRef,
                     lastR, lastG, lastB, lastA,
                     prevMatrixMode);
@@ -252,10 +309,23 @@ public final class SpriteBatchImpl implements SpriteBatch {
             return;
         }
 
+        // flush 入口处的渲染目标：绘制后必须恢复（绘制期间绑定的是收集时刻捕获的目标）
+        int prevFbo = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
+        vpBuf.clear();
+        GL11.glGetInteger(GL11.GL_VIEWPORT, vpBuf);
+        int prevVpX = vpBuf.get(0);
+        int prevVpY = vpBuf.get(1);
+        int prevVpW = vpBuf.get(2);
+        int prevVpH = vpBuf.get(3);
+
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
                 | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
         try {
+            // 渲染目标回放收集时刻的捕获值：flush 可能延迟到 pass 切换之后触发
+            // （组切换 flush 发生在下一次 submit 时），必须落回收集时刻的 FBO 与 viewport
+            GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, currentFbo);
+            GL11.glViewport(currentVpX, currentVpY, currentVpW, currentVpH);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(currentBlendSrc, currentBlendDest);
@@ -300,6 +370,9 @@ public final class SpriteBatchImpl implements SpriteBatch {
             GL11.glPopAttrib();
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, prevElementBuffer);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, prevArrayBuffer);
+            // FBO 绑定与 viewport 不在 pushAttrib 覆盖范围（本段未含 GL_VIEWPORT_BIT），显式恢复
+            GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, prevFbo);
+            GL11.glViewport(prevVpX, prevVpY, prevVpW, prevVpH);
             // 原版逐 sprite glColor4ub 的残留语义：当前颜色 = 最后一个 sprite 的颜色
             GL11.glColor4ub((byte) lastR, (byte) lastG, (byte) lastB, (byte) lastA);
         }

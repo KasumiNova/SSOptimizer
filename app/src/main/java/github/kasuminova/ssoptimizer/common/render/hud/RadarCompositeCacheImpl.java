@@ -20,7 +20,9 @@ import java.nio.IntBuffer;
  * 烘焙在 HUD 帧内惰性触发：开始前先 {@link SpriteBatch#flushPending()}
  * （必须在改动 FBO/视口/矩阵前落盘待绘批次，否则残批会被画进 FBO 单元格），
  * 结束后完整恢复 FBO 绑定/视口/矩阵/颜色掩码/裁剪状态。
- * 烘焙期的 sprite 绘制因 FBO 绑定被合批 guard 拒绝，自动走单 JNI 立即路径。
+ * 烘焙期开启 scissor，portrait sprite 仍被合批 guard 拒绝走立即路径；
+ * 即便烘焙区未来不再开 scissor，渲染目标（FBO + viewport）已纳入合批 run 状态键，
+ * 收集与 flush 均按收集时刻的目标回放，绘制仍落在正确的 FBO 单元格内。
  * <p>
  * 与原版的行为差异（均已评估可接受，截图验证）：
  * <ul>
