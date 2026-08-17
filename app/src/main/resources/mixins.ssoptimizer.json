@@ -16,6 +16,7 @@
     "ai.AttackAiModuleNullFlagMixin",
     "ai.CombatEngineAiParallelMixin",
     "ai.CombatFleetManagerConcurrentSetMixin",
+    "ai.FighterAiCarrierTargetMixin",
     "ai.HullVariantSpecOpCostMixin",
     "ai.MissileAiTargetSnapshotMixin",
     "ai.ProfilerWorkerGuardMixin",
