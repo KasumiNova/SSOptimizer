@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -52,6 +53,14 @@ public final class CollisionGridBvhImpl implements CollisionGridBvh {
     /** 全部登记条目（含已被 remove 消耗殆尽的），插入顺序即原版 addObject 调用顺序。 */
     private final ArrayList<Entry> entries = new ArrayList<>();
 
+    /**
+     * 对象 → 该对象的全部登记条目（插入顺序）。
+     * removeObject 的匹配条件仅为 equals（未匹配条目在扫描中不产生任何副作用），
+     * 因此按对象索引直接定位候选条目与全表扫描严格等价，把单次移除从
+     * O（全表条目数） 降到 O（该对象的登记数）。条目被消耗殆尽时从索引摘除。
+     */
+    private final HashMap<Object, List<Entry>> entriesByObject = new HashMap<>();
+
     /** 懒构建的扁平树；构建后若无活跃条目则为 null（以 {@link #built} 区分未构建）。 */
     private CollisionGridBvhBuild.Tree tree;
     /** 树叶子条目索引指向的条目数组（构建时活跃条目的快照）。 */
@@ -92,7 +101,9 @@ public final class CollisionGridBvhImpl implements CollisionGridBvh {
             // 完全落在网格外：原版 addToCell 逐 cell 越界跳过，等价于不登记。
             return;
         }
-        entries.add(new Entry(object, range));
+        final Entry entry = new Entry(object, range);
+        entries.add(entry);
+        entriesByObject.computeIfAbsent(object, key -> new ArrayList<>(1)).add(entry);
     }
 
     @Override
@@ -107,14 +118,20 @@ public final class CollisionGridBvhImpl implements CollisionGridBvh {
             return;
         }
 
-        // remaining 为尚未消耗的移除区域；逐条目（插入顺序）消耗，
-        // 与原版「每个 cell 移除桶内首个匹配项」逐 cell 等价。
+        // remaining 为尚未消耗的移除区域；仅扫描该对象的登记条目（插入顺序），
+        // 与原版「每个 cell 移除桶内首个匹配项」逐 cell 等价——未匹配条目在
+        // 原版全表扫描中不产生副作用，按对象索引定位不改变结果。
+        final List<Entry> candidates = entriesByObject.get(object);
+        if (candidates == null) {
+            return;
+        }
         List<int[]> remaining = new ArrayList<>(1);
         remaining.add(range);
-        for (final Entry entry : entries) {
-            // 原版 ArrayList.remove(Object) 按 equals 匹配。
-            final boolean matches = object == null ? entry.object == null : object.equals(entry.object);
-            if (!matches || entry.avail.isEmpty()) {
+        final Iterator<Entry> it = candidates.iterator();
+        while (it.hasNext()) {
+            final Entry entry = it.next();
+            if (entry.avail.isEmpty()) {
+                it.remove();
                 continue;
             }
             final List<int[]> hit = CollisionGridBvhBuild.intersectRects(entry.avail, remaining);
@@ -122,10 +139,16 @@ public final class CollisionGridBvhImpl implements CollisionGridBvh {
                 continue;
             }
             entry.avail = CollisionGridBvhBuild.subtractRects(entry.avail, hit);
+            if (entry.avail.isEmpty()) {
+                it.remove();
+            }
             remaining = CollisionGridBvhBuild.subtractRects(remaining, hit);
             if (remaining.isEmpty()) {
                 break;
             }
+        }
+        if (candidates.isEmpty()) {
+            entriesByObject.remove(object);
         }
     }
 
