@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import github.kasuminova.ssoptimizer.common.render.queue.SignalFenceCommand;
+import github.kasuminova.ssoptimizer.common.render.queue.SuspendFrameException;
 import github.kasuminova.ssoptimizer.common.render.queue.WaitFenceCommand;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,25 +47,19 @@ class SyncBridgeTest {
     }
 
     @Test
-    void waitSyncRecordedBeforeSignalStillRendezvous() throws InterruptedException {
-        // 乱序录制场景：wait 命令先入队（aux-context 生产者线程抢先）
+    void waitSyncRecordedBeforeSignalSuspendsInsteadOfBlocking() {
+        // 乱序/滞后场景：wait 命令执行时 fence 尚未 signal（BoxUtil 生产者被
+        // Phaser 挡住的情形）。悬挂协议下执行 wait 抛 SuspendFrameException
+        // 而非阻塞——阻塞会与「main 等帧完成」形成三方死锁
         GLSync sync = GL32.glFenceSync(org.lwjgl.opengl.GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         GL32.glWaitSync(sync, 0, org.lwjgl.opengl.GL32.GL_TIMEOUT_IGNORED);
         assertEquals(2, queue.recorded.size());
         assertInstanceOf(WaitFenceCommand.class, queue.recorded.get(1));
 
-        // 先执行 wait（渲染线程乱序执行到的情形）：阻塞直至 signal 执行
-        AtomicBoolean waitDone = new AtomicBoolean();
-        Thread waiter = new Thread(() -> {
-            queue.recorded.get(1).execute();
-            waitDone.set(true);
-        });
-        waiter.start();
-        Thread.sleep(50);
-        assertFalse(waitDone.get(), "fence 未完成时 wait 命令必须阻塞");
+        assertThrows(SuspendFrameException.class, () -> queue.recorded.get(1).execute(),
+                "fence 未 signal 时 wait 命令必须悬挂而非阻塞");
         queue.recorded.get(0).execute();
-        waiter.join(2000);
-        assertTrue(waitDone.get(), "signal 执行后 wait 必须放行");
+        assertDoesNotThrow(() -> queue.recorded.get(1).execute(), "signal 执行后 wait 必须放行");
     }
 
     @Test

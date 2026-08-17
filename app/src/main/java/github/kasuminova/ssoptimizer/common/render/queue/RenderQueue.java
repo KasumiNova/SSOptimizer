@@ -55,11 +55,37 @@ public interface RenderQueue {
     <T> T get(Callable<T> getter);
 
     /**
+     * 资源申请类阻塞调用（glGenBuffers/glCreateProgram/glGetUniformLocation 等
+     * 一次性资源分配与名称查找）：语义同 {@link #get(Callable)}，但不计入
+     * {@link StallDetector}。初始化期的成批资源申请是合法形态；熔断针对的是
+     * 逐帧状态回读打穿管线的模式，不是有界的一次性分配。
+     *
+     * @param getter 要在渲染线程执行的资源申请逻辑
+     * @param <T>    返回值类型
+     * @return getter 在渲染线程的执行结果
+     */
+    default <T> T getUncounted(Callable<T> getter) {
+        return get(getter);
+    }
+
+    /**
      * {@link #get(Callable)} 的无返回值形式。
      *
      * @param task 要在渲染线程执行的逻辑
      */
     void wait(Runnable task);
+
+    /**
+     * {@link #getUncounted(Callable)} 的无返回值形式。
+     *
+     * @param task 要在渲染线程执行的资源申请逻辑
+     */
+    default void waitUncounted(Runnable task) {
+        getUncounted(() -> {
+            task.run();
+            return null;
+        });
+    }
 
     /**
      * @return 当前线程是否为本队列的渲染线程

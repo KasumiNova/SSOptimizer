@@ -3,10 +3,16 @@ package github.kasuminova.ssoptimizer.common.render.queue;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 /**
  * {@link RenderQueue} 的默认实现。
@@ -25,16 +31,29 @@ import java.util.concurrent.LinkedBlockingQueue;
  * 保证 aux-context 生产者线程的 {@link #submit(GlCommand)} 与主线程 swap 不会把
  * 命令丢进已提交的帧；帧内列表本身的并发追加由 {@link RenderFrame#add} 的
  * synchronized 兜底。
+ * <p>
+ * 帧悬挂协议：{@link WaitFenceCommand} 发现 fence 未 signal 时抛
+ * {@link SuspendFrameException}，渲染线程不阻塞——剩余命令打包成续跑任务
+ * requeue 到队尾，本帧正常完成释放主线程（否则 BoxUtil 的 Phaser 协调会与
+ * 「main 等帧完成」形成三方死锁）；fence 信号到达后续跑任务会合执行余下命令。
  */
 public final class RenderQueueImpl implements RenderQueue {
     /** 渲染线程名，profiler / 日志诊断用。 */
     public static final String RENDER_THREAD_NAME = "SSOptimizer-Render";
+
+    /** 帧悬挂续跑任务 requeue 前的退避间隔（纳秒），避免 fence 长期未 signal 时续跑任务空转占满渲染线程。 */
+    private static final long SUSPEND_REQUEUE_BACKOFF_NANOS = 1_000_000L;
+
+    /** 阻塞调用站点定位用的 StackWalker（无类引用保留需求，默认配置即可）。 */
+    private static final StackWalker SITE_WALKER = StackWalker.getInstance();
 
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
     private final FramePool framePool;
     private final StallDetector stallDetector;
     private final LinkedBlockingQueue<RenderTask> submissionQueue = new LinkedBlockingQueue<>();
+    /** 阻塞式调用的来源站点计数（进程生命周期累计，熔断异常时输出 top 供定位；站点基数有界）。 */
+    private final ConcurrentHashMap<String, LongAdder> blockingSites = new ConcurrentHashMap<>();
     private final Object frameLock = new Object();
     private final Thread renderThread;
 
@@ -106,6 +125,33 @@ public final class RenderQueueImpl implements RenderQueue {
     }
 
     /**
+     * 记录一次阻塞式调用的来源站点：取栈上第一个不属于队列/bridge 包的帧
+     * （即游戏/模组/功能代码调用 bridge GL 方法的位置）。开销仅在已确定要
+     * 走阻塞通道的调用上发生，相对队列往返可忽略。
+     */
+    private void recordBlockingSite() {
+        String site = SITE_WALKER.walk(frames -> frames
+                .filter(f -> {
+                    String cls = f.getClassName();
+                    return !cls.startsWith("github.kasuminova.ssoptimizer.common.render.queue.")
+                            && !cls.startsWith("github.kasuminova.ssoptimizer.bridge.opengl.");
+                })
+                .findFirst()
+                .map(f -> f.getClassName() + "." + f.getMethodName() + ":" + f.getLineNumber())
+                .orElse("unknown"));
+        blockingSites.computeIfAbsent(site, k -> new LongAdder()).increment();
+    }
+
+    /** @return 累计阻塞调用站点 top5（熔断异常的诊断后缀） */
+    private String topBlockingSites() {
+        return blockingSites.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue().sum(), a.getValue().sum()))
+                .limit(5)
+                .map(e -> e.getKey() + " x" + e.getValue().sum())
+                .collect(Collectors.joining(", "));
+    }
+
+    /**
      * 主线程用：阻塞至上一帧执行完。若上一帧在渲染线程抛过异常，在此以
      * {@link IllegalStateException} 重抛（cause 为原始异常）——即
      * 「渲染线程异常在下一次 swapFramesAndSync 时向主线程传播」的落点。
@@ -123,6 +169,15 @@ public final class RenderQueueImpl implements RenderQueue {
 
     @Override
     public <T> T get(Callable<T> getter) {
+        return getInternal(getter, true);
+    }
+
+    @Override
+    public <T> T getUncounted(Callable<T> getter) {
+        return getInternal(getter, false);
+    }
+
+    private <T> T getInternal(Callable<T> getter, boolean countStall) {
         if (isRenderThread()) {
             // 渲染线程上的同步调用直接执行：再走提交队列必然自死锁
             try {
@@ -133,9 +188,16 @@ public final class RenderQueueImpl implements RenderQueue {
         }
         // 加载期（ResourceLoaderState.init 完成前）的阻塞调用豁免熔断：加载推进
         // 画面本身就在渲染帧，纹理/字体/shader 的成批一次性分配集中在该阶段属
-        // 正常形态；熔断只针对加载结束后的稳态逐帧 getter 回读
-        if (RenderThreadMode.isLoadingFinished()) {
-            stallDetector.onStall();
+        // 正常形态；熔断只针对加载结束后的稳态逐帧 getter 回读。
+        // 资源申请类调用（getUncounted）任何时期都不计数（见 RenderQueue 接口注释）
+        if (countStall && RenderThreadMode.isLoadingFinished()) {
+            recordBlockingSite();
+            try {
+                stallDetector.onStall();
+            } catch (IllegalStateException trip) {
+                throw new IllegalStateException(
+                        trip.getMessage() + " 累计阻塞调用站点 top5: " + topBlockingSites(), trip);
+            }
         }
         SyncTask<T> task = new SyncTask<>(getter);
         submissionQueue.offer(task);
@@ -152,6 +214,14 @@ public final class RenderQueueImpl implements RenderQueue {
     @Override
     public void wait(Runnable task) {
         get(() -> {
+            task.run();
+            return null;
+        });
+    }
+
+    @Override
+    public void waitUncounted(Runnable task) {
+        getUncounted(() -> {
             task.run();
             return null;
         });
@@ -213,15 +283,58 @@ public final class RenderQueueImpl implements RenderQueue {
         @Override
         public void run() {
             try {
-                for (GlCommand command : frame.commands()) {
-                    command.execute();
-                }
+                runOrRequeue(frame.commands());
+                // 帧悬挂（fence 未 signal）不视为失败：余下命令已由续跑任务接管，
+                // 本帧正常完成释放主线程——主线程推进后 fence 信号才会到来
                 frame.complete();
             } catch (Throwable t) {
                 LOGGER.error("[SSOptimizer] 渲染线程执行帧命令失败，本帧剩余命令已丢弃", t);
+                frame.signalAllFences();
                 frame.completeExceptionally(t);
             } finally {
                 framePool.release(frame);
+            }
+        }
+    }
+
+    /**
+     * 帧悬挂的续跑任务：携带上次悬挂点起的剩余命令，遇 fence 仍未 signal 则
+     * 再次打包 requeue，直至全部执行完。不关联任何帧 Future——原帧在首次悬挂时
+     * 已正常完成，续跑期间命令抛异常只记日志并丢弃余下命令（GL 状态已不可信，
+     * 与帧执行失败同语义，但主线程早已放行，无 Future 可传播）。
+     */
+    private final class ContinuationTask implements RenderTask {
+        private final List<GlCommand> commands;
+
+        ContinuationTask(List<GlCommand> commands) {
+            this.commands = commands;
+        }
+
+        @Override
+        public void run() {
+            try {
+                runOrRequeue(commands);
+            } catch (Throwable t) {
+                LOGGER.error("[SSOptimizer] 渲染线程执行悬挂帧的续跑命令失败，余下命令已丢弃", t);
+            }
+        }
+    }
+
+    /**
+     * 顺序执行命令列表；遇 {@link SuspendFrameException}（fence 未 signal）时
+     * 退避 {@link #SUSPEND_REQUEUE_BACKOFF_NANOS} 后把悬挂点起的剩余命令打包成
+     * {@link ContinuationTask} requeue 到提交队列队尾并返回。续跑任务排在队尾，
+     * 不阻塞后续帧任务与同步任务的执行。
+     */
+    private void runOrRequeue(List<GlCommand> commands) {
+        for (int i = 0; i < commands.size(); i++) {
+            try {
+                commands.get(i).execute();
+            } catch (SuspendFrameException suspend) {
+                LockSupport.parkNanos(SUSPEND_REQUEUE_BACKOFF_NANOS);
+                submissionQueue.offer(new ContinuationTask(
+                        new ArrayList<>(commands.subList(i, commands.size()))));
+                return;
             }
         }
     }

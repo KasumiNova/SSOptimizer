@@ -82,6 +82,17 @@ public final class RenderFrame {
         completion.complete(null);
     }
 
+    /**
+     * 帧执行失败兜底：强制完成本帧登记的全部 fence。失败帧的剩余命令（含
+     * {@link SignalFenceCommand}）会被丢弃，若不释放 fence，等待它的悬挂续跑
+     * 任务将永久自旋堵塞提交队列。已 signal 的 fence 重复 signal 幂等无害。
+     */
+    void signalAllFences() {
+        for (FrameFence fence : fences) {
+            fence.signal();
+        }
+    }
+
     /** 渲染线程用：本帧命令执行失败，异常随 Future 传播到主线程。 */
     void completeExceptionally(Throwable failure) {
         completion.completeExceptionally(failure);

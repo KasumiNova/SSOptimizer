@@ -16,9 +16,9 @@ import github.kasuminova.ssoptimizer.common.render.queue.WaitFenceCommand;
  *   <li>{@link #glFenceSync} 录制 {@link SignalFenceCommand}（渲染线程执行到该
  *       点时完成 fence——此前的渲染命令已全部进入执行流），并立即返回关联的
  *       {@link GLSync} 句柄；</li>
- *   <li>{@link #glWaitSync} 录制 {@link WaitFenceCommand}，执行时无条件阻塞到
- *       fence 完成——跨线程录制顺序不保证，等 wait 录制在 signal 之前也能正确
- *       会合（设计动机见 WaitFenceCommand 类 javadoc）；</li>
+ *   <li>{@link #glWaitSync} 录制 {@link WaitFenceCommand}，执行时检查 fence
+ *       是否已 signal：已 signal 直接放行，未 signal 则帧悬挂续跑（渲染线程
+ *       不阻塞，协议细节见 WaitFenceCommand 类 javadoc）；</li>
  *   <li>{@link #glDeleteSync} 只做句柄失效标记：fence 是纯 Java 对象，无真实
  *       GPU 资源需要释放。</li>
  * </ul>
@@ -46,6 +46,10 @@ public final class GL32 {
     /**
      * 录制 fence 信号命令并返回关联句柄。句柄立即有效（指向已入队的会合点），
      * 无需阻塞等待渲染线程。
+     * <p>
+     * fence 同时登记到当前帧（{@link RenderFrame#addFence}）：帧执行失败丢弃
+     * 剩余命令时，队列会强制完成登记过的 fence——否则信号命令随失败帧被丢弃，
+     * 等待该 fence 的悬挂续跑任务将永久自旋。
      *
      * @param condition LWJGL2 语义下固定为 GL_SYNC_GPU_COMMANDS_COMPLETE，原样保留
      * @param flags     保留参数，LWJGL2 语义下必须为 0
@@ -53,7 +57,9 @@ public final class GL32 {
      */
     public static GLSync glFenceSync(int condition, int flags) {
         FrameFence fence = new FrameFenceImpl();
-        BridgeSupport.enqueue(new SignalFenceCommand(fence));
+        RenderQueue queue = BridgeSupport.queue();
+        queue.currentFrame().addFence(fence);
+        queue.submit(new SignalFenceCommand(fence));
         return new GLSync(fence);
     }
 

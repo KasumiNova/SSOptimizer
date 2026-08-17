@@ -180,6 +180,8 @@ class RenderQueueImplTest {
         queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(60, 2));
         RenderThreadMode.markLoadingFinished();
         queue.get(() -> null);
+        // 熔断语义为 stall 帧密度：跨帧的第二次阻塞调用才计入第二个 stall 帧
+        queue.swapFramesAndSync();
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
         assertTrue(String.valueOf(ex.getMessage()).contains("阻塞式 GL 调用"));
     }
@@ -196,6 +198,30 @@ class RenderQueueImplTest {
         RenderThreadMode.markLoadingFinished();
         queue.get(() -> null);
         assertEquals(1, detector.currentWindowStalls(), "加载期结束后恢复计数");
+        // stall 帧密度语义：推进一帧后的阻塞调用计入第二个 stall 帧，达到阈值熔断
+        queue.swapFramesAndSync();
+        assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
+    }
+
+    @Test
+    void resourceBlockingCallsAreExemptFromStallDetector() {
+        // 资源申请类调用（getUncounted/waitUncounted）在加载期结束后也不计入熔断窗口；
+        // 同帧穿插的回读类 get 仍正常计数并熔断
+        StallDetector detector = new StallDetector(60, 2);
+        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), detector);
+        RenderThreadMode.markLoadingFinished();
+        queue.getUncounted(() -> null);
+        queue.waitUncounted(() -> {
+        });
+        queue.swapFramesAndSync();
+        queue.getUncounted(() -> null);
+        queue.swapFramesAndSync();
+        queue.getUncounted(() -> null);
+        assertEquals(0, detector.currentWindowStalls(), "资源申请类调用任何时期都不得计入熔断窗口");
+        queue.swapFramesAndSync();
+        queue.get(() -> null);
+        assertEquals(1, detector.currentWindowStalls(), "回读类调用保持计数");
+        queue.swapFramesAndSync();
         assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
     }
 
