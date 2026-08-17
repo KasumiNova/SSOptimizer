@@ -25,6 +25,7 @@ class GetterChannelTest {
         if (queue != null) {
             queue.shutdown();
         }
+        github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode.resetLoadingFinishedForTesting();
     }
 
     @Test
@@ -44,6 +45,8 @@ class GetterChannelTest {
         StallDetector detector = new StallDetector(60, 2);
         queue = new RenderQueueImpl(new github.kasuminova.ssoptimizer.common.render.queue.FramePool(
                 github.kasuminova.ssoptimizer.common.render.queue.FramePool.DEFAULT_CAPACITY), detector);
+        // 熔断只针对资源加载期结束后的稳态；加载期调用豁免，见 RenderQueueImpl 门控
+        github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode.markLoadingFinished();
         queue.get(() -> 1);
         assertEquals(1, detector.currentWindowStalls(), "每次阻塞调用计入 StallDetector");
         assertThrows(IllegalStateException.class, () -> queue.get(() -> 2),

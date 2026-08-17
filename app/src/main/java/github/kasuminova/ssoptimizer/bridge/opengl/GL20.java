@@ -2,6 +2,9 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+
 /**
  * org.lwjgl.opengl.GL20 的 bridge 镜像（GraphicsLib 需要的最小集）。
  * <p>
@@ -132,5 +135,72 @@ public final class GL20 {
 
     public static void glDeleteProgram(int program) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDeleteProgram(program));
+    }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：模组（GraphicsLib/BoxUtil 等）实际使用的顶点属性与 uniform 变体
+    // ------------------------------------------------------------------
+
+    public static void glDetachShader(int program, int shader) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDetachShader(program, shader));
+    }
+
+    public static void glEnableVertexAttribArray(int index) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glEnableVertexAttribArray(index));
+    }
+
+    public static void glDisableVertexAttribArray(int index) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDisableVertexAttribArray(index));
+    }
+
+    /** VBO 偏移形态（offset 是绑定 VBO 内的字节偏移，跨线程语义不变）。 */
+    public static void glVertexAttribPointer(int index, int size, int type, boolean normalized,
+                                             int stride, long offset) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL20.glVertexAttribPointer(index, size, type, normalized, stride, offset));
+    }
+
+    public static void glUniform2i(int location, int v0, int v1) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glUniform2i(location, v0, v1));
+    }
+
+    public static void glUniform3i(int location, int v0, int v1, int v2) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glUniform3i(location, v0, v1, v2));
+    }
+
+    public static void glUniform4i(int location, int v0, int v1, int v2, int v3) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glUniform4i(location, v0, v1, v2, v3));
+    }
+
+    /** 向量 uniform：buffer 快照后入队。 */
+    public static void glUniform3(int location, FloatBuffer values) {
+        BridgeSupport.enqueueSnapshot(values, snapshot ->
+                org.lwjgl.opengl.GL20.glUniform3(location, snapshot.asFloatBuffer()));
+    }
+
+    public static void glUniform4(int location, FloatBuffer values) {
+        BridgeSupport.enqueueSnapshot(values, snapshot ->
+                org.lwjgl.opengl.GL20.glUniform4(location, snapshot.asFloatBuffer()));
+    }
+
+    public static void glUniformMatrix4(int location, boolean transpose, FloatBuffer matrices) {
+        BridgeSupport.enqueueSnapshot(matrices, snapshot ->
+                org.lwjgl.opengl.GL20.glUniformMatrix4(location, transpose, snapshot.asFloatBuffer()));
+    }
+
+    /** 单缓冲 draw buffers 形态（GL11.glDrawBuffer 的多目标版）。 */
+    public static void glDrawBuffers(int buffer) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDrawBuffers(buffer));
+    }
+
+    public static void glDrawBuffers(IntBuffer buffers) {
+        BridgeSupport.enqueueSnapshot(buffers, snapshot ->
+                org.lwjgl.opengl.GL20.glDrawBuffers(snapshot.asIntBuffer()));
+    }
+
+    /** 链接信息回读（编译期一次性）：阻塞通道。 */
+    public static void glGetAttachedShaders(int program, IntBuffer count, IntBuffer shaders) {
+        BridgeSupport.blockingWait(() ->
+                org.lwjgl.opengl.GL20.glGetAttachedShaders(program, count, shaders));
     }
 }

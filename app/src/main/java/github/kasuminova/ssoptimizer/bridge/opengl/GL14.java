@@ -29,4 +29,10 @@ public final class GL14 {
     public static void glBlendEquation(int mode) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL14.glBlendEquation(mode));
     }
+
+    /** 分离式混合因子（模组路径使用，盘点补面）。 */
+    public static void glBlendFuncSeparate(int srcRGB, int dstRGB, int srcAlpha, int dstAlpha) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL14.glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha));
+    }
 }

@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.common.render.queue;
 
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 
 import java.util.concurrent.Callable;
@@ -54,7 +55,9 @@ public final class RenderQueueImpl implements RenderQueue {
 
     /**
      * @param framePool     帧池
-     * @param stallDetector 阻塞式调用熔断器（每次 get/wait 阻塞调用计数）
+     * @param stallDetector 阻塞式调用熔断器（仅统计资源加载期结束——
+     *                      RenderThreadMode.isLoadingFinished()——之后的
+     *                      get/wait 阻塞调用；加载期成批一次性分配豁免）
      */
     public RenderQueueImpl(FramePool framePool, StallDetector stallDetector) {
         this.framePool = framePool;
@@ -84,7 +87,9 @@ public final class RenderQueueImpl implements RenderQueue {
         synchronized (frameLock) {
             submitCurrentFrameLocked();
         }
-        stallDetector.onSwap();
+        // 注意：这里不推进 StallDetector 窗口——drain-first 阻塞通道每次调用都伴随
+        // 一次 swapFrames，窗口若以它前进会被「清下一槽」语义洗白/失真；
+        // 游戏帧边界由 swapFramesAndSync 唯一标记（见 get 的熔断门控注释）
     }
 
     @Override
@@ -126,7 +131,12 @@ public final class RenderQueueImpl implements RenderQueue {
                 throw new IllegalStateException("[SSOptimizer] 渲染线程内同步执行任务失败", e);
             }
         }
-        stallDetector.onStall();
+        // 加载期（ResourceLoaderState.init 完成前）的阻塞调用豁免熔断：加载推进
+        // 画面本身就在渲染帧，纹理/字体/shader 的成批一次性分配集中在该阶段属
+        // 正常形态；熔断只针对加载结束后的稳态逐帧 getter 回读
+        if (RenderThreadMode.isLoadingFinished()) {
+            stallDetector.onStall();
+        }
         SyncTask<T> task = new SyncTask<>(getter);
         submissionQueue.offer(task);
         try {

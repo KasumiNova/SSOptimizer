@@ -111,4 +111,15 @@ public final class GL15 {
         BridgeSupport.enqueueSnapshot(buffers, snapshot ->
                 org.lwjgl.opengl.GL15.glDeleteBuffers(snapshot.asIntBuffer()));
     }
+
+    /**
+     * 解除 buffer 映射。map/unmap 跨线程语义：映射指针由 {@code glMapBuffer} 经阻塞通道
+     * 取回后主线程直接写入，unmap 必须走阻塞通道 drain 到渲染线程真实执行后才返回，
+     * 保证「主线程写完 → unmap」的先后顺序不被异步执行颠覆（模组低频路径）。
+     *
+     * @return 真实 glUnmapBuffer 的返回值（false 表示映射期间数据损坏）
+     */
+    public static boolean glUnmapBuffer(int target) {
+        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL15.glUnmapBuffer(target));
+    }
 }

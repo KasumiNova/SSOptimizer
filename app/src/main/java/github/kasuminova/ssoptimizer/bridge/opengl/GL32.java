@@ -76,4 +76,18 @@ public final class GL32 {
     public static void glDeleteSync(GLSync sync) {
         sync.markDeleted();
     }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：64 位 getter（BoxUtil 等的健康校验/能力探测）
+    // ------------------------------------------------------------------
+
+    /** 64 位 getter：阻塞通道取回。 */
+    public static long glGetInteger64(int pname) {
+        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL32.glGetInteger64(pname));
+    }
+
+    /** 带索引 64 位 getter：阻塞通道取回。 */
+    public static long glGetInteger64(int pname, int index) {
+        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL32.glGetInteger64(pname, index));
+    }
 }

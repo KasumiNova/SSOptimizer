@@ -86,7 +86,12 @@ nanoforge {
     coremod.set(true)
     pluginClass.set("github.kasuminova.ssoptimizer.bootstrap.SSOptimizerCorePlugin")
     authors.set(listOf("kasuminova"))
-    asmTransformers.set(listOf("github.kasuminova.ssoptimizer.bootstrap.HybridWeaverTransformer"))
+    // 顺序敏感：HybridWeaver 的游戏类改写（如 glFinish→hook）必须先于
+    // RenderThreadRedirect 的 GL owner 重定向执行，保证 hook 调用点不被二次改写
+    asmTransformers.set(listOf(
+        "github.kasuminova.ssoptimizer.bootstrap.HybridWeaverTransformer",
+        "github.kasuminova.ssoptimizer.bootstrap.RenderThreadRedirectTransformer"
+    ))
     mixinConfigs.set(listOf("mixins.ssoptimizer.json"))
 }
 

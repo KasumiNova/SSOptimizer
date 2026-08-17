@@ -16,6 +16,7 @@ import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollecto
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.StripGroup;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.StripInstance;
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
@@ -89,7 +90,16 @@ public final class EngineBatchImpl implements EngineBatch {
 
     private EngineBatchImpl() {
         String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
-        this.enabled = !"false".equalsIgnoreCase(rawEnable.trim());
+        boolean enable = !"false".equalsIgnoreCase(rawEnable.trim());
+        if (enable && RenderThreadMode.isEnabled()) {
+            // 分离模式：Java 回退 flush 每帧有两次 buffer binding 回读
+            // （glGetInteger(GL_ARRAY_BUFFER_BINDING) 等），每次回读都是阻塞通道
+            // 全管线 drain；禁用合批回退原版引擎渲染（GL 调用被重定向录制）。
+            LOGGER.info("[SSOptimizer] 渲染线程分离模式：禁用引擎合批"
+                    + "（Java 回退 flush 的 binding 回读在分离模式下为全管线 drain）");
+            enable = false;
+        }
+        this.enabled = enable;
         this.statsEnabled = Boolean.parseBoolean(System.getProperty(STATS_PROPERTY, "false"));
 
         String rawMode = System.getProperty(MODE_PROPERTY, "vbo");

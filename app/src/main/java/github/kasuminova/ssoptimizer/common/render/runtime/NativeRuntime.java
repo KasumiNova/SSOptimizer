@@ -72,9 +72,21 @@ public final class NativeRuntime {
             System.load(nativePath.toString());
             loaded = true;
             LOGGER.info("[SSOptimizer] Native library loaded: " + nativePath);
-            glReady = nativeInitGl();
-            if (!glReady) {
-                LOGGER.warn("[SSOptimizer] glad GL 函数指针加载失败，GL 加速路径回退 Java 实现");
+            if (RenderThreadMode.isEnabled()) {
+                // 分离模式：主线程自始至终没有 GL context，native（glad 直调）在
+                // 主线程执行会崩。跳过 glad 函数指针加载，isGlReady() 恒 false，
+                // 强制 SpriteRenderHelper/EngineBatch/字体等 native 加速路径全部落
+                // Java 回退——回退路径里的 org.lwjgl 调用会被 ASM 重定向录制入队，
+                // 语义正确（性能回退可接受，native 迁移留待后续轮次）。
+                glReady = false;
+                LOGGER.info("[SSOptimizer] 渲染线程分离模式：跳过 glad 初始化，"
+                        + "native GL 加速路径（SpriteBatch/SpriteRenderHelper/EngineBatch/"
+                        + "TexturedStrip/BitmapFont 等）全部降级为 Java 录制路径");
+            } else {
+                glReady = nativeInitGl();
+                if (!glReady) {
+                    LOGGER.warn("[SSOptimizer] glad GL 函数指针加载失败，GL 加速路径回退 Java 实现");
+                }
             }
             return true;
         } catch (Throwable t) {

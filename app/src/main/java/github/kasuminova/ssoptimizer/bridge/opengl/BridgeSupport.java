@@ -63,16 +63,31 @@ final class BridgeSupport {
     }
 
     /**
-     * 阻塞式取值（getter 回读通道）：交给渲染线程执行并等待结果，
-     * 每次调用计入 {@link github.kasuminova.ssoptimizer.common.render.queue.StallDetector}。
+     * 阻塞式取值（getter 回读通道）：先把当前录制帧提交进渲染线程
+     * （{@link RenderQueue#swapFrames()}），再经阻塞通道执行 getter 并等待结果。
+     * <p>
+     * 先提交再取值是顺序正确性的关键：提交队列是 FIFO，帧任务排在同步任务之前执行，
+     * getter 读到的一定是「此前全部已录制命令执行完」的 GL 状态——否则 getter 会越过
+     * 尚未提交的录制命令读到滞后状态（如 glEnable 入队后立刻 glIsEnabled 返回旧值）。
+     * 每次调用在资源加载期结束后计入
+     * {@link github.kasuminova.ssoptimizer.common.render.queue.StallDetector}；
+     * 加载期的成批一次性分配豁免（见 RenderQueueImpl 的熔断门控）。
      */
     static <T> T blockingGet(Callable<T> getter) {
-        return queue().get(getter);
+        RenderQueue q = queue();
+        if (!q.isRenderThread()) {
+            q.swapFrames();
+        }
+        return q.get(getter);
     }
 
     /** {@link #blockingGet(Callable)} 的无返回值形式。 */
     static void blockingWait(Runnable task) {
-        queue().wait(task);
+        RenderQueue q = queue();
+        if (!q.isRenderThread()) {
+            q.swapFrames();
+        }
+        q.wait(task);
     }
 
     /** 声明 {@link LWJGLException} 的阻塞任务。 */

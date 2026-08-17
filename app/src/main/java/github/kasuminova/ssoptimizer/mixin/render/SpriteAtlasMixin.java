@@ -90,16 +90,31 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
      * UV 计算假设原点 (0,0)，图集化后必须补区域原点偏移；未重映射的精灵保持原样
      * （原版行为对 setTexX 后的精灵同样忽略 texX，不擅自改变）。
      * renderRegion 由 SpriteMixin 覆写后不再包含 glTexCoord2f 调用，不在此处理。
+     * require=0：分离模式下调用点已被 ASM 重定向到 bridge owner，由成对的
+     * {@link #ssoptimizer$texCoordWithAtlasOriginBridged} 命中。
      */
     @Redirect(method = {"renderNoBlendOrRotate(FFZ)V", "renderAtCenterWithCornerColors(FF)V"},
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexCoord2f(FF)V"),
-            remap = false)
+            remap = false, require = 0)
     private void ssoptimizer$texCoordWithAtlasOrigin(final float u, final float v) {
         if (this.ssoptimizer$atlasRemapped) {
             GL11.glTexCoord2f(u + this.texX, v + this.texY);
         } else {
             GL11.glTexCoord2f(u, v);
         }
+    }
+
+    /**
+     * 分离模式锚点：调用点被 RenderThreadRedirectTransformer 改写为 bridge
+     * {@code GL11.glTexCoord2f} 后由本 @Redirect 命中，handler 复用同一实现
+     * （其内部的 GL11 调用在分离模式下同样经本类字节码的 owner 改写进入录制）。
+     */
+    @Redirect(method = {"renderNoBlendOrRotate(FFZ)V", "renderAtCenterWithCornerColors(FF)V"},
+            at = @At(value = "INVOKE",
+                    target = "Lgithub/kasuminova/ssoptimizer/bridge/opengl/GL11;glTexCoord2f(FF)V"),
+            remap = false, require = 0)
+    private void ssoptimizer$texCoordWithAtlasOriginBridged(final float u, final float v) {
+        ssoptimizer$texCoordWithAtlasOrigin(u, v);
     }
 
     /**

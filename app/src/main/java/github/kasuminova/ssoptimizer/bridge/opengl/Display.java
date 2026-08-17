@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.DisplayMode;
+import org.lwjgl.opengl.PixelFormat;
 
 import java.nio.ByteBuffer;
 
@@ -62,12 +63,35 @@ public final class Display {
     }
 
     /**
+     * 携带像素格式参数的创建重载（游戏实际入口：{@code create(PixelFormat)}）。
+     * 参数在主线程捕获（{@link PixelFormat} 是纯数据对象），真实创建在渲染线程执行。
+     *
+     * @param pixelFormat 请求的像素格式
+     * @throws LWJGLException 渲染线程上的真实 {@code Display.create(PixelFormat)} 失败
+     */
+    public static void create(PixelFormat pixelFormat) throws LWJGLException {
+        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.create(pixelFormat));
+    }
+
+    /**
      * 帧尾：入队真实 {@code Display.update()}（渲染线程交换缓冲），
      * 然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。
      */
     public static void update() {
         RenderQueue q = BridgeSupport.queue();
         q.submit(org.lwjgl.opengl.Display::update);
+        q.swapFramesAndSync();
+    }
+
+    /**
+     * 携带事件泵开关的帧尾重载（战斗主循环的实际调用形态）。
+     * 事件泵随 update 一起收口到渲染线程，X11 访问保持单线程化。
+     *
+     * @param processMessages 是否在交换缓冲前泵送窗口事件
+     */
+    public static void update(boolean processMessages) {
+        RenderQueue q = BridgeSupport.queue();
+        q.submit(() -> org.lwjgl.opengl.Display.update(processMessages));
         q.swapFramesAndSync();
     }
 
@@ -94,6 +118,27 @@ public final class Display {
     /** 直通：Display 创建标志读 LWJGL 缓存字段，无 GL 依赖。 */
     public static boolean isCreated() {
         return org.lwjgl.opengl.Display.isCreated();
+    }
+
+    /** 直通：dirty 标志读 LWJGL 缓存字段，无 GL 依赖。 */
+    public static boolean isDirty() {
+        return org.lwjgl.opengl.Display.isDirty();
+    }
+
+    /** 直通：像素缩放因子读 LWJGL 缓存字段（游戏定制 LWJGL 扩展），无 GL 依赖。 */
+    public static float getPixelScaleFactor() {
+        return org.lwjgl.opengl.Display.getPixelScaleFactor();
+    }
+
+    /**
+     * 折叠模型下的 Display drawable：返回进程级单例登记对象（{@link DisplayDrawable}），
+     * 不产生 GL 命令。供 BoxUtil 类模组拿去包 {@link SharedDrawable} 的调用形态
+     * 正常走通；上下文语义见 {@link SharedDrawable} 类 javadoc。
+     *
+     * @return Display 的 bridge drawable 单例
+     */
+    public static Drawable getDrawable() {
+        return DisplayDrawable.INSTANCE;
     }
 
     /** 直通：全屏标志读 LWJGL 缓存字段，无 GL 依赖。 */

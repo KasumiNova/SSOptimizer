@@ -145,6 +145,28 @@ public final class GL11 {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor3d(red, green, blue));
     }
 
+    public static void glNormal3f(float nx, float ny, float nz) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glNormal3f(nx, ny, nz));
+    }
+
+    public static void glEdgeFlag(boolean flag) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glEdgeFlag(flag));
+    }
+
+    /** immediate 矩形（独立于 glBegin/glEnd 的单命令图元）。 */
+    public static void glRectf(float x1, float y1, float x2, float y2) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glRectf(x1, y1, x2, y2));
+    }
+
+    public static void glRectd(double x1, double y1, double x2, double y2) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glRectd(x1, y1, x2, y2));
+    }
+
+    /** 选择读取缓冲（glReadPixels 的配对状态）。 */
+    public static void glReadBuffer(int mode) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glReadBuffer(mode));
+    }
+
     /** 单元素绘制，同样携带 pointer 快照组（见 {@link #enqueueDraw}）。 */
     public static void glArrayElement(int index) {
         enqueueDraw(() -> org.lwjgl.opengl.GL11.glArrayElement(index));
@@ -176,6 +198,10 @@ public final class GL11 {
 
     public static void glTranslatef(float x, float y, float z) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTranslatef(x, y, z));
+    }
+
+    public static void glTranslated(double x, double y, double z) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTranslated(x, y, z));
     }
 
     public static void glRotatef(float angle, float x, float y, float z) {
@@ -773,6 +799,23 @@ public final class GL11 {
 
     public static void glTexParameterf(int target, int pname, float param) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexParameterf(target, pname, param));
+    }
+
+    /** 向量版纹理参数：buffer 快照后入队。 */
+    public static void glTexParameter(int target, int pname, FloatBuffer params) {
+        BridgeSupport.enqueueSnapshot(params, snapshot ->
+                org.lwjgl.opengl.GL11.glTexParameter(target, pname, snapshot.asFloatBuffer()));
+    }
+
+    /** 纹理环境参数（固定管线）。 */
+    public static void glTexEnvf(int target, int pname, float param) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexEnvf(target, pname, param));
+    }
+
+    /** 阻塞 getter：逐级纹理属性回读。 */
+    public static int glGetTexLevelParameteri(int target, int level, int pname) {
+        return BridgeSupport.blockingGet(() ->
+                org.lwjgl.opengl.GL11.glGetTexLevelParameteri(target, level, pname));
     }
 
     public static void glPixelStorei(int pname, int param) {

@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 /**
@@ -98,5 +99,67 @@ public final class GL30 {
 
     public static void glRenderbufferStorage(int target, int internalformat, int width, int height) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glRenderbufferStorage(target, internalformat, width, height));
+    }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：模组实际使用的 VAO / blit / map 族
+    // ------------------------------------------------------------------
+
+    /** FBO 间 blit（模组离屏合成路径）。 */
+    public static void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1,
+                                         int dstX0, int dstY0, int dstX1, int dstY1,
+                                         int mask, int filter) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glBlitFramebuffer(
+                srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter));
+    }
+
+    public static void glBindBufferBase(int target, int index, int buffer) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glBindBufferBase(target, index, buffer));
+    }
+
+    /** 资源分配：阻塞通道取回真实 VAO id。 */
+    public static int glGenVertexArrays() {
+        return BridgeSupport.blockingGet(org.lwjgl.opengl.GL30::glGenVertexArrays);
+    }
+
+    public static void glBindVertexArray(int array) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glBindVertexArray(array));
+    }
+
+    public static void glDeleteVertexArrays(int array) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glDeleteVertexArrays(array));
+    }
+
+    /** 带索引 getter（transform feedback 等）：阻塞通道取回。 */
+    public static int glGetInteger(int pname, int index) {
+        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL30.glGetInteger(pname, index));
+    }
+
+    /**
+     * 区间映射：阻塞通道取回真实映射 buffer（主线程随后直接写入；
+     * 配对的 unmap（{@link GL15#glUnmapBuffer(int)}）同样阻塞，顺序语义闭合）。
+     */
+    public static ByteBuffer glMapBufferRange(int target, long offset, long length, int access,
+                                              ByteBuffer oldBuffer) {
+        return BridgeSupport.blockingGet(() ->
+                org.lwjgl.opengl.GL30.glMapBufferRange(target, offset, length, access, oldBuffer));
+    }
+
+    public static void glUniform1ui(int location, int v0) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glUniform1ui(location, v0));
+    }
+
+    public static void glUniform2ui(int location, int v0, int v1) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glUniform2ui(location, v0, v1));
+    }
+
+    public static void glUniform3ui(int location, int v0, int v1, int v2) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glUniform3ui(location, v0, v1, v2));
+    }
+
+    /** 无符号整型顶点属性（VBO 偏移形态）。 */
+    public static void glVertexAttribIPointer(int index, int size, int type, int stride, long offset) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL30.glVertexAttribIPointer(index, size, type, stride, offset));
     }
 }

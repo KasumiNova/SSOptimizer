@@ -37,9 +37,25 @@ public abstract class CombatStateBenchmarkMixin {
         }
     }
 
-    @Inject(method = "traverse", remap = false,
+    /**
+     * 帧尾回调（非分离模式锚点）：原版 {@code Display.update(Z)V} 调用点。
+     * require=0——分离模式下该调用点已被 ASM 重定向到 bridge owner，由
+     * {@link #ssoptimizer$onCombatFrameEndBridged} 命中。
+     */
+    @Inject(method = "traverse", remap = false, require = 0,
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/Display;update(Z)V"))
     private void ssoptimizer$onCombatFrameEnd(final CallbackInfoReturnable<String> cir) {
+        BenchmarkDriver.onCombatFrameEnd();
+    }
+
+    /**
+     * 帧尾回调（分离模式锚点）：调用点被 RenderThreadRedirectTransformer 改写为
+     * bridge {@code Display.update(Z)V} 后由本 handler 命中，两种模式语义一致。
+     */
+    @Inject(method = "traverse", remap = false, require = 0,
+            at = @At(value = "INVOKE",
+                    target = "Lgithub/kasuminova/ssoptimizer/bridge/opengl/Display;update(Z)V"))
+    private void ssoptimizer$onCombatFrameEndBridged(final CallbackInfoReturnable<String> cir) {
         BenchmarkDriver.onCombatFrameEnd();
     }
 }

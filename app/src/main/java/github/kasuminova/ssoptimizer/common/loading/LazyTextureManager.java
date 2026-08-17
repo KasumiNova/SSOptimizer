@@ -4,6 +4,7 @@ import com.fs.graphics.TextureLoader;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides;
 import github.kasuminova.ssoptimizer.common.render.atlas.ShipWeaponAtlas;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
@@ -281,8 +282,17 @@ public final class LazyTextureManager {
      * 正确性依赖 {@code glGetInteger(GL_TEXTURE_BINDING_2D)} 返回驱动侧真实状态，
      * 因此游戏内任何绕过本管理器的直接 glBindTexture 调用都不会使去重失效。
      * 仅对 {@code GL_TEXTURE_2D} 目标去重，其余目标保持无条件绑定。
+     * <p>
+     * 渲染线程分离模式下去重整体跳过：此时 {@code glGetInteger} 经 bridge 是一次
+     * 全管线 drain（还会计入 StallDetector 熔断窗口），而重复 bind 只是渲染线程
+     * 上一条廉价命令——去重的收益与成本倒挂，直接录制绑定命令。
      */
     private static void bindTextureDeduped(final int target, final int textureId) {
+        if (RenderThreadMode.isEnabled()) {
+            GL11.glBindTexture(target, textureId);
+            BIND_STATS_REAL.incrementAndGet();
+            return;
+        }
         if (target == GL11.GL_TEXTURE_2D
                 && GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D) == textureId) {
             BIND_STATS_DEDUPED.incrementAndGet();
@@ -1133,6 +1143,12 @@ public final class LazyTextureManager {
     private static int captureBoundTexture(final int target) {
         final int bindingParameter = bindingParameterForTarget(target);
         if (bindingParameter == Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        if (RenderThreadMode.isEnabled()) {
+            // 分离模式下查询当前绑定是一次全管线 drain；上传路径之后所有绘制都会
+            // 经 bindTextureDeduped 重新绑定正确纹理（分离模式下它无条件录制 bind），
+            // 捕获/恢复旧绑定没有语义价值，直接跳过（返回哨兵使 restore 空转）
             return Integer.MIN_VALUE;
         }
         try {

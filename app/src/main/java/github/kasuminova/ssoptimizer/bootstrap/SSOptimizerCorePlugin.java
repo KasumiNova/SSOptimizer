@@ -10,7 +10,10 @@ import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallback
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
+import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
 import github.kasuminova.ssoptimizer.common.logging.VanillaLogNoiseConfigurator;
+import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.modopt.dcr.DcrModOptimizer;
 import io.github.nanoforged.api.CoreModContext;
@@ -53,9 +56,31 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
     @Override
     public void onLoad(CoreModContext context) {
         VanillaLogNoiseConfigurator.configure();
+        installRenderThreadSeparation();
         registerAllProcessors(HybridWeaverTransformer::registerProcessor);
         LOGGER.info("[SSOptimizer] CoreMod loaded — Engine + AI + loading repair phase active, "
                 + HybridWeaverTransformer.getProcessorCount() + " processor registrations");
+    }
+
+    /**
+     * 渲染线程分离模式装配（{@code -Dssoptimizer.renderthread.enable=true} 时生效）。
+     * <p>
+     * 时序要求：onLoad 早于一切游戏类加载，此处创建 {@link RenderQueueImpl}（启动
+     * SSOptimizer-Render 线程）并安装进 bridge——此后游戏/模组类加载时经
+     * {@link RenderThreadRedirectTransformer} 改写到 bridge 的调用才有消费者，
+     * 主线程自始至终不持有 GL context（{@code Display.create} 经队列阻塞通道
+     * 延迟到渲染线程执行）。flag 关闭时什么都不做，bridge 保持未安装状态
+     * （bridge 方法被意外调用会以 ISE 快速失败）。
+     */
+    private static void installRenderThreadSeparation() {
+        if (!RenderThreadMode.isEnabled()) {
+            return;
+        }
+        RenderQueueImpl queue = new RenderQueueImpl();
+        // BridgeSupport 安装是全局共享的，任一 bridge 入口类的 install 等价
+        GL11.install(queue);
+        LOGGER.info("[SSOptimizer] 渲染线程分离模式已启用：RenderQueue 已安装，"
+                + "GL 调用将经 ASM 重定向录制到 " + RenderQueueImpl.RENDER_THREAD_NAME);
     }
 
     /**

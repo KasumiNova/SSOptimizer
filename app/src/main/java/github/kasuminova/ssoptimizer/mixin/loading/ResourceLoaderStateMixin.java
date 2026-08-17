@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.loading;
 
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -38,5 +39,19 @@ public abstract class ResourceLoaderStateMixin {
     @Inject(method = "queueResource", at = @At("RETURN"), remap = false)
     private void ssoptimizer$unlockQueue(CallbackInfo ci) {
         ssoptimizer$queueLock.unlock();
+    }
+
+    /**
+     * init 返回时标记资源加载期结束。
+     * <p>
+     * 注入动机：渲染线程分离模式下 RenderQueueImpl 的 StallDetector 熔断以此
+     * 为门控边界——加载期推进画面本身就在渲染帧，纹理/字体/shader 的成批
+     * 一次性分配产生的阻塞式 GL 调用属正常形态，不计入熔断窗口；加载结束后
+     * 的稳态逐帧 getter 回读才是熔断目标。非分离模式下该标记无人读取，
+     * 置位无副作用。
+     */
+    @Inject(method = "init", at = @At("RETURN"), remap = false)
+    private void ssoptimizer$markLoadingFinished(CallbackInfo ci) {
+        RenderThreadMode.markLoadingFinished();
     }
 }

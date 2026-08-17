@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.common.loading.script;
 
+import github.kasuminova.ssoptimizer.asm.render.RenderThreadRedirector;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.JavaSourceIClassLoader;
@@ -98,8 +100,11 @@ public final class JaninoScriptCompilerCoordinator {
         }
 
         final Map<String, byte[]> generated = invokeOriginalGenerate(loader, className);
-        cacheGeneratedBytecodes(loader, className, generated);
-        return generated;
+        // 分离模式：写入缓存前先完成 GL owner 重定向（缓存目录按模式分版，见
+        // cacheDirectory），保证 warmup 与主线程编译产物同样被改写
+        final Map<String, byte[]> redirected = RenderThreadRedirector.redirectAll(generated);
+        cacheGeneratedBytecodes(loader, className, redirected);
+        return redirected;
     }
 
     /**
@@ -549,11 +554,14 @@ public final class JaninoScriptCompilerCoordinator {
         }
 
         final Path modsDir = Path.of(System.getProperty("com.fs.starfarer.settings.paths.mods", "./mods"));
+        // 分离模式的缓存产物是经过 GL owner 重定向的字节码，与普通模式字节码语义不同，
+        // 必须分目录隔离，避免跨模式复用（普通模式读到改写产物会因 bridge 未安装而 ISE）
+        final String versionDir = RenderThreadMode.isEnabled() ? "v2-rt" : "v2";
         return modsDir.resolve("ssoptimizer")
                       .resolve("cache")
                       .resolve("scripts")
                       .resolve("janino")
-                      .resolve("v2")
+                      .resolve(versionDir)
                       .toAbsolutePath()
                       .normalize();
     }

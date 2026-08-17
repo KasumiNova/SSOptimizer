@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.common.render.spritebatch;
 import com.fs.graphics.util.GLListManager;
 import github.kasuminova.ssoptimizer.common.render.engine.DynamicVbo;
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -101,7 +102,17 @@ public final class SpriteBatchImpl implements SpriteBatch {
 
     private SpriteBatchImpl() {
         String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
-        this.enabled = !"false".equalsIgnoreCase(rawEnable.trim());
+        boolean enable = !"false".equalsIgnoreCase(rawEnable.trim());
+        if (enable && RenderThreadMode.isEnabled()) {
+            // 分离模式：收集端的 glGet 守卫（矩阵模式/stencil/scissor/FBO/viewport）
+            // 每个都是阻塞通道全管线 drain，每 sprite 数次 drain 会打穿管线；
+            // 直接禁用收集，sprite 走 SpriteRenderHelper Java 立即路径录制
+            // （v1 正确性优先，状态仿真接入后再恢复收集）。
+            LOGGER.info("[SSOptimizer] 渲染线程分离模式：禁用 SpriteBatch 收集"
+                    + "（收集端 glGet 守卫在分离模式下为全管线 drain）");
+            enable = false;
+        }
+        this.enabled = enable;
     }
 
     public static SpriteBatchImpl getInstance() {

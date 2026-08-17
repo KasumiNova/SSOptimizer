@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.common.render.queue;
 
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +23,7 @@ class RenderQueueImplTest {
         if (queue != null) {
             queue.shutdown();
         }
+        RenderThreadMode.resetLoadingFinishedForTesting();
     }
 
     private static void awaitLatch(CountDownLatch latch) {
@@ -176,9 +178,25 @@ class RenderQueueImplTest {
     @Test
     void blockingCallsCountedByStallDetector() {
         queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(60, 2));
+        RenderThreadMode.markLoadingFinished();
         queue.get(() -> null);
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
         assertTrue(String.valueOf(ex.getMessage()).contains("阻塞式 GL 调用"));
+    }
+
+    @Test
+    void loadingPhaseBlockingCallsAreExemptFromStallDetector() {
+        // 资源加载期（loadingFinished 标记置位前）的成批一次性分配不计入熔断窗口；
+        // 加载期结束后恢复计数并熔断
+        StallDetector detector = new StallDetector(60, 2);
+        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), detector);
+        queue.get(() -> null);
+        queue.get(() -> null);
+        assertEquals(0, detector.currentWindowStalls(), "加载期阻塞调用不得计入熔断窗口");
+        RenderThreadMode.markLoadingFinished();
+        queue.get(() -> null);
+        assertEquals(1, detector.currentWindowStalls(), "加载期结束后恢复计数");
+        assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
     }
 
     @Test

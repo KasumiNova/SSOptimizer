@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.render.shield;
 
 import com.fs.graphics.TextureObject;
 import com.fs.graphics.util.RenderStateUtils;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import org.lwjgl.opengl.GL11;
 
@@ -35,8 +36,23 @@ public final class ShieldRenderHelper {
 
     private static final Logger LOGGER = Logger.getLogger(ShieldRenderHelper.class.getName());
 
-    private static final boolean ENABLED =
-            Boolean.parseBoolean(System.getProperty(ENABLE_PROPERTY, "true"));
+    private static final boolean ENABLED = resolveEnabled();
+
+    /**
+     * 生效判定：用户开关优先；渲染线程分离模式下强制关闭——本路径每次护盾渲染都有
+     * {@code glGetInteger(GL_LIST_INDEX)} 守卫，分离模式下该 getter 是阻塞通道全管线
+     * drain，每帧每个护盾一次 drain 会打穿管线（原版护盾路径的 GL 调用会被重定向
+     * 录制，语义正确）。
+     */
+    private static boolean resolveEnabled() {
+        boolean enabled = Boolean.parseBoolean(System.getProperty(ENABLE_PROPERTY, "true"));
+        if (enabled && RenderThreadMode.isEnabled()) {
+            LOGGER.info("[SSOptimizer] 渲染线程分离模式：禁用护盾优化渲染"
+                    + "（GL_LIST_INDEX 守卫在分离模式下为全管线 drain）");
+            return false;
+        }
+        return enabled;
+    }
 
     private static final int GL_TEXTURE_2D           = 3553;
     private static final int GL_BLEND                = 3042;
