@@ -48,6 +48,8 @@ class BufferObjectBridgeTest {
         ids.flip();
 
         GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 1);
+        assertEquals(1, BridgeSupport.pointerState().arrayBufferBinding(),
+                "ARRAY_BUFFER 绑定需同步录制侧跟踪（offset 指针重放恢复用）");
         GL15.glBufferData(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 1024L, org.lwjgl.opengl.GL15.GL_DYNAMIC_DRAW);
         GL15.glBufferData(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, data, org.lwjgl.opengl.GL15.GL_STATIC_DRAW);
         GL15.glBufferData(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, floatData, org.lwjgl.opengl.GL15.GL_STATIC_DRAW);
@@ -65,8 +67,10 @@ class BufferObjectBridgeTest {
         assertEquals(9, GL15.glGenBuffers());
         IntBuffer out = ByteBuffer.allocateDirect(4).asIntBuffer();
         GL15.glGenBuffers(out);
-        assertEquals(1, queue.getCallCount);
-        assertEquals(1, queue.blockingTasks.size());
+        assertEquals(1, queue.uncountedGetCallCount, "glGenBuffers 归资源申请类，走不计数阻塞取值通道");
+        assertEquals(1, queue.uncountedBlockingTasks.size(), "IntBuffer 变体走不计数阻塞 wait 通道");
+        assertEquals(0, queue.getCallCount, "资源申请类不得触碰计数通道");
+        assertEquals(0, queue.blockingTasks.size());
     }
 
     @Test

@@ -48,6 +48,6 @@ public final class GL31 {
     /** 名称查询：阻塞通道取回（调用方立即消费返回值）。名称在录制时刻定稿。 */
     public static int glGetUniformBlockIndex(int program, CharSequence uniformBlockName) {
         String name = uniformBlockName.toString();
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL31.glGetUniformBlockIndex(program, name));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL31.glGetUniformBlockIndex(program, name));
     }
 }

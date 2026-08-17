@@ -21,9 +21,13 @@ import java.util.function.Function;
 final class FakeRenderQueue implements RenderQueue {
     final List<GlCommand> recorded = new ArrayList<>();
     final List<Runnable> blockingTasks = new ArrayList<>();
+    /** 资源申请类（不计数）阻塞 wait 通道的记录。 */
+    final List<Runnable> uncountedBlockingTasks = new ArrayList<>();
     int swapCount;
     int swapAndSyncCount;
     int getCallCount;
+    /** 资源申请类（不计数）阻塞取值通道的调用次数。 */
+    int uncountedGetCallCount;
     /** get 通道的桩：入参是（不会被执行的）真实 GL 取值 callable，出参是桩返回值。 */
     Function<Callable<?>, Object> getHandler = callable -> {
         throw new UnsupportedOperationException("fake queue 不支持 get");
@@ -61,6 +65,18 @@ final class FakeRenderQueue implements RenderQueue {
     public void wait(Runnable task) {
         // 只记录不执行：执行体会触碰真实 Display（无显示环境）
         blockingTasks.add(task);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getUncounted(Callable<T> getter) {
+        uncountedGetCallCount++;
+        return (T) getHandler.apply(getter);
+    }
+
+    @Override
+    public void waitUncounted(Runnable task) {
+        uncountedBlockingTasks.add(task);
     }
 
     @Override

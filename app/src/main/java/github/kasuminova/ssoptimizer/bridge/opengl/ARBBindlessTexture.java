@@ -32,23 +32,23 @@ public final class ARBBindlessTexture {
 
     /** 句柄获取：阻塞通道取回（调用方立即消费返回值）。 */
     public static long glGetTextureHandleARB(int texture) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.ARBBindlessTexture.glGetTextureHandleARB(texture));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBBindlessTexture.glGetTextureHandleARB(texture));
     }
 
     /** 句柄获取：阻塞通道取回。 */
     public static long glGetImageHandleARB(int texture, int level, boolean layered, int layer, int format) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.ARBBindlessTexture
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBBindlessTexture
                 .glGetImageHandleARB(texture, level, layered, layer, format));
     }
 
     /** 驻留查询：阻塞通道取回。 */
     public static boolean glIsTextureHandleResidentARB(long handle) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.ARBBindlessTexture.glIsTextureHandleResidentARB(handle));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBBindlessTexture.glIsTextureHandleResidentARB(handle));
     }
 
     /** 驻留查询：阻塞通道取回。 */
     public static boolean glIsImageHandleResidentARB(long handle) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.ARBBindlessTexture.glIsImageHandleResidentARB(handle));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBBindlessTexture.glIsImageHandleResidentARB(handle));
     }
 
     public static void glMakeTextureHandleResidentARB(long handle) {

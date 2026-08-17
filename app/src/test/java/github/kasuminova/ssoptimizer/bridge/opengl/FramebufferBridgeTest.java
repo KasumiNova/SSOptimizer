@@ -36,7 +36,8 @@ class FramebufferBridgeTest {
         queue.getHandler = callable -> org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_COMPLETE_EXT;
         assertEquals(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_COMPLETE_EXT,
                 EXTFramebufferObject.glCheckFramebufferStatusEXT(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT));
-        assertEquals(3, queue.getCallCount);
+        assertEquals(3, queue.uncountedGetCallCount, "gen/完整性校验归资源申请类不计数");
+        assertEquals(0, queue.getCallCount, "资源申请类不得触碰计数通道");
 
         EXTFramebufferObject.glBindFramebufferEXT(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT, 3);
         EXTFramebufferObject.glFramebufferTexture2DEXT(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT,
@@ -62,7 +63,8 @@ class FramebufferBridgeTest {
         queue.getHandler = callable -> org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_COMPLETE;
         assertEquals(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_COMPLETE,
                 ARBFramebufferObject.glCheckFramebufferStatus(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER));
-        assertEquals(3, queue.getCallCount);
+        assertEquals(3, queue.uncountedGetCallCount, "gen/完整性校验归资源申请类不计数");
+        assertEquals(0, queue.getCallCount, "资源申请类不得触碰计数通道");
 
         ARBFramebufferObject.glBindFramebuffer(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER, 4);
         ARBFramebufferObject.glFramebufferTexture2D(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER,
@@ -81,7 +83,8 @@ class FramebufferBridgeTest {
         queue.getHandler = callable -> org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_COMPLETE;
         assertEquals(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_COMPLETE,
                 GL30.glCheckFramebufferStatus(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER));
-        assertEquals(3, queue.getCallCount);
+        assertEquals(3, queue.uncountedGetCallCount, "gen/完整性校验归资源申请类不计数");
+        assertEquals(0, queue.getCallCount, "资源申请类不得触碰计数通道");
 
         GL30.glBindFramebuffer(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER, 6);
         GL30.glFramebufferRenderbuffer(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER,
@@ -90,13 +93,33 @@ class FramebufferBridgeTest {
         GL30.glDeleteRenderbuffers(6);
         assertEquals(4, queue.recorded.size());
 
-        // IntBuffer 变体：gen 走阻塞 wait、delete 走快照命令
+        // IntBuffer 变体：gen 走不计数阻塞 wait、delete 走快照命令
         IntBuffer ids = ByteBuffer.allocateDirect(4).asIntBuffer();
         ids.put(6);
         ids.flip();
         GL30.glGenFramebuffers(ByteBuffer.allocateDirect(4).asIntBuffer());
         GL30.glDeleteFramebuffers(ids);
-        assertEquals(1, queue.blockingTasks.size());
+        assertEquals(1, queue.uncountedBlockingTasks.size());
+        assertEquals(0, queue.blockingTasks.size());
         assertEquals(5, queue.recorded.size());
+    }
+
+    @Test
+    void framebufferBindingQueryShortCircuitsToRecordSideTracking() {
+        assertEquals(0, GL11.glGetInteger(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT));
+        EXTFramebufferObject.glBindFramebufferEXT(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT, 11);
+        assertEquals(11, GL11.glGetInteger(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT),
+                "FBO 绑定查询短路到录制侧跟踪值，免阻塞往返");
+        GL30.glBindFramebuffer(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER, 0);
+        assertEquals(0, GL11.glGetInteger(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT));
+        ARBFramebufferObject.glBindFramebuffer(org.lwjgl.opengl.GL30.GL_FRAMEBUFFER, 7);
+        assertEquals(7, GL11.glGetInteger(org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT),
+                "三族 FBO 绑定共享同一跟踪值");
+        assertEquals(0, queue.getCallCount, "短路路径不得触发阻塞通道");
+
+        // 其他 pname 仍走阻塞通道
+        queue.getHandler = callable -> 99;
+        assertEquals(99, GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D));
+        assertEquals(1, queue.getCallCount);
     }
 }

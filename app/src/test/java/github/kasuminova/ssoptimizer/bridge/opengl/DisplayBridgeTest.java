@@ -74,11 +74,12 @@ class DisplayBridgeTest {
         queue.getHandler = callable -> 0;
         Display.setIcon(new java.nio.ByteBuffer[0]);
         assertEquals(4, queue.blockingTasks.size());
-        assertEquals(1, queue.getCallCount, "setIcon 走阻塞取值通道");
+        assertEquals(1, queue.uncountedGetCallCount, "setIcon 归资源申请类，走不计数阻塞取值通道");
+        assertEquals(0, queue.getCallCount);
         queue.getHandler = callable -> new org.lwjgl.opengl.DisplayMode[0];
         Display.getAvailableDisplayModes();
         queue.getHandler = callable -> null;
         Display.getDesktopDisplayMode();
-        assertEquals(3, queue.getCallCount);
+        assertEquals(2, queue.getCallCount, "显示模式查询属回读类，保持计数");
     }
 }

@@ -238,6 +238,6 @@ public final class Display {
      * @return 真实 {@code Display.setIcon} 的返回值
      */
     public static int setIcon(ByteBuffer[] icons) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.Display.setIcon(icons));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.Display.setIcon(icons));
     }
 }

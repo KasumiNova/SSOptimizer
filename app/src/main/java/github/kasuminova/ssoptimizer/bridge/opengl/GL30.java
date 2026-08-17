@@ -33,17 +33,21 @@ public final class GL30 {
     }
 
     public static void glBindFramebuffer(int target, int framebuffer) {
+        if (target == org.lwjgl.opengl.GL30.GL_FRAMEBUFFER) {
+            // 同 EXTFramebufferObject.glBindFramebufferEXT：录制侧 FRAMEBUFFER 绑定跟踪
+            BridgeSupport.setFramebufferBinding(framebuffer);
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glBindFramebuffer(target, framebuffer));
     }
 
     /** 资源分配：阻塞通道取回真实 FBO id。 */
     public static int glGenFramebuffers() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.GL30::glGenFramebuffers);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL30::glGenFramebuffers);
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenFramebuffers(IntBuffer framebuffers) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL30.glGenFramebuffers(framebuffers));
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL30.glGenFramebuffers(framebuffers));
     }
 
     public static void glDeleteFramebuffers(int framebuffer) {
@@ -57,7 +61,7 @@ public final class GL30 {
 
     /** 状态查询：阻塞通道取回（FBO 完整性校验语义强依赖执行完成）。 */
     public static int glCheckFramebufferStatus(int target) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL30.glCheckFramebufferStatus(target));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL30.glCheckFramebufferStatus(target));
     }
 
     public static void glFramebufferTexture2D(int target, int attachment, int textarget, int texture, int level) {
@@ -80,12 +84,12 @@ public final class GL30 {
 
     /** 资源分配：阻塞通道取回真实 renderbuffer id。 */
     public static int glGenRenderbuffers() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.GL30::glGenRenderbuffers);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL30::glGenRenderbuffers);
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenRenderbuffers(IntBuffer renderbuffers) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL30.glGenRenderbuffers(renderbuffers));
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL30.glGenRenderbuffers(renderbuffers));
     }
 
     public static void glDeleteRenderbuffers(int renderbuffer) {
@@ -119,7 +123,7 @@ public final class GL30 {
 
     /** 资源分配：阻塞通道取回真实 VAO id。 */
     public static int glGenVertexArrays() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.GL30::glGenVertexArrays);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL30::glGenVertexArrays);
     }
 
     public static void glBindVertexArray(int array) {

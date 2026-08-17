@@ -22,6 +22,16 @@ final class ClientPointerState {
     private PointerSnapshot texCoord;
     private PointerSnapshot normal;
     private PointerSnapshot interleaved;
+    /** 录制侧跟踪的 GL_ARRAY_BUFFER 绑定（offset 指针重放时恢复用，见 PointerSnapshotGroup.apply）。 */
+    private int arrayBufferBinding;
+
+    int arrayBufferBinding() {
+        return arrayBufferBinding;
+    }
+
+    void setArrayBufferBinding(int buffer) {
+        this.arrayBufferBinding = buffer;
+    }
 
     void setVertex(PointerSnapshot snapshot) {
         releaseHeld(vertex);

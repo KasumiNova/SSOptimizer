@@ -447,10 +447,11 @@ public final class GL11 {
                 size, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移标记。 */
+    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glVertexPointer(int size, int type, int stride, long offset) {
         BridgeSupport.pointerState().setVertex(
-                PointerSnapshot.ofOffset(PointerSnapshot.Kind.VERTEX, size, type, stride, offset));
+                PointerSnapshot.ofOffset(PointerSnapshot.Kind.VERTEX, size, type, stride, offset,
+                        BridgeSupport.pointerState().arrayBufferBinding()));
     }
 
     public static void glColorPointer(int size, int stride, DoubleBuffer buffer) {
@@ -474,10 +475,11 @@ public final class GL11 {
                 size, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移标记。 */
+    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glColorPointer(int size, int type, int stride, long offset) {
         BridgeSupport.pointerState().setColor(
-                PointerSnapshot.ofOffset(PointerSnapshot.Kind.COLOR, size, type, stride, offset));
+                PointerSnapshot.ofOffset(PointerSnapshot.Kind.COLOR, size, type, stride, offset,
+                        BridgeSupport.pointerState().arrayBufferBinding()));
     }
 
     public static void glTexCoordPointer(int size, int stride, DoubleBuffer buffer) {
@@ -505,10 +507,11 @@ public final class GL11 {
                 size, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移标记。 */
+    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glTexCoordPointer(int size, int type, int stride, long offset) {
         BridgeSupport.pointerState().setTexCoord(
-                PointerSnapshot.ofOffset(PointerSnapshot.Kind.TEX_COORD, size, type, stride, offset));
+                PointerSnapshot.ofOffset(PointerSnapshot.Kind.TEX_COORD, size, type, stride, offset,
+                        BridgeSupport.pointerState().arrayBufferBinding()));
     }
 
     public static void glNormalPointer(int stride, DoubleBuffer buffer) {
@@ -536,10 +539,11 @@ public final class GL11 {
                 0, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移标记。 */
+    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glNormalPointer(int type, int stride, long offset) {
         BridgeSupport.pointerState().setNormal(
-                PointerSnapshot.ofOffset(PointerSnapshot.Kind.NORMAL, 0, type, stride, offset));
+                PointerSnapshot.ofOffset(PointerSnapshot.Kind.NORMAL, 0, type, stride, offset,
+                        BridgeSupport.pointerState().arrayBufferBinding()));
     }
 
     /** interleaved 使已记录的离散 pointer 快照失效（简化语义见 ClientPointerState）。 */
@@ -632,12 +636,12 @@ public final class GL11 {
 
     /** 资源分配：阻塞通道取回真实纹理 id（预生成 stash 为后续演进点）。 */
     public static int glGenTextures() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.GL11::glGenTextures);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL11::glGenTextures);
     }
 
     /** 渲染线程直接把 id 写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenTextures(IntBuffer textures) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGenTextures(textures));
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL11.glGenTextures(textures));
     }
 
     public static void glDeleteTextures(int texture) {
@@ -843,7 +847,7 @@ public final class GL11 {
 
     /** 资源分配：阻塞通道取回真实 list 基址。 */
     public static int glGenLists(int range) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGenLists(range));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL11.glGenLists(range));
     }
 
     /**
@@ -871,6 +875,13 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static int glGetInteger(int pname) {
+        if (pname == org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT) {
+            // 录制侧跟踪值直接返回：FBO 保存/恢复惯用法（雷达合成缓存 bakeCell 等）
+            // 每帧多次调用，阻塞往返会把管线打回串行。游戏与模组的 FBO 绑定全部
+            // 经 bridge 镜像（EXTFramebufferObject/GL30/ARBFramebufferObject），
+            // 跟踪值与命令流一致（跨线程 FBO 使用存在记录序近似，见 BridgeSupport）
+            return BridgeSupport.framebufferBinding();
+        }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
     }
 
@@ -934,5 +945,18 @@ public final class GL11 {
 
     public static void glReadPixels(int x, int y, int width, int height, int format, int type, ShortBuffer pixels) {
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glReadPixels(x, y, width, height, format, type, pixels));
+    }
+
+    public static void glVertex2i(int x, int y) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glVertex2i(x, y));
+    }
+
+    public static void glColor4b(byte red, byte green, byte blue, byte alpha) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor4b(red, green, blue, alpha));
+    }
+
+    /** 单缓冲 draw buffer 选择（GL20.glDrawBuffers 的单目标形态）。 */
+    public static void glDrawBuffer(int mode) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDrawBuffer(mode));
     }
 }

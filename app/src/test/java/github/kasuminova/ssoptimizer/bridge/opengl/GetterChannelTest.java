@@ -49,6 +49,8 @@ class GetterChannelTest {
         github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode.markLoadingFinished();
         queue.get(() -> 1);
         assertEquals(1, detector.currentWindowStalls(), "每次阻塞调用计入 StallDetector");
+        // 熔断语义为 stall 帧密度：推进一帧后的第二次阻塞调用才达到阈值
+        queue.swapFramesAndSync();
         assertThrows(IllegalStateException.class, () -> queue.get(() -> 2),
                 "达到阈值的阻塞调用必须被熔断");
     }

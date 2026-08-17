@@ -150,6 +150,23 @@ class GL11PointerBridgeTest {
     }
 
     @Test
+    void vboOffsetPointerCapturesArrayBufferBindingAtRecordTime() {
+        // LazyFont 序列：绑定 VBO → 设 offset pointer → 解绑 → draw；
+        // 快照必须携带 pointer 调用时刻的绑定，供重放时恢复（见 PointerSnapshotGroup.apply）
+        GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 42);
+        GL11.glVertexPointer(2, org.lwjgl.opengl.GL11.GL_FLOAT, 0, 16L);
+        PointerSnapshotGroup group = BridgeSupport.pointerState().capture();
+        assertEquals(42, group.get(0).vboId, "offset 指针必须快照录制时刻的 ARRAY_BUFFER 绑定");
+        group.release();
+
+        GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 0);
+        GL11.glVertexPointer(2, org.lwjgl.opengl.GL11.GL_FLOAT, 0, 32L);
+        PointerSnapshotGroup g2 = BridgeSupport.pointerState().capture();
+        assertEquals(0, g2.get(0).vboId, "解绑后设置的指针捕获新绑定 0");
+        g2.release();
+    }
+
+    @Test
     void drawElementsSnapshotsIndicesAtRecordTime() {
         java.nio.IntBuffer indices = java.nio.ByteBuffer.allocateDirect(3 * Integer.BYTES).asIntBuffer();
         indices.put(new int[]{0, 1, 2});

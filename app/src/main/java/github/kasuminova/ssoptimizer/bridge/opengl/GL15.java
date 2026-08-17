@@ -35,17 +35,30 @@ public final class GL15 {
     }
 
     public static void glBindBuffer(int target, int buffer) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glBindBuffer(target, buffer));
+        if (target == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
+            // 录制侧跟踪 ARRAY_BUFFER 绑定：offset 形式的 client pointer 调用
+            // 在真实 GL 中会捕获调用时刻的绑定（LazyFont 等「绑定→设 pointer→解绑→
+            // draw」序列依赖该语义），bridge 把 pointer 重放推迟到 draw 时必须
+            // 显式恢复该绑定（见 PointerSnapshotGroup.apply）
+            BridgeSupport.pointerState().setArrayBufferBinding(buffer);
+        }
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL15.glBindBuffer(target, buffer);
+            if (target == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
+                // 渲染线程簿记：pointer 快照重放据此恢复录制时刻的绑定
+                BridgeSupport.executedArrayBufferBinding(buffer);
+            }
+        });
     }
 
     /** 资源分配：阻塞通道取回真实 buffer id。 */
     public static int glGenBuffers() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.GL15::glGenBuffers);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL15::glGenBuffers);
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenBuffers(IntBuffer buffers) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL15.glGenBuffers(buffers));
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL15.glGenBuffers(buffers));
     }
 
     /** 仅指定容量的分配形式，无数据参数。 */

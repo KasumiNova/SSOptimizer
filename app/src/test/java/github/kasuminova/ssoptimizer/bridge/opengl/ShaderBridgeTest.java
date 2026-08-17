@@ -65,7 +65,8 @@ class ShaderBridgeTest {
         queue.getHandler = callable -> "log";
         assertEquals("log", GL20.glGetShaderInfoLog(2, 1024));
         assertEquals("log", GL20.glGetProgramInfoLog(1, 1024));
-        assertEquals(7, queue.getCallCount);
+        assertEquals(5, queue.uncountedGetCallCount, "创建/名称查询/InfoLog 归资源申请类不计数");
+        assertEquals(2, queue.getCallCount, "编译/链接状态轮询（glGetShaderi/glGetProgrami）保持计数");
         assertEquals(0, queue.recorded.size());
     }
 }

@@ -28,6 +28,14 @@ final class BridgeSupport {
     private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
     private static final ThreadLocal<ClientPointerState> POINTER_STATES =
             ThreadLocal.withInitial(ClientPointerState::new);
+    /** 录制侧逐线程的 FRAMEBUFFER 绑定跟踪（供 bridge 的 getter 短路，免阻塞往返）。 */
+    private static final ThreadLocal<int[]> FRAMEBUFFER_BINDING = ThreadLocal.withInitial(() -> new int[1]);
+    /**
+     * 渲染线程侧簿记：命令流执行到当前位置的 GL_ARRAY_BUFFER 真实绑定。
+     * 只由 bind 命令执行体与 pointer 重放（{@link PointerSnapshotGroup#apply()}）
+     * 在渲染线程读写。
+     */
+    private static volatile int executedArrayBufferBinding;
 
     private static volatile RenderQueue queue;
 
@@ -47,6 +55,8 @@ final class BridgeSupport {
     static void uninstall() {
         queue = null;
         POINTER_STATES.remove();
+        FRAMEBUFFER_BINDING.remove();
+        executedArrayBufferBinding = 0;
     }
 
     static RenderQueue queue() {
@@ -88,6 +98,27 @@ final class BridgeSupport {
             q.swapFrames();
         }
         q.wait(task);
+    }
+
+    /**
+     * 资源申请类阻塞取值（glGenBuffers/glCreateProgram/glGetUniformLocation 等），
+     * 不计入 StallDetector；顺序语义同 {@link #blockingGet}（先提交当前帧再取值）。
+     */
+    static <T> T blockingGetResource(Callable<T> getter) {
+        RenderQueue q = queue();
+        if (!q.isRenderThread()) {
+            q.swapFrames();
+        }
+        return q.getUncounted(getter);
+    }
+
+    /** {@link #blockingGetResource(Callable)} 的无返回值形式。 */
+    static void blockingWaitResource(Runnable task) {
+        RenderQueue q = queue();
+        if (!q.isRenderThread()) {
+            q.swapFrames();
+        }
+        q.waitUncounted(task);
     }
 
     /** 声明 {@link LWJGLException} 的阻塞任务。 */
@@ -141,6 +172,26 @@ final class BridgeSupport {
      */
     static ClientPointerState pointerState() {
         return POINTER_STATES.get();
+    }
+
+    /** 录制侧（当前线程）跟踪的 FRAMEBUFFER 绑定。 */
+    static int framebufferBinding() {
+        return FRAMEBUFFER_BINDING.get()[0];
+    }
+
+    /** 录制侧（当前线程）更新 FRAMEBUFFER 绑定跟踪（bridge 的 bindFramebuffer 调用点维护）。 */
+    static void setFramebufferBinding(int framebuffer) {
+        FRAMEBUFFER_BINDING.get()[0] = framebuffer;
+    }
+
+    /** 渲染线程簿记：命令流当前位置的 GL_ARRAY_BUFFER 绑定。 */
+    static int executedArrayBufferBinding() {
+        return executedArrayBufferBinding;
+    }
+
+    /** 渲染线程簿记更新（bind 命令执行体调用）。 */
+    static void executedArrayBufferBinding(int buffer) {
+        executedArrayBufferBinding = buffer;
     }
 
     /** 缓冲快照池（包内与单测可见）。 */

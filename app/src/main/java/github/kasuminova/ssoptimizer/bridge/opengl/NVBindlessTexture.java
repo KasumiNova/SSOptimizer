@@ -32,23 +32,23 @@ public final class NVBindlessTexture {
 
     /** 句柄获取：阻塞通道取回。 */
     public static long glGetTextureHandleNV(int texture) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.NVBindlessTexture.glGetTextureHandleNV(texture));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.NVBindlessTexture.glGetTextureHandleNV(texture));
     }
 
     /** 句柄获取：阻塞通道取回。 */
     public static long glGetImageHandleNV(int texture, int level, boolean layered, int layer, int format) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.NVBindlessTexture
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.NVBindlessTexture
                 .glGetImageHandleNV(texture, level, layered, layer, format));
     }
 
     /** 驻留查询：阻塞通道取回。 */
     public static boolean glIsTextureHandleResidentNV(long handle) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.NVBindlessTexture.glIsTextureHandleResidentNV(handle));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.NVBindlessTexture.glIsTextureHandleResidentNV(handle));
     }
 
     /** 驻留查询：阻塞通道取回。 */
     public static boolean glIsImageHandleResidentNV(long handle) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.NVBindlessTexture.glIsImageHandleResidentNV(handle));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.NVBindlessTexture.glIsImageHandleResidentNV(handle));
     }
 
     public static void glMakeTextureHandleResidentNV(long handle) {

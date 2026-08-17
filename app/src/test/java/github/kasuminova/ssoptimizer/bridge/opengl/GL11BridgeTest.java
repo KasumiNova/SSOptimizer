@@ -161,8 +161,9 @@ class GL11BridgeTest {
     @Test
     void displayListCallsAreRecordedExceptBlockingGen() {
         queue.getHandler = callable -> 7;
-        assertEquals(7, GL11.glGenLists(1), "glGenLists 走阻塞通道取回");
-        assertEquals(1, queue.getCallCount);
+        assertEquals(7, GL11.glGenLists(1), "glGenLists 走不计数阻塞通道取回");
+        assertEquals(1, queue.uncountedGetCallCount);
+        assertEquals(0, queue.getCallCount, "资源申请类不得触碰计数通道");
         GL11.glNewList(7, org.lwjgl.opengl.GL11.GL_COMPILE);
         GL11.glEndList();
         GL11.glCallList(7);

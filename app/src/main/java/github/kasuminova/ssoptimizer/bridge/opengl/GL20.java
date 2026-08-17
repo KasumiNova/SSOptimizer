@@ -15,9 +15,10 @@ import java.nio.IntBuffer;
  *       固化为不可变 {@link String}（CharSequence 可能是可变的 StringBuilder，
  *       与 buffer 快照同一防护思路）；</li>
  *   <li>创建/编译/链接期的回读（glCreateShader/glCreateProgram/
- *       glGetUniformLocation/glGetShaderi/glGetProgrami/InfoLog）走阻塞通道——
- *       这些是加载期一次性调用，drain 可接受；运行期命令（glUseProgram/
- *       glUniform*）按普通命令录制；</li>
+ *       glGetUniformLocation/glGetAttribLocation/InfoLog/glGetAttachedShaders）
+ *       走不计数阻塞通道——这些是资源申请类一次性调用，不计入 StallDetector；
+ *       编译/链接状态轮询（glGetShaderi/glGetProgrami/glIsProgram）属回读类，
+ *       保持计数；运行期命令（glUseProgram/glUniform*）按普通命令录制；</li>
  *   <li>GL20 其余面（顶点属性/矩阵 uniform/多重 draw buffer 等）本阶段不做。</li>
  * </ul>
  */
@@ -41,7 +42,7 @@ public final class GL20 {
 
     /** 资源分配：阻塞通道取回真实 shader id。 */
     public static int glCreateShader(int type) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glCreateShader(type));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glCreateShader(type));
     }
 
     /** 源码录制时刻固化为 String，防止调用方随后改写 CharSequence。 */
@@ -101,27 +102,27 @@ public final class GL20 {
     /** uniform 名录制时刻固化为 String；阻塞通道取回 location。 */
     public static int glGetUniformLocation(int program, CharSequence name) {
         String snapshot = name.toString();
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetUniformLocation(program, snapshot));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetUniformLocation(program, snapshot));
     }
 
-    /** 编译期校验回读：阻塞通道取回。 */
+    /** 编译期校验回读：阻塞通道取回（状态轮询属回读类，保持计数）。 */
     public static int glGetShaderi(int shader, int pname) {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetShaderi(shader, pname));
     }
 
-    /** 链接期校验回读：阻塞通道取回。 */
+    /** 链接期校验回读：阻塞通道取回（状态轮询属回读类，保持计数）。 */
     public static int glGetProgrami(int program, int pname) {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetProgrami(program, pname));
     }
 
-    /** 编译日志回读：阻塞通道取回。 */
+    /** 编译日志回读：阻塞通道取回（编译期一次性，归资源申请类不计数）。 */
     public static String glGetShaderInfoLog(int shader, int maxLength) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetShaderInfoLog(shader, maxLength));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetShaderInfoLog(shader, maxLength));
     }
 
-    /** 链接日志回读：阻塞通道取回。 */
+    /** 链接日志回读：阻塞通道取回（链接期一次性，归资源申请类不计数）。 */
     public static String glGetProgramInfoLog(int program, int maxLength) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetProgramInfoLog(program, maxLength));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetProgramInfoLog(program, maxLength));
     }
 
     public static void glDeleteShader(int shader) {
@@ -130,7 +131,7 @@ public final class GL20 {
 
     /** 资源分配：阻塞通道取回真实 program id。 */
     public static int glCreateProgram() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.GL20::glCreateProgram);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL20::glCreateProgram);
     }
 
     public static void glDeleteProgram(int program) {
@@ -198,9 +199,32 @@ public final class GL20 {
                 org.lwjgl.opengl.GL20.glDrawBuffers(snapshot.asIntBuffer()));
     }
 
-    /** 链接信息回读（编译期一次性）：阻塞通道。 */
+    /** 链接信息回读（编译期一次性）：不计数阻塞通道。 */
     public static void glGetAttachedShaders(int program, IntBuffer count, IntBuffer shaders) {
-        BridgeSupport.blockingWait(() ->
+        BridgeSupport.blockingWaitResource(() ->
                 org.lwjgl.opengl.GL20.glGetAttachedShaders(program, count, shaders));
+    }
+
+    /** 属性名绑定：名称在录制时刻定稿（CharSequence 可能可变）。 */
+    public static void glBindAttribLocation(int program, int index, CharSequence name) {
+        String nameStr = name.toString();
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glBindAttribLocation(program, index, nameStr));
+    }
+
+    /** 名称查询：阻塞通道取回（调用方立即消费返回值）。名称在录制时刻定稿。 */
+    public static int glGetAttribLocation(int program, CharSequence name) {
+        String nameStr = name.toString();
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetAttribLocation(program, nameStr));
+    }
+
+    /** 状态查询：阻塞通道取回。 */
+    public static boolean glIsProgram(int program) {
+        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glIsProgram(program));
+    }
+
+    /** 矩阵 uniform：buffer 快照后入队。 */
+    public static void glUniformMatrix3(int location, boolean transpose, FloatBuffer matrices) {
+        BridgeSupport.enqueueSnapshot(matrices, snapshot ->
+                org.lwjgl.opengl.GL20.glUniformMatrix3(location, transpose, snapshot.asFloatBuffer()));
     }
 }

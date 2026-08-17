@@ -33,9 +33,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * 改写规则：
  * <ul>
- *   <li>owner 改写表：{@code org/lwjgl/opengl/{GL11,GL13,GL14,GL15,GL20,GL30,GL32,
- *       ARBVertexBufferObject,EXTFramebufferObject,ARBFramebufferObject,Display,GLContext,
- *       Drawable,SharedDrawable,GLSync}} → bridge/opengl 同名类；</li>
+ *   <li>owner 改写表：{@code org/lwjgl/opengl/{GL11~GL15,GL20,GL30~GL32,
+ *       GL40~GL44,ARBVertexBufferObject,EXTFramebufferObject,ARBFramebufferObject,
+ *       ARBTextureStorage,ARBBindlessTexture,NVBindlessTexture,Display,GLContext,
+ *       Drawable,SharedDrawable,GLSync,Util}} → bridge/opengl 同名类；</li>
  *   <li>只改写 bridge 实际镜像了的方法（镜像表在首次使用时解析 bridge 类自身字节码
  *       构建，方法名+描述符匹配）；未镜像的调用保持原 owner 并按调用签名首次
  *       记 warn 日志——未镜像调用在分离模式下会在无 context 的调用线程执行真实 GL，
@@ -77,9 +78,11 @@ public final class RenderThreadRedirector {
 
     /** owner 改写表覆盖的类名（org/lwjgl/opengl 下的简单名，与 bridge 类一一同名）。 */
     private static final String[] MIRRORED_CLASS_NAMES = {
-            "GL11", "GL13", "GL14", "GL15", "GL20", "GL30", "GL32",
+            "GL11", "GL12", "GL13", "GL14", "GL15", "GL20", "GL30", "GL31", "GL32",
+            "GL40", "GL41", "GL42", "GL43", "GL44",
             "ARBVertexBufferObject", "EXTFramebufferObject", "ARBFramebufferObject",
-            "Display", "GLContext", "Drawable", "SharedDrawable", "GLSync"
+            "ARBTextureStorage", "ARBBindlessTexture", "NVBindlessTexture",
+            "Display", "GLContext", "Drawable", "SharedDrawable", "GLSync", "Util"
     };
 
     /** owner 改写表：org/lwjgl/opengl/X → bridge/opengl/X。 */

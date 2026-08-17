@@ -15,10 +15,33 @@ final class PointerSnapshotGroup {
         this.snapshots = snapshots;
     }
 
-    /** 全量重放本组 pointer 设置（真实 GL 调用）。 */
+    /**
+     * 全量重放本组 pointer 设置（真实 GL 调用）。
+     * <p>
+     * ARRAY_BUFFER 绑定编排：真实 GL 在 pointer 调用时刻捕获绑定（VBO 偏移形式要求
+     * 绑定点有效，buffer 形式要求无绑定），而本 bridge 把 pointer 重放推迟到 draw
+     * 执行——模组在设完 pointer 后改动绑定再 draw 是合法序列（LazyFont：绑定 VBO →
+     * 设 offset pointer → 解绑 → draw），重放时必须逐快照恢复录制时刻的绑定。
+     * 「命令流执行到这儿的真实绑定」从 {@link BridgeSupport#executedArrayBufferBinding()}
+     * 读取（渲染线程侧簿记，bind 命令执行时同步），避免每次 draw 一次 glGetInteger
+     * 往返；重放结束后恢复到该值，保证后续命令看到的状态与未分离时一致。
+     */
     void apply() {
+        final int streamBinding = BridgeSupport.executedArrayBufferBinding();
+        int current = streamBinding;
         for (PointerSnapshot snapshot : snapshots) {
+            // buffer 形式（含 INTERLEAVED）要求未绑定；偏移形式要求绑定录制时刻的 VBO
+            final int required = snapshot.data == null ? snapshot.vboId : 0;
+            if (current != required) {
+                org.lwjgl.opengl.GL15.glBindBuffer(
+                        org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, required);
+                current = required;
+            }
             snapshot.apply();
+        }
+        if (current != streamBinding) {
+            org.lwjgl.opengl.GL15.glBindBuffer(
+                    org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, streamBinding);
         }
     }
 

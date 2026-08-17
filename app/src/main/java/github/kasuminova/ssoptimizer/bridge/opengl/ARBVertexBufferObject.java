@@ -34,17 +34,26 @@ public final class ARBVertexBufferObject {
     }
 
     public static void glBindBufferARB(int target, int buffer) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBVertexBufferObject.glBindBufferARB(target, buffer));
+        if (target == org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB) {
+            // 同 GL15.glBindBuffer：录制侧跟踪 ARRAY_BUFFER 绑定供 offset 指针重放恢复
+            BridgeSupport.pointerState().setArrayBufferBinding(buffer);
+        }
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.ARBVertexBufferObject.glBindBufferARB(target, buffer);
+            if (target == org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB) {
+                BridgeSupport.executedArrayBufferBinding(buffer);
+            }
+        });
     }
 
     /** 资源分配：阻塞通道取回真实 buffer id。 */
     public static int glGenBuffersARB() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.ARBVertexBufferObject::glGenBuffersARB);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.ARBVertexBufferObject::glGenBuffersARB);
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenBuffersARB(IntBuffer buffers) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.ARBVertexBufferObject.glGenBuffersARB(buffers));
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.ARBVertexBufferObject.glGenBuffersARB(buffers));
     }
 
     /** 仅指定容量的分配形式，无数据参数。 */

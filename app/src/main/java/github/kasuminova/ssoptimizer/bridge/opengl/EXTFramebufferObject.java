@@ -35,17 +35,23 @@ public final class EXTFramebufferObject {
     }
 
     public static void glBindFramebufferEXT(int target, int framebuffer) {
+        if (target == org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT) {
+            // 录制侧跟踪 FRAMEBUFFER 绑定：bridge GL11.glGetInteger 的
+            // GL_FRAMEBUFFER_BINDING_EXT 短路读取该值，免阻塞往返（雷达合成缓存等
+            // 保存/恢复路径每帧使用）
+            BridgeSupport.setFramebufferBinding(framebuffer);
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.EXTFramebufferObject.glBindFramebufferEXT(target, framebuffer));
     }
 
     /** 资源分配：阻塞通道取回真实 FBO id。 */
     public static int glGenFramebuffersEXT() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.EXTFramebufferObject::glGenFramebuffersEXT);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.EXTFramebufferObject::glGenFramebuffersEXT);
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenFramebuffersEXT(IntBuffer framebuffers) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.EXTFramebufferObject.glGenFramebuffersEXT(framebuffers));
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.EXTFramebufferObject.glGenFramebuffersEXT(framebuffers));
     }
 
     public static void glDeleteFramebuffersEXT(int framebuffer) {
@@ -59,7 +65,7 @@ public final class EXTFramebufferObject {
 
     /** 状态查询：阻塞通道取回（FBO 完整性校验语义强依赖执行完成）。 */
     public static int glCheckFramebufferStatusEXT(int target) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.EXTFramebufferObject.glCheckFramebufferStatusEXT(target));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.EXTFramebufferObject.glCheckFramebufferStatusEXT(target));
     }
 
     public static void glFramebufferTexture2DEXT(int target, int attachment, int textarget, int texture, int level) {
@@ -82,12 +88,12 @@ public final class EXTFramebufferObject {
 
     /** 资源分配：阻塞通道取回真实 renderbuffer id。 */
     public static int glGenRenderbuffersEXT() {
-        return BridgeSupport.blockingGet(org.lwjgl.opengl.EXTFramebufferObject::glGenRenderbuffersEXT);
+        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.EXTFramebufferObject::glGenRenderbuffersEXT);
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenRenderbuffersEXT(IntBuffer renderbuffers) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.EXTFramebufferObject.glGenRenderbuffersEXT(renderbuffers));
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.EXTFramebufferObject.glGenRenderbuffersEXT(renderbuffers));
     }
 
     public static void glDeleteRenderbuffersEXT(int renderbuffer) {

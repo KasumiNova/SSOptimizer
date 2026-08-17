@@ -53,12 +53,12 @@ public final class GL40 {
     /** 名称查询：阻塞通道取回。名称在录制时刻定稿。 */
     public static int glGetSubroutineIndex(int program, int shadertype, CharSequence name) {
         String nameStr = name.toString();
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL40.glGetSubroutineIndex(program, shadertype, nameStr));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL40.glGetSubroutineIndex(program, shadertype, nameStr));
     }
 
     /** 名称查询：阻塞通道取回。名称在录制时刻定稿。 */
     public static int glGetSubroutineUniformLocation(int program, int shadertype, CharSequence name) {
         String nameStr = name.toString();
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL40.glGetSubroutineUniformLocation(program, shadertype, nameStr));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL40.glGetSubroutineUniformLocation(program, shadertype, nameStr));
     }
 }

@@ -24,6 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </ul>
  * VBO 路径：pointer 的 long 偏移变体（VBO bound 时的语义）没有 buffer 可快照，
  * 记录为 {@link #data} 为 null 的偏移形式，重放时原样调用 long 变体。
+ * 真实 GL 在 pointer 调用时刻捕获当时的 GL_ARRAY_BUFFER 绑定（LazyFont 等
+ * 「绑定 VBO → 设 offset pointer → 解绑 → draw」序列依赖该语义），bridge 把
+ * pointer 重放推迟到 draw 执行，因此偏移形式同时快照录制时刻的绑定
+ * （{@link #vboId}），由 {@link PointerSnapshotGroup#apply()} 显式恢复。
  */
 final class PointerSnapshot {
     /** pointer 种类：决定重放时调用哪一个真实 GL 入口。 */
@@ -40,6 +44,8 @@ final class PointerSnapshot {
     final ByteBuffer data;
     /** VBO 偏移形式的有效偏移。 */
     final long offset;
+    /** VBO 偏移形式在录制时刻的 GL_ARRAY_BUFFER 绑定；buffer 形式为 0。 */
+    final int vboId;
     /**
      * 本快照的存活引用数：录制侧状态持有 1 份（创建时计数为 1），每条捕获它的
      * draw 命令再加 1；归零时归还池。VBO 偏移形式（{@link #data} 为 null）
@@ -47,22 +53,23 @@ final class PointerSnapshot {
      */
     private final AtomicInteger pendingDraws;
 
-    private PointerSnapshot(Kind kind, int size, int type, int stride, ByteBuffer data, long offset) {
+    private PointerSnapshot(Kind kind, int size, int type, int stride, ByteBuffer data, long offset, int vboId) {
         this.kind = kind;
         this.size = size;
         this.type = type;
         this.stride = stride;
         this.data = data;
         this.offset = offset;
+        this.vboId = vboId;
         this.pendingDraws = new AtomicInteger(data != null ? 1 : 0);
     }
 
     static PointerSnapshot ofBuffer(Kind kind, int size, int type, int stride, ByteBuffer data) {
-        return new PointerSnapshot(kind, size, type, stride, data, 0);
+        return new PointerSnapshot(kind, size, type, stride, data, 0, 0);
     }
 
-    static PointerSnapshot ofOffset(Kind kind, int size, int type, int stride, long offset) {
-        return new PointerSnapshot(kind, size, type, stride, null, offset);
+    static PointerSnapshot ofOffset(Kind kind, int size, int type, int stride, long offset, int vboId) {
+        return new PointerSnapshot(kind, size, type, stride, null, offset, vboId);
     }
 
     /** draw 命令捕获本快照时调用，推迟归还直到该 draw 执行完。 */
