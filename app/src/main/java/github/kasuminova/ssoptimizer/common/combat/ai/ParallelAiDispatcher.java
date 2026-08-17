@@ -7,7 +7,8 @@ import github.kasuminova.ssoptimizer.mixin.accessor.FighterAIAccessor;
 import org.apache.log4j.Logger;
 
 /**
- * 并行舰船 AI 调度门面，供织入 {@code CombatEngine.advanceInner} 的 ASM 字节码直接调用。
+ * 并行舰船 AI 调度门面，供 {@code CombatEngineAiParallelMixin} 织入
+ * {@code CombatEngine.advanceInner} 后直接调用。
  * <p>
  * 织入效果：原版 AI 循环中的 {@code AI.advance(float)} 调用被替换为
  * {@link #dispatch(AI, float)}，循环结束（"Advancing entities" 段之前）插入
@@ -67,6 +68,17 @@ public final class ParallelAiDispatcher {
         } finally {
             AiThreadLocals.nextFrame();
         }
+    }
+
+    /**
+     * 供 {@link AutofireBatchRunner} 等同包批处理复用底层执行器。
+     * 注意：直接使用返回执行器的 {@code awaitAll} 不会推进线程本地帧号，
+     * 帧号推进仅由 {@link #awaitAll()} 负责。
+     *
+     * @return 执行器实例；AI 并行关闭时为 null
+     */
+    static AiParallelExecutor executor() {
+        return EXECUTOR;
     }
 
     /**

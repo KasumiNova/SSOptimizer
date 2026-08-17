@@ -223,6 +223,13 @@ public final class LazyTextureManager {
 
     public static void bindTexture(final com.fs.graphics.TextureObject texture,
                                    final int target) {
+        final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
+        if (atlasRegion != null) {
+            // 已入舰船/武器图集：直接绑定图集纹理，原始贴图不再上传
+            GL11.glBindTexture(target, atlasRegion.textureId());
+            noteCurrentBoundTexture(texture);
+            return;
+        }
         if (isContextReloadInProgress(texture)) {
             GL11.glBindTexture(target, Math.max(readTextureId(texture, -1), 0));
             noteCurrentBoundTexture(texture);
@@ -409,7 +416,14 @@ public final class LazyTextureManager {
         return false;
     }
 
-    private static boolean isOriginalLazyModeEnabled() {
+    /**
+     * 游戏设置中的原始延迟加载模式是否启用。
+     * 该模式下贴图元数据（尺寸/uScale）在 setTexture 时不可用，
+     * {@code ShipWeaponAtlas} 等依赖元数据的功能据此跳过。
+     *
+     * @return 启用返回 true；设置方法不可用时按未启用处理
+     */
+    public static boolean isOriginalLazyModeEnabled() {
         final Method method = ORIGINAL_LAZY_MODE_METHOD;
         if (method == null) {
             return false;

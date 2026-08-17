@@ -129,6 +129,9 @@ public final class GameClassNames {
     public static final String TIMEOUT_TRACKER_MAP_DOTTED          = "com.fs.starfarer.api.util.TimeoutTrackerMap";
     public static final String COMBAT_FLEET_MANAGER                = "com/fs/starfarer/combat/CombatFleetManager";
     public static final String COMBAT_FLEET_MANAGER_DOTTED         = "com.fs.starfarer.combat.CombatFleetManager";
+    public static final String WEAPON_GROUP                        = "com/fs/starfarer/combat/systems/WeaponGroup";
+    public static final String WEAPON_GROUP_DOTTED                 = "com.fs.starfarer.combat.systems.WeaponGroup";
+    public static final String SHIP_SYSTEM_SCRIPT_ADAPTER_DOTTED   = "com.fs.starfarer.loading.specs.ShipSystemSpec$SystemAIScriptAdapter";
 
     private GameClassNames() {
     }
