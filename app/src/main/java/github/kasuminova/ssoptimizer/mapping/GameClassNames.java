@@ -132,6 +132,8 @@ public final class GameClassNames {
     public static final String WEAPON_GROUP                        = "com/fs/starfarer/combat/systems/WeaponGroup";
     public static final String WEAPON_GROUP_DOTTED                 = "com.fs.starfarer.combat.systems.WeaponGroup";
     public static final String SHIP_SYSTEM_SCRIPT_ADAPTER_DOTTED   = "com.fs.starfarer.loading.specs.ShipSystemSpec$SystemAIScriptAdapter";
+    public static final String HULL_VARIANT_SPEC_DOTTED            = "com.fs.starfarer.loading.specs.HullVariantSpec";
+    public static final String MISSILE_AI_DOTTED                   = "com.fs.starfarer.combat.ai.missile.MissileAI";
 
     private GameClassNames() {
     }
