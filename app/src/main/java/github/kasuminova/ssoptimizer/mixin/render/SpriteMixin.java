@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.TextureObject;
 import com.fs.graphics.util.RenderStateUtils;
+import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvState;
 import github.kasuminova.ssoptimizer.common.render.engine.SpriteRenderHelper;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatchStats;
@@ -115,6 +116,87 @@ public abstract class SpriteMixin {
         if (texClamp) {
             RenderStateUtils.restoreTextureClamp();
         }
+    }
+
+    /**
+     * 区域渲染（武器炮管、损伤贴花等子矩形绘制）。
+     * <p>
+     * 原版为 17-19 次 LWJGL JNI（bind/pushMatrix/rotate/立即模式 quad）；覆写后优先并入
+     * {@link SpriteBatch} 合批，拒绝时走 {@link SpriteRenderHelper} 单 JNI 路径。
+     * 几何等价变换：原版「平移到 (f,g) + 绕全图枢轴旋转 + 子矩形顶点/UV」等价于
+     * 「子矩形 quad + 枢轴平移 (pivot - h*w, i*h_) + 子矩形 UV」，
+     * 因此可直接复用整图渲染的 helper/合批接口。图集重映射精灵的 UV 补区域原点偏移，
+     * 边缘内缩取 {@link SpriteAtlasMixin} 缓存的像素等价值（未重映射保持原版 0.001F
+     * 且不补 texX/texY，忠实保留原版忽略 setTexX 的行为）。
+     *
+     * @param f  目标 X（叠加 offsetX）
+     * @param g  目标 Y（叠加 offsetY）
+     * @param h  区域 UV 起点 U 比例（0..1）
+     * @param i  区域 UV 起点 V 比例
+     * @param j  区域 UV 宽比例
+     * @param k  区域 UV 高比例
+     * @param bl 是否绑定纹理
+     * @author KasumiNova
+     * @reason 武器炮管 renderBarrel 每帧经 renderRegion 全量重绘（含 GraphicLib 三 pass），
+     * 原版立即模式开销显著；需与 render 一样接入合批/单 JNI 路径。
+     */
+    @Overwrite(remap = false)
+    public void renderRegion(float f, float g, float h, float i, float j, float k, boolean bl) {
+        if (texture == null) {
+            return;
+        }
+        final AtlasUvState atlas = (AtlasUvState) this;
+        final boolean remapped = atlas.ssoptimizer$isAtlasRemapped();
+        final float insetU = remapped ? atlas.ssoptimizer$atlasInsetU() : 0.001F;
+        final float insetV = remapped ? atlas.ssoptimizer$atlasInsetV() : 0.001F;
+
+        float u0 = h * texWidth + insetU;
+        float v0 = i * texHeight + insetV;
+        float u1 = (h + j) * texWidth - insetU;
+        float v1 = (i + k) * texHeight - insetV;
+        if (remapped) {
+            u0 += texX;
+            u1 += texX;
+            v0 += texY;
+            v1 += texY;
+        }
+
+        // 原版旋转枢轴：centerX/centerY 有效时用其值，否则取全图中心
+        final boolean hasCenter = centerX != -1.0F && centerY != -1.0F;
+        final float pivotX = hasCenter ? centerX : width * 0.5F;
+        final float pivotY = hasCenter ? centerY : height * 0.5F;
+        final float subW = j * width;
+        final float subH = k * height;
+        // 子矩形 quad 的位置与枢轴（换算到 helper 的「quad 左下角 + 局部枢轴」约定）
+        final float posX = f + offsetX + (width - subW) * 0.5F;
+        final float posY = g + offsetY + (height - subH) * 0.5F;
+        final float subCenterX = pivotX - h * width;
+        final float subCenterY = pivotY - i * height;
+        final int r = color.getRed();
+        final int gc = color.getGreen();
+        final int b = color.getBlue();
+        final int a = (int) (color.getAlpha() * alphaMult);
+
+        if (SpriteBatchStats.isEnabled()) {
+            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, !bl);
+        }
+        // 原版 renderRegion 不处理 texClamp，合批提交同样按非 clamp 处理
+        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+                posX, posY, subW, subH, subCenterX, subCenterY, angle,
+                r, gc, b, a, blendSrc, blendDest,
+                u0, v0, u1 - u0, v1 - v0, false)) {
+            return;
+        }
+        if (bl) {
+            texture.bind();
+        }
+        SpriteRenderHelper.renderSprite(
+                posX, posY, subW, subH,
+                subCenterX, subCenterY,
+                angle,
+                r, gc, b, a,
+                blendSrc, blendDest,
+                u0, v0, u1 - u0, v1 - v0);
     }
 
     /**
