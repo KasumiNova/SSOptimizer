@@ -134,7 +134,8 @@ public abstract class SpecStoreMixin {
         //   projectiles/hulls ← styles；weapons ← projectiles；weapon_data ← weapons
         //   ship_data ← hulls+weapon_data（默认 Variant 构造会解析武器 spec）；skins ← ship_data；wing_data ← skins；shipSystems ← wings（且反向清理 hulls）
         //   simulationVariants ← hulls+weapons；variants ← simulationVariants（containsVariant 跳过语义依赖原版顺序）
-        //   factions ← hulls/weapons/hullmods/variants/commodities；skills ← aptitudes
+        //   factions ← hulls/weapons/hullmods/variants/commodities；skills ← aptitudes+hullmods（SkillEffectSpec
+        //   构造内 HullModUnlockComparator 会解析 hullmod spec，实测竞态 NPE）
         //   procgen ← weapons/wings/commodities/specialItems/customEntities/marketConditions
         //   campaignData/titleVariants ← variants；其余全部独立
         SpecLoadScheduler.newDag()
@@ -174,7 +175,7 @@ public abstract class SpecStoreMixin {
                 .task("shipSystems", () -> SpecStore.loadShipSystems(state), "wings")
                 .task("simulationVariants", SpecStoreMixin::ssoptimizer$createSimulationVariants, "shipSystems", "weaponData")
                 .task("variants", SpecStoreMixin::loadVariants, "simulationVariants")
-                .task("skills", () -> SpecStore.loadSkills(state), "aptitudes")
+                .task("skills", () -> SpecStore.loadSkills(state), "aptitudes", "hullmods")
                 .task("factions", () -> SpecStore.loadFactions(state),
                         "shipSystems", "weaponData", "hullmods", "variants", "commodities")
                 .task("campaignData", SpecStore::loadCampaignData, "variants")
