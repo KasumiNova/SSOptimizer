@@ -53,10 +53,12 @@ import java.util.concurrent.Future;
  *       （与原版大纹理行为一致，初版不做上下文热重建）；</li>
  *   <li>光束 core/fringe 与弹丸贴图使用平铺/自定义 UV，不入图集。</li>
  * </ul>
- * 开关：{@code -Dssoptimizer.atlas.shipweapon=false} 关闭（默认开启）。
+ * 开关：{@code -Dssoptimizer.atlas.shipweapon=false} 关闭（默认开启）；
+ * {@code -Dssoptimizer.atlas.shipweapon.dumpdir=<dir>} 导出每页 PNG 供检查空间利用率。
  */
 public final class ShipWeaponAtlas {
     public static final String ENABLED_PROPERTY = "ssoptimizer.atlas.shipweapon";
+    public static final String DUMP_DIR_PROPERTY = "ssoptimizer.atlas.shipweapon.dumpdir";
 
     private static final Logger LOGGER = Logger.getLogger(ShipWeaponAtlas.class);
 
@@ -127,23 +129,43 @@ public final class ShipWeaponAtlas {
                 new AtlasPacker.Entry(path, image.getWidth(), image.getHeight())));
         final int pageSize = resolvePageSize();
         final AtlasPacker.Result packed = AtlasPacker.pack(entries, pageSize, PADDING);
+        final java.nio.file.Path dumpDir = resolveDumpDir();
 
         int regionCount = 0;
+        long contentArea = 0L;
+        long cellArea = 0L;
         for (AtlasPacker.Page page : packed.pages()) {
-            final int textureId = composeAndUpload(page, images, pageSize);
+            final int textureId = composeAndUpload(page, images, pageSize, dumpDir);
             for (AtlasPacker.Placement placement : page.placements()) {
                 // 图像空间（左上原点）→ GL 空间（左下原点）：gY = atlasSize - y - height
                 REGIONS.put(placement.path(), new Region(
                         textureId, pageSize, placement.x(), pageSize - placement.y() - placement.height()));
                 regionCount++;
+                contentArea += (long) placement.width() * placement.height();
+                cellArea += (long) (placement.width() + PADDING * 2) * (placement.height() + PADDING * 2);
             }
         }
         images.clear();
 
+        final double totalArea = (double) packed.pages().size() * pageSize * pageSize;
         LOGGER.info(String.format(
-                "[SSOptimizer] Ship/weapon texture atlas built: %d regions in %d page(s) of %d², %d skipped (oversize), %d ms",
+                "[SSOptimizer] Ship/weapon texture atlas built: %d regions in %d page(s) of %d², %d skipped (oversize),"
+                        + " fill=%.1f%% (cell), content=%.1f%%, %d ms",
                 regionCount, packed.pages().size(), pageSize, packed.skipped().size(),
+                cellArea / totalArea * 100.0, contentArea / totalArea * 100.0,
                 (System.nanoTime() - startNanos) / 1_000_000L));
+    }
+
+    /**
+     * 解析图集页导出目录：{@code -Dssoptimizer.atlas.shipweapon.dumpdir=<dir>} 设置后，
+     * 构建时把每页图集写成 PNG 供人工检查空间利用率；未设置返回 null（不导出）。
+     */
+    private static java.nio.file.Path resolveDumpDir() {
+        final String configured = System.getProperty(DUMP_DIR_PROPERTY);
+        if (configured == null || configured.isBlank()) {
+            return null;
+        }
+        return java.nio.file.Paths.get(configured.trim());
     }
 
     /**
@@ -280,7 +302,7 @@ public final class ShipWeaponAtlas {
      * @return 图集页 GL 纹理 id
      */
     private static int composeAndUpload(final AtlasPacker.Page page, final Map<String, BufferedImage> images,
-                                        final int pageSize) {
+                                        final int pageSize, final java.nio.file.Path dumpDir) {
         final BufferedImage atlasImage = new BufferedImage(pageSize, pageSize, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D graphics = atlasImage.createGraphics();
         try {
@@ -290,6 +312,7 @@ public final class ShipWeaponAtlas {
         } finally {
             graphics.dispose();
         }
+        dumpPage(atlasImage, dumpDir, page.index());
 
         final TexturePixelConversionResult converted = TexturePixelConverter.convert(atlasImage);
         final java.nio.IntBuffer idBuffer = BufferUtils.createIntBuffer(1);
@@ -302,6 +325,25 @@ public final class ShipWeaponAtlas {
         TextureUploadHelper.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA,
                 pageSize, pageSize, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, converted.buffer());
         return textureId;
+    }
+
+    /**
+     * 导出单页图集 PNG（仅当设置了 dumpdir 时调用）。导出失败记错误日志，
+     * 不影响图集构建主流程。
+     */
+    private static void dumpPage(final BufferedImage atlasImage, final java.nio.file.Path dumpDir,
+                                 final int pageIndex) {
+        if (dumpDir == null) {
+            return;
+        }
+        try {
+            java.nio.file.Files.createDirectories(dumpDir);
+            final java.nio.file.Path file = dumpDir.resolve(String.format("atlas-page-%02d.png", pageIndex));
+            ImageIO.write(atlasImage, "PNG", file.toFile());
+        } catch (IOException e) {
+            LOGGER.error("[SSOptimizer] Ship/weapon texture atlas: failed to dump page " + pageIndex
+                    + " to " + dumpDir, e);
+        }
     }
 
     /**
