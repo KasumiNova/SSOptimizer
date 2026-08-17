@@ -108,10 +108,10 @@ public final class SpriteBatchImpl implements SpriteBatch {
 
         long key = SpriteGroupStats.key(textureId, blendSrc, blendDest);
         if (key != currentKey) {
-            flushPending();
+            doFlush();
         }
         if (pendingQuads >= SpriteQuadPacker.MAX_QUADS_PER_DRAW) {
-            flushPending();
+            doFlush();
         }
         if (vertexScratch == null) {
             vertexScratch = ByteBuffer.allocateDirect(VERTEX_SCRATCH_BYTES).order(ByteOrder.nativeOrder());
@@ -204,6 +204,15 @@ public final class SpriteBatchImpl implements SpriteBatch {
 
     @Override
     public void flushPending() {
+        // 外部 barrier（非 sprite 绘制边界/拒绝路径/作用域结束）：统计上关闭当前段
+        if (SpriteBatchStats.isEnabled()) {
+            SpriteBatchStats.onFlushBarrier();
+        }
+        doFlush();
+    }
+
+    /** 组切换/容量满等内部 flush：不构成 barrier（段内归并的可优化对象正是这类 flush）。 */
+    private void doFlush() {
         if (pendingQuads == 0) {
             return;
         }

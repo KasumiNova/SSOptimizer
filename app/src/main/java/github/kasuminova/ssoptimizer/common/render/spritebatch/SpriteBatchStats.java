@@ -58,6 +58,16 @@ public final class SpriteBatchStats {
     }
 
     /**
+     * 记录一次外部 flush barrier（{@code SpriteBatch.flushPending()} 被非 sprite 绘制边界 /
+     * 拒绝路径触发时调用）：统计上关闭当前段。仅统计开启时有实际开销。
+     */
+    public static void onFlushBarrier() {
+        if (ENABLED && combatScope) {
+            STATS.barrier();
+        }
+    }
+
+    /**
      * 记录一次 sprite 绘制（render/renderNoBind 共用入口）。
      *
      * @param textureId 纹理 ID
