@@ -27,6 +27,7 @@
     "bench.CombatStateBenchmarkMixin",
     "bench.TitleScreenBenchmarkMixin",
     "campaign.CampaignEngineBattleReportMixin",
+    "campaign.FactionManagerEarlyInitMixin",
     "combat.CollisionGridQueryMixin",
     "combat.CombatEngineScopeMixin",
     "combat.ShieldRenderMixin",

@@ -138,6 +138,23 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 阵营管理器早期快照自愈 Mixin 签名常量。
+     * <p>
+     * {@code FactionManager} 构造时对 {@code SpecStore} 中的 {@code FactionSpec} 做一次性快照，
+     * 若 {@code CampaignEngine} 在 faction spec 注册完成前被提前创建（如脚本编译线程上的
+     * mod 脚本类静态初始化触发 {@code CampaignEngine.getInstance()}），则 player faction 永久为空。
+     */
+    public static final class FactionManager {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.FactionManager";
+        public static final String GET_PLAYER_FACTION = "getPlayerFaction";
+        public static final String GET_FACTION = "getFaction";
+        public static final String GET_ALL_FACTIONS = "getAllFactions";
+
+        private FactionManager() {
+        }
+    }
+
+    /**
      * 文本框 IME 相关桥接签名常量。
      * <p>
      * {@code releaseFocus} 的参数类型是游戏的输入事件实现类，已在两平台映射表中统一命名为
