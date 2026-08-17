@@ -34,4 +34,15 @@ public interface AtlasUvState {
      * @return V 向内缩量
      */
     float ssoptimizer$atlasInsetV();
+
+    /**
+     * 重映射时缓存的图集页 GL 纹理 id（供合批提交使用）。
+     * <p>
+     * 图集双轨制下 {@code TextureObject.getTextureId()} 只返回原始纹理 id
+     * （raw id 消费方需要原始 UV 空间的真实纹理），合批路径必须改用本值
+     * 才能与同页精灵共享图集纹理。
+     *
+     * @return 图集页纹理 id；未重映射时返回 -1
+     */
+    int ssoptimizer$atlasTextureId();
 }

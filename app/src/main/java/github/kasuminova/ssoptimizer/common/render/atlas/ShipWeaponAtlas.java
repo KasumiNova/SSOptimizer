@@ -7,8 +7,6 @@ import com.fs.starfarer.loading.specs.BeamWeaponSpec;
 import com.fs.starfarer.loading.specs.MissileSpec;
 import com.fs.starfarer.loading.specs.ProjectileWeaponSpec;
 import com.fs.starfarer.loading.specs.ShipHullSpec;
-import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.ModSpecAPI;
 import com.fs.util.ResourceLoader;
 import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
 import github.kasuminova.ssoptimizer.common.loading.TexturePixelConversionResult;
@@ -40,10 +38,16 @@ import java.util.concurrent.Future;
  * 船体图与武器系列贴图（炮塔/硬点/底衬/辉光/枪管/动画帧，以及导弹船体与辉光）
  * shelf 装箱进若干图集页（期望 8192²，按 {@code GL_MAX_TEXTURE_SIZE} 收敛；按船体/武器/弹体 id
  * 亲和分组排布以提高同页命中率）并上传 GPU；{@code SpriteAtlasMixin} 在
- * {@code Sprite.setTexture} 尾部把 UV 四字段重映射进图集区域，
- * {@link LazyTextureManager} 在绑定层把已入图集路径的 bind/getTextureId 重定向到图集
- * 纹理。效果：同页贴图共享同一 GL 纹理 id，SpriteBatch 合批率与 bind 次数显著改善，
- * 且原始贴图不再单独上传（节省显存）。
+ * {@code Sprite.setTexture} 尾部把 UV 四字段重映射进图集区域并缓存图集页纹理 id，
+ * {@link LazyTextureManager} 在<b>绑定路径</b>把已入图集路径的 bind 重定向到图集纹理。
+ * 效果：同页贴图共享同一 GL 纹理 id，SpriteBatch 合批率与 bind 次数显著改善，
+ * 且原始贴图在纯 Sprite 渲染路径下不再单独上传（节省显存）。
+ * <p>
+ * 双轨制：{@code TextureObject.getTextureId()} 始终返回原始纹理真实 id（不随图集
+ * 重定向）——raw id 消费方（GraphicLib 光照 pass、模组自定义 shader 等）以原始
+ * UV 空间自行采样，若拿图集 id 会把整页图集当单张贴图绘制（实机已复现串染）。
+ * 合批路径由 SpriteAtlasMixin 缓存的图集 id 提交，不经 getTextureId。
+ * 同理，GraphicLib 光照贴图（material/normal/surface）只被 raw id 消费，不入图集。
  * <p>
  * 防渗色：每张贴图四边 16px 边缘复制 padding + 图集生成 mipmap。
  * <p>
@@ -233,95 +237,7 @@ public final class ShipWeaponAtlas {
                 add(paths, missile.getGlowSpriteName(), group);
             }
         }
-        collectGraphicLibTextures(paths);
         return paths;
-    }
-
-    /**
-     * 收集 GraphicLib 光照贴图（material/normal/surface）：扫描各启用模组的
-     * {@code data/lights/<anything>_texture_data.csv}（表头含 {@code path} 列），
-     * 把其中全部贴图路径按模组目录名分组入图集。
-     * GraphicLib 的 FBO pass（renderForeground/drawNormalMaps/drawSurfaceMaps）经
-     * {@code SpriteAPI.renderAtCenter} 全量重绘这些贴图（{@code SettingsAPI.loadTexture}/
-     * {@code getSprite} 标准管线加载，绑定重定向与 UV 重映射现成生效）；图集 16px
-     * 边缘复制 padding 保证法线图边缘线性采样不串色。
-     */
-    private static void collectGraphicLibTextures(final Map<String, String> paths) {
-        final java.nio.file.Path modsDir = java.nio.file.Path.of(System.getProperty("user.dir", "."))
-                .toAbsolutePath().normalize().resolve("mods");
-        if (!java.nio.file.Files.isDirectory(modsDir)) {
-            return;
-        }
-        for (ModSpecAPI mod : Global.getSettings().getModManager().getEnabledModsCopy()) {
-            final java.nio.file.Path lightsDir = modsDir.resolve(mod.getDirName()).resolve("data").resolve("lights");
-            if (!java.nio.file.Files.isDirectory(lightsDir)) {
-                continue;
-            }
-            try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.list(lightsDir)) {
-                for (java.nio.file.Path csv : files
-                        .filter(f -> f.getFileName().toString().toLowerCase(java.util.Locale.ROOT)
-                                .endsWith("_texture_data.csv"))
-                        .toList()) {
-                    parseTextureDataCsv(csv, "g/" + mod.getDirName(), paths);
-                }
-            } catch (IOException e) {
-                LOGGER.warn("[SSOptimizer] Atlas: cannot list GraphicLib lights dir " + lightsDir
-                        + " (" + e.getMessage() + ")");
-            }
-        }
-    }
-
-    /**
-     * 解析单个 texture_data CSV：按表头定位 {@code path} 列，逐行收集贴图路径。
-     * 行解析失败（列数不足等）记警告并跳过该行。
-     */
-    private static void parseTextureDataCsv(final java.nio.file.Path csv, final String group,
-                                            final Map<String, String> paths) {
-        try (java.io.BufferedReader reader = java.nio.file.Files.newBufferedReader(csv)) {
-            final String header = reader.readLine();
-            if (header == null) {
-                return;
-            }
-            final String[] columns = header.split(",");
-            int pathColumn = -1;
-            for (int i = 0; i < columns.length; i++) {
-                if ("path".equalsIgnoreCase(columns[i].trim())) {
-                    pathColumn = i;
-                    break;
-                }
-            }
-            if (pathColumn < 0) {
-                LOGGER.warn("[SSOptimizer] Atlas: GraphicLib texture csv has no path column: " + csv);
-                return;
-            }
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // 注释行（# 开头）、空白行、逗号占位行静默跳过
-                if (line.isBlank() || line.startsWith("#")) {
-                    continue;
-                }
-                final String[] cells = line.split(",");
-                if (cells.length <= pathColumn) {
-                    continue;
-                }
-                final String path = cells[pathColumn].trim();
-                // 汉化模组的 CSV 常带中文副表头（如「材质文件路径」）等噪声行，
-                // 只接受图片资源路径
-                if (!isImagePath(path)) {
-                    continue;
-                }
-                add(paths, path, group);
-            }
-        } catch (IOException e) {
-            LOGGER.warn("[SSOptimizer] Atlas: cannot read GraphicLib texture csv " + csv
-                    + " (" + e.getMessage() + ")");
-        }
-    }
-
-    /** 判断是否为图片资源路径（png/jpg/jpeg，大小写不敏感）。 */
-    private static boolean isImagePath(final String path) {
-        final String lower = path.toLowerCase(java.util.Locale.ROOT);
-        return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
     }
 
     private static void add(final Map<String, String> paths, final String path, final String group) {

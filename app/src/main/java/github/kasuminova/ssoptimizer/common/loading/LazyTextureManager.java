@@ -300,16 +300,21 @@ public final class LazyTextureManager {
         return isManagedFontTexture(CURRENT_BOUND_TEXTURE_PATH.get());
     }
 
+    /**
+     * 读取纹理真实 GL id（可能触发延迟上传）。
+     * <p>
+     * 图集双轨制：已入舰船/武器图集的贴图在<b>绑定路径</b>（{@link #bindTexture}）
+     * 重定向到图集纹理，但本方法始终返回<b>原始纹理</b>的真实 id——raw id 消费方
+     * （GraphicLib 光照 pass、模组自定义 shader 等）拿到 id 后会以原始 UV 空间自行
+     * 绘制，若返回图集 id 会把整页图集当单张贴图采样（实机已复现：舰船表面被
+     * 光照染色的图集网格内容覆盖）。Sprite 合批路径不经本方法取图集 id，而是由
+     * {@code SpriteAtlasMixin} 在 UV 重映射时缓存图集 id 直接提交给合批器。
+     */
     public static int getTextureId(final com.fs.graphics.TextureObject texture,
                                    final int target,
                                    final int currentTextureId) {
         if (texture == null) {
             return currentTextureId;
-        }
-        final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
-        if (atlasRegion != null) {
-            // 已入舰船/武器图集：返回图集纹理 id（合批与绑定共用同一出口）
-            return atlasRegion.textureId();
         }
         if (isContextReloadInProgress(texture)) {
             return currentTextureId;

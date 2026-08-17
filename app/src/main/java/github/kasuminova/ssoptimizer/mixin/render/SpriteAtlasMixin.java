@@ -66,6 +66,10 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     @Unique
     private float ssoptimizer$atlasInsetV;
 
+    /** 重映射时缓存的图集页纹理 id（双轨制：getTextureId 只回原始 id，合批用本值）。 */
+    @Unique
+    private int ssoptimizer$atlasTextureId = -1;
+
     /**
      * @author KasumiNova
      * @reason 已入图集的贴图在 setTexture 时把 UV 映射进图集区域。
@@ -73,6 +77,9 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     @Inject(method = "setTexture", at = @At("RETURN"), remap = false)
     private void ssoptimizer$remapToAtlas(final TextureObject newTexture, final CallbackInfo ci) {
         this.ssoptimizer$atlasRemapped = newTexture != null && ssoptimizer$remap(newTexture);
+        if (!this.ssoptimizer$atlasRemapped) {
+            this.ssoptimizer$atlasTextureId = -1;
+        }
     }
 
     /**
@@ -82,6 +89,9 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     @Inject(method = "readResolve", at = @At("RETURN"), remap = false)
     private void ssoptimizer$remapToAtlasAfterDeserialize(final CallbackInfoReturnable<Object> cir) {
         this.ssoptimizer$atlasRemapped = this.texture != null && ssoptimizer$remap(this.texture);
+        if (!this.ssoptimizer$atlasRemapped) {
+            this.ssoptimizer$atlasTextureId = -1;
+        }
     }
 
     /**
@@ -123,6 +133,12 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
         return this.ssoptimizer$atlasInsetV;
     }
 
+    /** 供合批提交读取重映射时缓存的图集页纹理 id。 */
+    @Override
+    public int ssoptimizer$atlasTextureId() {
+        return this.ssoptimizer$atlasTextureId;
+    }
+
     /**
      * 把当前 UV 四字段从原纹理 GL 空间换算到图集 GL 空间。
      * 原纹理 GL 尺寸 = imageSize / uvScale（uScale = imageWidth / textureWidth）。
@@ -145,6 +161,7 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
         // 换算到图集 UV 域保持像素等价
         this.ssoptimizer$atlasInsetU = 0.001F * srcW / atlasSize;
         this.ssoptimizer$atlasInsetV = 0.001F * srcH / atlasSize;
+        this.ssoptimizer$atlasTextureId = region.textureId();
         return true;
     }
 }

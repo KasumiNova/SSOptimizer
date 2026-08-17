@@ -90,10 +90,15 @@ public abstract class SpriteMixin {
         if (texture == null) {
             return;
         }
+        // 图集双轨制：getTextureId 只回原始纹理 id（供 raw id 消费方），
+        // 已重映射精灵的合批纹理必须取重映射时缓存的图集页 id
+        final AtlasUvState atlas = (AtlasUvState) this;
+        final int batchTextureId = atlas.ssoptimizer$isAtlasRemapped()
+                ? atlas.ssoptimizer$atlasTextureId() : texture.getTextureId();
         if (SpriteBatchStats.isEnabled()) {
-            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, false);
+            SpriteBatchStats.onSpriteRender(batchTextureId, blendSrc, blendDest, false);
         }
-        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+        if (SpriteBatch.getInstance().submitIfActive(batchTextureId,
                 x + offsetX, y + offsetY, width, height, centerX, centerY, angle,
                 color.getRed(), color.getGreen(), color.getBlue(),
                 (int) (color.getAlpha() * alphaMult), blendSrc, blendDest,
@@ -147,6 +152,8 @@ public abstract class SpriteMixin {
         }
         final AtlasUvState atlas = (AtlasUvState) this;
         final boolean remapped = atlas.ssoptimizer$isAtlasRemapped();
+        // 图集双轨制：合批纹理取重映射时缓存的图集页 id，非 getTextureId 的原始 id
+        final int batchTextureId = remapped ? atlas.ssoptimizer$atlasTextureId() : texture.getTextureId();
         final float insetU = remapped ? atlas.ssoptimizer$atlasInsetU() : 0.001F;
         final float insetV = remapped ? atlas.ssoptimizer$atlasInsetV() : 0.001F;
 
@@ -178,10 +185,10 @@ public abstract class SpriteMixin {
         final int a = (int) (color.getAlpha() * alphaMult);
 
         if (SpriteBatchStats.isEnabled()) {
-            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, !bl);
+            SpriteBatchStats.onSpriteRender(batchTextureId, blendSrc, blendDest, !bl);
         }
         // 原版 renderRegion 不处理 texClamp，合批提交同样按非 clamp 处理
-        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+        if (SpriteBatch.getInstance().submitIfActive(batchTextureId,
                 posX, posY, subW, subH, subCenterX, subCenterY, angle,
                 r, gc, b, a, blendSrc, blendDest,
                 u0, v0, u1 - u0, v1 - v0, false)) {
@@ -212,10 +219,14 @@ public abstract class SpriteMixin {
         if (texture == null) {
             return;
         }
+        // 图集双轨制：合批纹理取重映射时缓存的图集页 id，非 getTextureId 的原始 id
+        final AtlasUvState atlas = (AtlasUvState) this;
+        final int batchTextureId = atlas.ssoptimizer$isAtlasRemapped()
+                ? atlas.ssoptimizer$atlasTextureId() : texture.getTextureId();
         if (SpriteBatchStats.isEnabled()) {
-            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, true);
+            SpriteBatchStats.onSpriteRender(batchTextureId, blendSrc, blendDest, true);
         }
-        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+        if (SpriteBatch.getInstance().submitIfActive(batchTextureId,
                 x + offsetX, y + offsetY, width, height, centerX, centerY, angle,
                 color.getRed(), color.getGreen(), color.getBlue(),
                 (int) (color.getAlpha() * alphaMult), blendSrc, blendDest,
