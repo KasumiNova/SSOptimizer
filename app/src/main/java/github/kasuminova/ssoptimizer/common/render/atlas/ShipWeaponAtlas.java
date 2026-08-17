@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * <p>
  * 加载期（{@code ResourceLoaderState.init} 返回点，主线程持 GL 上下文）把全部舰船
  * 船体图与武器系列贴图（炮塔/硬点/底衬/辉光/枪管/动画帧，以及导弹船体与辉光）
- * shelf 装箱进若干 2048² 图集页并上传 GPU；{@code SpriteAtlasMixin} 在
+ * shelf 装箱进若干图集页（期望 4096²，按 {@code GL_MAX_TEXTURE_SIZE} 收敛）并上传 GPU；{@code SpriteAtlasMixin} 在
  * {@code Sprite.setTexture} 尾部把 UV 四字段重映射进图集区域，
  * {@link LazyTextureManager} 在绑定层把已入图集路径的 bind/getTextureId 重定向到图集
  * 纹理。效果：同页贴图共享同一 GL 纹理 id，SpriteBatch 合批率与 bind 次数显著改善，
@@ -62,7 +62,7 @@ public final class ShipWeaponAtlas {
 
     private static final boolean ENABLED = Boolean.parseBoolean(
             System.getProperty(ENABLED_PROPERTY, "true"));
-    private static final int ATLAS_SIZE = 2048;
+    private static final int DESIRED_ATLAS_SIZE = 4096;
     private static final int PADDING = 16;
 
     private static final Map<String, Region> REGIONS = new ConcurrentHashMap<>();
@@ -125,24 +125,40 @@ public final class ShipWeaponAtlas {
         final List<AtlasPacker.Entry> entries = new ArrayList<>(images.size());
         images.forEach((path, image) -> entries.add(
                 new AtlasPacker.Entry(path, image.getWidth(), image.getHeight())));
-        final AtlasPacker.Result packed = AtlasPacker.pack(entries, ATLAS_SIZE, PADDING);
+        final int pageSize = resolvePageSize();
+        final AtlasPacker.Result packed = AtlasPacker.pack(entries, pageSize, PADDING);
 
         int regionCount = 0;
         for (AtlasPacker.Page page : packed.pages()) {
-            final int textureId = composeAndUpload(page, images);
+            final int textureId = composeAndUpload(page, images, pageSize);
             for (AtlasPacker.Placement placement : page.placements()) {
                 // 图像空间（左上原点）→ GL 空间（左下原点）：gY = atlasSize - y - height
                 REGIONS.put(placement.path(), new Region(
-                        textureId, ATLAS_SIZE, placement.x(), ATLAS_SIZE - placement.y() - placement.height()));
+                        textureId, pageSize, placement.x(), pageSize - placement.y() - placement.height()));
                 regionCount++;
             }
         }
         images.clear();
 
         LOGGER.info(String.format(
-                "[SSOptimizer] Ship/weapon texture atlas built: %d regions in %d page(s), %d skipped (oversize), %d ms",
-                regionCount, packed.pages().size(), packed.skipped().size(),
+                "[SSOptimizer] Ship/weapon texture atlas built: %d regions in %d page(s) of %d², %d skipped (oversize), %d ms",
+                regionCount, packed.pages().size(), pageSize, packed.skipped().size(),
                 (System.nanoTime() - startNanos) / 1_000_000L));
+    }
+
+    /**
+     * 解析图集页边长：期望 4096（2006 年后的独显/核显均支持），
+     * 受 {@code GL_MAX_TEXTURE_SIZE} 限制时收敛到硬件上限并记日志。
+     * 调用方必须持有 OpenGL 上下文。
+     */
+    private static int resolvePageSize() {
+        final int maxTextureSize = GL11.glGetInteger(GL11.GL_MAX_TEXTURE_SIZE);
+        final int pageSize = Math.min(DESIRED_ATLAS_SIZE, maxTextureSize);
+        if (pageSize < DESIRED_ATLAS_SIZE) {
+            LOGGER.warn("[SSOptimizer] Ship/weapon texture atlas: GL_MAX_TEXTURE_SIZE=" + maxTextureSize
+                    + ", page size limited to " + pageSize);
+        }
+        return pageSize;
     }
 
     /**
@@ -260,10 +276,12 @@ public final class ShipWeaponAtlas {
      * 把一页的贴图合成图集图像（含 16px 边缘复制 padding）并上传为 GL 纹理。
      * 调用方必须持有 OpenGL 上下文。
      *
+     * @param pageSize 图集页边长（像素）
      * @return 图集页 GL 纹理 id
      */
-    private static int composeAndUpload(final AtlasPacker.Page page, final Map<String, BufferedImage> images) {
-        final BufferedImage atlasImage = new BufferedImage(ATLAS_SIZE, ATLAS_SIZE, BufferedImage.TYPE_INT_ARGB);
+    private static int composeAndUpload(final AtlasPacker.Page page, final Map<String, BufferedImage> images,
+                                        final int pageSize) {
+        final BufferedImage atlasImage = new BufferedImage(pageSize, pageSize, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D graphics = atlasImage.createGraphics();
         try {
             for (AtlasPacker.Placement placement : page.placements()) {
@@ -282,7 +300,7 @@ public final class ShipWeaponAtlas {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL14.GL_GENERATE_MIPMAP, GL11.GL_TRUE);
         TextureUploadHelper.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA,
-                ATLAS_SIZE, ATLAS_SIZE, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, converted.buffer());
+                pageSize, pageSize, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, converted.buffer());
         return textureId;
     }
 
