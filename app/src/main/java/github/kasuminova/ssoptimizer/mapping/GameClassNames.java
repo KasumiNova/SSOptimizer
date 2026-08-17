@@ -45,6 +45,7 @@ public final class GameClassNames {
     public static final String COMBAT_STATE_DOTTED                 = "com.fs.starfarer.combat.CombatState";
     public static final String COMBAT_ENGINE                       = "com/fs/starfarer/combat/CombatEngine";
     public static final String COMBAT_ENGINE_DOTTED                = "com.fs.starfarer.combat.CombatEngine";
+    public static final String RADAR_ICON_SPRITE_DOTTED            = "com.fs.starfarer.CombatRadarHud.RadarIconSprite";
     public static final String DECAL_RENDERER                      = "com/fs/starfarer/renderers/damage/DecalRenderer";
     public static final String DECAL_RENDERER_DOTTED               = "com.fs.starfarer.renderers.damage.DecalRenderer";
     public static final String WEAPON_DAMAGE_EFFECT                = "com/fs/starfarer/combat/entities/ship/WeaponDamageEffect";
