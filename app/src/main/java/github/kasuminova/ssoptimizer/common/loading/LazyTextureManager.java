@@ -115,6 +115,9 @@ public final class LazyTextureManager {
     private static final    AtomicLong                                                   BIND_STATS_REAL                      = new AtomicLong();
     private static final    AtomicLong                                                   BIND_STATS_DEDUPED                   = new AtomicLong();
     private static final    AtomicLong                                                   BIND_STATS_ATLAS                     = new AtomicLong();
+    /** 逐路径 bind 统计（诊断用，{@code -Dssoptimizer.bindstats.paths=true} 开启）：非图集 bind 的调用数按路径计数。 */
+    private static final    boolean                                                      BIND_PATH_STATS                      = Boolean.getBoolean("ssoptimizer.bindstats.paths");
+    private static final    java.util.concurrent.ConcurrentHashMap<String, AtomicLong>   BIND_PATH_COUNTS                     = BIND_PATH_STATS ? new java.util.concurrent.ConcurrentHashMap<>() : null;
     private static volatile long                                                         nextBindStatsLogNanos                = 0L;
     private static volatile Object                                                       lastOpenGlContextToken              = null;
     private static volatile long                                                         currentOpenGlContextGeneration      = 0L;
@@ -242,6 +245,7 @@ public final class LazyTextureManager {
         if (isContextReloadInProgress(texture)) {
             bindTextureDeduped(target, Math.max(readTextureId(texture, -1), 0));
             noteCurrentBoundTexture(texture);
+            noteBindPath(texture);
             maybeLogBindStats();
             return;
         }
@@ -252,9 +256,20 @@ public final class LazyTextureManager {
         final int textureId = readTextureId(texture, -1);
         bindTextureDeduped(target, Math.max(textureId, 0));
         noteCurrentBoundTexture(texture);
+        noteBindPath(texture);
         maybeLogBindStats();
         maybeSweepIdleTextures(texture, now);
         maybeEmitTextureDiagnostics(now);
+    }
+
+    /** 诊断：记录一次非图集 bind 的逐路径计数（仅在 BIND_PATH_STATS 开启时有效）。 */
+    private static void noteBindPath(final com.fs.graphics.TextureObject texture) {
+        if (BIND_PATH_COUNTS == null) {
+            return;
+        }
+        final String path = texture.getTexturePath();
+        BIND_PATH_COUNTS.computeIfAbsent(path == null ? "<null>" : path, k -> new AtomicLong())
+                .incrementAndGet();
     }
 
     /**
@@ -322,6 +337,15 @@ public final class LazyTextureManager {
                 + " real=" + BIND_STATS_REAL.get()
                 + " deduped=" + BIND_STATS_DEDUPED.get()
                 + " atlas=" + BIND_STATS_ATLAS.get());
+        if (BIND_PATH_COUNTS != null) {
+            final StringBuilder top = new StringBuilder("[SSOptimizer] top non-atlas bind paths:");
+            BIND_PATH_COUNTS.entrySet().stream()
+                    .sorted(Map.Entry.<String, AtomicLong>comparingByValue(
+                            (a, b) -> Long.compare(b.get(), a.get())))
+                    .limit(15)
+                    .forEach(e -> top.append(' ').append(e.getKey()).append('=').append(e.getValue().get()));
+            LOGGER.info(top.toString());
+        }
     }
 
     static boolean isTextureEvictable(final com.fs.graphics.TextureObject texture) {
