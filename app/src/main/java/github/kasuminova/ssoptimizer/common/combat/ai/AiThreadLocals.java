@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * 动机：原版 {@code AIUtils} 以静态字段充当 AI 计算期的临时状态
  * （blockingShips 缓存、aimErrorOffset1/2 瞄偏参数、名为 {@code null} 的布尔开关），
  * 串行时代安全；AI 并行化后这些状态必须按线程隔离，否则工作线程间互相覆盖。
- * ASM 处理器把 {@code AIUtils} 与 {@code AttackAIModule} 内对这些字段的
+ * Mixin（{@code mixin.ai.AiUtilsThreadLocalMixin} / {@code AttackAiModuleNullFlagMixin}）
+ * 把 {@code AIUtils} 与 {@code AttackAIModule} 内对这些字段的
  * GETSTATIC/PUTSTATIC 访问重定向到本类的对应方法。
  * <p>
  * 帧失效：blockingShips 缓存原版每帧由主线程调用 clear/reset 清空；并行化后

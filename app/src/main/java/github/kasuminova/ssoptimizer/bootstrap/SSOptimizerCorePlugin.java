@@ -2,7 +2,6 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.api.CompositeAsmClassProcessor;
-import github.kasuminova.ssoptimizer.asm.ai.*;
 import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
@@ -95,33 +94,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
                 new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
                 new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()),
                 new ProcessorToggle("caseinsensitiveresource", new CaseInsensitiveResourceFallbackProcessor()));
-        registerParallelAiProcessors(registrator);
-    }
-
-    /**
-     * 注册并行舰船 AI 的全部 ASM 处理器（统一开关 {@code ssoptimizer.disable.aiparallel}）。
-     * <p>
-     * 七件套必须同生共死：只织入循环调度而不同步线程本地化/共享 Map 并发化会导致
-     * 工作线程竞争静态状态。运行期另有 {@code ssoptimizer.ai.parallel=false} 软开关
-     * （保留织入、全部内联串行），便于基准对比与问题排查。
-     *
-     * @param registrator 处理器注册接收器
-     */
-    private static void registerParallelAiProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
-        if (Boolean.getBoolean("ssoptimizer.disable.aiparallel")) {
-            LOGGER.info("[SSOptimizer] Processor set DISABLED via system property: aiparallel");
-            return;
-        }
-        AiStaticsThreadLocalProcessor aiStatics = new AiStaticsThreadLocalProcessor();
-        registrator.accept(GameClassNames.COMBAT_ENGINE, new CombatEngineAiLoopProcessor());
-        registrator.accept(GameClassNames.AI_UTILS, aiStatics);
-        registrator.accept(GameClassNames.ATTACK_AI_MODULE, aiStatics);
-        registrator.accept(GameClassNames.PROFILER, new ProfilerWorkerGuardProcessor());
-        registrator.accept(GameClassNames.SHIPWIDE_AI_FLAGS,
-                new ConcurrentMapFieldProcessor(GameClassNames.SHIPWIDE_AI_FLAGS, "flags", "java/util/HashMap"));
-        registrator.accept(GameClassNames.TIMEOUT_TRACKER_MAP,
-                new ConcurrentMapFieldProcessor(GameClassNames.TIMEOUT_TRACKER_MAP, "items", "java/util/LinkedHashMap"));
-        registrator.accept(GameClassNames.FIGHTER_AI, new FighterAIWingKeyProcessor());
     }
 
     /**

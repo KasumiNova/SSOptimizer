@@ -11,6 +11,7 @@ class SSOptimizerMixinConfigPluginTest {
     @AfterEach
     void clearEngineRenderProperty() {
         System.clearProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY);
+        System.clearProperty(SSOptimizerMixinConfigPlugin.AI_PARALLEL_DISABLE_PROPERTY);
     }
 
     @Test
@@ -30,6 +31,25 @@ class SSOptimizerMixinConfigPluginTest {
         assertFalse(plugin.shouldApplyMixin(
                 "com.fs.starfarer.combat.entities.Engine",
                 "github.kasuminova.ssoptimizer.mixin.render.EngineRenderMixin"));
+    }
+
+    @Test
+    void skipsAiMixinsWhenParallelAiDisabled() {
+        System.setProperty(SSOptimizerMixinConfigPlugin.AI_PARALLEL_DISABLE_PROPERTY, "true");
+        SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
+
+        assertFalse(plugin.shouldApplyMixin(
+                "com.fs.starfarer.combat.CombatEngine",
+                "github.kasuminova.ssoptimizer.mixin.ai.CombatEngineAiParallelMixin"));
+    }
+
+    @Test
+    void appliesAiMixinsByDefault() {
+        SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
+
+        assertTrue(plugin.shouldApplyMixin(
+                "com.fs.starfarer.combat.CombatEngine",
+                "github.kasuminova.ssoptimizer.mixin.ai.CombatEngineAiParallelMixin"));
     }
 
     @Test

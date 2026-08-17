@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.common.combat.ai;
 import com.fs.starfarer.combat.ai.AI;
 import com.fs.starfarer.combat.ai.BasicShipAI;
 import com.fs.starfarer.combat.ai.FighterAI;
+import github.kasuminova.ssoptimizer.mixin.accessor.FighterAIAccessor;
 import org.apache.log4j.Logger;
 
 /**
@@ -17,8 +18,9 @@ import org.apache.log4j.Logger;
  * 在调用点内联串行执行，行为与原版完全一致——模组兼容由精确类型匹配保证，
  * 模组即便继承/替换原版 AI 也只会落到内联路径。
  * <p>
- * 战机编队约束：{@link FighterAI} 经 ASM 实现 {@link WingKeyProvider}，同编队
- * （共享 {@code FighterWing}）的战机任务固定到同一工作线程串行执行。
+ * 战机编队约束：{@link FighterAI} 经 Mixin Accessor（{@code FighterAIAccessor}）暴露
+ * 私有 {@code wing} 字段，同编队（共享 {@code FighterWing}）的战机任务固定到同一
+ * 工作线程串行执行。
  * <p>
  * 开关：{@code -Dssoptimizer.ai.parallel=false} 运行期整体关闭（全部内联串行）；
  * {@code -Dssoptimizer.ai.parallel.threads=N} 指定工作线程数，
@@ -47,7 +49,7 @@ public final class ParallelAiDispatcher {
             ai.advance(amount);
             return;
         }
-        Object stripeKey = ai instanceof WingKeyProvider provider ? provider.ssoptimizer$getWingKey() : null;
+        Object stripeKey = ai instanceof FighterAIAccessor accessor ? accessor.ssoptimizer$getWing() : null;
         executor.submit(() -> ai.advance(amount), stripeKey);
     }
 
