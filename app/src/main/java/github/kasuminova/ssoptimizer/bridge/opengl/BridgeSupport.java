@@ -1,0 +1,187 @@
+package github.kasuminova.ssoptimizer.bridge.opengl;
+
+import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPool;
+import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPoolImpl;
+import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
+import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
+import org.lwjgl.LWJGLException;
+
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
+import java.util.concurrent.Callable;
+
+/**
+ * bridge 各入口类共享的静态支撑：队列句柄、录制/阻塞助手、缓冲快照池、
+ * client pointer 快照状态。
+ * <p>
+ * 动机：bridge 的每个入口类（GL11/GL13/.../Display/GLContext）都需要同一套
+ * 「提交命令 / 阻塞取回 / buffer 快照」原语，分散实现会产生十几份机械重复。
+ * 收敛到本类后，入口方法体保持一行一命令的机械形态。
+ * <p>
+ * 快照池是进程级单例：直接缓冲池的价值在于跨帧复用，随用例新建会失去意义；
+ * 池实现本身线程安全（录制在多生产者线程、归还在渲染线程）。
+ */
+final class BridgeSupport {
+    private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
+    private static final ThreadLocal<ClientPointerState> POINTER_STATES =
+            ThreadLocal.withInitial(ClientPointerState::new);
+
+    private static volatile RenderQueue queue;
+
+    private BridgeSupport() {
+    }
+
+    /**
+     * 安装命令消费者。各 bridge 入口类的 install 全部委托到此处，共享同一队列。
+     *
+     * @param renderQueue 渲染队列实例
+     */
+    static void install(RenderQueue renderQueue) {
+        queue = renderQueue;
+    }
+
+    /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
+    static void uninstall() {
+        queue = null;
+        POINTER_STATES.remove();
+    }
+
+    static RenderQueue queue() {
+        RenderQueue q = queue;
+        if (q == null) {
+            throw new IllegalStateException("[SSOptimizer] bridge 的 RenderQueue 未安装（install 未被调用）");
+        }
+        return q;
+    }
+
+    /** 录制一条命令到当前帧。 */
+    static void enqueue(GlCommand command) {
+        queue().submit(command);
+    }
+
+    /**
+     * 阻塞式取值（getter 回读通道）：交给渲染线程执行并等待结果，
+     * 每次调用计入 {@link github.kasuminova.ssoptimizer.common.render.queue.StallDetector}。
+     */
+    static <T> T blockingGet(Callable<T> getter) {
+        return queue().get(getter);
+    }
+
+    /** {@link #blockingGet(Callable)} 的无返回值形式。 */
+    static void blockingWait(Runnable task) {
+        queue().wait(task);
+    }
+
+    /** 声明 {@link LWJGLException} 的阻塞任务。 */
+    interface ThrowingTask {
+        void run() throws LWJGLException;
+    }
+
+    /** 声明 {@link LWJGLException} 的阻塞取值。 */
+    interface ThrowingGetter<T> {
+        T get() throws LWJGLException;
+    }
+
+    /**
+     * 阻塞通道执行并原样透传 {@link LWJGLException}（Display 创建/显示模式等
+     * 调用方依赖受检异常做失败处理的场景）。
+     */
+    static void blockingWaitLwjgl(ThrowingTask task) throws LWJGLException {
+        LWJGLException[] failure = new LWJGLException[1];
+        blockingWait(() -> {
+            try {
+                task.run();
+            } catch (LWJGLException e) {
+                failure[0] = e;
+            }
+        });
+        if (failure[0] != null) {
+            throw failure[0];
+        }
+    }
+
+    /** {@link #blockingWaitLwjgl(ThrowingTask)} 的取值版本。 */
+    static <T> T blockingGetLwjgl(ThrowingGetter<T> getter) throws LWJGLException {
+        LWJGLException[] failure = new LWJGLException[1];
+        T result = blockingGet(() -> {
+            try {
+                return getter.get();
+            } catch (LWJGLException e) {
+                failure[0] = e;
+                return null;
+            }
+        });
+        if (failure[0] != null) {
+            throw failure[0];
+        }
+        return result;
+    }
+
+    /**
+     * 录制侧的 client pointer 快照状态（按生产者线程隔离）。
+     * 暴露给 bridge 包内与单测使用。
+     */
+    static ClientPointerState pointerState() {
+        return POINTER_STATES.get();
+    }
+
+    /** 缓冲快照池（包内与单测可见）。 */
+    static BufferSnapshotPool pool() {
+        return pool;
+    }
+
+    /** 测试用：更换全新快照池，避免用例间经静态单例池串扰。 */
+    static void resetPoolForTesting() {
+        pool = new BufferSnapshotPoolImpl();
+    }
+
+    static void releaseSnapshot(ByteBuffer snapshot) {
+        pool.release(snapshot);
+    }
+
+    /** 快照命令体：在渲染线程拿到池化快照执行，执行后归还。 */
+    interface SnapshotCommand {
+        void execute(ByteBuffer snapshot);
+    }
+
+    /**
+     * 把 {@code src} 深拷贝入池后录制一条携带快照的命令；命令执行完（无论
+     * 成败）归还快照。拷贝发生在录制时刻，调用方随后改写源 buffer 不影响命令。
+     */
+    static void enqueueSnapshot(ByteBuffer src, SnapshotCommand command) {
+        enqueueSnapshotCommand(pool.snapshot(src), command);
+    }
+
+    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link DoubleBuffer} 版本。 */
+    static void enqueueSnapshot(DoubleBuffer src, SnapshotCommand command) {
+        enqueueSnapshotCommand(pool.snapshot(src), command);
+    }
+
+    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link FloatBuffer} 版本。 */
+    static void enqueueSnapshot(FloatBuffer src, SnapshotCommand command) {
+        enqueueSnapshotCommand(pool.snapshot(src), command);
+    }
+
+    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link IntBuffer} 版本。 */
+    static void enqueueSnapshot(IntBuffer src, SnapshotCommand command) {
+        enqueueSnapshotCommand(pool.snapshot(src), command);
+    }
+
+    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link ShortBuffer} 版本。 */
+    static void enqueueSnapshot(ShortBuffer src, SnapshotCommand command) {
+        enqueueSnapshotCommand(pool.snapshot(src), command);
+    }
+
+    private static void enqueueSnapshotCommand(ByteBuffer snapshot, SnapshotCommand command) {
+        enqueue(() -> {
+            try {
+                command.execute(snapshot);
+            } finally {
+                pool.release(snapshot);
+            }
+        });
+    }
+}

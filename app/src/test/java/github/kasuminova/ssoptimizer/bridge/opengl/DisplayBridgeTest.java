@@ -53,4 +53,32 @@ class DisplayBridgeTest {
         Display.uninstall();
         assertThrows(IllegalStateException.class, Display::update);
     }
+
+    @Test
+    void windowAttributeChangesAreEnqueued() throws Exception {
+        Display.setVSyncEnabled(true);
+        Display.setTitle("title");
+        Display.setLocation(10, 20);
+        assertEquals(3, queue.recorded.size(), "窗口属性变更按普通命令入队");
+        assertEquals(0, queue.blockingTasks.size());
+    }
+
+    @Test
+    void windowLevelChangesRouteThroughBlockingChannel() throws Exception {
+        // 假队列的 wait/get 不执行命令体（真实 Display 调用在无显示环境不可调），
+        // 只验证通道路由与受检异常透传结构
+        Display.setDisplayMode(null);
+        Display.setFullscreen(true);
+        Display.destroy();
+        Display.makeCurrent();
+        queue.getHandler = callable -> 0;
+        Display.setIcon(new java.nio.ByteBuffer[0]);
+        assertEquals(4, queue.blockingTasks.size());
+        assertEquals(1, queue.getCallCount, "setIcon 走阻塞取值通道");
+        queue.getHandler = callable -> new org.lwjgl.opengl.DisplayMode[0];
+        Display.getAvailableDisplayModes();
+        queue.getHandler = callable -> null;
+        Display.getDesktopDisplayMode();
+        assertEquals(3, queue.getCallCount);
+    }
 }
