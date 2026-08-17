@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Sprite UV 图集重映射 Mixin。
  * <p>
  * 注入目标：{@code com.fs.graphics.Sprite}<br>
- * 注入动机：{@link ShipWeaponAtlas} 把舰船/武器贴图合并进 2048² 图集后，Sprite 的
+ * 注入动机：{@link ShipWeaponAtlas} 把舰船/武器贴图合并进图集后，Sprite 的
  * 纹理坐标仍指向原始独立纹理的 UV 空间，必须映射进图集区域才能与绑定层的图集
  * 重定向（{@code LazyTextureManager}）配套。<br>
  * 注入效果：

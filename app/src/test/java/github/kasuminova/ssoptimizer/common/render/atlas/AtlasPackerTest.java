@@ -72,6 +72,24 @@ class AtlasPackerTest {
     }
 
     @Test
+    void affinityGroupsPackConsecutively() {
+        // 组按「组内最高条目」降序排列，同组条目在装箱顺序中连续（页局部性来源）
+        List<AtlasPacker.Entry> entries = List.of(
+                new AtlasPacker.Entry("a1.png", 100, 100, "g/a"),
+                new AtlasPacker.Entry("b1.png", 100, 500, "g/b"),
+                new AtlasPacker.Entry("a2.png", 100, 90, "g/a"),
+                new AtlasPacker.Entry("b2.png", 100, 400, "g/b"),
+                new AtlasPacker.Entry("free.png", 100, 600));
+        AtlasPacker.Result result = AtlasPacker.pack(entries, 4096, 16);
+
+        assertEquals(1, result.pages().size());
+        List<String> order = result.pages().get(0).placements().stream()
+                .map(AtlasPacker.Placement::path).toList();
+        // free.png 组最高（600）最先；g/b（组高 500）整组先于 g/a（组高 100），组内高度降序
+        assertEquals(List.of("free.png", "b1.png", "b2.png", "a1.png", "a2.png"), order);
+    }
+
+    @Test
     void placementsNeverOverlap() {
         List<AtlasPacker.Entry> entries = new java.util.ArrayList<>();
         for (int i = 0; i < 50; i++) {

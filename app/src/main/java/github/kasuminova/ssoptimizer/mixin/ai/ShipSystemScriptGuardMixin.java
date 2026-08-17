@@ -7,7 +7,6 @@ import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.lwjgl.util.vector.Vector2f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -22,20 +21,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * URLClassLoader 加载，不经过 LaunchClassLoader 变换链，无法直接 Mixin 修复模组类，
  * 只能在调用侧（游戏类适配器）加锁串行化。<br>
  * 注入效果：工作线程上执行<b>模组</b>脚本（包名不以 {@code com.fs.starfarer.} 开头）时，
- * 全程持有全局锁串行执行并取消原方法；原版脚本与主线程调用不受影响（原版脚本已在
- * 并行 AI 长程测试中验证无共享静态状态问题）。
+ * 全程持有 {@link ParallelAiDispatcher#MOD_SCRIPT_LOCK} 串行执行并取消原方法；
+ * 原版脚本与主线程调用不受影响（原版脚本已在并行 AI 长程测试中验证无共享静态状态问题）。
  * <p>
- * 并发覆盖完整性：并行阶段与实体 advance/渲染阶段由帧内屏障隔开，LazyLib 缓存的
- * 主线程使用者（EveryFrame 插件等）不会与工作线程并发，故只需串行化工作线程之间的
- * 模组脚本执行。
+ * 并发覆盖完整性：并行阶段与实体 advance/渲染阶段由帧内屏障隔开，但主线程在并行
+ * 窗口内仍会内联执行模组导弹 AI（GuidedMissileAIWrapper 包装），因此主线程侧的模组
+ * AI 由 {@code ParallelAiDispatcher.dispatch} 内联路径持同一把锁互斥；
+ * 帧屏障之外的模组主线程使用者（EveryFrame 插件等）不会与工作线程并发。
  */
 @Mixin(targets = GameClassNames.SHIP_SYSTEM_SCRIPT_ADAPTER_DOTTED)
 public abstract class ShipSystemScriptGuardMixin {
     @Shadow(remap = false)
     private ShipSystemAIScript aiScript;
-
-    @Unique
-    private static final Object ssoptimizer$MOD_SCRIPT_LOCK = new Object();
 
     /**
      * @author KasumiNova
@@ -52,7 +49,7 @@ public abstract class ShipSystemScriptGuardMixin {
         if (script == null || script.getClass().getName().startsWith("com.fs.starfarer.")) {
             return;
         }
-        synchronized (ssoptimizer$MOD_SCRIPT_LOCK) {
+        synchronized (ParallelAiDispatcher.MOD_SCRIPT_LOCK) {
             script.advance(amount, missileDangerDir, collisionDangerDir, ship);
         }
         ci.cancel();

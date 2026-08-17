@@ -23,7 +23,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,7 +36,8 @@ import java.util.concurrent.Future;
  * <p>
  * 加载期（{@code ResourceLoaderState.init} 返回点，主线程持 GL 上下文）把全部舰船
  * 船体图与武器系列贴图（炮塔/硬点/底衬/辉光/枪管/动画帧，以及导弹船体与辉光）
- * shelf 装箱进若干图集页（期望 4096²，按 {@code GL_MAX_TEXTURE_SIZE} 收敛）并上传 GPU；{@code SpriteAtlasMixin} 在
+ * shelf 装箱进若干图集页（期望 8192²，按 {@code GL_MAX_TEXTURE_SIZE} 收敛；按船体/武器/弹体 id
+ * 亲和分组排布以提高同页命中率）并上传 GPU；{@code SpriteAtlasMixin} 在
  * {@code Sprite.setTexture} 尾部把 UV 四字段重映射进图集区域，
  * {@link LazyTextureManager} 在绑定层把已入图集路径的 bind/getTextureId 重定向到图集
  * 纹理。效果：同页贴图共享同一 GL 纹理 id，SpriteBatch 合批率与 bind 次数显著改善，
@@ -64,7 +64,7 @@ public final class ShipWeaponAtlas {
 
     private static final boolean ENABLED = Boolean.parseBoolean(
             System.getProperty(ENABLED_PROPERTY, "true"));
-    private static final int DESIRED_ATLAS_SIZE = 4096;
+    private static final int DESIRED_ATLAS_SIZE = 8192;
     private static final int PADDING = 16;
 
     private static final Map<String, Region> REGIONS = new ConcurrentHashMap<>();
@@ -117,8 +117,8 @@ public final class ShipWeaponAtlas {
         }
 
         final long startNanos = System.nanoTime();
-        final Set<String> paths = collectSpritePaths();
-        final Map<String, BufferedImage> images = decodeAll(paths);
+        final Map<String, String> pathAffinity = collectSpritePaths();
+        final Map<String, BufferedImage> images = decodeAll(pathAffinity.keySet());
         if (images.isEmpty()) {
             LOGGER.warn("[SSOptimizer] Ship/weapon texture atlas: no sprite decoded, atlas disabled");
             return;
@@ -126,7 +126,8 @@ public final class ShipWeaponAtlas {
 
         final List<AtlasPacker.Entry> entries = new ArrayList<>(images.size());
         images.forEach((path, image) -> entries.add(
-                new AtlasPacker.Entry(path, image.getWidth(), image.getHeight())));
+                new AtlasPacker.Entry(path, image.getWidth(), image.getHeight(),
+                        pathAffinity.getOrDefault(path, ""))));
         final int pageSize = resolvePageSize();
         final AtlasPacker.Result packed = AtlasPacker.pack(entries, pageSize, PADDING);
         final java.nio.file.Path dumpDir = resolveDumpDir();
@@ -169,7 +170,7 @@ public final class ShipWeaponAtlas {
     }
 
     /**
-     * 解析图集页边长：期望 4096（2006 年后的独显/核显均支持），
+     * 解析图集页边长：期望 8192（近十年独显/核显普遍支持 16384），
      * 受 {@code GL_MAX_TEXTURE_SIZE} 限制时收敛到硬件上限并记日志。
      * 调用方必须持有 OpenGL 上下文。
      */
@@ -185,64 +186,71 @@ public final class ShipWeaponAtlas {
 
     /**
      * 枚举舰船/武器系列贴图路径（口径与 {@code ResourceLoaderState.queueShipAndWeaponSprites}
-     * 一致，去掉光束与弹丸贴图）。
+     * 一致，去掉光束与弹丸贴图），并为每个路径标注亲和分组键：
+     * 舰船按船体 id、武器按武器 id、导弹按弹体 id 分组。同组贴图在图集内连续排布，
+     * 渲染一艘船/一件武器的全部贴图时落在同一页，提高 bind 去重与合批命中率。
+     *
+     * @return 贴图路径 → 亲和分组键（同一路径被多个组引用时先到先得，保证确定性）
      */
-    private static Set<String> collectSpritePaths() {
-        final Set<String> paths = new LinkedHashSet<>();
+    private static Map<String, String> collectSpritePaths() {
+        final Map<String, String> paths = new java.util.LinkedHashMap<>();
         for (String hullId : ShipHullSpecStore.getIds()) {
             final ShipHullSpec hullSpec = ShipHullSpecStore.get(hullId);
             if (hullSpec != null && hullSpec.getSpriteSpec() != null) {
-                add(paths, hullSpec.getSpriteSpec().getSpriteName());
+                add(paths, hullSpec.getSpriteSpec().getSpriteName(), "h/" + hullId);
             }
         }
         for (String weaponId : WeaponSpecStore.getWeaponSpecIds()) {
             final BaseWeaponSpec spec = WeaponSpecStore.getWeaponSpec(weaponId);
-            add(paths, spec.getTurretSpriteName());
-            add(paths, spec.getHardpointSpriteName());
-            add(paths, spec.getTurretUnderSpriteName());
-            add(paths, spec.getHardpointUnderSpriteName());
+            final String group = "w/" + weaponId;
+            add(paths, spec.getTurretSpriteName(), group);
+            add(paths, spec.getHardpointSpriteName(), group);
+            add(paths, spec.getTurretUnderSpriteName(), group);
+            add(paths, spec.getHardpointUnderSpriteName(), group);
             if (spec instanceof ProjectileWeaponSpec projectile) {
-                add(paths, projectile.getTurretGlowSpriteName());
-                add(paths, projectile.getHardpointGlowSpriteName());
-                add(paths, projectile.getTurretGunSpriteName());
-                add(paths, projectile.getHardpointGunSpriteName());
-                addAnimationFrames(paths, projectile.getTurretSpriteName(), projectile.getNumFrames());
-                addAnimationFrames(paths, projectile.getHardpointSpriteName(), projectile.getNumFrames());
+                add(paths, projectile.getTurretGlowSpriteName(), group);
+                add(paths, projectile.getHardpointGlowSpriteName(), group);
+                add(paths, projectile.getTurretGunSpriteName(), group);
+                add(paths, projectile.getHardpointGunSpriteName(), group);
+                addAnimationFrames(paths, projectile.getTurretSpriteName(), projectile.getNumFrames(), group);
+                addAnimationFrames(paths, projectile.getHardpointSpriteName(), projectile.getNumFrames(), group);
             } else if (spec instanceof BeamWeaponSpec beam) {
-                add(paths, beam.getTurretGlowSpriteName());
-                add(paths, beam.getHardpointGlowSpriteName());
-                addAnimationFrames(paths, beam.getTurretSpriteName(), beam.getNumFrames());
-                addAnimationFrames(paths, beam.getHardpointSpriteName(), beam.getNumFrames());
+                add(paths, beam.getTurretGlowSpriteName(), group);
+                add(paths, beam.getHardpointGlowSpriteName(), group);
+                addAnimationFrames(paths, beam.getTurretSpriteName(), beam.getNumFrames(), group);
+                addAnimationFrames(paths, beam.getHardpointSpriteName(), beam.getNumFrames(), group);
             }
         }
         // 导弹船体与辉光（武器子变体）
         for (String projectileId : WeaponSpecStore.getProjectileSpecIds()) {
             if (WeaponSpecStore.getProjectileSpec(projectileId) instanceof MissileSpec missile) {
+                final String group = "m/" + projectileId;
                 if (missile.getHullSpec() != null && missile.getHullSpec().getSpriteSpec() != null) {
-                    add(paths, missile.getHullSpec().getSpriteSpec().getSpriteName());
+                    add(paths, missile.getHullSpec().getSpriteSpec().getSpriteName(), group);
                 }
-                add(paths, missile.getGlowSpriteName());
+                add(paths, missile.getGlowSpriteName(), group);
             }
         }
         return paths;
     }
 
-    private static void add(final Set<String> paths, final String path) {
+    private static void add(final Map<String, String> paths, final String path, final String group) {
         if (path != null && !path.isEmpty()) {
-            paths.add(path);
+            paths.putIfAbsent(path, group);
         }
     }
 
     /**
      * 武器动画帧：基图名为 {@code ...00.png}，后续帧为 {@code ...01.png} 起的两位序号。
      */
-    private static void addAnimationFrames(final Set<String> paths, final String baseSprite, final int numFrames) {
+    private static void addAnimationFrames(final Map<String, String> paths, final String baseSprite,
+                                           final int numFrames, final String group) {
         if (baseSprite == null || !baseSprite.endsWith("00.png")) {
             return;
         }
         final String base = baseSprite.substring(0, baseSprite.length() - "00.png".length());
         for (int frame = 1; frame < numFrames; frame++) {
-            paths.add(String.format("%s%02d.png", base, frame));
+            paths.putIfAbsent(String.format("%s%02d.png", base, frame), group);
         }
     }
 
