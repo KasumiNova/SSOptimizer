@@ -1,11 +1,12 @@
 package github.kasuminova.ssoptimizer.common.render.queue;
 
+import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
+
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -13,25 +14,31 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  * 分级策略：容量 {@value #MIN_CAPACITY}B ~ {@value #MAX_CAPACITY}B 按 2 的幂分桶，
  * 借出时向上取整到最近的桶容量；超过上限的请求直接分配非池化缓冲（释放时不入池）。
- * 桶用无锁队列实现，录制线程（主线程/aux 生产者）借出与渲染线程归还互不阻塞。
+ * 桶用 JCTools MPMC 无界 Xadd 数组队列：录制线程（主线程/aux 生产者）借出与渲染
+ * 线程归还互不阻塞，相对 {@link java.util.concurrent.ConcurrentLinkedDeque} 消除了
+ * 链表节点 CAS（v36 profile：{@code ConcurrentLinkedDeque.pollFirst} 热点来源之一）；
+ * 无界保证归还永不丢弃（固定容量队列会在归还峰值期「归还即丢弃」，使池化退化回
+ * 每帧分配，v44 实测回归）。
  */
 public final class BufferSnapshotPoolImpl implements BufferSnapshotPool {
     /** 最小桶容量（字节）。 */
     public static final int MIN_CAPACITY = 256;
     /** 最大池化容量（字节）；超过即走非池化分配。 */
     public static final int MAX_CAPACITY = 16 * 1024 * 1024;
+    /** 每桶初始 chunk 容量（2 的幂）；队列按 chunk 链增长。 */
+    private static final int PER_BUCKET_INITIAL_CAPACITY = 128;
 
     private static final int MIN_SHIFT = Integer.numberOfTrailingZeros(MIN_CAPACITY);
     private static final int BUCKET_COUNT = Integer.numberOfTrailingZeros(MAX_CAPACITY) - MIN_SHIFT + 1;
 
-    private final ConcurrentLinkedDeque<ByteBuffer>[] buckets;
+    private final MpmcUnboundedXaddArrayQueue<ByteBuffer>[] buckets;
     private final AtomicInteger allocations = new AtomicInteger();
 
     @SuppressWarnings("unchecked")
     public BufferSnapshotPoolImpl() {
-        this.buckets = new ConcurrentLinkedDeque[BUCKET_COUNT];
+        this.buckets = new MpmcUnboundedXaddArrayQueue[BUCKET_COUNT];
         for (int i = 0; i < BUCKET_COUNT; i++) {
-            buckets[i] = new ConcurrentLinkedDeque<>();
+            buckets[i] = new MpmcUnboundedXaddArrayQueue<>(PER_BUCKET_INITIAL_CAPACITY);
         }
     }
 
@@ -61,7 +68,8 @@ public final class BufferSnapshotPoolImpl implements BufferSnapshotPool {
             // 非池化缓冲（超过上限的大块分配）：直接丢弃
             return;
         }
-        buckets[bucketIndexFor(capacity)].offer(buffer);
+        int index = bucketIndexFor(capacity);
+        buckets[index].offer(buffer);
     }
 
     @Override
@@ -117,7 +125,7 @@ public final class BufferSnapshotPoolImpl implements BufferSnapshotPool {
     @Override
     public int pooledBufferCount() {
         int total = 0;
-        for (ConcurrentLinkedDeque<ByteBuffer> bucket : buckets) {
+        for (MpmcUnboundedXaddArrayQueue<ByteBuffer> bucket : buckets) {
             total += bucket.size();
         }
         return total;
