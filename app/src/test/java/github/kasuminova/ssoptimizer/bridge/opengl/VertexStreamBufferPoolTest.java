@@ -2,6 +2,9 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -98,5 +101,87 @@ class VertexStreamBufferPoolTest {
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         pool.release(new byte[16]);
         assertEquals(0, pool.pooledBufferCount(), "低于最小档容量的缓冲不应入池");
+    }
+
+    @Test
+    void retentionIsBoundedByPeakDemandAndDoesNotGrowAcrossRounds() {
+        // 无界保留回归点（JProfiler 实机 dump：池内 byte[] 6,335 MB）：高峰借出后
+        // 池保留量收敛于 peak + slack，相同需求量反复借还不随轮次增长。
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        final int size = VertexStreamBufferPool.MIN_CAPACITY;
+        final List<byte[]> held = new ArrayList<>();
+
+        for (int i = 0; i < 200; i++) {
+            held.add(pool.acquire(size));
+        }
+        for (byte[] buffer : held) {
+            pool.release(buffer);
+        }
+        final int afterPeak = pool.pooledBufferCount();
+        assertTrue(afterPeak <= 200 + VertexStreamBufferPool.RETENTION_SLACK,
+                "高峰借还后池保留量应 ≤ peak+slack，实际 " + afterPeak);
+
+        for (int round = 0; round < 5; round++) {
+            held.clear();
+            for (int i = 0; i < 200; i++) {
+                held.add(pool.acquire(size));
+            }
+            for (byte[] buffer : held) {
+                pool.release(buffer);
+            }
+            assertTrue(pool.pooledBufferCount() <= 200 + VertexStreamBufferPool.RETENTION_SLACK,
+                    "反复借还后保留量不得增长，round=" + round + " 实际 " + pool.pooledBufferCount());
+        }
+    }
+
+    @Test
+    void peakDecayDrainsExcessRetentionAndExcessReleaseIsDropped() {
+        // 需求回落后峰值衰减：池主动排空超限库存；之后超限归还被丢弃并计数。
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        final int size = VertexStreamBufferPool.MIN_CAPACITY;
+        final List<byte[]> held = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            held.add(pool.acquire(size));
+        }
+        for (byte[] buffer : held) {
+            pool.release(buffer);
+        }
+        assertEquals(100, pool.pooledBufferCount());
+
+        // 连续衰减把借出峰值收缩至 0：上限回落至 slack，池排空至 slack 以内
+        for (int i = 0; i < 30; i++) {
+            pool.decayPeaksForTest();
+        }
+        assertTrue(pool.pooledBufferCount() <= VertexStreamBufferPool.RETENTION_SLACK,
+                "峰值衰减后池应排空至 slack 以内，实际 " + pool.pooledBufferCount());
+
+        final long droppedBefore = pool.droppedBufferCount();
+        pool.release(new byte[size]);
+        assertTrue(pool.pooledBufferCount() <= VertexStreamBufferPool.RETENTION_SLACK,
+                "超限归还应被丢弃而非继续滞留");
+        assertTrue(pool.droppedBufferCount() > droppedBefore, "丢荒应计数");
+    }
+
+    @Test
+    void steadyStateRetentionMatchesDemandWithoutDrops() {
+        // 稳态不抖动：需求 D 时池保留量在 [D, D+slack] 内波动，且不触发丢荒
+        // （保留上限 = 借出峰值 + slack 恒 ≥ 需求）。
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        final int size = VertexStreamBufferPool.MIN_CAPACITY;
+        final int demand = 40;
+        final List<byte[]> held = new ArrayList<>();
+        for (int round = 0; round < 10; round++) {
+            held.clear();
+            for (int i = 0; i < demand; i++) {
+                held.add(pool.acquire(size));
+            }
+            for (byte[] buffer : held) {
+                pool.release(buffer);
+            }
+        }
+        assertTrue(pool.pooledBufferCount() <= demand + VertexStreamBufferPool.RETENTION_SLACK,
+                "稳态保留量应 ≤ 需求+slack，实际 " + pool.pooledBufferCount());
+        // 稳态下 10 轮借还不应有任何丢荒（保留上限覆盖需求）
+        assertEquals(0, pool.droppedBufferCount(), "稳态需求下不得丢荒重建");
     }
 }

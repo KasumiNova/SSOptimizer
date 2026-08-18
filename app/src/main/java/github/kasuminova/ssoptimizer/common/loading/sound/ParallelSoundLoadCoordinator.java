@@ -118,6 +118,11 @@ public final class ParallelSoundLoadCoordinator {
         }
     }
 
+    /** 测试用：当前在途声音加载 future 数（验证完成/失败后条目移除）。 */
+    static int inflightLoadCountForTests() {
+        return INFLIGHT_LOADS.size();
+    }
+
     static List<String> discoverSoundResourcesForTests(final Path gameRoot,
                                                        final Path modsDir) {
         DISCOVERED_FILES.clear();
@@ -165,12 +170,15 @@ public final class ParallelSoundLoadCoordinator {
                 }, executor()));
 
         try {
-            final byte[] loaded = future.join();
-            INFLIGHT_LOADS.remove(resourcePath, future);
-            return loaded;
-        } catch (CompletionException ignored) {
-            INFLIGHT_LOADS.remove(resourcePath, future);
+            return future.join();
+        } catch (CompletionException e) {
+            LOGGER.warn("[SSOptimizer] Parallel sound load failed for " + resourcePath
+                    + ", fallback to original path: " + e.getCause(), e);
             return null;
+        } finally {
+            // 无论成功/失败/取消都必须移除条目：完成后的 future 持有已加载字节
+            // （单项可达 12MB），滞留会让 INFLIGHT_LOADS 永久持有全部已加载声音
+            INFLIGHT_LOADS.remove(resourcePath, future);
         }
     }
 
@@ -188,17 +196,25 @@ public final class ParallelSoundLoadCoordinator {
 
         for (String resource : resources) {
             INFLIGHT_LOADS.computeIfAbsent(resource,
-                    ignored -> CompletableFuture.supplyAsync(() -> {
-                        try {
-                            final byte[] loaded = loadBytes(resource);
-                            if (loaded != null) {
-                                rememberCompletedBytes(resource, loaded);
+                    ignored -> {
+                        final CompletableFuture<byte[]> future = CompletableFuture.supplyAsync(() -> {
+                            try {
+                                final byte[] loaded = loadBytes(resource);
+                                if (loaded != null) {
+                                    rememberCompletedBytes(resource, loaded);
+                                }
+                                return loaded;
+                            } catch (IOException e) {
+                                LOGGER.warn("[SSOptimizer] Sound preload failed for " + resource + ": "
+                                        + e.getMessage(), e);
+                                return null;
                             }
-                            return loaded;
-                        } catch (IOException e) {
-                            return null;
-                        }
-                    }, executor()));
+                        }, executor());
+                        // 预载 future 完成（含失败）后立即摘除条目：结果已进 COMPLETED_BYTES
+                        // 缓存，滞留的 future 会永久持有已加载字节（12MB 级）
+                        future.whenComplete((loaded, error) -> INFLIGHT_LOADS.remove(resource, future));
+                        return future;
+                    });
         }
 
         LOGGER.info("[SSOptimizer] Parallel sound preload scheduled: resources="
@@ -215,7 +231,8 @@ public final class ParallelSoundLoadCoordinator {
             try (Stream<Path> modEntries = Files.list(modsDir)) {
                 modEntries.filter(Files::isDirectory)
                           .forEach(modPath -> scanSoundRoot(modPath.resolve("sounds"), resources));
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                LOGGER.debug("[SSOptimizer] Failed to list mods dir " + modsDir + ": " + e.getMessage(), e);
             }
         }
 
@@ -236,7 +253,8 @@ public final class ParallelSoundLoadCoordinator {
                      resources.add(resourcePath);
                      DISCOVERED_FILES.putIfAbsent(resourcePath, path.toAbsolutePath().normalize());
                  });
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            LOGGER.debug("[SSOptimizer] Failed to scan sound root " + soundRoot + ": " + e.getMessage(), e);
         }
     }
 

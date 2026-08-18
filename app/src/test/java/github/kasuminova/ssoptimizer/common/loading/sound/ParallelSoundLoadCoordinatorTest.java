@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ParallelSoundLoadCoordinatorTest {
     @TempDir
@@ -126,6 +127,59 @@ class ParallelSoundLoadCoordinatorTest {
 
         assertEquals("fallback-o00000:sounds/ui/cached.ogg", result);
         assertTrue(manager.originalPathFallbackUsed);
+    }
+
+    @Test
+    void inflightEntriesAreRemovedAfterLoadAndPrewarmComplete() throws Exception {
+        final Path gameRoot = tempDir.resolve("game");
+        final Path modsDir = gameRoot.resolve("mods");
+        Files.createDirectories(gameRoot.resolve("sounds"));
+        Files.writeString(gameRoot.resolve("sounds/a.ogg"), "aaa", StandardCharsets.UTF_8);
+        Files.writeString(gameRoot.resolve("sounds/b.ogg"), "bbb", StandardCharsets.UTF_8);
+        Files.writeString(gameRoot.resolve("sounds/c.ogg"), "ccc", StandardCharsets.UTF_8);
+
+        System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
+        System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
+
+        final FakeSoundManager manager = new FakeSoundManager();
+        ParallelSoundLoadCoordinator.loadObjectFamily(manager, "sounds/a.ogg");
+
+        // 加载/预载完成后 INFLIGHT_LOADS 必须清空：滞留的 future 持有已加载字节
+        // （单项 12MB 级，JProfiler 实测 522 MB 泄露的根因）。
+        awaitInflightDrain();
+        assertEquals(0, ParallelSoundLoadCoordinator.inflightLoadCountForTests(),
+                "加载与预载完成后 INFLIGHT_LOADS 应清空");
+    }
+
+    @Test
+    void inflightEntryRemovedWhenPrewarmLoadFails() throws Exception {
+        final Path gameRoot = tempDir.resolve("game");
+        final Path modsDir = gameRoot.resolve("mods");
+        Files.createDirectories(gameRoot.resolve("sounds"));
+        Files.writeString(gameRoot.resolve("sounds/good.ogg"), "good", StandardCharsets.UTF_8);
+        final Path broken = gameRoot.resolve("sounds/broken.ogg");
+        Files.writeString(broken, "broken", StandardCharsets.UTF_8);
+        assumeTrue(broken.toFile().setReadable(false),
+                "平台不支持文件权限位（如 Windows），跳过预载失败路径断言");
+
+        System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
+        System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
+
+        final FakeSoundManager manager = new FakeSoundManager();
+        ParallelSoundLoadCoordinator.loadObjectFamily(manager, "sounds/good.ogg");
+
+        // 正常预载完成 + 不可读文件预载失败：两者的 INFLIGHT 条目都必须移除
+        awaitInflightDrain();
+        assertEquals(0, ParallelSoundLoadCoordinator.inflightLoadCountForTests(),
+                "预载失败条目也必须移除（future 不得滞留）");
+    }
+
+    /** 轮询等待全部在途 future 完成并从 INFLIGHT_LOADS 摘除（5s 上限）。 */
+    private static void awaitInflightDrain() throws InterruptedException {
+        final long deadline = System.nanoTime() + 5_000_000_000L;
+        while (ParallelSoundLoadCoordinator.inflightLoadCountForTests() > 0 && System.nanoTime() < deadline) {
+            Thread.sleep(20);
+        }
     }
 
     @SuppressWarnings("unused")

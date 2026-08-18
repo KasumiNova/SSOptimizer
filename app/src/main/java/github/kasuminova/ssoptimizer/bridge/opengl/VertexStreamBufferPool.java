@@ -1,8 +1,10 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import org.apache.log4j.Logger;
 import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 顶点流编码缓冲池：跨线程复用 immediate 顶点流（{@link VertexStream}）的
@@ -29,8 +31,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 桶用 JCTools MPMC 无界 Xadd 数组队列：借出（主线程/aux 生产者，多消费者）
  * 与归还（渲染线程，单生产者）互不阻塞，且相对
  * {@link java.util.concurrent.ConcurrentLinkedDeque} 消除了链表节点 CAS
- * （v36 pollFirst 热点）；无界保证归还永不丢弃（固定容量队列会在归还峰值期
- * 出现「归还即丢弃」，使池化退化回每帧分配，v44 实测回归）。
+ * （v36 pollFirst 热点）。
+ * <p>
+ * <b>有界保留（A5）</b>：v46 池降频改造后全局桶无界——任何归还的缓冲都会
+ * 永久滞留（为避免 v44 固定容量池「归还即丢弃」的日志洪泛而走向另一极端），
+ * 峰值帧借出的大容量缓冲（2MB~4MB 档）全部保留，JProfiler 实机 dump 显示
+ * 池内 byte[] 累计 6,335 MB（约 80% 堆）。修复：按桶以「历史并发借出峰值 +
+ * 松弛量」为保留上限，归还超限即丢弃；峰值按时间衰减（需求回落后主动排空
+ * 超限库存），有界且不抖动——借出峰值在 acquire 侧即时抬升，稳态需求下
+ * 池保留量收敛于需求水平，不会像固定上限那样在借出峰值期反复丢荒重建。
+ * 硬约束沿用 v44 教训：{@link #acquire(int)} 仍从需求档向下补货；归还路径
+ * 常态零日志，丢荒仅低频（约每分钟）汇总一次。
  */
 final class VertexStreamBufferPool {
     /** 最小桶容量（字节）。 */
@@ -41,6 +52,23 @@ final class VertexStreamBufferPool {
     private static final int PER_BUCKET_INITIAL_CAPACITY = 256;
     /** 每线程本地预借栈容量与单次补货预算。 */
     private static final int LOCAL_BATCH = 32;
+    /**
+     * 每桶保留上限相对借出峰值（{@link #peakInFlight}）的松弛量：覆盖本地栈
+     * 补货突发（一次 refill = {@link #LOCAL_BATCH}）与多线程同时 refill 的
+     * 短时超出，避免峰值上升前的瞬时丢荒。
+     */
+    static final int RETENTION_SLACK = LOCAL_BATCH * 2;
+    /** 借出峰值衰减间隔（纳秒）：超过该间隔未达峰时按 {@link #PEAK_DECAY_FACTOR} 收缩。 */
+    private static final long PEAK_DECAY_INTERVAL_NANOS = 2_000_000_000L;
+    /** 峰值衰减系数（每间隔收缩至 max(当前借出, 峰值 * 系数)）。 */
+    private static final int PEAK_DECAY_FACTOR_NUM = 3;
+    private static final int PEAK_DECAY_FACTOR_DEN = 4;
+    /** 丢荒汇总日志间隔（纳秒）：约每分钟一次。 */
+    private static final long DROP_LOG_INTERVAL_NANOS = 60_000_000_000L;
+    /** 归还路径维护（衰减/排空/日志）的采样掩码：每 64 次归还执行一次。 */
+    private static final int MAINTENANCE_MASK = 0x3F;
+
+    private static final Logger LOGGER = Logger.getLogger(VertexStreamBufferPool.class);
 
     private static final int MIN_SHIFT = Integer.numberOfTrailingZeros(MIN_CAPACITY);
     private static final int BUCKET_COUNT = Integer.numberOfTrailingZeros(MAX_CAPACITY) - MIN_SHIFT + 1;
@@ -51,10 +79,23 @@ final class VertexStreamBufferPool {
             ThreadLocal.withInitial(() -> new LocalBufferStack(LOCAL_BATCH));
     /** 累计新建缓冲数（诊断/测试用：验证池化覆盖借出，见 {@link #totalAllocations()}）。 */
     private final AtomicInteger allocations = new AtomicInteger();
+    /** 每桶当前借出未归（经 {@link #acquire(int)} 交出、尚未 {@link #release(byte[])} 归还）的缓冲数。 */
+    private final AtomicInteger[] inFlight = new AtomicInteger[BUCKET_COUNT];
+    /** 每桶借出高水位（带时间衰减）：保留上限 = 高水位 + {@link #RETENTION_SLACK}。 */
+    private final AtomicInteger[] peakInFlight = new AtomicInteger[BUCKET_COUNT];
+    private final AtomicLong[] lastDecayNanos = new AtomicLong[BUCKET_COUNT];
+    /** 累计丢弃缓冲数（超限归还 + 峰值衰减后的主动排空）。 */
+    private final AtomicLong droppedBuffers = new AtomicLong();
+    private final AtomicLong droppedAtLastLog = new AtomicLong();
+    private volatile long lastDropLogNanos;
+    private final AtomicInteger releaseCounter = new AtomicInteger();
 
     VertexStreamBufferPool() {
         for (int i = 0; i < BUCKET_COUNT; i++) {
             buckets[i] = new MpmcUnboundedXaddArrayQueue<>(PER_BUCKET_INITIAL_CAPACITY);
+            inFlight[i] = new AtomicInteger();
+            peakInFlight[i] = new AtomicInteger();
+            lastDecayNanos[i] = new AtomicLong();
         }
     }
 
@@ -75,7 +116,7 @@ final class VertexStreamBufferPool {
         LocalBufferStack stack = local.get();
         byte[] hit = stack.findAndRemove(minCapacity);
         if (hit != null) {
-            return hit;
+            return trackBorrow(hit);
         }
         // 批量补货：从需求档向下 poll（预算 LOCAL_BATCH），全部入本地栈
         // （容量不匹配的留栈供更小需求），随后从栈中取合适的——本地栈由此
@@ -98,10 +139,25 @@ final class VertexStreamBufferPool {
         }
         byte[] fromStack = stack.findAndRemove(minCapacity);
         if (fromStack != null) {
-            return fromStack;
+            return trackBorrow(fromStack);
         }
         allocations.incrementAndGet();
-        return new byte[capacityFor(minCapacity)];
+        return trackBorrow(new byte[capacityFor(minCapacity)]);
+    }
+
+    /**
+     * 借出计数：池化区间内的缓冲记录到所在桶的借出高水位（保留上限 = 高水位 +
+     * {@link #RETENTION_SLACK}）。超上限的非池化缓冲不参与——它永不入池，
+     * {@link #release(byte[])} 对其早退，计数必须保持平衡。
+     */
+    private byte[] trackBorrow(byte[] buffer) {
+        final int capacity = buffer.length;
+        if (capacity >= MIN_CAPACITY && capacity <= MAX_CAPACITY) {
+            final int bucket = bucketIndexFor(capacity);
+            final int cur = inFlight[bucket].incrementAndGet();
+            peakInFlight[bucket].updateAndGet(peak -> Math.max(peak, cur));
+        }
+        return buffer;
     }
 
     /** 测试用：累计新建缓冲数（池化生效的验证指标）。 */
@@ -110,8 +166,11 @@ final class VertexStreamBufferPool {
     }
 
     /**
-     * 归还缓冲（渲染线程执行完顶点批次命令后）。容量落在池化区间内则按
-     * 容量进位入档；无界队列，不丢对象。
+     * 归还缓冲（渲染线程执行完顶点批次命令后）。容量落在池化区间内则按容量
+     * 进位入档；保留量超过该档上限（借出峰值 + 松弛量）的缓冲直接丢弃——
+     * 峰值由 {@link #acquire(int)} 侧即时抬升、按时间衰减回落，稳态下池保留
+     * 量收敛于实际并发借出水平（JProfiler 实测修复前无界保留 6,335 MB）。
+     * 归还路径常态零日志；丢荒仅在约每分钟一次的维护点上汇总输出。
      */
     void release(byte[] buffer) {
         int capacity = buffer.length;
@@ -119,7 +178,72 @@ final class VertexStreamBufferPool {
             // 非池化缓冲（低于最小档或超过上限的大块分配）：直接丢弃
             return;
         }
-        buckets[bucketIndexFor(capacity)].offer(buffer);
+        int bucket = bucketIndexFor(capacity);
+        inFlight[bucket].decrementAndGet();
+        if ((releaseCounter.incrementAndGet() & MAINTENANCE_MASK) == 0) {
+            final long now = System.nanoTime();
+            maintainBucket(bucket, now);
+            maybeLogDrops(now);
+        }
+        if (buckets[bucket].size() < peakInFlight[bucket].get() + RETENTION_SLACK) {
+            buckets[bucket].offer(buffer);
+        } else {
+            droppedBuffers.incrementAndGet();
+        }
+    }
+
+    /**
+     * 单桶维护（低频调用）：峰值时间衰减 + 主动排空超限库存。
+     * <p>
+     * 峰值衰减把「历史借出高水位」收缩向当前需求——若需求长期未达峰，峰值每
+     * {@link #PEAK_DECAY_INTERVAL_NANOS} 收缩 {@link #PEAK_DECAY_FACTOR_NUM}/
+     * {@link #PEAK_DECAY_FACTOR_DEN}，使保留上限跟随需求回落；排空直接摘除
+     * 超限库存（从桶尾 poll 丢弃），否则仅靠「归还超限丢弃」无法消化峰值期
+     * 滞留的存量。借出峰值在 acquire 侧即时抬升，因此维护不会在稳态需求下
+     * 误伤库存（上限恒 ≥ 当前需求 + 松弛量）。
+     */
+    private void maintainBucket(int bucket, long now) {
+        if (now - lastDecayNanos[bucket].get() >= PEAK_DECAY_INTERVAL_NANOS) {
+            lastDecayNanos[bucket].set(now);
+            final int cur = inFlight[bucket].get();
+            final int peak = peakInFlight[bucket].get();
+            peakInFlight[bucket].set(Math.max(cur, peak * PEAK_DECAY_FACTOR_NUM / PEAK_DECAY_FACTOR_DEN));
+        }
+        final int limit = peakInFlight[bucket].get() + RETENTION_SLACK;
+        while (buckets[bucket].size() > limit) {
+            if (buckets[bucket].poll() == null) {
+                break;
+            }
+            droppedBuffers.incrementAndGet();
+        }
+    }
+
+    /** 丢荒汇总日志：约每分钟一次，仅在有丢弃时输出（常态零日志）。 */
+    private void maybeLogDrops(long now) {
+        if (now - lastDropLogNanos < DROP_LOG_INTERVAL_NANOS) {
+            return;
+        }
+        lastDropLogNanos = now;
+        final long total = droppedBuffers.get();
+        final long sinceLast = total - droppedAtLastLog.getAndSet(total);
+        if (sinceLast > 0) {
+            LOGGER.warn("[SSOptimizer] VertexStreamBufferPool 丢弃 " + sinceLast
+                    + " 个缓冲（保留上限收紧，累计 " + total + " 个）");
+        }
+    }
+
+    /** 测试用：对所有桶强制执行一次峰值衰减 + 超限排空（模拟维护点时间流逝）。 */
+    void decayPeaksForTest() {
+        final long now = System.nanoTime();
+        for (int i = 0; i < BUCKET_COUNT; i++) {
+            lastDecayNanos[i].set(now - PEAK_DECAY_INTERVAL_NANOS - 1L);
+            maintainBucket(i, now);
+        }
+    }
+
+    /** 测试用：累计丢弃缓冲数（超限归还 + 主动排空）。 */
+    long droppedBufferCount() {
+        return droppedBuffers.get();
     }
 
     /** 测试用：全局池内空闲缓冲总数（不含线程本地预借栈）。 */
