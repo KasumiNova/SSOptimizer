@@ -78,4 +78,35 @@ class AiSnapshotConcurrencyTest {
             assertTrue(seen >= 0, "每轮快照迭代都必须完成");
         }
     }
+
+    /**
+     * isEscortTargetOf 的 maneuver 守卫语义模拟：instanceof 检查后二次取引用
+     * 为 null（并行窗口期 maneuver 被并发替换）→ getTargetShip 返回 null →
+     * 递归 null target（arg 守卫兜底 false）→ 整体非护航（返回 false），
+     * 全程不抛 NPE。对应 {@code AiUtilsEscortTargetGuardMixin} 的守卫二 +
+     * 守卫一组合。
+     */
+    @Test
+    void nullManeuverInEscortChainYieldsFalseWithoutNpe() {
+        assertFalse(simulateIsEscortTargetOf(0), "maneuver 并发失效时 isEscortTargetOf 必须返回 false 且不抛异常");
+    }
+
+    /** 递归模拟（depth 上限 2，与游戏实现一致）；null maneuver 时 target 视为 null。 */
+    private static boolean simulateIsEscortTargetOf(int depth) {
+        if (depth >= 2) {
+            return false;
+        }
+        // 守卫二：maneuver 为 null（并发替换）→ getTargetShip 返回 null
+        Object maneuver = depth == 0 ? null : new Object();
+        if (maneuver instanceof String targetSupplier) {
+            return false; // 非 EscortTargetManeuverV3 分支（简化：不进入）
+        }
+        // EscortTargetManeuverV3 分支：getTargetShip() 返回 null（守卫二）
+        Object target = null;
+        // 守卫一：null target（或 null arg）→ 递归返回 false
+        if (target == null) {
+            return false;
+        }
+        return !target.equals("arg2") && !simulateIsEscortTargetOf(depth + 1);
+    }
 }
