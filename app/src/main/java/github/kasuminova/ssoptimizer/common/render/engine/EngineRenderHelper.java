@@ -3,7 +3,6 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 import com.fs.graphics.Sprite;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
@@ -299,7 +298,9 @@ public final class EngineRenderHelper {
     }
 
     private static boolean isPrimaryGlowType(Object glowType) {
-        return glowType instanceof Enum<?> mode && GameMemberNames.EngineGlowType.PRIMARY.equals(mode.name());
+        // 注意：该枚举常量的 name() 在原版 jar 中即为 "NORMAL"（字段名 PRIMARY 与
+        // clinit 名称串不一致是上游混淆残留），必须按引用比较，不能按 name() 比较。
+        return glowType == com.fs.starfarer.combat.entities.Engine.EngineGlowType.PRIMARY;
     }
 
     private static void renderEngineStripPasses(float posX, float posY,
