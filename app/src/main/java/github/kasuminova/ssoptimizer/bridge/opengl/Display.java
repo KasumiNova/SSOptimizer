@@ -210,6 +210,8 @@ public final class Display {
      */
     public static void setDisplayMode(DisplayMode mode) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setDisplayMode(mode));
+        // 显示模式切换重建 GL 上下文，录制侧状态簿记全部回到默认值
+        BridgeSupport.simulatedState().onContextRecreated();
     }
 
     /**
@@ -219,6 +221,8 @@ public final class Display {
      */
     public static void setFullscreen(boolean fullscreen) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setFullscreen(fullscreen));
+        // 全屏切换重建 GL 上下文，录制侧状态簿记全部回到默认值
+        BridgeSupport.simulatedState().onContextRecreated();
     }
 
     /** 窗口标题变更：无返回值依赖，按普通命令入队（X11 收口渲染线程）。 */

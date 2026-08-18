@@ -395,6 +395,19 @@ final class BridgeSupport {
         recordingContext().framebufferBinding[0] = framebuffer;
     }
 
+    /** 录制侧（当前线程）的 GL 状态仿真（bridge 各 setter/getter 调用点维护/查询）。 */
+    static SimulatedGlState simulatedState() {
+        return recordingContext().simulatedState;
+    }
+
+    /**
+     * 当前线程是否主录制线程（游戏主线程）：getter 仿真短路仅对主线程开放——
+     * aux 线程簿记不含主线程的状态流，一律回退阻塞通道保语义。
+     */
+    static boolean isMainRecordingThread() {
+        return RenderQueueImpl.isMainThread();
+    }
+
     /** 渲染线程簿记：命令流当前位置的 GL_ARRAY_BUFFER 绑定。 */
     static int executedArrayBufferBinding() {
         return executedArrayBufferBinding;

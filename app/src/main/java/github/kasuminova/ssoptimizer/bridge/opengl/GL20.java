@@ -78,6 +78,7 @@ public final class GL20 {
     }
 
     public static void glUseProgram(int program) {
+        BridgeSupport.simulatedState().onUseProgram(program);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glUseProgram(program));
     }
 
@@ -193,10 +194,14 @@ public final class GL20 {
 
     /** 单缓冲 draw buffers 形态（GL11.glDrawBuffer 的多目标版）。 */
     public static void glDrawBuffers(int buffer) {
+        // 单目标便捷形态：语义等同 glDrawBuffer，getter 簿记直接跟踪
+        BridgeSupport.simulatedState().onDrawBuffer(buffer);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDrawBuffers(buffer));
     }
 
     public static void glDrawBuffers(IntBuffer buffers) {
+        // 多目标形态超出单值簿记，失效化回退阻塞通道
+        BridgeSupport.simulatedState().onDrawBuffers();
         BridgeSupport.enqueueSnapshot(buffers, snapshot ->
                 org.lwjgl.opengl.GL20.glDrawBuffers(snapshot.asIntBuffer()));
     }

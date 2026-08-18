@@ -247,7 +247,7 @@ class GL11BridgeTest {
         GL11.glReadPixels(0, 0, 1, 1,
                 org.lwjgl.opengl.GL11.GL_RGBA, org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE, pixels);
         java.nio.IntBuffer out = java.nio.ByteBuffer.allocateDirect(4).asIntBuffer();
-        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_VIEWPORT, out);
+        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_SCISSOR_BOX, out);
         assertEquals(2, queue.blockingTasks.size(), "写入调用方 buffer 的回读走阻塞 wait 通道");
     }
 

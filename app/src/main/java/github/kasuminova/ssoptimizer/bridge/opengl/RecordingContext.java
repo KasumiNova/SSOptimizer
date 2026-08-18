@@ -27,6 +27,8 @@ final class RecordingContext {
     final VertexStream vertexStream = new VertexStream();
     /** 状态命令去重（连续相同的高频状态命令只入队一次，见 {@link StateDedup}）。 */
     final StateDedup stateDedup = new StateDedup();
+    /** 录制侧 GL 状态仿真（getter 回读短路，见 {@link SimulatedGlState}）。 */
+    final SimulatedGlState simulatedState = new SimulatedGlState();
     /**
      * 当前录制帧（状态命令去重的相邻性判据来源）：主线程在每帧边界（swap）
      * 刷新；非主线程保持 null，由 {@link BridgeSupport#queue()} 现取当前帧。

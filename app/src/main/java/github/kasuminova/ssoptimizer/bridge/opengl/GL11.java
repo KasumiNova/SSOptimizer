@@ -213,59 +213,72 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glMatrixMode(int mode) {
+        BridgeSupport.simulatedState().onMatrixMode(mode);
         BridgeSupport.enqueueState(StateDedup.TYPE_MATRIX_MODE, mode, 0, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glMatrixMode(mode));
     }
 
     public static void glLoadIdentity() {
+        BridgeSupport.simulatedState().onLoadIdentity();
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glLoadIdentity);
     }
 
     public static void glOrtho(double left, double right, double bottom, double top, double zNear, double zFar) {
+        BridgeSupport.simulatedState().onOrtho(left, right, bottom, top, zNear, zFar);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glOrtho(left, right, bottom, top, zNear, zFar));
     }
 
     public static void glPushMatrix() {
+        BridgeSupport.simulatedState().onPushMatrix();
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glPushMatrix);
     }
 
     public static void glPopMatrix() {
+        BridgeSupport.simulatedState().onPopMatrix();
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glPopMatrix);
     }
 
     public static void glTranslatef(float x, float y, float z) {
+        BridgeSupport.simulatedState().onTranslate(x, y, z);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTranslatef(x, y, z));
     }
 
     public static void glTranslated(double x, double y, double z) {
+        BridgeSupport.simulatedState().onTranslate(x, y, z);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTranslated(x, y, z));
     }
 
     public static void glRotatef(float angle, float x, float y, float z) {
+        BridgeSupport.simulatedState().onRotate(angle, x, y, z);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glRotatef(angle, x, y, z));
     }
 
     public static void glScalef(float x, float y, float z) {
+        BridgeSupport.simulatedState().onScale(x, y, z);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glScalef(x, y, z));
     }
 
     /** buffer 参数录制时深拷贝（16 元素矩阵），执行后归还池。 */
     public static void glLoadMatrix(FloatBuffer matrix) {
+        BridgeSupport.simulatedState().onLoadMatrix(matrix);
         BridgeSupport.enqueueSnapshot(matrix, snapshot ->
                 org.lwjgl.opengl.GL11.glLoadMatrix(snapshot.asFloatBuffer()));
     }
 
     public static void glLoadMatrix(DoubleBuffer matrix) {
+        BridgeSupport.simulatedState().onLoadMatrix(matrix);
         BridgeSupport.enqueueSnapshot(matrix, snapshot ->
                 org.lwjgl.opengl.GL11.glLoadMatrix(snapshot.asDoubleBuffer()));
     }
 
     public static void glMultMatrix(FloatBuffer matrix) {
+        BridgeSupport.simulatedState().onMultMatrix(matrix);
         BridgeSupport.enqueueSnapshot(matrix, snapshot ->
                 org.lwjgl.opengl.GL11.glMultMatrix(snapshot.asFloatBuffer()));
     }
 
     public static void glMultMatrix(DoubleBuffer matrix) {
+        BridgeSupport.simulatedState().onMultMatrix(matrix);
         BridgeSupport.enqueueSnapshot(matrix, snapshot ->
                 org.lwjgl.opengl.GL11.glMultMatrix(snapshot.asDoubleBuffer()));
     }
@@ -365,6 +378,7 @@ public final class GL11 {
     }
 
     public static void glViewport(int x, int y, int width, int height) {
+        BridgeSupport.simulatedState().onViewport(x, y, width, height);
         BridgeSupport.enqueueState(StateDedup.TYPE_VIEWPORT, x, y, width, height,
                 () -> org.lwjgl.opengl.GL11.glViewport(x, y, width, height));
     }
@@ -444,10 +458,12 @@ public final class GL11 {
     }
 
     public static void glPushAttrib(int mask) {
+        BridgeSupport.simulatedState().onPushAttrib(mask);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glPushAttrib(mask));
     }
 
     public static void glPopAttrib() {
+        BridgeSupport.simulatedState().onPopAttrib();
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glPopAttrib);
     }
 
@@ -678,6 +694,7 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glBindTexture(int target, int texture) {
+        BridgeSupport.simulatedState().onBindTexture(target, texture);
         BridgeSupport.enqueueState(StateDedup.TYPE_BIND_TEXTURE, target, texture, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
     }
@@ -693,10 +710,15 @@ public final class GL11 {
     }
 
     public static void glDeleteTextures(int texture) {
+        BridgeSupport.simulatedState().onDeleteTexture(texture);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDeleteTextures(texture));
     }
 
     public static void glDeleteTextures(IntBuffer textures) {
+        // 绝对读取遍历，不改动 buffer 位置；删除后各单元绑定簿记清零
+        for (int i = textures.position(); i < textures.limit(); i++) {
+            BridgeSupport.simulatedState().onDeleteTexture(textures.get(i));
+        }
         BridgeSupport.enqueueSnapshot(textures, snapshot ->
                 org.lwjgl.opengl.GL11.glDeleteTextures(snapshot.asIntBuffer()));
     }
@@ -920,7 +942,7 @@ public final class GL11 {
     }
 
     // ------------------------------------------------------------------
-    // getter（阻塞通道；状态仿真为后续演进点，见类 javadoc）
+    // getter（FBO 绑定与 SimulatedGlState 簿记命中走录制侧仿真，其余阻塞通道）
     // ------------------------------------------------------------------
 
     public static int glGetInteger(int pname) {
@@ -931,11 +953,22 @@ public final class GL11 {
             // 跟踪值与命令流一致（跨线程 FBO 使用存在记录序近似，见 BridgeSupport）
             return BridgeSupport.framebufferBinding();
         }
+        if (BridgeSupport.isMainRecordingThread()) {
+            // getter 回读状态仿真：簿记命中直接返回，未跟踪/失效回退阻塞通道
+            final Integer simulated = BridgeSupport.simulatedState().getInteger(pname);
+            if (simulated != null) {
+                return simulated;
+            }
+        }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGetInteger(int pname, IntBuffer params) {
+        if (BridgeSupport.isMainRecordingThread()
+                && BridgeSupport.simulatedState().getInteger(pname, params)) {
+            return;
+        }
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetInteger(pname, params));
     }
 
@@ -944,6 +977,10 @@ public final class GL11 {
     }
 
     public static void glGetFloat(int pname, FloatBuffer params) {
+        if (BridgeSupport.isMainRecordingThread()
+                && BridgeSupport.simulatedState().getFloat(pname, params)) {
+            return;
+        }
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetFloat(pname, params));
     }
 
@@ -1029,6 +1066,7 @@ public final class GL11 {
 
     /** 单缓冲 draw buffer 选择（GL20.glDrawBuffers 的单目标形态）。 */
     public static void glDrawBuffer(int mode) {
+        BridgeSupport.simulatedState().onDrawBuffer(mode);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDrawBuffer(mode));
     }
 }
