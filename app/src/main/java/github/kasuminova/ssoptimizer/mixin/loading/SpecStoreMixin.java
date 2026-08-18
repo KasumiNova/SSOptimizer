@@ -16,6 +16,8 @@ import com.fs.starfarer.loading.WeaponSpecLoader;
 import com.fs.starfarer.loading.WeaponSpreadsheetLoader;
 import com.fs.starfarer.loading.scripts.ScriptStore;
 import com.fs.starfarer.loading.specs.HullVariantSpec;
+import com.fs.starfarer.loading.specs.ShipEngineSlot;
+import com.fs.starfarer.loading.specs.ShipHullSpec;
 import com.fs.starfarer.loading.specs.SimulationFleetData;
 import com.fs.starfarer.settings.StarfarerSettings;
 import github.kasuminova.ssoptimizer.common.loading.SpecLoadScheduler;
@@ -183,6 +185,61 @@ public abstract class SpecStoreMixin {
                 .task("procgen", () -> SpecStore.loadProcgenData(state),
                         "weaponData", "wings", "commodities", "specialItems", "customEntities", "marketConditions")
                 .join();
+
+        ssoptimizer$dumpEngineStyleDiagnostics();
+    }
+
+    /**
+     * 引擎样式 spec 链诊断（{@code -Dssoptimizer.debug.enginestyle=true}）：
+     * 在 loadStarmap 完成后转储 EngineStyle 注册表与全部 hull 的 CUSTOM 槽位
+     * glowTexture 解析结果——用于定位「模组引擎样式贴图未生效」是 spec 链
+     * 未挂接（glowTexture 为空）还是纹理加载/绑定链断裂（路径正常）。
+     */
+    @Unique
+    private static void ssoptimizer$dumpEngineStyleDiagnostics() {
+        if (!Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.enginestyle", "false"))) {
+            return;
+        }
+        final Map<String, Object> styles = SpecStore.getSpecMap(ShipEngineSlot.EngineStyle.class);
+        ssoptimizer$logger.info("[SSOptimizer] engine style specs: " + styles.size());
+        for (Map.Entry<String, Object> entry : styles.entrySet()) {
+            final ShipEngineSlot.EngineStyle style = (ShipEngineSlot.EngineStyle) entry.getValue();
+            ssoptimizer$logger.info("[SSOptimizer]   style " + entry.getKey()
+                    + " glowSprite=" + style.getGlowSprite());
+        }
+
+        int totalSlots = 0;
+        int customSlots = 0;
+        int customWithGlow = 0;
+        int customEmptyGlow = 0;
+        final Map<String, Integer> glowPathUsage = new LinkedHashMap<>();
+        for (String hullId : ShipHullSpecStore.getIds()) {
+            final ShipHullSpec hull = ShipHullSpecStore.getOrNull(hullId);
+            if (hull == null) {
+                continue;
+            }
+            for (ShipEngineSlot slot : hull.getEngineSlots()) {
+                totalSlots++;
+                if (slot.getStyleType() != ShipEngineSlot.EngineStyleType.CUSTOM) {
+                    continue;
+                }
+                customSlots++;
+                final String glow = slot.toEngineSlot().getGlowTexture();
+                if (glow == null || glow.isEmpty()) {
+                    customEmptyGlow++;
+                    ssoptimizer$logger.info("[SSOptimizer]   CUSTOM slot without glow: hull=" + hullId);
+                } else {
+                    customWithGlow++;
+                    glowPathUsage.merge(glow, 1, Integer::sum);
+                }
+            }
+        }
+        ssoptimizer$logger.info("[SSOptimizer] engine slots: total=" + totalSlots
+                + " custom=" + customSlots + " customWithGlow=" + customWithGlow
+                + " customEmptyGlow=" + customEmptyGlow);
+        for (Map.Entry<String, Integer> entry : glowPathUsage.entrySet()) {
+            ssoptimizer$logger.info("[SSOptimizer]   glow path " + entry.getKey() + " x" + entry.getValue());
+        }
     }
 
     /**

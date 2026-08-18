@@ -3,7 +3,6 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 import com.fs.graphics.Sprite;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
@@ -29,6 +28,52 @@ public final class EngineRenderHelper {
     private static final float                    TEX_MAX                  = 0.99f;
 
     private EngineRenderHelper() {
+    }
+
+    /** 引擎贴图诊断开关（{@code -Dssoptimizer.debug.enginestyle=true}）：每个不同纹理对象仅记录一次。 */
+    private static final boolean DEBUG_ENGINE_STYLE =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.enginestyle", "false"));
+    private static final java.util.Set<Integer> DEBUG_LOGGED_TEXTURES =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final java.util.Set<String> DEBUG_LOGGED_GLOW_TYPES =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * 引擎 glow 贴图诊断：记录纹理路径与实际绑定的纹理 id，用于定位「样式 glow 未生效」
+     * 是 spec 链未覆盖（路径仍为默认 engineglow32）还是纹理加载/绑定链断裂（路径正确但 id 异常）。
+     */
+    private static void debugLogGlowTexture(final com.fs.graphics.TextureObject texture, final boolean primary) {
+        if (!DEBUG_ENGINE_STYLE || texture == null) {
+            if (DEBUG_ENGINE_STYLE && texture == null && DEBUG_LOGGED_TEXTURES.add(-1)) {
+                org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).warn(
+                        "[SSOptimizer] engine glow texture is NULL (primary=" + primary + ")");
+            }
+            return;
+        }
+        if (DEBUG_LOGGED_TEXTURES.add(System.identityHashCode(texture))) {
+            org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).info(
+                    "[SSOptimizer] engine glow texture: primary=" + primary
+                            + " path=" + texture.getTexturePath()
+                            + " id=" + texture.getTextureId());
+        }
+    }
+
+    /** glowType 分支诊断：记录实际拿到的枚举值（类名@name）及该枚举全部常量，每不同类仅记一次。 */
+    private static void debugLogGlowType(final Object glowType) {
+        if (glowType == null) {
+            if (DEBUG_LOGGED_GLOW_TYPES.add("null")) {
+                org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).info(
+                        "[SSOptimizer] engine slot glowType=null");
+            }
+            return;
+        }
+        if (DEBUG_LOGGED_GLOW_TYPES.add(glowType.getClass().getName())) {
+            org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).info(
+                    "[SSOptimizer] engine slot glowType class=" + glowType.getClass().getName()
+                            + " value=" + glowType
+                            + " constants=" + java.util.Arrays.toString(
+                                    glowType.getClass().getEnumConstants()));
+        }
     }
 
     public static void renderEngines(Object engineObject, float alphaScale) {
@@ -150,9 +195,14 @@ public final class EngineRenderHelper {
         float innerLength = Math.min(innerWidth * 0.5f, stripLength * 0.25f);
         float texSpan = stripLength == 0.0f ? 0.0f : innerLength / stripLength;
 
+        if (DEBUG_ENGINE_STYLE) {
+            debugLogGlowType(slotAccessor.ssoptimizer$getGlowType());
+        }
         if (isPrimaryGlowType(slotAccessor.ssoptimizer$getGlowType())) {
+            debugLogGlowTexture(engine.ssoptimizer$getPrimaryGlowTexture(), true);
             engine.ssoptimizer$getPrimaryGlowTexture().bind();
         } else {
+            debugLogGlowTexture(engine.ssoptimizer$getSecondaryGlowTexture(), false);
             engine.ssoptimizer$getSecondaryGlowTexture().bind();
         }
 
@@ -299,7 +349,9 @@ public final class EngineRenderHelper {
     }
 
     private static boolean isPrimaryGlowType(Object glowType) {
-        return glowType instanceof Enum<?> mode && GameMemberNames.EngineGlowType.PRIMARY.equals(mode.name());
+        // 注意：该枚举常量的 name() 在原版 jar 中即为 "NORMAL"（字段名 PRIMARY 与
+        // clinit 名称串不一致是上游混淆残留），必须按引用比较，不能按 name() 比较。
+        return glowType == com.fs.starfarer.combat.entities.Engine.EngineGlowType.PRIMARY;
     }
 
     private static void renderEngineStripPasses(float posX, float posY,

@@ -60,6 +60,35 @@ public final class EngineBatchImpl implements EngineBatch {
     public static final String MODE_PROPERTY   = "ssoptimizer.render.shipengine.mode";
     public static final String STATS_PROPERTY  = "ssoptimizer.render.shipengine.stats";
 
+    /** 引擎贴图诊断开关（{@code -Dssoptimizer.debug.enginestyle=true}）：每个不同纹理对象仅记录一次。 */
+    private static final boolean DEBUG_ENGINE_STYLE =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.enginestyle", "false"));
+    private static final java.util.Set<Object> DEBUG_LOGGED =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * 合批路径纹理诊断：记录每个引擎纹理对象的路径/GL id/延迟加载标记，用于定位
+     * 「模组引擎样式贴图未生效」是纹理对象为 null（未注册）、id=-1（延迟加载未落地）
+     * 还是绑定正确但视觉异常。
+     */
+    private static void debugLogTexture(final String label, final TextureObject texture) {
+        if (!DEBUG_ENGINE_STYLE) {
+            return;
+        }
+        if (texture == null) {
+            if (DEBUG_LOGGED.add("null:" + label)) {
+                LOGGER.warn("[SSOptimizer] engine batch texture NULL: " + label);
+            }
+            return;
+        }
+        if (DEBUG_LOGGED.add(System.identityHashCode(texture))) {
+            LOGGER.info("[SSOptimizer] engine batch texture: " + label
+                    + " path=" + texture.getTexturePath()
+                    + " id=" + texture.getTextureId()
+                    + " deferred=" + texture.isDeferredLoadingEnabled());
+        }
+    }
+
     private static final EngineBatchImpl INSTANCE = new EngineBatchImpl();
 
     private static final int VERTEX_VBO_CAPACITY   = 512 * 1024;
@@ -218,6 +247,11 @@ public final class EngineBatchImpl implements EngineBatch {
         TextureObject flame = engine.ssoptimizer$getFlameTexture();
         Sprite glowSprite = engine.ssoptimizer$getGlowSprite();
         TextureObject glowTexture = glowSprite == null ? null : glowSprite.getTexture();
+
+        debugLogTexture("primaryGlow", primaryGlow);
+        debugLogTexture("secondaryGlow", secondaryGlow);
+        debugLogTexture("flame", flame);
+        debugLogTexture("glowSpriteTex", glowTexture);
 
         FrameInput frame = new FrameInput(
                 alphaScale,
