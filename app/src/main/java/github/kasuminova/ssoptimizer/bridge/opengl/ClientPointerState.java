@@ -84,33 +84,34 @@ final class ClientPointerState {
     /**
      * 捕获当前快照组供一条 draw 命令携带：每个非 null 快照 {@link PointerSnapshot#retain()}
      * 一次，draw 执行完后由 {@link PointerSnapshotGroup#release()} 配对归还。
+     * 组对象从命令池借出（{@link BridgeSupport#acquireSnapshotGroup()}），
+     * release 时归还。
      *
      * @return 当前快照组（全未设置时为空组）
      */
     PointerSnapshotGroup capture() {
+        PointerSnapshotGroup group = BridgeSupport.acquireSnapshotGroup();
         if (interleaved != null) {
             interleaved.retain();
-            return new PointerSnapshotGroup(new PointerSnapshot[]{interleaved});
+            group.add(interleaved);
+            return group;
         }
-        PointerSnapshot[] group = new PointerSnapshot[4];
-        int count = 0;
         if (vertex != null) {
-            group[count++] = vertex;
+            vertex.retain();
+            group.add(vertex);
         }
         if (color != null) {
-            group[count++] = color;
+            color.retain();
+            group.add(color);
         }
         if (texCoord != null) {
-            group[count++] = texCoord;
+            texCoord.retain();
+            group.add(texCoord);
         }
         if (normal != null) {
-            group[count++] = normal;
+            normal.retain();
+            group.add(normal);
         }
-        PointerSnapshot[] snapshots = new PointerSnapshot[count];
-        System.arraycopy(group, 0, snapshots, 0, count);
-        for (PointerSnapshot snapshot : snapshots) {
-            snapshot.retain();
-        }
-        return new PointerSnapshotGroup(snapshots);
+        return group;
     }
 }

@@ -27,7 +27,9 @@ import java.util.concurrent.Callable;
 final class BridgeSupport {
     private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
     /** 池化命令对象（录制线程借出、渲染线程归还，见 {@link CommandPool} 的生命周期约束）。 */
+    private static volatile CommandPool<DrawCommand> drawCommands = new CommandPool<>(DrawCommand::new);
     private static volatile CommandPool<VertexBatchCommand> vertexBatches = new CommandPool<>(VertexBatchCommand::new);
+    private static volatile CommandPool<PointerSnapshotGroup> snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
     private static final ThreadLocal<ClientPointerState> POINTER_STATES =
             ThreadLocal.withInitial(ClientPointerState::new);
     /** 录制侧逐线程的 FRAMEBUFFER 绑定跟踪（供 bridge 的 getter 短路，免阻塞往返）。 */
@@ -62,7 +64,9 @@ final class BridgeSupport {
         FRAMEBUFFER_BINDING.remove();
         VERTEX_STREAMS.remove();
         executedArrayBufferBinding = 0;
+        drawCommands = new CommandPool<>(DrawCommand::new);
         vertexBatches = new CommandPool<>(VertexBatchCommand::new);
+        snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
     }
 
     static RenderQueue queue() {
@@ -236,6 +240,26 @@ final class BridgeSupport {
     /** 缓冲快照池（包内与单测可见）。 */
     static BufferSnapshotPool pool() {
         return pool;
+    }
+
+    /** 借出池化的 draw 命令（录制侧设置参数后落帧，渲染线程执行完归还）。 */
+    static DrawCommand acquireDrawCommand() {
+        return drawCommands.acquire();
+    }
+
+    /** 归还 draw 命令（仅 {@link DrawCommand#execute()} 的 finally 调用）。 */
+    static void releaseDrawCommand(DrawCommand command) {
+        drawCommands.release(command);
+    }
+
+    /** 借出池化的 pointer 快照组（{@link ClientPointerState#capture()} 用）。 */
+    static PointerSnapshotGroup acquireSnapshotGroup() {
+        return snapshotGroups.acquire();
+    }
+
+    /** 归还快照组（仅 {@link PointerSnapshotGroup#release()} 调用）。 */
+    static void releaseSnapshotGroup(PointerSnapshotGroup group) {
+        snapshotGroups.release(group);
     }
 
     /** 归还顶点流回放命令（仅 {@link VertexBatchCommand#execute()} 的 finally 调用）。 */

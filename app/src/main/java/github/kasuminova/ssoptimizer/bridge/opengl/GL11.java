@@ -69,29 +69,8 @@ public final class GL11 {
     }
 
     // ------------------------------------------------------------------
-    // draw 助手：携带当前 client pointer 快照组的绘制命令
+    // draw：池化 DrawCommand 携带当前 client pointer 快照组
     // ------------------------------------------------------------------
-
-    /** 依赖 client pointer 状态的绘制调用体。 */
-    private interface DrawCall {
-        void execute();
-    }
-
-    /**
-     * 录制一条 draw 命令：渲染线程执行时先全量重放录制时刻捕获的 pointer
-     * 快照组，再执行真实 draw；finally 中归还快照组。
-     */
-    private static void enqueueDraw(DrawCall draw) {
-        PointerSnapshotGroup group = BridgeSupport.pointerState().capture();
-        BridgeSupport.enqueue(() -> {
-            try {
-                group.apply();
-                draw.execute();
-            } finally {
-                group.release();
-            }
-        });
-    }
 
     // ------------------------------------------------------------------
     // immediate 顶点流（流式录制：编码进逐线程 VertexStream，glEnd/非流式
@@ -174,9 +153,11 @@ public final class GL11 {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glReadBuffer(mode));
     }
 
-    /** 单元素绘制，同样携带 pointer 快照组（见 {@link #enqueueDraw}）。 */
+    /** 单元素绘制，同样携带 pointer 快照组（池化 {@link DrawCommand}）。 */
     public static void glArrayElement(int index) {
-        enqueueDraw(() -> org.lwjgl.opengl.GL11.glArrayElement(index));
+        DrawCommand command = BridgeSupport.acquireDrawCommand();
+        command.setArrayElement(index, BridgeSupport.pointerState().capture());
+        BridgeSupport.enqueue(command);
     }
 
     // ------------------------------------------------------------------
@@ -579,58 +560,41 @@ public final class GL11 {
                 format, 0, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    // -- draw：携带 pointer 快照组
+    // -- draw：池化 DrawCommand 携带 pointer 快照组
 
     public static void glDrawArrays(int mode, int first, int count) {
-        enqueueDraw(() -> org.lwjgl.opengl.GL11.glDrawArrays(mode, first, count));
+        DrawCommand command = BridgeSupport.acquireDrawCommand();
+        command.setDrawArrays(mode, first, count, BridgeSupport.pointerState().capture());
+        BridgeSupport.enqueue(command);
     }
 
     /** 索引 buffer 同样录制时快照，执行后归还。 */
     public static void glDrawElements(int mode, ByteBuffer indices) {
-        ByteBuffer indexSnapshot = BridgeSupport.pool().snapshot(indices);
-        PointerSnapshotGroup group = BridgeSupport.pointerState().capture();
-        BridgeSupport.enqueue(() -> {
-            try {
-                group.apply();
-                org.lwjgl.opengl.GL11.glDrawElements(mode, indexSnapshot);
-            } finally {
-                group.release();
-                BridgeSupport.releaseSnapshot(indexSnapshot);
-            }
-        });
+        DrawCommand command = BridgeSupport.acquireDrawCommand();
+        command.setDrawElementsSnapshot(mode, BridgeSupport.pool().snapshot(indices),
+                DrawCommand.VIEW_BYTE, BridgeSupport.pointerState().capture());
+        BridgeSupport.enqueue(command);
     }
 
     public static void glDrawElements(int mode, IntBuffer indices) {
-        ByteBuffer indexSnapshot = BridgeSupport.pool().snapshot(indices);
-        PointerSnapshotGroup group = BridgeSupport.pointerState().capture();
-        BridgeSupport.enqueue(() -> {
-            try {
-                group.apply();
-                org.lwjgl.opengl.GL11.glDrawElements(mode, indexSnapshot.asIntBuffer());
-            } finally {
-                group.release();
-                BridgeSupport.releaseSnapshot(indexSnapshot);
-            }
-        });
+        DrawCommand command = BridgeSupport.acquireDrawCommand();
+        command.setDrawElementsSnapshot(mode, BridgeSupport.pool().snapshot(indices),
+                DrawCommand.VIEW_INT, BridgeSupport.pointerState().capture());
+        BridgeSupport.enqueue(command);
     }
 
     public static void glDrawElements(int mode, ShortBuffer indices) {
-        ByteBuffer indexSnapshot = BridgeSupport.pool().snapshot(indices);
-        PointerSnapshotGroup group = BridgeSupport.pointerState().capture();
-        BridgeSupport.enqueue(() -> {
-            try {
-                group.apply();
-                org.lwjgl.opengl.GL11.glDrawElements(mode, indexSnapshot.asShortBuffer());
-            } finally {
-                group.release();
-                BridgeSupport.releaseSnapshot(indexSnapshot);
-            }
-        });
+        DrawCommand command = BridgeSupport.acquireDrawCommand();
+        command.setDrawElementsSnapshot(mode, BridgeSupport.pool().snapshot(indices),
+                DrawCommand.VIEW_SHORT, BridgeSupport.pointerState().capture());
+        BridgeSupport.enqueue(command);
     }
 
     /** VBO 索引偏移形式：无 buffer 可快照。 */
     public static void glDrawElements(int mode, int count, int type, long offset) {
-        enqueueDraw(() -> org.lwjgl.opengl.GL11.glDrawElements(mode, count, type, offset));
+        DrawCommand command = BridgeSupport.acquireDrawCommand();
+        command.setDrawElementsOffset(mode, count, type, offset, BridgeSupport.pointerState().capture());
+        BridgeSupport.enqueue(command);
     }
 
     // ------------------------------------------------------------------

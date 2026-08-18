@@ -72,13 +72,14 @@ class GL11BridgeTest {
     }
 
     @Test
-    void vertexBatchesUsePooledCommandObjects() {
+    void vertexBatchesAndDrawsUsePooledCommandObjects() {
         GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
         GL11.glVertex2f(0f, 0f);
         GL11.glEnd();
         GL11.glDrawArrays(org.lwjgl.opengl.GL11.GL_QUADS, 0, 4);
         assertEquals(2, queue.recorded.size());
         assertInstanceOf(VertexBatchCommand.class, queue.recorded.get(0), "顶点批次走池化回放命令");
+        assertInstanceOf(DrawCommand.class, queue.recorded.get(1), "draw 走池化命令");
     }
 
     @Test
