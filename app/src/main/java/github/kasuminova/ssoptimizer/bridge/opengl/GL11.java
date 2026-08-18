@@ -7,6 +7,7 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * org.lwjgl.opengl.GL11 的 bridge 镜像（游戏使用面全集）。
@@ -32,11 +33,14 @@ import java.nio.ShortBuffer;
  *       {@link ClientPointerState}，draw 命令（glDrawArrays/glDrawElements/
  *       glArrayElement）携带快照组在执行前全量重放——简化语义与 FR
  *       ClientAttribTracker 的差异见 {@link PointerSnapshot} 的 javadoc；</li>
- *   <li>getter（glGetInteger/glGetFloat/glGetBoolean/glGetString/glIsEnabled
+ *   <li>getter（glGetInteger/glGetFloat/glGetBoolean/glIsEnabled
  *       /glReadPixels/glGetError 等）与资源分配
  *       （glGenTextures/glGenLists）：走 {@link RenderQueue#get} 阻塞通道
  *       （自动计入 StallDetector）；后续演进点是把高频 pname/资源 id 换成
- *       主线程侧状态仿真与预生成 stash（见盘点文档 getter 清单）；</li>
+ *       主线程侧状态仿真与预生成 stash（见盘点文档 getter 清单）。例外：
+ *       glGetString 的五类结果（供应商/渲染器/版本/扩展/着色语言版本）在同一
+ *       GL context 生命周期内不变，首次阻塞取回后录制侧缓存——游戏的
+ *       SpriteBatch 每次构造都经此探测 VBO 能力，不缓存会打成稳态热点；</li>
  *   <li>display list（glNewList/glEndList/glCallList）：本阶段按普通命令入队
  *       ——即「渲染线程直接执行真实 display list 编译/调用」，语义等价于单线程，
  *       只是 display list 本体编译发生在渲染线程。ListManager 式命令帧重放
@@ -51,6 +55,12 @@ import java.nio.ShortBuffer;
  * {@link IllegalStateException}——桥接类没有可回退的直通路径。
  */
 public final class GL11 {
+    /**
+     * glGetString 录制侧缓存：五类结果在同一 GL context 生命周期内不变，
+     * 槽位见 {@link #glGetString(int)}；{@link #uninstall()} 时清空。
+     */
+    private static final AtomicReferenceArray<String> STRING_CACHE = new AtomicReferenceArray<>(5);
+
     private GL11() {
     }
 
@@ -66,6 +76,9 @@ public final class GL11 {
     /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
     static void uninstall() {
         BridgeSupport.uninstall();
+        for (int i = 0; i < STRING_CACHE.length(); i++) {
+            STRING_CACHE.set(i, null);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -877,8 +890,31 @@ public final class GL11 {
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetBoolean(pname, params));
     }
 
+    /**
+     * 字符串查询：五类 pname（供应商/渲染器/版本/扩展/着色语言版本）的结果
+     * 在同一 GL context 生命周期内不变，首次走阻塞通道取回后录制侧缓存，
+     * 后续调用零往返——游戏的 SpriteBatch 每次构造都经此探测 VBO 能力，
+     * 逐次阻塞会把回读通道打成稳态热点。未识别的 pname 不缓存直通。
+     */
     public static String glGetString(int name) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetString(name));
+        int slot = switch (name) {
+            case org.lwjgl.opengl.GL11.GL_VENDOR -> 0;
+            case org.lwjgl.opengl.GL11.GL_RENDERER -> 1;
+            case org.lwjgl.opengl.GL11.GL_VERSION -> 2;
+            case org.lwjgl.opengl.GL11.GL_EXTENSIONS -> 3;
+            case org.lwjgl.opengl.GL20.GL_SHADING_LANGUAGE_VERSION -> 4;
+            default -> -1;
+        };
+        if (slot < 0) {
+            return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetString(name));
+        }
+        String cached = STRING_CACHE.get(slot);
+        if (cached != null) {
+            return cached;
+        }
+        String value = BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetString(name));
+        STRING_CACHE.set(slot, value);
+        return value;
     }
 
     public static boolean glIsEnabled(int cap) {

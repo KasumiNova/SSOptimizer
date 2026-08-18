@@ -83,6 +83,23 @@ class GL11BridgeTest {
     }
 
     @Test
+    void glGetStringResultIsCachedPerPname() {
+        queue.getHandler = callable -> "value";
+        assertEquals("value", GL11.glGetString(org.lwjgl.opengl.GL11.GL_VENDOR));
+        assertEquals("value", GL11.glGetString(org.lwjgl.opengl.GL11.GL_VENDOR));
+        assertEquals(1, queue.getCallCount, "同 pname 第二次命中缓存不再阻塞");
+        assertEquals("value", GL11.glGetString(org.lwjgl.opengl.GL11.GL_RENDERER));
+        assertEquals(2, queue.getCallCount, "不同 pname 各自取回一次");
+        GL11.glGetString(0x9999);
+        GL11.glGetString(0x9999);
+        assertEquals(4, queue.getCallCount, "未识别 pname 不缓存逐次阻塞");
+        GL11.uninstall();
+        GL11.install(queue);
+        GL11.glGetString(org.lwjgl.opengl.GL11.GL_VENDOR);
+        assertEquals(5, queue.getCallCount, "uninstall 清空缓存后重新取回");
+    }
+
+    @Test
     void stateCallsAreRecordedOneCommandEach() {
         GL11.glClearColor(0f, 0f, 0f, 1f);
         GL11.glViewport(0, 0, 800, 600);
