@@ -188,7 +188,9 @@ public final class EngineRenderHelper {
             stripWidth *= 1.0f + spreadRatio * 0.25f;
         }
 
-        float spreadRotation = length == 0.0f ? 0.0f : (1.0f - stripLength / length) * spread;
+        // 原版语义：omega 模式扩散角恒为 0（var50=0），单层火焰不做扇形展开；
+        // 非 omega 为 (1-stripLength/length)*spread（length=0 时原版得 Inf，防御归零）
+        float spreadRotation = omegaMode || length == 0.0f ? 0.0f : (1.0f - stripLength / length) * spread;
         float textureAdvance = flameLevel;
         int passCount = omegaMode ? 1 : 6;
         float texU = state.ssoptimizer$getTexU();
