@@ -65,8 +65,8 @@ class ShaderBridgeTest {
         queue.getHandler = callable -> "log";
         assertEquals("log", GL20.glGetShaderInfoLog(2, 1024));
         assertEquals("log", GL20.glGetProgramInfoLog(1, 1024));
-        assertEquals(5, queue.uncountedGetCallCount, "创建/名称查询/InfoLog 归资源申请类不计数");
-        assertEquals(2, queue.getCallCount, "编译/链接状态轮询（glGetShaderi/glGetProgrami）保持计数");
+        assertEquals(7, queue.uncountedGetCallCount, "创建/名称查询/InfoLog/编译链接状态查询归资源申请类不计数");
+        assertEquals(0, queue.getCallCount, "glGetShaderi/glGetProgrami 状态在重编译前不变，不再计入 StallDetector");
         assertEquals(0, queue.recorded.size());
     }
 }

@@ -15,10 +15,12 @@ import java.nio.IntBuffer;
  *       固化为不可变 {@link String}（CharSequence 可能是可变的 StringBuilder，
  *       与 buffer 快照同一防护思路）；</li>
  *   <li>创建/编译/链接期的回读（glCreateShader/glCreateProgram/
- *       glGetUniformLocation/glGetAttribLocation/InfoLog/glGetAttachedShaders）
- *       走不计数阻塞通道——这些是资源申请类一次性调用，不计入 StallDetector；
- *       编译/链接状态轮询（glGetShaderi/glGetProgrami/glIsProgram）属回读类，
- *       保持计数；运行期命令（glUseProgram/glUniform*）按普通命令录制；</li>
+ *       glGetUniformLocation/glGetAttribLocation/InfoLog/glGetAttachedShaders/
+ *       glGetShaderi/glGetProgrami）走不计数阻塞通道——这些是资源申请类
+ *       一次性调用，不计入 StallDetector：编译/链接状态在再次
+ *       glCompileShader/glLinkProgram 前不变，查询属创建流程而非逐帧稳态回读；
+ *       仅 glIsProgram 属回读类，保持计数；运行期命令（glUseProgram/glUniform*）
+ *       按普通命令录制；</li>
  *   <li>GL20 其余面（顶点属性/矩阵 uniform/多重 draw buffer 等）本阶段不做。</li>
  * </ul>
  */
@@ -105,14 +107,14 @@ public final class GL20 {
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetUniformLocation(program, snapshot));
     }
 
-    /** 编译期校验回读：阻塞通道取回（状态轮询属回读类，保持计数）。 */
+    /** 编译期校验回读：阻塞通道取回（编译后状态在再次 glCompileShader 前不变，归资源申请类不计数）。 */
     public static int glGetShaderi(int shader, int pname) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetShaderi(shader, pname));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetShaderi(shader, pname));
     }
 
-    /** 链接期校验回读：阻塞通道取回（状态轮询属回读类，保持计数）。 */
+    /** 链接期校验回读：阻塞通道取回（链接后状态在再次 glLinkProgram 前不变，归资源申请类不计数）。 */
     public static int glGetProgrami(int program, int pname) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetProgrami(program, pname));
+        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetProgrami(program, pname));
     }
 
     /** 编译日志回读：阻塞通道取回（编译期一次性，归资源申请类不计数）。 */
