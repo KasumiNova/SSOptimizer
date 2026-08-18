@@ -235,4 +235,50 @@ class RenderQueueImplTest {
         // 两帧均已执行完并归还：池内至少有归还的帧
         assertTrue(pool.idleCount() >= 1);
     }
+
+    @Test
+    void multiProducerSyncCallsAndFrameCommandsAllComplete() throws InterruptedException {
+        // MPSC 提交通道的多生产者压力：aux-context 生产者线程并发发同步任务
+        // （get）与帧命令（submit），主线程持续推进帧——全部任务必须执行且
+        // 同步结果正确（队列丢任务会体现为结果错误或命令计数不足）
+        queue = new RenderQueueImpl();
+        int producers = 4;
+        int perProducer = 200;
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger executed = new AtomicInteger();
+        AtomicInteger syncErrors = new AtomicInteger();
+        Thread[] threads = new Thread[producers];
+        for (int p = 0; p < producers; p++) {
+            final int base = p * perProducer;
+            threads[p] = new Thread(() -> {
+                try {
+                    start.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                for (int i = 0; i < perProducer; i++) {
+                    int expected = base + i;
+                    if (queue.get(() -> expected) != expected) {
+                        syncErrors.incrementAndGet();
+                    }
+                    queue.submit(executed::incrementAndGet);
+                }
+            }, "aux-producer-" + p);
+            threads[p].start();
+        }
+        start.countDown();
+        for (Thread thread : threads) {
+            thread.join(TimeUnit.SECONDS.toMillis(10));
+            assertFalse(thread.isAlive(), "生产者线程未在期限内完成：" + thread.getName());
+        }
+        // 排空生产者提交的全部帧命令
+        while (executed.get() < producers * perProducer) {
+            queue.swapFrames();
+            queue.swapFramesAndSync();
+        }
+        queue.swapFramesAndSync();
+        assertEquals(0, syncErrors.get(), "同步任务结果必须原样返回");
+        assertEquals(producers * perProducer, executed.get(), "帧命令必须全部执行");
+    }
 }

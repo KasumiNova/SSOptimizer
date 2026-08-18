@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.render.queue;
 
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
+import org.jctools.queues.MpscBlockingConsumerArrayQueue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +10,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
@@ -44,6 +44,9 @@ public final class RenderQueueImpl implements RenderQueue {
     /** 帧悬挂续跑任务 requeue 前的退避间隔（纳秒），避免 fence 长期未 signal 时续跑任务空转占满渲染线程。 */
     private static final long SUSPEND_REQUEUE_BACKOFF_NANOS = 1_000_000L;
 
+    /** 提交队列容量（见字段注释：正常深度为个位数到几十，打满即渲染线程已死）。 */
+    private static final int SUBMISSION_QUEUE_CAPACITY = 65536;
+
     /** 阻塞调用站点定位用的 StackWalker（无类引用保留需求，默认配置即可）。 */
     private static final StackWalker SITE_WALKER = StackWalker.getInstance();
 
@@ -51,7 +54,17 @@ public final class RenderQueueImpl implements RenderQueue {
 
     private final FramePool framePool;
     private final StallDetector stallDetector;
-    private final LinkedBlockingQueue<RenderTask> submissionQueue = new LinkedBlockingQueue<>();
+    /**
+     * 提交队列：MPSC 无锁有界数组队列（JCTools，项目既有依赖）。生产者为主线程
+     * （帧/同步任务）、aux-context 生产者线程（同步任务）与渲染线程自身（悬挂
+     * 续跑 requeue），唯一消费者是渲染线程——语义恰好 MPSC；相对
+     * LinkedBlockingQueue 消除了每次 offer/take 的双锁与 Node 分配。
+     * 容量取 {@value #SUBMISSION_QUEUE_CAPACITY}：稳态深度为「在飞帧任务（≤2）
+     * + 阻塞中的同步任务（≈阻塞线程数）+ 在飞续跑任务」，正常为个位数到几十，
+     * 该容量下的 offer 失败只可能意味着渲染线程已死，属必须暴露的不变量破坏。
+     */
+    private final MpscBlockingConsumerArrayQueue<RenderTask> submissionQueue =
+            new MpscBlockingConsumerArrayQueue<>(SUBMISSION_QUEUE_CAPACITY);
     /** 阻塞式调用的来源站点计数（进程生命周期累计，熔断异常时输出 top 供定位；站点基数有界）。 */
     private final ConcurrentHashMap<String, LongAdder> blockingSites = new ConcurrentHashMap<>();
     private final Object frameLock = new Object();
@@ -200,7 +213,7 @@ public final class RenderQueueImpl implements RenderQueue {
             }
         }
         SyncTask<T> task = new SyncTask<>(getter);
-        submissionQueue.offer(task);
+        offerOrThrow(task);
         try {
             return task.result.get();
         } catch (InterruptedException e) {
@@ -246,9 +259,24 @@ public final class RenderQueueImpl implements RenderQueue {
         // 必须先捕获完成 Future 再 offer：offer 之后渲染线程随时可能执行完并把帧
         // 归还池（reset 换发新 Future），届时再读帧上的 Future 已不是本周期的实例
         CompletableFuture<Void> completion = submitted.completionFuture();
-        submissionQueue.offer(new FrameTask(submitted));
+        offerOrThrow(new FrameTask(submitted));
         currentFrame = framePool.acquire();
         lastSubmittedCompletion = completion;
+    }
+
+    /**
+     * 提交任务到渲染队列。MPSC 有界队列的 offer 在队列满时返回 false——正常深度
+     * 为个位数到几十（见 {@link #submissionQueue} 注释），打满只可能是渲染线程
+     * 已停止消费，属不变量破坏：记日志并抛异常，绝不静默丢任务（丢帧任务会让
+     * swapFramesAndSync 永久等待，丢同步任务会让调用线程永久阻塞）。
+     */
+    private void offerOrThrow(RenderTask task) {
+        if (!submissionQueue.offer(task)) {
+            IllegalStateException failure = new IllegalStateException(String.format(
+                    "[SSOptimizer] 渲染提交队列已满（容量 %d），渲染线程疑似停止消费", SUBMISSION_QUEUE_CAPACITY));
+            LOGGER.error(failure.getMessage(), failure);
+            throw failure;
+        }
     }
 
     private void renderLoop() {
@@ -332,7 +360,7 @@ public final class RenderQueueImpl implements RenderQueue {
                 commands.get(i).execute();
             } catch (SuspendFrameException suspend) {
                 LockSupport.parkNanos(SUSPEND_REQUEUE_BACKOFF_NANOS);
-                submissionQueue.offer(new ContinuationTask(
+                offerOrThrow(new ContinuationTask(
                         new ArrayList<>(commands.subList(i, commands.size()))));
                 return;
             }
