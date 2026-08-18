@@ -165,6 +165,30 @@ class CollisionGridBvhTest {
     }
 
     @Test
+    void largeResultQueriesRemainCompletePastCollectionCapacity() {
+        // 结果数远超查询收集容器初始容量（64），覆盖预置容量后的多次扩容路径；
+        // 同时以 3000 条目物化 BVH，覆盖构建期容器预热（节点数上界 2*count-1）后的
+        // 完整构建。防止预置/扩容改动破坏结果完整性。
+        final VanillaGridReference ref = new VanillaGridReference(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
+        final CollisionGridBvhImpl bvh = newBvh(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
+        final int count = 3000;
+        final Random rng = new Random(777L);
+        for (int i = 0; i < count; i++) {
+            final Object obj = new Object();
+            final float[] d = randomRect(rng, false);
+            ref.addObject(obj, d[0], d[1], d[2], d[3]);
+            bvh.addObject(obj, d[0], d[1], d[2], d[3]);
+        }
+
+        // 全图范围查询：命中全部登记实体（去重后），与参考实现逐一相等；
+        // 命中规模远超 64 的收集预置容量，确保确实走过多轮扩容。
+        final HashSet<Object> expected = drainToSet(ref.getCheckIterator(0, 0, 40000, 40000));
+        final HashSet<Object> actual = drainToSet(bvh.getCheckIterator(0, 0, 40000, 40000));
+        assertEquals(expected, actual);
+        assertTrue(actual.size() > 1000, "全图查询应命中绝大多数实体，实际 " + actual.size());
+    }
+
+    @Test
     void bvhInternalNodeBoundsAreUnionOfChildren() {
         final Random rng = new Random(424242L);
         final int n = 200;

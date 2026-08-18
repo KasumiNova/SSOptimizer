@@ -241,14 +241,14 @@ public final class CollisionGridBvhBuild {
         private final int[] entryMaxY;
         private final int[] order;
 
-        private final IntArrayList nMinX = new IntArrayList();
-        private final IntArrayList nMinY = new IntArrayList();
-        private final IntArrayList nMaxX = new IntArrayList();
-        private final IntArrayList nMaxY = new IntArrayList();
-        private final IntArrayList nLeft = new IntArrayList();
-        private final IntArrayList nRight = new IntArrayList();
-        private final IntArrayList nEntryStart = new IntArrayList();
-        private final IntArrayList nEntryCount = new IntArrayList();
+        private final IntArrayList nMinX;
+        private final IntArrayList nMinY;
+        private final IntArrayList nMaxX;
+        private final IntArrayList nMaxY;
+        private final IntArrayList nLeft;
+        private final IntArrayList nRight;
+        private final IntArrayList nEntryStart;
+        private final IntArrayList nEntryCount;
 
         Builder(final int[] entryMinX, final int[] entryMinY,
                 final int[] entryMaxX, final int[] entryMaxY,
@@ -258,6 +258,18 @@ public final class CollisionGridBvhBuild {
             this.entryMaxX = entryMaxX;
             this.entryMaxY = entryMaxY;
             this.order = order;
+            // 构建期容器预热：节点总数为 2*叶子数-1，叶子数 ≤ 条目数（每叶至少 1 条），
+            // 按 2*count 预置即整个构建期零扩容（v49 profile：buildNode 的 IntArrayList.grow
+            // 13 样本的消除目标）；最终 Tree 数组经 toIntArray 精确拷贝，预热容量不保留。
+            final int nodeCapacity = order.length * 2;
+            nMinX = new IntArrayList(nodeCapacity);
+            nMinY = new IntArrayList(nodeCapacity);
+            nMaxX = new IntArrayList(nodeCapacity);
+            nMaxY = new IntArrayList(nodeCapacity);
+            nLeft = new IntArrayList(nodeCapacity);
+            nRight = new IntArrayList(nodeCapacity);
+            nEntryStart = new IntArrayList(nodeCapacity);
+            nEntryCount = new IntArrayList(nodeCapacity);
         }
 
         /** 构建覆盖 {@code order[lo..hi)} 的子树，返回节点下标（前序分配，根为 0）。 */
