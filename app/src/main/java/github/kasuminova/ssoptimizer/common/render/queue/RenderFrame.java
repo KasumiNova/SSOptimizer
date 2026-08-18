@@ -16,7 +16,11 @@ import java.util.concurrent.CompletableFuture;
  * 下引入命令对象池（FR 的 Frame 同样从简单列表起步）。
  */
 public final class RenderFrame {
-    private final List<GlCommand> commands = new ArrayList<>();
+    /** 命令列表的默认初始容量：新建帧的容量下限（与 JDK {@link ArrayList} 无参构造一致）。 */
+    static final int DEFAULT_COMMAND_CAPACITY = 10;
+
+    private final List<GlCommand>  commands;
+    private final int              initialCommandCapacity;
     private final List<FrameFence> fences = new ArrayList<>();
     /** 帧执行完成信号；{@link #reset()} 换发新实例，已提交帧的旧 Future 结果不受影响。 */
     private CompletableFuture<Void> completion = new CompletableFuture<>();
@@ -28,6 +32,34 @@ public final class RenderFrame {
      * 去重跳过才是安全的；序号变化即视为状态可能已被其他路径改变。
      */
     private volatile int commitSeq;
+
+    /**
+     * 默认容量构造：命令列表按 {@link #DEFAULT_COMMAND_CAPACITY} 起步。
+     */
+    public RenderFrame() {
+        this(DEFAULT_COMMAND_CAPACITY);
+    }
+
+    /**
+     * 按预热容量构造：新建帧（池空时 {@link FramePool#acquire()} 的产物）的命令列表
+     * 初始容量取 {@link FramePool} 记录的近 N 帧命令数峰值，避免每帧从默认容量
+     * 渐进扩容（v49 profile：{@code ArrayList.grow} 2,728 样本的主要来源）。
+     * 池化复用帧不走本构造：{@link #reset()} 的 clear 不缩容，容量跨帧保留。
+     *
+     * @param initialCommandCapacity 命令列表初始容量（实际容量可随超峰命令增长）
+     */
+    RenderFrame(final int initialCommandCapacity) {
+        this.initialCommandCapacity = initialCommandCapacity;
+        this.commands = new ArrayList<>(initialCommandCapacity);
+    }
+
+    /**
+     * @return 本帧命令列表的初始容量（构造时预定的预热基线；列表实际容量可能随
+     * 超峰命令增长，测试用）
+     */
+    int commandCapacity() {
+        return initialCommandCapacity;
+    }
 
     /**
      * 追加一条命令到帧尾。synchronized 保证主线程直接录制与 aux-context 生产者
