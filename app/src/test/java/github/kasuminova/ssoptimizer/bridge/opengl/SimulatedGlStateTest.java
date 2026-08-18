@@ -191,29 +191,56 @@ class SimulatedGlStateTest {
     }
 
     @Test
-    void popAttribInvalidatesByMaskBits() {
+    void popAttribRestoresSnapshotByMaskBits() {
         final SimulatedGlState state = new SimulatedGlState();
         state.onViewport(0, 0, 100, 100);
         state.onPushAttrib(GL11.GL_VIEWPORT_BIT);
+        state.onViewport(5, 6, 700, 500);
         state.onPopAttrib();
-        assertNull(state.getInteger(GL11.GL_VIEWPORT), "VIEWPORT_BIT 恢复值不可簿记，必须失效");
-        // matrixMode 未按位失效，保持有效
-        assertEquals(GL11.GL_MODELVIEW, state.getInteger(GL11.GL_MATRIX_MODE));
+        // VIEWPORT_BIT：pop 恢复 push 时的快照
+        assertEquals(0, state.getInteger(GL11.GL_VIEWPORT));
+        final IntBuffer out = IntBuffer.allocate(4);
+        assertTrue(state.getInteger(GL11.GL_VIEWPORT, out));
+        out.flip();
+        assertEquals(0, out.get());
+        assertEquals(0, out.get());
+        assertEquals(100, out.get());
+        assertEquals(100, out.get());
 
         state.onMatrixMode(GL11.GL_PROJECTION);
         state.onPushAttrib(GL11.GL_TRANSFORM_BIT);
+        state.onMatrixMode(GL11.GL_TEXTURE);
         state.onPopAttrib();
-        assertNull(state.getInteger(GL11.GL_MATRIX_MODE), "TRANSFORM_BIT 恢复 matrixMode，必须失效");
+        assertEquals(GL11.GL_PROJECTION, state.getInteger(GL11.GL_MATRIX_MODE),
+                "TRANSFORM_BIT：pop 恢复 push 时的 matrixMode");
+
+        // 未按位保存的分组不受 pop 影响
+        state.onViewport(1, 1, 50, 50);
+        state.onPushAttrib(GL11.GL_TRANSFORM_BIT);
+        state.onViewport(2, 2, 60, 60);
+        state.onPopAttrib();
+        assertEquals(2, state.getInteger(GL11.GL_VIEWPORT), "TRANSFORM_BIT 不触碰 viewport");
     }
 
     @Test
-    void drawBuffersInvalidatesUntilSingleTargetRecorded() {
+    void popAttribWithoutPairInvalidates() {
+        final SimulatedGlState state = new SimulatedGlState();
+        state.onViewport(0, 0, 100, 100);
+        state.onMatrixMode(GL11.GL_PROJECTION);
+        state.onPopAttrib();
+        assertNull(state.getInteger(GL11.GL_VIEWPORT), "无配对 pop 失效化 viewport");
+        assertNull(state.getInteger(GL11.GL_MATRIX_MODE), "无配对 pop 失效化 matrixMode");
+    }
+
+    @Test
+    void drawBuffersTracksFirstBuffer() {
         final SimulatedGlState state = new SimulatedGlState();
         state.onDrawBuffer(GL11.GL_BACK);
-        state.onDrawBuffers();
-        assertNull(state.getInteger(GL11.GL_DRAW_BUFFER), "多目标形态必须失效");
-        state.onDrawBuffer(GL11.GL_FRONT);
-        assertEquals(GL11.GL_FRONT, state.getInteger(GL11.GL_DRAW_BUFFER), "单目标记录后恢复有效");
+        // glDrawBuffers([FRONT, ...]) 的单值查询语义即 DRAW_BUFFER0=FRONT
+        state.onDrawBuffers(GL11.GL_FRONT);
+        assertEquals(GL11.GL_FRONT, state.getInteger(GL11.GL_DRAW_BUFFER));
+        state.onDrawBuffer(GL11.GL_BACK);
+        assertEquals(GL11.GL_BACK, state.getInteger(GL11.GL_DRAW_BUFFER));
     }
 
     @Test

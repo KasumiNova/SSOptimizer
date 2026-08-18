@@ -19,10 +19,11 @@ import java.nio.IntBuffer;
  * 命令流镜像（glUseProgram/glBindTexture/glActiveTexture/glDrawBuffer/glViewport/
  * 矩阵族），录制侧簿记在命令流顺序下与真实状态逐指令一致。
  * <p>
- * 语义安全：任何未建模的突变（glPopAttrib 恢复 VIEWPORT/TRANSFORM 位、
- * glDrawBuffers 多目标、显示模式切换重建上下文）会把对应分组标记为失效，
- * getter 回退真实阻塞通道——语义正确性优先于零阻塞。矩阵栈初始为单位阵
- * （与全新 GL 上下文一致），视口在首个 glViewport 录制前无效。
+ * 语义安全：glPushAttrib/glPopAttrib 对 VIEWPORT/TRANSFORM 位做按位快照恢复，
+ * glDrawBuffers 按规范簿记首元素（GL_DRAW_BUFFER 单值查询即 DRAW_BUFFER0），
+ * 仅真正不可簿记的突变（attrib 配对不可知/栈溢出、显示模式切换重建上下文）
+ * 会把对应分组标记为失效，getter 回退真实阻塞通道——语义正确性优先于零阻塞。
+ * 矩阵栈初始为单位阵（与全新 GL 上下文一致），视口在首个 glViewport 录制前无效。
  * <p>
  * 实例非线程安全，线程隔离由 {@link RecordingContext} 访问约定保证；
  * 仅主录制线程的 getter 走仿真（见桥接调用点），aux 线程一律回退阻塞——
@@ -62,8 +63,14 @@ final class SimulatedGlState {
     private final float[][] matrixStacks = new float[MODE_COUNT][MAX_MATRIX_STACK * 16];
     private final int[]     matrixDepths = new int[MODE_COUNT];
     private final boolean[] matrixValid  = {true, true, true};
-    /** glPushAttrib 的 mask 栈：pop 时按位决定哪些仿真分组失效。 */
+    /** glPushAttrib 的 mask 栈与按位快照：pop 时按位恢复簿记值。 */
     private final int[] attribMasks = new int[MAX_ATTRIB_STACK];
+    /** 每槽 VIEWPORT_BIT 快照（mask 含位且 push 时 viewport 有效才记录）。 */
+    private final int[] attribViewportSnaps = new int[MAX_ATTRIB_STACK * 4];
+    private final boolean[] attribViewportSnapValid = new boolean[MAX_ATTRIB_STACK];
+    /** 每槽 TRANSFORM_BIT 快照（matrixMode 单值）。 */
+    private final int[] attribMatrixModeSnaps = new int[MAX_ATTRIB_STACK];
+    private final boolean[] attribMatrixModeSnapValid = new boolean[MAX_ATTRIB_STACK];
     private int     attribDepth;
     private boolean attribTrackingValid = true;
 
@@ -91,9 +98,13 @@ final class SimulatedGlState {
         drawBufferValid = true;
     }
 
-    /** glDrawBuffers 多目标形态语义超出单值簿记，失效化回退阻塞通道。 */
-    void onDrawBuffers() {
-        drawBufferValid = false;
+    /**
+     * glDrawBuffers 簿记：GL_DRAW_BUFFER 单值查询的规范语义即 DRAW_BUFFER0，
+     * 记录 buffers 首元素（与模组保存/恢复惯用法逐指令一致）。
+     */
+    void onDrawBuffers(final int firstBuffer) {
+        drawBuffer = firstBuffer;
+        drawBufferValid = true;
     }
 
     void onViewport(final int x, final int y, final int width, final int height) {
@@ -313,6 +324,19 @@ final class SimulatedGlState {
             attribDepth = 0;
             return;
         }
+        // 按位快照：pop 时原值恢复，簿记全程不失效
+        if ((mask & GL11.GL_VIEWPORT_BIT) != 0 && viewportValid) {
+            System.arraycopy(viewport, 0, attribViewportSnaps, attribDepth * 4, 4);
+            attribViewportSnapValid[attribDepth] = true;
+        } else {
+            attribViewportSnapValid[attribDepth] = false;
+        }
+        if ((mask & GL11.GL_TRANSFORM_BIT) != 0 && matrixModeValid) {
+            attribMatrixModeSnaps[attribDepth] = matrixMode;
+            attribMatrixModeSnapValid[attribDepth] = true;
+        } else {
+            attribMatrixModeSnapValid[attribDepth] = false;
+        }
         attribMasks[attribDepth++] = mask;
     }
 
@@ -325,10 +349,20 @@ final class SimulatedGlState {
         }
         final int mask = attribMasks[--attribDepth];
         if ((mask & GL11.GL_VIEWPORT_BIT) != 0) {
-            viewportValid = false;
+            if (attribViewportSnapValid[attribDepth]) {
+                System.arraycopy(attribViewportSnaps, attribDepth * 4, viewport, 0, 4);
+                viewportValid = true;
+            } else {
+                viewportValid = false;
+            }
         }
         if ((mask & GL11.GL_TRANSFORM_BIT) != 0) {
-            matrixModeValid = false;
+            if (attribMatrixModeSnapValid[attribDepth]) {
+                matrixMode = attribMatrixModeSnaps[attribDepth];
+                matrixModeValid = true;
+            } else {
+                matrixModeValid = false;
+            }
         }
     }
 

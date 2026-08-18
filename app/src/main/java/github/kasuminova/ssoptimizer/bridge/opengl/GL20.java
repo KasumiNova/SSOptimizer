@@ -200,8 +200,10 @@ public final class GL20 {
     }
 
     public static void glDrawBuffers(IntBuffer buffers) {
-        // 多目标形态超出单值簿记，失效化回退阻塞通道
-        BridgeSupport.simulatedState().onDrawBuffers();
+        // GL_DRAW_BUFFER 单值查询语义即 DRAW_BUFFER0：簿记首元素（绝对读取不动 position）
+        if (buffers.remaining() >= 1) {
+            BridgeSupport.simulatedState().onDrawBuffers(buffers.get(buffers.position()));
+        }
         BridgeSupport.enqueueSnapshot(buffers, snapshot ->
                 org.lwjgl.opengl.GL20.glDrawBuffers(snapshot.asIntBuffer()));
     }
