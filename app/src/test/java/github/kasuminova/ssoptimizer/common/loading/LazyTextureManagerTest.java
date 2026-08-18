@@ -4,6 +4,7 @@ import com.fs.graphics.TextureObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -387,6 +388,33 @@ class LazyTextureManagerTest {
     @Test
     void originalLazyModeResolverReturnsNullWhenStaticBooleanCandidatesAreAmbiguous() {
         assertNull(LazyTextureManager.resolveOriginalLazyModeMethod(FakeTextureManagerWithAmbiguousToggles.class));
+    }
+
+    @Test
+    void managedTextureEntryIsDroppedAfterTextureGc() {
+        // 受管纹理条目（WeakKeyMap 值）随纹理对象被 GC 后不得泄漏：登记 → 释放强引用 →
+        // GC 循环等待条目数回落（清理为惰性：键被收集后经引用队列在后续 size/expunge
+        // 摘除，清空与入队之间存在 GC 时序差，故以「弱引用清空 && 条目数收敛」为终态）。
+        final WeakReference<TextureObject> weak = new WeakReference<>(trackForTestAndReturn());
+        assertTrue(LazyTextureManager.isTextureEvictable(weak.get()));
+        final int afterPut = LazyTextureManager.managedTextureCountForTests();
+
+        int afterGc = afterPut;
+        for (int i = 0; i < 100 && (weak.get() != null || afterGc >= afterPut); i++) {
+            byte[] garbage = new byte[1 << 20];
+            System.gc();
+            afterGc = LazyTextureManager.managedTextureCountForTests();
+        }
+        assertNull(weak.get(), "纹理对象应已被 GC 回收");
+        assertTrue(afterGc < afterPut,
+                "纹理被 GC 后其受管条目应被清理（WeakKeyMap 弱键语义；afterPut=" + afterPut + ", afterGc=" + afterGc + "）");
+    }
+
+    /** 登记一个受管纹理并仅经弱引用返回（方法返回后无强引用）。 */
+    private static TextureObject trackForTestAndReturn() {
+        final TextureObject texture = new TextureObject(3553, -1, "graphics/portraits/gc_test.png");
+        LazyTextureManager.trackResidentTextureForTests(texture, "graphics/portraits/gc_test.png");
+        return texture;
     }
 
     private static final class FakeTextureLoaderWithAlias {
