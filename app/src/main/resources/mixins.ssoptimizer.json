@@ -84,7 +84,9 @@
     "save.XStreamFieldsMixin",
     "save.XStreamObjectIdDictionaryMixin",
     "save.XStreamPathTrackerMixin",
-    "warroom.TaskIconManagerMixin"
+    "warroom.TaskIconManagerMixin",
+    "debug.BaseGameStateNoWindowIdleMixin",
+    "campaign.FleetDataSyncGuardMixin"
   ],
   "client": [],
   "injectors": {

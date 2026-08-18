@@ -44,6 +44,18 @@ public final class FramebufferCapture {
      * @throws IOException Display 尺寸非法时抛出
      */
     public static BufferedImage capture() throws IOException {
+        return capture(GL11.GL_BACK);
+    }
+
+    /**
+     * 指定读取缓冲的抓取变体（rt 渲染线程取证用：back buffer 在 swap 前的管线时序下
+     * 可能读不到已呈现内容，GL_FRONT 读到的是当前实际显示帧）。
+     *
+     * @param readBuffer GL11.GL_BACK 或 GL11.GL_FRONT
+     * @return 纵向翻转后的帧图像
+     * @throws IOException Display 尺寸非法时抛出
+     */
+    public static BufferedImage capture(final int readBuffer) throws IOException {
         final int width = Display.getWidth();
         final int height = Display.getHeight();
         if (width <= 0 || height <= 0) {
@@ -51,7 +63,7 @@ public final class FramebufferCapture {
         }
 
         final ByteBuffer pixels = BufferUtils.createByteBuffer(width * height * 4);
-        GL11.glReadBuffer(GL11.GL_BACK);
+        GL11.glReadBuffer(readBuffer);
         GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
 
         final int[] argb = new int[width * height];
@@ -60,7 +72,9 @@ public final class FramebufferCapture {
             final int dstRow = (height - y - 1) * width;
             for (int x = 0; x < width; x++) {
                 final int index = (srcRow + x) * 4;
-                argb[dstRow + x] = (pixels.get(index + 3) << 24)
+                // alpha 通道强制 255：无 alpha 平面的 GLX 视觉下 glReadPixels 的 alpha
+                // 分量读回 0（Mesa 实证），截图是不透明帧，直接置不透明。
+                argb[dstRow + x] = 0xFF000000
                         | ((pixels.get(index) & 0xFF) << 16)
                         | ((pixels.get(index + 1) & 0xFF) << 8)
                         | (pixels.get(index + 2) & 0xFF);
