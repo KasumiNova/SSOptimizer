@@ -53,6 +53,25 @@ class SSOptimizerMixinConfigPluginTest {
     }
 
     @Test
+    void appliesEscortTargetGuardMixinByDefault() {
+        SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
+
+        assertTrue(plugin.shouldApplyMixin(
+                "com.fs.starfarer.combat.ai.AIUtils",
+                "github.kasuminova.ssoptimizer.mixin.ai.AiUtilsEscortTargetGuardMixin"));
+    }
+
+    @Test
+    void skipsEscortTargetGuardMixinWhenParallelAiDisabled() {
+        System.setProperty(SSOptimizerMixinConfigPlugin.AI_PARALLEL_DISABLE_PROPERTY, "true");
+        SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
+
+        assertFalse(plugin.shouldApplyMixin(
+                "com.fs.starfarer.combat.ai.AIUtils",
+                "github.kasuminova.ssoptimizer.mixin.ai.AiUtilsEscortTargetGuardMixin"));
+    }
+
+    @Test
     void keepsOtherMixinsEnabledByDefault() {
         SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
 

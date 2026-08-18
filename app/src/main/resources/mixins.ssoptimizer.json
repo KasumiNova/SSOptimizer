@@ -12,6 +12,7 @@
     "accessor.FighterAIAccessor",
     "accessor.ShipAccessor",
     "accessor.Txw2DelegatingXmlStreamWriterAccessor",
+    "ai.AiUtilsEscortTargetGuardMixin",
     "ai.AiUtilsThreadLocalMixin",
     "ai.AttackAiModuleNullFlagMixin",
     "ai.CombatEngineAiParallelMixin",
