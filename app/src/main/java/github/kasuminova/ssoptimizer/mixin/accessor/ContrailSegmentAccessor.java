@@ -30,7 +30,12 @@ public interface ContrailSegmentAccessor {
     @Accessor(value = "width", remap = false)
     void ssoptimizer$setWidth(float width);
 
-    @Accessor(value = "baseWidth", remap = false)
+    /**
+     * 宽度基值字段在运行时名为 {@code oO0000}（named 管线对该字段保留混淆名——
+     * 反编译 named 仓 jar 确认：{@code addSegment} 中 {@code segment.oO0000 =
+     * group.width}，即宽度公式的输入基值），非 {@code baseWidth}。
+     */
+    @Accessor(value = "oO0000", remap = false)
     float ssoptimizer$getBaseWidth();
 
     @Accessor(value = "maxAge", remap = false)
