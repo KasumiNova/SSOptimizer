@@ -26,10 +26,14 @@ import java.util.concurrent.Callable;
  */
 final class BridgeSupport {
     private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
+    /** 池化命令对象（录制线程借出、渲染线程归还，见 {@link CommandPool} 的生命周期约束）。 */
+    private static volatile CommandPool<VertexBatchCommand> vertexBatches = new CommandPool<>(VertexBatchCommand::new);
     private static final ThreadLocal<ClientPointerState> POINTER_STATES =
             ThreadLocal.withInitial(ClientPointerState::new);
     /** 录制侧逐线程的 FRAMEBUFFER 绑定跟踪（供 bridge 的 getter 短路，免阻塞往返）。 */
     private static final ThreadLocal<int[]> FRAMEBUFFER_BINDING = ThreadLocal.withInitial(() -> new int[1]);
+    /** 录制侧逐线程的 immediate 顶点流缓冲（glBegin/glVertex* 族，见 {@link VertexStream}）。 */
+    private static final ThreadLocal<VertexStream> VERTEX_STREAMS = ThreadLocal.withInitial(VertexStream::new);
     /**
      * 渲染线程侧簿记：命令流执行到当前位置的 GL_ARRAY_BUFFER 真实绑定。
      * 只由 bind 命令执行体与 pointer 重放（{@link PointerSnapshotGroup#apply()}）
@@ -56,7 +60,9 @@ final class BridgeSupport {
         queue = null;
         POINTER_STATES.remove();
         FRAMEBUFFER_BINDING.remove();
+        VERTEX_STREAMS.remove();
         executedArrayBufferBinding = 0;
+        vertexBatches = new CommandPool<>(VertexBatchCommand::new);
     }
 
     static RenderQueue queue() {
@@ -67,9 +73,36 @@ final class BridgeSupport {
         return q;
     }
 
-    /** 录制一条命令到当前帧。 */
+    /**
+     * 录制一条命令到当前帧。若当前线程的顶点流有未落帧的 immediate 操作，
+     * 先把它打包落帧——流段命令与本命令在帧列表中的顺序即录制顺序。
+     */
     static void enqueue(GlCommand command) {
+        flushVertexStream();
         queue().submit(command);
+    }
+
+    /** 当前线程的 immediate 顶点流（bridge 的 glBegin/glVertex* 族录制入口）。 */
+    static VertexStream vertexStream() {
+        return VERTEX_STREAMS.get();
+    }
+
+    /**
+     * 顶点流落帧：当前线程已累计的 immediate 操作拷贝进池化的
+     * {@link VertexBatchCommand} 追加进当前帧（空流不产生任何命令）。触发点：
+     * glEnd、任一非流式命令（见 {@link #enqueue(GlCommand)}）、阻塞通道
+     * drain-first 之前——保证流段与其他命令/回读的相对顺序与原调用序列
+     * 逐指令等价。
+     */
+    static void flushVertexStream() {
+        VertexStream stream = VERTEX_STREAMS.get();
+        if (stream.isEmpty()) {
+            return;
+        }
+        VertexBatchCommand batch = vertexBatches.acquire();
+        batch.fillFrom(stream);
+        stream.reset();
+        queue().submit(batch);
     }
 
     /**
@@ -86,6 +119,9 @@ final class BridgeSupport {
     static <T> T blockingGet(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            // drain-first 必须包含未落帧的顶点流：getter 读到的是此前全部录制命令
+            // 执行完的 GL 状态，顶点流是其中一部分
+            flushVertexStream();
             q.swapFrames();
         }
         return q.get(getter);
@@ -95,6 +131,7 @@ final class BridgeSupport {
     static void blockingWait(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            flushVertexStream();
             q.swapFrames();
         }
         q.wait(task);
@@ -107,6 +144,7 @@ final class BridgeSupport {
     static <T> T blockingGetResource(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            flushVertexStream();
             q.swapFrames();
         }
         return q.getUncounted(getter);
@@ -116,6 +154,7 @@ final class BridgeSupport {
     static void blockingWaitResource(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            flushVertexStream();
             q.swapFrames();
         }
         q.waitUncounted(task);
@@ -197,6 +236,11 @@ final class BridgeSupport {
     /** 缓冲快照池（包内与单测可见）。 */
     static BufferSnapshotPool pool() {
         return pool;
+    }
+
+    /** 归还顶点流回放命令（仅 {@link VertexBatchCommand#execute()} 的 finally 调用）。 */
+    static void releaseVertexBatch(VertexBatchCommand batch) {
+        vertexBatches.release(batch);
     }
 
     /** 测试用：更换全新快照池，避免用例间经静态单例池串扰。 */

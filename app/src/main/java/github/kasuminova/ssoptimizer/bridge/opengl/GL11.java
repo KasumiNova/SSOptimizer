@@ -19,6 +19,10 @@ import java.nio.ShortBuffer;
  * <p>
  * 本阶段（bridge + 单测）的语义约定：
  * <ul>
+ *   <li>immediate 顶点流（glBegin/glEnd 与 glVertex/glTexCoord/glColor/
+ *       glNormal3f 族）：编码进逐线程 {@link VertexStream}，在 glEnd/任一非流式
+ *       命令/阻塞通道 drain-first 之前打包成单条回放命令落帧——流段与命令
+ *       对象在帧列表中共享同一有序序列，回放与原调用逐指令等价；</li>
  *   <li>无参/标量参数命令：1:1 录制一条命令，命令体调真
  *       {@link org.lwjgl.opengl.GL11}；</li>
  *   <li>buffer 参数命令（glTexImage/glBufferData/glLoadMatrix 等）：录制时经
@@ -39,8 +43,8 @@ import java.nio.ShortBuffer;
  *       （编译期展开为命令序列、跨帧复用）留待后续轮次。</li>
  * </ul>
  * 后续阶段计划：immediate 顶点流被顶点拦截器当场变换进批量缓冲（glEnd 转
- * draw 命令）；矩阵操作改走主线程 CPU 仿真栈不再产生 GL 命令；glFlush/glFinish
- * 评估抹成 no-op（语义由帧同步点统一保证）。
+ * draw 命令，取代本步的逐指令回放）；矩阵操作改走主线程 CPU 仿真栈不再产生
+ * GL 命令；glFlush/glFinish 评估抹成 no-op（语义由帧同步点统一保证）。
  * <p>
  * 注入：{@link #install(RenderQueue)} 装配命令消费者（游戏接入时由 bootstrap
  * 安装真实队列；单测安装假队列验证录制行为）。未安装时调用直接抛
@@ -90,63 +94,66 @@ public final class GL11 {
     }
 
     // ------------------------------------------------------------------
-    // immediate 顶点流
+    // immediate 顶点流（流式录制：编码进逐线程 VertexStream，glEnd/非流式
+    // 命令/阻塞通道前打包成单条回放命令落帧，见 VertexStream 的顺序语义）
     // ------------------------------------------------------------------
 
     public static void glBegin(int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glBegin(mode));
+        BridgeSupport.vertexStream().begin(mode);
     }
 
     public static void glEnd() {
-        BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glEnd);
+        VertexStream stream = BridgeSupport.vertexStream();
+        stream.end();
+        BridgeSupport.flushVertexStream();
     }
 
     public static void glVertex2f(float x, float y) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glVertex2f(x, y));
+        BridgeSupport.vertexStream().vertex2f(x, y);
     }
 
     public static void glVertex3f(float x, float y, float z) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glVertex3f(x, y, z));
+        BridgeSupport.vertexStream().vertex3f(x, y, z);
     }
 
     public static void glVertex2d(double x, double y) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glVertex2d(x, y));
+        BridgeSupport.vertexStream().vertex2d(x, y);
     }
 
     public static void glVertex3d(double x, double y, double z) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glVertex3d(x, y, z));
+        BridgeSupport.vertexStream().vertex3d(x, y, z);
     }
 
     public static void glTexCoord2f(float s, float t) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexCoord2f(s, t));
+        BridgeSupport.vertexStream().texCoord2f(s, t);
     }
 
     public static void glTexCoord2d(double s, double t) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexCoord2d(s, t));
+        BridgeSupport.vertexStream().texCoord2d(s, t);
     }
 
     public static void glColor4ub(byte red, byte green, byte blue, byte alpha) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor4ub(red, green, blue, alpha));
+        BridgeSupport.vertexStream().color4ub(red, green, blue, alpha);
     }
 
     public static void glColor3ub(byte red, byte green, byte blue) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor3ub(red, green, blue));
+        BridgeSupport.vertexStream().color3ub(red, green, blue);
     }
 
     public static void glColor3f(float red, float green, float blue) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor3f(red, green, blue));
+        BridgeSupport.vertexStream().color3f(red, green, blue);
     }
 
     public static void glColor4f(float red, float green, float blue, float alpha) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor4f(red, green, blue, alpha));
+        BridgeSupport.vertexStream().color4f(red, green, blue, alpha);
     }
 
     public static void glColor3d(double red, double green, double blue) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor3d(red, green, blue));
+        BridgeSupport.vertexStream().color3d(red, green, blue);
     }
 
     public static void glNormal3f(float nx, float ny, float nz) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glNormal3f(nx, ny, nz));
+        BridgeSupport.vertexStream().normal3f(nx, ny, nz);
     }
 
     public static void glEdgeFlag(boolean flag) {

@@ -39,10 +39,46 @@ class GL11BridgeTest {
         GL11.glVertex2f(3f, 4f);
         GL11.glEnd();
         GL11.glPopMatrix();
-        assertEquals(11, queue.recorded.size());
+        // 矩阵/状态命令逐条入队；begin..end 的 5 次 immediate 调用合并为 1 条流回放命令
+        assertEquals(7, queue.recorded.size());
         // 只录制不执行：无 GL 上下文也未抛异常，证明调用被完整延迟
         assertEquals(0, queue.swapCount);
         assertEquals(0, queue.swapAndSyncCount);
+    }
+
+    @Test
+    void nonStreamCommandFlushesPendingVertexStreamInOrder() {
+        // 顶点流与命令对象混排：非流式命令插入时，先落帧已累计的流段，
+        // 帧列表顺序即录制顺序（段 1 = begin+2 顶点，其后 enable，其后段 2）
+        GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+        GL11.glVertex2f(0f, 0f);
+        GL11.glVertex2f(1f, 0f);
+        GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+        GL11.glVertex2f(1f, 1f);
+        GL11.glEnd();
+        assertEquals(3, queue.recorded.size());
+    }
+
+    @Test
+    void blockingGetterFlushesPendingVertexStreamBeforeSwap() {
+        // drain-first 必须包含未落帧的顶点流：getter 读到此前全部录制命令执行完的状态
+        GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+        GL11.glVertex2f(0f, 0f);
+        queue.getHandler = callable -> 0;
+        GL11.glGetError();
+        assertEquals(1, queue.recorded.size(), "顶点流段先于 swap 落帧");
+        assertEquals(1, queue.swapCount);
+        assertEquals(1, queue.getCallCount);
+    }
+
+    @Test
+    void vertexBatchesUsePooledCommandObjects() {
+        GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+        GL11.glVertex2f(0f, 0f);
+        GL11.glEnd();
+        GL11.glDrawArrays(org.lwjgl.opengl.GL11.GL_QUADS, 0, 4);
+        assertEquals(2, queue.recorded.size());
+        assertInstanceOf(VertexBatchCommand.class, queue.recorded.get(0), "顶点批次走池化回放命令");
     }
 
     @Test
@@ -97,7 +133,8 @@ class GL11BridgeTest {
         GL11.glPopAttrib();
         GL11.glPushClientAttrib(org.lwjgl.opengl.GL11.GL_ALL_CLIENT_ATTRIB_BITS);
         GL11.glPopClientAttrib();
-        assertEquals(28, queue.recorded.size());
+        // 前 8 次 immediate 调用合并为 1 条流回放命令（在 glAlphaFunc 前落帧），其后 20 条逐条入队
+        assertEquals(21, queue.recorded.size());
     }
 
     @Test
