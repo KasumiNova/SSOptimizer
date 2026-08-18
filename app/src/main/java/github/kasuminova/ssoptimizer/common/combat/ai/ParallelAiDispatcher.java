@@ -27,7 +27,9 @@ import org.apache.log4j.Logger;
  * <p>
  * 开关：{@code -Dssoptimizer.ai.parallel=false} 运行期整体关闭（全部内联串行）；
  * {@code -Dssoptimizer.ai.parallel.threads=N} 指定工作线程数，
- * 默认 {@code min(4, cores-1)}，下限 1。
+ * 默认 {@code cores-1}（下限 1），保留 1 个核给主线程/渲染线程，避免
+ * oversubscription（Worker 数明显超过物理核数时上下文切换加剧屏障尾延迟，
+ * v45c profile：AI 屏障 awaitAll 1,540 样本 + 自动开火屏障 777 样本）。
  */
 public final class ParallelAiDispatcher {
     public static final String ENABLED_PROPERTY = "ssoptimizer.ai.parallel";
@@ -143,8 +145,12 @@ public final class ParallelAiDispatcher {
 
     private static AiParallelExecutor createExecutor() {
         int cores = Runtime.getRuntime().availableProcessors();
+        // 默认 cores-1（给主线程/渲染线程留 1 核）：相对旧默认 min(4, cores-1)
+        // 在多数核的机器上显著提高并行度，缩短帧内 AI 屏障就绪时间（v45c
+        // profile：屏障 awaitAll 1,540 + 自动开火 777 样本）；cores-1 不超过
+        // 物理核数，不引入 oversubscription 的上下文切换开销。系统属性覆盖保留。
         int threads = Integer.parseInt(
-                System.getProperty(THREADS_PROPERTY, String.valueOf(Math.max(1, Math.min(4, cores - 1)))));
+                System.getProperty(THREADS_PROPERTY, String.valueOf(Math.max(1, cores - 1))));
         if (threads < 1) {
             LOGGER.warn("[SSOptimizer] Invalid " + THREADS_PROPERTY + "=" + threads + ", falling back to 1");
             threads = 1;
