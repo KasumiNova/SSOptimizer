@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import github.kasuminova.ssoptimizer.common.bench.FramebufferCapture;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import org.lwjgl.LWJGLException;
 
@@ -69,13 +70,44 @@ public final class Display {
         }
     }
 
+    /** 调试帧抓取输出目录（{@code -Dssoptimizer.debug.framecapture.dir}），null 关闭。 */
+    private static final String DEBUG_CAPTURE_DIR = System.getProperty("ssoptimizer.debug.framecapture.dir");
+    /** 调试帧抓取触发帧号（{@code -Dssoptimizer.debug.framecapture.frame}，默认 600）。 */
+    private static final int    DEBUG_CAPTURE_FRAME = Integer.getInteger("ssoptimizer.debug.framecapture.frame", 600);
+    /** 渲染线程帧计数（仅调试抓取使用）。 */
+    private static int debugFrameCounter;
+
+    /**
+     * 调试帧抓取：渲染线程在 swap 前抓取 back buffer 写 PNG（主菜单/非战斗场景的
+     * 渲染取证手段，bench 的截图机制只覆盖任务内）。每进程只抓一帧。
+     */
+    private static void debugCaptureFrame() {
+        if (DEBUG_CAPTURE_DIR == null) {
+            return;
+        }
+        debugFrameCounter++;
+        if (debugFrameCounter != DEBUG_CAPTURE_FRAME) {
+            return;
+        }
+        try {
+            FramebufferCapture.captureToPng(
+                    java.nio.file.Paths.get(DEBUG_CAPTURE_DIR, "frame-" + debugFrameCounter + ".png"));
+        } catch (Exception e) {
+            org.apache.log4j.Logger.getLogger(Display.class).warn(
+                    "[SSOptimizer] debug frame capture failed at frame " + debugFrameCounter, e);
+        }
+    }
+
     /**
      * 帧尾：入队真实 {@code Display.update()}（渲染线程交换缓冲），
      * 然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。
      */
     public static void update() {
         RenderQueue q = queue();
-        q.submit(org.lwjgl.opengl.Display::update);
+        q.submit(() -> {
+            debugCaptureFrame();
+            org.lwjgl.opengl.Display.update();
+        });
         q.swapFramesAndSync();
     }
 
