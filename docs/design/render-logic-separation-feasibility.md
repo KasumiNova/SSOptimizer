@@ -76,6 +76,27 @@ advance——这正是本阶段并行 AI 的前提：AI 产出的实体增删仍
    消除 CME 类冲突。
 4. **引擎级 advance/render 拆分**：以上全部完成后才具备条件。
 
+## 远期候选：native 共享内存消费队列（已记录，暂缓执行）
+
+思路（2026-08 提出，待 3→1→2 录制优化收尾并重新 profile 后再评估）：
+
+- **机制**：命令不再构造成 Java 对象，而是以二进制流写入堆外固定环形队列
+  （`Unsafe`/direct ByteBuffer，SPSC/MPSC、游标缓存行对齐防 false sharing）；
+  启动时一次 JNI 把内存地址交给 native，native 起常驻消费线程自旋+退避轮询游标，
+  用已 vendor 的 glad 直接调 GL——逐帧零 JNI，fence 回收也只是 Java 侧读消费游标。
+- **基础设施已具备**：`native/` 模块已有 glad 与构建链（含 Windows 交叉编译），
+  且已有 SpriteBatch/EngineBatch/Particle 等 JNI 批量渲染器可作先导改造对象。
+- **不打当前瓶颈**：v29 profile 显示渲染线程几乎不钳制，瓶颈在主线程录制侧 ~29%；
+  本方案省的是回放侧 JNI（每调用 1~3ns），短期收益有限，须以新 profile 数据为准。
+- **真正价值在终态**：渲染循环（含 swapBuffers）整体下放 native 线程后，Java 主线程
+  彻底不持 GL 上下文，命令流即内存格式，是录制开销的终极解法。
+- **最大风险是兼容性**：GL 上下文归 native 线程后，BoxUtil/GraphicLib 等在 renderHook
+  内直接调 LWJGL 的 mod 断路——要么同样录制，要么 `Display.makeCurrent` 来回切换
+  （参考项目 starsector-render 正是在多线程 GL 适配翻车）。初版必须保留 mod 渲染的
+  Java 侧通路。
+- **建议路径**：先导验证（现有 native batch 渲染器改走共享 ring，独立可测、风险最小）
+  → 有效后再升级为完整渲染线程后端（`Renderer` 接口新实现），mod renderHook 通路不变。
+
 ## 与本阶段已交付成果的关系
 
 - **多线程舰船 AI**（已实装，commit 8cbfb22）：AI 计算并行化不涉及 GL 与实体容器
