@@ -46,9 +46,9 @@ public final class ARBVertexBufferObject {
         });
     }
 
-    /** 资源分配：阻塞通道取回真实 buffer id。 */
+    /** 单值形式与 {@link GL15#glGenBuffers()} 共享录制侧预生成 stash，命中时零阻塞。 */
     public static int glGenBuffersARB() {
-        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.ARBVertexBufferObject::glGenBuffersARB);
+        return BridgeSupport.acquireBufferId();
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */

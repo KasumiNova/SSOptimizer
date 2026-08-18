@@ -13,8 +13,9 @@ import java.nio.ShortBuffer;
  * <p>
  * 动机同 {@link GL11}。盘点结论：SSOptimizer 自身 DynamicVbo（环形 VBO）走
  * GL15 全套，必须覆盖。buffer 数据参数（glBufferData/glBufferSubData）录制时
- * 深拷贝为池化快照（语义见 {@link GL11} 类 javadoc）；glGenBuffers 走阻塞通道
- * 取回真实 id（预生成 stash 为后续演进点）；查询/map 面本阶段不做。
+ * 深拷贝为池化快照（语义见 {@link GL11} 类 javadoc）；glGenBuffers 单值形式
+ * 走录制侧预生成 stash（{@link BridgeSupport#acquireBufferId()}，命中零阻塞，
+ * 空时一次阻塞批量补货 64 个），批量形式仍阻塞直通；查询/map 面本阶段不做。
  */
 public final class GL15 {
     private GL15() {
@@ -51,9 +52,9 @@ public final class GL15 {
         });
     }
 
-    /** 资源分配：阻塞通道取回真实 buffer id。 */
+    /** 单值形式走录制侧预生成 stash（{@link BridgeSupport#acquireBufferId()}），命中时零阻塞。 */
     public static int glGenBuffers() {
-        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL15::glGenBuffers);
+        return BridgeSupport.acquireBufferId();
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */

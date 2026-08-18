@@ -62,23 +62,53 @@ class BufferObjectBridgeTest {
     }
 
     @Test
-    void gl15GenBuffersRoutesThroughBlockingChannel() {
-        queue.getHandler = callable -> 9;
-        assertEquals(9, GL15.glGenBuffers());
+    void gl15GenBuffersServedFromRecordingSideStash() {
+        int[] batch = new int[64];
+        for (int i = 0; i < batch.length; i++) {
+            batch[i] = 100 + i;
+        }
+        queue.getHandler = callable -> batch;
+        assertEquals(100, GL15.glGenBuffers(), "池空时一次阻塞批量补货，返回批次首个 id");
+        assertEquals(1, queue.uncountedGetCallCount);
+        assertEquals(101, GL15.glGenBuffers());
+        assertEquals(102, GL15.glGenBuffers());
+        assertEquals(1, queue.uncountedGetCallCount, "stash 命中零阻塞");
         IntBuffer out = ByteBuffer.allocateDirect(4).asIntBuffer();
         GL15.glGenBuffers(out);
-        assertEquals(1, queue.uncountedGetCallCount, "glGenBuffers 归资源申请类，走不计数阻塞取值通道");
-        assertEquals(1, queue.uncountedBlockingTasks.size(), "IntBuffer 变体走不计数阻塞 wait 通道");
+        assertEquals(1, queue.uncountedBlockingTasks.size(), "IntBuffer 批量变体仍走不计数阻塞 wait 通道");
         assertEquals(0, queue.getCallCount, "资源申请类不得触碰计数通道");
         assertEquals(0, queue.blockingTasks.size());
     }
 
     @Test
+    void gl15GenBuffersStashRefillsWhenExhausted() {
+        int[] first = new int[64];
+        int[] second = new int[64];
+        for (int i = 0; i < 64; i++) {
+            first[i] = 100 + i;
+            second[i] = 200 + i;
+        }
+        int[] refills = {0};
+        queue.getHandler = callable -> refills[0]++ == 0 ? first : second;
+        for (int i = 0; i < 64; i++) {
+            assertEquals(100 + i, GL15.glGenBuffers());
+        }
+        assertEquals(1, queue.uncountedGetCallCount);
+        assertEquals(200, GL15.glGenBuffers(), "第 65 次触发第二次批量补货");
+        assertEquals(2, queue.uncountedGetCallCount);
+    }
+
+    @Test
     void arbVertexBufferObjectMirrorsGl15Semantics() {
         ByteBuffer data = ByteBuffer.allocateDirect(16);
-        queue.getHandler = callable -> 5;
+        int[] batch = new int[64];
+        for (int i = 0; i < batch.length; i++) {
+            batch[i] = 5 + i;
+        }
+        queue.getHandler = callable -> batch;
 
-        assertEquals(5, ARBVertexBufferObject.glGenBuffersARB(), "ARB 资源分配同样走阻塞通道");
+        assertEquals(5, ARBVertexBufferObject.glGenBuffersARB(), "ARB 与 GL15 共享 stash：补货后返回批次首个 id");
+        assertEquals(1, queue.uncountedGetCallCount);
         ARBVertexBufferObject.glBindBufferARB(org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB, 5);
         ARBVertexBufferObject.glBufferDataARB(org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB,
                 1024L, org.lwjgl.opengl.ARBVertexBufferObject.GL_DYNAMIC_DRAW_ARB);

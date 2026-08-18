@@ -12,6 +12,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * bridge 各入口类共享的静态支撑：队列句柄、录制/阻塞助手、缓冲快照池、
@@ -36,6 +37,17 @@ final class BridgeSupport {
     private static final ThreadLocal<int[]> FRAMEBUFFER_BINDING = ThreadLocal.withInitial(() -> new int[1]);
     /** 录制侧逐线程的 immediate 顶点流缓冲（glBegin/glVertex* 族，见 {@link VertexStream}）。 */
     private static final ThreadLocal<VertexStream> VERTEX_STREAMS = ThreadLocal.withInitial(VertexStream::new);
+    /** VBO id stash 单次批量预生成的个数（约等于重负载战斗单帧的 glGenBuffers 次数量级）。 */
+    private static final int BUFFER_ID_STASH_BATCH = 64;
+    /**
+     * VBO id 预生成 stash：{@link GL15#glGenBuffers()}/{@link ARBVertexBufferObject#glGenBuffersARB()}
+     * 单值形式的录制侧 id 池。游戏战斗期逐帧创建 VBO（SpriteBatch/粒子等），
+     * 逐个走阻塞通道取 id 会把主线程耗在等渲染线程上（v35 profile：阻塞等待
+     * 占主线程约 25%，其中 glGenBuffers 占绝对大头）；stash 命中时零阻塞，
+     * 空时一次阻塞批量预生成 {@value #BUFFER_ID_STASH_BATCH} 个摊销往返。
+     * id 的唯一性由渲染线程的真实 glGenBuffers 保证，返回顺序无语义。
+     */
+    private static volatile ConcurrentLinkedQueue<Integer> bufferIdStash = new ConcurrentLinkedQueue<>();
     /**
      * 渲染线程侧簿记：命令流执行到当前位置的 GL_ARRAY_BUFFER 真实绑定。
      * 只由 bind 命令执行体与 pointer 重放（{@link PointerSnapshotGroup#apply()}）
@@ -67,6 +79,7 @@ final class BridgeSupport {
         drawCommands = new CommandPool<>(DrawCommand::new);
         vertexBatches = new CommandPool<>(VertexBatchCommand::new);
         snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
+        bufferIdStash = new ConcurrentLinkedQueue<>();
     }
 
     static RenderQueue queue() {
@@ -162,6 +175,31 @@ final class BridgeSupport {
             q.swapFrames();
         }
         q.waitUncounted(task);
+    }
+
+    /**
+     * 取一个 VBO id（{@link GL15#glGenBuffers()}/{@link ARBVertexBufferObject#glGenBuffersARB()}
+     * 单值形式的入口）：stash 非空零阻塞出队；空则走一次资源申请阻塞通道，
+     * 由渲染线程批量预生成 {@value #BUFFER_ID_STASH_BATCH} 个 id——返回首个，
+     * 其余入池。并发录制线程同时发现池空时会各自补货一批，id 唯一性由
+     * 真实 glGenBuffers 保证，多发一批无害。
+     */
+    static int acquireBufferId() {
+        Integer stashed = bufferIdStash.poll();
+        if (stashed != null) {
+            return stashed;
+        }
+        int[] generated = blockingGetResource(() -> {
+            IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4).asIntBuffer();
+            org.lwjgl.opengl.GL15.glGenBuffers(ids);
+            int[] batch = new int[BUFFER_ID_STASH_BATCH];
+            ids.get(batch);
+            return batch;
+        });
+        for (int i = 1; i < generated.length; i++) {
+            bufferIdStash.add(generated[i]);
+        }
+        return generated[0];
     }
 
     /** 声明 {@link LWJGLException} 的阻塞任务。 */
