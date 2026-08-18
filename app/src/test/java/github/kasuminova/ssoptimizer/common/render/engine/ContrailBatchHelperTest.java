@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.common.render.engine;
 
+import com.fs.starfarer.combat.entities.ContrailEngine;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import github.kasuminova.ssoptimizer.mixin.accessor.ContrailGroupAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.ContrailSegmentAccessor;
@@ -10,6 +11,7 @@ import org.lwjgl.util.vector.Vector2f;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -308,6 +310,95 @@ class ContrailBatchHelperTest {
     }
 
     // ------------------------------------------------------------------
+    // fadeWindow 组级提升的位级一致性（P2：encode 瘦身）
+    // ------------------------------------------------------------------
+
+    /**
+     * P2 把 fadeWindow 从「每段读 maxAge 重算」提升为「组级从 segmentDuration
+     * 算一次」。游戏不变量：每段 maxAge 恒等于组 segmentDuration（原版
+     * addSegment 赋值），两者位级同值。本测试用随机段状态对照逐段公式参考实现，
+     * 验证 encode 输出的每个顶点 alpha 位级一致（含 segmentDuration=0/负值的
+     * fadeWindow 钳制边界——提升版与逐段版走同一守卫）。
+     */
+    @Test
+    void hoistedFadeWindowMatchesPerSegmentFormulaAcrossRandomStates() {
+        Random random = new Random(0xCAFE_BEEFL);
+        float[] edgeDurations = {0f, -1f, 0.1f, 1f, 5f};
+
+        for (int trial = 0; trial < 300; trial++) {
+            ContrailBatchHelper.beginStrip();
+
+            float segmentDuration;
+            if (trial < edgeDurations.length * 20) {
+                segmentDuration = edgeDurations[trial / 20];
+            } else {
+                segmentDuration = 0.1f + random.nextFloat() * 5f;
+            }
+
+            FakeGroup group = new FakeGroup();
+            group.color = new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256), 255);
+            group.segmentDuration = segmentDuration;
+            int baseAlpha = group.color.getAlpha();
+            int red = group.color.getRed();
+            int green = group.color.getGreen();
+            int blue = group.color.getBlue();
+
+            int segmentCount = 1 + random.nextInt(8);
+            FakeSegment[] segments = new FakeSegment[segmentCount];
+            for (int i = 0; i < segmentCount; i++) {
+                FakeSegment s = new FakeSegment();
+                s.position = new Vector2f(random.nextFloat() * 100f, random.nextFloat() * 100f);
+                s.normal = new Vector2f(random.nextFloat() * 2f - 1f, random.nextFloat() * 2f - 1f);
+                s.width = random.nextFloat() * 10f;
+                s.maxAge = segmentDuration; // 游戏不变量：maxAge == segmentDuration
+                s.progress = random.nextFloat();
+                s.alphaMult = random.nextFloat();
+                s.u = random.nextFloat();
+                segments[i] = s;
+                group.segments.add(s);
+            }
+            group.tail = new Vector2f(random.nextFloat() * 100f, random.nextFloat() * 100f);
+            float alphaScale = random.nextFloat() * 2f;
+
+            // 参考实现：逐段 maxAge 计算 fadeWindow（A1 版本公式），产出期望 alpha
+            int[] expectedAlpha = new int[segmentCount];
+            for (int i = 0; i < segmentCount; i++) {
+                FakeSegment s = segments[i];
+                float fadeWindow = s.maxAge <= 0f ? 0.5f : 0.05f / s.maxAge;
+                if (fadeWindow > 0.5f) {
+                    fadeWindow = 0.5f;
+                }
+                float brightness;
+                if (s.progress < fadeWindow) {
+                    brightness = s.progress * 10f;
+                } else {
+                    brightness = (1f - s.progress) / (1f - fadeWindow);
+                }
+                brightness *= alphaScale;
+                expectedAlpha[i] = ContrailBatchHelper.clampColorComponent(
+                        (int) (baseAlpha * s.alphaMult * brightness));
+            }
+
+            assertTrue(ContrailBatchHelper.encodeGroup(group, alphaScale));
+            assertEquals(segmentCount * 2 + 2, ContrailBatchHelper.getNumVertices(), "段对 + 尾点对");
+
+            for (int i = 0; i < segmentCount; i++) {
+                ContrailBatchHelper.EncodedVertex left = ContrailBatchHelper.vertexAt(i * 2);
+                ContrailBatchHelper.EncodedVertex right = ContrailBatchHelper.vertexAt(i * 2 + 1);
+                assertEquals(red, left.r(), "段 " + i + " 红色通道");
+                assertEquals(green, left.g(), "段 " + i + " 绿色通道");
+                assertEquals(blue, left.b(), "段 " + i + " 蓝色通道");
+                assertEquals(expectedAlpha[i], left.a(), "段 " + i + " alpha 与逐段公式位级一致");
+                assertEquals(expectedAlpha[i], right.a(), "段 " + i + " 右顶点 alpha 与逐段公式位级一致");
+            }
+
+            // 尾点对 alpha 恒 0
+            assertEquals(0, ContrailBatchHelper.vertexAt(segmentCount * 2).a());
+            assertEquals(0, ContrailBatchHelper.vertexAt(segmentCount * 2 + 1).a());
+        }
+    }
+
+    // ------------------------------------------------------------------
     // 夹具
     // ------------------------------------------------------------------
 
@@ -319,6 +410,7 @@ class ContrailBatchHelperTest {
         FakeGroup group = new FakeGroup();
         group.color = color;
         group.tail = tail;
+        group.segmentDuration = 1f; // 与原版一致：段 maxAge 恒等于组 segmentDuration
         group.segments.add(segment);
         return group;
     }
@@ -341,6 +433,11 @@ class ContrailBatchHelperTest {
         final List<Object> segments = new ArrayList<>();
         Color color;
         Vector2f tail;
+        boolean ended;
+        ContrailEngine.ContrailWidthMode widthMode;
+        float widthMultiplier;
+        float segmentDuration;
+        Object key;
 
         @Override
         public List<Object> ssoptimizer$getSegments() {
@@ -366,12 +463,45 @@ class ContrailBatchHelperTest {
         public EngineSlot.BlendMode ssoptimizer$getBlendMode() {
             return null;
         }
+
+        @Override
+        public boolean ssoptimizer$getEnded() {
+            return ended;
+        }
+
+        @Override
+        public ContrailEngine.ContrailWidthMode ssoptimizer$getWidthMode() {
+            return widthMode;
+        }
+
+        @Override
+        public float ssoptimizer$getWidthMultiplier() {
+            return widthMultiplier;
+        }
+
+        @Override
+        public float ssoptimizer$getSegmentDuration() {
+            return segmentDuration;
+        }
+
+        @Override
+        public Object ssoptimizer$getKey() {
+            return key;
+        }
+
+        @Override
+        public boolean ssoptimizer$removeExpiredSegment() {
+            // 编码测试不触达死亡移除，夹具直接返回 false
+            return false;
+        }
     }
 
     private static final class FakeSegment implements ContrailSegmentAccessor {
         Vector2f position;
         Vector2f normal;
+        Vector2f vel = new Vector2f();
         float width;
+        float baseWidth;
         float maxAge;
         float progress;
         float alphaMult;
@@ -388,8 +518,23 @@ class ContrailBatchHelperTest {
         }
 
         @Override
+        public Vector2f ssoptimizer$getVel() {
+            return vel;
+        }
+
+        @Override
         public float ssoptimizer$getWidth() {
             return width;
+        }
+
+        @Override
+        public void ssoptimizer$setWidth(float width) {
+            this.width = width;
+        }
+
+        @Override
+        public float ssoptimizer$getBaseWidth() {
+            return baseWidth;
         }
 
         @Override
@@ -403,6 +548,11 @@ class ContrailBatchHelperTest {
         }
 
         @Override
+        public void ssoptimizer$setProgress(float progress) {
+            this.progress = progress;
+        }
+
+        @Override
         public float ssoptimizer$getAlphaMult() {
             return alphaMult;
         }
@@ -410,6 +560,11 @@ class ContrailBatchHelperTest {
         @Override
         public float ssoptimizer$getU() {
             return u;
+        }
+
+        @Override
+        public void ssoptimizer$setTexU(float texU) {
+            this.u = texU;
         }
     }
 }

@@ -49,6 +49,7 @@
     "render.CampaignFleetMemberViewMixin",
     "render.CampaignFleetViewMixin",
     "render.ContrailEngineMixin",
+    "render.ContrailGroupMixin",
     "render.DetailedSmokeParticleMixin",
     "render.EngineRenderMixin",
     "render.GenericTextureParticleMixin",

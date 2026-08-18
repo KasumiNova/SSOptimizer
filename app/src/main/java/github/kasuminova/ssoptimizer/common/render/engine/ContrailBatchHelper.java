@@ -164,15 +164,21 @@ public final class ContrailBatchHelper {
 
         emitJoinConnector();
 
-        ContrailSegmentAccessor lastSegment = null;
-        for (Object segmentObject : group.ssoptimizer$getSegments()) {
-            ContrailSegmentAccessor segment = (ContrailSegmentAccessor) segmentObject;
+        // 组内 maxAge 恒定（原版 addSegment 恒以 group.segmentDuration 赋值段
+        // maxAge，advance 不再改写），fadeWindow 提升为组级常量——与逐段计算
+        // 位级一致（0.05/maxAge 与 0.05/segmentDuration 同值），省去每段 1 次
+        // maxAge 读取 + 1 次除法 + 1 次钳制（v49 profile：encodeGroup self
+        // 2,771 样本的逐段瘦身点之一）。
+        float segmentDuration = group.ssoptimizer$getSegmentDuration();
+        float fadeWindow = segmentDuration <= 0.0f ? 0.5f : 0.05f / segmentDuration;
+        if (fadeWindow > 0.5f) {
+            fadeWindow = 0.5f;
+        }
 
-            float maxAge = segment.ssoptimizer$getMaxAge();
-            float fadeWindow = maxAge <= 0.0f ? 0.5f : 0.05f / maxAge;
-            if (fadeWindow > 0.5f) {
-                fadeWindow = 0.5f;
-            }
+        List<Object> segments = group.ssoptimizer$getSegments();
+        ContrailSegmentAccessor lastSegment = null;
+        for (int i = 0; i < segments.size(); i++) {
+            ContrailSegmentAccessor segment = (ContrailSegmentAccessor) segments.get(i);
 
             float progress = segment.ssoptimizer$getProgress();
             float brightness;
