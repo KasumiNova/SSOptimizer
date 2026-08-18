@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.mixin.ai;
 
 import com.fs.starfarer.api.combat.MutableStat;
 import github.kasuminova.ssoptimizer.common.combat.ai.SnapshotRetry;
+import github.kasuminova.ssoptimizer.common.combat.ai.SyncStatBonusMap;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,6 +31,13 @@ import java.util.LinkedHashMap;
  * 组合；percent 求和 / flat 求和 / mult 连乘与迭代顺序无关，语义等价）。
  * 快照创建本身撞上并发写时有界重试（{@link SnapshotRetry#MAX_RETRIES} 次，
  * 正常路径零 CME 零开销）；重试耗尽仍 CME 时重抛异常并记 error——不吞异常。
+ * <p>
+ * 结构级修复：快照守卫解决不了 put+put 并发写损坏哈希桶链表（压测实测
+ * values() 产出 null 元素 → recompute NPE "Cannot read field value because
+ * mod is null"）。三个 bonuses 表的全部四个分配点（三个惰性 getter +
+ * readResolve）重定向为 {@link SyncStatBonusMap}——单操作实例锁同步 +
+ * 视图快照拷贝，从结构上杜绝并发写损坏；保持 LinkedHashMap 子类与 null
+ * 语义，兼容模组直接持表读写。
  */
 @Mixin(targets = GameClassNames.STAT_BONUS)
 public abstract class StatBonusConcurrencyMixin {
@@ -45,5 +53,21 @@ public abstract class StatBonusConcurrencyMixin {
     private static Collection<MutableStat.StatMod> ssoptimizer$snapshotStatMods(
             LinkedHashMap<String, MutableStat.StatMod> bonuses) {
         return SnapshotRetry.snapshotWithRetry(bonuses::values, "StatBonus mods");
+    }
+
+    /**
+     * 三个 bonuses 表的实例化点统一换成 {@link SyncStatBonusMap}（结构级并发安全）。
+     * <p>
+     * 快照守卫解决「迭代遇并发写」的 CME，但解决不了 put+put 并发导致的哈希桶
+     * 链表损坏（压测实测 values() 产出 null 元素 → recompute NPE）。
+     * 覆盖全部四个分配点：三个惰性 getter 与 XStream 反序列化的 readResolve。
+     *
+     * @return 同步化 + 视图快照化的 LinkedHashMap 子类实例
+     */
+    @Redirect(method = {"getFlatBonuses", "getPercentBonuses", "getMultBonuses", "readResolve"},
+            at = @At(value = "NEW", target = "java/util/LinkedHashMap"),
+            remap = false)
+    private static LinkedHashMap<String, MutableStat.StatMod> ssoptimizer$newSyncBonusMap() {
+        return new SyncStatBonusMap();
     }
 }

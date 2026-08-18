@@ -90,6 +90,66 @@ class StatBonusConcurrencyMixinTest {
         return false;
     }
 
+    @Test
+    void statBonusGettersAndReadResolveAllocateLinkedHashMap() throws IOException {
+        ClassNode node = readClass(GameClassNames.STAT_BONUS);
+        for (String name : new String[]{
+                "getFlatBonuses", "getPercentBonuses", "getMultBonuses", "readResolve"}) {
+            MethodNode method = findMethod(node, name);
+            assertNotNull(method, "StatBonus." + name + " 必须存在（注入点）");
+            assertTrue(hasNew(method, "java/util/LinkedHashMap"),
+                    name + " 必须包含 NEW LinkedHashMap（注入点）");
+        }
+    }
+
+    @Test
+    void bonusMapSwapHandlerCoversAllFourAllocationSites() throws IOException {
+        ClassNode node = readClass("github/kasuminova/ssoptimizer/mixin/ai/StatBonusConcurrencyMixin");
+        MethodNode handler = findMethod(node, "ssoptimizer$newSyncBonusMap");
+        assertNotNull(handler, "bonus map 替换处理器必须存在");
+        assertPrivateStatic(handler);
+
+        AnnotationNode redirect = findAnnotation(handler,
+                "Lorg/spongepowered/asm/mixin/injection/Redirect;");
+        assertNotNull(redirect, "处理器必须带 @Redirect 注解");
+
+        List<String> methods = new ArrayList<>();
+        String atTarget = null;
+        boolean remap = true;
+        for (int i = 0; i + 1 < redirect.values.size(); i += 2) {
+            Object key = redirect.values.get(i);
+            Object value = redirect.values.get(i + 1);
+            if ("method".equals(key) && value instanceof List<?> list) {
+                for (Object entry : list) {
+                    methods.add(String.valueOf(entry));
+                }
+            } else if ("remap".equals(key)) {
+                remap = Boolean.TRUE.equals(value);
+            } else if ("at".equals(key) && value instanceof AnnotationNode atNode
+                    && atNode.values != null) {
+                for (int j = 0; j + 1 < atNode.values.size(); j += 2) {
+                    if ("target".equals(atNode.values.get(j))) {
+                        atTarget = String.valueOf(atNode.values.get(j + 1));
+                    }
+                }
+            }
+        }
+        assertEquals(List.of("getFlatBonuses", "getPercentBonuses", "getMultBonuses", "readResolve"),
+                methods, "@Redirect.method 必须覆盖全部四个分配点");
+        assertEquals("java/util/LinkedHashMap", atTarget, "@At 必须为 NEW LinkedHashMap");
+        assertTrue(!remap, "@Redirect 必须 remap=false");
+    }
+
+    private static boolean hasNew(MethodNode method, String type) {
+        for (org.objectweb.asm.tree.AbstractInsnNode insn : method.instructions) {
+            if (insn instanceof org.objectweb.asm.tree.TypeInsnNode typeInsn
+                    && typeInsn.getOpcode() == Opcodes.NEW && type.equals(typeInsn.desc)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static void assertPrivateStatic(MethodNode handler) {
         assertTrue((handler.access & Opcodes.ACC_PRIVATE) != 0
                         && (handler.access & Opcodes.ACC_STATIC) != 0,
