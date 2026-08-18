@@ -75,12 +75,13 @@ public final class Display {
 
     /**
      * 帧尾：入队真实 {@code Display.update()}（渲染线程交换缓冲），
-     * 然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。
+     * 然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。swap 收口处
+     * 同时刷新主录制线程的帧上下文缓存（见 {@link BridgeSupport#swapFramesAndSync()}）。
      */
     public static void update() {
         RenderQueue q = BridgeSupport.queue();
         q.submit(org.lwjgl.opengl.Display::update);
-        q.swapFramesAndSync();
+        BridgeSupport.swapFramesAndSync();
     }
 
     /**
@@ -92,7 +93,7 @@ public final class Display {
     public static void update(boolean processMessages) {
         RenderQueue q = BridgeSupport.queue();
         q.submit(() -> org.lwjgl.opengl.Display.update(processMessages));
-        q.swapFramesAndSync();
+        BridgeSupport.swapFramesAndSync();
     }
 
     /** 直通：事件泵无 GL 依赖（后续若迁移事件泵，此处改帧同步点读取）。 */

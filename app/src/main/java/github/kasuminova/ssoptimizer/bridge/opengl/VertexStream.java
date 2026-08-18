@@ -44,6 +44,8 @@ final class VertexStream {
 
     private byte[] buffer = new byte[INITIAL_CAPACITY];
     private int pos;
+    /** 本实例历史最大已编码字节数：借新缓冲时按此指定容量，稳态下每次落帧零扩容。 */
+    private int peakLength = INITIAL_CAPACITY;
 
     boolean isEmpty() {
         return pos == 0;
@@ -156,6 +158,27 @@ final class VertexStream {
      */
     void copyTo(byte[] dst) {
         System.arraycopy(buffer, 0, dst, 0, pos);
+    }
+
+    /**
+     * 移交当前缓冲的所有权给调用方（顶点批次落帧），本流换新缓冲继续编码。
+     * 移交零拷贝——录制热路径上原先逐批次 {@link System#arraycopy} 拷贝进
+     * 批次命令的耗时由此消除（v36 profile：{@code fillFrom} 2,303 样本）。
+     * 移交出的缓冲由渲染线程执行完批次命令后经
+     * {@link VertexStreamBufferPool} 归还，容量跨帧保留；新缓冲按本线程
+     * 历史峰值从池借取，稳态不再触发扩容（v36 profile：{@code Arrays.copyOf}
+     * 1,421 样本的主要来源）。
+     *
+     * @return 已编码内容所在的缓冲（调用方接管所有权）
+     */
+    byte[] transferBuffer() {
+        byte[] out = buffer;
+        if (pos > peakLength) {
+            peakLength = pos;
+        }
+        buffer = BridgeSupport.acquireVertexStreamBuffer(peakLength);
+        pos = 0;
+        return out;
     }
 
     /** 清空已编码内容（容量保留，同量级批次不再触发扩容）。 */

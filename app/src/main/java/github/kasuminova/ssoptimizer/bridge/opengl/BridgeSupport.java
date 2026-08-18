@@ -4,6 +4,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPool;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPoolImpl;
 import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
+import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
 import org.lwjgl.LWJGLException;
 
 import java.nio.ByteBuffer;
@@ -31,12 +32,19 @@ final class BridgeSupport {
     private static volatile CommandPool<DrawCommand> drawCommands = new CommandPool<>(DrawCommand::new);
     private static volatile CommandPool<VertexBatchCommand> vertexBatches = new CommandPool<>(VertexBatchCommand::new);
     private static volatile CommandPool<PointerSnapshotGroup> snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
-    private static final ThreadLocal<ClientPointerState> POINTER_STATES =
-            ThreadLocal.withInitial(ClientPointerState::new);
-    /** 录制侧逐线程的 FRAMEBUFFER 绑定跟踪（供 bridge 的 getter 短路，免阻塞往返）。 */
-    private static final ThreadLocal<int[]> FRAMEBUFFER_BINDING = ThreadLocal.withInitial(() -> new int[1]);
-    /** 录制侧逐线程的 immediate 顶点流缓冲（glBegin/glVertex* 族，见 {@link VertexStream}）。 */
-    private static final ThreadLocal<VertexStream> VERTEX_STREAMS = ThreadLocal.withInitial(VertexStream::new);
+    /** 顶点流编码缓冲池（录制线程借出、渲染线程归还，见 {@link VertexStreamBufferPool}）。 */
+    private static volatile VertexStreamBufferPool vertexStreamBuffers = new VertexStreamBufferPool();
+    /**
+     * 录制侧逐线程的帧录制上下文（见 {@link RecordingContext}）：统一持有
+     * client pointer 状态、FRAMEBUFFER 绑定跟踪与 immediate 顶点流。
+     */
+    private static final ThreadLocal<RecordingContext> RECORDING_CONTEXT = ThreadLocal.withInitial(RecordingContext::new);
+    /**
+     * 主录制线程（游戏主线程）的帧录制上下文缓存：每帧边界（swap）获取一次
+     * 后帧内直读，录制热路径不再逐调用走 ThreadLocal 查找（v36 profile 热点）。
+     * 只由主线程写入；读者校验 owner 后再用，aux 生产者线程仍走各自实例。
+     */
+    private static volatile RecordingContext mainRecordingContext;
     /** VBO id stash 单次批量预生成的个数（约等于重负载战斗单帧的 glGenBuffers 次数量级）。 */
     private static final int BUFFER_ID_STASH_BATCH = 64;
     /**
@@ -72,13 +80,13 @@ final class BridgeSupport {
     /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
     static void uninstall() {
         queue = null;
-        POINTER_STATES.remove();
-        FRAMEBUFFER_BINDING.remove();
-        VERTEX_STREAMS.remove();
+        RECORDING_CONTEXT.remove();
+        mainRecordingContext = null;
         executedArrayBufferBinding = 0;
         drawCommands = new CommandPool<>(DrawCommand::new);
         vertexBatches = new CommandPool<>(VertexBatchCommand::new);
         snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
+        vertexStreamBuffers = new VertexStreamBufferPool();
         bufferIdStash = new ConcurrentLinkedQueue<>();
     }
 
@@ -91,6 +99,29 @@ final class BridgeSupport {
     }
 
     /**
+     * 帧提交收口（不等待）：swap 后刷新主录制线程的帧上下文缓存——
+     * 主线程每帧此处获取一次 {@link RecordingContext}，帧内 GL 调用直读
+     * 缓存，不再逐调用走 ThreadLocal（v36 profile 热点）。
+     */
+    static void swapFrames() {
+        queue().swapFrames();
+        refreshMainRecordingContext();
+    }
+
+    /** 帧提交收口（等待上一帧完成，Display.update 的帧尾调用形态）。 */
+    static void swapFramesAndSync() {
+        queue().swapFramesAndSync();
+        refreshMainRecordingContext();
+    }
+
+    /** 主录制线程（构造 RenderQueueImpl 的线程，即游戏主线程）在帧边界缓存上下文。 */
+    private static void refreshMainRecordingContext() {
+        if (RenderQueueImpl.isMainThread()) {
+            mainRecordingContext = RECORDING_CONTEXT.get();
+        }
+    }
+
+    /**
      * 录制一条命令到当前帧。若当前线程的顶点流有未落帧的 immediate 操作，
      * 先把它打包落帧——流段命令与本命令在帧列表中的顺序即录制顺序。
      */
@@ -99,26 +130,40 @@ final class BridgeSupport {
         queue().submit(command);
     }
 
+    /**
+     * 当前线程的帧录制上下文：主录制线程命中帧边界缓存（每帧一次
+     * ThreadLocal 获取，帧内直读），其他线程每次经 ThreadLocal 获取。
+     */
+    static RecordingContext recordingContext() {
+        RecordingContext cached = mainRecordingContext;
+        if (cached != null && cached.owner == Thread.currentThread()) {
+            return cached;
+        }
+        return RECORDING_CONTEXT.get();
+    }
+
     /** 当前线程的 immediate 顶点流（bridge 的 glBegin/glVertex* 族录制入口）。 */
     static VertexStream vertexStream() {
-        return VERTEX_STREAMS.get();
+        return recordingContext().vertexStream;
     }
 
     /**
-     * 顶点流落帧：当前线程已累计的 immediate 操作拷贝进池化的
+     * 顶点流落帧：当前线程已累计的 immediate 操作移交给池化的
      * {@link VertexBatchCommand} 追加进当前帧（空流不产生任何命令）。触发点：
      * glEnd、任一非流式命令（见 {@link #enqueue(GlCommand)}）、阻塞通道
      * drain-first 之前——保证流段与其他命令/回读的相对顺序与原调用序列
-     * 逐指令等价。
+     * 逐指令等价。缓冲所有权移交（{@link VertexStream#transferBuffer()}），
+     * 渲染线程执行完经 {@link VertexStreamBufferPool} 归还，稳态零拷贝零分配。
      */
     static void flushVertexStream() {
-        VertexStream stream = VERTEX_STREAMS.get();
+        VertexStream stream = recordingContext().vertexStream;
         if (stream.isEmpty()) {
             return;
         }
+        int length = stream.length();
+        byte[] data = stream.transferBuffer();
         VertexBatchCommand batch = vertexBatches.acquire();
-        batch.fillFrom(stream);
-        stream.reset();
+        batch.setData(data, length);
         queue().submit(batch);
     }
 
@@ -139,7 +184,7 @@ final class BridgeSupport {
             // drain-first 必须包含未落帧的顶点流：getter 读到的是此前全部录制命令
             // 执行完的 GL 状态，顶点流是其中一部分
             flushVertexStream();
-            q.swapFrames();
+            swapFrames();
         }
         return q.get(getter);
     }
@@ -149,7 +194,7 @@ final class BridgeSupport {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
             flushVertexStream();
-            q.swapFrames();
+            swapFrames();
         }
         q.wait(task);
     }
@@ -162,7 +207,7 @@ final class BridgeSupport {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
             flushVertexStream();
-            q.swapFrames();
+            swapFrames();
         }
         return q.getUncounted(getter);
     }
@@ -172,7 +217,7 @@ final class BridgeSupport {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
             flushVertexStream();
-            q.swapFrames();
+            swapFrames();
         }
         q.waitUncounted(task);
     }
@@ -252,17 +297,17 @@ final class BridgeSupport {
      * 暴露给 bridge 包内与单测使用。
      */
     static ClientPointerState pointerState() {
-        return POINTER_STATES.get();
+        return recordingContext().pointerState;
     }
 
     /** 录制侧（当前线程）跟踪的 FRAMEBUFFER 绑定。 */
     static int framebufferBinding() {
-        return FRAMEBUFFER_BINDING.get()[0];
+        return recordingContext().framebufferBinding[0];
     }
 
     /** 录制侧（当前线程）更新 FRAMEBUFFER 绑定跟踪（bridge 的 bindFramebuffer 调用点维护）。 */
     static void setFramebufferBinding(int framebuffer) {
-        FRAMEBUFFER_BINDING.get()[0] = framebuffer;
+        recordingContext().framebufferBinding[0] = framebuffer;
     }
 
     /** 渲染线程簿记：命令流当前位置的 GL_ARRAY_BUFFER 绑定。 */
@@ -303,6 +348,16 @@ final class BridgeSupport {
     /** 归还顶点流回放命令（仅 {@link VertexBatchCommand#execute()} 的 finally 调用）。 */
     static void releaseVertexBatch(VertexBatchCommand batch) {
         vertexBatches.release(batch);
+    }
+
+    /** 顶点流换缓冲时从池借取（{@link VertexStream#transferBuffer()} 用）。 */
+    static byte[] acquireVertexStreamBuffer(int minCapacity) {
+        return vertexStreamBuffers.acquire(minCapacity);
+    }
+
+    /** 归还顶点流缓冲（仅 {@link VertexBatchCommand#execute()} 的 finally 调用）。 */
+    static void releaseVertexStreamBuffer(byte[] data) {
+        vertexStreamBuffers.release(data);
     }
 
     /** 测试用：更换全新快照池，避免用例间经静态单例池串扰。 */

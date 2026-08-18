@@ -91,61 +91,61 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glBegin(int mode) {
-        BridgeSupport.vertexStream().begin(mode);
+        BridgeSupport.recordingContext().vertexStream.begin(mode);
     }
 
     public static void glEnd() {
-        VertexStream stream = BridgeSupport.vertexStream();
-        stream.end();
+        RecordingContext context = BridgeSupport.recordingContext();
+        context.vertexStream.end();
         BridgeSupport.flushVertexStream();
     }
 
     public static void glVertex2f(float x, float y) {
-        BridgeSupport.vertexStream().vertex2f(x, y);
+        BridgeSupport.recordingContext().vertexStream.vertex2f(x, y);
     }
 
     public static void glVertex3f(float x, float y, float z) {
-        BridgeSupport.vertexStream().vertex3f(x, y, z);
+        BridgeSupport.recordingContext().vertexStream.vertex3f(x, y, z);
     }
 
     public static void glVertex2d(double x, double y) {
-        BridgeSupport.vertexStream().vertex2d(x, y);
+        BridgeSupport.recordingContext().vertexStream.vertex2d(x, y);
     }
 
     public static void glVertex3d(double x, double y, double z) {
-        BridgeSupport.vertexStream().vertex3d(x, y, z);
+        BridgeSupport.recordingContext().vertexStream.vertex3d(x, y, z);
     }
 
     public static void glTexCoord2f(float s, float t) {
-        BridgeSupport.vertexStream().texCoord2f(s, t);
+        BridgeSupport.recordingContext().vertexStream.texCoord2f(s, t);
     }
 
     public static void glTexCoord2d(double s, double t) {
-        BridgeSupport.vertexStream().texCoord2d(s, t);
+        BridgeSupport.recordingContext().vertexStream.texCoord2d(s, t);
     }
 
     public static void glColor4ub(byte red, byte green, byte blue, byte alpha) {
-        BridgeSupport.vertexStream().color4ub(red, green, blue, alpha);
+        BridgeSupport.recordingContext().vertexStream.color4ub(red, green, blue, alpha);
     }
 
     public static void glColor3ub(byte red, byte green, byte blue) {
-        BridgeSupport.vertexStream().color3ub(red, green, blue);
+        BridgeSupport.recordingContext().vertexStream.color3ub(red, green, blue);
     }
 
     public static void glColor3f(float red, float green, float blue) {
-        BridgeSupport.vertexStream().color3f(red, green, blue);
+        BridgeSupport.recordingContext().vertexStream.color3f(red, green, blue);
     }
 
     public static void glColor4f(float red, float green, float blue, float alpha) {
-        BridgeSupport.vertexStream().color4f(red, green, blue, alpha);
+        BridgeSupport.recordingContext().vertexStream.color4f(red, green, blue, alpha);
     }
 
     public static void glColor3d(double red, double green, double blue) {
-        BridgeSupport.vertexStream().color3d(red, green, blue);
+        BridgeSupport.recordingContext().vertexStream.color3d(red, green, blue);
     }
 
     public static void glNormal3f(float nx, float ny, float nz) {
-        BridgeSupport.vertexStream().normal3f(nx, ny, nz);
+        BridgeSupport.recordingContext().vertexStream.normal3f(nx, ny, nz);
     }
 
     public static void glEdgeFlag(boolean flag) {
@@ -450,9 +450,10 @@ public final class GL11 {
 
     /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glVertexPointer(int size, int type, int stride, long offset) {
-        BridgeSupport.pointerState().setVertex(
+        ClientPointerState state = BridgeSupport.pointerState();
+        state.setVertex(
                 PointerSnapshot.ofOffset(PointerSnapshot.Kind.VERTEX, size, type, stride, offset,
-                        BridgeSupport.pointerState().arrayBufferBinding()));
+                        state.arrayBufferBinding()));
     }
 
     public static void glColorPointer(int size, int stride, DoubleBuffer buffer) {
@@ -478,9 +479,10 @@ public final class GL11 {
 
     /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glColorPointer(int size, int type, int stride, long offset) {
-        BridgeSupport.pointerState().setColor(
+        ClientPointerState state = BridgeSupport.pointerState();
+        state.setColor(
                 PointerSnapshot.ofOffset(PointerSnapshot.Kind.COLOR, size, type, stride, offset,
-                        BridgeSupport.pointerState().arrayBufferBinding()));
+                        state.arrayBufferBinding()));
     }
 
     public static void glTexCoordPointer(int size, int stride, DoubleBuffer buffer) {
@@ -510,9 +512,10 @@ public final class GL11 {
 
     /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glTexCoordPointer(int size, int type, int stride, long offset) {
-        BridgeSupport.pointerState().setTexCoord(
+        ClientPointerState state = BridgeSupport.pointerState();
+        state.setTexCoord(
                 PointerSnapshot.ofOffset(PointerSnapshot.Kind.TEX_COORD, size, type, stride, offset,
-                        BridgeSupport.pointerState().arrayBufferBinding()));
+                        state.arrayBufferBinding()));
     }
 
     public static void glNormalPointer(int stride, DoubleBuffer buffer) {
@@ -542,9 +545,10 @@ public final class GL11 {
 
     /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glNormalPointer(int type, int stride, long offset) {
-        BridgeSupport.pointerState().setNormal(
+        ClientPointerState state = BridgeSupport.pointerState();
+        state.setNormal(
                 PointerSnapshot.ofOffset(PointerSnapshot.Kind.NORMAL, 0, type, stride, offset,
-                        BridgeSupport.pointerState().arrayBufferBinding()));
+                        state.arrayBufferBinding()));
     }
 
     /** interleaved 使已记录的离散 pointer 快照失效（简化语义见 ClientPointerState）。 */

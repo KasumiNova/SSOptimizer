@@ -52,6 +52,13 @@ public final class RenderQueueImpl implements RenderQueue {
 
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
+    /**
+     * 主录制线程：构造本队列的线程（游戏中即游戏主线程，mod 加载期构造）。
+     * bridge 的帧录制上下文帧边界缓存（{@link BridgeSupport#recordingContext()}）
+     * 依赖此判定——aux-context 生产者线程不得命中主线程缓存。
+     */
+    private static final Thread MAIN_THREAD = Thread.currentThread();
+
     private final FramePool framePool;
     private final StallDetector stallDetector;
     /**
@@ -243,6 +250,11 @@ public final class RenderQueueImpl implements RenderQueue {
     @Override
     public boolean isRenderThread() {
         return Thread.currentThread() == renderThread;
+    }
+
+    /** @return 当前线程是否为主录制线程（构造本队列的线程）。 */
+    public static boolean isMainThread() {
+        return Thread.currentThread() == MAIN_THREAD;
     }
 
     /**

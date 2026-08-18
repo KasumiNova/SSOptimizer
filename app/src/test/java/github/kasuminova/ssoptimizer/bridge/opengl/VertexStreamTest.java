@@ -179,4 +179,43 @@ class VertexStreamTest {
         assertEquals(List.of("begin:" + org.lwjgl.opengl.GL11.GL_LINES, "vertex2f:9.0,9.0", "end"),
                 secondSink.calls);
     }
+
+    @Test
+    void transferBufferHandsOffContentAndStreamContinuesFresh() {
+        // 移交路径（生产 flush 的形态）：缓冲所有权移交零拷贝，移交后流为空并
+        // 换新缓冲继续编码，移交出的缓冲内容保持移交时刻的完整编码
+        VertexStream stream = new VertexStream();
+        stream.begin(org.lwjgl.opengl.GL11.GL_TRIANGLES);
+        stream.vertex2f(1f, 2f);
+        stream.vertex2f(3f, 4f);
+        stream.end();
+        int handedLength = stream.length();
+        byte[] handed = stream.transferBuffer();
+
+        RecordingSink firstSink = new RecordingSink();
+        VertexStream.replay(handed, handedLength, firstSink);
+        assertEquals(List.of(
+                "begin:" + org.lwjgl.opengl.GL11.GL_TRIANGLES,
+                "vertex2f:1.0,2.0",
+                "vertex2f:3.0,4.0",
+                "end"), firstSink.calls);
+        assertTrue(stream.isEmpty(), "移交后流必须为空");
+        assertEquals(0, stream.length());
+
+        // 移交出的缓冲不随流后续编码变化（所有权已转移）
+        stream.begin(org.lwjgl.opengl.GL11.GL_LINES);
+        stream.vertex2f(9f, 9f);
+        stream.end();
+        RecordingSink firstAgain = new RecordingSink();
+        VertexStream.replay(handed, handedLength, firstAgain);
+        assertEquals(List.of(
+                "begin:" + org.lwjgl.opengl.GL11.GL_TRIANGLES,
+                "vertex2f:1.0,2.0",
+                "vertex2f:3.0,4.0",
+                "end"), firstAgain.calls);
+        RecordingSink secondSink = new RecordingSink();
+        replayInto(stream, secondSink);
+        assertEquals(List.of("begin:" + org.lwjgl.opengl.GL11.GL_LINES, "vertex2f:9.0,9.0", "end"),
+                secondSink.calls);
+    }
 }
