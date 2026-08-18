@@ -14,8 +14,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 战斗引擎 AI 循环并行化 Mixin。
@@ -30,9 +31,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>循环结束（ldc "Advancing entities" 之前）注入
  *       {@link ParallelAiDispatcher#awaitAll} 帧内屏障，屏障后调用
  *       {@link AutofireBatchRunner#collectAndCompute} 并行收集自动开火决策；</li>
- *   <li>{@code customData} 字段写入重定向为 ConcurrentHashMap 包装
+ *   <li>{@code customData} 字段写入重定向为同步 LinkedHashMap 包装
  *       （AI 并行后模组/AI 代码可能在工作线程读写该 Map）。</li>
  * </ol>
+ * 已知语义变化：包装为 {@link Collections#synchronizedMap} 而非 ConcurrentHashMap——
+ * 原版 HashMap 允许 null key/value，模组（如写入未初始化字段的 hullmod 脚本）依赖
+ * 该行为，CHM 的 null 限制会让此类模组直接 NPE；customData 非热路径，锁竞争可接受。
  */
 @Mixin(targets = GameClassNames.COMBAT_ENGINE_DOTTED)
 public abstract class CombatEngineAiParallelMixin {
@@ -67,13 +71,12 @@ public abstract class CombatEngineAiParallelMixin {
 
     /**
      * @author KasumiNova
-     * @reason customData 在 AI 并行后可能被工作线程并发读写，构造返回点统一替换为
-     * ConcurrentHashMap（两处 HashMap 初始化均在 <init> 内，字节码已核实）。
+     * @reason customData 在 AI 并行后可能被工作线程并发读写，构造返回点包装为同步
+     * LinkedHashMap。不能用 ConcurrentHashMap：模组会写入 null key/value（原版
+     * HashMap 允许），CHM 直接 NPE。
      */
     @Inject(method = "<init>", at = @At("RETURN"), remap = false)
     private void ssoptimizer$concurrentCustomData(CallbackInfo ci) {
-        if (!(this.customData instanceof ConcurrentHashMap)) {
-            this.customData = new ConcurrentHashMap<>(this.customData);
-        }
+        this.customData = Collections.synchronizedMap(new LinkedHashMap<>(this.customData));
     }
 }
