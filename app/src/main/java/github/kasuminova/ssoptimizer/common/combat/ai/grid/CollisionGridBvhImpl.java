@@ -34,6 +34,14 @@ public final class CollisionGridBvhImpl implements CollisionGridBvh {
     private static final Logger LOGGER = Logger.getLogger(CollisionGridBvhImpl.class);
 
     /**
+     * 查询结果收集容器（去重集合 seen / 结果列表 ordered）的初始容量：战斗查询的
+     * 典型命中规模为数十个实体，预置该容量覆盖绝大多数查询，消除收集期的
+     * fastutil 渐进扩容（v49 profile：collectIfVisible 的 ObjectArrayList.grow
+     * 39 样本）；超大查询（如全图范围）仍按需扩容，语义不变。
+     */
+    private static final int QUERY_COLLECTION_INITIAL_CAPACITY = 64;
+
+    /**
      * 功能开关：{@code -Dssoptimizer.collisionGridBvh=false} 时回退到现有 fastutil 收集器路径。
      * 静态初始化时读取一次。
      */
@@ -165,8 +173,8 @@ public final class CollisionGridBvhImpl implements CollisionGridBvh {
 
         ensureBuilt();
 
-        final ObjectOpenHashSet<Object> seen = new ObjectOpenHashSet<>();
-        final ObjectArrayList<Object> ordered = new ObjectArrayList<>();
+        final ObjectOpenHashSet<Object> seen = new ObjectOpenHashSet<>(QUERY_COLLECTION_INITIAL_CAPACITY);
+        final ObjectArrayList<Object> ordered = new ObjectArrayList<>(QUERY_COLLECTION_INITIAL_CAPACITY);
 
         if (tree != null) {
             traverse(query, seen, ordered);
