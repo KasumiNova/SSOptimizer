@@ -38,6 +38,14 @@ final class VertexStream {
     private static final byte OP_COLOR4F = 12;
     private static final byte OP_COLOR3D = 13;
     private static final byte OP_NORMAL3F = 14;
+    /** 流内 glEnable(cap)：在 glBegin/glEnd 段外执行，回放时改变启用状态。 */
+    private static final byte OP_ENABLE = 15;
+    /** 流内 glDisable(cap)：段外执行。 */
+    private static final byte OP_DISABLE = 16;
+    /** 流内 glBlendFunc(src, dst)：段外执行。 */
+    private static final byte OP_BLEND_FUNC = 17;
+    /** 流内 glBindTexture(TEXTURE_2D, texture)：段间（end..begin 之间）执行。 */
+    private static final byte OP_BIND_TEXTURE = 18;
 
     /** 初始容量：一批典型 immediate 四边形组（百余顶点）约数 KB。 */
     private static final int INITIAL_CAPACITY = 4096;
@@ -154,6 +162,42 @@ final class VertexStream {
     }
 
     /**
+     * 流内 glEnable(cap)：在 glBegin/glEnd 段外执行（回放时改变启用状态）。
+     * 由 sprite 渲染路径（{@link GL11#streamEnable(int)}）等把状态设置编码进
+     * 顶点流，避免「每 sprite 一条非流式状态命令」打断流段合并（v49 profile：
+     * 主线程 flushVertexStream 4,253 样本，Sprite.render 2,432 的最大调用方）。
+     */
+    void enable(int cap) {
+        putOp(OP_ENABLE);
+        putInt(cap);
+    }
+
+    /** 流内 glDisable(cap)：段外执行，语义同 {@link #enable(int)}。 */
+    void disable(int cap) {
+        putOp(OP_DISABLE);
+        putInt(cap);
+    }
+
+    /** 流内 glBlendFunc(src, dst)：段外执行。 */
+    void blendFunc(int src, int dst) {
+        putOp(OP_BLEND_FUNC);
+        putInt(src);
+        putInt(dst);
+    }
+
+    /**
+     * 流内 glBindTexture(TEXTURE_2D, texture)：段间（上一段 glEnd 之后、
+     * 下一段 glBegin 之前）执行——glBindTexture 在 glBegin/glEnd 段内非法，
+     * 编码保证落在段边界处；同纹理连续 sprite 的重复绑定在回放时幂等冗余，
+     * 换纹理的绑定打断的是「流内位置」而非「流段」——连续 sprite 的多个
+     * begin..end 段仍合并为一条流命令，段与段之间由本指令衔接。
+     */
+    void bindTexture(int texture) {
+        putOp(OP_BIND_TEXTURE);
+        putInt(texture);
+    }
+
+    /**
      * @return 当前已编码的字节数
      */
     int length() {
@@ -236,6 +280,10 @@ final class VertexStream {
                 case OP_COLOR4F -> sink.color4f(in.getFloat(), in.getFloat(), in.getFloat(), in.getFloat());
                 case OP_COLOR3D -> sink.color3d(in.getDouble(), in.getDouble(), in.getDouble());
                 case OP_NORMAL3F -> sink.normal3f(in.getFloat(), in.getFloat(), in.getFloat());
+                case OP_ENABLE -> sink.enable(in.getInt());
+                case OP_DISABLE -> sink.disable(in.getInt());
+                case OP_BLEND_FUNC -> sink.blendFunc(in.getInt(), in.getInt());
+                case OP_BIND_TEXTURE -> sink.bindTexture(in.getInt());
                 default -> throw new IllegalStateException("[SSOptimizer] 顶点流损坏：未知操作码");
             }
         }

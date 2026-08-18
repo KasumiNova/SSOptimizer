@@ -102,10 +102,12 @@ public final class SpriteRenderHelper {
 
         GL11.glColor4ub((byte) colorR, (byte) colorG, (byte) colorB, (byte) colorA);
 
-        /* ── GL state + textured quad ─────────────────────────── */
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(blendSrc, blendDest);
+        /* ── GL state + textured quad（状态命令编码进顶点流，段外执行）─── */
+        // bridge 流内入口用全限定名：本类编译期引用 org.lwjgl.opengl.GL11（常量
+        // 内联 + ASM 重定向把方法调用改写为 bridge），流内状态指令是 bridge 专有
+        github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamEnable(GL11.GL_TEXTURE_2D);
+        github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamEnable(GL11.GL_BLEND);
+        github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamBlendFunc(blendSrc, blendDest);
 
         GL11.glBegin(GL11.GL_QUADS);
         GL11.glTexCoord2f(texX, texY);
@@ -118,8 +120,8 @@ public final class SpriteRenderHelper {
         GL11.glVertex2f(x3, y3);
         GL11.glEnd();
 
-        /* ── Cleanup (matches original bytecode order) ──────── */
-        GL11.glDisable(GL11.GL_BLEND);
+        /* ── Cleanup（流内 disable，段外执行，保持与原版一致的 blend 关闭）── */
+        github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamDisable(GL11.GL_BLEND);
     }
 
     static native void nativeRenderSprite(

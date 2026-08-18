@@ -53,4 +53,20 @@ interface VertexSink {
 
     /** 对应 {@code glNormal3f(nx, ny, nz)}。 */
     void normal3f(float nx, float ny, float nz);
+
+    /**
+     * 对应 {@code glEnable(cap)}（流内状态指令：在 glBegin/glEnd 段外执行）。
+     * 由 sprite 渲染路径把状态设置编码进顶点流，避免每 sprite 一条非流式
+     * 状态命令打断流段合并（v49 profile：主线程 flushVertexStream 热点）。
+     */
+    void enable(int cap);
+
+    /** 对应 {@code glDisable(cap)}（流内状态指令，段外执行）。 */
+    void disable(int cap);
+
+    /** 对应 {@code glBlendFunc(src, dst)}（流内状态指令，段外执行）。 */
+    void blendFunc(int src, int dst);
+
+    /** 对应 {@code glBindTexture(TEXTURE_2D, texture)}（流内状态指令，段间执行）。 */
+    void bindTexture(int texture);
 }

@@ -95,9 +95,44 @@ public final class GL11 {
     }
 
     public static void glEnd() {
+        // 立即落帧（保持既有「段即批次」语义）：主线程流段在 glEnd 处原子入队，
+        // 若延迟到后续命令统一 flush，挂起窗口内 aux 生产者线程（BoxUtil 等）
+        // 提交的命令会先入队，造成帧列表顺序错乱（aux 命令本应在流段之后）。
+        // 流内状态指令（streamEnable/streamBlendFunc 等）已把 sprite 的状态设置
+        // 合并进本段，每 sprite 仍是一次落帧但命令数从 6 条降到 1 条流命令。
         RecordingContext context = BridgeSupport.recordingContext();
         context.vertexStream.end();
         BridgeSupport.flushVertexStream();
+    }
+
+    /**
+     * 流内 glEnable(cap)：把状态设置编码进顶点流（段外执行），供 sprite 渲染
+     * 路径（{@link SpriteRenderHelper}）把「每 sprite 一条非流式状态命令」改为
+     * 流内指令，避免打断连续同状态 sprite 的流段合并。
+     */
+    public static void streamEnable(int cap) {
+        BridgeSupport.recordingContext().vertexStream.enable(cap);
+    }
+
+    /** 流内 glDisable(cap)，语义同 {@link #streamEnable(int)}。 */
+    public static void streamDisable(int cap) {
+        BridgeSupport.recordingContext().vertexStream.disable(cap);
+    }
+
+    /** 流内 glBlendFunc(src, dst)，语义同 {@link #streamEnable(int)}。 */
+    public static void streamBlendFunc(int src, int dst) {
+        BridgeSupport.recordingContext().vertexStream.blendFunc(src, dst);
+    }
+
+    /**
+     * 流内 glBindTexture(TEXTURE_2D, texture)：编码为段间指令（上一段 glEnd
+     * 之后、下一段 glBegin 之前执行——glBindTexture 在 begin/end 段内非法，
+     * 编码保证落在段边界）；同纹理连续 sprite 的重复绑定回放幂等，换纹理的
+     * 绑定打断的是流内位置而非流段，连续 sprite 的 begin..end 段仍合并为
+     * 一条流命令。
+     */
+    public static void streamBindTexture(int texture) {
+        BridgeSupport.recordingContext().vertexStream.bindTexture(texture);
     }
 
     public static void glVertex2f(float x, float y) {
