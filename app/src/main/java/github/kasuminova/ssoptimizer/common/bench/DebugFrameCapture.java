@@ -1,6 +1,12 @@
 package github.kasuminova.ssoptimizer.common.bench;
 
 import org.apache.log4j.Logger;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
+
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 /**
  * 调试帧抓取：按帧号触发一次 back buffer 截图写 PNG。
@@ -14,6 +20,10 @@ import org.apache.log4j.Logger;
  * {@code -Dssoptimizer.debug.framecapture.frame=<帧号>}（默认 600）指定单帧抓取，
  * 或 {@code -Dssoptimizer.debug.framecapture.frames=<帧号,帧号,...>} 多帧采样。
  * 每个帧号只抓一帧；必须在持有 GL 上下文的线程调用（即 Display.update 的调用线程）。
+ * <p>
+ * rt 黑屏取证增强：每帧同时抓 FRONT（当前显示帧）与 BACK（swap 前本帧绘制结果），
+ * 并输出 viewport / scissor / 投影矩阵采样 / 窗口尺寸 / 清空后排队的全部错误码，
+ * 用于区分「绘制没执行」「swap 丢失」「默认帧缓冲异常」三类根因。
  */
 public final class DebugFrameCapture {
     private static final Logger LOGGER = Logger.getLogger(DebugFrameCapture.class);
@@ -46,7 +56,7 @@ public final class DebugFrameCapture {
         return frames;
     }
 
-    /** 帧尾回调：到达目标帧号时抓取 back buffer 写 PNG，每帧号只抓一次。 */
+    /** 帧尾回调：到达目标帧号时抓取 front/back buffer 写 PNG 并输出 GL 状态，每帧号只抓一次。 */
     public static void onDisplayUpdate() {
         if (CAPTURE_DIR == null) {
             return;
@@ -56,21 +66,57 @@ public final class DebugFrameCapture {
             return;
         }
         try {
-            // 取证诊断：记录捕获时刻的 GL 状态（rt 渲染线程下曾出现全白帧，
-            // 需区分 glReadPixels 失败 / FBO 绑定错位 / back buffer 为空三种情形）。
-            int fboBinding = org.lwjgl.opengl.GL11.glGetInteger(
-                    org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_BINDING);
-            int readBuffer = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_READ_BUFFER);
-            // rt 渲染线程时序下 back buffer 读不到已呈现内容（实证：fbo=0/read=BACK/err=0
-            // 仍全透明），改读 GL_FRONT——即当前实际显示帧，正是取证目标。
-            javax.imageio.ImageIO.write(FramebufferCapture.capture(org.lwjgl.opengl.GL11.GL_FRONT), "png",
-                    java.nio.file.Paths.get(CAPTURE_DIR, "frame-" + frameCounter + ".png").toFile());
-            int glError = org.lwjgl.opengl.GL11.glGetError();
+            // 先清空排队错误，避免历史残留干扰本次读取的判别
+            java.util.Map<Integer, Integer> pendingErrors = drainGlErrors();
+
+            IntBuffer ints = BufferUtils.createIntBuffer(16);
+            GL11.glGetInteger(GL11.GL_VIEWPORT, ints);
+            String viewport = ints.get(0) + "," + ints.get(1) + " " + ints.get(2) + "x" + ints.get(3);
+            ints.clear();
+            GL11.glGetInteger(GL11.GL_SCISSOR_BOX, ints);
+            String scissor = GL11.glGetBoolean(GL11.GL_SCISSOR_TEST)
+                    ? ints.get(0) + "," + ints.get(1) + " " + ints.get(2) + "x" + ints.get(3) : "off";
+            int fboBinding = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
+            FloatBuffer floats = BufferUtils.createFloatBuffer(16);
+            GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, floats);
+            String proj = "p0=" + floats.get(0) + " p5=" + floats.get(5);
+
+            javax.imageio.ImageIO.write(FramebufferCapture.capture(GL11.GL_FRONT), "png",
+                    java.nio.file.Paths.get(CAPTURE_DIR, "frame-" + frameCounter + "-front.png").toFile());
+            javax.imageio.ImageIO.write(FramebufferCapture.capture(GL11.GL_BACK), "png",
+                    java.nio.file.Paths.get(CAPTURE_DIR, "frame-" + frameCounter + "-back.png").toFile());
+
+            java.util.Map<Integer, Integer> errors = drainGlErrors();
             LOGGER.info("[SSOptimizer] debug frame captured at frame " + frameCounter
-                    + " (fboBinding=" + fboBinding + " readBuffer=0x" + Integer.toHexString(readBuffer)
-                    + " glError=0x" + Integer.toHexString(glError) + ")");
+                    + " (fboBinding=" + fboBinding
+                    + " viewport=" + viewport + " scissor=" + scissor + " " + proj
+                    + " display=" + org.lwjgl.opengl.Display.getWidth() + "x" + org.lwjgl.opengl.Display.getHeight()
+                    + " active=" + org.lwjgl.opengl.Display.isActive()
+                    + " pendingErr=" + formatErrors(pendingErrors)
+                    + " captureErr=" + formatErrors(errors) + ")");
         } catch (Exception e) {
             LOGGER.warn("[SSOptimizer] debug frame capture failed at frame " + frameCounter, e);
         }
+    }
+
+    /** 循环排空 glGetError 并按错误码聚合计数。 */
+    private static java.util.Map<Integer, Integer> drainGlErrors() {
+        java.util.Map<Integer, Integer> counts = new java.util.LinkedHashMap<>();
+        int err;
+        int guard = 0;
+        while ((err = GL11.glGetError()) != GL11.GL_NO_ERROR && guard++ < 64) {
+            counts.merge(err, 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    private static String formatErrors(final java.util.Map<Integer, Integer> errors) {
+        if (errors.isEmpty()) {
+            return "none";
+        }
+        StringBuilder sb = new StringBuilder();
+        errors.forEach((code, count) ->
+                sb.append("0x").append(Integer.toHexString(code)).append('x').append(count).append(' '));
+        return sb.toString().trim();
     }
 }
