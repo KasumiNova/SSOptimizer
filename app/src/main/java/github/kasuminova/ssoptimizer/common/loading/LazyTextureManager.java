@@ -87,13 +87,11 @@ public final class LazyTextureManager {
             "graphics/warroom/"
     };
 
-    private static final    Map<com.fs.graphics.TextureObject, ManagedTextureEntry>      MANAGED_TEXTURES                    =
-            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final    WeakKeyMap<com.fs.graphics.TextureObject, ManagedTextureEntry>      MANAGED_TEXTURES                    = new WeakKeyMap<>();
     // Texture ids are bound to the current OpenGL context. Launcher UI and the
     // actual game can create different contexts within the same JVM, so cached
     // texture objects need lazy in-place reload when the context generation changes.
-    private static final    Map<com.fs.graphics.TextureObject, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              =
-            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final    WeakKeyMap<com.fs.graphics.TextureObject, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              = new WeakKeyMap<>();
     private static final    ThreadLocal<Set<com.fs.graphics.TextureObject>>              CONTEXT_RELOAD_GUARD                =
             ThreadLocal.withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<>()));
     private static final    ThreadLocal<String>                                          CURRENT_BOUND_TEXTURE_PATH          =
@@ -383,6 +381,11 @@ public final class LazyTextureManager {
                 ManagedTextureEntry.resident(normalizeResourcePath(resourcePath), "test-hash", metadata, System.nanoTime(), true));
     }
 
+    /** 测试用：当前受管纹理条目数（size 会先 expunge，返回存活数）。 */
+    static int managedTextureCountForTests() {
+        return MANAGED_TEXTURES.size();
+    }
+
     static String configuredCompositionReportPath() {
         final String configured = System.getProperty(COMPOSITION_REPORT_FILE_PROPERTY);
         if (configured == null || configured.isBlank()) {
@@ -534,43 +537,40 @@ public final class LazyTextureManager {
         }
         nextSweepNanos = now + sweepIntervalMillis() * 1_000_000L;
 
-        int evicted = 0;
+        final int[] evicted = {0};
         synchronized (MANAGED_TEXTURES) {
-            for (Map.Entry<com.fs.graphics.TextureObject, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
-                final com.fs.graphics.TextureObject candidate = managedEntry.getKey();
+            MANAGED_TEXTURES.forEach((candidate, entry) -> {
                 if (candidate == null || candidate == currentTexture) {
-                    continue;
+                    return;
                 }
-
-                final ManagedTextureEntry entry = managedEntry.getValue();
                 if (entry == null || entry.pendingUpload()) {
-                    continue;
+                    return;
                 }
                 if (!entry.evictable) {
-                    continue;
+                    return;
                 }
 
                 final int textureId = readTextureId(candidate, -1);
                 if (textureId == -1) {
                     entry.markPendingUpload();
-                    continue;
+                    return;
                 }
                 final long candidateIdleNanos = effectiveIdleUnloadMillis(entry.resourcePath) * 1_000_000L;
                 if (now - entry.lastBindNanos() < candidateIdleNanos) {
-                    continue;
+                    return;
                 }
 
                 GL11.glDeleteTextures(textureId);
                 setTextureId(candidate, -1);
                 entry.markPendingUpload();
-                evicted++;
-            }
+                evicted[0]++;
+            });
         }
 
-        if (evicted > 0) {
-            TOTAL_EVICTED_TEXTURES.addAndGet(evicted);
-            PENDING_EVICTED_TEXTURES.addAndGet(evicted);
-            LOGGER.debug("[SSOptimizer] Evicted " + evicted + " idle texture(s) from VRAM");
+        if (evicted[0] > 0) {
+            TOTAL_EVICTED_TEXTURES.addAndGet(evicted[0]);
+            PENDING_EVICTED_TEXTURES.addAndGet(evicted[0]);
+            LOGGER.debug("[SSOptimizer] Evicted " + evicted[0] + " idle texture(s) from VRAM");
         }
     }
 
@@ -1489,11 +1489,9 @@ public final class LazyTextureManager {
         final long now = System.nanoTime();
         final List<TextureCompositionReport.TextureEntry> snapshots = new ArrayList<>();
         synchronized (MANAGED_TEXTURES) {
-            for (Map.Entry<com.fs.graphics.TextureObject, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
-                final com.fs.graphics.TextureObject texture = managedEntry.getKey();
-                final ManagedTextureEntry entry = managedEntry.getValue();
+            MANAGED_TEXTURES.forEach((texture, entry) -> {
                 if (texture == null || entry == null) {
-                    continue;
+                    return;
                 }
 
                 final int textureId = readTextureId(texture, -1);
@@ -1519,7 +1517,7 @@ public final class LazyTextureManager {
                         textureId,
                         entry.sourceHash
                 ));
-            }
+            });
         }
         return snapshots;
     }
