@@ -50,16 +50,38 @@ class VertexStreamBufferPoolTest {
     @Test
     void acquireReusesAnyBucketBelowRequestWhenTargetBucketEmpty() {
         // 旧实现从需求档向上找：低档归还的缓冲永远不命中大需求，导致每帧新建
-        // 大块且被池持有（v44b 实测内存涨至 7.9GB OOM）。修复后从需求档向下找，
-        // 任何归还缓冲都能复用，容量不足由编码端 ensure 渐进扩容
+        // 大块且被池持有（v44b 实测内存涨至 7.9GB OOM）。修复后从需求档向下
+        // 找：不足需求的缓冲入本地栈供更小需求，补货仍空则新建满足需求的——
+        // acquire 返回值保证容量 >= 请求（编码端不再触发渐进扩容）
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         byte[] small = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY);
         pool.release(small);
-        byte[] fromLowerBucket = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY * 8);
-        assertSame(small, fromLowerBucket, "目标档为空时必须复用低档归还的缓冲");
-        // 归还后仍按实际容量入低档，后续小需求可再次命中
-        pool.release(fromLowerBucket);
-        assertSame(small, pool.acquire(VertexStreamBufferPool.MIN_CAPACITY));
+        byte[] fromPool = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY * 8);
+        assertTrue(fromPool.length >= VertexStreamBufferPool.MIN_CAPACITY * 8,
+                "补货找不到合适缓冲时必须新建满足需求的容量");
+        // 不足需求的小缓冲入本地栈，供更小需求复用
+        assertSame(small, pool.acquire(VertexStreamBufferPool.MIN_CAPACITY),
+                "不足需求的小缓冲入栈后供更小需求命中");
+    }
+
+    @Test
+    void localPrefetchServesConsecutiveAcquiresWithoutNewAllocation() {
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        int batch = 32;
+        // 直接灌入 32 个同档缓冲进全局池（模拟渲染线程归还的稳态库存）
+        for (int i = 0; i < batch; i++) {
+            pool.release(new byte[VertexStreamBufferPool.MIN_CAPACITY]);
+        }
+        assertEquals(batch, pool.pooledBufferCount());
+        int before = pool.totalAllocations();
+
+        // 借出 32 个：首次触发批量预借（池 32 全进栈 → 取 1），其余 31 次命中本地栈
+        for (int i = 0; i < batch; i++) {
+            byte[] buffer = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY);
+            assertTrue(buffer.length >= VertexStreamBufferPool.MIN_CAPACITY);
+        }
+        assertEquals(0, pool.pooledBufferCount(), "32 个借出应全部覆盖预借栈 + 池库存");
+        assertEquals(before, pool.totalAllocations(), "预借栈命中时借出不得新建缓冲");
     }
 
     @Test

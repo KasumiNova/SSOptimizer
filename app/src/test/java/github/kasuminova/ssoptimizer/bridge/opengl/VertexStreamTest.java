@@ -218,4 +218,52 @@ class VertexStreamTest {
         assertEquals(List.of("begin:" + org.lwjgl.opengl.GL11.GL_LINES, "vertex2f:9.0,9.0", "end"),
                 secondSink.calls);
     }
+
+    @Test
+    void prewarmCapacityTracksRecentBatchPeak() {
+        // A3 预热：新缓冲借取容量 = 近期批次峰值；突发大段撑大预热容量，
+        // 峰值滑出窗口后回落（相对历史最大单调不减，避免罕见大段永久撑大内存）
+        VertexStream stream = new VertexStream();
+        int initial = stream.prewarmCapacity();
+
+        // 小批次不影响预热容量（低于初始值）
+        stream.begin(org.lwjgl.opengl.GL11.GL_LINES);
+        stream.vertex2f(1f, 2f);
+        stream.end();
+        stream.transferBuffer();
+        assertEquals(initial, stream.prewarmCapacity(), "小批次不得改变预热容量");
+
+        // 大批次（远超初始容量）撑大峰值
+        stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
+        for (int i = 0; i < 2000; i++) {
+            stream.vertex2f(i, -i);
+        }
+        stream.end();
+        int large = stream.length();
+        stream.transferBuffer();
+        assertTrue(stream.prewarmCapacity() >= large, "大批次必须撑大预热容量到实际字节数");
+    }
+
+    @Test
+    void prewarmPeakEvictsAfterWindowSlidesPast() {
+        // 峰值批次滑出 64 批次窗口后，预热容量回落到窗口内实际量级
+        VertexStream stream = new VertexStream();
+        stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
+        for (int i = 0; i < 2000; i++) {
+            stream.vertex2f(i, -i);
+        }
+        stream.end();
+        int large = stream.length();
+        stream.transferBuffer();
+        assertTrue(stream.prewarmCapacity() >= large);
+
+        // 连续 64 个小批次覆盖峰值槽位
+        for (int i = 0; i < VertexStream.PREWARM_WINDOW; i++) {
+            stream.begin(org.lwjgl.opengl.GL11.GL_LINES);
+            stream.vertex2f(1f, 2f);
+            stream.end();
+            stream.transferBuffer();
+        }
+        assertTrue(stream.prewarmCapacity() < large, "峰值滑出窗口后预热容量必须回落");
+    }
 }

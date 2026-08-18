@@ -41,11 +41,22 @@ final class VertexStream {
 
     /** 初始容量：一批典型 immediate 四边形组（百余顶点）约数 KB。 */
     private static final int INITIAL_CAPACITY = 4096;
+    /** 预热统计窗口（批次 = 每次 {@link #transferBuffer()} 移交的段）。 */
+    static final int PREWARM_WINDOW = 64;
 
     private byte[] buffer = new byte[INITIAL_CAPACITY];
     private int pos;
-    /** 本实例历史最大已编码字节数：借新缓冲时按此指定容量，稳态下每次落帧零扩容。 */
-    private int peakLength = INITIAL_CAPACITY;
+    /** 近期批次的编码字节数环形记录（A3 预热：借新缓冲容量取窗口峰值，稳态零扩容）。 */
+    private final int[] recentBatchLengths = new int[PREWARM_WINDOW];
+    private int recentIndex;
+    /**
+     * 近期批次峰值（窗口内最大已编码字节数）：{@link #transferBuffer()} 换新
+     * 缓冲时作为借取容量需求——相对历史最大（单调不减，罕见大段永久撑大内存
+     * 需求），窗口峰值在突发批次滑出窗口后回落，借取容量与实际批次量级保持
+     * 同步，池内缓冲容量既不浪费也不触发编码端渐进扩容（v45c profile：
+     * {@code Arrays.copyOf} 1,893 样本的消除目标）。
+     */
+    private int prewarmCapacity = INITIAL_CAPACITY;
 
     boolean isEmpty() {
         return pos == 0;
@@ -149,6 +160,11 @@ final class VertexStream {
         return pos;
     }
 
+    /** 测试用：当前预热容量（近期批次峰值，借缓冲与扩容的容量基准）。 */
+    int prewarmCapacity() {
+        return prewarmCapacity;
+    }
+
     /**
      * 把已编码内容拷贝到 {@code dst}（调用方保证容量足够）。内容拷贝后缓冲区
      * 所有权不移交——本流继续持有并复用自己的缓冲，避免逐批次分配（渲染线程
@@ -165,20 +181,35 @@ final class VertexStream {
      * 移交零拷贝——录制热路径上原先逐批次 {@link System#arraycopy} 拷贝进
      * 批次命令的耗时由此消除（v36 profile：{@code fillFrom} 2,303 样本）。
      * 移交出的缓冲由渲染线程执行完批次命令后经
-     * {@link VertexStreamBufferPool} 归还，容量跨帧保留；新缓冲按本线程
-     * 历史峰值从池借取，稳态不再触发扩容（v36 profile：{@code Arrays.copyOf}
-     * 1,421 样本的主要来源）。
+     * {@link VertexStreamBufferPool} 归还，容量跨帧保留；新缓冲按近期批次
+     * 峰值（预热）从池借取，稳态命中即不触发扩容（v45c profile：
+     * {@code Arrays.copyOf} 1,893 样本的主要来源）。
      *
      * @return 已编码内容所在的缓冲（调用方接管所有权）
      */
     byte[] transferBuffer() {
         byte[] out = buffer;
-        if (pos > peakLength) {
-            peakLength = pos;
-        }
-        buffer = BridgeSupport.acquireVertexStreamBuffer(peakLength);
+        recordBatchLength(pos);
+        buffer = BridgeSupport.acquireVertexStreamBuffer(prewarmCapacity);
         pos = 0;
         return out;
+    }
+
+    /** 记录本批次编码字节数并维护预热容量（窗口峰值；峰值被滑出窗口时重算）。 */
+    private void recordBatchLength(int length) {
+        int evicted = recentBatchLengths[recentIndex];
+        recentBatchLengths[recentIndex] = length;
+        recentIndex = (recentIndex + 1) % PREWARM_WINDOW;
+        if (length >= prewarmCapacity) {
+            prewarmCapacity = length;
+        } else if (evicted == prewarmCapacity) {
+            prewarmCapacity = INITIAL_CAPACITY;
+            for (int windowLength : recentBatchLengths) {
+                if (windowLength > prewarmCapacity) {
+                    prewarmCapacity = windowLength;
+                }
+            }
+        }
     }
 
     /** 清空已编码内容（容量保留，同量级批次不再触发扩容）。 */
