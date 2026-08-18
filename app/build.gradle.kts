@@ -78,6 +78,8 @@ starsector {
         .filter { it.isNotBlank() }
         .map { file(it) }))
     manageEnabledMods.set(true)
+    // 部署保留运行时缓存目录（字体包/纹理转换缓存），避免每次 deployMod 后全量重建导致加载极慢
+    deployPreserve.set(listOf("cache"))
     // SourceSector named 仓路径覆盖（默认取同级 SourceSector 检出；CI 用 -Psourcesector.namedRepo 指定）
     providers.gradleProperty("sourcesector.namedRepo").orNull?.let { sourceRepo.set(file(it)) }
 }
