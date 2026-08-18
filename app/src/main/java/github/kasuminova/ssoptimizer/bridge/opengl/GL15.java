@@ -36,6 +36,7 @@ public final class GL15 {
     }
 
     public static void glBindBuffer(int target, int buffer) {
+        BufferMapEmulator.onBindBuffer(target, buffer);
         if (target == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
             // 录制侧跟踪 ARRAY_BUFFER 绑定：offset 形式的 client pointer 调用
             // 在真实 GL 中会捕获调用时刻的绑定（LazyFont 等「绑定→设 pointer→解绑→
@@ -64,30 +65,36 @@ public final class GL15 {
 
     /** 仅指定容量的分配形式，无数据参数。 */
     public static void glBufferData(int target, long size, int usage) {
+        BufferMapEmulator.onBufferData(target, size);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glBufferData(target, size, usage));
     }
 
     public static void glBufferData(int target, ByteBuffer data, int usage) {
+        BufferMapEmulator.onBufferData(target, data.remaining());
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferData(target, snapshot, usage));
     }
 
     public static void glBufferData(int target, DoubleBuffer data, int usage) {
+        BufferMapEmulator.onBufferData(target, (long) data.remaining() << 3);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferData(target, snapshot.asDoubleBuffer(), usage));
     }
 
     public static void glBufferData(int target, FloatBuffer data, int usage) {
+        BufferMapEmulator.onBufferData(target, (long) data.remaining() << 2);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferData(target, snapshot.asFloatBuffer(), usage));
     }
 
     public static void glBufferData(int target, IntBuffer data, int usage) {
+        BufferMapEmulator.onBufferData(target, (long) data.remaining() << 2);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferData(target, snapshot.asIntBuffer(), usage));
     }
 
     public static void glBufferData(int target, ShortBuffer data, int usage) {
+        BufferMapEmulator.onBufferData(target, (long) data.remaining() << 1);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferData(target, snapshot.asShortBuffer(), usage));
     }
@@ -118,22 +125,32 @@ public final class GL15 {
     }
 
     public static void glDeleteBuffers(int buffer) {
+        BufferMapEmulator.onDeleteBuffer(buffer);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glDeleteBuffers(buffer));
     }
 
     public static void glDeleteBuffers(IntBuffer buffers) {
+        while (buffers.hasRemaining()) {
+            BufferMapEmulator.onDeleteBuffer(buffers.get());
+        }
+        buffers.rewind();
         BridgeSupport.enqueueSnapshot(buffers, snapshot ->
                 org.lwjgl.opengl.GL15.glDeleteBuffers(snapshot.asIntBuffer()));
     }
 
     /**
-     * 解除 buffer 映射。map/unmap 跨线程语义：映射指针由 {@code glMapBuffer} 经阻塞通道
-     * 取回后主线程直接写入，unmap 必须走阻塞通道 drain 到渲染线程真实执行后才返回，
-     * 保证「主线程写完 → unmap」的先后顺序不被异步执行颠覆（模组低频路径）。
+     * 解除 buffer 映射。纯写仿真映射（{@link BufferMapEmulator}）在此把写入区间快照
+     * 入队上传后直接返回，零阻塞；非仿真映射（map 经阻塞通道取得真实指针）仍走
+     * 阻塞通道 drain，保证「主线程写完 → unmap」的先后顺序不被异步执行颠覆。
      *
-     * @return 真实 glUnmapBuffer 的返回值（false 表示映射期间数据损坏）
+     * @return 真实 glUnmapBuffer 的返回值（false 表示映射期间数据损坏）；仿真映射恒 true
      */
     public static boolean glUnmapBuffer(int target) {
+        BufferMapEmulator.PendingUpload upload = BufferMapEmulator.pollEmulatedUnmap(target);
+        if (upload != null) {
+            BufferMapEmulator.enqueueUpload(upload);
+            return true;
+        }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL15.glUnmapBuffer(target));
     }
 }

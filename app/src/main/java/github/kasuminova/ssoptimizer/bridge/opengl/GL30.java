@@ -140,11 +140,16 @@ public final class GL30 {
     }
 
     /**
-     * 区间映射：阻塞通道取回真实映射 buffer（主线程随后直接写入；
-     * 配对的 unmap（{@link GL15#glUnmapBuffer(int)}）同样阻塞，顺序语义闭合）。
+     * 区间映射：纯写映射（WRITE 且无 READ）走 {@link BufferMapEmulator} 镜像仿真，
+     * 零阻塞（unmap 时快照入队上传，见 {@link GL15#glUnmapBuffer(int)}）；
+     * 其余形态（含 READ/重入/未跟踪 target）回退阻塞通道取回真实映射 buffer。
      */
     public static ByteBuffer glMapBufferRange(int target, long offset, long length, int access,
                                               ByteBuffer oldBuffer) {
+        ByteBuffer mirror = BufferMapEmulator.tryEmulateMapRange(target, offset, length, access);
+        if (mirror != null) {
+            return mirror;
+        }
         return BridgeSupport.blockingGet(() ->
                 org.lwjgl.opengl.GL30.glMapBufferRange(target, offset, length, access, oldBuffer));
     }
