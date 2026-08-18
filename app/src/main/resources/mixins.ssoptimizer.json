@@ -85,7 +85,8 @@
     "save.XStreamPathTrackerMixin",
     "warroom.TaskIconManagerMixin",
     "debug.DisplayFrameCaptureMixin",
-    "debug.BaseGameStateNoWindowIdleMixin"
+    "debug.BaseGameStateNoWindowIdleMixin",
+    "campaign.FleetDataSyncGuardMixin"
   ],
   "client": [],
   "injectors": {
