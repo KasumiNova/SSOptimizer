@@ -76,4 +76,24 @@ enum LwjglVertexSink implements VertexSink {
     public void normal3f(float nx, float ny, float nz) {
         org.lwjgl.opengl.GL11.glNormal3f(nx, ny, nz);
     }
+
+    @Override
+    public void enable(int cap) {
+        org.lwjgl.opengl.GL11.glEnable(cap);
+    }
+
+    @Override
+    public void disable(int cap) {
+        org.lwjgl.opengl.GL11.glDisable(cap);
+    }
+
+    @Override
+    public void blendFunc(int src, int dst) {
+        org.lwjgl.opengl.GL11.glBlendFunc(src, dst);
+    }
+
+    @Override
+    public void bindTexture(int texture) {
+        org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, texture);
+    }
 }

@@ -56,7 +56,7 @@ class GL11BridgeTest {
         GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
         GL11.glVertex2f(1f, 1f);
         GL11.glEnd();
-        assertEquals(3, queue.recorded.size());
+        assertEquals(3, queue.recorded.size(), "段1 + enable + 段2（glEnd 立即落帧）");
     }
 
     @Test
@@ -293,7 +293,7 @@ class GL11BridgeTest {
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
         GL11.glVertex2f(0f, 0f);
-        GL11.glEnd(); // 顶点流落帧插入命令
+        GL11.glEnd(); // glEnd 立即落帧，流命令插入打断 bind 相邻性
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         assertEquals(3, queue.recorded.size(), "顶点流落帧命令必须打断相邻性");
     }
@@ -311,5 +311,54 @@ class GL11BridgeTest {
         } finally {
             BridgeSupport.stateDedupEnabled = saved;
         }
+    }
+
+    // -- 流内状态指令（sprite 渲染路径，见 SpriteRenderHelper 的流内化）--
+
+    @Test
+    void streamStateInstructionsEncodeIntoOneVertexBatch() {
+        // sprite 的完整绘制（bind + enable + blendFunc + quad 段 + disable）全部
+        // 编码进顶点流：glEnd 处一次落帧成 1 条流命令（状态命令数从 5 条降为 0）
+        GL11.streamBindTexture(7);
+        GL11.streamEnable(org.lwjgl.opengl.GL11.GL_TEXTURE_2D);
+        GL11.streamEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+        GL11.streamBlendFunc(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE);
+        GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+        GL11.glColor4ub((byte) 255, (byte) 255, (byte) 255, (byte) 255);
+        GL11.glTexCoord2f(0f, 0f);
+        GL11.glVertex2f(0f, 0f);
+        GL11.glTexCoord2f(1f, 0f);
+        GL11.glVertex2f(1f, 0f);
+        GL11.glTexCoord2f(1f, 1f);
+        GL11.glVertex2f(1f, 1f);
+        GL11.glTexCoord2f(0f, 1f);
+        GL11.glVertex2f(0f, 1f);
+        GL11.glEnd();
+        GL11.streamDisable(org.lwjgl.opengl.GL11.GL_BLEND);
+
+        assertEquals(1, queue.recorded.size(), "sprite 的 bind+状态+quad+disable 编码进一条流命令");
+        assertInstanceOf(VertexBatchCommand.class, queue.recorded.get(0),
+                "整段 sprite 绘制（含状态）为一条流回放命令");
+    }
+
+    @Test
+    void consecutiveStreamSpritesEachProduceOneBatch() {
+        // 连续两个 sprite：各自 glEnd 落帧为 1 条流命令（glEnd 保持「段即批次」
+        // 语义，避免挂起流与 aux 提交的帧列表错序）；状态命令已合并进流，
+        // 每 sprite 的命令数从 6 条（5 状态 + 1 流）降为 1 条流命令
+        for (int sprite = 0; sprite < 2; sprite++) {
+            GL11.streamBindTexture(7);
+            GL11.streamEnable(org.lwjgl.opengl.GL11.GL_TEXTURE_2D);
+            GL11.streamEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+            GL11.streamBlendFunc(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE);
+            GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+            GL11.glTexCoord2f(0f, 0f);
+            GL11.glVertex2f(sprite, 0f);
+            GL11.glTexCoord2f(1f, 0f);
+            GL11.glVertex2f(sprite, 1f);
+            GL11.glEnd();
+            GL11.streamDisable(org.lwjgl.opengl.GL11.GL_BLEND);
+        }
+        assertEquals(2, queue.recorded.size(), "两个 sprite 各一条流命令（状态合并进流）");
     }
 }

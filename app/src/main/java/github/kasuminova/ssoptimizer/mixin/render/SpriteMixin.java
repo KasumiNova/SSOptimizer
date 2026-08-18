@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.TextureObject;
 import com.fs.graphics.util.RenderStateUtils;
+import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
 import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvState;
 import github.kasuminova.ssoptimizer.common.render.engine.SpriteRenderHelper;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
@@ -100,7 +101,10 @@ public abstract class SpriteMixin {
                 texX, texY, texWidth, texHeight, texClamp)) {
             return;
         }
-        texture.bind();
+        // 纹理绑定编码进顶点流（段间执行）：同纹理连续 sprite 的重复绑定回放
+        // 幂等冗余，换纹理的绑定打断的是流内位置而非流段——连续 sprite 的
+        // begin..end 段合并为一条流命令（减少每 sprite 一次的 flush 边界）
+        GL11.streamBindTexture(texture.getTextureId());
         if (texClamp) {
             RenderStateUtils.enableTextureClamp();
         }
@@ -188,7 +192,8 @@ public abstract class SpriteMixin {
             return;
         }
         if (bl) {
-            texture.bind();
+            // 流内绑定（段间执行），语义同 render 的 streamBindTexture
+            GL11.streamBindTexture(texture.getTextureId());
         }
         SpriteRenderHelper.renderSprite(
                 posX, posY, subW, subH,

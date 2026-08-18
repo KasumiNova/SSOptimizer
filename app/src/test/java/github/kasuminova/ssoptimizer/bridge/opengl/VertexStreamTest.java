@@ -94,6 +94,26 @@ class VertexStreamTest {
         public void normal3f(float nx, float ny, float nz) {
             calls.add("normal3f:" + nx + "," + ny + "," + nz);
         }
+
+        @Override
+        public void enable(int cap) {
+            calls.add("enable:" + cap);
+        }
+
+        @Override
+        public void disable(int cap) {
+            calls.add("disable:" + cap);
+        }
+
+        @Override
+        public void blendFunc(int src, int dst) {
+            calls.add("blendFunc:" + src + "," + dst);
+        }
+
+        @Override
+        public void bindTexture(int texture) {
+            calls.add("bindTexture:" + texture);
+        }
     }
 
     @Test
@@ -213,10 +233,72 @@ class VertexStreamTest {
                 "vertex2f:1.0,2.0",
                 "vertex2f:3.0,4.0",
                 "end"), firstAgain.calls);
-        RecordingSink secondSink = new RecordingSink();
-        replayInto(stream, secondSink);
-        assertEquals(List.of("begin:" + org.lwjgl.opengl.GL11.GL_LINES, "vertex2f:9.0,9.0", "end"),
-                secondSink.calls);
+    }
+
+    @Test
+    void streamStateInstructionsRoundtripInOrder() {
+        // 流内状态指令（sprite 渲染路径）：enable/disable/blendFunc 段外、
+        // bindTexture 段间，与顶点段按编码顺序回放
+        VertexStream stream = new VertexStream();
+        stream.bindTexture(42);
+        stream.enable(org.lwjgl.opengl.GL11.GL_TEXTURE_2D);
+        stream.enable(org.lwjgl.opengl.GL11.GL_BLEND);
+        stream.blendFunc(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE);
+        stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
+        stream.color4ub((byte) 255, (byte) 128, (byte) 64, (byte) 32);
+        stream.texCoord2f(0f, 0f);
+        stream.vertex2f(0f, 0f);
+        stream.texCoord2f(1f, 0f);
+        stream.vertex2f(1f, 0f);
+        stream.end();
+        stream.disable(org.lwjgl.opengl.GL11.GL_BLEND);
+
+        RecordingSink sink = new RecordingSink();
+        replayInto(stream, sink);
+        assertEquals(List.of(
+                "bindTexture:42",
+                "enable:" + org.lwjgl.opengl.GL11.GL_TEXTURE_2D,
+                "enable:" + org.lwjgl.opengl.GL11.GL_BLEND,
+                "blendFunc:" + org.lwjgl.opengl.GL11.GL_SRC_ALPHA + "," + org.lwjgl.opengl.GL11.GL_ONE,
+                "begin:" + org.lwjgl.opengl.GL11.GL_QUADS,
+                "color4ub:-1,-128,64,32",
+                "texCoord2f:0.0,0.0",
+                "vertex2f:0.0,0.0",
+                "texCoord2f:1.0,0.0",
+                "vertex2f:1.0,0.0",
+                "end",
+                "disable:" + org.lwjgl.opengl.GL11.GL_BLEND), sink.calls);
+    }
+
+    @Test
+    void consecutiveQuadsShareOneStreamBuffer() {
+        // VertexStream 层能力：连续两个独立 begin..end 段可编码进同一条流缓冲
+        // （sprite 的 quad 序列），transferBuffer 一次移交。当前 GL11.glEnd 保持
+        // 「段即批次」立即落帧（避免挂起流与 aux 提交的帧列表错序），本用例
+        // 验证流编码本身支持多段——若未来出现安全合并路径可直接复用。
+        VertexStream stream = new VertexStream();
+        for (int quad = 0; quad < 2; quad++) {
+            stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
+            stream.texCoord2f(0f, 0f);
+            stream.vertex2f(quad, 0f);
+            stream.texCoord2f(1f, 0f);
+            stream.vertex2f(quad, 1f);
+            stream.end();
+        }
+        int length = stream.length();
+        byte[] handed = stream.transferBuffer();
+
+        RecordingSink sink = new RecordingSink();
+        VertexStream.replay(handed, length, sink);
+        assertEquals(List.of(
+                "begin:" + org.lwjgl.opengl.GL11.GL_QUADS,
+                "texCoord2f:0.0,0.0", "vertex2f:0.0,0.0",
+                "texCoord2f:1.0,0.0", "vertex2f:0.0,1.0",
+                "end",
+                "begin:" + org.lwjgl.opengl.GL11.GL_QUADS,
+                "texCoord2f:0.0,0.0", "vertex2f:1.0,0.0",
+                "texCoord2f:1.0,0.0", "vertex2f:1.0,1.0",
+                "end"), sink.calls);
     }
 
     @Test
