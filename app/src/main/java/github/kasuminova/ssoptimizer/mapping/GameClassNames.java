@@ -111,6 +111,7 @@ public final class GameClassNames {
     public static final String CAMPAIGN_ENGINE_DOTTED              = "com.fs.starfarer.campaign.CampaignEngine";
     public static final String TITLE_SCREEN_STATE                  = "com/fs/starfarer/title/TitleScreenState";
     public static final String TITLE_SCREEN_STATE_DOTTED           = "com.fs.starfarer.title.TitleScreenState";
+    public static final String BASE_GAME_STATE_DOTTED              = "com.fs.starfarer.BaseGameState";
     public static final String TASK_ICON_MANAGER                   = "com/fs/starfarer/combat/warroom/TaskIconManager";
     public static final String TASK_ICON_MANAGER_DOTTED            = "com.fs.starfarer.combat.warroom.TaskIconManager";
     public static final String PROFILER                            = "com/fs/profiler/Profiler";
