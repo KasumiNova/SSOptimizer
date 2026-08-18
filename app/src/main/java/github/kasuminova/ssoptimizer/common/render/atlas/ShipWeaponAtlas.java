@@ -60,7 +60,8 @@ import java.util.concurrent.Future;
  *   <li>光束 core/fringe 与弹丸贴图使用平铺/自定义 UV，不入图集。</li>
  * </ul>
  * 开关：{@code -Dssoptimizer.atlas.shipweapon=false} 关闭（默认开启）；
- * {@code -Dssoptimizer.atlas.shipweapon.dumpdir=<dir>} 导出每页 PNG 供检查空间利用率。
+ * {@code -Dssoptimizer.atlas.shipweapon.dumpdir=<dir>} 导出每页 PNG 与区域坐标表
+ * （atlas-regions.tsv：page/x/y/w/h + 路径，图像空间）供检查空间利用率与区域定位。
  */
 public final class ShipWeaponAtlas {
     public static final String ENABLED_PROPERTY = "ssoptimizer.atlas.shipweapon";
@@ -141,18 +142,27 @@ public final class ShipWeaponAtlas {
         int regionCount = 0;
         long contentArea = 0L;
         long cellArea = 0L;
+        final StringBuilder regionDump = dumpDir != null ? new StringBuilder() : null;
         for (AtlasPacker.Page page : packed.pages()) {
             final int textureId = composeAndUpload(page, images, pageSize, dumpDir);
             for (AtlasPacker.Placement placement : page.placements()) {
                 // 图像空间（左上原点）→ GL 空间（左下原点）：gY = atlasSize - y - height
                 REGIONS.put(placement.path(), new Region(
                         textureId, pageSize, placement.x(), pageSize - placement.y() - placement.height()));
+                if (regionDump != null) {
+                    // 图像空间坐标（与导出的页 PNG 直接对应），便于人工定位区域
+                    regionDump.append(page.index()).append('\t')
+                            .append(placement.x()).append('\t').append(placement.y()).append('\t')
+                            .append(placement.width()).append('\t').append(placement.height()).append('\t')
+                            .append(placement.path()).append('\n');
+                }
                 regionCount++;
                 contentArea += (long) placement.width() * placement.height();
                 cellArea += (long) (placement.width() + PADDING * 2) * (placement.height() + PADDING * 2);
             }
         }
         images.clear();
+        dumpRegionTable(regionDump, dumpDir);
 
         final double totalArea = (double) packed.pages().size() * pageSize * pageSize;
         LOGGER.info(String.format(
@@ -362,6 +372,22 @@ public final class ShipWeaponAtlas {
         } catch (IOException e) {
             LOGGER.error("[SSOptimizer] Ship/weapon texture atlas: failed to dump page " + pageIndex
                     + " to " + dumpDir, e);
+        }
+    }
+
+    /**
+     * 导出区域坐标表（仅当设置了 dumpdir 时调用）：page/x/y/w/h（图像空间）+ 路径，
+     * 与页 PNG 配套，供人工定位某张贴图在图集中的位置。导出失败记错误日志。
+     */
+    private static void dumpRegionTable(final StringBuilder regionDump, final java.nio.file.Path dumpDir) {
+        if (regionDump == null || dumpDir == null) {
+            return;
+        }
+        try {
+            java.nio.file.Files.createDirectories(dumpDir);
+            java.nio.file.Files.writeString(dumpDir.resolve("atlas-regions.tsv"), regionDump.toString());
+        } catch (IOException e) {
+            LOGGER.error("[SSOptimizer] Ship/weapon texture atlas: failed to dump region table to " + dumpDir, e);
         }
     }
 
