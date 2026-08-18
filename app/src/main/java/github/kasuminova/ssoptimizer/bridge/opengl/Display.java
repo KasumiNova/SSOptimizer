@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import github.kasuminova.ssoptimizer.common.bench.FramebufferCapture;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.DisplayMode;
@@ -81,10 +82,39 @@ public final class Display {
      * {@link BridgeSupport#refillBufferIdStashIfLow()}）——下一帧录制开始前
      * stash 已就位，主线程 glGenBuffers 不再阻塞（v45c/v47 getInternal 热点）。
      */
+    /** 调试帧抓取输出目录（{@code -Dssoptimizer.debug.framecapture.dir}），null 关闭。 */
+    private static final String DEBUG_CAPTURE_DIR = System.getProperty("ssoptimizer.debug.framecapture.dir");
+    /** 调试帧抓取触发帧号（{@code -Dssoptimizer.debug.framecapture.frame}，默认 600）。 */
+    private static final int    DEBUG_CAPTURE_FRAME = Integer.getInteger("ssoptimizer.debug.framecapture.frame", 600);
+    /** 渲染线程帧计数（仅调试抓取使用）。 */
+    private static int debugFrameCounter;
+
+    /**
+     * 调试帧抓取：渲染线程在 swap 前抓取 back buffer 写 PNG（主菜单/非战斗场景的
+     * 渲染取证手段，bench 的截图机制只覆盖任务内）。每进程只抓一帧。
+     */
+    private static void debugCaptureFrame() {
+        if (DEBUG_CAPTURE_DIR == null) {
+            return;
+        }
+        debugFrameCounter++;
+        if (debugFrameCounter != DEBUG_CAPTURE_FRAME) {
+            return;
+        }
+        try {
+            FramebufferCapture.captureToPng(
+                    java.nio.file.Paths.get(DEBUG_CAPTURE_DIR, "frame-" + debugFrameCounter + ".png"));
+        } catch (Exception e) {
+            org.apache.log4j.Logger.getLogger(Display.class).warn(
+                    "[SSOptimizer] debug frame capture failed at frame " + debugFrameCounter, e);
+        }
+    }
+
     public static void update() {
         RenderQueue q = BridgeSupport.queue();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
+            debugCaptureFrame();
             org.lwjgl.opengl.Display.update();
         });
         BridgeSupport.swapFramesAndSync();
@@ -100,6 +130,7 @@ public final class Display {
         RenderQueue q = BridgeSupport.queue();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
+            debugCaptureFrame();
             org.lwjgl.opengl.Display.update(processMessages);
         });
         BridgeSupport.swapFramesAndSync();
