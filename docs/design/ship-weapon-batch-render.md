@@ -153,3 +153,13 @@ SpriteBatch（common/render/spritebatch/）
   隔离或禁区透传，无需特殊处理。
 - 回读类模组（读像素做 bloom/distortion）：合批不改变最终帧缓冲内容，仅改变
   drawcall 时序；层内次序保持，理论无影响，P1 用 GraphicsLib 场景实测验证。
+
+## 已知问题（待复现）：攻势XIV 护盾 dome 串染
+
+用户实机截图（2026-08）：攻势XIV 级护盾 dome 内表面出现红色小图标阵列，疑似图集纹理
++ 平铺 UV 扫过邻近贴图。2026-08-18 受控实验（`sso_xiv_probe` mission，图集开/关对照，
+护盾常开 + 锁定视口各 13 帧）在 2819688（图集双轨制）之后**无法复现**，静态分析已排除
+全部理论消费路径。可能原因：(a) 已被双轨制顺带修复；(b) 需特定条件（战役存档/模组组合/
+操作序列）。待用户补充复现场景后，用 `-Dssoptimizer.atlas.shipweapon.dumpdir=<dir>`
+导出的 atlas-regions.tsv（567619b）对照截图反推消费路径。复现命令见 sso_xiv_probe
+mission（游戏目录 mods/ssoptimizer/data/missions/ 下）。
