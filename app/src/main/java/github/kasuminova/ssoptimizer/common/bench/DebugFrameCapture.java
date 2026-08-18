@@ -11,8 +11,9 @@ import org.apache.log4j.Logger;
  * 全部渲染路径（LWJGL2 的 {@code update()} 内部委托 {@code update(true)}）。
  * <p>
  * 触发方式：{@code -Dssoptimizer.debug.framecapture.dir=<目录>} 开启，
- * {@code -Dssoptimizer.debug.framecapture.frame=<帧号>}（默认 600）指定抓取帧。
- * 每进程只抓一帧；必须在持有 GL 上下文的线程调用（即 Display.update 的调用线程）。
+ * {@code -Dssoptimizer.debug.framecapture.frame=<帧号>}（默认 600）指定单帧抓取，
+ * 或 {@code -Dssoptimizer.debug.framecapture.frames=<帧号,帧号,...>} 多帧采样。
+ * 每个帧号只抓一帧；必须在持有 GL 上下文的线程调用（即 Display.update 的调用线程）。
  */
 public final class DebugFrameCapture {
     private static final Logger LOGGER = Logger.getLogger(DebugFrameCapture.class);
@@ -21,6 +22,11 @@ public final class DebugFrameCapture {
     private static final String CAPTURE_DIR = System.getProperty("ssoptimizer.debug.framecapture.dir");
     /** 调试帧抓取触发帧号（{@code -Dssoptimizer.debug.framecapture.frame}，默认 600）。 */
     private static final int CAPTURE_FRAME = Integer.getInteger("ssoptimizer.debug.framecapture.frame", 600);
+    /**
+     * 调试帧抓取触发帧号集合（{@code -Dssoptimizer.debug.framecapture.frames}，
+     * 逗号分隔，用于偶发渲染问题的多帧采样；未配置时退化为 {@link #CAPTURE_FRAME} 单帧）。
+     */
+    private static final java.util.Set<Integer> CAPTURE_FRAMES = parseCaptureFrames();
 
     /** 已渲染帧计数（仅在开启时递增）。 */
     private static int frameCounter;
@@ -28,13 +34,25 @@ public final class DebugFrameCapture {
     private DebugFrameCapture() {
     }
 
-    /** 帧尾回调：到达目标帧号时抓取 back buffer 写 PNG，随后不再动作。 */
+    private static java.util.Set<Integer> parseCaptureFrames() {
+        String list = System.getProperty("ssoptimizer.debug.framecapture.frames");
+        if (list == null || list.isBlank()) {
+            return java.util.Collections.singleton(CAPTURE_FRAME);
+        }
+        java.util.Set<Integer> frames = new java.util.TreeSet<>();
+        for (String token : list.split(",")) {
+            frames.add(Integer.parseInt(token.trim()));
+        }
+        return frames;
+    }
+
+    /** 帧尾回调：到达目标帧号时抓取 back buffer 写 PNG，每帧号只抓一次。 */
     public static void onDisplayUpdate() {
         if (CAPTURE_DIR == null) {
             return;
         }
         frameCounter++;
-        if (frameCounter != CAPTURE_FRAME) {
+        if (!CAPTURE_FRAMES.contains(frameCounter)) {
             return;
         }
         try {

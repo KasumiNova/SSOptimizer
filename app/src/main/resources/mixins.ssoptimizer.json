@@ -84,7 +84,8 @@
     "save.XStreamObjectIdDictionaryMixin",
     "save.XStreamPathTrackerMixin",
     "warroom.TaskIconManagerMixin",
-    "debug.DisplayFrameCaptureMixin"
+    "debug.DisplayFrameCaptureMixin",
+    "debug.BaseGameStateNoWindowIdleMixin"
   ],
   "client": [],
   "injectors": {
