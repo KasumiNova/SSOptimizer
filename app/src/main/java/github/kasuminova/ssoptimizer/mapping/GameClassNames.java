@@ -118,6 +118,9 @@ public final class GameClassNames {
     public static final String AI_INTERFACE                        = "com/fs/starfarer/combat/ai/AI";
     public static final String AI_UTILS                            = "com/fs/starfarer/combat/ai/AIUtils";
     public static final String AI_UTILS_DOTTED                     = "com.fs.starfarer.combat.ai.AIUtils";
+    public static final String STAT_BONUS                          = "com/fs/starfarer/api/combat/StatBonus";
+    public static final String STAT_BONUS_DOTTED                   = "com.fs.starfarer.api.combat.StatBonus";
+    public static final String FIRING_SOLUTION_EVAL                = "com/fs/starfarer/combat/ai/FiringSolutionEval";
     public static final String BASIC_SHIP_AI                       = "com/fs/starfarer/combat/ai/BasicShipAI";
     public static final String FIGHTER_AI                          = "com/fs/starfarer/combat/ai/FighterAI";
     public static final String FIGHTER_AI_DOTTED                   = "com.fs.starfarer.combat.ai.FighterAI";
