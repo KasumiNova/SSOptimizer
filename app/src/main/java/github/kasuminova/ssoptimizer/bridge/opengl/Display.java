@@ -77,10 +77,16 @@ public final class Display {
      * 帧尾：入队真实 {@code Display.update()}（渲染线程交换缓冲），
      * 然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。swap 收口处
      * 同时刷新主录制线程的帧上下文缓存（见 {@link BridgeSupport#swapFramesAndSync()}）。
+     * 命令体在渲染线程执行时先做 VBO id stash 低水位补货（
+     * {@link BridgeSupport#refillBufferIdStashIfLow()}）——下一帧录制开始前
+     * stash 已就位，主线程 glGenBuffers 不再阻塞（v45c/v47 getInternal 热点）。
      */
     public static void update() {
         RenderQueue q = BridgeSupport.queue();
-        q.submit(org.lwjgl.opengl.Display::update);
+        q.submit(() -> {
+            BridgeSupport.refillBufferIdStashIfLow();
+            org.lwjgl.opengl.Display.update();
+        });
         BridgeSupport.swapFramesAndSync();
     }
 
@@ -92,7 +98,10 @@ public final class Display {
      */
     public static void update(boolean processMessages) {
         RenderQueue q = BridgeSupport.queue();
-        q.submit(() -> org.lwjgl.opengl.Display.update(processMessages));
+        q.submit(() -> {
+            BridgeSupport.refillBufferIdStashIfLow();
+            org.lwjgl.opengl.Display.update(processMessages);
+        });
         BridgeSupport.swapFramesAndSync();
     }
 

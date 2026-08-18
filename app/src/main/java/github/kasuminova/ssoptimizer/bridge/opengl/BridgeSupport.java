@@ -15,6 +15,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * bridge 各入口类共享的静态支撑：队列句柄、录制/阻塞助手、缓冲快照池、
@@ -54,8 +55,16 @@ final class BridgeSupport {
      * 只由主线程写入；读者校验 owner 后再用，aux 生产者线程仍走各自实例。
      */
     private static volatile RecordingContext mainRecordingContext;
-    /** VBO id stash 单次批量预生成的个数（约等于重负载战斗单帧的 glGenBuffers 次数量级）。 */
-    private static final int BUFFER_ID_STASH_BATCH = 64;
+    /**
+     * VBO id stash 单次批量预生成的个数。相对旧值 64 加大：v45c/v47 profile
+     * 显示 LazyLib LazyFont 每帧 createText 新建 SpriteBatch（glGenBuffers），
+     * stash 耗尽时主线程阻塞批量补货（getInternal park 1,065/535 样本的大头）；
+     * 512 覆盖多帧消耗，配合低水位异步补货（{@link #refillBufferIdStashIfLow()}）
+     * 使主线程 stash 恒有货。
+     */
+    static final int BUFFER_ID_STASH_BATCH = 512;
+    /** stash 低水位阈值：渲染线程帧尾补货触发线（低于此值补一批 BATCH）。 */
+    static final int BUFFER_ID_STASH_LOW_WATER = 256;
     /**
      * VBO id 预生成 stash：{@link GL15#glGenBuffers()}/{@link ARBVertexBufferObject#glGenBuffersARB()}
      * 单值形式的录制侧 id 池。游戏战斗期逐帧创建 VBO（SpriteBatch/粒子等），
@@ -65,6 +74,8 @@ final class BridgeSupport {
      * id 的唯一性由渲染线程的真实 glGenBuffers 保证，返回顺序无语义。
      */
     private static volatile ConcurrentLinkedQueue<Integer> bufferIdStash = new ConcurrentLinkedQueue<>();
+    /** stash 当前元素计数（低水位补货判断用；随 offer/poll 增减，与 stash 内容一致）。 */
+    private static volatile AtomicInteger bufferIdStashCount = new AtomicInteger();
     /**
      * 渲染线程侧簿记：命令流执行到当前位置的 GL_ARRAY_BUFFER 真实绑定。
      * 只由 bind 命令执行体与 pointer 重放（{@link PointerSnapshotGroup#apply()}）
@@ -97,6 +108,7 @@ final class BridgeSupport {
         snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
         vertexStreamBuffers = new VertexStreamBufferPool();
         bufferIdStash = new ConcurrentLinkedQueue<>();
+        bufferIdStashCount = new AtomicInteger();
     }
 
     static RenderQueue queue() {
@@ -275,11 +287,13 @@ final class BridgeSupport {
      * 单值形式的入口）：stash 非空零阻塞出队；空则走一次资源申请阻塞通道，
      * 由渲染线程批量预生成 {@value #BUFFER_ID_STASH_BATCH} 个 id——返回首个，
      * 其余入池。并发录制线程同时发现池空时会各自补货一批，id 唯一性由
-     * 真实 glGenBuffers 保证，多发一批无害。
+     * 真实 glGenBuffers 保证，多发一批无害。稳态下阻塞兜底几乎不触发：
+     * 渲染线程每帧帧尾经 {@link #refillBufferIdStashIfLow()} 低水位补货。
      */
     static int acquireBufferId() {
         Integer stashed = bufferIdStash.poll();
         if (stashed != null) {
+            bufferIdStashCount.decrementAndGet();
             return stashed;
         }
         int[] generated = blockingGetResource(() -> {
@@ -291,8 +305,31 @@ final class BridgeSupport {
         });
         for (int i = 1; i < generated.length; i++) {
             bufferIdStash.add(generated[i]);
+            bufferIdStashCount.incrementAndGet();
         }
         return generated[0];
+    }
+
+    /**
+     * stash 低水位补货（渲染线程调用，Display.update 命令体前置）：计数低于
+     * {@value #BUFFER_ID_STASH_LOW_WATER} 时直接在渲染线程真实 glGenBuffers
+     * 一批 {@value #BUFFER_ID_STASH_BATCH} 个入 stash——补货不经过主线程阻塞
+     * 通道，帧尾执行完后下一帧录制开始时 stash 已就位，主线程
+     * {@link #acquireBufferId()} 恒零阻塞（v45c/v47 profile：LazyFont 每帧
+     * createText 新建 SpriteBatch 的 glGenBuffers 高频路径）。
+     */
+    static void refillBufferIdStashIfLow() {
+        if (bufferIdStashCount.get() >= BUFFER_ID_STASH_LOW_WATER) {
+            return;
+        }
+        int[] generated = new int[BUFFER_ID_STASH_BATCH];
+        IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4).asIntBuffer();
+        org.lwjgl.opengl.GL15.glGenBuffers(ids);
+        ids.get(generated);
+        for (int id : generated) {
+            bufferIdStash.add(id);
+            bufferIdStashCount.incrementAndGet();
+        }
     }
 
     /** 声明 {@link LWJGLException} 的阻塞任务。 */

@@ -63,7 +63,8 @@ class BufferObjectBridgeTest {
 
     @Test
     void gl15GenBuffersServedFromRecordingSideStash() {
-        int[] batch = new int[64];
+        int batchSize = BridgeSupport.BUFFER_ID_STASH_BATCH;
+        int[] batch = new int[batchSize];
         for (int i = 0; i < batch.length; i++) {
             batch[i] = 100 + i;
         }
@@ -82,26 +83,27 @@ class BufferObjectBridgeTest {
 
     @Test
     void gl15GenBuffersStashRefillsWhenExhausted() {
-        int[] first = new int[64];
-        int[] second = new int[64];
-        for (int i = 0; i < 64; i++) {
+        int batchSize = BridgeSupport.BUFFER_ID_STASH_BATCH;
+        int[] first = new int[batchSize];
+        int[] second = new int[batchSize];
+        for (int i = 0; i < batchSize; i++) {
             first[i] = 100 + i;
             second[i] = 200 + i;
         }
         int[] refills = {0};
         queue.getHandler = callable -> refills[0]++ == 0 ? first : second;
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < batchSize; i++) {
             assertEquals(100 + i, GL15.glGenBuffers());
         }
         assertEquals(1, queue.uncountedGetCallCount);
-        assertEquals(200, GL15.glGenBuffers(), "第 65 次触发第二次批量补货");
+        assertEquals(200, GL15.glGenBuffers(), "第 " + (batchSize + 1) + " 次触发第二次批量补货");
         assertEquals(2, queue.uncountedGetCallCount);
     }
 
     @Test
     void arbVertexBufferObjectMirrorsGl15Semantics() {
         ByteBuffer data = ByteBuffer.allocateDirect(16);
-        int[] batch = new int[64];
+        int[] batch = new int[BridgeSupport.BUFFER_ID_STASH_BATCH];
         for (int i = 0; i < batch.length; i++) {
             batch[i] = 5 + i;
         }
