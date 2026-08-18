@@ -20,6 +20,14 @@ public final class RenderFrame {
     private final List<FrameFence> fences = new ArrayList<>();
     /** 帧执行完成信号；{@link #reset()} 换发新实例，已提交帧的旧 Future 结果不受影响。 */
     private CompletableFuture<Void> completion = new CompletableFuture<>();
+    /**
+     * 本帧命令列表的提交序号：每次 {@link #add} 递增（多生产者线程安全的
+     * 单调计数器）。录制侧状态命令去重（{@code StateDedup}）以此为「相邻性」
+     * 判据——自上次状态命令入队以来序号未变，说明帧列表没有任何插入
+     * （含 aux 生产者线程的并发提交、顶点流落帧、glCallList 等一切命令），
+     * 去重跳过才是安全的；序号变化即视为状态可能已被其他路径改变。
+     */
+    private volatile int commitSeq;
 
     /**
      * 追加一条命令到帧尾。synchronized 保证主线程直接录制与 aux-context 生产者
@@ -30,6 +38,14 @@ public final class RenderFrame {
      */
     public synchronized void add(GlCommand command) {
         commands.add(command);
+        commitSeq++;
+    }
+
+    /**
+     * @return 本帧当前提交序号（自上次 {@link #add} 后未变 = 命令列表无任何插入）
+     */
+    public int commitSeq() {
+        return commitSeq;
     }
 
     /**

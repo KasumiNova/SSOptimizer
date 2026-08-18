@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
+
 /**
  * 录制侧单个生产者线程的帧录制上下文：收敛主线程 GL 录制热路径上分散在
  * 多个 ThreadLocal 的逐调用查找（v36 profile：{@code ThreadLocal.getEntry/
@@ -7,7 +9,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
  * <p>
  * 收敛内容：client pointer 快照状态（原 {@code POINTER_STATES}）、FRAMEBUFFER
  * 绑定跟踪（原 {@code FRAMEBUFFER_BINDING}）、immediate 顶点流（原
- * {@code VERTEX_STREAMS}）。
+ * {@code VERTEX_STREAMS}）、状态命令去重（{@link StateDedup}）。
  * <p>
  * 访问约定（{@link BridgeSupport#recordingContext()}）：主录制线程（游戏主线程）
  * 在每帧边界（swap）获取一次并缓存到静态引用，帧内全部 GL 调用直读缓存
@@ -23,4 +25,11 @@ final class RecordingContext {
     final int[] framebufferBinding = new int[1];
     /** 录制侧逐线程的 immediate 顶点流缓冲（glBegin/glVertex* 族，见 {@link VertexStream}）。 */
     final VertexStream vertexStream = new VertexStream();
+    /** 状态命令去重（连续相同的高频状态命令只入队一次，见 {@link StateDedup}）。 */
+    final StateDedup stateDedup = new StateDedup();
+    /**
+     * 当前录制帧（状态命令去重的相邻性判据来源）：主线程在每帧边界（swap）
+     * 刷新；非主线程保持 null，由 {@link BridgeSupport#queue()} 现取当前帧。
+     */
+    RenderFrame dedupFrame;
 }

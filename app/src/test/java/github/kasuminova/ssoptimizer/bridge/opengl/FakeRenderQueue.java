@@ -32,7 +32,7 @@ final class FakeRenderQueue implements RenderQueue {
     Function<Callable<?>, Object> getHandler = callable -> {
         throw new UnsupportedOperationException("fake queue 不支持 get");
     };
-    private final RenderFrame frame = new RenderFrame();
+    final RenderFrame frame = new RenderFrame();
 
     @Override
     public RenderFrame currentFrame() {
@@ -42,6 +42,9 @@ final class FakeRenderQueue implements RenderQueue {
     @Override
     public void submit(GlCommand command) {
         recorded.add(command);
+        // 同步真实队列的「提交序号递增」语义：状态命令去重的相邻性判据
+        // （StateDedup 依赖 frame.commitSeq）依赖每次提交都进帧命令列表
+        frame.add(command);
     }
 
     @Override

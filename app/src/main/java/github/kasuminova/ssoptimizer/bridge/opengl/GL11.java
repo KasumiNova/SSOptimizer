@@ -178,7 +178,8 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glMatrixMode(int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glMatrixMode(mode));
+        BridgeSupport.enqueueState(StateDedup.TYPE_MATRIX_MODE, mode, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glMatrixMode(mode));
     }
 
     public static void glLoadIdentity() {
@@ -239,79 +240,98 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glEnable(int cap) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glEnable(cap));
+        BridgeSupport.enqueueState(StateDedup.TYPE_ENABLE, cap, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glEnable(cap));
     }
 
     public static void glDisable(int cap) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDisable(cap));
+        BridgeSupport.enqueueState(StateDedup.TYPE_DISABLE, cap, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glDisable(cap));
     }
 
     public static void glBlendFunc(int sfactor, int dfactor) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glBlendFunc(sfactor, dfactor));
+        BridgeSupport.enqueueState(StateDedup.TYPE_BLEND_FUNC, sfactor, dfactor, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glBlendFunc(sfactor, dfactor));
     }
 
     public static void glAlphaFunc(int func, float ref) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glAlphaFunc(func, ref));
+        BridgeSupport.enqueueState(StateDedup.TYPE_ALPHA_FUNC, func, Float.floatToRawIntBits(ref), 0, 0,
+                () -> org.lwjgl.opengl.GL11.glAlphaFunc(func, ref));
     }
 
     public static void glShadeModel(int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glShadeModel(mode));
+        BridgeSupport.enqueueState(StateDedup.TYPE_SHADE_MODEL, mode, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glShadeModel(mode));
     }
 
     public static void glLineWidth(float width) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glLineWidth(width));
+        BridgeSupport.enqueueState(StateDedup.TYPE_LINE_WIDTH, Float.floatToRawIntBits(width), 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glLineWidth(width));
     }
 
     public static void glPointSize(float size) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glPointSize(size));
+        BridgeSupport.enqueueState(StateDedup.TYPE_POINT_SIZE, Float.floatToRawIntBits(size), 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glPointSize(size));
     }
 
     public static void glPolygonMode(int face, int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glPolygonMode(face, mode));
+        BridgeSupport.enqueueState(StateDedup.TYPE_POLYGON_MODE, face, mode, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glPolygonMode(face, mode));
     }
 
     public static void glHint(int target, int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glHint(target, mode));
+        BridgeSupport.enqueueState(StateDedup.TYPE_HINT, target, mode, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glHint(target, mode));
     }
 
     public static void glDepthMask(boolean flag) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDepthMask(flag));
+        BridgeSupport.enqueueState(StateDedup.TYPE_DEPTH_MASK, flag ? 1 : 0, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glDepthMask(flag));
     }
 
     public static void glDepthFunc(int func) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDepthFunc(func));
+        BridgeSupport.enqueueState(StateDedup.TYPE_DEPTH_FUNC, func, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glDepthFunc(func));
     }
 
     public static void glCullFace(int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glCullFace(mode));
+        BridgeSupport.enqueueState(StateDedup.TYPE_CULL_FACE, mode, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glCullFace(mode));
     }
 
     public static void glFrontFace(int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glFrontFace(mode));
+        BridgeSupport.enqueueState(StateDedup.TYPE_FRONT_FACE, mode, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glFrontFace(mode));
     }
 
     public static void glColorMask(boolean red, boolean green, boolean blue, boolean alpha) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColorMask(red, green, blue, alpha));
+        BridgeSupport.enqueueState(StateDedup.TYPE_COLOR_MASK, red ? 1 : 0, green ? 1 : 0, blue ? 1 : 0, alpha ? 1 : 0,
+                () -> org.lwjgl.opengl.GL11.glColorMask(red, green, blue, alpha));
     }
 
     public static void glStencilFunc(int func, int ref, int mask) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glStencilFunc(func, ref, mask));
+        BridgeSupport.enqueueState(StateDedup.TYPE_STENCIL_FUNC, func, ref, mask, 0,
+                () -> org.lwjgl.opengl.GL11.glStencilFunc(func, ref, mask));
     }
 
     public static void glStencilOp(int fail, int zfail, int zpass) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glStencilOp(fail, zfail, zpass));
+        BridgeSupport.enqueueState(StateDedup.TYPE_STENCIL_OP, fail, zfail, zpass, 0,
+                () -> org.lwjgl.opengl.GL11.glStencilOp(fail, zfail, zpass));
     }
 
     public static void glStencilMask(int mask) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glStencilMask(mask));
+        BridgeSupport.enqueueState(StateDedup.TYPE_STENCIL_MASK, mask, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glStencilMask(mask));
     }
 
     public static void glScissor(int x, int y, int width, int height) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glScissor(x, y, width, height));
+        BridgeSupport.enqueueState(StateDedup.TYPE_SCISSOR, x, y, width, height,
+                () -> org.lwjgl.opengl.GL11.glScissor(x, y, width, height));
     }
 
     public static void glViewport(int x, int y, int width, int height) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glViewport(x, y, width, height));
+        BridgeSupport.enqueueState(StateDedup.TYPE_VIEWPORT, x, y, width, height,
+                () -> org.lwjgl.opengl.GL11.glViewport(x, y, width, height));
     }
 
     public static void glClear(int mask) {
@@ -319,11 +339,15 @@ public final class GL11 {
     }
 
     public static void glClearColor(float red, float green, float blue, float alpha) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glClearColor(red, green, blue, alpha));
+        BridgeSupport.enqueueState(StateDedup.TYPE_CLEAR_COLOR,
+                Float.floatToRawIntBits(red), Float.floatToRawIntBits(green),
+                Float.floatToRawIntBits(blue), Float.floatToRawIntBits(alpha),
+                () -> org.lwjgl.opengl.GL11.glClearColor(red, green, blue, alpha));
     }
 
     public static void glClearStencil(int s) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glClearStencil(s));
+        BridgeSupport.enqueueState(StateDedup.TYPE_CLEAR_STENCIL, s, 0, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glClearStencil(s));
     }
 
     public static void glColorMaterial(int face, int mode) {
@@ -619,7 +643,8 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glBindTexture(int target, int texture) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
+        BridgeSupport.enqueueState(StateDedup.TYPE_BIND_TEXTURE, target, texture, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
     }
 
     /** 资源分配：阻塞通道取回真实纹理 id（预生成 stash 为后续演进点）。 */
@@ -811,7 +836,8 @@ public final class GL11 {
     }
 
     public static void glPixelStorei(int pname, int param) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glPixelStorei(pname, param));
+        BridgeSupport.enqueueState(StateDedup.TYPE_PIXEL_STOREI, pname, param, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glPixelStorei(pname, param));
     }
 
     /** 两个 buffer 参数分别快照，执行后逐一归还。 */

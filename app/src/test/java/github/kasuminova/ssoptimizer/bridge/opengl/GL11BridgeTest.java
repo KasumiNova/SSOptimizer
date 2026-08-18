@@ -257,4 +257,59 @@ class GL11BridgeTest {
         GL11.glDisableClientState(org.lwjgl.opengl.GL11.GL_COLOR_ARRAY);
         assertEquals(2, queue.recorded.size());
     }
+
+    // -- 状态命令去重（StateDedup）--
+
+    @Test
+    void consecutiveIdenticalStateCommandsAreDeduplicated() {
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+        GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+        assertEquals(2, queue.recorded.size(), "连续相同状态命令只入队一次");
+    }
+
+    @Test
+    void stateCommandDedupBreaksOnInterleavedCommand() {
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND); // 不同命令插入 → 打断相邻性
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        assertEquals(3, queue.recorded.size(), "插入命令后相同状态命令必须重新入队");
+    }
+
+    @Test
+    void stateCommandDedupBreaksOnAuxProducerCommit() {
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        // aux 生产者线程并发提交：直接向帧追加命令（绕过主线程录制上下文）
+        queue.frame.add(() -> {
+        });
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        assertEquals(2, queue.recorded.size(), "aux 提交必须打断相邻性，第二条绑定重新入队");
+    }
+
+    @Test
+    void stateCommandDedupBreaksOnVertexStreamFlush() {
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+        GL11.glVertex2f(0f, 0f);
+        GL11.glEnd(); // 顶点流落帧插入命令
+        GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+        assertEquals(3, queue.recorded.size(), "顶点流落帧命令必须打断相邻性");
+    }
+
+    @Test
+    void dedupDisabledByFlagRecordsEveryStateCommand() {
+        boolean saved = BridgeSupport.stateDedupEnabled;
+        try {
+            BridgeSupport.stateDedupEnabled = false;
+            GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+            GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
+            GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+            GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+            assertEquals(4, queue.recorded.size(), "开关关闭时每条状态命令照常入队");
+        } finally {
+            BridgeSupport.stateDedupEnabled = saved;
+        }
+    }
 }

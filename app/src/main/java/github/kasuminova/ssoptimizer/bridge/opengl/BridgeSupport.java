@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPool;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPoolImpl;
 import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
+import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
 import org.lwjgl.LWJGLException;
@@ -27,6 +28,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * 池实现本身线程安全（录制在多生产者线程、归还在渲染线程）。
  */
 final class BridgeSupport {
+    /**
+     * 状态命令去重开关：{@code -Dssoptimizer.render.statededup=false} 关闭，
+     * 默认开启（连续相同的高频状态命令只入队一次，见 {@link StateDedup}）。
+     * 静态可变字段供测试切换；uninstall 不重置（系统属性进程级语义）。
+     */
+    static volatile boolean stateDedupEnabled =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.render.statededup", "true"));
+
     private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
     /** 池化命令对象（录制线程借出、渲染线程归还，见 {@link CommandPool} 的生命周期约束）。 */
     private static volatile CommandPool<DrawCommand> drawCommands = new CommandPool<>(DrawCommand::new);
@@ -114,10 +123,17 @@ final class BridgeSupport {
         refreshMainRecordingContext();
     }
 
-    /** 主录制线程（构造 RenderQueueImpl 的线程，即游戏主线程）在帧边界缓存上下文。 */
+    /**
+     * 主录制线程（构造 RenderQueueImpl 的线程，即游戏主线程）在帧边界缓存
+     * 上下文与当前录制帧（状态命令去重的相邻性判据），并重置去重缓存——
+     * 跨帧不延续去重（GL 状态虽跨帧保持，保守起见帧间状态命令照常入队）。
+     */
     private static void refreshMainRecordingContext() {
         if (RenderQueueImpl.isMainThread()) {
-            mainRecordingContext = RECORDING_CONTEXT.get();
+            RecordingContext ctx = RECORDING_CONTEXT.get();
+            mainRecordingContext = ctx;
+            ctx.dedupFrame = queue().currentFrame();
+            ctx.stateDedup.invalidate();
         }
     }
 
@@ -128,6 +144,38 @@ final class BridgeSupport {
     static void enqueue(GlCommand command) {
         flushVertexStream();
         queue().submit(command);
+    }
+
+    /**
+     * 录制一条可去重的状态命令（glBindTexture/glEnable/glDisable/glBlendFunc
+     * 等，见 {@link StateDedup} 的类型常量）：与上一条已入队的状态命令
+     * 类型参数完全相同、且期间帧命令列表无任何插入时跳过（不产生命令）；
+     * 否则按 {@link #enqueue(GlCommand)} 落帧并记录指纹。任何插入——含
+     * glCallList（显示列表执行绕过录制侧）、aux 生产者线程并发提交、顶点流
+     * 落帧、其他命令——都会经帧提交序号（{@code RenderFrame.commitSeq}）打断
+     * 相邻性，保证去重永不跨越「状态可能已被改变」的边界（旁路审计见
+     * docs/design/render-state-dedup.md）。
+     *
+     * @param type    状态命令类型（{@link StateDedup} 常量）
+     * @param a,b,c,d 参数槽（最多 4 个 int；float 由调用点转位模式）
+     * @param command 真实 GL 调用命令体
+     */
+    static void enqueueState(int type, int a, int b, int c, int d, GlCommand command) {
+        RecordingContext ctx = recordingContext();
+        if (!stateDedupEnabled) {
+            enqueue(command);
+            return;
+        }
+        RenderFrame frame = ctx.dedupFrame;
+        if (frame == null) {
+            frame = queue().currentFrame();
+        }
+        StateDedup dedup = ctx.stateDedup;
+        if (dedup.shouldSkip(frame, type, a, b, c, d)) {
+            return;
+        }
+        enqueue(command);
+        dedup.record(frame, type, a, b, c, d);
     }
 
     /**
