@@ -43,7 +43,6 @@
     "econ.CommodityOnMarketMixin",
     "econ.MarketMixin",
     "ime.LinuxEventImeMixin",
-    "loading.AITweaksCoreLoaderMixin",
     "loading.JaninoJavaSourceClassLoaderMixin",
     "loading.LoadingUtilsMixin",
     "loading.ParallelImagePreloaderMixin",

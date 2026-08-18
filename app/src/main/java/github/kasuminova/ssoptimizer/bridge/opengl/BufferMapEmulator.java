@@ -41,6 +41,17 @@ final class BufferMapEmulator {
     /** 渲染线程上传用直接 staging（仅渲染线程触碰，按需增长）。 */
     private static ByteBuffer staging;
 
+    /** 仿真诊断开关（{@code -Dssoptimizer.debug.buffermap=true}）：统计写映射仿真命中率。 */
+    private static final boolean DEBUG =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.buffermap", "false"));
+    private static final org.apache.log4j.Logger DEBUG_LOGGER =
+            org.apache.log4j.Logger.getLogger(BufferMapEmulator.class);
+    private static final long DEBUG_STATS_INTERVAL_NANOS = 15_000_000_000L;
+    private static long debugEmulatedMaps;
+    private static long debugEmulatedUploads;
+    private static long debugFallbacks;
+    private static long debugLastStatsNanos;
+
     private BufferMapEmulator() {
     }
 
@@ -100,13 +111,16 @@ final class BufferMapEmulator {
                                                       final long length, final int access) {
         // 纯写映射才可仿真：调用方读旧内容（MAP_READ）时镜像语义不成立
         if ((access & GL30.GL_MAP_WRITE_BIT) == 0 || (access & GL30.GL_MAP_READ_BIT) != 0) {
+            debugFallback();
             return null;
         }
         if (bindingQueryPname(target) == 0 || offset < 0 || length <= 0 || length > Integer.MAX_VALUE) {
+            debugFallback();
             return null;
         }
         final Integer vbo = BOUND.get(target);
         if (vbo == null || vbo == 0 || PENDING.containsKey(target)) {
+            debugFallback();
             return null;
         }
         final int len = (int) length;
@@ -116,10 +130,41 @@ final class BufferMapEmulator {
             MIRRORS.put(vbo, mirror);
         }
         PENDING.put(target, new PendingMap(vbo, offset, len));
+        if (DEBUG) {
+            if (debugEmulatedMaps == 0L) {
+                DEBUG_LOGGER.info("[SSOptimizer] 首次仿真写映射：target=0x" + Integer.toHexString(target)
+                        + " vbo=" + vbo + " offset=" + offset + " length=" + len
+                        + " access=0x" + Integer.toHexString(access));
+            }
+            debugEmulatedMaps++;
+            maybeLogStatsLocked();
+        }
         final ByteBuffer view = mirror.duplicate();
         view.position(0);
         view.limit(len);
         return view;
+    }
+
+    private static void debugFallback() {
+        if (DEBUG) {
+            debugFallbacks++;
+            maybeLogStatsLocked();
+        }
+    }
+
+    /** 周期性输出仿真统计（持有类锁期间调用，间隔门控，常态零开销）。 */
+    private static void maybeLogStatsLocked() {
+        final long now = System.nanoTime();
+        if (debugLastStatsNanos != 0L && now - debugLastStatsNanos < DEBUG_STATS_INTERVAL_NANOS) {
+            return;
+        }
+        debugLastStatsNanos = now;
+        if (debugEmulatedMaps + debugFallbacks == 0L) {
+            return;
+        }
+        DEBUG_LOGGER.info("[SSOptimizer] 写映射仿真统计：emulated=" + debugEmulatedMaps
+                + " uploads=" + debugEmulatedUploads
+                + " fallback=" + debugFallbacks);
     }
 
     /**
@@ -131,6 +176,9 @@ final class BufferMapEmulator {
         final PendingMap pending = PENDING.remove(target);
         if (pending == null) {
             return null;
+        }
+        if (DEBUG) {
+            debugEmulatedUploads++;
         }
         final ByteBuffer mirror = MIRRORS.get(pending.vbo);
         if (mirror == null) {
@@ -204,5 +252,9 @@ final class BufferMapEmulator {
         MIRRORS.clear();
         PENDING.clear();
         staging = null;
+        debugEmulatedMaps = 0L;
+        debugEmulatedUploads = 0L;
+        debugFallbacks = 0L;
+        debugLastStatsNanos = 0L;
     }
 }
