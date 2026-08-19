@@ -21,6 +21,11 @@ import org.objectweb.asm.Opcodes;
  * 目标会被永久丢弃（运行时实测：{@code @Mixin target ... was not found} WARN）。
  * ASM 处理器在类实际经 LaunchClassLoader 加载时才介入，不受解析时序影响。<br>
  * <p>
+ * <b>前置依赖</b>：CoreLoader 默认由 AITweaks 自带的 BootstrapLoader（父加载器为系统
+ * 类加载器）定义，并不经过 LaunchClassLoader——本处理器只有在
+ * {@link AITweaksBootstrapLoaderProcessor} 把 BootstrapLoader 的父加载器改为
+ * LaunchClassLoader 之后才会被触发，二者必须同时注册。<br>
+ * <p>
  * 注入效果：向 CoreLoader 追加合成静态方法 {@code ssoptimizer$defineClassRedirected}，
  * 先把字节码交给 {@code RenderThreadRedirector.redirect}（非分离模式零开销原样返回），
  * 再回调原 defineClass；loadClass 内原 INVOKEVIRTUAL 调用点改写为该合成方法的 INVOKESTATIC。
