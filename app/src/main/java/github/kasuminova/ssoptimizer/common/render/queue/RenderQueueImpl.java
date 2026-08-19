@@ -10,6 +10,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
@@ -53,11 +54,47 @@ public final class RenderQueueImpl implements RenderQueue {
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
     /**
-     * 主录制线程：构造本队列的线程（游戏中即游戏主线程，mod 加载期构造）。
-     * bridge 的帧录制上下文帧边界缓存（{@link BridgeSupport#recordingContext()}）
-     * 依赖此判定——aux-context 生产者线程不得命中主线程缓存。
+     * aux 命令游程的状态围栏（见 {@link AuxRunFence}）：默认 {@link AuxRunFence#NOOP}，
+     * 生产装配（SSOptimizerCorePlugin）在安装队列时注入真实实现。渲染线程
+     * 执行循环据此隔离 aux 线程命令对游戏侧 GL 状态的污染。
      */
-    private static final Thread MAIN_THREAD = Thread.currentThread();
+    private static volatile AuxRunFence auxRunFence = AuxRunFence.NOOP;
+
+    /**
+     * 渲染线程 display list 编译窗口标记（仅渲染线程读写）：bridge 的
+     * glNewList/glEndList 命令体经 {@link #onListCompileBegin()}/
+     * {@link #onListCompileEnd()} 翻转。静态而非实例字段：帧悬挂续跑与后续帧
+     * 共用同一 GL 上下文的编译状态。
+     */
+    private static boolean listRecording;
+    /**
+     * 编译窗口内到达的 aux 命令延迟队列（仅渲染线程读写）：窗口关闭或帧/续跑
+     * 末尾由 {@link #drainDeferredAuxCommands()} 补执行，悬挂 requeue 时留存
+     * 给续跑任务接续（命令不丢、相对序不变）。
+     */
+    private static final List<GlCommand> deferredAuxCommands = new ArrayList<>();
+
+    /** 当前执行回合是否处于 aux 游程内（仅渲染线程读写；回合结束在 finally 中复位）。 */
+    private boolean inAuxRun;
+
+    /** 诊断计数（跨实例累计）：aux 生产者提交的命令总数（录制侧活性证据，bridge 侧递增）。 */
+    public static final AtomicLong auxCommandsSubmitted = new AtomicLong();
+    /** 诊断计数：aux 游程进入次数（围栏触发证据）。 */
+    private static final AtomicLong auxRunCount = new AtomicLong();
+    /** 诊断计数：围栏内执行的 aux 命令总数。 */
+    private static final AtomicLong auxCommandCount = new AtomicLong();
+    /** 诊断计数：display list 编译窗口内被延迟的 aux 命令总数。 */
+    private static final AtomicLong auxDeferredTotal = new AtomicLong();
+
+    /**
+     * 主录制线程：生产环境为类初始化线程（主线程装配队列时触发，即游戏主线程）。
+     * bridge 的帧录制上下文帧边界缓存（{@link BridgeSupport#recordingContext()}）
+     * 与 aux 生产者判定（{@code BridgeSupport#isAuxProducer}）依赖此判定——
+     * aux-context 生产者线程不得命中主线程缓存、其命令必须包装来源标记。
+     * 测试 JVM 内类初始化时机取决于用例执行序，须用
+     * {@link #captureMainThreadForTesting()} 在断言主/aux 行为前显式锚定。
+     */
+    private static volatile Thread mainThread = Thread.currentThread();
 
     private final FramePool framePool;
     private final StallDetector stallDetector;
@@ -252,9 +289,49 @@ public final class RenderQueueImpl implements RenderQueue {
         return Thread.currentThread() == renderThread;
     }
 
-    /** @return 当前线程是否为主录制线程（构造本队列的线程）。 */
+    /** @return 当前线程是否为主录制线程。 */
     public static boolean isMainThread() {
-        return Thread.currentThread() == MAIN_THREAD;
+        return Thread.currentThread() == mainThread;
+    }
+
+    /**
+     * 渲染线程执行侧的 display list 编译窗口开始（bridge 的 glNewList 命令体在
+     * 真实 glNewList 成功后调用）。窗口内到达的 aux 命令（{@link AuxOriginCommand}）
+     * 必须延迟到窗口关闭后执行——否则 aux 命令会被驱动编译进列表本体，每次
+     * glCallList 永久重放（glyph/字符串显示列表腐坏的根因，症状为随机 onset
+     * 且持续整局）。
+     */
+    public static void onListCompileBegin() {
+        listRecording = true;
+    }
+
+    /** {@link #onListCompileBegin()} 的配对结束（bridge 的 glEndList 命令体调用）。 */
+    public static void onListCompileEnd() {
+        listRecording = false;
+    }
+
+    /** 测试用：复位编译窗口标记与延迟队列，避免用例间静态状态串扰。 */
+    static void resetListCompileStateForTesting() {
+        listRecording = false;
+        deferredAuxCommands.clear();
+    }
+
+    /**
+     * 测试用：把主录制线程判定锚定到调用线程。静态初始化捕获的线程在测试 JVM
+     * 内不确定（取决于哪个用例先触发类初始化），断言主/aux 录制行为的用例
+     * 必须在 setUp 调用本方法消除执行序依赖。
+     */
+    public static void captureMainThreadForTesting() {
+        mainThread = Thread.currentThread();
+    }
+
+    /**
+     * 注入 aux 游程状态围栏（生产装配在安装队列时调用一次；测试注入计数假实现
+     * 验证游程状态机的 enter/exit 配对，用毕应重置为 {@link AuxRunFence#NOOP}
+     * 避免跨用例静态状态串扰）。
+     */
+    public static void installAuxRunFence(AuxRunFence fence) {
+        auxRunFence = fence;
     }
 
     /**
@@ -368,16 +445,91 @@ public final class RenderQueueImpl implements RenderQueue {
      * 退避 {@link #SUSPEND_REQUEUE_BACKOFF_NANOS} 后把悬挂点起的剩余命令打包成
      * {@link ContinuationTask} requeue 到提交队列队尾并返回。续跑任务排在队尾，
      * 不阻塞后续帧任务与同步任务的执行。
+     * <p>
+     * aux 游程状态机：连续的 {@link AuxOriginCommand} 构成一个游程，进入首个
+     * aux 命令前 {@link AuxRunFence#enter()} 快照游戏侧 GL 状态，遇非 aux 命令
+     * 或列表结束（含悬挂 requeue、异常中断，finally 兜底）时 exit 恢复——aux
+     * 线程命令的状态改写被隔离在游程内部。悬挂边界会先 exit 再 requeue，续跑
+     * 遇后续 aux 命令重新 enter，保证游程不跨越其他任务（getter 读到的一定是
+     * 恢复后的游戏状态）。
+     * <p>
+     * display list 编译窗口：{@link #listRecording} 期间到达的 aux 命令不执行，
+     * 暂存 {@link #deferredAuxCommands}（驱动会把窗口内执行的命令编译进列表
+     * 本体，aux 命令混入即列表永久腐坏）；窗口关闭后（glEndList 命令执行完）
+     * 就地补执行，悬挂/异常中断时留存给续跑或后续 drain 点。
      */
     private void runOrRequeue(List<GlCommand> commands) {
-        for (int i = 0; i < commands.size(); i++) {
-            try {
-                commands.get(i).execute();
-            } catch (SuspendFrameException suspend) {
-                LockSupport.parkNanos(SUSPEND_REQUEUE_BACKOFF_NANOS);
-                offerOrThrow(new ContinuationTask(
-                        new ArrayList<>(commands.subList(i, commands.size()))));
-                return;
+        try {
+            for (int i = 0; i < commands.size(); i++) {
+                GlCommand command = commands.get(i);
+                if (listRecording && command instanceof AuxOriginCommand) {
+                    auxDeferredTotal.incrementAndGet();
+                    deferredAuxCommands.add(command);
+                    continue;
+                }
+                try {
+                    executeWithFence(command);
+                } catch (SuspendFrameException suspend) {
+                    LockSupport.parkNanos(SUSPEND_REQUEUE_BACKOFF_NANOS);
+                    offerOrThrow(new ContinuationTask(
+                            new ArrayList<>(commands.subList(i, commands.size()))));
+                    return;
+                }
+                if (!listRecording && !deferredAuxCommands.isEmpty()) {
+                    drainDeferredAuxCommands();
+                }
+            }
+        } finally {
+            if (inAuxRun) {
+                auxRunFence.exit();
+                inAuxRun = false;
+            }
+        }
+    }
+
+    /**
+     * 经 aux 游程围栏执行单条命令：aux 命令进入/离开游程时翻转围栏
+     * （{@link AuxRunFence#enter()}/{@link #exit()}），同游程内连续 aux 命令
+     * 共享一次快照/恢复。
+     */
+    private void executeWithFence(GlCommand command) {
+        boolean aux = command instanceof AuxOriginCommand;
+        if (aux != inAuxRun) {
+            if (aux) {
+                auxRunFence.enter();
+                long runs = auxRunCount.incrementAndGet();
+                if (runs % 600 == 0) {
+                    // 低频活性遥测：腐坏排查用（aux 无活性则污染理论不成立）
+                    LOGGER.info("[SSOptimizer] aux 围栏统计: 游程=" + runs
+                            + " 围栏内aux命令=" + auxCommandCount.get()
+                            + " 编译窗口延迟=" + auxDeferredTotal.get()
+                            + " 录制侧aux提交=" + auxCommandsSubmitted.get());
+                }
+            } else {
+                auxRunFence.exit();
+            }
+            inAuxRun = aux;
+        }
+        if (aux) {
+            auxCommandCount.incrementAndGet();
+        }
+        command.execute();
+    }
+
+    /**
+     * 补执行编译窗口内延迟的 aux 命令（经 {@link #executeWithFence} 正常进围栏）。
+     * 逐条移除：中途抛 {@link SuspendFrameException}（aux 命令携带的 fence 等待）
+     * 时余下命令留存，由续跑任务的 drain 点接续，不丢命令。
+     */
+    private void drainDeferredAuxCommands() {
+        int executed = 0;
+        try {
+            for (; executed < deferredAuxCommands.size(); executed++) {
+                executeWithFence(deferredAuxCommands.get(executed));
+            }
+        } finally {
+            if (executed > 0) {
+                deferredAuxCommands.subList(0, executed).clear();
             }
         }
     }

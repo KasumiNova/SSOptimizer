@@ -48,6 +48,9 @@ public final class ARBFramebufferObject {
     }
 
     public static void glDeleteFramebuffers(int framebuffer) {
+        if (BridgeSupport.dropAuxMutation("glDeleteFramebuffers")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject.glDeleteFramebuffers(framebuffer));
     }
 
@@ -90,6 +93,9 @@ public final class ARBFramebufferObject {
     }
 
     public static void glDeleteRenderbuffers(int renderbuffer) {
+        if (BridgeSupport.dropAuxMutation("glDeleteRenderbuffers")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject.glDeleteRenderbuffers(renderbuffer));
     }
 

@@ -129,6 +129,9 @@ public final class GL20 {
     }
 
     public static void glDeleteShader(int shader) {
+        if (BridgeSupport.dropAuxMutation("glDeleteShader")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDeleteShader(shader));
     }
 
@@ -138,6 +141,9 @@ public final class GL20 {
     }
 
     public static void glDeleteProgram(int program) {
+        if (BridgeSupport.dropAuxMutation("glDeleteProgram")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDeleteProgram(program));
     }
 

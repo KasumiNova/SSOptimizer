@@ -14,6 +14,7 @@ import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcess
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlStateFence;
 import github.kasuminova.ssoptimizer.common.logging.VanillaLogNoiseConfigurator;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
@@ -80,6 +81,9 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
             return;
         }
         RenderQueueImpl queue = new RenderQueueImpl();
+        // aux 游程状态围栏：隔离模组自有线程（BoxUtil 后台线程等）经折叠模型
+        // 压进渲染线程的 GL 命令对游戏侧状态的污染（文本腐坏根因修复）
+        RenderQueueImpl.installAuxRunFence(new GlStateFence());
         // BridgeSupport 安装是全局共享的，任一 bridge 入口类的 install 等价
         GL11.install(queue);
         LOGGER.info("[SSOptimizer] 渲染线程分离模式已启用：RenderQueue 已安装，"

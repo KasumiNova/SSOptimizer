@@ -140,7 +140,7 @@ ParallelLayerRenderer 段任务异常改为段内捕获、屏障后统一 fail-f
 回归：最小模组集并行 3 连跑截图目检全部干净（108-113 FPS）；字体生成日志确认全部
 变体在标题阶段由主线程生成完毕，战斗期无惰性生成。
 
-### 全模组串行路径文本腐坏（根因实锤：折叠上下文污染，修复路径=BoxUtil 方案 A）
+### 全模组串行路径文本腐坏（未解决，随并行录制一并归档至 feat/render-multithread）
 
 现象：全模组 120s 回归基准（BoxUtil 在场 → 编排器自动回退串行）FPS 达标但截图
 满屏绿色/黄色/黑色方块；最小模组集同构建完全干净。腐坏开始时机跨轮随机
@@ -154,15 +154,25 @@ ParallelLayerRenderer 段任务异常改为段内捕获、屏障后统一 fail-f
 症状重读：方块颜色=文本色、几何位置正确——不是 glyph 数据腐坏，而是文本 quad
 在「GL_TEXTURE_2D 被关/纹理被换/FBO 被切」的状态下画出的无纹理纯色 quad。
 
-根因实锤：SharedDrawable 桥门面的**折叠模型**（bridge/opengl/SharedDrawable.java
-javadoc 已声明的限制）——BoxUtil 的渲染/逻辑/逻辑辅助三个后台线程与 aitweaks
-等模组的 GL 调用全部被 ASM 重定向压平进唯一渲染线程，与游戏渲染命令流**交错
-执行、共享同一份 GL 状态**；aux 命令（glDisable(GL_TEXTURE_2D)、FBO 切换、视口
-切换等）穿插在文本渲染命令之间，状态互相污染。这统一解释了文本腐坏、极度偶发
-画面撕裂、以及「真实 glGenBuffers 批发出无效 id」的上下文疑似异常。
+折叠上下文假设（曾实锤为最强方向）与三轮机制修复（均未命中，已全部实证排除）：
 
-修复路径：boxutil-parallel-integration.md 方案 A（RenderQueue 并行窗口 + aux
-阻塞调用延迟 flush + BufferMapEmulator 线程隔离），是紧随阶段 2 的独立增量。
+1. **aux 绘制时状态污染**：AuxOriginCommand 标记 + GlStateFence 游程围栏（快照
+   glPushAttrib(ALL)/glPushClientAttrib/PROJECTION/MODELVIEW/TEXTURE 矩阵/
+   matrixMode/CurrentProgram/FBO/ActiveTexture/VBO 绑定，exit 全量恢复）。
+   遥测轮实证围栏高频触发（约 600 游程/秒、12 万+ 围栏内命令/120s）但腐坏不变。
+2. **display list 编译窗口污染**：glNewList/glEndList 命令体内翻转编译窗口标记，
+   窗口内到达的 aux 命令延迟至窗口关闭补执行。全程仅 3 次延迟事件，腐坏不变。
+3. **aux 对象内容污染**：auxmutationdrop 实验（录制侧丢弃 aux 的全部快照命令与
+   单值 delete，开关 -Dssoptimizer.render.auxmutationdrop）——120s 全程仅 1 次
+   丢弃（自身 TextureUploadHelper 的 glTexImage2D，加载期），腐坏不变。
+   aux 线程战斗期实质上不做对象写入，该通道排除。
+
+下一轮方向（归档时未执行）：腐坏与全模组集强相关（最小集干净），而 aux 通道
+已全部排除——转向主线程模组交互，重点怀疑字体/汉化类模组直接 hook 文本渲染
+或替换字体图集资源，手段为 enabled_mods.json 二分定位肇事模组。
+
+修复路径（若重启并行录制）：boxutil-parallel-integration.md 方案 A（RenderQueue
+并行窗口 + aux 阻塞调用延迟 flush + BufferMapEmulator 线程隔离）。
 
 排查过程中顺带修复的独立成立真 bug（不因根因转移而回滚）：
 

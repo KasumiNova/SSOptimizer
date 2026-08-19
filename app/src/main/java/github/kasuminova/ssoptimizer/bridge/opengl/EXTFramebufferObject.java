@@ -55,6 +55,9 @@ public final class EXTFramebufferObject {
     }
 
     public static void glDeleteFramebuffersEXT(int framebuffer) {
+        if (BridgeSupport.dropAuxMutation("glDeleteFramebuffersEXT")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.EXTFramebufferObject.glDeleteFramebuffersEXT(framebuffer));
     }
 
@@ -97,6 +100,9 @@ public final class EXTFramebufferObject {
     }
 
     public static void glDeleteRenderbuffersEXT(int renderbuffer) {
+        if (BridgeSupport.dropAuxMutation("glDeleteRenderbuffersEXT")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.EXTFramebufferObject.glDeleteRenderbuffersEXT(renderbuffer));
     }
 

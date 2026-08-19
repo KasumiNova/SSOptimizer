@@ -133,6 +133,9 @@ public final class GL15 {
     }
 
     public static void glDeleteBuffers(int buffer) {
+        if (BridgeSupport.dropAuxMutation("glDeleteBuffers")) {
+            return;
+        }
         BufferMapEmulator.onDeleteBuffer(buffer);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glDeleteBuffers(buffer));
     }

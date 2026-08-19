@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
+import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
 
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
@@ -741,6 +742,9 @@ public final class GL11 {
     }
 
     public static void glDeleteTextures(int texture) {
+        if (BridgeSupport.dropAuxMutation("glDeleteTextures")) {
+            return;
+        }
         BridgeSupport.simulatedState().onDeleteTexture(texture);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDeleteTextures(texture));
     }
@@ -954,14 +958,23 @@ public final class GL11 {
 
     /**
      * 本阶段录制语义：渲染线程执行到本命令时才编译真实 display list——
-     * glNewList 到 glEndList 之间的命令在队列中天然有序，编译结果与单线程一致。
+     * glNewList 到 glEndList 之间同线程命令在队列中有序，编译结果与单线程一致。
+     * aux 线程命令（{@link AuxOriginCommand}）在编译窗口内被渲染线程延迟到
+     * 窗口关闭后执行（{@link RenderQueueImpl#onListCompileBegin()}），避免被
+     * 驱动编译进列表本体永久重放。
      */
     public static void glNewList(int list, int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glNewList(list, mode));
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL11.glNewList(list, mode);
+            RenderQueueImpl.onListCompileBegin();
+        });
     }
 
     public static void glEndList() {
-        BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glEndList);
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL11.glEndList();
+            RenderQueueImpl.onListCompileEnd();
+        });
     }
 
     public static void glCallList(int list) {
@@ -969,6 +982,9 @@ public final class GL11 {
     }
 
     public static void glDeleteLists(int list, int range) {
+        if (BridgeSupport.dropAuxMutation("glDeleteLists")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDeleteLists(list, range));
     }
 

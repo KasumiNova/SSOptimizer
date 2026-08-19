@@ -131,6 +131,9 @@ public final class GL30 {
     }
 
     public static void glDeleteVertexArrays(int array) {
+        if (BridgeSupport.dropAuxMutation("glDeleteVertexArrays")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glDeleteVertexArrays(array));
     }
 

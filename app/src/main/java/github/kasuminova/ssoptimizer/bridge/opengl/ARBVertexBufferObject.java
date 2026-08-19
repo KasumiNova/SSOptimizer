@@ -112,6 +112,9 @@ public final class ARBVertexBufferObject {
     }
 
     public static void glDeleteBuffersARB(int buffer) {
+        if (BridgeSupport.dropAuxMutation("glDeleteBuffersARB")) {
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBVertexBufferObject.glDeleteBuffersARB(buffer));
     }
 

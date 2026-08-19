@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import github.kasuminova.ssoptimizer.common.render.queue.AuxOriginCommand;
+import github.kasuminova.ssoptimizer.common.render.queue.AuxRunFence;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPool;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPoolImpl;
 import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
@@ -7,6 +9,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderSegment;
+import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
 
 import java.nio.ByteBuffer;
@@ -15,7 +18,9 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
@@ -32,6 +37,8 @@ import java.util.function.IntSupplier;
  * 池实现本身线程安全（录制在多生产者线程、归还在渲染线程）。
  */
 final class BridgeSupport {
+    private static final Logger LOGGER = Logger.getLogger(BridgeSupport.class);
+
     /**
      * 状态命令去重开关：{@code -Dssoptimizer.render.statededup=false} 关闭，
      * 默认开启（连续相同的高频状态命令只入队一次，见 {@link StateDedup}）。
@@ -39,6 +46,36 @@ final class BridgeSupport {
      */
     static volatile boolean stateDedupEnabled =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.render.statededup", "true"));
+
+    /**
+     * aux 命令来源标记开关：{@code -Dssoptimizer.render.auxfence=false} 时 aux
+     * 线程命令不包装 {@link AuxOriginCommand}（执行侧围栏/编译窗口延迟随之失效），
+     * 用于腐坏问题的 A/B 对照。诊断计数
+     * （{@link RenderQueueImpl#auxCommandsSubmitted}）不受开关影响——标记关闭时
+     * 仍统计 aux 录制量（区分「无 aux 活性」与「围栏未生效」）。
+     */
+    static volatile boolean auxFenceEnabled =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.render.auxfence", "true"));
+
+    /**
+     * aux 对象写入丢弃实验开关：{@code -Dssoptimizer.render.auxmutationdrop=true}
+     * 时，aux 生产者线程（非主录制线程且无并行段绑定）提交的<b>对象内容写入类</b>
+     * 命令（glTexImage/glTexSubImage/glBufferData(SubData) 各形态与 buffer 形态
+     * delete 等全部快照命令，以及单值形态 delete）在录制侧直接丢弃（快照归还池、
+     * 不产生命令），并对每个肇事调用点输出一次性 WARN。
+     * <p>
+     * 诊断目的：验证「aux 线程的对象写入因折叠上下文（无独立共享上下文）落在
+     * 游戏当前绑定的纹理/VBO 上，覆写其内容」这一文本腐坏假设——围栏只隔离
+     * 绘制时状态污染，管不了对象内容。默认关闭，关闭时零额外开销。
+     */
+    static volatile boolean auxMutationDrop =
+            Boolean.getBoolean("ssoptimizer.render.auxmutationdrop");
+
+    /** aux 写入丢弃实验的一次性 WARN 去重集（调用点字符串）。 */
+    private static final Set<String> AUX_DROP_LOGGED = ConcurrentHashMap.newKeySet();
+
+    /** 丢弃调用点定位用的 StackWalker（无类引用保留需求，默认配置即可）。 */
+    private static final StackWalker DROP_SITE_WALKER = StackWalker.getInstance();
 
     private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
     /** 池化命令对象（录制线程借出、渲染线程归还，见 {@link CommandPool} 的生命周期约束）。 */
@@ -245,6 +282,11 @@ final class BridgeSupport {
      * 录制一条命令到当前帧。若当前线程的顶点流有未落帧的 immediate 操作，
      * 先把它打包落帧——流段命令与本命令在帧列表中的顺序即录制顺序。
      * 并行段绑定期间（编排器指派的 worker）直接写入绑定段，绕过帧临界区。
+     * <p>
+     * aux-context 生产者线程（非主录制线程且无并行段绑定：BoxUtil 后台线程等
+     * 模组自有线程）的命令包装为 {@link AuxOriginCommand}——渲染线程执行循环
+     * 据此把连续 aux 命令围进状态围栏（{@link AuxRunFence}），隔离其对游戏侧
+     * GL 状态的污染（文本腐坏根因，见 docs/design/render-parallel-recording.md）。
      */
     static void enqueue(GlCommand command) {
         RecordingContext ctx = recordingContext();
@@ -252,9 +294,20 @@ final class BridgeSupport {
         RenderSegment bound = ctx.boundSegment;
         if (bound != null) {
             bound.add(command);
+        } else if (isAuxProducer(ctx)) {
+            RenderQueueImpl.auxCommandsSubmitted.incrementAndGet();
+            queue().submit(auxFenceEnabled ? new AuxOriginCommand(command) : command);
         } else {
             queue().submit(command);
         }
+    }
+
+    /**
+     * 当前线程是否为 aux-context 生产者：非主录制线程、且无编排器指派的并行段
+     * 绑定（worker 段任务写入绑定段，录制边界由编排器屏障保证，不走围栏）。
+     */
+    private static boolean isAuxProducer(RecordingContext ctx) {
+        return ctx.boundSegment == null && !RenderQueueImpl.isMainThread();
     }
 
     /**
@@ -278,11 +331,20 @@ final class BridgeSupport {
             enqueue(command);
             return;
         }
+        if (isAuxProducer(ctx)) {
+            // aux 生产者：去重的相邻性判据（段提交序号）基于本线程视角的段，
+            // aux 命令实际落入的串行段被主线程并发录制，判据失真；且 aux 命令
+            // 由执行侧围栏隔离，去重省下的命令开销相对围栏 enter/exit 无意义。
+            // 直接落帧，包装在 enqueue 内完成。
+            enqueue(command);
+            return;
+        }
         RenderSegment segment = ctx.boundSegment;
         if (segment == null) {
             segment = ctx.dedupSegment;
             if (segment == null) {
-                // aux 生产者线程（无帧边界刷新）：现取当前帧的串行段
+                // 主录制线程首次 swap 前的启动窗口（帧边界缓存尚未建立）：
+                // 现取当前帧的串行段
                 segment = queue().currentFrame().serialSegment();
             }
         }
@@ -340,6 +402,9 @@ final class BridgeSupport {
         RenderSegment bound = ctx.boundSegment;
         if (bound != null) {
             bound.add(batch);
+        } else if (isAuxProducer(ctx)) {
+            RenderQueueImpl.auxCommandsSubmitted.incrementAndGet();
+            queue().submit(auxFenceEnabled ? new AuxOriginCommand(batch) : batch);
         } else {
             queue().submit(batch);
         }
@@ -870,12 +935,66 @@ final class BridgeSupport {
     }
 
     private static void enqueueSnapshotCommand(ByteBuffer snapshot, SnapshotCommand command) {
+        if (auxMutationDrop && isAuxProducer(recordingContext())) {
+            // aux 对象写入丢弃实验（见 auxMutationDrop 字段注释）：快照归还池、
+            // 不产生命令。快照形态覆盖了 aux 线程全部对象内容写入路径
+            // （glTexImage*/glTexSubImage*/glBufferData(SubData)/buffer 形态 delete）。
+            pool.release(snapshot);
+            logAuxMutationDrop("snapshot-command");
+            return;
+        }
+        // 录制线程名（getName 返回构造期 String，无分配）：执行期契约失败时的定位信息
+        String recordThread = Thread.currentThread().getName();
         enqueue(() -> {
             try {
                 command.execute(snapshot);
+            } catch (IllegalArgumentException contractViolation) {
+                // LWJGL BufferChecks 的契约校验（buffer 尺寸/类型不匹配）在原生调用
+                // 之前抛出，GL 状态未被改写。原版中该异常抛在调用线程（模组自有线程
+                // 通常自带 catch-all 继续运行）；bridge 把抛点移到了渲染线程，若按
+                // 帧级 fail-fast 处理会把模组局部 bug 放大为全局崩溃。降级为命令级
+                // 跳过并输出 ERROR（含录制线程名供定位肇事方）。
+                LOGGER.error("[SSOptimizer] 快照命令因调用方 buffer 契约违例被跳过（录制线程 "
+                        + recordThread + "）：" + contractViolation.getMessage(), contractViolation);
             } finally {
                 pool.release(snapshot);
             }
         });
+    }
+
+    /**
+     * aux 对象写入丢弃守卫（单值形态命令用：glDeleteTextures(int)/
+     * glDeleteBuffers(int)/glDeleteLists/glDeleteProgram/glDeleteShader/
+     * glDeleteFramebuffers(int)/glDeleteRenderbuffers(int)/glDeleteVertexArrays
+     * 等方法体开头调用）：返回 true 表示本次调用应直接丢弃（无快照可归还）。
+     * 快照形态在 {@link #enqueueSnapshotCommand} 入口统一处理。见
+     * {@link #auxMutationDrop} 字段注释。开关关闭时仅一次 volatile 读。
+     */
+    static boolean dropAuxMutation(String callSite) {
+        if (!auxMutationDrop) {
+            return false;
+        }
+        if (!isAuxProducer(recordingContext())) {
+            return false;
+        }
+        logAuxMutationDrop(callSite);
+        return true;
+    }
+
+    /** 对每个肇事调用点输出一次性 WARN（含录制线程名），供实验判读定位。 */
+    private static void logAuxMutationDrop(String callSite) {
+        String site = callSite + " @ " + DROP_SITE_WALKER.walk(frames -> frames
+                .filter(f -> {
+                    String cls = f.getClassName();
+                    return !cls.startsWith("github.kasuminova.ssoptimizer.common.render.queue.")
+                            && !cls.startsWith("github.kasuminova.ssoptimizer.bridge.opengl.");
+                })
+                .findFirst()
+                .map(f -> f.getClassName() + "." + f.getMethodName() + ":" + f.getLineNumber())
+                .orElse("unknown"));
+        if (AUX_DROP_LOGGED.add(site)) {
+            LOGGER.warn("[SSOptimizer] aux 对象写入已丢弃（auxmutationdrop 实验，线程 "
+                    + Thread.currentThread().getName() + "）：" + site);
+        }
     }
 }
