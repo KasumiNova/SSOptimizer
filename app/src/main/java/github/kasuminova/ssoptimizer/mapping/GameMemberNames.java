@@ -112,7 +112,8 @@ public final class GameMemberNames {
     }
 
     public static final class BitmapFontManager {
-        public static final String GET_FONT = "getFont";
+        public static final String GET_FONT  = "getFont";
+        public static final String LOAD_FONT = "loadFont";
 
         private BitmapFontManager() {
         }

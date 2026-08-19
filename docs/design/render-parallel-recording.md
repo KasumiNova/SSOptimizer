@@ -108,6 +108,76 @@
 
 ## 已知问题（跟踪）
 
+### 并行段内 glGenTextures 崩溃（已修复，88bf4b1）
+
+最小模组集首轮复测时标题界面 Planet 惰性纹理上传（LazyTextureManager.ensureTextureReady
+→ uploadConverted → glGenTextures）在并行录制段内走阻塞通道被 fail-fast 拒绝；且段任务
+异常被 AI 池「串行重跑」机制捕获重跑（渲染录制非幂等，重跑必再失败）导致战斗帧崩溃。
+修复：BridgeSupport 纹理 id 预生成 stash（batch 512/低水位 256，镜像 VBO/list stash，
+glGenTextures 两个重载零阻塞出队，Display.update 帧尾三 stash 统一补货，上下文重建清空）；
+ParallelLayerRenderer 段任务异常改为段内捕获、屏障后统一 fail-fast 抛出（绕开池重跑语义）。
+
+### 并行录制文本腐坏（已修复，5d417b1）
+
+现象：并行录制开启时战斗内全部文本腐坏——短文本变纯色方块（颜色=文本色，几何位置正确），
+长文本（display list 路径）呈空心/垂直拉伸；Sprite/图标正常。跨 run 随机、单 run 内持续。
+排查走过的弯路（存档备忘）：dedup 开关 A/B 曾显示「关 dedup 即正常」，仪器化后证实整局
+运行零次 skip（`-Dssoptimizer.render.statededup.debug` 时无输出），A/B 差异是 JIT 时序
+巧合——flaky 竞态下小样本 A/B 不可信，必须先仪器化再下结论。
+
+根因（三处，均为并行放大的共享可变状态）：
+
+1. **主根因**：运行时缩放字体在战斗渲染期惰性生成，RuntimeScaledFontCache.loadOrRegister
+   在 GENERATION_LOCK 外调游戏 BitmapFontManager.loadFont——其 .fnt 解析器用进程级
+   静态分词器（lineTokens/tokenIndex），fonts 表为非同步 HashMap；worker 并发加载 →
+   字形度量/UV 解析串台并永久缓存进 fonts 表（单 run 内不可自愈）。修复：loadOrRegister
+   全程持 GENERATION_LOCK（双检，单加载、安全发布）。
+2. **次根因**：BitmapFont.getKerning 的共享可变 kerningLookupPair 查询键被多 worker
+   并发写入（字体单例跨线程共享）。修复：BitmapFontMixin @Overwrite 改线程局部 Pair。
+3. **架构缺陷**：unbindSegment 前不 flush 顶点流，worker 跨任务复用会把残留流段泄进
+   下一个段的段首。修复：解绑先落流进当前段。
+
+回归：最小模组集并行 3 连跑截图目检全部干净（108-113 FPS）；字体生成日志确认全部
+变体在标题阶段由主线程生成完毕，战斗期无惰性生成。
+
+### 全模组串行路径文本腐坏（根因实锤：折叠上下文污染，修复路径=BoxUtil 方案 A）
+
+现象：全模组 120s 回归基准（BoxUtil 在场 → 编排器自动回退串行）FPS 达标但截图
+满屏绿色/黄色/黑色方块；最小模组集同构建完全干净。腐坏开始时机跨轮随机
+（一轮 frame-002 干净 frame-003 腐坏、一轮 frame-002 已腐坏），一旦发生持续整局。
+
+排查排除项（均为实证）：运行时字体缩放（禁用仍腐坏）、并行录制（串行回退仍腐坏）、
+纹理 idle sweep（阈值拉到一天仍腐坏）、BitmapFontManager 加载竞态（加 ACC_SYNCHRONIZED
+后仍腐坏）、段并发写竞态（RenderSegment.add 加锁后仍腐坏）、字体生成事件
+（一轮腐坏紧跟 orbitron20bold_s1500 生成，另一轮无任何字体事件——假相关）。
+
+症状重读：方块颜色=文本色、几何位置正确——不是 glyph 数据腐坏，而是文本 quad
+在「GL_TEXTURE_2D 被关/纹理被换/FBO 被切」的状态下画出的无纹理纯色 quad。
+
+根因实锤：SharedDrawable 桥门面的**折叠模型**（bridge/opengl/SharedDrawable.java
+javadoc 已声明的限制）——BoxUtil 的渲染/逻辑/逻辑辅助三个后台线程与 aitweaks
+等模组的 GL 调用全部被 ASM 重定向压平进唯一渲染线程，与游戏渲染命令流**交错
+执行、共享同一份 GL 状态**；aux 命令（glDisable(GL_TEXTURE_2D)、FBO 切换、视口
+切换等）穿插在文本渲染命令之间，状态互相污染。这统一解释了文本腐坏、极度偶发
+画面撕裂、以及「真实 glGenBuffers 批发出无效 id」的上下文疑似异常。
+
+修复路径：boxutil-parallel-integration.md 方案 A（RenderQueue 并行窗口 + aux
+阻塞调用延迟 flush + BufferMapEmulator 线程隔离），是紧随阶段 2 的独立增量。
+
+排查过程中顺带修复的独立成立真 bug（不因根因转移而回滚）：
+
+1. `RenderSegment.add` 多写者竞态：aux 线程经 enqueueState 的无绑定段 fallback
+   与主线程并发写同一串行段（ArrayList 并发腐坏 + volatile commitSeq++ 丢失
+   递增，dedup 相邻性判据失真）。修复：段级监视器锁，锁内先 bump seq 再入列
+   （保证无锁读端保守方向），并发回归用例 8 线程×2000 次。
+2. 原生 `BitmapFontManager.getFont/loadFont` 无锁：静态分词器与非同步 fonts 表
+   对游戏/模组/SSOptimizer 反射路径全敞开。修复：ASM 处理器
+   `BitmapFontManagerSyncProcessor` 追加 ACC_SYNCHRONIZED（Mixin 无法不加方法体
+   覆写地追加 synchronized 修饰，javadoc 已注明）。
+3. 发现但未立项：禁用 lazytextureupload 的 eager 回退路径加载
+   graphics/illustrations/luddic_church.jpg 时 FastResourceImageDecoder
+   ArrayIndexOutOfBoundsException（Coordinate out of bounds）。
+
 ### 极度偶发画面撕裂（2026-08-18 记录，未立项）
 
 现象：实战中极度偶发地出现一帧画面上下两半内容不一致（截图实证：上半为三舰编队

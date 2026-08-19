@@ -10,10 +10,17 @@ import java.util.List;
  * 主线程按段登记序（而非完成序）在提交前把各段拼接成帧命令列表，
  * 回放侧因此完全无感分段的存在（见 docs/design/render-parallel-recording.md）。
  * <p>
- * <b>单写者契约</b>：同一段同一时刻只允许一个线程写入（主线程的串行段，
- * 或被编排器指派的某一个 worker）。{@link #add} 刻意不加锁——并行录制的
- * 收益正是不经过帧级临界区；编排器以帧内屏障（awaitAll）保证 worker 写完
- * 后主线程才 {@link RenderFrame#flatten()}，happens-before 由屏障建立。
+ * <b>多写者并发</b>：本类按「单写者」设计（主线程的串行段，或被编排器
+ * 指派的某一个 worker），并行录制的收益正是不经过帧级临界区；编排器以帧内
+ * 屏障（awaitAll）保证 worker 写完后主线程才 {@link RenderFrame#flatten()}。
+ * 但 aux 生产者线程（BoxUtil 等模组的后台 GL 线程，其调用被字节码重定向
+ * 劫持进桥）会经 {@code BridgeSupport} 的无绑定段 fallback 与主线程并发写
+ * 同一串行段——{@link #add} 因此加段级监视器锁：worker 各写各的段时锁无
+ * 竞争（零开销），仅 aux 与主线程共享串行段时互斥（正是需要正确性的地方）。
+ * 锁内先 {@code commitSeq++} 后入列：读端（StateDedup.shouldSkip）无锁读
+ * seq，必须先让 seq 变化对读端可见再让命令进列表，否则「命令已插入而 seq
+ * 未变」的窗口会让 dedup 错误跳过紧随的状态命令（aux 的 glDisable 进流、
+ * 主线程的 glEnable 被吞 → 无纹理纯色方块，即全模组文本腐坏的根因）。
  * <p>
  * {@link #commitSeq} 是段局部的提交序号：录制侧状态去重（StateDedup）的
  * 相邻性判据。段在回放时连续执行，故「相邻」只需考察本段内的插入；
@@ -45,18 +52,23 @@ public final class RenderSegment {
     }
 
     /**
-     * 追加一条命令到段尾（单写者，无同步）。
+     * 追加一条命令到段尾（段级监视器互斥，见类注释「多写者并发」）。
+     * <p>
+     * 锁内必须先 bump {@code commitSeq} 再入列：StateDedup 读端无锁读 seq，
+     * 保证「读到旧 seq ⟹ 无任何已完成插入」的方向成立（保守，不错误去重）。
      *
      * @param command 待执行命令
      * @throws IllegalStateException 段已随帧提交封存后仍被写入
      */
     public void add(final GlCommand command) {
-        if (sealed) {
-            throw new IllegalStateException(
-                    "[SSOptimizer] 并行段已随帧提交封存，仍有迟到写入——编排器屏障（awaitAll）未覆盖该写入者");
+        synchronized (this) {
+            if (sealed) {
+                throw new IllegalStateException(
+                        "[SSOptimizer] 并行段已随帧提交封存，仍有迟到写入——编排器屏障（awaitAll）未覆盖该写入者");
+            }
+            commitSeq++;
+            commands.add(command);
         }
-        commands.add(command);
-        commitSeq++;
     }
 
     /**

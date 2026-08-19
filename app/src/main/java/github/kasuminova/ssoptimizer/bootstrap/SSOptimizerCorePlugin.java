@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.bootstrap;
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.api.CompositeAsmClassProcessor;
 import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
+import github.kasuminova.ssoptimizer.asm.font.BitmapFontManagerSyncProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
@@ -116,6 +117,7 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "aitweakscoreloader", AITweaksCoreLoaderProcessor.TARGET_CLASS, new AITweaksCoreLoaderProcessor());
         registerIf(registrator, "windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());
         registerIf(registrator, "tooltiptextfieldime", GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE, new TooltipTextFieldFactoryProcessor());
+        registerIf(registrator, "fontmanagersync", GameClassNames.BITMAP_FONT_MANAGER, new BitmapFontManagerSyncProcessor());
         registerIf(registrator, "settingstextfieldime", GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER, new SettingsTextFieldFactoryProcessor());
         registerIf(registrator, "textfieldimplime", GameClassNames.TEXT_FIELD_IMPL, new TextFieldImplementationProcessor());
         registerCompositeIf(registrator,
