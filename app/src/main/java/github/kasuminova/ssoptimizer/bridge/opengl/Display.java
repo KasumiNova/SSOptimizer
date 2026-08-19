@@ -99,6 +99,7 @@ public final class Display {
         RenderQueue q = BridgeSupport.queue();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
+            BridgeSupport.refillListIdStashIfLow();
             DebugFrameCapture.onDisplayUpdate();
             org.lwjgl.opengl.Display.update();
         });
@@ -115,6 +116,7 @@ public final class Display {
         RenderQueue q = BridgeSupport.queue();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
+            BridgeSupport.refillListIdStashIfLow();
             DebugFrameCapture.onDisplayUpdate();
             org.lwjgl.opengl.Display.update(processMessages);
         });

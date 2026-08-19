@@ -80,6 +80,24 @@ final class BridgeSupport {
     /** stash 当前元素计数（低水位补货判断用；随 offer/poll 增减，与 stash 内容一致）。 */
     private static volatile AtomicInteger bufferIdStashCount = new AtomicInteger();
     /**
+     * display list id stash 单次批量预生成的个数（真实 glGenLists(range) 返回
+     * 连续区段基址，拆成 range 个独立 id 入池）。与 VBO stash 同构：
+     * 字体字形/jitter 的显示列表惰性重建是战斗期高频路径，见
+     * {@link DisplayListGuard}。
+     */
+    static final int LIST_ID_STASH_BATCH = 512;
+    /** display list stash 低水位阈值：渲染线程帧尾补货触发线。 */
+    static final int LIST_ID_STASH_LOW_WATER = 256;
+    /**
+     * display list id 预生成 stash：{@link DisplayListGuard#beginList()} 的
+     * 录制侧 id 池。语义同 {@link #bufferIdStash}——stash 命中零阻塞，
+     * 主线程空时一次阻塞批量预生成摊销往返；并行录制段内空时返回 -1
+     * （段内禁止阻塞，调用方按 suspend 等价语义退化为直接渲染）。
+     */
+    private static volatile ConcurrentLinkedQueue<Integer> listIdStash = new ConcurrentLinkedQueue<>();
+    /** display list stash 当前元素计数（与 stash 内容一致）。 */
+    private static volatile AtomicInteger listIdStashCount = new AtomicInteger();
+    /**
      * 渲染线程侧簿记：命令流执行到当前位置的 GL_ARRAY_BUFFER 真实绑定。
      * 只由 bind 命令执行体与 pointer 重放（{@link PointerSnapshotGroup#apply()}）
      * 在渲染线程读写。
@@ -112,6 +130,9 @@ final class BridgeSupport {
         vertexStreamBuffers = new VertexStreamBufferPool();
         bufferIdStash = new ConcurrentLinkedQueue<>();
         bufferIdStashCount = new AtomicInteger();
+        listIdStash = new ConcurrentLinkedQueue<>();
+        listIdStashCount = new AtomicInteger();
+        DisplayListGuard.reset();
     }
 
     static RenderQueue queue() {
@@ -430,6 +451,65 @@ final class BridgeSupport {
     }
 
     /**
+     * 取一个 display list id（{@link DisplayListGuard#beginList()} 的入口）：
+     * stash 非空零阻塞出队；空时——主线程/加载期走一次资源申请阻塞通道批量
+     * 预生成 {@value #LIST_ID_STASH_BATCH} 个（真实 glGenLists 返回连续区段
+     * 基址，拆成单个 id 入池，返回首个）；并行录制段内禁止阻塞，返回 -1，
+     * 由调用方按 suspend 等价语义退化（display list 缓存未命中→直接渲染，
+     * 调用方惯用法自带该回退路径）。
+     *
+     * @return 可用的 display list id，或 -1 表示段内 stash 耗尽
+     */
+    static int acquireListId() {
+        Integer stashed = listIdStash.poll();
+        if (stashed != null) {
+            listIdStashCount.decrementAndGet();
+            return stashed;
+        }
+        if (recordingContext().boundSegment != null) {
+            return -1;
+        }
+        int[] generated = blockingGetResource(() -> {
+            int base = org.lwjgl.opengl.GL11.glGenLists(LIST_ID_STASH_BATCH);
+            if (base == 0) {
+                throw new IllegalStateException(
+                        "[SSOptimizer] 真实 glGenLists 批量预生成失败（返回 0，GL 上下文疑似异常）");
+            }
+            int[] batch = new int[LIST_ID_STASH_BATCH];
+            for (int i = 0; i < batch.length; i++) {
+                batch[i] = base + i;
+            }
+            return batch;
+        });
+        for (int i = 1; i < generated.length; i++) {
+            listIdStash.add(generated[i]);
+            listIdStashCount.incrementAndGet();
+        }
+        return generated[0];
+    }
+
+    /**
+     * display list stash 低水位补货（渲染线程调用，与
+     * {@link #refillBufferIdStashIfLow()} 同在 Display.update 命令体前置）：
+     * 计数低于 {@value #LIST_ID_STASH_LOW_WATER} 时直接在渲染线程真实
+     * glGenLists 一批 {@value #LIST_ID_STASH_BATCH} 个入 stash。
+     */
+    static void refillListIdStashIfLow() {
+        if (listIdStashCount.get() >= LIST_ID_STASH_LOW_WATER) {
+            return;
+        }
+        int base = org.lwjgl.opengl.GL11.glGenLists(LIST_ID_STASH_BATCH);
+        if (base == 0) {
+            throw new IllegalStateException(
+                    "[SSOptimizer] 渲染线程 display list stash 补货失败（glGenLists 返回 0，GL 上下文疑似异常）");
+        }
+        for (int i = 0; i < LIST_ID_STASH_BATCH; i++) {
+            listIdStash.add(base + i);
+            listIdStashCount.incrementAndGet();
+        }
+    }
+
+    /**
      * 真实 glGenBuffers 批发结果的 fail-fast 校验（渲染线程上、生成点就地调用）。
      * LWJGL2 不按 GL 错误抛异常：上下文异常/驱动故障时批发会静默写入 0，
      * 死 id 流入调用方后在模组侧以隐晦形式爆发（BoxUtil runtimeBufferIDCheck
@@ -532,13 +612,18 @@ final class BridgeSupport {
      * GL 上下文重建后的聚合簿记复位（Display.create/setDisplayMode/setFullscreen 成功
      * 后由主线程调用）：录制侧状态仿真归零（{@link SimulatedGlState#onContextRecreated()}），
      * 并清空 VBO id stash——stash 内预生成的 id 全部属于已销毁的旧上下文，
-     * 继续分发出去的都是死 id。清空后由渲染线程帧尾
+     * 继续分发出去的都是死 id。display list stash 同理（display list 本体
+     * 随上下文销毁，簿记经 {@link DisplayListGuard#onContextRecreated()} 全量
+     * 作废）。清空后由渲染线程帧尾
      * {@link #refillBufferIdStashIfLow()} 在新上下文里重新补货。
      */
     static void onContextRecreated() {
         simulatedState().onContextRecreated();
         bufferIdStash = new ConcurrentLinkedQueue<>();
         bufferIdStashCount = new AtomicInteger();
+        listIdStash = new ConcurrentLinkedQueue<>();
+        listIdStashCount = new AtomicInteger();
+        DisplayListGuard.onContextRecreated();
     }
 
     /**

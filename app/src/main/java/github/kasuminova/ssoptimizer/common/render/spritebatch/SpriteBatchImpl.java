@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.common.render.spritebatch;
 
-import com.fs.graphics.util.GLListManager;
+import github.kasuminova.ssoptimizer.bridge.opengl.DisplayListGuard;
 import github.kasuminova.ssoptimizer.common.render.engine.DynamicVbo;
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
@@ -131,7 +131,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
             return false;
         }
         // 免费检查先行；GL 状态检查由 native 单次 JNI 完成（native 缺失时走 Java 路径）
-        if (!SpriteBatchStats.isInCombatScope() || texClamp || GLListManager.buildingList) {
+        if (!SpriteBatchStats.isInCombatScope() || texClamp || DisplayListGuard.isBuildingList()) {
             // 拒绝收集：先 flush 已有批次，保证后续原版绘制的相对顺序不变
             flushPending();
             return false;

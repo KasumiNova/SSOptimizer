@@ -1,7 +1,7 @@
 package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.Sprite;
-import com.fs.graphics.util.GLListManager;
+import github.kasuminova.ssoptimizer.bridge.opengl.DisplayListGuard;
 import com.fs.profiler.Profiler;
 import com.fs.starfarer.combat.ai.FighterWing;
 import com.fs.starfarer.combat.entities.Ship;
@@ -135,7 +135,7 @@ public abstract class RadarIconSpriteMixin {
     private void ssoptimizer$renderComposite(final float x, final float y, final float h,
                                              final boolean isMember) {
         final RadarCompositeCache cache = RadarCompositeCache.getInstance();
-        if (!cache.isAvailable() || GLListManager.buildingList) {
+        if (!cache.isAvailable() || DisplayListGuard.isBuildingList()) {
             this.renderer.render(this.sprite, x, y, h, isMember);
             return;
         }

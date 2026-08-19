@@ -21,7 +21,7 @@
 
 | # | 共享点 | 关键调用点 | 依据 | 处置 |
 |---|---|---|---|---|
-| H1 | **GLListManager 全局静态**（`activeLists/allocatedLists/freeLists/currListId/buildingList/suspend`） | `Ship.java:3760-3773/3109-3122`（jitter）、`FfIndicator.java:270-275`、`BitmapFontRenderer.java:740-745`（字体显示列表惰性缓存）、`GLLauncher.java:996-998`（每帧 `nextFrame()` 清理）；`buildingList` 分支读 `Ship.java:3640/3685`、`BeamWeapon.java:371/394` | 并发 beginList/callList 互踩 ID 池与集合；`buildingList` 竞态进错分支 | **前置改造**：worker 私有列表池（各段独立 build，回放前主线程统一 merge 进 nextFrame 无效化流程）——改造后字体/jitter/FF 全部释放并行 |
+| H1 | **GLListManager 全局静态**（`activeLists/allocatedLists/freeLists/currListId/buildingList/suspend`） | `Ship.java:3760-3773/3109-3122`（jitter）、`FfIndicator.java:270-275`、`BitmapFontRenderer.java:740-745`（字体显示列表惰性缓存）、`GLLauncher.java:996-998`（每帧 `nextFrame()` 清理）；`buildingList` 分支读 `Ship.java:3640/3685`、`BeamWeapon.java:371/394` | 并发 beginList/callList 互踩 ID 池与集合；`buildingList` 竞态进错分支 | **已完成**（阶段 2 前置）：`DisplayListGuard`（bridge.opengl）整体接管——全局锁簿记 + `buildingList` 改 ThreadLocal + id 预生成 stash（渲染线程帧尾补货，段内零阻塞）+ fresh-token 护栏（本帧他段新建 token 段内 callList 按未命中处理）；`GLListManagerMixin` @Overwrite 五静态方法 + Ship/Beam/Plasma/MissileWeapon/Planet 字段读写 @Redirect |
 | H2 | ~~contrailEngine 单例 Map~~ **复核后排除**（详见表下附注） | `Engine.java:873` `addSegment` 实际位于 `advance(float)`（方法起点 `:754`），非 render；`CombatEngine.java:1314` advance 老化同属串行 advance 阶段 | 渲染期唯一触点是 `CONTRAILS_LAYER` 的 `ContrailEngine.render()` 只读遍历（`CombatEngine.java:282` LayeredRenderable） | **无需改造**：写入全部发生在串行 advance 阶段；层 18 渲染段按 §6 编排自然串行执行即可 |
 | H3 | **粒子组容器**（12 个 `DynamicParticleGroup` + `DebrisParticleSystem.groups[8]` + `ExplosionParticleSystem.groups[5]` + `CombatParticleEffects` 静态列表） | 写：`CombatEngine.java:2744-2876`（`addXxxParticle`）、`DebrisParticleSystem.java:151`、`ExplosionParticleSystem.java:202`；渲染：`CombatEngine.java:937-938/948/950-963` | 组内多实体并发写互踩；`ExplosionParticleSystem.random` 非线程安全；debris/explosion 含惰性初始化 | **分区粒度下限 = 组**：组整段串行；组渲染段（底层:937-938、顶层:948-963）钉为固定串行段 |
 | H4 | **字体/UI 进程级共享**（除 H1 外）：共享 `BitmapFont` 的 `kerningLookupPair`（`BitmapFont.java:43-51`）、`Version.renderer` 静态单例（`Version.java:16`）、`ScissorStack` 静态栈（`ScissorStack.java:9-11`，`Panel.java:195-210` 全 HUD 子树 push/pop） | HUD 全链（`CombatState.java:910-984`） | 任何画文字的段都踩；HUD 整段不可直接并行 | **HUD 整段钉为固定串行段**（收益放实体层）；后续如需 HUD 并行再给 ScissorStack/kerning pair 加守卫 |
@@ -134,8 +134,8 @@ render-logic-separation-entrypoints.md 的分层归并结论）。
 3. **固定串行段**（按 §3 次序钉死）：底粒子组 →（并行区）→ debris/12 粒子系统/尾层 →
    浮动文字 → 插件 world 段 → arc/waypoint → 插件 UI 段 → HUD 全段。
 4. **前置改造**（阶段 2 动工前完成，决定并行收益上限）：
-   - **H1 GLListManager worker 私有化**（否则 jitter/字体/FF 全锁死，字体进而锁死 HUD 之外一切
-     含文字段——舰船层内船名/状态文字同样走 BitmapFontRenderer，**这是并行区的隐形地雷，必须最先改**）
+   - **H1 GLListManager 并行安全化**（已完成：`DisplayListGuard` 整体接管，见 §1 H1 行；
+     jitter/字体/FF 显示列表路径在并行段内可用，fresh-token 护栏挡住跨段调用本帧新 token）
    - ~~H2 contrailEngine~~ 已复核排除（见 §1 附注：写入全在串行 advance 阶段，无需改造）
    - §5 的 5 个静态能力缓存（已完成：bridge GL11 录制侧缓存，单值/buffer 重载共享槽位）
 5. **执行器**：复用 AiParallelExecutor 池（advance/render 不重叠）；worker 段任务失败走既有

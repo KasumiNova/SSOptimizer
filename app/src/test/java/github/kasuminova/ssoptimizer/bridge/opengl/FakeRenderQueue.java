@@ -32,7 +32,12 @@ final class FakeRenderQueue implements RenderQueue {
     Function<Callable<?>, Object> getHandler = callable -> {
         throw new UnsupportedOperationException("fake queue 不支持 get");
     };
-    final RenderFrame frame = new RenderFrame();
+    RenderFrame frame = new RenderFrame();
+
+    /** 模拟帧边界：换一帧（DisplayListGuard 的 fresh-token 护栏按帧引用判新）。 */
+    void rotateFrame() {
+        frame = new RenderFrame();
+    }
 
     @Override
     public RenderFrame currentFrame() {

@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.common.render.spritebatch;
 
-import com.fs.graphics.util.GLListManager;
+import github.kasuminova.ssoptimizer.bridge.opengl.DisplayListGuard;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
@@ -97,7 +97,7 @@ public final class SpriteBatchStats {
             return;
         }
         // 禁区判定：display list 编译区间 / stencil / scissor 开启时不参与合批统计
-        boolean forbidden = GLListManager.buildingList
+        boolean forbidden = DisplayListGuard.isBuildingList()
                 || GL11.glGetBoolean(GL11.GL_STENCIL_TEST)
                 || GL11.glGetBoolean(GL11.GL_SCISSOR_TEST);
         STATS.record(SpriteGroupStats.key(textureId, blendSrc, blendDest), noBind, forbidden);

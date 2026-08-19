@@ -55,6 +55,14 @@ public final class GameClassNames {
     public static final String WEAPON_DAMAGE_EFFECT_DOTTED         = "com.fs.starfarer.combat.entities.ship.WeaponDamageEffect";
     public static final String CUSTOM_COMBAT_ENTITY                = "com/fs/starfarer/combat/entities/CustomCombatEntity";
     public static final String CUSTOM_COMBAT_ENTITY_DOTTED         = "com.fs.starfarer.combat.entities.CustomCombatEntity";
+    public static final String GL_LIST_MANAGER                     = "com/fs/graphics/util/GLListManager";
+    public static final String GL_LIST_MANAGER_DOTTED              = "com.fs.graphics.util.GLListManager";
+    public static final String GL_LIST_TOKEN                = "com/fs/graphics/util/GLListManager$GLListToken";
+    public static final String GL_LIST_TOKEN_DOTTED         = "com.fs.graphics.util.GLListManager$GLListToken";
+    public static final String SHIP_BEAM_WEAPON_DOTTED             = "com.fs.starfarer.combat.entities.ship.A.BeamWeapon";
+    public static final String SHIP_PLASMA_WEAPON_DOTTED           = "com.fs.starfarer.combat.entities.ship.A.PlasmaWeapon";
+    public static final String SHIP_MISSILE_WEAPON_DOTTED          = "com.fs.starfarer.combat.entities.ship.A.MissileWeapon";
+    public static final String PLANET_DOTTED                       = "com.fs.starfarer.combat.entities.terrain.Planet";
     public static final String SMOOTH_PARTICLE                     = "com/fs/graphics/particle/SmoothParticle";
     public static final String SMOOTH_PARTICLE_DOTTED              = "com.fs.graphics.particle.SmoothParticle";
     public static final String BASE_PARTICLE                       = "com/fs/graphics/particle/BaseParticle";

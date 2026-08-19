@@ -2,7 +2,7 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 
 import com.fs.graphics.Sprite;
 import com.fs.graphics.TextureObject;
-import com.fs.graphics.util.GLListManager;
+import github.kasuminova.ssoptimizer.bridge.opengl.DisplayListGuard;
 import com.fs.graphics.util.RenderStateUtils;
 import com.fs.starfarer.combat.entities.Engine.EngineGlowType;
 import com.fs.starfarer.loading.specs.EngineSlot;
@@ -50,7 +50,7 @@ import java.util.List;
  *       实例数与 display list 回退计数；首个非空批次无条件输出一次摘要）</li>
  * </ul>
  * display list 说明：舰船 display list 编译区间会包含引擎渲染调用，命中
- * {@link GLListManager#buildingList} 时退回立即模式等价路径（{@link EngineRenderHelper}，
+ * {@link DisplayListGuard#isBuildingList()} 时退回立即模式等价路径（{@link EngineRenderHelper}，
  * 公式已与原版逐行校准），首次命中记一次日志。
  */
 public final class EngineBatchImpl implements EngineBatch {
@@ -161,7 +161,7 @@ public final class EngineBatchImpl implements EngineBatch {
             EngineRenderHelper.renderEngines(engineObject, alphaScale);
             return;
         }
-        if (GLListManager.buildingList) {
+        if (DisplayListGuard.isBuildingList()) {
             // display list 编译区间内禁止使用 VBO/着色器路径（glBufferSubData 等不会被记录且语义错乱）
             displayListFallbacks++;
             if (!buildingListLogged) {
