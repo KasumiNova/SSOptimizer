@@ -305,6 +305,13 @@ public final class RuntimeScaledFontCache {
         return loaded;
     }
 
+    /**
+     * 查游戏字体管理器，未注册则注册（解析 .fnt + 上传纹理）。
+     * 全程持 {@link #GENERATION_LOCK}：游戏 {@code BitmapFontManager} 的分词器
+     * （lineTokens/tokenIndex）与 fonts 表是进程级静态可变状态，worker 并发
+     * 进入会把字形度量/UV 解析成乱码并永久缓存（并行录制期文本腐坏的根因）；
+     * 锁内二次查表保证单加载、安全发布。
+     */
     private static Object loadOrRegister(final String fontPath,
                                          final ClassLoader loader) throws ReflectiveOperationException, IOException {
         final Method lookup = resolveFontLookupMethod(loader);
@@ -313,9 +320,15 @@ public final class RuntimeScaledFontCache {
             return loaded;
         }
 
-        final Method register = resolveFontRegisterMethod(loader);
-        invokeStatic(register, fontPath, fontPath);
-        return invokeStatic(lookup, fontPath);
+        synchronized (GENERATION_LOCK) {
+            final Object rechecked = invokeStatic(lookup, fontPath);
+            if (rechecked != null) {
+                return rechecked;
+            }
+            final Method register = resolveFontRegisterMethod(loader);
+            invokeStatic(register, fontPath, fontPath);
+            return invokeStatic(lookup, fontPath);
+        }
     }
 
     private static String fontPath(final Object currentFont) throws ReflectiveOperationException {

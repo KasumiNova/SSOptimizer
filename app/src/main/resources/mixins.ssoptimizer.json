@@ -55,6 +55,7 @@
     "loading.TextureObjectMixin",
     "modopt.dcr.DcrCompressionUtilMixin",
     "render.BitmapFontRendererMixin",
+    "render.BitmapFontMixin",
     "render.BeamWeaponDisplayListGuardMixin",
     "render.CampaignLocationMapCanvasMixin",
     "render.CampaignFleetMemberViewMixin",

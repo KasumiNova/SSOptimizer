@@ -227,9 +227,15 @@ final class BridgeSupport {
         ctx.stateDedup.invalidate();
     }
 
-    /** 解除当前线程的并行段绑定（段边界去重缓存失效，保守）。 */
+    /**
+     * 解除当前线程的并行段绑定（段边界去重缓存失效，保守）。
+     * 解绑前先把本线程未落帧的顶点流 flush 进当前段——worker 池线程跨任务复用
+     * 同一 RecordingContext/VertexStream，残留流段若不解绑时落帧，会被下一个
+     * 任务的首条命令 flush 进另一个段的段首，造成跨段状态/几何串扰。
+     */
     static void unbindSegment() {
         RecordingContext ctx = RECORDING_CONTEXT.get();
+        flushVertexStream(ctx);
         ctx.boundSegment = null;
         ctx.dedupSegment = null;
         ctx.stateDedup.invalidate();

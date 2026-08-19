@@ -16,7 +16,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
+
+import org.apache.log4j.Logger;
 
 /**
  * 实体级并行录制编排器：拦截 {@code CombatEngine.render(boolean)} 内
@@ -46,7 +47,7 @@ public final class ParallelLayerRenderer {
     /** 层内可并行渲染物少于此数时整层串行（分片开销大于收益）。 */
     static final int MIN_PARALLEL_SIZE = 4;
 
-    private static final Logger LOGGER = Logger.getLogger(ParallelLayerRenderer.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ParallelLayerRenderer.class);
     private static final boolean ENABLED = Boolean.parseBoolean(System.getProperty(ENABLED_PROPERTY, "true"));
     /** BoxUtil 探测：类存在即判定不兼容（一次性，随日志告知自动回退）。 */
     private static final boolean BOXUTIL_PRESENT = probeBoxUtil();

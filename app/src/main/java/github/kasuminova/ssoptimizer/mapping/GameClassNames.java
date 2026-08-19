@@ -30,6 +30,7 @@ public final class GameClassNames {
     public static final String BITMAP_FONT_RENDERER_DOTTED         = "com.fs.graphics.font.BitmapFontRenderer";
     public static final String BITMAP_GLYPH                        = "com/fs/graphics/font/BitmapGlyph";
     public static final String BITMAP_FONT                         = "com/fs/graphics/font/BitmapFont";
+    public static final String BITMAP_FONT_DOTTED                  = "com.fs.graphics.font.BitmapFont";
     public static final String BITMAP_FONT_MANAGER                 = "com/fs/graphics/font/BitmapFontManager";
     public static final String TEXTURED_STRIP_RENDERER             = "com/fs/starfarer/renderers/TexturedStripRenderer";
     public static final String TEXTURED_STRIP_RENDERER_DOTTED      = "com.fs.starfarer.renderers.TexturedStripRenderer";
