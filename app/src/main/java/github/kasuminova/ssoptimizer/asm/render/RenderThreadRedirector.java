@@ -62,8 +62,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 字节码帧不重算（不用 {@code COMPUTE_FRAMES}）：owner/描述符改写不改变操作数栈形状，
  * 原始帧原样保留有效。
  * <p>
- * feature flag：{@link RenderThreadMode#ENABLE_PROPERTY} 关闭时 {@link #redirect}
- * 原样返回（零开销零风险），镜像表也不会构建。
+ * feature flag：{@link RenderThreadMode#ENABLE_PROPERTY} 显式 {@code =false} 时
+ * {@link #redirect} 原样返回（零开销零风险），镜像表也不会构建；默认启用。
  */
 public final class RenderThreadRedirector {
     private static final Logger LOGGER = Logger.getLogger(RenderThreadRedirector.class);
@@ -117,9 +117,11 @@ public final class RenderThreadRedirector {
      * <p>
      * flag 检查刻意不经 {@link RenderThreadMode#isEnabled()} 方法调用：本方法在
      * transformer 链上执行，{@code ENABLE_PROPERTY} 是编译期内联的字符串常量，
-     * 直接 {@code Boolean.getBoolean} 不产生对 RenderThreadMode 的类引用——
+     * 直接读系统属性不产生对 RenderThreadMode 的类引用——
      * 否则「正在改写 RenderThreadMode 类自身时触发其加载」会以
      * {@link ClassCircularityError} 收场（运行时已验证）。
+     * 默认启用（RT 流水线已稳定），仅显式 {@code =false} 回退——判定式与
+     * {@link RenderThreadMode#isEnabled()} 保持逐字一致。
      *
      * @param internalClassName 类名（点号或斜杠分隔均可；可为 {@code null}，
      *                          此时从字节码读取类名做排除判定）
@@ -128,7 +130,8 @@ public final class RenderThreadRedirector {
      *         无实际改写点时原样返回入参
      */
     public static byte[] redirect(final String internalClassName, final byte[] classBytes) {
-        if (!Boolean.getBoolean(RenderThreadMode.ENABLE_PROPERTY) || classBytes == null) {
+        if ("false".equalsIgnoreCase(System.getProperty(RenderThreadMode.ENABLE_PROPERTY, "true"))
+                || classBytes == null) {
             return classBytes;
         }
         if (internalClassName != null && isExcluded(internalClassName.replace('.', '/'))) {
@@ -159,7 +162,7 @@ public final class RenderThreadRedirector {
      * @return 重定向后的新 map，或原 map
      */
     public static Map<String, byte[]> redirectAll(final Map<String, byte[]> bytecodes) {
-        if (!Boolean.getBoolean(RenderThreadMode.ENABLE_PROPERTY)
+        if ("false".equalsIgnoreCase(System.getProperty(RenderThreadMode.ENABLE_PROPERTY, "true"))
                 || bytecodes == null || bytecodes.isEmpty()) {
             return bytecodes;
         }

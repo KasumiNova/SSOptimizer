@@ -541,10 +541,10 @@ if log_contains "FATAL"; then
     PASS=false
 fi
 
-if grep -q "\[SSOptimizer\] Agent loaded" "$LOG_FILE"; then
-    echo "OK: Agent loaded successfully"
+if grep -q "\[SSOptimizer\] CoreMod loaded" "$LOG_FILE"; then
+    echo "OK: CoreMod loaded successfully"
 else
-    echo "WARN: Agent load message not found"
+    echo "WARN: CoreMod load message not found"
 fi
 
 if [[ "$MODE" == "game" || "$MODE" == "automation" ]]; then

@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.bootstrap;
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.modopt.dcr.DcrBatchSaveSynthProcessor;
 import github.kasuminova.ssoptimizer.modopt.dcr.DcrOnGameLoadProcessor;
@@ -27,8 +28,8 @@ class EngineProcessorRegistrationTest {
     void registersEngineAndExternalModProcessors() {
         Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-        // 13 个引擎级注册项（含 RESOURCE_LOADER 组合处理器）+ 2 个 DCR 处理器
-        assertEquals(15, processors.size());
+        // 14 个引擎级注册项（含 RESOURCE_LOADER 组合处理器）+ 2 个 DCR 处理器
+        assertEquals(16, processors.size());
         assertTrue(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         assertTrue(processors.containsKey(GameClassNames.COMBAT_STATE));
         assertTrue(processors.containsKey(GameClassNames.RESOURCE_LOADER));
@@ -36,6 +37,7 @@ class EngineProcessorRegistrationTest {
         assertTrue(processors.containsKey(DcrOnGameLoadProcessor.TARGET_CLASS));
         assertTrue(processors.containsKey(AITweaksCoreLoaderProcessor.TARGET_CLASS));
         assertTrue(processors.containsKey(AITweaksBootstrapLoaderProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(ShipMasteryReflectionLoaderProcessor.TARGET_CLASS));
     }
 
     @Test
@@ -45,7 +47,7 @@ class EngineProcessorRegistrationTest {
             System.setProperty("ssoptimizer.disable.textureloader", "true");
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(14, processors.size());
+            assertEquals(15, processors.size());
             assertFalse(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         } finally {
             restoreProperty("ssoptimizer.disable.textureloader", original);
@@ -59,7 +61,7 @@ class EngineProcessorRegistrationTest {
             System.setProperty("ssoptimizer.disable.dcr", "true");
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(13, processors.size());
+            assertEquals(14, processors.size());
             assertFalse(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
         } finally {
             restoreProperty("ssoptimizer.disable.dcr", original);

@@ -9,9 +9,10 @@ package github.kasuminova.ssoptimizer.common.render.runtime;
  * 类初始化期一次性决策（ASM transformer 是否改写、native GL 是否初始化、各渲染助手
  * 是否降级），故收敛为单一事实源。
  * <p>
- * 默认 false：关闭时 transformer 完全 no-op、bridge 不安装、native 路径不变，
- * 对默认运行路径零影响。属性在进程生命周期内不允许变更（onLoad 期的装配决策不可撤销），
- * 读取处可自行缓存。
+ * 默认 true：RT 流水线已稳定并设为默认路径（571cfdb 起全部基准与启动器路径
+ * 实测通过）；显式 {@code -Dssoptimizer.renderthread.enable=false} 回退到旧行为
+ * （transformer 完全 no-op、bridge 不安装、native 路径不变）。属性在进程生命周期内
+ * 不允许变更（onLoad 期的装配决策不可撤销），读取处可自行缓存。
  */
 public final class RenderThreadMode {
     /** 分离模式开关系统属性名。 */
@@ -32,7 +33,7 @@ public final class RenderThreadMode {
      * @return 渲染线程分离模式是否启用
      */
     public static boolean isEnabled() {
-        return Boolean.getBoolean(ENABLE_PROPERTY);
+        return !"false".equalsIgnoreCase(System.getProperty(ENABLE_PROPERTY, "true"));
     }
 
     /** 标记资源加载期结束（ResourceLoaderStateMixin 在 init RETURN 时调用）。幂等。 */

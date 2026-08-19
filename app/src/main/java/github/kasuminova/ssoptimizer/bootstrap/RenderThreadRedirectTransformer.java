@@ -19,8 +19,8 @@ import org.apache.log4j.Logger;
  * <p>
  * 语义与契约：
  * <ul>
- *   <li>{@code -Dssoptimizer.renderthread.enable=false}（默认）时完全 no-op，
- *       原字节直返，零风险零开销；</li>
+ *   <li>显式 {@code -Dssoptimizer.renderthread.enable=false} 时完全 no-op，
+ *       原字节直返；默认启用（RT 流水线已稳定并设为默认路径）；</li>
  *   <li>RFB 契约：transform 必须返回原字节，禁止返回 null
  *       （同 {@link HybridWeaverTransformer} 的契约警告）；</li>
  *   <li>重入防护：{@link RenderThreadRedirector#redirect} 本身不触发类加载
@@ -55,8 +55,10 @@ public final class RenderThreadRedirectTransformer implements IClassTransformer 
         }
         // flag 检查不经 RenderThreadMode.isEnabled()（编译期内联常量，无类引用）：
         // transformer 链上引用我们自己的类会触发「类加载中再触发类加载」的
-        // ClassCircularityError（RenderThreadMode 已踩过，见 RenderThreadRedirector 注释）
-        if (!Boolean.getBoolean(RenderThreadMode.ENABLE_PROPERTY)) {
+        // ClassCircularityError（RenderThreadMode 已踩过，见 RenderThreadRedirector 注释）。
+        // 默认启用（RT 流水线已稳定），仅显式 =false 回退——判定式与
+        // RenderThreadMode.isEnabled() 保持逐字一致。
+        if ("false".equalsIgnoreCase(System.getProperty(RenderThreadMode.ENABLE_PROPERTY, "true"))) {
             return basicClass;
         }
 

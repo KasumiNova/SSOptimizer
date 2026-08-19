@@ -10,6 +10,7 @@ import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcesso
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
@@ -65,7 +66,8 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
     }
 
     /**
-     * 渲染线程分离模式装配（{@code -Dssoptimizer.renderthread.enable=true} 时生效）。
+     * 渲染线程分离模式装配（默认启用；显式
+     * {@code -Dssoptimizer.renderthread.enable=false} 时跳过）。
      * <p>
      * 时序要求：onLoad 早于一切游戏类加载，此处创建 {@link RenderQueueImpl}（启动
      * SSOptimizer-Render 线程）并安装进 bridge——此后游戏/模组类加载时经
@@ -114,6 +116,7 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "astdautomation", ASTDAutomationCombatPluginProcessor.TARGET_CLASS, new ASTDAutomationCombatPluginProcessor());
         registerIf(registrator, "aitweaksbootstraploader", AITweaksBootstrapLoaderProcessor.TARGET_CLASS, new AITweaksBootstrapLoaderProcessor());
         registerIf(registrator, "aitweakscoreloader", AITweaksCoreLoaderProcessor.TARGET_CLASS, new AITweaksCoreLoaderProcessor());
+        registerIf(registrator, "shipmasteryreflectionloader", ShipMasteryReflectionLoaderProcessor.TARGET_CLASS, new ShipMasteryReflectionLoaderProcessor());
         registerIf(registrator, "windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());
         registerIf(registrator, "tooltiptextfieldime", GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE, new TooltipTextFieldFactoryProcessor());
         registerIf(registrator, "settingstextfieldime", GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER, new SettingsTextFieldFactoryProcessor());
