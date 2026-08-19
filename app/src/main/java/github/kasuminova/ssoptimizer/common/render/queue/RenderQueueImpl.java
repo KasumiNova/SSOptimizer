@@ -268,6 +268,9 @@ public final class RenderQueueImpl implements RenderQueue {
     /** frameLock 内：提交当前帧到渲染线程并换发新帧。 */
     private void submitCurrentFrameLocked() {
         RenderFrame submitted = currentFrame;
+        // 分段扁平化必须在提交前完成（并行段不变量：编排器屏障先于 swap，
+        // 此处封存全部段）；单段帧零拷贝，非并行帧无额外开销
+        submitted.flatten();
         // 必须先捕获完成 Future 再 offer：offer 之后渲染线程随时可能执行完并把帧
         // 归还池（reset 换发新 Future），届时再读帧上的 Future 已不是本周期的实例
         CompletableFuture<Void> completion = submitted.completionFuture();

@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -183,5 +186,60 @@ class VertexStreamBufferPoolTest {
                 "稳态保留量应 ≤ 需求+slack，实际 " + pool.pooledBufferCount());
         // 稳态下 10 轮借还不应有任何丢荒（保留上限覆盖需求）
         assertEquals(0, pool.droppedBufferCount(), "稳态需求下不得丢荒重建");
+    }
+
+    @Test
+    void concurrentAcquireReleaseAcrossProducerThreadsIsSafe() throws Exception {
+        // 并行录制的多生产者语义坐实：多个录制线程并发借出，归还经交接队列
+        // 由另一线程执行（录制线程借出、渲染线程归还的跨线程形态），
+        // 全程不得抛异常、不得交出 null、容量恒满足请求
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        final int threads = 8;
+        final int rounds = 2_000;
+        ConcurrentLinkedQueue<byte[]> handoff = new ConcurrentLinkedQueue<>();
+        AtomicBoolean producing = new AtomicBoolean(true);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+
+        Thread releaser = new Thread(() -> {
+            while (producing.get() || !handoff.isEmpty()) {
+                byte[] buffer = handoff.poll();
+                if (buffer != null) {
+                    pool.release(buffer);
+                }
+            }
+        });
+        releaser.start();
+
+        List<Thread> workers = new ArrayList<>();
+        for (int t = 0; t < threads; t++) {
+            Thread worker = new Thread(() -> {
+                try {
+                    for (int i = 0; i < rounds; i++) {
+                        int request = VertexStreamBufferPool.MIN_CAPACITY * (1 + (i % 4));
+                        byte[] buffer = pool.acquire(request);
+                        if (buffer == null || buffer.length < request) {
+                            throw new IllegalStateException("借出的缓冲不满足容量请求");
+                        }
+                        if ((i & 1) == 0) {
+                            pool.release(buffer);
+                        } else {
+                            handoff.add(buffer); // 跨线程归还（渲染线程形态）
+                        }
+                    }
+                } catch (Throwable e) {
+                    failure.compareAndSet(null, e);
+                }
+            });
+            workers.add(worker);
+            worker.start();
+        }
+        for (Thread worker : workers) {
+            worker.join();
+        }
+        producing.set(false);
+        releaser.join();
+
+        assertNull(failure.get(), "并发借还不得失败");
+        assertTrue(pool.pooledBufferCount() > 0, "全部归还后池内应有滞留缓冲");
     }
 }

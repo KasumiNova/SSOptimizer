@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
-import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
+import github.kasuminova.ssoptimizer.common.render.queue.RenderSegment;
 
 /**
  * 录制侧单个生产者线程的帧录制上下文：收敛主线程 GL 录制热路径上分散在
@@ -30,8 +30,16 @@ final class RecordingContext {
     /** 录制侧 GL 状态仿真（getter 回读短路，见 {@link SimulatedGlState}）。 */
     final SimulatedGlState simulatedState = new SimulatedGlState();
     /**
-     * 当前录制帧（状态命令去重的相邻性判据来源）：主线程在每帧边界（swap）
-     * 刷新；非主线程保持 null，由 {@link BridgeSupport#queue()} 现取当前帧。
+     * 去重相邻性判据来源的段（状态命令的实际写入目标）：主线程在帧边界（swap）
+     * 刷新为当前帧的串行段，串行段切换时随 {@link BridgeSupport#openNextSerialSegment()}
+     * 更新；非主线程保持 null，由 {@link BridgeSupport#queue()} 现取当前帧的串行段。
      */
-    RenderFrame dedupFrame;
+    RenderSegment dedupSegment;
+    /**
+     * 并行段绑定（编排器指派的 worker 在段任务期间经
+     * {@link BridgeSupport#bindSegment(RenderSegment)} 绑定）：非 null 时本线程的
+     * 一切录制（含顶点流落帧与状态命令）绕过帧临界区直接写入该段。
+     * 绑定/解绑时去重缓存强制失效（段边界不去重，保守）。
+     */
+    RenderSegment boundSegment;
 }

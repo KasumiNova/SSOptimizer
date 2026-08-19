@@ -1,6 +1,9 @@
 # 渲染并行录制（分段录制 + 确定性合并）设计跟踪
 
-状态：**规划期**（2026-08）。前置分析见 v50b profile 与会话决策。
+状态：**阶段 1 落地中**（2026-08-19）。前置分析见 v50b profile 与会话决策；
+阶段 0 审计产物见 `render-parallel-audit.md`（含 0.98a 情报修正：无 LazyFont，
+字体链走 BitmapFontRenderer + GLListManager）；当前 RT tip 基线重测 avgFps 71.82
+（120s gl_benchmark，替代 v50b 的 72.45 作为阶段 2 验收基线）。
 
 ## 背景数据（v50b，avgFps 72.45，主线程 49,091 wall 样本）
 
@@ -36,8 +39,9 @@
 
 ## 下一步
 
-- [ ] 渲染路径共享状态审计（实施前置门禁）
-- [ ] 并行录制实现 goal（待审计结论后立项）
+- [x] 渲染路径共享状态审计（实施前置门禁）——`render-parallel-audit.md`，待用户过目
+- [ ] 并行录制实现 goal（待审计结论后立项）——阶段 1 分段基础设施已实现
+  （RenderSegment/RenderFrame 段化/BridgeSupport 段绑定与阻塞护栏），阶段 2 待门禁放行
 
 ## 实现计划（2026-08-18 定稿）
 

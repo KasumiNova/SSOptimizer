@@ -6,6 +6,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
+import github.kasuminova.ssoptimizer.common.render.queue.RenderSegment;
 import org.lwjgl.LWJGLException;
 
 import java.nio.ByteBuffer;
@@ -146,29 +147,79 @@ final class BridgeSupport {
         if (RenderQueueImpl.isMainThread()) {
             RecordingContext ctx = RECORDING_CONTEXT.get();
             mainRecordingContext = ctx;
-            ctx.dedupFrame = queue().currentFrame();
+            ctx.dedupSegment = queue().currentFrame().serialSegment();
             ctx.stateDedup.invalidate();
         }
     }
 
     /**
+     * 开启当前帧的下一个串行段（并行区屏障后由编排器在主线程调用）：
+     * 帧内登记新段、切换主线程去重判据来源并失效段边界缓存（段首状态命令
+     * 强制入队，跨段不去重，保守）。
+     *
+     * @return 新的当前串行段
+     */
+    static RenderSegment openNextSerialSegment() {
+        RenderSegment segment = queue().currentFrame().openNextSerialSegment();
+        RecordingContext ctx = recordingContext();
+        ctx.dedupSegment = segment;
+        ctx.stateDedup.invalidate();
+        return segment;
+    }
+
+    /**
+     * 把当前线程绑定到编排器指派的并行段（worker 段任务开始时调用）：此后
+     * 本线程的一切录制（含顶点流落帧与状态命令）绕过帧临界区直接写入该段
+     * （单写者契约，见 {@link RenderSegment}）。段任务结束必须
+     * {@link #unbindSegment()}（try/finally）；绑定期间禁止阻塞式调用
+     * （见 {@link #blockingGet(Callable)} 的 fail-fast）。
+     *
+     * @param segment 当前帧内经 {@code RenderFrame#reserveSegments} 预定的段
+     */
+    static void bindSegment(RenderSegment segment) {
+        if (segment == null) {
+            throw new IllegalArgumentException("segment must not be null");
+        }
+        RecordingContext ctx = RECORDING_CONTEXT.get();
+        ctx.boundSegment = segment;
+        ctx.dedupSegment = segment;
+        ctx.stateDedup.invalidate();
+    }
+
+    /** 解除当前线程的并行段绑定（段边界去重缓存失效，保守）。 */
+    static void unbindSegment() {
+        RecordingContext ctx = RECORDING_CONTEXT.get();
+        ctx.boundSegment = null;
+        ctx.dedupSegment = null;
+        ctx.stateDedup.invalidate();
+    }
+
+    /**
      * 录制一条命令到当前帧。若当前线程的顶点流有未落帧的 immediate 操作，
      * 先把它打包落帧——流段命令与本命令在帧列表中的顺序即录制顺序。
+     * 并行段绑定期间（编排器指派的 worker）直接写入绑定段，绕过帧临界区。
      */
     static void enqueue(GlCommand command) {
-        flushVertexStream();
-        queue().submit(command);
+        RecordingContext ctx = recordingContext();
+        flushVertexStream(ctx);
+        RenderSegment bound = ctx.boundSegment;
+        if (bound != null) {
+            bound.add(command);
+        } else {
+            queue().submit(command);
+        }
     }
 
     /**
      * 录制一条可去重的状态命令（glBindTexture/glEnable/glDisable/glBlendFunc
      * 等，见 {@link StateDedup} 的类型常量）：与上一条已入队的状态命令
-     * 类型参数完全相同、且期间帧命令列表无任何插入时跳过（不产生命令）；
-     * 否则按 {@link #enqueue(GlCommand)} 落帧并记录指纹。任何插入——含
-     * glCallList（显示列表执行绕过录制侧）、aux 生产者线程并发提交、顶点流
-     * 落帧、其他命令——都会经帧提交序号（{@code RenderFrame.commitSeq}）打断
-     * 相邻性，保证去重永不跨越「状态可能已被改变」的边界（旁路审计见
-     * docs/design/render-state-dedup.md）。
+     * 类型参数完全相同、且期间本段命令列表无任何插入时跳过（不产生命令）；
+     * 否则按 {@link #enqueue(GlCommand)} 落帧并记录指纹。段内任何插入——含
+     * glCallList（显示列表执行绕过录制侧）、顶点流落帧、其他命令——都会经
+     * 段提交序号（{@code RenderSegment.commitSeq}）打断相邻性；其他段的并发
+     * 录制与本段回放时的执行相邻性无关，不打断。段边界（帧边界/段切换/worker
+     * 绑定解绑）由调用路径失效重置，保证去重永不跨越「状态可能已被改变」的
+     * 边界（旁路审计见 docs/design/render-state-dedup.md）。
      *
      * @param type    状态命令类型（{@link StateDedup} 常量）
      * @param a,b,c,d 参数槽（最多 4 个 int；float 由调用点转位模式）
@@ -180,16 +231,20 @@ final class BridgeSupport {
             enqueue(command);
             return;
         }
-        RenderFrame frame = ctx.dedupFrame;
-        if (frame == null) {
-            frame = queue().currentFrame();
+        RenderSegment segment = ctx.boundSegment;
+        if (segment == null) {
+            segment = ctx.dedupSegment;
+            if (segment == null) {
+                // aux 生产者线程（无帧边界刷新）：现取当前帧的串行段
+                segment = queue().currentFrame().serialSegment();
+            }
         }
         StateDedup dedup = ctx.stateDedup;
-        if (dedup.shouldSkip(frame, type, a, b, c, d)) {
+        if (dedup.shouldSkip(segment, type, a, b, c, d)) {
             return;
         }
         enqueue(command);
-        dedup.record(frame, type, a, b, c, d);
+        dedup.record(segment, type, a, b, c, d);
     }
 
     /**
@@ -218,7 +273,16 @@ final class BridgeSupport {
      * 渲染线程执行完经 {@link VertexStreamBufferPool} 归还，稳态零拷贝零分配。
      */
     static void flushVertexStream() {
-        VertexStream stream = recordingContext().vertexStream;
+        flushVertexStream(recordingContext());
+    }
+
+    /**
+     * {@link #flushVertexStream()} 的上下文直传形式（热路径免去重复的
+     * ThreadLocal/缓存查找）。并行段绑定期间批量命令直接写入绑定段，
+     * 保持与后续命令在同一段内的录制顺序。
+     */
+    private static void flushVertexStream(RecordingContext ctx) {
+        VertexStream stream = ctx.vertexStream;
         if (stream.isEmpty()) {
             return;
         }
@@ -226,7 +290,12 @@ final class BridgeSupport {
         byte[] data = stream.transferBuffer();
         VertexBatchCommand batch = vertexBatches.acquire();
         batch.setData(data, length);
-        queue().submit(batch);
+        RenderSegment bound = ctx.boundSegment;
+        if (bound != null) {
+            bound.add(batch);
+        } else {
+            queue().submit(batch);
+        }
     }
 
     /**
@@ -243,6 +312,7 @@ final class BridgeSupport {
     static <T> T blockingGet(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            rejectBlockingInBoundSegment();
             // drain-first 必须包含未落帧的顶点流：getter 读到的是此前全部录制命令
             // 执行完的 GL 状态，顶点流是其中一部分
             flushVertexStream();
@@ -251,10 +321,26 @@ final class BridgeSupport {
         return q.get(getter);
     }
 
+    /**
+     * 并行段内阻塞通道 fail-fast：getter/同步任务/资源申请的 drain-first 会
+     * swap 当前帧并等待渲染线程排空——段任务期间这会击穿分段不变量（帧被提前
+     * 提交、worker 迟到写入已封存段），且所有 worker 随排空串行化，并行收益
+     * 归零。并行段内的状态查询必须走 {@link SimulatedGlState} 仿真；未覆盖的
+     * 查询属实现缺口，应补仿真而非放行阻塞。
+     */
+    private static void rejectBlockingInBoundSegment() {
+        if (recordingContext().boundSegment != null) {
+            throw new IllegalStateException(
+                    "[SSOptimizer] 并行录制段内禁止阻塞式 GL 调用（getter/同步/资源申请会 drain 整条管线并击穿分段不变量）；"
+                            + "请为该调用补状态仿真（SimulatedGlState）或将该调用点移出并行段");
+        }
+    }
+
     /** {@link #blockingGet(Callable)} 的无返回值形式。 */
     static void blockingWait(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            rejectBlockingInBoundSegment();
             flushVertexStream();
             swapFrames();
         }
@@ -268,6 +354,7 @@ final class BridgeSupport {
     static <T> T blockingGetResource(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            rejectBlockingInBoundSegment();
             flushVertexStream();
             swapFrames();
         }
@@ -278,6 +365,7 @@ final class BridgeSupport {
     static void blockingWaitResource(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            rejectBlockingInBoundSegment();
             flushVertexStream();
             swapFrames();
         }
