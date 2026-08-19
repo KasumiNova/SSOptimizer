@@ -401,6 +401,19 @@ final class BridgeSupport {
     }
 
     /**
+     * GL 上下文重建后的聚合簿记复位（Display.create/setDisplayMode/setFullscreen 成功
+     * 后由主线程调用）：录制侧状态仿真归零（{@link SimulatedGlState#onContextRecreated()}），
+     * 并清空 VBO id stash——stash 内预生成的 id 全部属于已销毁的旧上下文，
+     * 继续分发出去的都是死 id。清空后由渲染线程帧尾
+     * {@link #refillBufferIdStashIfLow()} 在新上下文里重新补货。
+     */
+    static void onContextRecreated() {
+        simulatedState().onContextRecreated();
+        bufferIdStash = new ConcurrentLinkedQueue<>();
+        bufferIdStashCount = new AtomicInteger();
+    }
+
+    /**
      * 当前线程是否主录制线程（游戏主线程）：getter 仿真短路仅对主线程开放——
      * aux 线程簿记不含主线程的状态流，一律回退阻塞通道保语义。
      */

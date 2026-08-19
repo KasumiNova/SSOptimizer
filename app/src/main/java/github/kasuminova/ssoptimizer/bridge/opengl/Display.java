@@ -61,6 +61,9 @@ public final class Display {
      */
     public static void create() throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(org.lwjgl.opengl.Display::create);
+        // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
+        BridgeSupport.onContextRecreated();
+        GLContext.invalidateCapabilities();
     }
 
     /**
@@ -72,6 +75,9 @@ public final class Display {
      */
     public static void create(PixelFormat pixelFormat) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.create(pixelFormat));
+        // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
+        BridgeSupport.onContextRecreated();
+        GLContext.invalidateCapabilities();
     }
 
     /**
@@ -210,8 +216,10 @@ public final class Display {
      */
     public static void setDisplayMode(DisplayMode mode) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setDisplayMode(mode));
-        // 显示模式切换重建 GL 上下文，录制侧状态簿记全部回到默认值
-        BridgeSupport.simulatedState().onContextRecreated();
+        // 显示模式切换重建 GL 上下文：录制侧状态簿记与 VBO id stash 全部复位
+        BridgeSupport.onContextRecreated();
+        // capabilities 缓存随旧上下文一并失效（见 GLContext.invalidateCapabilities）
+        GLContext.invalidateCapabilities();
     }
 
     /**
@@ -221,8 +229,10 @@ public final class Display {
      */
     public static void setFullscreen(boolean fullscreen) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setFullscreen(fullscreen));
-        // 全屏切换重建 GL 上下文，录制侧状态簿记全部回到默认值
-        BridgeSupport.simulatedState().onContextRecreated();
+        // 全屏切换重建 GL 上下文：录制侧状态簿记与 VBO id stash 全部复位
+        BridgeSupport.onContextRecreated();
+        // capabilities 缓存随旧上下文一并失效（见 GLContext.invalidateCapabilities）
+        GLContext.invalidateCapabilities();
     }
 
     /** 窗口标题变更：无返回值依赖，按普通命令入队（X11 收口渲染线程）。 */

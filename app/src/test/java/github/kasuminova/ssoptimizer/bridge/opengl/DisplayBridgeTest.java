@@ -27,6 +27,7 @@ class DisplayBridgeTest {
     @AfterEach
     void tearDown() {
         Display.uninstall();
+        GLContext.uninstall();
     }
 
     @Test
@@ -46,6 +47,30 @@ class DisplayBridgeTest {
         // 真实 Display.create 在无显示环境不能调）
         assertEquals(1, queue.blockingTasks.size());
         assertEquals(0, queue.recorded.size());
+    }
+
+    @Test
+    void contextRecreationInvalidatesCapabilitiesCacheAndBufferStash() throws Exception {
+        // capabilities 已被取回并缓存（旧上下文时代）
+        GLContext.install(queue);
+        queue.getHandler = callable -> null;
+        GLContext.getCapabilities();
+        assertEquals(1, queue.getCallCount);
+        // VBO id stash 已有预生成存货（旧上下文时代）
+        queue.getHandler = callable -> new int[BridgeSupport.BUFFER_ID_STASH_BATCH];
+        BridgeSupport.acquireBufferId();
+        assertEquals(1, queue.uncountedGetCallCount);
+
+        Display.create();
+
+        // 新上下文建立后：capabilities 缓存失效，下次获取重新走阻塞通道
+        queue.getHandler = callable -> null;
+        GLContext.getCapabilities();
+        assertEquals(2, queue.getCallCount, "create 后 capabilities 缓存必须失效");
+        // stash 内旧上下文的死 id 被清空，重新走资源申请通道补货
+        queue.getHandler = callable -> new int[BridgeSupport.BUFFER_ID_STASH_BATCH];
+        BridgeSupport.acquireBufferId();
+        assertEquals(2, queue.uncountedGetCallCount, "create 后 stash 旧 id 必须清空");
     }
 
     @Test

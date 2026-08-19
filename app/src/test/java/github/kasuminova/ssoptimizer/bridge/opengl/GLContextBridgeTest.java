@@ -43,4 +43,13 @@ class GLContextBridgeTest {
         GLContext.getCapabilities();
         assertEquals(2, queue.getCallCount, "uninstall 后缓存失效重新取回");
     }
+
+    @Test
+    void invalidateCapabilitiesForcesRefetch() {
+        queue.getHandler = callable -> null;
+        GLContext.getCapabilities();
+        GLContext.invalidateCapabilities();
+        GLContext.getCapabilities();
+        assertEquals(2, queue.getCallCount, "上下文重建事件后缓存失效，重新走阻塞通道取回");
+    }
 }

@@ -36,6 +36,20 @@ public final class GLContext {
     }
 
     /**
+     * GL 上下文重建事件（{@code Display.create}/{@code setDisplayMode}/{@code setFullscreen}）
+     * 后使 capabilities 缓存失效：真实 {@link ContextCapabilities} 对象随上下文易主，
+     * 继续返回旧对象会让依赖引用比对做上下文代际检测的下游（LazyTextureManager
+     * 的纹理按代际重载）永远感知不到重建，已失效纹理 ID 不再重载。
+     * <p>
+     * 不在 {@code Display.destroy} 时调用：销毁后到下次创建前的窗口期内渲染线程
+     * 没有上下文，重新取回必然失败，保留旧缓存让此窗口期的调用安全返回。
+     */
+    static void invalidateCapabilities() {
+        capabilities = null;
+        capabilitiesFetched = false;
+    }
+
+    /**
      * 取回当前上下文的能力表。首次调用经阻塞通道在渲染线程执行真实
      * {@code GLContext.getCapabilities()}（要求 {@link Display#create()} 已完成）
      * 并缓存结果；后续调用零阻塞读缓存。
