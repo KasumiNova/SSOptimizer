@@ -41,13 +41,14 @@ public final class FastResourceImageDecoder {
                         ? TextureConversionCache.probeFingerprint(path)
                         : null;
         if (sourceFingerprint != null) {
-            final TextureConversionCache.ResourceCacheHit resourceCacheHit = TextureConversionCache.loadByResourcePath(path, sourceFingerprint);
-            if (resourceCacheHit != null) {
+            final TextureConversionCache.ResourceMetadataHit metadataHit =
+                    TextureConversionCache.probeMetadataByResourcePath(path, sourceFingerprint);
+            if (metadataHit != null) {
                 return TrackedResourceImage.cached(
                         path,
-                        resourceCacheHit.sourceHash(),
+                        metadataHit.sourceHash(),
                         null,
-                        resourceCacheHit.cachedData(),
+                        metadataHit.metadata(),
                         sourceFingerprint
                 );
             }
@@ -66,9 +67,9 @@ public final class FastResourceImageDecoder {
                 ? TrackedResourceImage.computeSourceHash(imageBytes)
                 : null;
         if (sourceHash != null) {
-            final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(sourceHash);
-            if (cached != null) {
-                return TrackedResourceImage.cached(path, sourceHash, imageBytes, cached, sourceFingerprint);
+            final TextureConversionCache.CachedTextureMetadata metadata = TextureConversionCache.loadMetadata(sourceHash);
+            if (metadata != null) {
+                return TrackedResourceImage.cached(path, sourceHash, imageBytes, metadata, sourceFingerprint);
             }
         }
 

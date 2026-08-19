@@ -30,6 +30,13 @@ public abstract class XStreamObjectIdDictionaryMixin {
     @Shadow(remap = false)
     private Map<?, ?> map;
 
+    // 原版 removeId 在移除映射后会调用 cleanup() 处理弱引用回收队列；
+    // @Shadow 声明原方法，覆盖实现中保持同样的清理语义
+    @Shadow(remap = false)
+    private void cleanup() {
+        throw new AssertionError();
+    }
+
     @Unique
     private static final int SSOPTIMIZER_INITIAL_REFERENCE_MAP_CAPACITY = 4096;
 
@@ -73,10 +80,12 @@ public abstract class XStreamObjectIdDictionaryMixin {
      *
      * @param item 待删除对象
      * @author GitHub Copilot
-     * @reason 复用字典实例级探针 key，降低引用字典清理阶段的查询分配成本与 ThreadLocal 读取开销。
+     * @reason 复用字典实例级探针 key，降低引用字典清理阶段的查询分配成本与 ThreadLocal 读取开销；
+     * 删除后跟随原实现调用 {@code cleanup()} 处理弱引用回收队列。
      */
     @Overwrite(remap = false)
     public void removeId(final Object item) {
         XStreamObjectIdDictionaryHelper.removeId(map, item, ssoptimizer$lookupProbe);
+        cleanup();
     }
 }

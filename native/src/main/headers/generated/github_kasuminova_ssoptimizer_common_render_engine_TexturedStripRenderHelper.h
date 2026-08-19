@@ -15,6 +15,14 @@ extern "C" {
 JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_TexturedStripRenderHelper_nativeRenderTexturedStrip
   (JNIEnv *, jclass, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jfloat, jfloat, jboolean);
 
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_render_engine_TexturedStripRenderHelper
+ * Method:    nativeRenderTexturedStripBatch
+ * Signature: ([F[II)V
+ */
+JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_TexturedStripRenderHelper_nativeRenderTexturedStripBatch
+  (JNIEnv *, jclass, jfloatArray, jintArray, jint);
+
 #ifdef __cplusplus
 }
 #endif

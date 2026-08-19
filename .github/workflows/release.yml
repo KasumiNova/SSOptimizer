@@ -26,24 +26,64 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build mapped jar
+      # coremod 编译期依赖 NanoForge API（mavenLocal SNAPSHOT），CI 需现场发布
+      - name: Checkout NanoForge
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/NanoForge
+          path: NanoForge
+
+      - name: Publish NanoForge to mavenLocal
+        working-directory: NanoForge
+        run: ./gradlew publishToMavenLocal --console=plain
+
+      # SDG 插件（io.github.nanoforged.sectordevgradle.*）以 SNAPSHOT 发布在 mavenLocal，CI 需现场发布
+      - name: Checkout SectorDevGradle
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/SectorDevGradle
+          path: SectorDevGradle
+
+      - name: Publish SDG plugins to mavenLocal
+        working-directory: SectorDevGradle
+        run: ./gradlew publishToMavenLocal --console=plain
+
+      # named 游戏 jar 依赖已切换为 SourceSector 本地 maven 仓，CI 现场发布 windows 仓
+      - name: Checkout SourceSector
+        uses: actions/checkout@v4
+        with:
+          repository: NanoForged/SourceSector
+          path: SourceSector
+
+      - name: Publish named game jars (SourceSector)
+        working-directory: SourceSector
+        run: ./gradlew :mapping:publishNamedGameJars --console=plain
+
+      - name: Build app jar and mod metadata
         run: |
-          ./gradlew jarMapped \
+          ./gradlew :app:modProduction \
             -Pstarsector.gameDir= \
-            -Pstarsector.platform=${{ matrix.platform }} \
+            -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows \
             -x :native:assemble
 
       - name: Run unit tests
         run: |
           ./gradlew test \
             -Pstarsector.gameDir= \
-            -Pstarsector.platform=${{ matrix.platform }}
+            -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows
 
-      - name: Upload mapped jar
+      - name: Stage release artifacts
+        run: |
+          mkdir -p app/build/release-stage
+          cp app/build/libs/SSOptimizer.jar app/build/release-stage/
+          cp app/build/mod_production/mod_info.json app/build/release-stage/
+          cp app/build/mod_production/nanoforge.mod.toml app/build/release-stage/
+
+      - name: Upload app jar
         uses: actions/upload-artifact@v4
         with:
-          name: mapped-jar-${{ matrix.platform }}
-          path: build/libs/SSOptimizer-mapped.jar
+          name: app-jar-${{ matrix.platform }}
+          path: app/build/release-stage/
 
   build-native-linux:
     name: Build Native (Linux)
@@ -73,8 +113,7 @@ jobs:
       - name: Build native library
         run: |
           ./gradlew :native:assembleRelease \
-            -Pstarsector.gameDir= \
-            -Pstarsector.platform=linux
+            -Pstarsector.gameDir=
 
       - name: Collect runtime dependencies
         run: |
@@ -123,7 +162,6 @@ jobs:
         run: |
           gradlew.bat :native:assembleRelease ^
             -Pstarsector.gameDir= ^
-            -Pstarsector.platform=windows ^
             -Pssoptimizer.native.windows.vcpkgRoot=%VCPKG_INSTALLATION_ROOT% ^
             -Pssoptimizer.native.windows.triplet=x64-windows
 
@@ -186,13 +224,17 @@ jobs:
                    "${LINUX_MOD_STAGE}/native/linux" \
                    "${LINUX_MOD_STAGE}/fonts" \
                    "${LINUX_STAGE}/graphics/fonts" \
+                   "${LINUX_STAGE}/mods/coremods" \
                    "${WINDOWS_MOD_STAGE}/jars" \
                    "${WINDOWS_MOD_STAGE}/native/windows" \
                    "${WINDOWS_MOD_STAGE}/fonts" \
-                   "${WINDOWS_STAGE}/starsector-core/graphics/fonts"
+                   "${WINDOWS_STAGE}/starsector-core/graphics/fonts" \
+                   "${WINDOWS_STAGE}/mods/coremods"
 
-          cp artifacts/mapped-jar-linux/SSOptimizer-mapped.jar "${LINUX_MOD_STAGE}/jars/SSOptimizer.jar"
-          cp artifacts/mapped-jar-windows/SSOptimizer-mapped.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/app-jar-linux/SSOptimizer.jar "${LINUX_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/app-jar-linux/SSOptimizer.jar "${LINUX_STAGE}/mods/coremods/SSOptimizer.jar"
+          cp artifacts/app-jar-windows/SSOptimizer.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
+          cp artifacts/app-jar-windows/SSOptimizer.jar "${WINDOWS_STAGE}/mods/coremods/SSOptimizer.jar"
           cp artifacts/native-linux/libnative.so "${LINUX_MOD_STAGE}/native/linux/lib${MOD_ID}.so"
           cp artifacts/native-windows/native.dll "${WINDOWS_MOD_STAGE}/native/windows/${MOD_ID}.dll"
 
@@ -207,21 +249,14 @@ jobs:
             cp "$f" "${WINDOWS_MOD_STAGE}/native/windows/" 2>/dev/null || true
           done
 
-          cp mod_info.json README.md "${LINUX_MOD_STAGE}/"
-          cp mod_info.json README.md "${WINDOWS_MOD_STAGE}/"
+          cp artifacts/app-jar-linux/mod_info.json artifacts/app-jar-linux/nanoforge.mod.toml README.md "${LINUX_MOD_STAGE}/"
+          cp artifacts/app-jar-windows/mod_info.json artifacts/app-jar-windows/nanoforge.mod.toml README.md "${WINDOWS_MOD_STAGE}/"
           cp log4j.properties "${LINUX_STAGE}/log4j.properties"
           cp log4j.properties "${WINDOWS_STAGE}/starsector-core/log4j.properties"
           cp game-fonts/ttf/* "${LINUX_MOD_STAGE}/fonts/"
           cp game-fonts/ttf/* "${WINDOWS_MOD_STAGE}/fonts/"
           cp game-fonts/fnt/* "${LINUX_STAGE}/graphics/fonts/"
           cp game-fonts/fnt/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
-
-          cp tools/starsector.sh "${LINUX_STAGE}/starsector.sh"
-          cp tools/launch_injected_ss.sh "${LINUX_STAGE}/launch_injected_ss.sh"
-          chmod +x "${LINUX_STAGE}/starsector.sh" "${LINUX_STAGE}/launch_injected_ss.sh"
-
-          cp tools/starsector.bat "${WINDOWS_STAGE}/starsector-core/starsector.bat"
-          cp tools/starsector-ssoptimizer.bat "${WINDOWS_STAGE}/starsector-ssoptimizer.bat"
 
           mkdir -p build/distributions
           cd "${LINUX_STAGE}"

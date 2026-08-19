@@ -1,0 +1,165 @@
+package github.kasuminova.ssoptimizer.mixin.render;
+
+import com.fs.graphics.TextureObject;
+import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvState;
+import github.kasuminova.ssoptimizer.common.render.atlas.ShipWeaponAtlas;
+import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import org.lwjgl.opengl.GL11;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+/**
+ * Sprite UV 图集重映射 Mixin。
+ * <p>
+ * 注入目标：{@code com.fs.graphics.Sprite}<br>
+ * 注入动机：{@link ShipWeaponAtlas} 把舰船/武器贴图合并进图集后，Sprite 的
+ * 纹理坐标仍指向原始独立纹理的 UV 空间，必须映射进图集区域才能与绑定层的图集
+ * 重定向（{@code LazyTextureManager}）配套。<br>
+ * 注入效果：
+ * <ol>
+ *   <li>{@code setTexture}/{@code readResolve}（XStream 反序列化恢复原始空间 UV）
+ *       返回点按贴图路径查图集区域，把 texX/texY/texWidth/texHeight 从「原纹理 GL
+ *       空间」换算到「图集 GL 空间」：
+ *       {@code texX' = (region.x + texX * srcW) / atlasSize}（Y/宽/高同理，
+ *       srcW/srcH 为原纹理 GL 尺寸，由 imageWidth/uScale 推得），并置重映射标记；
+ *       sprite.texture 引用保持原对象（imageWidth/平均色等元数据消费者不受影响）；</li>
+ *   <li>{@code renderNoBlendOrRotate}/{@code renderAtCenterWithCornerColors}
+ *       两个方法的 {@code glTexCoord2f} 调用对<b>已重映射</b>的精灵补上
+ *       texX/texY 原点偏移——原版这两个方法假设 UV 原点为 (0,0)
+ *       （原版 texX/texY 恒为 0 时行为不变），图集化后原点必须加上区域偏移，
+ *       否则会渲染图集左下角内容。{@code renderRegion} 由 {@link SpriteMixin}
+ *       整体覆写为合批/单 JNI 路径，图集原点与边缘内缩在覆写方法内联处理。</li>
+ * </ol>
+ */
+@Mixin(targets = GameClassNames.SPRITE_DOTTED)
+public abstract class SpriteAtlasMixin implements AtlasUvState {
+    @Shadow(remap = false)
+    protected float texX;
+
+    @Shadow(remap = false)
+    protected float texY;
+
+    @Shadow(remap = false)
+    protected float texWidth;
+
+    @Shadow(remap = false)
+    protected float texHeight;
+
+    @Shadow(remap = false)
+    protected TextureObject texture;
+
+    /** 当前纹理是否已重映射进图集（决定原点假设方法是否补偏移）。 */
+    @Unique
+    private boolean ssoptimizer$atlasRemapped;
+
+    /** 图集化后与原 UV 域 0.001F 像素等价的 U 向内缩（0.001 * srcW / atlasSize）。 */
+    @Unique
+    private float ssoptimizer$atlasInsetU;
+
+    /** 图集化后与原 UV 域 0.001F 像素等价的 V 向内缩（0.001 * srcH / atlasSize）。 */
+    @Unique
+    private float ssoptimizer$atlasInsetV;
+
+    /**
+     * @author KasumiNova
+     * @reason 已入图集的贴图在 setTexture 时把 UV 映射进图集区域。
+     */
+    @Inject(method = "setTexture", at = @At("RETURN"), remap = false)
+    private void ssoptimizer$remapToAtlas(final TextureObject newTexture, final CallbackInfo ci) {
+        this.ssoptimizer$atlasRemapped = newTexture != null && ssoptimizer$remap(newTexture);
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 反序列化恢复的 Sprite 不经过 setTexture，UV 为原始空间，需同样重映射。
+     */
+    @Inject(method = "readResolve", at = @At("RETURN"), remap = false)
+    private void ssoptimizer$remapToAtlasAfterDeserialize(final CallbackInfoReturnable<Object> cir) {
+        this.ssoptimizer$atlasRemapped = this.texture != null && ssoptimizer$remap(this.texture);
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason renderNoBlendOrRotate/renderAtCenterWithCornerColors 的
+     * UV 计算假设原点 (0,0)，图集化后必须补区域原点偏移；未重映射的精灵保持原样
+     * （原版行为对 setTexX 后的精灵同样忽略 texX，不擅自改变）。
+     * renderRegion 由 SpriteMixin 覆写后不再包含 glTexCoord2f 调用，不在此处理。
+     * require=0：分离模式下调用点已被 ASM 重定向到 bridge owner，由成对的
+     * {@link #ssoptimizer$texCoordWithAtlasOriginBridged} 命中。
+     */
+    @Redirect(method = {"renderNoBlendOrRotate(FFZ)V", "renderAtCenterWithCornerColors(FF)V"},
+            at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexCoord2f(FF)V"),
+            remap = false, require = 0)
+    private void ssoptimizer$texCoordWithAtlasOrigin(final float u, final float v) {
+        if (this.ssoptimizer$atlasRemapped) {
+            GL11.glTexCoord2f(u + this.texX, v + this.texY);
+        } else {
+            GL11.glTexCoord2f(u, v);
+        }
+    }
+
+    /**
+     * 分离模式锚点：调用点被 RenderThreadRedirectTransformer 改写为 bridge
+     * {@code GL11.glTexCoord2f} 后由本 @Redirect 命中，handler 复用同一实现
+     * （其内部的 GL11 调用在分离模式下同样经本类字节码的 owner 改写进入录制）。
+     */
+    @Redirect(method = {"renderNoBlendOrRotate(FFZ)V", "renderAtCenterWithCornerColors(FF)V"},
+            at = @At(value = "INVOKE",
+                    target = "Lgithub/kasuminova/ssoptimizer/bridge/opengl/GL11;glTexCoord2f(FF)V"),
+            remap = false, require = 0)
+    private void ssoptimizer$texCoordWithAtlasOriginBridged(final float u, final float v) {
+        ssoptimizer$texCoordWithAtlasOrigin(u, v);
+    }
+
+    /**
+     * 供 {@link SpriteMixin} 的 renderRegion 覆写读取重映射标记
+     * （Mixin 包不被 LaunchClassLoader 加载，经 {@link AtlasUvState} 接口注入传递）。
+     */
+    @Override
+    public boolean ssoptimizer$isAtlasRemapped() {
+        return this.ssoptimizer$atlasRemapped;
+    }
+
+    /** 供 {@link SpriteMixin} 的 renderRegion 覆写读取像素等价 U 内缩。 */
+    @Override
+    public float ssoptimizer$atlasInsetU() {
+        return this.ssoptimizer$atlasInsetU;
+    }
+
+    /** 供 {@link SpriteMixin} 的 renderRegion 覆写读取像素等价 V 内缩。 */
+    @Override
+    public float ssoptimizer$atlasInsetV() {
+        return this.ssoptimizer$atlasInsetV;
+    }
+
+    /**
+     * 把当前 UV 四字段从原纹理 GL 空间换算到图集 GL 空间。
+     * 原纹理 GL 尺寸 = imageSize / uvScale（uScale = imageWidth / textureWidth）。
+     *
+     * @return 命中图集并完成重映射返回 true
+     */
+    private boolean ssoptimizer$remap(final TextureObject source) {
+        final ShipWeaponAtlas.Region region = ShipWeaponAtlas.lookup(source.getTexturePath());
+        if (region == null) {
+            return false;
+        }
+        final float srcW = source.getImageWidth() / source.getUScale();
+        final float srcH = source.getImageHeight() / source.getVScale();
+        final float atlasSize = region.atlasSize();
+        this.texX = (region.x() + this.texX * srcW) / atlasSize;
+        this.texY = (region.y() + this.texY * srcH) / atlasSize;
+        this.texWidth = this.texWidth * srcW / atlasSize;
+        this.texHeight = this.texHeight * srcH / atlasSize;
+        // 原版 renderRegion 的 0.001F 边缘内缩以原纹理 UV 域为基准（= 0.001 * srcW 像素），
+        // 换算到图集 UV 域保持像素等价
+        this.ssoptimizer$atlasInsetU = 0.001F * srcW / atlasSize;
+        this.ssoptimizer$atlasInsetV = 0.001F * srcH / atlasSize;
+        return true;
+    }
+}

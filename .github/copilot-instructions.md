@@ -65,7 +65,7 @@ github.kasuminova.ssoptimizer/
 ./gradlew :native:build
 
 # 部署到游戏目录
-./gradlew installDevMod
+./gradlew deployMod
 
 # 烟测（启动器模式）
 ./tools/smoke_test_game_launch.sh <gameDir> <timeoutSec> launcher

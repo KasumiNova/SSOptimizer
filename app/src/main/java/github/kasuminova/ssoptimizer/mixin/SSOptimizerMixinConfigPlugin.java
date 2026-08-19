@@ -19,6 +19,9 @@ import java.util.Set;
 public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
     private static final Logger LOGGER = Logger.getLogger(SSOptimizerMixinConfigPlugin.class);
 
+    /** 并行 AI 织入总开关（禁用整个 mixin.ai 包）。 */
+    public static final String AI_PARALLEL_DISABLE_PROPERTY = "ssoptimizer.disable.aiparallel";
+
     /**
      * Mixin 配置加载回调。
      *
@@ -51,6 +54,14 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
         if (mixinClassName.endsWith(".render.EngineRenderMixin") && !ShipEngineRenderOptimizationToggle.isEnabled()) {
             LOGGER.info("[SSOptimizer] Ship engine render optimization mixin disabled by default; enable with -D"
                 + ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY + "=true");
+            return false;
+        }
+        // 并行 AI 织入总开关：整套 ai 包 Mixin 同生共死（含线程本地化与并发化），
+        // 另有 ssoptimizer.ai.parallel=false 运行期软开关（保留织入、全部内联串行）。
+        if (mixinClassName.contains(".mixin.ai.")
+                && Boolean.getBoolean(AI_PARALLEL_DISABLE_PROPERTY)) {
+            LOGGER.info("[SSOptimizer] Parallel AI mixin disabled via -D" + AI_PARALLEL_DISABLE_PROPERTY
+                + "=true: " + mixinClassName);
             return false;
         }
         return true;

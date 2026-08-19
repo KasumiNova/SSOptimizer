@@ -3,6 +3,8 @@ package github.kasuminova.ssoptimizer.common.loading;
 import com.fs.graphics.TextureLoader;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides;
+import github.kasuminova.ssoptimizer.common.render.atlas.ShipWeaponAtlas;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
@@ -85,13 +87,11 @@ public final class LazyTextureManager {
             "graphics/warroom/"
     };
 
-    private static final    Map<com.fs.graphics.TextureObject, ManagedTextureEntry>      MANAGED_TEXTURES                    =
-            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final    WeakKeyMap<com.fs.graphics.TextureObject, ManagedTextureEntry>      MANAGED_TEXTURES                    = new WeakKeyMap<>();
     // Texture ids are bound to the current OpenGL context. Launcher UI and the
     // actual game can create different contexts within the same JVM, so cached
     // texture objects need lazy in-place reload when the context generation changes.
-    private static final    Map<com.fs.graphics.TextureObject, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              =
-            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final    WeakKeyMap<com.fs.graphics.TextureObject, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              = new WeakKeyMap<>();
     private static final    ThreadLocal<Set<com.fs.graphics.TextureObject>>              CONTEXT_RELOAD_GUARD                =
             ThreadLocal.withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<>()));
     private static final    ThreadLocal<String>                                          CURRENT_BOUND_TEXTURE_PATH          =
@@ -110,6 +110,14 @@ public final class LazyTextureManager {
     private static volatile long                                                         nextSweepNanos                      = 0L;
     private static volatile long                                                         nextCompositionReportNanos          = 0L;
     private static volatile long                                                         nextManagementLogNanos              = 0L;
+    private static final    AtomicLong                                                   BIND_STATS_CALLS                     = new AtomicLong();
+    private static final    AtomicLong                                                   BIND_STATS_REAL                      = new AtomicLong();
+    private static final    AtomicLong                                                   BIND_STATS_DEDUPED                   = new AtomicLong();
+    private static final    AtomicLong                                                   BIND_STATS_ATLAS                     = new AtomicLong();
+    /** 逐路径 bind 统计（诊断用，{@code -Dssoptimizer.bindstats.paths=true} 开启）：非图集 bind 的调用数按路径计数。 */
+    private static final    boolean                                                      BIND_PATH_STATS                      = Boolean.getBoolean("ssoptimizer.bindstats.paths");
+    private static final    java.util.concurrent.ConcurrentHashMap<String, AtomicLong>   BIND_PATH_COUNTS                     = BIND_PATH_STATS ? new java.util.concurrent.ConcurrentHashMap<>() : null;
+    private static volatile long                                                         nextBindStatsLogNanos                = 0L;
     private static volatile Object                                                       lastOpenGlContextToken              = null;
     private static volatile long                                                         currentOpenGlContextGeneration      = 0L;
 
@@ -189,6 +197,12 @@ public final class LazyTextureManager {
             return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath, resourcePath), resourcePath);
         }
 
+        // worker 预备管线：读源/哈希/缓存写入已在后台完成，这里直接消费元数据
+        final TexturePreparationRegistry.Prepared prepared = TexturePreparationRegistry.await(effectivePath);
+        if (prepared != null) {
+            return loadPreparedTexture(loader, textureCache, resourcePath, effectivePath, prepared);
+        }
+
         final SourceSnapshot source = readSource(effectivePath, resourcePath);
         final LazyTextureMetadata metadata = buildMetadata(effectivePath, source);
         if (metadata == null) {
@@ -217,9 +231,21 @@ public final class LazyTextureManager {
 
     public static void bindTexture(final com.fs.graphics.TextureObject texture,
                                    final int target) {
-        if (isContextReloadInProgress(texture)) {
-            GL11.glBindTexture(target, Math.max(readTextureId(texture, -1), 0));
+        BIND_STATS_CALLS.incrementAndGet();
+        final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
+        if (atlasRegion != null) {
+            // 已入舰船/武器图集：直接绑定图集纹理，原始贴图不再上传
+            bindTextureDeduped(target, atlasRegion.textureId());
             noteCurrentBoundTexture(texture);
+            BIND_STATS_ATLAS.incrementAndGet();
+            maybeLogBindStats();
+            return;
+        }
+        if (isContextReloadInProgress(texture)) {
+            bindTextureDeduped(target, Math.max(readTextureId(texture, -1), 0));
+            noteCurrentBoundTexture(texture);
+            noteBindPath(texture);
+            maybeLogBindStats();
             return;
         }
 
@@ -227,10 +253,51 @@ public final class LazyTextureManager {
         ensureTextureReady(texture, target, now, false);
 
         final int textureId = readTextureId(texture, -1);
-        GL11.glBindTexture(target, Math.max(textureId, 0));
+        bindTextureDeduped(target, Math.max(textureId, 0));
         noteCurrentBoundTexture(texture);
+        noteBindPath(texture);
+        maybeLogBindStats();
         maybeSweepIdleTextures(texture, now);
         maybeEmitTextureDiagnostics(now);
+    }
+
+    /** 诊断：记录一次非图集 bind 的逐路径计数（仅在 BIND_PATH_STATS 开启时有效）。 */
+    private static void noteBindPath(final com.fs.graphics.TextureObject texture) {
+        if (BIND_PATH_COUNTS == null) {
+            return;
+        }
+        final String path = texture.getTexturePath();
+        BIND_PATH_COUNTS.computeIfAbsent(path == null ? "<null>" : path, k -> new AtomicLong())
+                .incrementAndGet();
+    }
+
+    /**
+     * 真实 GL 绑定去重：先向驱动查询当前绑定，仅当目标纹理不同才发起
+     * {@code glBindTexture}。图集化后大量精灵共享同一图集页纹理，连续绘制同页
+     * 内容时本方法可把真实 bind 调用压到接近零；非图集纹理的相邻重复绑定
+     * （UI 字体、粒子批次等）同样受益。
+     * <p>
+     * 正确性依赖 {@code glGetInteger(GL_TEXTURE_BINDING_2D)} 返回驱动侧真实状态，
+     * 因此游戏内任何绕过本管理器的直接 glBindTexture 调用都不会使去重失效。
+     * 仅对 {@code GL_TEXTURE_2D} 目标去重，其余目标保持无条件绑定。
+     * <p>
+     * 渲染线程分离模式下去重整体跳过：此时 {@code glGetInteger} 经 bridge 是一次
+     * 全管线 drain（还会计入 StallDetector 熔断窗口），而重复 bind 只是渲染线程
+     * 上一条廉价命令——去重的收益与成本倒挂，直接录制绑定命令。
+     */
+    private static void bindTextureDeduped(final int target, final int textureId) {
+        if (RenderThreadMode.isEnabled()) {
+            GL11.glBindTexture(target, textureId);
+            BIND_STATS_REAL.incrementAndGet();
+            return;
+        }
+        if (target == GL11.GL_TEXTURE_2D
+                && GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D) == textureId) {
+            BIND_STATS_DEDUPED.incrementAndGet();
+            return;
+        }
+        GL11.glBindTexture(target, textureId);
+        BIND_STATS_REAL.incrementAndGet();
     }
 
     public static boolean isCurrentBoundVictorPixelFontTexture() {
@@ -247,6 +314,11 @@ public final class LazyTextureManager {
         if (texture == null) {
             return currentTextureId;
         }
+        final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
+        if (atlasRegion != null) {
+            // 已入舰船/武器图集：返回图集纹理 id（合批与绑定共用同一出口）
+            return atlasRegion.textureId();
+        }
         if (isContextReloadInProgress(texture)) {
             return currentTextureId;
         }
@@ -257,6 +329,31 @@ public final class LazyTextureManager {
         maybeSweepIdleTextures(texture, now);
         maybeEmitTextureDiagnostics(now);
         return ensuredTextureId >= 0 ? ensuredTextureId : currentTextureId;
+    }
+
+    /**
+     * 纹理绑定计数日志：每 10 秒输出一次 bindTexture 调用数、真实 glBindTexture 数、
+     * 去重跳过数与其中图集页命中数，用于基准对照图集的 bind 开销削减效果。
+     */
+    private static void maybeLogBindStats() {
+        final long now = System.nanoTime();
+        if (now < nextBindStatsLogNanos) {
+            return;
+        }
+        nextBindStatsLogNanos = now + 10_000_000_000L;
+        LOGGER.info("[SSOptimizer] texture binds: calls=" + BIND_STATS_CALLS.get()
+                + " real=" + BIND_STATS_REAL.get()
+                + " deduped=" + BIND_STATS_DEDUPED.get()
+                + " atlas=" + BIND_STATS_ATLAS.get());
+        if (BIND_PATH_COUNTS != null) {
+            final StringBuilder top = new StringBuilder("[SSOptimizer] top non-atlas bind paths:");
+            BIND_PATH_COUNTS.entrySet().stream()
+                    .sorted(Map.Entry.<String, AtomicLong>comparingByValue(
+                            (a, b) -> Long.compare(b.get(), a.get())))
+                    .limit(15)
+                    .forEach(e -> top.append(' ').append(e.getKey()).append('=').append(e.getValue().get()));
+            LOGGER.info(top.toString());
+        }
     }
 
     static boolean isTextureEvictable(final com.fs.graphics.TextureObject texture) {
@@ -282,6 +379,11 @@ public final class LazyTextureManager {
         );
         MANAGED_TEXTURES.put(texture,
                 ManagedTextureEntry.resident(normalizeResourcePath(resourcePath), "test-hash", metadata, System.nanoTime(), true));
+    }
+
+    /** 测试用：当前受管纹理条目数（size 会先 expunge，返回存活数）。 */
+    static int managedTextureCountForTests() {
+        return MANAGED_TEXTURES.size();
     }
 
     static String configuredCompositionReportPath() {
@@ -403,7 +505,14 @@ public final class LazyTextureManager {
         return false;
     }
 
-    private static boolean isOriginalLazyModeEnabled() {
+    /**
+     * 游戏设置中的原始延迟加载模式是否启用。
+     * 该模式下贴图元数据（尺寸/uScale）在 setTexture 时不可用，
+     * {@code ShipWeaponAtlas} 等依赖元数据的功能据此跳过。
+     *
+     * @return 启用返回 true；设置方法不可用时按未启用处理
+     */
+    public static boolean isOriginalLazyModeEnabled() {
         final Method method = ORIGINAL_LAZY_MODE_METHOD;
         if (method == null) {
             return false;
@@ -428,59 +537,59 @@ public final class LazyTextureManager {
         }
         nextSweepNanos = now + sweepIntervalMillis() * 1_000_000L;
 
-        int evicted = 0;
+        final int[] evicted = {0};
         synchronized (MANAGED_TEXTURES) {
-            for (Map.Entry<com.fs.graphics.TextureObject, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
-                final com.fs.graphics.TextureObject candidate = managedEntry.getKey();
+            MANAGED_TEXTURES.forEach((candidate, entry) -> {
                 if (candidate == null || candidate == currentTexture) {
-                    continue;
+                    return;
                 }
-
-                final ManagedTextureEntry entry = managedEntry.getValue();
                 if (entry == null || entry.pendingUpload()) {
-                    continue;
+                    return;
                 }
                 if (!entry.evictable) {
-                    continue;
+                    return;
                 }
 
                 final int textureId = readTextureId(candidate, -1);
                 if (textureId == -1) {
                     entry.markPendingUpload();
-                    continue;
+                    return;
                 }
                 final long candidateIdleNanos = effectiveIdleUnloadMillis(entry.resourcePath) * 1_000_000L;
                 if (now - entry.lastBindNanos() < candidateIdleNanos) {
-                    continue;
+                    return;
                 }
 
                 GL11.glDeleteTextures(textureId);
                 setTextureId(candidate, -1);
                 entry.markPendingUpload();
-                evicted++;
-            }
+                evicted[0]++;
+            });
         }
 
-        if (evicted > 0) {
-            TOTAL_EVICTED_TEXTURES.addAndGet(evicted);
-            PENDING_EVICTED_TEXTURES.addAndGet(evicted);
-            LOGGER.debug("[SSOptimizer] Evicted " + evicted + " idle texture(s) from VRAM");
+        if (evicted[0] > 0) {
+            TOTAL_EVICTED_TEXTURES.addAndGet(evicted[0]);
+            PENDING_EVICTED_TEXTURES.addAndGet(evicted[0]);
+            LOGGER.debug("[SSOptimizer] Evicted " + evicted[0] + " idle texture(s) from VRAM");
         }
     }
 
     private static void uploadDeferredTexture(final com.fs.graphics.TextureObject texture,
                                               final int target,
                                               final ManagedTextureEntry entry) throws IOException {
-        TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(entry.sourceHash);
-        if (cached == null) {
-            final SourceSnapshot source = readSource(entry.resourcePath, entry.resourcePath);
-            buildMetadata(entry.resourcePath, source);
-            cached = TextureConversionCache.load(entry.sourceHash);
-            if (cached == null) {
-                throw new IOException("Texture cache miss after deferred rebuild: " + entry.resourcePath);
-            }
+        final ResolvedDeferredTexture resolved = resolveDeferredTextureData(entry.resourcePath, entry.sourceHash);
+        if (resolved == null) {
+            uploadFallbackPixelTexture(texture, target, entry);
+            return;
         }
 
+        if (!resolved.sourceHash().equals(entry.sourceHash)) {
+            // 重建后实际源哈希与登记键不一致（如 worker 与主线程读源路径不同）：
+            // 同步 entry 键，保证后续绑定（闲置卸载后再上传）直接命中缓存。
+            entry.updateSourceHash(resolved.sourceHash());
+        }
+
+        final TextureConversionCache.CachedTextureData cached = resolved.data();
         final TexturePixelConversionResult result = cached.conversionResult();
         applyMetadata(texture, LazyTextureMetadata.from(entry.resourcePath,
                 cached.imageWidth(),
@@ -488,6 +597,110 @@ public final class LazyTextureManager {
                 cached.hasAlpha(),
                 result));
 
+        uploadConverted(texture, target, entry.resourcePath, cached);
+    }
+
+    /**
+     * 解析延迟上传所需的像素数据。
+     * <p>
+     * 优先按登记的 {@code registeredSourceHash} 命中压缩缓存；未命中时立即重建：
+     * 直接重读源字节并解码/转换为像素，同时尝试回写磁盘缓存（回写失败不阻塞本次上传）。
+     * 重建结果直接返回，不再依赖第二次缓存读取——旧实现中 {@code buildMetadata} 可能走
+     * 元数据短路（索引与数据文件不同步时成为空操作）、缓存写入失败被静默吞掉或重建哈希
+     * 与登记键不一致，都会导致重建后再次 miss，最终以 IOException 失败并黑采样。
+     *
+     * @return 像素数据与实际使用的源哈希；源不可读或解码失败时返回 null（调用方走 1x1 兜底上传）
+     */
+    static ResolvedDeferredTexture resolveDeferredTextureData(final String resourcePath,
+                                                              final String registeredSourceHash) {
+        final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(registeredSourceHash);
+        if (cached != null) {
+            return new ResolvedDeferredTexture(cached, registeredSourceHash);
+        }
+
+        LOGGER.warn("[SSOptimizer] Deferred texture cache miss for " + resourcePath
+                + " (hash=" + registeredSourceHash + "), rebuilding by immediate decode");
+
+        final byte[] sourceBytes = readRebuildSourceBytes(resourcePath);
+        if (sourceBytes == null) {
+            LOGGER.error("[SSOptimizer] Deferred texture cache miss and source unreadable: " + resourcePath);
+            return null;
+        }
+
+        final BufferedImage decoded;
+        try {
+            decoded = FastResourceImageDecoder.decodeUntracked(sourceBytes);
+        } catch (IOException e) {
+            LOGGER.error("[SSOptimizer] Failed to decode texture for deferred rebuild: " + resourcePath, e);
+            return null;
+        }
+        if (decoded == null) {
+            LOGGER.error("[SSOptimizer] Texture decode produced no image for deferred rebuild: " + resourcePath);
+            return null;
+        }
+
+        final String rebuiltHash = TrackedResourceImage.computeSourceHash(sourceBytes);
+        if (!rebuiltHash.equals(registeredSourceHash)) {
+            LOGGER.warn("[SSOptimizer] Deferred texture cache key mismatch for " + resourcePath
+                    + ": registered=" + registeredSourceHash + ", rebuilt=" + rebuiltHash);
+        }
+
+        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint =
+                TextureConversionCache.probeFingerprint(resourcePath);
+        final BufferedImage tracked = TrackedResourceImage.wrap(resourcePath, rebuiltHash, decoded, sourceFingerprint);
+        final TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
+        return new ResolvedDeferredTexture(
+                new TextureConversionCache.CachedTextureData(
+                        decoded.getWidth(),
+                        decoded.getHeight(),
+                        decoded.getColorModel().hasAlpha(),
+                        result),
+                rebuiltHash);
+    }
+
+    /**
+     * 延迟重建时重读源字节。缓存未命中后不再走资源索引指纹短路（索引与数据文件不同步时
+     * 该路径可能空转），直接从资源流读取原始字节。
+     */
+    private static byte[] readRebuildSourceBytes(final String resourcePath) {
+        try (InputStream input = openStream(resourcePath, resourcePath)) {
+            if (input == null) {
+                return null;
+            }
+            return input.readAllBytes();
+        } catch (IOException e) {
+            LOGGER.error("[SSOptimizer] Failed to read texture source for deferred rebuild: " + resourcePath, e);
+            return null;
+        }
+    }
+
+    /**
+     * 源不可读/解码失败时上传 1x1 白色像素贴图，避免 GL 以未生成纹理 id 的不完整纹理
+     * 采样产生黑块；同时输出 ERROR 日志便于排查。白色对 normal map 是合法非零扰动，
+     * 对颜色贴图是可见占位，均优于黑采样。
+     */
+    private static void uploadFallbackPixelTexture(final com.fs.graphics.TextureObject texture,
+                                                   final int target,
+                                                   final ManagedTextureEntry entry) {
+        LOGGER.error("[SSOptimizer] Deferred texture data unavailable for " + entry.resourcePath
+                + ", uploading 1x1 white fallback texture");
+        final BufferedImage white = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+        white.setRGB(0, 0, 0xFFFFFFFF);
+        final TexturePixelConversionResult result = TexturePixelConverter.convert(white);
+        applyMetadata(texture, LazyTextureMetadata.from(entry.resourcePath, 1, 1, true, result));
+        uploadConverted(texture, target, entry.resourcePath,
+                new TextureConversionCache.CachedTextureData(1, 1, true, result));
+    }
+
+    /**
+     * 用已完成的像素转换结果执行纯 GL 上传（gen/bind/参数/texImage2D）。
+     * 调用方必须持有 OpenGL 上下文。
+     */
+    private static void uploadConverted(final com.fs.graphics.TextureObject texture,
+                                        final int target,
+                                        final String resourcePath,
+                                        final TextureConversionCache.CachedTextureData cached) {
+        final TexturePixelConversionResult result = cached.conversionResult();
         int textureId = readTextureId(texture, -1);
         if (textureId == -1) {
             final IntBuffer ids = BufferUtils.createIntBuffer(1);
@@ -497,14 +710,14 @@ public final class LazyTextureManager {
         }
 
         GL11.glBindTexture(target, textureId);
-        final boolean generateMipmaps = shouldGenerateMipmaps(entry.resourcePath, cached.imageWidth(), cached.imageHeight());
+        final boolean generateMipmaps = shouldGenerateMipmaps(resourcePath, cached.imageWidth(), cached.imageHeight());
         if (generateMipmaps) {
             GL11.glTexParameteri(target, 10241, FILTER_LINEAR_MIPMAP_LINEAR);
-            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(entry.resourcePath));
+            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(resourcePath));
             GL11.glTexParameteri(TARGET_2D, GENERATE_MIPMAP, 1);
         } else {
-            GL11.glTexParameteri(target, 10241, minFilterForResourcePath(entry.resourcePath));
-            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(entry.resourcePath));
+            GL11.glTexParameteri(target, 10241, minFilterForResourcePath(resourcePath));
+            GL11.glTexParameteri(target, 10240, magFilterForResourcePath(resourcePath));
             GL11.glTexParameteri(target, GENERATE_MIPMAP, 0);
         }
 
@@ -562,6 +775,48 @@ public final class LazyTextureManager {
         }
     }
 
+    /**
+     * 消费 worker 预备结果：defer 贴图只登记元数据；eager 贴图在此时才把像素
+     * 从 Zstd 缓存解压到 DirectBuffer 并执行纯 GL 上传，不再走
+     * {@code ssoptimizer$loadTextureEager} 的原版读图/转换路径。
+     */
+    private static com.fs.graphics.TextureObject loadPreparedTexture(final TextureLoader loader,
+                                                                     final HashMap<String, com.fs.graphics.TextureObject> textureCache,
+                                                                     final String requestedPath,
+                                                                     final String effectivePath,
+                                                                     final TexturePreparationRegistry.Prepared prepared) throws IOException {
+        final TextureConversionCache.CachedTextureMetadata preparedMetadata = prepared.metadata();
+        final LazyTextureMetadata metadata = LazyTextureMetadata.from(effectivePath, preparedMetadata);
+        final int sourceBytes = (int) Math.min(Integer.MAX_VALUE, Math.max(0L, prepared.sourceByteLength()));
+        final boolean defer = shouldDefer(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
+        final boolean trackResidency = shouldTrackResidency(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
+        final long now = System.nanoTime();
+
+        final com.fs.graphics.TextureObject texture = new com.fs.graphics.TextureObject(TARGET_2D, -1, effectivePath);
+        applyMetadata(texture, metadata);
+
+        if (trackResidency && defer) {
+            cacheTexture(textureCache, requestedPath, effectivePath, texture);
+            MANAGED_TEXTURES.put(texture, ManagedTextureEntry.pending(effectivePath, prepared.sourceHash(), metadata, now, true));
+            return markTextureLoadedInCurrentContext(texture, effectivePath);
+        }
+
+        final TextureConversionCache.CachedTextureData pixels = TextureConversionCache.load(prepared.sourceHash());
+        if (pixels == null) {
+            LOGGER.warn("[SSOptimizer] Prepared texture cache entry missing for "
+                    + effectivePath + ", falling back to eager load");
+            return markTextureLoadedInCurrentContext(
+                    eagerLoad(loader, textureCache, effectivePath, requestedPath), effectivePath);
+        }
+
+        uploadConverted(texture, TARGET_2D, effectivePath, pixels);
+        cacheTexture(textureCache, requestedPath, effectivePath, texture);
+        if (trackResidency) {
+            MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(effectivePath, prepared.sourceHash(), metadata, now, true));
+        }
+        return markTextureLoadedInCurrentContext(texture, effectivePath);
+    }
+
     private static void cacheTexture(final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                      final String requestedPath,
                                      final String normalizedPath,
@@ -588,12 +843,13 @@ public final class LazyTextureManager {
             }
         }
         if (sourceFingerprint != null) {
-            final TextureConversionCache.ResourceCacheHit resourceCacheHit = TextureConversionCache.loadByResourcePath(normalizedPath, sourceFingerprint);
-            if (resourceCacheHit != null) {
+            final TextureConversionCache.ResourceMetadataHit metadataHit =
+                    TextureConversionCache.probeMetadataByResourcePath(normalizedPath, sourceFingerprint);
+            if (metadataHit != null) {
                 return SourceSnapshot.cached(
-                        resourceCacheHit.sourceHash(),
-                        resourceCacheHit.sourceByteLength(),
-                        resourceCacheHit.cachedData(),
+                        metadataHit.sourceHash(),
+                        metadataHit.sourceByteLength(),
+                        metadataHit.metadata(),
                         sourceFingerprint
                 );
             }
@@ -790,21 +1046,13 @@ public final class LazyTextureManager {
 
     private static LazyTextureMetadata buildMetadata(final String resourcePath,
                                                      final SourceSnapshot source) throws IOException {
-        if (source.cachedData() != null) {
-            return LazyTextureMetadata.from(resourcePath,
-                    source.cachedData().imageWidth(),
-                    source.cachedData().imageHeight(),
-                    source.cachedData().hasAlpha(),
-                    source.cachedData().conversionResult());
+        if (source.cachedMetadata() != null) {
+            return LazyTextureMetadata.from(resourcePath, source.cachedMetadata());
         }
 
-        final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(source.sourceHash);
+        final TextureConversionCache.CachedTextureMetadata cached = TextureConversionCache.loadMetadata(source.sourceHash);
         if (cached != null) {
-            return LazyTextureMetadata.from(resourcePath,
-                    cached.imageWidth(),
-                    cached.imageHeight(),
-                    cached.hasAlpha(),
-                    cached.conversionResult());
+            return LazyTextureMetadata.from(resourcePath, cached);
         }
 
         final BufferedImage decoded = FastResourceImageDecoder.decodeUntracked(source.sourceBytes);
@@ -895,6 +1143,12 @@ public final class LazyTextureManager {
     private static int captureBoundTexture(final int target) {
         final int bindingParameter = bindingParameterForTarget(target);
         if (bindingParameter == Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        if (RenderThreadMode.isEnabled()) {
+            // 分离模式下查询当前绑定是一次全管线 drain；上传路径之后所有绘制都会
+            // 经 bindTextureDeduped 重新绑定正确纹理（分离模式下它无条件录制 bind），
+            // 捕获/恢复旧绑定没有语义价值，直接跳过（返回哨兵使 restore 空转）
             return Integer.MIN_VALUE;
         }
         try {
@@ -1235,11 +1489,9 @@ public final class LazyTextureManager {
         final long now = System.nanoTime();
         final List<TextureCompositionReport.TextureEntry> snapshots = new ArrayList<>();
         synchronized (MANAGED_TEXTURES) {
-            for (Map.Entry<com.fs.graphics.TextureObject, ManagedTextureEntry> managedEntry : MANAGED_TEXTURES.entrySet()) {
-                final com.fs.graphics.TextureObject texture = managedEntry.getKey();
-                final ManagedTextureEntry entry = managedEntry.getValue();
+            MANAGED_TEXTURES.forEach((texture, entry) -> {
                 if (texture == null || entry == null) {
-                    continue;
+                    return;
                 }
 
                 final int textureId = readTextureId(texture, -1);
@@ -1265,7 +1517,7 @@ public final class LazyTextureManager {
                         textureId,
                         entry.sourceHash
                 ));
-            }
+            });
         }
         return snapshots;
     }
@@ -1523,7 +1775,7 @@ public final class LazyTextureManager {
     private record SourceSnapshot(byte[] sourceBytes,
                                   String sourceHash,
                                   int sourceByteLength,
-                                  TextureConversionCache.CachedTextureData cachedData,
+                                  TextureConversionCache.CachedTextureMetadata cachedMetadata,
                                   TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         private static SourceSnapshot loaded(final byte[] sourceBytes,
                                              final String sourceHash,
@@ -1537,14 +1789,21 @@ public final class LazyTextureManager {
 
         private static SourceSnapshot cached(final String sourceHash,
                                              final int sourceByteLength,
-                                             final TextureConversionCache.CachedTextureData cachedData,
+                                             final TextureConversionCache.CachedTextureMetadata cachedMetadata,
                                              final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
             return new SourceSnapshot(null,
                     sourceHash,
                     sourceByteLength,
-                    cachedData,
+                    cachedMetadata,
                     sourceFingerprint);
         }
+    }
+
+    /**
+     * 延迟上传解析结果：像素数据 + 实际生效的源哈希（重建后可能与登记键不同）。
+     */
+    record ResolvedDeferredTexture(TextureConversionCache.CachedTextureData data,
+                                   String sourceHash) {
     }
 
     private record ContextBoundTextureEntry(String resourcePath,
@@ -1553,7 +1812,7 @@ public final class LazyTextureManager {
 
     private static final class ManagedTextureEntry {
         private final    String  resourcePath;
-        private final    String  sourceHash;
+        private volatile String  sourceHash;
         private final    int     imageWidth;
         private final    int     imageHeight;
         private final    int     textureWidth;
@@ -1636,6 +1895,14 @@ public final class LazyTextureManager {
         void markNonEvictable() {
             evictable = false;
         }
+
+        /**
+         * 延迟重建后同步实际源哈希（重建键与登记键不一致时调用），
+         * 使后续绑定可直接命中缓存。仅在持 entry 锁时调用。
+         */
+        void updateSourceHash(final String sourceHash) {
+            this.sourceHash = sourceHash;
+        }
     }
 
     private static final class ResidentGroupSummary {
@@ -1655,6 +1922,25 @@ public final class LazyTextureManager {
                                        Color upperHalfColor,
                                        Color lowerHalfColor,
                                        long estimatedGpuBytes) {
+        private static LazyTextureMetadata from(final String resourcePath,
+                                                final TextureConversionCache.CachedTextureMetadata metadata) {
+            return new LazyTextureMetadata(
+                    metadata.imageWidth(),
+                    metadata.imageHeight(),
+                    metadata.hasAlpha(),
+                    metadata.textureWidth(),
+                    metadata.textureHeight(),
+                    metadata.averageColor(),
+                    metadata.upperHalfColor(),
+                    metadata.lowerHalfColor(),
+                    estimateTextureGpuBytes(resourcePath,
+                            metadata.imageWidth(),
+                            metadata.imageHeight(),
+                            metadata.textureWidth(),
+                            metadata.textureHeight())
+            );
+        }
+
         private static LazyTextureMetadata from(final String resourcePath,
                                                 final int imageWidth,
                                                 final int imageHeight,

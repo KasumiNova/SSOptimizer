@@ -1,6 +1,6 @@
 # SSOptimizer
 
-Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin）在运行时修改游戏引擎行为，无需修改游戏原始文件。
+Starsector 游戏性能优化模组。以 NanoForge coremod 形式装配（ASM / Mixin 字节码织入），在运行时修改游戏引擎行为，无需修改游戏原始文件。
 
 ## 核心特性
 
@@ -23,35 +23,27 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
 3. `.fnt` 覆盖字体会被解压到 `starsector-core/graphics/fonts/`；TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
-4. 使用项目提供的 `starsector-ssoptimizer.bat` 启动游戏；它会调用 `starsector-core/starsector.bat`，并按顺序扫描脚本/游戏目录下的所有 `java.exe`、`JAVA_HOME`、以及 `PATH` 中的 Java 25
+4. coremod 入口 jar 会被解压到 `mods/coremods/SSOptimizer.jar`，由 NanoForge 在启动时自动发现装配
 5. 安装包会同时写入 `starsector-core/log4j.properties`，用于恢复默认文件日志输出
-6. 如需手动注入 JVM 参数，可添加：
-   ```
-   -javaagent:../mods/ssoptimizer/jars/SSOptimizer.jar
-   ```
-7. 启动游戏，首次运行会在游戏根目录生成 `launch-config.json` 配置文件
+6. 需要已安装 NanoForge 加载器，通过 NanoForge 提供的启动入口启动游戏
 
 ### Linux
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-linux.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
 3. `.fnt` 覆盖字体会被解压到游戏根目录 `graphics/fonts/`；TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
-4. 安装包会同时写入游戏根目录 `log4j.properties`，用于恢复默认文件日志输出
-5. 使用项目提供的 `starsector.sh` 或 `launch_injected_ss.sh` 启动游戏；脚本会按顺序扫描脚本目录下的所有 `java`、随后 `JAVA_HOME`、再扫描 `/usr/lib/jvm` 等系统目录中的 Java 25
-6. 如需手动注入 JVM 参数，可在启动脚本中添加：
-   ```
-   -javaagent:./mods/ssoptimizer/jars/SSOptimizer.jar
-   ```
-7. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
-8. 启动游戏
+4. coremod 入口 jar 会被解压到 `mods/coremods/SSOptimizer.jar`，由 NanoForge 在启动时自动发现装配
+5. 安装包会同时写入游戏根目录 `log4j.properties`，用于恢复默认文件日志输出
+6. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
+7. 通过 NanoForge 启动脚本 `launch_nanoforge_ss.sh` 启动游戏
 
 ## 配置
 
-配置文件为游戏根目录下的 `launch-config.json`，首次启动自动生成默认配置。各项参数含义见文件内注释。
+SSOptimizer 的可选开关均为 JVM 系统属性，在 NanoForge 启动脚本的 JVM 参数中传入。完整属性清单见 [系统属性索引](docs/design/system-properties.md)。
 
 ### 可选优化开关
 
-舰船引擎火焰渲染替换默认关闭。若需要测试该路径，可在 `launch-config.json` 的 `jvmArgs.common` 中手动加入：
+舰船引擎火焰渲染替换默认关闭。若需要测试该路径，可在启动脚本 JVM 参数中手动加入：
 
 ```text
 -Dssoptimizer.render.shipengine.enable=true
@@ -65,6 +57,16 @@ Starsector 游戏性能优化 Java Agent。通过字节码注入（ASM / Mixin�
 - **SSOptimizer 可以继续读取旧版原版存档**，也可以读取自己写出的新格式存档。
 - **原版未安装 SSOptimizer 的 Starsector 无法读取带 `SSOZ1:` 前缀的新地形 tile 存档内容**；也就是说，用 SSOptimizer 保存后的新存档，不能保证再回到原版直接读取。
 - 如果你需要保持对原版读取的写出兼容性，可在 JVM 参数中添加：`-Dssoptimizer.disable.save.terrain.zstd=true`，强制退回旧版 Deflater 写入格式。
+
+### 外部模组优化：DetailedCombatResults（DCR）
+
+针对第三方模组的性能优化源码已收编进 `:app` 模块，经 SPI（`ExternalModOptimizer`）在 coremod 装配时自动注册。首个目标是 **DetailedCombatResults（详细战斗报告）** 的读档热点：
+
+- **L1（默认开，零格式风险）**：读档时 DCR 会在裁剪战报后「清空 + 逐条重写」整份历史（O(N²) 的重序列化 + 压缩）。SSOptimizer 将其合并为「收集 N 次 + 落盘一次」，把该热点从十余秒降到亚秒级。此优化不改变存档格式，卸载 SSOptimizer 后 DCR 仍可正常读档。
+- **L2（默认开，可关）**：将 DCR 的压缩内核从 `Deflater` 级别 9 替换为 **Zstd**（基准下大存档约 6–13× 提速），读取时自动识别 Zstd / 旧 Deflate 两种格式，旧存档读出后下一次保存即迁移为 Zstd。
+  - **权衡**：DCR 战报压缩串会随存档落盘；一旦迁移为 Zstd，卸载 SSOptimizer（或开启下方子开关）后，DCR 原生 `Inflater` 将无法读取这些战报，会判定数据损坏并清空历史战报记录（仅影响战报分析数据，不影响存档本体）。
+  - 如需保持对「无 SSOptimizer 环境」的兼容，可加入：`-Dssoptimizer.disable.dcrzstd=true`，仅保留 L1 合并、压缩走 DCR 原生 Deflater。
+- 关闭对 DCR 的全部优化：`-Dssoptimizer.disable.dcr=true`。
 
 ## 从源码构建
 
@@ -87,12 +89,9 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 ./gradlew packageLinuxOverlayZip -Pstarsector.gameDir=/path/to/Starsector
 # 产物：build/distributions/SSOptimizer-<version>-linux.zip
 
-# 生成 Windows 覆盖安装包（解压后直接使用根目录的 starsector-ssoptimizer.bat 启动）
+# 生成 Windows 覆盖安装包（含 mods/ssoptimizer 与 mods/coremods 入口 jar）
 ./gradlew packageWindowsOverlayZip -Pstarsector.gameDir=/path/to/Starsector
 # 产物：build/distributions/SSOptimizer-<version>-windows.zip
-
-# Windows 直接启动入口
-./starsector-ssoptimizer.bat
 
 # 一次性生成双端发布包
 ./gradlew packageReleaseZips -Pstarsector.gameDir=/path/to/Starsector
@@ -107,16 +106,14 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 ./gradlew :native:build -Pstarsector.platform=windows -Pssoptimizer.native.windows.triplet=x64-mingw-static
 
 # 部署到游戏目录（开发用）
-./gradlew installDevMod
+./gradlew deployMod
 
-# 烟测：启动器模式
+# 烟测：启动器模式（默认使用游戏根目录的 launch_nanoforge_ss.sh，
+# 可用 SSOPTIMIZER_SMOKE_LAUNCH_SCRIPT 环境变量覆盖启动脚本名）
 ./tools/smoke_test_game_launch.sh <gameDir> <timeoutSec> launcher
 
 # 烟测：游戏模式
 ./tools/smoke_test_game_launch.sh <gameDir> <timeoutSec> game
-
-# Windows 烟测：启动器模式
-powershell -ExecutionPolicy Bypass -File ./tools/smoke_test_game_launch.ps1 -GameDir C:/Data/Games/Starsector098 -Mode launcher
 ```
 
 ### 项目结构

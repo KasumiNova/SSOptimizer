@@ -29,7 +29,7 @@ final class TrackedResourceImage extends BufferedImage {
     private final int                          imageWidth;
     private final int                          imageHeight;
     private final boolean                      hasAlpha;
-    private final TexturePixelConversionResult cachedConversionResult;
+    private final TextureConversionCache.CachedTextureMetadata cachedMetadata;
 
     private volatile BufferedImage delegate;
 
@@ -45,24 +45,24 @@ final class TrackedResourceImage extends BufferedImage {
         this.imageWidth = delegate.getWidth();
         this.imageHeight = delegate.getHeight();
         this.hasAlpha = delegate.getColorModel().hasAlpha();
-        this.cachedConversionResult = null;
+        this.cachedMetadata = null;
         this.delegate = delegate;
     }
 
     private TrackedResourceImage(final String resourcePath,
                                  final String sourceHash,
                                  final byte[] sourceBytes,
-                                 final TextureConversionCache.CachedTextureData cachedData,
+                                 final TextureConversionCache.CachedTextureMetadata cachedMetadata,
                                  final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
-        super(1, 1, cachedData.hasAlpha() ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
+        super(1, 1, cachedMetadata.hasAlpha() ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
         this.resourcePath = resourcePath;
         this.sourceHash = sourceHash;
         this.sourceBytes = sourceBytes;
         this.sourceFingerprint = sourceFingerprint;
-        this.imageWidth = cachedData.imageWidth();
-        this.imageHeight = cachedData.imageHeight();
-        this.hasAlpha = cachedData.hasAlpha();
-        this.cachedConversionResult = cachedData.conversionResult();
+        this.imageWidth = cachedMetadata.imageWidth();
+        this.imageHeight = cachedMetadata.imageHeight();
+        this.hasAlpha = cachedMetadata.hasAlpha();
+        this.cachedMetadata = cachedMetadata;
     }
 
     static BufferedImage wrap(final String resourcePath,
@@ -96,14 +96,14 @@ final class TrackedResourceImage extends BufferedImage {
     static BufferedImage cached(final String resourcePath,
                                 final String sourceHash,
                                 final byte[] sourceBytes,
-                                final TextureConversionCache.CachedTextureData cachedData) {
-        return cached(resourcePath, sourceHash, sourceBytes, cachedData, null);
+                                final TextureConversionCache.CachedTextureMetadata cachedMetadata) {
+        return cached(resourcePath, sourceHash, sourceBytes, cachedMetadata, null);
     }
 
     static BufferedImage cached(final String resourcePath,
                                 final String sourceHash,
                                 final byte[] sourceBytes,
-                                final TextureConversionCache.CachedTextureData cachedData,
+                                final TextureConversionCache.CachedTextureMetadata cachedMetadata,
                                 final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         if (!TextureConversionCache.isEnabled()) {
             return null;
@@ -112,7 +112,7 @@ final class TrackedResourceImage extends BufferedImage {
                 resourcePath != null ? resourcePath : "",
                 sourceHash,
                 sourceBytes,
-                cachedData,
+                cachedMetadata,
                 sourceFingerprint
         );
     }
@@ -134,12 +134,22 @@ final class TrackedResourceImage extends BufferedImage {
         return sourceHash;
     }
 
-    TexturePixelConversionResult cachedConversionResult() {
-        return cachedConversionResult;
+    TextureConversionCache.CachedTextureMetadata cachedMetadata() {
+        return cachedMetadata;
     }
 
     TextureConversionCache.TextureSourceFingerprint sourceFingerprint() {
         return sourceFingerprint;
+    }
+
+    /**
+     * 源文件字节数（指纹或已读源字节推导），无法确定时返回 -1。
+     */
+    long sourceByteLength() {
+        if (sourceFingerprint != null) {
+            return sourceFingerprint.byteLength();
+        }
+        return sourceBytes != null ? sourceBytes.length : -1L;
     }
 
     @Override

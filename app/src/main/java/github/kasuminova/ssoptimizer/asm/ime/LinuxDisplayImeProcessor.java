@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.asm.ime;
 
-import github.kasuminova.ssoptimizer.bootstrap.AsmClassProcessor;
+import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import org.objectweb.asm.*;
 
 /**

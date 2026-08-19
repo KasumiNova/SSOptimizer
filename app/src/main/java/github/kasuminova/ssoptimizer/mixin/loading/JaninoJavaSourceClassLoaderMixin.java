@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.loading;
 
+import github.kasuminova.ssoptimizer.asm.render.RenderThreadRedirector;
 import github.kasuminova.ssoptimizer.common.loading.script.JaninoScriptCompilerCoordinator;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,13 +39,20 @@ public abstract class JaninoJavaSourceClassLoaderMixin {
         }
     }
 
-    @Inject(method = "generateBytecodes(Ljava/lang/String;)Ljava/util/Map;", at = @At("RETURN"), remap = false)
+    @Inject(method = "generateBytecodes(Ljava/lang/String;)Ljava/util/Map;", at = @At("RETURN"), cancellable = true, remap = false)
     private void ssoptimizer$persistGeneratedBytecodes(final String className,
                                                        final CallbackInfoReturnable<Map<String, byte[]>> cir) {
+        // 渲染线程分离模式：Janino 编译的脚本类不经过 LaunchClassLoader transformer 链，
+        // 在此对编译输出做同样的 GL owner 重定向（改写后入缓存，缓存目录已按模式分版，
+        // 见 JaninoScriptCompilerCoordinator.cacheDirectory）；非分离模式原样返回零开销
+        final Map<String, byte[]> bytecodes = RenderThreadRedirector.redirectAll(cir.getReturnValue());
+        if (bytecodes != cir.getReturnValue()) {
+            cir.setReturnValue(bytecodes);
+        }
         JaninoScriptCompilerCoordinator.cacheGeneratedBytecodes(
                 (JavaSourceClassLoader) (Object) this,
                 className,
-                cir.getReturnValue()
+                bytecodes
         );
     }
 }

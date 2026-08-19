@@ -22,7 +22,10 @@
 #include <windows.h>
 #endif
 
-#include <GL/gl.h>
+// 全库 GL 入口统一走 glad（compatibility 3.0）：Windows 的 opengl32 仅导出 GL 1.1 符号，
+// glBindBuffer / glBlendEquation 等必须由 glad 在运行时取指针；gladLoadGL 在
+// NativeRuntime.nativeInitGl 中完成一次性加载
+#include <glad/glad.h>
 
 namespace ssoptimizer::render {
 
@@ -221,8 +224,8 @@ inline void computeStripPassVertices(const float posX, const float posY,
     const float halfPassCount = passCount / 2.0f;
     const float rotation2 = ((halfPassCount - phase - 1.0f) / halfPassCount) * direction * 2.0f * spreadRotation;
     const float translateX = ((passCount - passIndexF - 1.0f) * innerLength) / (passCount * 2.0f);
-    const float scaleX = 0.5f + ((passIndexF + 1.0f) / passCount);
-    const float scaleY = 1.0f - ((passCount - passIndexF) / passCount);
+    const float scaleX = 0.5f + 0.5f * (passIndexF + 1.0f) / passCount;
+    const float scaleY = (passCount - passIndexF) / passCount;
     const float scaledHalfWidth = (stripWidth * 0.5f) * scaleY;
     const float lengths[3] = {0.0f, innerLength, stripLength};
 

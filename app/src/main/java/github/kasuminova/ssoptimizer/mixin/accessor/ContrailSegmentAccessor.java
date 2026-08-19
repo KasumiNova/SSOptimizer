@@ -8,10 +8,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 /**
  * 引擎尾焰轨迹段（ContrailSegment）的 Mixin Accessor。
  *
- * <p>注入目标：{@code com.fs.starfarer.combat.entities.ContrailEngine$Oo}<br>
- * 注入动机：轨迹段存储了每个粒子的位置、法线、宽度、年龄进度和 UV 坐标等数据，
- * 原始字段名称为混淆名，需通过 Accessor 暴露给优化后的批量渲染管线。<br>
- * 注入效果：暴露 8 个只读访问器。</p>
+ * <p>注入目标：{@code com.fs.starfarer.combat.entities.ContrailEngine$ContrailSegment}<br>
+ * 注入动机：渲染管线读取位置/法线/宽度/年龄/UV 等属性；{@code ContrailAdvanceHelper}
+ * 需要写回 texU/progress/width（段更新公式的产物）并读取 vel/baseWidth
+ * （advance 的位置推进与宽度公式输入）。</p>
  */
 @Mixin(targets = GameClassNames.CONTRAIL_SEGMENT_DOTTED)
 public interface ContrailSegmentAccessor {
@@ -21,8 +21,22 @@ public interface ContrailSegmentAccessor {
     @Accessor(value = "normal", remap = false)
     Vector2f ssoptimizer$getNormal();
 
+    @Accessor(value = "vel", remap = false)
+    Vector2f ssoptimizer$getVel();
+
     @Accessor(value = "width", remap = false)
     float ssoptimizer$getWidth();
+
+    @Accessor(value = "width", remap = false)
+    void ssoptimizer$setWidth(float width);
+
+    /**
+     * 宽度基值字段在运行时名为 {@code oO0000}（named 管线对该字段保留混淆名——
+     * 反编译 named 仓 jar 确认：{@code addSegment} 中 {@code segment.oO0000 =
+     * group.width}，即宽度公式的输入基值），非 {@code baseWidth}。
+     */
+    @Accessor(value = "oO0000", remap = false)
+    float ssoptimizer$getBaseWidth();
 
     @Accessor(value = "maxAge", remap = false)
     float ssoptimizer$getMaxAge();
@@ -30,9 +44,15 @@ public interface ContrailSegmentAccessor {
     @Accessor(value = "progress", remap = false)
     float ssoptimizer$getProgress();
 
+    @Accessor(value = "progress", remap = false)
+    void ssoptimizer$setProgress(float progress);
+
     @Accessor(value = "alphaMult", remap = false)
     float ssoptimizer$getAlphaMult();
 
     @Accessor(value = "texU", remap = false)
     float ssoptimizer$getU();
+
+    @Accessor(value = "texU", remap = false)
+    void ssoptimizer$setTexU(float texU);
 }

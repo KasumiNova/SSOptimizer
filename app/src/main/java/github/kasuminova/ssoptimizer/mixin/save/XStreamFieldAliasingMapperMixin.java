@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.save;
 
+import com.thoughtworks.xstream.core.util.MemberStore;
 import com.thoughtworks.xstream.mapper.Mapper;
 import com.thoughtworks.xstream.mapper.MapperWrapper;
 import github.kasuminova.ssoptimizer.common.save.XStreamFieldAliasingCache;
@@ -12,8 +13,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Map;
-
 /**
  * XStream 字段别名链查询加速 Mixin。
  * <p>
@@ -24,11 +23,13 @@ import java.util.Map;
  */
 @Mixin(targets = "com.thoughtworks.xstream.mapper.FieldAliasingMapper")
 public abstract class XStreamFieldAliasingMapperMixin extends MapperWrapper {
+    // miko 补丁版 XStream 将别名存储从原版 Map 改为 MemberStore（put/get 按 (Class, String) 索引），
+    // 且字段可见性收紧为 private；@Shadow 需按运行时实际签名声明，否则 Mixin apply 时无法定位字段
     @Shadow(remap = false)
-    protected Map<?, ?> fieldToAliasMap;
+    private MemberStore fieldToAliasMap;
 
     @Shadow(remap = false)
-    protected Map<?, ?> aliasToFieldMap;
+    private MemberStore aliasToFieldMap;
 
     @Unique
     private final XStreamFieldAliasingCache ssoptimizer$aliasingCache = new XStreamFieldAliasingCache();
@@ -38,7 +39,7 @@ public abstract class XStreamFieldAliasingMapperMixin extends MapperWrapper {
     }
 
     @Invoker("getMember")
-    protected abstract String ssoptimizer$invokeGetMember(Class<?> type, String memberName, Map<?, ?> map);
+    protected abstract String ssoptimizer$invokeGetMember(Class<?> type, String memberName, MemberStore map);
 
     /**
      * 解析字段的序列化名称。

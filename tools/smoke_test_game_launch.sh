@@ -1,10 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# Smoke test: launch Starsector with SSOptimizer agent, check for fatal errors.
-GAME_DIR="${1:-/mnt/windows_data/Games/Starsector098-linux}"
+# Smoke test: launch Starsector with SSOptimizer as a NanoForge coremod, check for fatal errors.
+GAME_DIR="${1:-/mnt/store/Games/Starsector098-linux}"
 TIMEOUT_SEC="${2:-15}"
-MODE="${3:-launcher}"
+# 默认进入真实游戏（autostart 跳过启动器）；launcher 模式会永久卡在启动器 UI
+MODE="${3:-game}"
+LAUNCH_SCRIPT="${SSOPTIMIZER_SMOKE_LAUNCH_SCRIPT:-launch_nanoforge_ss.sh}"
 LOG_FILE="$GAME_DIR/starsector.log"
 PROCESS_LOG_FILE="$GAME_DIR/ssoptimizer-smoke-process.log"
 SETTINGS_FILE="$GAME_DIR/data/config/settings.json"
@@ -18,14 +20,19 @@ IME_SMOKE_HELPER="$SCRIPT_DIR/ime_keyboard_smoke.py"
 IME_SMOKE_PID=""
 IME_SMOKE_LOG_FILE="$GAME_DIR/ssoptimizer-ime-smoke-input.log"
 IME_SMOKE_TRIGGER_PATTERN="${SSOPTIMIZER_SMOKE_INPUT_TRIGGER_PATTERN:-IME text field focused}"
+AUTOMATION_SCENARIO="${SSOPTIMIZER_AUTOMATION_SCENARIO:-arc_flare_aod7_basic}"
+AUTOMATION_OUTPUT_DIR="${SSOPTIMIZER_AUTOMATION_OUTPUT_DIR:-$GAME_DIR/ssoptimizer-automation-output}"
+AUTOMATION_TELEMETRY_FILE="$AUTOMATION_OUTPUT_DIR/astd-ingame-automation-telemetry.json"
+AUTOMATION_VERIFY_SCRIPT="${SSOPTIMIZER_AUTOMATION_VERIFY_SCRIPT:-/mnt/store/Games/Starsector098-linux/mods/Asteria_Directorate/tools/verify_ingame_vfx_automation.py}"
+AUTOMATION_REQUIRE_SCREENSHOT_FILE="${SSOPTIMIZER_AUTOMATION_REQUIRE_SCREENSHOT_FILE:-false}"
 
 echo "=== SSOptimizer Game Launch Smoke Test ==="
 echo "Game dir: $GAME_DIR"
 echo "Timeout:  ${TIMEOUT_SEC}s"
 echo "Mode:     ${MODE}"
 
-if [[ ! -f "$GAME_DIR/launch_injected_ss.sh" ]]; then
-    echo "FAIL: launch_injected_ss.sh not found in $GAME_DIR"
+if [[ ! -f "$GAME_DIR/$LAUNCH_SCRIPT" ]]; then
+    echo "FAIL: $LAUNCH_SCRIPT not found in $GAME_DIR"
     exit 1
 fi
 
@@ -384,12 +391,25 @@ trap cleanup_game EXIT INT TERM
 : > "$PROCESS_LOG_FILE" 2>/dev/null || true
 
 ORIGINAL_JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-}"
-if [[ "$MODE" == "game" ]]; then
-    START_RES="${SSOPTIMIZER_START_RES:-1920x1080}"
+if [[ "$MODE" == "game" || "$MODE" == "automation" ]]; then
+    if [[ "$MODE" == "automation" ]]; then
+        START_RES="${SSOPTIMIZER_START_RES:-2560x1440}"
+    else
+        START_RES="${SSOPTIMIZER_START_RES:-1920x1080}"
+    fi
     START_FS="${SSOPTIMIZER_START_FS:-false}"
     START_SOUND="${SSOPTIMIZER_START_SOUND:-true}"
     SCREEN_SCALE_OVERRIDE="${SSOPTIMIZER_SCREEN_SCALE_OVERRIDE:-}"
     EXTRA_OPTS="-Dssoptimizer.launcher.autostart=true -Dssoptimizer.launcher.autostart.res=${START_RES} -Dssoptimizer.launcher.autostart.fullscreen=${START_FS} -Dssoptimizer.launcher.autostart.sound=${START_SOUND} -DstartRes=${START_RES} -DstartFS=${START_FS} -DstartSound=${START_SOUND}"
+    if [[ "$MODE" == "automation" ]]; then
+        rm -rf "$AUTOMATION_OUTPUT_DIR"
+        mkdir -p "$AUTOMATION_OUTPUT_DIR"
+        EXTRA_OPTS="$EXTRA_OPTS -Dssoptimizer.automation.enabled=true -Dssoptimizer.automation.scenario=${AUTOMATION_SCENARIO} -Dssoptimizer.automation.outputDir=${AUTOMATION_OUTPUT_DIR} -Dssoptimizer.automation.requireScreenshotFile=${AUTOMATION_REQUIRE_SCREENSHOT_FILE}"
+        echo "Automation profile: enabled"
+        echo "  scenario:   ${AUTOMATION_SCENARIO}"
+        echo "  output dir: ${AUTOMATION_OUTPUT_DIR}"
+        echo "  telemetry:  ${AUTOMATION_TELEMETRY_FILE}"
+    fi
     if [[ -n "$ORIGINAL_JAVA_TOOL_OPTIONS" ]]; then
         export JAVA_TOOL_OPTIONS="$ORIGINAL_JAVA_TOOL_OPTIONS $EXTRA_OPTS"
     else
@@ -405,10 +425,10 @@ fi
 # Launch game in background
 cd "$GAME_DIR"
 if command -v setsid >/dev/null 2>&1; then
-    setsid ./launch_injected_ss.sh > "$PROCESS_LOG_FILE" 2>&1 &
+    setsid ./"$LAUNCH_SCRIPT" > "$PROCESS_LOG_FILE" 2>&1 &
     GAME_PID=$!
 else
-    ./launch_injected_ss.sh > "$PROCESS_LOG_FILE" 2>&1 &
+    ./"$LAUNCH_SCRIPT" > "$PROCESS_LOG_FILE" 2>&1 &
     GAME_PID=$!
 fi
 
@@ -439,6 +459,11 @@ for ((elapsed = 0; elapsed < TIMEOUT_SEC; elapsed++)); do
 
     if log_contains "$FATAL_LOG_PATTERN"; then
         echo "Fatal marker detected in log, stopping early"
+        break
+    fi
+
+    if [[ "$MODE" == "automation" && -f "$AUTOMATION_TELEMETRY_FILE" ]] && grep -q '"state"[[:space:]]*:[[:space:]]*"Completed"' "$AUTOMATION_TELEMETRY_FILE" 2>/dev/null; then
+        echo "Automation completion telemetry detected"
         break
     fi
 
@@ -522,12 +547,65 @@ else
     echo "WARN: Agent load message not found"
 fi
 
-if [[ "$MODE" == "game" ]]; then
+if [[ "$MODE" == "game" || "$MODE" == "automation" ]]; then
     if grep -q "\[SSOptimizer\] Loaded on Java" "$LOG_FILE"; then
         echo "OK: Game load path reached BaseModPlugin.onApplicationLoad"
     else
         echo "WARN: Game load path marker not found"
         PASS=false
+    fi
+fi
+
+if [[ "$MODE" == "automation" ]]; then
+    echo ""
+    echo "=== Automation Analysis ==="
+    if grep -q "\[SSO-Automation\] enabled" "$LOG_FILE" "$PROCESS_LOG_FILE" 2>/dev/null; then
+        echo "OK: SSOptimizer automation profile enabled"
+        grep "\[SSO-Automation\] enabled" "$LOG_FILE" "$PROCESS_LOG_FILE" 2>/dev/null || true
+    else
+        echo "WARN: SSOptimizer automation profile marker not found"
+        PASS=false
+    fi
+
+    if [[ -f "$AUTOMATION_TELEMETRY_FILE" ]]; then
+        echo "OK: Automation telemetry found: $AUTOMATION_TELEMETRY_FILE"
+        if [[ -f "$AUTOMATION_VERIFY_SCRIPT" ]]; then
+            VERIFY_ARGS=("$AUTOMATION_TELEMETRY_FILE")
+            if [[ "$AUTOMATION_REQUIRE_SCREENSHOT_FILE" == "true" ]]; then
+                VERIFY_ARGS+=("--require-screenshot-file")
+            fi
+            if python3 "$AUTOMATION_VERIFY_SCRIPT" "${VERIFY_ARGS[@]}"; then
+                echo "OK: Automation telemetry verifier passed"
+            else
+                echo "FAIL: Automation telemetry verifier failed"
+                PASS=false
+            fi
+        else
+            echo "FAIL: Automation verify script not found: $AUTOMATION_VERIFY_SCRIPT"
+            PASS=false
+        fi
+    else
+        if grep -q "\[ASTD-Automation\] Completed: arc_flare/aod7/astd_aod7_shot/VFX observed" "$LOG_FILE" 2>/dev/null; then
+            echo "OK: ASTD automation completion marker found in log"
+            if [[ -f "$AUTOMATION_VERIFY_SCRIPT" ]]; then
+                VERIFY_ARGS=("$AUTOMATION_TELEMETRY_FILE" "--log" "$LOG_FILE")
+                if [[ "$AUTOMATION_REQUIRE_SCREENSHOT_FILE" == "true" ]]; then
+                    VERIFY_ARGS+=("--require-screenshot-file")
+                fi
+                if python3 "$AUTOMATION_VERIFY_SCRIPT" "${VERIFY_ARGS[@]}"; then
+                    echo "OK: Automation log verifier passed"
+                else
+                    echo "FAIL: Automation log verifier failed"
+                    PASS=false
+                fi
+            else
+                echo "FAIL: Automation verify script not found: $AUTOMATION_VERIFY_SCRIPT"
+                PASS=false
+            fi
+        else
+            echo "FAIL: Automation telemetry missing: $AUTOMATION_TELEMETRY_FILE"
+            PASS=false
+        fi
     fi
 fi
 

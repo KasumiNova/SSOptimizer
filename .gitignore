@@ -12,6 +12,8 @@ out/
 .DS_Store
 hs_err_pid*
 .github/superpower/
+.kimi-code/
 bin/
 app/ssoptimizer-texture-composition.tsv
 *.code-workspace
+.references

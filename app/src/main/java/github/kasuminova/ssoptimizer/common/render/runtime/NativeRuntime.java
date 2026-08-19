@@ -20,6 +20,8 @@ public final class NativeRuntime {
 
     private static volatile boolean loadAttempted;
     private static volatile boolean loaded;
+    /** glad GL 函数指针是否就绪（仅 GL 加速路径关心；非 GL 功能如 PNG/字体不看此标志）。 */
+    private static volatile boolean glReady;
 
     /**
      * Windows 下需要预加载的依赖 DLL 列表（按依赖顺序排列：被依赖者在前）。
@@ -42,6 +44,17 @@ public final class NativeRuntime {
         return loaded;
     }
 
+    /**
+     * GL 加速路径是否可用（native 库已加载且 glad 函数指针就绪）。
+     * GL 相关的 helper 应以此为准；PNG 解码 / 字体栅格化等非 GL 功能只看 {@link #isLoaded()}。
+     */
+    public static boolean isGlReady() {
+        return ensureLoaded() && glReady;
+    }
+
+    /** glad 一次性加载 GL 函数指针（不要求当前线程持有 GL context）。 */
+    private static native boolean nativeInitGl();
+
     public static synchronized boolean ensureLoaded() {
         if (loadAttempted) {
             return loaded;
@@ -59,6 +72,22 @@ public final class NativeRuntime {
             System.load(nativePath.toString());
             loaded = true;
             LOGGER.info("[SSOptimizer] Native library loaded: " + nativePath);
+            if (RenderThreadMode.isEnabled()) {
+                // 分离模式：主线程自始至终没有 GL context，native（glad 直调）在
+                // 主线程执行会崩。跳过 glad 函数指针加载，isGlReady() 恒 false，
+                // 强制 SpriteRenderHelper/EngineBatch/字体等 native 加速路径全部落
+                // Java 回退——回退路径里的 org.lwjgl 调用会被 ASM 重定向录制入队，
+                // 语义正确（性能回退可接受，native 迁移留待后续轮次）。
+                glReady = false;
+                LOGGER.info("[SSOptimizer] 渲染线程分离模式：跳过 glad 初始化，"
+                        + "native GL 加速路径（SpriteBatch/SpriteRenderHelper/EngineBatch/"
+                        + "TexturedStrip/BitmapFont 等）全部降级为 Java 录制路径");
+            } else {
+                glReady = nativeInitGl();
+                if (!glReady) {
+                    LOGGER.warn("[SSOptimizer] glad GL 函数指针加载失败，GL 加速路径回退 Java 实现");
+                }
+            }
             return true;
         } catch (Throwable t) {
             LOGGER.warn("[SSOptimizer] Failed to load native library: " + t.getMessage());

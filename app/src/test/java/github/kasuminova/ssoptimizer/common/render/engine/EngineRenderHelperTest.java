@@ -45,6 +45,7 @@ class EngineRenderHelperTest {
 
     @Test
     void computeStripVerticesMatchesExpectedZeroRotationLayout() {
+        // 原版公式：scaleX = 0.5 + 0.5*(pass+1)/passCount = 1.0，scaleY = (passCount-pass)/passCount = 0.25
         float[] vertices = EngineRenderHelper.computeStripVertices(
                 10.0f, 20.0f,
                 0.0f,
@@ -58,11 +59,11 @@ class EngineRenderHelperTest {
         );
 
         assertEquals(10.0f, vertices[0], 0.0001f);
-        assertEquals(18.5f, vertices[1], 0.0001f);
-        assertEquals(13.0f, vertices[4], 0.0001f);
-        assertEquals(18.5f, vertices[5], 0.0001f);
-        assertEquals(22.0f, vertices[8], 0.0001f);
-        assertEquals(21.5f, vertices[11], 0.0001f);
+        assertEquals(19.5f, vertices[1], 0.0001f);
+        assertEquals(12.0f, vertices[4], 0.0001f);
+        assertEquals(19.5f, vertices[5], 0.0001f);
+        assertEquals(18.0f, vertices[8], 0.0001f);
+        assertEquals(20.5f, vertices[11], 0.0001f);
     }
 
     @Test
@@ -83,13 +84,14 @@ class EngineRenderHelperTest {
     }
 
     @Test
-    void computeGlowAlphaTracksFlameLevelInsteadOfUsingConstantFloor() {
-        float lowFlameAlpha = EngineRenderHelper.computeGlowAlpha(0.0f, 0.2f, 0.5f, 1.0f);
-        float hotFlameAlpha = EngineRenderHelper.computeGlowAlpha(0.0f, 0.9f, 1.0f, 1.0f);
+    void computeGlowAlphaUsesVanillaConstantFlameFloor() {
+        // 原版在 glow 前将火焰强度重置为 1.0F：Math.max(base, 1.0F - 0.4F) * 0.75F * alphaScale
+        float baseAlpha = EngineRenderHelper.computeGlowAlpha(0.0f, 0.5f, 1.0f);
+        float hotBaseAlpha = EngineRenderHelper.computeGlowAlpha(0.9f, 1.0f, 1.0f);
 
-        assertEquals(0.0f, lowFlameAlpha, 0.0001f,
-                "Low flame levels should not force the glow sprite to a constant visible alpha");
-        assertEquals(0.375f, hotFlameAlpha, 0.0001f,
-                "Glow alpha should follow the original flameLevel-0.4 ramp before edgeAlpha clamping");
+        assertEquals(0.45f, baseAlpha, 0.0001f,
+                "Glow alpha should use the vanilla constant 0.6 floor scaled by 0.75");
+        assertEquals(0.675f, hotBaseAlpha, 0.0001f,
+                "Glow alpha should follow max(base, 0.6) * 0.75 before edgeAlpha clamping");
     }
 }

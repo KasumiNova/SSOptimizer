@@ -17,17 +17,15 @@ public final class TexturePixelConverter {
     private TexturePixelConverter() {
     }
 
+    /**
+     * 转换为引擎期望的 direct NIO 像素布局。
+     * <p>
+     * 缓存命中短路由调用方负责（如预加载 worker 直接消费元数据）；走到这里的
+     * 一律执行真实像素转换并尝试写入磁盘缓存（已存在条目时 {@code store} 自动跳过）。
+     * 对仅持元数据的 {@link TrackedResourceImage} 调用会触发实体化解码后再转换。
+     */
     public static TexturePixelConversionResult convert(final BufferedImage image) {
         if (image instanceof TrackedResourceImage trackedImage) {
-            if (trackedImage.cachedConversionResult() != null) {
-                return trackedImage.cachedConversionResult();
-            }
-
-            final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(trackedImage.sourceHash());
-            if (cached != null) {
-                return cached.conversionResult();
-            }
-
             final TexturePixelConversionResult converted = convertUncached(image);
             TextureConversionCache.store(trackedImage, converted);
             return converted;

@@ -3,7 +3,6 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 import com.fs.graphics.Sprite;
 import com.fs.starfarer.loading.specs.EngineSlot;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
@@ -29,6 +28,52 @@ public final class EngineRenderHelper {
     private static final float                    TEX_MAX                  = 0.99f;
 
     private EngineRenderHelper() {
+    }
+
+    /** 引擎贴图诊断开关（{@code -Dssoptimizer.debug.enginestyle=true}）：每个不同纹理对象仅记录一次。 */
+    private static final boolean DEBUG_ENGINE_STYLE =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.enginestyle", "false"));
+    private static final java.util.Set<Integer> DEBUG_LOGGED_TEXTURES =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final java.util.Set<String> DEBUG_LOGGED_GLOW_TYPES =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * 引擎 glow 贴图诊断：记录纹理路径与实际绑定的纹理 id，用于定位「样式 glow 未生效」
+     * 是 spec 链未覆盖（路径仍为默认 engineglow32）还是纹理加载/绑定链断裂（路径正确但 id 异常）。
+     */
+    private static void debugLogGlowTexture(final com.fs.graphics.TextureObject texture, final boolean primary) {
+        if (!DEBUG_ENGINE_STYLE || texture == null) {
+            if (DEBUG_ENGINE_STYLE && texture == null && DEBUG_LOGGED_TEXTURES.add(-1)) {
+                org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).warn(
+                        "[SSOptimizer] engine glow texture is NULL (primary=" + primary + ")");
+            }
+            return;
+        }
+        if (DEBUG_LOGGED_TEXTURES.add(System.identityHashCode(texture))) {
+            org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).info(
+                    "[SSOptimizer] engine glow texture: primary=" + primary
+                            + " path=" + texture.getTexturePath()
+                            + " id=" + texture.getTextureId());
+        }
+    }
+
+    /** glowType 分支诊断：记录实际拿到的枚举值（类名@name）及该枚举全部常量，每不同类仅记一次。 */
+    private static void debugLogGlowType(final Object glowType) {
+        if (glowType == null) {
+            if (DEBUG_LOGGED_GLOW_TYPES.add("null")) {
+                org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).info(
+                        "[SSOptimizer] engine slot glowType=null");
+            }
+            return;
+        }
+        if (DEBUG_LOGGED_GLOW_TYPES.add(glowType.getClass().getName())) {
+            org.apache.log4j.Logger.getLogger(EngineRenderHelper.class).info(
+                    "[SSOptimizer] engine slot glowType class=" + glowType.getClass().getName()
+                            + " value=" + glowType
+                            + " constants=" + java.util.Arrays.toString(
+                                    glowType.getClass().getEnumConstants()));
+        }
     }
 
     public static void renderEngines(Object engineObject, float alphaScale) {
@@ -113,7 +158,7 @@ public final class EngineRenderHelper {
             lengthFactor = Math.max(0.0f, adjustedLevel - 0.8f) / 0.19999999f;
             lengthFactor *= lengthFactor;
         } else {
-            widthFactor = 0.09f + Math.max(0.0f, adjustedLevel - 0.8f) / 0.19999999f;
+            widthFactor = Math.max(0.09f, adjustedLevel - 0.8f) / 0.19999999f;
             lengthFactor = Math.max(0.0f, adjustedLevel - 0.8f) / 0.19999999f;
         }
 
@@ -143,16 +188,23 @@ public final class EngineRenderHelper {
             stripWidth *= 1.0f + spreadRatio * 0.25f;
         }
 
-        float spreadRotation = length == 0.0f ? 0.0f : (1.0f - stripLength / length) * spread;
+        // 原版语义：omega 模式扩散角恒为 0（var50=0），单层火焰不做扇形展开；
+        // 非 omega 为 (1-stripLength/length)*spread（length=0 时原版得 Inf，防御归零）
+        float spreadRotation = omegaMode || length == 0.0f ? 0.0f : (1.0f - stripLength / length) * spread;
         float textureAdvance = flameLevel;
         int passCount = omegaMode ? 1 : 6;
         float texU = state.ssoptimizer$getTexU();
         float innerLength = Math.min(innerWidth * 0.5f, stripLength * 0.25f);
         float texSpan = stripLength == 0.0f ? 0.0f : innerLength / stripLength;
 
+        if (DEBUG_ENGINE_STYLE) {
+            debugLogGlowType(slotAccessor.ssoptimizer$getGlowType());
+        }
         if (isPrimaryGlowType(slotAccessor.ssoptimizer$getGlowType())) {
+            debugLogGlowTexture(engine.ssoptimizer$getPrimaryGlowTexture(), true);
             engine.ssoptimizer$getPrimaryGlowTexture().bind();
         } else {
+            debugLogGlowTexture(engine.ssoptimizer$getSecondaryGlowTexture(), false);
             engine.ssoptimizer$getSecondaryGlowTexture().bind();
         }
 
@@ -176,7 +228,7 @@ public final class EngineRenderHelper {
                 red, green, blue, coreAlpha, exactAlphaPath);
 
         renderGlowSprite(engine, owner, slotAccessor, state, position, angle,
-            flameLevel, primaryBrightness, edgeAlpha, spread, maxSpread,
+                primaryBrightness, edgeAlpha, spread, maxSpread,
                 innerWidth, stripWidth, color, alphaScale);
     }
 
@@ -186,7 +238,6 @@ public final class EngineRenderHelper {
                                          EngineStateAccessor state,
                                          Vector2f position,
                                          float angle,
-                         float flameLevel,
                                          float primaryBrightness,
                                          float edgeAlpha,
                                          float spread,
@@ -205,11 +256,11 @@ public final class EngineRenderHelper {
         if (engine.ssoptimizer$getLengthShifter().isShifted()
                 || engine.ssoptimizer$getWidthShifter().isShifted()
                 || engine.ssoptimizer$getGlowShifter().isShifted()) {
-            float extraWidth = (stripWidth - innerWidth) * 2.0f;
+            float extraWidth = (stripWidth - innerWidth * engine.ssoptimizer$getWidthShifter().getCurr()) * 2.0f;
             glowSize = extraWidth + extraWidth * 0.5f * primaryBrightness;
             glowSize += extraWidth * engine.ssoptimizer$getGlowShifter().getCurr();
         } else {
-            glowSize = stripWidth * 2.0f * (1.0f + primaryBrightness);
+            glowSize = stripWidth * (2.0f + primaryBrightness);
         }
 
         float glowAlphaBase = 0.0f;
@@ -218,7 +269,7 @@ public final class EngineRenderHelper {
         }
         glowAlphaBase = Math.max(glowAlphaBase, glowBrightness);
 
-        float glowAlpha = computeGlowAlpha(glowAlphaBase, flameLevel, edgeAlpha, alphaScale);
+        float glowAlpha = computeGlowAlpha(glowAlphaBase, edgeAlpha, alphaScale);
 
         if (owner.ssoptimizer$isMissile()) {
             glowSize *= 2.0f;
@@ -300,7 +351,9 @@ public final class EngineRenderHelper {
     }
 
     private static boolean isPrimaryGlowType(Object glowType) {
-        return glowType instanceof Enum<?> mode && GameMemberNames.EngineGlowType.PRIMARY.equals(mode.name());
+        // 注意：该枚举常量的 name() 在原版 jar 中即为 "NORMAL"（字段名 PRIMARY 与
+        // clinit 名称串不一致是上游混淆残留），必须按引用比较，不能按 name() 比较。
+        return glowType == com.fs.starfarer.combat.entities.Engine.EngineGlowType.PRIMARY;
     }
 
     private static void renderEngineStripPasses(float posX, float posY,
@@ -412,8 +465,8 @@ public final class EngineRenderHelper {
         float halfPassCount = passCount / 2.0f;
         float rotation2 = ((halfPassCount - phase - 1.0f) / halfPassCount) * direction * 2.0f * spreadRotation;
         float translateX = ((passCount - passIndexF - 1.0f) * innerLength) / (passCount * 2.0f);
-        float scaleX = 0.5f + ((passIndexF + 1.0f) / passCount);
-        float scaleY = 1.0f - ((passCount - passIndexF) / passCount);
+        float scaleX = 0.5f + 0.5f * (passIndexF + 1.0f) / passCount;
+        float scaleY = (passCount - passIndexF) / passCount;
         float halfWidth = stripWidth * 0.5f;
 
         float[] vertices = new float[12];
@@ -452,10 +505,10 @@ public final class EngineRenderHelper {
     }
 
     static float computeGlowAlpha(float glowAlphaBase,
-                                  float flameLevel,
                                   float edgeAlpha,
                                   float alphaScale) {
-        float glowAlpha = Math.max(glowAlphaBase, flameLevel - 0.4f) * 0.75f * alphaScale;
+        // 原版在 glow 前将火焰强度变量重置为 1.0F：Math.max(var59, 1.0F - 0.4F)
+        float glowAlpha = Math.max(glowAlphaBase, 0.6f) * 0.75f * alphaScale;
         return Math.min(edgeAlpha, glowAlpha);
     }
 
