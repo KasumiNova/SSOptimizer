@@ -229,7 +229,7 @@ class GL11BridgeTest {
     @Test
     void gettersRouteThroughBlockingChannel() {
         queue.getHandler = callable -> 0;
-        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_TEXTURE_SIZE);
+        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_CLIP_PLANES);
         GL11.glGetError();
         queue.getHandler = callable -> 0.5f;
         GL11.glGetFloat(org.lwjgl.opengl.GL11.GL_LINE_WIDTH);
@@ -249,6 +249,46 @@ class GL11BridgeTest {
         java.nio.IntBuffer out = java.nio.ByteBuffer.allocateDirect(4).asIntBuffer();
         GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_SCISSOR_BOX, out);
         assertEquals(2, queue.blockingTasks.size(), "写入调用方 buffer 的回读走阻塞 wait 通道");
+    }
+
+    @Test
+    void staticCapabilityGetIntegerResultsAreCached() {
+        // 桩返回分量数组：真实取回 callable 在无 GL 上下文环境不可执行，
+        // 由 fake 队列按约定直接返回桩值（与真实桥接路径的 int[] 出参一致）
+        queue.getHandler = callable -> new int[]{16384};
+        assertEquals(16384, GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_TEXTURE_SIZE));
+        assertEquals(16384, GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_TEXTURE_SIZE));
+        assertEquals(1, queue.getCallCount, "同 pname 第二次命中缓存不再阻塞");
+
+        assertEquals(16384, GL11.glGetInteger(org.lwjgl.opengl.GL30.GL_MAX_SAMPLES));
+        assertEquals(2, queue.getCallCount, "不同 pname 各自取回一次");
+
+        // 双分量 pname 的 buffer 重载：缓存分量按序写入调用方 buffer 当前位置
+        queue.getHandler = callable -> new int[]{3840, 2160};
+        java.nio.IntBuffer viewport = java.nio.ByteBuffer.allocateDirect(16).asIntBuffer();
+        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_VIEWPORT_DIMS, viewport);
+        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_VIEWPORT_DIMS, viewport);
+        assertEquals(3, queue.getCallCount, "buffer 重载共享同一缓存槽位");
+        assertEquals(3840, viewport.get(0));
+        assertEquals(2160, viewport.get(1));
+        assertEquals(3840, viewport.get(2), "第二次调用继续写入当前位置");
+        assertEquals(2160, viewport.get(3));
+
+        // 单值重载读双分量 pname 取首分量（与真实 LWJGL 一致）
+        assertEquals(3840, GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_VIEWPORT_DIMS));
+        assertEquals(3, queue.getCallCount, "单值重载命中缓存不新增阻塞");
+
+        // 未识别 pname 不缓存逐次阻塞（单值通道桩返回标量）
+        queue.getHandler = callable -> 6;
+        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_CLIP_PLANES);
+        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_CLIP_PLANES);
+        assertEquals(5, queue.getCallCount, "清单外 pname 不缓存");
+
+        GL11.uninstall();
+        GL11.install(queue);
+        queue.getHandler = callable -> new int[]{16384};
+        GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_MAX_TEXTURE_SIZE);
+        assertEquals(6, queue.getCallCount, "uninstall 清空缓存后重新取回");
     }
 
     @Test

@@ -38,7 +38,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *       （glGenTextures/glGenLists）：走 {@link RenderQueue#get} 阻塞通道
  *       （自动计入 StallDetector）；后续演进点是把高频 pname/资源 id 换成
  *       主线程侧状态仿真与预生成 stash（见盘点文档 getter 清单）。例外：
- *       glGetString 的五类结果（供应商/渲染器/版本/扩展/着色语言版本）在同一
+ *       glGetString 的五类结果（供应商/渲染器/版本/扩展/着色语言版本）与
+ *       glGetInteger 的五项静态能力（最大视口尺寸/最大纹理尺寸/点大小范围/
+ *       模板位深/最大多重采样）在同一
  *       GL context 生命周期内不变，首次阻塞取回后录制侧缓存——游戏的
  *       SpriteBatch 每次构造都经此探测 VBO 能力，不缓存会打成稳态热点；</li>
  *   <li>display list（glNewList/glEndList/glCallList）：本阶段按普通命令入队
@@ -61,6 +63,24 @@ public final class GL11 {
      */
     private static final AtomicReferenceArray<String> STRING_CACHE = new AtomicReferenceArray<>(5);
 
+    /**
+     * glGetInteger 静态能力缓存：下列 pname 的结果在同一 GL context 生命周期内
+     * 不变（驱动/硬件上限与默认帧缓冲位深），首次阻塞取回后录制侧缓存，
+     * {@link #uninstall()} 时清空。槽位序见 {@link #capabilitySlot(int)}。
+     * <p>
+     * 覆盖清单（游戏全部调用点均为初始化期查询，见盘点文档 getter 清单）：
+     * {@code GL_MAX_VIEWPORT_DIMS}（2 分量，FrameBufferObject 尺寸探测）、
+     * {@code GL_MAX_TEXTURE_SIZE}、{@code GL_POINT_SIZE_RANGE}（2 分量，
+     * StaticParticleGroup 静态初始化）、{@code GL_STENCIL_BITS}（默认帧缓冲
+     * 位深——游戏仅在无 FBO 绑定的初始化期查询）、{@code GL_MAX_SAMPLES}。
+     * 不缓存会留个低频但致命的隐患：模组若在并行录制段内触发 FBO 创建
+     * （雷达 bakeCell 等），逐次阻塞回读直接 fail-fast。
+     */
+    private static final AtomicReferenceArray<int[]> INT_CACHE = new AtomicReferenceArray<>(5);
+
+    /** {@link #INT_CACHE} 各槽位对应 pname 的分量数（单值与双值两档）。 */
+    private static final int[] INT_CACHE_COMPONENTS = {2, 1, 2, 1, 1};
+
     private GL11() {
     }
 
@@ -78,6 +98,9 @@ public final class GL11 {
         BridgeSupport.uninstall();
         for (int i = 0; i < STRING_CACHE.length(); i++) {
             STRING_CACHE.set(i, null);
+        }
+        for (int i = 0; i < INT_CACHE.length(); i++) {
+            INT_CACHE.set(i, null);
         }
     }
 
@@ -960,16 +983,77 @@ public final class GL11 {
                 return simulated;
             }
         }
+        int[] capability = cachedCapability(pname);
+        if (capability != null) {
+            // 单值重载语义：返回首分量（与真实 LWJGL 一致）
+            return capability[0];
+        }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGetInteger(int pname, IntBuffer params) {
+        int[] capability = cachedCapability(pname);
+        if (capability != null) {
+            params.put(capability);
+            return;
+        }
         if (BridgeSupport.isMainRecordingThread()
                 && BridgeSupport.simulatedState().getInteger(pname, params)) {
             return;
         }
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetInteger(pname, params));
+    }
+
+    /**
+     * {@link #INT_CACHE} 槽位映射；返回 -1 表示该 pname 不在静态能力清单，
+     * 不缓存、按原路径走仿真/阻塞通道。
+     */
+    private static int capabilitySlot(int pname) {
+        if (pname == org.lwjgl.opengl.GL11.GL_MAX_VIEWPORT_DIMS) {
+            return 0;
+        }
+        if (pname == org.lwjgl.opengl.GL11.GL_MAX_TEXTURE_SIZE) {
+            return 1;
+        }
+        if (pname == org.lwjgl.opengl.GL11.GL_POINT_SIZE_RANGE) {
+            return 2;
+        }
+        if (pname == org.lwjgl.opengl.GL11.GL_STENCIL_BITS) {
+            return 3;
+        }
+        if (pname == org.lwjgl.opengl.GL30.GL_MAX_SAMPLES) {
+            return 4;
+        }
+        return -1;
+    }
+
+    /**
+     * 取静态能力值：命中缓存直接返回；未命中走阻塞通道按全分量取回并缓存。
+     * 不在清单的 pname 返回 null。缓存数组不复制——分量少且只读使用，
+     * 调用方不得修改返回值。
+     */
+    private static int[] cachedCapability(int pname) {
+        int slot = capabilitySlot(pname);
+        if (slot < 0) {
+            return null;
+        }
+        int[] cached = INT_CACHE.get(slot);
+        if (cached != null) {
+            return cached;
+        }
+        int components = INT_CACHE_COMPONENTS[slot];
+        int[] value = BridgeSupport.blockingGet(() -> {
+            IntBuffer tmp = org.lwjgl.BufferUtils.createIntBuffer(components);
+            org.lwjgl.opengl.GL11.glGetInteger(pname, tmp);
+            int[] result = new int[components];
+            for (int i = 0; i < components; i++) {
+                result[i] = tmp.get(i);
+            }
+            return result;
+        });
+        INT_CACHE.set(slot, value);
+        return value;
     }
 
     public static float glGetFloat(int pname) {

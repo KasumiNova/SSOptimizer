@@ -76,7 +76,26 @@
 | GraphicsLib | `ShaderHook`（EveryFrameCombatPlugin，settings.json plugins）+ `ShaderCombatLayerHook`（CombatLayeredRenderingPlugin，`EnumSet.allOf` 全层注册，按层分发 LightShader→ABOVE_SHIPS_AND_MISSILES、DistortionShader→JUST_BELOW_WIDGETS） | 分层段 `CombatEngine.java:941-966`；world 段 `CombatState:787`；UI 段 `CombatState:913`；advance `CombatEngine:1246` | LightShader 惰性整帧重渲进 foreground FBO + 全屏灯光复合；Distortion copyScreen 变形；PostProcess 跨段读上一帧缓冲 | 分层遍历含其 CustomCombatEntity 代理——**层内动态分流**（见 §6）；world/UI/advance 三段钉死 |
 | MagicLib | `MagicRenderPlugin`/`MagicTrailPlugin`（BaseEveryFrameCombatPlugin → addLayeredRenderingPlugin，全层）+ MagicFakeBeamPlugin（renderInWorldCoords） | 同上 | 静态列表渲染期读写删；MagicTrailRenderer 直接 GL11 immediate | 同上 |
 | LazyLib | **无渲染 hook**（工具库，javadoc 引用不算） | 无 | 无自有渲染状态 | 无需钉段 |
-| BoxUtil | **自建后台 GL 线程体系**（SharedDrawable 共享上下文 + RenderingThread + LogicalThread×2），fence 同步点 `__SYNC_BEGIN_ADVANCE/__SYNC_FINISH_ADVANCE/__SYNC_AFTER_RENDERING_HOST` | 无游戏侧锚点 | SSBO 实例池 + shaderpack；跨线程 GL 资源共享 | **声明不兼容**（既有决策），保留 fence/aux-context 队列钩子 |
+| BoxUtil | **自建后台 GL 线程体系**（SharedDrawable 共享上下文 + RenderingThread + LogicalThread×2），fence 同步点 `__SYNC_BEGIN_ADVANCE/__SYNC_FINISH_ADVANCE/__SYNC_AFTER_RENDERING_HOST` | 无游戏侧锚点 | SSBO 实例池 + shaderpack；跨线程 GL 资源共享 | **串行录制模式下兼容**（现状，全量测试实证）；**并行录制模式声明不支持**（见 §4 附注），保留 fence/aux-context 队列钩子 |
+
+**§4 附注：BoxUtil 在并行录制模式下的具体冲突点**（「不支持」的技术内涵）：
+
+1. **aux 线程 drain 击穿分段不变量（致命，响亮崩）**：BoxUtil 的 Logical/Rendering 线程会在
+   任意时机走 bridge 阻塞通道（getter/资源申请，如 `runtimeBufferIDCheck` 族），阻塞通道的
+   drain-first 会 `swapFrames()` 提前提交当前帧——若此时主线程正处于并行录制窗口
+   （worker 尚未 join），`flatten()` 封存全部段，worker 迟到写入触发
+   `IllegalStateException`（段封存 fail-fast）。这是刻意设计的响亮失败，不会静默坏帧，
+   但效果等同「开战即炸」。
+2. **命令序语义偏移（隐性）**：aux 提交在串行模式下按到达序进帧；分段后并行窗口内的
+   aux 提交落点是「旧串行段」，拼接序中排在全部并行段之前——与 BoxUtil fence 协议
+   （`__SYNC_AFTER_RENDERING_HOST` 等命名点对齐主线程渲染进度）的时序假设错位，
+   症状可能是其 SSBO 数据与画面差一帧或闪烁。
+3. **审计材料不完整**：`/tmp/boxutil-src` 仅含 4 个 core 类（无入口/桥接类 .java），
+   fence 协议全量语义未验证——故按「不支持」声明而非逐项适配。
+
+**阶段 2 防线（已纳入计划）**：检测到 BoxUtil 存在时自动回退串行录制
+（等价 `-Dssoptimizer.render.parallel=false`）+ 明确日志；未来若要对 BoxUtil 开放并行，
+需把 fence 协议接到段编排（aux 提交路由到当前活跃段 + 并行窗口禁 drain），成本单列。
 
 **关键结构事实**（审计 4+6 交叉验证）：`CombatLayeredRenderingPlugin` 经
 `CombatEngine:855-859` 包成 `CustomCombatEntity` 注册进 renderer 层列表——模组渲染代码
