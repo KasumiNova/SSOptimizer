@@ -9,6 +9,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
 import org.lwjgl.LWJGLException;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -298,7 +299,10 @@ final class BridgeSupport {
             return stashed;
         }
         int[] generated = blockingGetResource(() -> {
-            IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4).asIntBuffer();
+            // nativeOrder 是硬契约：驱动按平台小端序写入，默认大端视图会把
+            // id 读成字节交换值（低字节 ≥0x80 时为负，BoxUtil 校验即死于斯）
+            IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4)
+                    .order(ByteOrder.nativeOrder()).asIntBuffer();
             org.lwjgl.opengl.GL15.glGenBuffers(ids);
             int[] batch = new int[BUFFER_ID_STASH_BATCH];
             ids.get(batch);
@@ -325,7 +329,9 @@ final class BridgeSupport {
             return;
         }
         int[] generated = new int[BUFFER_ID_STASH_BATCH];
-        IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4).asIntBuffer();
+        // nativeOrder 契约同 acquireBufferId
+        IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4)
+                .order(ByteOrder.nativeOrder()).asIntBuffer();
         org.lwjgl.opengl.GL15.glGenBuffers(ids);
         ids.get(generated);
         validateGeneratedBufferIds(generated, org.lwjgl.opengl.GL11::glGetError);
