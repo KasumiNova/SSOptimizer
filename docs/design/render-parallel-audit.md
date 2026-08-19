@@ -22,12 +22,20 @@
 | # | 共享点 | 关键调用点 | 依据 | 处置 |
 |---|---|---|---|---|
 | H1 | **GLListManager 全局静态**（`activeLists/allocatedLists/freeLists/currListId/buildingList/suspend`） | `Ship.java:3760-3773/3109-3122`（jitter）、`FfIndicator.java:270-275`、`BitmapFontRenderer.java:740-745`（字体显示列表惰性缓存）、`GLLauncher.java:996-998`（每帧 `nextFrame()` 清理）；`buildingList` 分支读 `Ship.java:3640/3685`、`BeamWeapon.java:371/394` | 并发 beginList/callList 互踩 ID 池与集合；`buildingList` 竞态进错分支 | **前置改造**：worker 私有列表池（各段独立 build，回放前主线程统一 merge 进 nextFrame 无效化流程）——改造后字体/jitter/FF 全部释放并行 |
-| H2 | **contrailEngine 单例 Map**（`Map<EngineSlot, Group>` + 每 key LinkedList） | `Engine.java:873-875`（`Engine.render` 每舰/导弹 `addSegment`）、`Engine.java:82-198`（trail 生命周期）、`CombatEngine.java:1314`（advance 老化）；`CONTRAILS_LAYER` 渲染读（`CombatEngine.java:282`） | **每艘船渲染都写同一 HashMap**——不分区则舰船层无法并行 | **前置改造**：per-slot 段内局部缓冲 + 主线程按段序合并（或段锁，粒度 per-key） |
+| H2 | ~~contrailEngine 单例 Map~~ **复核后排除**（详见表下附注） | `Engine.java:873` `addSegment` 实际位于 `advance(float)`（方法起点 `:754`），非 render；`CombatEngine.java:1314` advance 老化同属串行 advance 阶段 | 渲染期唯一触点是 `CONTRAILS_LAYER` 的 `ContrailEngine.render()` 只读遍历（`CombatEngine.java:282` LayeredRenderable） | **无需改造**：写入全部发生在串行 advance 阶段；层 18 渲染段按 §6 编排自然串行执行即可 |
 | H3 | **粒子组容器**（12 个 `DynamicParticleGroup` + `DebrisParticleSystem.groups[8]` + `ExplosionParticleSystem.groups[5]` + `CombatParticleEffects` 静态列表） | 写：`CombatEngine.java:2744-2876`（`addXxxParticle`）、`DebrisParticleSystem.java:151`、`ExplosionParticleSystem.java:202`；渲染：`CombatEngine.java:937-938/948/950-963` | 组内多实体并发写互踩；`ExplosionParticleSystem.random` 非线程安全；debris/explosion 含惰性初始化 | **分区粒度下限 = 组**：组整段串行；组渲染段（底层:937-938、顶层:948-963）钉为固定串行段 |
 | H4 | **字体/UI 进程级共享**（除 H1 外）：共享 `BitmapFont` 的 `kerningLookupPair`（`BitmapFont.java:43-51`）、`Version.renderer` 静态单例（`Version.java:16`）、`ScissorStack` 静态栈（`ScissorStack.java:9-11`，`Panel.java:195-210` 全 HUD 子树 push/pop） | HUD 全链（`CombatState.java:910-984`） | 任何画文字的段都踩；HUD 整段不可直接并行 | **HUD 整段钉为固定串行段**（收益放实体层）；后续如需 HUD 并行再给 ScissorStack/kerning pair 加守卫 |
 | H5 | **模组静态列表**（MagicLib `MagicRenderPlugin` 4 静态列表渲染期读写删除；GraphicsLib `renderForeground` 就地排序 `engine.getShips()` 并改写共享 SpriteAPI——`ShaderLib.java:1079-1080`） | 经分层插件混入层遍历（§4） | 模组渲染 hook 已在决策中钉为固定串行段 | 编排上锚定（§4），不改游戏代码 |
 
 次要/条件项：
+- **H2 复核附注**（阶段 2 动工时按 named 源码逐行复核）：`Engine.java:873` 的
+  `contrailEngine.addSegment(...)` 位于 `advance(float)`（`:754` 起）内，与
+  `addExtraPoint`(`:191`)/`extendTrail`(`:198`)/`endTrail`(`:142`)/`createTrail`(`:83`) 同属
+  串行 advance 与舰船初始化路径；渲染期仅 `CONTRAILS_LAYER` 的
+  `ContrailEngine.render()` 只读遍历 `groups`。且 `ShipFactory.java:187` 证实
+  `EngineSlot` key 为每舰新建实例（`toEngineSlot()` → `new EngineSlot`），即便未来
+  出现渲染期写入，「同实体同段」分区也能保证 per-key 隔离。结论：H2 不构成
+  并行录制障碍，从「前置改造」降级为「无需改造」。
 - `Profiler` 全局静态栈（`Ship.java` 多处 begin/end）——默认 `enabled=false` 空操作；**启用 profiling 时强制串行**（或改 ThreadLocal 栈）。
 - 武器皮肤共享 Sprite（`Misc.getWeaponSkin` 缓存实例，`MissileWeapon.java:524-530/611-617`）——稀有路径，分区约束「同皮肤武器同段」或文档化。
 - `SmoothParticle.java:20-23`/`NegativeParticle.java:24` 静态顶点缓冲——当前走立即模式分支无并发写，**潜伏性**：勿启用其批处理路径。
@@ -128,8 +136,8 @@ render-logic-separation-entrypoints.md 的分层归并结论）。
 4. **前置改造**（阶段 2 动工前完成，决定并行收益上限）：
    - **H1 GLListManager worker 私有化**（否则 jitter/字体/FF 全锁死，字体进而锁死 HUD 之外一切
      含文字段——舰船层内船名/状态文字同样走 BitmapFontRenderer，**这是并行区的隐形地雷，必须最先改**）
-   - **H2 contrailEngine per-slot 缓冲 + 段序合并**（否则每舰一脚踩死舰船层并行）
-   - §5 的 5 个静态能力缓存
+   - ~~H2 contrailEngine~~ 已复核排除（见 §1 附注：写入全在串行 advance 阶段，无需改造）
+   - §5 的 5 个静态能力缓存（已完成：bridge GL11 录制侧缓存，单值/buffer 重载共享槽位）
 5. **执行器**：复用 AiParallelExecutor 池（advance/render 不重叠）；worker 段任务失败走既有
    串行重跑降级（重录制无 GL 副作用）。
 6. **开关**：`-Dssoptimizer.render.parallel=false` 整体回退。
@@ -142,7 +150,7 @@ render-logic-separation-entrypoints.md 的分层归并结论）。
 ## 7. 门禁确认项（用户过目点）
 
 1. 分区方案 §6 是否认可（尤其：层内重排可接受、CustomCombatEntity 动态分流策略）；
-2. H1/H2 两项前置改造的工作量接受度（GLListManager worker 私有化涉及显示列表生命周期
-   与 `GLLauncher.nextFrame()` 无效化流程的跨段协调）；
+2. H1 前置改造的工作量接受度（GLListManager worker 私有化涉及显示列表生命周期
+   与 `GLLauncher.nextFrame()` 无效化流程的跨段协调；H2 已复核排除，见 §1 附注）；
 3. BoxUtil 维持不兼容声明；
 4. 5 个静态能力缓存补齐纳入阶段 2 前置。
