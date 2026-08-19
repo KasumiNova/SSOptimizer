@@ -60,7 +60,15 @@ public final class GL15 {
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenBuffers(IntBuffer buffers) {
-        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL15.glGenBuffers(buffers));
+        BridgeSupport.blockingWaitResource(() -> {
+            org.lwjgl.opengl.GL15.glGenBuffers(buffers);
+            // 同 acquireBufferId 的 fail-fast：真实批发静默出 0 时在生成点拦截
+            // （诊断语义见 BridgeSupport.validateGeneratedBufferIds）。批量形式
+            // 非热路径，拷贝校验开销可忽略。
+            int[] written = new int[buffers.remaining()];
+            buffers.slice().get(written);
+            BridgeSupport.validateGeneratedBufferIds(written, org.lwjgl.opengl.GL11::glGetError);
+        });
     }
 
     /** 仅指定容量的分配形式，无数据参数。 */

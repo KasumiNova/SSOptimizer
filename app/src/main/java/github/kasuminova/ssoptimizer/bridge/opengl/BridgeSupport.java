@@ -16,6 +16,7 @@ import java.nio.ShortBuffer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
 
 /**
  * bridge 各入口类共享的静态支撑：队列句柄、录制/阻塞助手、缓冲快照池、
@@ -301,6 +302,7 @@ final class BridgeSupport {
             org.lwjgl.opengl.GL15.glGenBuffers(ids);
             int[] batch = new int[BUFFER_ID_STASH_BATCH];
             ids.get(batch);
+            validateGeneratedBufferIds(batch, org.lwjgl.opengl.GL11::glGetError);
             return batch;
         });
         for (int i = 1; i < generated.length; i++) {
@@ -326,10 +328,42 @@ final class BridgeSupport {
         IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4).asIntBuffer();
         org.lwjgl.opengl.GL15.glGenBuffers(ids);
         ids.get(generated);
+        validateGeneratedBufferIds(generated, org.lwjgl.opengl.GL11::glGetError);
         for (int id : generated) {
             bufferIdStash.add(id);
             bufferIdStashCount.incrementAndGet();
         }
+    }
+
+    /**
+     * 真实 glGenBuffers 批发结果的 fail-fast 校验（渲染线程上、生成点就地调用）。
+     * LWJGL2 不按 GL 错误抛异常：上下文异常/驱动故障时批发会静默写入 0，
+     * 死 id 流入调用方后在模组侧以隐晦形式爆发（BoxUtil runtimeBufferIDCheck
+     * 杀死逻辑线程），或成为幽灵绑定互踩渲染内容。此处拦截并附 GL 错误码。
+     *
+     * @param batch           批发出的 id 数组
+     * @param glErrorSupplier 渲染线程上的 glGetError 取值（测试注入桩，避免无
+     *                        上下文环境触碰真实 GL）
+     */
+    static void validateGeneratedBufferIds(int[] batch, IntSupplier glErrorSupplier) {
+        int invalidCount = 0;
+        int firstInvalidIndex = -1;
+        for (int i = 0; i < batch.length; i++) {
+            if (batch[i] >= 1) {
+                continue;
+            }
+            if (firstInvalidIndex < 0) {
+                firstInvalidIndex = i;
+            }
+            invalidCount++;
+        }
+        if (invalidCount == 0) {
+            return;
+        }
+        throw new IllegalStateException(String.format(
+                "[SSOptimizer] 真实 glGenBuffers 批发出 %d/%d 个无效 id（首个下标 %d，glGetError=0x%08X）。"
+                        + "GL 上下文疑似异常（驱动故障或上下文丢失），拒绝分发死 id。",
+                invalidCount, batch.length, firstInvalidIndex, glErrorSupplier.getAsInt()));
     }
 
     /** 声明 {@link LWJGLException} 的阻塞任务。 */
