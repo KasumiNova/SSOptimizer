@@ -59,10 +59,11 @@ public final class GameClassNames {
     public static final String GL_LIST_MANAGER_DOTTED              = "com.fs.graphics.util.GLListManager";
     public static final String GL_LIST_TOKEN                = "com/fs/graphics/util/GLListManager$GLListToken";
     public static final String GL_LIST_TOKEN_DOTTED         = "com.fs.graphics.util.GLListManager$GLListToken";
-    public static final String SHIP_BEAM_WEAPON_DOTTED             = "com.fs.starfarer.combat.entities.ship.A.BeamWeapon";
-    public static final String SHIP_PLASMA_WEAPON_DOTTED           = "com.fs.starfarer.combat.entities.ship.A.PlasmaWeapon";
-    public static final String SHIP_MISSILE_WEAPON_DOTTED          = "com.fs.starfarer.combat.entities.ship.A.MissileWeapon";
+    public static final String SHIP_BEAM_WEAPON_DOTTED             = "com.fs.starfarer.combat.entities.ship.BeamWeapon";
+    public static final String SHIP_PLASMA_WEAPON_DOTTED           = "com.fs.starfarer.combat.entities.ship.PlasmaWeapon";
+    public static final String SHIP_MISSILE_WEAPON_DOTTED          = "com.fs.starfarer.combat.entities.ship.MissileWeapon";
     public static final String PLANET_DOTTED                       = "com.fs.starfarer.combat.entities.terrain.Planet";
+    public static final String LAYERED_RENDERER_DOTTED             = "com.fs.graphics.LayeredRenderer";
     public static final String SMOOTH_PARTICLE                     = "com/fs/graphics/particle/SmoothParticle";
     public static final String SMOOTH_PARTICLE_DOTTED              = "com.fs.graphics.particle.SmoothParticle";
     public static final String BASE_PARTICLE                       = "com/fs/graphics/particle/BaseParticle";

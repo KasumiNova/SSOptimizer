@@ -100,13 +100,15 @@ public final class ParallelAiDispatcher {
     }
 
     /**
-     * 供 {@link AutofireBatchRunner} 等同包批处理复用底层执行器。
+     * 供 {@link AutofireBatchRunner} 等同包批处理与渲染侧并行编排器
+     * （{@code ParallelLayerRenderer}，advance/render 时段不重叠，共用同一池）
+     * 复用底层执行器。
      * 注意：直接使用返回执行器的 {@code awaitAll} 不会推进线程本地帧号，
      * 帧号推进仅由 {@link #awaitAll()} 负责。
      *
      * @return 执行器实例；AI 并行关闭时为 null
      */
-    static AiParallelExecutor executor() {
+    public static AiParallelExecutor executor() {
         return EXECUTOR;
     }
 
