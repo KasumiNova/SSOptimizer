@@ -78,6 +78,21 @@
 - 门禁：smoke launch（mixin 改动新规）+ 基准 PASSED 不降 + **逐帧截图对比**
   （并行顺序错误的典型症状 = 贴图/混合错乱/尾迹串层，需多帧确认）。
 
+**实施记录（2026-08-19）**：
+
+- 前置改造三项全部落地：静态能力缓存（GL11 bridge，commit 0d97234 + 2e18deb）、
+  H2 复核排除（写入全在串行 advance 阶段，无需改造，commit d6e462b）、
+  H1 GLListManager 并行安全化（DisplayListGuard 整体接管 + 5 方法 @Overwrite
+  + 5 类字段读写 @Redirect，commit d2caa2d）。
+- 编排器落地（commit c7dd42e）：@Redirect 单点拦截 renderExcluding →
+  ParallelLayerRenderer 层内分片并行（舰载机-母舰同段经 LaunchingShipLink 接口
+  注入；CustomCombatEntity 钉层尾串行段；worker 异常 fail-fast 传播）。
+- BoxUtil：检测到即自动回退串行（接入方案见 boxutil-parallel-integration.md
+  方案 A，列为独立增量）；四路回退均有一次性诊断日志。
+- 全模组（97，含 BoxUtil）120s 基准：avgFps 68.86（回退路径，基线 71.82±3 内）。
+- 注意：named jar 的 Ship 等游戏类含 JVM 规范外字段名（反混淆产物），
+  单测环境不可加载——编排器与单测一律面向我方接口编程，不直接引用游戏类型。
+
 ### 阶段 3（顺延项，本阶段不做）
 
 - 回放侧 VertexStream 消费优化（用户决策 2：渲染显存方向延后一轮，
