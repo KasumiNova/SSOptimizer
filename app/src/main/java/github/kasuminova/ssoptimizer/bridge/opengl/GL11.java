@@ -1044,7 +1044,9 @@ public final class GL11 {
         }
         int components = INT_CACHE_COMPONENTS[slot];
         int[] value = BridgeSupport.blockingGet(() -> {
-            IntBuffer tmp = org.lwjgl.BufferUtils.createIntBuffer(components);
+            // LWJGL 硬契约：glGetInteger 的 buffer 重载要求 remaining >= 16
+            // （与 pname 实际分量数无关），临时缓冲按 16 分配
+            IntBuffer tmp = org.lwjgl.BufferUtils.createIntBuffer(16);
             org.lwjgl.opengl.GL11.glGetInteger(pname, tmp);
             int[] result = new int[components];
             for (int i = 0; i < components; i++) {
