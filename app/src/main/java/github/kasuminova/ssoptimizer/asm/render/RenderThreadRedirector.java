@@ -78,7 +78,7 @@ public final class RenderThreadRedirector {
 
     /** owner 改写表覆盖的类名（org/lwjgl/opengl 下的简单名，与 bridge 类一一同名）。 */
     private static final String[] MIRRORED_CLASS_NAMES = {
-            "GL11", "GL12", "GL13", "GL14", "GL15", "GL20", "GL30", "GL31", "GL32",
+            "GL11", "GL12", "GL13", "GL14", "GL15", "GL20", "GL30", "GL31", "GL32", "GL33",
             "GL40", "GL41", "GL42", "GL43", "GL44",
             "ARBVertexBufferObject", "EXTFramebufferObject", "ARBFramebufferObject",
             "ARBTextureStorage", "ARBBindlessTexture", "NVBindlessTexture",

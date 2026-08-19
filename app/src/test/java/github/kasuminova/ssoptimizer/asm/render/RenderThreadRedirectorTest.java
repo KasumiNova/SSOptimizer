@@ -233,6 +233,30 @@ class RenderThreadRedirectorTest {
     }
 
     @Test
+    void gl33CallsAreRedirected() {
+        // GL33 曾整体缺席镜像表：Particle Engine 的 ParticleAllocator 调
+        // glVertexAttribDivisor 直奔真实 GL（No OpenGL context 崩溃签名）。
+        // 抽查实例化除数 + sampler 族 + 时间戳查询必须全部改写。
+        byte[] source = buildClass("com/example/UsesGl33", mv -> {
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL33",
+                    "glVertexAttribDivisor", "(II)V", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL33",
+                    "glGenSamplers", "()I", false);
+            mv.visitInsn(Opcodes.POP);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL33",
+                    "glQueryCounter", "(II)V", false);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.UsesGl33", source);
+        List<String> calls = collectMethodCalls(result);
+        assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL33.glVertexAttribDivisor(II)V"), calls.toString());
+        assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL33.glGenSamplers()I"), calls.toString());
+        assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL33.glQueryCounter(II)V"), calls.toString());
+        assertFalse(calls.stream().anyMatch(c -> c.contains("org/lwjgl/opengl/GL33")),
+                "GL33 调用点不得残留原 owner: " + calls);
+    }
+
+    @Test
     void mirrorTableCoversExpectedSurface() {
         // 镜像表是改写覆盖面的事实源：抽查关键方法必须已镜像（防 bridge 重构漂移）
         byte[] source = buildClass("com/example/Probe", mv -> {
