@@ -80,6 +80,55 @@ class DisplayBridgeTest {
     }
 
     @Test
+    void glGenTexturesUsesStashAfterFirstRefill() {
+        // 首次取 id：stash 空，走资源申请阻塞通道批量预生成（fake queue 返回桩批次）
+        queue.getHandler = callable -> new int[BridgeSupport.TEXTURE_ID_STASH_BATCH];
+        GL11.glGenTextures();
+        assertEquals(1, queue.uncountedGetCallCount);
+        // 之后 stash 命中：零阻塞
+        GL11.glGenTextures();
+        GL11.glGenTextures();
+        assertEquals(1, queue.uncountedGetCallCount, "stash 命中必须零阻塞");
+    }
+
+    @Test
+    void glGenTexturesBatchFillsFromStashWhenStocked() {
+        queue.getHandler = callable -> new int[BridgeSupport.TEXTURE_ID_STASH_BATCH];
+        GL11.glGenTextures(); // 预生成一批入 stash
+        assertEquals(1, queue.uncountedGetCallCount);
+
+        java.nio.IntBuffer out = java.nio.ByteBuffer.allocateDirect(2 * 4)
+                .order(java.nio.ByteOrder.nativeOrder()).asIntBuffer();
+        GL11.glGenTextures(out);
+        assertEquals(2, out.position(), "stash 命中时 id 写入调用方 buffer");
+        assertEquals(1, queue.uncountedGetCallCount, "stash 充足时批量填充必须零阻塞");
+        assertTrue(queue.uncountedBlockingTasks.isEmpty());
+    }
+
+    @Test
+    void glGenTexturesBatchFallsBackToBlockingChannelWhenStashShort() {
+        // stash 空：批量形式回退阻塞通道（fake queue 只记录不执行）
+        java.nio.IntBuffer out = java.nio.ByteBuffer.allocateDirect(2 * 4)
+                .order(java.nio.ByteOrder.nativeOrder()).asIntBuffer();
+        GL11.glGenTextures(out);
+        assertEquals(1, queue.uncountedBlockingTasks.size(), "stash 不足必须走阻塞通道兜底");
+        assertEquals(0, out.position(), "阻塞通道未完成前 buffer 不被写入");
+    }
+
+    @Test
+    void contextRecreationClearsTextureIdStash() throws Exception {
+        queue.getHandler = callable -> new int[BridgeSupport.TEXTURE_ID_STASH_BATCH];
+        GL11.glGenTextures();
+        assertEquals(1, queue.uncountedGetCallCount);
+
+        Display.create();
+
+        // 新上下文建立后：stash 内旧上下文的死 id 被清空，重新走资源申请通道补货
+        GL11.glGenTextures();
+        assertEquals(2, queue.uncountedGetCallCount, "create 后纹理 stash 旧 id 必须清空");
+    }
+
+    @Test
     void windowAttributeChangesAreEnqueued() throws Exception {
         Display.setVSyncEnabled(true);
         Display.setTitle("title");

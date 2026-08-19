@@ -34,15 +34,16 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *       glArrayElement）携带快照组在执行前全量重放——简化语义与 FR
  *       ClientAttribTracker 的差异见 {@link PointerSnapshot} 的 javadoc；</li>
  *   <li>getter（glGetInteger/glGetFloat/glGetBoolean/glIsEnabled
- *       /glReadPixels/glGetError 等）与资源分配
- *       （glGenTextures/glGenLists）：走 {@link RenderQueue#get} 阻塞通道
- *       （自动计入 StallDetector）；后续演进点是把高频 pname/资源 id 换成
- *       主线程侧状态仿真与预生成 stash（见盘点文档 getter 清单）。例外：
+ *       /glReadPixels/glGetError 等）与 glGenLists：走 {@link RenderQueue#get}
+ *       阻塞通道（自动计入 StallDetector）；后续演进点是把高频 pname 换成
+ *       主线程侧状态仿真（见盘点文档 getter 清单）。例外：
  *       glGetString 的五类结果（供应商/渲染器/版本/扩展/着色语言版本）与
  *       glGetInteger 的五项静态能力（最大视口尺寸/最大纹理尺寸/点大小范围/
  *       模板位深/最大多重采样）在同一
  *       GL context 生命周期内不变，首次阻塞取回后录制侧缓存——游戏的
- *       SpriteBatch 每次构造都经此探测 VBO 能力，不缓存会打成稳态热点；</li>
+ *       SpriteBatch 每次构造都经此探测 VBO 能力，不缓存会打成稳态热点；
+ *       glGenTextures 走录制侧预生成 stash（{@link BridgeSupport#acquireTextureId()}），
+ *       命中零阻塞，惰性纹理上传是并行录制段内的合法路径；</li>
  *   <li>display list（glNewList/glEndList/glCallList）：本阶段按普通命令入队
  *       ——即「渲染线程直接执行真实 display list 编译/调用」，语义等价于单线程，
  *       只是 display list 本体编译发生在渲染线程。ListManager 式命令帧重放
@@ -722,13 +723,20 @@ public final class GL11 {
                 () -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
     }
 
-    /** 资源分配：阻塞通道取回真实纹理 id（预生成 stash 为后续演进点）。 */
+    /** 单值形式走录制侧预生成 stash（{@link BridgeSupport#acquireTextureId()}），命中时零阻塞。 */
     public static int glGenTextures() {
-        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL11::glGenTextures);
+        return BridgeSupport.acquireTextureId();
     }
 
-    /** 渲染线程直接把 id 写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
+    /**
+     * 批量形式优先 stash 零阻塞填充（{@link BridgeSupport#tryFillTextureIds(IntBuffer)}）；
+     * stash 存量不足时走阻塞通道，渲染线程直接把 id 写入调用方 buffer
+     * （调用方阻塞期间 buffer 不被触碰）。并行录制段内存量不足 fail-fast。
+     */
     public static void glGenTextures(IntBuffer textures) {
+        if (BridgeSupport.tryFillTextureIds(textures)) {
+            return;
+        }
         BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL11.glGenTextures(textures));
     }
 

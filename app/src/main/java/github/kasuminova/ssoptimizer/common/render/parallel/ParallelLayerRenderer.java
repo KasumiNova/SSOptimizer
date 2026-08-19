@@ -122,24 +122,54 @@ public final class ParallelLayerRenderer {
         List<List<Object>> shards = shardByGroup(parallel, shardCount);
 
         RenderSegment[] segments = ParallelRecording.reserveSegments(shardCount);
+        // 段任务异常收集：渲染录制非幂等（命令已部分入段），不能走 AI 池的
+        // 串行重跑降级——失败任务在段内吞获、任务体正常返回，屏障后统一
+        // fail-fast 抛给主线程。段内阻塞 GL 调用等缺口必须修复调用点，
+        // 重跑只会重复录制并再次失败。
+        Throwable[] taskErrors = new Throwable[shardCount];
         for (int w = 0; w < shardCount; w++) {
             List<Object> shard = shards.get(w);
             if (shard.isEmpty()) {
                 continue;
             }
             RenderSegment segment = segments[w];
+            int shardIndex = w;
             executor.submit(() -> {
                 ParallelRecording.bindSegment(segment);
                 try {
                     for (Object renderable : shard) {
                         ((com.fs.graphics.LayeredRenderable) renderable).render(layer, viewport);
                     }
+                } catch (Throwable t) {
+                    taskErrors[shardIndex] = t;
                 } finally {
                     ParallelRecording.unbindSegment();
                 }
             }, null);
         }
         executor.awaitAll();
+        Throwable firstError = null;
+        int errorCount = 0;
+        for (Throwable t : taskErrors) {
+            if (t == null) {
+                continue;
+            }
+            errorCount++;
+            if (firstError == null) {
+                firstError = t;
+            }
+        }
+        if (firstError != null) {
+            RuntimeException propagated = new RuntimeException(
+                    "[SSOptimizer] 并行录制段任务失败（" + errorCount + " 个分片，不重跑：渲染录制非幂等，"
+                            + "段内失败属实现缺口，须修复调用点）", firstError);
+            for (Throwable t : taskErrors) {
+                if (t != null && t != firstError) {
+                    propagated.addSuppressed(t);
+                }
+            }
+            throw propagated;
+        }
 
         // 层尾串行段：模组代理渲染物在屏障后由主线程按原相对序录制
         ParallelRecording.openNextSerialSegment();

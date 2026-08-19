@@ -98,6 +98,24 @@ final class BridgeSupport {
     /** display list stash 当前元素计数（与 stash 内容一致）。 */
     private static volatile AtomicInteger listIdStashCount = new AtomicInteger();
     /**
+     * 纹理 id stash 单次批量预生成的个数。惰性纹理上传（LazyTextureManager
+     * ensureTextureReady→glGenTextures）在战斗/标题渲染期随首次引用触发，
+     * 并行录制段内禁止阻塞取 id——stash 命中是段内唯一合法路径。
+     */
+    static final int TEXTURE_ID_STASH_BATCH = 512;
+    /** 纹理 stash 低水位阈值：渲染线程帧尾补货触发线。 */
+    static final int TEXTURE_ID_STASH_LOW_WATER = 256;
+    /**
+     * 纹理 id 预生成 stash：{@link GL11#glGenTextures()} 的录制侧 id 池。
+     * 语义同 {@link #bufferIdStash}——stash 命中零阻塞，空时一次阻塞批量
+     * 预生成摊销往返；并行录制段内空时经阻塞通道 fail-fast（纹理 id 无
+     * display list 那样的 suspend 退化路径，耗尽属 stash 容量缺口，必须
+     * 显式暴露而非分发死 id）。
+     */
+    private static volatile ConcurrentLinkedQueue<Integer> textureIdStash = new ConcurrentLinkedQueue<>();
+    /** 纹理 stash 当前元素计数（与 stash 内容一致）。 */
+    private static volatile AtomicInteger textureIdStashCount = new AtomicInteger();
+    /**
      * 渲染线程侧簿记：命令流执行到当前位置的 GL_ARRAY_BUFFER 真实绑定。
      * 只由 bind 命令执行体与 pointer 重放（{@link PointerSnapshotGroup#apply()}）
      * 在渲染线程读写。
@@ -132,6 +150,8 @@ final class BridgeSupport {
         bufferIdStashCount = new AtomicInteger();
         listIdStash = new ConcurrentLinkedQueue<>();
         listIdStashCount = new AtomicInteger();
+        textureIdStash = new ConcurrentLinkedQueue<>();
+        textureIdStashCount = new AtomicInteger();
         DisplayListGuard.reset();
     }
 
@@ -510,6 +530,121 @@ final class BridgeSupport {
     }
 
     /**
+     * 取一个纹理 id（{@link GL11#glGenTextures()} 单值形式的入口）：stash 非空
+     * 零阻塞出队；空则走一次资源申请阻塞通道，由渲染线程批量预生成
+     * {@value #TEXTURE_ID_STASH_BATCH} 个 id——返回首个，其余入池。语义同
+     * {@link #acquireBufferId()}；与 display list 不同，纹理 id 没有 suspend
+     * 等价退化路径，段内 stash 耗尽只能经阻塞通道 fail-fast（容量缺口必须
+     * 显式暴露）。稳态下由渲染线程每帧帧尾 {@link #refillTextureIdStashIfLow()}
+     * 低水位补货保持 stash 恒有货。
+     */
+    static int acquireTextureId() {
+        Integer stashed = textureIdStash.poll();
+        if (stashed != null) {
+            textureIdStashCount.decrementAndGet();
+            return stashed;
+        }
+        int[] generated = blockingGetResource(() -> {
+            // nativeOrder 契约同 acquireBufferId
+            IntBuffer ids = ByteBuffer.allocateDirect(TEXTURE_ID_STASH_BATCH * 4)
+                    .order(ByteOrder.nativeOrder()).asIntBuffer();
+            org.lwjgl.opengl.GL11.glGenTextures(ids);
+            int[] batch = new int[TEXTURE_ID_STASH_BATCH];
+            ids.get(batch);
+            validateGeneratedTextureIds(batch, org.lwjgl.opengl.GL11::glGetError);
+            return batch;
+        });
+        for (int i = 1; i < generated.length; i++) {
+            textureIdStash.add(generated[i]);
+            textureIdStashCount.incrementAndGet();
+        }
+        return generated[0];
+    }
+
+    /**
+     * 纹理 stash 低水位补货（渲染线程调用，与
+     * {@link #refillBufferIdStashIfLow()} 同在 Display.update 命令体前置）：
+     * 计数低于 {@value #TEXTURE_ID_STASH_LOW_WATER} 时直接在渲染线程真实
+     * glGenTextures 一批 {@value #TEXTURE_ID_STASH_BATCH} 个入 stash。
+     */
+    static void refillTextureIdStashIfLow() {
+        if (textureIdStashCount.get() >= TEXTURE_ID_STASH_LOW_WATER) {
+            return;
+        }
+        int[] generated = new int[TEXTURE_ID_STASH_BATCH];
+        // nativeOrder 契约同 acquireTextureId
+        IntBuffer ids = ByteBuffer.allocateDirect(TEXTURE_ID_STASH_BATCH * 4)
+                .order(ByteOrder.nativeOrder()).asIntBuffer();
+        org.lwjgl.opengl.GL11.glGenTextures(ids);
+        ids.get(generated);
+        validateGeneratedTextureIds(generated, org.lwjgl.opengl.GL11::glGetError);
+        for (int id : generated) {
+            textureIdStash.add(id);
+            textureIdStashCount.incrementAndGet();
+        }
+    }
+
+    /**
+     * {@link GL11#glGenTextures(IntBuffer)} 的零阻塞填充尝试：stash 存量足够
+     * 时出队 remaining 个 id 写入 out（推进 position）并返回 true；存量不足
+     * 或竞争中耗尽时回滚已出队元素并返回 false，由调用方走阻塞通道兜底。
+     * 并行录制段内存量不足经阻塞通道 fail-fast（同 {@link #acquireTextureId()}）。
+     */
+    static boolean tryFillTextureIds(IntBuffer out) {
+        int n = out.remaining();
+        if (n <= 0) {
+            return true;
+        }
+        Integer[] ids = new Integer[n];
+        for (int i = 0; i < n; i++) {
+            ids[i] = textureIdStash.poll();
+            if (ids[i] == null) {
+                // 竞争中耗尽：已出队的放回池尾，一个 id 都不分发（调用方走阻塞通道全量取）
+                for (int j = 0; j < i; j++) {
+                    textureIdStash.add(ids[j]);
+                    textureIdStashCount.incrementAndGet();
+                }
+                return false;
+            }
+            textureIdStashCount.decrementAndGet();
+        }
+        for (Integer id : ids) {
+            out.put(id);
+        }
+        return true;
+    }
+
+    /**
+     * 真实 glGenTextures 批发结果的 fail-fast 校验：动机同
+     * {@link #validateGeneratedBufferIds}——LWJGL2 不按 GL 错误抛异常，
+     * 批发静默出 0 时死 id 会以幽灵纹理形式爆发。此处拦截并附 GL 错误码。
+     *
+     * @param batch           批发出的 id 数组
+     * @param glErrorSupplier 渲染线程上的 glGetError 取值（测试注入桩，避免无
+     *                        上下文环境触碰真实 GL）
+     */
+    static void validateGeneratedTextureIds(int[] batch, IntSupplier glErrorSupplier) {
+        int invalidCount = 0;
+        int firstInvalidIndex = -1;
+        for (int i = 0; i < batch.length; i++) {
+            if (batch[i] >= 1) {
+                continue;
+            }
+            if (firstInvalidIndex < 0) {
+                firstInvalidIndex = i;
+            }
+            invalidCount++;
+        }
+        if (invalidCount == 0) {
+            return;
+        }
+        throw new IllegalStateException(String.format(
+                "[SSOptimizer] 真实 glGenTextures 批发出 %d/%d 个无效 id（首个下标 %d，glGetError=0x%08X）。"
+                        + "GL 上下文疑似异常（驱动故障或上下文丢失），拒绝分发死 id。",
+                invalidCount, batch.length, firstInvalidIndex, glErrorSupplier.getAsInt()));
+    }
+
+    /**
      * 真实 glGenBuffers 批发结果的 fail-fast 校验（渲染线程上、生成点就地调用）。
      * LWJGL2 不按 GL 错误抛异常：上下文异常/驱动故障时批发会静默写入 0，
      * 死 id 流入调用方后在模组侧以隐晦形式爆发（BoxUtil runtimeBufferIDCheck
@@ -623,6 +758,8 @@ final class BridgeSupport {
         bufferIdStashCount = new AtomicInteger();
         listIdStash = new ConcurrentLinkedQueue<>();
         listIdStashCount = new AtomicInteger();
+        textureIdStash = new ConcurrentLinkedQueue<>();
+        textureIdStashCount = new AtomicInteger();
         DisplayListGuard.onContextRecreated();
     }
 
