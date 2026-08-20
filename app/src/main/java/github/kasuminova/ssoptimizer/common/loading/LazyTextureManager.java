@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -94,6 +95,13 @@ public final class LazyTextureManager {
     private static final    WeakKeyMap<com.fs.graphics.TextureObject, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              = new WeakKeyMap<>();
     private static final    ThreadLocal<Set<com.fs.graphics.TextureObject>>              CONTEXT_RELOAD_GUARD                =
             ThreadLocal.withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<>()));
+    /**
+     * 重入卫兵的全局活跃计数（任意线程持有卫兵即 >0）：{@code isContextReloadInProgress}
+     * 的稳态快速路径——上下文重建是罕见事件，但卫兵检查在纹理绑定热路径上逐次触发
+     * （ThreadLocal.get + Set.contains 的 profile 热点）；计数为 0 时一次 volatile
+     * 读即可否决，仅在真有重建进行时走 ThreadLocal 精确判断。
+     */
+    private static final    AtomicInteger                                                CONTEXT_RELOAD_GUARD_ACTIVE         = new AtomicInteger();
     private static final    ThreadLocal<String>                                          CURRENT_BOUND_TEXTURE_PATH          =
             ThreadLocal.withInitial(() -> "");
     private static final    AtomicBoolean                                                COMPOSITION_REPORT_HOOK_INSTALLED   = new AtomicBoolean(false);
@@ -105,6 +113,15 @@ public final class LazyTextureManager {
     private static final    Method                                                       ORIGINAL_LAZY_MODE_METHOD           = resolveOriginalLazyModeMethod();
     private static final    Method                                                       RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
     private static final    Method                                                       RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
+    /**
+     * 延迟上传回写 textureId 的反射通道：named jar 的 TextureObject 无 public
+     * setter，写字段只能反射（每纹理生命周期一次，非热路径）。
+     * 读路径同样必须走字段而非 public getTextureId()：该 getter 已被懒加载管线
+     * 挂钩（重定向进 {@link #getTextureId} → ensureTextureReady → readTextureId），
+     * 直接调 getter 会无限递归（cpu10 实测 StackOverflowError）。
+     * 已知残余成本：Field.getInt 逐次访问检查（cpu9 profile 约 0.2~0.6% 全局），
+     * 无 Mixin 方案是因为单测环境无 Mixin 注入且用例构造真实 TextureObject。
+     */
     private static final    Field                                                        TEXTURE_ID_FIELD                    = resolveField(com.fs.graphics.TextureObject.class, "textureId");
     private static final    Field                                                        SPECIAL_MIPMAP_SET_FIELD            = resolveField(TextureLoader.class, GameMemberNames.TextureLoader.SPECIAL_MIPMAP_SET);
     private static volatile long                                                         nextSweepNanos                      = 0L;
@@ -1005,6 +1022,7 @@ public final class LazyTextureManager {
             CONTEXT_BOUND_TEXTURES.clear();
         }
         CONTEXT_RELOAD_GUARD.remove();
+        CONTEXT_RELOAD_GUARD_ACTIVE.set(0);
         CURRENT_BOUND_TEXTURE_PATH.remove();
         lastOpenGlContextToken = null;
         currentOpenGlContextGeneration = 0L;
@@ -1095,6 +1113,7 @@ public final class LazyTextureManager {
 
     private static int readTextureId(final com.fs.graphics.TextureObject texture,
                                      final int fallback) {
+        // 必须读字段而非 getTextureId()：该 getter 已被懒加载管线挂钩（见 TEXTURE_ID_FIELD 注释）
         final Field field = TEXTURE_ID_FIELD;
         if (field == null || texture == null) {
             return fallback;
@@ -1216,11 +1235,20 @@ public final class LazyTextureManager {
     }
 
     private static boolean isContextReloadInProgress(final com.fs.graphics.TextureObject texture) {
-        return texture != null && CONTEXT_RELOAD_GUARD.get().contains(texture);
+        return texture != null
+                && CONTEXT_RELOAD_GUARD_ACTIVE.get() > 0
+                && CONTEXT_RELOAD_GUARD.get().contains(texture);
     }
 
     private static boolean enterContextReloadGuard(final com.fs.graphics.TextureObject texture) {
-        return texture != null && CONTEXT_RELOAD_GUARD.get().add(texture);
+        if (texture == null) {
+            return false;
+        }
+        final boolean added = CONTEXT_RELOAD_GUARD.get().add(texture);
+        if (added) {
+            CONTEXT_RELOAD_GUARD_ACTIVE.incrementAndGet();
+        }
+        return added;
     }
 
     private static void exitContextReloadGuard(final com.fs.graphics.TextureObject texture,
@@ -1228,6 +1256,7 @@ public final class LazyTextureManager {
         final Set<com.fs.graphics.TextureObject> guardedTextures = CONTEXT_RELOAD_GUARD.get();
         if (added) {
             guardedTextures.remove(texture);
+            CONTEXT_RELOAD_GUARD_ACTIVE.decrementAndGet();
         }
         if (guardedTextures.isEmpty()) {
             CONTEXT_RELOAD_GUARD.remove();
