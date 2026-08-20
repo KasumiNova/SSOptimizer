@@ -2,7 +2,9 @@ package github.kasuminova.ssoptimizer.common.save;
 
 import com.thoughtworks.xstream.converters.reflection.ObjectAccessException;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -103,9 +105,20 @@ public final class XStreamFieldAccessHelper {
                     MethodHandles.lookup()
             );
             final VarHandle handle = privateLookup.unreflectVarHandle(field);
-            return Modifier.isStatic(field.getModifiers())
-                    ? new StaticVarHandleFieldAccessor(field, handle)
-                    : new InstanceVarHandleFieldAccessor(field, handle);
+            // 一次性把访问句柄适配到固定签名并固化 LambdaForm，避免运行期
+            // 经 VarHandle.get/set 多态调用点反复触发 LambdaForm 重定制（checkCustomized）。
+            if (Modifier.isStatic(field.getModifiers())) {
+                final MethodHandle getter = handle.toMethodHandle(VarHandle.AccessMode.GET)
+                        .asType(MethodType.methodType(Object.class));
+                final MethodHandle setter = handle.toMethodHandle(VarHandle.AccessMode.SET)
+                        .asType(MethodType.methodType(void.class, Object.class));
+                return new StaticVarHandleFieldAccessor(field, getter, setter);
+            }
+            final MethodHandle getter = handle.toMethodHandle(VarHandle.AccessMode.GET)
+                    .asType(MethodType.methodType(Object.class, Object.class));
+            final MethodHandle setter = handle.toMethodHandle(VarHandle.AccessMode.SET)
+                    .asType(MethodType.methodType(void.class, Object.class, Object.class));
+            return new InstanceVarHandleFieldAccessor(field, getter, setter);
         } catch (final Throwable ignored) {
             return new ReflectionFieldAccessor(field);
         }
@@ -160,27 +173,45 @@ public final class XStreamFieldAccessHelper {
         }
     }
 
-    private record InstanceVarHandleFieldAccessor(Field field, VarHandle handle) implements FieldAccessor {
+    private record InstanceVarHandleFieldAccessor(Field field, MethodHandle getter, MethodHandle setter)
+            implements FieldAccessor {
         @Override
         public Object read(final Object target) {
-            return handle.get(target);
+            try {
+                return getter.invokeExact(target);
+            } catch (final Throwable t) {
+                return reflectRead(field, target);
+            }
         }
 
         @Override
         public void write(final Object target, final Object value) {
-            handle.set(target, value);
+            try {
+                setter.invokeExact(target, value);
+            } catch (final Throwable t) {
+                reflectWrite(field, target, value);
+            }
         }
     }
 
-    private record StaticVarHandleFieldAccessor(Field field, VarHandle handle) implements FieldAccessor {
+    private record StaticVarHandleFieldAccessor(Field field, MethodHandle getter, MethodHandle setter)
+            implements FieldAccessor {
         @Override
         public Object read(final Object target) {
-            return handle.get();
+            try {
+                return getter.invokeExact();
+            } catch (final Throwable t) {
+                return reflectRead(field, target);
+            }
         }
 
         @Override
         public void write(final Object target, final Object value) {
-            handle.set(value);
+            try {
+                setter.invokeExact(value);
+            } catch (final Throwable t) {
+                reflectWrite(field, target, value);
+            }
         }
     }
 }

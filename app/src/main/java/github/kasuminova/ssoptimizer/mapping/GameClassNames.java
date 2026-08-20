@@ -90,6 +90,8 @@ public final class GameClassNames {
     public static final String HYPERSPACE_AUTOMATON_DOTTED         = "com.fs.starfarer.api.impl.campaign.terrain.HyperspaceAutomaton";
     public static final String CAMPAIGN_SAVE_PROGRESS_DIALOG       = "com/fs/starfarer/campaign/save/CampaignSaveProgressDialog";
     public static final String CAMPAIGN_SAVE_PROGRESS_DIALOG_DOTTED = "com.fs.starfarer.campaign.save.CampaignSaveProgressDialog";
+    public static final String CHARACTER_STATS                     = "com/fs/starfarer/campaign/CharacterStats";
+    public static final String CHARACTER_STATS_DOTTED              = "com.fs.starfarer.campaign.CharacterStats";
     public static final String SAVE_PROGRESS_OUTPUT_STREAM         = "com/fs/starfarer/util/SaveProgressOutputStream";
     public static final String SAVE_PROGRESS_OUTPUT_STREAM_DOTTED  = "com.fs.starfarer.util.SaveProgressOutputStream";
     public static final String MARKET                              = "com/fs/starfarer/campaign/econ/Market";

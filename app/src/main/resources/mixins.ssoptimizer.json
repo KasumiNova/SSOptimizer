@@ -90,6 +90,13 @@
     "save.XStreamFieldsMixin",
     "save.XStreamObjectIdDictionaryMixin",
     "save.XStreamPathTrackerMixin",
+    "save.XStreamCachingMapperMixin",
+    "save.XStreamMemberStoreMixin",
+    "save.XStreamStringConverterMixin",
+    "save.CampaignGameManagerMixin",
+    "save.XStreamReflectionConverterMixin",
+    "save.CharacterStatsReadResolveBatchMixin",
+    "save.XStreamSerializationMembersMixin",
     "warroom.TaskIconManagerMixin",
     "debug.BaseGameStateNoWindowIdleMixin",
     "campaign.FleetDataSyncGuardMixin"
