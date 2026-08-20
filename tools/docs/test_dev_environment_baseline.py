@@ -45,8 +45,8 @@ REQUIRED_FILES = {
 
 REQUIRED_SNIPPETS = [
     "./gradlew doctor",
-    "./gradlew :app:test",
-    "./gradlew :app:run",
+    "./gradlew :modules:internal:sso-app:test",
+    "./gradlew :modules:internal:sso-app:run",
     "./gradlew docsCheck",
 ]
 

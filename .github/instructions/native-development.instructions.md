@@ -1,6 +1,6 @@
 ---
 description: "C++ / JNI 原生模块开发：字体栅格化、PNG 解码、OpenGL 批渲染、Linux IME"
-applyTo: "native/src/**/*.{cpp,h,c}"
+applyTo: "{modules/internal/sso-render,modules/internal/sso-loading,modules/internal/sso-font,modules/internal/sso-ime}/native/src/**/*.{cpp,h,c}"
 ---
 
 # C++ / JNI 原生模块开发规范
@@ -9,7 +9,11 @@ applyTo: "native/src/**/*.{cpp,h,c}"
 
 - C++ 20 标准
 - 依赖：FreeType（字体栅格化）、X11 / XIM（Linux IME）、OpenGL（批渲染）
-- 构建：`./gradlew :native:build`
+- 构建（阶段 4 起按功能域拆为四个子模块，产物 libssoptimizer_<域>.so / ssoptimizer_<域>.dll）：
+  - `./gradlew :modules:internal:sso-render:native-render:build`（glad + GL 渲染器）
+  - `./gradlew :modules:internal:sso-loading:native-loading:build`（libpng 解码）
+  - `./gradlew :modules:internal:sso-font:native-font:build`（FreeType 栅格化）
+  - `./gradlew :modules:internal:sso-ime:native-ime:build`（XIM / IMM32）
 
 ## JNI 注释规范
 

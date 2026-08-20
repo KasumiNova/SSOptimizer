@@ -61,10 +61,13 @@ jobs:
 
       - name: Build app jar and mod metadata
         run: |
-          ./gradlew :app:modProduction \
+          ./gradlew :modules:internal:sso-app:modProduction \
             -Pstarsector.gameDir= \
             -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows \
-            -x :native:assemble
+            -x :modules:internal:sso-render:native-render:assemble \
+            -x :modules:internal:sso-loading:native-loading:assemble \
+            -x :modules:internal:sso-font:native-font:assemble \
+            -x :modules:internal:sso-ime:native-ime:assemble
 
       - name: Run unit tests
         run: |
@@ -74,16 +77,16 @@ jobs:
 
       - name: Stage release artifacts
         run: |
-          mkdir -p app/build/release-stage
-          cp app/build/libs/SSOptimizer.jar app/build/release-stage/
-          cp app/build/mod_production/mod_info.json app/build/release-stage/
-          cp app/build/mod_production/nanoforge.mod.toml app/build/release-stage/
+          mkdir -p modules/internal/sso-app/build/release-stage
+          cp modules/internal/sso-app/build/libs/SSOptimizer.jar modules/internal/sso-app/build/release-stage/
+          cp modules/internal/sso-app/build/mod_production/mod_info.json modules/internal/sso-app/build/release-stage/
+          cp modules/internal/sso-app/build/mod_production/nanoforge.mod.toml modules/internal/sso-app/build/release-stage/
 
       - name: Upload app jar
         uses: actions/upload-artifact@v4
         with:
           name: app-jar-${{ matrix.platform }}
-          path: app/build/release-stage/
+          path: modules/internal/sso-app/build/release-stage/
 
   build-native-linux:
     name: Build Native (Linux)
@@ -112,31 +115,37 @@ jobs:
 
       - name: Build native library
         run: |
-          ./gradlew :native:assembleRelease \
+          ./gradlew :modules:internal:sso-render:native-render:assembleRelease \
+            :modules:internal:sso-loading:native-loading:assembleRelease \
+            :modules:internal:sso-font:native-font:assembleRelease \
+            :modules:internal:sso-ime:native-ime:assembleRelease \
             -Pstarsector.gameDir=
 
       - name: Collect runtime dependencies
         run: |
-          mkdir -p native/build/runtime-deps
+          mkdir -p build/runtime-deps
           for lib in libpng16 libfreetype; do
             path=$(ldconfig -p | grep -oP "/[^\s]+${lib}\.so\.\d[^\s]*" | head -1)
             if [ -n "$path" ] && [ -f "$path" ]; then
-              cp -L "$path" native/build/runtime-deps/
+              cp -L "$path" build/runtime-deps/
               echo "Collected: $(basename $path)"
             fi
           done
 
       - name: Stage native artifacts
         run: |
-          mkdir -p native/build/stage
-          cp native/build/lib/main/release/libnative.so native/build/stage/
-          cp native/build/runtime-deps/*.so* native/build/stage/ 2>/dev/null || true
+          mkdir -p build/stage
+          cp modules/internal/sso-render/native/build/lib/main/release/libssoptimizer_render.so build/stage/
+          cp modules/internal/sso-loading/native/build/lib/main/release/libssoptimizer_loading.so build/stage/
+          cp modules/internal/sso-font/native/build/lib/main/release/libssoptimizer_font.so build/stage/
+          cp modules/internal/sso-ime/native/build/lib/main/release/libssoptimizer_ime.so build/stage/
+          cp build/runtime-deps/*.so* build/stage/ 2>/dev/null || true
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: native-linux
-          path: native/build/stage/
+          path: build/stage/
 
   build-native-windows:
     name: Build Native (Windows)
@@ -160,7 +169,7 @@ jobs:
       - name: Build native library
         shell: cmd
         run: |
-          gradlew.bat :native:assembleRelease ^
+          gradlew.bat :modules:internal:sso-render:native-render:assembleRelease :modules:internal:sso-loading:native-loading:assembleRelease :modules:internal:sso-font:native-font:assembleRelease :modules:internal:sso-ime:native-ime:assembleRelease ^
             -Pstarsector.gameDir= ^
             -Pssoptimizer.native.windows.vcpkgRoot=%VCPKG_INSTALLATION_ROOT% ^
             -Pssoptimizer.native.windows.triplet=x64-windows
@@ -170,7 +179,7 @@ jobs:
         run: |
           $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
           $deps = @("libpng16.dll", "freetype.dll", "zlib1.dll", "bz2.dll", "brotlidec.dll", "brotlicommon.dll")
-          $staging = "native/build/runtime-deps"
+          $staging = "build/runtime-deps"
           New-Item -ItemType Directory -Force -Path $staging | Out-Null
           foreach ($dll in $deps) {
             $src = Join-Path $vcpkgBin $dll
@@ -183,15 +192,18 @@ jobs:
       - name: Stage native artifacts
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path native/build/stage | Out-Null
-          Copy-Item native/build/lib/main/release/native.dll native/build/stage/
-          Copy-Item native/build/runtime-deps/*.dll native/build/stage/ -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path build/stage | Out-Null
+          Copy-Item modules/internal/sso-render/native/build/lib/main/release/ssoptimizer_render.dll build/stage/
+          Copy-Item modules/internal/sso-loading/native/build/lib/main/release/ssoptimizer_loading.dll build/stage/
+          Copy-Item modules/internal/sso-font/native/build/lib/main/release/ssoptimizer_font.dll build/stage/
+          Copy-Item modules/internal/sso-ime/native/build/lib/main/release/ssoptimizer_ime.dll build/stage/
+          Copy-Item build/runtime-deps/*.dll build/stage/ -ErrorAction SilentlyContinue
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: native-windows
-          path: native/build/stage/
+          path: build/stage/
 
   release:
     name: Package & Publish Release
@@ -235,17 +247,27 @@ jobs:
           cp artifacts/app-jar-linux/SSOptimizer.jar "${LINUX_STAGE}/mods/coremods/SSOptimizer.jar"
           cp artifacts/app-jar-windows/SSOptimizer.jar "${WINDOWS_MOD_STAGE}/jars/SSOptimizer.jar"
           cp artifacts/app-jar-windows/SSOptimizer.jar "${WINDOWS_STAGE}/mods/coremods/SSOptimizer.jar"
-          cp artifacts/native-linux/libnative.so "${LINUX_MOD_STAGE}/native/linux/lib${MOD_ID}.so"
-          cp artifacts/native-windows/native.dll "${WINDOWS_MOD_STAGE}/native/windows/${MOD_ID}.dll"
+
+          # 四个功能域原生库平铺部署（产物名即部署名，不再 rename）
+          cp artifacts/native-linux/libssoptimizer_render.so artifacts/native-linux/libssoptimizer_loading.so \
+             artifacts/native-linux/libssoptimizer_font.so artifacts/native-linux/libssoptimizer_ime.so \
+             "${LINUX_MOD_STAGE}/native/linux/"
+          cp artifacts/native-windows/ssoptimizer_render.dll artifacts/native-windows/ssoptimizer_loading.dll \
+             artifacts/native-windows/ssoptimizer_font.dll artifacts/native-windows/ssoptimizer_ime.dll \
+             "${WINDOWS_MOD_STAGE}/native/windows/"
 
           # Copy runtime dependency libraries (libpng, freetype, zlib, etc.)
-          # They are in the same flat directory as the main library
+          # They are in the same flat directory as the main libraries; skip the four module libraries
           for f in artifacts/native-linux/*.so*; do
-            [ "$(basename "$f")" = "libnative.so" ] && continue
+            case "$(basename "$f")" in
+              libssoptimizer_*.so) continue ;;
+            esac
             cp "$f" "${LINUX_MOD_STAGE}/native/linux/" 2>/dev/null || true
           done
           for f in artifacts/native-windows/*.dll; do
-            [ "$(basename "$f")" = "native.dll" ] && continue
+            case "$(basename "$f")" in
+              ssoptimizer_*.dll) continue ;;
+            esac
             cp "$f" "${WINDOWS_MOD_STAGE}/native/windows/" 2>/dev/null || true
           done
 

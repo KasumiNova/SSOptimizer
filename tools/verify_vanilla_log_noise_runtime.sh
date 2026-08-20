@@ -16,10 +16,10 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
 
 GAME_DIR="${1:-/mnt/store/Games/Starsector098-linux}"
-CORE_JAR="$PROJECT_ROOT/app/build/libs/SSOptimizer.jar"
+CORE_JAR="$PROJECT_ROOT/modules/internal/sso-app/build/libs/SSOptimizer.jar"
 NANOFORGE_DIR="$GAME_DIR/mods/nanoforge"
 
-[ -f "$CORE_JAR" ] || { echo "ERROR: 未找到 $CORE_JAR（先执行 ./gradlew :app:jar）" >&2; exit 1; }
+[ -f "$CORE_JAR" ] || { echo "ERROR: 未找到 $CORE_JAR（先执行 ./gradlew :modules:internal:sso-app:jar）" >&2; exit 1; }
 [ -f "$NANOFORGE_DIR/log4j-api-2.25.2.jar" ] || { echo "ERROR: 未找到 NanoForge log4j2（$NANOFORGE_DIR）" >&2; exit 1; }
 
 WORK_DIR=$(mktemp -d)

@@ -1,6 +1,6 @@
 param(
     [string]$GameDir = $env:SSOPTIMIZER_GAME_DIR,
-    [string]$Task = ':native:compileDebugCpp',
+    [string]$Task = ':modules:internal:sso-render:native-render:compileDebugCpp',
     [string]$Platform = 'windows',
     [string]$JavaInstallationsPath,
     [string[]]$ExtraGradleArgs = @()

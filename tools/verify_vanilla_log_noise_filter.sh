@@ -2,7 +2,7 @@
 # 独立 JVM 端到端验证：原版加载噪音日志阈值（setLevel）在真实 log4j-1.x 下的生效效果。
 #
 # 背景：Gradle 测试 worker 的 classpath 中 org.apache.log4j 由 gradle-api 内嵌的
-# no-op 桥接提供（setLevel 无效），:app:test 只能验证行为契约；本脚本用真实
+# no-op 桥接提供（setLevel 无效），:modules:internal:sso-app:test 只能验证行为契约；本脚本用真实
 # log4j-1.2.17 + 已编译的 VanillaLogNoiseConfigurator 验证：
 #   - configure() 后 loading.LoadingUtils 的 INFO 被压制、WARN/ERROR 保留
 #   - SSOptimizer 自身 logger 与 ERROR 专用 logger（util.TextureData）不受影响
@@ -17,13 +17,13 @@ PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
 LOG4J_JAR=$(find /mnt/data/hikari_nova/.gradle /home/hikari_nova/.gradle \
     -path '*/modules-2/files-2.1/log4j/log4j/1.2.17/*/log4j-1.2.17.jar' 2>/dev/null | head -n 1)
 if [ -z "$LOG4J_JAR" ]; then
-    echo "ERROR: 未找到 log4j-1.2.17.jar（先执行 ./gradlew :app:test 下载依赖）" >&2
+    echo "ERROR: 未找到 log4j-1.2.17.jar（先执行 ./gradlew :modules:internal:sso-app:test 下载依赖）" >&2
     exit 1
 fi
 
-CLASSES_DIR="$PROJECT_ROOT/app/build/classes/java/main"
+CLASSES_DIR="$PROJECT_ROOT/modules/internal/sso-app/build/classes/java/main"
 if [ ! -d "$CLASSES_DIR" ]; then
-    echo "ERROR: 未找到编译产物 $CLASSES_DIR（先执行 ./gradlew :app:compileJava）" >&2
+    echo "ERROR: 未找到编译产物 $CLASSES_DIR（先执行 ./gradlew :modules:internal:sso-app:compileJava）" >&2
     exit 1
 fi
 

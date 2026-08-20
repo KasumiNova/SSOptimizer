@@ -61,8 +61,8 @@ github.kasuminova.ssoptimizer/
 # Java 编译 + 单元测试
 ./gradlew test
 
-# Native 编译（需要 FreeType + C++ 工具链）
-./gradlew :native:build
+# Native 编译（需要 FreeType + C++ 工具链；阶段 4 起四个功能域子模块）
+./gradlew :modules:internal:sso-render:native-render:build :modules:internal:sso-loading:native-loading:build :modules:internal:sso-font:native-font:build :modules:internal:sso-ime:native-ime:build
 
 # 部署到游戏目录
 ./gradlew deployMod

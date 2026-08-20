@@ -1,3 +1,0 @@
-[submodule "native/vendor/msdfgen"]
-	path = native/vendor/msdfgen
-	url = https://github.com/Chlumsky/msdfgen.git

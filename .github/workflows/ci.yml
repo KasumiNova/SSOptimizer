@@ -61,10 +61,13 @@ jobs:
 
       - name: Build app jar (${{ matrix.platform }})
         run: |
-          ./gradlew :app:jar \
+          ./gradlew :modules:internal:sso-app:jar \
             -Pstarsector.gameDir= \
             -Psourcesector.namedRepo=${{ github.workspace }}/SourceSector/build/named-game-repo/windows \
-            -x :native:assemble
+            -x :modules:internal:sso-render:native-render:assemble \
+            -x :modules:internal:sso-loading:native-loading:assemble \
+            -x :modules:internal:sso-font:native-font:assemble \
+            -x :modules:internal:sso-ime:native-ime:assemble
 
       - name: Run unit tests
         run: |
@@ -76,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SSOptimizer-app-${{ matrix.platform }}
-          path: app/build/libs/SSOptimizer.jar
+          path: modules/internal/sso-app/build/libs/SSOptimizer.jar
 
   build-native-linux:
     name: Build Native (Linux)
@@ -106,32 +109,38 @@ jobs:
 
       - name: Build native library
         run: |
-          ./gradlew :native:assembleRelease \
+          ./gradlew :modules:internal:sso-render:native-render:assembleRelease \
+            :modules:internal:sso-loading:native-loading:assembleRelease \
+            :modules:internal:sso-font:native-font:assembleRelease \
+            :modules:internal:sso-ime:native-ime:assembleRelease \
             -Pstarsector.gameDir=
 
       - name: Collect runtime dependencies
         run: |
-          mkdir -p native/build/runtime-deps
+          mkdir -p build/runtime-deps
           # Collect versioned .so files for libpng and freetype using ldconfig
           for lib in libpng16 libfreetype; do
             path=$(ldconfig -p | grep -oP "/[^\s]+${lib}\.so\.\d[^\s]*" | head -1)
             if [ -n "$path" ] && [ -f "$path" ]; then
-              cp -L "$path" native/build/runtime-deps/
+              cp -L "$path" build/runtime-deps/
               echo "Collected: $(basename $path)"
             fi
           done
 
       - name: Stage native artifacts
         run: |
-          mkdir -p native/build/stage
-          cp native/build/lib/main/release/libnative.so native/build/stage/
-          cp native/build/runtime-deps/*.so* native/build/stage/ 2>/dev/null || true
+          mkdir -p build/stage
+          cp modules/internal/sso-render/native/build/lib/main/release/libssoptimizer_render.so build/stage/
+          cp modules/internal/sso-loading/native/build/lib/main/release/libssoptimizer_loading.so build/stage/
+          cp modules/internal/sso-font/native/build/lib/main/release/libssoptimizer_font.so build/stage/
+          cp modules/internal/sso-ime/native/build/lib/main/release/libssoptimizer_ime.so build/stage/
+          cp build/runtime-deps/*.so* build/stage/ 2>/dev/null || true
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: libssoptimizer-linux
-          path: native/build/stage/
+          path: build/stage/
 
   build-native-windows:
     name: Build Native (Windows)
@@ -156,7 +165,7 @@ jobs:
       - name: Build native library
         shell: cmd
         run: |
-          gradlew.bat :native:assembleRelease ^
+          gradlew.bat :modules:internal:sso-render:native-render:assembleRelease :modules:internal:sso-loading:native-loading:assembleRelease :modules:internal:sso-font:native-font:assembleRelease :modules:internal:sso-ime:native-ime:assembleRelease ^
             -Pstarsector.gameDir= ^
             -Pssoptimizer.native.windows.vcpkgRoot=%VCPKG_INSTALLATION_ROOT% ^
             -Pssoptimizer.native.windows.triplet=x64-windows
@@ -166,7 +175,7 @@ jobs:
         run: |
           $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
           $deps = @("libpng16.dll", "freetype.dll", "zlib1.dll", "bz2.dll", "brotlidec.dll", "brotlicommon.dll")
-          $staging = "native/build/runtime-deps"
+          $staging = "build/runtime-deps"
           New-Item -ItemType Directory -Force -Path $staging | Out-Null
           foreach ($dll in $deps) {
             $src = Join-Path $vcpkgBin $dll
@@ -179,12 +188,15 @@ jobs:
       - name: Stage native artifacts
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path native/build/stage | Out-Null
-          Copy-Item native/build/lib/main/release/native.dll native/build/stage/
-          Copy-Item native/build/runtime-deps/*.dll native/build/stage/ -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path build/stage | Out-Null
+          Copy-Item modules/internal/sso-render/native/build/lib/main/release/ssoptimizer_render.dll build/stage/
+          Copy-Item modules/internal/sso-loading/native/build/lib/main/release/ssoptimizer_loading.dll build/stage/
+          Copy-Item modules/internal/sso-font/native/build/lib/main/release/ssoptimizer_font.dll build/stage/
+          Copy-Item modules/internal/sso-ime/native/build/lib/main/release/ssoptimizer_ime.dll build/stage/
+          Copy-Item build/runtime-deps/*.dll build/stage/ -ErrorAction SilentlyContinue
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: ssoptimizer-windows
-          path: native/build/stage/
+          path: build/stage/

@@ -1,6 +1,6 @@
 .gradle/
 **/build/
-!app/src/**/build/
+!modules/internal/sso-app/src/**/build/
 out/
 .idea/
 .vscode/
@@ -14,6 +14,6 @@ hs_err_pid*
 .github/superpower/
 .kimi-code/
 bin/
-app/ssoptimizer-texture-composition.tsv
+modules/internal/sso-app/ssoptimizer-texture-composition.tsv
 *.code-workspace
 .references

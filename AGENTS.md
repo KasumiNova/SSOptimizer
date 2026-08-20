@@ -1,9 +1,38 @@
 # SSOptimizer 项目规范
 
+## 模块地图（Gradle 多模块）
+
+目录布局：`modules/api/`（跨域契约）、`modules/internal/`（实现模块）。
+
+- `:modules:api:sso-api` — 跨域服务接口层，只放接口与契约 record，零实现、零第三方依赖。
+- `:modules:internal:sso-core` — 共享基础设施：ASM/Mixin 装配（HybridWeaverTransformer）、
+  日志、ServiceRegistry、NativeRuntime/NativeLibraryResolver、杂项引擎级优化。
+- `:modules:internal:sso-app` — 装配模块：coremod 入口（SSOptimizerCorePlugin）、
+  跨域服务注册、shade 打包。
+- 功能模块：`:modules:internal:sso-render`（渲染线程）、`:modules:internal:sso-ai`（异步 AI）、
+  `:modules:internal:sso-loading`（加载优化）、`:modules:internal:sso-font`（字体渲染）、
+  `:modules:internal:sso-ime`（输入法）、`:modules:internal:sso-save`（存档读写）、
+  `:modules:internal:sso-modopt`（第三方模组优化）、`:modules:internal:sso-automation`（自动化/基准）。
+- 含 C++ 支持的模块下设 `<域>/native/` 子模块（native-render/native-loading/
+  native-font/native-ime），产物 `libssoptimizer_<module>.so`，
+  JNI 生成头统一落在根级 `native-headers/generated/`。
+
+## 跨域调用：必须经 :api 接口
+
+1. 功能模块只允许依赖 `:modules:api:sso-api` + `:modules:internal:sso-core`；
+   功能模块之间**禁止直接依赖**
+   （唯一既有例外：sso-font → sso-loading/sso-render 的纹理注册与文本渲染复用）。
+2. 跨域行为调用在 `:modules:api:sso-api` 定义接口，实现方模块提供实现，由
+   `:modules:internal:sso-app` 的 `SSOptimizerCorePlugin.registerModuleServices()` 注册进
+   core 的 `ServiceRegistry`；调用方经 `ServiceRegistry.require/getOrNull` 解析。
+   语义允许缺省的接口必须在 javadoc 写明「未注册=何语义」，调用点显式判空。
+3. native 库按模块拆分加载：主库 `render` 由 `NativeRuntime.ensureLoaded()` 加载，
+   其余经 `NativeRuntime.loadModule("<module>")` 懒加载。
+
 ## 字节码改写：Mixin 优先，ASM 兜底
 
 1. 对游戏类的行为改写（方法调用重定向、字段访问重定向、方法头/尾注入、Accessor）
-   **必须使用 Mixin**（`app/src/main/java/.../mixin/`，注册进 `mixins.ssoptimizer.json`）。
+   **必须使用 Mixin**（各功能模块的 `src/main/java/.../mixin/`，注册进 `mixins.ssoptimizer.json`）。
 2. 仅当 Mixin 在技术上完全不可实现时才允许使用 ASM 处理器
    （`asm/` 包 + `HybridWeaverTransformer`），且必须在处理器 javadoc 中写明
    「为什么 Mixin 不可行」。已知必须走 ASM 的情形：

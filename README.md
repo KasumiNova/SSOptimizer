@@ -60,7 +60,7 @@ SSOptimizer 的可选开关均为 JVM 系统属性，在 NanoForge 启动脚本�
 
 ### 外部模组优化：DetailedCombatResults（DCR）
 
-针对第三方模组的性能优化源码已收编进 `:app` 模块，经 SPI（`ExternalModOptimizer`）在 coremod 装配时自动注册。首个目标是 **DetailedCombatResults（详细战斗报告）** 的读档热点：
+针对第三方模组的性能优化源码收编在 `:modopt` 模块，经 SPI（`ExternalModOptimizer`）在 coremod 装配时自动注册。首个目标是 **DetailedCombatResults（详细战斗报告）** 的读档热点：
 
 - **L1（默认开，零格式风险）**：读档时 DCR 会在裁剪战报后「清空 + 逐条重写」整份历史（O(N²) 的重序列化 + 压缩）。SSOptimizer 将其合并为「收集 N 次 + 落盘一次」，把该热点从十余秒降到亚秒级。此优化不改变存档格式，卸载 SSOptimizer 后 DCR 仍可正常读档。
 - **L2（默认开，可关）**：将 DCR 的压缩内核从 `Deflater` 级别 9 替换为 **Zstd**（基准下大存档约 6–13× 提速），读取时自动识别 Zstd / 旧 Deflate 两种格式，旧存档读出后下一次保存即迁移为 Zstd。
@@ -99,11 +99,11 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 # 如需自用的统一 bundle，仍可保留
 ./gradlew packageUserModZip -Pstarsector.gameDir=/path/to/Starsector
 
-# 原生模块编译
-./gradlew :native:build
+# 原生模块编译（阶段 4 起四个功能域子模块：render/loading/font/ime）
+./gradlew :modules:internal:sso-render:native-render:build :modules:internal:sso-loading:native-loading:build :modules:internal:sso-font:native-font:build :modules:internal:sso-ime:native-ime:build
 
 # Linux 主机交叉编译 Windows 原生库（需要 x86_64-w64-mingw32-g++ + vcpkg x64-mingw-static）
-./gradlew :native:build -Pstarsector.platform=windows -Pssoptimizer.native.windows.triplet=x64-mingw-static
+./gradlew :modules:internal:sso-render:native-render:build :modules:internal:sso-loading:native-loading:build :modules:internal:sso-font:native-font:build :modules:internal:sso-ime:native-ime:build -Pstarsector.platform=windows -Pssoptimizer.native.windows.triplet=x64-mingw-static
 
 # 部署到游戏目录（开发用）
 ./gradlew deployMod
@@ -120,11 +120,30 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 
 ```
 SSOptimizer/
-├── app/           Java 25 主模块（github.kasuminova.ssoptimizer）
-├── native/        C++ 原生模块（字体栅格化、PNG 解码、OpenGL 批渲染、Linux IME）
+├── modules/
+│   ├── api/
+│   │   └── sso-api/   跨域服务接口层（ServiceRegistry 契约，零实现）
+│   └── internal/
+│       ├── sso-core/  共享基础设施：ASM/Mixin 装配、日志、ServiceRegistry、NativeRuntime
+│       ├── sso-app/   装配模块：coremod 入口、服务注册、打包 shade
+│       ├── sso-render/    渲染线程模块（+ native-render：GL 批渲染 C++）
+│       ├── sso-ai/        异步 AI 模块
+│       ├── sso-loading/   加载优化模块（+ native-loading：PNG 解码）
+│       ├── sso-font/      字体渲染模块（+ native-font：FreeType 栅格化）
+│       ├── sso-ime/       输入法模块（+ native-ime：XIM/IMM 桥接）
+│       ├── sso-save/      存档读写优化模块（含 saveBench 基准）
+│       ├── sso-modopt/    第三方模组专项优化（DCR 等）
+│       └── sso-automation/ 自动化测试/基准/启动器辅助
+├── native-headers/ 全部 JNI 生成头的共享目录（各 Java 模块 compileJava 产出）
 ├── tools/         烟测脚本、日志过滤、IME 调试工具
 └── docs/design/   设计文档
 ```
+
+模块依赖规则：功能模块只允许依赖 `:modules:api:sso-api` + `:modules:internal:sso-core`，
+功能模块之间禁止直接依赖（唯一例外：sso-font → sso-loading/sso-render，
+为字体纹理注册与文本渲染辅助的既有复用）。
+跨域行为调用必须经 `:modules:api:sso-api` 接口 + core 的 `ServiceRegistry` 解析，
+由 `:modules:internal:sso-app` 的 `SSOptimizerCorePlugin.registerModuleServices()` 统一装配。
 
 ### Linux 主机交叉编译 Windows 原生库
 
@@ -141,7 +160,7 @@ SSOptimizer/
 vcpkg install libpng freetype --triplet x64-mingw-static
 
 # Linux 主机构建 Windows 原生库
-./gradlew :native:build \
+./gradlew :modules:internal:sso-render:native-render:build :modules:internal:sso-loading:native-loading:build :modules:internal:sso-font:native-font:build :modules:internal:sso-ime:native-ime:build \
    -Pstarsector.platform=windows \
    -Pssoptimizer.native.windows.triplet=x64-mingw-static
 ```

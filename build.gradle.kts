@@ -65,13 +65,13 @@ tasks.register("doctor") {
 tasks.register("docsCheck") {
     group = "verification"
     description = "Validate development-environment baseline docs contract (JUnit)"
-    dependsOn(":app:docsTest")
+    dependsOn(":modules:internal:sso-app:docsTest")
 }
 
 tasks.register("bootstrapDev") {
     group = "dev workflow"
     description = "Initialize and verify development environment"
-    dependsOn("doctor", "docsCheck", ":app:genIdeaRuns", ":app:decompileDependencies")
+    dependsOn("doctor", "docsCheck", ":modules:internal:sso-app:genIdeaRuns", ":modules:internal:sso-app:decompileDependencies")
     doLast {
         println("✓ Development environment bootstrap complete")
     }
@@ -80,7 +80,7 @@ tasks.register("bootstrapDev") {
 tasks.register("qualityGateLocal") {
     group = "dev workflow"
     description = "Run all quality gates (docs + tests + diagnostics)"
-    dependsOn("docsCheck", ":app:test", "doctor")
+    dependsOn("docsCheck", ":modules:internal:sso-app:test", "doctor")
     doLast {
         println("✓ All local quality gates passed")
     }
@@ -89,22 +89,37 @@ tasks.register("qualityGateLocal") {
 tasks.register("devCycle") {
     group = "dev workflow"
     description = "Daily development cycle: quality gates + build"
-    dependsOn("qualityGateLocal", ":app:classes")
+    dependsOn("qualityGateLocal", ":modules:internal:sso-app:classes")
     doLast {
         println("✓ Dev cycle complete — ready to run")
     }
 }
 
-val appJarFile = project(":app").layout.buildDirectory.file("libs/SSOptimizer.jar")
-val nativeLinuxLibraryFile = project(":native").layout.buildDirectory.file("lib/main/release/libnative.so")
-val nativeWindowsLibraryFile = project(":native").layout.buildDirectory.file("lib/main/release/native.dll")
+val appJarFile = project(":modules:internal:sso-app").layout.buildDirectory.file("libs/SSOptimizer.jar")
+
+// 四个功能域 native 子模块（render/loading/font/ime）：
+// 产物 libssoptimizer_<module>.so / ssoptimizer_<module>.dll，runtime deps 按模块各自收集
+val nativeModules = listOf("render", "loading", "font", "ime")
+
+fun nativeProject(module: String) = project(":modules:internal:sso-$module:native-$module")
+
+fun nativeLibraryFile(module: String, windows: Boolean) = nativeProject(module).layout.buildDirectory.file(
+    "lib/main/release/" + if (windows) "ssoptimizer_$module.dll" else "libssoptimizer_$module.so"
+)
+
+val nativeLinuxLibraryFiles = nativeModules.map { nativeLibraryFile(it, false) }
+val nativeWindowsLibraryFiles = nativeModules.map { nativeLibraryFile(it, true) }
 val nativeWindowsRuntimeDlls: List<File> by lazy {
-    @Suppress("UNCHECKED_CAST")
-    (project(":native").extra["windowsRuntimeDlls"] as? List<File>) ?: emptyList()
+    nativeModules.flatMap { module ->
+        @Suppress("UNCHECKED_CAST")
+        (nativeProject(module).extra["windowsRuntimeDlls"] as? List<File>) ?: emptyList()
+    }.distinct()
 }
 val nativeLinuxRuntimeSharedLibs: List<File> by lazy {
-    @Suppress("UNCHECKED_CAST")
-    (project(":native").extra["linuxRuntimeSharedLibs"] as? List<File>) ?: emptyList()
+    nativeModules.flatMap { module ->
+        @Suppress("UNCHECKED_CAST")
+        (nativeProject(module).extra["linuxRuntimeSharedLibs"] as? List<File>) ?: emptyList()
+    }.distinct()
 }
 val packagedFontFntDir = rootProject.file("game-fonts/fnt")
 val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
@@ -114,27 +129,27 @@ val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
 tasks.register<Sync>("stageUserMod") {
     group = "distribution"
     description = "Stage an end-user ready mod layout under build/user-package"
-    dependsOn(":app:modProduction", ":native:assembleRelease")
+    dependsOn(":modules:internal:sso-app:modProduction")
+    nativeModules.forEach { module ->
+        dependsOn(":modules:internal:sso-$module:native-$module:assembleRelease")
+    }
 
     from(appJarFile) {
         into("jars")
     }
+    // 四个功能域原生库平铺进 native/<platform>/（产物名即部署名，不再 rename）
     from(project.provider {
-        val file = nativeLinuxLibraryFile.get().asFile
-        if (file.isFile) listOf(file) else emptyList<File>()
+        nativeLinuxLibraryFiles.map { it.get().asFile }.filter { it.isFile }
     }) {
         into("native/linux")
-        rename { System.mapLibraryName(modId) }
     }
     from(project.provider { nativeLinuxRuntimeSharedLibs.filter { it.isFile } }) {
         into("native/linux")
     }
     from(project.provider {
-        val file = nativeWindowsLibraryFile.get().asFile
-        if (file.isFile) listOf(file) else emptyList<File>()
+        nativeWindowsLibraryFiles.map { it.get().asFile }.filter { it.isFile }
     }) {
         into("native/windows")
-        rename { System.mapLibraryName(modId) }
     }
     from(project.provider { nativeWindowsRuntimeDlls.filter { it.isFile } }) {
         into("native/windows")
@@ -143,7 +158,7 @@ tasks.register<Sync>("stageUserMod") {
         into("fonts")
     }
     // 元数据由 SDG 生成（mod_info.json + nanoforge.mod.toml，与部署产物同源）
-    from(project(":app").layout.buildDirectory.dir("mod_production")) {
+    from(project(":modules:internal:sso-app").layout.buildDirectory.dir("mod_production")) {
         include("mod_info.json", "nanoforge.mod.toml")
     }
     from(rootProject.file("README.md"))
@@ -154,9 +169,11 @@ tasks.register<Sync>("stageUserMod") {
         check(appJarFile.get().asFile.isFile) {
             "未找到用户发布所需的 app 产物: ${appJarFile.get().asFile}"
         }
-        val hasAnyNative = nativeLinuxLibraryFile.get().asFile.isFile || nativeWindowsLibraryFile.get().asFile.isFile
-        check(hasAnyNative) {
-            "未找到任何可打包的原生库：linux=${nativeLinuxLibraryFile.get().asFile} windows=${nativeWindowsLibraryFile.get().asFile}"
+        // 主库（render）存在即视为具备原生运行时；其余模块可缺失（Java 回退）
+        val renderLinux = nativeLinuxLibraryFiles.first().get().asFile
+        val renderWindows = nativeWindowsLibraryFiles.first().get().asFile
+        check(renderLinux.isFile || renderWindows.isFile) {
+            "未找到主原生库（render）：linux=$renderLinux windows=$renderWindows"
         }
     }
 
@@ -276,8 +293,8 @@ tasks.register<Zip>("packageLinuxOverlayZip") {
     from(linuxOverlayStageDir)
 
     doFirst {
-        check(nativeLinuxLibraryFile.get().asFile.isFile) {
-            "未找到 Linux 原生库: ${nativeLinuxLibraryFile.get().asFile}"
+        check(nativeLinuxLibraryFiles.first().get().asFile.isFile) {
+            "未找到 Linux 原生库: ${nativeLinuxLibraryFiles.first().get().asFile}"
         }
     }
 
@@ -299,8 +316,8 @@ tasks.register<Zip>("packageWindowsOverlayZip") {
     from(windowsOverlayStageDir)
 
     doFirst {
-        check(nativeWindowsLibraryFile.get().asFile.isFile) {
-            "未找到 Windows 原生库: ${nativeWindowsLibraryFile.get().asFile}"
+        check(nativeWindowsLibraryFiles.first().get().asFile.isFile) {
+            "未找到 Windows 原生库: ${nativeWindowsLibraryFiles.first().get().asFile}"
         }
     }
 
@@ -318,23 +335,24 @@ tasks.register("packageReleaseZips") {
 tasks.register("runClient") {
     group = "dev workflow"
     description = "Launch the Starsector client with the deployed mod"
-    dependsOn(":app:runGame")
+    dependsOn(":modules:internal:sso-app:runGame")
 }
 
 tasks.register<Copy>("installNativeRuntime") {
     group = "dev workflow"
     description = "Deploy native runtime libraries into the deployed mod directory"
     if (targetPlatformProvider.get() == "linux") {
-        dependsOn(":native:assembleRelease")
+        nativeModules.forEach { module ->
+            dependsOn(":modules:internal:sso-$module:native-$module:assembleRelease")
+        }
     }
 
     from(project.provider {
         val platform = targetPlatformProvider.get()
-        val nativeFile = if (platform == "windows") nativeWindowsLibraryFile.get().asFile else nativeLinuxLibraryFile.get().asFile
-        if (nativeFile.isFile) listOf(nativeFile) else emptyList<File>()
+        val libraryFiles = if (platform == "windows") nativeWindowsLibraryFiles else nativeLinuxLibraryFiles
+        libraryFiles.map { it.get().asFile }.filter { it.isFile }
     }) {
         into("native/${targetPlatformProvider.get()}")
-        rename { System.mapLibraryName("ssoptimizer") }
     }
     from(project.provider {
         val platform = targetPlatformProvider.get()
@@ -347,7 +365,7 @@ tasks.register<Copy>("installNativeRuntime") {
     into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
 
     // SDG deployMod 的 Sync 会清掉 native/，必须在其之后落位
-    mustRunAfter(":app:deployMod")
+    mustRunAfter(":modules:internal:sso-app:deployMod")
 
     doFirst {
         check(configuredGameDirProvider.isPresent) {
@@ -357,9 +375,9 @@ tasks.register<Copy>("installNativeRuntime") {
 
     doLast {
         val platform = targetPlatformProvider.get()
-        val nativeFile = if (platform == "windows") nativeWindowsLibraryFile.get().asFile else nativeLinuxLibraryFile.get().asFile
+        val libraryFiles = if (platform == "windows") nativeWindowsLibraryFiles else nativeLinuxLibraryFiles
         println("[installNativeRuntime] Native runtime deployed to ${configuredGameDirProvider.get()}/mods/$modId")
-        if (!nativeFile.isFile) {
+        if (libraryFiles.none { it.get().asFile.isFile }) {
             println("[installNativeRuntime] Native runtime not available for $platform; Java fallbacks will be used")
         }
     }
@@ -376,7 +394,7 @@ tasks.register<Copy>("installFontResources") {
     into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
 
     // SDG deployMod 的 Sync 会清掉 fonts/，必须在其之后落位
-    mustRunAfter(":app:deployMod")
+    mustRunAfter(":modules:internal:sso-app:deployMod")
 
     doFirst {
         check(configuredGameDirProvider.isPresent) {
@@ -394,7 +412,7 @@ tasks.register<Copy>("installFontResources") {
 
 tasks.register("deployMod") {
     group = "dev workflow"
-    description = "Deploy mod metadata/jars (SDG :app:deployMod) plus native runtime and font resources"
-    dependsOn(":app:deployMod", "installNativeRuntime", "installFontResources")
+    description = "Deploy mod metadata/jars (SDG :modules:internal:sso-app:deployMod) plus native runtime and font resources"
+    dependsOn(":modules:internal:sso-app:deployMod", "installNativeRuntime", "installFontResources")
 }
 
