@@ -86,6 +86,27 @@ public final class TerrainTileCompressionHelper {
         return unpackQuaternaryTiles(decodePackedPayload(encoded), width, height);
     }
 
+    /**
+     * 将任意支持格式（{@code SSOZ1:} Zstd 或旧版 Deflater 分块）的 tile 压缩串
+     * 规范化为旧版 Deflater 分块 Base64 格式。
+     *
+     * <p>动机：离线存档基准（saveBench）不应用 Mixin，游戏类的 {@code decodeTiles}
+     * 走原版 {@code DatatypeConverter.parseBase64Binary} 路径，无法识别 {@code SSOZ1:}
+     * 前缀；且该 JAXB 实现的 {@code guessLength} 对拼接 base64 存在低估缺陷，
+     * 非对齐串会直接溢出。基准开始前用本方法把存档中的新格式字段回译为
+     * 原版可读的等价 payload，保证离线 unmarshal 语义与游戏内一致。</p>
+     *
+     * @param encoded 存档中的 tile 压缩字符串
+     * @return 旧版 Deflater 分块 Base64 格式的等价字符串；非 {@code SSOZ1:} 前缀时原样返回
+     * @throws DataFormatException 当压缩内容损坏、被截断或格式非法时抛出
+     */
+    public static String toLegacyDeflateFormat(final String encoded) throws DataFormatException {
+        if (encoded == null || !encoded.startsWith(ZSTD_PREFIX)) {
+            return encoded;
+        }
+        return encodeLegacyDeflaterPayload(decodePackedPayload(encoded));
+    }
+
     private static byte[] packBinaryTiles(final int[][] tiles) {
         final int width = tiles.length;
         final int height = tiles[0].length;

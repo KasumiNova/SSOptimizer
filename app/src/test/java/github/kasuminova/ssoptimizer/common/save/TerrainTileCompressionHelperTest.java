@@ -136,6 +136,41 @@ class TerrainTileCompressionHelperTest {
         assertMatrixEquals(tiles, TerrainTileCompressionHelper.decodeQuaternaryTiles(wrapped, tiles.length, tiles[0].length));
     }
 
+    @Test
+    void toLegacyDeflateFormatConvertsZstdPayloadToDecodableLegacyForm() throws DataFormatException {
+        final int width = 512;
+        final int height = 512;
+        int[][] tiles = new int[width][height];
+        int seed = 0x2468ACE0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                seed = seed * 1664525 + 1013904223;
+                tiles[x][y] = (seed >>> 30) & 0x3;
+            }
+        }
+
+        String zstdEncoded = TerrainTileCompressionHelper.encodeQuaternaryTiles(tiles);
+        String legacy = TerrainTileCompressionHelper.toLegacyDeflateFormat(zstdEncoded);
+
+        assertFalse(legacy.startsWith("SSOZ1:"), "回译结果必须是旧版 Deflater 分块格式");
+        // 完整逻辑验证：旧版格式必须能被旧版解码链（Inflater）还原出相同矩阵
+        assertMatrixEquals(tiles, TerrainTileCompressionHelper.decodeQuaternaryTiles(legacy, width, height));
+    }
+
+    @Test
+    void toLegacyDeflateFormatKeepsLegacyPayloadUntouched() throws DataFormatException {
+        int[][] tiles = {
+                {1, -1, 1, -1},
+                {-1, -1, 1, 1},
+                {1, 1, -1, -1}
+        };
+
+        String legacy = encodeLegacyBinaryTiles(tiles);
+
+        assertTrue(TerrainTileCompressionHelper.toLegacyDeflateFormat(legacy).equals(legacy),
+                "非 SSOZ1 前缀的字符串必须原样返回");
+    }
+
     private static String encodeLegacyBinaryTiles(final int[][] tiles) {
         final int width = tiles.length;
         final int height = tiles[0].length;
