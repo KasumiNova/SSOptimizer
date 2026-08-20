@@ -67,6 +67,8 @@ class GL11PointerBridgeTest {
         assertNotSame(snapshot.data, BridgeSupport.pool().snapshot(spare),
                 "状态仍持有时快照不得归还池");
         // 替换 pointer：状态释放旧快照，引用归零归还池
+        // （池化后旧快照对象会被回收复用，先取出缓冲引用再触发释放）
+        java.nio.ByteBuffer releasedData = snapshot.data;
         FloatBuffer vertices2 = ByteBuffer.allocateDirect(4 * Float.BYTES).asFloatBuffer();
         vertices2.put(new float[4]);
         vertices2.flip();
@@ -74,7 +76,7 @@ class GL11PointerBridgeTest {
         FloatBuffer spare2 = ByteBuffer.allocateDirect(4 * Float.BYTES).asFloatBuffer();
         spare2.put(new float[4]);
         spare2.flip();
-        assertSame(snapshot.data, BridgeSupport.pool().snapshot(spare2),
+        assertSame(releasedData, BridgeSupport.pool().snapshot(spare2),
                 "状态与捕获引用都释放后快照应归还池并被复用");
         // 清理：释放替换后的状态持有（ spare2 的快照借走了一块，无妨）
         BridgeSupport.pointerState().capture().release();

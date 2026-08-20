@@ -82,6 +82,7 @@ public final class RenderThreadRedirector {
             "GL40", "GL41", "GL42", "GL43", "GL44",
             "ARBVertexBufferObject", "EXTFramebufferObject", "ARBFramebufferObject",
             "ARBTextureStorage", "ARBBindlessTexture", "NVBindlessTexture",
+            "ARBInstancedArrays", "ARBDrawInstanced",
             "Display", "GLContext", "Drawable", "SharedDrawable", "GLSync", "Util"
     };
 

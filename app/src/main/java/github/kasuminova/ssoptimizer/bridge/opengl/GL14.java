@@ -27,6 +27,7 @@ public final class GL14 {
     }
 
     public static void glBlendEquation(int mode) {
+        BridgeSupport.simulatedState().onBlendEquation(mode);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL14.glBlendEquation(mode));
     }
 

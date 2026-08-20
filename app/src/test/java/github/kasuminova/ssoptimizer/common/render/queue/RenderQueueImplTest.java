@@ -5,12 +5,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -232,7 +234,12 @@ class RenderQueueImplTest {
         queue.swapFrames();
         queue.swapFramesAndSync();
         queue.swapFramesAndSync();
-        // 两帧均已执行完并归还：池内至少有归还的帧
+        // 两帧均已执行完并归还：池内至少有归还的帧。
+        // 归还（finally）发生在帧 Future 完成（complete）之后，需给渲染线程一个归还窗口
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (pool.idleCount() < 1 && System.nanoTime() < deadline) {
+            Thread.yield();
+        }
         assertTrue(pool.idleCount() >= 1);
     }
 
@@ -280,5 +287,87 @@ class RenderQueueImplTest {
         queue.swapFramesAndSync();
         assertEquals(0, syncErrors.get(), "同步任务结果必须原样返回");
         assertEquals(producers * perProducer, executed.get(), "帧命令必须全部执行");
+    }
+
+    @Test
+    void mergedBatchCommandsExecuteAsConsecutiveRun() {
+        queue = new RenderQueueImpl();
+        List<String> events = new CopyOnWriteArrayList<>();
+        class FakeBatch implements MergedBatchCommand {
+            private final int id;
+
+            FakeBatch(int id) {
+                this.id = id;
+            }
+
+            @Override
+            public void executeMerged(boolean runHead, boolean runTail) {
+                events.add(id + ":" + (runHead ? "H" : "-") + (runTail ? "T" : "-"));
+            }
+        }
+        // 同实现连续实例构成一个串（0:head, 1:tail）；普通命令切开串；孤立实例为单命令串
+        queue.submit(new FakeBatch(0));
+        queue.submit(new FakeBatch(1));
+        queue.submit(() -> events.add("mid"));
+        queue.submit(new FakeBatch(2));
+        queue.swapFrames();
+        queue.swapFramesAndSync();
+        assertEquals(List.of("0:H-", "1:-T", "mid", "2:HT"), events);
+    }
+
+    @Test
+    void frameProbeDrainsErrorsOncePerFrame() {
+        // 帧模式：每帧执行完后排空一次，错误源被脚本化为 [1281, 0]（首个错误 + 排空终止）
+        List<Integer> scripted = new ArrayList<>(List.of(1281, 0));
+        AtomicInteger sourceCalls = new AtomicInteger();
+        IntSupplier source = () -> {
+            sourceCalls.incrementAndGet();
+            return scripted.isEmpty() ? 0 : scripted.remove(0);
+        };
+        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(),
+                RenderQueueImpl.GlErrorProbe.FRAME, source);
+        queue.submit(() -> { });
+        queue.submit(() -> { });
+        queue.swapFrames();
+        // 同步任务在提交队列中排在帧任务之后：它返回时首帧（含探针排空）必然已执行完
+        queue.get(() -> null);
+        assertEquals(2, sourceCalls.get(), "帧模式应在帧尾恰好排空一次（1281 + 终止 0）");
+    }
+
+    @Test
+    void commandProbeDrainsAfterEachCommand() {
+        // 命令模式：每条命令后都探一轮；错误源恒 0，两条命令 → 恰好 2 次取错
+        AtomicInteger sourceCalls = new AtomicInteger();
+        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(),
+                RenderQueueImpl.GlErrorProbe.COMMAND, () -> {
+            sourceCalls.incrementAndGet();
+            return 0;
+        });
+        queue.submit(() -> { });
+        queue.submit(() -> { });
+        queue.swapFrames();
+        queue.get(() -> null);
+        assertEquals(2, sourceCalls.get(), "命令模式应在每条命令后各取一次错误码");
+    }
+
+    @Test
+    void probeOffDoesNotTouchErrorSource() {
+        AtomicInteger sourceCalls = new AtomicInteger();
+        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(),
+                RenderQueueImpl.GlErrorProbe.OFF, () -> {
+            sourceCalls.incrementAndGet();
+            return 0;
+        });
+        queue.submit(() -> { });
+        queue.swapFrames();
+        queue.get(() -> null);
+        assertEquals(0, sourceCalls.get(), "探针关闭时不得触碰错误源");
+    }
+
+    @Test
+    void probeRejectsUnknownMode() {
+        assertThrows(IllegalArgumentException.class,
+                () -> RenderQueueImpl.GlErrorProbe.parse("verbose"));
+        assertEquals(RenderQueueImpl.GlErrorProbe.FRAME, RenderQueueImpl.GlErrorProbe.parse(" Frame "));
     }
 }

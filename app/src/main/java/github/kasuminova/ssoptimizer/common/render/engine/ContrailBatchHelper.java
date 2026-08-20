@@ -177,8 +177,11 @@ public final class ContrailBatchHelper {
 
         List<Object> segments = group.ssoptimizer$getSegments();
         ContrailSegmentAccessor lastSegment = null;
-        for (int i = 0; i < segments.size(); i++) {
-            ContrailSegmentAccessor segment = (ContrailSegmentAccessor) segments.get(i);
+        // 迭代器遍历：segments 运行期类型是 LinkedList（游戏构造器实例化），
+        // 索引 get(i) 在其上退化为 O(n²)（v50 cpu profile：encodeGroup self
+        // 1,933 样本的主因之一）
+        for (final Object segmentObj : segments) {
+            ContrailSegmentAccessor segment = (ContrailSegmentAccessor) segmentObj;
 
             float progress = segment.ssoptimizer$getProgress();
             float brightness;

@@ -34,6 +34,7 @@ public final class ARBVertexBufferObject {
     }
 
     public static void glBindBufferARB(int target, int buffer) {
+        BridgeSupport.simulatedState().onBindBuffer(target, buffer);
         if (target == org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB) {
             // 同 GL15.glBindBuffer：录制侧跟踪 ARRAY_BUFFER 绑定供 offset 指针重放恢复
             BridgeSupport.pointerState().setArrayBufferBinding(buffer);

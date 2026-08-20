@@ -83,6 +83,25 @@ class GL11BridgeTest {
     }
 
     @Test
+    void openSegmentBatchesAreMarkedImmediate() {
+        // 开放段切割：glBegin 后插入非流式命令（glEnable）落帧时段仍开放；
+        // 该批次与后续「以开放段开始」的批次都必须走 immediate 兜底回放，
+        // 闭合段的普通批次不受影响
+        GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+        GL11.glVertex2f(0f, 0f);
+        GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
+        GL11.glVertex2f(1f, 1f);
+        GL11.glEnd();
+        GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
+        GL11.glVertex2f(2f, 2f);
+        GL11.glEnd();
+        assertEquals(4, queue.recorded.size(), "批次1 + enable + 批次2 + 批次3");
+        assertTrue(((VertexBatchCommand) queue.recorded.get(0)).immediate(), "段开放中落帧的批次");
+        assertTrue(((VertexBatchCommand) queue.recorded.get(2)).immediate(), "以开放段开始的批次");
+        assertFalse(((VertexBatchCommand) queue.recorded.get(3)).immediate(), "完整闭合段的批次");
+    }
+
+    @Test
     void glGetStringResultIsCachedPerPname() {
         queue.getHandler = callable -> "value";
         assertEquals("value", GL11.glGetString(org.lwjgl.opengl.GL11.GL_VENDOR));
@@ -234,7 +253,10 @@ class GL11BridgeTest {
         queue.getHandler = callable -> 0.5f;
         GL11.glGetFloat(org.lwjgl.opengl.GL11.GL_LINE_WIDTH);
         queue.getHandler = callable -> true;
-        GL11.glGetBoolean(org.lwjgl.opengl.GL11.GL_BLEND);
+        assertTrue(GL11.glGetBoolean(org.lwjgl.opengl.GL11.GL_DEPTH_TEST),
+                "未跟踪 enable 能力回退阻塞取值通道");
+        assertFalse(GL11.glGetBoolean(org.lwjgl.opengl.GL11.GL_BLEND),
+                "五个跟踪 enable 能力走录制侧仿真（全新上下文默认关闭），不触碰阻塞通道");
         GL11.glIsEnabled(org.lwjgl.opengl.GL11.GL_BLEND);
         GL11.glIsTexture(1);
         GL11.glIsList(1);

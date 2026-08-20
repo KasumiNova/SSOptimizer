@@ -116,7 +116,9 @@ final class VertexStreamBufferPool {
         LocalBufferStack stack = local.get();
         byte[] hit = stack.findAndRemove(minCapacity);
         if (hit != null) {
-            return trackBorrow(hit);
+            // 栈命中零原子操作：借出计数在缓冲离开全局池（补货/新建）时即已记录，
+            // 本地栈持有期间视同「在途」（它们确实不在池内）
+            return hit;
         }
         // 批量补货：从需求档向下 poll（预算 LOCAL_BATCH），全部入本地栈
         // （容量不匹配的留栈供更小需求），随后从栈中取合适的——本地栈由此
@@ -130,34 +132,51 @@ final class VertexStreamBufferPool {
                     break;
                 }
                 budget--;
+                trackBorrow(buffer);
                 if (!stack.push(buffer)) {
-                    // 栈满：放回对应档（无界队列，不丢对象）
+                    // 栈满：放回对应档（无界队列，不丢对象），补记归还保持计数平衡
                     buckets[bucketIndexFor(buffer.length)].offer(buffer);
+                    trackReturn(buffer);
                     break;
                 }
             }
         }
         byte[] fromStack = stack.findAndRemove(minCapacity);
         if (fromStack != null) {
-            return trackBorrow(fromStack);
+            return fromStack;
         }
         allocations.incrementAndGet();
-        return trackBorrow(new byte[capacityFor(minCapacity)]);
+        byte[] created = new byte[capacityFor(minCapacity)];
+        trackBorrow(created);
+        return created;
     }
 
     /**
-     * 借出计数：池化区间内的缓冲记录到所在桶的借出高水位（保留上限 = 高水位 +
+     * 借出计数：缓冲离开全局池时记录到所在桶的借出高水位（保留上限 = 高水位 +
      * {@link #RETENTION_SLACK}）。超上限的非池化缓冲不参与——它永不入池，
      * {@link #release(byte[])} 对其早退，计数必须保持平衡。
      */
-    private byte[] trackBorrow(byte[] buffer) {
+    private void trackBorrow(byte[] buffer) {
         final int capacity = buffer.length;
         if (capacity >= MIN_CAPACITY && capacity <= MAX_CAPACITY) {
             final int bucket = bucketIndexFor(capacity);
             final int cur = inFlight[bucket].incrementAndGet();
-            peakInFlight[bucket].updateAndGet(peak -> Math.max(peak, cur));
+            // 峰值只是保留策略的启发式高水位，并发下允许丢失更新（瞬时偏低至多
+            // 让归还侧多丢一个缓冲，下次借出即重新抬升）；相对 updateAndGet 的
+            // CAS 重试循环，省去录制热路径上与归还线程的跨核重试。
+            final AtomicInteger peak = peakInFlight[bucket];
+            if (cur > peak.get()) {
+                peak.set(cur);
+            }
         }
-        return buffer;
+    }
+
+    /** {@link #trackBorrow(byte[])} 的反向补记（仅栈满放回全局池的罕见路径）。 */
+    private void trackReturn(byte[] buffer) {
+        final int capacity = buffer.length;
+        if (capacity >= MIN_CAPACITY && capacity <= MAX_CAPACITY) {
+            inFlight[bucketIndexFor(capacity)].decrementAndGet();
+        }
     }
 
     /** 测试用：累计新建缓冲数（池化生效的验证指标）。 */

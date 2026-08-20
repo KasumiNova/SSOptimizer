@@ -74,6 +74,20 @@ public final class RenderFrame {
     }
 
     /**
+     * 队列提交路径的无锁追加（调用方必须已持有 {@code RenderQueueImpl} 的
+     * frameLock）：与 {@link #add(GlCommand)} 的区别仅在于不再进出帧自身
+     * 监视器——提交路径的互斥与可见性已由 frameLock 提供，省去录制热路径上
+     * 每命令一次的嵌套监视器开销。帧归还池后不可能再被本方法触达（提交方
+     * 只能经 frameLock 拿到当前帧）。
+     *
+     * @param command 待执行命令
+     */
+    void addUnlocked(GlCommand command) {
+        commands.add(command);
+        commitSeq++;
+    }
+
+    /**
      * @return 本帧当前提交序号（自上次 {@link #add} 后未变 = 命令列表无任何插入）
      */
     public int commitSeq() {

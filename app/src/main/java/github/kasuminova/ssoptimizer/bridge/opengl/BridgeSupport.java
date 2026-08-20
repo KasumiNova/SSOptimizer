@@ -3,6 +3,8 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPool;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPoolImpl;
 import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
+import github.kasuminova.ssoptimizer.common.render.queue.MergedBatchCommand;
+import github.kasuminova.ssoptimizer.common.render.queue.ProbeSiteCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
@@ -38,6 +40,15 @@ final class BridgeSupport {
      */
     static volatile boolean stateDedupEnabled =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.render.statededup", "true"));
+
+    /**
+     * 命令级 GL 错误探针（仅诊断）：{@code glErrorProbe=command} 时 enqueue 把
+     * 命令包装为 {@link ProbeSiteCommand} 并捕获录制点堆栈，供渲染线程侧探针
+     * 在排空到错误时输出定位（bridge 命令体多为匿名 lambda，类型名不可读）。
+     * 编译期常量属性名内联，不触发 RenderQueueImpl 类初始化。
+     */
+    private static final boolean GL_ERROR_PROBE_COMMAND = "command".equals(
+            System.getProperty(RenderQueueImpl.GL_ERROR_PROBE_PROPERTY, "off"));
 
     private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
     /** 池化命令对象（录制线程借出、渲染线程归还，见 {@link CommandPool} 的生命周期约束）。 */
@@ -157,6 +168,11 @@ final class BridgeSupport {
      */
     static void enqueue(GlCommand command) {
         flushVertexStream();
+        // 探针包装跳过 MergedBatchCommand：包装会打断渲染线程侧的串合并
+        // instance-of 判定，改变被诊断对象本身的执行形态
+        if (GL_ERROR_PROBE_COMMAND && !(command instanceof MergedBatchCommand)) {
+            command = new ProbeSiteCommand(command);
+        }
         queue().submit(command);
     }
 
@@ -218,14 +234,27 @@ final class BridgeSupport {
      * 渲染线程执行完经 {@link VertexStreamBufferPool} 归还，稳态零拷贝零分配。
      */
     static void flushVertexStream() {
-        VertexStream stream = recordingContext().vertexStream;
+        flushVertexStream(recordingContext());
+    }
+
+    /**
+     * {@link #flushVertexStream()} 的上下文直传形式：调用点已持有本线程录制上下文
+     * （如 {@code GL11#glEnd()}）时免去第二次 {@link #recordingContext()} 获取。
+     */
+    static void flushVertexStream(RecordingContext ctx) {
+        VertexStream stream = ctx.vertexStream;
         if (stream.isEmpty()) {
             return;
         }
         int length = stream.length();
+        // 开放段切割检测：本批次以段开放开始（上一批次未收口）或结束时段仍
+        // 开放（非流式命令插入 begin..end 之间）→ 逐指令 immediate 兜底回放
+        final boolean startsOpen = ctx.vertexStreamStartsOpen;
+        final boolean endsOpen = stream.hasOpenSegment();
+        ctx.vertexStreamStartsOpen = endsOpen;
         byte[] data = stream.transferBuffer();
         VertexBatchCommand batch = vertexBatches.acquire();
-        batch.setData(data, length);
+        batch.setData(data, length, startsOpen || endsOpen);
         queue().submit(batch);
     }
 

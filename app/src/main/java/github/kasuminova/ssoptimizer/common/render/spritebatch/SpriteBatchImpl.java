@@ -104,12 +104,14 @@ public final class SpriteBatchImpl implements SpriteBatch {
         String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
         boolean enable = !"false".equalsIgnoreCase(rawEnable.trim());
         if (enable && RenderThreadMode.isEnabled()) {
-            // 分离模式：收集端的 glGet 守卫（矩阵模式/stencil/scissor/FBO/viewport）
-            // 每个都是阻塞通道全管线 drain，每 sprite 数次 drain 会打穿管线；
-            // 直接禁用收集，sprite 走 SpriteRenderHelper Java 立即路径录制
-            // （v1 正确性优先，状态仿真接入后再恢复收集）。
-            LOGGER.info("[SSOptimizer] 渲染线程分离模式：禁用 SpriteBatch 收集"
-                    + "（收集端 glGet 守卫在分离模式下为全管线 drain）");
+            // 分离模式实测禁用：native 路径在分离模式下不可用（glad 不初始化），
+            // flush 只能走 Java 回退——每次 flush 录制 ~25 条 GL 命令 + 双 VBO 上传，
+            // 基准场景每帧 ~200 次 flush ≈ 5000 条额外录制命令（enqueue 热点翻倍），
+            // 且 VBO 逐 run 绘制无法享受 VertexStream 的跨命令合并与 glDrawArrays
+            // 回放；被替代的 immediate 路径已经过串合并/状态去重深度优化。
+            // A/B 实测（cpu7 vs cpu7-nosb）：启用后 avgFps 57.25 → 65.2，负优化。
+            LOGGER.info("[SSOptimizer] 渲染线程分离模式：SpriteBatch 收集禁用"
+                    + "（Java 回退 flush 实测负优化，immediate 路径已优化）");
             enable = false;
         }
         this.enabled = enable;

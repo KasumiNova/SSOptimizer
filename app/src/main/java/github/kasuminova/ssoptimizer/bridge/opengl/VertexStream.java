@@ -1,6 +1,5 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -46,6 +45,11 @@ final class VertexStream {
     private static final byte OP_BLEND_FUNC = 17;
     /** 流内 glBindTexture(TEXTURE_2D, texture)：段间（end..begin 之间）执行。 */
     private static final byte OP_BIND_TEXTURE = 18;
+    /**
+     * 精灵四边形融合指令（载荷 12 个 float：x0..y3 + texX/texY/texW/texH）：
+     * 等价 begin(QUADS)+4×(texCoord+vertex)+end，见 {@link VertexSink#spriteQuad}。
+     */
+    private static final byte OP_SPRITE_QUAD = 19;
 
     /** 初始容量：一批典型 immediate 四边形组（百余顶点）约数 KB。 */
     private static final int INITIAL_CAPACITY = 4096;
@@ -54,6 +58,8 @@ final class VertexStream {
 
     private byte[] buffer = new byte[INITIAL_CAPACITY];
     private int pos;
+    /** 未收口的 glBegin 段深度（跨落帧保留，见 {@link #hasOpenSegment()}）。 */
+    private int beginDepth;
     /** 近期批次的编码字节数环形记录（A3 预热：借新缓冲容量取窗口峰值，稳态零扩容）。 */
     private final int[] recentBatchLengths = new int[PREWARM_WINDOW];
     private int recentIndex;
@@ -70,13 +76,26 @@ final class VertexStream {
         return pos == 0;
     }
 
+    /**
+     * 当前是否有未收口的 glBegin 段（跨落帧追踪，不随 {@link #transferBuffer()}
+     * 复位）：落帧时刻若段仍开放，本批次与「段开放期间插入的其他命令」构成
+     * 病态切割序列（如 glCallList 插入 begin..end 之间），回放必须走逐指令
+     * immediate 兜底（{@link ImmediateVertexSink}），数组化无法保持
+     * 「真实 GL 段开放 + current 值逐指令推进」语义。
+     */
+    boolean hasOpenSegment() {
+        return beginDepth > 0;
+    }
+
     void begin(int mode) {
         putOp(OP_BEGIN);
         putInt(mode);
+        beginDepth++;
     }
 
     void end() {
         putOp(OP_END);
+        beginDepth--;
     }
 
     void vertex2f(float x, float y) {
@@ -198,6 +217,31 @@ final class VertexStream {
     }
 
     /**
+     * 精灵四边形融合指令（{@link VertexSink#spriteQuad} 的编码侧）：
+     * sprite 渲染路径把 begin..end 整组调用压成一条流指令（1 字节操作码 +
+     * 48 字节载荷），替代 13 次流调用约 78 字节编码（主线程每 sprite 的
+     * 编码成本大头）。
+     */
+    void spriteQuad(
+            float x0, float y0, float x1, float y1,
+            float x2, float y2, float x3, float y3,
+            float texX, float texY, float texWidth, float texHeight) {
+        putOp(OP_SPRITE_QUAD);
+        putFloat(x0);
+        putFloat(y0);
+        putFloat(x1);
+        putFloat(y1);
+        putFloat(x2);
+        putFloat(y2);
+        putFloat(x3);
+        putFloat(y3);
+        putFloat(texX);
+        putFloat(texY);
+        putFloat(texWidth);
+        putFloat(texHeight);
+    }
+
+    /**
      * @return 当前已编码的字节数
      */
     int length() {
@@ -261,32 +305,130 @@ final class VertexStream {
         pos = 0;
     }
 
-    /** 解码字节流并对 {@code sink} 逐条回放；操作码未知说明流已损坏，直接抛异常。 */
+    /**
+     * 解码字节流并对 {@code sink} 逐条回放（含 {@link VertexSink#startReplay()}/
+     * {@link VertexSink#finishReplay()} 回调）；操作码未知说明流已损坏，直接抛异常。
+     */
     static void replay(byte[] data, int length, VertexSink sink) {
-        ByteBuffer in = ByteBuffer.wrap(data, 0, length);
-        while (in.hasRemaining()) {
-            switch (in.get()) {
-                case OP_BEGIN -> sink.begin(in.getInt());
+        sink.startReplay();
+        replayBody(data, length, sink);
+        sink.finishReplay();
+    }
+
+    /**
+     * {@link #replay} 的裸解码形式（不含回放开始/结束回调）：跨批次串合并执行
+     * （{@link VertexBatchCommand#executeMerged}）时，串首/串尾回调由命令侧
+     * 按串边界管理，串内每条批次只做裸解码。
+     */
+    static void replayBody(byte[] data, int length, VertexSink sink) {
+        // 游标直读（大端，与 put 族编码约定一致）：每批次一次 ByteBuffer.wrap 的
+        // HeapByteBuffer 分配与逐图元 getXxx 分派开销在渲染线程回放热路径上
+        // 占比可观（cpu4 profile：wrap/<init> 865 样本 + HeapByteBuffer.get 族
+        // 合计约占渲染线程 3.5%），此处消除。
+        int p = 0;
+        while (p < length) {
+            switch (data[p++]) {
+                case OP_BEGIN -> {
+                    sink.begin(readInt(data, p));
+                    p += 4;
+                }
                 case OP_END -> sink.end();
-                case OP_VERTEX2F -> sink.vertex2f(in.getFloat(), in.getFloat());
-                case OP_VERTEX3F -> sink.vertex3f(in.getFloat(), in.getFloat(), in.getFloat());
-                case OP_VERTEX2D -> sink.vertex2d(in.getDouble(), in.getDouble());
-                case OP_VERTEX3D -> sink.vertex3d(in.getDouble(), in.getDouble(), in.getDouble());
-                case OP_TEXCOORD2F -> sink.texCoord2f(in.getFloat(), in.getFloat());
-                case OP_TEXCOORD2D -> sink.texCoord2d(in.getDouble(), in.getDouble());
-                case OP_COLOR4UB -> sink.color4ub(in.get(), in.get(), in.get(), in.get());
-                case OP_COLOR3UB -> sink.color3ub(in.get(), in.get(), in.get());
-                case OP_COLOR3F -> sink.color3f(in.getFloat(), in.getFloat(), in.getFloat());
-                case OP_COLOR4F -> sink.color4f(in.getFloat(), in.getFloat(), in.getFloat(), in.getFloat());
-                case OP_COLOR3D -> sink.color3d(in.getDouble(), in.getDouble(), in.getDouble());
-                case OP_NORMAL3F -> sink.normal3f(in.getFloat(), in.getFloat(), in.getFloat());
-                case OP_ENABLE -> sink.enable(in.getInt());
-                case OP_DISABLE -> sink.disable(in.getInt());
-                case OP_BLEND_FUNC -> sink.blendFunc(in.getInt(), in.getInt());
-                case OP_BIND_TEXTURE -> sink.bindTexture(in.getInt());
+                case OP_VERTEX2F -> {
+                    sink.vertex2f(readFloat(data, p), readFloat(data, p + 4));
+                    p += 8;
+                }
+                case OP_VERTEX3F -> {
+                    sink.vertex3f(readFloat(data, p), readFloat(data, p + 4), readFloat(data, p + 8));
+                    p += 12;
+                }
+                case OP_VERTEX2D -> {
+                    sink.vertex2d(readDouble(data, p), readDouble(data, p + 8));
+                    p += 16;
+                }
+                case OP_VERTEX3D -> {
+                    sink.vertex3d(readDouble(data, p), readDouble(data, p + 8), readDouble(data, p + 16));
+                    p += 24;
+                }
+                case OP_TEXCOORD2F -> {
+                    sink.texCoord2f(readFloat(data, p), readFloat(data, p + 4));
+                    p += 8;
+                }
+                case OP_TEXCOORD2D -> {
+                    sink.texCoord2d(readDouble(data, p), readDouble(data, p + 8));
+                    p += 16;
+                }
+                case OP_COLOR4UB -> {
+                    sink.color4ub(data[p], data[p + 1], data[p + 2], data[p + 3]);
+                    p += 4;
+                }
+                case OP_COLOR3UB -> {
+                    sink.color3ub(data[p], data[p + 1], data[p + 2]);
+                    p += 3;
+                }
+                case OP_COLOR3F -> {
+                    sink.color3f(readFloat(data, p), readFloat(data, p + 4), readFloat(data, p + 8));
+                    p += 12;
+                }
+                case OP_COLOR4F -> {
+                    sink.color4f(readFloat(data, p), readFloat(data, p + 4),
+                            readFloat(data, p + 8), readFloat(data, p + 12));
+                    p += 16;
+                }
+                case OP_COLOR3D -> {
+                    sink.color3d(readDouble(data, p), readDouble(data, p + 8), readDouble(data, p + 16));
+                    p += 24;
+                }
+                case OP_NORMAL3F -> {
+                    sink.normal3f(readFloat(data, p), readFloat(data, p + 4), readFloat(data, p + 8));
+                    p += 12;
+                }
+                case OP_ENABLE -> {
+                    sink.enable(readInt(data, p));
+                    p += 4;
+                }
+                case OP_DISABLE -> {
+                    sink.disable(readInt(data, p));
+                    p += 4;
+                }
+                case OP_BLEND_FUNC -> {
+                    sink.blendFunc(readInt(data, p), readInt(data, p + 4));
+                    p += 8;
+                }
+                case OP_BIND_TEXTURE -> {
+                    sink.bindTexture(readInt(data, p));
+                    p += 4;
+                }
+                case OP_SPRITE_QUAD -> {
+                    sink.spriteQuad(
+                            readFloat(data, p), readFloat(data, p + 4),
+                            readFloat(data, p + 8), readFloat(data, p + 12),
+                            readFloat(data, p + 16), readFloat(data, p + 20),
+                            readFloat(data, p + 24), readFloat(data, p + 28),
+                            readFloat(data, p + 32), readFloat(data, p + 36),
+                            readFloat(data, p + 40), readFloat(data, p + 44));
+                    p += 48;
+                }
                 default -> throw new IllegalStateException("[SSOptimizer] 顶点流损坏：未知操作码");
             }
         }
+    }
+
+    /** 大端解码（与 {@link #putInt} 编码序一致）。 */
+    private static int readInt(final byte[] data, final int p) {
+        return (data[p] << 24) | ((data[p + 1] & 0xFF) << 16)
+                | ((data[p + 2] & 0xFF) << 8) | (data[p + 3] & 0xFF);
+    }
+
+    private static float readFloat(final byte[] data, final int p) {
+        return Float.intBitsToFloat(readInt(data, p));
+    }
+
+    private static long readLong(final byte[] data, final int p) {
+        return ((long) readInt(data, p) << 32) | (readInt(data, p + 4) & 0xFFFFFFFFL);
+    }
+
+    private static double readDouble(final byte[] data, final int p) {
+        return Double.longBitsToDouble(readLong(data, p));
     }
 
     private void ensure(int additional) {

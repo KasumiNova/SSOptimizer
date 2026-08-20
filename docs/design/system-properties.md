@@ -114,8 +114,8 @@
 | `ssoptimizer.txw2.queuedwriter.batchsize` | `256`（下限 16） | 批量队列批大小 | `common/save/Txw2CompactXmlWriterHelper.java:51` |
 | `ssoptimizer.save.referenceid.cache.max` | `1048576`（1 << 20，向上取 chunk 边界） | XStream reference-id 预计算上限 | `common/save/XStreamReferenceIdHelper.java:237` |
 | `ssoptimizer.disable.save.terrain.zstd` | `false` | 禁用地形 tile Zstd 写入格式（回退原版 Deflater 载荷） | `common/save/TerrainTileCompressionHelper.java:176` |
-| `ssoptimizer.disable.save.progress.overlay` | `false` | 禁用保存/读档进度界面回放 | `common/save/SaveProgressOverlayCoordinator.java:80,119,144,161,197,227,250,269` |
-| `ssoptimizer.save.progress.fps` | `0`（≤0 时按显示器刷新率） | 覆盖保存/读档进度界面目标刷新率（fps） | `common/save/SaveProgressOverlayCoordinator.java:374` |
+| `ssoptimizer.disable.save.progress.overlay` | `false` | 禁用保存/读档进度界面回放 | `common/save/SaveProgressOverlayCoordinator.java:85,124,149,166,202,232,255,275` |
+| `ssoptimizer.save.progress.fps` | `0`（≤0 时按显示器刷新率） | 覆盖保存/读档进度界面目标刷新率（fps） | `common/save/SaveProgressOverlayCoordinator.java:418` |
 
 ## 渲染
 
@@ -133,6 +133,7 @@
 | `ssoptimizer.render.shipmasktess.enable` | `true` | Ship 蒙版三角化缓存开关（耳切 + WeakHashMap 缓存；false 走原 GLU 路径） | `common/render/tessellation/ShipMaskTessellationToggle.java` |
 | `ssoptimizer.textdiagnostics.enable` | `false` | 启用位图文本渲染诊断统计（glyph 四边形聚合） | `common/render/engine/TextRenderDiagnostics.java:117`，`TextLayoutDiagnostics.java:42` |
 | `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextRenderDiagnostics.java:121`，`TextLayoutDiagnostics.java:98` |
+| `ssoptimizer.renderthread.glErrorProbe` | `"off"` | RT 管线 GL 错误探针：`frame`（每帧末尾排空滞留 glGetError 并记 WARN）/ `command`（逐命令排空，重，仅定位用；该模式下录制侧把命令包装为 `ProbeSiteCommand` 捕获录制点堆栈，出错时输出去重后的录制点）。用于定位「滞留 GL 错误被模组健康校验（如 BoxUtil aux 线程 glInit）读到」类问题 | `common/render/queue/RenderQueueImpl.java`（`GL_ERROR_PROBE_PROPERTY`）、`ProbeSiteCommand.java` |
 
 ## 战斗逻辑
 

@@ -102,7 +102,7 @@ public final class GL11 {
         // 合并进本段，每 sprite 仍是一次落帧但命令数从 6 条降到 1 条流命令。
         RecordingContext context = BridgeSupport.recordingContext();
         context.vertexStream.end();
-        BridgeSupport.flushVertexStream();
+        BridgeSupport.flushVertexStream(context);
     }
 
     /**
@@ -111,11 +111,15 @@ public final class GL11 {
      * 流内指令，避免打断连续同状态 sprite 的流段合并。
      */
     public static void streamEnable(int cap) {
+        // 簿记在录制点（=回放序）更新：流内指令回放期才改真实状态，主线程 getter
+        // 仿真以命令流顺序为准（见 SimulatedGlState 类 javadoc）
+        BridgeSupport.simulatedState().onEnable(cap);
         BridgeSupport.recordingContext().vertexStream.enable(cap);
     }
 
     /** 流内 glDisable(cap)，语义同 {@link #streamEnable(int)}。 */
     public static void streamDisable(int cap) {
+        BridgeSupport.simulatedState().onDisable(cap);
         BridgeSupport.recordingContext().vertexStream.disable(cap);
     }
 
@@ -132,7 +136,24 @@ public final class GL11 {
      * 一条流命令。
      */
     public static void streamBindTexture(int texture) {
+        // 簿记在录制点更新（理由同 streamEnable）：保持 TEXTURE_BINDING_2D 仿真
+        // 与命令流逐指令一致
+        BridgeSupport.simulatedState().onBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, texture);
         BridgeSupport.recordingContext().vertexStream.bindTexture(texture);
+    }
+
+    /**
+     * 精灵四边形融合指令：sprite 渲染路径（{@link SpriteRenderHelper}）把
+     * begin(QUADS)+4×(texCoord+vertex)+end 的整组调用压成一条流指令
+     * （编码侧 13 次流调用 → 1 次），tex 角点顺序与
+     * {@link VertexSink#spriteQuad} 约定一致。
+     */
+    public static void streamSpriteQuad(
+            float x0, float y0, float x1, float y1,
+            float x2, float y2, float x3, float y3,
+            float texX, float texY, float texWidth, float texHeight) {
+        BridgeSupport.recordingContext().vertexStream.spriteQuad(
+                x0, y0, x1, y1, x2, y2, x3, y3, texX, texY, texWidth, texHeight);
     }
 
     public static void glVertex2f(float x, float y) {
@@ -288,11 +309,14 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glEnable(int cap) {
+        // 状态仿真簿记先行：enqueueState 去重丢弃重复命令时簿记仍正确（enable 幂等）
+        BridgeSupport.simulatedState().onEnable(cap);
         BridgeSupport.enqueueState(StateDedup.TYPE_ENABLE, cap, 0, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glEnable(cap));
     }
 
     public static void glDisable(int cap) {
+        BridgeSupport.simulatedState().onDisable(cap);
         BridgeSupport.enqueueState(StateDedup.TYPE_DISABLE, cap, 0, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glDisable(cap));
     }
@@ -303,6 +327,7 @@ public final class GL11 {
     }
 
     public static void glAlphaFunc(int func, float ref) {
+        BridgeSupport.simulatedState().onAlphaFunc(func, ref);
         BridgeSupport.enqueueState(StateDedup.TYPE_ALPHA_FUNC, func, Float.floatToRawIntBits(ref), 0, 0,
                 () -> org.lwjgl.opengl.GL11.glAlphaFunc(func, ref));
     }
@@ -468,10 +493,12 @@ public final class GL11 {
     }
 
     public static void glPushClientAttrib(int mask) {
+        BridgeSupport.simulatedState().onPushClientAttrib(mask);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glPushClientAttrib(mask));
     }
 
     public static void glPopClientAttrib() {
+        BridgeSupport.simulatedState().onPopClientAttrib();
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glPopClientAttrib);
     }
 
@@ -954,20 +981,33 @@ public final class GL11 {
             return BridgeSupport.framebufferBinding();
         }
         if (BridgeSupport.isMainRecordingThread()) {
-            // getter 回读状态仿真：簿记命中直接返回，未跟踪/失效回退阻塞通道
+            // getter 回读状态仿真：簿记命中直接返回，未跟踪/失效回退阻塞通道；
+            // 失效场景把读回的权威值采入簿记再同步（一次性成本，见 SimulatedGlState adopt 族）
             final Integer simulated = BridgeSupport.simulatedState().getInteger(pname);
             if (simulated != null) {
                 return simulated;
             }
+            final int authoritative = BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
+            BridgeSupport.simulatedState().adoptInteger(pname, authoritative);
+            return authoritative;
         }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
     }
 
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGetInteger(int pname, IntBuffer params) {
-        if (BridgeSupport.isMainRecordingThread()
-                && BridgeSupport.simulatedState().getInteger(pname, params)) {
-            return;
+        if (BridgeSupport.isMainRecordingThread()) {
+            if (BridgeSupport.simulatedState().getInteger(pname, params)) {
+                return;
+            }
+            if (pname == org.lwjgl.opengl.GL11.GL_VIEWPORT) {
+                // VIEWPORT 失效再同步：阻塞读回后采入 4 值（写入起点即调用时 position）
+                final int base = params.position();
+                BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetInteger(pname, params));
+                BridgeSupport.simulatedState().adoptViewport(
+                        params.get(base), params.get(base + 1), params.get(base + 2), params.get(base + 3));
+                return;
+            }
         }
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetInteger(pname, params));
     }
@@ -977,14 +1017,33 @@ public final class GL11 {
     }
 
     public static void glGetFloat(int pname, FloatBuffer params) {
-        if (BridgeSupport.isMainRecordingThread()
-                && BridgeSupport.simulatedState().getFloat(pname, params)) {
-            return;
+        if (BridgeSupport.isMainRecordingThread()) {
+            if (BridgeSupport.simulatedState().getFloat(pname, params)) {
+                return;
+            }
+            if (pname == org.lwjgl.opengl.GL11.GL_ALPHA_TEST_REF) {
+                // ALPHA_TEST_REF 失效再同步（语义同 glGetInteger 的 VIEWPORT 分支）
+                final int base = params.position();
+                BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetFloat(pname, params));
+                BridgeSupport.simulatedState().adoptAlphaRef(params.get(base));
+                return;
+            }
         }
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetFloat(pname, params));
     }
 
     public static boolean glGetBoolean(int pname) {
+        if (BridgeSupport.isMainRecordingThread()) {
+            // enable 能力簿记命中直接返回（SpriteBatch 收集守卫等逐 sprite 回读）；
+            // 失效时阻塞读回并采入簿记再同步（一次性成本）
+            final Boolean simulated = BridgeSupport.simulatedState().getBoolean(pname);
+            if (simulated != null) {
+                return simulated;
+            }
+            final boolean authoritative = BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetBoolean(pname));
+            BridgeSupport.simulatedState().adoptBoolean(pname, authoritative);
+            return authoritative;
+        }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetBoolean(pname));
     }
 

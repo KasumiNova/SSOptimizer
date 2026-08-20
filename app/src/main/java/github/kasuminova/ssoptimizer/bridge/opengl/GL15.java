@@ -37,6 +37,7 @@ public final class GL15 {
 
     public static void glBindBuffer(int target, int buffer) {
         BufferMapEmulator.onBindBuffer(target, buffer);
+        BridgeSupport.simulatedState().onBindBuffer(target, buffer);
         if (target == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
             // 录制侧跟踪 ARRAY_BUFFER 绑定：offset 形式的 client pointer 调用
             // 在真实 GL 中会捕获调用时刻的绑定（LazyFont 等「绑定→设 pointer→解绑→

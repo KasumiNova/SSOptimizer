@@ -3,6 +3,8 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 
 import java.nio.ByteBuffer;
@@ -20,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>
  * 直接调用记录点与 getter 仿真：矩阵族（单位阵/平移/缩放/旋转/正交/push/pop/
  * load/mult 双精度变体）、标量分组（program/activeTexture/drawBuffer/viewport/
- * matrixMode/纹理绑定）、attrib 失效语义与上下文重建复位。
+ * matrixMode/纹理绑定）、attrib 快照恢复与下溢空操作语义、adopt 采入再同步、
+ * 上下文重建复位。
  */
 class SimulatedGlStateTest {
     private static final float EPS = 1e-6f;
@@ -223,13 +226,15 @@ class SimulatedGlStateTest {
     }
 
     @Test
-    void popAttribWithoutPairInvalidates() {
+    void popAttribWithoutPairIsNoOp() {
+        // GL 规范：栈下溢仅报 GL_STACK_UNDERFLOW，状态不变；簿记同样保持不变
         final SimulatedGlState state = new SimulatedGlState();
-        state.onViewport(0, 0, 100, 100);
+        state.onViewport(7, 8, 100, 100);
         state.onMatrixMode(GL11.GL_PROJECTION);
         state.onPopAttrib();
-        assertNull(state.getInteger(GL11.GL_VIEWPORT), "无配对 pop 失效化 viewport");
-        assertNull(state.getInteger(GL11.GL_MATRIX_MODE), "无配对 pop 失效化 matrixMode");
+        assertEquals(7, state.getInteger(GL11.GL_VIEWPORT), "下溢 pop 为空操作，viewport 不变");
+        assertEquals(GL11.GL_PROJECTION, state.getInteger(GL11.GL_MATRIX_MODE),
+                "下溢 pop 为空操作，matrixMode 不变");
     }
 
     @Test
@@ -270,7 +275,7 @@ class SimulatedGlStateTest {
         assertNull(state.getInteger(GL11.GL_VIEWPORT));
         assertEquals(GL11.GL_MODELVIEW, state.getInteger(GL11.GL_MATRIX_MODE));
         assertIdentity(matrixOf(state, GL11.GL_PROJECTION_MATRIX));
-        // attrib 栈一并复位：再次 pop 走「配对不可知」失效化，不得抛异常
+        // attrib 栈一并复位：再次 pop 为下溢空操作，不得抛异常
         state.onPopAttrib();
         assertNull(state.getInteger(GL11.GL_VIEWPORT));
     }
@@ -295,5 +300,226 @@ class SimulatedGlStateTest {
         }
         final float[] m = matrixOf(state, GL11.GL_MODELVIEW_MATRIX);
         assertEquals(1.0f, m[12], EPS, "溢出后栈顶保持（真实 GL 报 STACK_OVERFLOW 且栈不变）");
+    }
+
+    // ------------------------------------------------------------------
+    // enable 位 / blendEquation / alphaFunc/ref / VBO 绑定（SpriteBatch 守卫覆盖面）
+    // ------------------------------------------------------------------
+
+    @Test
+    void enableCapsDefaultDisabledAndTracked() {
+        final SimulatedGlState state = new SimulatedGlState();
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_TEXTURE_2D));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_BLEND));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_ALPHA_TEST));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_STENCIL_TEST));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_SCISSOR_TEST));
+        assertNull(state.getBoolean(GL11.GL_DEPTH_TEST), "未跟踪能力必须回退阻塞通道");
+
+        state.onEnable(GL11.GL_BLEND);
+        state.onEnable(GL11.GL_STENCIL_TEST);
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_BLEND));
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_STENCIL_TEST));
+        state.onDisable(GL11.GL_BLEND);
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_BLEND));
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_STENCIL_TEST), "其余能力互不影响");
+    }
+
+    @Test
+    void pushAttribEnableBitRestoresAllTrackedCaps() {
+        final SimulatedGlState state = new SimulatedGlState();
+        // ENABLE_BIT 双归属：五个跟踪能力的 enable 位全部入 enable 组
+        state.onPushAttrib(GL11.GL_ENABLE_BIT);
+        state.onEnable(GL11.GL_TEXTURE_2D);
+        state.onEnable(GL11.GL_BLEND);
+        state.onEnable(GL11.GL_ALPHA_TEST);
+        state.onEnable(GL11.GL_STENCIL_TEST);
+        state.onEnable(GL11.GL_SCISSOR_TEST);
+        state.onPopAttrib();
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_TEXTURE_2D));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_BLEND));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_ALPHA_TEST));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_STENCIL_TEST));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_SCISSOR_TEST));
+    }
+
+    @Test
+    void pushAttribFunctionalGroupsRestoreOnlyOwnCaps() {
+        final SimulatedGlState state = new SimulatedGlState();
+        state.onEnable(GL11.GL_TEXTURE_2D);
+        state.onPushAttrib(GL11.GL_TEXTURE_BIT);
+        state.onDisable(GL11.GL_TEXTURE_2D);
+        state.onEnable(GL11.GL_BLEND);
+        state.onPopAttrib();
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_TEXTURE_2D),
+                "TEXTURE_BIT 恢复 TEXTURE_2D enable");
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_BLEND),
+                "TEXTURE_BIT 不触碰 BLEND enable");
+
+        state.onPushAttrib(GL11.GL_STENCIL_BUFFER_BIT);
+        state.onEnable(GL11.GL_STENCIL_TEST);
+        state.onEnable(GL11.GL_SCISSOR_TEST);
+        state.onPopAttrib();
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_STENCIL_TEST),
+                "STENCIL_BUFFER_BIT 恢复 STENCIL_TEST enable");
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_SCISSOR_TEST),
+                "STENCIL_BUFFER_BIT 不触碰 SCISSOR_TEST enable");
+    }
+
+    @Test
+    void blendEquationAndAlphaStateTrackedAndRestored() {
+        final SimulatedGlState state = new SimulatedGlState();
+        assertEquals(GL14.GL_FUNC_ADD, state.getInteger(GL14.GL_BLEND_EQUATION));
+        assertEquals(GL11.GL_ALWAYS, state.getInteger(GL11.GL_ALPHA_TEST_FUNC));
+
+        state.onBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT);
+        state.onAlphaFunc(GL11.GL_GEQUAL, 0.5f);
+        assertEquals(GL14.GL_FUNC_REVERSE_SUBTRACT, state.getInteger(GL14.GL_BLEND_EQUATION));
+        assertEquals(GL11.GL_GEQUAL, state.getInteger(GL11.GL_ALPHA_TEST_FUNC));
+        final FloatBuffer ref = directFloatBuffer(16);
+        assertTrue(state.getFloat(GL11.GL_ALPHA_TEST_REF, ref));
+        assertEquals(0.5f, ref.get(0), EPS);
+
+        // COLOR_BUFFER_BIT 快照恢复两个标量
+        state.onPushAttrib(GL11.GL_COLOR_BUFFER_BIT);
+        state.onBlendEquation(GL14.GL_FUNC_ADD);
+        state.onAlphaFunc(GL11.GL_NEVER, 0.1f);
+        state.onPopAttrib();
+        assertEquals(GL14.GL_FUNC_REVERSE_SUBTRACT, state.getInteger(GL14.GL_BLEND_EQUATION));
+        assertEquals(GL11.GL_GEQUAL, state.getInteger(GL11.GL_ALPHA_TEST_FUNC));
+        final FloatBuffer refAfter = directFloatBuffer(16);
+        assertTrue(state.getFloat(GL11.GL_ALPHA_TEST_REF, refAfter));
+        assertEquals(0.5f, refAfter.get(0), EPS);
+
+        // ENABLE_BIT 不含这两个标量：pop 后不恢复
+        state.onPushAttrib(GL11.GL_ENABLE_BIT);
+        state.onBlendEquation(GL14.GL_MIN);
+        state.onPopAttrib();
+        assertEquals(GL14.GL_MIN, state.getInteger(GL14.GL_BLEND_EQUATION),
+                "ENABLE_BIT 不覆盖 blendEquation");
+    }
+
+    @Test
+    void bufferBindingsTrackedAndClientAttribRestoresArrayBinding() {
+        final SimulatedGlState state = new SimulatedGlState();
+        assertEquals(0, state.getInteger(GL15.GL_ARRAY_BUFFER_BINDING));
+        assertEquals(0, state.getInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING));
+
+        state.onBindBuffer(GL15.GL_ARRAY_BUFFER, 7);
+        state.onBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 9);
+        assertEquals(7, state.getInteger(GL15.GL_ARRAY_BUFFER_BINDING));
+        assertEquals(9, state.getInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING));
+
+        state.onPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
+        state.onBindBuffer(GL15.GL_ARRAY_BUFFER, 42);
+        state.onBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 43);
+        state.onPopClientAttrib();
+        assertEquals(7, state.getInteger(GL15.GL_ARRAY_BUFFER_BINDING),
+                "CLIENT_VERTEX_ARRAY_BIT 恢复 ARRAY_BUFFER 绑定");
+        assertEquals(43, state.getInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING),
+                "ELEMENT_ARRAY_BUFFER 是 server 状态，client attrib 不恢复");
+    }
+
+    @Test
+    void unpairedPopIsNoOpForNewGroups() {
+        // 与 server 栈同理：下溢 pop 为空操作，所有分组簿记保持不变
+        final SimulatedGlState state = new SimulatedGlState();
+        state.onEnable(GL11.GL_BLEND);
+        state.onBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT);
+        state.onAlphaFunc(GL11.GL_GEQUAL, 0.5f);
+        state.onPopAttrib();
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_BLEND), "下溢 pop 为空操作，enable 位不变");
+        assertEquals(GL14.GL_FUNC_REVERSE_SUBTRACT, state.getInteger(GL14.GL_BLEND_EQUATION),
+                "下溢 pop 为空操作，blendEquation 不变");
+        assertEquals(GL11.GL_GEQUAL, state.getInteger(GL11.GL_ALPHA_TEST_FUNC),
+                "下溢 pop 为空操作，alpha 状态不变");
+        final FloatBuffer ref = directFloatBuffer(16);
+        assertTrue(state.getFloat(GL11.GL_ALPHA_TEST_REF, ref));
+        assertEquals(0.5f, ref.get(0), EPS);
+
+        state.onBindBuffer(GL15.GL_ARRAY_BUFFER, 7);
+        state.onPopClientAttrib();
+        assertEquals(7, state.getInteger(GL15.GL_ARRAY_BUFFER_BINDING),
+                "下溢 client pop 为空操作，ARRAY_BUFFER 绑定不变");
+        assertEquals(0, state.getInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING),
+                "ELEMENT_ARRAY_BUFFER 不受 client attrib 影响");
+    }
+
+    @Test
+    void contextRecreatedResetsNewGroups() {
+        final SimulatedGlState state = new SimulatedGlState();
+        state.onEnable(GL11.GL_BLEND);
+        state.onEnable(GL11.GL_SCISSOR_TEST);
+        state.onBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT);
+        state.onAlphaFunc(GL11.GL_GEQUAL, 0.5f);
+        state.onBindBuffer(GL15.GL_ARRAY_BUFFER, 7);
+        state.onBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 9);
+        state.onPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
+
+        state.onContextRecreated();
+
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_BLEND));
+        assertEquals(Boolean.FALSE, state.getBoolean(GL11.GL_SCISSOR_TEST));
+        assertEquals(GL14.GL_FUNC_ADD, state.getInteger(GL14.GL_BLEND_EQUATION));
+        assertEquals(GL11.GL_ALWAYS, state.getInteger(GL11.GL_ALPHA_TEST_FUNC));
+        assertEquals(0, state.getInteger(GL15.GL_ARRAY_BUFFER_BINDING));
+        assertEquals(0, state.getInteger(GL15.GL_ELEMENT_ARRAY_BUFFER_BINDING));
+        // client attrib 栈一并复位：再次 pop 为下溢空操作，绑定保持有效
+        state.onPopClientAttrib();
+        assertEquals(0, state.getInteger(GL15.GL_ARRAY_BUFFER_BINDING));
+    }
+
+    @Test
+    void adoptionResyncsAfterInvalidation() {
+        final SimulatedGlState state = new SimulatedGlState();
+        // viewport 在首个 glViewport 录制前无效，是天然的失效初始态
+        assertNull(state.getInteger(GL11.GL_VIEWPORT));
+
+        // 阻塞通道读回的权威值采入簿记：getter 恢复仿真命中
+        state.adoptViewport(1, 2, 300, 200);
+        final IntBuffer vp = IntBuffer.allocate(4);
+        assertTrue(state.getInteger(GL11.GL_VIEWPORT, vp), "VIEWPORT 采入后 buffer 形式恢复命中");
+        vp.flip();
+        assertEquals(1, vp.get());
+        assertEquals(2, vp.get());
+        assertEquals(300, vp.get());
+        assertEquals(200, vp.get());
+
+        // 采入后继续参与 attrib 快照恢复（簿记已重新生效）
+        state.onPushAttrib(GL11.GL_VIEWPORT_BIT);
+        state.onViewport(5, 6, 640, 480);
+        state.onPopAttrib();
+        final IntBuffer vp2 = IntBuffer.allocate(4);
+        assertTrue(state.getInteger(GL11.GL_VIEWPORT, vp2), "采入后的值被 push 快照、pop 恢复");
+        vp2.flip();
+        assertEquals(1, vp2.get());
+        assertEquals(300, vp2.get(2));
+
+        // adoptBoolean/adoptInteger 直接写入并生效
+        state.adoptBoolean(GL11.GL_BLEND, true);
+        assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_BLEND));
+        state.adoptInteger(GL14.GL_BLEND_EQUATION, GL14.GL_FUNC_REVERSE_SUBTRACT);
+        assertEquals(GL14.GL_FUNC_REVERSE_SUBTRACT, state.getInteger(GL14.GL_BLEND_EQUATION));
+
+        // 未跟踪能力的 adopt 是 no-op
+        state.adoptBoolean(GL11.GL_DEPTH_TEST, true);
+        assertNull(state.getBoolean(GL11.GL_DEPTH_TEST));
+    }
+
+    @Test
+    void alphaFuncAndRefValidityAreIndependent() {
+        // adopt 按 func/ref 粒度独立写入：采入 func 不触碰 ref
+        final SimulatedGlState state = new SimulatedGlState();
+        state.onAlphaFunc(GL11.GL_GEQUAL, 0.5f);
+
+        state.adoptInteger(GL11.GL_ALPHA_TEST_FUNC, GL11.GL_NEVER);
+        assertEquals(GL11.GL_NEVER, state.getInteger(GL11.GL_ALPHA_TEST_FUNC), "func 单独采入生效");
+        final FloatBuffer ref = directFloatBuffer(16);
+        assertTrue(state.getFloat(GL11.GL_ALPHA_TEST_REF, ref));
+        assertEquals(0.5f, ref.get(0), EPS, "ref 不受 func 采入影响");
+        state.adoptAlphaRef(0.25f);
+        final FloatBuffer ref2 = directFloatBuffer(16);
+        assertTrue(state.getFloat(GL11.GL_ALPHA_TEST_REF, ref2));
+        assertEquals(0.25f, ref2.get(0), EPS);
     }
 }

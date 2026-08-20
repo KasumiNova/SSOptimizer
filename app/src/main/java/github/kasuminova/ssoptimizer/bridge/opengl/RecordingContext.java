@@ -34,4 +34,10 @@ final class RecordingContext {
      * 刷新；非主线程保持 null，由 {@link BridgeSupport#queue()} 现取当前帧。
      */
     RenderFrame dedupFrame;
+    /**
+     * 本线程顶点流的开放段延续标记：上一次落帧时流内 glBegin 段未收口
+     * （{@link VertexStream#hasOpenSegment()}），下一批次以段开放状态开始——
+     * 该批次必须走 immediate 兜底回放（见 {@link ImmediateVertexSink}）。
+     */
+    boolean vertexStreamStartsOpen;
 }

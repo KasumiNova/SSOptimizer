@@ -109,16 +109,10 @@ public final class SpriteRenderHelper {
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamEnable(GL11.GL_BLEND);
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamBlendFunc(blendSrc, blendDest);
 
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glTexCoord2f(texX, texY);
-        GL11.glVertex2f(x0, y0);
-        GL11.glTexCoord2f(texX, texY + texHeight);
-        GL11.glVertex2f(x1, y1);
-        GL11.glTexCoord2f(texX + texWidth, texY + texHeight);
-        GL11.glVertex2f(x2, y2);
-        GL11.glTexCoord2f(texX + texWidth, texY);
-        GL11.glVertex2f(x3, y3);
-        GL11.glEnd();
+        // 整组 begin..end 压成一条流内融合指令（编码 13 次流调用 → 1 次；
+        // tex 角点顺序与原逐顶点序列一致）
+        github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamSpriteQuad(
+                x0, y0, x1, y1, x2, y2, x3, y3, texX, texY, texWidth, texHeight);
 
         /* ── Cleanup（流内 disable，段外执行，保持与原版一致的 blend 关闭）── */
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamDisable(GL11.GL_BLEND);

@@ -1,10 +1,19 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
 /**
- * {@link VertexSink} 的生产实现：逐条转发到真实 {@link org.lwjgl.opengl.GL11}。
+ * {@link VertexSink} 的逐指令 immediate 回放实现：仅用于「开放段跨批次切割」的
+ * 病态批次（glBegin 与配对的 glEnd 之间被非流式命令切开，典型如 begin..end 段内
+ * 的 glCallList——显示列表消费<b>调用时刻</b>的 current color 做纹理调制）。
+ * <p>
+ * 该路径下数组化回放（{@link VertexArrayBatch}）无法保持语义：顶点数组要求完整
+ * 图元段，而真实 GL 的 begin 必须保持开放跨命令执行；current 值也必须逐指令推进。
+ * 因此这类批次退回逐条真实 {@link org.lwjgl.opengl.GL11} 调用（与数组化前的
+ * 回放行为逐指令等价）。正常批次（段完整）永远走 {@link VertexArrayBatch}，
+ * 本类只在罕见病态序列出现时使用，性能不敏感。
+ * <p>
  * 只在渲染线程的流段回放命令里被调用（此时 GL 上下文归渲染线程持有）。
  */
-enum LwjglVertexSink implements VertexSink {
+enum ImmediateVertexSink implements VertexSink {
     INSTANCE;
 
     @Override

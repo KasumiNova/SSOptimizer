@@ -257,6 +257,22 @@ class RenderThreadRedirectorTest {
     }
 
     @Test
+    void arbInstancedVariantsAreRedirected() {
+        // GL33/GL31 实例化入口的 ARB 扩展别名：模组按能力探测二选一，同语义必须同覆盖
+        byte[] source = buildClass("com/example/UsesArbInstanced", mv -> {
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/ARBInstancedArrays",
+                    "glVertexAttribDivisorARB", "(II)V", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/ARBDrawInstanced",
+                    "glDrawArraysInstancedARB", "(IIII)V", false);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.UsesArbInstanced", source);
+        List<String> calls = collectMethodCalls(result);
+        assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/ARBInstancedArrays.glVertexAttribDivisorARB(II)V"), calls.toString());
+        assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/ARBDrawInstanced.glDrawArraysInstancedARB(IIII)V"), calls.toString());
+    }
+
+    @Test
     void mirrorTableCoversExpectedSurface() {
         // 镜像表是改写覆盖面的事实源：抽查关键方法必须已镜像（防 bridge 重构漂移）
         byte[] source = buildClass("com/example/Probe", mv -> {

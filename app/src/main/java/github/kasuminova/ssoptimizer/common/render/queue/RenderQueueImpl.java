@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
 /**
@@ -49,6 +50,9 @@ public final class RenderQueueImpl implements RenderQueue {
 
     /** 阻塞调用站点定位用的 StackWalker（无类引用保留需求，默认配置即可）。 */
     private static final StackWalker SITE_WALKER = StackWalker.getInstance();
+
+    /** GL 错误探针系统属性：off（默认）/ frame（帧尾排空）/ command（逐命令排空）。 */
+    public static final String GL_ERROR_PROBE_PROPERTY = "ssoptimizer.renderthread.glErrorProbe";
 
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
@@ -88,6 +92,15 @@ public final class RenderQueueImpl implements RenderQueue {
 
     private volatile boolean running = true;
 
+    /** GL 错误探针模式（诊断设施，见 {@link #GL_ERROR_PROBE_PROPERTY}）。 */
+    private final GlErrorProbe glErrorProbe;
+    /** 探针取错误的来源（测试注入桩，避免无 context 环境下触真 GL；与 BridgeSupport 的注入桩同模式）。 */
+    private final IntSupplier glErrorSource;
+    /** 探针帧序号（仅诊断日志展示用）。 */
+    private long probeFrameSequence;
+    /** 已输出过录制点堆栈的站点指纹（前 6 帧拼串），仅渲染线程访问。 */
+    private final java.util.Set<String> probeSiteKeys = new java.util.HashSet<>();
+
     public RenderQueueImpl() {
         this(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector());
     }
@@ -99,8 +112,21 @@ public final class RenderQueueImpl implements RenderQueue {
      *                      get/wait 阻塞调用；加载期成批一次性分配豁免）
      */
     public RenderQueueImpl(FramePool framePool, StallDetector stallDetector) {
+        this(framePool, stallDetector,
+                GlErrorProbe.parse(System.getProperty(GL_ERROR_PROBE_PROPERTY, "off")),
+                // 上下文创建前渲染线程无 current context，glGetError 会抛
+                // 「No OpenGL context」——未创建期视为无错误跳过（此处引用会被
+                // RenderThreadRedirector 改写为 bridge 镜像，语义不变）
+                () -> org.lwjgl.opengl.Display.isCreated() ? org.lwjgl.opengl.GL11.glGetError() : 0);
+    }
+
+    /** 测试入口：注入探针模式与错误来源桩。 */
+    RenderQueueImpl(FramePool framePool, StallDetector stallDetector,
+                    GlErrorProbe glErrorProbe, IntSupplier glErrorSource) {
         this.framePool = framePool;
         this.stallDetector = stallDetector;
+        this.glErrorProbe = glErrorProbe;
+        this.glErrorSource = glErrorSource;
         this.currentFrame = framePool.acquire();
         this.renderThread = new Thread(this::renderLoop, RENDER_THREAD_NAME);
         this.renderThread.setDaemon(true);
@@ -117,7 +143,8 @@ public final class RenderQueueImpl implements RenderQueue {
     @Override
     public void submit(GlCommand command) {
         synchronized (frameLock) {
-            currentFrame.add(command);
+            // frameLock 已提供互斥与可见性，帧自身监视器在此冗余（addUnlocked）
+            currentFrame.addUnlocked(command);
         }
     }
 
@@ -324,12 +351,16 @@ public final class RenderQueueImpl implements RenderQueue {
         public void run() {
             try {
                 runOrRequeue(frame.commands());
+                // 帧模式探针在 complete 之前：等待帧 Future 的一方由此确定探针已落地
+                probeFrameErrors();
                 // 帧悬挂（fence 未 signal）不视为失败：余下命令已由续跑任务接管，
                 // 本帧正常完成释放主线程——主线程推进后 fence 信号才会到来
                 frame.complete();
             } catch (Throwable t) {
                 LOGGER.error("[SSOptimizer] 渲染线程执行帧命令失败，本帧剩余命令已丢弃", t);
                 frame.signalAllFences();
+                // 失败帧的 GL 状态诊断价值最高，同样探一轮
+                probeFrameErrors();
                 frame.completeExceptionally(t);
             } finally {
                 framePool.release(frame);
@@ -365,11 +396,31 @@ public final class RenderQueueImpl implements RenderQueue {
      * 退避 {@link #SUSPEND_REQUEUE_BACKOFF_NANOS} 后把悬挂点起的剩余命令打包成
      * {@link ContinuationTask} requeue 到提交队列队尾并返回。续跑任务排在队尾，
      * 不阻塞后续帧任务与同步任务的执行。
+     * <p>
+     * 连续串合并：相邻且同实现的 {@link MergedBatchCommand}（顶点批次）构成
+     * 一个串，整串以 {@link MergedBatchCommand#executeMerged} 协议执行——串内
+     * 共享合并器（跨批次状态去重/DRAW 合并），真实 GL 调用延迟到串尾。
      */
     private void runOrRequeue(List<GlCommand> commands) {
+        boolean inMergedRun = false;
         for (int i = 0; i < commands.size(); i++) {
+            GlCommand command = commands.get(i);
             try {
-                commands.get(i).execute();
+                if (command instanceof MergedBatchCommand merged) {
+                    boolean runTail = i + 1 >= commands.size()
+                            || commands.get(i + 1).getClass() != command.getClass();
+                    merged.executeMerged(!inMergedRun, runTail);
+                    inMergedRun = !runTail;
+                } else {
+                    inMergedRun = false;
+                    command.execute();
+                }
+                if (glErrorProbe == GlErrorProbe.COMMAND) {
+                    boolean hadError = drainGlErrors("命令 " + probeCommandName(command) + " 之后");
+                    if (hadError && command instanceof ProbeSiteCommand probe) {
+                        logProbeRecordingSite(probe);
+                    }
+                }
             } catch (SuspendFrameException suspend) {
                 LockSupport.parkNanos(SUSPEND_REQUEUE_BACKOFF_NANOS);
                 offerOrThrow(new ContinuationTask(
@@ -395,6 +446,85 @@ public final class RenderQueueImpl implements RenderQueue {
             } catch (Throwable t) {
                 result.completeExceptionally(t);
             }
+        }
+    }
+
+    /** 帧模式探针落点：帧命令执行完（无论成败）后、帧 Future 完成前排空一次。 */
+    private void probeFrameErrors() {
+        if (glErrorProbe == GlErrorProbe.FRAME) {
+            probeFrameSequence++;
+            drainGlErrors("帧 #" + probeFrameSequence + " 末尾");
+        }
+    }
+
+    /**
+     * 排空滞留 GL 错误并按错误码聚合计数，有错误时记 WARN。
+     * 用途：诊断「真实上下文中滞留的 GL 错误被模组的 makeCurrent+glGetError
+     * 健康校验（如 BoxUtil aux 线程 glInit）读到」类问题——滞留错误意味着
+     * 渲染管线某处产生了失败的 GL 调用且无人察觉。
+     *
+     * @param site 探针位置描述（帧尾/某命令之后）
+     * @return 是否排空到任何错误
+     */
+    private boolean drainGlErrors(final String site) {        final java.util.Map<Integer, Integer> counts = new java.util.LinkedHashMap<>();
+        int guard = 0;
+        int error;
+        while ((error = glErrorSource.getAsInt()) != 0 && guard++ < 64) {
+            counts.merge(error, 1, Integer::sum);
+        }
+        if (counts.isEmpty()) {
+            return false;
+        }
+        final StringBuilder sb = new StringBuilder();
+        counts.forEach((code, count) ->
+                sb.append("0x").append(Integer.toHexString(code)).append('x').append(count).append(' '));
+        LOGGER.warn("[SSOptimizer] GL 错误探针：" + site + " 排空到滞留 GL 错误: " + sb.toString().trim());
+        return true;
+    }
+
+    /** 探针日志的命令名：录制点包装命令展示被包装命令的类型名。 */
+    private static String probeCommandName(final GlCommand command) {
+        if (command instanceof ProbeSiteCommand probe) {
+            return probe.delegate().getClass().getSimpleName();
+        }
+        return command.getClass().getSimpleName();
+    }
+
+    /**
+     * 输出录制点包装命令的诊断堆栈（按前 6 帧指纹去重，同一录制点只打一次，
+     * 总量封顶 32 个站点——标题界面每帧重复的错误不会刷屏）。
+     */
+    private void logProbeRecordingSite(final ProbeSiteCommand command) {
+        final StackTraceElement[] trace = command.recordingSite().getStackTrace();
+        final StringBuilder key = new StringBuilder();
+        final int depth = Math.min(trace.length, 6);
+        for (int i = 0; i < depth; i++) {
+            key.append(trace[i].getClassName()).append('#').append(trace[i].getMethodName())
+                    .append(':').append(trace[i].getLineNumber()).append(';');
+        }
+        if (probeSiteKeys.add(key.toString()) && probeSiteKeys.size() <= 32) {
+            LOGGER.warn("[SSOptimizer] GL 错误探针：出错命令的录制点堆栈（诊断堆栈，非异常）",
+                    command.recordingSite());
+        }
+    }
+
+    /** GL 错误探针模式。 */
+    enum GlErrorProbe {
+        /** 关闭（默认，零开销）。 */
+        OFF,
+        /** 每帧命令执行完毕后排空一次。 */
+        FRAME,
+        /** 每条命令执行后排空一次（重，仅定位用）。 */
+        COMMAND;
+
+        static GlErrorProbe parse(final String value) {
+            return switch (value.trim().toLowerCase(java.util.Locale.ROOT)) {
+                case "frame" -> FRAME;
+                case "command" -> COMMAND;
+                case "off" -> OFF;
+                default -> throw new IllegalArgumentException(
+                        "[SSOptimizer] 非法 " + GL_ERROR_PROBE_PROPERTY + " 取值: " + value + "（允许 off/frame/command）");
+            };
         }
     }
 }

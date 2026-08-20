@@ -3,6 +3,8 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
+
 /**
  * 一次 client pointer 设置（glVertexPointer/glColorPointer/glTexCoordPointer/
  * glNormalPointer/glInterleavedArrays）的录制快照。
@@ -30,46 +32,72 @@ import java.util.concurrent.atomic.AtomicInteger;
  * （{@link #vboId}），由 {@link PointerSnapshotGroup#apply()} 显式恢复。
  */
 final class PointerSnapshot {
+    /**
+     * 快照对象池（借出：录制线程 ofBuffer/ofOffset；归还：最后一份引用释放时
+     * 的 {@link #release()} 调用线程，渲染线程与录制线程皆可能）——MPMC 语义。
+     * 动机：pointer 快照连同 pendingDraws 原子计数器是逐 pointer 调用的分配
+     * （v50 cpu profile：PointerSnapshot.&lt;init&gt; + AtomicInteger.&lt;init&gt;
+     * 合计约 600 样本），池化后稳态零分配。
+     */
+    private static final MpmcUnboundedXaddArrayQueue<PointerSnapshot> POOL =
+            new MpmcUnboundedXaddArrayQueue<>(1024);
+
     /** pointer 种类：决定重放时调用哪一个真实 GL 入口。 */
     enum Kind {
         VERTEX, COLOR, TEX_COORD, NORMAL, INTERLEAVED
     }
 
-    final Kind kind;
+    /** 以下字段均非 final：池化复用时由工厂方法整体重写（见 {@link #ofBuffer}）。 */
+    Kind kind;
     /** glVertexPointer 的 size；INTERLEAVED 时复用为 format。 */
-    final int size;
-    final int type;
-    final int stride;
+    int size;
+    int type;
+    int stride;
     /** 池化快照；VBO 偏移形式为 null。 */
-    final ByteBuffer data;
+    ByteBuffer data;
     /** VBO 偏移形式的有效偏移。 */
-    final long offset;
+    long offset;
     /** VBO 偏移形式在录制时刻的 GL_ARRAY_BUFFER 绑定；buffer 形式为 0。 */
-    final int vboId;
+    int vboId;
     /**
      * 本快照的存活引用数：录制侧状态持有 1 份（创建时计数为 1），每条捕获它的
-     * draw 命令再加 1；归零时归还池。VBO 偏移形式（{@link #data} 为 null）
-     * 无池缓冲，计数不参与归还。
+     * draw 命令再加 1；归零时归还池（data 缓冲与快照对象各自归还）。VBO 偏移
+     * 形式（{@link #data} 为 null）无池缓冲，计数不参与归还。
      */
-    private final AtomicInteger pendingDraws;
+    private final AtomicInteger pendingDraws = new AtomicInteger();
 
-    private PointerSnapshot(Kind kind, int size, int type, int stride, ByteBuffer data, long offset, int vboId) {
-        this.kind = kind;
-        this.size = size;
-        this.type = type;
-        this.stride = stride;
-        this.data = data;
-        this.offset = offset;
-        this.vboId = vboId;
-        this.pendingDraws = new AtomicInteger(data != null ? 1 : 0);
+    private PointerSnapshot() {
     }
 
     static PointerSnapshot ofBuffer(Kind kind, int size, int type, int stride, ByteBuffer data) {
-        return new PointerSnapshot(kind, size, type, stride, data, 0, 0);
+        final PointerSnapshot snapshot = acquire();
+        snapshot.kind = kind;
+        snapshot.size = size;
+        snapshot.type = type;
+        snapshot.stride = stride;
+        snapshot.data = data;
+        snapshot.offset = 0;
+        snapshot.vboId = 0;
+        snapshot.pendingDraws.set(1);
+        return snapshot;
     }
 
     static PointerSnapshot ofOffset(Kind kind, int size, int type, int stride, long offset, int vboId) {
-        return new PointerSnapshot(kind, size, type, stride, null, offset, vboId);
+        final PointerSnapshot snapshot = acquire();
+        snapshot.kind = kind;
+        snapshot.size = size;
+        snapshot.type = type;
+        snapshot.stride = stride;
+        snapshot.data = null;
+        snapshot.offset = offset;
+        snapshot.vboId = vboId;
+        snapshot.pendingDraws.set(0);
+        return snapshot;
+    }
+
+    private static PointerSnapshot acquire() {
+        final PointerSnapshot pooled = POOL.poll();
+        return pooled != null ? pooled : new PointerSnapshot();
     }
 
     /** draw 命令捕获本快照时调用，推迟归还直到该 draw 执行完。 */
@@ -81,11 +109,13 @@ final class PointerSnapshot {
 
     /**
      * 释放一份引用（draw 执行完或状态覆盖时调用）；最后一份引用释放时把快照
-     * 归还池。
+     * 缓冲与对象本身归还各自池。归还后本对象可被立即复用，调用方不得再触碰。
      */
     void release() {
         if (data != null && pendingDraws.decrementAndGet() == 0) {
             BridgeSupport.releaseSnapshot(data);
+            data = null;
+            POOL.offer(this);
         }
     }
 

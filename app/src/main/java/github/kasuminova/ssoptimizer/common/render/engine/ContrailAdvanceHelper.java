@@ -59,8 +59,9 @@ public final class ContrailAdvanceHelper {
         ContrailEngine.ContrailWidthMode widthMode = group.ssoptimizer$getWidthMode();
         float widthMultiplier = group.ssoptimizer$getWidthMultiplier();
 
-        for (int i = 0; i < segments.size(); i++) {
-            advanceSegment((ContrailSegmentAccessor) segments.get(i), amount, ended, widthMode, widthMultiplier);
+        // 迭代器遍历：segments 运行期类型是 LinkedList，索引 get(i) 会退化为 O(n²)
+        for (final Object segment : segments) {
+            advanceSegment((ContrailSegmentAccessor) segment, amount, ended, widthMode, widthMultiplier);
         }
 
         // 原版组级逻辑：段数 >= 2 时循环移除已完全老化的头段；段数 < 2 且组已
