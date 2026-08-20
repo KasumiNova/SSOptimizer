@@ -80,7 +80,7 @@ public final class ParallelAiDispatcher {
             return;
         }
         Object stripeKey = ai instanceof FighterAIAccessor accessor ? accessor.ssoptimizer$getWing() : null;
-        executor.submit(() -> ai.advance(amount), stripeKey);
+        executor.submit(PooledAiTask.acquire(ai, amount), stripeKey);
     }
 
     /**

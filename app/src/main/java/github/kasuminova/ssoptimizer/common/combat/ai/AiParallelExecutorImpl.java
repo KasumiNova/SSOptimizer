@@ -1,18 +1,25 @@
 package github.kasuminova.ssoptimizer.common.combat.ai;
 
 import org.apache.log4j.Logger;
+import org.jctools.queues.MpscUnboundedArrayQueue;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * AI 并行执行线程池的默认实现。
  * <p>
- * 线程模型：固定数量工作线程各自持有一个无界队列，主线程（游戏逻辑线程）通过
+ * 线程模型：固定数量工作线程各自持有一个 JCTools MPSC 无界数组队列（生产者
+ * 仅主线程分发循环，消费者仅本线程），主线程（游戏逻辑线程）通过
  * {@link #submit(Runnable, Object)} 投递任务并以 {@link #awaitAll()} 作为帧内屏障。
  * 屏障不跨帧：每帧的 AI 任务必须在同一帧内全部完成。
+ * <p>
+ * 队列选型：相对 LinkedBlockingQueue 消除了逐任务的 Node 分配与双锁
+ * （cpu profile：submit 556 样本中 92% 为 LinkedBlockingQueue.offer）；
+ * 空队列等待走「置 parked 标记 → 二次 poll → park」协议，生产端 offer 后
+ * 见标记即 unpark，无丢失唤醒（顺序论证见 {@link WorkerThread#run()}）。
  * <p>
  * 分组键语义：携带相同 stripeKey 的任务按身份哈希固定到同一工作线程，保证串行
  * （战机编队共享 {@code FighterWing} 状态，同编队战机 AI 不得并行）；无键任务
@@ -57,7 +64,13 @@ public final class AiParallelExecutorImpl implements AiParallelExecutor {
             idx = (roundRobin.getAndIncrement() & 0x7fffffff) % workers.length;
         }
         pending.incrementAndGet();
-        workers[idx].queue.offer(task);
+        final WorkerThread worker = workers[idx];
+        worker.queue.offer(task);
+        // 唤醒协议生产端：offer 先于 parked 读；若读到 true 则 worker 尚未 park
+        // 或已 park——unpark 对未 park 线程无副作用（其后的 park 立即返回）
+        if (worker.parked) {
+            LockSupport.unpark(worker);
+        }
     }
 
     @Override
@@ -135,9 +148,17 @@ public final class AiParallelExecutorImpl implements AiParallelExecutor {
     /**
      * AI 工作线程。任务异常必须记录（任务 + 异常）并上报到主线程屏障降级，
      * 禁止静默吞没。
+     * <p>
+     * 空转等待协议（防丢失唤醒）：消费者 poll 到空 → 置 {@link #parked} →
+     * 二次 poll → 仍空才 park。生产端 offer 后读 {@link #parked}：若读到
+     * false，则 offer 先行发生于消费者二次 poll 之前（volatile 顺序），
+     * 二次 poll 必见任务不会入睡；若读到 true 则 unpark 兜底。
      */
     private final class WorkerThread extends Thread {
-        private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+        /** 任务队列：MPSC 无界数组队列（生产者：主线程分发循环；消费者：本线程）。 */
+        private final MpscUnboundedArrayQueue<Runnable> queue = new MpscUnboundedArrayQueue<>(64);
+        /** park 标记（生产端据此决定 unpark）；仅本线程写、生产线程读。 */
+        private volatile boolean parked;
 
         WorkerThread(String name) {
             super(name);
@@ -146,26 +167,42 @@ public final class AiParallelExecutorImpl implements AiParallelExecutor {
         @Override
         public void run() {
             while (true) {
-                Runnable task;
-                try {
-                    task = queue.take();
-                } catch (InterruptedException e) {
-                    LOGGER.warn("[SSOptimizer] AI worker interrupted, continuing", e);
-                    continue;
+                Runnable task = queue.poll();
+                if (task == null) {
+                    parked = true;
+                    task = queue.poll();
+                    if (task == null) {
+                        LockSupport.park();
+                        parked = false;
+                        continue;
+                    }
+                    parked = false;
                 }
-                try {
-                    task.run();
-                } catch (Throwable t) {
-                    LOGGER.error("[SSOptimizer] Ship AI task failed", t);
+                execute(task);
+            }
+        }
+
+        /** 执行单个任务：异常记录到 failures 待降级重跑；成功的池化任务归还池。 */
+        private void execute(final Runnable task) {
+            boolean success = false;
+            try {
+                task.run();
+                success = true;
+            } catch (Throwable t) {
+                LOGGER.error("[SSOptimizer] Ship AI task failed", t);
+                synchronized (completionLock) {
+                    failures.add(new TaskFailure(task, t));
+                }
+            } finally {
+                if (pending.decrementAndGet() == 0) {
                     synchronized (completionLock) {
-                        failures.add(new TaskFailure(task, t));
+                        completionLock.notifyAll();
                     }
-                } finally {
-                    if (pending.decrementAndGet() == 0) {
-                        synchronized (completionLock) {
-                            completionLock.notifyAll();
-                        }
-                    }
+                }
+                // 仅成功任务归还池：失败任务被 failures 引用等待主线程重跑，
+                // 归还后字段会被下次 acquire 覆写（见 PooledAiTask javadoc）
+                if (success && task instanceof PooledAiTask pooled) {
+                    PooledAiTask.release(pooled);
                 }
             }
         }
