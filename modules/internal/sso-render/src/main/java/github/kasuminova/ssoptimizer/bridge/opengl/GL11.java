@@ -41,10 +41,20 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *       glGetString 的五类结果（供应商/渲染器/版本/扩展/着色语言版本）在同一
  *       GL context 生命周期内不变，首次阻塞取回后录制侧缓存——游戏的
  *       SpriteBatch 每次构造都经此探测 VBO 能力，不缓存会打成稳态热点；</li>
- *   <li>display list（glNewList/glEndList/glCallList）：本阶段按普通命令入队
- *       ——即「渲染线程直接执行真实 display list 编译/调用」，语义等价于单线程，
- *       只是 display list 本体编译发生在渲染线程。ListManager 式命令帧重放
- *       （编译期展开为命令序列、跨帧复用）留待后续轮次。</li>
+ *   <li>display list（glNewList/glEndList/glCallList）：按普通命令入队——即
+ *       「渲染线程直接执行真实 display list 编译/调用」，语义等价于单线程，
+ *       只是 display list 本体编译发生在渲染线程。渲染线程在编译窗口
+ *       （glNewList..glEndList 命令执行序之间）内把<b>全部数据类命令</b>强制
+ *       切到逐指令 immediate 回放：display list 编译对客户端数组按指针捕获、
+ *       不回拷数据，{@link VertexArrayBatch} 的共享缓冲与 {@link DrawCommand}
+ *       的池化 pointer 快照跨批次复用都会使列表回放读到陈旧内容（舰船图标
+ *       串图 / 字体阴影层级反转的根因面），immediate 调用则按数据捕获、回放
+ *       正确。窗口内顶点批次（{@link VertexBatchCommand}）禁止排干合并器
+ *       （陈旧 current 值回同步会被列表按值捕获）；{@link DrawCommand} 的
+ *       buffer 形式快照由 {@link DrawCommandImmediateDecoder} 解码为 immediate
+ *       调用重放，VBO 偏移形式保持原样（服务器端数据，指针捕获语义正确）。
+ *       ListManager 式命令帧重放（编译期展开为命令序列、跨帧复用）留待后续
+ *       轮次。</li>
  * </ul>
  * 后续阶段计划：immediate 顶点流被顶点拦截器当场变换进批量缓冲（glEnd 转
  * draw 命令，取代本步的逐指令回放）；矩阵操作改走主线程 CPU 仿真栈不再产生
@@ -951,13 +961,24 @@ public final class GL11 {
     /**
      * 本阶段录制语义：渲染线程执行到本命令时才编译真实 display list——
      * glNewList 到 glEndList 之间的命令在队列中天然有序，编译结果与单线程一致。
+     * <p>
+     * 命令体在渲染线程进入编译窗口前先递增编译深度（{@link BridgeSupport}）：
+     * 编译窗口内的顶点批次必须逐指令 immediate 回放（display list 对客户端
+     * 数组按指针捕获，数组化共享缓冲跨批次复用会在列表回放时读到陈旧数据，
+     * 见 {@link BridgeSupport#isCompilingDisplayList()}）。
      */
     public static void glNewList(int list, int mode) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glNewList(list, mode));
+        BridgeSupport.enqueue(() -> {
+            BridgeSupport.onDisplayListCompileStart();
+            org.lwjgl.opengl.GL11.glNewList(list, mode);
+        });
     }
 
     public static void glEndList() {
-        BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glEndList);
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL11.glEndList();
+            BridgeSupport.onDisplayListCompileEnd();
+        });
     }
 
     public static void glCallList(int list) {

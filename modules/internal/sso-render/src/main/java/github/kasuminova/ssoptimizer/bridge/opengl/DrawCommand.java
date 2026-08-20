@@ -78,6 +78,25 @@ final class DrawCommand implements GlCommand {
     @Override
     public void execute() {
         try {
+            if (BridgeSupport.isCompilingDisplayList() && DrawCommandImmediateDecoder.canDecode(group)) {
+                // display list 编译窗口内：客户端数组按指针捕获、不回拷数据——
+                // buffer 形式快照是池化缓冲，draw 执行后归还池复用，列表重放会
+                // 读到陈旧内容（与 VertexArrayBatch 共享缓冲同类问题）。把快照
+                // 数据解码为 immediate 调用（按值捕获），见
+                // {@link DrawCommandImmediateDecoder}。VBO 偏移形式（canDecode
+                // 返回 false）走下方常规路径：服务器端数据指针捕获语义正确。
+                switch (variant) {
+                    case DRAW_ARRAYS -> DrawCommandImmediateDecoder.replayDrawArrays(
+                            group, a, b, c, ImmediateVertexSink.INSTANCE);
+                    case DRAW_ELEMENTS_SNAPSHOT -> DrawCommandImmediateDecoder.replayDrawElements(
+                            group, a, indexSnapshot, indexView, ImmediateVertexSink.INSTANCE);
+                    case ARRAY_ELEMENT -> DrawCommandImmediateDecoder.replayArrayElement(
+                            group, a, ImmediateVertexSink.INSTANCE);
+                    default -> throw new IllegalStateException(
+                            "[SSOptimizer] 编译窗口内 draw 变体不可解码：" + variant);
+                }
+                return;
+            }
             group.apply();
             switch (variant) {
                 case DRAW_ARRAYS -> org.lwjgl.opengl.GL11.glDrawArrays(a, b, c);

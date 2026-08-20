@@ -8,6 +8,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.ProbeSiteCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
+import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
 
 import java.nio.ByteBuffer;
@@ -33,6 +34,8 @@ import java.util.function.IntSupplier;
  * 池实现本身线程安全（录制在多生产者线程、归还在渲染线程）。
  */
 final class BridgeSupport {
+    private static final Logger LOGGER = Logger.getLogger(BridgeSupport.class);
+
     /**
      * 状态命令去重开关：{@code -Dssoptimizer.render.statededup=false} 关闭，
      * 默认开启（连续相同的高频状态命令只入队一次，见 {@link StateDedup}）。
@@ -95,6 +98,21 @@ final class BridgeSupport {
      * 在渲染线程读写。
      */
     private static volatile int executedArrayBufferBinding;
+    /**
+     * 渲染线程侧簿记：display list 编译窗口的嵌套深度（glNewList/glEndList 命令
+     * 体在渲染线程执行序上增减）。GL 规范中 display list 编译对客户端数组
+     * （glVertexPointer/glTexCoordPointer 等）按<b>指针捕获</b>、不回拷数据——
+     * {@link VertexArrayBatch} 的共享单例直接缓冲跨批次复用，列表回放时
+     * {@code glDrawArrays} 会读到后续批次覆盖的内容（实机症状：对话框舰队
+     * 列表舰船图标串图）。编译窗口内的顶点批次因此必须逐指令 immediate 回放
+     * （glBegin/glVertex/glEnd 按数据捕获，回放正确）。
+     * <p>
+     * 归渲染线程执行序：glNewList/glEndList 命令的入队与执行之间隔着帧边界
+     * （命令在录制线程入队、渲染线程下一帧执行），录制侧维护会在入队序上
+     * 提前改变状态；此处由命令执行体维护，命令流当前位置的编译深度恒准确，
+     * 编译窗口跨帧也正确保持。
+     */
+    private static volatile int displayListCompileDepth;
 
     private static volatile RenderQueue queue;
 
@@ -116,6 +134,7 @@ final class BridgeSupport {
         RECORDING_CONTEXT.remove();
         mainRecordingContext = null;
         executedArrayBufferBinding = 0;
+        displayListCompileDepth = 0;
         drawCommands = new CommandPool<>(DrawCommand::new);
         vertexBatches = new CommandPool<>(VertexBatchCommand::new);
         snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
@@ -498,6 +517,40 @@ final class BridgeSupport {
     /** 渲染线程簿记更新（bind 命令执行体调用）。 */
     static void executedArrayBufferBinding(int buffer) {
         executedArrayBufferBinding = buffer;
+    }
+
+    /**
+     * 渲染线程侧：进入 display list 编译窗口（glNewList 命令体调用）。
+     * 嵌套计数：display list 编译期间的 glNewList（合法场景为嵌套列表编译，
+     * 或异常序列）正确累加；窗口内深度恒 >0，跨帧保持。
+     */
+    static void onDisplayListCompileStart() {
+        displayListCompileDepth++;
+    }
+
+    /**
+     * 渲染线程侧：离开 display list 编译窗口（glEndList 命令体调用）。
+     * 深度归零后渲染线程恢复数组化回放（编译窗口外行为完全不变）。
+     */
+    static void onDisplayListCompileEnd() {
+        if (displayListCompileDepth <= 0) {
+            // 防御：glEndList 命令体先于 glNewList 出现（非法 GL 序列或命令流被
+            // 帧边界/悬挂切割的异常态）——深度已归零时不得继续递减（负数会让
+            // 后续批次误判「编译中」恒真）。此路径不产生真实 GL 调用，仅簿记
+            // 提前损坏，记 WARN 便于诊断命令流异常。
+            if (displayListCompileDepth < 0) {
+                LOGGER.warn("[SSOptimizer] display list 编译深度异常为负（" + displayListCompileDepth
+                        + "），复位为 0——命令流中 glEndList 多于 glNewList，GL 序列疑似非法");
+            }
+            displayListCompileDepth = 0;
+            return;
+        }
+        displayListCompileDepth--;
+    }
+
+    /** 渲染线程侧：当前命令流位置是否处于 display list 编译窗口内。 */
+    static boolean isCompilingDisplayList() {
+        return displayListCompileDepth > 0;
     }
 
     /** 缓冲快照池（包内与单测可见）。 */

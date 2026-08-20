@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.TextureObject;
+import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvMapper;
 import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvState;
 import github.kasuminova.ssoptimizer.api.loading.WeaponAtlasLookup;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
@@ -29,7 +30,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *       空间」换算到「图集 GL 空间」：
  *       {@code texX' = (region.x + texX * srcW) / atlasSize}（Y/宽/高同理，
  *       srcW/srcH 为原纹理 GL 尺寸，由 imageWidth/uScale 推得），并置重映射标记；
- *       sprite.texture 引用保持原对象（imageWidth/平均色等元数据消费者不受影响）；</li>
+ *       sprite.texture 引用保持原对象（imageWidth/平均色等元数据消费者不受影响）。</li>
+ *   <li>同贴图重复 {@code setTexture} 的<b>幂等重推导</b>：原版 setTexture
+ *       只重置 texWidth/texHeight、不重置 texX/texY，重复调用时 texX/texY 仍
+ *       是上次换算后的图集值，若继续按当前值换算会二次平移进入相邻图集
+ *       Region（实机触发点：Ship.shadow.setTexture 在动画路径二次调用，舰船
+ *       图标串图）。本 Mixin 缓存「首次换算时的原始 texX/texY/texWidth/texHeight
+ *       + 原贴图路径」，同贴图重复 setTexture 且 texX/texY 未被 setTexX/setTexY
+ *       改动时从缓存原始值重新推导（结果与首次一致）；<b>换贴图</b>（新贴图
+ *       路径与缓存不同）时当前 texX/texY 是旧贴图的图集空间值，先把它们复位
+ *       为原版默认 (0,0) 再建立新基准（否则旧图集偏移会被当成新贴图的原始
+ *       UV，二次平移进相邻 Region）；落到非图集纹理 / 解绑时重置缓存
+ *       （见 {@link AtlasUvMapper} 的幂等性契约）。</li>
  *   <li>{@code renderNoBlendOrRotate}/{@code renderAtCenterWithCornerColors}
  *       两个方法的 {@code glTexCoord2f} 调用对<b>已重映射</b>的精灵补上
  *       texX/texY 原点偏移——原版这两个方法假设 UV 原点为 (0,0)
@@ -67,13 +79,73 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     @Unique
     private float ssoptimizer$atlasInsetV;
 
+    // ── 幂等重推导缓存（同贴图重复 setTexture 的 UV 二次平移防护，见类 javadoc）──
+    /** 幂等缓存是否已建立（存在「原始 UV 四元组 + 原贴图路径」基准）。 */
+    @Unique
+    private boolean ssoptimizer$atlasOriginCached;
+    /** 幂等基准：首次换算时的原始纹理空间 texX（缓存建立时的当前值）。 */
+    @Unique
+    private float ssoptimizer$atlasOriginTexX;
+    /** 幂等基准：首次换算时的原始纹理空间 texY。 */
+    @Unique
+    private float ssoptimizer$atlasOriginTexY;
+    /** 幂等基准：首次换算时的原始纹理空间 texWidth（原版 setTexture 重置后的值）。 */
+    @Unique
+    private float ssoptimizer$atlasOriginTexWidth;
+    /** 幂等基准：首次换算时的原始纹理空间 texHeight。 */
+    @Unique
+    private float ssoptimizer$atlasOriginTexHeight;
+    /** 幂等基准：原贴图路径（同贴图重复 setTexture 的标识）。 */
+    @Unique
+    private String ssoptimizer$atlasOriginTexturePath;
+    /** 上次换算产出的图集 texX（判定 texX/texY 是否被 setTexX/setTexY 改动过）。 */
+    @Unique
+    private float ssoptimizer$atlasLastTexX;
+    /** 上次换算产出的图集 texY。 */
+    @Unique
+    private float ssoptimizer$atlasLastTexY;
+
     /**
      * @author KasumiNova
-     * @reason 已入图集的贴图在 setTexture 时把 UV 映射进图集区域。
+     * @reason 已入图集的贴图在 setTexture 时把 UV 映射进图集区域；同贴图重复
+     * setTexture 从幂等缓存原始值重新推导（原版只重置 texWidth/texHeight、
+     * 不重置 texX/texY，按当前图集值再换算会二次平移——串图根因）。
      */
     @Inject(method = "setTexture", at = @At("RETURN"), remap = false)
     private void ssoptimizer$remapToAtlas(final TextureObject newTexture, final CallbackInfo ci) {
-        this.ssoptimizer$atlasRemapped = newTexture != null && ssoptimizer$remap(newTexture);
+        if (newTexture == null) {
+            // 解绑纹理：重映射状态与幂等缓存一并清除
+            this.ssoptimizer$atlasRemapped = false;
+            this.ssoptimizer$clearAtlasOriginCache();
+            return;
+        }
+        if (this.ssoptimizer$atlasOriginCached
+                && this.ssoptimizer$atlasOriginTexturePath.equals(newTexture.getTexturePath())
+                && this.texX == this.ssoptimizer$atlasLastTexX
+                && this.texY == this.ssoptimizer$atlasLastTexY) {
+            // 同贴图重复 setTexture 且 texX/texY 未被 setTexX/setTexY 改动：
+            // 当前 texX/texY 仍是上次换算后的图集值（原版不重置），必须从缓存
+            // 原始值重新推导；texWidth/texHeight 已由原版重置为原始空间值，
+            // 与缓存基准一致
+            this.ssoptimizer$atlasRemapped = this.ssoptimizer$remapFromOrigin(newTexture);
+            return;
+        }
+        // 首次 / 换贴图 / texX/texY 被 setTexX/setTexY 改过：texWidth/texHeight
+        // 刚被原版重置为原始空间值，texX/texY 为原始空间值（换贴图时若遗留
+        // 旧图集值，是原版「setTexture 不重置 texX/texY」的既有语义，调用方
+        // 负责）——缓存当前四元组作为新的原始基准后换算。
+        // 换贴图特判：若幂等缓存持有的是<b>另一张贴图</b>（缓存存在即旧贴图
+        // 曾命中图集并完成重映射），当前 texX/texY 是旧贴图的图集空间值——
+        // 直接作为新贴图的「原始基准」会在换算时二次平移进入相邻图集 Region
+        // （修复前 setTexture 幂等化只覆盖了同贴图重复调用，换贴图路径漏网）。
+        // 原版 setTexture 不重置 texX/texY，全贴图精灵的默认原点就是 (0,0)；
+        // 先复位再建基准，与「新精灵首次 setTexture」的结果一致。
+        if (this.ssoptimizer$atlasOriginCached
+                && !this.ssoptimizer$atlasOriginTexturePath.equals(newTexture.getTexturePath())) {
+            this.texX = 0.0F;
+            this.texY = 0.0F;
+        }
+        this.ssoptimizer$atlasRemapped = this.ssoptimizer$cacheOriginAndRemap(newTexture);
     }
 
     /**
@@ -82,7 +154,13 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
      */
     @Inject(method = "readResolve", at = @At("RETURN"), remap = false)
     private void ssoptimizer$remapToAtlasAfterDeserialize(final CallbackInfoReturnable<Object> cir) {
-        this.ssoptimizer$atlasRemapped = this.texture != null && ssoptimizer$remap(this.texture);
+        if (this.texture == null) {
+            this.ssoptimizer$atlasRemapped = false;
+            this.ssoptimizer$clearAtlasOriginCache();
+            return;
+        }
+        // 新反序列化对象无缓存：以当前 UV（原始空间）建立基准后换算
+        this.ssoptimizer$atlasRemapped = this.ssoptimizer$cacheOriginAndRemap(this.texture);
     }
 
     /**
@@ -140,28 +218,63 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     }
 
     /**
-     * 把当前 UV 四字段从原纹理 GL 空间换算到图集 GL 空间。
-     * 原纹理 GL 尺寸 = imageSize / uvScale（uScale = imageWidth / textureWidth）。
+     * 把当前 UV 四字段作为「原始纹理 GL 空间」基准缓存，并换算到图集 GL 空间。
+     * 供 setTexture/readResolve 注入点的首次换算与换贴图路径调用。
      *
+     * @param source 当前贴图（调用点已判非 null）
      * @return 命中图集并完成重映射返回 true
      */
-    private boolean ssoptimizer$remap(final TextureObject source) {
+    private boolean ssoptimizer$cacheOriginAndRemap(final TextureObject source) {
+        this.ssoptimizer$atlasOriginCached = true;
+        this.ssoptimizer$atlasOriginTexturePath = source.getTexturePath();
+        this.ssoptimizer$atlasOriginTexX = this.texX;
+        this.ssoptimizer$atlasOriginTexY = this.texY;
+        this.ssoptimizer$atlasOriginTexWidth = this.texWidth;
+        this.ssoptimizer$atlasOriginTexHeight = this.texHeight;
+        return this.ssoptimizer$remapFromOrigin(source);
+    }
+
+    /** 清除幂等缓存（解绑纹理 / 落到非图集纹理时调用，避免陈旧基准误导后续重推导）。 */
+    private void ssoptimizer$clearAtlasOriginCache() {
+        this.ssoptimizer$atlasOriginCached = false;
+        this.ssoptimizer$atlasOriginTexturePath = null;
+    }
+
+    /**
+     * 从幂等缓存中的原始 UV 四元组换算到图集 GL 空间（计算本体委托
+     * {@link AtlasUvMapper#remapFromOrigin}，见其幂等性契约）。
+     *
+     * @param source 当前贴图（调用点已判非 null）
+     * @return 命中图集并完成重映射返回 true
+     */
+    private boolean ssoptimizer$remapFromOrigin(final TextureObject source) {
         final WeaponAtlasLookup.Region region = ServiceRegistry.require(WeaponAtlasLookup.class)
                 .lookupRegion(source.getTexturePath());
         if (region == null) {
+            // 未入图集：维持原始 UV，并清除缓存——后续同贴图 setTexture 时
+            // 重新从当前值评估（图集在运行时才构建完成，加载早期贴图可能先
+            // 未入图集后入图集）
+            this.ssoptimizer$clearAtlasOriginCache();
             return false;
         }
         final float srcW = source.getImageWidth() / source.getUScale();
         final float srcH = source.getImageHeight() / source.getVScale();
-        final float atlasSize = region.atlasSize();
-        this.texX = (region.x() + this.texX * srcW) / atlasSize;
-        this.texY = (region.y() + this.texY * srcH) / atlasSize;
-        this.texWidth = this.texWidth * srcW / atlasSize;
-        this.texHeight = this.texHeight * srcH / atlasSize;
+        final AtlasUvMapper.RemappedUv uv = AtlasUvMapper.remapFromOrigin(
+                this.ssoptimizer$atlasOriginTexX, this.ssoptimizer$atlasOriginTexY,
+                this.ssoptimizer$atlasOriginTexWidth, this.ssoptimizer$atlasOriginTexHeight,
+                srcW, srcH, region.x(), region.y(), region.atlasSize());
+        this.texX = uv.texX();
+        this.texY = uv.texY();
+        this.texWidth = uv.texWidth();
+        this.texHeight = uv.texHeight();
         // 原版 renderRegion 的 0.001F 边缘内缩以原纹理 UV 域为基准（= 0.001 * srcW 像素），
         // 换算到图集 UV 域保持像素等价
-        this.ssoptimizer$atlasInsetU = 0.001F * srcW / atlasSize;
-        this.ssoptimizer$atlasInsetV = 0.001F * srcH / atlasSize;
+        this.ssoptimizer$atlasInsetU = uv.insetU();
+        this.ssoptimizer$atlasInsetV = uv.insetV();
+        // 记录本次产出的图集 texX/texY：下次 setTexture 判定 texX/texY 是否被
+        // setTexX/setTexY 改动过（未改动才走幂等路径）
+        this.ssoptimizer$atlasLastTexX = this.texX;
+        this.ssoptimizer$atlasLastTexY = this.texY;
         return true;
     }
 }
