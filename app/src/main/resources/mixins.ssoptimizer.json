@@ -79,6 +79,7 @@
     "render.TexturedStripRendererMixin",
     "save.BaseTiledTerrainMixin",
     "save.CampaignSaveProgressDialogMixin",
+    "save.CampaignSaveProgressInputStreamMixin",
     "save.CampaignSaveProgressOutputStreamMixin",
     "save.HyperspaceAutomatonMixin",
     "save.Txw2IndentingXmlStreamWriterMixin",

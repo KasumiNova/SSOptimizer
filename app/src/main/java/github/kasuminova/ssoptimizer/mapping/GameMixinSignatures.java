@@ -43,6 +43,18 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 保存进度输入流（读档进度）Mixin 签名常量。
+     */
+    public static final class SaveProgressInputStream {
+        public static final String TARGET_CLASS = "com.fs.starfarer.util.SaveProgressInputStream";
+        public static final String UPDATE_PROGRESS = "updateProgress(Z)V";
+        public static final String MARK_COMPLETE = "markComplete()V";
+
+        private SaveProgressInputStream() {
+        }
+    }
+
+    /**
      * 市场商品事件修正 Mixin 签名常量。
      */
     public static final class CommodityOnMarket {

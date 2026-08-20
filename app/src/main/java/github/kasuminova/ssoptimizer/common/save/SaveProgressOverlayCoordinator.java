@@ -3,6 +3,8 @@ package github.kasuminova.ssoptimizer.common.save;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
 import com.fs.starfarer.campaign.save.CampaignSaveProgressDialog;
+import github.kasuminova.ssoptimizer.bridge.opengl.RenderThreadDispatch;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.lwjgl.opengl.GLContext;
@@ -18,7 +20,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * 设计动机：原版将保存 UI 的 render 与 {@code OutputStream.write(...)} 紧耦合，导致一旦真实写出落到后台线程，
  * 就会在无 OpenGL 上下文的线程里调用渲染代码并崩溃。<br>
  * 兼容性策略：后台线程只更新状态，不直接触碰原版 UI；真正的原版界面回调只允许在当前线程持有 OpenGL
- * 上下文时发生，并且按目标刷新率节流，避免重新落回“每写一点就重画一次”的旧模型。
+ * 上下文时发生，并且按目标刷新率节流，避免重新落回“每写一点就重画一次”的旧模型。<br>
+ * 渲染线程分离模式（{@link RenderThreadMode}）下 GL 上下文只存在于渲染线程，回放体整体经
+ * {@link RenderThreadDispatch} 路由到渲染线程执行（阻塞等待）：原版 UI 的 GLListManager 等静态渲染
+ * 状态回归单线程一致，不再被主线程与渲染线程的在飞帧交错打破。
  */
 public final class SaveProgressOverlayCoordinator {
     private static final Logger LOGGER = Logger.getLogger(SaveProgressOverlayCoordinator.class);
@@ -263,13 +268,14 @@ public final class SaveProgressOverlayCoordinator {
     }
 
     /**
-    * 若当前线程持有 OpenGL 上下文，则按节流策略重放一帧原版保存进度界面。
+    * 若当前可安全渲染（非 RT 模式要求当前线程持有 OpenGL 上下文；RT 模式路由到渲染线程），
+    * 则按节流策略重放一帧原版保存进度界面。
      */
     public static void maybePumpFrame() {
         if (Boolean.getBoolean(DISABLE_SAVE_OVERLAY_PROPERTY)) {
             return;
         }
-        if ((!active && !completed) || !hasCurrentOpenGlContext() || RENDER_GUARD.get()) {
+        if ((!active && !completed) || RENDER_GUARD.get()) {
             return;
         }
 
@@ -294,6 +300,36 @@ public final class SaveProgressOverlayCoordinator {
             return;
         }
 
+        if (RenderThreadMode.isEnabled()) {
+            // RT 模式下 GL 上下文只存在于渲染线程，「当前线程持有上下文」的检查必然失效
+            // （bridge GLContext 的能力缓存对任意线程返回非空）；回放体整体路由到渲染线程
+            // 执行（阻塞等待），REPLAY_GUARD/RENDER_GUARD 在任务体内设置（ThreadLocal 只在
+            // 执行线程上生效），回放内部的 GL 调用照常走 bridge 录制——原版 UI 的
+            // GLListManager 等静态渲染状态回归单线程一致，不再被在飞帧跨线程交错打破。
+            try {
+                RenderThreadDispatch.runBlocking(() -> replayFrame(currentDialog, snapshot, sequence, now));
+            } catch (final Throwable throwable) {
+                LOGGER.error("[SSOptimizer] 保存/读档进度渲染线程回放调度失败，已自动回退为无 UI 保底模式", throwable);
+                clearState();
+            }
+            return;
+        }
+
+        if (!hasCurrentOpenGlContext()) {
+            return;
+        }
+        replayFrame(currentDialog, snapshot, sequence, now);
+    }
+
+    /**
+    * 在当前线程重放一帧原版保存进度界面（调用方负责确保当前线程可安全渲染）。
+    * 回放期间经 {@link #RENDER_GUARD}/{@link #REPLAY_GUARD} 防重入；失败时回退为
+    * 无 UI 保底模式（保存本身不受影响）。
+    */
+    private static void replayFrame(final CampaignSaveProgressDialog currentDialog,
+                                    final SaveProgressSnapshot snapshot,
+                                    final long sequence,
+                                    final long now) {
         RENDER_GUARD.set(true);
         try {
             REPLAY_GUARD.set(true);
@@ -309,7 +345,7 @@ public final class SaveProgressOverlayCoordinator {
                 clearState();
             }
         } catch (final Throwable throwable) {
-            LOGGER.error("[SSOptimizer] 保存/读档进度主线程重放原版界面失败，已自动回退为无 UI 保底模式", throwable);
+            LOGGER.error("[SSOptimizer] 保存/读档进度重放原版界面失败，已自动回退为无 UI 保底模式", throwable);
             clearState();
         } finally {
             REPLAY_GUARD.set(false);
@@ -328,10 +364,18 @@ public final class SaveProgressOverlayCoordinator {
 
     /**
      * 判断当前线程是否持有可用于原版保存/读档界面渲染的 OpenGL 上下文。
+     * <p>
+     * RT 模式下唯一持有 GL 上下文的是渲染线程，而渲染线程上的原版回调已由
+     * {@link #isReplayInProgress()} 短路放行；走到本方法的调用必然来自无上下文线程
+     * （bridge GLContext 的能力缓存对任意线程返回非空，不能做判据），直接返回
+     * {@code false} 让原版内联渲染被取消，改由协调器路由到渲染线程回放。
      *
      * @return 若当前线程持有 OpenGL 上下文则返回 {@code true}
      */
     public static boolean hasActiveOpenGlContext() {
+        if (RenderThreadMode.isEnabled()) {
+            return false;
+        }
         return hasCurrentOpenGlContext();
     }
 

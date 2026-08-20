@@ -14,7 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * 注入动机：原版会在该类的进度回调里直接执行 Sprite/UI 渲染与 {@code Display.update()}，
  * 一旦底层写出迁移到后台线程，就会在无 OpenGL 上下文的线程里崩溃。<br>
  * 注入效果：保留原版的状态文本与进度语义，但不再在后台线程的回调现场渲染，而是把状态转交给
- * {@link SaveProgressOverlayCoordinator}，再由主线程重放原版对话框方法。
+ * {@link SaveProgressOverlayCoordinator}，再由持有 GL 上下文的线程重放原版对话框方法
+ * （RT 模式下为渲染线程，见协调器的 RT 路由分支）。
  */
 @Mixin(targets = GameMixinSignatures.CampaignSaveProgressDialog.TARGET_CLASS)
 public abstract class CampaignSaveProgressDialogMixin {
