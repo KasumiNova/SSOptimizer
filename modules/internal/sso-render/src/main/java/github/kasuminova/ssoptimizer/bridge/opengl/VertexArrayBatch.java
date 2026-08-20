@@ -499,10 +499,41 @@ final class VertexArrayBatch implements VertexSink {
         segmentCount = 0;
     }
 
+    /**
+     * 相邻 DRAW 合并的图元边界资格判定。
+     * <p>
+     * 离散型图元（POINTS/LINES/TRIANGLES/QUADS）的每图元顶点数固定，合并只是
+     * 把顶点序列接续——前一段顶点数必须是每图元顶点数的整数倍（前段末尾恰落在
+     * 图元边界上），合并后各图元配对才与分开绘制一致。若前一段顶点数不对齐
+     * （如 GL_LINES 奇数顶点），分开绘制时末尾未配对顶点被 GL 忽略，合并后该
+     * 顶点会与后一段首顶点错误配对、后续图元整体偏移一位——实机「线段对角
+     * 交叉」症状（战役地图刻度线交叉错乱、战斗目标框画成 X 形）的根因。
+     * <p>
+     * 连续型图元（LINE_STRIP/LINE_LOOP/TRIANGLE_STRIP/TRIANGLE_FAN/
+     * QUAD_STRIP/POLYGON）的图元结构跨段延续，合并会在两段顶点之间引入额外的
+     * 连接图元（如两个 LINE_STRIP 合并后中间多出一条连线），无论顶点数是否
+     * 对齐都不安全，一律不合并；未知图元模式按不安全处理。
+     *
+     * @param mode      前一段的图元模式（与当前段相同，调用方已校验）
+     * @param prevCount 前一段的顶点数
+     */
+    private static boolean canMergeDraw(final int mode, final int prevCount) {
+        final int stride = switch (mode) {
+            case GL11.GL_POINTS -> 1;
+            case GL11.GL_LINES -> 2;
+            case GL11.GL_TRIANGLES -> 3;
+            case GL11.GL_QUADS -> 4;
+            default -> 0;
+        };
+        return stride > 0 && prevCount % stride == 0;
+    }
+
     private void addOp(final int kind, final int a, final int b, final int c, final int flags) {
         if (kind == OP_DRAW) {
             // 相邻 DRAW 合并：同图元模式/属性标志、顶点区间相邻，且中间仅隔着
-            // 已抵消（OP_NOOP）的状态对——NOOP 对净状态为零，跨它合并等价。
+            // 已抵消（OP_NOOP）的状态对——NOOP 对净状态为零，跨它合并等价；
+            // 且前一段顶点数须与图元边界对齐（见 canMergeDraw）——否则合并后
+            // 顶点配对整体偏移，产生跨段错误图元（实机「线段对角交叉」根因）。
             int prev = opCount - 1;
             while (prev >= 0 && ops[prev * OP_STRIDE] == OP_NOOP) {
                 prev--;
@@ -510,7 +541,8 @@ final class VertexArrayBatch implements VertexSink {
             if (prev >= 0 && ops[prev * OP_STRIDE] == OP_DRAW
                     && ops[prev * OP_STRIDE + 1] == a
                     && opFlags[prev] == flags
-                    && ops[prev * OP_STRIDE + 2] + ops[prev * OP_STRIDE + 3] == b) {
+                    && ops[prev * OP_STRIDE + 2] + ops[prev * OP_STRIDE + 3] == b
+                    && canMergeDraw(a, ops[prev * OP_STRIDE + 3])) {
                 ops[prev * OP_STRIDE + 3] += c;
                 drawStamp++;
                 return;
