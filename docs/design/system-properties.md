@@ -116,6 +116,7 @@
 | `ssoptimizer.disable.save.terrain.zstd` | `false` | 禁用地形 tile Zstd 写入格式（回退原版 Deflater 载荷） | `common/save/TerrainTileCompressionHelper.java:176` |
 | `ssoptimizer.disable.save.progress.overlay` | `false` | 禁用保存/读档进度界面回放 | `common/save/SaveProgressOverlayCoordinator.java:85,124,149,166,202,232,255,275` |
 | `ssoptimizer.save.progress.fps` | `0`（≤0 时按显示器刷新率） | 覆盖保存/读档进度界面目标刷新率（fps） | `common/save/SaveProgressOverlayCoordinator.java:418` |
+| `ssoptimizer.save.modloadtiming` | `false` | 读档后处理阶段模组 `onGameLoad` 逐项计时（读档结束输出 TOP 15 汇总日志） | `common/save/ModPluginLoadTimer.java` |
 
 ## 渲染
 
@@ -166,6 +167,11 @@
 | `ssoptimizer.automation.scenario` | `"arc_flare_aod7_basic"` | 自动化场景 ID | `common/automation/AutomationConfig.java:40` |
 | `ssoptimizer.automation.outputDir` | `""`（空 → `<工作目录>/ssoptimizer-automation-output`） | 自动化输出目录（截图、telemetry） | `common/automation/AutomationConfig.java:41-44` |
 | `ssoptimizer.automation.requireScreenshotFile` | `false` | 强制要求真实截图文件（验收验证用） | `common/automation/AutomationConfig.java:45` |
+| `ssoptimizer.automation.saveload.saveDir` | 无（必填，否则报错退出） | `save_load_cycle` 场景的目标存档目录名（`<游戏目录>/saves/` 下）或绝对路径 | `common/automation/SaveLoadCycleDriver.java` |
+| `ssoptimizer.automation.saveload.settleFrames` | `30` | 标题界面稳定帧数，达到后才触发读档 | `common/automation/SaveLoadCycleDriver.java` |
+| `ssoptimizer.automation.saveload.saveAfterLoad` | `true` | 读档成功后是否立即执行完整保存（写侧基线采集） | `common/automation/SaveLoadCycleDriver.java` |
+
+> `save_load_cycle` 场景（`ssoptimizer.automation.scenario=save_load_cycle`）：标题界面直接同步读档并计时，随后（默认）执行一次完整保存，遥测写入 `<outputDir>/saveload-telemetry.json`（含 `success`/`loadMs`/`unmarshalMs`/`saveMs`/`saveError`/`error`），随后自动退出（成功 exit 0，保存失败 exit 3）。用于存档读写性能基准与回归冒烟，与 mission 类场景互斥分发（见 `mixin/automation/TitleScreenAutomationMixin.java`）。写侧会真实覆写目标存档目录，`tools/save_load_smoke.sh` 会先把目标存档复制为 `_ssbench` 后缀的 scratch 副本再运行。
 
 ## native
 

@@ -55,6 +55,20 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 战役存档管理器 Mixin 签名常量。
+     */
+    public static final class CampaignGameManager {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.save.CampaignGameManager";
+        /** 五参完整读档入口（注意 CampaignUI 是 CampaignEngine 的内部接口）。 */
+        public static final String LOAD_GAME = "loadGame(Ljava/lang/String;Lcom/fs/starfarer/campaign/CampaignListener;Lcom/fs/starfarer/campaign/CampaignEngine$CampaignUI;ZZ)Ljava/lang/String;";
+        /** 读档后模组插件回调调用点（阶段33 的 onGameLoad(false) 循环）。 */
+        public static final String MOD_PLUGIN_ON_GAME_LOAD = "Lcom/fs/starfarer/api/ModPlugin;onGameLoad(Z)V";
+
+        private CampaignGameManager() {
+        }
+    }
+
+    /**
      * 市场商品事件修正 Mixin 签名常量。
      */
     public static final class CommodityOnMarket {
