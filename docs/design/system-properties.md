@@ -47,6 +47,7 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
+| `ssoptimizer.font.engine` | `"legacy"` | 文本渲染引擎版本：`legacy`（drawGlyph 替换 + 运行时缩放换字体）/ `v2`（布局引擎 + 流式发射，P1 阶段默认 legacy，P2 翻转，P4 移除开关） | `common/font/FontRenderEngine.java:14` |
 | `ssoptimizer.font.ttf.enable` | `true` | 启用 TTF 生成的字体覆盖（替代原版位图字体资源流） | `common/font/OriginalGameFontOverrides.java:71` |
 | `ssoptimizer.font.ttf.dir` | 无（`null` → `<工作目录>/<mods>/ssoptimizer/fonts`） | 自定义 TTF 字体源目录 | `common/font/OriginalGameFontOverrides.java:165` |
 | `ssoptimizer.font.ttf.debug` | `false` | 开启字体覆盖命中/未命中调试日志 | `common/font/OriginalGameFontOverrides.java:47,59,64,147` |

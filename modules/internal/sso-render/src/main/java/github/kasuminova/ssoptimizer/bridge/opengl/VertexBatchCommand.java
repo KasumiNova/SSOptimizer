@@ -126,6 +126,14 @@ final class VertexBatchCommand implements MergedBatchCommand {
         return length;
     }
 
+    /**
+     * 测试用：本命令持有的流缓冲（仅供回放验证编码内容；
+     * 执行后缓冲归还池且字段置 null，勿在生产路径调用）。
+     */
+    byte[] data() {
+        return data;
+    }
+
     /** 测试用：开放段切割标记（immediate 兜底回放判定）。 */
     boolean immediate() {
         return immediate;
