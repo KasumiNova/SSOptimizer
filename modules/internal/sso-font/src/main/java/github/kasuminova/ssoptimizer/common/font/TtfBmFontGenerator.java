@@ -31,16 +31,17 @@ final class TtfBmFontGenerator {
     private static final int    LEFT_BRACE_CODE_POINT           = '{';
     private static final int    RIGHT_BRACE_CODE_POINT          = '}';
     private static final String PRIMARY_VISUAL_SAMPLE           = "HNM0";
-    private static final String PRIMARY_ADVANCE_SAMPLE          = "HNM0UI";
-    private static final String FALLBACK_VISUAL_SAMPLE          = "汉界测港";
+    // 运行期 face 校准（TtfGlyphProvider）复用这两个采样串与缩放钳制区间
+    static final String PRIMARY_ADVANCE_SAMPLE          = "HNM0UI";
+    static final String FALLBACK_VISUAL_SAMPLE          = "汉界测港";
     private static final String VICTOR_PRIMARY_SAMPLE           = "ABMWQJ";
     private static final int    MAX_RUNTIME_PAGE_DIMENSION      = 8192;
     private static final int    MIN_RUNTIME_PAGE_STEP           = 64;
     private static final int    MAX_RUNTIME_PAGE_STEP           = 512;
-    private static final float  MIN_PRIMARY_ADVANCE_SCALE       = 0.88f;
-    private static final float  MAX_PRIMARY_ADVANCE_SCALE       = 1.08f;
-    private static final float  MIN_FALLBACK_VISUAL_SCALE       = 0.88f;
-    private static final float  MAX_FALLBACK_VISUAL_SCALE       = 1.36f;
+    static final float  MIN_PRIMARY_ADVANCE_SCALE       = 0.88f;
+    static final float  MAX_PRIMARY_ADVANCE_SCALE       = 1.08f;
+    static final float  MIN_FALLBACK_VISUAL_SCALE       = 0.88f;
+    static final float  MAX_FALLBACK_VISUAL_SCALE       = 1.36f;
     private static final float  MIN_VICTOR_PRIMARY_VISUAL_SCALE = 0.94f;
     private static final float  MAX_VICTOR_PRIMARY_VISUAL_SCALE = 1.24f;
 

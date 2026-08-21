@@ -164,6 +164,62 @@ final class SimulatedGlState {
 
     void onUseProgram(final int program) {
         currentProgram = program;
+        // 使用中删除的 program 在解绑（切换到其他 program）时销毁，名字随之失效
+        if (!pendingDeletePrograms.isEmpty()) {
+            for (final Integer pending : pendingDeletePrograms) {
+                if (pending != program) {
+                    programNames.remove(pending);
+                }
+            }
+            pendingDeletePrograms.removeIf(pending -> pending != program);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // is* 名字簿记：glIsProgram/glIsTexture 的本地仿真数据源。
+    // program/texture 名字的创建与删除全部经 bridge 调用点镜像，集合即权威答案；
+    // 模组（HaIoDynamics HSIInitPlugin 等）逐帧轮询 glIsProgram 若走阻塞通道
+    // 会把管线打回串行触发 StallDetector 熔断。
+    // ------------------------------------------------------------------
+
+    /** program 名字集合（glCreateProgram/glDeleteProgram 镜像）。 */
+    private final java.util.Set<Integer> programNames = new java.util.HashSet<>();
+    /** 使用中删除（glDeleteProgram 时仍为 currentProgram）等待解绑销毁的 program。 */
+    private final java.util.Set<Integer> pendingDeletePrograms = new java.util.HashSet<>();
+    /** texture 名字集合（glGenTextures/glBindTexture 创建语义 + glDeleteTextures 镜像）。 */
+    private final java.util.Set<Integer> textureNames = new java.util.HashSet<>();
+    /** TEXTURE_2D level-0 参数簿记：texId → [width, height, internalFormat]。 */
+    private final java.util.Map<Integer, int[]> texLevel0Params = new java.util.HashMap<>();
+    /**
+     * caps 常量缓存（GL_MAX_* 族，上下文生命周期内不变）：首次回退阻塞读回后采入，
+     * {@link #onContextRecreated()} 清空。修复自家 ShipWeaponAtlas.resolvePageSize
+     * 与模组同类常量查询的逐次管线 drain。
+     */
+    private final java.util.Map<Integer, Integer> capsCache = new java.util.HashMap<>();
+
+    void onCreateProgram(final int program) {
+        programNames.add(program);
+    }
+
+    /** 使用中删除按 GL 规范延迟销毁（glIsProgram 仍 true 直到解绑），见 {@link #onUseProgram}。 */
+    void onDeleteProgram(final int program) {
+        if (program == currentProgram) {
+            pendingDeletePrograms.add(program);
+        } else {
+            programNames.remove(program);
+        }
+    }
+
+    boolean isProgram(final int program) {
+        return programNames.contains(program);
+    }
+
+    boolean isTexture(final int texture) {
+        return textureNames.contains(texture);
+    }
+
+    void onGenTexture(final int texture) {
+        textureNames.add(texture);
     }
 
     void onActiveTexture(final int texture) {
@@ -193,6 +249,11 @@ final class SimulatedGlState {
     }
 
     void onBindTexture(final int target, final int texture) {
+        // glIsTexture 簿记：名字被 bind 即创建纹理对象（GL1.x 语义），与 target 无关；
+        // 名字 0 是「无纹理」占位而非纹理对象，不入册
+        if (texture != 0) {
+            textureNames.add(texture);
+        }
         if (target != GL11.GL_TEXTURE_2D) {
             return;
         }
@@ -203,11 +264,93 @@ final class SimulatedGlState {
     }
 
     void onDeleteTexture(final int texture) {
+        textureNames.remove(texture);
+        texLevel0Params.remove(texture);
         for (int unit = 0; unit < MAX_TEXTURE_UNITS; unit++) {
             if (texture2dBinding[unit] == texture) {
                 texture2dBinding[unit] = 0;
             }
         }
+    }
+
+    /**
+     * glTexImage2D/glCopyTexImage2D 簿记：TEXTURE_2D + level 0 时记录当前绑定纹理的
+     * 尺寸与 internalFormat（参数直出，无需回读）；其余 target/level 不跟踪。
+     */
+    void onTexImage2D(final int target, final int level, final int internalformat,
+                      final int width, final int height) {
+        if (target != GL11.GL_TEXTURE_2D || level != 0) {
+            return;
+        }
+        final int unit = activeTexture - GL13.GL_TEXTURE0;
+        if (unit < 0 || unit >= MAX_TEXTURE_UNITS) {
+            return;
+        }
+        final int bound = texture2dBinding[unit];
+        if (bound != 0) {
+            texLevel0Params.put(bound, new int[]{width, height, internalformat});
+        }
+    }
+
+    /**
+     * glGetTexLevelParameteri 仿真：仅 TEXTURE_2D + level 0 + 已簿记纹理 +
+     * WIDTH/HEIGHT/INTERNAL_FORMAT/BORDER（border 恒 0）；其余返回 null 回退阻塞。
+     */
+    Integer getTexLevelParam(final int target, final int level, final int pname) {
+        if (target != GL11.GL_TEXTURE_2D || level != 0) {
+            return null;
+        }
+        final int unit = activeTexture - GL13.GL_TEXTURE0;
+        if (unit < 0 || unit >= MAX_TEXTURE_UNITS) {
+            return null;
+        }
+        final int[] params = texLevel0Params.get(texture2dBinding[unit]);
+        if (params == null) {
+            return null;
+        }
+        switch (pname) {
+            case GL11.GL_TEXTURE_WIDTH:
+                return params[0];
+            case GL11.GL_TEXTURE_HEIGHT:
+                return params[1];
+            case GL11.GL_TEXTURE_INTERNAL_FORMAT:
+                return params[2];
+            case GL11.GL_TEXTURE_BORDER:
+                return 0;
+            default:
+                return null;
+        }
+    }
+
+    /** caps 白名单（GL_MAX_* 族，上下文生命周期内不变的实现常量）。 */
+    static boolean isCapConstant(final int pname) {
+        switch (pname) {
+            case GL11.GL_MAX_TEXTURE_SIZE:
+            case GL11.GL_MAX_CLIP_PLANES:
+            case GL11.GL_MAX_LIGHTS:
+            case GL11.GL_MAX_MODELVIEW_STACK_DEPTH:
+            case GL11.GL_MAX_PROJECTION_STACK_DEPTH:
+            case GL11.GL_MAX_TEXTURE_STACK_DEPTH:
+            case GL11.GL_MAX_ATTRIB_STACK_DEPTH:
+            case GL11.GL_MAX_CLIENT_ATTRIB_STACK_DEPTH:
+            case GL20.GL_MAX_TEXTURE_IMAGE_UNITS:
+            case GL20.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+            case GL20.GL_MAX_TEXTURE_COORDS:
+            case GL20.GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /** caps 缓存查询；未缓存返回 null。 */
+    Integer cachedCap(final int pname) {
+        return capsCache.get(pname);
+    }
+
+    /** caps 首次阻塞读回后采入缓存。 */
+    void adoptCap(final int pname, final int value) {
+        capsCache.put(pname, value);
     }
 
     void onMatrixMode(final int mode) {
@@ -594,6 +737,11 @@ final class SimulatedGlState {
         arrayBufferBindingValid = true;
         elementArrayBufferBinding = 0;
         clientDepth = 0;
+        programNames.clear();
+        pendingDeletePrograms.clear();
+        textureNames.clear();
+        texLevel0Params.clear();
+        capsCache.clear();
     }
 
     // ------------------------------------------------------------------

@@ -10,8 +10,10 @@ import github.kasuminova.ssoptimizer.common.font.layout.GlyphProvider;
  * {@link GlyphProvider} 的位图字体实现：直接读取原版 {@link BitmapFont} 的公开 getter
  * （glyph 数组 / kerning 表 / 名义字号 / 行高），逐次调用组装 {@link GlyphMetrics}。
  * <p>
- * 动机：P1/P2 阶段字形源仍是原版 fnt 位图（含现有 TTF 覆盖生成的产物），
- * 布局引擎经本适配器对接；P3 动态图集上线后由 TTF 源实现平行替换。
+ * 动机：位图字形源（原版 fnt 位图，含现有 TTF 覆盖生成的产物）经本适配器对接
+ * 布局引擎；TTF 动态图集上线后与其平行——原版覆盖表命中的字体走
+ * {@code TtfGlyphProvider}（纹理 id 体系），未命中/mod 自带字体仍走本类
+ * （textureId 恒 0，发射层用 pass 级字体纹理）。
  */
 public final class BitmapFontGlyphProvider implements GlyphProvider {
 
@@ -30,7 +32,8 @@ public final class BitmapFontGlyphProvider implements GlyphProvider {
         return new GlyphMetrics(
                 glyph.getXOffset(), glyph.getXAdvance(), glyph.getBearingY(),
                 glyph.getWidth(), glyph.getHeight(),
-                glyph.getTexX(), glyph.getTexY(), glyph.getTexWidth(), glyph.getTexHeight());
+                glyph.getTexX(), glyph.getTexY(), glyph.getTexWidth(), glyph.getTexHeight(),
+                0);
     }
 
     @Override

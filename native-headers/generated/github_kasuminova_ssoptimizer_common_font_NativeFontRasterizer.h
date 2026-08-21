@@ -33,6 +33,30 @@ JNIEXPORT jobject JNICALL Java_github_kasuminova_ssoptimizer_common_font_NativeF
 
 /*
  * Class:     github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer
+ * Method:    nativeRasterizeGlyphStroked
+ * Signature: (JIIF)Lgithub/kasuminova/ssoptimizer/common/font/NativeGlyphBitmap;
+ */
+JNIEXPORT jobject JNICALL Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRasterizeGlyphStroked
+  (JNIEnv *, jclass, jlong, jint, jint, jfloat);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer
+ * Method:    nativeRasterizeGlyphs
+ * Signature: (J[IIF)[Lgithub/kasuminova/ssoptimizer/common/font/NativeGlyphBitmap;
+ */
+JNIEXPORT jobjectArray JNICALL Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRasterizeGlyphs
+  (JNIEnv *, jclass, jlong, jintArray, jint, jfloat);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer
+ * Method:    nativeHasGlyph
+ * Signature: (JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeHasGlyph
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer
  * Method:    nativeDestroyFace
  * Signature: (J)V
  */

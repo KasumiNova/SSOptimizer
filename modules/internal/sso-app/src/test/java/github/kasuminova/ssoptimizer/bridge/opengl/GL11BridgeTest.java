@@ -258,11 +258,12 @@ class GL11BridgeTest {
         assertFalse(GL11.glGetBoolean(org.lwjgl.opengl.GL11.GL_BLEND),
                 "五个跟踪 enable 能力走录制侧仿真（全新上下文默认关闭），不触碰阻塞通道");
         GL11.glIsEnabled(org.lwjgl.opengl.GL11.GL_BLEND);
-        GL11.glIsTexture(1);
+        // glIsTexture 走录制侧名字簿记（名字 1 从未创建，本地回答 false，不触阻塞通道）
+        assertFalse(GL11.glIsTexture(1), "未创建的纹理名字由簿记本地回答");
         GL11.glIsList(1);
         queue.getHandler = callable -> "stub";
         assertEquals("stub", GL11.glGetString(org.lwjgl.opengl.GL11.GL_VERSION));
-        assertEquals(8, queue.getCallCount, "标量 getter 全部走阻塞取值通道");
+        assertEquals(7, queue.getCallCount, "标量 getter 走阻塞取值通道（glIsTexture 已由簿记覆盖）");
         assertEquals(0, queue.recorded.size());
 
         java.nio.ByteBuffer pixels = java.nio.ByteBuffer.allocateDirect(4);

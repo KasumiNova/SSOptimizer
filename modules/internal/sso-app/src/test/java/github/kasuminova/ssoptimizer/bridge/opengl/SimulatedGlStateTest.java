@@ -522,4 +522,106 @@ class SimulatedGlStateTest {
         assertTrue(state.getFloat(GL11.GL_ALPHA_TEST_REF, ref2));
         assertEquals(0.25f, ref2.get(0), EPS);
     }
+
+    // ------------------------------------------------------------------
+    // is* 名字簿记（glIsProgram/glIsTexture 仿真数据源）
+    // ------------------------------------------------------------------
+
+    @Test
+    void programNameLifecycle() {
+        final SimulatedGlState state = new SimulatedGlState();
+        assertFalse(state.isProgram(7), "未创建的名字不是 program");
+
+        state.onCreateProgram(7);
+        assertTrue(state.isProgram(7));
+
+        // 非当前 program 删除立即失效
+        state.onDeleteProgram(7);
+        assertFalse(state.isProgram(7));
+    }
+
+    @Test
+    void deleteWhileInUseDefersProgramInvalidation() {
+        final SimulatedGlState state = new SimulatedGlState();
+        state.onCreateProgram(7);
+        state.onCreateProgram(9);
+        state.onUseProgram(7);
+
+        // 使用中删除：GL 规范延迟销毁，isProgram 仍为 true
+        state.onDeleteProgram(7);
+        assertTrue(state.isProgram(7), "使用中删除的 program 在解绑前仍有效");
+
+        // 切换到其他 program 后销毁；无关 program 的切换不影响仍当前的删除标记
+        state.onUseProgram(9);
+        assertFalse(state.isProgram(7), "解绑后删除生效");
+        assertTrue(state.isProgram(9));
+    }
+
+    @Test
+    void textureNameLifecycle() {
+        final SimulatedGlState state = new SimulatedGlState();
+        assertFalse(state.isTexture(3));
+
+        // gen 即入册
+        state.onGenTexture(3);
+        assertTrue(state.isTexture(3));
+        state.onDeleteTexture(3);
+        assertFalse(state.isTexture(3));
+
+        // GL1.x bind-创建语义：bind 未 gen 的名字也入册；名字 0 不是纹理
+        state.onBindTexture(GL11.GL_TEXTURE_2D, 11);
+        assertTrue(state.isTexture(11));
+        state.onBindTexture(GL11.GL_TEXTURE_2D, 0);
+        assertFalse(state.isTexture(0), "名字 0 是无纹理占位，不入册");
+
+        // 绑定簿记与名字簿记独立：删除后绑定槽清零
+        assertEquals(0, state.getInteger(GL11.GL_TEXTURE_BINDING_2D));
+    }
+
+    // ------------------------------------------------------------------
+    // 纹理 level-0 参数与 caps 常量缓存
+    // ------------------------------------------------------------------
+
+    @Test
+    void texLevel0ParamsTrackedAtUploadAndClearedAtDelete() {
+        final SimulatedGlState state = new SimulatedGlState();
+        state.onBindTexture(GL11.GL_TEXTURE_2D, 5);
+        state.onTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, 64, 32);
+
+        assertEquals(64, state.getTexLevelParam(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH));
+        assertEquals(32, state.getTexLevelParam(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT));
+        assertEquals(GL11.GL_RGBA, state.getTexLevelParam(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_INTERNAL_FORMAT));
+        assertEquals(0, state.getTexLevelParam(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_BORDER));
+
+        // 非零 level 与不支持的 pname 不跟踪
+        assertNull(state.getTexLevelParam(GL11.GL_TEXTURE_2D, 1, GL11.GL_TEXTURE_WIDTH));
+        // 未上传参数的纹理回退
+        state.onBindTexture(GL11.GL_TEXTURE_2D, 6);
+        assertNull(state.getTexLevelParam(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH));
+        // 删除后簿记清除
+        state.onBindTexture(GL11.GL_TEXTURE_2D, 5);
+        state.onDeleteTexture(5);
+        assertNull(state.getTexLevelParam(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH));
+    }
+
+    @Test
+    void capsCacheAdoptAndContextRecreation() {
+        final SimulatedGlState state = new SimulatedGlState();
+        assertTrue(SimulatedGlState.isCapConstant(GL11.GL_MAX_TEXTURE_SIZE));
+        assertFalse(SimulatedGlState.isCapConstant(GL11.GL_VIEWPORT), "动态状态不是 caps 常量");
+
+        assertNull(state.cachedCap(GL11.GL_MAX_TEXTURE_SIZE));
+        state.adoptCap(GL11.GL_MAX_TEXTURE_SIZE, 16384);
+        assertEquals(16384, state.cachedCap(GL11.GL_MAX_TEXTURE_SIZE));
+
+        // 上下文重建：名字簿记/纹理参数/caps 全部归零
+        state.onCreateProgram(7);
+        state.onBindTexture(GL11.GL_TEXTURE_2D, 5);
+        state.onTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, 8, 8);
+        state.onContextRecreated();
+        assertNull(state.cachedCap(GL11.GL_MAX_TEXTURE_SIZE));
+        assertFalse(state.isProgram(7));
+        assertFalse(state.isTexture(5));
+        assertNull(state.getTexLevelParam(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH));
+    }
 }

@@ -200,9 +200,8 @@ public final class OriginalGameFontOverrides {
     private static Map<String, FontOverrideSpec> createOverrideSpecs() {
         final Map<String, FontOverrideSpec> specs = new LinkedHashMap<>();
         final FontProfile profile = resolveProfile(configuredProfileName());
-        final List<String> fallback = profile.fallback();
 
-        registerFamily(specs, profile, fallback, FontRole.INSIGNIA_REGULAR,
+        registerFamily(specs, profile, FontRole.INSIGNIA_REGULAR,
                 "graphics/fonts/insignia12.fnt",
                 "graphics/fonts/insignia12a.fnt",
                 "graphics/fonts/insignia15LTaa.fnt",
@@ -214,11 +213,11 @@ public final class OriginalGameFontOverrides {
                 "graphics/fonts/insignia25LTaa.fnt",
                 "graphics/fonts/insignia42LTaa.fnt"
         );
-        registerFamily(specs, profile, fallback, FontRole.INSIGNIA_BOLD,
+        registerFamily(specs, profile, FontRole.INSIGNIA_BOLD,
                 "graphics/fonts/insignia12bold.fnt"
         );
 
-        registerFamily(specs, profile, fallback, FontRole.ORBITRON_BOLD, // Bold 观感更好
+        registerFamily(specs, profile, FontRole.ORBITRON_BOLD, // Bold 观感更好
                 "graphics/fonts/orbitron10.fnt",
                 "graphics/fonts/orbitron12condensed.fnt",
                 "graphics/fonts/orbitron12.fnt",
@@ -227,7 +226,7 @@ public final class OriginalGameFontOverrides {
                 "graphics/fonts/orbitron20aa.fnt",
                 "graphics/fonts/orbitron24aa.fnt"
         );
-        registerFamily(specs, profile, fallback, FontRole.ORBITRON_BOLD,
+        registerFamily(specs, profile, FontRole.ORBITRON_BOLD,
                 "graphics/fonts/orbitron12bold.fnt",
                 "graphics/fonts/orbitron20bold.fnt",
                 "graphics/fonts/orbitron20aabold.fnt",
@@ -274,7 +273,9 @@ public final class OriginalGameFontOverrides {
                     List.of("Maple UI Bold.ttf", "MapleUI-Bold.otf"),
                     List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"),
                     List.of("MiSans-Medium.ttf", "font.ttf"),
-                    List.of("MiSans-Medium.ttf", "font.ttf")
+                    List.of("MiSans-Medium.ttf", "font.ttf"),
+                    // bold 角色的 CJK 用细一字重：Medium 在粗体 UI（按钮/标题）上观感过重
+                    List.of("MiSans-Regular.ttf", "MiSans-Medium.ttf", "font.ttf")
             );
         }
 
@@ -286,16 +287,20 @@ public final class OriginalGameFontOverrides {
                 List.of("orbitron-bold.ttf", "MiSans-Medium.ttf"),
                 List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"),
                 List.of("MiSans-Medium.ttf", "font.ttf"),
-                List.of("MiSans-Medium.ttf", "font.ttf")
+                List.of("MiSans-Medium.ttf", "font.ttf"),
+                List.of("MiSans-Regular.ttf", "MiSans-Medium.ttf", "font.ttf")
         );
     }
 
     private static void registerFamily(final Map<String, FontOverrideSpec> specs,
                                        final FontProfile profile,
-                                       final List<String> fallback,
                                        final FontRole role,
                                        final String... originalFontPaths) {
         final List<String> primary = primaryCandidates(profile, role);
+        // bold 角色的 CJK 回退用细一字重（boldFallback），避免粗体 UI 上观感过重
+        final List<String> fallback = role == FontRole.INSIGNIA_BOLD || role == FontRole.ORBITRON_BOLD
+                ? profile.boldFallback()
+                : profile.fallback();
         for (String originalFontPath : originalFontPaths) {
             register(specs, new FontOverrideSpec(
                     originalFontPath,
@@ -405,7 +410,8 @@ public final class OriginalGameFontOverrides {
                        List<String> orbitronBoldPrimary,
                        List<String> victorPrimary,
                        List<String> victorFallback,
-                       List<String> fallback) {
+                       List<String> fallback,
+                       List<String> boldFallback) {
         FontProfile {
             insigniaPrimary = List.copyOf(insigniaPrimary);
             insigniaBoldPrimary = List.copyOf(insigniaBoldPrimary);
@@ -414,6 +420,7 @@ public final class OriginalGameFontOverrides {
             victorPrimary = List.copyOf(victorPrimary);
             victorFallback = List.copyOf(victorFallback);
             fallback = List.copyOf(fallback);
+            boldFallback = List.copyOf(boldFallback);
         }
     }
 }

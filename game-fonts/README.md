@@ -12,6 +12,7 @@ game-fonts/
 │   ├── orbitron-bold.ttf     # Orbitron Bold — 游戏自带
 │   ├── orbitron-light.ttf    # Orbitron Light — 游戏自带
 │   ├── MiSans-Medium.ttf     # 小米 MiSans — CJK 回退字体 (SIL OFL 1.1)
+│   ├── MiSans-Regular.ttf    # 小米 MiSans — bold 角色 CJK 回退（细一字重，SIL OFL 1.1）
 │   └── Oxanium-Medium.ttf    # Oxanium — 用于 victor 系列 (SIL OFL 1.1)
 └── fnt/          # BMFont 描述文件（已添加 CJK 字符表）
     ├── insignia15LTaa.fnt
@@ -31,5 +32,5 @@ game-fonts/
 | 字体 | 许可证 |
 |------|--------|
 | lte50549.ttf, orbitron-*.ttf | Starsector 游戏自带 |
-| MiSans-Medium.ttf | SIL Open Font License 1.1 |
+| MiSans-Medium.ttf, MiSans-Regular.ttf | SIL Open Font License 1.1 |
 | Oxanium-Medium.ttf | SIL Open Font License 1.1 |

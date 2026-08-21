@@ -132,12 +132,15 @@ public final class GL20 {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDeleteShader(shader));
     }
 
-    /** 资源分配：阻塞通道取回真实 program id。 */
+    /** 资源分配：阻塞通道取回真实 program id，同时登记 isProgram 名字簿记。 */
     public static int glCreateProgram() {
-        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL20::glCreateProgram);
+        final int program = BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL20::glCreateProgram);
+        BridgeSupport.simulatedState().onCreateProgram(program);
+        return program;
     }
 
     public static void glDeleteProgram(int program) {
+        BridgeSupport.simulatedState().onDeleteProgram(program);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDeleteProgram(program));
     }
 
@@ -226,8 +229,16 @@ public final class GL20 {
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetAttribLocation(program, nameStr));
     }
 
-    /** 状态查询：阻塞通道取回。 */
+    /**
+     * 状态查询：主线程走 isProgram 名字簿记仿真（创建/删除全部经 bridge 镜像，
+     * 集合即权威答案）；aux 线程回退阻塞通道。
+     * 仿真动机：HaIoDynamics HSIInitPlugin 等模组逐帧轮询本方法，阻塞通道会
+     * 把管线打回串行触发 StallDetector 熔断。
+     */
     public static boolean glIsProgram(int program) {
+        if (BridgeSupport.isMainRecordingThread()) {
+            return BridgeSupport.simulatedState().isProgram(program);
+        }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glIsProgram(program));
     }
 

@@ -128,19 +128,23 @@ public final class ParallelAiDispatcher {
 
     /**
      * 模组 AI 判断：非 {@code com.fs.starfarer.} 包的 AI 直接判定为模组；
-     * 原版 {@code Missile$GuidedMissileAIWrapper} 需解开包装检查内部插件
-     * （模组导弹 AI 如 CTBGuideRocAI 由原版包装器承载，长程基准实测其在主线程
+     * 原版 {@code Missile$GuidedMissileAIWrapper} / {@code Missile$MissileAIWrapper}
+     * 需解开包装检查内部插件（模组导弹 AI 由原版包装器承载，长程基准实测其在主线程
      * 内联执行时与 worker 上的模组系统脚本并发踩踏 LazyLib CombatCache）。
      */
     private static boolean isModAi(AI ai) {
         if (!ai.getClass().getName().startsWith("com.fs.starfarer.")) {
             return true;
         }
-        if (ai instanceof Missile.GuidedMissileAIWrapper wrapper) {
-            final MissileAIPlugin plugin = wrapper.getAI();
-            return plugin != null && !plugin.getClass().getName().startsWith("com.fs.starfarer.");
+        final MissileAIPlugin plugin;
+        if (ai instanceof Missile.GuidedMissileAIWrapper guided) {
+            plugin = guided.getAI();
+        } else if (ai instanceof Missile.MissileAIWrapper wrapper) {
+            plugin = wrapper.getAI();
+        } else {
+            return false;
         }
-        return false;
+        return plugin != null && !plugin.getClass().getName().startsWith("com.fs.starfarer.");
     }
 
     private static AiParallelExecutor createExecutor() {

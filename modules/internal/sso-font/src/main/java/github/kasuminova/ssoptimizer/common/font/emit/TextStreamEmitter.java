@@ -14,6 +14,9 @@ import java.util.List;
  * GL 语义与原版 render() 逐项对应：启用 TEXTURE_2D（原版结束后保持启用，不关）、
  * 绑定字体图集、启用 BLEND + 自定义 blendFunc、逐 pass 一段 glBegin(GL_QUADS)/glEnd、
  * pass 内颜色变化用 glColor4ub（相邻同色去重）、结束后关 BLEND。
+ * 两种纹理组织：位图路径（{@link #emit(List, TextureObject, int, int)}）绑定 pass 级
+ * 字体纹理；图集路径（{@link #emit(List, int, int)}）按 quad 携带的图集页 textureId
+ * 连续分组换绑（TTF 动态图集多页共存）。
  * 与原版的两处刻意差异：不 push/pop 矩阵（pass 偏移与 drawX/drawY 已在布局期烘焙进顶点）、
  * 不录制 display list（新链路逐帧发射，批次合并由渲染线程 VertexArrayBatch 承担）。
  */
@@ -46,6 +49,66 @@ public final class TextStreamEmitter {
         GL11.streamEnable(GL_TEXTURE_2D);
         texture.bind();
         emitPasses(passes, blendSrc, blendDst);
+    }
+
+    /**
+     * 图集路径发射（TTF 动态图集）：不绑 pass 级纹理，逐 pass 内按 quad 的
+     * textureId 连续分组——组间 streamBindTexture 换绑并新起一段 glBegin(GL_QUADS)，
+     * 同 textureId 的连续 quad 不切断；颜色切换逻辑与位图路径一致。
+     *
+     * @param passes   布局结果（有序）
+     * @param blendSrc 混合源因子（renderer 的 blendSrcFactor）
+     * @param blendDst 混合目标因子（renderer 的 blendDstFactor）
+     */
+    public static void emit(
+            final List<TextPass> passes,
+            final int blendSrc,
+            final int blendDst) {
+        GL11.streamEnable(GL_TEXTURE_2D);
+        GL11.streamEnable(GL_BLEND);
+        GL11.streamBlendFunc(blendSrc, blendDst);
+
+        int currentColor = 0;
+        boolean hasColor = false;
+        for (final TextPass pass : passes) {
+            final List<GlyphQuad> quads = pass.quads();
+            if (quads.isEmpty()) {
+                continue;
+            }
+            int currentTexture = -1;
+            boolean segmentOpen = false;
+            for (final GlyphQuad q : quads) {
+                if (!segmentOpen || q.textureId() != currentTexture) {
+                    if (segmentOpen) {
+                        GL11.glEnd();
+                    }
+                    // streamBindTexture 编码为段间指令（begin/end 段内绑定非法）
+                    GL11.streamBindTexture(q.textureId());
+                    GL11.glBegin(GL_QUADS);
+                    currentTexture = q.textureId();
+                    segmentOpen = true;
+                }
+                if (!hasColor || q.color() != currentColor) {
+                    final int c = q.color();
+                    GL11.glColor4ub((byte) (c >>> 16), (byte) (c >>> 8), (byte) c, (byte) (c >>> 24));
+                    currentColor = c;
+                    hasColor = true;
+                }
+                GL11.glTexCoord2f(q.u1(), q.v1());
+                GL11.glVertex2f(q.x1(), q.y1());
+                GL11.glTexCoord2f(q.u2(), q.v2());
+                GL11.glVertex2f(q.x2(), q.y2());
+                GL11.glTexCoord2f(q.u3(), q.v3());
+                GL11.glVertex2f(q.x3(), q.y3());
+                GL11.glTexCoord2f(q.u4(), q.v4());
+                GL11.glVertex2f(q.x4(), q.y4());
+            }
+            if (segmentOpen) {
+                GL11.glEnd();
+            }
+        }
+
+        GL11.streamDisable(GL_BLEND);
     }
 
     /**

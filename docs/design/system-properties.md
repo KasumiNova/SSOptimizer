@@ -47,7 +47,7 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.font.engine` | `"legacy"` | 文本渲染引擎版本：`legacy`（drawGlyph 替换 + 运行时缩放换字体）/ `v2`（布局引擎 + 流式发射，P1 阶段默认 legacy，P2 翻转，P4 移除开关） | `common/font/FontRenderEngine.java:14` |
+| `ssoptimizer.font.engine` | `"v2"` | 文本渲染引擎版本：`v2`（布局引擎 + 流式发射，P3 起 TTF 动态图集）/ `legacy`（drawGlyph 替换 + 运行时缩放换字体，回滚选项，P4 移除开关） | `common/font/FontRenderEngine.java:14` |
 | `ssoptimizer.font.ttf.enable` | `true` | 启用 TTF 生成的字体覆盖（替代原版位图字体资源流） | `common/font/OriginalGameFontOverrides.java:71` |
 | `ssoptimizer.font.ttf.dir` | 无（`null` → `<工作目录>/<mods>/ssoptimizer/fonts`） | 自定义 TTF 字体源目录 | `common/font/OriginalGameFontOverrides.java:165` |
 | `ssoptimizer.font.ttf.debug` | `false` | 开启字体覆盖命中/未命中调试日志 | `common/font/OriginalGameFontOverrides.java:47,59,64,147` |
@@ -61,6 +61,10 @@
 | `ssoptimizer.font.forceautohint` | `"auto"` | 强制 autohint 模式 | `common/font/NativeFontRasterizer.java:145` |
 | `ssoptimizer.disable.fontcache` | `false` | 禁用生成的字体包持久缓存 | `common/font/FontPackCache.java:35` |
 | `ssoptimizer.fontcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/fonts/zstd/v6`） | 自定义字体包缓存目录 | `common/font/FontPackCache.java:181` |
+| `ssoptimizer.font.atlas.pageSize` | `2048` | TTF 动态字形图集单页边长（像素，GL_ALPHA8） | `common/font/atlas/DynamicGlyphAtlas.java` |
+| `ssoptimizer.font.atlas.maxPages` | `16` | 图集全局页数上限，超限按 (face, bucket) 整组 LRU 淘汰 | `common/font/atlas/DynamicGlyphAtlas.java` |
+| `ssoptimizer.font.atlas.debug` | `false` | 图集命中/未命中/页数/上传量诊断日志 | `common/font/atlas/FontAtlasDiagnostics.java` |
+| `ssoptimizer.font.stroke.synthesize` | `true` | TTF 源下描边/边框在栅格化层合成（单 pass 剪影）；false 回退原版多 pass | `common/font/layout/TextLayoutEngine.java` |
 
 ## 纹理/加载
 

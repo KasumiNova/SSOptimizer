@@ -48,6 +48,11 @@ public final class FontPackCache {
         fingerprint.append("pageWidth=").append(spec == null ? 0 : spec.pageWidth()).append('\n');
         fingerprint.append("pageHeight=").append(spec == null ? 0 : spec.pageHeight()).append('\n');
         fingerprint.append("profile=").append(OriginalGameFontOverrides.configuredProfileName()).append('\n');
+        // 引擎形态入指纹：v2+native 的缓存包页文件是 1×1 占位 PNG（见
+        // TtfBmFontGenerator.buildPack），与位图形态缓存不可互用
+        fingerprint.append("engine=")
+                   .append(FontRenderEngine.isV2() && NativeFontRasterizer.isAvailable() ? "v2-atlas" : "bitmap")
+                   .append('\n');
         fingerprint.append("rasterizer=").append(NativeFontRasterizer.requestedMode()).append('\n');
         fingerprint.append("hintAA=").append(NativeFontRasterizer.describeSettings(true)).append('\n');
         fingerprint.append("hintNoAA=").append(NativeFontRasterizer.describeSettings(false)).append('\n');

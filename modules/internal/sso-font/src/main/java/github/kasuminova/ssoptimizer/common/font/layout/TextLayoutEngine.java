@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.common.font.layout;
 
+import github.kasuminova.ssoptimizer.common.render.engine.TextScaleBuckets;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +28,10 @@ import java.util.List;
  *       且仅在选区起点字形发射（原版如此，各 pass 都会发射）；</li>
  *   <li>compact 字体（isCompactFont）每 pass 重复 3 次；shear 对应 drawGlyphs 路径的
  *       逐行 translate+multMatrix，折算为 x += shear × 行内局部 y；</li>
- *   <li>display list 缓存不复制——新链路逐帧布局，无列表语义。</li>
+ *   <li>display list 缓存不复制——新链路逐帧布局，无列表语义；</li>
+ *   <li>P3 起：TTF 描边合成源（{@link OutlineGlyphProvider}）下边框/outline 改为
+ *       主 pass 内剪影 quad 垫底单 pass（§4.5），阴影偏移在屏幕像素空间取整；
+ *       零尺寸字形（'{'/'}' 空格化等占位符）不产 quad，只推进 penX。</li>
  * </ul>
  * 坐标系：输出顶点为绝对坐标（drawX/drawY 与 pass 偏移已烘焙），
  * y 向下为正（与原版顶点值一致，外部模型矩阵由调用方维持）。
@@ -37,6 +42,16 @@ public final class TextLayoutEngine {
     private static final int FALLBACK_GLYPH = 63;
     /** 下划线字形码点（'_'），原版硬编码 glyphs[95]。 */
     private static final int UNDERLINE_GLYPH = 95;
+    /** 边框模式的剪影宽度（逻辑像素），对应原版 4 向 ±1px 偏移的覆盖半径。 */
+    private static final float BORDER_STROKE_WIDTH = 1f;
+
+    /**
+     * 描边栅格化合成开关：{@code -Dssoptimizer.font.stroke.synthesize=false} 关闭，
+     * 默认开启（TTF 源下边框/outline 单 pass 剪影合成，见设计文档 §4.5）。
+     * 静态可变字段供测试切换；位图路径不受本开关影响（源无法重栅格化，恒多 pass）。
+     */
+    static volatile boolean strokeSynthesizeEnabled =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.font.stroke.synthesize", "true"));
 
     private TextLayoutEngine() {
     }
@@ -46,26 +61,81 @@ public final class TextLayoutEngine {
      *
      * @param s       渲染状态快照
      * @param glyphs  字形度量来源
-     * @return 有序 pass 序列（边框/阴影在前，主 pass 在最后；compact 字体每逻辑 pass 展开为 3 个）
+     * @return 有序 pass 序列（边框/阴影在前，主 pass 在最后；compact 字体每逻辑 pass 展开为 3 个；
+     *         TTF 描边合成路径下边框/outline 不产独立 pass，剪影 quad 内联在主 pass 各字形之前）
      */
     public static List<TextPass> layout(final TextRenderState s, final GlyphProvider glyphs) {
-        final float scale = s.fontSize() / glyphs.nominalFontSize();
+        // 尺寸档位视图：TTF 源据此选定 size bucket（含屏幕缩放量化），位图源返回 this
+        final GlyphProvider sized = glyphs.forScale(s.fontSize() / glyphs.nominalFontSize());
+        final float scale = s.fontSize() / sized.nominalFontSize();
         final int iterations = s.compactFont() ? 3 : 1;
+        final OutlineGlyphProvider outline = strokeSynthesizeEnabled
+                && sized instanceof OutlineGlyphProvider candidate
+                && candidate.synthesizesOutline()
+                ? candidate : null;
 
         final List<TextPass> passes = new ArrayList<>();
+        if (outline != null) {
+            layoutWithStrokeSynthesis(passes, s, sized, outline, scale, iterations);
+            return passes;
+        }
         if (s.borderEnabled()) {
             final int borderColor = packColor(s.outlineColorRgb(), s.borderAlpha());
-            buildPass(passes, s, glyphs, scale, 1f, 0f, borderColor, false, iterations);
-            buildPass(passes, s, glyphs, scale, -1f, 0f, borderColor, false, iterations);
-            buildPass(passes, s, glyphs, scale, 0f, 1f, borderColor, false, iterations);
-            buildPass(passes, s, glyphs, scale, 0f, -1f, borderColor, false, iterations);
+            buildPass(passes, s, sized, scale, 1f, 0f, borderColor, false, iterations, null, 0f, null);
+            buildPass(passes, s, sized, scale, -1f, 0f, borderColor, false, iterations, null, 0f, null);
+            buildPass(passes, s, sized, scale, 0f, 1f, borderColor, false, iterations, null, 0f, null);
+            buildPass(passes, s, sized, scale, 0f, -1f, borderColor, false, iterations, null, 0f, null);
         } else if (s.shadowEnabled()) {
-            buildPass(passes, s, glyphs, scale, s.shadowOffsetX(), s.shadowOffsetY(),
-                    packColor(s.outlineColorRgb(), s.shadowAlpha()), false, iterations);
+            buildPass(passes, s, sized, scale, s.shadowOffsetX(), s.shadowOffsetY(),
+                    packColor(s.outlineColorRgb(), s.shadowAlpha()), false, iterations, null, 0f, null);
         }
-        buildPass(passes, s, glyphs, scale, 0f, 0f,
-                packColor(s.textColorRgb(), s.textAlpha()), true, iterations);
+        buildPass(passes, s, sized, scale, 0f, 0f,
+                packColor(s.textColorRgb(), s.textAlpha()), true, iterations, null, 0f, null);
         return passes;
+    }
+
+    /**
+     * TTF 描边合成路径（§4.5）：边框/outline 不再多 pass 叠位图，主 pass 内每字形
+     * 先发描边剪影 quad（描边色垫底）再发填充 quad；阴影偏移黑副本维持独立 pass，
+     * 但偏移量在屏幕像素空间取整（乘以 bucketScale 取整再除回），消除位图空间
+     * 偏移经非整数缩放映射后的错位采样。
+     */
+    private static void layoutWithStrokeSynthesis(
+            final List<TextPass> passes,
+            final TextRenderState s,
+            final GlyphProvider sized,
+            final OutlineGlyphProvider outline,
+            final float scale,
+            final int iterations) {
+        // 阴影 pass：原版 border 与 shadow 互斥（else-if），剪影合成路径保持该语义
+        if (!s.borderEnabled() && s.shadowEnabled()) {
+            final float bucketScale = outline.currentBucketScale();
+            final float snapX = Math.round(s.shadowOffsetX() * bucketScale) / bucketScale;
+            final float snapY = Math.round(s.shadowOffsetY() * bucketScale) / bucketScale;
+            buildPass(passes, s, sized, scale, snapX, snapY,
+                    packColor(s.outlineColorRgb(), s.shadowAlpha()), false, iterations, null, 0f, null);
+        }
+
+        // 剪影宽度与颜色：边框与 outline 同时存在时合并为一个剪影（宽度取大者，描边色）；
+        // 仅 outline 时剪影跟随各字形当前色（原版放大副本用字形色），仅边框时用描边色
+        final float strokeWidth;
+        final Integer strokeColor;
+        if (s.borderEnabled() && s.shadowCopies() > 0) {
+            strokeWidth = Math.max(BORDER_STROKE_WIDTH, s.shadowCopies() * s.shadowScale());
+            strokeColor = packColor(s.outlineColorRgb(), s.borderAlpha());
+        } else if (s.borderEnabled()) {
+            strokeWidth = BORDER_STROKE_WIDTH;
+            strokeColor = packColor(s.outlineColorRgb(), s.borderAlpha());
+        } else if (s.shadowCopies() > 0) {
+            strokeWidth = s.shadowCopies() * s.shadowScale();
+            strokeColor = null;
+        } else {
+            strokeWidth = 0f;
+            strokeColor = null;
+        }
+        buildPass(passes, s, sized, scale, 0f, 0f,
+                packColor(s.textColorRgb(), s.textAlpha()), true, iterations,
+                outline, strokeWidth, strokeColor);
     }
 
     /**
@@ -74,6 +144,10 @@ public final class TextLayoutEngine {
      * @param offX/offY          pass 平移（边框 ±1px / 阴影偏移 / 主 pass 0）
      * @param baseColor          pass 起始颜色（ARGB）
      * @param selectionColoring  是否启用选区/高亮着色（仅主 pass，且 visible 时强制关闭）
+     * @param outline            描边合成来源（非 null 时主 pass 每字形先发剪影 quad）
+     * @param strokeWidth        剪影宽度（逻辑像素，0 = 不合成）
+     * @param strokeColor        剪影固定颜色（ARGB）；null = 跟随各字形当前色
+     *                           （原版 outline 放大副本用字形色）
      */
     private static void buildPass(
             final List<TextPass> out,
@@ -84,7 +158,10 @@ public final class TextLayoutEngine {
             final float offY,
             final int baseColor,
             final boolean selectionColoring,
-            final int iterations) {
+            final int iterations,
+            final OutlineGlyphProvider outline,
+            final float strokeWidth,
+            final Integer strokeColor) {
         final boolean coloring = selectionColoring && !s.visible();
         final int textColor = packColor(s.textColorRgb(), s.textAlpha());
         final String text = s.text();
@@ -139,7 +216,7 @@ public final class TextLayoutEngine {
                     currentColor = resolveHighlight(s, i);
                 }
 
-                emitGlyph(quads, s, gm, scale, penX, lineY, currentColor, offX, offY);
+                emitGlyph(quads, s, outline, strokeWidth, strokeColor, c, gm, scale, penX, lineY, currentColor, offX, offY);
                 if (s.underlineEnabled() && isSelectionStart(s, i)) {
                     emitUnderline(quads, s, g, gm, scale, penX, lineY, currentColor, offX, offY);
                 }
@@ -154,10 +231,20 @@ public final class TextLayoutEngine {
         }
     }
 
-    /** 单字形 quad：先描边放大副本（shadowCopies 个），再主 quad；坐标见 drawGlyph L974-1010。 */
+    /**
+     * 单字形 quad：描边合成路径（outline != null 且 strokeWidth &gt; 0）先发描边剪影 quad
+     * （填充几何按描边宽度四向外扩，采样剪影槽位 UV）再发填充 quad；位图路径维持原版
+     * 的 shadowCopies 放大副本循环（先于主 quad 发射，横纵扩张按宽高比不对称缩放）。
+     * 零尺寸字形（'{'/'}' 空格化等占位符）不产任何 quad——只推进 penX，
+     * 与原版 bake 后不产可见像素的语义对齐（同时修正位图路径的退化 quad）。
+     */
     private static void emitGlyph(
             final List<GlyphQuad> quads,
             final TextRenderState s,
+            final OutlineGlyphProvider outline,
+            final float strokeWidth,
+            final Integer strokeColor,
+            final int codePoint,
             final GlyphMetrics gm,
             final float scale,
             final float penX,
@@ -165,15 +252,60 @@ public final class TextLayoutEngine {
             final int color,
             final float offX,
             final float offY) {
+        if (gm.width() == 0 && gm.height() == 0) {
+            return;
+        }
         final float sb = scale * gm.bearingY();
         final float sh = scale * gm.height();
         final float sw = scale * gm.width();
+
+        // TTF 图集路径：quad 边吸附到设备像素网格（bucket 网格），消除逐字亚像素
+        // 采样相位差（观感：字形边缘粗细/阴影逐字不一致、毛边）。槽位尺寸在 bucket
+        // 网格上是整数，scale==1（fontSize==nominal）时吸附后得 1:1 texel 映射。
+        // 仅无剪切（shear==0）时吸附——shear 下 x 依赖 y，网格语义不成立；
+        // 位图路径（outline==null）维持原版逐字浮点坐标语义。
+        final float devGrid = outline != null && s.shear() == 0f
+                ? outline.currentBucketScale()
+                : 0f;
+        final float baseX = s.drawX() + offX;
+        final float baseY = s.drawY() + offY + lineY;
+
+        if (outline != null && strokeWidth > 0f) {
+            final GlyphMetrics sm = outline.strokedGlyph(codePoint, strokeWidth);
+            if (sm != null) {
+                final float su0 = sm.texX();
+                final float sv0 = sm.texY();
+                final float su1 = sm.texX() + sm.texWidth();
+                final float sv1 = sm.texY() + sm.texHeight();
+                final int silhouetteColor = strokeColor != null ? strokeColor : color;
+                // 剪影盒 = 描边槽位的并集画布盒（provider 侧已含描边外扩与墨迹溢出，
+                // 度量为设备像素 ÷ bucketScale 的亚像素逻辑值），锚定同一落笔原点：
+                // penX 已含填充 xOffset，此处换算相对偏移。引擎不再手工外扩几何
+                float sx = penX + scale * (sm.xOffset() - gm.xOffset());
+                final float ssb = scale * sm.bearingY();
+                final float ssh = scale * sm.height();
+                final float ssw = scale * sm.width();
+                float sxL = sx, sxR = sx + ssw, syT = -ssb, syB = -ssb - ssh;
+                if (devGrid > 0f) {
+                    sxL = snapToDeviceGrid(sxL, baseX, devGrid);
+                    sxR = snapToDeviceGrid(sxR, baseX, devGrid);
+                    syT = snapToDeviceGrid(syT, baseY, devGrid);
+                    syB = snapToDeviceGrid(syB, baseY, devGrid);
+                }
+                quads.add(quad(s, offX, offY, lineY, silhouetteColor, sm.textureId(),
+                        sxL, syT, su0, sv1,
+                        sxL, syB, su0, sv0,
+                        sxR, syB, su1, sv0,
+                        sxR, syT, su1, sv1));
+            }
+        }
+
         final float u0 = gm.texX();
         final float v0 = gm.texY();
         final float u1 = gm.texX() + gm.texWidth();
         final float v1 = gm.texY() + gm.texHeight();
 
-        if (s.shadowCopies() > 0) {
+        if (s.shadowCopies() > 0 && outline == null) {
             final float w = gm.width();
             final float h = gm.height();
             for (int k = 1; k <= s.shadowCopies(); k++) {
@@ -186,7 +318,7 @@ public final class TextLayoutEngine {
                 if (h > w) {
                     ex *= w / h;
                 }
-                quads.add(quad(s, offX, offY, lineY, color,
+                quads.add(quad(s, offX, offY, lineY, color, gm.textureId(),
                         penX - ex, -sb - ey, u0, v1,
                         penX - ex, -sh - sb + ey * 2f, u0, v0,
                         penX + sw + ex * 2f, -sh - sb + ey * 2f, u1, v0,
@@ -194,11 +326,23 @@ public final class TextLayoutEngine {
             }
         }
 
-        quads.add(quad(s, offX, offY, lineY, color,
-                penX, -sb, u0, v1,
-                penX, -sh - sb, u0, v0,
-                penX + sw, -sh - sb, u1, v0,
-                penX + sw, -sb, u1, v1));
+        float fxL = penX, fxR = penX + sw, fyT = -sb, fyB = -sh - sb;
+        if (devGrid > 0f) {
+            fxL = snapToDeviceGrid(fxL, baseX, devGrid);
+            fxR = snapToDeviceGrid(fxR, baseX, devGrid);
+            fyT = snapToDeviceGrid(fyT, baseY, devGrid);
+            fyB = snapToDeviceGrid(fyB, baseY, devGrid);
+        }
+        quads.add(quad(s, offX, offY, lineY, color, gm.textureId(),
+                fxL, fyT, u0, v1,
+                fxL, fyB, u0, v0,
+                fxR, fyB, u1, v0,
+                fxR, fyT, u1, v1));
+    }
+
+    /** 局部坐标吸附到设备像素网格：换算含 base 的绝对坐标取整后折回局部。 */
+    private static float snapToDeviceGrid(final float local, final float base, final float grid) {
+        return Math.round((local + base) * grid) / grid - base;
     }
 
     /** 下划线 quad：码点 95 字形在 y-2 处拉伸到当前字形宽度（drawUnderline L1022-1033）。 */
@@ -226,7 +370,7 @@ public final class TextLayoutEngine {
         final float v1 = um.texY() + um.texHeight();
         // 原版把 y-2 作为该 quad 的基准：-2 属于局部坐标（drawGlyphs 路径下同样被 shear 矩阵
         // 作用），因此并入各顶点 vyLocal 而非 lineY
-        quads.add(quad(s, offX, offY, lineY, color,
+        quads.add(quad(s, offX, offY, lineY, color, um.textureId(),
                 penX, -2f - sb, u0, v1,
                 penX, -2f - sh - sb, u0, v0,
                 penX + sw, -2f - sh - sb, u1, v0,
@@ -236,6 +380,7 @@ public final class TextLayoutEngine {
     /**
      * 组装绝对坐标 quad：局部 y（vyLocal，相对行基线）经 shear 折算到 x，
      * 行偏移 lineY 在 shear 之后叠加（等价原版 drawGlyphs 的 translate(0,lineY)+multMatrix 顺序）。
+     * textureId 从 GlyphMetrics 透传（位图路径恒 0，发射层忽略）。
      */
     private static GlyphQuad quad(
             final TextRenderState s,
@@ -243,6 +388,7 @@ public final class TextLayoutEngine {
             final float offY,
             final float lineY,
             final int color,
+            final int textureId,
             final float x1, final float y1, final float u1, final float v1,
             final float x2, final float y2, final float u2, final float v2,
             final float x3, final float y3, final float u3, final float v3,
@@ -255,7 +401,8 @@ public final class TextLayoutEngine {
                 baseX + x2 + shear * y2, baseY + y2, u2, v2,
                 baseX + x3 + shear * y3, baseY + y3, u3, v3,
                 baseX + x4 + shear * y4, baseY + y4, u4, v4,
-                color);
+                color,
+                textureId);
     }
 
     /** 选区起点判定，逐字复刻原版 isSelectionStart（含 charSelectionFlags 长度越界返回 false 的写法）。 */

@@ -25,7 +25,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * 原版脚本与主线程调用不受影响（原版脚本已在并行 AI 长程测试中验证无共享静态状态问题）。
  * <p>
  * 并发覆盖完整性：并行阶段与实体 advance/渲染阶段由帧内屏障隔开，但主线程在并行
- * 窗口内仍会内联执行模组导弹 AI（GuidedMissileAIWrapper 包装），因此主线程侧的模组
+ * 窗口内仍会内联执行模组导弹 AI（GuidedMissileAIWrapper / MissileAIWrapper 包装），
+ * 因此主线程侧的模组
  * AI 由 {@code ParallelAiDispatcher.dispatch} 内联路径持同一把锁互斥；
  * 帧屏障之外的模组主线程使用者（EveryFrame 插件等）不会与工作线程并发。
  */

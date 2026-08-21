@@ -19,6 +19,9 @@ public final class TextLayoutDiagnostics {
     private static final int                                             TOP_LIMIT                  = 5;
     private static final AtomicLong                                      NEXT_LOG_NANOS             = new AtomicLong();
     private static final LongAdder                                       TOTAL_LAYOUT_GLYPHS        = new LongAdder();
+    private static final LongAdder                                       V2_RENDER_CALLS            = new LongAdder();
+    private static final LongAdder                                       V2_PASSES                  = new LongAdder();
+    private static final LongAdder                                       V2_QUADS                   = new LongAdder();
     private static final LongAdder                                       SCALE_MILLIS_SUM           = new LongAdder();
     private static final ConcurrentHashMap<Integer, LongAdder>           SCALE_BUCKET_COUNTS        = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, LongAdder>           REQUESTED_FONT_SIZE_COUNTS = new ConcurrentHashMap<>();
@@ -58,17 +61,43 @@ public final class TextLayoutDiagnostics {
         maybeLogSummary(System.nanoTime());
     }
 
+    /** 诊断总开关（{@code ssoptimizer.textdiagnostics.enable}），供调用点规避统计开销。 */
+    public static boolean isEnabled() {
+        return Boolean.getBoolean(TextRenderDiagnostics.ENABLE_PROPERTY);
+    }
+
+    /**
+     * v2 引擎单次 render 接管的聚合记录（pass 数 / 发射 quad 数 / 请求字号）。
+     * 与 {@link #recordGlyphLayout} 的正交性：v2 链路不走 drawGlyph，布局诊断恒为零，
+     * v2 运行期画像只由本方法产出。
+     */
+    public static void recordV2Render(final int passCount, final int quadCount, final float fontSize) {
+        if (!Boolean.getBoolean(TextRenderDiagnostics.ENABLE_PROPERTY)) {
+            return;
+        }
+
+        V2_RENDER_CALLS.increment();
+        V2_PASSES.add(passCount);
+        V2_QUADS.add(quadCount);
+        REQUESTED_FONT_SIZE_COUNTS.computeIfAbsent(bucketRequestedFontSizeMillis(fontSize), ignored -> new LongAdder()).increment();
+        maybeLogSummary(System.nanoTime());
+    }
+
     static String snapshotSummary() {
         final long total = TOTAL_LAYOUT_GLYPHS.sum();
-        if (total == 0L) {
+        final long v2Calls = V2_RENDER_CALLS.sum();
+        if (total == 0L && v2Calls == 0L) {
             return "";
         }
 
-        final double averageScale = SCALE_MILLIS_SUM.sum() / 1000.0 / total;
+        final double averageScale = SCALE_MILLIS_SUM.sum() / 1000.0 / Math.max(1L, total);
         final float screenScale = currentScreenScale();
         return String.format(Locale.ROOT,
-                "[SSOptimizer] Text layout summary: layoutGlyphs=%d uniqueFontInstances=%d screenScale=%s avgScale=%.3f scaleBuckets=%s requestedFontSizes=%s nominalFontSizes=%s topCacheKeys=%s topXAdvances=%s topXOffsets=%s",
+                "[SSOptimizer] Text layout summary: layoutGlyphs=%d v2RenderCalls=%d v2Passes=%d v2Quads=%d uniqueFontInstances=%d screenScale=%s avgScale=%.3f scaleBuckets=%s requestedFontSizes=%s nominalFontSizes=%s topCacheKeys=%s topXAdvances=%s topXOffsets=%s",
                 total,
+                v2Calls,
+                V2_PASSES.sum(),
+                V2_QUADS.sum(),
                 FONT_INSTANCE_COUNTS.size(),
                 formatScreenScale(screenScale),
                 averageScale,
@@ -82,6 +111,9 @@ public final class TextLayoutDiagnostics {
 
     static void resetForTests() {
         TOTAL_LAYOUT_GLYPHS.reset();
+        V2_RENDER_CALLS.reset();
+        V2_PASSES.reset();
+        V2_QUADS.reset();
         SCALE_MILLIS_SUM.reset();
         NEXT_LOG_NANOS.set(0L);
         SCALE_BUCKET_COUNTS.clear();

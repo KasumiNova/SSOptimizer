@@ -74,4 +74,26 @@ class GetterChannelTest {
                 }));
         assertInstanceOf(UnsupportedOperationException.class, thrown.getCause());
     }
+
+    /**
+     * 主录制线程认领：类初始化捕获的线程（生产中为 launcher 线程）在首个
+     * {@code swapFramesAndSync} 时迁移到游戏循环线程——生产环境游戏循环跑在
+     * StarfarerLauncher$LaunchGameRunnable 派生线程，与 coremod onLoad 线程不同。
+     */
+    @Test
+    void mainThreadIsClaimedByFirstSwapFramesAndSyncCaller() throws Exception {
+        queue = new RenderQueueImpl();
+        assertTrue(RenderQueueImpl.isMainThread(), "初始主线程为类加载线程（测试线程）");
+
+        Thread loopThread = new Thread(() -> queue.swapFramesAndSync(), "simulated-game-loop");
+        loopThread.start();
+        loopThread.join(5000);
+        assertFalse(loopThread.isAlive(), "swapFramesAndSync 必须正常返回");
+
+        assertFalse(RenderQueueImpl.isMainThread(), "认领迁移后原线程不再是主录制线程");
+
+        // 还原：测试线程再次 swap 即重新认领，避免静态状态串扰其他用例
+        queue.swapFramesAndSync();
+        assertTrue(RenderQueueImpl.isMainThread(), "再次 swap 后认领回到测试线程");
+    }
 }

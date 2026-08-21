@@ -40,4 +40,27 @@ class TextLayoutDiagnosticsTest {
         assertTrue(summary.contains("topXAdvances=7x2, 8x1"));
         assertTrue(summary.contains("topXOffsets=1x2, -1x1"));
     }
+
+    @Test
+    void disabledDiagnosticsDoNotCollectV2Stats() {
+        TextLayoutDiagnostics.recordV2Render(3, 42, 15.0f);
+
+        assertEquals("", TextLayoutDiagnostics.snapshotSummary());
+    }
+
+    @Test
+    void enabledDiagnosticsAggregateV2RenderStatsWithoutLayoutGlyphs() {
+        System.setProperty(TextRenderDiagnostics.ENABLE_PROPERTY, "true");
+        System.setProperty(TextRenderDiagnostics.LOG_INTERVAL_PROPERTY, "0");
+
+        TextLayoutDiagnostics.recordV2Render(3, 42, 15.0f);
+        TextLayoutDiagnostics.recordV2Render(1, 10, 15.0f);
+
+        final String summary = TextLayoutDiagnostics.snapshotSummary();
+        assertTrue(summary.contains("layoutGlyphs=0"));
+        assertTrue(summary.contains("v2RenderCalls=2"));
+        assertTrue(summary.contains("v2Passes=4"));
+        assertTrue(summary.contains("v2Quads=52"));
+        assertTrue(summary.contains("requestedFontSizes=15.000x2"));
+    }
 }

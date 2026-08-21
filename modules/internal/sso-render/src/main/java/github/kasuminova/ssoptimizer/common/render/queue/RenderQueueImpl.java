@@ -57,11 +57,14 @@ public final class RenderQueueImpl implements RenderQueue {
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
     /**
-     * 主录制线程：构造本队列的线程（游戏中即游戏主线程，mod 加载期构造）。
+     * 主录制线程：初值为加载本类的线程（coremod onLoad 阶段，launcher 主线程），
+     * 首个 {@link #swapFramesAndSync()} 调用时由游戏主循环线程认领——游戏循环实际跑在
+     * {@code StarfarerLauncher$LaunchGameRunnable} 派生线程，类初始化时的线程并非
+     * 游戏线程；帧边界推进本就由游戏循环线程唯一执行（aux 线程不调用 swap），认领安全。
      * bridge 的帧录制上下文帧边界缓存（{@link BridgeSupport#recordingContext()}）
      * 依赖此判定——aux-context 生产者线程不得命中主线程缓存。
      */
-    private static final Thread MAIN_THREAD = Thread.currentThread();
+    private static volatile Thread mainThread = Thread.currentThread();
 
     private final FramePool framePool;
     private final StallDetector stallDetector;
@@ -160,6 +163,7 @@ public final class RenderQueueImpl implements RenderQueue {
 
     @Override
     public void swapFramesAndSync() {
+        claimMainThreadIfNeeded();
         CompletableFuture<Void> previousCompletion;
         synchronized (frameLock) {
             previousCompletion = lastSubmittedCompletion;
@@ -279,9 +283,30 @@ public final class RenderQueueImpl implements RenderQueue {
         return Thread.currentThread() == renderThread;
     }
 
-    /** @return 当前线程是否为主录制线程（构造本队列的线程）。 */
+    /** @return 当前线程是否为主录制线程（帧边界推进线程，即游戏主循环线程）。 */
     public static boolean isMainThread() {
-        return Thread.currentThread() == MAIN_THREAD;
+        return Thread.currentThread() == mainThread;
+    }
+
+    /**
+     * 主录制线程认领：首个 {@link #swapFramesAndSync()} 调用线程即游戏主循环线程
+     * （生产环境中队列类可能由 launcher 线程加载，与游戏循环线程不是同一个），
+     * 迁移时输出 INFO 日志供实机诊断确认。
+     * 渲染线程豁免：加载期画面由渲染线程 pump（RenderFramePump 路径也会调到本方法），
+     * 渲染线程的帧推进只是加载期代跑，不得窃取主录制线程身份——否则游戏线程的
+     * getter 仿真门控会在加载后期失效（实机实测渲染线程曾短暂窃取后被游戏线程抢回）。
+     */
+    private void claimMainThreadIfNeeded() {
+        final Thread current = Thread.currentThread();
+        if (current == renderThread) {
+            return;
+        }
+        final Thread existing = mainThread;
+        if (existing != current) {
+            mainThread = current;
+            LOGGER.info("[SSOptimizer] 主录制线程认领：\"" + existing.getName()
+                    + "\" -> \"" + current.getName() + "\"");
+        }
     }
 
     /**

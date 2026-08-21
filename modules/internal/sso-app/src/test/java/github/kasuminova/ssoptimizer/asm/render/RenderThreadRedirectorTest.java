@@ -192,6 +192,20 @@ class RenderThreadRedirectorTest {
     }
 
     @Test
+    void fontAtlasGlIsExcludedFromRedirect() {
+        // 字体动态图集的真实 GL 操作体（bridge/opengl/FontAtlasGl）必须调真 GL：
+        // 该类在渲染线程执行纹理创建/上传/删除，若被重定向成 bridge 录制调用，
+        // 真实上传会被延迟到后续帧且绑定交错污染其他纹理（实机横条/贴图污染症状）。
+        // 用真实类名现造字节码，断言其裸 lwjgl 调用点不被改写。
+        byte[] source = buildClass("github/kasuminova/ssoptimizer/bridge/opengl/FontAtlasGl", mv ->
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11",
+                        "glBindTexture", "(II)V", false));
+        assertSame(source, RenderThreadRedirector.redirect(
+                        "github.kasuminova.ssoptimizer.bridge.opengl.FontAtlasGl", source),
+                "FontAtlasGl 命中 bridge 包排除规则，绝不改写");
+    }
+
+    @Test
     void lwjglInternalsAreExcluded() {
         byte[] source = buildClass("org/lwjgl/opengl/LinuxDisplay", mv ->
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glBegin", "(I)V", false));

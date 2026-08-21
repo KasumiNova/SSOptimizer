@@ -18,11 +18,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class TextLayoutEngineTest {
 
     // ── fixture：固定度量的小字体（名义 15 / 行高 18）─────────────────────
-    private static final GlyphMetrics GLYPH_A = new GlyphMetrics(1, 12, 11, 10, 12, 0.10f, 0.10f, 0.05f, 0.06f);
-    private static final GlyphMetrics GLYPH_B = new GlyphMetrics(0, 11, 11, 9, 12, 0.20f, 0.10f, 0.05f, 0.06f);
-    private static final GlyphMetrics GLYPH_Q = new GlyphMetrics(0, 8, 10, 7, 11, 0.30f, 0.10f, 0.05f, 0.06f);
-    private static final GlyphMetrics GLYPH_UL = new GlyphMetrics(0, 10, -2, 8, 2, 0.40f, 0.10f, 0.05f, 0.06f);
-    private static final GlyphMetrics GLYPH_BRACE = new GlyphMetrics(0, 4, 0, 0, 0, 0.50f, 0.10f, 0f, 0f);
+    private static final GlyphMetrics GLYPH_A = new GlyphMetrics(1, 12, 11, 10, 12, 0.10f, 0.10f, 0.05f, 0.06f, 0);
+    private static final GlyphMetrics GLYPH_B = new GlyphMetrics(0, 11, 11, 9, 12, 0.20f, 0.10f, 0.05f, 0.06f, 0);
+    private static final GlyphMetrics GLYPH_Q = new GlyphMetrics(0, 8, 10, 7, 11, 0.30f, 0.10f, 0.05f, 0.06f, 0);
+    private static final GlyphMetrics GLYPH_UL = new GlyphMetrics(0, 10, -2, 8, 2, 0.40f, 0.10f, 0.05f, 0.06f, 0);
+    private static final GlyphMetrics GLYPH_BRACE = new GlyphMetrics(0, 4, 0, 0, 0, 0.50f, 0.10f, 0f, 0f, 0);
 
     private static final class FakeGlyphs implements GlyphProvider {
         final Map<Integer, GlyphMetrics> glyphs = new HashMap<>();
@@ -315,13 +315,12 @@ class TextLayoutEngineTest {
     // ── 特殊字形（占位符语义已烘焙在 fnt 度量中）─────────────────────────
 
     @Test
-    void bracePlaceholderAdvancesLikeSpaceWithDegenerateQuad() {
+    void bracePlaceholderAdvancesLikeSpaceWithoutQuad() {
+        // P3 语义对齐：零尺寸占位符不产 quad（原版 bake 后不产可见像素），只推进 penX
         List<TextPass> passes = TextLayoutEngine.layout(state("A{B").build(), font());
         List<GlyphQuad> quads = passes.get(0).quads();
-        assertEquals(3, quads.size(), "原版对零尺寸占位符仍发射退化 quad");
-        GlyphQuad brace = quads.get(1);
-        assertEquals(brace.x1(), brace.x3(), "零宽字形 quad 退化");
+        assertEquals(2, quads.size(), "零尺寸占位符不发射 quad");
         // '{' 贡献 xAdvance 4：B 的 penX = 13 + 4 + 0 + kern(123,66)=null → 17
-        assertEquals(117f, quads.get(2).x1());
+        assertEquals(117f, quads.get(1).x1());
     }
 }

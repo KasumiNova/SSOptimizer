@@ -2,10 +2,11 @@ package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.font.BitmapFont;
 import com.fs.graphics.font.BitmapGlyph;
-import github.kasuminova.ssoptimizer.common.font.BitmapFontGlyphProvider;
+import github.kasuminova.ssoptimizer.common.font.FontGlyphSources;
 import github.kasuminova.ssoptimizer.common.font.FontRenderEngine;
 import github.kasuminova.ssoptimizer.common.font.RuntimeScaledFontCache;
 import github.kasuminova.ssoptimizer.common.font.emit.TextStreamEmitter;
+import github.kasuminova.ssoptimizer.common.font.layout.GlyphProvider;
 import github.kasuminova.ssoptimizer.common.font.layout.TextLayoutEngine;
 import github.kasuminova.ssoptimizer.common.font.layout.TextPass;
 import github.kasuminova.ssoptimizer.common.font.layout.TextRenderState;
@@ -32,7 +33,7 @@ import java.util.List;
  * 注入效果（双引擎，{@link FontRenderEngine} 开关切换）：<br>
  * - v2（新布局引擎）：{@code render()} HEAD 接管——状态快照 → TextLayoutEngine 布局 →
  *   TextStreamEmitter 流式发射，原私有渲染链（含 display list）整体不再执行；<br>
- * - legacy（现行默认）：{@code drawGlyph} 替换为 helper/native 委托 + render HEAD 运行时缩放换字体，
+ * - legacy（回滚选项）：{@code drawGlyph} 替换为 helper/native 委托 + render HEAD 运行时缩放换字体，
  *   行为与重写前完全一致。P4 拆除 legacy 后本类只保留 v2 注入。
  */
 @Mixin(targets = GameClassNames.BITMAP_FONT_RENDERER_DOTTED)
@@ -75,7 +76,9 @@ public abstract class BitmapFontRendererMixin {
     protected abstract void updateCompactFontFlag();
 
     /**
-     * v2 渲染接管：render() 整体替换为「快照 → 布局引擎 → 流式发射」。
+     * v2 渲染接管：render() 整体替换为「快照 → 字形源解析 → 布局引擎 → 流式发射」。
+     * P3 起字形源按字体身份分流：原版覆盖表命中且 native 栅格化可用 → TTF 动态图集
+     * （quad 携带图集页 textureId，发射层分组换绑）；否则 → 位图直发（pass 级纹理）。
      *
      * @reason 新链路在保留 codepoint/颜色语义的层级重建文本绘制，替代原版私有渲染链；
      *         legacy 模式下不接管（返回后走原版 render）。
@@ -91,11 +94,6 @@ public abstract class BitmapFontRendererMixin {
             SSOPTIMIZER$LOGGER.info("trying to render non-null text with a null font");
             return;
         }
-        // P2 过渡期：位图字形源下沿用运行时缩放换字体保持高缩放档位清晰
-        // （P3 动态图集按有效像素尺寸精确栅格化后移除本调用，连同 RuntimeScaledFontCache 一并拆除）；
-        // 显式在此调用而非依赖注入顺序，保证快照一定取到换装后的字体
-        font = (BitmapFont) RuntimeScaledFontCache.resolveScaledFont(font, requestedFontSize);
-        requestedFontSize = RuntimeScaledFontCache.adjustRequestedFontSize(font, requestedFontSize);
         // compact 标记的惰性刷新与原版 renderText 内的 updateCompactFontFlag 对齐
         updateCompactFontFlag();
 
@@ -119,8 +117,23 @@ public abstract class BitmapFontRendererMixin {
                 .shear(shearMatrix != null ? shearMatrix.get(4) : 0f)
                 .visible(visible)
                 .build();
-        final List<TextPass> passes = TextLayoutEngine.layout(state, new BitmapFontGlyphProvider(font));
-        TextStreamEmitter.emit(passes, font.getTexture(), blendSrcFactor, blendDstFactor);
+        // P3：字形源按字体身份解析——覆盖表命中且 native 可用走 TTF 动态图集，否则位图直发
+        final GlyphProvider provider = FontGlyphSources.resolve(font);
+        final List<TextPass> passes = TextLayoutEngine.layout(state, provider);
+        // 图集脏数据必须先于发射提交渲染线程（同帧命令顺序保证上传先于采样执行）
+        provider.flushPendingUploads();
+        if (provider.usesAtlasTexture()) {
+            TextStreamEmitter.emit(passes, blendSrcFactor, blendDstFactor);
+        } else {
+            TextStreamEmitter.emit(passes, font.getTexture(), blendSrcFactor, blendDstFactor);
+        }
+        if (TextLayoutDiagnostics.isEnabled()) {
+            int quadCount = 0;
+            for (final TextPass pass : passes) {
+                quadCount += pass.quads().size();
+            }
+            TextLayoutDiagnostics.recordV2Render(passes.size(), quadCount, requestedFontSize);
+        }
     }
 
     /** wordColors（Color[]）转 RGB int[]；null 项保持 null 语义由引擎侧守卫处理。 */

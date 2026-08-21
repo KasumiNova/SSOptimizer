@@ -113,6 +113,92 @@ public final class NativeFontRasterizer {
         }
     }
 
+    /**
+     * 栅格化指定码点的「描边剪影」：填充字形 ∪ 轮廓向外扩张 {@code strokeWidthPx} 像素的外环。
+     * <p>
+     * 合成语义：填充位图与描边外环位图按各自 bearing 求包围盒并集，逐像素取 alpha 最大值
+     * （两者均为 8-bit 灰度覆盖率），输出并集尺寸的白底 alpha 位图。
+     * {@code xAdvance} 与纯填充一致（描边不改变步进），{@code xOffset}/{@code yOffset}
+     * 以并集包围盒为准。{@code strokeWidthPx <= 0} 或 native 描边器不可用时退化为纯填充结果。
+     *
+     * @param faceHandle    {@link #createFace} 返回的句柄
+     * @param codePoint     Unicode code point
+     * @param baseline      基线位置（与 {@link #rasterizeGlyph} 同语义）
+     * @param strokeWidthPx 描边宽度（像素），{@code <= 0} 时等价于纯填充
+     * @return 描边剪影位图；句柄非法或栅格化失败返回 {@code null}
+     */
+    public static NativeGlyphBitmap rasterizeGlyphStroked(final long faceHandle,
+                                                          final int codePoint,
+                                                          final int baseline,
+                                                          final float strokeWidthPx) {
+        if (faceHandle == 0L || !isAvailable()) {
+            return null;
+        }
+
+        try {
+            return nativeRasterizeGlyphStroked(faceHandle, codePoint, baseline, strokeWidthPx);
+        } catch (UnsatisfiedLinkError | RuntimeException e) {
+            LOGGER.warn("[SSOptimizer] Native font rasterizer rasterizeGlyphStroked failed: " + e.getMessage());
+            markUnavailable();
+            return null;
+        }
+    }
+
+    /**
+     * 批量栅格化一组码点，摊薄 JNI 边界开销。
+     * <p>
+     * {@code strokeWidthPx > 0} 时逐字走描边剪影合成（语义同
+     * {@link #rasterizeGlyphStroked}），否则为纯填充。返回数组长度与 {@code codePoints}
+     * 严格一致；单个码点栅格化失败（如字体无该字形）时对应元素为 {@code null}，
+     * 不影响其余元素的栅格化。
+     *
+     * @param faceHandle    {@link #createFace} 返回的句柄
+     * @param codePoints    待栅格化的 Unicode code point 数组
+     * @param baseline      基线位置（与 {@link #rasterizeGlyph} 同语义）
+     * @param strokeWidthPx 描边宽度（像素），{@code <= 0} 时为纯填充
+     * @return 与入参等长的位图数组（失败元素为 {@code null}）；入参非法或整体失败返回 {@code null}
+     */
+    public static NativeGlyphBitmap[] rasterizeGlyphs(final long faceHandle,
+                                                      final int[] codePoints,
+                                                      final int baseline,
+                                                      final float strokeWidthPx) {
+        if (faceHandle == 0L || codePoints == null || !isAvailable()) {
+            return null;
+        }
+
+        try {
+            return nativeRasterizeGlyphs(faceHandle, codePoints, baseline, strokeWidthPx);
+        } catch (UnsatisfiedLinkError | RuntimeException e) {
+            LOGGER.warn("[SSOptimizer] Native font rasterizer rasterizeGlyphs failed: " + e.getMessage());
+            markUnavailable();
+            return null;
+        }
+    }
+
+    /**
+     * 查询 face 是否含指定码点的字形（TTF 动态图集 face 链回退选择用，
+     * 不改变任何栅格化语义）：{@code FT_Get_Char_Index(face, cp) != 0}。
+     * 码点 0（.notdef 占位查询无意义）、句柄非法或 native 不可用时返回 false。
+     *
+     * @param faceHandle {@link #createFace} 返回的句柄
+     * @param codePoint  Unicode code point
+     * @return face 含该字形返回 true
+     */
+    public static boolean hasGlyph(final long faceHandle,
+                                   final int codePoint) {
+        if (faceHandle == 0L || codePoint == 0 || !isAvailable()) {
+            return false;
+        }
+
+        try {
+            return nativeHasGlyph(faceHandle, codePoint);
+        } catch (UnsatisfiedLinkError | RuntimeException e) {
+            LOGGER.warn("[SSOptimizer] Native font rasterizer hasGlyph failed: " + e.getMessage());
+            markUnavailable();
+            return false;
+        }
+    }
+
     public static void destroyFace(final long faceHandle) {
         if (faceHandle == 0L || !isAvailable()) {
             return;
@@ -167,6 +253,19 @@ public final class NativeFontRasterizer {
     private static native NativeGlyphBitmap nativeRasterizeGlyph(long faceHandle,
                                                                  int codePoint,
                                                                  int baseline);
+
+    private static native NativeGlyphBitmap nativeRasterizeGlyphStroked(long faceHandle,
+                                                                        int codePoint,
+                                                                        int baseline,
+                                                                        float strokeWidthPx);
+
+    private static native NativeGlyphBitmap[] nativeRasterizeGlyphs(long faceHandle,
+                                                                    int[] codePoints,
+                                                                    int baseline,
+                                                                    float strokeWidthPx);
+
+    private static native boolean nativeHasGlyph(long faceHandle,
+                                                 int codePoint);
 
     private static native void nativeDestroyFace(long faceHandle);
 

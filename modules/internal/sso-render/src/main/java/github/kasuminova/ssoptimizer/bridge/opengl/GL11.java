@@ -83,8 +83,8 @@ public final class GL11 {
         BridgeSupport.install(renderQueue);
     }
 
-    /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
-    static void uninstall() {
+    /** 测试用：卸载已安装的队列，避免用例间静态状态串扰（跨包测试亦需要，故 public）。 */
+    public static void uninstall() {
         BridgeSupport.uninstall();
         for (int i = 0; i < STRING_CACHE.length(); i++) {
             STRING_CACHE.set(i, null);
@@ -736,14 +736,22 @@ public final class GL11 {
                 () -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
     }
 
-    /** 资源分配：阻塞通道取回真实纹理 id（预生成 stash 为后续演进点）。 */
+    /** 资源分配：阻塞通道取回真实纹理 id，同时登记 isTexture 名字簿记（预生成 stash 为后续演进点）。 */
     public static int glGenTextures() {
-        return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL11::glGenTextures);
+        final int texture = BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL11::glGenTextures);
+        BridgeSupport.simulatedState().onGenTexture(texture);
+        return texture;
     }
 
     /** 渲染线程直接把 id 写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenTextures(IntBuffer textures) {
+        final int base = textures.position();
+        final int count = textures.remaining();
         BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL11.glGenTextures(textures));
+        // 绝对读取采入 isTexture 簿记（glGenTextures 语义即名字预留，无需 bind）
+        for (int i = base; i < base + count; i++) {
+            BridgeSupport.simulatedState().onGenTexture(textures.get(i));
+        }
     }
 
     public static void glDeleteTextures(int texture) {
@@ -799,6 +807,7 @@ public final class GL11 {
     /** pixels 允许为 null（仅分配纹理存储），此时无快照直接录制。 */
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height,
                                     int border, int format, int type, ByteBuffer pixels) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
         if (pixels == null) {
             BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexImage2D(
                     target, level, internalformat, width, height, border, format, type, (ByteBuffer) null));
@@ -810,24 +819,28 @@ public final class GL11 {
 
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height,
                                     int border, int format, int type, DoubleBuffer pixels) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
         BridgeSupport.enqueueSnapshot(pixels, snapshot -> org.lwjgl.opengl.GL11.glTexImage2D(
                 target, level, internalformat, width, height, border, format, type, snapshot.asDoubleBuffer()));
     }
 
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height,
                                     int border, int format, int type, FloatBuffer pixels) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
         BridgeSupport.enqueueSnapshot(pixels, snapshot -> org.lwjgl.opengl.GL11.glTexImage2D(
                 target, level, internalformat, width, height, border, format, type, snapshot.asFloatBuffer()));
     }
 
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height,
                                     int border, int format, int type, IntBuffer pixels) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
         BridgeSupport.enqueueSnapshot(pixels, snapshot -> org.lwjgl.opengl.GL11.glTexImage2D(
                 target, level, internalformat, width, height, border, format, type, snapshot.asIntBuffer()));
     }
 
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height,
                                     int border, int format, int type, ShortBuffer pixels) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
         BridgeSupport.enqueueSnapshot(pixels, snapshot -> org.lwjgl.opengl.GL11.glTexImage2D(
                 target, level, internalformat, width, height, border, format, type, snapshot.asShortBuffer()));
     }
@@ -894,6 +907,7 @@ public final class GL11 {
 
     public static void glCopyTexImage2D(int target, int level, int internalformat,
                                         int x, int y, int width, int height, int border) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glCopyTexImage2D(
                 target, level, internalformat, x, y, width, height, border));
     }
@@ -923,8 +937,20 @@ public final class GL11 {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexEnvf(target, pname, param));
     }
 
-    /** 阻塞 getter：逐级纹理属性回读。 */
+    /**
+     * 主线程对 TEXTURE_2D + level 0 + 已簿记纹理的 WIDTH/HEIGHT/INTERNAL_FORMAT/BORDER
+     * 走本地簿记（上传调用点登记，零阻塞）；其余 pname/level/target 回退阻塞通道。
+     * 仿真动机：BoxUtil UIBorderObject 等模组构造期经本方法读纹理尺寸，无缓存时
+     * 每次实例化都是一次管线 drain。
+     */
     public static int glGetTexLevelParameteri(int target, int level, int pname) {
+        if (BridgeSupport.isMainRecordingThread()) {
+            final Integer simulated =
+                    BridgeSupport.simulatedState().getTexLevelParam(target, level, pname);
+            if (simulated != null) {
+                return simulated;
+            }
+        }
         return BridgeSupport.blockingGet(() ->
                 org.lwjgl.opengl.GL11.glGetTexLevelParameteri(target, level, pname));
     }
@@ -1007,6 +1033,16 @@ public final class GL11 {
             final Integer simulated = BridgeSupport.simulatedState().getInteger(pname);
             if (simulated != null) {
                 return simulated;
+            }
+            if (SimulatedGlState.isCapConstant(pname)) {
+                // caps 常量（GL_MAX_* 族）上下文生命周期内不变：首次阻塞读回后永久缓存
+                final Integer cached = BridgeSupport.simulatedState().cachedCap(pname);
+                if (cached != null) {
+                    return cached;
+                }
+                final int value = BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
+                BridgeSupport.simulatedState().adoptCap(pname, value);
+                return value;
             }
             final int authoritative = BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
             BridgeSupport.simulatedState().adoptInteger(pname, authoritative);
@@ -1103,7 +1139,14 @@ public final class GL11 {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glIsEnabled(cap));
     }
 
+    /**
+     * 主线程走 isTexture 名字簿记仿真（gen/bind 创建、delete 移除均经 bridge 镜像）；
+     * aux 线程回退阻塞通道。
+     */
     public static boolean glIsTexture(int texture) {
+        if (BridgeSupport.isMainRecordingThread()) {
+            return BridgeSupport.simulatedState().isTexture(texture);
+        }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glIsTexture(texture));
     }
 

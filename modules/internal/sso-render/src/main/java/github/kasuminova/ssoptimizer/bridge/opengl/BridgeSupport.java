@@ -116,6 +116,14 @@ final class BridgeSupport {
 
     private static volatile RenderQueue queue;
 
+    /**
+     * GL 上下文重建监听器（{@link GlDispatch#registerContextRecreatedListener(Runnable)}
+     * 的注册落点）：onContextRecreated 末尾逐个通知。CopyOnWrite 语义——注册在启动期
+     * 发生、通知在显示模式切换期发生，双方都不在帧热路径上，读多写极少。
+     */
+    private static final java.util.List<Runnable> CONTEXT_RECREATED_LISTENERS =
+            new java.util.concurrent.CopyOnWriteArrayList<>();
+
     private BridgeSupport() {
     }
 
@@ -131,6 +139,7 @@ final class BridgeSupport {
     /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
     static void uninstall() {
         queue = null;
+        CONTEXT_RECREATED_LISTENERS.clear();
         RECORDING_CONTEXT.remove();
         mainRecordingContext = null;
         executedArrayBufferBinding = 0;
@@ -168,9 +177,10 @@ final class BridgeSupport {
     }
 
     /**
-     * 主录制线程（构造 RenderQueueImpl 的线程，即游戏主线程）在帧边界缓存
-     * 上下文与当前录制帧（状态命令去重的相邻性判据），并重置去重缓存——
-     * 跨帧不延续去重（GL 状态虽跨帧保持，保守起见帧间状态命令照常入队）。
+     * 主录制线程（游戏主循环线程，首个 swapFramesAndSync 调用时认领，见
+     * {@link RenderQueueImpl}）在帧边界缓存上下文与当前录制帧（状态命令去重的
+     * 相邻性判据），并重置去重缓存——跨帧不延续去重（GL 状态虽跨帧保持，
+     * 保守起见帧间状态命令照常入队）。
      */
     private static void refreshMainRecordingContext() {
         if (RenderQueueImpl.isMainThread()) {
@@ -499,6 +509,25 @@ final class BridgeSupport {
         simulatedState().onContextRecreated();
         bufferIdStash = new ConcurrentLinkedQueue<>();
         bufferIdStashCount = new AtomicInteger();
+        // 通知外部资源持有者（如字体动态图集）：单个监听器抛错不中断其余监听器——
+        // 上下文重建后所有持有者都必须有机会复位自身簿记，否则残留旧上下文的死 id
+        for (final Runnable listener : CONTEXT_RECREATED_LISTENERS) {
+            try {
+                listener.run();
+            } catch (Throwable t) {
+                LOGGER.warn("[SSOptimizer] GL 上下文重建监听器执行失败，继续通知其余监听器", t);
+            }
+        }
+    }
+
+    /** 注册 GL 上下文重建监听器（供 {@link GlDispatch} 门面转发）。 */
+    static void registerContextRecreatedListener(final Runnable listener) {
+        CONTEXT_RECREATED_LISTENERS.add(listener);
+    }
+
+    /** 已安装的队列（可为 null）；{@link GlDispatch#isRenderThread()} 的空安全判定用。 */
+    static RenderQueue installedQueue() {
+        return queue;
     }
 
     /**
