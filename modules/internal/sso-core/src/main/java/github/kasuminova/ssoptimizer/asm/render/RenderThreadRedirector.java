@@ -50,6 +50,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>字段访问（GETSTATIC 等）不改写：javac 会把 GL 常量内联，运行期字段访问
  *       不存在于这些 owner 上；出现即 warn 保持原样（bridge 类不声明常量字段，
  *       改写 owner 会 NoSuchFieldError）。</li>
+ *   <li>GLU Sphere 特例：{@code org/lwjgl/util/glu/Sphere.draw(FII)V}
+ *       （INVOKEVIRTUAL）改写为 {@code GluSupport.enqueueSphereDraw} 的
+ *       INVOKESTATIC——Sphere 随 lwjgl_util 由 System 类加载器加载、内部引用
+ *       真实 GL11，owner 改写够不到 System 域；整段绘制录制为一条渲染队列命令
+ *       （机制见 GluSupport 类注释）。操作数栈形状不变（receiver 变首参），
+ *       帧原样保留。Sphere 的纯配置方法（setDrawStyle/setNormals/setOrientation/
+ *       setTextureFlag）不触碰 GL，保持原样在调用线程同步执行。GLU 其余入口
+ *       （GLU 静态类、GLUtessellator）经实机模组面扫描确认无需覆盖：gluErrorString
+ *       为纯字符串查询；tessellator 本体纯 Java 几何计算，其回调实现位于模组
+ *       自身类（Launch 域），GL 调用已被 owner 改写覆盖。</li>
  * </ul>
  * 排除规则：
  * <ul>
@@ -71,6 +81,16 @@ public final class RenderThreadRedirector {
     /** LWJGL GL 包前缀（常量池 UTF8 预筛与 owner 判定共用）。 */
     private static final String LWJGL_PREFIX = "org/lwjgl/opengl/";
     private static final byte[] LWJGL_PREFIX_BYTES = LWJGL_PREFIX.getBytes(StandardCharsets.UTF_8);
+    /** GLU Sphere owner：System 域 lwjgl_util 类，draw 内部引用真实 GL11，需特例改写。 */
+    private static final String GLU_SPHERE_OWNER = "org/lwjgl/util/glu/Sphere";
+    private static final byte[] GLU_SPHERE_OWNER_BYTES = GLU_SPHERE_OWNER.getBytes(StandardCharsets.UTF_8);
+    /** Sphere.draw 的方法名与原始描述符。 */
+    private static final String GLU_SPHERE_DRAW_NAME = "draw";
+    private static final String GLU_SPHERE_DRAW_DESC = "(FII)V";
+    /** Sphere.draw 的整段入队转发入口（receiver 变首参，栈形状不变）。 */
+    private static final String GLU_SUPPORT_OWNER =
+            "github/kasuminova/ssoptimizer/bridge/opengl/GluSupport";
+    private static final String GLU_SUPPORT_DRAW_DESC = "(Lorg/lwjgl/util/glu/Sphere;FII)V";
     /** bridge GL 镜像包前缀（owner 改写目标）。 */
     private static final String BRIDGE_PREFIX = "github/kasuminova/ssoptimizer/bridge/opengl/";
     /** 排除规则前缀：bridge 包整体（命令体必须调真 GL）。 */
@@ -138,7 +158,7 @@ public final class RenderThreadRedirector {
         if (internalClassName != null && isExcluded(internalClassName.replace('.', '/'))) {
             return classBytes;
         }
-        if (!containsLwjglReference(classBytes)) {
+        if (!containsRedirectableReference(classBytes)) {
             return classBytes;
         }
 
@@ -187,12 +207,20 @@ public final class RenderThreadRedirector {
                 || internalClassName.equals("github/kasuminova/ssoptimizer/asm/render/RenderThreadRedirector");
     }
 
-    /** 常量池预筛：字节中不含 LWJGL GL 包名则不可能存在待改写引用。 */
-    private static boolean containsLwjglReference(final byte[] bytes) {
+    /**
+     * 常量池预筛：字节中不含 LWJGL GL 包名且不含 GLU Sphere 类名时，
+     * 不可能存在待改写引用（模组类可能只调 Sphere.draw 而无任何 org/lwjgl/opengl
+     * 直接引用，两个前缀都必须筛）。
+     */
+    private static boolean containsRedirectableReference(final byte[] bytes) {
+        return containsBytes(bytes, LWJGL_PREFIX_BYTES) || containsBytes(bytes, GLU_SPHERE_OWNER_BYTES);
+    }
+
+    private static boolean containsBytes(final byte[] bytes, final byte[] needle) {
         outer:
-        for (int i = 0; i <= bytes.length - LWJGL_PREFIX_BYTES.length; i++) {
-            for (int j = 0; j < LWJGL_PREFIX_BYTES.length; j++) {
-                if (bytes[i + j] != LWJGL_PREFIX_BYTES[j]) {
+        for (int i = 0; i <= bytes.length - needle.length; i++) {
+            for (int j = 0; j < needle.length; j++) {
+                if (bytes[i + j] != needle[j]) {
                     continue outer;
                 }
             }
@@ -317,6 +345,14 @@ public final class RenderThreadRedirector {
 
         @Override
         public void visitMethodInsn(int opcode, String ownerName, String name, String desc, boolean itf) {
+            // GLU Sphere 特例：整段绘制入队（owner 改写够不到 System 域的 Sphere 内部）
+            if (opcode == Opcodes.INVOKEVIRTUAL && GLU_SPHERE_OWNER.equals(ownerName)
+                    && GLU_SPHERE_DRAW_NAME.equals(name) && GLU_SPHERE_DRAW_DESC.equals(desc)) {
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, GLU_SUPPORT_OWNER,
+                        "enqueueSphereDraw", GLU_SUPPORT_DRAW_DESC, false);
+                classVisitor.modified = true;
+                return;
+            }
             String bridgeOwner = OWNER_REMAP.get(ownerName);
             if (bridgeOwner == null) {
                 super.visitMethodInsn(opcode, ownerName, name, desc, itf);

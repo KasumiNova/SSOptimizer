@@ -63,7 +63,6 @@
     "render.EngineRenderMixin",
     "render.GenericTextureParticleMixin",
     "render.NebulaParticleMixin",
-    "render.PlanetGluSphereMixin",
     "render.RadarIconSpriteMixin",
     "render.NegativeParticleMixin",
     "render.SmokeParticleMixin",

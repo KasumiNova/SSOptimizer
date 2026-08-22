@@ -8,13 +8,16 @@ import org.lwjgl.util.glu.Sphere;
  * <p>
  * 动机：分离模式下主线程不持有 GL context，而 GLU 类（如 {@link Sphere}）
  * 内部直接引用真实 {@code org.lwjgl.opengl.GL11}——它们随 lwjgl_util jar 由
- * System 类加载器加载，{@code RenderThreadRedirectTransformer} 处理不到，
+ * System 类加载器加载，{@code RenderThreadRedirector} 的 owner 改写处理不到，
  * 主线程直接调用会以 "No OpenGL context found in the current thread" 崩溃。
  * 本类把这些调用整段作为一条命令提交进渲染队列，在持有真实 context 的
  * 渲染线程上执行；调用点前后的 bridged GL 状态调用与它在同一 FIFO 队列中，
  * 顺序语义与单线程一致。
  * <p>
- * 仅在分离模式启用且队列已安装时使用；非分离模式由调用方直接走原路径。
+ * 接入方式：游戏类与模组类中的 {@code Sphere.draw(FII)V} 调用点由
+ * {@code RenderThreadRedirector} 在类加载期统一改写为
+ * {@link #enqueueSphereDraw} 的静态调用（receiver 变首参），仅分离模式启用时
+ * 改写；调用方无需也不应直接调用本类。
  */
 public final class GluSupport {
 

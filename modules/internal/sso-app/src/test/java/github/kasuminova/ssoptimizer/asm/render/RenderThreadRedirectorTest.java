@@ -309,4 +309,65 @@ class RenderThreadRedirectorTest {
         assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/Display.update(Z)V"), calls.toString());
         assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GLContext.getCapabilities()Lorg/lwjgl/opengl/ContextCapabilities;"), calls.toString());
     }
+
+    @Test
+    void gluSphereDrawIsRedirectedToGluSupport() {
+        // ApproLight/LunaLib 等模组的 Sphere.draw 崩溃签名：Sphere 在 System 域，
+        // 内部裸调真实 GL11。调用类只引用 Sphere 而无任何 org/lwjgl/opengl 直接引用，
+        // 同时验证 GLU 前缀预筛必须放行此类（否则整类跳过改写）。
+        byte[] source = buildClass("com/example/UsesGluSphere", mv -> {
+            mv.visitInsn(Opcodes.ACONST_NULL); // sphere receiver
+            mv.visitInsn(Opcodes.FCONST_1);
+            mv.visitIntInsn(Opcodes.BIPUSH, 16);
+            mv.visitIntInsn(Opcodes.BIPUSH, 8);
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "org/lwjgl/util/glu/Sphere",
+                    "draw", "(FII)V", false);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.UsesGluSphere", source);
+        assertNotSame(source, result, "Sphere.draw 调用点必须被改写（含仅引 Sphere 的预筛放行）");
+
+        List<String> opcodes = new ArrayList<>();
+        List<String> calls = new ArrayList<>();
+        new ClassReader(result).accept(new ClassVisitor(Opcodes.ASM9, null) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc,
+                                             String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9, null) {
+                    @Override
+                    public void visitMethodInsn(int opcode, String owner, String methodName,
+                                                String methodDesc, boolean itf) {
+                        opcodes.add(String.valueOf(opcode));
+                        calls.add(owner + '.' + methodName + methodDesc);
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        int idx = calls.indexOf("github/kasuminova/ssoptimizer/bridge/opengl/GluSupport"
+                + ".enqueueSphereDraw(Lorg/lwjgl/util/glu/Sphere;FII)V");
+        assertTrue(idx >= 0, "必须改写为 GluSupport.enqueueSphereDraw，实际: " + calls);
+        assertEquals(String.valueOf(Opcodes.INVOKESTATIC), opcodes.get(idx),
+                "receiver 变首参后必须是 INVOKESTATIC（栈形状不变）");
+        assertFalse(calls.stream().anyMatch(c -> c.startsWith("org/lwjgl/util/glu/")),
+                "Sphere.draw 原调用点不得残留: " + calls);
+    }
+
+    @Test
+    void gluSphereConfigMethodsAreUntouched() {
+        // setDrawStyle/setNormals/setOrientation/setTextureFlag 是纯 Java 配置，
+        // 必须保持同步原样执行（配置完成后 draw 才入队录制，顺序语义依赖这一点）
+        byte[] source = buildClass("com/example/ConfiguresGluSphere", mv -> {
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.visitIntInsn(Opcodes.BIPUSH, 100);
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "org/lwjgl/util/glu/Sphere",
+                    "setDrawStyle", "(I)V", false);
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.visitInsn(Opcodes.ICONST_1);
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "org/lwjgl/util/glu/Sphere",
+                    "setTextureFlag", "(Z)V", false);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.ConfiguresGluSphere", source);
+        assertSame(source, result, "Sphere 纯配置方法不得改写");
+    }
 }
