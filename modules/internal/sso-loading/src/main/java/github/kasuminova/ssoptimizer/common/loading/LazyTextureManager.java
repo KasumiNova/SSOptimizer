@@ -183,6 +183,9 @@ public final class LazyTextureManager {
     public static com.fs.graphics.TextureObject loadTexture(final TextureLoader loader,
                                                             final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                                             final String resourcePath) throws IOException {
+        // T1 地基：首次贴图加载时触发一次压缩能力探测（结果静态缓存 + info 日志，
+        // 此后调用仅一次 volatile 读）；T2 压缩管线直接复用该探测结论
+        TextureCompressionSupport.preferredFormat();
         final com.fs.graphics.TextureObject cached = (com.fs.graphics.TextureObject) textureCache.get(resourcePath);
         if (cached != null) {
             ensureContextBoundTextureTracked(cached, resourcePath);
@@ -1540,6 +1543,7 @@ public final class LazyTextureManager {
                 snapshots.add(new TextureCompositionReport.TextureEntry(
                         entry.resourcePath,
                         state,
+                        entry.compressionFormat,
                         entry.evictable,
                         entry.bindCount(),
                         lastBindAgoMillis,
@@ -1601,8 +1605,9 @@ public final class LazyTextureManager {
                                         final int imageWidth,
                                         final int imageHeight,
                                         final int textureWidth,
-                                        final int textureHeight) {
-        long total = mipLevelBytes(textureWidth, textureHeight);
+                                        final int textureHeight,
+                                        final TextureCompressionSupport.Format compressionFormat) {
+        long total = mipLevelBytes(textureWidth, textureHeight, compressionFormat);
         if (!shouldGenerateMipmaps(resourcePath, imageWidth, imageHeight)) {
             return total;
         }
@@ -1612,14 +1617,17 @@ public final class LazyTextureManager {
         while (width > 1 || height > 1) {
             width = Math.max(1, width / 2);
             height = Math.max(1, height / 2);
-            total += mipLevelBytes(width, height);
+            total += mipLevelBytes(width, height, compressionFormat);
         }
         return total;
     }
 
+    /** 按压缩形态折算单 mip 层字节数（none=4B/px、bc1=0.5B/px、bc3/bc7=1B/px）。 */
     private static long mipLevelBytes(final int textureWidth,
-                                      final int textureHeight) {
-        return (long) Math.max(1, textureWidth) * (long) Math.max(1, textureHeight) * 4L;
+                                      final int textureHeight,
+                                      final TextureCompressionSupport.Format compressionFormat) {
+        return (long) Math.max(1, textureWidth) * (long) Math.max(1, textureHeight)
+                * compressionFormat.bitsPerPixel() / 8L;
     }
 
     private static Method resolveEagerLoadMethod() {
@@ -1852,6 +1860,12 @@ public final class LazyTextureManager {
         private final    int     textureWidth;
         private final    int     textureHeight;
         private final    long    estimatedGpuBytes;
+        /**
+         * 压缩纹理形态（诊断基线/T2 压缩管线写入真值）：本期（T1）恒
+         * {@link TextureCompressionSupport.Format#NONE}——估算字节数与 TSV
+         * compression 列均以它为准，压缩本体落地前报表全 none。
+         */
+        private volatile TextureCompressionSupport.Format compressionFormat = TextureCompressionSupport.Format.NONE;
         private volatile boolean evictable;
         private volatile boolean pendingUpload;
         private volatile boolean uploadedOnce;
@@ -1971,7 +1985,9 @@ public final class LazyTextureManager {
                             metadata.imageWidth(),
                             metadata.imageHeight(),
                             metadata.textureWidth(),
-                            metadata.textureHeight())
+                            metadata.textureHeight(),
+                            // T1 恒 NONE（压缩本体 T2 落地后由 ManagedTextureEntry 写真值）
+                            TextureCompressionSupport.Format.NONE)
             );
         }
 
@@ -1993,7 +2009,9 @@ public final class LazyTextureManager {
                             imageWidth,
                             imageHeight,
                             result.textureWidth(),
-                            result.textureHeight())
+                            result.textureHeight(),
+                            // T1 恒 NONE（压缩本体 T2 落地后由 ManagedTextureEntry 写真值）
+                            TextureCompressionSupport.Format.NONE)
             );
         }
     }

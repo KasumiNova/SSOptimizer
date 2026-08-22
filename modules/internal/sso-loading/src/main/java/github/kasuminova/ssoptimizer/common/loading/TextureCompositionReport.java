@@ -101,12 +101,13 @@ final class TextureCompositionReport {
         out.append('\n');
 
         out.append("[texture_details]\n");
-        out.append("retention_advice\tretention_reason\tstate\tevictable\tbind_count\tlast_bind_ago_ms\testimated_gpu_bytes\timage_width\timage_height\ttexture_width\ttexture_height\ttexture_id\tresource_path\tsource_hash\n");
+        out.append("retention_advice\tretention_reason\tstate\tcompression\tevictable\tbind_count\tlast_bind_ago_ms\testimated_gpu_bytes\timage_width\timage_height\ttexture_width\ttexture_height\ttexture_id\tresource_path\tsource_hash\n");
         for (TextureEntry entry : sorted) {
             final RetentionAssessment assessment = assessments.get(entry);
             out.append(assessment.advice()).append('\t')
                .append(sanitize(assessment.reason())).append('\t')
                .append(entry.state()).append('\t')
+               .append(entry.compression().name().toLowerCase(Locale.ROOT)).append('\t')
                .append(entry.evictable()).append('\t')
                .append(entry.bindCount()).append('\t')
                .append(entry.lastBindAgoMillis()).append('\t')
@@ -205,6 +206,7 @@ final class TextureCompositionReport {
 
     record TextureEntry(String resourcePath,
                         String state,
+                        TextureCompressionSupport.Format compression,
                         boolean evictable,
                         long bindCount,
                         long lastBindAgoMillis,

@@ -15,6 +15,7 @@ class TextureCompositionReportTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics/weapons/railgun.png",
                         "resident",
+                        TextureCompressionSupport.Format.NONE,
                         true,
                         12,
                         1500,
@@ -29,6 +30,7 @@ class TextureCompositionReportTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics/ships/capital.png",
                         "evicted-awaiting-reload",
+                        TextureCompressionSupport.Format.NONE,
                         true,
                         1,
                         75_000,
@@ -51,6 +53,8 @@ class TextureCompositionReportTest {
         assertTrue(report.contains("not_needed_now"));
         assertTrue(report.contains("railgun.png"));
         assertTrue(report.contains("capital.png"));
+        assertTrue(report.contains("state\tcompression\tevictable"));
+        assertTrue(report.contains("resident\tnone\ttrue"));
     }
 
     @Test
@@ -59,6 +63,7 @@ class TextureCompositionReportTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics/weapons/railgun.png",
                         "resident",
+                        TextureCompressionSupport.Format.BC7,
                         true,
                         20,
                         1_200,
@@ -75,6 +80,7 @@ class TextureCompositionReportTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics/portraits/captain.png",
                         "deferred-awaiting-first-bind",
+                        TextureCompressionSupport.Format.NONE,
                         true,
                         0,
                         55_000,

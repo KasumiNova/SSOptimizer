@@ -179,7 +179,8 @@ class LazyTextureManagerTest {
                 2048,
                 2048,
                 2048,
-                2048);
+                2048,
+                TextureCompressionSupport.Format.NONE);
 
         assertEquals(2048L * 2048L * 4L, estimated);
     }
@@ -191,7 +192,8 @@ class LazyTextureManagerTest {
                 512,
                 512,
                 512,
-                512);
+                512,
+                TextureCompressionSupport.Format.NONE);
 
         assertEquals(1_398_100L, estimated);
     }
@@ -210,7 +212,8 @@ class LazyTextureManagerTest {
                 512,
                 512,
                 512,
-                512);
+                512,
+                TextureCompressionSupport.Format.NONE);
         assertEquals(512L * 512L * 4L, estimated);
     }
 
@@ -225,7 +228,8 @@ class LazyTextureManagerTest {
                 512,
                 512,
                 512,
-                512);
+                512,
+                TextureCompressionSupport.Format.NONE);
         assertEquals(512L * 512L * 4L, estimated);
     }
 
@@ -284,6 +288,7 @@ class LazyTextureManagerTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics/ships/capital.png",
                         "resident",
+                        TextureCompressionSupport.Format.NONE,
                         true,
                         10,
                         1000,
@@ -298,6 +303,7 @@ class LazyTextureManagerTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics/weapons/railgun.png",
                         "resident",
+                        TextureCompressionSupport.Format.NONE,
                         true,
                         5,
                         1200,
@@ -312,6 +318,7 @@ class LazyTextureManagerTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics/portraits/captain.png",
                         "deferred-awaiting-first-bind",
+                        TextureCompressionSupport.Format.NONE,
                         true,
                         0,
                         60_000,
@@ -340,6 +347,7 @@ class LazyTextureManagerTest {
                 new TextureCompositionReport.TextureEntry(
                         "graphics\\icons\\cargo\\blueprint_hightech.png",
                         "resident",
+                        TextureCompressionSupport.Format.NONE,
                         true,
                         1,
                         0,

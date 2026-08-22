@@ -73,6 +73,8 @@
 | `ssoptimizer.disable.texturecache.warmup` | `false` | 禁用启动期后台把磁盘缓存预热到内存 | `common/loading/TextureConversionCache.java:191` |
 | `ssoptimizer.disable.npot` | `false` | 禁用 NPOT 探测，纹理尺寸统一向上取 2 的幂 | `common/loading/TextureDimensionSupport.java:34` |
 | `ssoptimizer.force.npot` | `false` | 强制启用 NPOT，跳过 GL 能力探测 | `common/loading/TextureDimensionSupport.java:37` |
+| `ssoptimizer.texcompress.enable` | `true` | GPU 纹理压缩（BC 族）总开关；false 时整特性视为不可用。T1 仅落地探测/开关/诊断，压缩本体 T2 接入上传路径 | `common/loading/TextureCompressionSupport.java:29` |
+| `ssoptimizer.texcompress.format` | `auto` | 压缩格式收窄：`auto`（bc7 优先、bc3 回退）/ `bc7` / `bc3`（强制 bc3 时即便 bc7 可用也用 BC3）；T2 生效 | `common/loading/TextureCompressionSupport.java:30` |
 | `ssoptimizer.disable.nativepngdecoder` | `false` | 禁用 JNI 原生 PNG 解码器 | `common/loading/NativePngDecoder.java:57` |
 | `ssoptimizer.disable.lazytextureupload` | `false` | 禁用惰性纹理上传（启动只留元数据，首次绑定才传 GPU） | `common/loading/LazyTextureManager.java:296` |
 | `ssoptimizer.lazytextureupload.minimalstartup` | `true` | 最小化启动纹理（managed 图形资源且 ≥ trackminbytes）延迟上传 | `common/loading/LazyTextureManager.java:318` |
