@@ -525,6 +525,118 @@ class AtlasSoftwareRenderIT {
     }
 
     // ------------------------------------------------------------------
+    // 殖民地 UI 症状复现：白字黑描边 + 黄色高亮词（实机「基底文本发黑」）
+    // ------------------------------------------------------------------
+
+    /**
+     * 「星币： 22,701,414」式场景：border 描边 + 选区高亮（黄）混合文本。
+     * 实机症状是基底白字发黑、高亮黄字正常——本测试在软件复合层验证
+     * 布局产物的 quad 颜色与复合结果，把问题隔离在布局/图集层还是 GL 发射层。
+     */
+    @Test
+    void borderAndHighlightSoftRender() throws IOException {
+        provider.forScale(1.0f);
+        final String text = "远行星号 12345";
+        final int selStart = text.indexOf('1');
+        final TextRenderState state = TextRenderState.builder(text)
+                .draw(DRAW_X, DRAW_Y)
+                .fontSize(15f)
+                .textColor(0xFFFFFF, 1f)
+                .outlineColor(0x000000)
+                .borderAlpha(1f)
+                .borderEnabled(true)
+                .highlightColor(0xFFC800, 1f)
+                .selection(selStart, text.length() - 1)
+                .build();
+        final List<TextPass> passes = TextLayoutEngine.layout(state, provider);
+        assertFalse(passes.isEmpty());
+
+        // quad 颜色断言：剪影全黑不透明；填充在选区前白、选区内黄
+        int silhouetteCount = 0;
+        final List<GlyphQuad> fills = new ArrayList<>();
+        for (final GlyphQuad quad : passes.get(0).quads()) {
+            if (quad.color() == 0xFF000000) {
+                silhouetteCount++;
+            } else {
+                fills.add(quad);
+            }
+        }
+        assertTrue(silhouetteCount > 0, "border 描边合成必须产出黑色剪影 quad");
+        // 内容驱动断言：选区「12345」5 个字符的填充必须是高亮黄，选区前的 CJK 填充必须是白
+        int yellowFills = 0;
+        GlyphQuad firstYellow = null;
+        for (final GlyphQuad quad : fills) {
+            if (quad.color() == 0xFFFFC800) {
+                yellowFills++;
+                if (firstYellow == null) {
+                    firstYellow = quad;
+                }
+            }
+        }
+        System.out.println("[softrender-bh] fills=" + fills.size() + " yellow=" + yellowFills
+                + " colors=" + fills.stream().map(q -> Integer.toHexString(q.color())).toList());
+        assertEquals(5, yellowFills, "选区内 5 个数字字符的填充必须是高亮黄（0xFFFFC800）");
+        assertEquals(0xFFFFFFFF, fills.get(0).color(), "选区前填充必须是白");
+        final GlyphQuad firstHighlightFill = firstYellow;
+
+        final Map<Integer, byte[]> textures = new HashMap<>();
+        for (final GlyphAtlasPage page : AtlasTestHooks.pagesOfGroup(atlas, faceKey, 1000, 0)) {
+            textures.put(page.textureId(), AtlasTestHooks.stagingSnapshot(page));
+        }
+        for (final GlyphAtlasPage page : AtlasTestHooks.pagesOfGroup(atlas, faceKey, 1000, 1000)) {
+            textures.put(page.textureId(), AtlasTestHooks.stagingSnapshot(page));
+        }
+
+        final int[] canvas = new int[CANVAS_W * CANVAS_H];
+        java.util.Arrays.fill(canvas, CANVAS_BG);
+        for (final TextPass pass : passes) {
+            for (final GlyphQuad quad : pass.quads()) {
+                final byte[] staging = textures.get(quad.textureId());
+                assertNotNull(staging, "quad 的 textureId 必须能解析到图集页");
+                drawQuad(canvas, quad, staging);
+            }
+        }
+        writePng("softrender_border_highlight.png", canvas, CANVAS_W, CANVAS_H, 2);
+
+        // 复合结果断言：'远' 填充区域最亮像素必须接近纯白（发黑症状下会被剪影压暗）；
+        // '1' 填充区域必须存在黄像素（高亮生效）
+        final int maxWhite = maxChannelInRegion(canvas, fills.get(0));
+        assertTrue(maxWhite > 200,
+                "基底白字区域最亮像素应 >200（实机发黑症状下远低于此），实际=" + maxWhite);
+        final boolean[] yellowFound = {false};
+        forEachPixelInRegion(canvas, firstHighlightFill, (rgb) -> {
+            final int r = (rgb >>> 16) & 0xFF;
+            final int g = (rgb >>> 8) & 0xFF;
+            final int b = rgb & 0xFF;
+            if (r > 180 && g > 130 && b < 140) {
+                yellowFound[0] = true;
+            }
+        });
+        assertTrue(yellowFound[0], "高亮词区域必须存在黄像素");
+    }
+
+    /** quad 屏幕区域内像素的最大 R 通道值（亮度探针）。 */
+    private static int maxChannelInRegion(final int[] canvas, final GlyphQuad quad) {
+        final int[] max = {0};
+        forEachPixelInRegion(canvas, quad, (rgb) -> max[0] = Math.max(max[0], (rgb >>> 16) & 0xFF));
+        return max[0];
+    }
+
+    /** 遍历 quad 屏幕区域（与 drawQuad 同坐标系）内全部像素。 */
+    private static void forEachPixelInRegion(final int[] canvas, final GlyphQuad quad,
+                                             final java.util.function.IntConsumer action) {
+        final int x0 = Math.max(0, (int) Math.floor(quad.x1()));
+        final int x1 = Math.min(CANVAS_W, (int) Math.ceil(quad.x3()));
+        final int y0 = Math.max(0, (int) Math.floor(quad.y2()));
+        final int y1 = Math.min(CANVAS_H, (int) Math.ceil(quad.y1()));
+        for (int y = y0; y < y1; y++) {
+            for (int x = x0; x < x1; x++) {
+                action.accept(canvas[y * CANVAS_W + x]);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
     // 任务 3c：阴影 pass 软渲染复现（bucket 1.0 / 1.5，默认偏移 (1,-1)）
     // ------------------------------------------------------------------
 

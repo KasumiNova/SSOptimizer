@@ -247,4 +247,53 @@ class TextLayoutEngineOutlineTest {
         assertEquals(List.of(65, 66), glyphQueries, "逐码点缓存：同码点同 render 只穿透查询一次");
         assertEquals(List.of(65, 66), strokedQueries, "描边查询同样按码点去重");
     }
+
+    @Test
+    void splitAlphasAreRecombinedForSingleLayerStrokeSynthesis() {
+        final FakeOutlineGlyphs font = font();
+        // 战斗浮字场景（FloatingText：border+shadow+outlinePasses(3)，alpha=0.85）：
+        // 原版 setAlpha 按 copies+1=4 层叠画预分解 textAlpha ≈ 0.3777、
+        // borderAlpha = textAlpha² ≈ 0.1426；合成路径剪影/填充各一层，必须重聚合
+        final float splitText = 1f - (float) Math.pow(1.0 - 0.85, 1.0 / 4.0);
+        final float splitBorder = splitText * splitText;
+        final List<TextPass> passes = TextLayoutEngine.layout(
+                state("A").textColor(0xFFFFFF, splitText)
+                        .borderEnabled(true).outlineColor(0x000000).borderAlpha(splitBorder)
+                        .outline(3, 0.125f).build(), font);
+
+        assertEquals(1, passes.size());
+        final List<GlyphQuad> quads = passes.get(0).quads();
+        assertEquals(2, quads.size());
+
+        final int silhouetteAlpha = quads.get(0).color() >>> 24;
+        // 边框剪影按 4 pass × 4 层 = 16 层累计：1-(1-0.1426)^16 ≈ 0.915 → 字节 233
+        assertTrue(silhouetteAlpha >= 230 && silhouetteAlpha <= 236,
+                "边框剪影 alpha 需按 16 层重聚合（≈233），实际=" + silhouetteAlpha);
+        assertEquals(0x000000, quads.get(0).color() & 0xFFFFFF, "剪影仍是描边黑色");
+
+        final int fillAlpha = quads.get(1).color() >>> 24;
+        // 填充按 copies+1=4 层累计回 0.85 → 字节 ≈216（截断字节 96 重聚合）
+        assertTrue(fillAlpha >= 213 && fillAlpha <= 219,
+                "填充 alpha 需重聚合回 0.85（≈216），预分解值仅 96（实机半透明症状），实际=" + fillAlpha);
+    }
+
+    @Test
+    void followColorSilhouetteCountsAsOneLayerOnFillRecombination() {
+        final FakeOutlineGlyphs font = font();
+        // 仅 outline（copies=2、无边框）：alpha=0.85 的预分解 textAlpha ≈ 0.4687；
+        // 随字色剪影自身充当一层，填充只补 copies=2 层
+        final float splitText = 1f - (float) Math.pow(1.0 - 0.85, 1.0 / 3.0);
+        final List<TextPass> passes = TextLayoutEngine.layout(
+                state("A").textColor(0xFFFFFF, splitText).outline(2, 0.25f).build(), font);
+
+        final List<GlyphQuad> quads = passes.get(0).quads();
+        assertEquals(2, quads.size());
+        final int silhouetteAlpha = quads.get(0).color() >>> 24;
+        assertEquals((int) (255f * splitText), silhouetteAlpha,
+                "随字色剪影保持预分解单层 alpha（充当叠画一层）");
+        final int fillAlpha = quads.get(1).color() >>> 24;
+        // 填充补 2 层：1-(1-119/255)² ≈ 0.7156 → 字节 182；与剪影累计 ≈ 0.85
+        assertTrue(fillAlpha >= 179 && fillAlpha <= 185,
+                "填充按 copies=2 层重聚合（≈182），实际=" + fillAlpha);
+    }
 }

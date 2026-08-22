@@ -120,6 +120,13 @@ public final class TextLayoutEngine {
      * 先发描边剪影 quad（描边色垫底）再发填充 quad；阴影偏移黑副本维持独立 pass，
      * 但偏移量在屏幕像素空间取整（乘以 bucketScale 取整再除回），消除位图空间
      * 偏移经非整数缩放映射后的错位采样。
+     * <p>
+     * alpha 重聚合：原版 setAlpha 按「shadowCopies+1 层放大副本 + 主字形叠画」把目标
+     * alpha 预分解进 textAlpha/borderAlpha（叠画后累计回目标值）；本路径剪影/填充
+     * 各只画一层，直接使用预分解值会比原版透明得多（实机症状：战斗浮字半透明、
+     * 面板标签「发黑」只剩描边）。因此边框剪影 alpha 按原版 4 向边框 pass ×
+     * (copies+1) 层的累计量重聚合，填充层在 emitGlyph 内按剩余层数重聚合
+     * （见 emitGlyph 注释）。
      */
     private static void layoutWithStrokeSynthesis(
             final List<TextPass> passes,
@@ -139,15 +146,19 @@ public final class TextLayoutEngine {
         }
 
         // 剪影宽度与颜色：边框与 outline 同时存在时合并为一个剪影（宽度取大者，描边色）；
-        // 仅 outline 时剪影跟随各字形当前色（原版放大副本用字形色），仅边框时用描边色
+        // 仅 outline 时剪影跟随各字形当前色（原版放大副本用字形色），仅边框时用描边色。
+        // 描边色剪影的 alpha 重聚合：原版边框 = 4 向 pass × (copies+1) 层叠画，
+        // 单剪影需按 4*(copies+1) 层累计量补齐，否则边框远薄于原版
         final float strokeWidth;
         final Integer strokeColor;
         if (border && s.shadowCopies() > 0) {
             strokeWidth = Math.max(BORDER_STROKE_WIDTH, s.shadowCopies() * s.shadowScale());
-            strokeColor = packColor(s.outlineColorRgb(), s.borderAlpha());
+            strokeColor = packColor(s.outlineColorRgb(),
+                    recombineLayers(s.borderAlpha(), 4 * (s.shadowCopies() + 1)));
         } else if (border) {
             strokeWidth = BORDER_STROKE_WIDTH;
-            strokeColor = packColor(s.outlineColorRgb(), s.borderAlpha());
+            strokeColor = packColor(s.outlineColorRgb(),
+                    recombineLayers(s.borderAlpha(), 4 * (s.shadowCopies() + 1)));
         } else if (s.shadowCopies() > 0 && borderPassEnabled) {
             strokeWidth = s.shadowCopies() * s.shadowScale();
             strokeColor = null;
@@ -158,6 +169,24 @@ public final class TextLayoutEngine {
         buildPass(passes, s, sized, scale, 0f, 0f,
                 packColor(s.textColorRgb(), s.textAlpha()), true, iterations,
                 outline, strokeWidth, strokeColor);
+    }
+
+    /** 原版 alpha 预分解的逆运算：perLayer 经 layers 层叠画后的累计 alpha。 */
+    private static float recombineLayers(final float perLayerAlpha, final int layers) {
+        if (layers <= 1) {
+            return perLayerAlpha;
+        }
+        return 1f - (float) Math.pow(1f - perLayerAlpha, layers);
+    }
+
+    /** {@link #recombineLayers} 的 ARGB 字节级形态（填充色在 emitGlyph 内动态切换，无法提前按 float 聚合）。 */
+    private static int recombineSplitAlpha(final int argb, final int layers) {
+        if (layers <= 1) {
+            return argb;
+        }
+        final float perLayer = ((argb >>> 24) & 0xFF) / 255f;
+        final int combined = Math.min(255, Math.round((1f - (float) Math.pow(1f - perLayer, layers)) * 255f));
+        return (combined << 24) | (argb & 0xFFFFFF);
     }
 
     /**
@@ -308,9 +337,12 @@ public final class TextLayoutEngine {
         final float baseX = s.drawX() + offX;
         final float baseY = s.drawY() + offY + lineY;
 
-        if (outline != null && strokeWidth > 0f) {
+        final boolean strokeSynthesis = outline != null && strokeWidth > 0f;
+        boolean silhouetteEmitted = false;
+        if (strokeSynthesis) {
             final GlyphMetrics sm = outline.strokedGlyph(codePoint, strokeWidth);
             if (sm != null) {
+                silhouetteEmitted = true;
                 final float su0 = sm.texX();
                 final float sv0 = sm.texY();
                 final float su1 = sm.texX() + sm.texWidth();
@@ -372,7 +404,20 @@ public final class TextLayoutEngine {
             fyT = snapToDeviceGrid(fyT, baseY, devGrid);
             fyB = snapToDeviceGrid(fyB, baseY, devGrid);
         }
-        quads.add(quad(s, offX, offY, lineY, color, gm.textureId(),
+        // 填充 alpha 重聚合（描边合成路径专属）：state 携带的 alpha 是原版按
+        // 「copies+1 层叠画」预分解的单层值，本路径填充只画一层必须补回累计量——
+        // 描边色剪影（黑，异色）：填充需补齐全部 copies+1 层；
+        // 随字色剪影（同色）：剪影本身充当一层，填充补 copies 层；
+        // 剪影栅格化缺失时填充独自承担 copies+1 层。
+        // 位图路径（outline==null）维持原版逐层叠画语义，不重聚合。
+        int fillColor = color;
+        if (strokeSynthesis) {
+            final int layers = strokeColor != null || !silhouetteEmitted
+                    ? s.shadowCopies() + 1
+                    : s.shadowCopies();
+            fillColor = recombineSplitAlpha(color, layers);
+        }
+        quads.add(quad(s, offX, offY, lineY, fillColor, gm.textureId(),
                 fxL, fyT, u0, v1,
                 fxL, fyB, u0, v0,
                 fxR, fyB, u1, v0,
