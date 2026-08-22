@@ -38,9 +38,6 @@ public final class FontGlyphSources {
      * @return TTF 动态图集源或位图源（永不返回 null）
      */
     public static GlyphProvider resolve(final BitmapFont font) {
-        if (!FontRenderEngine.isV2()) {
-            return new BitmapFontGlyphProvider(font);
-        }
         // 渲染线程（RT 模式加载期 pump 路径会直接在游戏渲染代码里画文本）只走位图源：
         // TTF 源的图集请求会持有全局图集锁并可能经 GlDispatch.allocate 阻塞等渲染线程
         // drain——若调用方本身就是渲染线程即自死锁，若是主线程则与渲染线程形成

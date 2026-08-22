@@ -53,8 +53,6 @@ class WindowsOverlayDistributionContractTest {
         assertTrue(releaseWorkflowText.contains("WINDOWS_MOD_STAGE=\"${WINDOWS_STAGE}/mods/${MOD_ID}\""), "Release workflow 必须将 Windows 模组放在根 mods 目录");
         assertTrue(releaseWorkflowText.contains("cp game-fonts/ttf/* \"${LINUX_MOD_STAGE}/fonts/\""), "Release workflow 必须将 Linux TTF 打包到模组 fonts 目录");
         assertTrue(releaseWorkflowText.contains("cp game-fonts/ttf/* \"${WINDOWS_MOD_STAGE}/fonts/\""), "Release workflow 必须将 Windows TTF 打包到模组 fonts 目录");
-        assertTrue(releaseWorkflowText.contains("cp game-fonts/fnt/* \"${LINUX_STAGE}/graphics/fonts/\""), "Release workflow 必须将 Linux FNT 打包到平台根 graphics/fonts");
-        assertTrue(releaseWorkflowText.contains("cp game-fonts/fnt/* \"${WINDOWS_STAGE}/starsector-core/graphics/fonts/\""), "Release workflow 必须将 Windows FNT 打包到平台根 graphics/fonts");
         assertTrue(releaseWorkflowText.contains("cp log4j.properties \"${LINUX_STAGE}/log4j.properties\""), "Release workflow 必须为 Linux 安装包写入 log4j.properties");
         assertTrue(releaseWorkflowText.contains("cp log4j.properties \"${WINDOWS_STAGE}/starsector-core/log4j.properties\""), "Release workflow 必须为 Windows 启动目录写入 log4j.properties");
 

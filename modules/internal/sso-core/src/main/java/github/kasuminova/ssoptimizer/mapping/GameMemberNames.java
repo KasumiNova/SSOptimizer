@@ -103,18 +103,9 @@ public final class GameMemberNames {
     }
 
     public static final class BitmapFont {
-        public static final String GET_FONT_PATH = "getFontPath";
-        public static final String GET_NOMINAL_FONT_SIZE = "getNominalFontSize";
         public static final String GET_LINE_HEIGHT = "getLineHeight";
 
         private BitmapFont() {
-        }
-    }
-
-    public static final class BitmapFontManager {
-        public static final String GET_FONT = "getFont";
-
-        private BitmapFontManager() {
         }
     }
 

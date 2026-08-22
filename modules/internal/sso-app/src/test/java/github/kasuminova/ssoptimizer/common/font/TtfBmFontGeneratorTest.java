@@ -12,77 +12,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TtfBmFontGeneratorTest {
     @Test
-    void expandsRuntimeAtlasDimensionsInSmallRectangularSteps() {
-        final OriginalGameFontOverrides.FontOverrideSpec baseSpec = new OriginalGameFontOverrides.FontOverrideSpec(
-                "graphics/fonts/insignia21LTaa.fnt",
-                List.of("lte50549.ttf"),
-                List.of("MiSans-Regular.ttf"),
-                2048,
-                1024
-        );
-
-        final OriginalGameFontOverrides.FontOverrideSpec scale1000 = TtfBmFontGenerator.runtimeSpecForScale(
-                baseSpec,
-                "ssoptimizer/runtimefonts/graphics/fonts/insignia21LTaa_s1000.fnt",
-                1.0f
-        );
-        assertEquals(2048, scale1000.pageWidth());
-        assertEquals(1024, scale1000.pageHeight());
-
-        final OriginalGameFontOverrides.FontOverrideSpec scale1500 = TtfBmFontGenerator.runtimeSpecForScale(
-                baseSpec,
-                "ssoptimizer/runtimefonts/graphics/fonts/insignia21LTaa_s1500.fnt",
-                1.5f
-        );
-        assertEquals(3072, scale1500.pageWidth());
-        assertEquals(1536, scale1500.pageHeight());
-
-        final OriginalGameFontOverrides.FontOverrideSpec scale3125 = TtfBmFontGenerator.runtimeSpecForScale(
-                baseSpec,
-                "ssoptimizer/runtimefonts/graphics/fonts/insignia21LTaa_s3125.fnt",
-                3.125f
-        );
-        assertEquals(6400, scale3125.pageWidth());
-        assertEquals(3200, scale3125.pageHeight());
-
-        final OriginalGameFontOverrides.FontOverrideSpec scale4000 = TtfBmFontGenerator.runtimeSpecForScale(
-                new OriginalGameFontOverrides.FontOverrideSpec(
-                        "graphics/fonts/orbitron24aabold.fnt",
-                        List.of("orbitron-bold.ttf"),
-                        List.of("MiSans-Regular.ttf"),
-                        2048,
-                        2048
-                ),
-                "ssoptimizer/runtimefonts/graphics/fonts/orbitron24aabold_s4000.fnt",
-                4.0f
-        );
-        assertEquals(8192, scale4000.pageWidth());
-        assertEquals(8192, scale4000.pageHeight());
-    }
-
-    @Test
-    void prefersSourceAtlasDimensionsWhenProvided() {
-        final OriginalGameFontOverrides.FontOverrideSpec baseSpec = new OriginalGameFontOverrides.FontOverrideSpec(
-                "graphics/fonts/orbitron20bold.fnt",
-                List.of("orbitron-bold.ttf"),
-                List.of("MiSans-Regular.ttf"),
-                2048,
-                2048
-        );
-
-        final OriginalGameFontOverrides.FontOverrideSpec runtimeSpec = TtfBmFontGenerator.runtimeSpecForScale(
-                baseSpec,
-                "ssoptimizer/runtimefonts/graphics/fonts/orbitron20bold_s1500.fnt",
-                1.5f,
-                256,
-                256
-        );
-
-        assertEquals(384, runtimeSpec.pageWidth());
-        assertEquals(384, runtimeSpec.pageHeight());
-    }
-
-    @Test
     void doesNotDoubleScaleAlreadyScaledSourceAtlasWhenFitting() {
         final OriginalGameFontOverrides.FontOverrideSpec baseSpec = new OriginalGameFontOverrides.FontOverrideSpec(
                 "graphics/fonts/orbitron24aabold.fnt",
@@ -174,6 +103,19 @@ class TtfBmFontGeneratorTest {
     }
 
     @Test
+    void preservesControlCharsAsPlaceholderGlyphsWithoutRasterization() {
+        // orbitron12condensed.fnt 的 id=0（NUL）/ id=29（GS）为 1×3 零墨迹占位符，应跳过栅格化
+        assertTrue(TtfBmFontGenerator.shouldPreserveControlGlyph(0));
+        assertTrue(TtfBmFontGenerator.shouldPreserveControlGlyph(29));
+        assertTrue(TtfBmFontGenerator.shouldPreserveControlGlyph(31));
+        // 空格（32）走正常栅格化（TTF 可显示、输出空墨迹）；
+        // 可打印字符（如 victor10 的 1×3 冒号 id=58）不得被误判为占位符
+        assertFalse(TtfBmFontGenerator.shouldPreserveControlGlyph(32));
+        assertFalse(TtfBmFontGenerator.shouldPreserveControlGlyph(58));
+        assertFalse(TtfBmFontGenerator.shouldPreserveControlGlyph(65));
+    }
+
+    @Test
     void substitutesVictorAsciiLowercaseWithUppercaseGlyphs() {
         assertEquals('A', TtfBmFontGenerator.substituteVictorLowercaseCodePoint('a'));
         assertEquals('Z', TtfBmFontGenerator.substituteVictorLowercaseCodePoint('z'));
@@ -185,9 +127,6 @@ class TtfBmFontGeneratorTest {
     void detectsVictorManagedFontPaths() {
         assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor10.fnt"));
         assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor14_0.png"));
-        assertTrue(TtfBmFontGenerator.isVictorManagedFontPath(
-                "ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500.fnt"
-        ));
         assertFalse(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/orbitron20aa.fnt"));
     }
 

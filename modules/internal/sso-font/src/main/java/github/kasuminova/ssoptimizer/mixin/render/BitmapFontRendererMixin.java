@@ -1,21 +1,16 @@
 package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.font.BitmapFont;
-import com.fs.graphics.font.BitmapGlyph;
 import github.kasuminova.ssoptimizer.common.font.FontGlyphSources;
-import github.kasuminova.ssoptimizer.common.font.FontRenderEngine;
-import github.kasuminova.ssoptimizer.common.font.RuntimeScaledFontCache;
 import github.kasuminova.ssoptimizer.common.font.emit.TextStreamEmitter;
 import github.kasuminova.ssoptimizer.common.font.layout.GlyphProvider;
 import github.kasuminova.ssoptimizer.common.font.layout.TextLayoutEngine;
 import github.kasuminova.ssoptimizer.common.font.layout.TextPass;
 import github.kasuminova.ssoptimizer.common.font.layout.TextRenderState;
-import github.kasuminova.ssoptimizer.common.render.engine.BitmapFontRendererHelper;
 import github.kasuminova.ssoptimizer.common.render.engine.TextLayoutDiagnostics;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.apache.log4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -26,15 +21,12 @@ import java.nio.FloatBuffer;
 import java.util.List;
 
 /**
- * BitmapFontRenderer 文本绘制路径的 Mixin 重写。
+ * BitmapFontRenderer 文本绘制路径的 Mixin 重写（v2 布局引擎管线）。
  * <p>
  * 注入目标：{@code com.fs.graphics.font.BitmapFontRenderer}<br>
  * 注入动机：原版逐字形渲染会产生大量 Java 侧 GL 调用，文本绘制路径在高 DPI 和大字号下开销明显。<br>
- * 注入效果（双引擎，{@link FontRenderEngine} 开关切换）：<br>
- * - v2（新布局引擎）：{@code render()} HEAD 接管——状态快照 → TextLayoutEngine 布局 →
- *   TextStreamEmitter 流式发射，原私有渲染链（含 display list）整体不再执行；<br>
- * - legacy（回滚选项）：{@code drawGlyph} 替换为 helper/native 委托 + render HEAD 运行时缩放换字体，
- *   行为与重写前完全一致。P4 拆除 legacy 后本类只保留 v2 注入。
+ * 注入效果：{@code render()} HEAD 无条件接管——状态快照 → TextLayoutEngine 布局 →
+ * TextStreamEmitter 流式发射，原私有渲染链（含 display list）整体不再执行。
  */
 @Mixin(targets = GameClassNames.BITMAP_FONT_RENDERER_DOTTED)
 public abstract class BitmapFontRendererMixin {
@@ -77,17 +69,13 @@ public abstract class BitmapFontRendererMixin {
 
     /**
      * v2 渲染接管：render() 整体替换为「快照 → 字形源解析 → 布局引擎 → 流式发射」。
-     * P3 起字形源按字体身份分流：原版覆盖表命中且 native 栅格化可用 → TTF 动态图集
+     * 字形源按字体身份分流：原版覆盖表命中且 native 栅格化可用 → TTF 动态图集
      * （quad 携带图集页 textureId，发射层分组换绑）；否则 → 位图直发（pass 级纹理）。
      *
-     * @reason 新链路在保留 codepoint/颜色语义的层级重建文本绘制，替代原版私有渲染链；
-     *         legacy 模式下不接管（返回后走原版 render）。
+     * @reason 新链路在保留 codepoint/颜色语义的层级重建文本绘制，替代原版私有渲染链。
      */
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, remap = false)
     private void ssoptimizer$renderWithLayoutEngine(final CallbackInfo ci) {
-        if (!FontRenderEngine.isV2()) {
-            return;
-        }
         ci.cancel();
         // 与原版 render() 相同的空字体防护（原版 log4j info 后返回）
         if (renderText != null && font == null) {
@@ -117,7 +105,7 @@ public abstract class BitmapFontRendererMixin {
                 .shear(shearMatrix != null ? shearMatrix.get(4) : 0f)
                 .visible(visible)
                 .build();
-        // P3：字形源按字体身份解析——覆盖表命中且 native 可用走 TTF 动态图集，否则位图直发
+        // 字形源按字体身份解析——覆盖表命中且 native 可用走 TTF 动态图集，否则位图直发
         final GlyphProvider provider = FontGlyphSources.resolve(font);
         final List<TextPass> passes = TextLayoutEngine.layout(state, provider);
         // 图集脏数据必须先于发射提交渲染线程（同帧命令顺序保证上传先于采样执行）
@@ -147,43 +135,5 @@ public abstract class BitmapFontRendererMixin {
             rgbs[i] = color != null ? color.getRGB() & 0xFFFFFF : 0;
         }
         return rgbs;
-    }
-
-    /**
-     * 渲染入口：按屏幕缩放解析换用缩放字体，并回写调整后的请求字号（legacy 路径）。
-     *
-     * @reason 原 ASM 处理器在 render()V 入口插入字体缩放换字体逻辑，迁移为等价的 @Inject(HEAD)；
-     *         v2 引擎接管时缩放由新链路负责（P3 动态图集），本注入跳过。
-     */
-    @Inject(method = "render", at = @At("HEAD"), remap = false)
-    private void ssoptimizer$resolveScaledFontAtRenderHead(final CallbackInfo ci) {
-        if (FontRenderEngine.isV2()) {
-            return;
-        }
-        font = (BitmapFont) RuntimeScaledFontCache.resolveScaledFont(font, requestedFontSize);
-        requestedFontSize = RuntimeScaledFontCache.adjustRequestedFontSize(font, requestedFontSize);
-    }
-
-    /**
-     * 单个字形输出整体替换为 helper/native 委托（legacy 路径；v2 下原私有链不执行，本方法不会被调用）。
-     *
-     * @param x     字形基准 X
-     * @param y     字形基准 Y
-     * @param glyph 字形度量
-     * @param scale 当前字号缩放
-     * @param blend 混合标记（替换体不区分，保持签名一致）
-     * @reason 原 ASM 处理器整体替换 drawGlyph 方法体，迁移为等价的 @Overwrite。
-     */
-    @Overwrite(remap = false)
-    private void drawGlyph(final float x, final float y, final BitmapGlyph glyph, final float scale, final boolean blend) {
-        TextLayoutDiagnostics.recordGlyphLayout(
-                glyph.getGlyphId(), glyph.getXOffset(), glyph.getXAdvance(),
-                System.identityHashCode(font), scale, requestedFontSize,
-                font.getNominalFontSize(), font.getLineHeight());
-        BitmapFontRendererHelper.renderGlyphQuad(
-                x, y,
-                glyph.getWidth(), glyph.getHeight(), glyph.getBearingY(),
-                glyph.getTexX(), glyph.getTexY(), glyph.getTexWidth(), glyph.getTexHeight(),
-                scale, shadowCopies, shadowScale);
     }
 }

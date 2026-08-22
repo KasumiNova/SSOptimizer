@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * 动态字形图集的运行时诊断：命中/未命中、页创建/淘汰、上传量计数。
  * 默认关闭，{@code -Dssoptimizer.font.atlas.debug=true} 开启后按固定间隔汇总输出
- * （风格与 {@code TextRenderDiagnostics} 一致）。
+ * （风格与 {@code TextLayoutDiagnostics} 一致）。
  */
 public final class FontAtlasDiagnostics {
     public static final String DEBUG_PROPERTY = "ssoptimizer.font.atlas.debug";

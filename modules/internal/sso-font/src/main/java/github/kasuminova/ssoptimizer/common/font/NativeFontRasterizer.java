@@ -7,10 +7,11 @@ import java.nio.file.Path;
 import java.util.Locale;
 
 /**
- * Thin Java facade around the optional native FreeType rasterizer.
+ * Thin Java facade around the native FreeType rasterizer.
  * <p>
- * The native backend is opportunistic: if the library is missing or does not
- * export the expected JNI symbols, callers transparently fall back to Java2D.
+ * TTF 路径只保留 native 后端（P4 起）：库缺失或 JNI 符号不匹配时
+ * {@link #isAvailable()} 为 false，调用方走显式回退（位图字形源/原版字体），
+ * 不存在 Java2D 降级。
  */
 public final class NativeFontRasterizer {
     private static final Logger LOGGER = Logger.getLogger(NativeFontRasterizer.class);
@@ -25,6 +26,11 @@ public final class NativeFontRasterizer {
     private NativeFontRasterizer() {
     }
 
+    /**
+     * 请求的后端模式。P4 起 TTF 路径仅 native 可用，本属性只影响缓存指纹与
+     * 「显式要求 native 但不可用」时的诊断信息；{@code auto} 与 {@code native}
+     * 之外的取值按 {@code auto} 处理。
+     */
     public static RasterizerMode requestedMode() {
         final String configured = System.getProperty(RASTERIZER_PROPERTY, "auto");
         if (configured == null || configured.isBlank()) {
@@ -32,7 +38,6 @@ public final class NativeFontRasterizer {
         }
         return switch (configured.trim().toLowerCase(Locale.ROOT)) {
             case "native" -> RasterizerMode.NATIVE;
-            case "java2d", "java" -> RasterizerMode.JAVA2D;
             default -> RasterizerMode.AUTO;
         };
     }
@@ -271,8 +276,7 @@ public final class NativeFontRasterizer {
 
     public enum RasterizerMode {
         AUTO,
-        NATIVE,
-        JAVA2D
+        NATIVE
     }
 
     private enum HintMode {

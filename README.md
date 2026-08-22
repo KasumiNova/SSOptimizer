@@ -22,7 +22,7 @@ Starsector 游戏性能优化模组。以 NanoForge coremod 形式装配（ASM /
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
-3. `.fnt` 覆盖字体会被解压到 `starsector-core/graphics/fonts/`；TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
+3. TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
 4. coremod 入口 jar 会被解压到 `mods/coremods/SSOptimizer.jar`，由 NanoForge 在启动时自动发现装配
 5. 安装包会同时写入 `starsector-core/log4j.properties`，用于恢复默认文件日志输出
 6. 需要已安装 NanoForge 加载器，通过 NanoForge 提供的启动入口启动游戏
@@ -31,7 +31,7 @@ Starsector 游戏性能优化模组。以 NanoForge coremod 形式装配（ASM /
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-linux.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
-3. `.fnt` 覆盖字体会被解压到游戏根目录 `graphics/fonts/`；TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
+3. TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
 4. coremod 入口 jar 会被解压到 `mods/coremods/SSOptimizer.jar`，由 NanoForge 在启动时自动发现装配
 5. 安装包会同时写入游戏根目录 `log4j.properties`，用于恢复默认文件日志输出
 6. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
@@ -140,8 +140,8 @@ SSOptimizer/
 ```
 
 模块依赖规则：功能模块只允许依赖 `:modules:api:sso-api` + `:modules:internal:sso-core`，
-功能模块之间禁止直接依赖（唯一例外：sso-font → sso-loading/sso-render，
-为字体纹理注册与文本渲染辅助的既有复用）。
+功能模块之间禁止直接依赖（唯一例外：sso-font → sso-render，
+动态图集纹理上传复用 render 模块的 GlDispatch）。
 跨域行为调用必须经 `:modules:api:sso-api` 接口 + core 的 `ServiceRegistry` 解析，
 由 `:modules:internal:sso-app` 的 `SSOptimizerCorePlugin.registerModuleServices()` 统一装配。
 

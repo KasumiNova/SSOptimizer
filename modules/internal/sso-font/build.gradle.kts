@@ -6,9 +6,7 @@ plugins {
 // 位图字体渲染优化（native FreeType 子模块在阶段 4 接入）。
 dependencies {
     implementation(project(":modules:internal:sso-core"))
-    // BitmapFontRendererHelper 复用 LazyTextureManager 的字体纹理注册
-    implementation(project(":modules:internal:sso-loading"))
-    // 文本渲染辅助复用 render 模块的 SpriteRenderHelper
+    // 动态字形图集经 render 模块的 GlDispatch 提交纹理上传/上下文重建
     implementation(project(":modules:internal:sso-render"))
     implementation("com.github.luben:zstd-jni:1.5.7-3")
 }

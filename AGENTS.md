@@ -21,7 +21,7 @@
 
 1. 功能模块只允许依赖 `:modules:api:sso-api` + `:modules:internal:sso-core`；
    功能模块之间**禁止直接依赖**
-   （唯一既有例外：sso-font → sso-loading/sso-render 的纹理注册与文本渲染复用）。
+   （唯一既有例外：sso-font → sso-render 的动态图集纹理上传复用 GlDispatch）。
 2. 跨域行为调用在 `:modules:api:sso-api` 定义接口，实现方模块提供实现，由
    `:modules:internal:sso-app` 的 `SSOptimizerCorePlugin.registerModuleServices()` 注册进
    core 的 `ServiceRegistry`；调用方经 `ServiceRegistry.require/getOrNull` 解析。

@@ -1,12 +1,15 @@
 # 字体渲染体系重写设计（Font Rendering Rewrite）
 
-状态：**设计稿，未实施**。目标版本：sso-font 下一轮大版本。
+状态：**P1-P4 已落地**（2026-08）。v2 管线（TextLayoutEngine + TextStreamEmitter + TTF 动态图集）
+为唯一文本渲染路径并实机验证通过；P4 已拆除 legacy 路径（drawGlyph @Overwrite、
+RuntimeScaledFontCache 反射换字体、`ssoptimizer.font.engine` 开关、fnt overlay、Java2D 降级链）。
+剩余 P5（描边/阴影栅格化合成 A/B）未实施。
 
 ## 1. 背景与动机
 
-现有 sso-font 是「不重写渲染器」的渐进路线：资源层拦截（`OriginalFontResourceStreamProcessor` →
+重写前 sso-font 是「不重写渲染器」的渐进路线：资源层拦截（`OriginalFontResourceStreamProcessor` →
 内存生成 BMFont）+ 渲染层 `drawGlyph` @Overwrite + 运行时换字体实例（`RuntimeScaledFontCache`）。
-它解决了 CJK 与高清化，但积累了结构性问题：
+它解决了 CJK 与高清化，但积累了结构性问题（以下均为重写前的历史描述，相关代码已随 P4 拆除）：
 
 1. **度量反向工程堆**：`encodedXAdvanceForRuntimeLayout`（xadvance = advance − xoffset）、
    `reconcileGlyphBox` 并集、victor 小写替换、`{`/`}` 空格化——每一条都是对原版混淆布局怪癖的
@@ -219,11 +222,10 @@ bucket ≈ 每字体族 5~7 个，而非理论上限 28 个，无需为「多份
    - 经游戏 API（`Fonts`/`BitmapFontRenderer`）的 mod 文本：透明升级，无需适配。
    - mod 自带字体路径：走 BitmapGlyphSource，行为不变。
    - LunaLib/GraphicsLib：无自带文本渲染器的证据，均走游戏 API，天然覆盖。
-3. **资源层双轨退役**：重写落地后，`game-fonts/fnt/` 部署期覆盖原版文件的 overlay 机制
-   （与汉化包互踩的来源）随新管线下线——fnt 数据改为运行时内存供给（保留 openStream 拦截），
-   游戏根目录不再被覆写。
-4. **反射清除**：`RuntimeScaledFontCache` 及其反射调用整体删除；字体实例获取改经
-   Mixin Accessor（`BitmapFontManager` 加 Accessor 接口）或资源层注入，零反射。
+3. **资源层双轨退役（P4 已执行）**：`game-fonts/fnt/` 部署期覆盖原版文件的 overlay 机制
+   （与汉化包互踩的来源）已随新管线下线——fnt 数据改为运行时内存供给（保留 openStream 拦截），
+   游戏根目录不再被覆写，`game-fonts/fnt/` 仅保留作测试 fixture。
+4. **反射清除（P4 已执行）**：`RuntimeScaledFontCache` 及其反射调用已整体删除。
 5. **配置迁移**：`ssoptimizer.font.ttf.enable/profile/rasterizer` 等属性保留语义；
    `runtimescale.*` 族随 RuntimeScaledFontCache 删除；新增 `ssoptimizer.font.atlas.*`
    （页尺寸/淘汰上限）与描边合成开关。`system-properties.md` 同步更新。
@@ -247,13 +249,13 @@ bucket ≈ 每字体族 5~7 个，而非理论上限 28 个，无需为「多份
 
 | 阶段 | 内容 | 验收 |
 |---|---|---|
-| P1 | TextLayoutEngine 纯计算实现 + 原版语义测试套件（§4.2 全部条目）；BitmapGlyphSource 位图直发路径 | 单元测试：run 序列与原版像素级一致（度量基准测试） |
-| P2 | 发射层接入 vertex stream + `render()` @Overwrite 切换（位图字体先行，TTF 字体暂走旧路径） | save_load_smoke + automation 基准；文本 GL 调用数显著下降 |
-| P3 | DynamicGlyphAtlas + native FreeType 扩展（批量/stroke）+ TTF 字体切换 | 高清观感 A/B；缩放全档位清晰；图集命中率/上传量诊断 |
-| P4 | 旧路径拆除：drawGlyph @Overwrite、RuntimeScaledFontCache（反射）、fnt overlay、双后端降级链 | 全量测试绿；`ssoptimizer.font.*` 属性面收敛 |
-| P5 | 描边/阴影栅格化合成（多 pass → 单 pass）A/B 优化 | automation 基准文本项提升，视觉无回归 |
+| P1 | TextLayoutEngine 纯计算实现 + 原版语义测试套件（§4.2 全部条目）；BitmapGlyphSource 位图直发路径 | ✅ 完成 |
+| P2 | 发射层接入 vertex stream + `render()` @Overwrite 切换（位图字体先行，TTF 字体暂走旧路径） | ✅ 完成 |
+| P3 | DynamicGlyphAtlas + native FreeType 扩展（批量/stroke）+ TTF 字体切换 | ✅ 完成 |
+| P4 | 旧路径拆除：drawGlyph @Overwrite、RuntimeScaledFontCache（反射）、fnt overlay、双后端降级链 | ✅ 完成（2026-08） |
+| P5 | 描边/阴影栅格化合成（多 pass → 单 pass）A/B 优化 | 未实施 |
 
-每阶段独立可部署、可回滚（配置开关切回旧路径，开关随 P4 完成移除）。
+每阶段独立可部署、可回滚（配置开关切回旧路径，开关随 P4 完成移除——已执行，`ssoptimizer.font.engine` 已删除）。
 
 ## 8. 风险与开放问题
 

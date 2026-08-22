@@ -44,10 +44,8 @@ public final class OriginalGameFontOverrides {
     private static final Map<String, FontOverrideSpec> OVERRIDES        = createOverrideSpecs();
     private static final Object                        LOCK             = new Object();
 
-    private static volatile Map<String, byte[]>  generatedResources           = Collections.emptyMap();
-    private static volatile Map<String, Integer> generatedScaleBuckets        = Collections.emptyMap();
-    private static volatile boolean              initializationAttempted      = false;
-    private static volatile int                  initializedScaleBucketMillis = 0;
+    private static volatile Map<String, byte[]> generatedResources      = Collections.emptyMap();
+    private static volatile boolean              initializationAttempted = false;
 
     private OriginalGameFontOverrides() {
     }
@@ -58,13 +56,6 @@ public final class OriginalGameFontOverrides {
         }
 
         final String normalized = normalize(resourcePath);
-        final InputStream runtimeStream = RuntimeScaledFontCache.openGeneratedStream(normalized);
-        if (runtimeStream != null) {
-            if (Boolean.getBoolean(DEBUG_LOG_PROPERTY)) {
-                LOGGER.info("[SSOptimizer][FontDebug] openStream HIT (runtime): " + normalized);
-            }
-            return runtimeStream;
-        }
         if (!isOverriddenPath(normalized)) {
             return null;
         }
@@ -110,39 +101,24 @@ public final class OriginalGameFontOverrides {
     }
 
     private static void ensureInitialized() {
-        final int desiredScaleBucketMillis = RuntimeScaledFontCache.bucketScaleMillis(effectiveBaseGenerationScale());
-        if (initializationAttempted && initializedScaleBucketMillis == desiredScaleBucketMillis) {
+        if (initializationAttempted) {
             return;
         }
 
         synchronized (LOCK) {
-            final float baseGenerationScale = effectiveBaseGenerationScale();
-            final int refreshedScaleBucketMillis = RuntimeScaledFontCache.bucketScaleMillis(baseGenerationScale);
-            if (initializationAttempted && initializedScaleBucketMillis == refreshedScaleBucketMillis) {
+            if (initializationAttempted) {
                 return;
-            }
-
-            if (initializationAttempted && initializedScaleBucketMillis != 0
-                    && initializedScaleBucketMillis != refreshedScaleBucketMillis) {
-                LOGGER.info("[SSOptimizer] Screen scale bucket changed for original font overrides: "
-                        + initializedScaleBucketMillis + " -> " + refreshedScaleBucketMillis
-                        + "; regenerating generated font resources");
             }
             initializationAttempted = true;
 
             final Map<String, byte[]> generated = new HashMap<>();
-            final Map<String, Integer> scaleBuckets = new HashMap<>();
             final Path fontDir = resolveFontDir();
             LOGGER.info("[SSOptimizer] Original font override profile=" + DEFAULT_PROFILE.name()
-                    + " fontDir=" + fontDir
-                    + " baseScale=" + String.format(Locale.ROOT, "%.3f", baseGenerationScale));
+                    + " fontDir=" + fontDir);
             for (FontOverrideSpec spec : OVERRIDES.values()) {
                 try {
-                    final TtfBmFontGenerator.GeneratedFontPack pack = Math.abs(baseGenerationScale - 1.0f) < 0.001f
-                            ? TtfBmFontGenerator.generate(spec, fontDir)
-                            : TtfBmFontGenerator.generateScaled(spec, fontDir, spec.originalFontPath(), baseGenerationScale);
+                    final TtfBmFontGenerator.GeneratedFontPack pack = TtfBmFontGenerator.generate(spec, fontDir);
                     generated.putAll(pack.resources());
-                    scaleBuckets.put(spec.normalizedOriginalFontPath(), refreshedScaleBucketMillis);
                     LOGGER.info("[SSOptimizer] Font override ready for " + spec.originalFontPath()
                             + " backend=" + pack.report().backendName()
                             + (pack.report().backendDetails().isBlank() ? "" : " details=" + pack.report().backendDetails())
@@ -168,8 +144,6 @@ public final class OriginalGameFontOverrides {
                 }
             }
             generatedResources = generated;
-            generatedScaleBuckets = Map.copyOf(scaleBuckets);
-            initializedScaleBucketMillis = refreshedScaleBucketMillis;
 
             if (!generated.isEmpty()) {
                 LOGGER.info("[SSOptimizer] Generated " + generated.size() + " TTF-backed original font resource(s)");
@@ -198,19 +172,6 @@ public final class OriginalGameFontOverrides {
 
     static Path currentFontDir() {
         return resolveFontDir();
-    }
-
-    static float effectiveBaseGenerationScale() {
-        return 1.0f;
-    }
-
-    static int baseScaleBucketMillis(final String resourcePath) {
-        final String normalized = normalize(resourcePath);
-        final Integer cached = generatedScaleBuckets.get(normalized);
-        if (cached != null) {
-            return cached;
-        }
-        return RuntimeScaledFontCache.bucketScaleMillis(effectiveBaseGenerationScale());
     }
 
     private static Map<String, FontOverrideSpec> createOverrideSpecs() {

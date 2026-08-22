@@ -121,7 +121,6 @@ val nativeLinuxRuntimeSharedLibs: List<File> by lazy {
         (nativeProject(module).extra["linuxRuntimeSharedLibs"] as? List<File>) ?: emptyList()
     }.distinct()
 }
-val packagedFontFntDir = rootProject.file("game-fonts/fnt")
 val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
 val log4jConfigFile = rootProject.file("log4j.properties")
 val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
@@ -199,9 +198,6 @@ tasks.register<Sync>("stageLinuxOverlay") {
     from(appJarFile) {
         into("mods/coremods")
     }
-    from(packagedFontFntDir) {
-        into("graphics/fonts")
-    }
     from(log4jConfigFile)
 
     into(linuxOverlayStageDir)
@@ -223,9 +219,6 @@ tasks.register<Sync>("stageWindowsOverlay") {
     // NanoForge coremod 入口：游戏根 mods/coremods/ 由 NanoForge 发现装配
     from(appJarFile) {
         into("mods/coremods")
-    }
-    from(packagedFontFntDir) {
-        into("starsector-core/graphics/fonts")
     }
     from(log4jConfigFile) {
         into("starsector-core")

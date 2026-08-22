@@ -277,8 +277,6 @@ jobs:
           cp log4j.properties "${WINDOWS_STAGE}/starsector-core/log4j.properties"
           cp game-fonts/ttf/* "${LINUX_MOD_STAGE}/fonts/"
           cp game-fonts/ttf/* "${WINDOWS_MOD_STAGE}/fonts/"
-          cp game-fonts/fnt/* "${LINUX_STAGE}/graphics/fonts/"
-          cp game-fonts/fnt/* "${WINDOWS_STAGE}/starsector-core/graphics/fonts/"
 
           mkdir -p build/distributions
           cd "${LINUX_STAGE}"

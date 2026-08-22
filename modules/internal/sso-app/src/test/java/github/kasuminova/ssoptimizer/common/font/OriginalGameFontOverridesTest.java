@@ -85,22 +85,6 @@ class OriginalGameFontOverridesTest {
     }
 
     @Test
-    void baseGenerationScaleKeepsOriginalMetricsEvenWithScreenScaleOverride() {
-        final String previous = System.getProperty(EffectiveScreenScale.OVERRIDE_PROPERTY);
-        System.setProperty(EffectiveScreenScale.OVERRIDE_PROPERTY, "150%");
-        try {
-            assertEquals(1.0f, OriginalGameFontOverrides.effectiveBaseGenerationScale());
-            assertEquals(1000, OriginalGameFontOverrides.baseScaleBucketMillis("graphics/fonts/orbitron20.fnt"));
-        } finally {
-            if (previous == null) {
-                System.clearProperty(EffectiveScreenScale.OVERRIDE_PROPERTY);
-            } else {
-                System.setProperty(EffectiveScreenScale.OVERRIDE_PROPERTY, previous);
-            }
-        }
-    }
-
-    @Test
     void defaultFontDirResolvesToModFontsUnderWorkingDirectory() {
         final Path fontDir = OriginalGameFontOverrides.resolveDefaultFontDir("../mods", Path.of("C:/Games/Starsector/starsector-core"));
 

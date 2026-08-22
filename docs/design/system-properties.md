@@ -47,15 +47,13 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.font.engine` | `"v2"` | 文本渲染引擎版本：`v2`（布局引擎 + 流式发射，P3 起 TTF 动态图集）/ `legacy`（drawGlyph 替换 + 运行时缩放换字体，回滚选项，P4 移除开关） | `common/font/FontRenderEngine.java:14` |
 | `ssoptimizer.font.ttf.enable` | `true` | 启用 TTF 生成的字体覆盖（替代原版位图字体资源流） | `common/font/OriginalGameFontOverrides.java:71` |
 | `ssoptimizer.font.ttf.dir` | 无（`null` → `<工作目录>/<mods>/ssoptimizer/fonts`） | 自定义 TTF 字体源目录 | `common/font/OriginalGameFontOverrides.java:165` |
 | `ssoptimizer.font.ttf.debug` | `false` | 开启字体覆盖命中/未命中调试日志 | `common/font/OriginalGameFontOverrides.java:47,59,64,147` |
 | `ssoptimizer.font.export` | `false` | 导出生成的 BMFont 产物与 manifest（A/B 检查用） | `common/font/FontArtifactExporter.java:25` |
 | `ssoptimizer.font.export.dir` | 无（`null` → `<工作目录>/ssoptimizer-font-export`） | 指定导出目录；设置该属性本身即视为开启导出 | `common/font/FontArtifactExporter.java:23,56` |
-| `ssoptimizer.font.runtimescale.enable` | `true` | 启用运行时缩放字体缓存（高 DPI 下生成高分辨率运行时字体图集） | `common/font/RuntimeScaledFontCache.java:404` |
 | `ssoptimizer.font.screenscale.override` | 无（`null` 或非正数 → 自动解析） | 强制指定屏幕缩放倍率，用于字体图集生成 | `common/font/EffectiveScreenScale.java:44` |
-| `ssoptimizer.font.rasterizer` | `"auto"` | 字体光栅化后端：`native` / `java2d` / `auto` | `common/font/NativeFontRasterizer.java:26` |
+| `ssoptimizer.font.rasterizer` | `"auto"` | 字体光栅化后端：`native` / `auto`（P4 起 TTF 路径仅 native，其它取值按 `auto` 处理） | `common/font/NativeFontRasterizer.java:26` |
 | `ssoptimizer.font.hint` | `"auto"` | 字体 hint 模式 | `common/font/NativeFontRasterizer.java:129` |
 | `ssoptimizer.font.forceautohint` | `"auto"` | 强制 autohint 模式 | `common/font/NativeFontRasterizer.java:145` |
 | `ssoptimizer.disable.fontcache` | `false` | 禁用生成的字体包持久缓存 | `common/font/FontPackCache.java:35` |
@@ -136,8 +134,8 @@
 | `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关（旋转递推 + 顶点缓存 + 合批） | `common/render/shield/ShieldRenderHelper.java` |
 | `ssoptimizer.render.shield.algo` | `"recurrence"` | 护盾顶点算法：`recurrence` / `raycast`（对照实现，实测约 8 倍劣化） | `common/render/shield/ShieldArcGeometry.java` |
 | `ssoptimizer.render.shipmasktess.enable` | `true` | Ship 蒙版三角化缓存开关（耳切 + WeakHashMap 缓存；false 走原 GLU 路径） | `common/render/tessellation/ShipMaskTessellationToggle.java` |
-| `ssoptimizer.textdiagnostics.enable` | `false` | 启用位图文本渲染诊断统计（glyph 四边形聚合） | `common/render/engine/TextRenderDiagnostics.java:117`，`TextLayoutDiagnostics.java:42` |
-| `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextRenderDiagnostics.java:121`，`TextLayoutDiagnostics.java:98` |
+| `ssoptimizer.textdiagnostics.enable` | `false` | 启用 v2 文本渲染诊断统计（render 接管的 pass/quad 聚合） | `common/render/engine/TextLayoutDiagnostics.java` |
+| `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.renderthread.glErrorProbe` | `"off"` | RT 管线 GL 错误探针：`frame`（每帧末尾排空滞留 glGetError 并记 WARN）/ `command`（逐命令排空，重，仅定位用；该模式下录制侧把命令包装为 `ProbeSiteCommand` 捕获录制点堆栈，出错时输出去重后的录制点）。用于定位「滞留 GL 错误被模组健康校验（如 BoxUtil aux 线程 glInit）读到」类问题 | `common/render/queue/RenderQueueImpl.java`（`GL_ERROR_PROBE_PROPERTY`）、`ProbeSiteCommand.java` |
 
 ## 战斗逻辑

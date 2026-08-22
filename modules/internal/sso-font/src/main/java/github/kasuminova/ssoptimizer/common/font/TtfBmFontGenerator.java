@@ -58,72 +58,15 @@ final class TtfBmFontGenerator {
                     .parse(OriginalGameFontOverrides.resolveOriginalFontFile(spec.originalFontPath()));
             final FontChain fonts = loadFontChain(spec, fontDir, source);
             final RasterizedGlyphs rasterized = rasterizeGlyphs(source, fonts);
-            final FittedAtlas fitted = fitSinglePageAtlas(spec, spec.originalFontPath(), source, rasterized, 1.0f);
+            final FittedAtlas fitted = fitSinglePageAtlas(spec, spec.originalFontPath(), source, rasterized);
             return buildPack(fitted.spec(), source, fonts, fitted.layout());
         });
-    }
-
-    static GeneratedFontPack generateScaled(final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
-                                            final Path fontDir,
-                                            final String runtimeFontPath,
-                                            final float scale) throws IOException, FontFormatException {
-        final SourceBmFont source = SourceBmFont
-                .parse(OriginalGameFontOverrides.resolveOriginalFontFile(baseSpec.originalFontPath()));
-        final OriginalGameFontOverrides.FontOverrideSpec runtimeSpec = runtimeSpecForScale(
-                baseSpec,
-                runtimeFontPath,
-                scale,
-                source.scaleWidth(),
-                source.scaleHeight());
-        return loadOrGenerateCached(runtimeSpec, baseSpec.originalFontPath(), fontDir, scale, () -> {
-            final SourceBmFont scaledSource = source.scaled(scale);
-            final FontChain fonts = loadFontChain(runtimeSpec, fontDir, scaledSource);
-            final RasterizedGlyphs rasterized = rasterizeGlyphs(scaledSource, fonts);
-            final FittedAtlas fitted = fitSinglePageAtlas(baseSpec, runtimeFontPath, scaledSource, rasterized, scale);
-            return buildPack(fitted.spec(), scaledSource, fonts, fitted.layout());
-        });
-    }
-
-    static OriginalGameFontOverrides.FontOverrideSpec runtimeSpecForScale(
-            final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
-            final String runtimeFontPath,
-            final float scale) {
-        return runtimeSpecForScale(baseSpec, runtimeFontPath, scale, baseSpec.pageWidth(), baseSpec.pageHeight());
-    }
-
-    static OriginalGameFontOverrides.FontOverrideSpec runtimeSpecForScale(
-            final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
-            final String runtimeFontPath,
-            final float scale,
-            final int sourcePageWidth,
-            final int sourcePageHeight) {
-        return new OriginalGameFontOverrides.FontOverrideSpec(
-                runtimeFontPath,
-                baseSpec.primaryFontCandidates(),
-                baseSpec.fallbackFontCandidates(),
-                runtimePageDimension(preferredPageDimension(baseSpec.pageWidth(), sourcePageWidth), scale),
-                runtimePageDimension(preferredPageDimension(baseSpec.pageHeight(), sourcePageHeight), scale));
     }
 
     static int preferredPageDimension(final int configuredDimension,
                                       final int sourceDimension) {
         final int normalizedConfiguredDimension = Math.max(1, configuredDimension);
         return sourceDimension > 0 ? sourceDimension : normalizedConfiguredDimension;
-    }
-
-    static int runtimePageDimension(final int baseDimension,
-                                    final float scale) {
-        final int normalizedBaseDimension = Math.max(1, baseDimension);
-        if (!Float.isFinite(scale) || scale <= 1.0f) {
-            return normalizedBaseDimension;
-        }
-
-        final int step = runtimePageStep(normalizedBaseDimension);
-        final long minimumRequiredDimension = Math.max(
-                normalizedBaseDimension,
-                Math.round(normalizedBaseDimension * scale));
-        final long cappedRequiredDimension = Math.min(MAX_RUNTIME_PAGE_DIMENSION, minimumRequiredDimension);
-        return Math.max(normalizedBaseDimension, roundUpToStep((int) cappedRequiredDimension, step));
     }
 
     static int runtimePageStep(final int baseDimension) {
@@ -138,11 +81,6 @@ final class TtfBmFontGenerator {
         final int normalizedStep = Math.max(1, step);
         final long rounded = ((long) normalizedValue + normalizedStep - 1L) / normalizedStep * normalizedStep;
         return (int) Math.min(Integer.MAX_VALUE, rounded);
-    }
-
-    static int readNominalFontSize(final String originalFontPath) throws IOException {
-        return Math.max(1, Math.abs(
-                SourceBmFont.parse(OriginalGameFontOverrides.resolveOriginalFontFile(originalFontPath)).infoSize()));
     }
 
     private static GeneratedFontPack loadOrGenerateCached(final OriginalGameFontOverrides.FontOverrideSpec spec,
@@ -430,9 +368,7 @@ final class TtfBmFontGenerator {
     static boolean isVictorManagedFontPath(final String fontPath) {
         final String normalized = OriginalGameFontOverrides.normalize(fontPath).toLowerCase(Locale.ROOT);
         return normalized.startsWith("graphics/fonts/victor10")
-                || normalized.startsWith("graphics/fonts/victor14")
-                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor10")
-                || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/victor14");
+                || normalized.startsWith("graphics/fonts/victor14");
     }
 
     static int substituteVictorLowercaseCodePoint(final int codePoint) {
@@ -595,6 +531,11 @@ final class TtfBmFontGenerator {
         if (shouldTreatAsSpaceGlyph(codePoint)) {
             return spaceEquivalentSourceMetric(spaceMetric);
         }
+        // 控制字符（NUL/GS 等）不可打印，原版 fnt 条目是纯占位度量（如 1×3 零墨迹），
+        // 直接保留不栅格化——字体链对它们本就无覆盖，栅格化只会落到链末 Dialog 兜底报 warn
+        if (sourceMetric != null && shouldPreserveControlGlyph(codePoint)) {
+            return sourceMetric;
+        }
         if (sourceMetric == null || !sourceMetric.isSpecialPlaceholder()) {
             return null;
         }
@@ -603,6 +544,14 @@ final class TtfBmFontGenerator {
 
     static boolean shouldTreatAsSpaceGlyph(final int codePoint) {
         return codePoint == LEFT_BRACE_CODE_POINT || codePoint == RIGHT_BRACE_CODE_POINT;
+    }
+
+    /**
+     * 控制字符（码点 &lt; 空格）判定：不可打印，原版 fnt 中的条目仅为占位度量，
+     * 布局层保留其 xadvance 语义但不产生任何墨迹，生成期应跳过栅格化。
+     */
+    static boolean shouldPreserveControlGlyph(final int codePoint) {
+        return codePoint >= 0 && codePoint < SPACE_CODE_POINT;
     }
 
     private static SourceGlyphMetric spaceEquivalentSourceMetric(final SourceGlyphMetric spaceMetric) {
@@ -625,7 +574,8 @@ final class TtfBmFontGenerator {
                                               final int yOffset,
                                               final int xAdvance) {
         final GlyphRaster glyph = preserveSourceSpecialGlyph(
-                0,
+                // 用可打印码点隔离「按维度判定占位符」逻辑，避免与控制字符保留分支叠加
+                'A',
                 new SourceGlyphMetric(width, height, xOffset, yOffset, xAdvance),
                 null,
                 null);
@@ -765,8 +715,7 @@ final class TtfBmFontGenerator {
     private static FittedAtlas fitSinglePageAtlas(final OriginalGameFontOverrides.FontOverrideSpec baseSpec,
                                                   final String outputFontPath,
                                                   final SourceBmFont source,
-                                                  final RasterizedGlyphs rasterized,
-                                                  final float scale) {
+                                                  final RasterizedGlyphs rasterized) {
         final int sourcePageWidth = preferredPageDimension(baseSpec.pageWidth(), source.scaleWidth());
         final int sourcePageHeight = preferredPageDimension(baseSpec.pageHeight(), source.scaleHeight());
         final int widthStep = runtimePageStep(sourcePageWidth);
@@ -951,15 +900,17 @@ final class TtfBmFontGenerator {
         return new GlyphLayout(pages, rasterized.backendName(), rasterized.backendDetails());
     }
 
+    /**
+     * TTF 覆盖包生成只走 native FreeType 后端（P4 拆除 Java2D 降级链）。
+     * native 不可用时直接抛错：由 {@code OriginalGameFontOverrides.ensureInitialized}
+     * 的 {@code catch (Throwable)} 记 warn 并回退原版位图字体，不做静默降级。
+     */
     private static GlyphRasterizer createRasterizer() {
-        final NativeFontRasterizer.RasterizerMode mode = NativeFontRasterizer.requestedMode();
-        if (mode != NativeFontRasterizer.RasterizerMode.JAVA2D && NativeFontRasterizer.isAvailable()) {
-            return new NativeGlyphRasterizer();
+        if (!NativeFontRasterizer.isAvailable()) {
+            throw new IllegalStateException("[SSOptimizer] native FreeType 栅格化不可用，无法生成 TTF 字体覆盖包"
+                    + "（rasterizer=" + NativeFontRasterizer.requestedMode() + "）");
         }
-        if (mode == NativeFontRasterizer.RasterizerMode.NATIVE) {
-            LOGGER.warn("[SSOptimizer] Native font rasterizer requested but unavailable; using Java2D fallback");
-        }
-        return new Java2dGlyphRasterizer();
+        return new NativeGlyphRasterizer();
     }
 
     private static BufferedImage toBufferedImage(final NativeGlyphBitmap glyphBitmap) {
@@ -1251,20 +1202,6 @@ final class TtfBmFontGenerator {
                     List.copyOf(codePoints), Map.copyOf(glyphMetrics));
         }
 
-        private static int scaleSignedMetric(final int value,
-                                             final float scale) {
-            final int sign = value < 0 ? -1 : 1;
-            return sign * scalePositiveMetric(Math.abs(value), scale);
-        }
-
-        private static int scalePositiveMetric(final int value,
-                                               final float scale) {
-            if (!Float.isFinite(scale) || scale <= 0.0f) {
-                return Math.max(1, value);
-            }
-            return Math.max(1, Math.round(Math.max(1, value) * scale));
-        }
-
         private static int parseIntProperty(final String line,
                                             final String key,
                                             final int defaultValue) {
@@ -1282,22 +1219,6 @@ final class TtfBmFontGenerator {
             } catch (NumberFormatException ignored) {
                 return defaultValue;
             }
-        }
-
-        SourceBmFont scaled(final float scale) {
-            final Map<Integer, SourceGlyphMetric> scaledGlyphMetrics = new LinkedHashMap<>(glyphMetrics.size());
-            for (Map.Entry<Integer, SourceGlyphMetric> entry : glyphMetrics.entrySet()) {
-                scaledGlyphMetrics.put(entry.getKey(), entry.getValue().scaled(scale));
-            }
-            return new SourceBmFont(
-                    scaleSignedMetric(infoSize, scale),
-                    antiAlias,
-                    scalePositiveMetric(lineHeight, scale),
-                    scalePositiveMetric(base, scale),
-                    scalePositiveMetric(scaleWidth, scale),
-                    scalePositiveMetric(scaleHeight, scale),
-                    codePoints,
-                    Map.copyOf(scaledGlyphMetrics));
         }
 
         float averageAdvance(final String sample) {
@@ -1336,94 +1257,13 @@ final class TtfBmFontGenerator {
                                      int xOffset,
                                      int yOffset,
                                      int xAdvance) {
-        private static int scaleMetric(final int value,
-                                       final float scale) {
-            if (!Float.isFinite(scale) || scale <= 0f) {
-                return Math.max(0, value);
-            }
-            return Math.max(0, Math.round(Math.max(0, value) * scale));
-        }
-
-        private static int scaleSignedMetric(final int value,
-                                             final float scale) {
-            final int sign = value < 0 ? -1 : 1;
-            return sign * scaleMetric(Math.abs(value), scale);
-        }
-
         boolean isSpecialPlaceholder() {
             return shouldPreserveSourceSpecialGlyph(width, height);
-        }
-
-        SourceGlyphMetric scaled(final float scale) {
-            return new SourceGlyphMetric(
-                    scaleMetric(width, scale),
-                    scaleMetric(height, scale),
-                    scaleSignedMetric(xOffset, scale),
-                    scaleSignedMetric(yOffset, scale),
-                    scaleMetric(xAdvance, scale));
-        }
-    }
-
-    private static final class Java2dGlyphRasterizer implements GlyphRasterizer {
-        @Override
-        public String backendName() {
-            return "java2d";
-        }
-
-        @Override
-        public String backendDetails(final FontChain chain) {
-            return "textAA=" + (chain.antiAlias() ? "on" : "off")
-                    + ", fractionalMetrics=" + (chain.fractionalMetrics() ? "on" : "off")
-                    + ", renderQuality=quality";
-        }
-
-        @Override
-        public GlyphRaster rasterizeGlyph(final int codePoint,
-                                          final int baseline,
-                                          final FontChain chain) {
-            final LoadedFont loadedFont = chain.selectFont(codePoint);
-            final Font font = loadedFont.font();
-            final String text = new String(Character.toChars(codePoint));
-
-            final BufferedImage scratch = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);
-            final Graphics2D g = scratch.createGraphics();
-            try {
-                applyTextHints(g, chain.antiAlias(), chain.fractionalMetrics());
-                final FontRenderContext frc = g.getFontRenderContext();
-                final GlyphVector gv = font.createGlyphVector(frc, text);
-                final java.awt.Rectangle pixelBounds = gv.getPixelBounds(frc, 0f, 0f);
-                final GlyphMetrics gm = gv.getGlyphMetrics(0);
-                final int width = Math.max(0, pixelBounds.width);
-                final int height = Math.max(0, pixelBounds.height);
-                final int xOffset = pixelBounds.x;
-                final int yOffset = baseline + pixelBounds.y;
-                final int xAdvance = Math.max(1, Math.round(gm.getAdvance()));
-
-                BufferedImage image = null;
-                if (width > 0 && height > 0) {
-                    image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-                    final Graphics2D gg = image.createGraphics();
-                    try {
-                        applyTextHints(gg, chain.antiAlias(), chain.fractionalMetrics());
-                        gg.setColor(Color.WHITE);
-                        gg.setFont(font);
-                        gg.drawGlyphVector(gv, -pixelBounds.x, -pixelBounds.y);
-                    } finally {
-                        gg.dispose();
-                    }
-                }
-
-                return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(), image, width, height,
-                        xOffset, yOffset, xAdvance);
-            } finally {
-                g.dispose();
-            }
         }
     }
 
     private static final class NativeGlyphRasterizer implements GlyphRasterizer {
-        private final Java2dGlyphRasterizer fallback    = new Java2dGlyphRasterizer();
-        private final Map<String, Long>     faceHandles = new LinkedHashMap<>();
+        private final Map<String, Long> faceHandles = new LinkedHashMap<>();
 
         @Override
         public String backendName() {
@@ -1440,14 +1280,29 @@ final class TtfBmFontGenerator {
                                           final int baseline,
                                           final FontChain chain) {
             final LoadedFont loadedFont = chain.selectFont(codePoint);
+            if (loadedFont.sourcePath() == null) {
+                // 链末 AWT Dialog 逻辑字体兜底（无 TTF 文件可交 native 栅格化）：
+                // 属单字形缺失而非家族级失败——留空墨迹，度量由 reconcileRasterizedGlyphToSourceMetrics
+                // 对齐原版 fnt 盒，与单字形栅格化失败路径同语义
+                LOGGER.warn("[SSOptimizer] 字形无任何 TTF 源可显示，保留空字形: codePoint=" + codePoint);
+                return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(),
+                        null, 0, 0, 0, 0, 0);
+            }
             final long faceHandle = resolveFaceHandle(loadedFont, chain.antiAlias());
             if (faceHandle == 0L) {
-                return fallback.rasterizeGlyph(codePoint, baseline, chain);
+                // createFace 失败已在 NativeFontRasterizer 记 warn；生成无法继续，整族回退位图字体
+                throw new IllegalStateException("[SSOptimizer] native createFace 失败，无法栅格化字体: "
+                        + loadedFont.sourcePath());
             }
 
             final NativeGlyphBitmap bitmap = NativeFontRasterizer.rasterizeGlyph(faceHandle, codePoint, baseline);
             if (bitmap == null) {
-                return fallback.rasterizeGlyph(codePoint, baseline, chain);
+                // 单字形栅格化失败（NativeFontRasterizer 已记 warn）：保留度量、留空墨迹，
+                // 由 reconcileRasterizedGlyphToSourceMetrics 对齐原版 fnt 盒
+                LOGGER.warn("[SSOptimizer] 单字形 native 栅格化失败，保留空字形: codePoint=" + codePoint
+                        + " font=" + loadedFont.sourceName());
+                return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(),
+                        null, 0, 0, 0, 0, 0);
             }
 
             return new GlyphRaster(
