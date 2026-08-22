@@ -40,7 +40,10 @@ final class TtfBmFontGenerator {
     private static final int    MAX_RUNTIME_PAGE_STEP           = 512;
     static final float  MIN_PRIMARY_ADVANCE_SCALE       = 0.88f;
     static final float  MAX_PRIMARY_ADVANCE_SCALE       = 1.08f;
-    static final float  MIN_FALLBACK_VISUAL_SCALE       = 0.88f;
+    // 下界必须容纳原版 fnt 的合法小 CJK 烘焙：insignia21LTaa 的 CJK 步进/名义比
+    // 低至 13/18 ≈ 0.722（CJK 按 13px 烘进 18px 行），若钳到 0.88 会把 CJK 墨迹
+    // 放大 22%，表现为图鉴正文/键位列表字号偏大、字距拥挤、行距过矮。
+    static final float  MIN_FALLBACK_VISUAL_SCALE       = 0.70f;
     static final float  MAX_FALLBACK_VISUAL_SCALE       = 1.36f;
     private static final float  MIN_VICTOR_PRIMARY_VISUAL_SCALE = 0.94f;
     private static final float  MAX_VICTOR_PRIMARY_VISUAL_SCALE = 1.24f;

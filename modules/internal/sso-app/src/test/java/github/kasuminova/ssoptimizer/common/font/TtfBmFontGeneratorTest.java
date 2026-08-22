@@ -255,7 +255,7 @@ class TtfBmFontGeneratorTest {
         assertEquals(1.0f, TtfBmFontGenerator.fallbackVisualScaleFactor(12f, 0f));
         assertEquals(1.0f, TtfBmFontGenerator.fallbackVisualScaleFactor(Float.NaN, 10f));
         assertEquals(1.36f, TtfBmFontGenerator.fallbackVisualScaleFactor(20f, 10f));
-        assertEquals(0.88f, TtfBmFontGenerator.fallbackVisualScaleFactor(8f, 20f));
+        assertEquals(0.70f, TtfBmFontGenerator.fallbackVisualScaleFactor(8f, 20f));
 
         final float balanced = TtfBmFontGenerator.fallbackVisualScaleFactor(12f, 11f);
         assertTrue(balanced > 1.0f && balanced < 1.36f);

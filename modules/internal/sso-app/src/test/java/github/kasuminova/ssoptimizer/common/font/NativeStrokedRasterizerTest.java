@@ -35,7 +35,7 @@ class NativeStrokedRasterizerTest {
             if (Files.isRegularFile(nativeLib) && System.getProperty("ssoptimizer.native.path.font") == null) {
                 System.setProperty("ssoptimizer.native.path.font", nativeLib.toAbsolutePath().toString());
             }
-            fontPath = rootDir.resolve("game-fonts/ttf/MiSans-Medium.ttf");
+            fontPath = rootDir.resolve("game-fonts/ttf/MiSans-Regular.ttf");
         }
     }
 
@@ -58,7 +58,7 @@ class NativeStrokedRasterizerTest {
     @BeforeAll
     static void createFace() {
         Assumptions.assumeTrue(fontPath != null && Files.isRegularFile(fontPath),
-                "测试字体 game-fonts/ttf/MiSans-Medium.ttf 不存在");
+                "测试字体 game-fonts/ttf/MiSans-Regular.ttf 不存在");
         Assumptions.assumeTrue(NativeFontRasterizer.isAvailable(),
                 "native font 栅格化后端不可用（未构建 libssoptimizer_font.so 或 FreeType 缺失）");
 

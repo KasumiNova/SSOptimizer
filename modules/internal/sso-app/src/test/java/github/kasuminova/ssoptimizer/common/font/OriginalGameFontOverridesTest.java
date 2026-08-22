@@ -37,9 +37,7 @@ class OriginalGameFontOverridesTest {
     @Test
     void exposesOverrideSpecForKnownOriginalFont() {
         final OriginalGameFontOverrides.FontOverrideSpec spec = OriginalGameFontOverrides.specForPath("graphics/fonts/insignia25LTaa.fnt");
-        final OriginalGameFontOverrides.FontProfile activeProfile = OriginalGameFontOverrides.resolveProfile(
-                OriginalGameFontOverrides.configuredProfileName()
-        );
+        final OriginalGameFontOverrides.FontProfile activeProfile = OriginalGameFontOverrides.activeProfile();
         assertNotNull(spec);
         assertEquals(activeProfile.insigniaPrimary(), spec.primaryFontCandidates());
         assertEquals(activeProfile.fallback(), spec.fallbackFontCandidates());
@@ -47,9 +45,7 @@ class OriginalGameFontOverridesTest {
 
     @Test
     void mapsAllManagedOrbitronFontsToBoldPrimaryCandidates() {
-        final OriginalGameFontOverrides.FontProfile activeProfile = OriginalGameFontOverrides.resolveProfile(
-                OriginalGameFontOverrides.configuredProfileName()
-        );
+        final OriginalGameFontOverrides.FontProfile activeProfile = OriginalGameFontOverrides.activeProfile();
 
         assertEquals(activeProfile.orbitronBoldPrimary(),
                 OriginalGameFontOverrides.specForPath("graphics/fonts/orbitron10.fnt").primaryFontCandidates());
@@ -60,24 +56,17 @@ class OriginalGameFontOverridesTest {
     }
 
     @Test
-    void resolvesMapleUiVerificationProfile() {
-        final OriginalGameFontOverrides.FontProfile profile = OriginalGameFontOverrides.resolveProfile("maple-ui");
-        assertEquals("maple-ui", profile.name());
-        assertTrue(profile.insigniaPrimary().contains("Maple UI.ttf"));
-        assertTrue(profile.insigniaBoldPrimary().contains("Maple UI Bold.ttf"));
-        assertTrue(profile.orbitronBoldPrimary().contains("Maple UI Bold.ttf"));
-        assertTrue(profile.fallback().contains("MiSans-Medium.ttf"));
-    }
-
-    @Test
-    void originalMatchProfilePrefersBundledOriginalTtfFirst() {
-        final OriginalGameFontOverrides.FontProfile profile = OriginalGameFontOverrides.resolveProfile("original-match");
+    void defaultProfilePrefersBundledOriginalTtfFirst() {
+        final OriginalGameFontOverrides.FontProfile profile = OriginalGameFontOverrides.activeProfile();
+        assertEquals("original-match", profile.name());
         assertEquals("lte50549.ttf", profile.insigniaPrimary().getFirst());
         assertEquals("lte50549.ttf", profile.insigniaBoldPrimary().getFirst());
         assertEquals("orbitron-light.ttf", profile.orbitronRegularPrimary().getFirst());
-        assertEquals("orbitron-bold.ttf", profile.orbitronBoldPrimary().getFirst());
-        assertEquals(List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"), profile.victorPrimary());
-        assertEquals(List.of("MiSans-Medium.ttf", "font.ttf"), profile.victorFallback());
+        assertEquals("orbitron-semibold.ttf", profile.orbitronBoldPrimary().getFirst());
+        assertEquals(List.of("Oxanium-Medium.ttf", "MiSans-Regular.ttf"), profile.victorPrimary());
+        assertEquals(List.of("MiSans-Regular.ttf"), profile.victorFallback());
+        assertEquals(List.of("MiSans-Regular.ttf", "font.ttf"), profile.fallback());
+        assertEquals(List.of("MiSans-Regular.ttf", "font.ttf"), profile.boldFallback());
     }
 
     @Test

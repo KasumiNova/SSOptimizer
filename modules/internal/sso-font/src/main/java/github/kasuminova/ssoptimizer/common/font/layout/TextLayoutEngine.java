@@ -3,7 +3,9 @@ package github.kasuminova.ssoptimizer.common.font.layout;
 import github.kasuminova.ssoptimizer.common.render.engine.TextScaleBuckets;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 文本布局引擎：完整复刻原版 {@code BitmapFontRenderer} 私有渲染链
@@ -53,6 +55,21 @@ public final class TextLayoutEngine {
     static volatile boolean strokeSynthesizeEnabled =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.font.stroke.synthesize", "true"));
 
+    /**
+     * 阴影 pass 总开关：{@code -Dssoptimizer.font.shadow=false} 关闭所有字体的
+     * 阴影偏移副本（边框/描边剪影不受影响），默认开启。临时诊断用途。
+     */
+    static volatile boolean shadowPassEnabled =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.font.shadow", "true"));
+
+    /**
+     * 边框/描边总开关：{@code -Dssoptimizer.font.border=false} 关闭所有字体的
+     * 边框 4 向 pass 与描边剪影 quad（含 outline 放大副本合成），默认开启。
+     * 临时诊断用途；关闭后等同于渲染状态 borderEnabled=false、shadowCopies=0。
+     */
+    static volatile boolean borderPassEnabled =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.font.border", "true"));
+
     private TextLayoutEngine() {
     }
 
@@ -73,23 +90,27 @@ public final class TextLayoutEngine {
                 && sized instanceof OutlineGlyphProvider candidate
                 && candidate.synthesizesOutline()
                 ? candidate : null;
+        // 单次 render 的逐码点缓存：shadow/边框/主各 pass（及 compact 迭代）会对同一
+        // 码点重复查询，TTF 路径每次查询都进全图集锁 + 双 Map 查找——缓存后每码点
+        // 每 render 只进一次。缓存对象不跨 render 存活，无淘汰/上下文一致性问题。
+        final GlyphSourceCache cache = new GlyphSourceCache(sized, outline);
 
         final List<TextPass> passes = new ArrayList<>();
         if (outline != null) {
-            layoutWithStrokeSynthesis(passes, s, sized, outline, scale, iterations);
+            layoutWithStrokeSynthesis(passes, s, cache, cache, scale, iterations);
             return passes;
         }
-        if (s.borderEnabled()) {
+        if (s.borderEnabled() && borderPassEnabled) {
             final int borderColor = packColor(s.outlineColorRgb(), s.borderAlpha());
-            buildPass(passes, s, sized, scale, 1f, 0f, borderColor, false, iterations, null, 0f, null);
-            buildPass(passes, s, sized, scale, -1f, 0f, borderColor, false, iterations, null, 0f, null);
-            buildPass(passes, s, sized, scale, 0f, 1f, borderColor, false, iterations, null, 0f, null);
-            buildPass(passes, s, sized, scale, 0f, -1f, borderColor, false, iterations, null, 0f, null);
-        } else if (s.shadowEnabled()) {
-            buildPass(passes, s, sized, scale, s.shadowOffsetX(), s.shadowOffsetY(),
+            buildPass(passes, s, cache, scale, 1f, 0f, borderColor, false, iterations, null, 0f, null);
+            buildPass(passes, s, cache, scale, -1f, 0f, borderColor, false, iterations, null, 0f, null);
+            buildPass(passes, s, cache, scale, 0f, 1f, borderColor, false, iterations, null, 0f, null);
+            buildPass(passes, s, cache, scale, 0f, -1f, borderColor, false, iterations, null, 0f, null);
+        } else if (s.shadowEnabled() && shadowPassEnabled) {
+            buildPass(passes, s, cache, scale, s.shadowOffsetX(), s.shadowOffsetY(),
                     packColor(s.outlineColorRgb(), s.shadowAlpha()), false, iterations, null, 0f, null);
         }
-        buildPass(passes, s, sized, scale, 0f, 0f,
+        buildPass(passes, s, cache, scale, 0f, 0f,
                 packColor(s.textColorRgb(), s.textAlpha()), true, iterations, null, 0f, null);
         return passes;
     }
@@ -108,7 +129,8 @@ public final class TextLayoutEngine {
             final float scale,
             final int iterations) {
         // 阴影 pass：原版 border 与 shadow 互斥（else-if），剪影合成路径保持该语义
-        if (!s.borderEnabled() && s.shadowEnabled()) {
+        final boolean border = s.borderEnabled() && borderPassEnabled;
+        if (!border && s.shadowEnabled() && shadowPassEnabled) {
             final float bucketScale = outline.currentBucketScale();
             final float snapX = Math.round(s.shadowOffsetX() * bucketScale) / bucketScale;
             final float snapY = Math.round(s.shadowOffsetY() * bucketScale) / bucketScale;
@@ -120,13 +142,13 @@ public final class TextLayoutEngine {
         // 仅 outline 时剪影跟随各字形当前色（原版放大副本用字形色），仅边框时用描边色
         final float strokeWidth;
         final Integer strokeColor;
-        if (s.borderEnabled() && s.shadowCopies() > 0) {
+        if (border && s.shadowCopies() > 0) {
             strokeWidth = Math.max(BORDER_STROKE_WIDTH, s.shadowCopies() * s.shadowScale());
             strokeColor = packColor(s.outlineColorRgb(), s.borderAlpha());
-        } else if (s.borderEnabled()) {
+        } else if (border) {
             strokeWidth = BORDER_STROKE_WIDTH;
             strokeColor = packColor(s.outlineColorRgb(), s.borderAlpha());
-        } else if (s.shadowCopies() > 0) {
+        } else if (s.shadowCopies() > 0 && borderPassEnabled) {
             strokeWidth = s.shadowCopies() * s.shadowScale();
             strokeColor = null;
         } else {
@@ -167,7 +189,13 @@ public final class TextLayoutEngine {
         final String text = s.text();
 
         for (int iter = 0; iter < iterations; iter++) {
-            final List<GlyphQuad> quads = new ArrayList<>();
+            final List<GlyphQuad> fills = new ArrayList<>();
+            // 描边合成主 pass：剪影 quad 集中到 pass 头部（同纹理连续），填充随后——
+            // 逐字形交错（S,F,S,F…）会让发射层每字形切 2 个纹理段（2N 条帧命令 /
+            // 2N 次 4 顶点 draw call）；分组后每 pass 段数收敛到剪影组 + 填充组。
+            // 绘制语义不变：剪影全局垫底于填充，与原版 shadowCopies「先副本后主字形」同构。
+            final List<GlyphQuad> silhouettes =
+                    outline != null && strokeWidth > 0f ? new ArrayList<>() : null;
             float penX = 0f;
             float lineY = 0f;
             int prev = -1;
@@ -216,9 +244,9 @@ public final class TextLayoutEngine {
                     currentColor = resolveHighlight(s, i);
                 }
 
-                emitGlyph(quads, s, outline, strokeWidth, strokeColor, c, gm, scale, penX, lineY, currentColor, offX, offY);
+                emitGlyph(fills, silhouettes, s, outline, strokeWidth, strokeColor, c, gm, scale, penX, lineY, currentColor, offX, offY);
                 if (s.underlineEnabled() && isSelectionStart(s, i)) {
-                    emitUnderline(quads, s, g, gm, scale, penX, lineY, currentColor, offX, offY);
+                    emitUnderline(fills, s, g, gm, scale, penX, lineY, currentColor, offX, offY);
                 }
 
                 penX += scale * gm.xAdvance();
@@ -227,19 +255,29 @@ public final class TextLayoutEngine {
                     currentColor = textColor;
                 }
             }
+            final List<GlyphQuad> quads;
+            if (silhouettes != null) {
+                silhouettes.addAll(fills);
+                quads = silhouettes;
+            } else {
+                quads = fills;
+            }
             out.add(new TextPass(quads));
         }
     }
 
     /**
-     * 单字形 quad：描边合成路径（outline != null 且 strokeWidth &gt; 0）先发描边剪影 quad
-     * （填充几何按描边宽度四向外扩，采样剪影槽位 UV）再发填充 quad；位图路径维持原版
+     * 单字形 quad：描边合成路径（outline != null 且 strokeWidth &gt; 0）产描边剪影 quad
+     * （填充几何按描边宽度四向外扩，采样剪影槽位 UV）与填充 quad——剪影写入
+     * {@code silhouetteSink}（非 null 时由调用方集中到 pass 头部，见 buildPass），
+     * 填充写入 {@code quads}；位图路径维持原版
      * 的 shadowCopies 放大副本循环（先于主 quad 发射，横纵扩张按宽高比不对称缩放）。
      * 零尺寸字形（'{'/'}' 空格化等占位符）不产任何 quad——只推进 penX，
      * 与原版 bake 后不产可见像素的语义对齐（同时修正位图路径的退化 quad）。
      */
     private static void emitGlyph(
             final List<GlyphQuad> quads,
+            final List<GlyphQuad> silhouetteSink,
             final TextRenderState s,
             final OutlineGlyphProvider outline,
             final float strokeWidth,
@@ -292,11 +330,12 @@ public final class TextLayoutEngine {
                     syT = snapToDeviceGrid(syT, baseY, devGrid);
                     syB = snapToDeviceGrid(syB, baseY, devGrid);
                 }
-                quads.add(quad(s, offX, offY, lineY, silhouetteColor, sm.textureId(),
-                        sxL, syT, su0, sv1,
-                        sxL, syB, su0, sv0,
-                        sxR, syB, su1, sv0,
-                        sxR, syT, su1, sv1));
+                (silhouetteSink != null ? silhouetteSink : quads).add(
+                        quad(s, offX, offY, lineY, silhouetteColor, sm.textureId(),
+                                sxL, syT, su0, sv1,
+                                sxL, syB, su0, sv0,
+                                sxR, syB, su1, sv0,
+                                sxR, syT, su1, sv1));
             }
         }
 
@@ -305,7 +344,7 @@ public final class TextLayoutEngine {
         final float u1 = gm.texX() + gm.texWidth();
         final float v1 = gm.texY() + gm.texHeight();
 
-        if (s.shadowCopies() > 0 && outline == null) {
+        if (s.shadowCopies() > 0 && outline == null && borderPassEnabled) {
             final float w = gm.width();
             final float h = gm.height();
             for (int k = 1; k <= s.shadowCopies(); k++) {
@@ -458,5 +497,84 @@ public final class TextLayoutEngine {
     static int packColor(final int rgb, final float alpha) {
         final int a = ((byte) (255.0f * alpha)) & 0xFF;
         return (a << 24) | (rgb & 0xFFFFFF);
+    }
+
+    /**
+     * 单次 render 的逐码点查询缓存（{@link #layout} 内创建、随调用结束丢弃）：
+     * 各 pass 与 compact 迭代对同一码点的重复 glyph()/strokedGlyph() 查询只穿透
+     * 一次到下游来源。kerning 不进缓存（位图实现是纯 fnt 数组读，无穿透开销）。
+     * 不跨 render 存活，因此无需处理图集淘汰/上下文重建的失效问题。
+     */
+    private static final class GlyphSourceCache implements OutlineGlyphProvider {
+        private final GlyphProvider        glyphs;
+        private final OutlineGlyphProvider outline;
+        private final Map<Integer, GlyphMetrics> glyphCache   = new HashMap<>();
+        private final Map<Long, GlyphMetrics>    strokedCache = new HashMap<>();
+
+        GlyphSourceCache(final GlyphProvider glyphs, final OutlineGlyphProvider outline) {
+            this.glyphs = glyphs;
+            this.outline = outline;
+        }
+
+        @Override
+        public GlyphMetrics glyph(final int codePoint) {
+            if (glyphCache.containsKey(codePoint)) {
+                return glyphCache.get(codePoint);
+            }
+            final GlyphMetrics gm = glyphs.glyph(codePoint);
+            glyphCache.put(codePoint, gm);
+            return gm;
+        }
+
+        @Override
+        public GlyphMetrics strokedGlyph(final int codePoint, final float strokeWidthLogicalPx) {
+            final long key = ((long) Float.floatToRawIntBits(strokeWidthLogicalPx) << 32) | codePoint;
+            if (strokedCache.containsKey(key)) {
+                return strokedCache.get(key);
+            }
+            final GlyphMetrics gm = outline.strokedGlyph(codePoint, strokeWidthLogicalPx);
+            strokedCache.put(key, gm);
+            return gm;
+        }
+
+        @Override
+        public boolean synthesizesOutline() {
+            return outline != null && outline.synthesizesOutline();
+        }
+
+        @Override
+        public float currentBucketScale() {
+            return outline.currentBucketScale();
+        }
+
+        @Override
+        public Integer kerning(final int prevCodePoint, final int codePoint) {
+            return glyphs.kerning(prevCodePoint, codePoint);
+        }
+
+        @Override
+        public int nominalFontSize() {
+            return glyphs.nominalFontSize();
+        }
+
+        @Override
+        public int lineHeight() {
+            return glyphs.lineHeight();
+        }
+
+        @Override
+        public GlyphProvider forScale(final float scale) {
+            return glyphs.forScale(scale);
+        }
+
+        @Override
+        public void flushPendingUploads() {
+            glyphs.flushPendingUploads();
+        }
+
+        @Override
+        public boolean usesAtlasTexture() {
+            return glyphs.usesAtlasTexture();
+        }
     }
 }

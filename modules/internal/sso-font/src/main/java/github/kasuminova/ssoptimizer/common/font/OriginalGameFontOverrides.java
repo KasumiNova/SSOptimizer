@@ -20,9 +20,25 @@ public final class OriginalGameFontOverrides {
     public static final String ENABLE_PROPERTY     = "ssoptimizer.font.ttf.enable";
     public static final String FONT_DIR_PROPERTY   = "ssoptimizer.font.ttf.dir";
     public static final String DEBUG_LOG_PROPERTY  = "ssoptimizer.font.ttf.debug";
-    public static final String PROFILE_PROPERTY    = "ssoptimizer.font.profile";
     public static final String EXPORT_PROPERTY     = FontArtifactExporter.EXPORT_PROPERTY;
     public static final String EXPORT_DIR_PROPERTY = FontArtifactExporter.EXPORT_DIR_PROPERTY;
+
+    /**
+     * 唯一内建 profile：字重统一策略为「CJK 全系 MiSans-Regular（Medium 在 CJK 正文
+     * 观感过重）；orbitron bold 角色映射到 semibold 字宽（bold 过粗发白）」。
+     * 声明位置必须在 {@link #OVERRIDES} 之前（clinit 顺序依赖）。
+     */
+    private static final FontProfile DEFAULT_PROFILE = new FontProfile(
+            "original-match",
+            List.of("lte50549.ttf", "MiSans-Regular.ttf"),
+            List.of("lte50549.ttf", "MiSans-Regular.ttf"),
+            List.of("orbitron-light.ttf", "MiSans-Regular.ttf"),
+            List.of("orbitron-semibold.ttf", "MiSans-Regular.ttf"),
+            List.of("Oxanium-Medium.ttf", "MiSans-Regular.ttf"),
+            List.of("MiSans-Regular.ttf"),
+            List.of("MiSans-Regular.ttf", "font.ttf"),
+            List.of("MiSans-Regular.ttf", "font.ttf")
+    );
 
     private static final Logger                        LOGGER           = Logger.getLogger(OriginalGameFontOverrides.class);
     private static final Map<String, FontOverrideSpec> OVERRIDES        = createOverrideSpecs();
@@ -117,7 +133,7 @@ public final class OriginalGameFontOverrides {
             final Map<String, byte[]> generated = new HashMap<>();
             final Map<String, Integer> scaleBuckets = new HashMap<>();
             final Path fontDir = resolveFontDir();
-            LOGGER.info("[SSOptimizer] Original font override profile=" + configuredProfileName()
+            LOGGER.info("[SSOptimizer] Original font override profile=" + DEFAULT_PROFILE.name()
                     + " fontDir=" + fontDir
                     + " baseScale=" + String.format(Locale.ROOT, "%.3f", baseGenerationScale));
             for (FontOverrideSpec spec : OVERRIDES.values()) {
@@ -199,7 +215,7 @@ public final class OriginalGameFontOverrides {
 
     private static Map<String, FontOverrideSpec> createOverrideSpecs() {
         final Map<String, FontOverrideSpec> specs = new LinkedHashMap<>();
-        final FontProfile profile = resolveProfile(configuredProfileName());
+        final FontProfile profile = DEFAULT_PROFILE;
 
         registerFamily(specs, profile, FontRole.INSIGNIA_REGULAR,
                 "graphics/fonts/insignia12.fnt",
@@ -251,45 +267,8 @@ public final class OriginalGameFontOverrides {
         return Collections.unmodifiableMap(specs);
     }
 
-    static String configuredProfileName() {
-        final String configured = System.getProperty(PROFILE_PROPERTY);
-        if (configured == null || configured.isBlank()) {
-            return "original-match";
-        }
-        return configured.trim().toLowerCase(Locale.ROOT);
-    }
-
-    static FontProfile resolveProfile(final String requestedProfileName) {
-        final String normalized = requestedProfileName == null || requestedProfileName.isBlank()
-                ? "original-match"
-                : requestedProfileName.trim().toLowerCase(Locale.ROOT);
-
-        if (Objects.equals(normalized, "maple-ui") || Objects.equals(normalized, "mapleui")) {
-            return new FontProfile(
-                    "maple-ui",
-                    List.of("Maple UI.ttf", "MapleUI.otf"),
-                    List.of("Maple UI Bold.ttf", "MapleUI-Bold.otf", "Maple UI.ttf", "MapleUI.otf"),
-                    List.of("Maple UI.ttf", "MapleUI.otf"),
-                    List.of("Maple UI Bold.ttf", "MapleUI-Bold.otf"),
-                    List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"),
-                    List.of("MiSans-Medium.ttf", "font.ttf"),
-                    List.of("MiSans-Medium.ttf", "font.ttf"),
-                    // bold 角色的 CJK 用细一字重：Medium 在粗体 UI（按钮/标题）上观感过重
-                    List.of("MiSans-Regular.ttf", "MiSans-Medium.ttf", "font.ttf")
-            );
-        }
-
-        return new FontProfile(
-                "original-match",
-                List.of("lte50549.ttf", "MiSans-Medium.ttf"),
-                List.of("lte50549.ttf", "MiSans-Medium.ttf"),
-                List.of("orbitron-light.ttf", "MiSans-Medium.ttf"),
-                List.of("orbitron-bold.ttf", "MiSans-Medium.ttf"),
-                List.of("Oxanium-Medium.ttf", "MiSans-Medium.ttf"),
-                List.of("MiSans-Medium.ttf", "font.ttf"),
-                List.of("MiSans-Medium.ttf", "font.ttf"),
-                List.of("MiSans-Regular.ttf", "MiSans-Medium.ttf", "font.ttf")
-        );
+    static FontProfile activeProfile() {
+        return DEFAULT_PROFILE;
     }
 
     private static void registerFamily(final Map<String, FontOverrideSpec> specs,
@@ -297,7 +276,7 @@ public final class OriginalGameFontOverrides {
                                        final FontRole role,
                                        final String... originalFontPaths) {
         final List<String> primary = primaryCandidates(profile, role);
-        // bold 角色的 CJK 回退用细一字重（boldFallback），避免粗体 UI 上观感过重
+        // bold 角色走独立回退链（boldFallback），当前与 fallback 完全一致（全系 Regular）
         final List<String> fallback = role == FontRole.INSIGNIA_BOLD || role == FontRole.ORBITRON_BOLD
                 ? profile.boldFallback()
                 : profile.fallback();

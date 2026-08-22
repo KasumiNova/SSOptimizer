@@ -62,13 +62,18 @@ public final class FontAtlasGl {
     }
 
     /**
-     * 把一组脏矩形（{@code {x, y, w, h}} + 行优先紧密排列的 ALPHA8 字节负载）
-     * 上传到图集纹理。仅渲染线程；绑定与 unpack 状态透明。
+     * 把一组脏矩形（{@code {x, y, w, h}} + 页内定位视图负载）上传到图集纹理。
+     * 仅渲染线程；绑定与 unpack 状态透明。
+     * <p>
+     * 负载语义（P4 起）：每个 payload 是图集页 staging direct 缓冲的视图，
+     * position 已定位到矩形原点（y*pageSize+x），行间步进由
+     * GL_UNPACK_ROW_LENGTH=pageSize 描述——零分配零拷贝；视图持有 staging
+     * 引用，命令执行期间 staging 内存不会被回收。
      *
      * @param textureId 目标图集纹理
-     * @param pageSize  页边长（像素），用于脏矩形越界 fail-fast 校验
+     * @param pageSize  页边长（像素），用于脏矩形越界 fail-fast 校验与行步进
      * @param rects     脏矩形列表（与 payloads 一一对应）
-     * @param payloads  各矩形的像素负载（{@code w*h} 字节的直接缓冲）
+     * @param payloads  各矩形的页内定位视图（remaining ≥ (h-1)*pageSize+w）
      */
     public static void uploadAlphaRects(final int textureId,
                                         final int pageSize,
@@ -82,10 +87,12 @@ public final class FontAtlasGl {
                 org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D);
         final int previousAlignment = org.lwjgl.opengl.GL11.glGetInteger(
                 org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT);
+        final int previousRowLength = org.lwjgl.opengl.GL11.glGetInteger(
+                org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH);
         try {
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, textureId);
-            // 单通道紧密行：行缓冲逐 rect 打包，无任何行距/跳过语义
-            org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH, 0);
+            // 单通道页内步进：payload 定位到矩形原点，跨行由 ROW_LENGTH 描述
+            org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH, pageSize);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_ROWS, 0);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_PIXELS, 0);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT, 1);
@@ -107,6 +114,7 @@ public final class FontAtlasGl {
         } finally {
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, previousBinding);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT, previousAlignment);
+            org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH, previousRowLength);
         }
     }
 

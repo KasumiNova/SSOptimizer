@@ -184,4 +184,67 @@ class TextLayoutEngineOutlineTest {
         assertEquals(1, quads.size(), "剪影栅格化失败时只发填充 quad（缺失语义同 '?' 回退的宽松形态）");
         assertEquals(7, quads.get(0).textureId());
     }
+
+    @Test
+    void silhouetteQuadsGroupBeforeFillsAndQueriesAreDeduplicated() {
+        final Map<Integer, GlyphMetrics> fills = Map.of(
+                65, GLYPH_A,
+                66, new GlyphMetrics(0, 11, 11, 9, 12, 0.20f, 0.20f, 0.05f, 0.06f, 8));
+        final Map<Integer, GlyphMetrics> strokes = Map.of(
+                65, GLYPH_A_STROKED,
+                66, new GlyphMetrics(0, 13, 10, 12, 14, 0.70f, 0.70f, 0.07f, 0.08f, 100));
+        final List<Integer> glyphQueries = new ArrayList<>();
+        final List<Integer> strokedQueries = new ArrayList<>();
+        final OutlineGlyphProvider font = new OutlineGlyphProvider() {
+            @Override
+            public GlyphMetrics glyph(final int codePoint) {
+                glyphQueries.add(codePoint);
+                return fills.get(codePoint);
+            }
+
+            @Override
+            public GlyphMetrics strokedGlyph(final int codePoint, final float strokeWidthLogicalPx) {
+                strokedQueries.add(codePoint);
+                return strokes.get(codePoint);
+            }
+
+            @Override
+            public boolean synthesizesOutline() {
+                return true;
+            }
+
+            @Override
+            public float currentBucketScale() {
+                return 1f;
+            }
+
+            @Override
+            public Integer kerning(final int prevCodePoint, final int codePoint) {
+                return null;
+            }
+
+            @Override
+            public int nominalFontSize() {
+                return 15;
+            }
+
+            @Override
+            public int lineHeight() {
+                return 18;
+            }
+        };
+
+        final List<TextPass> passes = TextLayoutEngine.layout(
+                state("ABA").borderEnabled(true).outlineColor(0x00FF00).borderAlpha(1f).build(), font);
+
+        assertEquals(1, passes.size());
+        final List<GlyphQuad> quads = passes.get(0).quads();
+        assertEquals(6, quads.size(), "3 字形 × (剪影 + 填充)");
+        assertEquals(List.of(99, 100, 99, 7, 8, 7),
+                quads.stream().map(GlyphQuad::textureId).toList(),
+                "剪影组（描边纹理 99/100）集中在 pass 头部、填充组（7/8）随后——"
+                        + "发射层按 textureId 切段时不再逐字形交错（2N 段 → 2 组）");
+        assertEquals(List.of(65, 66), glyphQueries, "逐码点缓存：同码点同 render 只穿透查询一次");
+        assertEquals(List.of(65, 66), strokedQueries, "描边查询同样按码点去重");
+    }
 }

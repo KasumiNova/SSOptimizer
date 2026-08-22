@@ -90,7 +90,7 @@ class AtlasSoftwareRenderIT {
                 System.setProperty("ssoptimizer.native.path.font", nativeLib.toAbsolutePath().toString());
             }
             ttfPath = rootDir.resolve("game-fonts/ttf/lte50549.ttf");
-            misansPath = rootDir.resolve("game-fonts/ttf/MiSans-Medium.ttf");
+            misansPath = rootDir.resolve("game-fonts/ttf/MiSans-Regular.ttf");
             fntPath = rootDir.resolve("game-fonts/fnt/insignia15LTaa.fnt");
             dumpDir = rootDir.resolve("build/font-atlas-dump");
         }

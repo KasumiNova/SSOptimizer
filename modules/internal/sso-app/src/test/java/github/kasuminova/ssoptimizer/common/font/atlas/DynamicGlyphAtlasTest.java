@@ -228,6 +228,27 @@ class DynamicGlyphAtlasTest {
         assertEquals(2, atlas.groupCount());
     }
 
+    @Test
+    void evictedPagesAreRecycledForNewGroups() {
+        final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(9, 2);
+        // 组 A 填满 2 页
+        for (int i = 0; i < 5; i++) {
+            atlas.request(FACE, 1000, 0, 0x4E00 + i, 13, solid4x4());
+        }
+        assertEquals(2, atlas.pageCount());
+        final List<GlyphAtlasPage> groupAPages = new ArrayList<>(atlas.pagesOfGroup(FACE, 1000, 0));
+
+        // 组 B 开页 → 淘汰组 A（2 页释放入回收池）
+        atlas.request(FACE, 1125, 0, 0x4E00, 13, solid4x4());
+        assertEquals(0, atlas.slotCount(FACE, 1000, 0));
+
+        // 组 C 开页 → 复用组 A 淘汰的页实例（staging direct 不重新分配，回收不依赖 GC）
+        final GlyphSlot slot = atlas.request("graphics/fonts/orbitron20aa.fnt", 1000, 0, 0x4E00, 13, solid4x4());
+        assertTrue(groupAPages.contains(slot.page()), "新组的页来自淘汰回收池（direct staging 复用）");
+        assertEquals(0, slot.x());
+        assertEquals(0, slot.y(), "复用页的 shelf 分配游标已重置");
+    }
+
     // ── 脏矩形上传 / 上下文重建 ─────────────────────────────────────────
 
     @Test

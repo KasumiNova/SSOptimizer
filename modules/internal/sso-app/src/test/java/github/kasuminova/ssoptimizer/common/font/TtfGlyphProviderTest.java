@@ -290,8 +290,8 @@ class TtfGlyphProviderTest {
 
     @Test
     void glyphFallsBackToFallbackFaceWhenPrimaryLacksGlyph() throws Exception {
-        // 链 = [lte50549.ttf（主）, MiSans-Medium.ttf（fallback）]；主 face 缺 '远'
-        Files.createFile(fontDir.resolve("MiSans-Medium.ttf"));
+        // 链 = [lte50549.ttf（主）, MiSans-Regular.ttf（fallback）]；主 face 缺 '远'
+        Files.createFile(fontDir.resolve("MiSans-Regular.ttf"));
         final FakeBackend backend = new FakeBackend();
         backend.missingOnPrimary.add(0x8FDC);
         final BitmapFont font = fixtureFont(INSIGNIA_PATH);
@@ -306,7 +306,7 @@ class TtfGlyphProviderTest {
         assertEquals(5, backend.createFaceCalls.get(),
                 "主探针 + 主 face + fallback 探针 + fallback 公式主探针 + fallback face");
         assertEquals(1, backend.rasterizeCalls.size());
-        assertEquals(backend.handleFor("MiSans-Medium.ttf"), (long) backend.rasterizeFaces.get(0),
+        assertEquals(backend.handleFor("MiSans-Regular.ttf"), (long) backend.rasterizeFaces.get(0),
                 "栅格化落在 fallback face（链上第二个文件）");
         assertEquals(13, gm.xAdvance(), "度量仍取 fnt");
         assertTrue(gm.textureId() != 0, "槽位纹理已创建");
@@ -497,19 +497,19 @@ class TtfGlyphProviderTest {
 
     @Test
     void calibrationScalesFallbackFaceByCjkSample() throws Exception {
-        Files.createFile(fontDir.resolve("MiSans-Medium.ttf"));
+        Files.createFile(fontDir.resolve("MiSans-Regular.ttf"));
         final FakeBackend backend = new FakeBackend();
         backend.missingOnPrimary.add(0x6C49); // 主 face 缺 '汉'
         // 主样本（HNM0UI）：fnt advance 12，native 探针 12 → 主因子 1.0；
-        // fallback 采样串（汉界测港）：fnt advance 13，native 探针 15
-        // → 目标步进 = 12 × 13/12 = 13，raw = 13/15 = 0.8667 → 钳制 0.88
+        // fallback 采样串（汉界测港）：fnt advance 13，native 探针 20
+        // → 目标步进 = 12 × 13/12 = 13，raw = 13/20 = 0.65 → 钳制 0.70
         final BitmapFont font = fixtureWithPrimarySample(INSIGNIA_PATH, 12);
         for (final int cp : TtfBmFontGenerator.PRIMARY_ADVANCE_SAMPLE.codePoints().toArray()) {
             backend.scriptedAdvances.put(cp, 12f);
         }
         for (final int cp : TtfBmFontGenerator.FALLBACK_VISUAL_SAMPLE.codePoints().toArray()) {
             font.addGlyph(glyph(cp, 13, 13, 0, 12, 13));
-            backend.scriptedAdvances.put(cp, 15f);
+            backend.scriptedAdvances.put(cp, 20f);
         }
         final TtfGlyphProvider provider = new TtfGlyphProvider(
                 font, OriginalGameFontOverrides.specForPath(INSIGNIA_PATH), fontDir,
@@ -520,17 +520,17 @@ class TtfGlyphProviderTest {
         assertEquals(5, backend.facePixelSizes.size(),
                 "主探针 + 主 face + fallback 探针 + fallback 公式主探针 + fallback face");
         assertEquals(15f, backend.facePixelSizes.get(2), 1e-6f, "fallback 探针 face 用名义字号");
-        assertEquals(15f * 0.88f, backend.facePixelSizes.get(4), 1e-4f,
-                "fallback 正式 face 按 CJK 采样校准（0.8667 → 0.88）");
+        assertEquals(15f * 0.70f, backend.facePixelSizes.get(4), 1e-4f,
+                "fallback 正式 face 按 CJK 采样校准（0.65 → 钳制 0.70）");
     }
 
     @Test
     void calibrationFallbackFollowsPrimaryRenderedAdvanceRatio() throws Exception {
-        Files.createFile(fontDir.resolve("MiSans-Medium.ttf"));
+        Files.createFile(fontDir.resolve("MiSans-Regular.ttf"));
         final FakeBackend backend = new FakeBackend();
         backend.missingOnPrimary.add(0x6C49);
         // 主样本 fnt/native 均 12 → 主因子 1.0；fallback fnt 13、native 14
-        // → 目标 13，raw = 13/14 ≈ 0.9286，落在 [0.88, 1.36] 内不钳制
+        // → 目标 13，raw = 13/14 ≈ 0.9286，落在 [0.70, 1.36] 内不钳制
         final BitmapFont font = fixtureWithPrimarySample(INSIGNIA_PATH, 12);
         for (final int cp : TtfBmFontGenerator.PRIMARY_ADVANCE_SAMPLE.codePoints().toArray()) {
             backend.scriptedAdvances.put(cp, 12f);
@@ -547,6 +547,60 @@ class TtfGlyphProviderTest {
 
         assertEquals(15f * (13f / 14f), backend.facePixelSizes.get(4), 1e-4f,
                 "fallback 校准因子 = 目标步进 13 / native 步进 14");
+    }
+
+    @Test
+    void calibrationPassesThroughLegitSmallCjkRatio() throws Exception {
+        Files.createFile(fontDir.resolve("MiSans-Regular.ttf"));
+        final FakeBackend backend = new FakeBackend();
+        backend.missingOnPrimary.add(0x6C49);
+        // insignia21LTaa 实机场景回归：原版 fnt 把 CJK 按 13px 烘进 18px 行，
+        // CJK 步进/名义比 ≈ 0.722。主样本 fnt/native 均 12 → 主因子 1.0；
+        // fallback fnt 13、native 18 → 目标 13，raw = 13/18 ≈ 0.722，
+        // 必须穿透钳制下界（0.70），否则 CJK 墨迹被放大约 22%（图鉴正文字号偏大）。
+        final BitmapFont font = fixtureWithPrimarySample(INSIGNIA_PATH, 12);
+        for (final int cp : TtfBmFontGenerator.PRIMARY_ADVANCE_SAMPLE.codePoints().toArray()) {
+            backend.scriptedAdvances.put(cp, 12f);
+        }
+        for (final int cp : TtfBmFontGenerator.FALLBACK_VISUAL_SAMPLE.codePoints().toArray()) {
+            font.addGlyph(glyph(cp, 13, 13, 0, 12, 13));
+            backend.scriptedAdvances.put(cp, 18f);
+        }
+        final TtfGlyphProvider provider = new TtfGlyphProvider(
+                font, OriginalGameFontOverrides.specForPath(INSIGNIA_PATH), fontDir,
+                new DynamicGlyphAtlas(64, 16), backend);
+
+        assertNotNull(provider.glyph(0x6C49), "fallback face 栅格化 '汉'");
+
+        assertEquals(15f * (13f / 18f), backend.facePixelSizes.get(4), 1e-4f,
+                "合法小 CJK 比率 0.722 穿透钳制，不被抬到 0.88");
+    }
+
+    // ── 槽位直通缓存 ────────────────────────────────────────────────────
+
+    @Test
+    void slotMetricsCacheBypassesAtlasOnRepeatAndInvalidatesOnEviction() {
+        final FakeBackend backend = new FakeBackend();
+        // maxPages=1：描边组开页即淘汰填充组（纹理代际递增）
+        final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(64, 1);
+        final TtfGlyphProvider provider = new TtfGlyphProvider(
+                fixtureFont(INSIGNIA_PATH),
+                OriginalGameFontOverrides.specForPath(INSIGNIA_PATH), fontDir, atlas, backend);
+
+        final GlyphMetrics first = provider.glyph('A');
+        assertNotNull(first);
+        assertTrue(first.textureId() != 0, "桩队列下纹理已创建，结果应入缓存");
+        assertSame(first, provider.glyph('A'),
+                "同 (bucket, stroke, 码点) 重复查询命中直通缓存，不进 atlas.request");
+        final int rasterizeBeforeEviction = backend.rasterizeCalls.size();
+
+        assertNotNull(provider.strokedGlyph('A', 1.0f), "描边组开页触发填充组淘汰");
+
+        final GlyphMetrics third = provider.glyph('A');
+        assertNotNull(third);
+        assertNotSame(first, third, "整组淘汰（纹理代际递增）后缓存必须失效");
+        assertTrue(backend.rasterizeCalls.size() > rasterizeBeforeEviction,
+                "淘汰后穿透到图集重新栅格化");
     }
 
     // ── 双源一致性 ──────────────────────────────────────────────────────

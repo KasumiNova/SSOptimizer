@@ -63,6 +63,20 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     /** 当前尺寸档位（逻辑线程可变，forScale 设置；预热线程启动时快照一次）。 */
     private int currentBucketMillis = TextScaleBuckets.bucketScaleMillis(1.0f);
 
+    /**
+     * 槽位度量直通缓存（仅逻辑线程访问）：key = bucketMillis<<41 | strokeBucketMillis<<21
+     * | 码点。绕过 atlas.request 的全图集锁与双 Map 查找——布局期同一 (bucket, stroke,
+     * 码点) 会被各 pass 与逐帧 render 反复查询（profiling 热点 LinkedHashMap.get）。
+     * 失效由图集纹理代际守卫（淘汰/上下文重建时 textureGeneration 递增 → 整体清空），
+     * 代际不变则槽位与 textureId 恒有效。textureId==0（预热线程建槽未建纹理的窗口期）
+     * 的结果不入缓存，避免把 0 号纹理烘进后续帧的 quad。
+     */
+    private final Map<Long, GlyphMetrics> slotCache = new HashMap<>();
+    /** slotCache 对应的图集纹理代际（-1 = 未初始化）。 */
+    private int slotCacheGeneration = -1;
+    /** slotCache 容量上限：超出即清空重建（稳态工作集为可见文本字符集，数百项）。 */
+    private static final int SLOT_CACHE_MAX = 4096;
+
     public TtfGlyphProvider(final BitmapFont baseFont,
                             final OriginalGameFontOverrides.FontOverrideSpec spec,
                             final Path fontDir,
@@ -140,11 +154,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
         final int rasterCodePoint = victorFamily
                 ? TtfBmFontGenerator.substituteVictorLowercaseCodePoint(codePoint)
                 : codePoint;
-        final GlyphSlot slot = requestSlot(rasterCodePoint, base, 0);
-        if (slot == null) {
-            return null;
-        }
-        return slotMetrics(base, slot, currentBucketScale());
+        return cachedSlotMetrics(rasterCodePoint, base, 0);
     }
 
     @Override
@@ -163,11 +173,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
         final int rasterCodePoint = victorFamily
                 ? TtfBmFontGenerator.substituteVictorLowercaseCodePoint(codePoint)
                 : codePoint;
-        final GlyphSlot slot = requestSlot(rasterCodePoint, base, strokeBucketMillis);
-        if (slot == null) {
-            return null;
-        }
-        return slotMetrics(base, slot, currentBucketScale());
+        return cachedSlotMetrics(rasterCodePoint, base, strokeBucketMillis);
     }
 
     @Override
@@ -361,6 +367,39 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     // ------------------------------------------------------------------
 
     /**
+     * 槽位度量直通缓存路径（见 slotCache 字段注释）：命中直接返回缓存度量，
+     * 未命中穿透到 {@link #requestSlot} 并按代际守卫入缓存（null 与 textureId==0
+     * 的窗口期结果不缓存）。
+     */
+    private GlyphMetrics cachedSlotMetrics(final int rasterCodePoint,
+                                           final GlyphMetrics base,
+                                           final int strokeBucketMillis) {
+        final int generation = atlas.textureGeneration();
+        if (generation != slotCacheGeneration) {
+            slotCache.clear();
+            slotCacheGeneration = generation;
+        }
+        final long key = ((long) currentBucketMillis << 41)
+                | ((long) strokeBucketMillis << 21) | rasterCodePoint;
+        final GlyphMetrics cached = slotCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        final GlyphSlot slot = requestSlot(rasterCodePoint, base, strokeBucketMillis);
+        if (slot == null) {
+            return null;
+        }
+        final GlyphMetrics result = slotMetrics(base, slot, currentBucketScale());
+        if (result.textureId() != 0) {
+            if (slotCache.size() >= SLOT_CACHE_MAX) {
+                slotCache.clear();
+            }
+            slotCache.put(key, result);
+        }
+        return result;
+    }
+
+    /**
      * 请求图集槽位：把 native 墨迹位图合成到并集画布（fnt 盒 × bucketScale ∪ 墨迹
      * 包围盒，描边档以「量化后的描边设备像素」为外扩种子）后入图集。
      * 槽位度量（含画布原点）经 {@link #slotMetrics} 折回逻辑坐标后驱动 quad 几何，
@@ -426,7 +465,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
      *       平均步进，钳制 [0.88, 1.08]（对应 harmonizePrimaryAdvance）；</li>
      *   <li>其余（fallback，CJK 样本）：目标步进 = 主字体校准后渲染平均步进 ×
      *       (fnt fallback 样本平均步进 / fnt 主样本平均步进)，因子 = 目标 / native
-     *       fallback 平均步进，钳制 [0.88, 1.36]（对应 harmonizeFallbackMetrics）——
+     *       fallback 平均步进，钳制 [0.70, 1.36]（对应 harmonizeFallbackMetrics）——
      *       注意目标不是「CJK 步进 = fnt CJK 步进」：那样方形 CJK 墨迹会撑满整个
      *       advance 盒、侧方位为零，正文观感过挤。</li>
      * </ul>

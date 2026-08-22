@@ -30,17 +30,32 @@ public final class DynamicGlyphAtlas {
 
     /** 图集页边长（像素）：{@code -Dssoptimizer.font.atlas.pageSize}，默认 2048。 */
     public static final String PAGE_SIZE_PROPERTY  = "ssoptimizer.font.atlas.pageSize";
-    /** 全局页数上限：{@code -Dssoptimizer.font.atlas.maxPages}，默认 16。 */
+    /** 全局页数上限：{@code -Dssoptimizer.font.atlas.maxPages}，默认 32。 */
     public static final String MAX_PAGES_PROPERTY  = "ssoptimizer.font.atlas.maxPages";
 
     private static final int DEFAULT_PAGE_SIZE = 2048;
-    private static final int DEFAULT_MAX_PAGES = 16;
+    // 覆盖表约 24 个字体 face，CJK 预热各占 1~4 页；上限低于预热组数会引发
+    // LRU 整组抖动（淘汰→重建→整页重传）。32 页 = 128MB VRAM + 128MB direct
+    // staging（构造时一次分配），两者均有界。
+    private static final int DEFAULT_MAX_PAGES = 32;
 
     private final int pageSize;
     private final int maxPages;
     /** accessOrder LinkedHashMap：LRU 顺序即迭代顺序（ eldest = 最久未用）。 */
     private final Map<GroupKey, Group> groups = new LinkedHashMap<>(16, 0.75f, true);
     private int totalPages;
+    /**
+     * 纹理代际：整组淘汰（纹理释放）与上下文重建（纹理 id 归零重建）时递增。
+     * 调用方（TtfGlyphProvider 的槽位直通缓存）据此判断缓存的 textureId 是否
+     * 仍指向存活纹理——代际不变则槽位与纹理 id 恒有效。
+     */
+    private volatile int textureGeneration;
+    /**
+     * 淘汰页回收池：LRU 淘汰的页经 release + resetForReuse 后入池复用，避免
+     * 每次淘汰都新分配 4MB direct staging（回收不依赖 GC，direct 占用有界）。
+     * 池上限 = maxPages（超出丢弃回 GC）；池内页不计入 totalPages。
+     */
+    private final List<GlyphAtlasPage> recycledPages = new ArrayList<>();
 
     public DynamicGlyphAtlas() {
         this(configuredPageSize(), configuredMaxPages());
@@ -104,7 +119,10 @@ public final class DynamicGlyphAtlas {
         GlyphAtlasPage page = group.pages.isEmpty() ? null : group.pages.get(group.pages.size() - 1);
         int[] cell = page == null ? null : page.allocateCell(bitmap.width(), bitmap.height());
         if (cell == null) {
-            page = new GlyphAtlasPage(pageSize);
+            // 优先复用淘汰回收池中的页（staging direct 复用），池空才新分配
+            page = recycledPages.isEmpty()
+                    ? new GlyphAtlasPage(pageSize)
+                    : recycledPages.remove(recycledPages.size() - 1);
             group.pages.add(page);
             totalPages++;
             FontAtlasDiagnostics.recordPageCreated();
@@ -150,6 +168,12 @@ public final class DynamicGlyphAtlas {
                 page.onContextRecreated();
             }
         }
+        textureGeneration++;
+    }
+
+    /** 当前纹理代际（淘汰/上下文重建时递增）；provider 侧缓存的失效哨兵。 */
+    public int textureGeneration() {
+        return textureGeneration;
     }
 
     /** 当前页总数（诊断/测试）。 */
@@ -190,6 +214,7 @@ public final class DynamicGlyphAtlas {
      * 释放其 GL 纹理并清槽位表。
      */
     private void evictLeastRecentlyUsedGroups(final GroupKey activeGroup) {
+        boolean evicted = false;
         final Iterator<Map.Entry<GroupKey, Group>> iterator = groups.entrySet().iterator();
         while (totalPages > maxPages && iterator.hasNext()) {
             final Map.Entry<GroupKey, Group> eldest = iterator.next();
@@ -198,14 +223,22 @@ public final class DynamicGlyphAtlas {
             }
             for (final GlyphAtlasPage page : eldest.getValue().pages) {
                 page.release();
+                page.resetForReuse();
+                if (recycledPages.size() < maxPages) {
+                    recycledPages.add(page);
+                }
                 FontAtlasDiagnostics.recordPageEvicted();
             }
             totalPages -= eldest.getValue().pages.size();
             iterator.remove();
+            evicted = true;
             if (FontAtlasDiagnostics.isEnabled()) {
                 LOGGER.info("[SSOptimizer] Font atlas evicted group " + eldest.getKey()
                         + " pages=" + eldest.getValue().pages.size() + " totalPages=" + totalPages);
             }
+        }
+        if (evicted) {
+            textureGeneration++;
         }
     }
 

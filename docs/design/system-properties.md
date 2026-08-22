@@ -51,7 +51,6 @@
 | `ssoptimizer.font.ttf.enable` | `true` | 启用 TTF 生成的字体覆盖（替代原版位图字体资源流） | `common/font/OriginalGameFontOverrides.java:71` |
 | `ssoptimizer.font.ttf.dir` | 无（`null` → `<工作目录>/<mods>/ssoptimizer/fonts`） | 自定义 TTF 字体源目录 | `common/font/OriginalGameFontOverrides.java:165` |
 | `ssoptimizer.font.ttf.debug` | `false` | 开启字体覆盖命中/未命中调试日志 | `common/font/OriginalGameFontOverrides.java:47,59,64,147` |
-| `ssoptimizer.font.profile` | `"original-match"` | 字体生成 profile（`original-match` / `maple-ui` 等） | `common/font/OriginalGameFontOverrides.java:256` |
 | `ssoptimizer.font.export` | `false` | 导出生成的 BMFont 产物与 manifest（A/B 检查用） | `common/font/FontArtifactExporter.java:25` |
 | `ssoptimizer.font.export.dir` | 无（`null` → `<工作目录>/ssoptimizer-font-export`） | 指定导出目录；设置该属性本身即视为开启导出 | `common/font/FontArtifactExporter.java:23,56` |
 | `ssoptimizer.font.runtimescale.enable` | `true` | 启用运行时缩放字体缓存（高 DPI 下生成高分辨率运行时字体图集） | `common/font/RuntimeScaledFontCache.java:404` |
