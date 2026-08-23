@@ -60,6 +60,8 @@ public final class GL32 {
         RenderQueue queue = BridgeSupport.queue();
         queue.currentFrame().addFence(fence);
         queue.submit(new SignalFenceCommand(fence));
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "FENCE_SIG", System.identityHashCode(fence), 0, 0, null);
         return new GLSync(fence);
     }
 
@@ -72,6 +74,8 @@ public final class GL32 {
      * @param timeout LWJGL2 语义下固定为 GL_TIMEOUT_IGNORED，原样保留
      */
     public static void glWaitSync(GLSync sync, int flags, long timeout) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "FENCE_WAIT", System.identityHashCode(sync.fence()), 0, 0, null);
         BridgeSupport.enqueue(new WaitFenceCommand(sync.fence()));
     }
 

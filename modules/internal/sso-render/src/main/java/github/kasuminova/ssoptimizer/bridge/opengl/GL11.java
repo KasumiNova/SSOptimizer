@@ -413,12 +413,18 @@ public final class GL11 {
     }
 
     public static void glViewport(int x, int y, int width, int height) {
+        if (github.kasuminova.ssoptimizer.common.render.queue.RtTrace.enabled()) {
+            github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                    "VIEWPORT", x, y, width, "h=" + height);
+        }
         BridgeSupport.simulatedState().onViewport(x, y, width, height);
         BridgeSupport.enqueueState(StateDedup.TYPE_VIEWPORT, x, y, width, height,
                 () -> org.lwjgl.opengl.GL11.glViewport(x, y, width, height));
     }
 
     public static void glClear(int mask) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "CLEAR", mask, BridgeSupport.framebufferBinding(), 0, null);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glClear(mask));
     }
 
@@ -692,6 +698,8 @@ public final class GL11 {
     // -- draw：池化 DrawCommand 携带 pointer 快照组
 
     public static void glDrawArrays(int mode, int first, int count) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "DRAW_ARRAYS", mode, first, count, null);
         DrawCommand command = BridgeSupport.acquireDrawCommand();
         command.setDrawArrays(mode, first, count, BridgeSupport.pointerState().capture());
         BridgeSupport.enqueue(command);
@@ -731,6 +739,8 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static void glBindTexture(int target, int texture) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BIND_TEX", target, texture, 0, null);
         BridgeSupport.simulatedState().onBindTexture(target, texture);
         BridgeSupport.enqueueState(StateDedup.TYPE_BIND_TEXTURE, target, texture, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
@@ -914,6 +924,8 @@ public final class GL11 {
 
     public static void glCopyTexSubImage2D(int target, int level, int xoffset, int yoffset,
                                            int x, int y, int width, int height) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "COPY_TEX", width, height, BridgeSupport.framebufferBinding(), null);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glCopyTexSubImage2D(
                 target, level, xoffset, yoffset, x, y, width, height));
     }
@@ -945,6 +957,7 @@ public final class GL11 {
      */
     public static int glGetTexLevelParameteri(int target, int level, int pname) {
         if (BridgeSupport.isMainRecordingThread()) {
+            BridgeSupport.resyncSimulatedStateIfAuxDirty();
             final Integer simulated =
                     BridgeSupport.simulatedState().getTexLevelParam(target, level, pname);
             if (simulated != null) {
@@ -1020,6 +1033,11 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     public static int glGetInteger(int pname) {
+        // aux 活动纪元失效：主线程的仿真/跟踪簿记（含下方 FBO 跟踪分支）只镜像
+        // 主线程命令流，aux 线程提交使簿记过期时先屏障再同步（见 BridgeSupport）
+        if (BridgeSupport.isMainRecordingThread()) {
+            BridgeSupport.resyncSimulatedStateIfAuxDirty();
+        }
         if (pname == org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT) {
             // 录制侧跟踪值直接返回：FBO 保存/恢复惯用法（雷达合成缓存 bakeCell 等）
             // 每帧多次调用，阻塞往返会把管线打回串行。游戏与模组的 FBO 绑定全部
@@ -1054,19 +1072,25 @@ public final class GL11 {
     /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGetInteger(int pname, IntBuffer params) {
         if (BridgeSupport.isMainRecordingThread()) {
+            BridgeSupport.resyncSimulatedStateIfAuxDirty();
             if (BridgeSupport.simulatedState().getInteger(pname, params)) {
                 return;
             }
             if (pname == org.lwjgl.opengl.GL11.GL_VIEWPORT) {
-                // VIEWPORT 失效再同步：阻塞读回后采入 4 值（写入起点即调用时 position）
+                // VIEWPORT 失效再同步：阻塞读回后采入 4 值（写入起点即调用时 position）。
+                // 填充辅助保证小缓冲（4 元素读 VIEWPORT 是模组惯用法）拿到真值后再采入
                 final int base = params.position();
-                BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetInteger(pname, params));
+                BridgeSupport.blockingWait(() -> GetBufferFill.fillInts(params, 16,
+                        buf -> org.lwjgl.opengl.GL11.glGetInteger(pname, buf)));
                 BridgeSupport.simulatedState().adoptViewport(
                         params.get(base), params.get(base + 1), params.get(base + 2), params.get(base + 3));
                 return;
             }
         }
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetInteger(pname, params));
+        // LWJGL2 对 glGetInteger 缓冲变体固定要求 remaining ≥ 16（BufferChecks），
+        // 小缓冲经填充辅助暂存执行后拷回（见 GetBufferFill）
+        BridgeSupport.blockingWait(() -> GetBufferFill.fillInts(params, 16,
+                buf -> org.lwjgl.opengl.GL11.glGetInteger(pname, buf)));
     }
 
     public static float glGetFloat(int pname) {
@@ -1075,22 +1099,27 @@ public final class GL11 {
 
     public static void glGetFloat(int pname, FloatBuffer params) {
         if (BridgeSupport.isMainRecordingThread()) {
+            BridgeSupport.resyncSimulatedStateIfAuxDirty();
             if (BridgeSupport.simulatedState().getFloat(pname, params)) {
                 return;
             }
             if (pname == org.lwjgl.opengl.GL11.GL_ALPHA_TEST_REF) {
                 // ALPHA_TEST_REF 失效再同步（语义同 glGetInteger 的 VIEWPORT 分支）
                 final int base = params.position();
-                BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetFloat(pname, params));
+                BridgeSupport.blockingWait(() -> GetBufferFill.fillFloats(params, 16,
+                        buf -> org.lwjgl.opengl.GL11.glGetFloat(pname, buf)));
                 BridgeSupport.simulatedState().adoptAlphaRef(params.get(base));
                 return;
             }
         }
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetFloat(pname, params));
+        // 固定下限 16 检查同 glGetInteger，见 GetBufferFill
+        BridgeSupport.blockingWait(() -> GetBufferFill.fillFloats(params, 16,
+                buf -> org.lwjgl.opengl.GL11.glGetFloat(pname, buf)));
     }
 
     public static boolean glGetBoolean(int pname) {
         if (BridgeSupport.isMainRecordingThread()) {
+            BridgeSupport.resyncSimulatedStateIfAuxDirty();
             // enable 能力簿记命中直接返回（SpriteBatch 收集守卫等逐 sprite 回读）；
             // 失效时阻塞读回并采入簿记再同步（一次性成本）
             final Boolean simulated = BridgeSupport.simulatedState().getBoolean(pname);
@@ -1105,7 +1134,9 @@ public final class GL11 {
     }
 
     public static void glGetBoolean(int pname, ByteBuffer params) {
-        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glGetBoolean(pname, params));
+        // 固定下限 16 检查同 glGetInteger，见 GetBufferFill
+        BridgeSupport.blockingWait(() -> GetBufferFill.fillBooleans(params, 16,
+                buf -> org.lwjgl.opengl.GL11.glGetBoolean(pname, buf)));
     }
 
     /**
@@ -1145,6 +1176,7 @@ public final class GL11 {
      */
     public static boolean glIsTexture(int texture) {
         if (BridgeSupport.isMainRecordingThread()) {
+            BridgeSupport.resyncSimulatedStateIfAuxDirty();
             return BridgeSupport.simulatedState().isTexture(texture);
         }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glIsTexture(texture));

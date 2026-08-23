@@ -144,6 +144,117 @@ class GlLedgerProcessorVerifyTest {
         assertVerifies("PublicFBO", new PublicFboLedgerProcessor().process(stub));
     }
 
+    // ---------- 调用点重定向处理器（upTex/screenRT/vbo） ----------
+
+    @Test
+    void boxTextureUploadOutputPassesDataFlowVerification() {
+        final byte[] stub = stubClass(BoxTextureUploadLedgerProcessor.TARGET_CLASS, w -> {
+            addMethod(w, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "loadTexture", "()V", mv -> {
+                pushCall(mv, "org/lwjgl/opengl/GL11", "glTexImage1D",
+                        "(IIIIIIILjava/nio/ByteBuffer;)V");
+                pushCall(mv, "org/lwjgl/opengl/GL11", "glTexImage2D",
+                        "(IIIIIIIILjava/nio/ByteBuffer;)V");
+                pushCall(mv, "org/lwjgl/opengl/GL42", "glTexStorage1D", "(IIII)V");
+                pushCall(mv, "org/lwjgl/opengl/GL42", "glTexStorage2D", "(IIIII)V");
+                pushCall(mv, "org/lwjgl/opengl/GL11", "glDeleteTextures", "(I)V");
+                mv.visitInsn(Opcodes.RETURN);
+            });
+        });
+        assertVerifies("TextureManager", new BoxTextureUploadLedgerProcessor().process(stub));
+    }
+
+    @Test
+    void boxLegacyNormalMapOutputPassesDataFlowVerification() {
+        final byte[] stub = stubClass(BoxLegacyNormalMapLedgerProcessor.TARGET_CLASS, w -> {
+            addMethod(w, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "glPutSourceTexture", "()V",
+                    mv -> {
+                        pushCall(mv, "org/lwjgl/opengl/GL11", "glTexImage2D",
+                                "(IIIIIIIILjava/nio/ByteBuffer;)V");
+                        pushCall(mv, "org/lwjgl/opengl/GL42", "glTexStorage2D", "(IIIII)V");
+                        pushCall(mv, "org/lwjgl/opengl/ARBTextureStorage", "glTexStorage2D",
+                                "(IIIII)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    });
+        });
+        assertVerifies("LegacyNormalMapHelper",
+                new BoxLegacyNormalMapLedgerProcessor().process(stub));
+    }
+
+    @Test
+    void singularityRenderersOutputPassesDataFlowVerification() {
+        final Consumer<ClassWriter> body = w -> {
+            addMethod(w, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "ensureScreenTexture", "()V",
+                    mv -> {
+                        pushCall(mv, "org/lwjgl/opengl/GL11", "glTexImage2D",
+                                "(IIIIIIIILjava/nio/ByteBuffer;)V");
+                        pushCall(mv, "org/lwjgl/opengl/GL11", "glDeleteTextures", "(I)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    });
+        };
+        assertVerifies("Moci_SingularityRenderer", new MociSingularityLedgerProcessor()
+                .process(stubClass(MociSingularityLedgerProcessor.TARGET_CLASS, body)));
+        assertVerifies("No101_SingularityRenderer", new No101SingularityLedgerProcessor()
+                .process(stubClass(No101SingularityLedgerProcessor.TARGET_CLASS, body)));
+    }
+
+    @Test
+    void astdTexTrailOutputPassesDataFlowVerification() {
+        final byte[] stub = stubClass(AstdTexTrailLedgerProcessor.TARGET_CLASS, w -> {
+            addMethod(w, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "createTargetTexture", "()V",
+                    mv -> {
+                        pushCall(mv, "org/lwjgl/opengl/GL11", "glTexImage2D",
+                                "(IIIIIIIILjava/nio/ByteBuffer;)V");
+                        pushCall(mv, "org/lwjgl/opengl/GL11", "glDeleteTextures", "(I)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    });
+        });
+        assertVerifies("TexTrailRenderer$Plugin", new AstdTexTrailLedgerProcessor().process(stub));
+    }
+
+    @Test
+    void boxConfigGuiOutputPassesDataFlowVerification() {
+        final byte[] stub = stubClass(BoxConfigGuiLedgerProcessor.TARGET_CLASS, w -> {
+            addMethod(w, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "init", "()V", mv -> {
+                pushCall(mv, "org/lwjgl/opengl/GL11", "glTexImage2D",
+                        "(IIIIIIIILjava/nio/ByteBuffer;)V");
+                pushCall(mv, "org/lwjgl/opengl/GL11", "glCopyTexImage2D", "(IIIIIIII)V");
+                mv.visitInsn(Opcodes.RETURN);
+            });
+        });
+        assertVerifies("BoxConfigGUI", new BoxConfigGuiLedgerProcessor().process(stub));
+    }
+
+    @Test
+    void boxInstancePoolOutputPassesDataFlowVerification() {
+        final byte[] stub = stubClass(BoxInstancePoolLedgerProcessor.TARGET_CLASS, w -> {
+            addMethod(w, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "initSSBO", "()V", mv -> {
+                pushCall(mv, "org/lwjgl/opengl/GL15", "glBufferData", "(IJI)V");
+                pushCall(mv, "org/lwjgl/opengl/GL44", "glBufferStorage", "(IJI)V");
+                pushCall(mv, "org/lwjgl/opengl/GL15", "glDeleteBuffers", "(I)V");
+                mv.visitInsn(Opcodes.RETURN);
+            });
+        });
+        assertVerifies("BUtil_InstanceDataMemoryPool",
+                new BoxInstancePoolLedgerProcessor().process(stub));
+    }
+
+    @Test
+    void particleEngineOutputPassesDataFlowVerification() {
+        final Consumer<ClassWriter> body = w -> {
+            addMethod(w, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "allocateParticles", "()V",
+                    mv -> {
+                        pushCall(mv, "org/lwjgl/opengl/GL15", "glBufferData",
+                                "(ILjava/nio/FloatBuffer;I)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    });
+        };
+        final ParticleEngineVboLedgerProcessor processor = new ParticleEngineVboLedgerProcessor();
+        assertVerifies("ParticleAllocator", processor.process(
+                stubClass(ParticleEngineVboLedgerProcessor.TARGET_CLASS_ALLOCATOR, body)));
+        assertVerifies("EmitterBufferHandler", processor.process(
+                stubClass(ParticleEngineVboLedgerProcessor.TARGET_CLASS_EMITTER, body)));
+    }
+
     // ---------- 校验与桩类合成工具 ----------
 
     /** 对产物做 CheckClassAdapter 全量校验（含数据流），断言无 AnalyzerException。 */
@@ -188,5 +299,25 @@ class GlLedgerProcessorVerifyTest {
         body.accept(mv);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
+    }
+
+    /** 按 desc 槽位压零值实参后发 INVOKESTATIC（long→LCONST_0，引用→ACONST_NULL）。 */
+    private static void pushCall(final MethodVisitor mv, final String owner, final String name,
+                                 final String desc) {
+        for (final org.objectweb.asm.Type arg : org.objectweb.asm.Type.getArgumentTypes(desc)) {
+            switch (arg.getSort()) {
+                case org.objectweb.asm.Type.LONG:
+                    mv.visitInsn(Opcodes.LCONST_0);
+                    break;
+                case org.objectweb.asm.Type.OBJECT:
+                case org.objectweb.asm.Type.ARRAY:
+                    mv.visitInsn(Opcodes.ACONST_NULL);
+                    break;
+                default:
+                    mv.visitInsn(Opcodes.ICONST_0);
+                    break;
+            }
+        }
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc, false);
     }
 }

@@ -23,7 +23,7 @@ IME_SMOKE_TRIGGER_PATTERN="${SSOPTIMIZER_SMOKE_INPUT_TRIGGER_PATTERN:-IME text f
 AUTOMATION_SCENARIO="${SSOPTIMIZER_AUTOMATION_SCENARIO:-arc_flare_aod7_basic}"
 AUTOMATION_OUTPUT_DIR="${SSOPTIMIZER_AUTOMATION_OUTPUT_DIR:-$GAME_DIR/ssoptimizer-automation-output}"
 AUTOMATION_TELEMETRY_FILE="$AUTOMATION_OUTPUT_DIR/astd-ingame-automation-telemetry.json"
-AUTOMATION_VERIFY_SCRIPT="${SSOPTIMIZER_AUTOMATION_VERIFY_SCRIPT:-/mnt/store/Games/Starsector098-linux/mods/Asteria_Directorate/tools/verify_ingame_vfx_automation.py}"
+AUTOMATION_VERIFY_SCRIPT="${SSOPTIMIZER_AUTOMATION_VERIFY_SCRIPT:-/home/hikari_nova/IdeaProjects/Asteria_Directorate/tools/verify_ingame_vfx_automation.py}"
 AUTOMATION_REQUIRE_SCREENSHOT_FILE="${SSOPTIMIZER_AUTOMATION_REQUIRE_SCREENSHOT_FILE:-false}"
 
 echo "=== SSOptimizer Game Launch Smoke Test ==="

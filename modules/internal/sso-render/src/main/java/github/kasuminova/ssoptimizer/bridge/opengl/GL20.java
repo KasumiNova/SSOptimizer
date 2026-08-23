@@ -78,6 +78,7 @@ public final class GL20 {
     }
 
     public static void glUseProgram(int program) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace("USE_PROG", program, 0, 0, null);
         BridgeSupport.simulatedState().onUseProgram(program);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glUseProgram(program));
     }
@@ -237,6 +238,7 @@ public final class GL20 {
      */
     public static boolean glIsProgram(int program) {
         if (BridgeSupport.isMainRecordingThread()) {
+            BridgeSupport.resyncSimulatedStateIfAuxDirty();
             return BridgeSupport.simulatedState().isProgram(program);
         }
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glIsProgram(program));

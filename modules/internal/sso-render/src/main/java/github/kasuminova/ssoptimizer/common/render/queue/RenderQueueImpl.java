@@ -66,6 +66,17 @@ public final class RenderQueueImpl implements RenderQueue {
      */
     private static volatile Thread mainThread = Thread.currentThread();
 
+    /**
+     * aux 生产者线程活动纪元：非主录制线程且非渲染线程的 {@link #submit(GlCommand)}
+     * （BoxUtil 后台线程、字体预热 daemon 经 GlDispatch 等）每次提交递增。
+     * 用途：主录制线程的 getter 状态仿真（bridge 侧 SimulatedGlState）只镜像主线程
+     * 自己的命令流；aux 提交意味着命令流中混入了簿记外的状态改动，主线程仿真 getter
+     * 据此纪元失效并回退一次屏障再同步（见 bridge 侧 BridgeSupport 的再同步路径）。
+     * 静态语义与 {@link #mainThread} 同级（队列进程级单例）。
+     */
+    private static final java.util.concurrent.atomic.AtomicLong AUX_SUBMISSION_EPOCH =
+            new java.util.concurrent.atomic.AtomicLong();
+
     private final FramePool framePool;
     private final StallDetector stallDetector;
     /**
@@ -145,6 +156,13 @@ public final class RenderQueueImpl implements RenderQueue {
 
     @Override
     public void submit(GlCommand command) {
+        // aux 生产者线程提交即 bump 活动纪元：该命令进入主线程正在录制的帧，
+        // 其执行可能改变真实 GL 状态而不进主线程仿真簿记（详见字段注释）。
+        // 主线程与渲染线程（悬挂续跑 requeue 不经过本方法）之外的提交才计数。
+        Thread producer = Thread.currentThread();
+        if (producer != mainThread && producer != renderThread) {
+            AUX_SUBMISSION_EPOCH.incrementAndGet();
+        }
         synchronized (frameLock) {
             // frameLock 已提供互斥与可见性，帧自身监视器在此冗余（addUnlocked）
             currentFrame.addUnlocked(command);
@@ -289,6 +307,19 @@ public final class RenderQueueImpl implements RenderQueue {
     }
 
     /**
+     * @return aux 生产者线程活动纪元（见 {@link #AUX_SUBMISSION_EPOCH}）；
+     * bridge 主线程仿真 getter 的失效判据
+     */
+    public static long auxSubmissionEpoch() {
+        return AUX_SUBMISSION_EPOCH.get();
+    }
+
+    /** 测试用：复位 aux 活动纪元，避免用例间静态状态串扰。 */
+    public static void resetAuxSubmissionEpochForTesting() {
+        AUX_SUBMISSION_EPOCH.set(0);
+    }
+
+    /**
      * 主录制线程认领：首个 {@link #swapFramesAndSync()} 调用线程即游戏主循环线程
      * （生产环境中队列类可能由 launcher 线程加载，与游戏循环线程不是同一个），
      * 迁移时输出 INFO 日志供实机诊断确认。
@@ -323,6 +354,7 @@ public final class RenderQueueImpl implements RenderQueue {
         // 必须先捕获完成 Future 再 offer：offer 之后渲染线程随时可能执行完并把帧
         // 归还池（reset 换发新 Future），届时再读帧上的 Future 已不是本周期的实例
         CompletableFuture<Void> completion = submitted.completionFuture();
+        RtTrace.frameBoundary();
         offerOrThrow(new FrameTask(submitted));
         currentFrame = framePool.acquire();
         lastSubmittedCompletion = completion;
@@ -375,6 +407,7 @@ public final class RenderQueueImpl implements RenderQueue {
         @Override
         public void run() {
             try {
+                RtTrace.trace("FRAME_EXEC", frame.commands().size(), 0, 0, null);
                 runOrRequeue(frame.commands());
                 // 帧模式探针在 complete 之前：等待帧 Future 的一方由此确定探针已落地
                 probeFrameErrors();
@@ -409,6 +442,7 @@ public final class RenderQueueImpl implements RenderQueue {
         @Override
         public void run() {
             try {
+                RtTrace.trace("CONT_EXEC", commands.size(), 0, 0, null);
                 runOrRequeue(commands);
             } catch (Throwable t) {
                 LOGGER.error("[SSOptimizer] 渲染线程执行悬挂帧的续跑命令失败，余下命令已丢弃", t);
@@ -447,6 +481,7 @@ public final class RenderQueueImpl implements RenderQueue {
                     }
                 }
             } catch (SuspendFrameException suspend) {
+                RtTrace.trace("SUSPEND", i, commands.size(), 0, null);
                 LockSupport.parkNanos(SUSPEND_REQUEUE_BACKOFF_NANOS);
                 offerOrThrow(new ContinuationTask(
                         new ArrayList<>(commands.subList(i, commands.size()))));

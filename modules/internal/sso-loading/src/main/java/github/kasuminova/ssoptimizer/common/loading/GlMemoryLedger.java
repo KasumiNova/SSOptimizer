@@ -29,7 +29,20 @@ public final class GlMemoryLedger {
         /** GraphicsLib 直接分配的纹理（ShaderLib 屏幕/前景/辅助缓冲、LightShader RT 纹理）。 */
         GFXLIB_TEX("gfxlibTex"),
         /** BoxUtil FBO 附件纹理（BUtil_RenderingBuffer 双层缓冲、PublicFBO）。 */
-        BOX_TEX("boxTex");
+        BOX_TEX("boxTex"),
+        /** 模组直接上传的贴图（BoxUtil TextureManager 统一上传头、LegacyNormalMapHelper 法线图）。 */
+        UPTEX("upTex"),
+        /** 模组自建的屏幕尺寸 RT 旁路（SingularityRenderer/TexTrailRenderer/BoxConfigGUI 等）。 */
+        SCREEN_RT("screenRT"),
+        /** 缓冲对象（BoxUtil SSBO 实例池、ParticleEngine 粒子池、游戏 SpriteBatch 批渲染 VBO）。 */
+        VBO("vbo"),
+        /**
+         * 受管游戏贴图的真实驻留：LazyTextureManager 各上传路径（含压缩/热重传/eager）
+         * 提交上传后入账、驱逐与上下文重建对称减量，外加舰船/武器图集页（只计分配峰值）。
+         * 与 summary 的 {@code managedResidentMiB}（估算口径子集）不同，本分类按上传/删除
+         * 的实际 GL 调用计量。
+         */
+        GAME_TEX("gameTex");
 
         private final String label;
 
@@ -131,10 +144,25 @@ public final class GlMemoryLedger {
                 return 2;
             case 33326: // GL_R32F
                 return 4;
+            case 34843: // GL_RGB16F
+                return 6;
+            case 33327: // GL_RG16F
+            case 33328: // GL_RG32F
             case 34842: // GL_RGBA16F
                 return 8;
+            case 34837: // GL_RGB32F
+                return 12;
             case 34836: // GL_RGBA32F
                 return 16;
+            // 8-bit 单/双通道与遗留亮度格式
+            case 6402:  // GL_ALPHA
+            case 6403:  // GL_RED
+            case 6409:  // GL_LUMINANCE
+            case 33321: // GL_R8
+                return 1;
+            case 6410:  // GL_LUMINANCE_ALPHA
+            case 33323: // GL_RG8
+                return 2;
             // 深度 / 模板
             case 36168: // GL_STENCIL_INDEX8（GraphicsLib ShaderLib.makeFramebuffer）
                 return 1;

@@ -200,6 +200,235 @@ class GlLedgerProcessorTransformTest {
                 "delete 钩子必须位于方法 HEAD（首条真实指令）");
     }
 
+    // ---------- 调用点重定向处理器（upTex/screenRT/vbo） ----------
+
+    private static final String GL11 = "org/lwjgl/opengl/GL11";
+    private static final String GL15 = "org/lwjgl/opengl/GL15";
+    private static final String GL42 = "org/lwjgl/opengl/GL42";
+    private static final String GL44 = "org/lwjgl/opengl/GL44";
+    private static final String ARB_TS = "org/lwjgl/opengl/ARBTextureStorage";
+    private static final String TEXIMAGE1D = "(IIIIIIILjava/nio/ByteBuffer;)V";
+    private static final String TEXIMAGE2D = "(IIIIIIIILjava/nio/ByteBuffer;)V";
+
+    @Test
+    void boxTextureUploadRedirectsAllFiveEntryPoints() {
+        final byte[] stub = stubClass(BoxTextureUploadLedgerProcessor.TARGET_CLASS, w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "loadTexture", "()V", mv -> {
+                        pushCall(mv, GL11, "glTexImage1D", TEXIMAGE1D);
+                        pushCall(mv, GL11, "glTexImage2D", TEXIMAGE2D);
+                        pushCall(mv, GL42, "glTexStorage1D", "(IIII)V");
+                        pushCall(mv, GL42, "glTexStorage2D", "(IIIII)V");
+                        // 非分配调用不得改写
+                        pushCall(mv, GL11, "glBindTexture", "(II)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "deleteTexture", "()V", mv -> {
+                        pushCall(mv, GL11, "glDeleteTextures", "(I)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        });
+
+        final byte[] rewritten = new BoxTextureUploadLedgerProcessor().process(stub);
+        assertNotNull(rewritten, "TextureManager 桩类应被改写");
+        final List<String> calls = staticCalls(rewritten);
+        assertTrue(calls.contains(HOOK + ".upTexImage1D:" + TEXIMAGE1D));
+        assertTrue(calls.contains(HOOK + ".upTexImage2D:" + TEXIMAGE2D));
+        assertTrue(calls.contains(HOOK + ".upTexStorage1D:(IIII)V"));
+        assertTrue(calls.contains(HOOK + ".upTexStorage2D:(IIIII)V"));
+        assertTrue(calls.contains(HOOK + ".upTexDeleteTexture:(I)V"),
+                "glDeleteTextures 应重定向为对称删除钩子");
+        assertTrue(calls.contains(GL11 + ".glBindTexture:(II)V"),
+                "非分配调用（glBindTexture）必须保持原样");
+    }
+
+    @Test
+    void boxLegacyNormalMapRedirectsThreeStorageVariants() {
+        final byte[] stub = stubClass(BoxLegacyNormalMapLedgerProcessor.TARGET_CLASS, w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "glPutSourceTexture", "()V", mv -> {
+                        pushCall(mv, GL11, "glTexImage2D", TEXIMAGE2D);
+                        pushCall(mv, GL42, "glTexStorage2D", "(IIIII)V");
+                        pushCall(mv, ARB_TS, "glTexStorage2D", "(IIIII)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        });
+
+        final byte[] rewritten = new BoxLegacyNormalMapLedgerProcessor().process(stub);
+        assertNotNull(rewritten, "LegacyNormalMapHelper 桩类应被改写");
+        final List<String> calls = staticCalls(rewritten);
+        assertTrue(calls.contains(HOOK + ".upTexImage2D:" + TEXIMAGE2D));
+        assertTrue(calls.contains(HOOK + ".upTexStorage2D:(IIIII)V"));
+        assertTrue(calls.contains(HOOK + ".upTexStorage2DARB:(IIIII)V"),
+                "ARB 变体必须走 ARB 转发钩子（回呼 ARBTextureStorage）");
+    }
+
+    @Test
+    void singularityRenderersRedirectScreenRtAllocAndDelete() {
+        final Consumer<ClassWriter> body = w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "ensureScreenTexture", "()V", mv -> {
+                        pushCall(mv, GL11, "glTexImage2D", TEXIMAGE2D);
+                        pushCall(mv, GL11, "glCopyTexSubImage2D", "(IIIIIIII)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "cleanup", "()V", mv -> {
+                        pushCall(mv, GL11, "glDeleteTextures", "(I)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        };
+
+        final byte[] moci = new MociSingularityLedgerProcessor()
+                .process(stubClass(MociSingularityLedgerProcessor.TARGET_CLASS, body));
+        assertNotNull(moci, "Moci_SingularityRenderer 桩类应被改写");
+        final List<String> mociCalls = staticCalls(moci);
+        assertTrue(mociCalls.contains(HOOK + ".rtTexImage2D:" + TEXIMAGE2D));
+        assertTrue(mociCalls.contains(HOOK + ".rtDeleteTexture:(I)V"));
+        assertTrue(mociCalls.contains(GL11 + ".glCopyTexSubImage2D:(IIIIIIII)V"),
+                "每帧 glCopyTexSubImage2D 不产生新分配，必须保持原样");
+
+        final byte[] no101 = new No101SingularityLedgerProcessor()
+                .process(stubClass(No101SingularityLedgerProcessor.TARGET_CLASS, body));
+        assertNotNull(no101, "No101_SingularityRenderer 桩类应被改写");
+        final List<String> no101Calls = staticCalls(no101);
+        assertTrue(no101Calls.contains(HOOK + ".rtTexImage2D:" + TEXIMAGE2D));
+        assertTrue(no101Calls.contains(HOOK + ".rtDeleteTexture:(I)V"));
+    }
+
+    @Test
+    void astdTexTrailRedirectsAllocAndDelete() {
+        final byte[] stub = stubClass(AstdTexTrailLedgerProcessor.TARGET_CLASS, w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "createTargetTexture", "()V", mv -> {
+                        pushCall(mv, GL11, "glTexImage2D", TEXIMAGE2D);
+                        pushCall(mv, GL11, "glDeleteTextures", "(I)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        });
+
+        final byte[] rewritten = new AstdTexTrailLedgerProcessor().process(stub);
+        assertNotNull(rewritten, "TexTrailRenderer$Plugin 桩类应被改写");
+        final List<String> calls = staticCalls(rewritten);
+        assertTrue(calls.contains(HOOK + ".rtTexImage2D:" + TEXIMAGE2D));
+        assertTrue(calls.contains(HOOK + ".rtDeleteTexture:(I)V"));
+    }
+
+    @Test
+    void boxConfigGuiRedirectsTexImageAndCopyTexImage() {
+        final byte[] stub = stubClass(BoxConfigGuiLedgerProcessor.TARGET_CLASS, w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "init", "()V", mv -> {
+                        pushCall(mv, GL11, "glTexImage2D", TEXIMAGE2D);
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "renderInUICoords", "()V", mv -> {
+                        pushCall(mv, GL11, "glCopyTexImage2D", "(IIIIIIII)V");
+                        pushCall(mv, GL11, "glCopyTexSubImage2D", "(IIIIIIII)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        });
+
+        final byte[] rewritten = new BoxConfigGuiLedgerProcessor().process(stub);
+        assertNotNull(rewritten, "BoxConfigGUI 桩类应被改写");
+        final List<String> calls = staticCalls(rewritten);
+        assertTrue(calls.contains(HOOK + ".rtTexImage2D:" + TEXIMAGE2D));
+        assertTrue(calls.contains(HOOK + ".rtCopyTexImage2D:(IIIIIIII)V"),
+                "glCopyTexImage2D 初始分配应入账");
+        assertTrue(calls.contains(GL11 + ".glCopyTexSubImage2D:(IIIIIIII)V"),
+                "每帧 glCopyTexSubImage2D 不产生新分配，必须保持原样");
+    }
+
+    @Test
+    void boxInstancePoolRedirectsBufferDataStorageAndDelete() {
+        final byte[] stub = stubClass(BoxInstancePoolLedgerProcessor.TARGET_CLASS, w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "initSSBO", "()V", mv -> {
+                        pushCall(mv, GL15, "glBufferData", "(IJI)V");
+                        pushCall(mv, GL44, "glBufferStorage", "(IJI)V");
+                        pushCall(mv, GL15, "glDeleteBuffers", "(I)V");
+                        // SubData 不分配，不得改写
+                        pushCall(mv, GL15, "glBufferSubData", "(IJI)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        });
+
+        final byte[] rewritten = new BoxInstancePoolLedgerProcessor().process(stub);
+        assertNotNull(rewritten, "BUtil_InstanceDataMemoryPool 桩类应被改写");
+        final List<String> calls = staticCalls(rewritten);
+        assertTrue(calls.contains(HOOK + ".vboBufferData:(IJI)V"));
+        assertTrue(calls.contains(HOOK + ".vboBufferStorage:(IJI)V"));
+        assertTrue(calls.contains(HOOK + ".vboDeleteBuffer:(I)V"));
+        assertTrue(calls.contains(GL15 + ".glBufferSubData:(IJI)V"),
+                "glBufferSubData 不产生新分配，必须保持原样");
+    }
+
+    @Test
+    void particleEngineProcessorHandlesBothTargetClasses() {
+        final Consumer<ClassWriter> body = w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "allocateParticles", "()V", mv -> {
+                        pushCall(mv, GL15, "glBufferData", "(ILjava/nio/FloatBuffer;I)V");
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        };
+
+        final ParticleEngineVboLedgerProcessor processor = new ParticleEngineVboLedgerProcessor();
+        final byte[] allocator = processor.process(
+                stubClass(ParticleEngineVboLedgerProcessor.TARGET_CLASS_ALLOCATOR, body));
+        final byte[] emitter = processor.process(
+                stubClass(ParticleEngineVboLedgerProcessor.TARGET_CLASS_EMITTER, body));
+        assertNotNull(allocator, "ParticleAllocator 桩类应被改写");
+        assertNotNull(emitter, "EmitterBufferHandler 桩类应被改写");
+        assertTrue(staticCalls(allocator)
+                .contains(HOOK + ".vboBufferData:(ILjava/nio/FloatBuffer;I)V"));
+        assertTrue(staticCalls(emitter)
+                .contains(HOOK + ".vboBufferData:(ILjava/nio/FloatBuffer;I)V"));
+    }
+
+    @Test
+    void redirectProcessorsIgnoreUnmatchedClass() {
+        final byte[] other = stubClass("org/example/NotTheTarget", w -> {
+            try (MethodCloseable ignored = addMethod(w,
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "work", "()V", mv -> {
+                        pushCall(mv, GL11, "glTexImage2D", TEXIMAGE2D);
+                        mv.visitInsn(Opcodes.RETURN);
+                    })) {
+                // 方法体在 lambda 内完成
+            }
+        });
+        assertNull(new BoxTextureUploadLedgerProcessor().process(other));
+        assertNull(new BoxLegacyNormalMapLedgerProcessor().process(other));
+        assertNull(new MociSingularityLedgerProcessor().process(other));
+        assertNull(new No101SingularityLedgerProcessor().process(other));
+        assertNull(new AstdTexTrailLedgerProcessor().process(other));
+        assertNull(new BoxConfigGuiLedgerProcessor().process(other));
+        assertNull(new BoxInstancePoolLedgerProcessor().process(other));
+        assertNull(new ParticleEngineVboLedgerProcessor().process(other));
+    }
+
     // ---------- 阴性用例 ----------
 
     @Test
@@ -413,5 +642,54 @@ class GlLedgerProcessorTransformTest {
                 return null;
             }
         }, 0);
+    }
+
+    /** 按 desc 槽位压零值实参（int→ICONST_0，long→LCONST_0，引用→ACONST_NULL）后发 INVOKESTATIC。 */
+    private static void pushCall(final MethodVisitor mv, final String owner, final String name,
+                                 final String desc) {
+        for (final org.objectweb.asm.Type arg : org.objectweb.asm.Type.getArgumentTypes(desc)) {
+            switch (arg.getSort()) {
+                case org.objectweb.asm.Type.LONG:
+                    mv.visitInsn(Opcodes.LCONST_0);
+                    break;
+                case org.objectweb.asm.Type.DOUBLE:
+                    mv.visitInsn(Opcodes.DCONST_0);
+                    break;
+                case org.objectweb.asm.Type.FLOAT:
+                    mv.visitInsn(Opcodes.FCONST_0);
+                    break;
+                case org.objectweb.asm.Type.OBJECT:
+                case org.objectweb.asm.Type.ARRAY:
+                    mv.visitInsn(Opcodes.ACONST_NULL);
+                    break;
+                default:
+                    mv.visitInsn(Opcodes.ICONST_0);
+                    break;
+            }
+        }
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc, false);
+    }
+
+    /** 收集全类所有方法的 INVOKESTATIC 调用（"owner.name:desc" 形态，按出现顺序）。 */
+    private static List<String> staticCalls(final byte[] classBytes) {
+        final List<String> calls = new ArrayList<>();
+        new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override
+            public MethodVisitor visitMethod(final int access, final String name,
+                                             final String descriptor, final String signature,
+                                             final String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9) {
+                    @Override
+                    public void visitMethodInsn(final int opcode, final String owner,
+                                                final String insnName, final String insnDesc,
+                                                final boolean isInterface) {
+                        if (opcode == Opcodes.INVOKESTATIC) {
+                            calls.add(owner + '.' + insnName + ':' + insnDesc);
+                        }
+                    }
+                };
+            }
+        }, 0);
+        return calls;
     }
 }

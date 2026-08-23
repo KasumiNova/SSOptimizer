@@ -33,10 +33,14 @@ public final class GL31 {
     }
 
     public static void glDrawArraysInstanced(int mode, int first, int count, int primcount) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "DRAW_INST", mode, count, primcount, null);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL31.glDrawArraysInstanced(mode, first, count, primcount));
     }
 
     public static void glTexBuffer(int target, int internalFormat, int buffer) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "TEXBUF", target, internalFormat, buffer, null);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL31.glTexBuffer(target, internalFormat, buffer));
     }
 

@@ -4,7 +4,9 @@ import org.apache.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * GL 显存账本的埋点入口（被各 Mixin 回调直调，集中承担字节计算与对象生命周期跟踪）。
@@ -22,6 +24,15 @@ import java.util.WeakHashMap;
  * bloom ping-pong 0 号位与 {@code texID[1][0]} 存在别名共享，逐层对称必然双减，
  * <b>只计分配峰值</b>（该对象正常路径全局长存，峰值即实况）；</li>
  * <li>BoxUtil PublicFBO：实例 → 字节，{@code delete()} 对称移除。</li>
+ * <li>upTex/screenRT/gameTex 纹理（前两者为 ASM 重定向 glTexImage/glTexStorage/
+ * glCopyTexImage 调用点至本类转发钩子，gameTex 由 LazyTextureManager/ShipWeaponAtlas
+ * 上传路径直调）：纹理 id 经「分配时查询当前绑定」或调用方已知 id 获得，按 id 替换；有
+ * glDeleteTextures 路径的类（TextureManager/Moci/No101/ASTD、LTM 驱逐/上下文重建）
+ * 做对称减量，无删除路径的类（LegacyNormalMapHelper/BoxConfigGUI/ShipWeaponAtlas
+ * 图集页）<b>只计分配峰值</b>；</li>
+ * <li>vbo 缓冲对象（ASM 重定向 glBufferData/glBufferStorage + 游戏 SpriteBatch Mixin）：
+ * buffer id 同上按绑定查询，同 id 重分配按替换计（GL 语义即旧存储释放）；
+ * 有 glDeleteBuffers 路径的做对称，无删除路径的（ParticleEngine）<b>只计分配峰值</b>。</li>
  * </ul>
  * 尺寸来源：GraphicsLib 经 {@code ShaderLib.getInternalWidth/Height} 返回值缓存；
  * BoxUtil 经 {@code ShaderCore.getScreenScaleWidth/Height} 返回值缓存——均与方法体内
@@ -44,6 +55,10 @@ public final class GlLedgerHooks {
     private static final Map<Object, Long> BOX_BUFFERS = new WeakHashMap<>();
     /** BoxUtil PublicFBO 实例 → [纹理字节, 纹理数, renderbuffer字节]。 */
     private static final Map<Object, long[]> PUBLIC_FBOS = new WeakHashMap<>();
+    /** 模组直传/屏幕 RT/受管贴图纹理：纹理 id → [字节, 分类序号]（upTex/screenRT/gameTex 共用，按 id 替换）。 */
+    private static final Map<Integer, long[]> TRACKED_TEXTURES = new HashMap<>();
+    /** 缓冲对象：buffer id → 字节（重复 glBufferData/glBufferStorage 同 id 按替换计）。 */
+    private static final Map<Integer, Long> TRACKED_BUFFERS = new HashMap<>();
 
     /** GraphicsLib 内部渲染分辨率缓存（getInternalWidth/Height 返回值）。 */
     private static int gfxlibInternalWidth;
@@ -54,6 +69,9 @@ public final class GlLedgerHooks {
 
     private static boolean gfxlibSizeWarned;
     private static boolean boxSizeWarned;
+
+    /** 未知纹理/缓冲绑定 target 告警去重（每种 target 只 WARN 一次）。 */
+    private static final Set<Integer> UNKNOWN_BINDING_WARNED = ConcurrentHashMap.newKeySet();
 
     private GlLedgerHooks() {
     }
@@ -362,6 +380,298 @@ public final class GlLedgerHooks {
         }
     }
 
+    // ---------- upTex/screenRT/vbo 计量核心（纯记账，可单测） ----------
+
+    /**
+     * 纹理分配字节计算：宽×高×{@link GlMemoryLedger#bytesPerPixel(int)}；
+     * {@code levels > 1}（glTexStorage 分配完整 mipmap 链）按 ×4/3 近似。
+     * 已知不准：glTexImage 系按单次调用的 level 0 分配计——本批埋点目标类
+     * （TextureManager/LegacyNormalMapHelper/各 RT 旁路）实际只用 level 0 分配；
+     * 若同 id 分级独立分配会按 id 互相顶替（替换语义），口径偏保守。
+     */
+    public static long texImageBytes(final int internalFormat, final int width,
+                                     final int height, final int levels) {
+        if (width <= 0 || height <= 0) {
+            return 0L;
+        }
+        final long base = (long) width * height * GlMemoryLedger.bytesPerPixel(internalFormat);
+        return levels > 1 ? GlMemoryLedger.withMipmaps(base) : base;
+    }
+
+    /**
+     * 登记一次纹理分配（upTex/screenRT 共用）。按纹理 id 跟踪：同 id 重复分配
+     * （尺寸变化重分配、ensure* 幂等重建）按替换计，先减旧值再加新值；
+     * id 不可得（<= 0）时退化为只加不减的毛计量。
+     */
+    public static void noteTextureBytes(final GlMemoryLedger.Category category, final int texId,
+                                        final long bytes) {
+        if (bytes <= 0L) {
+            return;
+        }
+        if (texId <= 0) {
+            GlMemoryLedger.add(category, bytes, 1);
+            return;
+        }
+        final long[] previous;
+        synchronized (LOCK) {
+            previous = TRACKED_TEXTURES.put(texId, new long[]{bytes, category.ordinal()});
+        }
+        if (previous != null) {
+            GlMemoryLedger.remove(GlMemoryLedger.Category.values()[(int) previous[1]],
+                    previous[0], 1);
+        }
+        GlMemoryLedger.add(category, bytes, 1);
+    }
+
+    /** 纹理删除对称减量（glDeleteTextures 路径存在时由转发钩子调用）。 */
+    public static void noteTextureFreed(final int texId) {
+        final long[] entry;
+        synchronized (LOCK) {
+            entry = TRACKED_TEXTURES.remove(texId);
+        }
+        if (entry != null) {
+            GlMemoryLedger.remove(GlMemoryLedger.Category.values()[(int) entry[1]], entry[0], 1);
+        }
+    }
+
+    // ---------- gameTex 计量（LazyTextureManager/ShipWeaponAtlas 上传路径直调，可单测） ----------
+
+    /**
+     * 受管贴图未压缩上传（{@code glTexImage2D} RGBA8）的驻留字节数：宽×高×4；
+     * {@code mipmaps}（GL_GENERATE_MIPMAP=1，生成完整 mip 链）按 ×4/3 近似。
+     */
+    public static long gameTexBytesForUpload(final boolean mipmaps, final int width,
+                                             final int height) {
+        if (width <= 0 || height <= 0) {
+            return 0L;
+        }
+        final long base = (long) width * height * 4L;
+        return mipmaps ? GlMemoryLedger.withMipmaps(base) : base;
+    }
+
+    /**
+     * SSOBC 压缩容器的精确上传字节数：各级 {@code dataLength} 求和，即逐次
+     * {@code glCompressedTexImage2D} 提交的块数据总量（等价于 BC1=8B/块、
+     * BC3/BC7=16B/块的块公式精确值，含完整 mip 链）。
+     */
+    public static long compressedContainerBytes(final SsobcContainer container) {
+        long total = 0L;
+        for (final SsobcContainer.Level level : container.levels()) {
+            total += level.dataLength();
+        }
+        return total;
+    }
+
+    /**
+     * 受管游戏贴图（gameTex 分类）入账：LazyTextureManager 各上传路径在提交上传后调用。
+     * <p>
+     * 计量口径：RT 渲染线程模式下上传调用经 bridge 入队，记账点为「已提交上传」而非
+     * 「GPU 完成」；同 id 重指定存储（热重传升级为压缩形态）按替换计——GL 语义上
+     * texImage 系重定义即释放旧存储，无双驻留窗口。与驱逐/上下文重建路径的
+     * {@link #noteGameTexFreed(int)} 配对。游戏设置开启原始延迟加载模式时贴图走游戏
+     * 自身 deferredLoading，不在本口径内。
+     */
+    public static void noteGameTexBytes(final int textureId, final long bytes) {
+        noteTextureBytes(GlMemoryLedger.Category.GAME_TEX, textureId, bytes);
+    }
+
+    /** 受管游戏贴图删除（闲置驱逐/旧上下文销毁）对称减量；未登记过的 id 为无害空操作。 */
+    public static void noteGameTexFreed(final int textureId) {
+        noteTextureFreed(textureId);
+    }
+
+    /**
+     * 登记一次缓冲对象分配（vbo 分类）。按 buffer id 跟踪，同 id 重复
+     * glBufferData/glBufferStorage 按替换计（GL 语义即旧存储被释放）；
+     * id 不可得（<= 0）时退化为只加不减的毛计量。
+     */
+    public static void noteBufferBytes(final int bufferId, final long bytes) {
+        if (bytes <= 0L) {
+            return;
+        }
+        if (bufferId <= 0) {
+            GlMemoryLedger.add(GlMemoryLedger.Category.VBO, bytes, 1);
+            return;
+        }
+        final Long previous;
+        synchronized (LOCK) {
+            previous = TRACKED_BUFFERS.put(bufferId, bytes);
+        }
+        if (previous != null) {
+            GlMemoryLedger.remove(GlMemoryLedger.Category.VBO, previous, 1);
+        }
+        GlMemoryLedger.add(GlMemoryLedger.Category.VBO, bytes, 1);
+    }
+
+    /** 缓冲对象删除对称减量（glDeleteBuffers 路径存在时由转发钩子/Mixin 调用）。 */
+    public static void noteBufferFreed(final int bufferId) {
+        final Long bytes;
+        synchronized (LOCK) {
+            bytes = TRACKED_BUFFERS.remove(bufferId);
+        }
+        if (bytes != null) {
+            GlMemoryLedger.remove(GlMemoryLedger.Category.VBO, bytes, 1);
+        }
+    }
+
+    // ---------- upTex/screenRT/vbo GL 转发钩子（ASM 重定向目标，签名与被替换调用一致） ----------
+
+    /** 替换 {@code GL11.glTexImage1D}（BoxUtil TextureManager），UPTEX 分类。 */
+    public static void upTexImage1D(final int target, final int level, final int internalformat,
+                                    final int width, final int border, final int format,
+                                    final int type, final java.nio.ByteBuffer pixels) {
+        org.lwjgl.opengl.GL11.glTexImage1D(target, level, internalformat, width, border, format,
+                type, pixels);
+        noteTextureBytes(GlMemoryLedger.Category.UPTEX, boundTextureId(target),
+                texImageBytes(internalformat, width, 1, 0));
+    }
+
+    /** 替换 {@code GL11.glTexImage2D}（TextureManager/LegacyNormalMapHelper），UPTEX 分类。 */
+    public static void upTexImage2D(final int target, final int level, final int internalformat,
+                                    final int width, final int height, final int border,
+                                    final int format, final int type,
+                                    final java.nio.ByteBuffer pixels) {
+        org.lwjgl.opengl.GL11.glTexImage2D(target, level, internalformat, width, height, border,
+                format, type, pixels);
+        noteTextureBytes(GlMemoryLedger.Category.UPTEX, boundTextureId(target),
+                texImageBytes(internalformat, width, height, 0));
+    }
+
+    /** 替换 {@code GL42.glTexStorage1D}（TextureManager），UPTEX 分类。 */
+    public static void upTexStorage1D(final int target, final int levels,
+                                      final int internalformat, final int width) {
+        org.lwjgl.opengl.GL42.glTexStorage1D(target, levels, internalformat, width);
+        noteTextureBytes(GlMemoryLedger.Category.UPTEX, boundTextureId(target),
+                texImageBytes(internalformat, width, 1, levels));
+    }
+
+    /** 替换 {@code GL42.glTexStorage2D}（TextureManager/LegacyNormalMapHelper），UPTEX 分类。 */
+    public static void upTexStorage2D(final int target, final int levels,
+                                      final int internalformat, final int width,
+                                      final int height) {
+        org.lwjgl.opengl.GL42.glTexStorage2D(target, levels, internalformat, width, height);
+        noteTextureBytes(GlMemoryLedger.Category.UPTEX, boundTextureId(target),
+                texImageBytes(internalformat, width, height, levels));
+    }
+
+    /** 替换 {@code ARBTextureStorage.glTexStorage2D}（LegacyNormalMapHelper），UPTEX 分类。 */
+    public static void upTexStorage2DARB(final int target, final int levels,
+                                         final int internalformat, final int width,
+                                         final int height) {
+        org.lwjgl.opengl.ARBTextureStorage.glTexStorage2D(target, levels, internalformat, width,
+                height);
+        noteTextureBytes(GlMemoryLedger.Category.UPTEX, boundTextureId(target),
+                texImageBytes(internalformat, width, height, levels));
+    }
+
+    /** 替换 {@code GL11.glDeleteTextures}（TextureManager.deleteTexture/deleteAutoGenNormal）。 */
+    public static void upTexDeleteTexture(final int texture) {
+        org.lwjgl.opengl.GL11.glDeleteTextures(texture);
+        noteTextureFreed(texture);
+    }
+
+    /** 替换 {@code GL11.glTexImage2D}（各屏幕尺寸 RT 旁路），SCREEN_RT 分类。 */
+    public static void rtTexImage2D(final int target, final int level, final int internalformat,
+                                    final int width, final int height, final int border,
+                                    final int format, final int type,
+                                    final java.nio.ByteBuffer pixels) {
+        org.lwjgl.opengl.GL11.glTexImage2D(target, level, internalformat, width, height, border,
+                format, type, pixels);
+        noteTextureBytes(GlMemoryLedger.Category.SCREEN_RT, boundTextureId(target),
+                texImageBytes(internalformat, width, height, 0));
+    }
+
+    /** 替换 {@code GL11.glCopyTexImage2D}（BoxConfigGUI.renderInUICoords），SCREEN_RT 分类。 */
+    public static void rtCopyTexImage2D(final int target, final int level,
+                                        final int internalformat, final int x, final int y,
+                                        final int width, final int height, final int border) {
+        org.lwjgl.opengl.GL11.glCopyTexImage2D(target, level, internalformat, x, y, width, height,
+                border);
+        noteTextureBytes(GlMemoryLedger.Category.SCREEN_RT, boundTextureId(target),
+                texImageBytes(internalformat, width, height, 0));
+    }
+
+    /** 替换 {@code GL11.glDeleteTextures}（Moci/No101/ASTD cleanup 路径）。 */
+    public static void rtDeleteTexture(final int texture) {
+        org.lwjgl.opengl.GL11.glDeleteTextures(texture);
+        noteTextureFreed(texture);
+    }
+
+    /** 替换 {@code GL15.glBufferData(int,long,int)}（BUtil_InstanceDataMemoryPool），VBO 分类。 */
+    public static void vboBufferData(final int target, final long size, final int usage) {
+        org.lwjgl.opengl.GL15.glBufferData(target, size, usage);
+        noteBufferBytes(boundBufferId(target), size);
+    }
+
+    /** 替换 {@code GL15.glBufferData(int,FloatBuffer,int)}（ParticleEngine），VBO 分类。 */
+    public static void vboBufferData(final int target, final java.nio.FloatBuffer data,
+                                     final int usage) {
+        org.lwjgl.opengl.GL15.glBufferData(target, data, usage);
+        noteBufferBytes(boundBufferId(target), (long) data.remaining() * 4L);
+    }
+
+    /** 替换 {@code GL44.glBufferStorage(int,long,int)}（BUtil_InstanceDataMemoryPool），VBO 分类。 */
+    public static void vboBufferStorage(final int target, final long size, final int flags) {
+        org.lwjgl.opengl.GL44.glBufferStorage(target, size, flags);
+        noteBufferBytes(boundBufferId(target), size);
+    }
+
+    /** 替换 {@code GL15.glDeleteBuffers}（BUtil_InstanceDataMemoryPool），VBO 对称减量。 */
+    public static void vboDeleteBuffer(final int buffer) {
+        org.lwjgl.opengl.GL15.glDeleteBuffers(buffer);
+        noteBufferFreed(buffer);
+    }
+
+    /** 纹理 target → 当前绑定纹理 id；未知 target 告警一次并返回 -1（调用方退化为毛计量）。 */
+    private static int boundTextureId(final int target) {
+        final int binding;
+        switch (target) {
+            case 3552:  // GL_TEXTURE_1D
+                binding = 32872; // GL_TEXTURE_BINDING_1D
+                break;
+            case 3553:  // GL_TEXTURE_2D
+                binding = 32873; // GL_TEXTURE_BINDING_2D
+                break;
+            case 32879: // GL_TEXTURE_3D
+                binding = 32874; // GL_TEXTURE_BINDING_3D
+                break;
+            default:
+                warnUnknownBinding("纹理", target);
+                return -1;
+        }
+        return org.lwjgl.opengl.GL11.glGetInteger(binding);
+    }
+
+    /** 缓冲 target → 当前绑定 buffer id；未知 target 告警一次并返回 -1。 */
+    private static int boundBufferId(final int target) {
+        final int binding;
+        switch (target) {
+            case 34962: // GL_ARRAY_BUFFER
+                binding = 34964; // GL_ARRAY_BUFFER_BINDING
+                break;
+            case 34963: // GL_ELEMENT_ARRAY_BUFFER
+                binding = 34965; // GL_ELEMENT_ARRAY_BUFFER_BINDING
+                break;
+            case 35345: // GL_UNIFORM_BUFFER
+                binding = 35368; // GL_UNIFORM_BUFFER_BINDING
+                break;
+            case 37074: // GL_SHADER_STORAGE_BUFFER
+                binding = 37075; // GL_SHADER_STORAGE_BUFFER_BINDING
+                break;
+            default:
+                warnUnknownBinding("缓冲", target);
+                return -1;
+        }
+        return org.lwjgl.opengl.GL11.glGetInteger(binding);
+    }
+
+    private static void warnUnknownBinding(final String kind, final int target) {
+        if (UNKNOWN_BINDING_WARNED.add(target)) {
+            LOGGER.warn("[SSOptimizer] glLedger 未知" + kind + "绑定 target " + target
+                    + "，本次分配只计增量不做 id 跟踪");
+        }
+    }
+
     /** 重置全部跟踪状态（仅供测试）。 */
     public static void resetForTesting() {
         synchronized (LOCK) {
@@ -371,6 +681,9 @@ public final class GlLedgerHooks {
             LIGHT_SHADERS.clear();
             BOX_BUFFERS.clear();
             PUBLIC_FBOS.clear();
+            TRACKED_TEXTURES.clear();
+            TRACKED_BUFFERS.clear();
+            UNKNOWN_BINDING_WARNED.clear();
             gfxlibInternalWidth = 0;
             gfxlibInternalHeight = 0;
             boxScaleWidth = 0;

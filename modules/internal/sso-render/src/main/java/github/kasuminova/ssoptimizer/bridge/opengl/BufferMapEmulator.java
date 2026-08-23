@@ -25,18 +25,29 @@ import java.util.Map;
  * 内存安全：unmap 即快照（byte[] 拷贝），同一 VBO 跨帧重复映射复用镜像不产生跨帧
  * 数据竞争；上传任务在渲染线程先恢复/还原目标绑定，不污染录制侧绑定簿记。
  * <p>
- * 非仿真情形（含 MAP_READ、同 target 重入映射、未跟踪的 target、未绑定 VBO）返回
- * null，由桥接回退真实阻塞映射——语义正确性优先于零阻塞。
+ * 非仿真情形（含 MAP_READ、同线程同 target 重入映射、未跟踪的 target、未绑定 VBO）
+ * 返回 null，由桥接回退真实阻塞映射——语义正确性优先于零阻塞。
+ * <p>
+ * 在途映射按（线程, target）为键隔离：BoxUtil 折叠进主帧后，其 logical/logical-aux/
+ * rendering/主线程会在同一 GL target 上并发持有在途写映射（如多线程同时向不同 SSBO
+ * 的 glMapBufferRange(37074, ...)——BoxUtil 仅以每 InstanceType 一把 GPU 锁互斥同池，
+ * 跨池并发是设计内行为）。若按 target 单槽登记，unmap 配对会跨线程错位：先到的一方
+ * 的 unmap 会消费另一方的在途登记，把另一方尚在写入的镜像提前快照上传（实例数据/节点
+ * 数据部分为旧值或零），真实映射的一方反而丢失 unmap。按线程隔离后各方快照均在
+ * 本线程写完之后产生，语义与非 RT 的多上下文模型等价。同理，绑定簿记也按
+ * （线程, target）隔离：非 RT 下各 BoxUtil 线程各有独立 GL 上下文、绑定互不可见；
+ * 折叠进单命令流后若共用一份绑定簿记，线程 A「bind SSBO-1」与线程 B「bind SSBO-2」
+ * 交错会让 A 随后的 map 被错误归属到 SSBO-2 的镜像（A 的数据上传到 B 的池）。
  */
 final class BufferMapEmulator {
-    /** 录制侧簿记：buffer target → 当前绑定 VBO 名。 */
-    private static final Map<Integer, Integer> BOUND = new HashMap<>();
+    /** 录制侧簿记：（线程, target）复合键 → 该线程当前绑定的 VBO 名。 */
+    private static final Map<Long, Integer> BOUND = new HashMap<>();
     /** 录制侧簿记：VBO 名 → 最近 glBufferData 容量（字节）。 */
     private static final Map<Integer, Integer> SIZES = new HashMap<>();
     /** 录制侧镜像：VBO 名 → 直接缓冲（按需增长复用）。 */
     private static final Map<Integer, ByteBuffer> MIRRORS = new HashMap<>();
-    /** 录制侧在途映射：target → 待上传区间。 */
-    private static final Map<Integer, PendingMap> PENDING = new HashMap<>();
+    /** 录制侧在途映射：（线程, target）复合键 → 待上传区间。 */
+    private static final Map<Long, PendingMap> PENDING = new HashMap<>();
 
     /** 渲染线程上传用直接 staging（仅渲染线程触碰，按需增长）。 */
     private static ByteBuffer staging;
@@ -83,14 +94,14 @@ final class BufferMapEmulator {
         }
     }
 
-    /** 录制侧绑定簿记（桥接 glBindBuffer 调用）。 */
+    /** 录制侧绑定簿记（桥接 glBindBuffer 调用），按调用线程隔离。 */
     static synchronized void onBindBuffer(final int target, final int buffer) {
-        BOUND.put(target, buffer);
+        BOUND.put(pendingKey(target), buffer);
     }
 
-    /** 录制侧容量簿记（桥接 glBufferData 调用，作用于当前绑定 VBO）。 */
+    /** 录制侧容量簿记（桥接 glBufferData 调用，作用于本线程当前绑定 VBO）。 */
     static synchronized void onBufferData(final int target, final long size) {
-        final Integer vbo = BOUND.get(target);
+        final Integer vbo = BOUND.get(pendingKey(target));
         if (vbo != null && vbo != 0) {
             SIZES.put(vbo, (int) Math.min(size, Integer.MAX_VALUE));
         }
@@ -118,8 +129,9 @@ final class BufferMapEmulator {
             debugFallback();
             return null;
         }
-        final Integer vbo = BOUND.get(target);
-        if (vbo == null || vbo == 0 || PENDING.containsKey(target)) {
+        final Integer vbo = BOUND.get(pendingKey(target));
+        final long pendingKey = pendingKey(target);
+        if (vbo == null || vbo == 0 || PENDING.containsKey(pendingKey)) {
             debugFallback();
             return null;
         }
@@ -129,7 +141,7 @@ final class BufferMapEmulator {
             mirror = BufferUtils.createByteBuffer(Math.max(len, mirror == null ? 0 : mirror.capacity() * 2));
             MIRRORS.put(vbo, mirror);
         }
-        PENDING.put(target, new PendingMap(vbo, offset, len));
+        PENDING.put(pendingKey, new PendingMap(vbo, offset, len));
         if (DEBUG) {
             if (debugEmulatedMaps == 0L) {
                 DEBUG_LOGGER.info("[SSOptimizer] 首次仿真写映射：target=0x" + Integer.toHexString(target)
@@ -140,6 +152,9 @@ final class BufferMapEmulator {
             maybeLogStatsLocked();
         }
         final ByteBuffer view = mirror.duplicate();
+        // duplicate() 会将字节序重置为 BIG_ENDIAN（JDK 行为），必须恢复镜像原序：
+        // 调用方可能经 asFloatBuffer() 等类型化视图写入，序错会以翻转字节序落盘并上传 GPU
+        view.order(mirror.order());
         view.position(0);
         view.limit(len);
         return view;
@@ -168,12 +183,12 @@ final class BufferMapEmulator {
     }
 
     /**
-     * unmap 配对：取出在途映射并把镜像写入区间快照为字节数组。
+     * unmap 配对：取出<b>本线程</b>在该 target 上的在途映射并把镜像写入区间快照为字节数组。
      *
-     * @return 待上传快照，或 null 表示该 target 无在途仿真映射（桥接回退真实 unmap）
+     * @return 待上传快照，或 null 表示本线程在该 target 无在途仿真映射（桥接回退真实 unmap）
      */
     static synchronized PendingUpload pollEmulatedUnmap(final int target) {
-        final PendingMap pending = PENDING.remove(target);
+        final PendingMap pending = PENDING.remove(pendingKey(target));
         if (pending == null) {
             return null;
         }
@@ -201,6 +216,14 @@ final class BufferMapEmulator {
         if (upload.data == null) {
             return;
         }
+        if (github.kasuminova.ssoptimizer.common.render.queue.RtTrace.enabled()) {
+            github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                    "BUF_UPLOAD", upload.vbo, upload.offset, upload.data.length,
+                    "target=" + upload.target + " "
+                            + github.kasuminova.ssoptimizer.common.render.queue.RtTrace.floatStats(upload.data)
+                            + " "
+                            + github.kasuminova.ssoptimizer.common.render.queue.RtTrace.hexPrefix(upload.data, 32));
+        }
         BridgeSupport.enqueue(() -> {
             if (staging == null || staging.capacity() < upload.data.length) {
                 staging = BufferUtils.createByteBuffer(
@@ -215,6 +238,11 @@ final class BufferMapEmulator {
             GL15.glBufferSubData(upload.target, upload.offset, staging);
             GL15.glBindBuffer(upload.target, prev);
         });
+    }
+
+    /** 在途映射复合键：调用线程 id 高 32 位 | target 低 32 位（线程 id 在 JVM 内单调不复用）。 */
+    private static long pendingKey(final int target) {
+        return Thread.currentThread().getId() << 32 | target & 0xFFFFFFFFL;
     }
 
     /** target 对应的绑定查询 pname；不认识的 target 返回 0（不可安全仿真）。 */

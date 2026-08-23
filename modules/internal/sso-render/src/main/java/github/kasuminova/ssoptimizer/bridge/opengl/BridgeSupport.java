@@ -117,6 +117,24 @@ final class BridgeSupport {
     private static volatile RenderQueue queue;
 
     /**
+     * 帧提交序号：{@link #swapFrames()}/{@link #swapFramesAndSync()} 收口递增
+     * （含阻塞通道 drain-first 的帧切割）。用途：aux 再同步的「每提交段至多一次
+     * 屏障」滞后判据——屏障内部的 swapFrames 自身推进序号，再同步完成后记录新
+     * 序号，同段内后续仿真 getter 不再触发屏障（见
+     * {@link #resyncSimulatedStateIfAuxDirty()}）。
+     */
+    private static volatile long frameSubmitSeq;
+    /**
+     * 渲染线程侧全量状态采样的来源（aux 再同步屏障的执行体）：生产为
+     * {@link GlStateSnapshot#capture()}（真实 GL 回读）；单测替换为桩以避免无
+     * 上下文环境触碰真实 GL（与 {@link RenderQueueImpl} 的 glErrorSource 注入桩同模式）。
+     */
+    private static volatile java.util.function.Supplier<GlStateSnapshot> stateSnapshotSource =
+            GlStateSnapshot::capture;
+    /** aux 再同步首次触发的一次性日志标记（诊断确认用，避免逐帧刷屏）。 */
+    private static volatile boolean auxResyncLogged;
+
+    /**
      * GL 上下文重建监听器（{@link GlDispatch#registerContextRecreatedListener(Runnable)}
      * 的注册落点）：onContextRecreated 末尾逐个通知。CopyOnWrite 语义——注册在启动期
      * 发生、通知在显示模式切换期发生，双方都不在帧热路径上，读多写极少。
@@ -144,6 +162,10 @@ final class BridgeSupport {
         mainRecordingContext = null;
         executedArrayBufferBinding = 0;
         displayListCompileDepth = 0;
+        frameSubmitSeq = 0;
+        stateSnapshotSource = GlStateSnapshot::capture;
+        auxResyncLogged = false;
+        RenderQueueImpl.resetAuxSubmissionEpochForTesting();
         drawCommands = new CommandPool<>(DrawCommand::new);
         vertexBatches = new CommandPool<>(VertexBatchCommand::new);
         snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
@@ -167,12 +189,14 @@ final class BridgeSupport {
      */
     static void swapFrames() {
         queue().swapFrames();
+        frameSubmitSeq++;
         refreshMainRecordingContext();
     }
 
     /** 帧提交收口（等待上一帧完成，Display.update 的帧尾调用形态）。 */
     static void swapFramesAndSync() {
         queue().swapFramesAndSync();
+        frameSubmitSeq++;
         refreshMainRecordingContext();
     }
 
@@ -499,6 +523,61 @@ final class BridgeSupport {
     }
 
     /**
+     * 主录制线程仿真 getter 的 aux 活动失效检查（各 getter 仿真读之前调用；
+     * 调用点保证当前线程是主录制线程）。
+     * <p>
+     * 动机：{@link SimulatedGlState} 只镜像主线程自己的命令流；aux 生产者线程
+     * （BoxUtil 后台线程、字体预热 daemon 经 GlDispatch 等）经
+     * {@code RenderQueueImpl.submit} 提交的命令会插入主线程正在录制的帧，在渲染
+     * 线程上改变真实 GL 状态而不进主线程簿记（实机回归：ASTD TexTrailRenderer
+     * 逐帧保存/恢复惯用法读过期的 CURRENT_PROGRAM/TEXTURE_BINDING_2D/矩阵仿真值，
+     * finally 恢复错误状态——拖尾画坏并污染紧随的 HUD 字体绘制）。aux 提交由
+     * {@code RenderQueueImpl.auxSubmissionEpoch()} 纪元标记；纪元变化即簿记不可信。
+     * <p>
+     * 失效语义：纪元脏时经一次阻塞屏障（资源通道，不计 StallDetector——每帧至多
+     * 一次的有界再同步，与「模组逐帧轮询 getter」的打穿形态不同）在渲染线程批量
+     * 读回全部跟踪状态并采入簿记（{@link SimulatedGlState#adoptSnapshot}），同时
+     * 复位 FRAMEBUFFER 绑定跟踪。屏障的 drain-first 顺序保证采样点包含此前全部
+     * 已提交命令（含 aux 命令）的执行结果；屏障后重读纪元，若期间 aux 又提交则
+     * 下一检查点再同步（保守不错过）。
+     * <p>
+     * 性能分层：纯主线程流程 = 一次序号比较 + 一次纪元 volatile 读，零屏障；
+     * aux 活跃期每提交段至多一次屏障（序号滞后窗口），同段内后续 getter 直接
+     * 用再同步后的簿记。段中途 aux 新提交造成的段内残留污染属 SharedDrawable
+     * 折叠模型的既定限制（见其类 javadoc），不在本机制职责内。
+     */
+    static void resyncSimulatedStateIfAuxDirty() {
+        final RecordingContext ctx = recordingContext();
+        // 滞后窗口只覆盖「已屏障再同步」的提交段：屏障是重操作，每段至多一次；
+        // 干净路径不做序号短路——纪元 volatile 读代价可忽略，段中途 aux 开始
+        // 活动必须被本段内下一个 getter 看见
+        if (ctx.auxResyncSeq == frameSubmitSeq) {
+            return;
+        }
+        final long epoch = RenderQueueImpl.auxSubmissionEpoch();
+        if (ctx.auxStateEpoch == epoch) {
+            // 无 aux 活动：纯主线程流程零屏障
+            return;
+        }
+        final GlStateSnapshot snapshot = blockingGetResource(stateSnapshotSource::get);
+        ctx.simulatedState.adoptSnapshot(snapshot);
+        ctx.framebufferBinding[0] = snapshot.framebufferBinding;
+        ctx.auxStateEpoch = RenderQueueImpl.auxSubmissionEpoch();
+        ctx.auxResyncSeq = frameSubmitSeq;
+        if (!auxResyncLogged) {
+            auxResyncLogged = true;
+            LOGGER.info("[SSOptimizer] 检测到 aux 生产者线程 GL 提交（BoxUtil 后台线程等），"
+                    + "主线程 getter 状态仿真进入屏障再同步模式：aux 活跃期每帧至多一次状态回读，"
+                    + "纯主线程流程不受影响");
+        }
+    }
+
+    /** 测试用：替换 aux 再同步屏障的采样来源（无 GL 上下文环境注入桩）。 */
+    static void stateSnapshotSourceForTesting(final java.util.function.Supplier<GlStateSnapshot> source) {
+        stateSnapshotSource = source;
+    }
+
+    /**
      * GL 上下文重建后的聚合簿记复位（Display.create/setDisplayMode/setFullscreen 成功
      * 后由主线程调用）：录制侧状态仿真归零（{@link SimulatedGlState#onContextRecreated()}），
      * 并清空 VBO id stash——stash 内预生成的 id 全部属于已销毁的旧上下文，
@@ -507,6 +586,11 @@ final class BridgeSupport {
      */
     static void onContextRecreated() {
         simulatedState().onContextRecreated();
+        // 新上下文全部状态回到默认值：仿真簿记归零即真值——FBO 绑定跟踪复位为 0，
+        // aux 活动纪元标记为已同步（重建后簿记与真实状态一致，无需屏障再同步）
+        final RecordingContext ctx = recordingContext();
+        ctx.framebufferBinding[0] = 0;
+        ctx.auxStateEpoch = RenderQueueImpl.auxSubmissionEpoch();
         bufferIdStash = new ConcurrentLinkedQueue<>();
         bufferIdStashCount = new AtomicInteger();
         // 通知外部资源持有者（如字体动态图集）：单个监听器抛错不中断其余监听器——

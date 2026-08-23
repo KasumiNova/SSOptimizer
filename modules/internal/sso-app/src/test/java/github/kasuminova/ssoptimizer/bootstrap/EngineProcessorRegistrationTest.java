@@ -3,9 +3,17 @@ package github.kasuminova.ssoptimizer.bootstrap;
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.AstdTexTrailLedgerProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.BoxConfigGuiLedgerProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.BoxInstancePoolLedgerProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.BoxLegacyNormalMapLedgerProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.BoxRenderingBufferLedgerProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.BoxShaderCoreLedgerProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.BoxTextureUploadLedgerProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.LightShaderLedgerProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.MociSingularityLedgerProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.No101SingularityLedgerProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.ParticleEngineVboLedgerProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.PublicFboLedgerProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShaderLibLedgerProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
@@ -34,8 +42,9 @@ class EngineProcessorRegistrationTest {
         Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
         // 16 个引擎级注册项（含 RESOURCE_LOADER 组合处理器）+ 2 个 DCR 处理器
-        // + 5 个 GL 显存账本模组埋点（GraphicsLib 2 + BoxUtil 3）
-        assertEquals(23, processors.size());
+        // + 14 个 GL 显存账本模组埋点注册项（第一批 5 + upTex/screenRT/vbo 9，
+        // ParticleEngine 一个处理器实例占两个目标类键）
+        assertEquals(32, processors.size());
         assertTrue(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         assertTrue(processors.containsKey(GameClassNames.COMBAT_STATE));
         assertTrue(processors.containsKey(GameClassNames.RESOURCE_LOADER));
@@ -49,6 +58,15 @@ class EngineProcessorRegistrationTest {
         assertTrue(processors.containsKey(BoxShaderCoreLedgerProcessor.TARGET_CLASS));
         assertTrue(processors.containsKey(BoxRenderingBufferLedgerProcessor.TARGET_CLASS));
         assertTrue(processors.containsKey(PublicFboLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(BoxTextureUploadLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(BoxLegacyNormalMapLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(MociSingularityLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(No101SingularityLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(AstdTexTrailLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(BoxConfigGuiLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(BoxInstancePoolLedgerProcessor.TARGET_CLASS));
+        assertTrue(processors.containsKey(ParticleEngineVboLedgerProcessor.TARGET_CLASS_ALLOCATOR));
+        assertTrue(processors.containsKey(ParticleEngineVboLedgerProcessor.TARGET_CLASS_EMITTER));
     }
 
     @Test
@@ -58,7 +76,7 @@ class EngineProcessorRegistrationTest {
             System.setProperty("ssoptimizer.disable.textureloader", "true");
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(22, processors.size());
+            assertEquals(31, processors.size());
             assertFalse(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         } finally {
             restoreProperty("ssoptimizer.disable.textureloader", original);
@@ -72,7 +90,7 @@ class EngineProcessorRegistrationTest {
             System.setProperty("ssoptimizer.disable.dcr", "true");
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(21, processors.size());
+            assertEquals(30, processors.size());
             assertFalse(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
         } finally {
             restoreProperty("ssoptimizer.disable.dcr", original);

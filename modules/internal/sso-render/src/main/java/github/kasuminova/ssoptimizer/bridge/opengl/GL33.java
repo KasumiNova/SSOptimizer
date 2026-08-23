@@ -139,7 +139,10 @@ public final class GL33 {
 
     /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameter(int sampler, int pname, IntBuffer params) {
-        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL33.glGetSamplerParameter(sampler, pname, params));
+        // LWJGL2 对本族固定要求 remaining ≥ 4（BufferChecks），小缓冲经填充辅助
+        // 暂存执行后拷回（见 GetBufferFill）；glGetQueryObject 族下限为 1，无需填充
+        BridgeSupport.blockingWaitResource(() -> GetBufferFill.fillInts(params, 4,
+                buf -> org.lwjgl.opengl.GL33.glGetSamplerParameter(sampler, pname, buf)));
     }
 
     public static int glGetSamplerParameteri(int sampler, int pname) {
@@ -148,7 +151,9 @@ public final class GL33 {
 
     /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameter(int sampler, int pname, FloatBuffer params) {
-        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL33.glGetSamplerParameter(sampler, pname, params));
+        // 固定下限 4 检查同 IntBuffer 变体，见 GetBufferFill
+        BridgeSupport.blockingWaitResource(() -> GetBufferFill.fillFloats(params, 4,
+                buf -> org.lwjgl.opengl.GL33.glGetSamplerParameter(sampler, pname, buf)));
     }
 
     public static float glGetSamplerParameterf(int sampler, int pname) {
@@ -157,7 +162,9 @@ public final class GL33 {
 
     /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameterI(int sampler, int pname, IntBuffer params) {
-        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL33.glGetSamplerParameterI(sampler, pname, params));
+        // 固定下限 4 检查同上，见 GetBufferFill
+        BridgeSupport.blockingWaitResource(() -> GetBufferFill.fillInts(params, 4,
+                buf -> org.lwjgl.opengl.GL33.glGetSamplerParameterI(sampler, pname, buf)));
     }
 
     public static int glGetSamplerParameterIi(int sampler, int pname) {
@@ -166,7 +173,9 @@ public final class GL33 {
 
     /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameterIu(int sampler, int pname, IntBuffer params) {
-        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL33.glGetSamplerParameterIu(sampler, pname, params));
+        // 固定下限 4 检查同上，见 GetBufferFill
+        BridgeSupport.blockingWaitResource(() -> GetBufferFill.fillInts(params, 4,
+                buf -> org.lwjgl.opengl.GL33.glGetSamplerParameterIu(sampler, pname, buf)));
     }
 
     public static int glGetSamplerParameterIui(int sampler, int pname) {

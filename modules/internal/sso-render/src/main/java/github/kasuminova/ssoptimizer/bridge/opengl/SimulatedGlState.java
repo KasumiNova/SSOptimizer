@@ -42,9 +42,12 @@ import java.nio.IntBuffer;
  * 矩阵栈初始为单位阵（与全新 GL 上下文一致），视口在首个 glViewport 录制前无效。
  * <p>
  * 实例非线程安全，线程隔离由 {@link RecordingContext} 访问约定保证；
- * 仅主录制线程的 getter 走仿真（见桥接调用点），aux 线程一律回退阻塞——
- * aux 线程对状态的突变不会反映到主线程簿记（与 FRAMEBUFFER 绑定跟踪同级的
- * 记录序近似，见 BridgeSupport 类 javadoc）。
+ * 仅主录制线程的 getter 走仿真（见桥接调用点），aux 线程一律回退阻塞。
+ * aux 线程提交（{@code RenderQueueImpl.auxSubmissionEpoch()} 纪元）会使主线程
+ * 簿记过期：主线程仿真 getter 在读簿记前经
+ * {@code BridgeSupport.resyncSimulatedStateIfAuxDirty()} 检查纪元，脏则一次屏障
+ * 读回全部跟踪状态并采入（{@link #adoptSnapshot(GlStateSnapshot)}），
+ * 簿记从「aux 活跃即永久漂移」降为「aux 活跃期每提交段至多一次屏障再同步」。
  */
 final class SimulatedGlState {
     private static final Logger LOGGER = Logger.getLogger(SimulatedGlState.class);
@@ -98,6 +101,17 @@ final class SimulatedGlState {
 
     /** 跟踪的 enable 能力槽数（槽位映射见 {@link #capSlot(int)}）。 */
     private static final int CAP_COUNT = 5;
+    /**
+     * 五个跟踪能力的 GL 常量（槽位序 = {@link #capSlot(int)} 返回值序）：
+     * {@link GlStateSnapshot#capture()} 按本表逐槽采样。
+     */
+    static final int[] TRACKED_CAPS = {
+            GL11.GL_TEXTURE_2D,
+            GL11.GL_BLEND,
+            GL11.GL_ALPHA_TEST,
+            GL11.GL_STENCIL_TEST,
+            GL11.GL_SCISSOR_TEST,
+    };
     /** attrib 配对丢失的一次性告警标记（server/client 各一）。 */
     private boolean unpairedServerPopWarned;
     private boolean unpairedClientPopWarned;
@@ -857,6 +871,47 @@ final class SimulatedGlState {
     void adoptAlphaRef(final float value) {
         alphaRef = value;
         alphaRefValid = true;
+    }
+
+    /**
+     * aux 活动屏障再同步的整体采入：快照由渲染线程在排空命令流后采样（drain-first
+     * 语义保证采样点即「此前全部已提交命令——含 aux 线程命令——执行完」的真实状态），
+     * 直接覆盖全部跟踪簿记并置有效。矩阵栈深不可观测，只采栈顶、深度归 1；
+     * attrib 栈保持主线程视角原样（动机与残留见 {@link GlStateSnapshot} 类 javadoc）。
+     */
+    void adoptSnapshot(final GlStateSnapshot snapshot) {
+        currentProgram = snapshot.currentProgram;
+        activeTexture = snapshot.activeTexture;
+        drawBuffer = snapshot.drawBuffer;
+        drawBufferValid = true;
+        System.arraycopy(snapshot.viewport, 0, viewport, 0, 4);
+        viewportValid = true;
+        System.arraycopy(snapshot.texture2dBinding, 0, texture2dBinding, 0, MAX_TEXTURE_UNITS);
+        matrixMode = snapshot.matrixMode;
+        matrixModeValid = true;
+        adoptMatrixTop(MODE_MODELVIEW, snapshot.modelviewTop);
+        adoptMatrixTop(MODE_PROJECTION, snapshot.projectionTop);
+        adoptMatrixTop(MODE_TEXTURE, snapshot.textureMatrixTop);
+        for (int slot = 0; slot < CAP_COUNT; slot++) {
+            capEnabled[slot] = snapshot.capEnabled[slot];
+            capValid[slot] = true;
+        }
+        blendEquation = snapshot.blendEquation;
+        blendEquationValid = true;
+        alphaFunc = snapshot.alphaFunc;
+        alphaFuncValid = true;
+        alphaRef = snapshot.alphaRef;
+        alphaRefValid = true;
+        arrayBufferBinding = snapshot.arrayBufferBinding;
+        arrayBufferBindingValid = true;
+        elementArrayBufferBinding = snapshot.elementArrayBufferBinding;
+    }
+
+    /** 矩阵栈顶整体采入：深度归 1（深层栈项不可经 getter 观测，见类 javadoc）。 */
+    private void adoptMatrixTop(final int mode, final float[] top) {
+        matrixDepths[mode] = 1;
+        matrixValid[mode] = true;
+        System.arraycopy(top, 0, matrixStacks[mode], 0, 16);
     }
 
     /** glGetFloat(pname, FloatBuffer) 仿真：三个矩阵栈顶（16 值）与 GL_ALPHA_TEST_REF（单值）。 */

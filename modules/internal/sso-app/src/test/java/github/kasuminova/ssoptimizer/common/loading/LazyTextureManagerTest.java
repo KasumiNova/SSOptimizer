@@ -333,7 +333,7 @@ class LazyTextureManagerTest {
         ), 2L, 5L);
 
         assertTrue(summary.contains("tracked=3"));
-        assertTrue(summary.contains("resident=2"));
+        assertTrue(summary.contains("managedResident=2"));
         assertTrue(summary.contains("nonResident=1"));
         assertTrue(summary.contains("recentlyEvicted=2"));
         assertTrue(summary.contains("totalEvicted=5"));

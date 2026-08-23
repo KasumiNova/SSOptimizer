@@ -163,4 +163,142 @@ class GlLedgerHooksTest {
                 new int[][]{{32856}}, false, 9);
         assertEquals(0L, GlMemoryLedger.bytesOf(Category.BOX_TEX));
     }
+
+    @Test
+    void texImageBytesComputesByFormatAndLevels() {
+        // RGBA8 单层
+        assertEquals(1920L * 1080 * 4, GlLedgerHooks.texImageBytes(32856, 1920, 1080, 0));
+        assertEquals(1920L * 1080 * 4, GlLedgerHooks.texImageBytes(32856, 1920, 1080, 1));
+        // levels>1（texStorage 完整链）：×4/3 近似
+        assertEquals(GlMemoryLedger.withMipmaps(1920L * 1080 * 4),
+                GlLedgerHooks.texImageBytes(32856, 1920, 1080, 5));
+        // R32F 1D 查找表（LightShader 同型）
+        assertEquals(4096L * 4, GlLedgerHooks.texImageBytes(33326, 4096, 1, 0));
+        // 非法尺寸不入账
+        assertEquals(0L, GlLedgerHooks.texImageBytes(32856, 0, 1080, 0));
+        assertEquals(0L, GlLedgerHooks.texImageBytes(32856, 1920, -1, 0));
+    }
+
+    @Test
+    void trackedTextureReplaceCrossCategoryAndFree() {
+        GlLedgerHooks.noteTextureBytes(Category.UPTEX, 101, 1000);
+        assertEquals(1000L, GlMemoryLedger.bytesOf(Category.UPTEX));
+
+        // 同 id 重分配（尺寸变化重建）：替换而非累加
+        GlLedgerHooks.noteTextureBytes(Category.UPTEX, 101, 2000);
+        assertEquals(2000L, GlMemoryLedger.bytesOf(Category.UPTEX));
+        assertEquals(1L, GlMemoryLedger.objectsOf(Category.UPTEX));
+
+        // 跨分类复用同 id：旧值从原分类减去
+        GlLedgerHooks.noteTextureBytes(Category.SCREEN_RT, 101, 4000);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.UPTEX));
+        assertEquals(4000L, GlMemoryLedger.bytesOf(Category.SCREEN_RT));
+
+        GlLedgerHooks.noteTextureFreed(101);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.SCREEN_RT));
+        assertEquals(0L, GlMemoryLedger.objectsOf(Category.SCREEN_RT));
+        // 重复删除幂等
+        GlLedgerHooks.noteTextureFreed(101);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.SCREEN_RT));
+    }
+
+    @Test
+    void untrackedTextureIdFallsBackToGrossAdd() {
+        // id 不可得（绑定查询失败）时退化为只加不减的毛计量
+        GlLedgerHooks.noteTextureBytes(Category.UPTEX, 0, 500);
+        GlLedgerHooks.noteTextureBytes(Category.UPTEX, -1, 700);
+        assertEquals(1200L, GlMemoryLedger.bytesOf(Category.UPTEX));
+        assertEquals(2L, GlMemoryLedger.objectsOf(Category.UPTEX));
+        // 毛计量条目无 id，删除不影响
+        GlLedgerHooks.noteTextureFreed(0);
+        assertEquals(1200L, GlMemoryLedger.bytesOf(Category.UPTEX));
+    }
+
+    @Test
+    void trackedBufferReplaceAndFree() {
+        GlLedgerHooks.noteBufferBytes(55, 1L << 20);
+        assertEquals(1L << 20, GlMemoryLedger.bytesOf(Category.VBO));
+
+        // 同 id 扩容重分配（glBufferData 语义即旧存储释放）：替换计
+        GlLedgerHooks.noteBufferBytes(55, 2L << 20);
+        assertEquals(2L << 20, GlMemoryLedger.bytesOf(Category.VBO));
+        assertEquals(1L, GlMemoryLedger.objectsOf(Category.VBO));
+
+        GlLedgerHooks.noteBufferFreed(55);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.VBO));
+        assertEquals(0L, GlMemoryLedger.objectsOf(Category.VBO));
+        GlLedgerHooks.noteBufferFreed(55);
+
+        // id 不可得：毛计量
+        GlLedgerHooks.noteBufferBytes(-1, 4096);
+        assertEquals(4096L, GlMemoryLedger.bytesOf(Category.VBO));
+    }
+
+    @Test
+    void gameTexBytesForUploadComputesRgba8WithMipmaps() {
+        // RGBA8 单层
+        assertEquals(256L * 128 * 4, GlLedgerHooks.gameTexBytesForUpload(false, 256, 128));
+        // GL_GENERATE_MIPMAP=1 完整链 ×4/3
+        assertEquals(GlMemoryLedger.withMipmaps(256L * 128 * 4),
+                GlLedgerHooks.gameTexBytesForUpload(true, 256, 128));
+        // 非法尺寸不入账
+        assertEquals(0L, GlLedgerHooks.gameTexBytesForUpload(false, 0, 128));
+        assertEquals(0L, GlLedgerHooks.gameTexBytesForUpload(true, 256, -1));
+    }
+
+    @Test
+    void compressedContainerBytesSumsLevelDataLengths() {
+        // BC7 64x64 单层：16x16 块 × 16B = 4096
+        final SsobcContainer single = SsobcContainer.parse(
+                SsobcTestContainers.build(NativeTextureCompressor.FORMAT_BC7, 64, 64, 1));
+        assertEquals(4096L, GlLedgerHooks.compressedContainerBytes(single));
+
+        // BC1 32x32 完整链（6 级：512+128+32+8+8+8 = 696）
+        final SsobcContainer fullChain = SsobcContainer.parse(
+                SsobcTestContainers.buildFullChain(NativeTextureCompressor.FORMAT_BC1, 32, 32));
+        long expected = 0L;
+        for (final SsobcContainer.Level level : fullChain.levels()) {
+            expected += level.dataLength();
+        }
+        assertEquals(696L, expected);
+        assertEquals(expected, GlLedgerHooks.compressedContainerBytes(fullChain));
+    }
+
+    @Test
+    void gameTexLifecycleUploadUpgradeEvict() {
+        // 首轮未压缩上传（mipmaps）
+        GlLedgerHooks.noteGameTexBytes(201,
+                GlLedgerHooks.gameTexBytesForUpload(true, 256, 128));
+        final long uncompressed = GlMemoryLedger.withMipmaps(256L * 128 * 4);
+        assertEquals(uncompressed, GlMemoryLedger.bytesOf(Category.GAME_TEX));
+        assertEquals(1L, GlMemoryLedger.objectsOf(Category.GAME_TEX));
+
+        // 热重传升级压缩形态：同 id 替换（旧未压缩存储随 texImage 重定义释放）
+        final SsobcContainer container = SsobcContainer.parse(
+                SsobcTestContainers.buildFullChain(NativeTextureCompressor.FORMAT_BC7, 256, 128));
+        final long compressed = GlLedgerHooks.compressedContainerBytes(container);
+        GlLedgerHooks.noteGameTexBytes(201, compressed);
+        assertEquals(compressed, GlMemoryLedger.bytesOf(Category.GAME_TEX));
+        assertEquals(1L, GlMemoryLedger.objectsOf(Category.GAME_TEX));
+
+        // 闲置驱逐：对称减量归零；重复删除幂等
+        GlLedgerHooks.noteGameTexFreed(201);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.GAME_TEX));
+        assertEquals(0L, GlMemoryLedger.objectsOf(Category.GAME_TEX));
+        GlLedgerHooks.noteGameTexFreed(201);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.GAME_TEX));
+    }
+
+    @Test
+    void gameTexSharesIdTrackingWithOtherTextureCategories() {
+        // TRACKED_TEXTURES 按 id 全局跟踪：模组直传纹理与受管贴图复用同 id 时跨分类替换
+        GlLedgerHooks.noteTextureBytes(Category.UPTEX, 202, 999);
+        GlLedgerHooks.noteGameTexBytes(202, 500);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.UPTEX));
+        assertEquals(500L, GlMemoryLedger.bytesOf(Category.GAME_TEX));
+
+        // gameTex 的删除钩子同样能对称清掉其它分类登记的同 id 条目
+        GlLedgerHooks.noteGameTexFreed(202);
+        assertEquals(0L, GlMemoryLedger.bytesOf(Category.GAME_TEX));
+    }
 }

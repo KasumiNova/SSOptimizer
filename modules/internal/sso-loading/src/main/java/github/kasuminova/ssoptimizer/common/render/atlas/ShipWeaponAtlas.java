@@ -8,6 +8,8 @@ import com.fs.starfarer.loading.specs.MissileSpec;
 import com.fs.starfarer.loading.specs.ProjectileWeaponSpec;
 import com.fs.starfarer.loading.specs.ShipHullSpec;
 import com.fs.util.ResourceLoader;
+import github.kasuminova.ssoptimizer.common.loading.GlLedgerHooks;
+import github.kasuminova.ssoptimizer.common.loading.GlMemoryLedger;
 import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
 import github.kasuminova.ssoptimizer.common.loading.TexturePixelConversionResult;
 import github.kasuminova.ssoptimizer.common.loading.TexturePixelConverter;
@@ -317,6 +319,10 @@ public final class ShipWeaponAtlas {
     /**
      * 把一页的贴图合成图集图像（含 16px 边缘复制 padding）并上传为 GL 纹理。
      * 调用方必须持有 OpenGL 上下文。
+     * <p>
+     * 图集页是 gameTex 显存账目中「受管贴图真实驻留」的主要构成（入图集后单张贴图
+     * 不再上传）；上传后按 RGBA8+mipmap 链入账。图集页无删除路径（无 glDeleteTextures、
+     * 无上下文重建处理），账本<b>只计分配峰值</b>。
      *
      * @param pageSize 图集页边长（像素）
      * @return 图集页 GL 纹理 id
@@ -344,6 +350,9 @@ public final class ShipWeaponAtlas {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL14.GL_GENERATE_MIPMAP, GL11.GL_TRUE);
         TextureUploadHelper.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA,
                 pageSize, pageSize, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, converted.buffer());
+        // 图集页入 gameTex 显存账目（RGBA8 + GL_GENERATE_MIPMAP 完整链；无删除路径只计峰值）
+        GlLedgerHooks.noteGameTexBytes(textureId,
+                GlMemoryLedger.withMipmaps((long) pageSize * pageSize * 4L));
         return textureId;
     }
 

@@ -30,6 +30,19 @@ final class RecordingContext {
     /** 录制侧 GL 状态仿真（getter 回读短路，见 {@link SimulatedGlState}）。 */
     final SimulatedGlState simulatedState = new SimulatedGlState();
     /**
+     * 主线程仿真 getter 的 aux 活动同步纪元：值为上次屏障再同步（或判定无 aux 活动）
+     * 时的 {@code RenderQueueImpl.auxSubmissionEpoch()}。与当前纪元不等即 aux 生产者
+     * 线程（BoxUtil 后台线程等）向命令流混入过簿记外的状态改动，主线程仿真簿记
+     * 不再可信，需屏障再同步（见 {@code BridgeSupport.resyncSimulatedStateIfAuxDirty()}）。
+     */
+    long auxStateEpoch;
+    /**
+     * 最近一次 aux 再同步发生时的帧提交序号（{@code BridgeSupport} 的 swap 计数）：
+     * 同一提交段内的后续仿真 getter 直接放行（每段至多一次屏障的滞后窗口）；
+     * -1 表示从未再同步。
+     */
+    long auxResyncSeq = -1;
+    /**
      * 当前录制帧（状态命令去重的相邻性判据来源）：主线程在每帧边界（swap）
      * 刷新；非主线程保持 null，由 {@link BridgeSupport#queue()} 现取当前帧。
      */

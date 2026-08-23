@@ -37,6 +37,8 @@ public final class GL30 {
             // 同 EXTFramebufferObject.glBindFramebufferEXT：录制侧 FRAMEBUFFER 绑定跟踪
             BridgeSupport.setFramebufferBinding(framebuffer);
         }
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BIND_FBO", target, framebuffer, 0, null);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glBindFramebuffer(target, framebuffer));
     }
 
@@ -113,6 +115,10 @@ public final class GL30 {
     public static void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1,
                                          int dstX0, int dstY0, int dstX1, int dstY1,
                                          int mask, int filter) {
+        if (github.kasuminova.ssoptimizer.common.render.queue.RtTrace.enabled()) {
+            github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                    "BLIT", srcX1, srcY1, dstX1, "dstY1=" + dstY1 + " mask=" + mask);
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glBlitFramebuffer(
                 srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter));
     }
@@ -147,6 +153,11 @@ public final class GL30 {
     public static ByteBuffer glMapBufferRange(int target, long offset, long length, int access,
                                               ByteBuffer oldBuffer) {
         ByteBuffer mirror = BufferMapEmulator.tryEmulateMapRange(target, offset, length, access);
+        if (github.kasuminova.ssoptimizer.common.render.queue.RtTrace.enabled()) {
+            github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                    mirror != null ? "MAP_EMU" : "MAP_REAL", target, offset, length,
+                    "access=0x" + Integer.toHexString(access));
+        }
         if (mirror != null) {
             return mirror;
         }

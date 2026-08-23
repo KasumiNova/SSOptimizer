@@ -36,6 +36,8 @@ public final class GL15 {
     }
 
     public static void glBindBuffer(int target, int buffer) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BIND_BUF", target, buffer, 0, null);
         BufferMapEmulator.onBindBuffer(target, buffer);
         BridgeSupport.simulatedState().onBindBuffer(target, buffer);
         if (target == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
@@ -75,6 +77,8 @@ public final class GL15 {
     /** 仅指定容量的分配形式，无数据参数。 */
     public static void glBufferData(int target, long size, int usage) {
         BufferMapEmulator.onBufferData(target, size);
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BUFFER_DATA", target, size, usage, null);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glBufferData(target, size, usage));
     }
 
@@ -109,26 +113,41 @@ public final class GL15 {
     }
 
     public static void glBufferSubData(int target, long offset, ByteBuffer data) {
+        if (github.kasuminova.ssoptimizer.common.render.queue.RtTrace.enabled()) {
+            github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                    "BUFFER_SUB", target, offset, data.remaining(),
+                    target == org.lwjgl.opengl.GL31.GL_TEXTURE_BUFFER
+                            ? github.kasuminova.ssoptimizer.common.render.queue.RtTrace.floatStats(data)
+                            : null);
+        }
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferSubData(target, offset, snapshot));
     }
 
     public static void glBufferSubData(int target, long offset, DoubleBuffer data) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BUFFER_SUB", target, offset, (long) data.remaining() << 3, null);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferSubData(target, offset, snapshot.asDoubleBuffer()));
     }
 
     public static void glBufferSubData(int target, long offset, FloatBuffer data) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BUFFER_SUB", target, offset, (long) data.remaining() << 2, null);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferSubData(target, offset, snapshot.asFloatBuffer()));
     }
 
     public static void glBufferSubData(int target, long offset, IntBuffer data) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BUFFER_SUB", target, offset, (long) data.remaining() << 2, null);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferSubData(target, offset, snapshot.asIntBuffer()));
     }
 
     public static void glBufferSubData(int target, long offset, ShortBuffer data) {
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
+                "BUFFER_SUB", target, offset, (long) data.remaining() << 1, null);
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL15.glBufferSubData(target, offset, snapshot.asShortBuffer()));
     }
@@ -160,6 +179,7 @@ public final class GL15 {
             BufferMapEmulator.enqueueUpload(upload);
             return true;
         }
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace("UNMAP_REAL", target, 0, 0, null);
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL15.glUnmapBuffer(target));
     }
 }

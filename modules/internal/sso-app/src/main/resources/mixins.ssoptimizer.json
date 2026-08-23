@@ -52,6 +52,7 @@
     "loading.ShipWeaponAtlasMixin",
     "loading.SoundManagerMixin",
     "loading.SoundMonoPrintMixin",
+    "loading.SpriteBatchLedgerMixin",
     "loading.SpecStoreMixin",
     "loading.StarfarerSettingsApiImplMixin",
     "loading.TextureObjectMixin",
