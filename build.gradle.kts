@@ -97,11 +97,18 @@ tasks.register("devCycle") {
 
 val appJarFile = project(":modules:internal:sso-app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 
-// 四个功能域 native 子模块（render/loading/font/ime）：
-// 产物 libssoptimizer_<module>.so / ssoptimizer_<module>.dll，runtime deps 按模块各自收集
-val nativeModules = listOf("render", "loading", "font", "ime")
+// 功能域 native 子模块：产物 libssoptimizer_<module>.so / ssoptimizer_<module>.dll，
+// runtime deps 按模块各自收集；texcompress 挂在 sso-loading 域下（独立库，懒加载）
+val nativeProjectPaths = mapOf(
+    "render" to ":modules:internal:sso-render:native-render",
+    "loading" to ":modules:internal:sso-loading:native-loading",
+    "font" to ":modules:internal:sso-font:native-font",
+    "ime" to ":modules:internal:sso-ime:native-ime",
+    "texcompress" to ":modules:internal:sso-loading:native-texcompress",
+)
+val nativeModules = nativeProjectPaths.keys.toList()
 
-fun nativeProject(module: String) = project(":modules:internal:sso-$module:native-$module")
+fun nativeProject(module: String) = project(nativeProjectPaths.getValue(module))
 
 fun nativeLibraryFile(module: String, windows: Boolean) = nativeProject(module).layout.buildDirectory.file(
     "lib/main/release/" + if (windows) "ssoptimizer_$module.dll" else "libssoptimizer_$module.so"
@@ -130,7 +137,7 @@ tasks.register<Sync>("stageUserMod") {
     description = "Stage an end-user ready mod layout under build/user-package"
     dependsOn(":modules:internal:sso-app:modProduction")
     nativeModules.forEach { module ->
-        dependsOn(":modules:internal:sso-$module:native-$module:assembleRelease")
+        dependsOn("${nativeProjectPaths.getValue(module)}:assembleRelease")
     }
 
     from(appJarFile) {
@@ -336,7 +343,7 @@ tasks.register<Copy>("installNativeRuntime") {
     description = "Deploy native runtime libraries into the deployed mod directory"
     if (targetPlatformProvider.get() == "linux") {
         nativeModules.forEach { module ->
-            dependsOn(":modules:internal:sso-$module:native-$module:assembleRelease")
+            dependsOn("${nativeProjectPaths.getValue(module)}:assembleRelease")
         }
     }
 

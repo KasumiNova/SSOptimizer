@@ -47,7 +47,8 @@ public final class GameClassNames {
     public static final String COMBAT_ENGINE_DOTTED                = "com.fs.starfarer.combat.CombatEngine";
     public static final String BASE_ENTITY_DOTTED                  = "com.fs.starfarer.combat.entities.BaseEntity";
     public static final String FLUX_TRACKER_DOTTED                 = "com.fs.starfarer.combat.entities.ship.FluxTracker";
-    public static final String COLLISION_HANDLER_IMPL_DOTTED       = "com.fs.starfarer.combat.CollisionHandlerImpl";
+    public static final String COLLISION_HANDLER_IMPL                = "com/fs/starfarer/combat/CollisionHandlerImpl";
+    public static final String COLLISION_HANDLER_IMPL_DOTTED         = "com.fs.starfarer.combat.CollisionHandlerImpl";
     public static final String RADAR_ICON_SPRITE_DOTTED            = "com.fs.starfarer.CombatRadarHud.RadarIconSprite";
     public static final String DECAL_RENDERER                      = "com/fs/starfarer/renderers/damage/DecalRenderer";
     public static final String DECAL_RENDERER_DOTTED               = "com.fs.starfarer.renderers.damage.DecalRenderer";
@@ -76,6 +77,8 @@ public final class GameClassNames {
     public static final String TEXTURE_LOADER                      = "com/fs/graphics/TextureLoader";
     public static final String TEXTURE_OBJECT                      = "com/fs/graphics/TextureObject";
     public static final String TEXTURE_OBJECT_DOTTED               = "com.fs.graphics.TextureObject";
+    public static final String SOUND                               = "sound/Sound";
+    public static final String SOUND_DOTTED                        = "sound.Sound";
     public static final String SOUND_MANAGER                       = "sound/SoundManager";
     public static final String SOUND_MANAGER_DOTTED                = "sound.SoundManager";
     public static final String RENDER_STATE_UTILS                  = "com/fs/graphics/util/RenderStateUtils";
@@ -106,6 +109,8 @@ public final class GameClassNames {
     public static final String LINUX_KEYBOARD                      = "org/lwjgl/opengl/LinuxKeyboard";
     public static final String STANDARD_TOOLTIP_V2_EXPANDABLE      = "com/fs/starfarer/ui/impl/StandardTooltipV2Expandable";
     public static final String STARFARER_SETTINGS_TEXT_FIELD_OWNER = "com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory";
+    /** SettingsAPI 匿名实现类（named 名 SettingsTextFieldFactory）的点分隔形式，供 Mixin targets 使用。 */
+    public static final String STARFARER_SETTINGS_API_IMPL_DOTTED  = "com.fs.starfarer.settings.StarfarerSettings$SettingsTextFieldFactory";
     public static final String TEXT_FIELD_IMPL                     = "com/fs/starfarer/ui/TextFieldImpl";
     public static final String TEXT_FIELD_API                      = "com/fs/starfarer/api/ui/TextFieldAPI";
     public static final String RESOURCE_LOADER                     = "com/fs/util/ResourceLoader";

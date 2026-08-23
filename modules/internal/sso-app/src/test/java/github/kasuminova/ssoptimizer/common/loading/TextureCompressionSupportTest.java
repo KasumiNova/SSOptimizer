@@ -83,4 +83,13 @@ class TextureCompressionSupportTest {
         assertEquals(TextureCompressionSupport.Format.BC7,
                 TextureCompressionSupport.decideFormat(true, "typo", true, false));
     }
+
+    @Test
+    void eagerModeParsing() {
+        assertFalse(TextureCompressionSupport.parseMode(null));
+        assertFalse(TextureCompressionSupport.parseMode("background"));
+        assertFalse(TextureCompressionSupport.parseMode("typo"));
+        assertTrue(TextureCompressionSupport.parseMode("eager"));
+        assertTrue(TextureCompressionSupport.parseMode(" EAGER "));
+    }
 }

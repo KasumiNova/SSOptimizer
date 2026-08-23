@@ -17,7 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Configurator 即时生效（已字节码确认）。级别生效的端到端验证见
  * {@code tools/verify_vanilla_log_noise_filter.sh}（独立 JVM + 真实 log4j-1.2.17）与
  * {@code tools/verify_vanilla_log_noise_runtime.sh}（log4j-1.2-api + log4j2 逐字节复现
- * 游戏运行时链路）。</p>
+ * 游戏运行时链路）。聚合过滤器安装在 log4j2 root LoggerConfig（生产链路 Filter 链），
+ * Gradle worker 由 {@code testImplementation("org.apache.logging.log4j:log4j-core")}
+ * 提供实现，可直接断言安装契约。</p>
  */
 class VanillaLogNoiseConfiguratorTest {
 
@@ -144,11 +146,49 @@ class VanillaLogNoiseConfiguratorTest {
         final String original = System.getProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY);
         try {
             System.clearProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY);
-            // 连续两次调用：幂等、不抛异常（生产路径按默认 WARN 阈值执行 setLevel）
+            // 连续两次调用：幂等、不抛异常（默认 WARN 语义：名单保持 INFO + 挂一次聚合过滤器）
             VanillaLogNoiseConfigurator.configure();
             VanillaLogNoiseConfigurator.configure();
         } finally {
             restoreProperty(original);
+            removeAggregateFilterIfPresent();
+        }
+    }
+
+    @Test
+    void defaultConfigureInstallsAggregateFilterExactlyOnce() {
+        final String original = System.getProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY);
+        try {
+            System.clearProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY);
+            VanillaLogNoiseConfigurator.configure();
+            VanillaLogNoiseConfigurator.configure();
+
+            final org.apache.logging.log4j.core.Filter installed =
+                    rootLoggerConfig().getFilter();
+            assertTrue(installed instanceof LoadingNoiseLog4j2Filter,
+                    "默认 WARN 阈值必须把聚合过滤器挂到 log4j2 root LoggerConfig");
+        } finally {
+            restoreProperty(original);
+            removeAggregateFilterIfPresent();
+        }
+    }
+
+    @Test
+    void infoThresholdConfigureSkipsAggregateFilter() {
+        final String original = System.getProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY);
+        try {
+            removeAggregateFilterIfPresent();
+            // INFO 阈值：恢复完整加载日志语义，不得安装聚合过滤器
+            System.setProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY, "INFO");
+            VanillaLogNoiseConfigurator.configure();
+
+            final org.apache.logging.log4j.core.Filter installed =
+                    rootLoggerConfig().getFilter();
+            assertFalse(installed instanceof LoadingNoiseLog4j2Filter,
+                    "INFO 阈值不得安装聚合过滤器");
+        } finally {
+            restoreProperty(original);
+            removeAggregateFilterIfPresent();
         }
     }
 
@@ -156,11 +196,12 @@ class VanillaLogNoiseConfiguratorTest {
     void infoThresholdConfigureRuns() {
         final String original = System.getProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY);
         try {
-            // INFO 阈值：setLevel(INFO) 分支（效果等同恢复 INFO 可见）
+            // INFO 阈值：名单 logger 保持 INFO 可见，不装聚合过滤器（效果等同恢复完整日志）
             System.setProperty(VanillaLogNoiseConfigurator.VANILLA_LEVEL_PROPERTY, "INFO");
             VanillaLogNoiseConfigurator.configure();
         } finally {
             restoreProperty(original);
+            removeAggregateFilterIfPresent();
         }
     }
 
@@ -183,6 +224,22 @@ class VanillaLogNoiseConfiguratorTest {
             }
         }
         return false;
+    }
+
+    /** log4j2 root LoggerConfig（Gradle worker 由 testImplementation 的 log4j-core 提供）。 */
+    private static org.apache.logging.log4j.core.config.LoggerConfig rootLoggerConfig() {
+        final org.apache.logging.log4j.core.LoggerContext context =
+                (org.apache.logging.log4j.core.LoggerContext) org.apache.logging.log4j.LogManager.getContext(false);
+        return context.getConfiguration().getRootLogger();
+    }
+
+    /** 卸载已安装的聚合过滤器，避免跨测试污染 log4j2 root 配置（进程级共享状态）。 */
+    private static void removeAggregateFilterIfPresent() {
+        final org.apache.logging.log4j.core.config.LoggerConfig root = rootLoggerConfig();
+        final org.apache.logging.log4j.core.Filter installed = root.getFilter();
+        if (installed instanceof LoadingNoiseLog4j2Filter) {
+            root.removeFilter(installed);
+        }
     }
 
     private static void restoreProperty(String original) {

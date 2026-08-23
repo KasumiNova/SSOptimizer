@@ -2,11 +2,15 @@ package github.kasuminova.ssoptimizer.mixin.loading;
 
 import com.fs.util.ResourceLoader;
 import github.kasuminova.ssoptimizer.common.loading.ResourceIndex;
+import github.kasuminova.ssoptimizer.common.loading.ResourceLoaderThreadState;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -37,6 +41,56 @@ public abstract class ResourceLoaderMixin {
 
     @Shadow(remap = false)
     private List<ResourceLoader.ResourceSpec> resourceSpecs;
+
+    /**
+     * resourcePath（source filter）读取重定向 → 线程本地。
+     * <p>
+     * 动机：原版 resourcePath 是实例级全局状态，「setResourcePath 写入 → 下次
+     * openResource 读取即置 null」的消费序列在并行加载下会跨线程泄漏（线程 A 的
+     * filter 被线程 B 消费，B 的合法资源被错误过滤报 not found）。改由
+     * {@link ResourceLoaderThreadState} 按线程封闭，同线程语义与原版一致。
+     */
+    @Redirect(method = "openResource(Ljava/lang/String;Z)Ljava/io/InputStream;", remap = false,
+            at = @At(value = "FIELD", opcode = Opcodes.GETFIELD,
+                    target = "Lcom/fs/util/ResourceLoader;resourcePath:Ljava/lang/String;"))
+    private String ssoptimizer$getSourceFilter(final ResourceLoader self) {
+        return ResourceLoaderThreadState.getSourceFilter();
+    }
+
+    /**
+     * resourcePath 写入重定向 → 线程本地。
+     * <p>
+     * 覆盖两处写入：{@code setResourcePath(String)} 的设置与
+     * {@code openResource(String, boolean)} 消费后的置 null（均为方法内唯一锚点）。
+     */
+    @Redirect(method = {"openResource(Ljava/lang/String;Z)Ljava/io/InputStream;",
+            "setResourcePath(Ljava/lang/String;)V"}, remap = false,
+            at = @At(value = "FIELD", opcode = Opcodes.PUTFIELD,
+                    target = "Lcom/fs/util/ResourceLoader;resourcePath:Ljava/lang/String;"))
+    private void ssoptimizer$setSourceFilter(final ResourceLoader self, final String filter) {
+        ResourceLoaderThreadState.setSourceFilter(filter);
+    }
+
+    /**
+     * suppressCustomResources 读取重定向 → 线程本地。
+     * <p>
+     * 原版为全局静态标记：loadCSV/loadJSON(path, false) 置 true，下次 openResource
+     * 读取后置 false。并行加载下同样存在跨线程泄漏，一并封闭到线程本地。
+     */
+    @Redirect(method = "openResource(Ljava/lang/String;Z)Ljava/io/InputStream;", remap = false,
+            at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC,
+                    target = "Lcom/fs/util/ResourceLoader;suppressCustomResources:Z"))
+    private static boolean ssoptimizer$isSuppressCustomResources() {
+        return ResourceLoaderThreadState.isSuppressCustomResources();
+    }
+
+    /** suppressCustomResources 消费置 false 重定向 → 线程本地。 */
+    @Redirect(method = "openResource(Ljava/lang/String;Z)Ljava/io/InputStream;", remap = false,
+            at = @At(value = "FIELD", opcode = Opcodes.PUTSTATIC,
+                    target = "Lcom/fs/util/ResourceLoader;suppressCustomResources:Z"))
+    private static void ssoptimizer$setSuppressCustomResources(final boolean suppress) {
+        ResourceLoaderThreadState.setSuppressCustomResources(suppress);
+    }
 
     /**
      * 按指定资源规格打开资源流。

@@ -11,6 +11,7 @@ import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GLContext;
 
 import java.awt.*;
@@ -22,6 +23,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +31,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -49,6 +52,8 @@ public final class LazyTextureManager {
     static final         String   SWEEP_INTERVAL_MILLIS_PROPERTY              = "ssoptimizer.lazytextureupload.sweepintervalmillis";
     static final         String   COMPOSITION_REPORT_INTERVAL_MILLIS_PROPERTY = "ssoptimizer.texturecomposition.reportintervalmillis";
     static final         String   MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY     = "ssoptimizer.texturemanager.logintervalmillis";
+    /** 热重传开关：后台压缩完成后，已驻留的未压缩纹理在下一次绑定时原地升级为压缩形态（默认开）。 */
+    static final         String   HOT_RELOAD_PROPERTY                         = "ssoptimizer.texcompress.hotreload";
     static final         String   RESOURCE_MANAGER_CLASS_NAME                 = ResourceLoaderFileAccessProcessor.TARGET_CLASS.replace('/', '.');
     static final         String   DEFAULT_COMPOSITION_REPORT_FILE             = "ssoptimizer-texture-composition.tsv";
     private static final Logger   LOGGER                                      = Logger.getLogger(LazyTextureManager.class);
@@ -138,6 +143,23 @@ public final class LazyTextureManager {
     private static volatile long                                                         nextBindStatsLogNanos                = 0L;
     private static volatile Object                                                       lastOpenGlContextToken              = null;
     private static volatile long                                                         currentOpenGlContextGeneration      = 0L;
+    /** 热重传计数：后台压缩完成后原地升级为压缩形态的纹理数（诊断/TSV 对照用）。 */
+    private static final AtomicLong                                                      HOT_RELOADED_TEXTURES               = new AtomicLong();
+    /**
+     * 热重传待升级队列：压缩完成时入队（entry 同时打升级键），由绑定路径按节流 drain——
+     * 主动重传不依赖该纹理「再次被绑定」（短期渲染后不再绑定的纹理也会在其仍驻留期间
+     * 被升级为压缩形态，避免未压缩形态常驻显存）。
+     */
+    private static final Queue<PendingCompressionUpgrade>                                PENDING_COMPRESSION_UPGRADES        = new ConcurrentLinkedQueue<>();
+    /** drain 节流：间隔 ~5ms（约每帧一次）、单次预算 8 张（单张全 mip 链上传亚毫秒级）。 */
+    private static final long                                                            HOT_RELOAD_DRAIN_INTERVAL_NANOS     = 5_000_000L;
+    private static final int                                                             HOT_RELOAD_DRAIN_BUDGET             = 8;
+    private static volatile long                                                         nextHotReloadDrainNanos             = 0L;
+
+    static {
+        // 热重传接线：后台压缩完成 → 标记同源驻留纹理，下一次绑定时原地升级（见 §3.3）
+        TextureCompressionScheduler.setCompletionListener(LazyTextureManager::noteCompressedTextureAvailable);
+    }
 
     private LazyTextureManager() {
     }
@@ -247,6 +269,7 @@ public final class LazyTextureManager {
         applyMetadata(texture, metadata);
         cacheTexture(textureCache, resourcePath, effectivePath, texture);
         MANAGED_TEXTURES.put(texture, ManagedTextureEntry.pending(effectivePath, source.sourceHash, metadata, now, true));
+        maybeScheduleDeferredPrepass(effectivePath, source.sourceHash, metadata);
         return markTextureLoadedInCurrentContext(texture, effectivePath);
     }
 
@@ -279,6 +302,7 @@ public final class LazyTextureManager {
         noteBindPath(texture);
         maybeLogBindStats();
         maybeSweepIdleTextures(texture, now);
+        drainCompressionUpgrades(target, Math.max(textureId, 0), now);
         maybeEmitTextureDiagnostics(now);
     }
 
@@ -391,6 +415,7 @@ public final class LazyTextureManager {
                 64,
                 64,
                 true,
+                AlphaKind.FULL,
                 64,
                 64,
                 Color.BLACK,
@@ -405,6 +430,12 @@ public final class LazyTextureManager {
     /** 测试用：当前受管纹理条目数（size 会先 expunge，返回存活数）。 */
     static int managedTextureCountForTests() {
         return MANAGED_TEXTURES.size();
+    }
+
+    /** 测试用：查询纹理条目当前的热重传升级键（无标记/无条目返回 null）。 */
+    static CompressedTextureCache.Key compressedUpgradeKeyForTests(final com.fs.graphics.TextureObject texture) {
+        final ManagedTextureEntry entry = MANAGED_TEXTURES.get(texture);
+        return entry == null ? null : entry.compressedUpgradeKey;
     }
 
     static String configuredCompositionReportPath() {
@@ -618,7 +649,9 @@ public final class LazyTextureManager {
                 cached.hasAlpha(),
                 result));
 
-        uploadConverted(texture, target, entry.resourcePath, cached);
+        final TextureCompressionSupport.Format usedFormat =
+                uploadConverted(texture, target, entry.resourcePath, resolved.sourceHash(), cached);
+        entry.applyCompressedFormat(usedFormat);
     }
 
     /**
@@ -683,7 +716,7 @@ public final class LazyTextureManager {
      * 延迟重建时重读源字节。缓存未命中后不再走资源索引指纹短路（索引与数据文件不同步时
      * 该路径可能空转），直接从资源流读取原始字节。
      */
-    private static byte[] readRebuildSourceBytes(final String resourcePath) {
+    static byte[] readRebuildSourceBytes(final String resourcePath) {
         try (InputStream input = openStream(resourcePath, resourcePath)) {
             if (input == null) {
                 return null;
@@ -709,18 +742,27 @@ public final class LazyTextureManager {
         white.setRGB(0, 0, 0xFFFFFFFF);
         final TexturePixelConversionResult result = TexturePixelConverter.convert(white);
         applyMetadata(texture, LazyTextureMetadata.from(entry.resourcePath, 1, 1, true, result));
-        uploadConverted(texture, target, entry.resourcePath,
+        uploadConverted(texture, target, entry.resourcePath, null,
                 new TextureConversionCache.CachedTextureData(1, 1, true, result));
     }
 
     /**
      * 用已完成的像素转换结果执行纯 GL 上传（gen/bind/参数/texImage2D）。
      * 调用方必须持有 OpenGL 上下文。
+     * <p>
+     * T2 压缩分流（设计 §4.1）：适用压缩且压缩缓存命中时，改走
+     * {@code glCompressedTexImage2D} 逐级上传（mip 链已随容器预生成，
+     * GL_GENERATE_MIPMAP 恒 0），并返回压缩形态供 {@link ManagedTextureEntry}
+     * 写真值；未命中走现状未压缩路径，并把可压缩纹理投递后台压缩线程池。
+     *
+     * @param sourceHash 源字节 SHA-256（压缩缓存键成分；无源哈希的兜底上传传 null）
+     * @return 实际使用的压缩形态；未压缩路径返回 {@link TextureCompressionSupport.Format#NONE}
      */
-    private static void uploadConverted(final com.fs.graphics.TextureObject texture,
-                                        final int target,
-                                        final String resourcePath,
-                                        final TextureConversionCache.CachedTextureData cached) {
+    private static TextureCompressionSupport.Format uploadConverted(final com.fs.graphics.TextureObject texture,
+                                                                    final int target,
+                                                                    final String resourcePath,
+                                                                    final String sourceHash,
+                                                                    final TextureConversionCache.CachedTextureData cached) {
         final TexturePixelConversionResult result = cached.conversionResult();
         int textureId = readTextureId(texture, -1);
         if (textureId == -1) {
@@ -732,6 +774,33 @@ public final class LazyTextureManager {
 
         GL11.glBindTexture(target, textureId);
         final boolean generateMipmaps = shouldGenerateMipmaps(resourcePath, cached.imageWidth(), cached.imageHeight());
+
+        final SsobcContainer compressed = TextureCompressionEligibility.resolveCompressedUpload(
+                resourcePath,
+                result.textureWidth(),
+                result.textureHeight(),
+                result.alphaKind(),
+                TextureCompressionSupport.preferredFormat(),
+                TextureCompressionSupport.isS3tcAvailable(),
+                sourceHash,
+                generateMipmaps,
+                CompressedTextureCache::load);
+        if (compressed != null) {
+            uploadCompressedLevels(target, resourcePath, generateMipmaps, compressed);
+            return compressed.format();
+        }
+
+        // eager 模式（ssoptimizer.texcompress.mode=eager）：缓存未命中时在加载线程
+        // 同步压缩并落盘，首轮即压缩形态上传；同步压缩失败回落未压缩路径 + 后台投递
+        if (TextureCompressionSupport.isEagerMode()) {
+            final SsobcContainer eagerCompressed = compressSynchronously(
+                    resourcePath, sourceHash, generateMipmaps, cached, result);
+            if (eagerCompressed != null) {
+                uploadCompressedLevels(target, resourcePath, generateMipmaps, eagerCompressed);
+                return eagerCompressed.format();
+            }
+        }
+
         if (generateMipmaps) {
             GL11.glTexParameteri(target, 10241, FILTER_LINEAR_MIPMAP_LINEAR);
             GL11.glTexParameteri(target, 10240, magFilterForResourcePath(resourcePath));
@@ -746,11 +815,285 @@ public final class LazyTextureManager {
         TextureUploadHelper.glTexImage2D(target, 0, INTERNAL_FORMAT_RGBA,
                 result.textureWidth(), result.textureHeight(), 0,
                 format, TYPE_UNSIGNED_BYTE, result.buffer());
+
+        // 上传完成后投递后台压缩（像素在投递处复制，不阻塞 GL 命令序列）；
+        // 缓存未命中首轮仍以未压缩路径上传，行为=现状
+        maybeScheduleCompression(resourcePath, sourceHash, generateMipmaps, result);
+        return TextureCompressionSupport.Format.NONE;
     }
 
-    private static boolean shouldGenerateMipmaps(final String resourcePath,
-                                                 final int imageWidth,
-                                                 final int imageHeight) {
+    /**
+     * 压缩纹理逐级上传（RT 模式下 {@code GL13.glCompressedTexImage2D} 调用点经
+     * RenderThreadRedirector 改写为 bridge 入队快照语义；同纹理按级别顺序追加即保持
+     * mip 链顺序，bridge 快照尺寸取 limit，故逐级切窗前先把 limit 收到块字节数）。
+     * 压缩纹理的 textureId 生命周期与未压缩一致（gen/bind 由调用方完成）。
+     */
+    private static void uploadCompressedLevels(final int target,
+                                               final String resourcePath,
+                                               final boolean generateMipmaps,
+                                               final SsobcContainer container) {
+        final List<SsobcContainer.Level> levels = container.levels();
+        // 容器层数与键的 mip 标志在缓存读侧已校验一致；generateMipmaps 却仅 1 级理论上
+        // 不可达，保底把 min filter 收到 LINEAR，避免不完整 mip 链采样出黑块
+        final boolean mipChainUploaded = generateMipmaps && levels.size() > 1;
+        if (generateMipmaps && !mipChainUploaded) {
+            LOGGER.warn("[SSOptimizer] 压缩纹理缺少 mip 链（" + resourcePath
+                    + "，levels=" + levels.size() + "），min filter 回退 LINEAR");
+        }
+
+        GL11.glTexParameteri(target, 10241, mipChainUploaded ? FILTER_LINEAR_MIPMAP_LINEAR : minFilterForResourcePath(resourcePath));
+        GL11.glTexParameteri(target, 10240, magFilterForResourcePath(resourcePath));
+        GL11.glTexParameteri(TARGET_2D, GENERATE_MIPMAP, 0);
+
+        // 块数据区一次拷入 direct buffer，逐级切窗上传（bridge 在入队时刻按窗快照深拷贝，
+        // 本方法返回后 buffer 即可被 GC）
+        final byte[] raw = container.raw();
+        final int dataRegionOffset = container.dataRegionOffset();
+        final ByteBuffer blocks = BufferUtils.createByteBuffer(raw.length - dataRegionOffset);
+        blocks.put(raw, dataRegionOffset, raw.length - dataRegionOffset);
+        blocks.flip();
+
+        final int internalFormat = container.format().glInternalFormat();
+        for (int level = 0; level < levels.size(); level++) {
+            final SsobcContainer.Level entry = levels.get(level);
+            final ByteBuffer window = blocks.duplicate();
+            final int relativeOffset = entry.dataOffset() - dataRegionOffset;
+            window.position(relativeOffset);
+            window.limit(relativeOffset + entry.dataLength());
+            GL13.glCompressedTexImage2D(target, level, internalFormat,
+                    entry.width(), entry.height(), 0, window);
+        }
+    }
+
+    /**
+     * eager 模式同步压缩（加载线程上执行）：像素规整为 RGBA8 后调
+     * {@link NativeTextureCompressor}，成功即写入 {@link CompressedTextureCache}
+     * 并返回容器供直接压缩上传。任一环节失败返回 null（compress 内部已记日志）。
+     */
+    private static SsobcContainer compressSynchronously(final String resourcePath,
+                                                        final String sourceHash,
+                                                        final boolean generateMipmaps,
+                                                        final TextureConversionCache.CachedTextureData cached,
+                                                        final TexturePixelConversionResult result) {
+        if (sourceHash == null || sourceHash.isBlank()) {
+            return null;
+        }
+        final TextureCompressionSupport.Format format = TextureCompressionEligibility.selectFormat(
+                resourcePath, result.textureWidth(), result.textureHeight(),
+                result.alphaKind(), TextureCompressionSupport.preferredFormat());
+        if (format == TextureCompressionSupport.Format.NONE) {
+            return null;
+        }
+
+        final byte[] rgbaPixels = TextureCompressionScheduler.copyAsRgba8(
+                result.buffer(), result.textureWidth(), result.textureHeight());
+        if (rgbaPixels == null) {
+            return null;
+        }
+        final ByteBuffer directPixels = BufferUtils.createByteBuffer(rgbaPixels.length);
+        directPixels.put(rgbaPixels);
+        directPixels.flip();
+
+        final int mipLevels = generateMipmaps
+                ? SsobcContainer.fullChainLevels(result.textureWidth(), result.textureHeight())
+                : 1;
+        final byte[] containerBytes = NativeTextureCompressor.compress(format.nativeId(), directPixels,
+                result.textureWidth(), result.textureHeight(), mipLevels,
+                TextureCompressionScheduler.resolveQuality(resourcePath),
+                TextureCompressionEligibility.usesPunchThroughAlpha(format, result.alphaKind()));
+        if (containerBytes == null) {
+            return null;
+        }
+
+        CompressedTextureCache.store(
+                new CompressedTextureCache.Key(sourceHash,
+                        result.textureWidth(), result.textureHeight(), generateMipmaps, format,
+                        TextureCompressionScheduler.resolveQuality(resourcePath)),
+                containerBytes, resourcePath, TextureConversionCache.probeFingerprint(resourcePath));
+        return SsobcContainer.parse(containerBytes);
+    }
+
+    /**
+     * 热重传标记（后台压缩完成回调，worker 线程）：给同源、已驻留、尚未压缩的
+     * 受管纹理记录升级键并入待升级队列；实际重传由绑定路径节流 drain
+     * （{@link #drainCompressionUpgrades}）或该纹理下一次绑定
+     * （{@link #maybeUpgradeToCompressed}）执行，均在持 GL 上下文线程上。
+     */
+    static void noteCompressedTextureAvailable(final String resourcePath,
+                                               final CompressedTextureCache.Key key) {
+        if (!isHotReloadEnabled() || key == null) {
+            return;
+        }
+        final String normalized = normalizeResourcePath(resourcePath);
+        synchronized (MANAGED_TEXTURES) {
+            MANAGED_TEXTURES.forEach((texture, entry) -> {
+                if (texture == null || entry == null) {
+                    return;
+                }
+                if (entry.pendingUpload()
+                        || entry.compressionFormat != TextureCompressionSupport.Format.NONE
+                        || !entry.resourcePath.equals(normalized)
+                        || !entry.sourceHash.equals(key.sourceHash())) {
+                    return;
+                }
+                // 升级键即「已入队」标记：仅 null → key 跃迁时入队，重复通知不产生重复项
+                if (entry.compressedUpgradeKey == null) {
+                    entry.compressedUpgradeKey = key;
+                    PENDING_COMPRESSION_UPGRADES.add(new PendingCompressionUpgrade(texture, key));
+                }
+            });
+        }
+    }
+
+    /**
+     * 热重传 drain（绑定路径尾部调用）：节流（间隔/单次预算）取出待升级纹理，
+     * 在其仍驻留期间主动重传为压缩形态。无 GL 上下文时整批留待下一帧；
+     * 条目已驱逐（pendingUpload）时清除标记跳过——重载时会自然命中压缩缓存。
+     * <p>
+     * 执行过任何升级后必须显式把绑定恢复为 {@code expectedBinding}（调用方刚绑定、
+     * 后续绘制假定它仍有效）：非 RT 下逐次升级内的 capture/restore 已覆盖，但 RT 模式
+     * 的 captureBoundTexture 刻意空转（查询=全管线 drain），不恢复会把后续绘制留在
+     * 升级纹理上造成串贴图。
+     */
+    private static void drainCompressionUpgrades(final int target,
+                                                 final int expectedBinding,
+                                                 final long now) {
+        if (PENDING_COMPRESSION_UPGRADES.isEmpty() || now < nextHotReloadDrainNanos) {
+            return;
+        }
+        nextHotReloadDrainNanos = now + HOT_RELOAD_DRAIN_INTERVAL_NANOS;
+        if (!hasCurrentOpenGlContext()) {
+            return;
+        }
+
+        boolean upgradedAny = false;
+        int budget = HOT_RELOAD_DRAIN_BUDGET;
+        while (budget-- > 0) {
+            final PendingCompressionUpgrade upgrade = PENDING_COMPRESSION_UPGRADES.poll();
+            if (upgrade == null) {
+                break;
+            }
+            final ManagedTextureEntry entry = MANAGED_TEXTURES.get(upgrade.texture());
+            if (entry == null) {
+                continue;
+            }
+            synchronized (entry) {
+                if (entry.compressedUpgradeKey != upgrade.key()) {
+                    continue; // 已被消费或被更新的键替换
+                }
+                if (entry.pendingUpload()) {
+                    entry.compressedUpgradeKey = null;
+                    continue;
+                }
+                // restoreBinding=false：恢复由下方统一执行（RT 模式逐次 capture 是空转）
+                maybeUpgradeToCompressed(upgrade.texture(), TARGET_2D, entry, false);
+                upgradedAny = true;
+            }
+        }
+        if (upgradedAny) {
+            GL11.glBindTexture(target, expectedBinding);
+        }
+    }
+
+    /** 测试用：待升级队列深度。 */
+    static int pendingCompressionUpgradeCountForTests() {
+        return PENDING_COMPRESSION_UPGRADES.size();
+    }
+
+    static boolean isHotReloadEnabled() {
+        return !"false".equalsIgnoreCase(System.getProperty(HOT_RELOAD_PROPERTY, "true"));
+    }
+
+    /**
+     * 热重传执行（绑定路径、持 GL 上下文线程）：缓存键仍匹配当前源哈希时，
+     * 在同一 textureId 上用压缩数据重指定存储（内容逐像素一致，视觉无缝）；
+     * 键过期/缓存失效/纹理已卸载则清除标记不再重试。无 GL 上下文时保留标记待下轮绑定。
+     */
+    private static void maybeUpgradeToCompressed(final com.fs.graphics.TextureObject texture,
+                                                 final int target,
+                                                 final ManagedTextureEntry entry,
+                                                 final boolean restoreBinding) {
+        final CompressedTextureCache.Key key = entry.compressedUpgradeKey;
+        if (key == null) {
+            return;
+        }
+        if (!entry.sourceHash.equals(key.sourceHash())) {
+            entry.compressedUpgradeKey = null;
+            return;
+        }
+        if (!hasCurrentOpenGlContext()) {
+            return;
+        }
+        final SsobcContainer container = CompressedTextureCache.load(key);
+        final int textureId = readTextureId(texture, -1);
+        if (container == null || textureId == -1) {
+            entry.compressedUpgradeKey = null;
+            return;
+        }
+
+        final int previousBinding = restoreBinding ? captureBoundTexture(target) : Integer.MIN_VALUE;
+        try {
+            GL11.glBindTexture(target, textureId);
+            uploadCompressedLevels(target, entry.resourcePath, key.mipmaps(), container);
+            entry.applyCompressedFormat(key.format());
+            entry.compressedUpgradeKey = null;
+            final long reloaded = HOT_RELOADED_TEXTURES.incrementAndGet();
+            if (reloaded == 1L || reloaded % 64L == 0L) {
+                LOGGER.info("[SSOptimizer] 纹理热重传进度：已原地升级为压缩形态 " + reloaded + " 张");
+            }
+        } finally {
+            if (restoreBinding) {
+                restoreBoundTexture(target, previousBinding);
+            }
+        }
+    }
+
+    /** 未命中压缩缓存时投递后台压缩任务；不适用（判定排除/GL 无能力/无源哈希）则跳过。 */
+    private static void maybeScheduleCompression(final String resourcePath,
+                                                 final String sourceHash,
+                                                 final boolean generateMipmaps,
+                                                 final TexturePixelConversionResult result) {
+        final TextureCompressionSupport.Format format = TextureCompressionEligibility.selectFormat(
+                resourcePath,
+                result.textureWidth(),
+                result.textureHeight(),
+                result.alphaKind(),
+                TextureCompressionSupport.preferredFormat());
+        if (format == TextureCompressionSupport.Format.NONE) {
+            return;
+        }
+        TextureCompressionScheduler.submit(resourcePath, sourceHash,
+                result.textureWidth(), result.textureHeight(), generateMipmaps, format,
+                TextureCompressionEligibility.usesPunchThroughAlpha(format, result.alphaKind()),
+                result.buffer());
+    }
+
+    /**
+     * 延迟贴图登记（deferred-awaiting-first-bind）时投递「仅压缩」prepass 任务：
+     * 后台解码→转换→压缩→落盘缓存，不做 GL 上传，使首次 bind 直接命中压缩缓存。
+     * 格式与 mip 标志在登记元数据上即可完全确定；不适用压缩/开关关闭则跳过。
+     */
+    private static void maybeScheduleDeferredPrepass(final String resourcePath,
+                                                     final String sourceHash,
+                                                     final LazyTextureMetadata metadata) {
+        final TextureCompressionSupport.Format format = TextureCompressionEligibility.selectFormat(
+                resourcePath,
+                metadata.textureWidth,
+                metadata.textureHeight,
+                metadata.alphaKind,
+                TextureCompressionSupport.preferredFormat());
+        if (format == TextureCompressionSupport.Format.NONE) {
+            return;
+        }
+        final boolean mipmaps = shouldGenerateMipmaps(resourcePath, metadata.imageWidth, metadata.imageHeight);
+        TextureCompressionScheduler.submitDeferredPrepass(resourcePath, sourceHash,
+                metadata.textureWidth, metadata.textureHeight, mipmaps, format,
+                TextureCompressionEligibility.usesPunchThroughAlpha(format, metadata.alphaKind));
+    }
+
+    static boolean shouldGenerateMipmaps(final String resourcePath,
+                                         final int imageWidth,
+                                         final int imageHeight) {
         if (isFontAtlasWithoutMipmaps(resourcePath)) {
             return false;
         }
@@ -819,6 +1162,7 @@ public final class LazyTextureManager {
         if (trackResidency && defer) {
             cacheTexture(textureCache, requestedPath, effectivePath, texture);
             MANAGED_TEXTURES.put(texture, ManagedTextureEntry.pending(effectivePath, prepared.sourceHash(), metadata, now, true));
+            maybeScheduleDeferredPrepass(effectivePath, prepared.sourceHash(), metadata);
             return markTextureLoadedInCurrentContext(texture, effectivePath);
         }
 
@@ -830,10 +1174,14 @@ public final class LazyTextureManager {
                     eagerLoad(loader, textureCache, effectivePath, requestedPath), effectivePath);
         }
 
-        uploadConverted(texture, TARGET_2D, effectivePath, pixels);
+        final TextureCompressionSupport.Format usedFormat =
+                uploadConverted(texture, TARGET_2D, effectivePath, prepared.sourceHash(), pixels);
         cacheTexture(textureCache, requestedPath, effectivePath, texture);
         if (trackResidency) {
-            MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(effectivePath, prepared.sourceHash(), metadata, now, true));
+            final ManagedTextureEntry entry =
+                    ManagedTextureEntry.resident(effectivePath, prepared.sourceHash(), metadata, now, true);
+            entry.applyCompressedFormat(usedFormat);
+            MANAGED_TEXTURES.put(texture, entry);
         }
         return markTextureLoadedInCurrentContext(texture, effectivePath);
     }
@@ -1004,6 +1352,9 @@ public final class LazyTextureManager {
                         restoreBoundTexture(target, previousBinding);
                     }
                 }
+            } else if (entry.compressedUpgradeKey != null) {
+                // 热重传：后台压缩已完成的驻留纹理，在本次绑定时原地升级为压缩形态
+                maybeUpgradeToCompressed(texture, target, entry, restoreBinding);
             }
         }
 
@@ -1410,7 +1761,7 @@ public final class LazyTextureManager {
                 || normalized.startsWith("ssoptimizer/runtimefonts/graphics/fonts/orbitron"));
     }
 
-    private static boolean isFontAtlasWithoutMipmaps(final String resourcePath) {
+    static boolean isFontAtlasWithoutMipmaps(final String resourcePath) {
         return isManagedVictorFontTexture(resourcePath) || isSharpenedUiFontTexture(resourcePath);
     }
 
@@ -1437,7 +1788,18 @@ public final class LazyTextureManager {
             final long totalEvicted = TOTAL_EVICTED_TEXTURES.get();
             if (!snapshot.isEmpty() || recentlyEvicted > 0L || totalEvicted > 0L) {
                 PENDING_EVICTED_TEXTURES.getAndSet(0L);
-                LOGGER.info(formatManagementSummary(snapshot, recentlyEvicted, totalEvicted));
+                String summary = formatManagementSummary(snapshot, recentlyEvicted, totalEvicted);
+                // 顺带输出驱动侧真实显存水位（RT 模式/无扩展时 VramProbe 返回 null）
+                final String vram = VramProbe.queryStatus();
+                if (vram != null) {
+                    summary = summary + ' ' + vram;
+                }
+                // 非受管 GL 分配分类账本（FBO 附件、模组直接上传纹理/renderbuffer）
+                final String ledger = GlMemoryLedger.formatSummary();
+                if (!ledger.isEmpty()) {
+                    summary = summary + ' ' + ledger;
+                }
+                LOGGER.info(summary);
             }
         }
     }
@@ -1852,6 +2214,11 @@ public final class LazyTextureManager {
                                             long contextGeneration) {
     }
 
+    /** 热重传待升级项：纹理对象 + 压缩缓存键（键实例与 entry.compressedUpgradeKey 同一引用，供幂等校验）。 */
+    private record PendingCompressionUpgrade(com.fs.graphics.TextureObject texture,
+                                             CompressedTextureCache.Key key) {
+    }
+
     private static final class ManagedTextureEntry {
         private final    String  resourcePath;
         private volatile String  sourceHash;
@@ -1859,13 +2226,19 @@ public final class LazyTextureManager {
         private final    int     imageHeight;
         private final    int     textureWidth;
         private final    int     textureHeight;
-        private final    long    estimatedGpuBytes;
+        /** 估算显存字节数：登记时按未压缩形态估算，压缩上传后由 {@link #applyCompressedFormat} 重算。 */
+        private volatile long    estimatedGpuBytes;
         /**
-         * 压缩纹理形态（诊断基线/T2 压缩管线写入真值）：本期（T1）恒
-         * {@link TextureCompressionSupport.Format#NONE}——估算字节数与 TSV
-         * compression 列均以它为准，压缩本体落地前报表全 none。
+         * 压缩纹理形态（T2 起由压缩上传分流写真值）：估算字节数与 TSV
+         * compression 列均以它为准，未走压缩上传的纹理恒 NONE。
          */
         private volatile TextureCompressionSupport.Format compressionFormat = TextureCompressionSupport.Format.NONE;
+        /**
+         * 热重传升级键（兼「已入待升级队列」标记）：后台压缩完成回调写入
+         * （{@link LazyTextureManager#noteCompressedTextureAvailable}），由绑定路径节流
+         * drain 或下一次绑定时命中压缩缓存原地重传并清空；源哈希变化/缓存失效时清空不再重试。
+         */
+        private volatile CompressedTextureCache.Key  compressedUpgradeKey;
         private volatile boolean evictable;
         private volatile boolean pendingUpload;
         private volatile boolean uploadedOnce;
@@ -1951,6 +2324,20 @@ public final class LazyTextureManager {
         void updateSourceHash(final String sourceHash) {
             this.sourceHash = sourceHash;
         }
+
+        /**
+         * 压缩上传成功后写真值：记录压缩形态并按形态重算估算显存字节数
+         * （BC7/BC3=1B/px、BC1=0.5B/px，见 {@link #estimateTextureGpuBytes}）。
+         * NONE（未压缩路径）为无操作。
+         */
+        void applyCompressedFormat(final TextureCompressionSupport.Format format) {
+            if (format == null || format == TextureCompressionSupport.Format.NONE) {
+                return;
+            }
+            compressionFormat = format;
+            estimatedGpuBytes = estimateTextureGpuBytes(
+                    resourcePath, imageWidth, imageHeight, textureWidth, textureHeight, format);
+        }
     }
 
     private static final class ResidentGroupSummary {
@@ -1964,6 +2351,7 @@ public final class LazyTextureManager {
     private record LazyTextureMetadata(int imageWidth,
                                        int imageHeight,
                                        boolean hasAlpha,
+                                       AlphaKind alphaKind,
                                        int textureWidth,
                                        int textureHeight,
                                        Color averageColor,
@@ -1976,6 +2364,7 @@ public final class LazyTextureManager {
                     metadata.imageWidth(),
                     metadata.imageHeight(),
                     metadata.hasAlpha(),
+                    metadata.alphaKind(),
                     metadata.textureWidth(),
                     metadata.textureHeight(),
                     metadata.averageColor(),
@@ -1986,7 +2375,7 @@ public final class LazyTextureManager {
                             metadata.imageHeight(),
                             metadata.textureWidth(),
                             metadata.textureHeight(),
-                            // T1 恒 NONE（压缩本体 T2 落地后由 ManagedTextureEntry 写真值）
+                            // 登记时按未压缩形态初估；压缩上传后由 ManagedTextureEntry.applyCompressedFormat 重算
                             TextureCompressionSupport.Format.NONE)
             );
         }
@@ -2000,6 +2389,7 @@ public final class LazyTextureManager {
                     imageWidth,
                     imageHeight,
                     hasAlpha,
+                    result.alphaKind(),
                     result.textureWidth(),
                     result.textureHeight(),
                     result.averageColor(),
@@ -2010,7 +2400,7 @@ public final class LazyTextureManager {
                             imageHeight,
                             result.textureWidth(),
                             result.textureHeight(),
-                            // T1 恒 NONE（压缩本体 T2 落地后由 ManagedTextureEntry 写真值）
+                            // 登记时按未压缩形态初估；压缩上传后由 ManagedTextureEntry.applyCompressedFormat 重算
                             TextureCompressionSupport.Format.NONE)
             );
         }

@@ -43,4 +43,6 @@ dependencies {
     compileOnly("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7")
     compileOnly("org.apache.logging.log4j:log4j-1.2-api:2.25.2")
     compileOnly("org.apache.logging.log4j:log4j-api:2.25.2")
+    // 加载期噪音聚合过滤器的 log4j2 层实现（生产运行时由 NanoForge 提供 log4j-core）
+    compileOnly("org.apache.logging.log4j:log4j-core:2.25.2")
 }

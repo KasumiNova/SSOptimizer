@@ -43,7 +43,7 @@ public final class TextureConversionCache {
     private static final Logger                        LOGGER                   = Logger.getLogger(TextureConversionCache.class);
     private static final String                        MAGIC                    = "SSOTEX";
     private static final String                        INDEX_MAGIC              = "SSOTEXIDX";
-    private static final int                           VERSION                  = 3;
+    private static final int                           VERSION                  = 4;
     private static final int                           INDEX_VERSION            = 1;
     private static final String                        FILE_EXTENSION           = ".ssotex.zst";
     private static final String                        INDEX_EXTENSION          = ".ssotexidx";
@@ -223,12 +223,8 @@ public final class TextureConversionCache {
             }
 
             try {
-                Files.createDirectories(cacheFile.getParent());
                 final byte[] compressedBytes = encodeCompressed(image, result);
-                Files.write(cacheFile, compressedBytes,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.TRUNCATE_EXISTING,
-                        StandardOpenOption.WRITE);
+                AtomicFileWriter.write(cacheFile, compressedBytes);
                 rememberCompressed(image.sourceHash(), compressedBytes);
                 METADATA_CACHE.put(image.sourceHash(), CachedTextureMetadata.of(
                         image.getWidth(),
@@ -400,7 +396,7 @@ public final class TextureConversionCache {
                       .resolve("cache")
                       .resolve("textures")
                       .resolve("zstd")
-                      .resolve("v3")
+                      .resolve("v4")
                       .toAbsolutePath();
     }
 
@@ -460,6 +456,8 @@ public final class TextureConversionCache {
             output.writeInt(image.getWidth());
             output.writeInt(image.getHeight());
             output.writeBoolean(image.getColorModel().hasAlpha());
+            // v4 起随头部落盘实际像素 alpha 内容（压缩格式选择免二次像素扫描）
+            output.writeByte(result.alphaKind().ordinal());
             output.writeInt(result.textureWidth());
             output.writeInt(result.textureHeight());
             output.writeInt(result.averageColor().getRGB());
@@ -498,6 +496,12 @@ public final class TextureConversionCache {
         final int imageWidth = input.readInt();
         final int imageHeight = input.readInt();
         final boolean hasAlpha = input.readBoolean();
+        final AlphaKind alphaKind;
+        try {
+            alphaKind = AlphaKind.fromOrdinal(input.readByte());
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Texture cache alpha kind is invalid", e);
+        }
         final int textureWidth = input.readInt();
         final int textureHeight = input.readInt();
         final int averageColor = input.readInt();
@@ -512,6 +516,7 @@ public final class TextureConversionCache {
                 imageWidth,
                 imageHeight,
                 hasAlpha,
+                alphaKind,
                 textureWidth,
                 textureHeight,
                 new Color(averageColor, true),
@@ -546,7 +551,8 @@ public final class TextureConversionCache {
                             metadata.textureHeight(),
                             metadata.averageColor(),
                             metadata.upperHalfColor(),
-                            metadata.lowerHalfColor()
+                            metadata.lowerHalfColor(),
+                            metadata.alphaKind()
                     )
             );
         }
@@ -586,13 +592,8 @@ public final class TextureConversionCache {
 
         final Path indexFile = indexFile(normalizedResourcePath);
         try {
-            Files.createDirectories(indexFile.getParent());
-            try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(
-                    indexFile,
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING,
-                    StandardOpenOption.WRITE
-            )))) {
+            final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(bytes))) {
                 output.writeUTF(INDEX_MAGIC);
                 output.writeInt(INDEX_VERSION);
                 output.writeUTF(indexEntry.normalizedResourcePath());
@@ -602,8 +603,10 @@ public final class TextureConversionCache {
                 output.writeUTF(indexEntry.sourceHash());
                 output.flush();
             }
+            AtomicFileWriter.write(indexFile, bytes.toByteArray());
             RESOURCE_INDEX_CACHE.put(normalizedResourcePath, indexEntry);
-        } catch (IOException ignored) {
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[SSOptimizer] 纹理资源索引写入失败（" + image.resourcePath() + "）", e);
             deleteQuietly(indexFile);
             RESOURCE_INDEX_CACHE.remove(normalizedResourcePath);
         }
@@ -674,10 +677,14 @@ public final class TextureConversionCache {
     /**
      * 缓存条目元数据：尺寸/alpha/纹理尺寸/直方图颜色/payload 字节数。
      * 不持有像素缓冲区，可常驻内存。
+     * <p>
+     * {@code hasAlpha} 是图片声明的 alpha 通道（决定未压缩上传 GL_RGB/GL_RGBA），
+     * {@code alphaKind} 是实际像素 alpha 内容（v4 起落盘，压缩格式选择用）。
      */
     record CachedTextureMetadata(int imageWidth,
                                  int imageHeight,
                                  boolean hasAlpha,
+                                 AlphaKind alphaKind,
                                  int textureWidth,
                                  int textureHeight,
                                  Color averageColor,
@@ -692,6 +699,7 @@ public final class TextureConversionCache {
                     imageWidth,
                     imageHeight,
                     hasAlpha,
+                    result.alphaKind(),
                     result.textureWidth(),
                     result.textureHeight(),
                     result.averageColor(),

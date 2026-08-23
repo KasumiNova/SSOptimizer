@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -96,7 +97,37 @@ class TextureConversionCacheTest {
         assertEquals(2, metadata.imageWidth());
         assertEquals(2, metadata.imageHeight());
         assertTrue(metadata.hasAlpha());
+        assertEquals(AlphaKind.OPAQUE, metadata.alphaKind(), "种子图 alpha 全 255，实际内容应为 OPAQUE");
         assertEquals(metadata.textureWidth() * metadata.textureHeight() * 4, metadata.bufferLength());
+    }
+
+    @Test
+    void binaryAlphaKindSurvivesCacheRoundtrip() throws Exception {
+        // v4 schema：实际像素 alpha 内容随元数据落盘（压缩格式选择免二次像素扫描）
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, tempDir.toString());
+
+        final BufferedImage source = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        source.setRGB(0, 0, new Color(10, 20, 30, 255).getRGB());
+        source.setRGB(1, 0, new Color(40, 50, 60, 0).getRGB());
+        source.setRGB(0, 1, new Color(70, 80, 90, 255).getRGB());
+        source.setRGB(1, 1, new Color(100, 110, 120, 255).getRGB());
+
+        final String sourceHash = TrackedResourceImage.computeSourceHash(new byte[]{7, 7, 7, 7});
+        TexturePixelConverter.convert(TrackedResourceImage.wrap(
+                "graphics/portraits/test_binary_alpha.png", sourceHash, source));
+
+        // 清掉内存元数据索引，强制从磁盘重解析头部（真实回读路径）
+        TextureConversionCache.clearMemoryCache();
+
+        final TextureConversionCache.CachedTextureMetadata metadata = TextureConversionCache.loadMetadata(sourceHash);
+        assertNotNull(metadata);
+        assertTrue(metadata.hasAlpha(), "声明的 alpha 通道保持 true");
+        assertEquals(AlphaKind.BINARY, metadata.alphaKind(), "alpha 仅 0/255 应回读为 BINARY");
+
+        final TextureConversionCache.CachedTextureData decoded = TextureConversionCache.load(sourceHash);
+        assertNotNull(decoded);
+        assertEquals(AlphaKind.BINARY, decoded.conversionResult().alphaKind(),
+                "完整解码路径的转换结果同样携带 BINARY");
     }
 
     @Test
@@ -113,6 +144,7 @@ class TextureConversionCacheTest {
         assertEquals(decoded.imageWidth(), metadata.imageWidth());
         assertEquals(decoded.imageHeight(), metadata.imageHeight());
         assertEquals(decoded.hasAlpha(), metadata.hasAlpha());
+        assertEquals(decoded.conversionResult().alphaKind(), metadata.alphaKind());
         assertEquals(decoded.conversionResult().textureWidth(), metadata.textureWidth());
         assertEquals(decoded.conversionResult().textureHeight(), metadata.textureHeight());
         assertEquals(decoded.conversionResult().averageColor().getRGB(), metadata.averageColor().getRGB());
@@ -140,11 +172,26 @@ class TextureConversionCacheTest {
                 "Changed source file metadata should invalidate the resource-path index entry");
     }
 
+    @Test
+    void atomicWriteLeavesNoTempFiles() throws Exception {
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, tempDir.toString());
+
+        seedTrackedConversion("graphics/portraits/test_atomic.png", new byte[]{3, 1, 4, 1});
+
+        try (Stream<Path> paths = Files.walk(tempDir)) {
+            final List<Path> files = paths.filter(Files::isRegularFile).toList();
+            assertFalse(files.isEmpty(), "Cache entry should be on disk");
+            for (final Path file : files) {
+                assertFalse(file.getFileName().toString().endsWith(".tmp"),
+                        "Temp file residue after atomic write: " + file);
+            }
+        }
+    }
+
     private String seedTrackedConversion(final String resourcePath,
                                          final byte[] sourceBytes) {
         return seedTrackedConversion(resourcePath, sourceBytes, null);
     }
-
     private String seedTrackedConversion(final String resourcePath,
                                          final byte[] sourceBytes,
                                          final String fingerprintPath) {

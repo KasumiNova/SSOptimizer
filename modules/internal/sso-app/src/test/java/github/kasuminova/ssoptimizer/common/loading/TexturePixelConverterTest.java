@@ -128,4 +128,51 @@ class TexturePixelConverterTest {
         assertEquals(200, Byte.toUnsignedInt(second.buffer().get(0)));
         assertFalse(containsCacheFile(tempDir), "Disabled cache should not write persistent files");
     }
+
+    @Test
+    void detectsActualPixelAlphaContent() {
+        // 无 alpha 通道（RGB）→ OPAQUE
+        final BufferedImage rgb = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+        assertEquals(AlphaKind.OPAQUE, TexturePixelConverter.convert(rgb).alphaKind());
+
+        // 声明 RGBA 但 alpha 实际全 255 → OPAQUE（压缩格式选择按实际像素内容，
+        // 不再被 ColorModel 声明的 alpha 通道误导）
+        final BufferedImage opaqueArgb = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        for (int x = 0; x < 2; x++) {
+            for (int y = 0; y < 2; y++) {
+                opaqueArgb.setRGB(x, y, new Color(10 + x, 20 + y, 30, 255).getRGB());
+            }
+        }
+        assertEquals(AlphaKind.OPAQUE, TexturePixelConverter.convert(opaqueArgb).alphaKind());
+
+        // alpha 只出现 0 与 255 → BINARY（硬边镂空，可 BC1 punch-through）
+        final BufferedImage binaryArgb = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        binaryArgb.setRGB(0, 0, new Color(255, 0, 0, 255).getRGB());
+        binaryArgb.setRGB(1, 0, new Color(0, 255, 0, 0).getRGB());
+        binaryArgb.setRGB(0, 1, new Color(0, 0, 255, 255).getRGB());
+        binaryArgb.setRGB(1, 1, new Color(255, 255, 0, 255).getRGB());
+        assertEquals(AlphaKind.BINARY, TexturePixelConverter.convert(binaryArgb).alphaKind());
+
+        // alpha 含 0/255 以外的中间值 → FULL（半透明渐变，需 BC7/BC3 插值 alpha）
+        final BufferedImage fullArgb = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        fullArgb.setRGB(0, 0, new Color(255, 0, 0, 128).getRGB());
+        fullArgb.setRGB(1, 0, new Color(0, 255, 0, 255).getRGB());
+        fullArgb.setRGB(0, 1, new Color(0, 0, 255, 255).getRGB());
+        fullArgb.setRGB(1, 1, new Color(255, 255, 0, 0).getRGB());
+        assertEquals(AlphaKind.FULL, TexturePixelConverter.convert(fullArgb).alphaKind());
+
+        // 全透明（sampledPixels=0 早退路径）→ 仍如实报 BINARY
+        final BufferedImage fullyTransparent = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        assertEquals(AlphaKind.BINARY, TexturePixelConverter.convert(fullyTransparent).alphaKind());
+    }
+
+    @Test
+    void alphaKindOfPureFunction() {
+        assertEquals(AlphaKind.OPAQUE, TexturePixelConverter.alphaKindOf(false, false, false));
+        assertEquals(AlphaKind.OPAQUE, TexturePixelConverter.alphaKindOf(false, true, true));
+        assertEquals(AlphaKind.OPAQUE, TexturePixelConverter.alphaKindOf(true, false, false));
+        assertEquals(AlphaKind.BINARY, TexturePixelConverter.alphaKindOf(true, true, false));
+        assertEquals(AlphaKind.FULL, TexturePixelConverter.alphaKindOf(true, false, true));
+        assertEquals(AlphaKind.FULL, TexturePixelConverter.alphaKindOf(true, true, true));
+    }
 }

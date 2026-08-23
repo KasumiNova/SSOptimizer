@@ -102,10 +102,11 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.13.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation(gradleTestKit())
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
     // 测试运行期的 org.apache.log4j 实现（生产运行期为 shade 的 log4j-1.2-api 桥接层）
     testImplementation("log4j:log4j:1.2.17")
+    // 聚合过滤器（log4j2 层实现）测试：构造真实 Log4jLogEvent 走 decide()（生产运行时由 NanoForge 提供）
+    testImplementation("org.apache.logging.log4j:log4j-core:2.25.2")
 
     // ---- 打进 coremod jar 的运行时依赖（NanoForge 未提供） ----
     implementation("it.unimi.dsi:fastutil:8.5.18")
@@ -165,6 +166,9 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // *IT（真实 native 集成测试）拆到独立 JVM 任务 nativeIT：其加载的 native 库与
+    // NativeRuntime 模块加载态缓存会驻留整个 test JVM，污染「无 native」语义的用例
+    exclude("**/*IT.class")
     dependsOn(tasks.named("jar"))
     // ModInfoJsonTest 校验 SDG 生成的发布元数据，需要完整产物布局
     dependsOn("modProduction")
@@ -182,6 +186,33 @@ tasks.test {
         "--add-opens=java.desktop/java.awt=ALL-UNNAMED",
         "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED"
     )
+}
+
+// 真实 native 产物集成测试（*IT）：独立 JVM 运行，native 产物缺失时用例内 Assumptions 跳过
+tasks.register<Test>("nativeIT") {
+    group = "verification"
+    description = "Run native-library integration tests (*IT) in a dedicated JVM"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform()
+    include("**/*IT.class")
+    systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
+    jvmArgs(
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang.ref=ALL-UNNAMED",
+        "--add-opens=java.base/java.text=ALL-UNNAMED",
+        "--add-opens=java.base/java.nio=ALL-UNNAMED",
+        "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+        "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED",
+        "--add-opens=java.desktop/java.awt=ALL-UNNAMED",
+        "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED"
+    )
+}
+
+tasks.named("check") {
+    dependsOn("nativeIT")
 }
 
 val docsTestSourceSet = sourceSets.create("docsTest") {

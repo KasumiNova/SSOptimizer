@@ -1,5 +1,9 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +13,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -108,5 +114,103 @@ class CaseInsensitiveResourceFallbackTest {
         assertNull(CaseInsensitiveResourceFallback.tryResolve(
                 "graphics/icons/cargo/definitely_missing.png", exception),
                 "文件在所有根目录下都不存在时必须返回 null");
+    }
+
+    @Test
+    void exactCaseMatchLogsInfoInsteadOfCaseMismatchWarn() throws Exception {
+        // 复现线上误报场景：请求路径大小写完全正确、文件确实存在，
+        // 游戏原加载因 filter/suppress 状态干扰失败，兜底精确命中。
+        // 期望：不打「大小写不匹配」WARN，只打一次性 INFO 说明兜底接管。
+        final Path target = gameDir.resolve("data/hulls/skins/exact_case_fallback.skin");
+        Files.createDirectories(target.getParent());
+        Files.writeString(target, "skin-json", StandardCharsets.UTF_8);
+
+        final RuntimeException exception = new RuntimeException(
+                "Error loading [data/hulls/skins/exact_case_fallback.skin] resource, not found in ["
+                        + modDir.toAbsolutePath() + ",CLASSPATH]");
+
+        final Logger logger = Logger.getLogger(CaseInsensitiveResourceFallback.class);
+        final List<LoggingEvent> events = new CopyOnWriteArrayList<>();
+        final AppenderSkeleton appender = new AppenderSkeleton() {
+            @Override
+            protected void append(final LoggingEvent event) {
+                events.add(event);
+            }
+
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public boolean requiresLayout() {
+                return false;
+            }
+        };
+        logger.addAppender(appender);
+        try (InputStream stream = CaseInsensitiveResourceFallback.tryResolve(
+                "data/hulls/skins/exact_case_fallback.skin", exception)) {
+            assertNotNull(stream);
+        } finally {
+            logger.removeAppender(appender);
+        }
+
+        final List<LoggingEvent> warns = events.stream()
+                .filter(e -> e.getLevel().toInt() >= Level.WARN_INT).toList();
+        assertTrue(warns.isEmpty(), "全段精确命中不得打大小写不匹配 WARN: " + warns);
+
+        final List<LoggingEvent> infos = events.stream()
+                .filter(e -> e.getLevel() == Level.INFO)
+                .filter(e -> String.valueOf(e.getMessage()).contains("精确路径存在"))
+                .toList();
+        assertEquals(1, infos.size(), "精确命中兜底必须打一条可观测性 INFO");
+    }
+
+    @Test
+    void caseCorrectedMatchStillLogsCaseMismatchWarn() throws Exception {
+        // 真实大小写不匹配（Windows 模组在 Linux 运行）：WARN 语义必须保留
+        final Path target = gameDir.resolve("data/hulls/skins/case_fixed_fallback.skin");
+        Files.createDirectories(target.getParent());
+        Files.writeString(target, "skin-json", StandardCharsets.UTF_8);
+
+        final RuntimeException exception = new RuntimeException(
+                "Error loading [DATA/hulls/skins/case_fixed_fallback.skin] resource, not found in ["
+                        + modDir.toAbsolutePath() + "]");
+
+        final Logger logger = Logger.getLogger(CaseInsensitiveResourceFallback.class);
+        final List<LoggingEvent> events = new CopyOnWriteArrayList<>();
+        final AppenderSkeleton appender = new AppenderSkeleton() {
+            @Override
+            protected void append(final LoggingEvent event) {
+                events.add(event);
+            }
+
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public boolean requiresLayout() {
+                return false;
+            }
+        };
+        logger.addAppender(appender);
+        try (InputStream stream = CaseInsensitiveResourceFallback.tryResolve(
+                "DATA/hulls/skins/case_fixed_fallback.skin", exception)) {
+            assertNotNull(stream);
+        } finally {
+            logger.removeAppender(appender);
+        }
+
+        final List<LoggingEvent> warns = events.stream()
+                .filter(e -> e.getLevel() == Level.WARN)
+                .filter(e -> String.valueOf(e.getMessage()).contains("大小写不匹配"))
+                .toList();
+        assertEquals(1, warns.size(), "发生大小写修正时必须保留 WARN 告警");
+
+        final List<LoggingEvent> infos = events.stream()
+                .filter(e -> e.getLevel() == Level.INFO)
+                .filter(e -> String.valueOf(e.getMessage()).contains("精确路径存在"))
+                .toList();
+        assertTrue(infos.isEmpty(), "大小写修正场景不得打精确命中 INFO");
     }
 }

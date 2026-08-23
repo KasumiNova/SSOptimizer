@@ -17,8 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * 当 {@code ResourceLoader.openStream(String)} 以精确大小写查找资源失败时（常见于
  * Windows 模组在 Linux 上运行的场景），本类通过解析异常信息中的根目录列表，逐段做
- * 大小写不敏感匹配来定位实际文件。匹配成功时记录告警日志并返回正确路径的输入流，
- * 匹配失败则返回 {@code null}，由调用方继续原始异常处理。
+ * 大小写不敏感匹配来定位实际文件。真正发生大小写修正时记录 WARN 告警；全段精确命中
+ * （游戏失败原因为过滤状态干扰等）只记录一次性 INFO。匹配失败则返回 {@code null}，
+ * 由调用方继续原始异常处理。
  * <p>
  * 所有缓存均为线程安全设计，支持多线程预加载场景。
  */
@@ -26,7 +27,7 @@ public final class CaseInsensitiveResourceFallback {
     private static final Logger LOGGER = Logger.getLogger(CaseInsensitiveResourceFallback.class);
 
     /**
-     * 已打印过告警的资源路径集合，避免同一路径重复告警。
+     * 已打印过日志（WARN 或 INFO）的资源路径集合，避免同一路径重复输出。
      */
     private static final Set<String> WARNED_PATHS = ConcurrentHashMap.newKeySet();
 
@@ -100,15 +101,23 @@ public final class CaseInsensitiveResourceFallback {
 
         // 逐个根目录尝试大小写不敏感解析
         for (final Path root : roots) {
-            final Path resolved = resolveInsensitive(root, normalizedPath);
-            if (resolved != null && Files.isRegularFile(resolved)) {
-                final String actualPath = resolved.toAbsolutePath().toString();
+            final ResolvedMatch match = resolveInsensitive(root, normalizedPath);
+            if (match != null && Files.isRegularFile(match.path())) {
+                final String actualPath = match.path().toAbsolutePath().toString();
                 RESOLVED_CACHE.put(normalizedPath, actualPath);
 
                 if (WARNED_PATHS.add(normalizedPath)) {
-                    LOGGER.warn("[SSOptimizer] 资源路径大小写不匹配: 请求 [" + normalizedPath
-                            + "] -> 实际 [" + root.relativize(resolved) + "] "
-                            + "(模组开发者应修正路径大小写以确保跨平台兼容)");
+                    if (match.caseCorrected()) {
+                        LOGGER.warn("[SSOptimizer] 资源路径大小写不匹配: 请求 [" + normalizedPath
+                                + "] -> 实际 [" + root.relativize(match.path()) + "] "
+                                + "(模组开发者应修正路径大小写以确保跨平台兼容)");
+                    } else {
+                        // 全段精确命中：游戏原加载失败并非大小写问题
+                        // （历史上多为并行加载期 filter/suppress 全局状态跨线程干扰，
+                        // 线程封闭化后应基本消失；保留此 INFO 作为兜底通道的可观测性）。
+                        LOGGER.info("[SSOptimizer] 资源 [" + normalizedPath
+                                + "] 精确路径存在但游戏原加载失败，已由大小写兜底通道提供");
+                    }
                 }
 
                 try {
@@ -199,15 +208,26 @@ public final class CaseInsensitiveResourceFallback {
     }
 
     /**
+     * 一次不敏感解析的结果。
+     *
+     * @param path          匹配到的文件完整路径
+     * @param caseCorrected 是否有路径段实际走了大小写修正（实际名称与请求段大小写不同）；
+     *                      false 表示全段精确命中（游戏失败原因与大小写无关）
+     */
+    private record ResolvedMatch(Path path, boolean caseCorrected) {
+    }
+
+    /**
      * 在给定根目录下，按路径段逐级做大小写不敏感匹配。
      *
      * @param root         资源根目录
      * @param resourcePath 相对资源路径（如 {@code graphics/ships/foo.png}）
-     * @return 匹配到的文件完整路径，或 {@code null}
+     * @return 匹配结果，或 {@code null}
      */
-    private static Path resolveInsensitive(final Path root, final String resourcePath) {
+    private static ResolvedMatch resolveInsensitive(final Path root, final String resourcePath) {
         final String[] segments = resourcePath.replace('\\', '/').split("/");
         Path current = root;
+        boolean caseCorrected = false;
 
         for (final String segment : segments) {
             if (segment.isEmpty()) {
@@ -225,10 +245,13 @@ public final class CaseInsensitiveResourceFallback {
             if (found == null) {
                 return null;
             }
+            if (!found.equals(segment)) {
+                caseCorrected = true;
+            }
             current = current.resolve(found);
         }
 
-        return current;
+        return new ResolvedMatch(current, caseCorrected);
     }
 
     /**

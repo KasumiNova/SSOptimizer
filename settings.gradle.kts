@@ -30,6 +30,8 @@ include(":modules:internal:sso-render:native")
 project(":modules:internal:sso-render:native").name = "native-render"
 include(":modules:internal:sso-loading:native")
 project(":modules:internal:sso-loading:native").name = "native-loading"
+include(":modules:internal:sso-loading:native-texcompress")
+project(":modules:internal:sso-loading:native-texcompress").name = "native-texcompress"
 include(":modules:internal:sso-font:native")
 project(":modules:internal:sso-font:native").name = "native-font"
 include(":modules:internal:sso-ime:native")

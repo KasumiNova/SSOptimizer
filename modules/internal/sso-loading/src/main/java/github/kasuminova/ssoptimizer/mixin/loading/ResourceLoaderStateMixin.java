@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.loading;
 
+import github.kasuminova.ssoptimizer.common.logging.SoundMonoNoticeAggregator;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
@@ -53,5 +54,7 @@ public abstract class ResourceLoaderStateMixin {
     @Inject(method = "init", at = @At("RETURN"), remap = false)
     private void ssoptimizer$markLoadingFinished(CallbackInfo ci) {
         RenderThreadMode.markLoadingFinished();
+        // 同一边界 flush Sound 构造器控制台输出的聚合零头（加载期音效已全部构造完毕）
+        SoundMonoNoticeAggregator.flushPending();
     }
 }

@@ -68,13 +68,22 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.disable.texturecache` | `false` | 禁用纹理像素转换磁盘缓存（Zstd 压缩，MD5 校验） | `common/loading/TextureConversionCache.java:58` |
-| `ssoptimizer.texturecache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/textures/zstd/v3`） | 自定义纹理缓存目录 | `common/loading/TextureConversionCache.java:332` |
+| `ssoptimizer.texturecache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/textures/zstd/v4`） | 自定义纹理缓存目录 | `common/loading/TextureConversionCache.java:332` |
 | `ssoptimizer.texturecache.memory.maxbytes` | `67108864`（64 MiB，下限 0） | 纹理缓存内存上限 | `common/loading/TextureConversionCache.java:347` |
 | `ssoptimizer.disable.texturecache.warmup` | `false` | 禁用启动期后台把磁盘缓存预热到内存 | `common/loading/TextureConversionCache.java:191` |
 | `ssoptimizer.disable.npot` | `false` | 禁用 NPOT 探测，纹理尺寸统一向上取 2 的幂 | `common/loading/TextureDimensionSupport.java:34` |
 | `ssoptimizer.force.npot` | `false` | 强制启用 NPOT，跳过 GL 能力探测 | `common/loading/TextureDimensionSupport.java:37` |
-| `ssoptimizer.texcompress.enable` | `true` | GPU 纹理压缩（BC 族）总开关；false 时整特性视为不可用。T1 仅落地探测/开关/诊断，压缩本体 T2 接入上传路径 | `common/loading/TextureCompressionSupport.java:29` |
+| `ssoptimizer.texcompress.enable` | `true` | GPU 纹理压缩（BC 族）总开关；false 时整特性视为不可用（全程未压缩路径） | `common/loading/TextureCompressionSupport.java:29` |
 | `ssoptimizer.texcompress.format` | `auto` | 压缩格式收窄：`auto`（bc7 优先、bc3 回退）/ `bc7` / `bc3`（强制 bc3 时即便 bc7 可用也用 BC3）；T2 生效 | `common/loading/TextureCompressionSupport.java:30` |
+| `ssoptimizer.texcompress.quality` | `normal` | 后台压缩质量档：`fast` / `normal` / `high`，投递压缩任务时读取 | `common/loading/TextureCompressionScheduler.java:40` |
+| `ssoptimizer.texcompress.highQualityPaths` | 空 | 高质量路径模式（逗号分隔子串，大小写不敏感）：命中的贴图强制 `high` 质量档，优先于全局 `quality`。默认空——背景/特效类贴图实测 high 档 BC7 仍有可见色阶，已由 `excludePaths` 默认排除面绕过压缩；本属性留给「宁可压缩也要省显存」的自定义场景 | `common/loading/TextureCompressionScheduler.java:47` |
+| `ssoptimizer.texcompress.excludePaths` | `background,starscape,nebula,illustration,/fx/` | 压缩排除路径模式（逗号分隔子串，大小写不敏感）：命中的贴图完全不压缩，保持 RGBA8 上传。默认排除背景/插画/星云/特效类大面积平滑渐变贴图（实测色阶不可接受）；置空字符串恢复全量压缩 | `common/loading/TextureCompressionEligibility.java:45` |
+| `ssoptimizer.texcompress.mode` | `background` | 压缩时机：`background`（后台线程压缩，首轮未压缩上传）/ `eager`（加载时同步压缩，首轮即压缩形态上传，首轮加载耗时显著增加，建议搭配 `quality=fast`） | `common/loading/TextureCompressionSupport.java:38` |
+| `ssoptimizer.texcompress.hotreload` | `true` | 热重传：后台压缩完成后，已驻留的未压缩纹理在下一次绑定时原地升级为压缩形态 | `common/loading/LazyTextureManager.java:55` |
+| `ssoptimizer.texcompress.bc1ForOpaque` | `false` | BC1 显存优先：BC7 可用时，实际像素全不透明的大图（最长边 ≥256）也选 BC1（画质换显存）；BC3 回退场景下非 FULL alpha 的大图恒走 BC1，不受此开关影响 | `common/loading/TextureCompressionSupport.java:38` |
+| `ssoptimizer.texcompress.deferredPrepass` | `true` | 延迟上传（deferred）纹理的后台压缩预处理：不持有像素、等首绑的纹理提前在后台完成解码+转换+压缩，首绑直接吃压缩缓存 | `common/loading/TextureCompressionScheduler.java:44` |
+| `ssoptimizer.bctexcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/textures-bc/<formatTag>/v1`） | 自定义压缩纹理（SSOBC+zstd）缓存根目录（覆盖后仍按 formatTag/v1 分层） | `common/loading/CompressedTextureCache.java:41` |
+| `ssoptimizer.bctexcache.memory.maxbytes` | `67108864`（64 MiB，下限 0） | 压缩纹理缓存内存上限 | `common/loading/CompressedTextureCache.java:42` |
 | `ssoptimizer.disable.nativepngdecoder` | `false` | 禁用 JNI 原生 PNG 解码器 | `common/loading/NativePngDecoder.java:57` |
 | `ssoptimizer.disable.lazytextureupload` | `false` | 禁用惰性纹理上传（启动只留元数据，首次绑定才传 GPU） | `common/loading/LazyTextureManager.java:296` |
 | `ssoptimizer.lazytextureupload.minimalstartup` | `true` | 最小化启动纹理（managed 图形资源且 ≥ trackminbytes）延迟上传 | `common/loading/LazyTextureManager.java:318` |
@@ -188,7 +197,7 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.logging.lunalib.level` | `"WARN"` | LunaLib 日志阈值（默认压制 INFO/DEBUG 噪音，设 `DEBUG` 恢复完整日志） | `common/logging/LogNoiseFilterConfigurator.java:51` |
-| `ssoptimizer.logging.vanilla.level` | `"WARN"` | 原版启动/加载期 INFO 噪音日志阈值（默认压制资源/规则/脚本/纹理/声音加载等 17 个高频原版 logger，WARN/ERROR 与 SSOptimizer 自身日志不受影响；设 `INFO`/`DEBUG` 恢复完整原版加载日志） | `common/logging/VanillaLogNoiseConfigurator.java:69` |
+| `ssoptimizer.logging.vanilla.level` | `"WARN"` | 原版启动/加载期 INFO 噪音日志阈值（默认对 17 个高频原版 logger 保持 INFO 可见并装配消息级聚合过滤器：逐条压制「Loading …/Class … already loaded/Cleaned buffer …」等刷屏行，加载期结束后 flush 成「Loaded N <分类>」汇总行，WARN/ERROR、not-found 诊断与 SSOptimizer 自身日志不受影响；设 `INFO`/`DEBUG` 恢复完整原版加载日志） | `common/logging/VanillaLogNoiseConfigurator.java:66` |
 
 ## 已移除属性
 

@@ -2,18 +2,22 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.api.CompositeAsmClassProcessor;
+import github.kasuminova.ssoptimizer.api.ExternalModOptimizer;
 import github.kasuminova.ssoptimizer.api.automation.FrameCaptureHook;
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
 import github.kasuminova.ssoptimizer.api.loading.WeaponAtlasLookup;
 import github.kasuminova.ssoptimizer.api.render.RenderFramePump;
 import github.kasuminova.ssoptimizer.api.save.SavePhaseTelemetry;
 import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
+import github.kasuminova.ssoptimizer.asm.combat.CollisionImpulseClampProcessor;
+import github.kasuminova.ssoptimizer.asm.combat.ShipDamageStageTwoProcessor;
 import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
+import github.kasuminova.ssoptimizer.asm.loading.GlLedgerModOptimizer;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
@@ -179,26 +183,39 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
                 new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
                 new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()),
                 new ProcessorToggle("caseinsensitiveresource", new CaseInsensitiveResourceFallbackProcessor()));
+        registerIf(registrator, "shipdamagestagetwo", GameClassNames.SHIP, new ShipDamageStageTwoProcessor());
+        registerIf(registrator, "collisionimpulseclamp", GameClassNames.COLLISION_HANDLER_IMPL, new CollisionImpulseClampProcessor());
     }
 
     /**
-     * 注册外部模组性能优化处理器（当前为 DetailedCombatResults 的 DCR 优化集合）。
+     * 注册外部模组性能优化处理器（DCR 优化集合 + GL 显存账本模组埋点集合）。
      * <p>
      *  javaagent 时代经 ServiceLoader SPI 发现；coremod 化后源码已收编进主模块，
-     * 此处直接实例化注册。总开关 {@code -Dssoptimizer.disable.dcr=true} 保持不变；
+     * 此处直接实例化注册。总开关 {@code -Dssoptimizer.disable.<featureKey>=true}；
      * 压缩内核（L2）已迁移为 Mixin（{@code mixin.modopt.dcr.DcrCompressionUtilMixin}），
      * 不再经本集合注册，原 {@code -Dssoptimizer.disable.dcrzstd} 子开关随之移除。
      *
      * @param registrator 处理器注册接收器
      */
     private static void registerExternalModOptimizers(BiConsumer<String, AsmClassProcessor> registrator) {
-        DcrModOptimizer dcr = new DcrModOptimizer();
-        String featureKey = dcr.featureKey();
+        registerModOptimizer(registrator, new DcrModOptimizer());
+        registerModOptimizer(registrator, new GlLedgerModOptimizer());
+    }
+
+    /**
+     * 按 feature key 总开关注册单个外部模组优化集合的全部处理器。
+     *
+     * @param registrator 处理器注册接收器
+     * @param optimizer   优化集合
+     */
+    private static void registerModOptimizer(BiConsumer<String, AsmClassProcessor> registrator,
+                                             ExternalModOptimizer optimizer) {
+        String featureKey = optimizer.featureKey();
         if (Boolean.getBoolean("ssoptimizer.disable." + featureKey)) {
             LOGGER.info("[SSOptimizer] External mod optimizer DISABLED via system property: " + featureKey);
             return;
         }
-        dcr.processors().forEach((className, processor) -> {
+        optimizer.processors().forEach((className, processor) -> {
             registrator.accept(className, processor);
             LOGGER.info("[SSOptimizer] Registered external mod optimizer '" + featureKey
                     + "' processor for " + className);

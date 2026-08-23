@@ -14,7 +14,8 @@
   `:modules:internal:sso-ime`（输入法）、`:modules:internal:sso-save`（存档读写）、
   `:modules:internal:sso-modopt`（第三方模组优化）、`:modules:internal:sso-automation`（自动化/基准）。
 - 含 C++ 支持的模块下设 `<域>/native/` 子模块（native-render/native-loading/
-  native-font/native-ime），产物 `libssoptimizer_<module>.so`，
+  native-font/native-ime；sso-loading 域下另有 native-texcompress，BC1/BC3/BC7
+  纹理压缩），产物 `libssoptimizer_<module>.so`，
   JNI 生成头统一落在根级 `native-headers/generated/`。
 
 ## 跨域调用：必须经 :api 接口

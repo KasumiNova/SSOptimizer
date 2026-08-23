@@ -1,9 +1,9 @@
 # 字体渲染体系重写设计（Font Rendering Rewrite）
 
-状态：**P1-P4 已落地**（2026-08）。v2 管线（TextLayoutEngine + TextStreamEmitter + TTF 动态图集）
+状态：**全部落地**（2026-08）。v2 管线（TextLayoutEngine + TextStreamEmitter + TTF 动态图集）
 为唯一文本渲染路径并实机验证通过；P4 已拆除 legacy 路径（drawGlyph @Overwrite、
-RuntimeScaledFontCache 反射换字体、`ssoptimizer.font.engine` 开关、fnt overlay、Java2D 降级链）。
-剩余 P5（描边/阴影栅格化合成 A/B）未实施。
+RuntimeScaledFontCache 反射换字体、`ssoptimizer.font.engine` 开关、fnt overlay、Java2D 降级链）；
+P5 描边/阴影栅格化合成已随 P3 观感对齐工作一并实现（见 §7 阶段表）。
 
 ## 1. 背景与动机
 
@@ -178,15 +178,20 @@ codepoint + kerning + scale 的层级完整接管：
 放大副本还会继承底图的低分辨率块状伪影。这是多 pass 位图描边的结构性缺陷，调 blend/对齐
 参数只能缓解不能消除。
 
-对策（TTF 源字体，v1 定案）：**描边在栅格化层合成**，不再多 pass 叠位图——
+对策（TTF 源字体，**已实现**，默认开启）：**描边在栅格化层合成**，不再多 pass 叠位图——
 
 - native-font 用 `FT_Stroker` 对轮廓按目标像素尺寸的描边宽度扩张，栅格化出「描边剪影」
-  字形（FreeType AA，边缘覆盖率精确到亚像素）；
+  字形（FreeType AA，边缘覆盖率精确到亚像素）——落地为
+  `NativeFontRasterizer.rasterizeGlyphStroked` / 批量 `rasterizeGlyphs`；
 - 发射时两个 quad：描边剪影 quad 用描边色（通常黑）垫底，填充字形 quad 用文本色盖顶。
-  两者都在**精确目标尺寸**下栅格化，无偏移采样、无缩放副本，毛边从根上消除；
-- cache key 增加描边宽度档位（量化到 0.5px 步进），同色异宽的描边字形各占槽位；
-- 阴影（单纯偏移黑副本）维持「第二 pass 偏移发射」，但偏移换算改在**屏幕像素空间**取整，
-  消除位图空间偏移的错位采样；
+  两者都在**精确目标尺寸**下栅格化，无偏移采样、无缩放副本，毛边从根上消除——落地为
+  `TextLayoutEngine.layoutWithStrokeSynthesis`（开关 `ssoptimizer.font.stroke.synthesize`，默认 on）；
+- cache key 增加描边宽度档位（量化到 0.5px 步进），同色异宽的描边字形各占槽位——落地为
+  `TextScaleBuckets.quantizeStrokeDevicePx`；
+- 阴影（单纯偏移黑副本）维持「第二 pass 偏移发射」，但偏移换算改在**屏幕像素空间**取整
+  （`TextLayoutEngine` 的 snapX/snapY），消除位图空间偏移的错位采样；
+- 原版 `setAlpha` 的多层叠画 alpha 预分解在单层合成路径上按层数重聚合
+  （`recombineLayers`/`recombineSplitAlpha`），保证 alpha<1 文本与原版不透明度一致；
 - 位图字体（mod 自带）无法重栅格化，保留多 pass 路径，观感与原版持平。
 
 ### 4.6 动态缩放文本（伤害浮字等）
@@ -253,7 +258,7 @@ bucket ≈ 每字体族 5~7 个，而非理论上限 28 个，无需为「多份
 | P2 | 发射层接入 vertex stream + `render()` @Overwrite 切换（位图字体先行，TTF 字体暂走旧路径） | ✅ 完成 |
 | P3 | DynamicGlyphAtlas + native FreeType 扩展（批量/stroke）+ TTF 字体切换 | ✅ 完成 |
 | P4 | 旧路径拆除：drawGlyph @Overwrite、RuntimeScaledFontCache（反射）、fnt overlay、双后端降级链 | ✅ 完成（2026-08） |
-| P5 | 描边/阴影栅格化合成（多 pass → 单 pass）A/B 优化 | 未实施 |
+| P5 | 描边/阴影栅格化合成（多 pass → 单 pass）A/B 优化 | ✅ 完成（2026-08，实现随 P3 观感对齐一并落地；视觉无回归已经实机验证，automation 基准留档为可选后续） |
 
 每阶段独立可部署、可回滚（配置开关切回旧路径，开关随 P4 完成移除——已执行，`ssoptimizer.font.engine` 已删除）。
 
