@@ -1,4 +1,4 @@
-package github.kasuminova.ssoptimizer.common.combat.ai;
+package github.kasuminova.ssoptimizer.common.concurrent;
 
 import org.junit.jupiter.api.Test;
 
@@ -7,14 +7,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * AI 并行失败串行降级的契约验证：全成功零降级路径、失败任务主线程串行
+ * 并行执行器失败串行降级的契约验证：全成功零降级路径、失败任务主线程串行
  * 重跑成功（已成功任务不重跑）、重跑仍失败时重抛（不吞异常）。
  */
-class AiParallelExecutorDegradationTest {
+class FrameParallelExecutorDegradationTest {
 
     @Test
     void allSucceedRunsEachTaskOnceWithoutDegradation() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(2);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         AtomicInteger runs = new AtomicInteger();
         for (int i = 0; i < 8; i++) {
             executor.submit(runs::incrementAndGet, null);
@@ -25,7 +25,7 @@ class AiParallelExecutorDegradationTest {
 
     @Test
     void failedTaskRerunsOnCallerThreadAndSucceeds() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(2);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         AtomicInteger runs = new AtomicInteger();
         // 首次执行抛异常（并行窗口期并发读失败），主线程串行重跑成功
         executor.submit(() -> {
@@ -39,20 +39,20 @@ class AiParallelExecutorDegradationTest {
 
     @Test
     void rerunStillFailingRethrowsWithFullContext() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(1);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 1);
         // 每次执行都抛：重跑仍失败 → 必须重抛（禁止吞异常）
         executor.submit(() -> {
             throw new IllegalStateException("persistent failure");
         }, null);
         RuntimeException ex = assertThrows(RuntimeException.class, executor::awaitAll);
-        assertTrue(String.valueOf(ex.getMessage()).contains("Parallel ship AI failed"),
+        assertTrue(String.valueOf(ex.getMessage()).contains("Parallel AI failed"),
                 "重抛消息必须保留失败上下文");
         assertInstanceOf(IllegalStateException.class, ex.getCause(), "cause 必须是首个原始异常");
     }
 
     @Test
     void successfulTasksAreNotRerunWhenSiblingFails() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(2);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         AtomicInteger okRuns = new AtomicInteger();
         AtomicInteger failRuns = new AtomicInteger();
         executor.submit(okRuns::incrementAndGet, null);
@@ -62,13 +62,13 @@ class AiParallelExecutorDegradationTest {
             }
         }, null);
         assertDoesNotThrow(executor::awaitAll, "失败任务重跑成功后不得抛");
-        assertEquals(1, okRuns.get(), "已成功完成的任务不得重跑（同帧 AI 只能推进一次）");
+        assertEquals(1, okRuns.get(), "已成功完成的任务不得重跑（同帧任务只能推进一次）");
         assertEquals(2, failRuns.get(), "失败任务执行（首次失败 + 主线程重跑）各一次");
     }
 
     @Test
     void multipleFailuresAllRerunInFailureOrder() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(2);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         AtomicInteger fail1 = new AtomicInteger();
         AtomicInteger fail2 = new AtomicInteger();
         executor.submit(() -> {

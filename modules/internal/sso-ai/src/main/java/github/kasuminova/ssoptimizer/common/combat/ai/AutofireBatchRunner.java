@@ -7,6 +7,7 @@ import com.fs.starfarer.combat.CombatEngine;
 import com.fs.starfarer.combat.entities.Ship;
 import com.fs.starfarer.combat.systems.Weapon;
 import com.fs.starfarer.combat.systems.WeaponGroup;
+import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutor;
 import org.apache.log4j.Logger;
 import org.lwjgl.util.vector.Vector2f;
 
@@ -89,7 +90,7 @@ public final class AutofireBatchRunner {
      * @param amount 本帧推进时长（秒）
      */
     public static void collectAndCompute(final CombatEngine engine, final float amount) {
-        final AiParallelExecutor executor = ParallelAiDispatcher.executor();
+        final FrameParallelExecutor executor = ParallelAiDispatcher.executor();
         if (!ENABLED || executor == null) {
             return;
         }

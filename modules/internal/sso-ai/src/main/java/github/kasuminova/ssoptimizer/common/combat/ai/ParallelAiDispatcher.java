@@ -5,6 +5,8 @@ import com.fs.starfarer.combat.ai.AI;
 import com.fs.starfarer.combat.ai.BasicShipAI;
 import com.fs.starfarer.combat.ai.FighterAI;
 import com.fs.starfarer.combat.entities.Missile;
+import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutor;
+import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutorImpl;
 import github.kasuminova.ssoptimizer.mixin.accessor.FighterAIAccessor;
 import org.apache.log4j.Logger;
 
@@ -39,7 +41,7 @@ public final class ParallelAiDispatcher {
 
     private static final boolean ENABLED = Boolean.parseBoolean(
             System.getProperty(ENABLED_PROPERTY, "true"));
-    private static final AiParallelExecutor EXECUTOR = ENABLED ? createExecutor() : null;
+    private static final FrameParallelExecutor EXECUTOR = ENABLED ? createExecutor() : null;
 
     /**
      * 模组 AI/脚本全局串行锁。
@@ -64,7 +66,7 @@ public final class ParallelAiDispatcher {
      * {@link #MOD_SCRIPT_LOCK} 与 worker 上的模组脚本互斥。
      */
     public static void dispatch(AI ai, float amount) {
-        AiParallelExecutor executor = EXECUTOR;
+        FrameParallelExecutor executor = EXECUTOR;
         if (executor == null || executor.isWorkerThread()) {
             ai.advance(amount);
             return;
@@ -88,7 +90,7 @@ public final class ParallelAiDispatcher {
      * 并汇总任务异常在主线程重新抛出。
      */
     public static void awaitAll() {
-        AiParallelExecutor executor = EXECUTOR;
+        FrameParallelExecutor executor = EXECUTOR;
         if (executor == null) {
             return;
         }
@@ -106,7 +108,7 @@ public final class ParallelAiDispatcher {
      *
      * @return 执行器实例；AI 并行关闭时为 null
      */
-    static AiParallelExecutor executor() {
+    static FrameParallelExecutor executor() {
         return EXECUTOR;
     }
 
@@ -114,7 +116,7 @@ public final class ParallelAiDispatcher {
      * @return 当前线程是否为 AI 工作线程（Profiler 等共享静态状态据此守卫）
      */
     public static boolean isWorkerThread() {
-        AiParallelExecutor executor = EXECUTOR;
+        FrameParallelExecutor executor = EXECUTOR;
         return executor != null && executor.isWorkerThread();
     }
 
@@ -147,7 +149,7 @@ public final class ParallelAiDispatcher {
         return plugin != null && !plugin.getClass().getName().startsWith("com.fs.starfarer.");
     }
 
-    private static AiParallelExecutor createExecutor() {
+    private static FrameParallelExecutor createExecutor() {
         int cores = Runtime.getRuntime().availableProcessors();
         // 默认 cores-1（给主线程/渲染线程留 1 核）：相对旧默认 min(4, cores-1)
         // 在多数核的机器上显著提高并行度，缩短帧内 AI 屏障就绪时间（v45c
@@ -160,6 +162,6 @@ public final class ParallelAiDispatcher {
             threads = 1;
         }
         LOGGER.info("[SSOptimizer] Parallel ship AI enabled with " + threads + " worker thread(s)");
-        return new AiParallelExecutorImpl(threads);
+        return new FrameParallelExecutorImpl("AI", threads);
     }
 }

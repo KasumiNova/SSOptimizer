@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.common.combat.ai;
 
 import com.fs.starfarer.combat.ai.AI;
+import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutor;
 import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
 
 /**
@@ -12,10 +13,11 @@ import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
  * 恰好 MPMC 语义（多借出者无、单借出点多归还者），用 JCTools 无界数组队列，
  * 与 bridge 侧 {@code CommandPool} 同选型。
  * <p>
- * 生命周期约束：任务异常时不归还（失败任务被 {@link AiParallelExecutorImpl}
- * 记录在 failures 中等待主线程串行重跑，字段必须保持原值），直接交 GC。
+ * 生命周期约束：任务异常时不归还（失败任务被执行器记录在 failures 中等待主线程
+ * 串行重跑，字段必须保持原值），直接交 GC——见
+ * {@link FrameParallelExecutor.PooledTask} 的回收约定。
  */
-final class PooledAiTask implements Runnable {
+final class PooledAiTask implements Runnable, FrameParallelExecutor.PooledTask {
     /** 全局空闲池（借出：主线程；归还：各工作线程）。 */
     private static final MpmcUnboundedXaddArrayQueue<PooledAiTask> POOL =
             new MpmcUnboundedXaddArrayQueue<>(1024);
@@ -40,12 +42,13 @@ final class PooledAiTask implements Runnable {
     }
 
     /**
-     * 任务成功执行后归还（调用方不得再持有引用）。清空 AI 引用避免池内
-     * 滞留战斗实体堆引用。
+     * 任务成功执行后由工作线程归还（{@link FrameParallelExecutor.PooledTask} 约定）。
+     * 清空 AI 引用避免池内滞留战斗实体堆引用。
      */
-    static void release(final PooledAiTask task) {
-        task.ai = null;
-        POOL.offer(task);
+    @Override
+    public void recycle() {
+        ai = null;
+        POOL.offer(this);
     }
 
     @Override

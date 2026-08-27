@@ -145,6 +145,9 @@
 | `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关（旋转递推 + 顶点缓存 + 合批） | `common/render/shield/ShieldRenderHelper.java` |
 | `ssoptimizer.render.shield.algo` | `"recurrence"` | 护盾顶点算法：`recurrence` / `raycast`（对照实现，实测约 8 倍劣化） | `common/render/shield/ShieldArcGeometry.java` |
 | `ssoptimizer.render.shipmasktess.enable` | `true` | Ship 蒙版三角化缓存开关（耳切 + WeakHashMap 缓存；false 走原 GLU 路径） | `common/render/tessellation/ShipMaskTessellationToggle.java` |
+| `ssoptimizer.render.contrail.lod` | `true` | 战役尾迹视口距离 LOD 总开关（false 时视口外舰队尾迹照常渲染，回退原版行为） | `common/render/campaign/CampaignFleetPerformanceHelper.java` |
+| `ssoptimizer.render.contrail.lod.margin` | `3000` | 尾迹 LOD 视口外扩边距：舰队位置超出可视矩形该边距时整条尾迹跳过渲染；默认远大于尾迹实际长度，屏幕边缘无可见截断 | `common/render/campaign/CampaignFleetPerformanceHelper.java` |
+| `ssoptimizer.render.contrail.maxpoints` | `256`（≤0 关闭上限） | 单条战役尾迹点数上限：超限后 `ContrailEngineV2.addPoint` 丢弃新点（旧点照常老化移除），约束 hyperspace/冲刺补点膨胀；稳态百级点数不触发 | `common/render/campaign/CampaignFleetPerformanceHelper.java`，`mixin/render/ContrailEngineV2Mixin.java` |
 | `ssoptimizer.textdiagnostics.enable` | `false` | 启用 v2 文本渲染诊断统计（render 接管的 pass/quad 聚合） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.renderthread.glErrorProbe` | `"off"` | RT 管线 GL 错误探针：`frame`（每帧末尾排空滞留 glGetError 并记 WARN）/ `command`（逐命令排空，重，仅定位用；该模式下录制侧把命令包装为 `ProbeSiteCommand` 捕获录制点堆栈，出错时输出去重后的录制点）。用于定位「滞留 GL 错误被模组健康校验（如 BoxUtil aux 线程 glInit）读到」类问题 | `common/render/queue/RenderQueueImpl.java`（`GL_ERROR_PROBE_PROPERTY`）、`ProbeSiteCommand.java` |
@@ -154,6 +157,14 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.collisionGridBvh` | `true` | CollisionGrid 扁平 BVH 查询优化（false 回退 fastutil 网格收集路径） | `common/combat/ai/grid/CollisionGridBvhImpl.java` |
+
+## 战役经济
+
+| 属性 | 默认值 | 作用 | 读取位置 |
+|---|---|---|---|
+| `ssoptimizer.econ.advance.interval` | `2` | 市场推进降频间隔：每 N 次经济推进以累计 dt 转发一次真实 `Market.advance`（1=逐帧转发即关闭；非法值按 1 处理并记 WARN 一次） | `common/campaign/econ/MarketAdvanceThrottleHelper.java` |
+| `ssoptimizer.econ.advance.parallel` | `false` | 市场级并行化：降频判定通过的 NPC 市场提交工作池并行推进，玩家市场留主线程内联（SharedData 月报 / marketShareData / 构建事件三处共享写均以 isPlayerOwned 为门），`Economy.advance` RETURN 处帧内屏障；失败任务屏障处主线程串行重跑降级。模组自定义条件/产业/子市场插件若写跨市场全局状态属风险敞口 | `common/campaign/econ/MarketAdvanceParallelDispatcher.java` |
+| `ssoptimizer.econ.advance.parallel.threads` | `cores-1`（下限 1） | 市场并行工作线程数（仅并行开启时生效，与 AI 并行池同策略） | `common/campaign/econ/MarketAdvanceParallelDispatcher.java` |
 
 ## IME 输入法
 

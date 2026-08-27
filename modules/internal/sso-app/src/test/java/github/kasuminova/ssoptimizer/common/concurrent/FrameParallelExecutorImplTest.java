@@ -1,8 +1,7 @@
-package github.kasuminova.ssoptimizer.common.combat.ai;
+package github.kasuminova.ssoptimizer.common.concurrent;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -10,11 +9,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class AiParallelExecutorImplTest {
+class FrameParallelExecutorImplTest {
 
     @Test
     void runsTasksOnWorkerThreads() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(2);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         ConcurrentLinkedQueue<String> threadNames = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < 8; i++) {
             executor.submit(() -> threadNames.add(Thread.currentThread().getName()), null);
@@ -27,7 +26,7 @@ class AiParallelExecutorImplTest {
 
     @Test
     void sameStripeKeyRunsOnSameThread() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(4);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 4);
         Object key = new Object();
         ConcurrentLinkedQueue<String> threadNames = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < 16; i++) {
@@ -39,7 +38,7 @@ class AiParallelExecutorImplTest {
 
     @Test
     void distinctStripeKeysMaySpreadAcrossWorkers() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(2);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         ConcurrentLinkedQueue<String> threadNames = new ConcurrentLinkedQueue<>();
         CountDownLatch entered = new CountDownLatch(2);
         // 确定性选择落在不同 worker 的两个分组键（身份哈希奇偶各一）
@@ -75,7 +74,7 @@ class AiParallelExecutorImplTest {
 
     @Test
     void awaitAllRethrowsTaskFailureOnCallerThread() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(2);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         AtomicInteger completed = new AtomicInteger();
         executor.submit(completed::incrementAndGet, null);
         executor.submit(() -> {
@@ -83,7 +82,7 @@ class AiParallelExecutorImplTest {
         }, null);
         executor.submit(completed::incrementAndGet, null);
         RuntimeException ex = assertThrows(RuntimeException.class, executor::awaitAll);
-        assertTrue(String.valueOf(ex.getMessage()).contains("Parallel ship AI failed"));
+        assertTrue(String.valueOf(ex.getMessage()).contains("Parallel AI failed"));
         assertInstanceOf(IllegalStateException.class, ex.getCause());
         assertEquals(2, completed.get());
         // 异常清理后下一帧可正常工作
@@ -94,7 +93,7 @@ class AiParallelExecutorImplTest {
 
     @Test
     void isWorkerThreadOnlyTrueOnWorkers() {
-        AiParallelExecutorImpl executor = new AiParallelExecutorImpl(1);
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 1);
         assertFalse(executor.isWorkerThread());
         boolean[] onWorker = {false};
         executor.submit(() -> onWorker[0] = executor.isWorkerThread(), null);
@@ -103,7 +102,51 @@ class AiParallelExecutorImplTest {
     }
 
     @Test
+    void successfulPooledTasksAreRecycledOnWorker() {
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 1);
+        AtomicInteger recycled = new AtomicInteger();
+        executor.submit(new TrackingPooledTask(recycled, false), null);
+        executor.awaitAll();
+        assertEquals(1, recycled.get(), "成功任务必须由工作线程归还池");
+    }
+
+    @Test
+    void failedPooledTasksAreNotRecycledUntilRerun() {
+        FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 1);
+        AtomicInteger recycled = new AtomicInteger();
+        // 首次执行抛异常：失败任务不归还（主线程重跑时字段必须保持原值）；
+        // 重跑在主线程直接 run()，同样不触发 recycle
+        executor.submit(new TrackingPooledTask(recycled, true), null);
+        assertDoesNotThrow(executor::awaitAll);
+        assertEquals(0, recycled.get(), "失败任务不得归还池");
+    }
+
+    @Test
     void rejectsInvalidThreadCount() {
-        assertThrows(IllegalArgumentException.class, () -> new AiParallelExecutorImpl(0));
+        assertThrows(IllegalArgumentException.class, () -> new FrameParallelExecutorImpl("AI", 0));
+    }
+
+    /** 池化任务测试桩：记录 recycle 次数；failFirst 时首次 run 抛异常。 */
+    private static final class TrackingPooledTask implements Runnable, FrameParallelExecutor.PooledTask {
+        private final AtomicInteger recycled;
+        private final boolean failFirst;
+        private int runs;
+
+        private TrackingPooledTask(final AtomicInteger recycled, final boolean failFirst) {
+            this.recycled = recycled;
+            this.failFirst = failFirst;
+        }
+
+        @Override
+        public void run() {
+            if (failFirst && runs++ == 0) {
+                throw new IllegalStateException("simulated concurrent failure");
+            }
+        }
+
+        @Override
+        public void recycle() {
+            recycled.incrementAndGet();
+        }
     }
 }

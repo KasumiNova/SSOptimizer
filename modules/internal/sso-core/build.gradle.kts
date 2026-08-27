@@ -8,6 +8,8 @@ dependencies {
     api(project(":modules:api:sso-api"))
     // BenchmarkProfiler 的采样接口（最终由 app 装配 shade 进 jar）
     implementation("tools.profiler:async-profiler:4.5")
+    // 帧内并行执行器（common/concurrent/FrameParallelExecutorImpl）的 MPSC 任务队列
+    implementation("org.jctools:jctools-core:4.0.5")
 }
 
 tasks.named<JavaCompile>("compileJava") {

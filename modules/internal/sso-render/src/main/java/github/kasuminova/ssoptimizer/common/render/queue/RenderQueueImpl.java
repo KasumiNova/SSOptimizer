@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * <p>
  * 失败传播：渲染线程上帧命令抛异常时记日志、中止本帧剩余命令（GL 状态已不可信），
  * 异常随帧 Future 在下一次 {@link #swapFramesAndSync()} 等待上一帧时向主线程重抛
- * （语义参考 common/combat/ai/AiParallelExecutorImpl 的失败收集模式，载体从
+ * （语义参考 common/concurrent/FrameParallelExecutorImpl 的失败收集模式，载体从
  * 失败列表换成帧 Future）。
  * <p>
  * 并发要点：{@link #frameLock} 只保护「当前帧指针 + 提交」这一小段临界区，

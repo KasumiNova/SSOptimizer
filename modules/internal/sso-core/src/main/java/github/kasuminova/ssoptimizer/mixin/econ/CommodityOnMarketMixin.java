@@ -6,6 +6,7 @@ import github.kasuminova.ssoptimizer.common.campaign.econ.CommodityEventModRefre
 import github.kasuminova.ssoptimizer.common.campaign.econ.CommodityEventModRefreshHelper;
 import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,8 +25,50 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(targets = GameMixinSignatures.CommodityOnMarket.TARGET_CLASS)
 public abstract class CommodityOnMarketMixin implements CommodityEventModRefreshBridge {
+    @Shadow
+    private MutableStatWithTempMods available;
+
     @Unique
     private boolean ssoptimizer$eventModDirty;
+
+    /**
+     * 上次市场推进记录的修改代际签名（四个统计各一）。
+     * <p>
+     * 读档后 {@code ssoptimizer$tradeModSignatureInitialized} 为 JVM 默认值
+     * {@code false}，首次推进视为签名变化，置脏一次并重建记录。
+     */
+    @Unique
+    private boolean ssoptimizer$tradeModSignatureInitialized;
+    @Unique
+    private int     ssoptimizer$sigAvailableGen;
+    @Unique
+    private int     ssoptimizer$sigTradeModGen;
+    @Unique
+    private int     ssoptimizer$sigTradeModPlusGen;
+    @Unique
+    private int     ssoptimizer$sigTradeModMinusGen;
+
+    /**
+     * {@code reapplyEventMod()} 空操作快速路径。
+     * <p>
+     * 动机：combinedTradeQuantity 为 0 且 {@code available} 上无 {@code eMod} 时，
+     * 原版方法体只做一次无副作用的 {@code unmodifyFlat("eMod")}，直接跳过。<br>
+     * 注意：此处必须走 {@link #available} 字段与 {@code getCombinedTradeModQuantity()}，
+     * 不得调用 {@code getAvailableStat()}——其 HEAD 注入的 ensureFresh 会在脏状态下
+     * 回调 {@code reapplyEventMod()} 造成无限递归。
+     */
+    @Inject(method = GameMixinSignatures.CommodityOnMarket.REAPPLY_EVENT_MOD,
+            at = @At("HEAD"), cancellable = true, remap = false)
+    private void ssoptimizer$skipNoopReapply(final CallbackInfo callbackInfo) {
+        final boolean hasEventMod = available.getFlatMods().get("eMod") != null;
+        if (!CommodityEventModRefreshHelper.shouldSkipReapply(
+                ((CommodityOnMarket) (Object) this).getCombinedTradeModQuantity(), hasEventMod)) {
+            return;
+        }
+
+        ssoptimizer$eventModDirty = false;
+        callbackInfo.cancel();
+    }
 
     @Redirect(
             method = GameMixinSignatures.CommodityOnMarket.ADD_TRADE_MOD,
@@ -82,5 +125,23 @@ public abstract class CommodityOnMarketMixin implements CommodityEventModRefresh
     @Override
     public void ssoptimizer$reapplyEventModNow() {
         ((CommodityOnMarket) (Object) this).reapplyEventMod();
+    }
+
+    @Override
+    public boolean ssoptimizer$updateTradeModSignatureAndCheckChanged(
+            final int availableGen, final int tradeModGen,
+            final int tradeModPlusGen, final int tradeModMinusGen) {
+        final boolean changed = CommodityEventModRefreshHelper.isTradeModSignatureChanged(
+                ssoptimizer$tradeModSignatureInitialized,
+                ssoptimizer$sigAvailableGen, ssoptimizer$sigTradeModGen,
+                ssoptimizer$sigTradeModPlusGen, ssoptimizer$sigTradeModMinusGen,
+                availableGen, tradeModGen, tradeModPlusGen, tradeModMinusGen);
+
+        ssoptimizer$tradeModSignatureInitialized = true;
+        ssoptimizer$sigAvailableGen = availableGen;
+        ssoptimizer$sigTradeModGen = tradeModGen;
+        ssoptimizer$sigTradeModPlusGen = tradeModPlusGen;
+        ssoptimizer$sigTradeModMinusGen = tradeModMinusGen;
+        return changed;
     }
 }

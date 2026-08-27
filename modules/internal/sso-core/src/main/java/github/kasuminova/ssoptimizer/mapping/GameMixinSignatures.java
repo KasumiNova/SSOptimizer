@@ -97,6 +97,38 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 经济体市场推进降频 + 并行调度 Mixin 签名常量。
+     * <p>
+     * {@code Economy.advance(float)} 先执行 reach 经济 stepper（保持在循环外原样执行），
+     * 再遍历 {@code getMarketsCopy()} 快照逐个调用 {@code MarketAPI.advance(amount)}，
+     * Mixin redirect 循环内的这一个调用点做降频/并行分发，并在 RETURN 注入帧内屏障。
+     */
+    public static final class Economy {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.econ.Economy";
+        public static final String ADVANCE = "advance(F)V";
+        public static final String MARKET_ADVANCE_TARGET =
+                "Lcom/fs/starfarer/api/campaign/econ/MarketAPI;advance(F)V";
+
+        private Economy() {
+        }
+    }
+
+    /**
+     * {@code MutableStat} 修改代际 Mixin 签名常量。
+     * <p>
+     * redirect 目标方法列表内联于 {@code MutableStatMutationMixin} 注解
+     * （数组无编译期常量表达式），其完备性由 sso-app 的锚点测试核验。
+     */
+    public static final class MutableStat {
+        public static final String TARGET_CLASS = "com.fs.starfarer.api.combat.MutableStat";
+        public static final String NEEDS_RECOMPUTE_FIELD =
+                "Lcom/fs/starfarer/api/combat/MutableStat;needsRecompute:Z";
+
+        private MutableStat() {
+        }
+    }
+
+    /**
      * 声音管理器 Mixin 签名常量。
      * <p>
      * 返回值中的 {@code sound/Audio}（linux 混淆名 {@code sound/O0OO}）已在映射表中统一命名，
