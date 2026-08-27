@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
+import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedInputStream;
@@ -21,8 +22,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -34,6 +33,11 @@ import java.util.stream.Stream;
  * （相对路径 → 文件元数据 + 目录 → 直接子项），之后的 exists/open/list 全部转为
  * 内存查找；同时对 {@code data/} 下的小文件做异步预读，文本类资源读取不再触碰磁盘。
  * 快照构建失败的根目录（不可读等）标记为未索引，调用方回退直接文件操作。
+ * <p>
+ * 线程模型（Wave 3 起）：后台任务（快照预构建、预读）提交 {@link VtWorkers} 虚拟线程。
+ * 原固定池的并行上限只约束平台线程数，虚拟线程下无意义，故移除且不设闸门——
+ * 并发任务数天然按资源根目录数封项（每根目录一个快照任务 + 一个串行预读任务），
+ * 预读总量另有 {@code ssoptimizer.spec.prefetch.mb} 内存预算约束。
  */
 public final class ResourceIndex {
     private static final Logger LOGGER = Logger.getLogger(ResourceIndex.class);
@@ -51,12 +55,6 @@ public final class ResourceIndex {
     private static final ConcurrentMap<String, RootSnapshot> SNAPSHOTS        = new ConcurrentHashMap<>();
     private static final ConcurrentMap<String, byte[]>       PREFETCHED       = new ConcurrentHashMap<>();
     private static final AtomicLong                          PREFETCHED_BYTES = new AtomicLong();
-    private static final ExecutorService                     PREFETCH_POOL    = Executors.newFixedThreadPool(
-            Math.max(2, Runtime.getRuntime().availableProcessors() / 2), runnable -> {
-                Thread thread = new Thread(runnable, "SSOptimizer-ResourcePrefetch");
-                thread.setDaemon(true);
-                return thread;
-            });
 
     private ResourceIndex() {
     }
@@ -134,7 +132,7 @@ public final class ResourceIndex {
             if (root == null) {
                 continue;
             }
-            PREFETCH_POOL.submit(() -> snapshot(root));
+            submitBackground("snapshot warmup " + root.getAbsolutePath(), () -> snapshot(root));
         }
     }
 
@@ -264,7 +262,7 @@ public final class ResourceIndex {
             return;
         }
 
-        PREFETCH_POOL.submit(() -> {
+        submitBackground("prefetch " + snapshot.entries().size() + " entries", () -> {
             for (final Entry entry : eligible) {
                 final long remaining = budget - PREFETCHED_BYTES.get();
                 if (remaining < entry.size()) {
@@ -279,6 +277,22 @@ public final class ResourceIndex {
                 } catch (final IOException e) {
                     LOGGER.warn("[SSOptimizer] Failed to prefetch " + entry.relPath() + ": " + e.getMessage());
                 }
+            }
+        });
+    }
+
+    /**
+     * 提交后台任务到 {@link VtWorkers}：任务体内部已逐文件记 WARN，此包装兜底
+     * 捕获未预期的 RuntimeException/Error 并记 ERROR 后原样重抛（Future 保留失败状态），
+     * 保证后台失败不静默。
+     */
+    private static void submitBackground(final String description, final Runnable task) {
+        VtWorkers.submit(() -> {
+            try {
+                task.run();
+            } catch (final RuntimeException | Error e) {
+                LOGGER.error("[SSOptimizer] ResourceIndex background task failed: " + description, e);
+                throw e;
             }
         });
     }

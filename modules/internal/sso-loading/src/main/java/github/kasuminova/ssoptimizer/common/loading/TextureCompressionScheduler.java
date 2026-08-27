@@ -35,6 +35,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * 开关 {@code ssoptimizer.texcompress.deferredPrepass}（默认 true）。
  * <p>
  * native 压缩库不可用时调度器整体停用（记一次 info），未压缩路径不受影响。
+ * <p>
+ * 线程资源统合（Wave 3）有意<b>不迁移</b>到虚拟线程：worker 依赖
+ * {@code Thread.MIN_PRIORITY} 调度优先级与任务间 25ms 让步语义压低对加载主路径的
+ * CPU 争抢，虚拟线程不支持优先级且让步语义不同，迁移会丢失该保护。
  */
 public final class TextureCompressionScheduler {
     static final String QUALITY_PROPERTY = "ssoptimizer.texcompress.quality";
@@ -345,6 +349,8 @@ public final class TextureCompressionScheduler {
             return;
         }
         if (HOOK_REGISTERED.compareAndSet(false, true)) {
+            // shutdown hook 有意保留平台线程（Wave 3 不迁移）：JVM 关停阶段虚拟线程
+            // 调度器已停止接受任务，hook 必须是平台线程
             Runtime.getRuntime().addShutdownHook(new Thread(TextureCompressionScheduler::shutdown));
         }
         final Thread worker = new Thread(TextureCompressionScheduler::runWorker, THREAD_NAME);

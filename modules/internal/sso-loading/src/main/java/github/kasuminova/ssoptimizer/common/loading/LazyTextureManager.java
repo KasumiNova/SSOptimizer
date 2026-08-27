@@ -172,6 +172,7 @@ public final class LazyTextureManager {
 
         LOGGER.info("[SSOptimizer] Texture composition TSV export enabled: " + resolveReportPath(configured));
 
+        // shutdown hook 有意保留平台线程（Wave 3 不迁移）：关停阶段虚拟线程调度器已停用
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 final Path exported = exportTextureCompositionReport(configured);

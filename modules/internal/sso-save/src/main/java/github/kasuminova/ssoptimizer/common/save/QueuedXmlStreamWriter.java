@@ -83,9 +83,10 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
             freeQueue.offer(new CommandBatch(effectiveBatchSize));
         }
 
-        this.workerThread = Thread.ofPlatform()
+        // Wave 3 起后台写线程改为虚拟线程：写循环以 parkNanos 退避等待批次，
+        // 阻塞不占载体线程；join-on-close 与 awaitBarrier 屏障语义不变
+        this.workerThread = Thread.ofVirtual()
                                   .name("ssoptimizer-txw2-queued-writer")
-                                  .daemon(true)
                                   .start(this::runLoop);
     }
 

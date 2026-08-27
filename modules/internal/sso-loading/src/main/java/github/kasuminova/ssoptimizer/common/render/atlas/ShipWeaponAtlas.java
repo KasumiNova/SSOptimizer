@@ -8,6 +8,7 @@ import com.fs.starfarer.loading.specs.MissileSpec;
 import com.fs.starfarer.loading.specs.ProjectileWeaponSpec;
 import com.fs.starfarer.loading.specs.ShipHullSpec;
 import com.fs.util.ResourceLoader;
+import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
 import github.kasuminova.ssoptimizer.common.loading.GlLedgerHooks;
 import github.kasuminova.ssoptimizer.common.loading.GlMemoryLedger;
 import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
@@ -29,9 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 
 /**
  * 舰船/武器贴图动态图集。
@@ -265,36 +265,37 @@ public final class ShipWeaponAtlas {
 
     /**
      * 并行解码全部贴图。解码失败的单张贴图记警告并跳过（不入图集，回退原始渲染）。
+     * <p>
+     * 线程模型（Wave 3 起）：解码任务跑在 {@link VtWorkers} 虚拟线程上，以 Semaphore
+     * 闸门保留原固定池 {@code min(8, cores)} 的并发上限——每张在途解码持有一份
+     * 解码中/已解码的 {@link BufferedImage}（大图单张可达数十 MB），闸门约束的是
+     * 在途堆内存与 PNG 解码 CPU 占用，而非平台线程数。
      */
     private static Map<String, BufferedImage> decodeAll(final Set<String> paths) {
         final Map<String, BufferedImage> images = new ConcurrentHashMap<>();
-        final int threads = Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors()));
-        final ExecutorService pool = Executors.newFixedThreadPool(threads, runnable -> {
-            Thread thread = new Thread(runnable, "SSOptimizer-Atlas-Decode");
-            thread.setDaemon(true);
-            return thread;
-        });
-        try {
-            final List<Future<?>> futures = new ArrayList<>(paths.size());
-            for (String path : paths) {
-                futures.add(pool.submit(() -> {
+        final Semaphore gate = new Semaphore(Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors())));
+        final List<Future<?>> futures = new ArrayList<>(paths.size());
+        for (String path : paths) {
+            futures.add(VtWorkers.submit(() -> {
+                try {
+                    gate.acquire();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("[SSOptimizer] Atlas decode interrupted", e);
+                }
+                try {
                     final BufferedImage image = decode(path);
                     if (image != null) {
                         images.put(path, image);
                     }
-                }));
-            }
-            for (Future<?> future : futures) {
-                future.get();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("[SSOptimizer] Atlas decode interrupted", e);
-        } catch (java.util.concurrent.ExecutionException e) {
-            throw new IllegalStateException("[SSOptimizer] Atlas decode failed", e.getCause());
-        } finally {
-            pool.shutdown();
+                } finally {
+                    gate.release();
+                }
+            }));
         }
+        // awaitAll 逐个 get 等待全部完成；decode 内部已兜底单图失败（记警告跳过），
+        // 走到这里的失败即中断等未预期异常，原样以 RuntimeException 传播
+        VtWorkers.awaitAll(futures.toArray(new Future[0]));
         return images;
     }
 

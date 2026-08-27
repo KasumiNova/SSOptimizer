@@ -37,6 +37,9 @@ import java.util.stream.Collectors;
  * {@link SuspendFrameException}，渲染线程不阻塞——剩余命令打包成续跑任务
  * requeue 到队尾，本帧正常完成释放主线程（否则 BoxUtil 的 Phaser 协调会与
  * 「main 等帧完成」形成三方死锁）；fence 信号到达后续跑任务会合执行余下命令。
+ * <p>
+ * 线程资源统合（Wave 3）有意<b>不迁移</b>到虚拟线程：渲染线程与 GL 上下文
+ * 有固定亲和（LWJGL 上下文绑定平台线程），且须为具名的单一常驻线程。
  */
 public final class RenderQueueImpl implements RenderQueue {
     /** 渲染线程名，profiler / 日志诊断用。 */

@@ -6,9 +6,8 @@ import com.fs.starfarer.combat.ai.BasicShipAI;
 import com.fs.starfarer.combat.ai.FighterAI;
 import com.fs.starfarer.combat.entities.Missile;
 import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutor;
-import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutorImpl;
+import github.kasuminova.ssoptimizer.common.concurrent.SharedFrameWorkers;
 import github.kasuminova.ssoptimizer.mixin.accessor.FighterAIAccessor;
-import org.apache.log4j.Logger;
 
 /**
  * 并行舰船 AI 调度门面，供 {@code CombatEngineAiParallelMixin} 织入
@@ -27,21 +26,16 @@ import org.apache.log4j.Logger;
  * 私有 {@code wing} 字段，同编队（共享 {@code FighterWing}）的战机任务固定到同一
  * 工作线程串行执行。
  * <p>
- * 开关：{@code -Dssoptimizer.ai.parallel=false} 运行期整体关闭（全部内联串行）；
- * {@code -Dssoptimizer.ai.parallel.threads=N} 指定工作线程数，
- * 默认 {@code cores-1}（下限 1），保留 1 个核给主线程/渲染线程，避免
- * oversubscription（Worker 数明显超过物理核数时上下文切换加剧屏障尾延迟，
- * v45c profile：AI 屏障 awaitAll 1,540 样本 + 自动开火屏障 777 样本）。
+ * 开关：{@code -Dssoptimizer.ai.parallel=false} 运行期整体关闭（全部内联串行）。
+ * 工作线程数由共享池统一属性 {@code ssoptimizer.workers.threads} 配置，
+ * 见 {@link SharedFrameWorkers}。
  */
 public final class ParallelAiDispatcher {
     public static final String ENABLED_PROPERTY = "ssoptimizer.ai.parallel";
-    public static final String THREADS_PROPERTY = "ssoptimizer.ai.parallel.threads";
-
-    private static final Logger LOGGER = Logger.getLogger(ParallelAiDispatcher.class);
 
     private static final boolean ENABLED = Boolean.parseBoolean(
             System.getProperty(ENABLED_PROPERTY, "true"));
-    private static final FrameParallelExecutor EXECUTOR = ENABLED ? createExecutor() : null;
+    private static final FrameParallelExecutor EXECUTOR = ENABLED ? SharedFrameWorkers.get() : null;
 
     /**
      * 模组 AI/脚本全局串行锁。
@@ -102,7 +96,7 @@ public final class ParallelAiDispatcher {
     }
 
     /**
-     * 供 {@link AutofireBatchRunner} 等同包批处理复用底层执行器。
+     * 供 {@link AutofireBatchRunner} 等同包批处理复用底层执行器（共享池实例）。
      * 注意：直接使用返回执行器的 {@code awaitAll} 不会推进线程本地帧号，
      * 帧号推进仅由 {@link #awaitAll()} 负责。
      *
@@ -113,11 +107,12 @@ public final class ParallelAiDispatcher {
     }
 
     /**
-     * @return 当前线程是否为 AI 工作线程（Profiler 等共享静态状态据此守卫）
+     * 工作线程守卫：当前线程是否为共享池工作线程（Profiler 等共享静态状态据此守卫）。
+     * 委托 {@link SharedFrameWorkers#isWorkerThread()}——AI 并行关闭而共享池已被
+     * 其他域（如市场推进）创建时，守卫仍能识别工作线程。
      */
     public static boolean isWorkerThread() {
-        FrameParallelExecutor executor = EXECUTOR;
-        return executor != null && executor.isWorkerThread();
+        return SharedFrameWorkers.isWorkerThread();
     }
 
     /**
@@ -147,21 +142,5 @@ public final class ParallelAiDispatcher {
             return false;
         }
         return plugin != null && !plugin.getClass().getName().startsWith("com.fs.starfarer.");
-    }
-
-    private static FrameParallelExecutor createExecutor() {
-        int cores = Runtime.getRuntime().availableProcessors();
-        // 默认 cores-1（给主线程/渲染线程留 1 核）：相对旧默认 min(4, cores-1)
-        // 在多数核的机器上显著提高并行度，缩短帧内 AI 屏障就绪时间（v45c
-        // profile：屏障 awaitAll 1,540 + 自动开火 777 样本）；cores-1 不超过
-        // 物理核数，不引入 oversubscription 的上下文切换开销。系统属性覆盖保留。
-        int threads = Integer.parseInt(
-                System.getProperty(THREADS_PROPERTY, String.valueOf(Math.max(1, cores - 1))));
-        if (threads < 1) {
-            LOGGER.warn("[SSOptimizer] Invalid " + THREADS_PROPERTY + "=" + threads + ", falling back to 1");
-            threads = 1;
-        }
-        LOGGER.info("[SSOptimizer] Parallel ship AI enabled with " + threads + " worker thread(s)");
-        return new FrameParallelExecutorImpl("AI", threads);
     }
 }

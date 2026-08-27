@@ -4,12 +4,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.lang.reflect.Field;
 import java.io.StringWriter;
 import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QueuedXmlStreamWriterTest {
@@ -122,6 +126,60 @@ class QueuedXmlStreamWriterTest {
             Thread.sleep(10L);
         }
         return !workerThread.isAlive();
+    }
+
+    @Test
+    void workerThreadIsVirtual() throws Exception {
+        StringWriter output = new StringWriter();
+        QueuedXmlStreamWriter writer = new QueuedXmlStreamWriter(
+                XMLOutputFactory.newFactory().createXMLStreamWriter(output),
+                64,
+                16
+        );
+
+        // Wave 3 迁移验收：后台写线程必须为虚拟线程
+        assertTrue(extractWorkerThread(writer).isVirtual(),
+                "queued writer worker thread should be a virtual thread");
+
+        writer.writeStartDocument();
+        writer.writeStartElement("root");
+        writer.writeEndElement();
+        writer.writeEndDocument();
+        writer.close();
+    }
+
+    @Test
+    void workerFailurePropagatesAtFlushBarrier() throws Exception {
+        // 底层输出立即失败的 Writer：后台线程执行首个批次时失败，
+        // 失败必须经 awaitBarrier/checkFailure 在前台屏障点抛出
+        final Writer failingOutput = new Writer() {
+            @Override
+            public void write(final char[] cbuf, final int off, final int len) throws IOException {
+                throw new IOException("simulated backend failure");
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        QueuedXmlStreamWriter writer = new QueuedXmlStreamWriter(
+                XMLOutputFactory.newFactory().createXMLStreamWriter(failingOutput),
+                64,
+                16
+        );
+
+        writer.writeStartDocument();
+
+        // awaitBarrier 语义：后台失败必须在下一个前台屏障点（flush）抛出，不得静默
+        assertThrows(XMLStreamException.class, writer::flush,
+                "后台写线程失败必须在 flush 屏障处向前台抛出");
+        // 失败状态粘滞：后续 close 也必须抛出同一失败而非假装成功
+        assertThrows(XMLStreamException.class, writer::close,
+                "失败后的 close 必须继续抛出失败而非静默关闭");
     }
 
     private static Thread extractWorkerThread(final QueuedXmlStreamWriter writer) throws Exception {

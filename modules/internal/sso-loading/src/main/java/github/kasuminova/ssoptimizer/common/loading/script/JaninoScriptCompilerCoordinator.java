@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.common.loading.script;
 
 import github.kasuminova.ssoptimizer.asm.render.RenderThreadRedirector;
+import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 import org.codehaus.janino.JavaSourceClassLoader;
@@ -36,13 +37,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /**
@@ -224,17 +223,18 @@ public final class JaninoScriptCompilerCoordinator {
         final Path cacheDirectory = cacheDirectory();
         final File[] sourcePath = sourceRoots.toArray(File[]::new);
         final ClassLoader parentLoader = loader.getParent();
-        final ThreadFactory threadFactory = warmupThreadFactory();
-        final ExecutorService executor = Executors.newFixedThreadPool(parallelism, threadFactory);
+        // Wave 3 起预热任务跑在 VtWorkers 虚拟线程上；Semaphore 闸门保留原固定池的
+        // 并发上限语义：每个预热任务持有一个独立的 WarmupJavaSourceClassLoader 编译器
+        // 实例，无闸门时数百脚本同时编译会造成明显的堆内存尖峰
+        final Semaphore gate = new Semaphore(parallelism);
 
         state.setFuture(CompletableFuture.allOf(discoveredClasses.stream()
                 .map(className -> CompletableFuture.runAsync(
-                        () -> warmupClass(parentLoader, sourcePath, cacheDirectory, className),
-                        executor
+                        () -> warmupClassGated(gate, parentLoader, sourcePath, cacheDirectory, className),
+                        VtWorkers::submit
                 ))
                 .toArray(CompletableFuture[]::new))
                 .whenComplete((ignored, throwable) -> {
-                    executor.shutdown();
                     if (throwable != null) {
                         LOGGER.debug("[SSOptimizer] Janino script cache warmup finished with suppressed failures", throwable);
                     }
@@ -264,6 +264,25 @@ public final class JaninoScriptCompilerCoordinator {
         IN_MEMORY_CACHE.clear();
     }
 
+    /** 闸门许可内执行单类预热；等待许可被中断时恢复中断标记并终止该任务。 */
+    private static void warmupClassGated(final Semaphore gate,
+                                         final ClassLoader parentLoader,
+                                         final File[] sourcePath,
+                                         final Path cacheDirectory,
+                                         final String className) {
+        try {
+            gate.acquire();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CompletionException(e);
+        }
+        try {
+            warmupClass(parentLoader, sourcePath, cacheDirectory, className);
+        } finally {
+            gate.release();
+        }
+    }
+
     private static void warmupClass(final ClassLoader parentLoader,
                                     final File[] sourcePath,
                                     final Path cacheDirectory,
@@ -274,7 +293,10 @@ public final class JaninoScriptCompilerCoordinator {
                     sourcePath
             );
             generateBytecodes(worker, className);
-        } catch (ClassNotFoundException ignored) {
+        } catch (ClassNotFoundException e) {
+            // 单个脚本编译失败（语法错误/依赖缺失等）属预热常态：该脚本回退主线程按需编译，
+            // 记 debug 日志后继续预热其余脚本
+            LOGGER.debug("[SSOptimizer] Janino warmup skipped script " + className + ": " + e.getMessage());
         }
     }
 
@@ -465,7 +487,8 @@ public final class JaninoScriptCompilerCoordinator {
                 final Method method = current.getDeclaredMethod(ORIGINAL_METHOD_NAME, String.class);
                 method.setAccessible(true);
                 return method;
-            } catch (NoSuchMethodException ignored) {
+            } catch (NoSuchMethodException e) {
+                // 本类未声明原始生成方法，继续向父类查找
             }
         }
         throw new IllegalStateException("Original Janino bytecode generator method is unavailable");
@@ -529,7 +552,8 @@ public final class JaninoScriptCompilerCoordinator {
                      .map(relativePath -> relativePath.replace(File.separatorChar, '.').replace('/', '.'))
                      .filter(className -> !className.isBlank())
                      .forEach(classNames::add);
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                LOGGER.debug("[SSOptimizer] 遍历脚本源目录失败: " + rootPath + ": " + e.getMessage(), e);
             }
         }
 
@@ -574,16 +598,6 @@ public final class JaninoScriptCompilerCoordinator {
         final int configured = Integer.getInteger(PARALLELISM_PROPERTY,
                 Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
         return Math.max(1, configured);
-    }
-
-    private static ThreadFactory warmupThreadFactory() {
-        final AtomicInteger threadCounter = new AtomicInteger(1);
-        return runnable -> {
-            final Thread thread = new Thread(runnable,
-                    "SSOptimizer-JaninoWarmup-" + threadCounter.getAndIncrement());
-            thread.setDaemon(true);
-            return thread;
-        };
     }
 
     private static WarmupState warmupState(final JavaSourceClassLoader loader) {

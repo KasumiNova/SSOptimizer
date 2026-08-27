@@ -24,6 +24,14 @@ class MarketAdvanceParallelDispatcherTest {
     private static final float DT = 0.1F;
 
     @Test
+    void executorIsNullWhenParallelDisabledByDefault() {
+        // 开关默认关闭（ssoptimizer.econ.advance.parallel 默认 false）：
+        // 本域不触碰共享池，与 AI 开关（默认开启）相互独立
+        assertNull(MarketAdvanceParallelDispatcher.executor(),
+                "econ.advance.parallel 默认关闭时执行器必须为 null");
+    }
+
+    @Test
     void disabledParallelIsFrameByFrameIdenticalToWave6Throttle() {
         // 并行关闭（executor=null）时，NPC 与玩家市场的推进序列必须与
         // 纯降频 helper 完全一致——零行为变化

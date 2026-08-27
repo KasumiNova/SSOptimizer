@@ -245,15 +245,17 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     // ------------------------------------------------------------------
 
     /**
-     * 启动 CJK 常用字预热（daemon 线程，一次性）：遍历基底 fnt 的非空字形，
+     * 启动 CJK 常用字预热（虚拟线程，一次性）：遍历基底 fnt 的非空字形，
      * 过滤 ASCII 可打印与 CJK 区间（0x2E80..0x9FFF / 0x3000..0x303F / 0xFF00..0xFFEF），
      * 按当前 bucket 批量栅格化入图集。异常只记日志，不影响游戏。
+     * <p>
+     * Wave 3 起改为虚拟线程（恒 daemon）：预热循环在 face 锁与 JNI 栅格化上频繁阻塞，
+     * 虚拟线程下不再占用平台线程；一次性任务无需池化。
      */
     public void startWarmup() {
-        final Thread thread = new Thread(this::warmupCommonGlyphs,
-                "SSOptimizer-FontWarmup-" + faceKey.substring(faceKey.lastIndexOf('/') + 1));
-        thread.setDaemon(true);
-        thread.start();
+        Thread.ofVirtual()
+              .name("SSOptimizer-FontWarmup-" + faceKey.substring(faceKey.lastIndexOf('/') + 1))
+              .start(this::warmupCommonGlyphs);
     }
 
     private void warmupCommonGlyphs() {

@@ -20,6 +20,7 @@ import com.fs.starfarer.loading.specs.ShipEngineSlot;
 import com.fs.starfarer.loading.specs.ShipHullSpec;
 import com.fs.starfarer.loading.specs.SimulationFleetData;
 import com.fs.starfarer.settings.StarfarerSettings;
+import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
 import github.kasuminova.ssoptimizer.common.loading.SpecLoadScheduler;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.apache.log4j.Logger;
@@ -39,8 +40,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 /**
  * SpecStore 加载路径的 Mixin 重写。
@@ -56,8 +56,8 @@ import java.util.concurrent.Executors;
  *   <li>{@code loadStarmap} 重写为 {@link SpecLoadScheduler} 的 DAG 并行调度
  *       （依赖关系见方法内注释），{@code -Dssoptimizer.disable.parallelspec=true}
  *       时回退原版串行序列；</li>
- *   <li>{@code loadVariants} 的逐文件 JSON 解析 + HullVariantSpec 构造搬到线程池并行，
- *       注册动作保持调用线程串行且顺序不变。</li>
+ *   <li>{@code loadVariants} 的逐文件 JSON 解析 + HullVariantSpec 构造搬到虚拟线程并行
+ *       （Semaphore 闸门限流），注册动作保持调用线程串行且顺序不变。</li>
  * </ul>
  */
 @Mixin(targets = GameClassNames.SPEC_STORE_DOTTED)
@@ -243,8 +243,8 @@ public abstract class SpecStoreMixin {
     }
 
     /**
-     * 并行版 loadVariants：逐文件 JSON 解析与 HullVariantSpec 构造在线程池并行，
-     * registerVariant 注册保持调用线程串行且文件顺序不变。
+     * 并行版 loadVariants：逐文件 JSON 解析与 HullVariantSpec 构造在虚拟线程并行
+     * （Semaphore 闸门限流），registerVariant 注册保持调用线程串行且文件顺序不变。
      *
      * @author KasumiNova
      * @reason variants 是 spec 加载中最大的单方法热点（数百个小 JSON 文件），
@@ -264,49 +264,52 @@ public abstract class SpecStoreMixin {
 
         ssoptimizer$logger.info("Loading ship & fighter variants");
 
-        final ExecutorService pool = Executors.newFixedThreadPool(SpecLoadScheduler.parallelism(), runnable -> {
-            final Thread thread = new Thread(runnable, "SSOptimizer-VariantParse");
-            thread.setDaemon(true);
-            return thread;
-        });
-        try {
-            final List<CompletableFuture<HullVariantSpec>> futures = new ArrayList<>(files.size());
-            for (final String path : files) {
-                futures.add(CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return ssoptimizer$parseVariant(path);
-                    } catch (final IOException | JSONException e) {
-                        throw new CompletionException(e);
-                    }
-                }, pool));
-            }
-
-            for (final CompletableFuture<HullVariantSpec> future : futures) {
-                final HullVariantSpec spec;
+        // Wave 3 起解析任务跑在 VtWorkers 虚拟线程上；Semaphore 闸门保留原
+        // 「每次调用现建现拆固定池」的并发上限语义（CPU 密集解析，上限见
+        // SpecLoadScheduler.parallelism()）
+        final Semaphore gate = new Semaphore(SpecLoadScheduler.parallelism());
+        final List<CompletableFuture<HullVariantSpec>> futures = new ArrayList<>(files.size());
+        for (final String path : files) {
+            futures.add(CompletableFuture.supplyAsync(() -> {
                 try {
-                    spec = future.join();
-                } catch (final CompletionException e) {
-                    final Throwable cause = e.getCause();
-                    if (cause instanceof IOException ioException) {
-                        throw ioException;
-                    }
-                    if (cause instanceof JSONException jsonException) {
-                        throw jsonException;
-                    }
-                    throw e;
+                    gate.acquire();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new CompletionException(e);
                 }
-                if (spec != null) {
-                    // containsVariant 跳过语义必须在串行注册阶段判定：
-                    // 并行解析领先于注册，同 id 的覆盖文件可能在先注册变体尚未
-                    // 入账时就通过检查，导致重复注册（"already exists"）。
-                    if (HullVariantSpecStore.containsVariant(spec.getHullVariantId())) {
-                        continue;
-                    }
-                    HullVariantSpecStore.registerVariant(spec, false);
+                try {
+                    return ssoptimizer$parseVariant(path);
+                } catch (final IOException | JSONException e) {
+                    throw new CompletionException(e);
+                } finally {
+                    gate.release();
                 }
+            }, VtWorkers::submit));
+        }
+
+        for (final CompletableFuture<HullVariantSpec> future : futures) {
+            final HullVariantSpec spec;
+            try {
+                spec = future.join();
+            } catch (final CompletionException e) {
+                final Throwable cause = e.getCause();
+                if (cause instanceof IOException ioException) {
+                    throw ioException;
+                }
+                if (cause instanceof JSONException jsonException) {
+                    throw jsonException;
+                }
+                throw e;
             }
-        } finally {
-            pool.shutdown();
+            if (spec != null) {
+                // containsVariant 跳过语义必须在串行注册阶段判定：
+                // 并行解析领先于注册，同 id 的覆盖文件可能在先注册变体尚未
+                // 入账时就通过检查，导致重复注册（"already exists"）。
+                if (HullVariantSpecStore.containsVariant(spec.getHullVariantId())) {
+                    continue;
+                }
+                HullVariantSpecStore.registerVariant(spec, false);
+            }
         }
 
         ssoptimizer$fixupStationModules();

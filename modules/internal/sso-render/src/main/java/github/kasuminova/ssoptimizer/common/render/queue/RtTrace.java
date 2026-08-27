@@ -59,7 +59,8 @@ public final class RtTrace {
             LOGGER.info("[SSOptimizer] RtTrace 已启用：capacity=" + CAPACITY
                     + " signal=" + (SIGNAL_FILE.isEmpty() ? "<未配置>" : SIGNAL_FILE)
                     + " dumpDir=" + (DUMP_DIR.isEmpty() ? "<user.dir>" : DUMP_DIR));
-            // 进程退出时兜底 dump 一次（烟测脚本 TERM 关停可走 shutdown hook）
+            // 进程退出时兜底 dump 一次（烟测脚本 TERM 关停可走 shutdown hook）；
+            // hook 有意保留平台线程（Wave 3 不迁移）：关停阶段虚拟线程调度器已停用
             Runtime.getRuntime().addShutdownHook(new Thread(() -> dump("shutdown"), "SSOptimizer-RtTrace-Dump"));
         }
     }

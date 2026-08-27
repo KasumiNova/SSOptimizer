@@ -2,8 +2,7 @@ package github.kasuminova.ssoptimizer.common.campaign.econ;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutor;
-import github.kasuminova.ssoptimizer.common.concurrent.FrameParallelExecutorImpl;
-import org.apache.log4j.Logger;
+import github.kasuminova.ssoptimizer.common.concurrent.SharedFrameWorkers;
 
 /**
  * 经济体市场推进并行调度器。
@@ -40,9 +39,9 @@ import org.apache.log4j.Logger;
  * 非幂等，重跑 = 同帧推进两次，相对崩溃是可接受的单帧降级）；重跑仍失败则重抛。
  * <p>
  * 开关：{@code -Dssoptimizer.econ.advance.parallel=true} 启用（默认关闭，
- * 关闭时完全走降频内联路径，与 Wave 6 行为逐帧等价）；
- * {@code -Dssoptimizer.econ.advance.parallel.threads=N} 指定工作线程数，
- * 默认 {@code cores-1}（下限 1），与 AI 并行池同策略。
+ * 关闭时完全走降频内联路径，与 Wave 6 行为逐帧等价）；启用后直接使用
+ * {@link SharedFrameWorkers} 共享工作池，线程数由统一属性
+ * {@code ssoptimizer.workers.threads} 配置。
  * <p>
  * 已知风险敞口：模组若在自定义条件/产业/子市场插件的 advance 中写跨市场全局状态
  * （原版全部没有），并行窗口期可能竞态——本功能默认关闭，属显式 opt-in。
@@ -50,14 +49,10 @@ import org.apache.log4j.Logger;
 public final class MarketAdvanceParallelDispatcher {
     /** 并行开关系统属性名。 */
     public static final String ENABLED_PROPERTY = "ssoptimizer.econ.advance.parallel";
-    /** 工作线程数系统属性名。 */
-    public static final String THREADS_PROPERTY = "ssoptimizer.econ.advance.parallel.threads";
-
-    private static final Logger LOGGER = Logger.getLogger(MarketAdvanceParallelDispatcher.class);
 
     private static final boolean ENABLED = Boolean.parseBoolean(
             System.getProperty(ENABLED_PROPERTY, "false"));
-    private static final FrameParallelExecutor EXECUTOR = ENABLED ? createExecutor() : null;
+    private static final FrameParallelExecutor EXECUTOR = ENABLED ? SharedFrameWorkers.get() : null;
 
     private MarketAdvanceParallelDispatcher() {
     }
@@ -118,16 +113,10 @@ public final class MarketAdvanceParallelDispatcher {
         }
     }
 
-    private static FrameParallelExecutor createExecutor() {
-        final int cores = Runtime.getRuntime().availableProcessors();
-        // 默认 cores-1（给主线程/渲染线程留 1 核），与 AI 并行池同策略
-        int threads = Integer.parseInt(
-                System.getProperty(THREADS_PROPERTY, String.valueOf(Math.max(1, cores - 1))));
-        if (threads < 1) {
-            LOGGER.warn("[SSOptimizer] Invalid " + THREADS_PROPERTY + "=" + threads + ", falling back to 1");
-            threads = 1;
-        }
-        LOGGER.info("[SSOptimizer] Parallel market advance enabled with " + threads + " worker thread(s)");
-        return new FrameParallelExecutorImpl("Econ", threads);
+    /**
+     * @return 当前生效的执行器（共享池实例）；并行关闭时为 {@code null}
+     */
+    static FrameParallelExecutor executor() {
+        return EXECUTOR;
     }
 }

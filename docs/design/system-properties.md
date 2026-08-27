@@ -96,7 +96,7 @@
 | `ssoptimizer.texturemanager.logintervalmillis` | `15000` | 纹理管理器汇总日志周期 | `common/loading/LazyTextureManager.java:375` |
 | `ssoptimizer.texturecomposition.reportfile` | `"ssoptimizer-texture-composition.tsv"` | 纹理组成报告文件路径 | `common/loading/LazyTextureManager.java:288` |
 | `ssoptimizer.loading.workerClass` | `github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadWorker` | 自定义延迟图片预加载 worker 类（须实现 `Runnable` 且有无参构造） | `common/loading/ParallelImagePreloadCoordinator.java:57` |
-| `ssoptimizer.loading.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 延迟图片预加载并行度 | `common/loading/ParallelImagePreloadCoordinator.java:77` |
+| `ssoptimizer.loading.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 延迟图片预加载并行度；Wave 3 起兼作 Spec DAG 加载与 Variant 解析（`SpecLoadScheduler` / `SpecStoreMixin.loadVariants`）的 Semaphore 最大并发闸门（任务跑在 VtWorkers 虚拟线程上，闸门约束加载期 CPU/磁盘争抢） | `common/loading/ParallelImagePreloadCoordinator.java:77`，`common/loading/SpecLoadScheduler.java` |
 | `ssoptimizer.disable.parallelpreload` | `false` | 禁用并行图片预加载（并行度降为 1） | `common/loading/ParallelImagePreloadCoordinator.java:73` |
 | `ssoptimizer.disable.resourcefilecache` | `false` | 禁用 ResourceLoader 文件元数据缓存（`exists`/`lastModified` 快照）。注意：既是 ASM 处理器开关（见上），又是运行时缓存开关，双重读取 | `common/loading/ResourceFileCache.java:80`，`bootstrap/SSOptimizerCorePlugin.java:104` |
 
@@ -104,18 +104,18 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.disable.parallelsoundload` | `false` | 禁用声音文件并行预读 | `common/loading/sound/ParallelSoundLoadCoordinator.java:131,178` |
-| `ssoptimizer.soundload.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 声音预读线程池大小 | `common/loading/sound/ParallelSoundLoadCoordinator.java:367` |
-| `ssoptimizer.soundload.cache.maxbytes` | `134217728`（128 MiB，下限 0） | 声音预读内存缓存上限 | `common/loading/sound/ParallelSoundLoadCoordinator.java:348` |
+| `ssoptimizer.disable.parallelsoundload` | `false` | 禁用声音文件并行预读 | `common/loading/sound/ParallelSoundLoadCoordinator.java:135,185` |
+| `ssoptimizer.soundload.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 声音预读最大并发闸门（Semaphore 许可数；Wave 3 起预读任务跑在 VtWorkers 虚拟线程上，闸门约束磁盘带宽与在途内存——在途字节不计入 cache.maxbytes 账目） | `common/loading/sound/ParallelSoundLoadCoordinator.java:407` |
+| `ssoptimizer.soundload.cache.maxbytes` | `134217728`（128 MiB，下限 0） | 声音预读内存缓存上限 | `common/loading/sound/ParallelSoundLoadCoordinator.java:365` |
 
 ## 脚本编译缓存
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.scriptcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/scripts/janino/v1`） | Janino 脚本字节码缓存目录 | `common/loading/script/JaninoScriptCompilerCoordinator.java:418` |
-| `ssoptimizer.disable.scriptcache` | `false` | 禁用脚本字节码磁盘缓存（每次重新编译） | `common/loading/script/JaninoScriptCompilerCoordinator.java:96,138` |
-| `ssoptimizer.disable.scriptprewarm` | `false` | 禁用首次脚本加载时的后台并行预编译 | `common/loading/script/JaninoScriptCompilerCoordinator.java:152` |
-| `ssoptimizer.scriptcompile.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 脚本预编译并行度 | `common/loading/script/JaninoScriptCompilerCoordinator.java:438` |
+| `ssoptimizer.scriptcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/scripts/janino/v2`，分离渲染模式为 `v2-rt`） | Janino 脚本字节码缓存目录 | `common/loading/script/JaninoScriptCompilerCoordinator.java:575` |
+| `ssoptimizer.disable.scriptcache` | `false` | 禁用脚本字节码磁盘缓存（每次重新编译） | `common/loading/script/JaninoScriptCompilerCoordinator.java:122,177` |
+| `ssoptimizer.disable.scriptprewarm` | `false` | 禁用首次脚本加载时的后台并行预编译 | `common/loading/script/JaninoScriptCompilerCoordinator.java:196` |
+| `ssoptimizer.scriptcompile.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 脚本预编译最大并发闸门（Semaphore 许可数；Wave 3 起预热任务跑在 VtWorkers 虚拟线程上，闸门约束在途编译器实例的堆内存尖峰） | `common/loading/script/JaninoScriptCompilerCoordinator.java:598` |
 
 ## 存档/XStream
 
@@ -152,6 +152,14 @@
 | `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.renderthread.glErrorProbe` | `"off"` | RT 管线 GL 错误探针：`frame`（每帧末尾排空滞留 glGetError 并记 WARN）/ `command`（逐命令排空，重，仅定位用；该模式下录制侧把命令包装为 `ProbeSiteCommand` 捕获录制点堆栈，出错时输出去重后的录制点）。用于定位「滞留 GL 错误被模组健康校验（如 BoxUtil aux 线程 glInit）读到」类问题 | `common/render/queue/RenderQueueImpl.java`（`GL_ERROR_PROBE_PROPERTY`）、`ProbeSiteCommand.java` |
 
+## 线程资源
+
+| 属性 | 默认值 | 作用 | 读取位置 |
+|---|---|---|---|
+| `ssoptimizer.workers.threads` | `max(cores-1, 1)` | 共享帧内工作池线程数（战斗 AI / 市场推进等帧内屏障任务共用，线程名 `SSOptimizer-Shared-Worker-N`）；非法值按默认处理并记 WARN | `common/concurrent/SharedFrameWorkers.java` |
+
+> Wave 3（B/C 类线程迁移）：后台 IO 阻塞与一次性批任务统一走 `common/concurrent/VtWorkers` 虚拟线程门面（ResourceIndex 快照/预读、声音预读、Spec DAG/Variant 解析、Janino 预热、图集解码、字体 CJK 预热、txw2 队列写线程）。原「固定池大小」属性的取舍见各条目：保护真实资源瓶颈的（`soundload.parallelism` / `loading.parallelism` / `scriptcompile.parallelism`）保留为 Semaphore 最大并发闸门，默认值与含义不变；仅约束平台线程数的（ResourceIndex 预读池）直接移除。有意不迁移：`TextureCompressionScheduler`（MIN_PRIORITY + 让步语义）、`RenderQueueImpl` 渲染线程（GL 上下文亲和）、全部 shutdown hook（关停阶段虚拟线程调度器已停用），均已在对应类 javadoc/注释标注。
+
 ## 战斗逻辑
 
 | 属性 | 默认值 | 作用 | 读取位置 |
@@ -163,8 +171,7 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.econ.advance.interval` | `2` | 市场推进降频间隔：每 N 次经济推进以累计 dt 转发一次真实 `Market.advance`（1=逐帧转发即关闭；非法值按 1 处理并记 WARN 一次） | `common/campaign/econ/MarketAdvanceThrottleHelper.java` |
-| `ssoptimizer.econ.advance.parallel` | `false` | 市场级并行化：降频判定通过的 NPC 市场提交工作池并行推进，玩家市场留主线程内联（SharedData 月报 / marketShareData / 构建事件三处共享写均以 isPlayerOwned 为门），`Economy.advance` RETURN 处帧内屏障；失败任务屏障处主线程串行重跑降级。模组自定义条件/产业/子市场插件若写跨市场全局状态属风险敞口 | `common/campaign/econ/MarketAdvanceParallelDispatcher.java` |
-| `ssoptimizer.econ.advance.parallel.threads` | `cores-1`（下限 1） | 市场并行工作线程数（仅并行开启时生效，与 AI 并行池同策略） | `common/campaign/econ/MarketAdvanceParallelDispatcher.java` |
+| `ssoptimizer.econ.advance.parallel` | `false` | 市场级并行化：降频判定通过的 NPC 市场提交共享工作池（`SharedFrameWorkers`）并行推进，玩家市场留主线程内联（SharedData 月报 / marketShareData / 构建事件三处共享写均以 isPlayerOwned 为门），`Economy.advance` RETURN 处帧内屏障；失败任务屏障处主线程串行重跑降级。模组自定义条件/产业/子市场插件若写跨市场全局状态属风险敞口 | `common/campaign/econ/MarketAdvanceParallelDispatcher.java` |
 
 ## IME 输入法
 
@@ -218,3 +225,10 @@
 |---|---|---|
 | `ssoptimizer.deobf.full` | 全量 deobf 模式开关（agent 启动期全类覆写为反混淆类名） | 依赖 agent 的启动期全类覆写通道，随 remap 通道删除 |
 | `ssoptimizer.remappedclasspath.exportdir` | remap classpath 导出目录（调试用） | 同上 |
+
+以下属性随 **线程资源统合（Wave 1+2）** 删除（AI / Econ 独立工作池合并为 `SharedFrameWorkers` 共享池，当前代码无任何残留，传入会被忽略）：
+
+| 属性 | 曾用语义 | 移除原因 |
+|---|---|---|
+| `ssoptimizer.ai.parallel.threads` | AI 并行工作线程数 | 两域独立池合并，统一为 `ssoptimizer.workers.threads` |
+| `ssoptimizer.econ.advance.parallel.threads` | 市场并行工作线程数 | 同上 |

@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
+import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
 
@@ -8,16 +9,20 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 /**
  * Spec 加载 DAG 并行调度器。
  * <p>
  * 把 {@code SpecStore.loadStarmap} 的扁平串行调用序列重组为带依赖声明的任务图：
- * 无依赖或依赖已完成的任务在共享线程池上并行执行，依赖未完成时自动等待。
+ * 无依赖或依赖已完成的任务在 {@link VtWorkers} 虚拟线程上并行执行，依赖未完成时自动等待。
  * 任务体异常会被包装携带任务名后提前终止整张图，并在 barrier 处解包重抛，
  * 保持与原版一致的 {@code IOException}/{@code JSONException} 抛出契约。
+ * <p>
+ * 线程模型（Wave 3 起）：任务跑在虚拟线程上，{@link #PARALLELISM_PROPERTY} 保留为
+ * 每次 {@link Dag#join()} 的 Semaphore 最大并发闸门——spec 加载任务是 CPU 密集的
+ * JSON/CSV 解析，无闸门时整图 30+ 任务瞬时并发只会空转争抢载体线程与磁盘带宽，
+ * 闸门保留原「加载期并行度调谐旋钮」语义。
  * <p>
  * {@code -Dssoptimizer.disable.parallelspec=true} 时调用方应回退原版串行序列。
  */
@@ -26,7 +31,7 @@ public final class SpecLoadScheduler {
 
     /** 全局禁用开关。 */
     public static final String DISABLE_PROPERTY    = "ssoptimizer.disable.parallelspec";
-    /** 并行度复用加载管线统一的 parallelism 属性。 */
+    /** 并行度复用加载管线统一的 parallelism 属性（Wave 3 起语义为 Semaphore 并发闸门许可数）。 */
     public static final String PARALLELISM_PROPERTY = "ssoptimizer.loading.parallelism";
 
     private SpecLoadScheduler() {
@@ -37,7 +42,7 @@ public final class SpecLoadScheduler {
         return !Boolean.getBoolean(DISABLE_PROPERTY);
     }
 
-    /** DAG 与 Variant 解析共用的线程池并行度。 */
+    /** DAG 与 Variant 解析共用的并发闸门许可数。 */
     public static int parallelism() {
         final int configured = Integer.getInteger(PARALLELISM_PROPERTY, 0);
         if (configured > 0) {
@@ -93,15 +98,11 @@ public final class SpecLoadScheduler {
          * @throws JSONException 任务体抛出的 JSONException 原样重抛
          */
         public void join() throws IOException, JSONException {
-            final ExecutorService pool = Executors.newFixedThreadPool(parallelism(), runnable -> {
-                final Thread thread = new Thread(runnable, "SSOptimizer-SpecLoad");
-                thread.setDaemon(true);
-                return thread;
-            });
+            final Semaphore gate = new Semaphore(parallelism());
             final long startedAt = System.nanoTime();
             try {
                 for (final Map.Entry<String, SpecTask> entry : bodies.entrySet()) {
-                    tasks.put(entry.getKey(), schedule(pool, entry.getKey(), entry.getValue(), depNames.get(entry.getKey())));
+                    tasks.put(entry.getKey(), schedule(gate, entry.getKey(), entry.getValue(), depNames.get(entry.getKey())));
                 }
                 CompletableFuture.allOf(tasks.values().toArray(new CompletableFuture[0])).join();
                 LOGGER.info("[SSOptimizer] Parallel spec loading finished in "
@@ -121,12 +122,10 @@ public final class SpecLoadScheduler {
                     throw runtimeException;
                 }
                 throw new RuntimeException(cause);
-            } finally {
-                pool.shutdown();
             }
         }
 
-        private CompletableFuture<Void> schedule(final ExecutorService pool,
+        private CompletableFuture<Void> schedule(final Semaphore gate,
                                                  final String name,
                                                  final SpecTask body,
                                                  final String[] deps) {
@@ -140,6 +139,12 @@ public final class SpecLoadScheduler {
             }
 
             return CompletableFuture.allOf(depFutures).thenRunAsync(() -> {
+                try {
+                    gate.acquire();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new CompletionException(e);
+                }
                 final long taskStartedAt = System.nanoTime();
                 try {
                     body.run();
@@ -148,8 +153,10 @@ public final class SpecLoadScheduler {
                 } catch (final Exception e) {
                     LOGGER.error("[SSOptimizer] Spec 加载任务 [" + name + "] 失败", e);
                     throw new CompletionException(e);
+                } finally {
+                    gate.release();
                 }
-            }, pool);
+            }, VtWorkers::submit);
         }
     }
 }
