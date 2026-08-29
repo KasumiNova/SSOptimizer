@@ -34,6 +34,7 @@
     "bench.TitleScreenBenchmarkMixin",
     "campaign.CampaignEngineBattleReportMixin",
     "campaign.FactionManagerEarlyInitMixin",
+    "campaign.ListenerManagerSyncMixin",
     "combat.BaseEntityNaNGuardMixin",
     "combat.CollisionGridQueryMixin",
     "combat.CollisionImpulseNaNTraceMixin",

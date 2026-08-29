@@ -114,6 +114,20 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 战役监听器管理器同步 Mixin 签名常量。
+     * <p>
+     * {@code ListenerManager} 实现 {@code DoNotObfuscate}，全部 API 方法名跨版本稳定；
+     * 7 个 API 方法的 {@code synchronized} 化覆写见
+     * {@code github.kasuminova.ssoptimizer.mixin.campaign.ListenerManagerSyncMixin}。
+     */
+    public static final class ListenerManager {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.ListenerManager";
+
+        private ListenerManager() {
+        }
+    }
+
+    /**
      * {@code MutableStat} 修改代际 Mixin 签名常量。
      * <p>
      * redirect 目标方法列表内联于 {@code MutableStatMutationMixin} 注解
