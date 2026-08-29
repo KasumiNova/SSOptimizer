@@ -128,6 +128,23 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 启动器 jar 路径回填 Mixin 签名常量。
+     * <p>
+     * {@code launchGame} 中 {@code ScriptStore.getJarFiles()} 仅有一个调用点
+     * （模组 jar 声明回填循环），重定向该点以大小写解析视图替换回填列表，
+     * 注入点唯一性由 sso-app 的 {@code StarfarerLauncherJarPathAnchorTest} 核验。
+     */
+    public static final class StarfarerLauncher {
+        public static final String TARGET_CLASS = "com.fs.starfarer.StarfarerLauncher";
+        public static final String LAUNCH_GAME = "launchGame(ZZLjava/lang/String;Ljava/lang/String;)V";
+        public static final String GET_JAR_FILES_TARGET =
+                "Lcom/fs/starfarer/loading/scripts/ScriptStore;getJarFiles()Ljava/util/List;";
+
+        private StarfarerLauncher() {
+        }
+    }
+
+    /**
      * {@code MutableStat} 修改代际 Mixin 签名常量。
      * <p>
      * redirect 目标方法列表内联于 {@code MutableStatMutationMixin} 注解

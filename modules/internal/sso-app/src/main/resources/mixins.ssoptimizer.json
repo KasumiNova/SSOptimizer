@@ -60,6 +60,7 @@
     "loading.SpriteBatchLedgerMixin",
     "loading.SpecStoreMixin",
     "loading.StarfarerSettingsApiImplMixin",
+    "loading.StarfarerLauncherJarPathMixin",
     "loading.TextureObjectMixin",
     "modopt.dcr.DcrCompressionUtilMixin",
     "render.BitmapFontRendererMixin",
