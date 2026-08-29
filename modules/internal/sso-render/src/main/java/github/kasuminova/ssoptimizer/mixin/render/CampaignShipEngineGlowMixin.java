@@ -51,9 +51,14 @@ public abstract class CampaignShipEngineGlowMixin {
      * 每船每槽的辉光几何缓存（R3 顶点缓存）：槽位 angle/offset/width/baseLength
      * 为构造期定值，8 顶点坐标是 scale 元组的纯函数，稳态巡航下整帧只写颜色字节。
      * 槽数变化（正常不会发生）时整体重建。
+     * <p>
+     * 必须为 {@code transient}：{@code CampaignShipEngineGlow} 会被战役存档 XStream
+     * 序列化（原版 glow/hitGlow 同样标 transient + readResolve 重建），缓存是纯
+     * 运行期派生状态，不随存档持久化；读档后字段为 null，首次渲染经下方的
+     * null/槽数守卫自然重建。
      */
     @Unique
-    private CampaignEngineGlowRenderHelper.GlowGeometryCache ssoptimizer$glowGeometryCache;
+    private transient CampaignEngineGlowRenderHelper.GlowGeometryCache ssoptimizer$glowGeometryCache;
 
     /**
      * 整段替换引擎辉光渲染入口：委托 {@link CampaignEngineGlowRenderHelper#render}

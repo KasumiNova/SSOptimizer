@@ -29,24 +29,27 @@ public abstract class CommodityOnMarketMixin implements CommodityEventModRefresh
     private MutableStatWithTempMods available;
 
     @Unique
-    private boolean ssoptimizer$eventModDirty;
+    private transient boolean ssoptimizer$eventModDirty;
 
     /**
      * 上次市场推进记录的修改代际签名（四个统计各一）。
      * <p>
-     * 读档后 {@code ssoptimizer$tradeModSignatureInitialized} 为 JVM 默认值
-     * {@code false}，首次推进视为签名变化，置脏一次并重建记录。
+     * 全部 transient：{@code CommodityOnMarket} 随市场进战役存档，注入字段为
+     * 运行期派生状态，不随存档持久化；读档后
+     * {@code ssoptimizer$tradeModSignatureInitialized} 为 JVM 默认值
+     * {@code false}，首次推进视为签名变化，置脏一次并重建记录（安全方向：
+     * 多读一次刷新，不会漏刷新）。
      */
     @Unique
-    private boolean ssoptimizer$tradeModSignatureInitialized;
+    private transient boolean ssoptimizer$tradeModSignatureInitialized;
     @Unique
-    private int     ssoptimizer$sigAvailableGen;
+    private transient int     ssoptimizer$sigAvailableGen;
     @Unique
-    private int     ssoptimizer$sigTradeModGen;
+    private transient int     ssoptimizer$sigTradeModGen;
     @Unique
-    private int     ssoptimizer$sigTradeModPlusGen;
+    private transient int     ssoptimizer$sigTradeModPlusGen;
     @Unique
-    private int     ssoptimizer$sigTradeModMinusGen;
+    private transient int     ssoptimizer$sigTradeModMinusGen;
 
     /**
      * {@code reapplyEventMod()} 空操作快速路径。

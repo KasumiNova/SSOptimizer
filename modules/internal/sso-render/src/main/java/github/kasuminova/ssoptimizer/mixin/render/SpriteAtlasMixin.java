@@ -69,41 +69,44 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
 
     /** 当前纹理是否已重映射进图集（决定原点假设方法是否补偏移）。 */
     @Unique
-    private boolean ssoptimizer$atlasRemapped;
+    private transient boolean ssoptimizer$atlasRemapped;
 
     /** 图集化后与原 UV 域 0.001F 像素等价的 U 向内缩（0.001 * srcW / atlasSize）。 */
     @Unique
-    private float ssoptimizer$atlasInsetU;
+    private transient float ssoptimizer$atlasInsetU;
 
     /** 图集化后与原 UV 域 0.001F 像素等价的 V 向内缩（0.001 * srcH / atlasSize）。 */
     @Unique
-    private float ssoptimizer$atlasInsetV;
+    private transient float ssoptimizer$atlasInsetV;
 
     // ── 幂等重推导缓存（同贴图重复 setTexture 的 UV 二次平移防护，见类 javadoc）──
+    // 全部 transient：Sprite 会被战役存档 XStream 序列化（save 配置含 Sprite alias），
+    // 注入字段均为运行期派生状态；读档后 readResolve 注入点无条件重推导
+    // （序列化值本就会被该 hook 覆盖，持久化纯属污染存档）。
     /** 幂等缓存是否已建立（存在「原始 UV 四元组 + 原贴图路径」基准）。 */
     @Unique
-    private boolean ssoptimizer$atlasOriginCached;
+    private transient boolean ssoptimizer$atlasOriginCached;
     /** 幂等基准：首次换算时的原始纹理空间 texX（缓存建立时的当前值）。 */
     @Unique
-    private float ssoptimizer$atlasOriginTexX;
+    private transient float ssoptimizer$atlasOriginTexX;
     /** 幂等基准：首次换算时的原始纹理空间 texY。 */
     @Unique
-    private float ssoptimizer$atlasOriginTexY;
+    private transient float ssoptimizer$atlasOriginTexY;
     /** 幂等基准：首次换算时的原始纹理空间 texWidth（原版 setTexture 重置后的值）。 */
     @Unique
-    private float ssoptimizer$atlasOriginTexWidth;
+    private transient float ssoptimizer$atlasOriginTexWidth;
     /** 幂等基准：首次换算时的原始纹理空间 texHeight。 */
     @Unique
-    private float ssoptimizer$atlasOriginTexHeight;
+    private transient float ssoptimizer$atlasOriginTexHeight;
     /** 幂等基准：原贴图路径（同贴图重复 setTexture 的标识）。 */
     @Unique
-    private String ssoptimizer$atlasOriginTexturePath;
+    private transient String ssoptimizer$atlasOriginTexturePath;
     /** 上次换算产出的图集 texX（判定 texX/texY 是否被 setTexX/setTexY 改动过）。 */
     @Unique
-    private float ssoptimizer$atlasLastTexX;
+    private transient float ssoptimizer$atlasLastTexX;
     /** 上次换算产出的图集 texY。 */
     @Unique
-    private float ssoptimizer$atlasLastTexY;
+    private transient float ssoptimizer$atlasLastTexY;
 
     /**
      * @author KasumiNova

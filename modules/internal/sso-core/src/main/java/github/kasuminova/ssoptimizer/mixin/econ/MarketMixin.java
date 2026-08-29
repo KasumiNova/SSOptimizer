@@ -27,10 +27,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  */
 @Mixin(targets = GameMixinSignatures.Market.TARGET_CLASS)
 public abstract class MarketMixin implements MarketAdvanceThrottleBridge {
+    // transient：Market 随经济体进战役存档；降频状态是运行期派生值，读档后
+    // 归零等价于「无积压待推进」，下次 economy tick 正常推进，语义安全。
     @Unique
-    private double ssoptimizer$pendingAdvanceSeconds;
+    private transient double ssoptimizer$pendingAdvanceSeconds;
     @Unique
-    private int    ssoptimizer$advanceCallCount;
+    private transient int    ssoptimizer$advanceCallCount;
 
     @Redirect(
             method = GameMixinSignatures.Market.ADVANCE,

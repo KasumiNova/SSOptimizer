@@ -26,8 +26,14 @@ public abstract class MutableStatMutationMixin implements StatMutationBridge {
     @Shadow
     private transient boolean needsRecompute;
 
+    /**
+     * 修改代际计数器。transient：{@code MutableStat} 会被战役存档 XStream
+     * 序列化（原版 {@code needsRecompute} 同样标 transient）；读档后归零，
+     * 与 {@code CommodityOnMarketMixin} 的签名缓存（同为 transient）一并重建，
+     * 首次市场推进强制置脏刷新一次，无漏刷新风险。
+     */
     @Unique
-    private int ssoptimizer$mutationGeneration;
+    private transient int ssoptimizer$mutationGeneration;
 
     /**
      * 拦截 {@code needsRecompute = true} 的字段写入并递增代际。
