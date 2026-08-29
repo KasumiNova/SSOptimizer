@@ -210,20 +210,23 @@ public final class OriginalGameFontOverrides {
                 "graphics/fonts/orbitron24aabold.fnt"
         );
 
-        register(specs, new FontOverrideSpec(
+        // victor 族全量覆盖：MapEntityIcon 按缩放阈值在 victor14/victor16 间切换，
+        // 缺任何一个都会让星图实体标签回退到无 CJK 字形的原版位图管线
+        for (String victorPath : List.of(
                 "graphics/fonts/victor10.fnt",
-                profile.victorPrimary(),
-                profile.victorFallback(),
-                2048,
-                2048
-        ));
-        register(specs, new FontOverrideSpec(
+                "graphics/fonts/victor12.fnt",
                 "graphics/fonts/victor14.fnt",
-                profile.victorPrimary(),
-                profile.victorFallback(),
-                2048,
-                2048
-        ));
+                "graphics/fonts/victor16.fnt",
+                "graphics/fonts/victor21.fnt"
+        )) {
+            register(specs, new FontOverrideSpec(
+                    victorPath,
+                    profile.victorPrimary(),
+                    profile.victorFallback(),
+                    2048,
+                    2048
+            ));
+        }
 
         return Collections.unmodifiableMap(specs);
     }
@@ -265,6 +268,37 @@ public final class OriginalGameFontOverrides {
     private static void register(final Map<String, FontOverrideSpec> specs,
                                  final FontOverrideSpec spec) {
         specs.put(spec.originalFontPath(), spec);
+    }
+
+    /**
+     * victor 族成员清单。汉化只为族内部分成员（10/14）烘焙了 CJK 字形，
+     * 12/16/21 的源 fnt 是纯 Latin-1——生成覆盖时以族内其他成员为字库捐赠者补齐。
+     */
+    private static final List<String> VICTOR_FAMILY = List.of(
+            "graphics/fonts/victor10.fnt",
+            "graphics/fonts/victor12.fnt",
+            "graphics/fonts/victor14.fnt",
+            "graphics/fonts/victor16.fnt",
+            "graphics/fonts/victor21.fnt"
+    );
+
+    /**
+     * 字库捐赠者：返回与指定字体同族的其他成员路径，生成期把捐赠者持有而源 fnt
+     * 缺失的码点补入烘焙字符集（典型：victor16 缺 CJK，由 victor10/14 捐赠）。
+     * 非同族字体返回空表。
+     */
+    static List<String> charsetDonorPaths(final String resourcePath) {
+        final String normalized = normalize(resourcePath);
+        if (!VICTOR_FAMILY.contains(normalized)) {
+            return List.of();
+        }
+        final List<String> donors = new ArrayList<>(VICTOR_FAMILY.size() - 1);
+        for (final String member : VICTOR_FAMILY) {
+            if (!member.equals(normalized)) {
+                donors.add(member);
+            }
+        }
+        return donors;
     }
 
     static FontOverrideSpec specForPath(final String resourcePath) {

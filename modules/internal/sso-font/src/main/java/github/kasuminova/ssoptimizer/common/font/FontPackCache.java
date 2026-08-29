@@ -24,7 +24,11 @@ public final class FontPackCache {
     public static final String DIRECTORY_PROPERTY = "ssoptimizer.fontcache.dir";
 
     private static final String              MAGIC          = "SSOFONT";
-    private static final int                 VERSION        = 6;
+    // v7：victor 族字库捐赠改变了同 key 的生成产物（victor12/16/21 补入族内 CJK 码点）
+    // v8：victor 族墨迹居中到 advance 单元格，盒度量变化
+    // v9：victor 族 fallback 协调跳过 advance 比例路径（解析层 xoffset 解码 + 视觉校准双重失真），
+    //     捐赠 CJK 改走高度比例缩放，墨迹尺寸变化
+    private static final int                 VERSION        = 9;
     private static final String              FILE_EXTENSION = ".ssofont.zst";
     private static final Map<String, Object> LOCKS          = new ConcurrentHashMap<>();
 
@@ -193,7 +197,7 @@ public final class FontPackCache {
                       .resolve("cache")
                       .resolve("fonts")
                       .resolve("zstd")
-                      .resolve("v6")
+                      .resolve("v8")
                       .toAbsolutePath();
     }
 

@@ -31,7 +31,26 @@ class OriginalGameFontOverridesTest {
         assertTrue(OriginalGameFontOverrides.isOverriddenPath("graphics/fonts/orbitron20bold.fnt"));
         assertTrue(OriginalGameFontOverrides.isOverriddenPath("/graphics/fonts/orbitron20aabold_0.png"));
         assertTrue(OriginalGameFontOverrides.isOverriddenPath("graphics/fonts/victor14.fnt"));
+        assertTrue(OriginalGameFontOverrides.isOverriddenPath("graphics/fonts/victor12.fnt"));
+        assertTrue(OriginalGameFontOverrides.isOverriddenPath("graphics/fonts/victor16.fnt"));
+        assertTrue(OriginalGameFontOverrides.isOverriddenPath("graphics/fonts/victor21.fnt"));
         assertFalse(OriginalGameFontOverrides.isOverriddenPath("graphics/ungp/fonts/ungp_orbitron.fnt"));
+    }
+
+    @Test
+    void victorFamilyMembersDonateCharsetsToEachOther() {
+        final List<String> victor16Donors = OriginalGameFontOverrides.charsetDonorPaths("graphics/fonts/victor16.fnt");
+        assertEquals(List.of(
+                "graphics/fonts/victor10.fnt",
+                "graphics/fonts/victor12.fnt",
+                "graphics/fonts/victor14.fnt",
+                "graphics/fonts/victor21.fnt"
+        ), victor16Donors);
+
+        // 族内每个成员互为捐赠者；非族字体无捐赠
+        assertEquals(4, OriginalGameFontOverrides.charsetDonorPaths("graphics/fonts/victor10.fnt").size());
+        assertTrue(OriginalGameFontOverrides.charsetDonorPaths("graphics/fonts/insignia15LTaa.fnt").isEmpty());
+        assertTrue(OriginalGameFontOverrides.charsetDonorPaths("graphics/fonts/orbitron20aa.fnt").isEmpty());
     }
 
     @Test

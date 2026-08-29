@@ -375,6 +375,41 @@ class TtfGlyphProviderTest {
         assertEquals(16f / 64f, a.texHeight(), 1e-6f);
     }
 
+    /** victor 族：composeToFontBox 把墨迹水平居中到 fnt advance 单元格，消除窄字后大空档。 */
+    @Test
+    void victorComposeCentersInkWithinAdvanceCell() {
+        final BitmapFont font = fixtureFont(VICTOR_PATH);
+        final TtfGlyphProvider provider = new TtfGlyphProvider(
+                font, OriginalGameFontOverrides.specForPath(VICTOR_PATH), fontDir,
+                new DynamicGlyphAtlas(64, 16), new FakeBackend());
+        // 'A' 的 fnt 条目：xOffset=1 xAdvance=12 → 单元格宽 13；墨迹 8×6 自然 bearing 0
+        // 居中落点 = round((13−8)/2) = 3；并集画布 = [min(1,3), max(11,11)] = [1,11]
+        final int[] inkPixels = new int[8 * 6];
+        Arrays.fill(inkPixels, 0xFFFFFFFF);
+        final NativeGlyphBitmap ink = new NativeGlyphBitmap(8, 6, inkPixels, 0, 9, 0);
+
+        final GlyphMetrics base = new BitmapFontGlyphProvider(font).glyph('A');
+        final NativeGlyphBitmap canvas = provider.composeToFontBox(ink, base, 0, 1.0f);
+
+        assertEquals(1, canvas.xOffset(), "画布原点 = fnt 盒左缘（居中落点在其右侧）");
+        assertEquals(10, canvas.width(), "画布宽 = 盒 [1,11)");
+        final int[] composed = canvas.argbPixels();
+        // 墨迹应落在画布列 2..9（居中落点 3 − 原点 1），列 0..1 为空
+        assertEquals(0, composed[0], "居中后墨迹左缘前留空");
+        assertEquals(0, composed[1], "居中后墨迹左缘前留空");
+        assertEquals(0xFFFFFFFF, composed[2], "墨迹起始列 = 居中落点");
+        assertEquals(0xFFFFFFFF, composed[9], "墨迹结束列");
+    }
+
+    /** 非 victor 族保持 native bearing 落点（不居中）。 */
+    @Test
+    void nonVictorComposeKeepsNativeBearing() {
+        assertEquals(0, TtfGlyphProvider.centeredInkLeftPx(0, 0), "零宽安全");
+        assertEquals(3, TtfGlyphProvider.centeredInkLeftPx(13, 8));
+        assertEquals(2, TtfGlyphProvider.centeredInkLeftPx(5, 2));
+        assertEquals(-1, TtfGlyphProvider.centeredInkLeftPx(10, 12), "墨迹宽于单元格对称负溢出");
+    }
+
     /** composeToFontBox 零裁剪断言：越界墨迹逐像素完整落入并集画布。 */
     @Test
     void composeCanvasContainsFullInkExtentPixelExact() {

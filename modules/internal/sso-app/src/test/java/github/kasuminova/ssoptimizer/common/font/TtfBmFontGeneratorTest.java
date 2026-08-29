@@ -126,8 +126,67 @@ class TtfBmFontGeneratorTest {
     @Test
     void detectsVictorManagedFontPaths() {
         assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor10.fnt"));
+        assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor12.fnt"));
         assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor14_0.png"));
+        assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor16.fnt"));
+        assertTrue(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/victor21.fnt"));
         assertFalse(TtfBmFontGenerator.isVictorManagedFontPath("graphics/fonts/orbitron20aa.fnt"));
+    }
+
+    @Test
+    void donatedCodePointsAreFilteredToPrintableBmpRange() {
+        assertTrue(TtfBmFontGenerator.isDonatableCodePoint(0x4E2D));
+        assertTrue(TtfBmFontGenerator.isDonatableCodePoint(32));
+        assertFalse(TtfBmFontGenerator.isDonatableCodePoint(31));
+        assertFalse(TtfBmFontGenerator.isDonatableCodePoint(0x7F));
+        assertFalse(TtfBmFontGenerator.isDonatableCodePoint(0x1F600));
+    }
+
+    @Test
+    void victorCenteredGlyphMetricsCenterInkWithinAdvanceCell() {
+        // 'M'：墨迹 9×8 居中到 advance 11 → 左边距 1，advance 不膨胀
+        assertArrayEquals(
+                new int[]{9, 8, 1, 4, 11},
+                TtfBmFontGenerator.victorCenteredGlyphMetrics(9, 8, 4, 8, 4, 11)
+        );
+        // 'I'：窄墨迹 2×8 居中到 advance 5 → 左边距 2（消除窄字后大空档）
+        assertArrayEquals(
+                new int[]{2, 8, 2, 4, 5},
+                TtfBmFontGenerator.victorCenteredGlyphMetrics(2, 8, 4, 8, 4, 5)
+        );
+        // CJK：墨迹 12×12 居中到 advance 13 → 左边距 1；垂直并集保留源盒（yoffset 2）
+        assertArrayEquals(
+                new int[]{12, 12, 1, 2, 13},
+                TtfBmFontGenerator.victorCenteredGlyphMetrics(12, 12, 2, 12, 2, 13)
+        );
+        // 墨迹宽于单元格：对称负溢出（advance 恒取源值）
+        assertArrayEquals(
+                new int[]{12, 8, -1, 4, 10},
+                TtfBmFontGenerator.victorCenteredGlyphMetrics(12, 8, 4, 8, 4, 10)
+        );
+    }
+
+    @Test
+    void victorFallbackHarmonizationSkipsAdvanceRatioPath() {
+        // victor 族水平步进由源逻辑 advance 单元格驱动（墨迹居中 reconcile），
+        // advance 比例换算会因解析层 xoffset 解码与主字体视觉校准双重失真，必须走高度比例路径
+        assertFalse(TtfBmFontGenerator.useAdvanceHarmonization(true));
+        assertTrue(TtfBmFontGenerator.useAdvanceHarmonization(false));
+    }
+
+    @Test
+    void donatedGlyphMetricsScaleWithLineHeightRatio() {
+        // victor14（lineHeight 13）的「中」11×11 advance 12 捐赠给 victor16（lineHeight 14）
+        // 应按 14/13 放大到 12×12 advance 13
+        assertArrayEquals(
+                new int[]{12, 12, 0, 2, 13},
+                TtfBmFontGenerator.scaledDonorGlyphMetrics(11, 11, 0, 2, 12, 14.0 / 13.0)
+        );
+        // 反向缩放（大字号捐赠给小字号）钳非负，偏移可为负
+        assertArrayEquals(
+                new int[]{7, 7, -1, 1, 8},
+                TtfBmFontGenerator.scaledDonorGlyphMetrics(11, 11, -1, 2, 12, 0.65)
+        );
     }
 
     @Test

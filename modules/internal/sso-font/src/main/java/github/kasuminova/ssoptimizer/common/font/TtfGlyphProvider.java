@@ -637,14 +637,26 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
         final int fntWidth = Math.max(1, Math.round(base.width() * bucketScale) + expand * 2);
         final int fntHeight = Math.max(1, Math.round(base.height() * bucketScale) + expand * 2);
 
+        // victor 族（像素字体义）：水平落点抛弃 native bearing，墨迹居中到
+        // 「fnt 逻辑 advance 单元格 × bucketScale」（与烘焙期 reconcileVictorGlyphToCell
+        // 同规则）——原字体按恒定侧边距设计，自然字宽会让窄字后跟出大空档（一长一短）。
+        // 垂直落点保持 native bearing（baseline 语义）。
+        final int inkPosX;
+        if (victorFamily && ink.hasImage()) {
+            inkPosX = centeredInkLeftPx(
+                    Math.round((base.xOffset() + base.xAdvance()) * bucketScale), ink.width());
+        } else {
+            inkPosX = ink.xOffset();
+        }
+
         int left = fntLeft;
         int top = fntTop;
         int right = fntLeft + fntWidth;
         int bottom = fntTop + fntHeight;
         if (ink.hasImage()) {
-            left = Math.min(left, ink.xOffset());
+            left = Math.min(left, inkPosX);
             top = Math.min(top, ink.yOffset());
-            right = Math.max(right, ink.xOffset() + ink.width());
+            right = Math.max(right, inkPosX + ink.width());
             bottom = Math.max(bottom, ink.yOffset() + ink.height());
         }
         final int canvasWidth = right - left;
@@ -653,7 +665,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
         final int[] canvas = new int[canvasWidth * canvasHeight];
         if (ink.hasImage()) {
             // 并集构造保证墨迹必然完整落入画布，无裁剪分支
-            final int destX = ink.xOffset() - left;
+            final int destX = inkPosX - left;
             final int destY = ink.yOffset() - top;
             final int[] pixels = ink.argbPixels();
             for (int row = 0; row < ink.height(); row++) {
@@ -662,6 +674,14 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
             }
         }
         return new NativeGlyphBitmap(canvasWidth, canvasHeight, canvas, left, top, 0);
+    }
+
+    /**
+     * victor 族单元格居中：墨迹左缘（设备像素）= round((单元格宽 − 墨迹宽) / 2)。
+     * 墨迹宽于单元格时返回负值（对称溢出，由并集画布承载）。
+     */
+    static int centeredInkLeftPx(final int cellWidthPx, final int inkWidthPx) {
+        return Math.round((cellWidthPx - inkWidthPx) / 2.0f);
     }
 
     /**

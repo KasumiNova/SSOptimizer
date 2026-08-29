@@ -54,13 +54,97 @@ final class TtfBmFontGenerator {
     static GeneratedFontPack generate(final OriginalGameFontOverrides.FontOverrideSpec spec,
                                       final Path fontDir) throws IOException, FontFormatException {
         return loadOrGenerateCached(spec, spec.originalFontPath(), fontDir, 1.0f, () -> {
-            final SourceBmFont source = SourceBmFont
-                    .parse(OriginalGameFontOverrides.resolveOriginalFontFile(spec.originalFontPath()));
+            final SourceBmFont source = withDonatedCharset(SourceBmFont
+                    .parse(OriginalGameFontOverrides.resolveOriginalFontFile(spec.originalFontPath())), spec);
             final FontChain fonts = loadFontChain(spec, fontDir, source);
             final RasterizedGlyphs rasterized = rasterizeGlyphs(source, fonts);
             final FittedAtlas fitted = fitSinglePageAtlas(spec, spec.originalFontPath(), source, rasterized);
             return buildPack(fitted.spec(), source, fonts, fitted.layout());
         });
+    }
+
+    /**
+     * 字库捐赠：把同族捐赠字体（见 {@link OriginalGameFontOverrides#charsetDonorPaths}）
+     * 持有而源 fnt 缺失的码点并入字符集，并按行高比缩放捐赠方度量作为合成源度量——
+     * 捐赠字形随后与原生字形走同一条「度量协调 + 源度量对齐」管线（CJK 由 MiSans 承担墨迹，
+     * advance/offset 继承捐赠方换算值）。多捐赠方持有同一码点时，行高最接近源字体者优先。
+     */
+    private static SourceBmFont withDonatedCharset(final SourceBmFont source,
+                                                   final OriginalGameFontOverrides.FontOverrideSpec spec)
+            throws IOException {
+        final List<String> donorPaths = OriginalGameFontOverrides
+                .charsetDonorPaths(spec.normalizedOriginalFontPath());
+        if (donorPaths.isEmpty()) {
+            return source;
+        }
+
+        final List<SourceBmFont> donors = new ArrayList<>(donorPaths.size());
+        for (final String donorPath : donorPaths) {
+            donors.add(SourceBmFont.parse(OriginalGameFontOverrides.resolveOriginalFontFile(donorPath)));
+        }
+        donors.sort(Comparator.comparingInt(donor -> Math.abs(donor.lineHeight() - source.lineHeight())));
+
+        final Map<Integer, SourceGlyphMetric> metrics = new LinkedHashMap<>(source.glyphMetrics());
+        final List<Integer> codePoints = new ArrayList<>(source.codePoints());
+        int donatedCount = 0;
+        for (final SourceBmFont donor : donors) {
+            final double scale = (double) source.lineHeight() / Math.max(1, donor.lineHeight());
+            for (final int codePoint : donor.codePoints()) {
+                if (!isDonatableCodePoint(codePoint) || metrics.containsKey(codePoint)) {
+                    continue;
+                }
+                final SourceGlyphMetric donorMetric = donor.glyphMetrics().get(codePoint);
+                if (donorMetric == null) {
+                    continue;
+                }
+                metrics.put(codePoint, scaleDonorMetric(donorMetric, scale));
+                codePoints.add(codePoint);
+                donatedCount++;
+            }
+        }
+        if (donatedCount == 0) {
+            return source;
+        }
+
+        LOGGER.info("[SSOptimizer] Font " + spec.originalFontPath() + " receives " + donatedCount
+                + " donated code points from " + donorPaths);
+        return new SourceBmFont(source.infoSize(), source.antiAlias(), source.lineHeight(), source.base(),
+                source.scaleWidth(), source.scaleHeight(),
+                List.copyOf(codePoints), Map.copyOf(metrics));
+    }
+
+    /**
+     * 捐赠码点可打印性过滤：剔除控制字符（&lt; 0x20 / 0x7F，布局层无可打印语义）
+     * 与 BMP 外码点（运行期布局按 UTF-16 code unit 迭代，无法寻址增补平面）。
+     */
+    static boolean isDonatableCodePoint(final int codePoint) {
+        return codePoint >= 0x20 && codePoint != 0x7F && codePoint <= 0xFFFF;
+    }
+
+    /**
+     * 捐赠度量按行高比缩放（int[] 形式便于测试锚定）：宽度/高度/步进钳非负，
+     * 偏移允许负值（悬挂笔画）。返回 [width, height, xOffset, yOffset, xAdvance]。
+     */
+    static int[] scaledDonorGlyphMetrics(final int width,
+                                         final int height,
+                                         final int xOffset,
+                                         final int yOffset,
+                                         final int xAdvance,
+                                         final double scale) {
+        return new int[]{
+                Math.max(0, (int) Math.round(width * scale)),
+                Math.max(0, (int) Math.round(height * scale)),
+                (int) Math.round(xOffset * scale),
+                (int) Math.round(yOffset * scale),
+                Math.max(0, (int) Math.round(xAdvance * scale))
+        };
+    }
+
+    private static SourceGlyphMetric scaleDonorMetric(final SourceGlyphMetric donorMetric,
+                                                      final double scale) {
+        final int[] scaled = scaledDonorGlyphMetrics(donorMetric.width(), donorMetric.height(),
+                donorMetric.xOffset(), donorMetric.yOffset(), donorMetric.xAdvance(), scale);
+        return new SourceGlyphMetric(scaled[0], scaled[1], scaled[2], scaled[3], scaled[4]);
     }
 
     static int preferredPageDimension(final int configuredDimension,
@@ -148,7 +232,7 @@ final class TtfBmFontGenerator {
                         path.getFileName().toString(),
                         path,
                         harmonizeFallbackMetrics(calibrated, source, primaryVisualHeight, primaryAverageHeight,
-                                primaryAverageAdvance, antiAlias, fractionalMetrics)));
+                                primaryAverageAdvance, victorManaged, antiAlias, fractionalMetrics)));
             }
         }
         final Font dialogFont = calibrate(new Font(Font.DIALOG, Font.PLAIN, Math.round(requestedSize)), requestedSize,
@@ -157,7 +241,7 @@ final class TtfBmFontGenerator {
                 "Dialog",
                 null,
                 harmonizeFallbackMetrics(dialogFont, source, primaryVisualHeight, primaryAverageHeight,
-                        primaryAverageAdvance, antiAlias, fractionalMetrics)));
+                        primaryAverageAdvance, victorManaged, antiAlias, fractionalMetrics)));
 
         final List<LoadedFont> chain = new ArrayList<>(primary.size() + fallback.size());
         chain.addAll(primary);
@@ -202,6 +286,9 @@ final class TtfBmFontGenerator {
      * @param primaryVisualHeight  主字体渲染的视觉高度（最后回退方案）
      * @param primaryAverageHeight 主字体渲染的平均字形高度
      * @param primaryAverageAdvance 主字体渲染的平均 advance
+     * @param victorManaged      victor 族（像素字体义）：水平步进由源逻辑 advance 单元格直接驱动
+     *                           （墨迹居中 reconcile），advance 比例换算会因解析层 xoffset 解码
+     *                           与 victor 主字体视觉校准双重失真，须跳过 advance 路径走高度比例
      * @param antiAlias            是否抗锯齿
      * @param fractionalMetrics    是否使用小数度量
      * @return 缩放后的 fallback 字体
@@ -211,25 +298,28 @@ final class TtfBmFontGenerator {
                                                  final float primaryVisualHeight,
                                                  final float primaryAverageHeight,
                                                  final float primaryAverageAdvance,
+                                                 final boolean victorManaged,
                                                  final boolean antiAlias,
                                                  final boolean fractionalMetrics) {
         if (!canDisplayAny(calibrated, FALLBACK_VISUAL_SAMPLE)) {
             return calibrated;
         }
 
-        // 优先使用 advance 缩放：advance 控制水平间距，是文本排版中最关键的视觉指标
-        final float sourcePrimaryAdvance = source.averageAdvance(PRIMARY_ADVANCE_SAMPLE);
-        final float sourceAverageAdvance = source.averageAdvance(FALLBACK_VISUAL_SAMPLE);
-        final float renderedAverageAdvance = measureAverageAdvance(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
-                fractionalMetrics);
-        final float targetAverageAdvance = fallbackTargetMetric(primaryAverageAdvance, sourcePrimaryAdvance,
-                sourceAverageAdvance);
-        if (targetAverageAdvance > 0f && renderedAverageAdvance > 0f) {
-            final float scaleFactor = fallbackVisualScaleFactor(targetAverageAdvance, renderedAverageAdvance);
-            if (Math.abs(scaleFactor - 1.0f) < 0.02f) {
-                return calibrated;
+        if (useAdvanceHarmonization(victorManaged)) {
+            // 优先使用 advance 缩放：advance 控制水平间距，是文本排版中最关键的视觉指标
+            final float sourcePrimaryAdvance = source.averageAdvance(PRIMARY_ADVANCE_SAMPLE);
+            final float sourceAverageAdvance = source.averageAdvance(FALLBACK_VISUAL_SAMPLE);
+            final float renderedAverageAdvance = measureAverageAdvance(calibrated, FALLBACK_VISUAL_SAMPLE,
+                    antiAlias, fractionalMetrics);
+            final float targetAverageAdvance = fallbackTargetMetric(primaryAverageAdvance, sourcePrimaryAdvance,
+                    sourceAverageAdvance);
+            if (targetAverageAdvance > 0f && renderedAverageAdvance > 0f) {
+                final float scaleFactor = fallbackVisualScaleFactor(targetAverageAdvance, renderedAverageAdvance);
+                if (Math.abs(scaleFactor - 1.0f) < 0.02f) {
+                    return calibrated;
+                }
+                return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
             }
-            return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
         }
 
         // 回退方案：通过高度比例缩放（源 .fnt 中缺少 fallback 采样字符的 advance 数据时使用）
@@ -258,6 +348,16 @@ final class TtfBmFontGenerator {
         }
 
         return calibrated;
+    }
+
+    /**
+     * fallback 协调是否采用 advance 比例路径。victor 族（像素字体义）的水平步进由源逻辑
+     * advance 单元格直接驱动（墨迹居中 reconcile，见 {@link #reconcileVictorGlyphToCell}），
+     * advance 比例换算会因解析层 xoffset 解码（{@link #decodedXAdvanceFromRuntimeLayout}）
+     * 与 victor 主字体视觉校准双重失真而给出过小的目标值，必须走高度比例路径。
+     */
+    static boolean useAdvanceHarmonization(final boolean victorManaged) {
+        return !victorManaged;
     }
 
     static float fallbackTargetMetric(final float primaryRenderedMetric,
@@ -367,8 +467,9 @@ final class TtfBmFontGenerator {
 
     static boolean isVictorManagedFontPath(final String fontPath) {
         final String normalized = OriginalGameFontOverrides.normalize(fontPath).toLowerCase(Locale.ROOT);
-        return normalized.startsWith("graphics/fonts/victor10")
-                || normalized.startsWith("graphics/fonts/victor14");
+        // 全族纳管：视觉尺寸对齐与小写字形替换对 victor10/12/14/16/21 一致生效，
+        // 缺任何一个都会让 MapEntityIcon 等按缩放切字体的调用点观感断裂
+        return normalized.startsWith("graphics/fonts/victor");
     }
 
     static int substituteVictorLowercaseCodePoint(final int codePoint) {
@@ -492,7 +593,11 @@ final class TtfBmFontGenerator {
                         rasterizer.rasterizeGlyph(rasterCodePoint, source.base(), fonts),
                         codePoint
                 );
-                glyphs.add(reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric));
+                // victor 族（像素字体义）：原字体按「恒定侧边距」设计单元格，替换字体的
+                // 自然字宽会破坏该节奏（窄字后跟大空档），须把墨迹居中到 advance 单元格
+                glyphs.add(fonts.substituteLowercaseWithUppercase()
+                        ? reconcileVictorGlyphToCell(rasterized, sourceMetric)
+                        : reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric));
             }
             glyphs.sort(Comparator.comparingInt(GlyphRaster::sortHeight).reversed()
                                   .thenComparingInt(GlyphRaster::codePoint));
@@ -646,6 +751,58 @@ final class TtfBmFontGenerator {
                 box.xOffset(),
                 box.yOffset(),
                 box.xAdvance());
+    }
+
+    /**
+     * victor 族单元格居中对齐：水平方向抛弃栅格自然 bearing，墨迹居中到源逻辑 advance
+     * 单元格（inkLeft = (advance − inkWidth) / 2），advance 恒取源值不膨胀——
+     * 对齐原版像素字体「恒定侧边距」的视觉节奏。垂直方向维持源盒 ∪ 墨迹盒并集
+     * （baseline/悬挂笔画语义不变）。墨迹宽于单元格时对称负溢出，由 quad 重叠承载。
+     */
+    private static GlyphRaster reconcileVictorGlyphToCell(final GlyphRaster rasterized,
+                                                          final SourceGlyphMetric sourceMetric) {
+        if (rasterized == null || sourceMetric == null || sourceMetric.isSpecialPlaceholder()) {
+            return rasterized;
+        }
+
+        final int[] metrics = victorCenteredGlyphMetrics(
+                rasterized.width(), rasterized.height(), rasterized.yOffset(),
+                sourceMetric.height(), sourceMetric.yOffset(), sourceMetric.xAdvance());
+        // 把栅格 bearing 改写为居中落点后复用通用画布对齐（水平 destX 恒 0）
+        final GlyphRaster centered = new GlyphRaster(
+                rasterized.codePoint(), rasterized.sourceName(), rasterized.faceName(),
+                rasterized.image(),
+                metrics[0], rasterized.height(), metrics[2], rasterized.yOffset(), metrics[4]);
+        final ReconciledGlyphBox box = new ReconciledGlyphBox(
+                metrics[0], metrics[1], metrics[2], metrics[3], metrics[4]);
+        final BufferedImage alignedImage = alignGlyphImageToSourceMetrics(centered, box);
+        return new GlyphRaster(
+                rasterized.codePoint(), rasterized.sourceName(), rasterized.faceName(),
+                alignedImage,
+                box.width(), box.height(), box.xOffset(), box.yOffset(), box.xAdvance());
+    }
+
+    /**
+     * 居中度量计算（int[] 形式便于测试锚定）。
+     * 返回 [width, height, xOffset=墨迹居中落点, yOffset=垂直并集顶, xAdvance=源逻辑 advance]。
+     */
+    static int[] victorCenteredGlyphMetrics(final int rasterWidth,
+                                            final int rasterHeight,
+                                            final int rasterYOffset,
+                                            final int sourceHeight,
+                                            final int sourceYOffset,
+                                            final int sourceLogicalXAdvance) {
+        final int advance = Math.max(0, sourceLogicalXAdvance);
+        final int inkLeft = Math.round((advance - rasterWidth) / 2.0f);
+        final int top = Math.min(sourceYOffset, rasterYOffset);
+        final int bottom = Math.max(sourceYOffset + sourceHeight, rasterYOffset + rasterHeight);
+        return new int[]{
+                Math.max(0, rasterWidth),
+                Math.max(0, bottom - top),
+                inkLeft,
+                top,
+                advance
+        };
     }
 
     private static BufferedImage alignGlyphImageToSourceMetrics(final GlyphRaster rasterized,
