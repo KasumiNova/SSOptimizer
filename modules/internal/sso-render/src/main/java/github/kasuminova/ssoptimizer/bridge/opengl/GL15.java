@@ -182,4 +182,30 @@ public final class GL15 {
         github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace("UNMAP_REAL", target, 0, 0, null);
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL15.glUnmapBuffer(target));
     }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：glGetBufferSubData 读回族（BoxUtil 引用）。
+    // 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰
+    // （语义同 glGenBuffers(IntBuffer) 的批量变体）。
+    // ------------------------------------------------------------------
+
+    public static void glGetBufferSubData(int target, long offset, ByteBuffer data) {
+        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL15.glGetBufferSubData(target, offset, data));
+    }
+
+    public static void glGetBufferSubData(int target, long offset, java.nio.DoubleBuffer data) {
+        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL15.glGetBufferSubData(target, offset, data));
+    }
+
+    public static void glGetBufferSubData(int target, long offset, FloatBuffer data) {
+        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL15.glGetBufferSubData(target, offset, data));
+    }
+
+    public static void glGetBufferSubData(int target, long offset, IntBuffer data) {
+        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL15.glGetBufferSubData(target, offset, data));
+    }
+
+    public static void glGetBufferSubData(int target, long offset, java.nio.ShortBuffer data) {
+        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL15.glGetBufferSubData(target, offset, data));
+    }
 }

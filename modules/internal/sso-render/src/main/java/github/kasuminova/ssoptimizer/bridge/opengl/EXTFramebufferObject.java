@@ -109,4 +109,19 @@ public final class EXTFramebufferObject {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.EXTFramebufferObject
                 .glRenderbufferStorageEXT(target, internalformat, width, height));
     }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：BoxUtil 引用的 1D/3D 纹理附着点
+    // ------------------------------------------------------------------
+
+    public static void glFramebufferTexture1DEXT(int target, int attachment, int textarget, int texture, int level) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.EXTFramebufferObject
+                .glFramebufferTexture1DEXT(target, attachment, textarget, texture, level));
+    }
+
+    public static void glFramebufferTexture3DEXT(int target, int attachment, int textarget, int texture,
+                                                 int level, int layer) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.EXTFramebufferObject
+                .glFramebufferTexture3DEXT(target, attachment, textarget, texture, level, layer));
+    }
 }

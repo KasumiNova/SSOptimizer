@@ -44,4 +44,9 @@ public final class GL41 {
     public static void glProgramUniform2f(int program, int location, float v0, float v1) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL41.glProgramUniform2f(program, location, v0, v1));
     }
+
+    /** 64 位顶点属性指针，VBO 偏移形态（BoxUtil 引用，盘点补面）：纯值参数，直接入队。 */
+    public static void glVertexAttribLPointer(int index, int size, int stride, long offset) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL41.glVertexAttribLPointer(index, size, stride, offset));
+    }
 }

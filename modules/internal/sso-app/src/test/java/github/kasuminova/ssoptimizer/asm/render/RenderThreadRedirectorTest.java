@@ -370,4 +370,247 @@ class RenderThreadRedirectorTest {
         byte[] result = RenderThreadRedirector.redirect("com.example.ConfiguresGluSphere", source);
         assertSame(source, result, "Sphere 纯配置方法不得改写");
     }
+
+    // ------------------------------------------------------------------
+    // invokedynamic 方法句柄（lambda/方法引用）的镜像表白名单判据
+    // ------------------------------------------------------------------
+
+    /** 收集全部 invokedynamic bootstrap 参数中引用 lwjgl 的方法句柄（断言用）。 */
+    private static List<String> collectIndyHandles(byte[] classBytes) {
+        List<String> handles = new ArrayList<>();
+        new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc,
+                                             String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9, null) {
+                    @Override
+                    public void visitInvokeDynamicInsn(String indyName, String indyDesc,
+                                                       org.objectweb.asm.Handle bsm, Object... bsmArgs) {
+                        for (Object arg : bsmArgs) {
+                            if (arg instanceof org.objectweb.asm.Handle handle
+                                    && handle.getOwner().startsWith("org/lwjgl/")) {
+                                handles.add(handle.getOwner() + '.' + handle.getName() + handle.getDesc());
+                            } else if (arg instanceof org.objectweb.asm.Handle handle
+                                    && handle.getOwner().startsWith("github/kasuminova/")) {
+                                handles.add(handle.getOwner() + '.' + handle.getName() + handle.getDesc());
+                            }
+                        }
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return handles;
+    }
+
+    /** LambdaMetafactory 形态的 invokedynamic（javac 方法引用产物）：{@code Owner::method}。 */
+    private static void visitLambdaRef(MethodVisitor mv, String owner, String name, String desc) {
+        org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
+                "java/lang/invoke/LambdaMetafactory", "metafactory",
+                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;"
+                        + "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;"
+                        + "Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)"
+                        + "Ljava/lang/invoke/CallSite;", false);
+        mv.visitInvokeDynamicInsn("run", "()Lcom/example/Fun;", metafactory,
+                org.objectweb.asm.Type.getType("()V"),
+                new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC, owner, name, desc, false),
+                org.objectweb.asm.Type.getType("()V"));
+        mv.visitInsn(Opcodes.POP);
+    }
+
+    @Test
+    void indyHandlesFollowMirrorWhitelist() {
+        // BoxUtil 1.0.6 GLWrapper$Drawcall.init 崩溃根因：方法引用（indy Handle）的
+        // owner 改写必须与 visitMethodInsn 共用镜像表白名单——桥未镜像的句柄盲改 owner
+        // 会在 LambdaMetafactory 链接期解析桥类不存在的方法签名，NoSuchMethodError
+        byte[] source = buildClass("com/example/LambdaRefs", mv -> {
+            visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glDrawArrays", "(III)V");
+            visitLambdaRef(mv, "org/lwjgl/opengl/GL12", "glDrawRangeElements", "(IIIIIJ)V");
+            visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glGetTexParameterf", "(II)F");
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.LambdaRefs", source);
+        List<String> handles = collectIndyHandles(result);
+        assertTrue(handles.contains(
+                "github/kasuminova/ssoptimizer/bridge/opengl/GL11.glDrawArrays(III)V"),
+                "已镜像句柄必须改写到桥: " + handles);
+        assertTrue(handles.contains(
+                "github/kasuminova/ssoptimizer/bridge/opengl/GL12.glDrawRangeElements(IIIIIJ)V"),
+                "补齐覆盖后的崩溃现场 API 必须改写到桥: " + handles);
+        assertTrue(handles.contains("org/lwjgl/opengl/GL11.glGetTexParameterf(II)F"),
+                "未镜像句柄必须保持原 owner（链接真实 LWJGL 方法）: " + handles);
+    }
+
+    @Test
+    void indyHandleToUnmirroredMethodAloneIsNoOp() {
+        // 唯一引用是未镜像方法句柄时整类无改写点，原样返回
+        byte[] source = buildClass("com/example/LambdaUnmirrored", mv ->
+                visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glGetTexParameterf", "(II)F"));
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.LambdaUnmirrored", source);
+        assertSame(source, result, "未镜像方法句柄不得改写（无改写点时原样返回）");
+    }
+
+    @Test
+    void indyInstantiatedMethodTypeWithIdentityTypeIsRemapped() {
+        // BoxUtil Operation$Sync.init 崩溃签名回归：泛型 Fun 接口以具体 GLSync 实例化
+        // （XIntLongFun<GLSync>），instantiatedMethodType 含 Lorg/lwjgl/opengl/GLSync;。
+        // impl Handle 改写到桥后该 MethodType 必须同步改写，否则 LambdaMetafactory
+        // 校验报 LambdaConversionException（lwjgl GLSync 不可 convertible 到 bridge GLSync）
+        byte[] source = buildClass("com/example/LambdaSyncRef", mv -> {
+            org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
+                    "java/lang/invoke/LambdaMetafactory", "metafactory",
+                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;"
+                            + "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;"
+                            + "Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)"
+                            + "Ljava/lang/invoke/CallSite;", false);
+            mv.visitInvokeDynamicInsn("run", "()Lcom/example/XIntLongFunInt;", metafactory,
+                    org.objectweb.asm.Type.getType("(Ljava/lang/Object;IJ)I"),
+                    new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC, "org/lwjgl/opengl/GL32",
+                            "glClientWaitSync", "(Lorg/lwjgl/opengl/GLSync;IJ)I", false),
+                    org.objectweb.asm.Type.getType("(Lorg/lwjgl/opengl/GLSync;IJ)I"));
+            mv.visitInsn(Opcodes.POP);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.LambdaSyncRef", source);
+        List<String> types = new ArrayList<>();
+        List<String> handles = new ArrayList<>();
+        new ClassReader(result).accept(new ClassVisitor(Opcodes.ASM9, null) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc,
+                                             String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9, null) {
+                    @Override
+                    public void visitInvokeDynamicInsn(String indyName, String indyDesc,
+                                                       org.objectweb.asm.Handle bsm, Object... bsmArgs) {
+                        for (Object arg : bsmArgs) {
+                            if (arg instanceof org.objectweb.asm.Type type) {
+                                types.add(type.getDescriptor());
+                            } else if (arg instanceof org.objectweb.asm.Handle handle) {
+                                handles.add(handle.getOwner() + '.' + handle.getName() + handle.getDesc());
+                            }
+                        }
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+
+        assertTrue(handles.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL32"
+                        + ".glClientWaitSync(Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;IJ)I"),
+                "impl Handle 必须改写到桥（含描述符身份类型替换）: " + handles);
+        assertTrue(types.contains("(Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;IJ)I"),
+                "instantiatedMethodType 的身份类型必须同步替换: " + types);
+        assertTrue(types.contains("(Ljava/lang/Object;IJ)I"), "sam 泛型擦除形态不受影响: " + types);
+        assertFalse(types.stream().anyMatch(t -> t.contains("org/lwjgl/opengl/GLSync")),
+                "indy 参数不得残留 lwjgl GLSync: " + types);
+    }
+
+    /** 收集 indy bootstrap 参数中的全部 Type 描述符与 Handle（断言用）。 */
+    private static void collectIndyArgs(byte[] classBytes, List<String> types, List<String> handles) {
+        new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc,
+                                             String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9, null) {
+                    @Override
+                    public void visitInvokeDynamicInsn(String indyName, String indyDesc,
+                                                       org.objectweb.asm.Handle bsm, Object... bsmArgs) {
+                        for (Object arg : bsmArgs) {
+                            if (arg instanceof org.objectweb.asm.Type type) {
+                                types.add(type.getDescriptor());
+                            } else if (arg instanceof org.objectweb.asm.Handle handle) {
+                                handles.add(handle.getOwner() + '.' + handle.getName() + handle.getDesc());
+                            }
+                        }
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+    }
+
+    /** 带身份类型的 LambdaMetafactory 站点：sam 擦除 Object，instantiated 具体 GLSync。 */
+    private static void visitSyncLambdaRef(MethodVisitor mv, String owner, String methodName) {
+        org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
+                "java/lang/invoke/LambdaMetafactory", "metafactory",
+                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;"
+                        + "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;"
+                        + "Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)"
+                        + "Ljava/lang/invoke/CallSite;", false);
+        mv.visitInvokeDynamicInsn("run", "()Lcom/example/XObjFun;", metafactory,
+                org.objectweb.asm.Type.getType("(Ljava/lang/Object;)V"),
+                new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC, owner, methodName,
+                        "(Lorg/lwjgl/opengl/GLSync;)V", false),
+                org.objectweb.asm.Type.getType("(Lorg/lwjgl/opengl/GLSync;)V"));
+        mv.visitInsn(Opcodes.POP);
+    }
+
+    @Test
+    void indySiteWithUnmirroredIdentityHandleKeepsTypeArgs() {
+        // BoxUtil Operation$Sync.init:3308 崩溃签名回归（glGetSync buffer 形态未镜像
+        // 时期的半改写站）：impl Handle 未镜像保持 lwjgl owner 时，instantiatedMethodType
+        // 必须同步保持 lwjgl——半改写站必在 LambdaMetafactory 链接期类型不匹配。
+        // 用一个桥必然未镜像的假想签名固定该判据（真实缺口修复后仍须守住整站一致性）
+        byte[] source = buildClass("com/example/LambdaUnmirroredSync", mv ->
+                visitSyncLambdaRef(mv, "org/lwjgl/opengl/GL32", "glFutureSyncOp"));
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.LambdaUnmirroredSync", source);
+        List<String> types = new ArrayList<>();
+        List<String> handles = new ArrayList<>();
+        collectIndyArgs(result, types, handles);
+        assertTrue(handles.contains("org/lwjgl/opengl/GL32.glFutureSyncOp(Lorg/lwjgl/opengl/GLSync;)V"),
+                "未镜像句柄必须保持原 owner: " + handles);
+        assertTrue(types.contains("(Lorg/lwjgl/opengl/GLSync;)V"),
+                "未镜像句柄站点的 MethodType 参数必须保持 lwjgl 原样: " + types);
+        assertFalse(types.stream().anyMatch(t -> t.contains("bridge/opengl/GLSync")),
+                "整站保留时不得出现桥身份类型: " + types);
+    }
+
+    @Test
+    void indySiteWithModOwnedIdentityHandleKeepsTypeArgs() {
+        // 模组自有 lambda 体（owner 不在改写表）签名引用身份类型时同样整站保留：
+        // 类声明不改写，模组方法的 GLSync 参数永远是 lwjgl 类型
+        byte[] source = buildClass("com/example/LambdaModOwnedSync", mv ->
+                visitSyncLambdaRef(mv, "com/example/SyncHelper", "lambda$sync$0"));
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.LambdaModOwnedSync", source);
+        List<String> types = new ArrayList<>();
+        List<String> handles = new ArrayList<>();
+        collectIndyArgs(result, types, handles);
+        assertTrue(handles.contains("com/example/SyncHelper.lambda$sync$0(Lorg/lwjgl/opengl/GLSync;)V"),
+                "模组自有句柄必须保持原样: " + handles);
+        assertTrue(types.contains("(Lorg/lwjgl/opengl/GLSync;)V"),
+                "MethodType 参数必须同步保持 lwjgl 原样: " + types);
+    }
+
+    @Test
+    void arbSyncFamilyHandlesAreMirrored() {
+        // Operation$Sync 的 GL_ARB_sync 回退分支：ARBSync 入改写表后方法引用
+        // 必须改写到桥（含描述符身份类型替换），与 GL32 主分支同一语义
+        byte[] source = buildClass("com/example/LambdaArbSync", mv -> {
+            visitSyncLambdaRef(mv, "org/lwjgl/opengl/ARBSync", "glDeleteSync");
+            org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
+                    "java/lang/invoke/LambdaMetafactory", "metafactory",
+                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;"
+                            + "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;"
+                            + "Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)"
+                            + "Ljava/lang/invoke/CallSite;", false);
+            mv.visitInvokeDynamicInsn("run", "()Lcom/example/XIntFunInt;", metafactory,
+                    org.objectweb.asm.Type.getType("(Ljava/lang/Object;I)I"),
+                    new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC, "org/lwjgl/opengl/ARBSync",
+                            "glGetSynci", "(Lorg/lwjgl/opengl/GLSync;I)I", false),
+                    org.objectweb.asm.Type.getType("(Lorg/lwjgl/opengl/GLSync;I)I"));
+            mv.visitInsn(Opcodes.POP);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.LambdaArbSync", source);
+        List<String> types = new ArrayList<>();
+        List<String> handles = new ArrayList<>();
+        collectIndyArgs(result, types, handles);
+        String bridge = "github/kasuminova/ssoptimizer/bridge/opengl/";
+        assertTrue(handles.contains(bridge + "ARBSync.glDeleteSync(L" + bridge + "GLSync;)V"),
+                "ARBSync 句柄必须改写到桥: " + handles);
+        assertTrue(handles.contains(bridge + "ARBSync.glGetSynci(L" + bridge + "GLSync;I)I"),
+                "ARBSync 句柄必须改写到桥: " + handles);
+        assertTrue(types.contains("(L" + bridge + "GLSync;I)I"),
+                "已镜像站点的 MethodType 身份类型必须同步改写: " + types);
+    }
 }

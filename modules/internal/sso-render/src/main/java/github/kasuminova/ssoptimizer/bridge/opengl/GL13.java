@@ -45,4 +45,109 @@ public final class GL13 {
         BridgeSupport.enqueueSnapshot(data, snapshot -> org.lwjgl.opengl.GL13.glCompressedTexImage2D(
                 target, level, internalformat, width, height, border, snapshot));
     }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：压缩纹理上传其余入口（BoxUtil 纹理压缩加载路径引用；
+    // buffer 形态录制时刻快照，PBO 偏移形态传值——数据在绑定的
+    // GL_PIXEL_UNPACK_BUFFER 里，无客户端内存可快照）
+    // ------------------------------------------------------------------
+
+    public static void glClientActiveTexture(int texture) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL13.glClientActiveTexture(texture));
+    }
+
+    /** 像素数据录制时刻快照入队，imageSize 取快照尺寸（同 glCompressedTexImage2D）。 */
+    public static void glCompressedTexImage1D(int target, int level, int internalformat, int width,
+                                              int border, java.nio.ByteBuffer data) {
+        BridgeSupport.enqueueSnapshot(data, snapshot -> org.lwjgl.opengl.GL13.glCompressedTexImage1D(
+                target, level, internalformat, width, border, snapshot));
+    }
+
+    /** PBO 偏移形态：纯值参数，直接入队。 */
+    public static void glCompressedTexImage1D(int target, int level, int internalformat, int width,
+                                              int border, int imageSize, long dataOffset) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL13.glCompressedTexImage1D(
+                target, level, internalformat, width, border, imageSize, dataOffset));
+    }
+
+    /** PBO 偏移形态：纯值参数，直接入队。 */
+    public static void glCompressedTexImage2D(int target, int level, int internalformat, int width, int height,
+                                              int border, int imageSize, long dataOffset) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL13.glCompressedTexImage2D(
+                target, level, internalformat, width, height, border, imageSize, dataOffset));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glCompressedTexImage3D(int target, int level, int internalformat,
+                                              int width, int height, int depth,
+                                              int border, java.nio.ByteBuffer data) {
+        BridgeSupport.enqueueSnapshot(data, snapshot -> org.lwjgl.opengl.GL13.glCompressedTexImage3D(
+                target, level, internalformat, width, height, depth, border, snapshot));
+    }
+
+    /** PBO 偏移形态：纯值参数，直接入队。 */
+    public static void glCompressedTexImage3D(int target, int level, int internalformat,
+                                              int width, int height, int depth,
+                                              int border, int imageSize, long dataOffset) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL13.glCompressedTexImage3D(
+                target, level, internalformat, width, height, depth, border, imageSize, dataOffset));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glCompressedTexSubImage1D(int target, int level, int xOffset, int width,
+                                                 int format, java.nio.ByteBuffer data) {
+        BridgeSupport.enqueueSnapshot(data, snapshot -> org.lwjgl.opengl.GL13.glCompressedTexSubImage1D(
+                target, level, xOffset, width, format, snapshot));
+    }
+
+    /** PBO 偏移形态：纯值参数，直接入队。 */
+    public static void glCompressedTexSubImage1D(int target, int level, int xOffset, int width,
+                                                 int format, int imageSize, long dataOffset) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL13.glCompressedTexSubImage1D(
+                target, level, xOffset, width, format, imageSize, dataOffset));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glCompressedTexSubImage2D(int target, int level, int xOffset, int yOffset,
+                                                 int width, int height, int format, java.nio.ByteBuffer data) {
+        BridgeSupport.enqueueSnapshot(data, snapshot -> org.lwjgl.opengl.GL13.glCompressedTexSubImage2D(
+                target, level, xOffset, yOffset, width, height, format, snapshot));
+    }
+
+    /** PBO 偏移形态：纯值参数，直接入队。 */
+    public static void glCompressedTexSubImage2D(int target, int level, int xOffset, int yOffset,
+                                                 int width, int height, int format, int imageSize, long dataOffset) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL13.glCompressedTexSubImage2D(
+                target, level, xOffset, yOffset, width, height, format, imageSize, dataOffset));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glCompressedTexSubImage3D(int target, int level, int xOffset, int yOffset, int zOffset,
+                                                 int width, int height, int depth, int format,
+                                                 java.nio.ByteBuffer data) {
+        BridgeSupport.enqueueSnapshot(data, snapshot -> org.lwjgl.opengl.GL13.glCompressedTexSubImage3D(
+                target, level, xOffset, yOffset, zOffset, width, height, depth, format, snapshot));
+    }
+
+    /** PBO 偏移形态：纯值参数，直接入队。 */
+    public static void glCompressedTexSubImage3D(int target, int level, int xOffset, int yOffset, int zOffset,
+                                                 int width, int height, int depth, int format,
+                                                 int imageSize, long dataOffset) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL13.glCompressedTexSubImage3D(
+                target, level, xOffset, yOffset, zOffset, width, height, depth, format, imageSize, dataOffset));
+    }
+
+    /**
+     * 压缩纹理读回（BoxUtil 引用，盘点补面）：渲染线程直接写入调用方 buffer；
+     * 调用方阻塞期间 buffer 不被触碰（语义同 GL15.glGetBufferSubData 族）。
+     */
+    public static void glGetCompressedTexImage(int target, int level, java.nio.ByteBuffer data) {
+        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL13.glGetCompressedTexImage(target, level, data));
+    }
+
+    /** PBO 读回偏移形态：阻塞通道（读回语义强依赖执行完成）。 */
+    public static void glGetCompressedTexImage(int target, int level, long dataOffset) {
+        BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL13.glGetCompressedTexImage(target, level, dataOffset));
+    }
 }

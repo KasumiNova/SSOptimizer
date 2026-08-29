@@ -49,4 +49,76 @@ public final class GL42 {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL42.glTexStorage3D(
                 target, levels, internalFormat, width, height, depth));
     }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：base-instance 实例化绘制族（BoxUtil 1.0.6 GLWrapper$Drawcall
+    // 引用；录制语义同 {@link ARBDrawInstanced}：索引 buffer 快照入队，VBO 偏移传值）
+    // ------------------------------------------------------------------
+
+    public static void glDrawArraysInstancedBaseInstance(int mode, int first, int count,
+                                                         int primcount, int baseInstance) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL42.glDrawArraysInstancedBaseInstance(
+                mode, first, count, primcount, baseInstance));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseInstance(int mode, java.nio.ByteBuffer indices,
+                                                           int primcount, int baseInstance) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseInstance(mode, snapshot, primcount, baseInstance));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseInstance(int mode, java.nio.IntBuffer indices,
+                                                           int primcount, int baseInstance) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseInstance(mode, snapshot.asIntBuffer(),
+                        primcount, baseInstance));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseInstance(int mode, java.nio.ShortBuffer indices,
+                                                           int primcount, int baseInstance) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseInstance(mode, snapshot.asShortBuffer(),
+                        primcount, baseInstance));
+    }
+
+    /** VBO 偏移形态：纯值参数，直接入队。 */
+    public static void glDrawElementsInstancedBaseInstance(int mode, int count, int type, long indicesOffset,
+                                                           int primcount, int baseInstance) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseInstance(
+                mode, count, type, indicesOffset, primcount, baseInstance));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseVertexBaseInstance(int mode, java.nio.ByteBuffer indices,
+                                                                     int primcount, int baseVertex, int baseInstance) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseVertexBaseInstance(mode, snapshot,
+                        primcount, baseVertex, baseInstance));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseVertexBaseInstance(int mode, java.nio.IntBuffer indices,
+                                                                     int primcount, int baseVertex, int baseInstance) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseVertexBaseInstance(mode, snapshot.asIntBuffer(),
+                        primcount, baseVertex, baseInstance));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseVertexBaseInstance(int mode, java.nio.ShortBuffer indices,
+                                                                     int primcount, int baseVertex, int baseInstance) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseVertexBaseInstance(mode, snapshot.asShortBuffer(),
+                        primcount, baseVertex, baseInstance));
+    }
+
+    /** VBO 偏移形态：纯值参数，直接入队。 */
+    public static void glDrawElementsInstancedBaseVertexBaseInstance(int mode, int count, int type, long indicesOffset,
+                                                                     int primcount, int baseVertex, int baseInstance) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseVertexBaseInstance(
+                mode, count, type, indicesOffset, primcount, baseVertex, baseInstance));
+    }
 }

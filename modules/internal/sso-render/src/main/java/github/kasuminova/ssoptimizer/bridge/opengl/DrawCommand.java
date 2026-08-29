@@ -5,7 +5,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
 import java.nio.ByteBuffer;
 
 /**
- * 池化的 draw 命令（glDrawArrays/glDrawElements/glArrayElement 全变体）。
+ * 池化的 draw 命令（glDrawArrays/glDrawElements/glDrawRangeElements/glArrayElement 全变体）。
  * <p>
  * 动机：draw 是逐 sprite 的高频命令，原实现每条 draw 分配「draw lambda +
  * 包装 lambda」两个命令对象；池化后录制侧借出、渲染线程执行完（finally）
@@ -24,6 +24,10 @@ final class DrawCommand implements GlCommand {
     static final int DRAW_ELEMENTS_OFFSET = 2;
     /** glArrayElement(index)。 */
     static final int ARRAY_ELEMENT = 3;
+    /** glDrawRangeElements(mode, start, end, indices快照)：语义同 DRAW_ELEMENTS_SNAPSHOT。 */
+    static final int DRAW_RANGE_ELEMENTS_SNAPSHOT = 4;
+    /** glDrawRangeElements(mode, start, end, count, type, offset)：VBO 索引偏移形式。 */
+    static final int DRAW_RANGE_ELEMENTS_OFFSET = 5;
 
     /** 索引快照的视图种类：ByteBuffer 原样。 */
     static final int VIEW_BYTE = 0;
@@ -39,6 +43,9 @@ final class DrawCommand implements GlCommand {
     private int c;
     /** DRAW_ELEMENTS_OFFSET 的索引偏移。 */
     private long offset;
+    /** DRAW_RANGE_ELEMENTS_OFFSET 的 count/type（range 变体比 elements 多 start/end 两个参数）。 */
+    private int d;
+    private int e;
     /** DRAW_ELEMENTS_SNAPSHOT 的池化索引快照与其视图种类。 */
     private ByteBuffer indexSnapshot;
     private int indexView;
@@ -75,6 +82,29 @@ final class DrawCommand implements GlCommand {
         this.group = group;
     }
 
+    void setDrawRangeElementsSnapshot(int mode, int start, int end, ByteBuffer snapshot, int view,
+                                      PointerSnapshotGroup group) {
+        this.variant = DRAW_RANGE_ELEMENTS_SNAPSHOT;
+        this.a = mode;
+        this.b = start;
+        this.c = end;
+        this.indexSnapshot = snapshot;
+        this.indexView = view;
+        this.group = group;
+    }
+
+    void setDrawRangeElementsOffset(int mode, int start, int end, int count, int type, long offset,
+                                    PointerSnapshotGroup group) {
+        this.variant = DRAW_RANGE_ELEMENTS_OFFSET;
+        this.a = mode;
+        this.b = start;
+        this.c = end;
+        this.d = count;
+        this.e = type;
+        this.offset = offset;
+        this.group = group;
+    }
+
     @Override
     public void execute() {
         try {
@@ -85,6 +115,8 @@ final class DrawCommand implements GlCommand {
                 // 数据解码为 immediate 调用（按值捕获），见
                 // {@link DrawCommandImmediateDecoder}。VBO 偏移形式（canDecode
                 // 返回 false）走下方常规路径：服务器端数据指针捕获语义正确。
+                // range 变体不进本分支：display list 编译与 glDrawRangeElements
+                // 的组合在实际模组面不存在，命中即 default 快速失败（日志可查）。
                 switch (variant) {
                     case DRAW_ARRAYS -> DrawCommandImmediateDecoder.replayDrawArrays(
                             group, a, b, c, ImmediateVertexSink.INSTANCE);
@@ -109,6 +141,15 @@ final class DrawCommand implements GlCommand {
                     }
                 }
                 case DRAW_ELEMENTS_OFFSET -> org.lwjgl.opengl.GL11.glDrawElements(a, b, c, offset);
+                case DRAW_RANGE_ELEMENTS_SNAPSHOT -> {
+                    switch (indexView) {
+                        case VIEW_BYTE -> org.lwjgl.opengl.GL12.glDrawRangeElements(a, b, c, indexSnapshot);
+                        case VIEW_INT -> org.lwjgl.opengl.GL12.glDrawRangeElements(a, b, c, indexSnapshot.asIntBuffer());
+                        case VIEW_SHORT -> org.lwjgl.opengl.GL12.glDrawRangeElements(a, b, c, indexSnapshot.asShortBuffer());
+                        default -> throw new IllegalStateException("[SSOptimizer] 未知索引快照视图种类 " + indexView);
+                    }
+                }
+                case DRAW_RANGE_ELEMENTS_OFFSET -> org.lwjgl.opengl.GL12.glDrawRangeElements(a, b, c, d, e, offset);
                 case ARRAY_ELEMENT -> org.lwjgl.opengl.GL11.glArrayElement(a);
                 default -> throw new IllegalStateException("[SSOptimizer] 未知 draw 命令变体 " + variant);
             }

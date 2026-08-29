@@ -7,7 +7,8 @@ import github.kasuminova.ssoptimizer.common.render.queue.SignalFenceCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.WaitFenceCommand;
 
 /**
- * org.lwjgl.opengl.GL32 的 bridge 镜像（fence sync 三件套）。
+ * org.lwjgl.opengl.GL32 的 bridge 镜像（fence sync 族 + base-vertex/实例化绘制族
+ * + FBO/多重采样状态族）。
  * <p>
  * 动机：BoxUtil 用 glFenceSync/glWaitSync/glDeleteSync 做跨上下文的 GPU 命令流
  * 可见性协调。aux-context 折叠进单渲染线程后（见 {@link SharedDrawable}），fence
@@ -99,5 +100,199 @@ public final class GL32 {
     /** 带索引 64 位 getter：阻塞通道取回。 */
     public static long glGetInteger64(int pname, int index) {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL32.glGetInteger64(pname, index));
+    }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：sync 等待/查询（BoxUtil Operation$Sync 引用）
+    // ------------------------------------------------------------------
+
+    /**
+     * 等待 fence 完成。折叠模型下 fence 是纯 Java 会合点（{@link #glFenceSync}），
+     * 等待在调用线程自旋（先经 {@link BridgeSupport#flushForFenceWait()} 提交当前帧，
+     * 通道选择理由见该方法 javadoc），不触碰真实 GL。
+     *
+     * @return {@code GL_CONDITION_SATISFIED}（已 signal）或 {@code GL_TIMEOUT_EXPIRED}
+     */
+    public static int glClientWaitSync(GLSync sync, int flags, long timeout) {
+        FrameFence fence = sync.fence();
+        BridgeSupport.flushForFenceWait();
+        final long deadline = System.nanoTime() + timeout;
+        while (!fence.isSignaled()) {
+            if (System.nanoTime() - deadline >= 0) {
+                return org.lwjgl.opengl.GL32.GL_TIMEOUT_EXPIRED;
+            }
+            Thread.onSpinWait();
+        }
+        return org.lwjgl.opengl.GL32.GL_CONDITION_SATISFIED;
+    }
+
+    /**
+     * fence 状态查询：折叠模型下是纯 CPU 查询（无真实 GL sync 对象），
+     * 支持 GL_OBJECT_TYPE/GL_SYNC_STATUS/GL_SYNC_CONDITION/GL_SYNC_FLAGS
+     * 四个标准 pname。
+     */
+    public static int glGetSynci(GLSync sync, int pname) {
+        switch (pname) {
+            case org.lwjgl.opengl.GL32.GL_OBJECT_TYPE:
+                return org.lwjgl.opengl.GL32.GL_SYNC_FENCE;
+            case org.lwjgl.opengl.GL32.GL_SYNC_STATUS:
+                return sync.fence().isSignaled()
+                        ? org.lwjgl.opengl.GL32.GL_SIGNALED : org.lwjgl.opengl.GL32.GL_UNSIGNALED;
+            case org.lwjgl.opengl.GL32.GL_SYNC_CONDITION:
+                return org.lwjgl.opengl.GL32.GL_SYNC_GPU_COMMANDS_COMPLETE;
+            case org.lwjgl.opengl.GL32.GL_SYNC_FLAGS:
+                return 0;
+            default:
+                throw new IllegalArgumentException("[SSOptimizer] 不支持的 glGetSynci pname: 0x"
+                        + Integer.toHexString(pname));
+        }
+    }
+
+    /**
+     * buffer 形态批量查询：折叠模型下每个 pname 恒为单值（真实 GL 对 sync 全部
+     * pname 也只返回一个值），写入 values 当前位置；length 非 null 时写入 1。
+     * <p>
+     * 必须镜像的理由（BoxUtil 1.0.6 Operation$Sync.init:3308 崩溃根因）：
+     * GLWrapper 以方法引用 {@code GL32::glGetSync} 挂 lambda，impl Handle 未镜像时
+     * 保持 lwjgl owner 而 instantiatedMethodType 的身份类型（GLSync）被改写，
+     * 两侧类型不一致 → LambdaConversionException。sync 身份族必须全族镜像。
+     *
+     * @param length 可选（可为 null），接收实际写入值个数
+     * @param values 接收查询值，remaining 至少 1
+     */
+    public static void glGetSync(GLSync sync, int pname, java.nio.IntBuffer length,
+                                 java.nio.IntBuffer values) {
+        if (values == null || values.remaining() < 1) {
+            throw new IllegalArgumentException("[SSOptimizer] glGetSync values 缓冲容量不足: "
+                    + (values == null ? "null" : values.remaining()));
+        }
+        values.put(glGetSynci(sync, pname));
+        if (length != null) {
+            length.put(1);
+        }
+    }
+
+    /** 单值便捷形态：语义同 {@link #glGetSynci}（LWJGL2 中两入口等价）。 */
+    public static int glGetSync(GLSync sync, int pname) {
+        return glGetSynci(sync, pname);
+    }
+
+    /** 折叠模型下桥句柄即 sync 对象：未被 glDeleteSync 标记失效即为 true。 */
+    public static boolean glIsSync(GLSync sync) {
+        return !sync.isDeleted();
+    }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：base-vertex / 实例化绘制族（BoxUtil 1.0.6 GLWrapper$Drawcall
+    // 引用；录制语义同 {@link ARBDrawInstanced}：索引 buffer 快照入队，VBO 偏移传值）
+    // ------------------------------------------------------------------
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsBaseVertex(int mode, java.nio.ByteBuffer indices, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawElementsBaseVertex(mode, snapshot, baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsBaseVertex(int mode, java.nio.IntBuffer indices, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawElementsBaseVertex(mode, snapshot.asIntBuffer(), baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsBaseVertex(int mode, java.nio.ShortBuffer indices, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawElementsBaseVertex(mode, snapshot.asShortBuffer(), baseVertex));
+    }
+
+    /** VBO 偏移形态：纯值参数，直接入队。 */
+    public static void glDrawElementsBaseVertex(int mode, int count, int type, long indicesOffset, int baseVertex) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL32.glDrawElementsBaseVertex(mode, count, type, indicesOffset, baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawRangeElementsBaseVertex(int mode, int start, int end,
+                                                     java.nio.ByteBuffer indices, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawRangeElementsBaseVertex(mode, start, end, snapshot, baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawRangeElementsBaseVertex(int mode, int start, int end,
+                                                     java.nio.IntBuffer indices, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawRangeElementsBaseVertex(mode, start, end,
+                        snapshot.asIntBuffer(), baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawRangeElementsBaseVertex(int mode, int start, int end,
+                                                     java.nio.ShortBuffer indices, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawRangeElementsBaseVertex(mode, start, end,
+                        snapshot.asShortBuffer(), baseVertex));
+    }
+
+    /** VBO 偏移形态：纯值参数，直接入队。 */
+    public static void glDrawRangeElementsBaseVertex(int mode, int start, int end, int count, int type,
+                                                     long indicesOffset, int baseVertex) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL32.glDrawRangeElementsBaseVertex(
+                mode, start, end, count, type, indicesOffset, baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseVertex(int mode, java.nio.ByteBuffer indices,
+                                                         int primcount, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(mode, snapshot, primcount, baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseVertex(int mode, java.nio.IntBuffer indices,
+                                                         int primcount, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(mode, snapshot.asIntBuffer(),
+                        primcount, baseVertex));
+    }
+
+    /** 索引 buffer 录制时刻快照。 */
+    public static void glDrawElementsInstancedBaseVertex(int mode, java.nio.ShortBuffer indices,
+                                                         int primcount, int baseVertex) {
+        BridgeSupport.enqueueSnapshot(indices, snapshot ->
+                org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(mode, snapshot.asShortBuffer(),
+                        primcount, baseVertex));
+    }
+
+    /** VBO 偏移形态：纯值参数，直接入队。 */
+    public static void glDrawElementsInstancedBaseVertex(int mode, int count, int type, long indicesOffset,
+                                                         int primcount, int baseVertex) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex(
+                mode, count, type, indicesOffset, primcount, baseVertex));
+    }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：FBO / 多重采样状态族（BoxUtil 引用，纯值参数直接入队）
+    // ------------------------------------------------------------------
+
+    public static void glFramebufferTexture(int target, int attachment, int texture, int level) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL32.glFramebufferTexture(target, attachment, texture, level));
+    }
+
+    public static void glTexImage2DMultisample(int target, int samples, int internalformat,
+                                               int width, int height, boolean fixedSampleLocations) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL32.glTexImage2DMultisample(
+                target, samples, internalformat, width, height, fixedSampleLocations));
+    }
+
+    public static void glTexImage3DMultisample(int target, int samples, int internalformat,
+                                               int width, int height, int depth, boolean fixedSampleLocations) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL32.glTexImage3DMultisample(
+                target, samples, internalformat, width, height, depth, fixedSampleLocations));
+    }
+
+    public static void glSampleMaski(int maskNumber, int mask) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL32.glSampleMaski(maskNumber, mask));
     }
 }

@@ -35,15 +35,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>owner 改写表：{@code org/lwjgl/opengl/{GL11~GL15,GL20,GL30~GL32,
  *       GL40~GL44,ARBVertexBufferObject,EXTFramebufferObject,ARBFramebufferObject,
- *       ARBTextureStorage,ARBBindlessTexture,NVBindlessTexture,Display,GLContext,
+ *       ARBTextureStorage,ARBBindlessTexture,NVBindlessTexture,ARBSync,Display,GLContext,
  *       Drawable,SharedDrawable,GLSync,Util}} → bridge/opengl 同名类；</li>
  *   <li>只改写 bridge 实际镜像了的方法（镜像表在首次使用时解析 bridge 类自身字节码
  *       构建，方法名+描述符匹配）；未镜像的调用保持原 owner 并按调用签名首次
  *       记 warn 日志——未镜像调用在分离模式下会在无 context 的调用线程执行真实 GL，
- *       日志是覆盖面审计与崩溃定位的唯一依据；</li>
+ *       日志是覆盖面审计与崩溃定位的唯一依据。invokedynamic bootstrap 参数中的
+ *       方法句柄（lambda/方法引用，如 {@code GL12::glDrawRangeElements}）适用同一
+ *       白名单判据：桥未镜像时保持原 owner 链接真实 LWJGL 方法，盲改 owner 会在
+ *       LambdaMetafactory 链接期以 NoSuchMethodError 收场；</li>
  *   <li>描述符类型改写仅限被改写的调用点：GLSync/Drawable/SharedDrawable 三类在
- *       bridge 化后对象身份不同，调用点描述符同步替换为 bridge 类型；类声明
- *       （字段/方法签名）不改写——跨声明持有这三类对象的模组（BoxUtil 级）会因
+ *       bridge 化后对象身份不同，调用点描述符同步替换为 bridge 类型（含 indy
+ *       bootstrap 参数里的 MethodType——泛型函数接口的具体实例化类型）。
+ *       indy 站点整站一致：只要有一个描述符含身份类型的 impl Handle 不改写
+ *       （未镜像或 owner 不在改写表），该站的 MethodType 参数也全部保持原样，
+ *       半改写站必在 LambdaMetafactory 链接期类型不匹配；
+ *       类声明（字段/方法签名）不改写——跨声明持有这三类对象的模组（BoxUtil 级）会因
  *       类型不一致校验失败，属已声明的 v1 不兼容范围；</li>
  *   <li>visitLdcInsn 的字符串字面量绝不动；{@code Type} 型 class 字面量只在命中
  *       三个对象身份类型时改写；</li>
@@ -102,7 +109,7 @@ public final class RenderThreadRedirector {
             "GL40", "GL41", "GL42", "GL43", "GL44",
             "ARBVertexBufferObject", "EXTFramebufferObject", "ARBFramebufferObject",
             "ARBTextureStorage", "ARBBindlessTexture", "NVBindlessTexture",
-            "ARBInstancedArrays", "ARBDrawInstanced",
+            "ARBInstancedArrays", "ARBDrawInstanced", "ARBSync",
             "Display", "GLContext", "Drawable", "SharedDrawable", "GLSync", "Util"
     };
 
@@ -420,25 +427,69 @@ public final class RenderThreadRedirector {
             // lambda/方法引用场景兜底：indy 描述符与 bootstrap 参数中的 Handle/Type
             // 同样可能引用被改写 owner（如 GL11::glBegin 方法引用）
             String remappedDesc = remapDescriptor(desc);
+            // 整站一致性预扫：indy 站点必须整站改写或整站保留。若某个描述符含身份
+            // 类型的 impl Handle 不会改写（owner 不在改写表——模组自有 lambda 体；
+            // 或桥未镜像），则本站的 Type 参数（samMethodType/instantiatedMethodType）
+            // 也必须保持原样——否则 impl 留在 lwjgl 世界而 instantiated 被改写进
+            // 桥世界，LambdaMetafactory 链接期必然类型不匹配
+            // （BoxUtil Operation$Sync.init:3308 崩溃签名：glGetSync buffer 形态
+            // 未镜像时 instantiated 被单独改写）。
+            boolean keepWholeSite = false;
+            for (Object arg : bsmArgs) {
+                if (!(arg instanceof Handle handle)) {
+                    continue;
+                }
+                String remappedHandleDesc = remapDescriptor(handle.getDesc());
+                if (remappedHandleDesc.equals(handle.getDesc())) {
+                    continue;
+                }
+                String bridgeOwner = OWNER_REMAP.get(handle.getOwner());
+                Set<String> mirrored = bridgeOwner == null ? null
+                        : mirrorTable.get(bridgeOwner.substring(BRIDGE_PREFIX.length()));
+                if (mirrored == null || !mirrored.contains(handle.getName() + remappedHandleDesc)) {
+                    keepWholeSite = true;
+                    break;
+                }
+            }
             Object[] remappedArgs = bsmArgs;
             for (int i = 0; i < bsmArgs.length; i++) {
                 Object arg = bsmArgs[i];
-                if (arg instanceof Type type && type.getSort() == Type.OBJECT) {
-                    String remapped = remapType(type.getInternalName());
-                    if (!remapped.equals(type.getInternalName())) {
+                if (arg instanceof Type type) {
+                    if (keepWholeSite) {
+                        continue;
+                    }
+                    // samMethodType/instantiatedMethodType 等 MethodType 参数同样可能
+                    // 引用对象身份类型（BoxUtil 的泛型 Fun 接口以具体 GLSync 实例化，
+                    // 如 XIntLongFun<GLSync> 的 instantiatedMethodType 含具体 GLSync）。
+                    // 必须同步改写：否则 impl Handle 已指向 bridge 方法而 instantiated
+                    // 类型仍是 lwjgl GLSync，LambdaMetafactory 校验类型不 convertible
+                    // 直接 LambdaConversionException（Operation$Sync.init 崩溃签名）。
+                    // remapDescriptor 只替换三个身份类型，OBJECT/ARRAY/METHOD 全形态安全。
+                    String remappedTypeDesc = remapDescriptor(type.getDescriptor());
+                    if (!remappedTypeDesc.equals(type.getDescriptor())) {
                         if (remappedArgs == bsmArgs) {
                             remappedArgs = bsmArgs.clone();
                         }
-                        remappedArgs[i] = Type.getObjectType(remapped);
+                        remappedArgs[i] = Type.getType(remappedTypeDesc);
                     }
                 } else if (arg instanceof Handle handle) {
                     String bridgeOwner = OWNER_REMAP.get(handle.getOwner());
                     if (bridgeOwner != null) {
-                        if (remappedArgs == bsmArgs) {
-                            remappedArgs = bsmArgs.clone();
+                        // 与 visitMethodInsn 同一白名单判据：桥未镜像的方法句柄保持原
+                        // owner（lambda/方法引用链接到真实 LWJGL 方法）。盲改 owner 会让
+                        // LambdaMetafactory 在链接期解析桥类不存在的方法签名，直接
+                        // NoSuchMethodError（BoxUtil 1.0.6 GLWrapper$Drawcall.init 崩溃根因）
+                        String remappedHandleDesc = remapDescriptor(handle.getDesc());
+                        Set<String> mirrored = mirrorTable.get(bridgeOwner.substring(BRIDGE_PREFIX.length()));
+                        if (mirrored != null && mirrored.contains(handle.getName() + remappedHandleDesc)) {
+                            if (remappedArgs == bsmArgs) {
+                                remappedArgs = bsmArgs.clone();
+                            }
+                            remappedArgs[i] = new Handle(handle.getTag(), bridgeOwner, handle.getName(),
+                                    remappedHandleDesc, handle.isInterface());
+                        } else {
+                            warnUnmirrored(className, handle.getOwner(), handle.getName(), handle.getDesc());
                         }
-                        remappedArgs[i] = new Handle(handle.getTag(), bridgeOwner, handle.getName(),
-                                remapDescriptor(handle.getDesc()), handle.isInterface());
                     }
                 }
             }

@@ -245,6 +245,11 @@ final class BufferMapEmulator {
         return Thread.currentThread().getId() << 32 | target & 0xFFFFFFFFL;
     }
 
+    /** 本线程在该 target 上是否有在途仿真映射（{@code glFlushMappedBufferRange} 桥接判定用）。 */
+    static synchronized boolean hasPendingMap(final int target) {
+        return PENDING.containsKey(pendingKey(target));
+    }
+
     /** target 对应的绑定查询 pname；不认识的 target 返回 0（不可安全仿真）。 */
     private static int bindingQueryPname(final int target) {
         if (target == GL15.GL_ARRAY_BUFFER) {

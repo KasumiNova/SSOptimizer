@@ -102,4 +102,37 @@ public final class ARBFramebufferObject {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject
                 .glRenderbufferStorage(target, internalformat, width, height));
     }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：BoxUtil 引用的 blit / 其余附着点 / 多重采样 renderbuffer
+    // ------------------------------------------------------------------
+
+    public static void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1,
+                                         int dstX0, int dstY0, int dstX1, int dstY1,
+                                         int mask, int filter) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject.glBlitFramebuffer(
+                srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter));
+    }
+
+    public static void glFramebufferTexture1D(int target, int attachment, int textarget, int texture, int level) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject
+                .glFramebufferTexture1D(target, attachment, textarget, texture, level));
+    }
+
+    public static void glFramebufferTexture3D(int target, int attachment, int textarget, int texture,
+                                              int level, int layer) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject
+                .glFramebufferTexture3D(target, attachment, textarget, texture, level, layer));
+    }
+
+    public static void glFramebufferTextureLayer(int target, int attachment, int texture, int level, int layer) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject
+                .glFramebufferTextureLayer(target, attachment, texture, level, layer));
+    }
+
+    public static void glRenderbufferStorageMultisample(int target, int samples, int internalformat,
+                                                        int width, int height) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject
+                .glRenderbufferStorageMultisample(target, samples, internalformat, width, height));
+    }
 }

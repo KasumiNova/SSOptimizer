@@ -36,4 +36,24 @@ public final class GL14 {
         BridgeSupport.enqueue(() ->
                 org.lwjgl.opengl.GL14.glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha));
     }
+
+    /**
+     * 批量 glDrawArrays（BoxUtil 1.0.6 GLWrapper$Drawcall 引用）。
+     * 两个参数数组都在录制时刻快照；pointer 状态由命令流内此前的 pointer 命令
+     * 按提交序重放（与 {@link ARBDrawInstanced} 的既有语义一致——本族非
+     * immediate 热路径，不进池化 DrawCommand）。
+     */
+    public static void glMultiDrawArrays(int mode, java.nio.IntBuffer firsts, java.nio.IntBuffer counts) {
+        java.nio.ByteBuffer firstsSnapshot = BridgeSupport.pool().snapshot(firsts);
+        java.nio.ByteBuffer countsSnapshot = BridgeSupport.pool().snapshot(counts);
+        BridgeSupport.enqueue(() -> {
+            try {
+                org.lwjgl.opengl.GL14.glMultiDrawArrays(mode, firstsSnapshot.asIntBuffer(),
+                        countsSnapshot.asIntBuffer());
+            } finally {
+                BridgeSupport.releaseSnapshot(firstsSnapshot);
+                BridgeSupport.releaseSnapshot(countsSnapshot);
+            }
+        });
+    }
 }

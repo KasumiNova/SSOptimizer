@@ -182,4 +182,87 @@ public final class GL30 {
         BridgeSupport.enqueue(() ->
                 org.lwjgl.opengl.GL30.glVertexAttribIPointer(index, size, type, stride, offset));
     }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：UBO range 绑定 / FBO 其余附着点 / 多重采样 renderbuffer /
+    // glClearBuffer 族（BoxUtil 1.0.6 引用；语义同既有方法）
+    // ------------------------------------------------------------------
+
+    public static void glBindBufferRange(int target, int index, int buffer, long offset, long size) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL30.glBindBufferRange(target, index, buffer, offset, size));
+    }
+
+    public static void glFramebufferTexture1D(int target, int attachment, int textarget, int texture, int level) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL30.glFramebufferTexture1D(target, attachment, textarget, texture, level));
+    }
+
+    public static void glFramebufferTexture3D(int target, int attachment, int textarget, int texture,
+                                              int level, int layer) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL30.glFramebufferTexture3D(target, attachment, textarget, texture, level, layer));
+    }
+
+    public static void glFramebufferTextureLayer(int target, int attachment, int texture, int level, int layer) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL30.glFramebufferTextureLayer(target, attachment, texture, level, layer));
+    }
+
+    public static void glRenderbufferStorageMultisample(int target, int samples, int internalformat,
+                                                        int width, int height) {
+        BridgeSupport.enqueue(() ->
+                org.lwjgl.opengl.GL30.glRenderbufferStorageMultisample(target, samples, internalformat, width, height));
+    }
+
+    /** 清除值录制时刻快照入队。 */
+    public static void glClearBuffer(int buffer, int drawbuffer, java.nio.FloatBuffer value) {
+        BridgeSupport.enqueueSnapshot(value, snapshot ->
+                org.lwjgl.opengl.GL30.glClearBuffer(buffer, drawbuffer, snapshot.asFloatBuffer()));
+    }
+
+    /** 清除值录制时刻快照入队。 */
+    public static void glClearBuffer(int buffer, int drawbuffer, IntBuffer value) {
+        BridgeSupport.enqueueSnapshot(value, snapshot ->
+                org.lwjgl.opengl.GL30.glClearBuffer(buffer, drawbuffer, snapshot.asIntBuffer()));
+    }
+
+    /** 清除值录制时刻快照入队。 */
+    public static void glClearBufferu(int buffer, int drawbuffer, IntBuffer value) {
+        BridgeSupport.enqueueSnapshot(value, snapshot ->
+                org.lwjgl.opengl.GL30.glClearBufferu(buffer, drawbuffer, snapshot.asIntBuffer()));
+    }
+
+    public static void glClearBufferfi(int buffer, int drawbuffer, float depth, int stencil) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glClearBufferfi(buffer, drawbuffer, depth, stencil));
+    }
+
+    /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
+    public static void glGenVertexArrays(IntBuffer arrays) {
+        BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL30.glGenVertexArrays(arrays));
+    }
+
+    /** id 列表录制时刻快照入队。 */
+    public static void glDeleteVertexArrays(IntBuffer arrays) {
+        BridgeSupport.enqueueSnapshot(arrays, snapshot ->
+                org.lwjgl.opengl.GL30.glDeleteVertexArrays(snapshot.asIntBuffer()));
+    }
+
+    /** 名称在录制时刻定稿（CharSequence 内容不可变假设同 glGetUniformBlockIndex）。 */
+    public static void glBindFragDataLocation(int program, int colorNumber, CharSequence name) {
+        String nameStr = name.toString();
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glBindFragDataLocation(program, colorNumber, nameStr));
+    }
+
+    /**
+     * 显式 flush 映射区间：本线程在该 target 有在途<b>仿真</b>映射时为 no-op——
+     * 仿真 unmap 会把整个映射区间快照上传（flush 区间的超集），语义正确（仅损失
+     * flush 的增量优化意图）；无在途仿真映射说明走了真实映射，入队真实 flush。
+     */
+    public static void glFlushMappedBufferRange(int target, long offset, long length) {
+        if (BufferMapEmulator.hasPendingMap(target)) {
+            return;
+        }
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL30.glFlushMappedBufferRange(target, offset, length));
+    }
 }

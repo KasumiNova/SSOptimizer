@@ -44,4 +44,28 @@ public final class GL44 {
         BridgeSupport.enqueueSnapshot(data, snapshot ->
                 org.lwjgl.opengl.GL44.glBufferStorage(target, snapshot.asFloatBuffer(), flags));
     }
+
+    /** 初始数据录制时刻快照入队（BoxUtil 引用，盘点补面）。 */
+    public static void glBufferStorage(int target, java.nio.DoubleBuffer data, int flags) {
+        BridgeSupport.enqueueSnapshot(data, snapshot ->
+                org.lwjgl.opengl.GL44.glBufferStorage(target, snapshot.asDoubleBuffer(), flags));
+    }
+
+    /** 初始数据录制时刻快照入队（BoxUtil 引用，盘点补面）。 */
+    public static void glBufferStorage(int target, java.nio.IntBuffer data, int flags) {
+        BridgeSupport.enqueueSnapshot(data, snapshot ->
+                org.lwjgl.opengl.GL44.glBufferStorage(target, snapshot.asIntBuffer(), flags));
+    }
+
+    /** 初始数据录制时刻快照入队（BoxUtil 引用，盘点补面）。 */
+    public static void glBufferStorage(int target, java.nio.ShortBuffer data, int flags) {
+        BridgeSupport.enqueueSnapshot(data, snapshot ->
+                org.lwjgl.opengl.GL44.glBufferStorage(target, snapshot.asShortBuffer(), flags));
+    }
+
+    /** 纹理 id 列表录制时刻快照入队（BoxUtil 引用，盘点补面）。 */
+    public static void glBindTextures(int first, int count, java.nio.IntBuffer textures) {
+        BridgeSupport.enqueueSnapshot(textures, snapshot ->
+                org.lwjgl.opengl.GL44.glBindTextures(first, count, snapshot.asIntBuffer()));
+    }
 }

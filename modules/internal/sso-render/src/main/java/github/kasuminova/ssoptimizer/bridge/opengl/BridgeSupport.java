@@ -367,6 +367,23 @@ final class BridgeSupport {
     }
 
     /**
+     * fence 等待通道（{@link GL32#glClientWaitSync}）：把当前录制帧（含未落帧的顶点流）
+     * 提交进渲染线程后返回，由调用方在<b>调用线程</b>自旋等待 fence。
+     * <p>
+     * 等待不得在渲染线程执行（即不能走 {@link #blockingGet} 的 getter 内自旋）：
+     * 折叠模型下 fence 的信号命令可能排在另一录制线程的帧里，渲染线程自旋会饿死
+     * 该帧的执行而互相死锁；调用线程自旋则与真实 glClientWaitSync 语义一致。
+     * 先提交当前帧保证本线程此前录制的 fence 信号命令已进入执行流。
+     */
+    static void flushForFenceWait() {
+        RenderQueue q = queue();
+        if (!q.isRenderThread()) {
+            flushVertexStream();
+            swapFrames();
+        }
+    }
+
+    /**
      * 取一个 VBO id（{@link GL15#glGenBuffers()}/{@link ARBVertexBufferObject#glGenBuffersARB()}
      * 单值形式的入口）：stash 非空零阻塞出队；空则走一次资源申请阻塞通道，
      * 由渲染线程批量预生成 {@value #BUFFER_ID_STASH_BATCH} 个 id——返回首个，
