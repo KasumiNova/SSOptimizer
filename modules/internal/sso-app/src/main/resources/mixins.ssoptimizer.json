@@ -47,7 +47,6 @@
     "econ.CommodityOnMarketMixin",
     "econ.EconomyAdvanceThrottleMixin",
     "econ.MarketMixin",
-    "ime.LinuxEventImeMixin",
     "loading.JaninoJavaSourceClassLoaderMixin",
     "loading.FrameBufferObjectLedgerMixin",
     "loading.LoadingUtilsMixin",

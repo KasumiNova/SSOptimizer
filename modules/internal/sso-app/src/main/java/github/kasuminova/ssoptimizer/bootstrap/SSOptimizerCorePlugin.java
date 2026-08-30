@@ -168,13 +168,16 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
         registerIf(registrator, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
         registrator.accept(GameClassNames.COMBAT_STATE, new CombatStateProcessor());
-        registerIf(registrator, "linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
-        registerIf(registrator, "linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
+        // lwjgl 目标类由 RFB 系统类加载器加载（classLoaderException 硬编码排除），
+        // Launch 域 transformer 链不可触及，必须经 NanoForge SystemAsmBridge（RFB 插件通道）注册
+        registerSystemIf("linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
+        registerSystemIf("linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
+        registerSystemIf("linuxeventime", LinuxEventImeProcessor.TARGET_CLASS, new LinuxEventImeProcessor());
+        registerSystemIf("windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());
         registerIf(registrator, "astdautomation", ASTDAutomationCombatPluginProcessor.TARGET_CLASS, new ASTDAutomationCombatPluginProcessor());
         registerIf(registrator, "aitweaksbootstraploader", AITweaksBootstrapLoaderProcessor.TARGET_CLASS, new AITweaksBootstrapLoaderProcessor());
         registerIf(registrator, "aitweakscoreloader", AITweaksCoreLoaderProcessor.TARGET_CLASS, new AITweaksCoreLoaderProcessor());
         registerIf(registrator, "shipmasteryreflectionloader", ShipMasteryReflectionLoaderProcessor.TARGET_CLASS, new ShipMasteryReflectionLoaderProcessor());
-        registerIf(registrator, "windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());
         registerIf(registrator, "tooltiptextfieldime", GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE, new TooltipTextFieldFactoryProcessor());
         registerIf(registrator, "settingstextfieldime", GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER, new SettingsTextFieldFactoryProcessor());
         registerIf(registrator, "textfieldimplime", GameClassNames.TEXT_FIELD_IMPL, new TextFieldImplementationProcessor());
@@ -229,6 +232,22 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
             return;
         }
         registrator.accept(className, processor);
+    }
+
+    /**
+     * 注册 System 域（RFB 系统类加载器）目标类的 ASM 处理器。
+     * <p>
+     * 与 {@link #registerIf} 同样支持 {@code ssoptimizer.disable.<key>} 开关，
+     * 但注册目标是 NanoForge 的 {@code SystemAsmBridge}（RFB 插件 transformer 通道），
+     * 用于改写 org.lwjgl. 等被 RFB 硬编码排除出 Launch 域的类。
+     */
+    private static void registerSystemIf(String key, String className, AsmClassProcessor processor) {
+        if (Boolean.getBoolean("ssoptimizer.disable." + key)) {
+            LOGGER.info("[SSOptimizer] System ASM processor DISABLED via system property: " + key);
+            return;
+        }
+        io.github.nanoforged.api.SystemAsmBridge.register(className, processor::process);
+        LOGGER.info("[SSOptimizer] Registered system-domain ASM processor '" + key + "' for " + className);
     }
 
     private static void registerCompositeIf(BiConsumer<String, AsmClassProcessor> registrator,
