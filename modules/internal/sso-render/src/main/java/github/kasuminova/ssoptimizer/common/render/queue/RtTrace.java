@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -29,6 +33,13 @@ public final class RtTrace {
     public static final String SIGNAL_FILE_PROPERTY = "ssoptimizer.debug.rttrace.signal";
     /** dump 输出目录系统属性。 */
     public static final String DUMP_DIR_PROPERTY = "ssoptimizer.debug.rttrace.dumpDir";
+    /**
+     * 定点监视的纹理 id 列表系统属性（逗号分隔，如 {@code 3588,3590}）。
+     * {@code glBindTexture} 命中时额外记录一条 {@code BIND_WATCH} 事件，
+     * extra 携带真实调用方摘要（跳过 java./ssoptimizer 框架帧）——用于定位
+     * 「图集页纹理 id 被裸 UV 消费者绑定」的泄漏源（记录侧调用点即真实调用线程）。
+     */
+    public static final String WATCH_TEX_PROPERTY = "ssoptimizer.debug.rttrace.watchtex";
 
     private static final int CAPACITY = 1 << 19;
     private static final int SLOT_MASK = CAPACITY - 1;
@@ -39,6 +50,11 @@ public final class RtTrace {
             Boolean.parseBoolean(System.getProperty(ENABLED_PROPERTY, "false"));
     private static final String SIGNAL_FILE = System.getProperty(SIGNAL_FILE_PROPERTY, "").trim();
     private static final String DUMP_DIR = System.getProperty(DUMP_DIR_PROPERTY, "").trim();
+    /** 定点监视的纹理 id 集合（空 = 不监视，watch 路径零开销）。 */
+    private static final Set<Integer> WATCH_TEX =
+            parseWatchTex(System.getProperty(WATCH_TEX_PROPERTY, ""));
+    /** 已输出日志的 watch 命中（tex@caller 去重，防止日志刷屏）。 */
+    private static final Set<String> WATCH_LOGGED = ConcurrentHashMap.newKeySet();
 
     private static final Entry[] RING = new Entry[CAPACITY];
     /** 全局事件序号（亦作 ring 游标）。 */
@@ -58,7 +74,8 @@ public final class RtTrace {
         if (ENABLED) {
             LOGGER.info("[SSOptimizer] RtTrace 已启用：capacity=" + CAPACITY
                     + " signal=" + (SIGNAL_FILE.isEmpty() ? "<未配置>" : SIGNAL_FILE)
-                    + " dumpDir=" + (DUMP_DIR.isEmpty() ? "<user.dir>" : DUMP_DIR));
+                    + " dumpDir=" + (DUMP_DIR.isEmpty() ? "<user.dir>" : DUMP_DIR)
+                    + (WATCH_TEX.isEmpty() ? "" : " watchTex=" + WATCH_TEX));
             // 进程退出时兜底 dump 一次（烟测脚本 TERM 关停可走 shutdown hook）；
             // hook 有意保留平台线程（Wave 3 不迁移）：关停阶段虚拟线程调度器已停用
             Runtime.getRuntime().addShutdownHook(new Thread(() -> dump("shutdown"), "SSOptimizer-RtTrace-Dump"));
@@ -98,6 +115,69 @@ public final class RtTrace {
         entry.p2 = p2;
         entry.p3 = p3;
         entry.extra = extra;
+    }
+
+    /**
+     * 定点纹理绑定监视：{@code texture} 命中 {@link #WATCH_TEX_PROPERTY} 列表时，
+     * 记录一条 {@code BIND_WATCH} 事件（extra = 调用方摘要），并对每个
+     * 「纹理 id × 调用方」组合输出一次 INFO 日志。
+     * 关闭或未配置时仅一次集合空检查，立即返回。
+     *
+     * @param target  绑定目标（如 GL_TEXTURE_2D）
+     * @param texture 被绑定的纹理 id
+     */
+    public static void traceBindWatch(final int target, final int texture) {
+        if (!ENABLED || WATCH_TEX.isEmpty() || !WATCH_TEX.contains(texture)) {
+            return;
+        }
+        final String caller = summarizeCaller();
+        trace("BIND_WATCH", target, texture, 0, caller);
+        if (WATCH_LOGGED.add(texture + "@" + caller)) {
+            LOGGER.info("[SSOptimizer][RtTrace] BIND_WATCH tex=" + texture + " target=" + target
+                    + " thread=" + Thread.currentThread().getName() + " caller=" + caller);
+        }
+    }
+
+    /**
+     * 解析 {@link #WATCH_TEX_PROPERTY} 的逗号分隔 id 列表；非法项记 warn 跳过。
+     * 包私有以便单测直接验证解析逻辑。
+     */
+    static Set<Integer> parseWatchTex(final String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return Collections.emptySet();
+        }
+        final Set<Integer> ids = new HashSet<>();
+        for (String token : raw.split(",")) {
+            final String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            try {
+                ids.add(Integer.parseInt(trimmed));
+            } catch (NumberFormatException e) {
+                LOGGER.warn("[SSOptimizer] RtTrace 忽略非法 watchtex 项: " + trimmed);
+            }
+        }
+        return ids.isEmpty() ? Collections.emptySet() : ids;
+    }
+
+    /** 调用方摘要：跳过 java./ssoptimizer 框架帧后的应用层调用链（长度受限）。 */
+    private static String summarizeCaller() {
+        final StringBuilder caller = new StringBuilder(160);
+        for (StackTraceElement frame : new Throwable().getStackTrace()) {
+            final String cls = frame.getClassName();
+            if (cls.startsWith("java.") || cls.startsWith("github.kasuminova.ssoptimizer")) {
+                continue;
+            }
+            if (caller.length() > 0) {
+                caller.append(" <= ");
+            }
+            caller.append(cls).append('.').append(frame.getMethodName());
+            if (caller.length() > 220) {
+                break;
+            }
+        }
+        return caller.toString();
     }
 
     /**

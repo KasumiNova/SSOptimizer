@@ -741,6 +741,7 @@ public final class GL11 {
     public static void glBindTexture(int target, int texture) {
         github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
                 "BIND_TEX", target, texture, 0, null);
+        github.kasuminova.ssoptimizer.common.render.queue.RtTrace.traceBindWatch(target, texture);
         BridgeSupport.simulatedState().onBindTexture(target, texture);
         BridgeSupport.enqueueState(StateDedup.TYPE_BIND_TEXTURE, target, texture, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
