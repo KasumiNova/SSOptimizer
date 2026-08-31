@@ -44,7 +44,9 @@ class EngineProcessorRegistrationTest {
         // 16 个引擎级注册项（含 RESOURCE_LOADER 组合处理器）+ 2 个 DCR 处理器
         // + 14 个 GL 显存账本模组埋点注册项（第一批 5 + upTex/screenRT/vbo 9，
         // ParticleEngine 一个处理器实例占两个目标类键）
-        assertEquals(32, processors.size());
+        // − 3 个 IME 处理器（ebd2ee9 起 lwjgl 目标迁移至 NanoForge SystemAsmBridge，
+        // 不再出现在 Launch 域注册表）
+        assertEquals(29, processors.size());
         assertTrue(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         assertTrue(processors.containsKey(GameClassNames.COMBAT_STATE));
         assertTrue(processors.containsKey(GameClassNames.RESOURCE_LOADER));
@@ -76,7 +78,7 @@ class EngineProcessorRegistrationTest {
             System.setProperty("ssoptimizer.disable.textureloader", "true");
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(31, processors.size());
+            assertEquals(28, processors.size());
             assertFalse(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         } finally {
             restoreProperty("ssoptimizer.disable.textureloader", original);
@@ -90,7 +92,7 @@ class EngineProcessorRegistrationTest {
             System.setProperty("ssoptimizer.disable.dcr", "true");
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(30, processors.size());
+            assertEquals(27, processors.size());
             assertFalse(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
         } finally {
             restoreProperty("ssoptimizer.disable.dcr", original);
@@ -104,7 +106,7 @@ class EngineProcessorRegistrationTest {
             System.setProperty("ssoptimizer.disable.glledger", "true");
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(18, processors.size());
+            assertEquals(15, processors.size());
             assertFalse(processors.containsKey(ShaderLibLedgerProcessor.TARGET_CLASS));
             assertFalse(processors.containsKey(PublicFboLedgerProcessor.TARGET_CLASS));
         } finally {
