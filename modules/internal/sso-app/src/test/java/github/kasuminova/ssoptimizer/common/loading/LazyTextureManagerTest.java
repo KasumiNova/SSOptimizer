@@ -283,6 +283,55 @@ class LazyTextureManagerTest {
     }
 
     @Test
+    void atlasConsumerClassificationTreatsGameRenderPathAsInternal() {
+        // 实测链：TextureObject.getTextureId <= Sprite.render <= Sprite.renderAtCenter
+        // <= SpriteAPIImpl.renderAtCenter <= GraphicsLib ShaderLib.renderForeground
+        // ——直接消费者是 com.fs.graphics.Sprite（UV 已图集重映射），即使更上层是模组
+        // 渲染入口也判定为内部合法消费。
+        assertFalse(LazyTextureManager.classifyAtlasConsumer(List.of(
+                "github.kasuminova.ssoptimizer.common.loading.LazyTextureManager",
+                "com.fs.graphics.TextureObject",
+                "com.fs.graphics.Sprite",
+                "com.fs.graphics.Sprite",
+                "com.fs.starfarer.settings.SpriteAPIImpl",
+                "org.dark.shaders.util.ShaderLib",
+                "org.dark.shaders.light.LightShader")));
+    }
+
+    @Test
+    void atlasConsumerClassificationDetectsModConsumersThroughSpriteApi() {
+        // 实测链：TextureObject.getTextureId <= SpriteAPIImpl.getTextureId
+        // <= org.boxutil.units.standard.attribute.MaterialData.<init>
+        assertTrue(LazyTextureManager.classifyAtlasConsumer(List.of(
+                "github.kasuminova.ssoptimizer.common.loading.LazyTextureManager",
+                "com.fs.graphics.TextureObject",
+                "com.fs.starfarer.settings.SpriteAPIImpl",
+                "org.boxutil.units.standard.attribute.MaterialData")));
+        // 实测链：<= data.scripts.util.PLSP_BoxBasedUtil.genSDF（裸 0..1 UV 全图采样）
+        assertTrue(LazyTextureManager.classifyAtlasConsumer(List.of(
+                "com.fs.graphics.TextureObject",
+                "com.fs.starfarer.settings.SpriteAPIImpl",
+                "data.scripts.util.PLSP_BoxBasedUtil")));
+    }
+
+    @Test
+    void atlasConsumerClassificationTreatsVanillaSpriteApiConsumersAsInternal() {
+        // 游戏自身代码经 SpriteAPIImpl.getTextureId 取 id：跳过 API 委托层后
+        // 首个帧仍是 com.fs.*，判定为内部。
+        assertFalse(LazyTextureManager.classifyAtlasConsumer(List.of(
+                "com.fs.graphics.TextureObject",
+                "com.fs.starfarer.settings.SpriteAPIImpl",
+                "com.fs.starfarer.combat.CombatEngine")));
+    }
+
+    @Test
+    void atlasConsumerClassificationSkipsJdkFramesAndDefaultsToInternal() {
+        assertFalse(LazyTextureManager.classifyAtlasConsumer(List.of(
+                "java.lang.Thread", "jdk.internal.reflect.MethodAccessor")));
+        assertFalse(LazyTextureManager.classifyAtlasConsumer(List.of()));
+    }
+
+    @Test
     void managementSummaryIncludesEvictionsAndResidentGroups() {
         final String summary = LazyTextureManager.formatManagementSummary(List.of(
                 new TextureCompositionReport.TextureEntry(

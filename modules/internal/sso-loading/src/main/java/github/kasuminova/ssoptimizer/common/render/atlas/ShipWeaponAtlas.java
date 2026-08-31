@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.common.render.atlas;
 
+import com.fs.starfarer.loading.LoadingUtils;
 import com.fs.starfarer.loading.ShipHullSpecStore;
 import com.fs.starfarer.loading.WeaponSpecStore;
 import com.fs.starfarer.loading.specs.BaseWeaponSpec;
@@ -8,6 +9,9 @@ import com.fs.starfarer.loading.specs.MissileSpec;
 import com.fs.starfarer.loading.specs.ProjectileWeaponSpec;
 import com.fs.starfarer.loading.specs.ShipHullSpec;
 import com.fs.util.ResourceLoader;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
 import github.kasuminova.ssoptimizer.common.loading.GlLedgerHooks;
 import github.kasuminova.ssoptimizer.common.loading.GlMemoryLedger;
@@ -26,6 +30,9 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +60,11 @@ import java.util.concurrent.Semaphore;
  *       不兼容——该模式下贴图元数据在 setTexture 时不可用，构建直接跳过；</li>
  *   <li>图集纹理 id 绑定到构建时的 GL 上下文，运行期显示模式重建上下文后需重启
  *       （与原版大纹理行为一致，初版不做上下文热重建）；</li>
- *   <li>光束 core/fringe 与弹丸贴图使用平铺/自定义 UV，不入图集。</li>
+ *   <li>光束 core/fringe 与弹丸贴图使用平铺/自定义 UV，不入图集；</li>
+ *   <li>settings.json graphics 段引用的贴图（模组通用贴图注册表，消费方多为
+ *       0..1 裸 UV 全图采样）构建期整体排除；仍入图集的贴图若被模组经
+ *       {@code getTextureId} 取走（外部消费者），由 {@link LazyTextureManager}
+ *       在运行期回退独立纹理 id，语义与原版一致。</li>
  * </ul>
  * 开关：{@code -Dssoptimizer.atlas.shipweapon=false} 关闭（默认开启）；
  * {@code -Dssoptimizer.atlas.shipweapon.dumpdir=<dir>} 导出每页 PNG 供检查空间利用率。
@@ -139,6 +150,8 @@ public final class ShipWeaponAtlas {
         long cellArea = 0L;
         for (AtlasPacker.Page page : packed.pages()) {
             final int textureId = composeAndUpload(page, images, pageSize, dumpDir);
+            LOGGER.info("[SSOptimizer] Ship/weapon texture atlas page " + page.index()
+                    + " uploaded: textureId=" + textureId + " regions=" + page.placements().size());
             for (AtlasPacker.Placement placement : page.placements()) {
                 // 图像空间（左上原点）→ GL 空间（左下原点）：gY = atlasSize - y - height
                 REGIONS.put(placement.path(), new Region(
@@ -240,6 +253,71 @@ public final class ShipWeaponAtlas {
         // 无 Sprite 的 UV 重映射补偿）。入图集后 getTextureId 返回图集页 id，全域
         // 采样得到整页贴图排列 → 光照计算出现图集格子状串染（曾实证于「攻势XIV」
         // 护盾/引擎高亮区域）。排除后这些贴图走原纹理上传与绑定，语义与原版一致。
+        //
+        // settings.json graphics 段引用的贴图整体不入图集：该段是模组的通用贴图
+        // 注册表，消费方多经 settings API / 自建渲染管线以 0..1 裸 UV 全图采样。
+        // 实证：BoxUtil 的 graphics/textures/BUtil_NONE.png 占位贴图被 ASTD 等模组
+        // 大量 .wpn/.proj 引用为隐形武器贴图而混入本节收集口径，入图集后 BoxUtil
+        // 每个 MaterialData 的默认漫反射槽都绑定到图集页 → 拖尾/光束渲染成图集页
+        // 平铺。排除后这些路径走独立纹理上传，与原版语义一致。
+        final Set<String> settingsGraphics = collectSettingsGraphicsPaths();
+        final int beforeExclude = paths.size();
+        paths.keySet().removeAll(settingsGraphics);
+        if (beforeExclude != paths.size()) {
+            LOGGER.info("[SSOptimizer] Ship/weapon texture atlas: excluded "
+                    + (beforeExclude - paths.size()) + " settings.json graphics sprite(s)");
+        }
+        return paths;
+    }
+
+    /**
+     * 枚举 settings.json graphics 段引用的全部贴图路径。经游戏自身
+     * {@link LoadingUtils#readJSON} 跨 vanilla 与启用模组资源根合并读取，
+     * 与游戏运行期的合并语义一致（含模组覆盖）。
+     * 读取/解析失败记错误日志并返回空集（不排除任何路径，图集行为与排除前一致）。
+     */
+    private static Set<String> collectSettingsGraphicsPaths() {
+        final JSONObject settings;
+        try {
+            settings = LoadingUtils.readJSON("data/config/settings.json");
+        } catch (IOException | JSONException | RuntimeException e) {
+            LOGGER.error("[SSOptimizer] Ship/weapon texture atlas: cannot read settings.json"
+                    + " for graphics exclusion, no paths excluded", e);
+            return Collections.emptySet();
+        }
+        return extractGraphicsSpritePaths(settings);
+    }
+
+    /**
+     * 从 settings.json 根对象提取 graphics 段的全部贴图路径。
+     * 段结构为 {@code graphics → 类别 → { 键: 路径 } 或 { 键: [路径...] }}
+     * （数组形态对应 {@code StarfarerSettings.getSpriteKeysFromArray}）。
+     */
+    static Set<String> extractGraphicsSpritePaths(final JSONObject settings) {
+        final Set<String> paths = new HashSet<>();
+        final JSONObject graphics = settings.optJSONObject("graphics");
+        if (graphics == null) {
+            return paths;
+        }
+        final Iterator<String> categories = graphics.keys();
+        while (categories.hasNext()) {
+            if (graphics.opt(categories.next()) instanceof JSONObject category) {
+                final Iterator<String> keys = category.keys();
+                while (keys.hasNext()) {
+                    final Object value = category.opt(keys.next());
+                    if (value instanceof String path) {
+                        paths.add(path);
+                    } else if (value instanceof JSONArray array) {
+                        for (int i = 0; i < array.length(); i++) {
+                            final String path = array.optString(i, "");
+                            if (!path.isEmpty()) {
+                                paths.add(path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return paths;
     }
 

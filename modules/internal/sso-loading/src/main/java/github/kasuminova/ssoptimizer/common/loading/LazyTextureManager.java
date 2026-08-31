@@ -75,6 +75,15 @@ public final class LazyTextureManager {
     private static final long     DEFAULT_MANAGEMENT_LOG_INTERVAL_MILLIS      = 15_000L;
     private static final boolean  DEFAULT_MINIMAL_STARTUP                     = true;
     private static final String   GRAPHICS_PREFIX                             = "graphics/";
+    /** 定点诊断：路径含该子串的纹理在 getTextureId/bindTexture 时输出 INFO 级轨迹（默认关）。 */
+    static final         String   TRACE_PATH_PROPERTY                         = "ssoptimizer.texture.tracepath";
+    private static final String   TRACE_PATH                                  = System.getProperty(TRACE_PATH_PROPERTY, "");
+    /** ALL 模式定点诊断的逐路径去重集。 */
+    private static final Set<String> TRACE_ALL_SEEN                           = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** 图集外部消费者回退日志的「路径@调用链」去重集（每组合只输出一次）。 */
+    private static final Set<String> ATLAS_FALLBACK_SEEN                      = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** 图集消费者分类的栈遍历器（惰性遍历，找到首个非基础设施帧即短路）。 */
+    private static final StackWalker ATLAS_CONSUMER_WALKER                    = StackWalker.getInstance();
     private static final String   FONTS_PREFIX                                = "graphics/fonts/";
     private static final String   ORIGINAL_EAGER_LOAD_METHOD_NAME             = "ssoptimizer$loadTextureEager";
     private static final String   INSIGNIA_PREFIX                             = FONTS_PREFIX + "insignia";
@@ -283,6 +292,7 @@ public final class LazyTextureManager {
         final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
         if (atlasRegion != null) {
             // 已入舰船/武器图集：直接绑定图集纹理，原始贴图不再上传
+            traceTextureAccess("bindTexture", texture, atlasRegion.textureId(), true);
             bindTextureDeduped(target, atlasRegion.textureId());
             noteCurrentBoundTexture(texture);
             BIND_STATS_ATLAS.incrementAndGet();
@@ -290,6 +300,7 @@ public final class LazyTextureManager {
             return;
         }
         if (isContextReloadInProgress(texture)) {
+            traceTextureAccess("bindTexture", texture, Math.max(readTextureId(texture, -1), 0), false);
             bindTextureDeduped(target, Math.max(readTextureId(texture, -1), 0));
             noteCurrentBoundTexture(texture);
             noteBindPath(texture);
@@ -301,6 +312,7 @@ public final class LazyTextureManager {
         ensureTextureReady(texture, target, now, false);
 
         final int textureId = readTextureId(texture, -1);
+        traceTextureAccess("bindTexture", texture, Math.max(textureId, 0), false);
         bindTextureDeduped(target, Math.max(textureId, 0));
         noteCurrentBoundTexture(texture);
         noteBindPath(texture);
@@ -365,10 +377,22 @@ public final class LazyTextureManager {
         }
         final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
         if (atlasRegion != null) {
-            // 已入舰船/武器图集：返回图集纹理 id（合批与绑定共用同一出口）
-            return atlasRegion.textureId();
+            if (!isExternalAtlasConsumer()) {
+                // 已入舰船/武器图集且消费者为游戏自身渲染路径：返回图集纹理 id
+                // （Sprite 的 UV 已在 setTexture 时重映射进图集空间，采样正确）
+                traceTextureAccess("getTextureId", texture, atlasRegion.textureId(), true);
+                return atlasRegion.textureId();
+            }
+            // 外部消费者回退：模组经 SpriteAPI.getTextureId() 取 id 后自行绑定并以
+            // 0..1 裸 UV 全图采样（实证：BoxUtil MaterialData 默认漫反射槽、Polaris
+            // PLSP_BoxBasedUtil.genSDF 船体辉光 SDF 生成），图集页 id 会采到整页
+            // 平铺；回退走独立纹理上传路径，语义与原版一致。
+            // 已知权衡：若模组捕获了 Sprite 的图集重映射 UV 又配对本回退 id 采样，
+            // 会得到错误的子区域（当前模组集未实证此形态，出现时需按个案适配）。
+            noteAtlasExternalFallback(texture, atlasRegion.textureId());
         }
         if (isContextReloadInProgress(texture)) {
+            traceTextureAccess("getTextureId", texture, currentTextureId, false);
             return currentTextureId;
         }
 
@@ -377,7 +401,116 @@ public final class LazyTextureManager {
         noteTextureIdExternalized(texture, now);
         maybeSweepIdleTextures(texture, now);
         maybeEmitTextureDiagnostics(now);
-        return ensuredTextureId >= 0 ? ensuredTextureId : currentTextureId;
+        final int result = ensuredTextureId >= 0 ? ensuredTextureId : currentTextureId;
+        traceTextureAccess("getTextureId", texture, result, false);
+        return result;
+    }
+
+    /**
+     * 判定当前 {@code getTextureId} 图集命中的真实消费者是否为游戏外部（模组）代码。
+     * 经 {@link StackWalker} 惰性遍历调用栈，找到首个非基础设施帧即短路。
+     * <p>
+     * 调用链形态（实测）：游戏自身渲染路径为
+     * {@code TextureObject.getTextureId <= com.fs.graphics.Sprite.render <= ...}
+     * （即使更上层是 GraphicsLib 等模组调用的 renderAtCenter，直接消费者仍是
+     * Sprite，UV 已图集重映射，合法）；外部裸 UV 消费者为
+     * {@code TextureObject.getTextureId <= SpriteAPIImpl.getTextureId <= 模组类}。
+     */
+    private static boolean isExternalAtlasConsumer() {
+        return ATLAS_CONSUMER_WALKER.walk(frames -> classifyAtlasConsumer(
+                frames.map(StackWalker.StackFrame::getClassName).limit(16).toList()));
+    }
+
+    /**
+     * 图集消费者分类（纯逻辑）：跳过基础设施帧（JDK、本模组自身、被挂钩的
+     * {@code com.fs.graphics.TextureObject} getter 本体与
+     * {@code com.fs.starfarer.settings.SpriteAPIImpl} API 委托层）后，
+     * 首个帧即真实消费者——{@code com.fs.*} 为游戏自身渲染路径（合法消费图集 id），
+     * 否则为模组外部消费者（需回退独立纹理）。
+     *
+     * @param frameClassNames 调用栈帧类名序列（栈顶在前）
+     * @return 外部消费者返回 true
+     */
+    static boolean classifyAtlasConsumer(final List<String> frameClassNames) {
+        for (final String cls : frameClassNames) {
+            if (cls.startsWith("java.") || cls.startsWith("jdk.")
+                    || cls.startsWith("github.kasuminova.ssoptimizer.")
+                    || cls.equals("com.fs.graphics.TextureObject")
+                    || cls.equals("com.fs.starfarer.settings.SpriteAPIImpl")) {
+                continue;
+            }
+            return !cls.startsWith("com.fs.");
+        }
+        return false;
+    }
+
+    /**
+     * 图集外部消费者回退日志：按「路径@调用链」去重，每组合只输出一次 INFO，
+     * 记录图集 id 被模组代码取走并回退独立纹理的事件，用于排查裸 UV 采样兼容问题。
+     */
+    private static void noteAtlasExternalFallback(final com.fs.graphics.TextureObject texture,
+                                                  final int atlasTextureId) {
+        final StringBuilder caller = new StringBuilder(160);
+        for (StackTraceElement frame : new Throwable().getStackTrace()) {
+            final String cls = frame.getClassName();
+            if (cls.startsWith("java.") || cls.startsWith("jdk.")
+                    || cls.startsWith("github.kasuminova.ssoptimizer")) {
+                continue;
+            }
+            caller.append(cls).append('.').append(frame.getMethodName()).append(" <= ");
+            if (caller.length() > 240) {
+                break;
+            }
+        }
+        final String key = texture.getTexturePath() + "@" + caller;
+        if (ATLAS_FALLBACK_SEEN.add(key)) {
+            LOGGER.info("[SSOptimizer][textrace] ATLAS-FALLBACK path=" + texture.getTexturePath()
+                    + " atlasId=" + atlasTextureId
+                    + " thread=" + Thread.currentThread().getName()
+                    + " caller=" + caller);
+        }
+    }
+
+    /**
+     * 定点诊断（{@link #TRACE_PATH_PROPERTY}）：路径含子串的纹理输出访问轨迹，
+     * 用于定位图集 id 外泄/纹理 id 错乱类问题。
+     * 特殊值 {@code ALL}：每路径只记一次（去重），并附带真实调用方栈帧——
+     * 用于定位「图集 id 经 getTextureId 外泄给裸 UV 消费者」的泄漏源。
+     */
+    private static void traceTextureAccess(final String op, final com.fs.graphics.TextureObject texture,
+                                           final int resultId, final boolean atlasHit) {
+        if (TRACE_PATH.isEmpty() || texture == null) {
+            return;
+        }
+        final String path = texture.getTexturePath();
+        if ("ALL".equals(TRACE_PATH)) {
+            if (!TRACE_ALL_SEEN.add(path == null ? "<null>" : path)) {
+                return;
+            }
+        } else if (path == null || !path.contains(TRACE_PATH)) {
+            return;
+        }
+        final ManagedTextureEntry entry = MANAGED_TEXTURES.get(texture);
+        final StringBuilder caller = new StringBuilder();
+        if ("ALL".equals(TRACE_PATH)) {
+            for (StackTraceElement frame : new Throwable().getStackTrace()) {
+                final String cls = frame.getClassName();
+                if (cls.startsWith("java.") || cls.startsWith("github.kasuminova.ssoptimizer")) {
+                    continue;
+                }
+                caller.append(cls).append('.').append(frame.getMethodName()).append(" <= ");
+                if (caller.length() > 240) {
+                    break;
+                }
+            }
+        }
+        LOGGER.info("[SSOptimizer][textrace] " + op + " path=" + path
+                + " resultId=" + resultId + " atlasHit=" + atlasHit
+                + " fieldId=" + readTextureId(texture, -1)
+                + " entry=" + (entry == null ? "unmanaged" : entry.pendingUpload() ? "pending" : "resident")
+                + " thread=" + Thread.currentThread().getName()
+                + " identity=" + System.identityHashCode(texture)
+                + (caller.length() == 0 ? "" : " caller=" + caller));
     }
 
     /**

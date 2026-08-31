@@ -95,6 +95,9 @@
 | `ssoptimizer.texturecomposition.reportintervalmillis` | `5000` | 纹理组成报告输出周期 | `common/loading/LazyTextureManager.java:369` |
 | `ssoptimizer.texturemanager.logintervalmillis` | `15000` | 纹理管理器汇总日志周期 | `common/loading/LazyTextureManager.java:375` |
 | `ssoptimizer.texturecomposition.reportfile` | `"ssoptimizer-texture-composition.tsv"` | 纹理组成报告文件路径 | `common/loading/LazyTextureManager.java:288` |
+| `ssoptimizer.atlas.shipweapon` | `true` | 舰船/武器贴图动态图集总开关。settings.json graphics 段引用的贴图构建期整体排除（模组裸 UV 消费面）；仍入图集的贴图被模组经 `getTextureId` 取走时运行期回退独立纹理 id（栈帧消费者分类，日志 `ATLAS-FALLBACK` 按路径@调用链去重输出） | `common/render/atlas/ShipWeaponAtlas.java:62` |
+| `ssoptimizer.atlas.shipweapon.dumpdir` | 无（`null` → 不导出） | 图集构建时把每页写成 PNG 到指定目录，供检查空间利用率 | `common/render/atlas/ShipWeaponAtlas.java:63` |
+| `ssoptimizer.texture.tracepath` | 空（关闭） | 定点诊断：路径含该子串的纹理在 getTextureId/bindTexture 时输出 INFO 轨迹；特殊值 `ALL` 每路径记一次并附调用栈 | `common/loading/LazyTextureManager.java:79` |
 | `ssoptimizer.loading.workerClass` | `github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadWorker` | 自定义延迟图片预加载 worker 类（须实现 `Runnable` 且有无参构造） | `common/loading/ParallelImagePreloadCoordinator.java:57` |
 | `ssoptimizer.loading.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 延迟图片预加载并行度；Wave 3 起兼作 Spec DAG 加载与 Variant 解析（`SpecLoadScheduler` / `SpecStoreMixin.loadVariants`）的 Semaphore 最大并发闸门（任务跑在 VtWorkers 虚拟线程上，闸门约束加载期 CPU/磁盘争抢） | `common/loading/ParallelImagePreloadCoordinator.java:77`，`common/loading/SpecLoadScheduler.java` |
 | `ssoptimizer.disable.parallelpreload` | `false` | 禁用并行图片预加载（并行度降为 1） | `common/loading/ParallelImagePreloadCoordinator.java:73` |

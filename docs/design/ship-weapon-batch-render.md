@@ -140,8 +140,12 @@ SpriteBatch（common/render/spritebatch/）
 - **P2 收益扩展**：Ship 级矩阵缓存（避免每 sprite 一次 glGetFloat）、
   武器 charge/glow sprite 变体纳入、renderNoBind 系列评估、
   stencil 状态一致区域（decal）内合批评估、分组重排开关的截图对照实验。
-- **不做（初版）**：纹理图集重打包（改资源加载层，动静大，留作后续独立评估）；
-  UI 场景合批；renderRegion*/renderWithCorners 变体；跨层合并（模组兼容性红线）。
+- **纹理图集重打包**：已独立落地为 `ShipWeaponAtlas`（加载期 shelf 装箱 8192² 图集页 +
+  `SpriteAtlasMixin` UV 重映射 + `LazyTextureManager` 绑定层重定向）。兼容性边界：
+  settings.json graphics 段引用贴图构建期排除；模组经 `getTextureId` 取图集 id 的
+  外部消费者运行期回退独立纹理（栈帧分类，见 `LazyTextureManager.classifyAtlasConsumer`）。
+- **不做（初版）**：UI 场景合批；renderRegion*/renderWithCorners 变体；跨层合并
+  （模组兼容性红线）。
 
 ## 5. 风险与兼容性清单
 
