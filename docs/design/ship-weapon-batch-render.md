@@ -141,9 +141,9 @@ SpriteBatch（common/render/spritebatch/）
   武器 charge/glow sprite 变体纳入、renderNoBind 系列评估、
   stencil 状态一致区域（decal）内合批评估、分组重排开关的截图对照实验。
 - **纹理图集重打包**：已独立落地为 `ShipWeaponAtlas`（加载期 shelf 装箱 8192² 图集页 +
-  `SpriteAtlasMixin` UV 重映射 + `LazyTextureManager` 绑定层重定向）。兼容性边界：
-  settings.json graphics 段引用贴图构建期排除；模组经 `getTextureId` 取图集 id 的
-  外部消费者运行期回退独立纹理（栈帧分类，见 `LazyTextureManager.classifyAtlasConsumer`）。
+  `SpriteAtlasMixin` UV 重映射 + `AtlasTextureResolver`/`bindTexture` 图集 id 重定向）。
+  兼容性边界：settings.json graphics 段引用贴图构建期排除；`getTextureId` 不感知
+  图集（模组裸 UV 消费者恒拿独立纹理 id），图集 id 仅对 Sprite 渲染路径可见。
 - **不做（初版）**：UI 场景合批；renderRegion*/renderWithCorners 变体；跨层合并
   （模组兼容性红线）。
 

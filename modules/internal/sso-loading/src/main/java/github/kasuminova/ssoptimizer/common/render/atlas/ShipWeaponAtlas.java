@@ -48,9 +48,10 @@ import java.util.concurrent.Semaphore;
  * shelf 装箱进若干图集页（期望 8192²，按 {@code GL_MAX_TEXTURE_SIZE} 收敛；按船体/武器/弹体 id
  * 亲和分组排布以提高同页命中率）并上传 GPU；{@code SpriteAtlasMixin} 在
  * {@code Sprite.setTexture} 尾部把 UV 四字段重映射进图集区域，
- * {@link LazyTextureManager} 在绑定层把已入图集路径的 bind/getTextureId 重定向到图集
- * 纹理。效果：同页贴图共享同一 GL 纹理 id，SpriteBatch 合批率与 bind 次数显著改善，
- * 且原始贴图不再单独上传（节省显存）。
+ * 渲染取 id 走 render 域 {@code AtlasTextureResolver}（SpriteMixin 覆写方法内
+ * 图集命中返回图集页 id），{@code LazyTextureManager.bindTexture} 把已入图集路径的
+ * bind 重定向到图集纹理。效果：同页贴图共享同一 GL 纹理 id，SpriteBatch 合批率
+ * 与 bind 次数显著改善，且原始贴图不再单独上传（节省显存）。
  * <p>
  * 防渗色：每张贴图四边 16px 边缘复制 padding + 图集生成 mipmap。
  * <p>
@@ -62,9 +63,12 @@ import java.util.concurrent.Semaphore;
  *       （与原版大纹理行为一致，初版不做上下文热重建）；</li>
  *   <li>光束 core/fringe 与弹丸贴图使用平铺/自定义 UV，不入图集；</li>
  *   <li>settings.json graphics 段引用的贴图（模组通用贴图注册表，消费方多为
- *       0..1 裸 UV 全图采样）构建期整体排除；仍入图集的贴图若被模组经
- *       {@code getTextureId} 取走（外部消费者），由 {@link LazyTextureManager}
- *       在运行期回退独立纹理 id，语义与原版一致。</li>
+ *       0..1 裸 UV 全图采样）构建期整体排除；</li>
+ *   <li>{@code getTextureId} 不感知图集（纯惰性上传语义）：模组经
+ *       {@code SpriteAPI.getTextureId()} 取 id 的裸 UV 消费者始终拿到独立纹理，
+ *       图集 id 只对 Sprite 渲染路径（UV 已重映射）可见。已知边界：模组若捕获
+ *       Sprite 的图集重映射 UV 又配对该独立 id 采样，会得到错误子区域
+ *       （当前模组集未实证此形态，出现时需按个案适配）。</li>
  * </ul>
  * 开关：{@code -Dssoptimizer.atlas.shipweapon=false} 关闭（默认开启）；
  * {@code -Dssoptimizer.atlas.shipweapon.dumpdir=<dir>} 导出每页 PNG 供检查空间利用率。

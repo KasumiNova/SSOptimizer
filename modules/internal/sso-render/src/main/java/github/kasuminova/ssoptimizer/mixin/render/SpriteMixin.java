@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.graphics.TextureObject;
 import com.fs.graphics.util.RenderStateUtils;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
+import github.kasuminova.ssoptimizer.common.render.atlas.AtlasTextureResolver;
 import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvState;
 import github.kasuminova.ssoptimizer.common.render.engine.SpriteRenderHelper;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
@@ -23,6 +24,10 @@ import java.awt.Color;
  * 显著降低单精灵渲染开销。<br>
  * 注入效果：两个方法体替换为「null 检查 →（render 仅）纹理绑定 → texClamp 开关 →
  * 字段解包调用 helper → texClamp 恢复」，语义与原 ASM 替换完全一致。
+ * 纹理 id 一律经 {@link AtlasTextureResolver} 解析：已入图集的贴图取图集页 id
+ * （UV 已由 SpriteAtlasMixin 重映射），未入图集走原版 getTextureId 惰性上传——
+ * 图集注入收敛在 Sprite 渲染方法内，{@code TextureObject.getTextureId()} 的其余
+ * 调用方（模组裸 UV 消费者）始终拿到独立纹理 id。
  */
 @Mixin(targets = GameClassNames.SPRITE_DOTTED)
 public abstract class SpriteMixin {
@@ -92,9 +97,9 @@ public abstract class SpriteMixin {
             return;
         }
         if (SpriteBatchStats.isEnabled()) {
-            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, false);
+            SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, false);
         }
-        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+        if (SpriteBatch.getInstance().submitIfActive(AtlasTextureResolver.textureIdForSpriteRender(texture),
                 x + offsetX, y + offsetY, width, height, centerX, centerY, angle,
                 color.getRed(), color.getGreen(), color.getBlue(),
                 (int) (color.getAlpha() * alphaMult), blendSrc, blendDest,
@@ -104,7 +109,7 @@ public abstract class SpriteMixin {
         // 纹理绑定编码进顶点流（段间执行）：同纹理连续 sprite 的重复绑定回放
         // 幂等冗余，换纹理的绑定打断的是流内位置而非流段——连续 sprite 的
         // begin..end 段合并为一条流命令（减少每 sprite 一次的 flush 边界）
-        GL11.streamBindTexture(texture.getTextureId());
+        GL11.streamBindTexture(AtlasTextureResolver.textureIdForSpriteRender(texture));
         if (texClamp) {
             RenderStateUtils.enableTextureClamp();
         }
@@ -182,10 +187,10 @@ public abstract class SpriteMixin {
         final int a = (int) (color.getAlpha() * alphaMult);
 
         if (SpriteBatchStats.isEnabled()) {
-            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, !bl);
+            SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, !bl);
         }
         // 原版 renderRegion 不处理 texClamp，合批提交同样按非 clamp 处理
-        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+        if (SpriteBatch.getInstance().submitIfActive(AtlasTextureResolver.textureIdForSpriteRender(texture),
                 posX, posY, subW, subH, subCenterX, subCenterY, angle,
                 r, gc, b, a, blendSrc, blendDest,
                 u0, v0, u1 - u0, v1 - v0, false)) {
@@ -193,7 +198,7 @@ public abstract class SpriteMixin {
         }
         if (bl) {
             // 流内绑定（段间执行），语义同 render 的 streamBindTexture
-            GL11.streamBindTexture(texture.getTextureId());
+            GL11.streamBindTexture(AtlasTextureResolver.textureIdForSpriteRender(texture));
         }
         SpriteRenderHelper.renderSprite(
                 posX, posY, subW, subH,
@@ -218,9 +223,9 @@ public abstract class SpriteMixin {
             return;
         }
         if (SpriteBatchStats.isEnabled()) {
-            SpriteBatchStats.onSpriteRender(texture.getTextureId(), blendSrc, blendDest, true);
+            SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, true);
         }
-        if (SpriteBatch.getInstance().submitIfActive(texture.getTextureId(),
+        if (SpriteBatch.getInstance().submitIfActive(AtlasTextureResolver.textureIdForSpriteRender(texture),
                 x + offsetX, y + offsetY, width, height, centerX, centerY, angle,
                 color.getRed(), color.getGreen(), color.getBlue(),
                 (int) (color.getAlpha() * alphaMult), blendSrc, blendDest,

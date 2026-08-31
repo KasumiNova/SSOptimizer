@@ -8,7 +8,8 @@ package github.kasuminova.ssoptimizer.api.loading;
  * 经本接口，render 不直接依赖 loading。
  * <p>
  * 实现由 loading 域提供（桥接 ShipWeaponAtlas），在 coremod 装配期经
- * {@code ServiceRegistry} 注册。调用频率为纹理绑定/换绑级，非逐帧热点。
+ * {@code ServiceRegistry} 注册。调用频率含逐帧热点（每个精灵渲染一次），
+ * 实现必须保持 ConcurrentHashMap 查询级的开销。
  */
 public interface WeaponAtlasLookup {
 
