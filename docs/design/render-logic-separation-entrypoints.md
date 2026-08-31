@@ -41,8 +41,11 @@ FR 的架构与「逻辑线程/渲染线程各自推进」有本质区别：
 
 1. **模组自建线程/上下文**（BoxUtil 的 SharedDrawable + glFenceSync）：FR 靠
    `ContextManager.createAuxContext` + fence 桥（glWaitSync 入队带 fence 引用防乱序死锁）+
-   `execMutex` 全局串行化硬救回来的，属于高成本适配。我们初版应**声明不支持**并留好
-   fence/aux-context 的队列钩子。
+   `execMutex` 全局串行化硬救回来的，属于高成本适配。我们曾按「折叠为登记对象」
+   初版处理，实机证实折叠模型下双命令流指令级交错互污染（BoxUtil 管线模组
+   拖尾采到 ShipWeaponAtlas 图集平铺）；已改为解折叠：`SharedDrawable` 创建真实
+   共享上下文，aux 线程原生直执，fence 恢复真实 GPU 序语义
+   （见 bridge `SharedDrawable`/`GL32` javadoc）。
 2. **模组每帧读 GL 状态**：每个未仿真 pname 都是一次全管线 drain，FR 靠不断扩充仿真覆盖
    面解决（changelog 里多次事故）。我们的状态仿真必须先盘点游戏+常用模组实际查询的 pname 集合。
 3. **glFlush/glFinish 即时语义**：FR 抹成 no-op（语义在帧同步点统一保证）。
@@ -88,4 +91,6 @@ render 读并行 → 真·双线程。FR 未覆盖这部分，无可抄方案，
 - **模组 GL 覆盖面**：ASM 重定向必须覆盖模组类（GraphicsLib 重度使用 shader/FBO）；
   漏接管 = 主线程无 context 直接崩。初版可先白名单验证 GraphicsLib/LazyLib 等常用模组。
 - **基准/截图工具链**：我们的自动化截图与 profiler 读像素路径需迁移到渲染线程。
-- **BoxUtil 级模组**：初版声明不兼容，留 fence/aux-context 队列钩子。
+- **BoxUtil 级模组**：已通过 SharedDrawable 解折叠 + fence 真实化兼容（见上文
+  模组兼容性风险第 1 条）；残留风险是显示模式切换重建主上下文后共享上下文
+  失效（行为对齐原生 LWJGL，模组需自行重建）。

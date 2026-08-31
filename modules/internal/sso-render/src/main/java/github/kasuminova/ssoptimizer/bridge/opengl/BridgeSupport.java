@@ -133,6 +133,12 @@ final class BridgeSupport {
             GlStateSnapshot::capture;
     /** aux 再同步首次触发的一次性日志标记（诊断确认用，避免逐帧刷屏）。 */
     private static volatile boolean auxResyncLogged;
+    /**
+     * 真实 GL sync 操作 seam（SharedDrawable 解折叠后 fence 的 GPU 侧载体，
+     * 见 {@link RealSyncOps}）：默认委托真实 GL32，单测注入假实现（与
+     * {@link #stateSnapshotSource} 桩同模式）。
+     */
+    private static volatile RealSyncOps syncOps = RealSyncOpsImpl.INSTANCE;
 
     /**
      * GL 上下文重建监听器（{@link GlDispatch#registerContextRecreatedListener(Runnable)}
@@ -164,6 +170,7 @@ final class BridgeSupport {
         displayListCompileDepth = 0;
         frameSubmitSeq = 0;
         stateSnapshotSource = GlStateSnapshot::capture;
+        syncOps = RealSyncOpsImpl.INSTANCE;
         auxResyncLogged = false;
         RenderQueueImpl.resetAuxSubmissionEpochForTesting();
         drawCommands = new CommandPool<>(DrawCommand::new);
@@ -218,9 +225,17 @@ final class BridgeSupport {
     /**
      * 录制一条命令到当前帧。若当前线程的顶点流有未落帧的 immediate 操作，
      * 先把它打包落帧——流段命令与本命令在帧列表中的顺序即录制顺序。
+     * <p>
+     * aux 原生线程（{@link RecordingContext#auxNative}，持有真实共享上下文的
+     * 模组后台线程）不入队：命令在调用线程立即执行，逐指令实时序即其原生语义。
      */
     static void enqueue(GlCommand command) {
-        flushVertexStream();
+        RecordingContext ctx = recordingContext();
+        flushVertexStream(ctx);
+        if (ctx.auxNative) {
+            command.execute();
+            return;
+        }
         // 探针包装跳过 MergedBatchCommand：包装会打断渲染线程侧的串合并
         // instance-of 判定，改变被诊断对象本身的执行形态
         if (GL_ERROR_PROBE_COMMAND && !(command instanceof MergedBatchCommand)) {
@@ -306,6 +321,17 @@ final class BridgeSupport {
         final boolean endsOpen = stream.hasOpenSegment();
         ctx.vertexStreamStartsOpen = endsOpen;
         byte[] data = stream.transferBuffer();
+        if (ctx.auxNative) {
+            // aux 原生线程：逐指令 immediate 直执。不可走 VertexBatchCommand——
+            // 其回放经渲染线程共享单例 VertexArrayBatch（单线程假设），aux 线程
+            // 并发触碰会破坏数组合并器状态
+            try {
+                VertexStream.replayBody(data, length, ImmediateVertexSink.INSTANCE);
+            } finally {
+                releaseVertexStreamBuffer(data);
+            }
+            return;
+        }
         VertexBatchCommand batch = vertexBatches.acquire();
         batch.setData(data, length, startsOpen || endsOpen);
         queue().submit(batch);
@@ -325,6 +351,9 @@ final class BridgeSupport {
     static <T> T blockingGet(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            if (recordingContext().auxNative) {
+                return callInline(getter);
+            }
             // drain-first 必须包含未落帧的顶点流：getter 读到的是此前全部录制命令
             // 执行完的 GL 状态，顶点流是其中一部分
             flushVertexStream();
@@ -333,10 +362,23 @@ final class BridgeSupport {
         return q.get(getter);
     }
 
+    /** aux 原生线程的阻塞通道内联执行（异常包装与渲染线程内同步执行同形态）。 */
+    private static <T> T callInline(Callable<T> getter) {
+        try {
+            return getter.call();
+        } catch (Exception e) {
+            throw new IllegalStateException("[SSOptimizer] aux 原生线程内联执行 GL 任务失败", e);
+        }
+    }
+
     /** {@link #blockingGet(Callable)} 的无返回值形式。 */
     static void blockingWait(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            if (recordingContext().auxNative) {
+                task.run();
+                return;
+            }
             flushVertexStream();
             swapFrames();
         }
@@ -350,6 +392,9 @@ final class BridgeSupport {
     static <T> T blockingGetResource(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            if (recordingContext().auxNative) {
+                return callInline(getter);
+            }
             flushVertexStream();
             swapFrames();
         }
@@ -360,6 +405,10 @@ final class BridgeSupport {
     static void blockingWaitResource(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            if (recordingContext().auxNative) {
+                task.run();
+                return;
+            }
             flushVertexStream();
             swapFrames();
         }
@@ -378,6 +427,11 @@ final class BridgeSupport {
     static void flushForFenceWait() {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
+            // aux 原生线程无帧可切：其 fence 是真实 GL sync（见 GL32.glFenceSync），
+            // 等待语义由真实 glClientWaitSync 直接承载
+            if (recordingContext().auxNative) {
+                return;
+            }
             flushVertexStream();
             swapFrames();
         }
@@ -392,6 +446,11 @@ final class BridgeSupport {
      * 渲染线程每帧帧尾经 {@link #refillBufferIdStashIfLow()} 低水位补货。
      */
     static int acquireBufferId() {
+        if (recordingContext().auxNative) {
+            // aux 原生线程：stash 的 id 由渲染线程预生成，与 aux 上下文共享同一
+            // 对象命名空间，原生直执单个 glGenBuffers 等价且无跨线程池依赖
+            return org.lwjgl.opengl.GL15.glGenBuffers();
+        }
         Integer stashed = bufferIdStash.poll();
         if (stashed != null) {
             bufferIdStashCount.decrementAndGet();
@@ -560,8 +619,11 @@ final class BridgeSupport {
      * <p>
      * 性能分层：纯主线程流程 = 一次序号比较 + 一次纪元 volatile 读，零屏障；
      * aux 活跃期每提交段至多一次屏障（序号滞后窗口），同段内后续 getter 直接
-     * 用再同步后的簿记。段中途 aux 新提交造成的段内残留污染属 SharedDrawable
-     * 折叠模型的既定限制（见其类 javadoc），不在本机制职责内。
+     * 用再同步后的簿记。段中途 aux 新提交造成的段内残留污染不在本机制职责内。
+     * <p>
+     * SharedDrawable 解折叠后（见其类 javadoc），BoxUtil 后台线程持有真实共享
+     * 上下文、不再经队列提交；本机制保留服务残留的 aux 提交路径（GlDispatch
+     * 字体预热 daemon 等）。
      */
     static void resyncSimulatedStateIfAuxDirty() {
         final RecordingContext ctx = recordingContext();
@@ -592,6 +654,16 @@ final class BridgeSupport {
     /** 测试用：替换 aux 再同步屏障的采样来源（无 GL 上下文环境注入桩）。 */
     static void stateSnapshotSourceForTesting(final java.util.function.Supplier<GlStateSnapshot> source) {
         stateSnapshotSource = source;
+    }
+
+    /** 真实 sync 操作入口（GL32 fence 族使用）。 */
+    static RealSyncOps syncOps() {
+        return syncOps;
+    }
+
+    /** 测试用：替换真实 sync 操作实现（无 GL 上下文环境注入桩）。 */
+    static void syncOpsForTesting(final RealSyncOps ops) {
+        syncOps = ops;
     }
 
     /**

@@ -7,11 +7,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * org.lwjgl.opengl.GLSync 的 bridge 门面：不透明句柄壳。
  * <p>
- * 动机：aux-context 折叠进单渲染线程后（见 {@link SharedDrawable} 类 javadoc），
- * BoxUtil 的 glFenceSync/glWaitSync 不再需要真实 GPU sync 对象——fence 语义退化为
- * 队列内的纯 Java 会合点。本壳只携带一个 {@link FrameFence}，录制侧（glFenceSync）
- * 与等待侧（glWaitSync，可能来自另一个生产者线程）通过它会合；等待侧未会合时
- * 帧悬挂续跑而非阻塞（见 WaitFenceCommand），避免乱序/滞后录制造成渲染线程死锁。
+ * 会合语义由 {@link FrameFence}（Java 会合点）承载：录制侧（glFenceSync）与
+ * 等待侧（glWaitSync/glClientWaitSync，可能来自另一个生产者线程）通过它会合；
+ * 队列内等待未会合时帧悬挂续跑而非阻塞（见 WaitFenceCommand），避免乱序/滞后
+ * 录制造成渲染线程死锁。
+ * <p>
+ * SharedDrawable 解折叠后 fence 恢复真实 GPU 序语义：句柄额外携带真实
+ * {@code org.lwjgl.opengl.GLSync}（{@link #realSync()}）。附着时机按产出线程
+ * 分两种：
+ * <ul>
+ *   <li>aux 原生线程产出：glFenceSync 原生直执，创建即附着（latch 预 signal）；</li>
+ *   <li>主线程产出：真实 sync 由渲染线程执行 SignalFenceCommand 时在命令流
+ *       序列点创建并附着，附着 happens-before latch signal。</li>
+ * </ul>
  * <p>
  * ASM 重定向阶段会把 {@code org/lwjgl/opengl/GLSync} 的类型引用改写到本类
  * （含方法描述符中的返回值/参数类型），模组代码内不应保留对本壳的方法调用
@@ -20,14 +28,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class GLSync {
     private final FrameFence fence;
     private final AtomicBoolean deleted = new AtomicBoolean();
+    /**
+     * 真实 GL sync 句柄（不透明 Object，见 {@link RealSyncOps}）：主产 fence 在渲染
+     * 线程序列点附着，aux 产 fence 创建即附着。
+     */
+    private volatile Object real;
 
     GLSync(FrameFence fence) {
         this.fence = fence;
     }
 
+    /** aux 原生线程产出形态：真实 sync 已存在，latch 语义由调用方预 signal。 */
+    GLSync(FrameFence fence, Object real) {
+        this.fence = fence;
+        this.real = real;
+    }
+
     /** 关联的队列内 fence（bridge 包内使用）。 */
     FrameFence fence() {
         return fence;
+    }
+
+    /** 真实 GL sync 句柄（可为 null：主产 fence 的信号命令尚未执行到时）。 */
+    Object realSync() {
+        return real;
+    }
+
+    /** 渲染线程信号命令体内的真实 sync 附着（必须在 fence.signal() 之前调用）。 */
+    void attachReal(Object real) {
+        this.real = real;
     }
 
     /** glDeleteSync 语义：标记句柄失效（幂等）。 */

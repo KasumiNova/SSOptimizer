@@ -19,9 +19,11 @@ GL 的旁路，结论如下：
   （`RenderThreadRedirector`，owner 改写表覆盖 `org/lwjgl/opengl/{GL11..GL44,
   ARB*, EXT*, Display, GLContext, ...}`）进入 bridge 镜像，录制为帧命令。
 - **mod renderHook（BoxUtil/GraphicLib 等）**：其字节码同样经重定向器改写，
-  GL 调用一律入队；BoxUtil 的 aux-context 结构在分离模式下折叠为
-  `SharedDrawable` 登记对象（见其 javadoc），模组线程的命令经
-  `RenderQueue.submit` 按提交序进入唯一渲染线程执行。**不存在「在渲染线程
+  GL 调用一律入队；BoxUtil 的 aux-context 结构经 `SharedDrawable` 解折叠为
+  真实共享 GL 上下文（见其 javadoc）——makeCurrent 成功的模组线程标记为
+  aux 原生线程，此后其 bridge GL 调用全部原生直执、不再入队，与主线程
+  录制流完全隔离（修复折叠模型下双命令流指令级交错互污染导致的
+  BoxUtil 管线贴图错乱）。主线程录制侧**不存在「在渲染线程
   直接调 LWJGL 的 mod」通路**——重定向覆盖所有经 LaunchClassLoader 加载的类，
   运行时「GL 调用未镜像」告警计数为 0（v44c 基准日志验证）。
 - **native batch helper（ContrailBatchHelper / SpriteBatchNative /

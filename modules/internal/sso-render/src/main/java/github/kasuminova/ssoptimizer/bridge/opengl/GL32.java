@@ -11,24 +11,29 @@ import github.kasuminova.ssoptimizer.common.render.queue.WaitFenceCommand;
  * + FBO/多重采样状态族）。
  * <p>
  * 动机：BoxUtil 用 glFenceSync/glWaitSync/glDeleteSync 做跨上下文的 GPU 命令流
- * 可见性协调。aux-context 折叠进单渲染线程后（见 {@link SharedDrawable}），fence
- * 退化为队列内会合点：
+ * 可见性协调。SharedDrawable 解折叠后（见 {@link SharedDrawable}），fence 恢复
+ * 真实 GPU 序语义，由「Java 会合点（{@link FrameFence}）+ 真实 GL sync 对象
+ * （{@link GLSync#realSync()}）」双层承载：
  * <ul>
- *   <li>{@link #glFenceSync} 录制 {@link SignalFenceCommand}（渲染线程执行到该
- *       点时完成 fence——此前的渲染命令已全部进入执行流），并立即返回关联的
- *       {@link GLSync} 句柄；</li>
- *   <li>{@link #glWaitSync} 录制 {@link WaitFenceCommand}，执行时检查 fence
- *       是否已 signal：已 signal 直接放行，未 signal 则帧悬挂续跑（渲染线程
- *       不阻塞，协议细节见 WaitFenceCommand 类 javadoc）；</li>
- *   <li>{@link #glDeleteSync} 只做句柄失效标记：fence 是纯 Java 对象，无真实
- *       GPU 资源需要释放。</li>
+ *   <li>{@link #glFenceSync}：主线程录制 {@link SignalFenceCommand}，命令体在
+ *       渲染线程的命令流序列点创建真实 sync 并附着句柄后完成 fence；aux 原生
+ *       线程原生直执并创建即附着（fence 预 signal）；</li>
+ *   <li>{@link #glWaitSync}：主线程录制 {@link WaitFenceCommand}（未 signal 帧
+ *       悬挂续跑，渲染线程不阻塞），放行后追加真实 glWaitSync 建立跨上下文
+ *       GPU 序；aux 线程原生直执；</li>
+ *   <li>{@link #glClientWaitSync}：latch 等待段不变（超时语义保留），通过后
+ *       追加真实 glClientWaitSync（主线程经阻塞通道在渲染线程执行，aux 线程
+ *       原生直执）；</li>
+ *   <li>{@link #glDeleteSync}：句柄标记失效 + 真实 sync 删除（主线程入队一条
+ *       删除命令，aux 线程原生直执）。</li>
  * </ul>
- * 骨架阶段 SignalFenceCommand 的命令体只完成 fence；接入游戏后如需与真实 GPU
- * 时间线对齐（性能分析等），再在命令体内追加真实 glFenceSync 调用。
  */
 public final class GL32 {
     private GL32() {
     }
+
+    /** aux 侧 glWaitSync 遇到主产 fence 真实 sync 未附着的恢复路径一次性 WARN 标记。 */
+    private static volatile boolean auxWaitWithoutRealWarned;
 
     /**
      * 安装命令消费者，语义同 {@link GL11#install(RenderQueue)}。
@@ -45,8 +50,12 @@ public final class GL32 {
     }
 
     /**
-     * 录制 fence 信号命令并返回关联句柄。句柄立即有效（指向已入队的会合点），
-     * 无需阻塞等待渲染线程。
+     * 主线程：录制 fence 信号命令并返回关联句柄。句柄立即有效（指向已入队的
+     * 会合点），无需阻塞等待渲染线程；真实 sync 由信号命令体在渲染线程的命令流
+     * 序列点创建并附着（附着 happens-before fence signal）。
+     * <p>
+     * aux 原生线程：真实 fence 立即插入 aux 上下文命令流（原生直执），真实 sync
+     * 创建即附着，Java 会合点预 signal（等待方读真实 sync 即可，无需会合）。
      * <p>
      * fence 同时登记到当前帧（{@link RenderFrame#addFence}）：帧执行失败丢弃
      * 剩余命令时，队列会强制完成登记过的 fence——否则信号命令随失败帧被丢弃，
@@ -57,35 +66,87 @@ public final class GL32 {
      * @return 关联本次 fence 的不透明句柄
      */
     public static GLSync glFenceSync(int condition, int flags) {
+        if (BridgeSupport.recordingContext().auxNative) {
+            Object real = BridgeSupport.syncOps().fenceSync(condition, flags);
+            FrameFence fence = new FrameFenceImpl();
+            fence.signal();
+            return new GLSync(fence, real);
+        }
         FrameFence fence = new FrameFenceImpl();
+        GLSync handle = new GLSync(fence);
         RenderQueue queue = BridgeSupport.queue();
         queue.currentFrame().addFence(fence);
-        queue.submit(new SignalFenceCommand(fence));
+        queue.submit(new SignalFenceCommand(fence, () -> {
+            Object real = BridgeSupport.syncOps().fenceSync(condition, flags);
+            handle.attachReal(real);
+            if (handle.isDeleted()) {
+                // 句柄在信号命令执行前已被 glDeleteSync：随建随删，避免真实 sync 泄漏
+                BridgeSupport.syncOps().deleteSync(real);
+            }
+        }));
         github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
                 "FENCE_SIG", System.identityHashCode(fence), 0, 0, null);
-        return new GLSync(fence);
+        return handle;
     }
 
     /**
      * 录制 fence 等待命令。{@code sync} 必须来自本 bridge 的
      * {@link #glFenceSync}（ASM 重定向保证模组拿到的只有本 bridge 的句柄）。
+     * <p>
+     * 主线程：{@link WaitFenceCommand} 放行（fence 已 signal）后追加真实
+     * glWaitSync——aux 产的 fence 在主上下文命令流上建立 GPU 序的关键。
+     * <p>
+     * aux 原生线程：真实 sync 已附着则原生直执；未附着（主产 fence 的信号命令
+     * 尚未执行，真实 sync 不存在）属恢复路径——原生语义下无对象可服务端等待，
+     * 一次性 WARN 后跳过（BoxUtil 的 tryGLSync 协议保证消费相位晚于信号相位，
+     * 稳态不应命中）。
      *
      * @param sync    glFenceSync 返回的句柄
      * @param flags   保留参数，LWJGL2 语义下必须为 0
      * @param timeout LWJGL2 语义下固定为 GL_TIMEOUT_IGNORED，原样保留
      */
     public static void glWaitSync(GLSync sync, int flags, long timeout) {
+        if (BridgeSupport.recordingContext().auxNative) {
+            Object real = sync.realSync();
+            if (real == null) {
+                if (!auxWaitWithoutRealWarned) {
+                    auxWaitWithoutRealWarned = true;
+                    org.apache.log4j.Logger.getLogger(GL32.class).warn(
+                            "[SSOptimizer] aux 线程 glWaitSync 遇到主产 fence 的真实 sync 未附着"
+                                    + "（信号命令尚未执行），本次服务端等待跳过（恢复路径，稳态不应出现）");
+                }
+                return;
+            }
+            BridgeSupport.syncOps().waitSync(real, flags, timeout);
+            return;
+        }
         github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
                 "FENCE_WAIT", System.identityHashCode(sync.fence()), 0, 0, null);
-        BridgeSupport.enqueue(new WaitFenceCommand(sync.fence()));
+        BridgeSupport.enqueue(new WaitFenceCommand(sync.fence(), () -> {
+            Object real = sync.realSync();
+            if (real != null) {
+                BridgeSupport.syncOps().waitSync(real, flags, timeout);
+            }
+        }));
     }
 
     /**
-     * 标记句柄失效。折叠模型下 sync 对象是纯 Java 会合点，无队列命令产生；
-     * 幂等，与真实 glDeleteSync 对同一 sync 多次调用未定义的语义不冲突。
+     * 标记句柄失效并删除真实 sync（已附着时）。主线程入队一条删除命令（程序序
+     晚于该线程的全部等待命令；GL 规范允许删除仍有待决等待的 sync 对象），
+     * aux 线程原生直执；未附着（主产 fence 信号命令未执行）时由信号命令体
+     * 随建随删。幂等。
      */
     public static void glDeleteSync(GLSync sync) {
         sync.markDeleted();
+        final Object real = sync.realSync();
+        if (real == null) {
+            return;
+        }
+        if (BridgeSupport.recordingContext().auxNative) {
+            BridgeSupport.syncOps().deleteSync(real);
+            return;
+        }
+        BridgeSupport.enqueue(() -> BridgeSupport.syncOps().deleteSync(real));
     }
 
     // ------------------------------------------------------------------
@@ -107,9 +168,10 @@ public final class GL32 {
     // ------------------------------------------------------------------
 
     /**
-     * 等待 fence 完成。折叠模型下 fence 是纯 Java 会合点（{@link #glFenceSync}），
-     * 等待在调用线程自旋（先经 {@link BridgeSupport#flushForFenceWait()} 提交当前帧，
-     * 通道选择理由见该方法 javadoc），不触碰真实 GL。
+     * 等待 fence 完成。latch 等待段（先经 {@link BridgeSupport#flushForFenceWait()}
+     * 提交当前帧，通道选择理由见该方法 javadoc；aux 原生线程上 flush 为空操作）
+     * 通过后追加真实 glClientWaitSync：主线程无 GL 上下文，经阻塞通道在渲染线程
+     * 执行；aux 原生线程原生直执。真实等待使用 latch 段的剩余超时预算。
      *
      * @return {@code GL_CONDITION_SATISFIED}（已 signal）或 {@code GL_TIMEOUT_EXPIRED}
      */
@@ -123,13 +185,30 @@ public final class GL32 {
             }
             Thread.onSpinWait();
         }
-        return org.lwjgl.opengl.GL32.GL_CONDITION_SATISFIED;
+        final Object real = sync.realSync();
+        if (real == null) {
+            // 帧失败强制 signal 的恢复路径：真实 sync 未创建，无 GPU 等待对象
+            return org.lwjgl.opengl.GL32.GL_CONDITION_SATISFIED;
+        }
+        final long remaining = deadline - System.nanoTime();
+        if (remaining <= 0) {
+            return org.lwjgl.opengl.GL32.GL_TIMEOUT_EXPIRED;
+        }
+        if (BridgeSupport.recordingContext().auxNative) {
+            return BridgeSupport.syncOps().clientWaitSync(real, flags, remaining);
+        }
+        final int[] result = new int[1];
+        BridgeSupport.blockingWaitResource(
+                () -> result[0] = BridgeSupport.syncOps().clientWaitSync(real, flags, remaining));
+        return result[0];
     }
 
     /**
-     * fence 状态查询：折叠模型下是纯 CPU 查询（无真实 GL sync 对象），
+     * fence 状态查询：CPU 侧近似（无真实 GL 回读），
      * 支持 GL_OBJECT_TYPE/GL_SYNC_STATUS/GL_SYNC_CONDITION/GL_SYNC_FLAGS
-     * 四个标准 pname。
+     * 四个标准 pname。GL_SYNC_STATUS 反映的是「命令流到达」（latch signal）
+     * 而非 GPU 完成——真实 GPU 完成状态查询需求未出现（BoxUtil 只做存在性/
+     * 类型校验），出现时再升级为真实 glGetSync 回读。
      */
     public static int glGetSynci(GLSync sync, int pname) {
         switch (pname) {
@@ -177,7 +256,7 @@ public final class GL32 {
         return glGetSynci(sync, pname);
     }
 
-    /** 折叠模型下桥句柄即 sync 对象：未被 glDeleteSync 标记失效即为 true。 */
+    /** 桥句柄即 sync 身份：未被 glDeleteSync 标记失效即为 true。 */
     public static boolean glIsSync(GLSync sync) {
         return !sync.isDeleted();
     }

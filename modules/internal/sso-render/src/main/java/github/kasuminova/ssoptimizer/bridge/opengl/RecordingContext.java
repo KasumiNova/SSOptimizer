@@ -53,4 +53,12 @@ final class RecordingContext {
      * 该批次必须走 immediate 兜底回放（见 {@link ImmediateVertexSink}）。
      */
     boolean vertexStreamStartsOpen;
+    /**
+     * aux 原生 GL 线程标记：本线程持有真实共享 GL 上下文（bridge
+     * {@link SharedDrawable} 解折叠后由 makeCurrent 置位、releaseContext/destroy
+     * 复位）。置位线程的 bridge GL 调用全部原生直执（{@link BridgeSupport} 各
+     * choke 点旁路录制/阻塞原语），语义回到原生 LWJGL 的「各上下文独立状态机 +
+     * 共享对象表」模型——BoxUtil 1.5.5 后台渲染线程依赖的上下文隔离由此恢复。
+     */
+    boolean auxNative;
 }

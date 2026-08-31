@@ -41,7 +41,7 @@
 
 主渲染链路零 getter 回读——好消息，瓶颈只在编译期回读（见 getter 清单）。
 
-## BoxUtil（初版声明不兼容，留钩子）
+## BoxUtil（已兼容：SharedDrawable 解折叠 + fence 真实化）
 
 调用面横跨 GL11~GL44 高端面：VAO、glMapBufferRange、compute（glDispatchCompute、
 glMemoryBarrier）、glBufferStorage、instanced、bindless（NV/ARB 全套）、
@@ -53,9 +53,11 @@ GL32 glFenceSync/glWaitSync/glDeleteSync。
 - 各线程 Drawable.makeCurrent + glGetError 校验，持有各自 GL 上下文；
 - CPU 协调用 Phaser，GPU 命令流可见性协调用 GLSync fence（5 个 fence 交接点）。
 
-对应我们已留的结构钩子：`RenderQueue.submit` 多生产者通道（aux-context 入队）、
-`FrameFence`/`SignalFenceCommand`/`WaitFenceCommand`（fence 信号可来自渲染流或
-CPU 侧生产者线程，glWaitSync 乱序录制不死锁）。
+落地形态：bridge `SharedDrawable` 为模组线程创建真实共享 GL 上下文并标记
+aux 原生线程（BridgeSupport 各 choke 点原生直执旁路，不再入队）；fence 由
+「Java 会合点 + 真实 GL sync」双层承载（SignalFenceCommand 在命令流序列点
+创建真实 sync 并附着，WaitFenceCommand 放行后追加真实 glWaitSync 建立跨上下文
+GPU 序），悬挂协议保留以消化乱序/滞后录制。
 
 ## bridge 初版覆盖面结论
 
@@ -72,7 +74,8 @@ CPU 侧生产者线程，glWaitSync 乱序录制不死锁）。
 **可推迟**：
 
 - GL20 shader 全族（二期，GraphicsLib 专项）
-- GL30+ 高端面 / compute / bindless（BoxUtil 专项，初版声明不兼容）
+- GL30+ 高端面 / compute / bindless（BoxUtil 专项；fence/sync 族已真实化，
+  其余高端面 aux 线程原生直执后天然可用）
 - display list 5 方法（低频，按需命令帧重放）
 - 低频 getter（逐个按仿真覆盖推进）
 
