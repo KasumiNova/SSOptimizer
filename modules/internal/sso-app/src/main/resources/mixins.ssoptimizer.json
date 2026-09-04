@@ -61,6 +61,7 @@
     "loading.StarfarerSettingsApiImplMixin",
     "loading.StarfarerLauncherJarPathMixin",
     "loading.TextureObjectMixin",
+    "ui.PositionImplMixin",
     "modopt.dcr.DcrCompressionUtilMixin",
     "render.BitmapFontRendererMixin",
     "render.BaseTiledTerrainRenderMixin",

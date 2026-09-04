@@ -329,4 +329,19 @@ public final class GameMixinSignatures {
         private TacticalModule() {
         }
     }
+
+    /**
+     * UI 位置布局 Mixin 签名常量。
+     * <p>
+     * {@code PositionImpl.sortChildren()} 为私有零参方法（按兄弟锚点拓扑排序子节点），
+     * 原版实现是多轮扫描 + {@code LinkedList.contains} 成员判定的 O(轮数×n²) 算法，
+     * 重构装配界面重建成员列表时是秒级阻塞热点；由
+     * {@code github.kasuminova.ssoptimizer.mixin.ui.PositionImplMixin} 全方法覆写。
+     */
+    public static final class PositionImpl {
+        public static final String TARGET_CLASS = "com.fs.starfarer.ui.PositionImpl";
+
+        private PositionImpl() {
+        }
+    }
 }
