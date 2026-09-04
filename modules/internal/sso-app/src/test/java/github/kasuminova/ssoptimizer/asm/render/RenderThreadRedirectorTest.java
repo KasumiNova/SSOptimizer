@@ -114,6 +114,66 @@ class RenderThreadRedirectorTest {
     }
 
     @Test
+    void glClearDepthIsMirrored() {
+        // BoxUtil 1.6.0 GLWrapper$FBO.glClearDepth 的实际调用签名：
+        // 桥必须镜像 GL11.glClearDepth(D)V，否则渲染线程分离模式下
+        // 主线程执行真实 GL 报 No OpenGL context（实机标题界面崩溃根因）
+        byte[] source = buildClass("org/boxutil/define/GLWrapper$FBO", mv -> {
+            mv.visitVarInsn(Opcodes.DLOAD, 0);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11",
+                    "glClearDepth", "(D)V", false);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("org.boxutil.define.GLWrapper$FBO", source);
+        assertNotSame(source, result, "glClearDepth 调用点必须被改写");
+
+        List<String> calls = collectMethodCalls(result);
+        assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL11.glClearDepth(D)V"));
+        assertFalse(calls.contains("org/lwjgl/opengl/GL11.glClearDepth(D)V"),
+                "glClearDepth 不得残留原 owner");
+    }
+
+    @Test
+    void boxUtil160FacadeSignaturesAreMirrored() {
+        // BoxUtil 1.6.0 GLWrapper 门面可达调用 ∩ 桥未镜像 的实机审计缺口全集
+        // （来源：渲染路径类字节码 × 运行期未镜像 warn 日志交叉分析）；
+        // 任一签名退化都会在分离模式下以 No OpenGL context 崩溃收场
+        final String[][] signatures = {
+                {"org/lwjgl/opengl/GL11", "glDepthRange", "(DD)V"},
+                {"org/lwjgl/opengl/GL11", "glTexParameter", "(IILjava/nio/IntBuffer;)V"},
+                {"org/lwjgl/opengl/GL11", "glTexImage1D", "(IIIIIIIJ)V"},
+                {"org/lwjgl/opengl/GL11", "glTexImage2D", "(IIIIIIIIJ)V"},
+                {"org/lwjgl/opengl/GL11", "glTexSubImage1D", "(IIIIIIJ)V"},
+                {"org/lwjgl/opengl/GL11", "glTexSubImage2D", "(IIIIIIIIJ)V"},
+                {"org/lwjgl/opengl/GL12", "glTexImage3D", "(IIIIIIIIIJ)V"},
+                {"org/lwjgl/opengl/GL12", "glTexImage3D", "(IIIIIIIIILjava/nio/DoubleBuffer;)V"},
+                {"org/lwjgl/opengl/GL12", "glTexImage3D", "(IIIIIIIIILjava/nio/FloatBuffer;)V"},
+                {"org/lwjgl/opengl/GL12", "glTexImage3D", "(IIIIIIIIILjava/nio/IntBuffer;)V"},
+                {"org/lwjgl/opengl/GL12", "glTexImage3D", "(IIIIIIIIILjava/nio/ShortBuffer;)V"},
+                {"org/lwjgl/opengl/GL12", "glTexSubImage3D", "(IIIIIIIIIIJ)V"},
+                {"org/lwjgl/opengl/GL12", "glTexSubImage3D", "(IIIIIIIIIILjava/nio/ByteBuffer;)V"},
+                {"org/lwjgl/opengl/GL12", "glTexSubImage3D", "(IIIIIIIIIILjava/nio/DoubleBuffer;)V"},
+                {"org/lwjgl/opengl/GL12", "glTexSubImage3D", "(IIIIIIIIIILjava/nio/IntBuffer;)V"},
+                {"org/lwjgl/opengl/GL12", "glTexSubImage3D", "(IIIIIIIIIILjava/nio/ShortBuffer;)V"},
+                {"org/lwjgl/opengl/GL32", "glGetInteger64", "(ILjava/nio/LongBuffer;)V"},
+                {"org/lwjgl/opengl/GL32", "glGetInteger64", "(IILjava/nio/LongBuffer;)V"},
+                {"org/lwjgl/opengl/ARBSync", "glGetInteger64", "(I)J"},
+                {"org/lwjgl/opengl/ARBSync", "glGetInteger64", "(ILjava/nio/LongBuffer;)V"},
+        };
+        for (final String[] sig : signatures) {
+            final byte[] source = buildClass("org/boxutil/define/GLWrapper$Audit", mv ->
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, sig[0], sig[1], sig[2], false));
+
+            final byte[] result = RenderThreadRedirector.redirect("org.boxutil.define.GLWrapper$Audit", source);
+            final String expected = "github/kasuminova/ssoptimizer/bridge/opengl/"
+                    + sig[0].substring(sig[0].lastIndexOf('/') + 1) + '.' + sig[1] + sig[2];
+            assertNotSame(source, result, "调用点必须被改写: " + sig[0] + '.' + sig[1] + sig[2]);
+            assertTrue(collectMethodCalls(result).contains(expected),
+                    "镜像目标缺失: " + expected);
+        }
+    }
+
+    @Test
     void unmirroredMethodKeepsOriginalOwner() {
         // GL44.glBufferStorage 不在 bridge 镜像面内（BoxUtil 级高端面）
         byte[] source = buildClass("com/example/UsesGl44", mv ->

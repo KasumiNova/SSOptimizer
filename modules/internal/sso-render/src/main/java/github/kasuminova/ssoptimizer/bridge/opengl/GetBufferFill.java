@@ -105,4 +105,24 @@ final class GetBufferFill {
             params.put(base + i, staging.get(i));
         }
     }
+
+    /** {@link #fillInts} 的 LongBuffer 版本（glGetInteger64 族，固定下限 16）。 */
+    static void fillLongs(final java.nio.LongBuffer params, final int minElements,
+                          final Consumer<java.nio.LongBuffer> realCall) {
+        if (params.remaining() >= minElements) {
+            realCall.accept(params);
+            return;
+        }
+        final java.nio.LongBuffer staging = STAGING.get().asLongBuffer();
+        staging.clear();
+        for (int i = 0; i < STAGING_ELEMENTS; i++) {
+            staging.put(i, 0L);
+        }
+        realCall.accept(staging);
+        final int count = Math.min(params.remaining(), STAGING_ELEMENTS);
+        final int base = params.position();
+        for (int i = 0; i < count; i++) {
+            params.put(base + i, staging.get(i));
+        }
+    }
 }

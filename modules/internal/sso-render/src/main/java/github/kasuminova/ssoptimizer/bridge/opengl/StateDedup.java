@@ -54,6 +54,8 @@ final class StateDedup {
     static final int TYPE_CLEAR_STENCIL = 21;
     static final int TYPE_PIXEL_STOREI = 22;
     static final int TYPE_MATRIX_MODE = 23;
+    static final int TYPE_CLEAR_DEPTH = 24;
+    static final int TYPE_DEPTH_RANGE = 25;
 
     private int lastType = UNKNOWN;
     private int lastA;

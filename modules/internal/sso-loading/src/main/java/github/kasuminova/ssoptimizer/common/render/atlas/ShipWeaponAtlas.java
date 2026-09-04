@@ -13,8 +13,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
-import github.kasuminova.ssoptimizer.common.loading.GlLedgerHooks;
-import github.kasuminova.ssoptimizer.common.loading.GlMemoryLedger;
 import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
 import github.kasuminova.ssoptimizer.common.loading.TexturePixelConversionResult;
 import github.kasuminova.ssoptimizer.common.loading.TexturePixelConverter;
@@ -433,9 +431,6 @@ public final class ShipWeaponAtlas {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL14.GL_GENERATE_MIPMAP, GL11.GL_TRUE);
         TextureUploadHelper.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA,
                 pageSize, pageSize, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, converted.buffer());
-        // 图集页入 gameTex 显存账目（RGBA8 + GL_GENERATE_MIPMAP 完整链；无删除路径只计峰值）
-        GlLedgerHooks.noteGameTexBytes(textureId,
-                GlMemoryLedger.withMipmaps((long) pageSize * pageSize * 4L));
         return textureId;
     }
 

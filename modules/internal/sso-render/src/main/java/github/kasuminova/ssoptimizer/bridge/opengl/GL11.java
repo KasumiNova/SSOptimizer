@@ -10,7 +10,8 @@ import java.nio.ShortBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
- * org.lwjgl.opengl.GL11 的 bridge 镜像（游戏使用面全集）。
+ * org.lwjgl.opengl.GL11 的 bridge 镜像（游戏 + 已适配模组（BoxUtil 1.6.0 GLWrapper
+ * 门面）使用面全集）。
  * <p>
  * 动机：ASM 重定向阶段会把游戏/模组字节码中 INVOKESTATIC owner
  * {@code org/lwjgl/opengl/GL11} 改写到本类，使所有固定管线调用不再直接触碰 GL
@@ -430,6 +431,16 @@ public final class GL11 {
                 () -> org.lwjgl.opengl.GL11.glDepthFunc(func));
     }
 
+    /** 深度范围映射：状态命令去重入队（两个 double 位模式各占两槽）。 */
+    public static void glDepthRange(double zNear, double zFar) {
+        final long nearBits = Double.doubleToRawLongBits(zNear);
+        final long farBits = Double.doubleToRawLongBits(zFar);
+        BridgeSupport.enqueueState(StateDedup.TYPE_DEPTH_RANGE,
+                (int) (nearBits >>> 32), (int) nearBits,
+                (int) (farBits >>> 32), (int) farBits,
+                () -> org.lwjgl.opengl.GL11.glDepthRange(zNear, zFar));
+    }
+
     public static void glCullFace(int mode) {
         BridgeSupport.enqueueState(StateDedup.TYPE_CULL_FACE, mode, 0, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glCullFace(mode));
@@ -491,6 +502,13 @@ public final class GL11 {
     public static void glClearStencil(int s) {
         BridgeSupport.enqueueState(StateDedup.TYPE_CLEAR_STENCIL, s, 0, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glClearStencil(s));
+    }
+
+    public static void glClearDepth(double depth) {
+        final long bits = Double.doubleToRawLongBits(depth);
+        BridgeSupport.enqueueState(StateDedup.TYPE_CLEAR_DEPTH,
+                (int) (bits >>> 32), (int) bits, 0, 0,
+                () -> org.lwjgl.opengl.GL11.glClearDepth(depth));
     }
 
     public static void glColorMaterial(int face, int mode) {
@@ -996,6 +1014,42 @@ public final class GL11 {
     public static void glTexParameter(int target, int pname, FloatBuffer params) {
         BridgeSupport.enqueueSnapshot(params, snapshot ->
                 org.lwjgl.opengl.GL11.glTexParameter(target, pname, snapshot.asFloatBuffer()));
+    }
+
+    /** 向量版纹理参数：buffer 快照后入队（BoxUtil 1.6.0 GLWrapper$Texture 引用）。 */
+    public static void glTexParameter(int target, int pname, IntBuffer params) {
+        BridgeSupport.enqueueSnapshot(params, snapshot ->
+                org.lwjgl.opengl.GL11.glTexParameter(target, pname, snapshot.asIntBuffer()));
+    }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：指针形纹理上传（BoxUtil 1.6.0 GLWrapper$Texture 引用）。
+    // 指针指向的本地内存生命周期由调用方保证（GL 契约语义），无 buffer 可快照。
+    // ------------------------------------------------------------------
+
+    public static void glTexImage1D(int target, int level, int internalformat, int width,
+                                    int border, int format, int type, long pixels) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexImage1D(
+                target, level, internalformat, width, border, format, type, pixels));
+    }
+
+    public static void glTexImage2D(int target, int level, int internalformat, int width, int height,
+                                    int border, int format, int type, long pixels) {
+        BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexImage2D(
+                target, level, internalformat, width, height, border, format, type, pixels));
+    }
+
+    public static void glTexSubImage1D(int target, int level, int xoffset, int width,
+                                       int format, int type, long pixels) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexSubImage1D(
+                target, level, xoffset, width, format, type, pixels));
+    }
+
+    public static void glTexSubImage2D(int target, int level, int xoffset, int yoffset,
+                                       int width, int height, int format, int type, long pixels) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexSubImage2D(
+                target, level, xoffset, yoffset, width, height, format, type, pixels));
     }
 
     /** 纹理环境参数（固定管线）。 */

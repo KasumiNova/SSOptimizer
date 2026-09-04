@@ -167,6 +167,21 @@ public final class GL32 {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL32.glGetInteger64(pname, index));
     }
 
+    /**
+     * 缓冲写回 64 位 getter：渲染线程直写调用方 buffer，调用方阻塞期间 buffer
+     * 不被触碰；小缓冲经 {@link GetBufferFill} 暂存绕过 LWJGL2 固定下限检查。
+     */
+    public static void glGetInteger64(int pname, java.nio.LongBuffer params) {
+        BridgeSupport.blockingWait(() -> GetBufferFill.fillLongs(params, 16,
+                buf -> org.lwjgl.opengl.GL32.glGetInteger64(pname, buf)));
+    }
+
+    /** 带索引缓冲写回 64 位 getter：语义同 {@link #glGetInteger64(int, java.nio.LongBuffer)}。 */
+    public static void glGetInteger64(int pname, int index, java.nio.LongBuffer params) {
+        BridgeSupport.blockingWait(() -> GetBufferFill.fillLongs(params, 16,
+                buf -> org.lwjgl.opengl.GL32.glGetInteger64(pname, index, buf)));
+    }
+
     // ------------------------------------------------------------------
     // 盘点补面：sync 等待/查询（BoxUtil Operation$Sync 引用）
     // ------------------------------------------------------------------

@@ -268,9 +268,6 @@ public final class LazyTextureManager {
         if (!defer) {
             final com.fs.graphics.TextureObject texture = eagerLoad(loader, textureCache, effectivePath, resourcePath);
             MANAGED_TEXTURES.put(texture, ManagedTextureEntry.resident(effectivePath, source.sourceHash, metadata, now, true));
-            // eager 上传走游戏主通道（不经 uploadConverted），按登记估算值入账，
-            // 与驱逐 sweep 的 noteGameTexFreed 配对
-            GlLedgerHooks.noteGameTexBytes(readTextureId(texture, -1), metadata.estimatedGpuBytes);
             return markTextureLoadedInCurrentContext(texture, effectivePath);
         }
 
@@ -675,8 +672,6 @@ public final class LazyTextureManager {
                 }
 
                 GL11.glDeleteTextures(textureId);
-                // 显存账本对称减量（与上传路径的 noteGameTexBytes 配对）
-                GlLedgerHooks.noteGameTexFreed(textureId);
                 setTextureId(candidate, -1);
                 entry.markPendingUpload();
                 evicted[0]++;
@@ -851,8 +846,6 @@ public final class LazyTextureManager {
                 CompressedTextureCache::load);
         if (compressed != null) {
             uploadCompressedLevels(target, resourcePath, generateMipmaps, compressed);
-            // 压缩上传按容器块数据精确值入账（含完整 mip 链）
-            GlLedgerHooks.noteGameTexBytes(textureId, GlLedgerHooks.compressedContainerBytes(compressed));
             return compressed.format();
         }
 
@@ -863,8 +856,6 @@ public final class LazyTextureManager {
                     resourcePath, sourceHash, generateMipmaps, cached, result);
             if (eagerCompressed != null) {
                 uploadCompressedLevels(target, resourcePath, generateMipmaps, eagerCompressed);
-                GlLedgerHooks.noteGameTexBytes(textureId,
-                        GlLedgerHooks.compressedContainerBytes(eagerCompressed));
                 return eagerCompressed.format();
             }
         }
@@ -883,9 +874,6 @@ public final class LazyTextureManager {
         TextureUploadHelper.glTexImage2D(target, 0, INTERNAL_FORMAT_RGBA,
                 result.textureWidth(), result.textureHeight(), 0,
                 format, TYPE_UNSIGNED_BYTE, result.buffer());
-        // 未压缩上传按 RGBA8 驻留入账（generateMipmaps 时含完整 mip 链 ×4/3）
-        GlLedgerHooks.noteGameTexBytes(textureId, GlLedgerHooks.gameTexBytesForUpload(
-                generateMipmaps, result.textureWidth(), result.textureHeight()));
 
         // 上传完成后投递后台压缩（像素在投递处复制，不阻塞 GL 命令序列）；
         // 缓存未命中首轮仍以未压缩路径上传，行为=现状
@@ -1106,8 +1094,6 @@ public final class LazyTextureManager {
         try {
             GL11.glBindTexture(target, textureId);
             uploadCompressedLevels(target, entry.resourcePath, key.mipmaps(), container);
-            // 同 id 重指定存储：GL 语义即旧（未压缩）存储被释放，账本按 id 替换为压缩精确值
-            GlLedgerHooks.noteGameTexBytes(textureId, GlLedgerHooks.compressedContainerBytes(container));
             entry.applyCompressedFormat(key.format());
             entry.compressedUpgradeKey = null;
             final long reloaded = HOT_RELOADED_TEXTURES.incrementAndGet();
@@ -1716,16 +1702,10 @@ public final class LazyTextureManager {
 
         final int previousBinding = restoreBinding ? captureBoundTexture(target) : Integer.MIN_VALUE;
         final boolean guarded = enterContextReloadGuard(texture);
-        // 旧纹理 id 随旧 GL 上下文销毁（无需也不能再 glDeleteTextures），仅账本需对称减量
-        final int oldTextureId = readTextureId(texture, -1);
+        // 旧纹理 id 随旧 GL 上下文销毁（无需也不能再 glDeleteTextures）
         try {
             reloadTextureInPlace(texture, target, tracked.resourcePath);
-            GlLedgerHooks.noteGameTexFreed(oldTextureId);
             if (entry != null) {
-                // 原地重传由游戏 TextureLoader 执行（RGBA8、不生成 mipmap），
-                // 受管贴图按登记尺寸补登新 id 驻留；非受管贴图只 free 不 add
-                GlLedgerHooks.noteGameTexBytes(readTextureId(texture, -1),
-                        (long) entry.textureWidth * entry.textureHeight * 4L);
                 entry.markResident(now);
             }
             storeContextBoundTextureEntry(texture, tracked.resourcePath, contextGeneration, true);
@@ -1874,11 +1854,6 @@ public final class LazyTextureManager {
                 if (vram != null) {
                     summary = summary + ' ' + vram;
                 }
-                // 非受管 GL 分配分类账本（FBO 附件、模组直接上传纹理/renderbuffer）
-                final String ledger = GlMemoryLedger.formatSummary();
-                if (!ledger.isEmpty()) {
-                    summary = summary + ' ' + ledger;
-                }
                 LOGGER.info(summary);
             }
         }
@@ -1916,8 +1891,7 @@ public final class LazyTextureManager {
      * 受管贴图周期摘要。{@code managedResident} 口径只含 LazyTextureManager 受管
      * （{@code MANAGED_TEXTURES}）且当前驻留的贴图估算字节：<b>不含</b>舰船/武器图集页
      * （受管贴图入图集后单张永不上传，图集页在 {@code ShipWeaponAtlas} 单独上传）、
-     * 不含非受管贴图（非 graphics/ 前缀或低于驻留跟踪阈值）。真实驻留总量见同行
-     * {@code glLedger} 的 {@code gameTex} 分类。
+     * 不含非受管贴图（非 graphics/ 前缀或低于驻留跟踪阈值）。
      */
     static String formatManagementSummary(final List<TextureCompositionReport.TextureEntry> entries,
                                           final long recentlyEvictedTextures,

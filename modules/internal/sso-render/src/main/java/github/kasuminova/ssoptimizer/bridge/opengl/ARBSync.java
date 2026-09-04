@@ -55,4 +55,14 @@ public final class ARBSync {
     public static int glGetSynci(GLSync sync, int pname) {
         return GL32.glGetSynci(sync, pname);
     }
+
+    /** @see GL32#glGetInteger64(int) */
+    public static long glGetInteger64(int pname) {
+        return GL32.glGetInteger64(pname);
+    }
+
+    /** @see GL32#glGetInteger64(int, java.nio.LongBuffer) */
+    public static void glGetInteger64(int pname, java.nio.LongBuffer params) {
+        GL32.glGetInteger64(pname, params);
+    }
 }

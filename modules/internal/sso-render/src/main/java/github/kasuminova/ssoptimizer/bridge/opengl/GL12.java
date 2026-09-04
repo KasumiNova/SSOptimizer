@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -50,6 +51,109 @@ public final class GL12 {
                 org.lwjgl.opengl.GL12.glTexSubImage3D(target, level,
                         xOffset, yOffset, zOffset, width, height, depth,
                         format, type, snapshot.asFloatBuffer()));
+    }
+
+    // ------------------------------------------------------------------
+    // 盘点补面：3D 纹理上传全变体（BoxUtil 1.6.0 GLWrapper$Texture 引用）。
+    // 指针形无 buffer 可快照，指针指向的本地内存生命周期由调用方保证
+    // （GL 契约语义）；buffer 形录制时刻快照入池。
+    // ------------------------------------------------------------------
+
+    /** 指针形 3D 纹理分配/上传。 */
+    public static void glTexImage3D(int target, int level, int internalFormat,
+                                    int width, int height, int depth,
+                                    int border, int format, int type, long pixels) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL12.glTexImage3D(target, level,
+                internalFormat, width, height, depth, border, format, type, pixels));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexImage3D(int target, int level, int internalFormat,
+                                    int width, int height, int depth,
+                                    int border, int format, int type, DoubleBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexImage3D(target, level, internalFormat,
+                        width, height, depth, border, format, type, snapshot.asDoubleBuffer()));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexImage3D(int target, int level, int internalFormat,
+                                    int width, int height, int depth,
+                                    int border, int format, int type, FloatBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexImage3D(target, level, internalFormat,
+                        width, height, depth, border, format, type, snapshot.asFloatBuffer()));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexImage3D(int target, int level, int internalFormat,
+                                    int width, int height, int depth,
+                                    int border, int format, int type, IntBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexImage3D(target, level, internalFormat,
+                        width, height, depth, border, format, type, snapshot.asIntBuffer()));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexImage3D(int target, int level, int internalFormat,
+                                    int width, int height, int depth,
+                                    int border, int format, int type, ShortBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexImage3D(target, level, internalFormat,
+                        width, height, depth, border, format, type, snapshot.asShortBuffer()));
+    }
+
+    /** 指针形 3D 纹理子区域上传。 */
+    public static void glTexSubImage3D(int target, int level,
+                                       int xOffset, int yOffset, int zOffset,
+                                       int width, int height, int depth,
+                                       int format, int type, long pixels) {
+        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL12.glTexSubImage3D(target, level,
+                xOffset, yOffset, zOffset, width, height, depth, format, type, pixels));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexSubImage3D(int target, int level,
+                                       int xOffset, int yOffset, int zOffset,
+                                       int width, int height, int depth,
+                                       int format, int type, ByteBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexSubImage3D(target, level,
+                        xOffset, yOffset, zOffset, width, height, depth,
+                        format, type, snapshot));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexSubImage3D(int target, int level,
+                                       int xOffset, int yOffset, int zOffset,
+                                       int width, int height, int depth,
+                                       int format, int type, DoubleBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexSubImage3D(target, level,
+                        xOffset, yOffset, zOffset, width, height, depth,
+                        format, type, snapshot.asDoubleBuffer()));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexSubImage3D(int target, int level,
+                                       int xOffset, int yOffset, int zOffset,
+                                       int width, int height, int depth,
+                                       int format, int type, IntBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexSubImage3D(target, level,
+                        xOffset, yOffset, zOffset, width, height, depth,
+                        format, type, snapshot.asIntBuffer()));
+    }
+
+    /** 像素数据录制时刻快照入队。 */
+    public static void glTexSubImage3D(int target, int level,
+                                       int xOffset, int yOffset, int zOffset,
+                                       int width, int height, int depth,
+                                       int format, int type, ShortBuffer pixels) {
+        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                org.lwjgl.opengl.GL12.glTexSubImage3D(target, level,
+                        xOffset, yOffset, zOffset, width, height, depth,
+                        format, type, snapshot.asShortBuffer()));
     }
 
     // ------------------------------------------------------------------

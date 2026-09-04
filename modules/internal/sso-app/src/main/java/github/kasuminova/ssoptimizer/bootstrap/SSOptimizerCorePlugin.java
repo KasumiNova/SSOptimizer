@@ -17,7 +17,6 @@ import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.GlLedgerModOptimizer;
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
@@ -202,7 +201,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
      */
     private static void registerExternalModOptimizers(BiConsumer<String, AsmClassProcessor> registrator) {
         registerModOptimizer(registrator, new DcrModOptimizer());
-        registerModOptimizer(registrator, new GlLedgerModOptimizer());
     }
 
     /**
