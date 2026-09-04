@@ -21,9 +21,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * 本阶段（bridge + 单测）的语义约定：
  * <ul>
  *   <li>immediate 顶点流（glBegin/glEnd 与 glVertex/glTexCoord/glColor/
- *       glNormal3f 族）：编码进逐线程 {@link VertexStream}，在 glEnd/任一非流式
- *       命令/阻塞通道 drain-first 之前打包成单条回放命令落帧——流段与命令
- *       对象在帧列表中共享同一有序序列，回放与原调用逐指令等价；</li>
+ *       glNormal3f 族）：编码进逐线程 {@link VertexStream}，在任一非流式命令/
+ *       帧尾 swap/阻塞通道 drain-first 之前打包成单条回放命令落帧（glEnd
+ *       默认延迟落帧，见 {@link BridgeSupport#flushVertexStreamOnGlEnd}）——
+ *       流段与命令对象在帧列表中共享同一有序序列，回放与原调用逐指令等价；</li>
  *   <li>无参/标量参数命令：1:1 录制一条命令，命令体调真
  *       {@link org.lwjgl.opengl.GL11}；</li>
  *   <li>buffer 参数命令（glTexImage/glBufferData/glLoadMatrix 等）：录制时经
@@ -57,8 +58,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *       轮次。</li>
  * </ul>
  * 后续阶段计划：immediate 顶点流被顶点拦截器当场变换进批量缓冲（glEnd 转
- * draw 命令，取代本步的逐指令回放）；矩阵操作改走主线程 CPU 仿真栈不再产生
- * GL 命令；glFlush/glFinish 评估抹成 no-op（语义由帧同步点统一保证）。
+ * draw 命令，取代本步的逐指令回放）；矩阵命令族已编码进顶点流（见「矩阵」
+ * 分节，开关 {@code ssoptimizer.render.streamMatrixOps}），更远期是主线程
+ * CPU 仿真栈直出；glFlush/glFinish 评估抹成 no-op（语义由帧同步点统一保证）。
  * <p>
  * 注入：{@link #install(RenderQueue)} 装配命令消费者（游戏接入时由 bootstrap
  * 安装真实队列；单测安装假队列验证录制行为）。未安装时调用直接抛
@@ -96,8 +98,9 @@ public final class GL11 {
     // ------------------------------------------------------------------
 
     // ------------------------------------------------------------------
-    // immediate 顶点流（流式录制：编码进逐线程 VertexStream，glEnd/非流式
-    // 命令/阻塞通道前打包成单条回放命令落帧，见 VertexStream 的顺序语义）
+    // immediate 顶点流（流式录制：编码进逐线程 VertexStream，非流式命令/帧尾
+    // swap/阻塞通道前打包成单条回放命令落帧，glEnd 默认延迟落帧，见
+    // BridgeSupport.flushVertexStreamOnGlEnd 与 VertexStream 的顺序语义）
     // ------------------------------------------------------------------
 
     public static void glBegin(int mode) {
@@ -105,14 +108,17 @@ public final class GL11 {
     }
 
     public static void glEnd() {
-        // 立即落帧（保持既有「段即批次」语义）：主线程流段在 glEnd 处原子入队，
-        // 若延迟到后续命令统一 flush，挂起窗口内 aux 生产者线程（BoxUtil 等）
-        // 提交的命令会先入队，造成帧列表顺序错乱（aux 命令本应在流段之后）。
-        // 流内状态指令（streamEnable/streamBlendFunc 等）已把 sprite 的状态设置
-        // 合并进本段，每 sprite 仍是一次落帧但命令数从 6 条降到 1 条流命令。
+        // 延迟落帧（默认开，见 BridgeSupport.flushVertexStreamOnGlEnd）：glEnd 只写
+        // OP_END 标记段落结束，落帧推迟到任一非流式命令/帧尾 swap/容量阈值——
+        // 逐段的 transferBuffer 换缓冲 acquire、批次命令分配与 frameLock 进入
+        // 全部摊销到少数落帧点（JProfiler 实证超空间大地图 acquire 42% 自身时间）。
+        // 已知取舍：挂起窗口内 aux 生产者线程（非 auxNative 的队列提交方，如字体
+        // 预热 daemon 经 GlDispatch）提交的命令会先于挂起流段入帧——实时序上
+        // 流段在先。该错序窗口与既有 sprite 流内指令路径（流挂起到下一命令才
+        // 落帧）同类，开关关闭即完全回退。
         RecordingContext context = BridgeSupport.recordingContext();
         context.vertexStream.end();
-        BridgeSupport.flushVertexStream(context);
+        BridgeSupport.flushVertexStreamOnGlEnd(context);
     }
 
     /**
@@ -241,16 +247,38 @@ public final class GL11 {
 
     // ------------------------------------------------------------------
     // 矩阵
+    //
+    // 流内矩阵指令模式（开关 ssoptimizer.render.streamMatrixOps，默认开，
+    // 决策见 BridgeSupport.shouldStreamMatrixOps）：glPushMatrix/glPopMatrix/
+    // glLoadIdentity/glTranslatef/glRotatef/glScalef/glMatrixMode 在
+    // SimulatedGlState 簿记后编码进顶点流（录制点 = 回放序，簿记语义与
+    // streamEnable 同构），不再每条 enqueue 一个非流式命令；回放按流内
+    // 位置逐指令执行（VertexArrayBatch 先排挂起段保序 / ImmediateVertexSink
+    // 直执）。开关关闭或 aux 原生线程回退 enqueue 老路径（glMatrixMode
+    // 回退路径保留 enqueueState 去重）。
+    // glTranslated/glOrtho/glLoadMatrix/glMultMatrix（double 载荷与 buffer
+    // 快照的低频路径）保持 enqueue 不变——enqueue 先落帧挂起流，相对顺序
+    // 天然保持。
     // ------------------------------------------------------------------
 
     public static void glMatrixMode(int mode) {
-        BridgeSupport.simulatedState().onMatrixMode(mode);
+        RecordingContext ctx = BridgeSupport.recordingContext();
+        ctx.simulatedState.onMatrixMode(mode);
+        if (BridgeSupport.shouldStreamMatrixOps(ctx)) {
+            ctx.vertexStream.matrixMode(mode);
+            return;
+        }
         BridgeSupport.enqueueState(StateDedup.TYPE_MATRIX_MODE, mode, 0, 0, 0,
                 () -> org.lwjgl.opengl.GL11.glMatrixMode(mode));
     }
 
     public static void glLoadIdentity() {
-        BridgeSupport.simulatedState().onLoadIdentity();
+        RecordingContext ctx = BridgeSupport.recordingContext();
+        ctx.simulatedState.onLoadIdentity();
+        if (BridgeSupport.shouldStreamMatrixOps(ctx)) {
+            ctx.vertexStream.loadIdentity();
+            return;
+        }
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glLoadIdentity);
     }
 
@@ -260,17 +288,32 @@ public final class GL11 {
     }
 
     public static void glPushMatrix() {
-        BridgeSupport.simulatedState().onPushMatrix();
+        RecordingContext ctx = BridgeSupport.recordingContext();
+        ctx.simulatedState.onPushMatrix();
+        if (BridgeSupport.shouldStreamMatrixOps(ctx)) {
+            ctx.vertexStream.pushMatrix();
+            return;
+        }
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glPushMatrix);
     }
 
     public static void glPopMatrix() {
-        BridgeSupport.simulatedState().onPopMatrix();
+        RecordingContext ctx = BridgeSupport.recordingContext();
+        ctx.simulatedState.onPopMatrix();
+        if (BridgeSupport.shouldStreamMatrixOps(ctx)) {
+            ctx.vertexStream.popMatrix();
+            return;
+        }
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glPopMatrix);
     }
 
     public static void glTranslatef(float x, float y, float z) {
-        BridgeSupport.simulatedState().onTranslate(x, y, z);
+        RecordingContext ctx = BridgeSupport.recordingContext();
+        ctx.simulatedState.onTranslate(x, y, z);
+        if (BridgeSupport.shouldStreamMatrixOps(ctx)) {
+            ctx.vertexStream.translatef(x, y, z);
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTranslatef(x, y, z));
     }
 
@@ -280,12 +323,22 @@ public final class GL11 {
     }
 
     public static void glRotatef(float angle, float x, float y, float z) {
-        BridgeSupport.simulatedState().onRotate(angle, x, y, z);
+        RecordingContext ctx = BridgeSupport.recordingContext();
+        ctx.simulatedState.onRotate(angle, x, y, z);
+        if (BridgeSupport.shouldStreamMatrixOps(ctx)) {
+            ctx.vertexStream.rotatef(angle, x, y, z);
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glRotatef(angle, x, y, z));
     }
 
     public static void glScalef(float x, float y, float z) {
-        BridgeSupport.simulatedState().onScale(x, y, z);
+        RecordingContext ctx = BridgeSupport.recordingContext();
+        ctx.simulatedState.onScale(x, y, z);
+        if (BridgeSupport.shouldStreamMatrixOps(ctx)) {
+            ctx.vertexStream.scalef(x, y, z);
+            return;
+        }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glScalef(x, y, z));
     }
 

@@ -41,6 +41,12 @@ import java.util.Map;
  *       保留。展开段相交检测前加包围圆拒绝（dist² > ((wA+wB)×0.75)² 时两圆不相交
  *       ⇒ 展开段必不相交，perp 恒单位向量），拒绝路径与原「检测必为 false」路径
  *       的 markFadeOut 副作用完全一致（均不触发）；</li>
+ *   <li><b>老化零亮度点简化路径</b>：{@code fadeOut} 已标记且 {@code maxBrightness}
+ *       == 0 的点（encode 期间 maxBrightness 无人改写，恒 0），其 alpha 字节与
+ *       亮度公式取值无关恒为 0、相交/折返检测的 markFadeOut 对已 fadeOut 点恒为
+ *       no-op、proximity 在 fadeSource 更新后恒为本点（dist 0 ⇒ mult 精确 0），
+ *       故跳过亮度除法/相交检测/sqrt，直接写零亮度顶点；fadeSource 更新与
+ *       {@code lastProximityMult} 写回逐字保留（见 {@link #encodeContrail} 内注释）；</li>
  *   <li><b>无分配</b>：{@code segmentIntersection} 只需要 null/非 null 判定，展开为
  *       同表达式同顺序的标量 {@link #segmentsIntersect}；亮度/距离计算全部标量化，
  *       不再逐点 new Vector2f；</li>
@@ -178,6 +184,41 @@ public final class CampaignContrailBatchHelper {
         ContrailEngineV2.ContrailPoint prev = null;
         for (int i = 0; i < size; i++) {
             ContrailEngineV2.ContrailPoint point = points.get(i);
+
+            // ---- 老化零亮度点简化路径（B1）----
+            // 条件保守地限定为「fadeOut 已标记且 maxBrightness == 0」的点（encode
+            // 期间 maxBrightness 无人改写，恒 0 成立）。逐项复核原版副作用：
+            // - 顶点 alpha：baseAlpha × maxBrightness(0) × brightness 恒为 ±0/NaN，
+            //   (int) 转换后恒 0（brightness 为 NaN 时 (int) NaN == 0 同样成立），
+            //   与亮度双段线性公式的具体取值无关——除法整体跳过，直接写 alpha=0；
+            // - 相交/折返检测：唯一副作用是 markFadeOut，对已 fadeOut 点恒为 no-op
+            //   （origMax/elapsedWhenFadeOut 快照只在首次标记时写入），跳过不丢状态；
+            // - fadeSource 更新：fadeOut 点即成为自己的参照，必须照常发生；更新后
+            //   fadeSource == 本点 ⇒ proximity 的 dist 恒 0、fadeRatio 恒 1
+            //   （origMax>0 时 maxBrightness 为 0；origMax<=0 时直接取 1）⇒
+            //   mult 恒为精确 0.0f，sqrt 与除法跳过；lastProximityMult 写回按原版
+            //   min 钳制代入 mult=0 逐字保留（含 -0.0/NaN 的位级行为）。
+            if (point.fadeOut && point.maxBrightness == 0.0f) {
+                fadeSource = point;
+                float mult = 0.0f;
+                if (mult > point.lastProximityMult) {
+                    mult = point.lastProximityMult;
+                }
+                point.lastProximityMult = mult;
+
+                float halfWidth = point.width / 2.0f;
+                addPair(
+                        red, green, blue, 0,
+                        point.texCoord,
+                        point.point.x - point.perp.x * halfWidth,
+                        point.point.y - point.perp.y * halfWidth,
+                        point.point.x + point.perp.x * halfWidth,
+                        point.point.y + point.perp.y * halfWidth
+                );
+                prev = point;
+                continue;
+            }
+
             ContrailEngineV2.ContrailPoint next = i + 1 < size ? points.get(i + 1) : null;
 
             // ---- 亮度（原版 var12）：双段线性 + 钳制 + 全局缩放 ----

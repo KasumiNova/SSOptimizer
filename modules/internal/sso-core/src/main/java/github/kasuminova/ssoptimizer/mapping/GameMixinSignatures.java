@@ -63,6 +63,9 @@ public final class GameMixinSignatures {
         public static final String LOAD_GAME = "loadGame(Ljava/lang/String;Lcom/fs/starfarer/campaign/CampaignListener;Lcom/fs/starfarer/campaign/CampaignEngine$CampaignUI;ZZ)Ljava/lang/String;";
         /** 读档后模组插件回调调用点（阶段33 的 onGameLoad(false) 循环）。 */
         public static final String MOD_PLUGIN_ON_GAME_LOAD = "Lcom/fs/starfarer/api/ModPlugin;onGameLoad(Z)V";
+        /** 阶段25 的新引擎安装调用点；异常路径另有一处恢复旧引擎的同名调用，需按参数区分。 */
+        public static final String ENGINE_SET_INSTANCE =
+                "Lcom/fs/starfarer/campaign/CampaignEngine;setInstance(Lcom/fs/starfarer/campaign/CampaignEngine;)V";
 
         private CampaignGameManager() {
         }
@@ -244,6 +247,37 @@ public final class GameMixinSignatures {
     }
 
     /**
+     * 基础瓦片地形渲染 Mixin 签名常量。
+     * <p>
+     * {@code BaseTiledTerrain.renderSubArea} 内每瓦片 {@code new Random(long)} 构造调用点
+     * （samples==1 与 samples>1 两条路径各一处，均为 {@code Random(J)V}，
+     * 该方法内无其他 Random 构造）。
+     */
+    public static final class BaseTiledTerrain {
+        public static final String TARGET_CLASS = "com.fs.starfarer.api.impl.campaign.terrain.BaseTiledTerrain";
+        /** renderSubArea 内 new Random(long) 的 NEW 锚点（仅匹配 Random 类型构造）。 */
+        public static final String TILE_RANDOM_NEW = "java/util/Random";
+
+        private BaseTiledTerrain() {
+        }
+    }
+
+    /**
+     * 超空间地形 Mixin 签名常量。
+     * <p>
+     * {@code HyperspaceTerrainPlugin.renderQuad} 内每瓦片 {@code new Random(long)} 构造调用点
+     * （方法内唯一 Random 构造，为 {@code Random(J)V}）。
+     */
+    public static final class HyperspaceTerrainPlugin {
+        public static final String TARGET_CLASS = "com.fs.starfarer.api.impl.campaign.terrain.HyperspaceTerrainPlugin";
+        /** renderQuad 内 new Random(long) 的 NEW 锚点（仅匹配 Random 类型构造）。 */
+        public static final String TILE_RANDOM_NEW = "java/util/Random";
+
+        private HyperspaceTerrainPlugin() {
+        }
+    }
+
+    /**
      * 文本框 IME 相关桥接签名常量。
      * <p>
      * {@code releaseFocus} 的参数类型是游戏的输入事件实现类，已在两平台映射表中统一命名为
@@ -261,6 +295,38 @@ public final class GameMixinSignatures {
         public static final String TEXT_FIELD_FOCUS_HOOK_DESC = "(Lcom/fs/starfarer/api/ui/TextFieldAPI;)V";
 
         private TextFieldIme() {
+        }
+    }
+
+    /**
+     * 星域交战检测分桶配对 Mixin 签名常量。
+     * <p>
+     * {@code BaseLocation.advance(float, InputEventList)} 的「Checking combat initiation」段
+     * 两两配对由格网分桶剪枝（{@code BaseLocationCombatPairingMixin} 全方法覆写，
+     * 覆写体内逐行对照原版，仅替换配对枚举方式）。
+     */
+    public static final class BaseLocation {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.BaseLocation";
+        public static final String ADVANCE = "advance(FLcom/fs/starfarer/util/InputEventList;)V";
+
+        private BaseLocation() {
+        }
+    }
+
+    /**
+     * 战术模块舰队扫描距离预过滤 Mixin 签名常量。
+     * <p>
+     * {@code TacticalModule.advance(float)} 内仅有一处
+     * {@code ObjectRepository.getList(Class)} 调用（interval 扫描的舰队列表，
+     * 另一处同名调用在 {@code hasEnoughStuffAround} 内），重定向该点做距离预过滤。
+     */
+    public static final class TacticalModule {
+        public static final String TARGET_CLASS = "com.fs.starfarer.campaign.ai.TacticalModule";
+        public static final String ADVANCE = "advance(F)V";
+        public static final String GET_LIST_TARGET =
+                "Lcom/fs/util/container/repo/ObjectRepository;getList(Ljava/lang/Class;)Ljava/util/List;";
+
+        private TacticalModule() {
         }
     }
 }

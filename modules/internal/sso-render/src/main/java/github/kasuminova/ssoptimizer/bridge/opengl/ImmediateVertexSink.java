@@ -105,4 +105,39 @@ enum ImmediateVertexSink implements VertexSink {
     public void bindTexture(int texture) {
         org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, texture);
     }
+
+    @Override
+    public void pushMatrix() {
+        org.lwjgl.opengl.GL11.glPushMatrix();
+    }
+
+    @Override
+    public void popMatrix() {
+        org.lwjgl.opengl.GL11.glPopMatrix();
+    }
+
+    @Override
+    public void loadIdentity() {
+        org.lwjgl.opengl.GL11.glLoadIdentity();
+    }
+
+    @Override
+    public void translatef(float x, float y, float z) {
+        org.lwjgl.opengl.GL11.glTranslatef(x, y, z);
+    }
+
+    @Override
+    public void rotatef(float angle, float x, float y, float z) {
+        org.lwjgl.opengl.GL11.glRotatef(angle, x, y, z);
+    }
+
+    @Override
+    public void scalef(float x, float y, float z) {
+        org.lwjgl.opengl.GL11.glScalef(x, y, z);
+    }
+
+    @Override
+    public void matrixMode(int mode) {
+        org.lwjgl.opengl.GL11.glMatrixMode(mode);
+    }
 }

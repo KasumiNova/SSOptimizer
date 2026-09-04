@@ -47,12 +47,20 @@ GL 的旁路，结论如下：
 | 未镜像 GL 调用 | 调用点 owner 未进镜像表时保持原 owner，在调用线程直接执行真实 GL；bridge 无法感知 | 运行时计数为 0（v44c 验证）；若未来出现且发生在渲染线程，dedup 只影响「同参状态命令是否重放」的优化正确性边界（视觉可能错位），帧失败熔断语义不受影响——属已声明的不可感知边界 |
 | 渲染线程命令体 | bridge 包类执行真实 GL（排除规则豁免重定向） | 命令体只执行「录制下来的命令」；被 dedup 跳过的命令不执行（真实状态未变），命令体不读写录制侧状态缓存，无一致性问题 |
 
-### 3. 矩阵类不纳入 dedup（审计决定）
+### 3. 矩阵类不纳入 dedup（审计决定，已随流内矩阵指令演进）
 
 `glLoadIdentity/glTranslatef/glRotatef/glScalef/glLoadMatrix/glMultMatrix`
-不纳入：相邻重复率低（参数几乎必然不同）、浮点参数位模式指纹收益低、且演进
+不纳入：相邻重复率低（参数几乎必然不同）、浮点参数位模式指纹收益低，且演进
 方向是主线程 CPU 仿真栈（见 GL11 类 javadoc 后续阶段计划）而非命令去重。
-`glMatrixMode`（标量状态命令，切换当前矩阵栈）纳入。
+`glMatrixMode`（标量状态命令，切换当前矩阵栈）在纯命令路径下纳入。
+
+后续演进（已落地）：矩阵命令族（glPushMatrix/glPopMatrix/glLoadIdentity/
+glTranslatef/glRotatef/glScalef/glMatrixMode）默认编码进顶点流的流内指令
+（开关 `-Dssoptimizer.render.streamMatrixOps`，VertexStream OP_PUSH_MATRIX
+族）——挂起流内的矩阵指令经 `VertexStream.hasPendingStateOps()` 扩展语义
+保守失效 dedup 相邻性（与流内 enable/bind 同判据）；开关关闭的回退路径下
+glMatrixMode 仍走 enqueueState 保留去重。glTranslated/glOrtho/glLoadMatrix/
+glMultMatrix（double 载荷与 buffer 快照低频路径）保持 enqueue 不变。
 
 ## 去重模型：commitSeq 相邻性判据
 

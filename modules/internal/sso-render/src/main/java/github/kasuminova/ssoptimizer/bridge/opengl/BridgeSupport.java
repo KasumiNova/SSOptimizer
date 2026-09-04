@@ -45,6 +45,43 @@ final class BridgeSupport {
             Boolean.parseBoolean(System.getProperty("ssoptimizer.render.statededup", "true"));
 
     /**
+     * glEnd 延迟落帧总开关：{@code -Dssoptimizer.render.deferredGlEnd=false} 回退
+     * 为「glEnd 立即落帧」的旧行为，默认开启。开启时 glEnd 只写 OP_END 标记，
+     * 落帧推迟到任一非流式命令 {@link #enqueue(GlCommand)} / 帧尾 swap /
+     * 容量阈值三个时机（见 {@link #flushVertexStreamOnGlEnd(RecordingContext)}）——
+     * 落帧次数从 O(glEnd 次数) 降到 O(flush 点)，消除逐段的 transferBuffer
+     * 换缓冲 acquire（JProfiler 实证超空间大地图 {@code VertexStreamBufferPool.acquire}
+     * 42% 自身时间）与逐段的批次命令分配 + synchronized(frameLock) 进入。
+     * 静态可变字段供测试切换；uninstall 不重置（系统属性进程级语义）。
+     */
+    static volatile boolean deferredGlEndEnabled =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.render.deferredGlEnd", "true"));
+
+    /**
+     * 流内矩阵指令总开关：{@code -Dssoptimizer.render.streamMatrixOps=false} 回退
+     * 为「每条矩阵调用一个非流式命令经 enqueue」的旧行为，默认开启。开启时
+     * GL11 矩阵族（glPushMatrix/glPopMatrix/glLoadIdentity/glTranslatef/
+     * glRotatef/glScalef/glMatrixMode）在 SimulatedGlState 簿记后编码进顶点流
+     * （{@link VertexStream} 的 OP_PUSH_MATRIX 族），跟随流走到下一个落帧点，
+     * 回放按流内位置逐指令执行——消除每帧 400-1500 条矩阵命令各自的落帧
+     * flush + lambda 命令分配 + synchronized(frameLock) 进入（deferred glEnd
+     * 落地后 JProfiler 热点转移到 glPopMatrix 的根因）。glTranslated/glOrtho/
+     * glLoadMatrix/glMultMatrix（double 载荷与 buffer 快照的低频路径）保持
+     * enqueue 不变。
+     * 静态可变字段供测试切换；uninstall 不重置（系统属性进程级语义）。
+     */
+    static volatile boolean streamMatrixOpsEnabled =
+            Boolean.parseBoolean(System.getProperty("ssoptimizer.render.streamMatrixOps", "true"));
+
+    /**
+     * glEnd 延迟落帧的容量阈值（字节）：{@code -Dssoptimizer.render.deferredGlEnd.thresholdBytes=N}
+     * 调整，默认 1MB。glEnd 处已编码字节数达到阈值即强制落帧——单帧缓冲
+     * 无限增长的兜底（纯流式序列在两个非流式命令之间不受其他落帧点约束）。
+     */
+    static volatile int deferredGlEndThresholdBytes =
+            Integer.getInteger("ssoptimizer.render.deferredGlEnd.thresholdBytes", 1 << 20);
+
+    /**
      * 命令级 GL 错误探针（仅诊断）：{@code glErrorProbe=command} 时 enqueue 把
      * 命令包装为 {@link ProbeSiteCommand} 并捕获录制点堆栈，供渲染线程侧探针
      * 在排空到错误时输出定位（bridge 命令体多为匿名 lambda，类型名不可读）。
@@ -193,8 +230,13 @@ final class BridgeSupport {
      * 帧提交收口（不等待）：swap 后刷新主录制线程的帧上下文缓存——
      * 主线程每帧此处获取一次 {@link RecordingContext}，帧内 GL 调用直读
      * 缓存，不再逐调用走 ThreadLocal（v36 profile 热点）。
+     * <p>
+     * swap 前先落帧当前线程未落帧的顶点流：glEnd 延迟落帧模式下流段挂起到
+     * 帧尾是常态，必须在帧切割前进帧——否则本帧内容落入下一帧，帧边界语义
+     * 被破坏（空流早退，旧模式下此处恒为空流一次方法调用的代价）。
      */
     static void swapFrames() {
+        flushVertexStream();
         queue().swapFrames();
         frameSubmitSeq++;
         refreshMainRecordingContext();
@@ -202,6 +244,7 @@ final class BridgeSupport {
 
     /** 帧提交收口（等待上一帧完成，Display.update 的帧尾调用形态）。 */
     static void swapFramesAndSync() {
+        flushVertexStream();
         queue().swapFramesAndSync();
         frameSubmitSeq++;
         refreshMainRecordingContext();
@@ -252,7 +295,9 @@ final class BridgeSupport {
      * glCallList（显示列表执行绕过录制侧）、aux 生产者线程并发提交、顶点流
      * 落帧、其他命令——都会经帧提交序号（{@code RenderFrame.commitSeq}）打断
      * 相邻性，保证去重永不跨越「状态可能已被改变」的边界（旁路审计见
-     * docs/design/render-state-dedup.md）。
+     * docs/design/render-state-dedup.md）。挂起顶点流内的状态指令是唯一不
+     * 推进 commitSeq 的状态改动源，由 {@link VertexStream#hasPendingStateOps()}
+     * 显式失效补齐（见方法体注释）。
      *
      * @param type    状态命令类型（{@link StateDedup} 常量）
      * @param a,b,c,d 参数槽（最多 4 个 int；float 由调用点转位模式）
@@ -269,6 +314,13 @@ final class BridgeSupport {
             frame = queue().currentFrame();
         }
         StateDedup dedup = ctx.stateDedup;
+        // 挂起顶点流内的状态指令（流内 enable/disable/blendFunc/bindTexture）
+        // 回放时改变真实 GL 状态但不推进 commitSeq（glEnd 延迟落帧模式下挂起
+        // 窗口覆盖整段 begin..end）：相邻性判据看不到它，必须保守失效——否则
+        // 「相同状态命令跳过」会被挂起的流内状态改动架空（回放序上真实状态已变）
+        if (ctx.vertexStream.hasPendingStateOps()) {
+            dedup.invalidate();
+        }
         if (dedup.shouldSkip(frame, type, a, b, c, d)) {
             return;
         }
@@ -296,13 +348,70 @@ final class BridgeSupport {
     /**
      * 顶点流落帧：当前线程已累计的 immediate 操作移交给池化的
      * {@link VertexBatchCommand} 追加进当前帧（空流不产生任何命令）。触发点：
-     * glEnd、任一非流式命令（见 {@link #enqueue(GlCommand)}）、阻塞通道
+     * 任一非流式命令（见 {@link #enqueue(GlCommand)}）、帧尾 swap（见
+     * {@link #swapFrames()}）、glEnd 的延迟落帧决策（见
+     * {@link #flushVertexStreamOnGlEnd(RecordingContext)}）、阻塞通道
      * drain-first 之前——保证流段与其他命令/回读的相对顺序与原调用序列
      * 逐指令等价。缓冲所有权移交（{@link VertexStream#transferBuffer()}），
      * 渲染线程执行完经 {@link VertexStreamBufferPool} 归还，稳态零拷贝零分配。
      */
     static void flushVertexStream() {
         flushVertexStream(recordingContext());
+    }
+
+    /**
+     * glEnd 处的落帧决策（延迟落帧模式，开关见 {@link #deferredGlEndEnabled}）：
+     * 默认只让 glEnd 写 OP_END 标记段落结束，不立即落帧——多段 begin..end
+     * 累积在同一缓冲，推迟到任一非流式命令 {@link #enqueue(GlCommand)}
+     * （先入队先 flush，顺序天然保持）、帧尾 swap（{@link #swapFrames()} 收口）
+     * 或容量阈值（{@link #deferredGlEndThresholdBytes}，单帧缓冲增长兜底）
+     * 三个时机统一落帧。
+     * <p>
+     * 保持立即落帧（回退旧行为）的情形：
+     * <ul>
+     *   <li>开关关闭（一键回退）；</li>
+     *   <li>aux 原生线程（{@link RecordingContext#auxNative}）：其阻塞通道
+     *       （{@link #blockingGet} 等）在 aux 下内联直执、不经 flush——挂起
+     *       的流段会让随后的真实 GL 回读越过未回放的流，逐指令实时序被破坏，
+     *       aux 下必须维持「glEnd 即逐指令 immediate 回放」的原生语义；</li>
+     *   <li>容量阈值触线（{@code stream.length() >= 阈值}）。</li>
+     * </ul>
+     * 渲染线程侧等价性：延迟后相邻流段合入同一 {@link VertexBatchCommand}，
+     * 与旧模式「多条相邻批次经 {@link MergedBatchCommand} 串合并共享同一
+     * {@link VertexArrayBatch} 解码」的执行路径一致（{@link VertexStream#replayBody}
+     * 对多段流顺序解码，OP_BEGIN/OP_END 序列逐指令等价）；display list 编译
+     * 窗口的 immediate 强制分流在渲染线程执行序上判定
+     * （{@link VertexBatchCommand#requiresImmediateReplay(boolean)}），与录制侧
+     * 批次边界无关。
+     */
+    static void flushVertexStreamOnGlEnd(RecordingContext ctx) {
+        if (shouldFlushOnGlEnd(ctx)) {
+            flushVertexStream(ctx);
+        }
+    }
+
+    /**
+     * glEnd 处是否立即落帧的判定（延迟落帧模式的决策本体，包内可见供单测
+     * 直接验证；aux 直执路径不可在无 GL 上下文环境回放，决策与执行分离）。
+     */
+    static boolean shouldFlushOnGlEnd(RecordingContext ctx) {
+        return !deferredGlEndEnabled
+                || ctx.auxNative
+                || ctx.vertexStream.length() >= deferredGlEndThresholdBytes;
+    }
+
+    /**
+     * 矩阵调用是否编码进顶点流的判定（流内矩阵指令模式的决策本体，包内可见
+     * 供单测直接验证；aux 直执路径不可在无 GL 上下文环境回放，决策与执行分离）。
+     * <p>
+     * aux 原生线程（{@link RecordingContext#auxNative}）必须回退 enqueue
+     * （enqueue 在 aux 下调用线程立即执行）：其阻塞通道（{@link #blockingGet}
+     * 等）在 aux 下内联直执、不经 flush——矩阵指令若进流挂起，随后的真实
+     * GL 回读会越过未回放的矩阵操作读到滞后矩阵，逐指令实时序被破坏（与
+     * {@link #shouldFlushOnGlEnd(RecordingContext)} 对 aux 的既有分流同理由）。
+     */
+    static boolean shouldStreamMatrixOps(RecordingContext ctx) {
+        return streamMatrixOpsEnabled && !ctx.auxNative;
     }
 
     /**

@@ -82,8 +82,8 @@ public final class Display {
     }
 
     /**
-     * 帧尾：入队真实 {@code Display.update()}（渲染线程交换缓冲），
-     * 然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。swap 收口处
+     * 帧尾：落帧挂起的顶点流段后入队真实 {@code Display.update()}（渲染线程
+     * 交换缓冲），然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。swap 收口处
      * 同时刷新主录制线程的帧上下文缓存（见 {@link BridgeSupport#swapFramesAndSync()}）。
      * 命令体在渲染线程执行时先做 VBO id stash 低水位补货（
      * {@link BridgeSupport#refillBufferIdStashIfLow()}）——下一帧录制开始前
@@ -106,6 +106,10 @@ public final class Display {
 
     public static void update() {
         RenderQueue q = BridgeSupport.queue();
+        // 落帧必须先于 update 命令入队：glEnd 延迟落帧模式下帧尾挂起流段是常态，
+        // 直接 submit 会让流段经 swap 收口处的落帧排在 swapBuffers 之后执行
+        // （内容晚一帧且画进新 back buffer）——本方法直交通道不走 enqueue，需显式落帧
+        BridgeSupport.flushVertexStream();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
             fireFrameCaptureHook();
@@ -122,6 +126,8 @@ public final class Display {
      */
     public static void update(boolean processMessages) {
         RenderQueue q = BridgeSupport.queue();
+        // 落帧先于 update 命令入队（理由同 {@link #update()}）
+        BridgeSupport.flushVertexStream();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
             fireFrameCaptureHook();

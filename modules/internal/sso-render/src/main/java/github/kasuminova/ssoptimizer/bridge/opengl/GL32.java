@@ -75,6 +75,10 @@ public final class GL32 {
         FrameFence fence = new FrameFenceImpl();
         GLSync handle = new GLSync(fence);
         RenderQueue queue = BridgeSupport.queue();
+        // 落帧必须先于信号命令入队：fence 语义是「此前全部已发出的 GL 命令完成之后
+        // 才 signal」，glEnd 延迟落帧模式下的挂起流段属于此前已发出的命令——
+        // 直交通道不走 enqueue，需显式落帧保持命令流序列点
+        BridgeSupport.flushVertexStream();
         queue.currentFrame().addFence(fence);
         queue.submit(new SignalFenceCommand(fence, () -> {
             Object real = BridgeSupport.syncOps().fenceSync(condition, flags);

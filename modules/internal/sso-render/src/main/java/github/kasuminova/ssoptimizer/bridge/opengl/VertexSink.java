@@ -86,6 +86,47 @@ interface VertexSink {
     void bindTexture(int texture);
 
     /**
+     * 对应 {@code glPushMatrix()}（流内矩阵指令，段外执行）。
+     * 默认实现抛出异常：矩阵指令只会流向两个生产 sink
+     * （{@link VertexArrayBatch} / {@link ImmediateVertexSink}，均已实现）；
+     * 测试记录桩等不消费矩阵指令的 sink 遇到本指令说明编码侧出现了预期外的
+     * 指令流，必须当场暴露而非静默丢弃（丢弃会把矩阵变换吞掉、画面静默错位）。
+     */
+    default void pushMatrix() {
+        throw new UnsupportedOperationException("sink 不支持流内矩阵指令 pushMatrix");
+    }
+
+    /** 对应 {@code glPopMatrix()}（流内矩阵指令，段外执行），默认实现语义同 {@link #pushMatrix()}。 */
+    default void popMatrix() {
+        throw new UnsupportedOperationException("sink 不支持流内矩阵指令 popMatrix");
+    }
+
+    /** 对应 {@code glLoadIdentity()}（流内矩阵指令，段外执行），默认实现语义同 {@link #pushMatrix()}。 */
+    default void loadIdentity() {
+        throw new UnsupportedOperationException("sink 不支持流内矩阵指令 loadIdentity");
+    }
+
+    /** 对应 {@code glTranslatef(x, y, z)}（流内矩阵指令，段外执行），默认实现语义同 {@link #pushMatrix()}。 */
+    default void translatef(float x, float y, float z) {
+        throw new UnsupportedOperationException("sink 不支持流内矩阵指令 translatef");
+    }
+
+    /** 对应 {@code glRotatef(angle, x, y, z)}（流内矩阵指令，段外执行），默认实现语义同 {@link #pushMatrix()}。 */
+    default void rotatef(float angle, float x, float y, float z) {
+        throw new UnsupportedOperationException("sink 不支持流内矩阵指令 rotatef");
+    }
+
+    /** 对应 {@code glScalef(x, y, z)}（流内矩阵指令，段外执行），默认实现语义同 {@link #pushMatrix()}。 */
+    default void scalef(float x, float y, float z) {
+        throw new UnsupportedOperationException("sink 不支持流内矩阵指令 scalef");
+    }
+
+    /** 对应 {@code glMatrixMode(mode)}（流内矩阵指令，段外执行），默认实现语义同 {@link #pushMatrix()}。 */
+    default void matrixMode(int mode) {
+        throw new UnsupportedOperationException("sink 不支持流内矩阵指令 matrixMode");
+    }
+
+    /**
      * 精灵四边形单操作码（begin(QUADS) + 4×(texCoord+vertex) + end 的融合形态）：
      * sprite 渲染路径（{@code SpriteRenderHelper}）把整组调用压成一条流指令，
      * 编码侧省去 13 次流调用，解码侧直写 4 个顶点进数组。

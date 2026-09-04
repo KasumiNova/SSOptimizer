@@ -9,16 +9,22 @@ import java.util.Arrays;
  * 动机：固定管线逐顶点调用是录制侧最高频路径（wall profile 显示 glVertex2f/
  * glTexCoord2f 占主线程录制耗时大头）——原先每次调用分配一条 lambda 命令入队，
  * 一帧数万命令对象既费 CPU 又制造 GC 压力。本类把同一线程相邻的 immediate
- * 调用编码进字节流（1 字节操作码 + 定长载荷，大端序），只在「非流式命令插入 /
- * glEnd / 阻塞通道 drain-first」时由 {@link BridgeSupport#flushVertexStream()}
- * 拷贝进池化的 {@link VertexBatchCommand} 落帧——批次自身零分配（流的缓冲
+ * 调用编码进字节流（1 字节操作码 + 定长载荷，大端序），落帧点：任一非流式
+ * 命令插入 / 阻塞通道 drain-first / 帧尾 swap 之前，以及 glEnd——glEnd 在
+ * 延迟落帧模式（{@code ssoptimizer.render.deferredGlEnd}，默认开）下仅在
+ * 容量阈值触线时落帧，否则多段 begin..end 累积在同一缓冲（见
+ * {@link BridgeSupport#flushVertexStreamOnGlEnd(RecordingContext)}）——
+ * 由 {@link BridgeSupport#flushVertexStream()} 移交进池化的
+ * {@link VertexBatchCommand} 落帧——批次自身零分配（流的缓冲
  * 逐线程复用，命令对象与回放缓冲池化复用）。
  * <p>
  * 顺序语义：流段命令在帧命令列表中占据其录制位置，回放逐指令原样执行——
  * 即使批次被中间命令切开（如 glBegin 后插入其他命令），两段流与该命令的执行
  * 顺序仍与原调用序列完全一致（glBegin..glEnd 之间插入非顶点调用本身是非法
  * GL 序列，此设计保证语义不进一步劣化，见 glCallList-in-begin 这类合法怪
- * 序列也能按原序回放）。
+ * 序列也能按原序回放）。段外状态指令（enable/disable/blendFunc/bindTexture）
+ * 与矩阵指令（pushMatrix/popMatrix/loadIdentity/translatef/rotatef/scalef/
+ * matrixMode）同样编码进流、按流内位置回放，见各编码方法的 javadoc。
  * <p>
  * 本类非线程安全，线程隔离由 ThreadLocal 保证。
  */
@@ -50,6 +56,20 @@ final class VertexStream {
      * 等价 begin(QUADS)+4×(texCoord+vertex)+end，见 {@link VertexSink#spriteQuad}。
      */
     private static final byte OP_SPRITE_QUAD = 19;
+    /** 流内 glPushMatrix()：段外执行，回放时改变真实 GL 矩阵栈（见类 javadoc 矩阵指令节）。 */
+    private static final byte OP_PUSH_MATRIX = 20;
+    /** 流内 glPopMatrix()：段外执行。 */
+    private static final byte OP_POP_MATRIX = 21;
+    /** 流内 glLoadIdentity()：段外执行。 */
+    private static final byte OP_LOAD_IDENTITY = 22;
+    /** 流内 glTranslatef(x, y, z)：段外执行。 */
+    private static final byte OP_TRANSLATE_F = 23;
+    /** 流内 glRotatef(angle, x, y, z)：段外执行。 */
+    private static final byte OP_ROTATE_F = 24;
+    /** 流内 glScalef(x, y, z)：段外执行。 */
+    private static final byte OP_SCALE_F = 25;
+    /** 流内 glMatrixMode(mode)：段外执行（切换当前矩阵栈）。 */
+    private static final byte OP_MATRIX_MODE = 26;
 
     /** 初始容量：一批典型 immediate 四边形组（百余顶点）约数 KB。 */
     private static final int INITIAL_CAPACITY = 4096;
@@ -60,6 +80,16 @@ final class VertexStream {
     private int pos;
     /** 未收口的 glBegin 段深度（跨落帧保留，见 {@link #hasOpenSegment()}）。 */
     private int beginDepth;
+    /**
+     * 当前未落帧内容中是否含状态类指令（OP_ENABLE/OP_DISABLE/OP_BLEND_FUNC/
+     * OP_BIND_TEXTURE 与流内矩阵指令 OP_PUSH_MATRIX/OP_POP_MATRIX/
+     * OP_LOAD_IDENTITY/OP_TRANSLATE_F/OP_ROTATE_F/OP_SCALE_F/OP_MATRIX_MODE——
+     * 回放时改变真实 GL 状态）：glEnd 延迟落帧模式下顶点流
+     * 挂起期间不推进帧 commitSeq，{@link BridgeSupport#enqueueState} 的相邻性
+     * 判据需凭本标记识别「挂起流内含状态改动」，保守失效去重缓存（否则挂起的
+     * 流内状态指令会被去重跳过架空，见 DeferredGlEndTest）。
+     */
+    private boolean pendingStateOps;
     /** 近期批次的编码字节数环形记录（A3 预热：借新缓冲容量取窗口峰值，稳态零扩容）。 */
     private final int[] recentBatchLengths = new int[PREWARM_WINDOW];
     private int recentIndex;
@@ -85,6 +115,16 @@ final class VertexStream {
      */
     boolean hasOpenSegment() {
         return beginDepth > 0;
+    }
+
+    /**
+     * 当前未落帧内容中是否含状态类指令（流内 enable/disable/blendFunc/
+     * bindTexture 与矩阵指令族）：{@link BridgeSupport#enqueueState} 在去重
+     * 相邻性判定前据此保守失效——挂起流未推进 commitSeq，但其回放会改变真实
+     * GL 状态。
+     */
+    boolean hasPendingStateOps() {
+        return pendingStateOps;
     }
 
     void begin(int mode) {
@@ -189,12 +229,14 @@ final class VertexStream {
     void enable(int cap) {
         putOp(OP_ENABLE);
         putInt(cap);
+        pendingStateOps = true;
     }
 
     /** 流内 glDisable(cap)：段外执行，语义同 {@link #enable(int)}。 */
     void disable(int cap) {
         putOp(OP_DISABLE);
         putInt(cap);
+        pendingStateOps = true;
     }
 
     /** 流内 glBlendFunc(src, dst)：段外执行。 */
@@ -202,6 +244,7 @@ final class VertexStream {
         putOp(OP_BLEND_FUNC);
         putInt(src);
         putInt(dst);
+        pendingStateOps = true;
     }
 
     /**
@@ -214,6 +257,68 @@ final class VertexStream {
     void bindTexture(int texture) {
         putOp(OP_BIND_TEXTURE);
         putInt(texture);
+        pendingStateOps = true;
+    }
+
+    /**
+     * 流内 glPushMatrix()：段外执行（矩阵指令在 glBegin/glEnd 段内非法，
+     * 与流内状态指令同约定）。矩阵命令族（GL11.glPushMatrix 等）由此编码进
+     * 顶点流，不再每条产生一个非流式命令——push/pop/transform 是 deferred
+     * glEnd 落地后剩下的唯一「每条即 flush」高频命令族（每帧 400-1500 条，
+     * 每条触发落帧 + lambda 命令分配 + frameLock 进入）；流内编码后跟随流
+     * 走到下一个落帧点，回放按流内位置逐指令执行（保序语义同 OP_ENABLE 族，
+     * 开关 {@code ssoptimizer.render.streamMatrixOps}）。
+     */
+    void pushMatrix() {
+        putOp(OP_PUSH_MATRIX);
+        pendingStateOps = true;
+    }
+
+    /** 流内 glPopMatrix()：段外执行，语义同 {@link #pushMatrix()}。 */
+    void popMatrix() {
+        putOp(OP_POP_MATRIX);
+        pendingStateOps = true;
+    }
+
+    /** 流内 glLoadIdentity()：段外执行，语义同 {@link #pushMatrix()}。 */
+    void loadIdentity() {
+        putOp(OP_LOAD_IDENTITY);
+        pendingStateOps = true;
+    }
+
+    /** 流内 glTranslatef(x, y, z)：段外执行，语义同 {@link #pushMatrix()}。 */
+    void translatef(float x, float y, float z) {
+        putOp(OP_TRANSLATE_F);
+        putFloat(x);
+        putFloat(y);
+        putFloat(z);
+        pendingStateOps = true;
+    }
+
+    /** 流内 glRotatef(angle, x, y, z)：段外执行，语义同 {@link #pushMatrix()}。 */
+    void rotatef(float angle, float x, float y, float z) {
+        putOp(OP_ROTATE_F);
+        putFloat(angle);
+        putFloat(x);
+        putFloat(y);
+        putFloat(z);
+        pendingStateOps = true;
+    }
+
+    /** 流内 glScalef(x, y, z)：段外执行，语义同 {@link #pushMatrix()}。 */
+    void scalef(float x, float y, float z) {
+        putOp(OP_SCALE_F);
+        putFloat(x);
+        putFloat(y);
+        putFloat(z);
+        pendingStateOps = true;
+    }
+
+    /** 流内 glMatrixMode(mode)：段外执行（切换当前矩阵栈），语义同 {@link #pushMatrix()}。 */
+    void matrixMode(int mode) {
+        putOp(OP_MATRIX_MODE);
+        putInt(mode);
+        pendingStateOps = true;
     }
 
     /**
@@ -280,6 +385,7 @@ final class VertexStream {
         recordBatchLength(pos);
         buffer = BridgeSupport.acquireVertexStreamBuffer(prewarmCapacity);
         pos = 0;
+        pendingStateOps = false;
         return out;
     }
 
@@ -303,6 +409,7 @@ final class VertexStream {
     /** 清空已编码内容（容量保留，同量级批次不再触发扩容）。 */
     void reset() {
         pos = 0;
+        pendingStateOps = false;
     }
 
     /**
@@ -407,6 +514,26 @@ final class VertexStream {
                             readFloat(data, p + 32), readFloat(data, p + 36),
                             readFloat(data, p + 40), readFloat(data, p + 44));
                     p += 48;
+                }
+                case OP_PUSH_MATRIX -> sink.pushMatrix();
+                case OP_POP_MATRIX -> sink.popMatrix();
+                case OP_LOAD_IDENTITY -> sink.loadIdentity();
+                case OP_TRANSLATE_F -> {
+                    sink.translatef(readFloat(data, p), readFloat(data, p + 4), readFloat(data, p + 8));
+                    p += 12;
+                }
+                case OP_ROTATE_F -> {
+                    sink.rotatef(readFloat(data, p), readFloat(data, p + 4),
+                            readFloat(data, p + 8), readFloat(data, p + 12));
+                    p += 16;
+                }
+                case OP_SCALE_F -> {
+                    sink.scalef(readFloat(data, p), readFloat(data, p + 4), readFloat(data, p + 8));
+                    p += 12;
+                }
+                case OP_MATRIX_MODE -> {
+                    sink.matrixMode(readInt(data, p));
+                    p += 4;
                 }
                 default -> throw new IllegalStateException("[SSOptimizer] 顶点流损坏：未知操作码");
             }

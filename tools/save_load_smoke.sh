@@ -26,17 +26,21 @@ if [[ ! -d "$GAME_DIR/saves/$SAVE_DIR_NAME" ]]; then
     exit 1
 fi
 
-# 写侧会执行真实保存，先在 scratch 副本上操作，避免污染原档
+# 写侧会执行真实保存。注意：游戏 saveGame 按战役内部存档名回写**原始槽位**而非 scratch
+# 目录，scratch 只保护读侧。为避免污染原档，默认关闭读后保存；需要写侧基线时设
+# SMOKE_SAVE_AFTER_LOAD=true 显式开启（仍会写原槽位，仅在确认可接受时使用）。
 SCRATCH_SAVE_NAME="${SAVE_DIR_NAME}_ssbench"
 echo "Scratch:  $SCRATCH_SAVE_NAME (copy of $SAVE_DIR_NAME)"
 rm -rf "$GAME_DIR/saves/$SCRATCH_SAVE_NAME"
 cp -a "$GAME_DIR/saves/$SAVE_DIR_NAME" "$GAME_DIR/saves/$SCRATCH_SAVE_NAME"
 
+SAVE_AFTER_LOAD="${SMOKE_SAVE_AFTER_LOAD:-false}"
+
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
 cd "$GAME_DIR"
-JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dssoptimizer.launcher.autostart=true -Dssoptimizer.launcher.autostart.res=1920x1080 -Dssoptimizer.launcher.autostart.fullscreen=false -Dssoptimizer.launcher.autostart.sound=true -DstartRes=1920x1080 -DstartFS=false -DstartSound=true -Dssoptimizer.automation.enabled=true -Dssoptimizer.automation.scenario=save_load_cycle -Dssoptimizer.automation.saveload.saveDir=${SCRATCH_SAVE_NAME} -Dssoptimizer.automation.outputDir=${OUTPUT_DIR}" \
+JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dssoptimizer.launcher.autostart=true -Dssoptimizer.launcher.autostart.res=1920x1080 -Dssoptimizer.launcher.autostart.fullscreen=false -Dssoptimizer.launcher.autostart.sound=true -DstartRes=1920x1080 -DstartFS=false -DstartSound=true -Dssoptimizer.automation.enabled=true -Dssoptimizer.automation.scenario=save_load_cycle -Dssoptimizer.automation.saveload.saveDir=${SCRATCH_SAVE_NAME} -Dssoptimizer.automation.saveload.saveAfterLoad=${SAVE_AFTER_LOAD} -Dssoptimizer.automation.outputDir=${OUTPUT_DIR}" \
     timeout "$TIMEOUT_SEC" ./"$LAUNCH_SCRIPT" > "$PROCESS_LOG_FILE" 2>&1 || true
 
 echo ""

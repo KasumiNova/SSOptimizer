@@ -16,8 +16,10 @@ import java.util.Arrays;
  * <p>
  * 顶点快照语义与 immediate 逐指令回放等价：每个顶点落入数组时快照当前
  * texcoord/color/normal 状态；流内状态指令（enable/disable/blendFunc/bindTexture）
- * 打断挂起图元段——先排出全部待绘段（此刻的 GL 状态正是这些段被录制时看到的
- * 状态），再执行真实状态调用，相对顺序与原调用序列逐指令一致。
+ * 与流内矩阵指令（pushMatrix/popMatrix/loadIdentity/translatef/rotatef/scalef/
+ * matrixMode）打断挂起图元段——先排出全部待绘段（此刻的 GL 状态正是这些段
+ * 被录制时看到的状态），再执行真实状态/矩阵调用，相对顺序与原调用序列逐指令
+ * 一致；矩阵指令同时打断相邻 DRAW 合并（矩阵改变顶点变换，跨其合并不等价）。
  * <p>
  * 属性激活规则：某属性（texcoord/color/normal）在本流内首次出现前，顶点必须
  * 使用回放现场的外部当前值——对应图元段不启用该属性数组；首次出现后按段切换
@@ -71,11 +73,18 @@ final class VertexArrayBatch implements VertexSink {
     static final int OP_DISABLE      = 2; // a=cap
     static final int OP_BLEND_FUNC   = 3; // a=src, b=dst
     static final int OP_BIND_TEXTURE = 4; // a=texture
+    static final int OP_PUSH_MATRIX   = 5;  // 无参
+    static final int OP_POP_MATRIX    = 6;  // 无参
+    static final int OP_LOAD_IDENTITY = 7;  // 无参
+    static final int OP_TRANSLATE_F   = 8;  // a/b/c = x/y/z 的 float 位模式
+    static final int OP_ROTATE_F      = 9;  // a/b/c/d = angle/x/y/z 的 float 位模式
+    static final int OP_SCALE_F       = 10; // a/b/c = x/y/z 的 float 位模式
+    static final int OP_MATRIX_MODE   = 11; // a=mode
     /** 被批次内状态去重抵消的操作（{@link #executeGl()} 跳过）。 */
     static final int OP_NOOP         = -1;
 
     private static final int SEG_STRIDE = 4; // mode, first, count, flags
-    private static final int OP_STRIDE  = 4; // kind, a, b, c（DRAW 的标志在 opFlags 平行数组）
+    private static final int OP_STRIDE  = 5; // kind, a, b, c, d（DRAW 的标志在 opFlags 平行数组）
 
     private ByteBuffer  posBytes;
     private ByteBuffer  texBytes;
@@ -316,7 +325,7 @@ final class VertexArrayBatch implements VertexSink {
                 return;
             }
         }
-        addOp(OP_ENABLE, cap, 0, 0, 0);
+        addOp(OP_ENABLE, cap, 0, 0, 0, 0);
         putCapEntry(cap, opCount - 1, true);
     }
 
@@ -335,7 +344,7 @@ final class VertexArrayBatch implements VertexSink {
                 return;
             }
         }
-        addOp(OP_DISABLE, cap, 0, 0, 0);
+        addOp(OP_DISABLE, cap, 0, 0, 0, 0);
         putCapEntry(cap, opCount - 1, false);
     }
 
@@ -358,7 +367,7 @@ final class VertexArrayBatch implements VertexSink {
                 return;
             }
         }
-        addOp(OP_BLEND_FUNC, src, dst, 0, 0);
+        addOp(OP_BLEND_FUNC, src, dst, 0, 0, 0);
         blendKnown = true;
         lastBlendSrc = src;
         lastBlendDst = dst;
@@ -380,11 +389,68 @@ final class VertexArrayBatch implements VertexSink {
                 return;
             }
         }
-        addOp(OP_BIND_TEXTURE, texture, 0, 0, 0);
+        addOp(OP_BIND_TEXTURE, texture, 0, 0, 0, 0);
         bindKnown = true;
         lastBind = texture;
         lastBindOp = opCount - 1;
         lastBindDrawStamp = drawStamp;
+    }
+
+    /**
+     * 流内 glPushMatrix（矩阵指令族统一形态）：先排出挂起图元段——此刻的矩阵
+     * 状态正是这些段被录制时看到的状态，再追加矩阵操作，回放相对顺序与原调用
+     * 序列逐指令一致。矩阵操作天然打断相邻 DRAW 合并（见 {@link #addOp}）；
+     * 矩阵不改变 cap/blend/纹理绑定，批次内状态去重缓存不受其影响。
+     */
+    @Override
+    public void pushMatrix() {
+        flushSegmentsToOps();
+        addOp(OP_PUSH_MATRIX, 0, 0, 0, 0, 0);
+    }
+
+    /** 流内 glPopMatrix：语义同 {@link #pushMatrix()}。 */
+    @Override
+    public void popMatrix() {
+        flushSegmentsToOps();
+        addOp(OP_POP_MATRIX, 0, 0, 0, 0, 0);
+    }
+
+    /** 流内 glLoadIdentity：语义同 {@link #pushMatrix()}。 */
+    @Override
+    public void loadIdentity() {
+        flushSegmentsToOps();
+        addOp(OP_LOAD_IDENTITY, 0, 0, 0, 0, 0);
+    }
+
+    /** 流内 glTranslatef（float 参数以位模式存入 int 参数槽）：语义同 {@link #pushMatrix()}。 */
+    @Override
+    public void translatef(final float x, final float y, final float z) {
+        flushSegmentsToOps();
+        addOp(OP_TRANSLATE_F, Float.floatToRawIntBits(x), Float.floatToRawIntBits(y),
+                Float.floatToRawIntBits(z), 0, 0);
+    }
+
+    /** 流内 glRotatef：语义同 {@link #translatef(float, float, float)}。 */
+    @Override
+    public void rotatef(final float angle, final float x, final float y, final float z) {
+        flushSegmentsToOps();
+        addOp(OP_ROTATE_F, Float.floatToRawIntBits(angle), Float.floatToRawIntBits(x),
+                Float.floatToRawIntBits(y), Float.floatToRawIntBits(z), 0);
+    }
+
+    /** 流内 glScalef：语义同 {@link #translatef(float, float, float)}。 */
+    @Override
+    public void scalef(final float x, final float y, final float z) {
+        flushSegmentsToOps();
+        addOp(OP_SCALE_F, Float.floatToRawIntBits(x), Float.floatToRawIntBits(y),
+                Float.floatToRawIntBits(z), 0, 0);
+    }
+
+    /** 流内 glMatrixMode（切换当前矩阵栈）：语义同 {@link #pushMatrix()}。 */
+    @Override
+    public void matrixMode(final int mode) {
+        flushSegmentsToOps();
+        addOp(OP_MATRIX_MODE, mode, 0, 0, 0, 0);
     }
 
     private int findCap(final int cap) {
@@ -494,7 +560,7 @@ final class VertexArrayBatch implements VertexSink {
         closeOpenSegment();
         for (int i = 0; i < segmentCount; i++) {
             final int base = i * SEG_STRIDE;
-            addOp(OP_DRAW, segments[base], segments[base + 1], segments[base + 2], segments[base + 3]);
+            addOp(OP_DRAW, segments[base], segments[base + 1], segments[base + 2], 0, segments[base + 3]);
         }
         segmentCount = 0;
     }
@@ -528,12 +594,14 @@ final class VertexArrayBatch implements VertexSink {
         return stride > 0 && prevCount % stride == 0;
     }
 
-    private void addOp(final int kind, final int a, final int b, final int c, final int flags) {
+    private void addOp(final int kind, final int a, final int b, final int c, final int d, final int flags) {
         if (kind == OP_DRAW) {
             // 相邻 DRAW 合并：同图元模式/属性标志、顶点区间相邻，且中间仅隔着
             // 已抵消（OP_NOOP）的状态对——NOOP 对净状态为零，跨它合并等价；
             // 且前一段顶点数须与图元边界对齐（见 canMergeDraw）——否则合并后
             // 顶点配对整体偏移，产生跨段错误图元（实机「线段对角交叉」根因）。
+            // 矩阵指令介于两 DRAW 之间时 prev 落在矩阵操作上，合并自然不成立
+            // （矩阵改变顶点变换，跨其合并语义不等价）。
             int prev = opCount - 1;
             while (prev >= 0 && ops[prev * OP_STRIDE] == OP_NOOP) {
                 prev--;
@@ -562,6 +630,7 @@ final class VertexArrayBatch implements VertexSink {
         ops[base + 1] = a;
         ops[base + 2] = b;
         ops[base + 3] = c;
+        ops[base + 4] = d;
         opFlags[opCount] = flags;
         opCount++;
     }
@@ -664,6 +733,23 @@ final class VertexArrayBatch implements VertexSink {
                 case OP_DISABLE -> GL11.glDisable(ops[base + 1]);
                 case OP_BLEND_FUNC -> GL11.glBlendFunc(ops[base + 1], ops[base + 2]);
                 case OP_BIND_TEXTURE -> GL11.glBindTexture(GL11.GL_TEXTURE_2D, ops[base + 1]);
+                case OP_PUSH_MATRIX -> GL11.glPushMatrix();
+                case OP_POP_MATRIX -> GL11.glPopMatrix();
+                case OP_LOAD_IDENTITY -> GL11.glLoadIdentity();
+                case OP_TRANSLATE_F -> GL11.glTranslatef(
+                        Float.intBitsToFloat(ops[base + 1]),
+                        Float.intBitsToFloat(ops[base + 2]),
+                        Float.intBitsToFloat(ops[base + 3]));
+                case OP_ROTATE_F -> GL11.glRotatef(
+                        Float.intBitsToFloat(ops[base + 1]),
+                        Float.intBitsToFloat(ops[base + 2]),
+                        Float.intBitsToFloat(ops[base + 3]),
+                        Float.intBitsToFloat(ops[base + 4]));
+                case OP_SCALE_F -> GL11.glScalef(
+                        Float.intBitsToFloat(ops[base + 1]),
+                        Float.intBitsToFloat(ops[base + 2]),
+                        Float.intBitsToFloat(ops[base + 3]));
+                case OP_MATRIX_MODE -> GL11.glMatrixMode(ops[base + 1]);
                 case OP_NOOP -> {
                     // 批次内去重抵消的状态对：无 GL 调用
                 }

@@ -154,6 +154,9 @@
 | `ssoptimizer.textdiagnostics.enable` | `false` | 启用 v2 文本渲染诊断统计（render 接管的 pass/quad 聚合） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.renderthread.glErrorProbe` | `"off"` | RT 管线 GL 错误探针：`frame`（每帧末尾排空滞留 glGetError 并记 WARN）/ `command`（逐命令排空，重，仅定位用；该模式下录制侧把命令包装为 `ProbeSiteCommand` 捕获录制点堆栈，出错时输出去重后的录制点）。用于定位「滞留 GL 错误被模组健康校验（如 BoxUtil aux 线程 glInit）读到」类问题 | `common/render/queue/RenderQueueImpl.java`（`GL_ERROR_PROBE_PROPERTY`）、`ProbeSiteCommand.java` |
+| `ssoptimizer.render.deferredGlEnd` | `true` | glEnd 延迟落帧：顶点流段在 glEnd 只记 OP_END，落帧推迟到非流式命令/帧尾/容量阈值（false 回退每 glEnd 立即落帧）；auxNative 路径强制保持立即落帧 | `bridge/opengl/BridgeSupport.java`、`GL11.java` |
+| `ssoptimizer.render.deferredGlEnd.thresholdBytes` | `1048576`（1MB） | 延迟落帧容量阈值：挂起流字节数达到即落帧兜底 | `bridge/opengl/BridgeSupport.java` |
+| `ssoptimizer.render.streamMatrixOps` | `true` | 流内矩阵指令：glPushMatrix/glPopMatrix/glLoadIdentity/glTranslatef/glRotatef/glScalef/glMatrixMode 在簿记后编码进顶点流（false 回退逐条 enqueue 老路径，glMatrixMode 回退路径保留去重）；auxNative 路径强制保持 enqueue 立即执行 | `bridge/opengl/BridgeSupport.java`、`GL11.java`、`VertexStream.java` |
 
 ## 线程资源
 
@@ -162,6 +165,13 @@
 | `ssoptimizer.workers.threads` | `max(cores-1, 1)` | 共享帧内工作池线程数（战斗 AI / 市场推进等帧内屏障任务共用，线程名 `SSOptimizer-Shared-Worker-N`）；非法值按默认处理并记 WARN | `common/concurrent/SharedFrameWorkers.java` |
 
 > Wave 3（B/C 类线程迁移）：后台 IO 阻塞与一次性批任务统一走 `common/concurrent/VtWorkers` 虚拟线程门面（ResourceIndex 快照/预读、声音预读、Spec DAG/Variant 解析、Janino 预热、图集解码、字体 CJK 预热、txw2 队列写线程）。原「固定池大小」属性的取舍见各条目：保护真实资源瓶颈的（`soundload.parallelism` / `loading.parallelism` / `scriptcompile.parallelism`）保留为 Semaphore 最大并发闸门，默认值与含义不变；仅约束平台线程数的（ResourceIndex 预读池）直接移除。有意不迁移：`TextureCompressionScheduler`（MIN_PRIORITY + 让步语义）、`RenderQueueImpl` 渲染线程（GL 上下文亲和）、全部 shutdown hook（关停阶段虚拟线程调度器已停用），均已在对应类 javadoc/注释标注。
+
+## 战役逻辑
+
+| 属性 | 默认值 | 作用 | 读取位置 |
+|---|---|---|---|
+| `ssoptimizer.campaign.combatPairing` | `true` | 交战检测格网分桶等价剪枝（结果集合与原版 O(F²) 双层循环完全一致；false 回退原版路径） | `common/campaign/CombatPairingGridHelper.java` |
+| `ssoptimizer.campaign.tacticalPrefilter` | `false` | TacticalModule 可见性扫描距离预过滤（逐字复刻原版距离 NONE 出口的等价剪枝；默认关，开启前见 `campaign-fleet-density-optimization.md` B5） | `common/campaign/TacticalVisibilityPrefilter.java` |
 
 ## 战斗逻辑
 
