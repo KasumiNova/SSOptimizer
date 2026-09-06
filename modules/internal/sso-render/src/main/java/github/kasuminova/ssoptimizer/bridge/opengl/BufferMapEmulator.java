@@ -7,6 +7,7 @@ import org.lwjgl.opengl.GL21;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL44;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -25,8 +26,15 @@ import java.util.Map;
  * 内存安全：unmap 即快照（byte[] 拷贝），同一 VBO 跨帧重复映射复用镜像不产生跨帧
  * 数据竞争；上传任务在渲染线程先恢复/还原目标绑定，不污染录制侧绑定簿记。
  * <p>
- * 非仿真情形（含 MAP_READ、同线程同 target 重入映射、未跟踪的 target、未绑定 VBO）
- * 返回 null，由桥接回退真实阻塞映射——语义正确性优先于零阻塞。
+ * 非仿真情形（含 MAP_READ、MAP_PERSISTENT/MAP_COHERENT 持久映射、同线程同 target
+ * 重入映射、未跟踪的 target、未绑定 VBO）返回 null，由桥接回退真实阻塞映射——
+ * 语义正确性优先于零阻塞。
+ * <p>
+ * 持久映射必须回退真实映射的动机：持久/相干映射的设计语义是「映射一次、跨帧常驻、
+ * CPU 侧持续写、不经任何 GL 调用即对 GPU 可见」（BoxUtil 1.6.0 静态尾迹池
+ * {@code BUtil_StaticTrailMemoryPool} 以 WRITE|PERSISTENT 映射后，逻辑线程直接向
+ * 映射指针写节点数据，全程无 unmap/flush）。镜像仿真只在 unmap 时快照上传，
+ * 此类映射永远不上传，GPU 缓冲保持初始零值——表现为尾迹完全不渲染且无任何报错。
  * <p>
  * 在途映射按（线程, target）为键隔离：BoxUtil 折叠进主帧后，其 logical/logical-aux/
  * rendering/主线程会在同一 GL target 上并发持有在途写映射（如多线程同时向不同 SSBO
@@ -122,6 +130,11 @@ final class BufferMapEmulator {
                                                       final long length, final int access) {
         // 纯写映射才可仿真：调用方读旧内容（MAP_READ）时镜像语义不成立
         if ((access & GL30.GL_MAP_WRITE_BIT) == 0 || (access & GL30.GL_MAP_READ_BIT) != 0) {
+            debugFallback();
+            return null;
+        }
+        // 持久/相干映射常驻不 unmap，数据可见性依赖真实映射内存，镜像快照模型不成立
+        if ((access & (GL44.GL_MAP_PERSISTENT_BIT | GL44.GL_MAP_COHERENT_BIT)) != 0) {
             debugFallback();
             return null;
         }

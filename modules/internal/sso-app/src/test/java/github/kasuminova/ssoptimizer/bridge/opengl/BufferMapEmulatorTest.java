@@ -186,6 +186,28 @@ class BufferMapEmulatorTest {
     }
 
     /**
+     * 持久/相干映射必须回退真实映射：此类映射常驻不 unmap，CPU 侧持续写、不经 GL 调用
+     * 即对 GPU 可见（BoxUtil 1.6.0 静态尾迹池 {@code BUtil_StaticTrailMemoryPool} 的
+     * WRITE|PERSISTENT 用法），镜像快照模型下数据永远不上传——尾迹完全不渲染且无报错
+     * 的根因。此处验证持久/相干标志位直接判退，不得进入仿真。
+     */
+    @Test
+    void persistentOrCoherentMappingFallsBack() {
+        BufferMapEmulator.onBindBuffer(TARGET, VBO);
+        assertNull(BufferMapEmulator.tryEmulateMapRange(
+                TARGET, 0, 256, GL30.GL_MAP_WRITE_BIT | org.lwjgl.opengl.GL44.GL_MAP_PERSISTENT_BIT),
+                "WRITE|PERSISTENT 必须回退真实映射");
+        assertNull(BufferMapEmulator.tryEmulateMapRange(
+                TARGET, 0, 256, GL30.GL_MAP_WRITE_BIT | org.lwjgl.opengl.GL44.GL_MAP_PERSISTENT_BIT
+                        | org.lwjgl.opengl.GL44.GL_MAP_COHERENT_BIT),
+                "WRITE|PERSISTENT|COHERENT 必须回退真实映射");
+        // 判退后未留下在途登记：随后的普通纯写映射不受影响，unmap 也不误配
+        assertNotNull(BufferMapEmulator.tryEmulateMapRange(
+                TARGET, 0, 64, GL30.GL_MAP_WRITE_BIT), "持久映射判退不得影响后续仿真");
+        assertNotNull(BufferMapEmulator.pollEmulatedUnmap(TARGET));
+    }
+
+    /**
      * 绑定簿记按线程隔离：线程 B 的 bind 不得覆盖线程 A 的绑定归属——非 RT 下各线程
      * 各有独立 GL 上下文（BoxUtil SharedDrawable 模型），bind/map 交错时 A 的映射必须
      * 仍归属 A 自己绑定的 VBO，否则 A 的数据会被上传到 B 的池。
