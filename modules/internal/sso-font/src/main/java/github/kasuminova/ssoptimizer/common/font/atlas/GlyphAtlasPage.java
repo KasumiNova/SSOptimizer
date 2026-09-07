@@ -205,17 +205,27 @@ public final class GlyphAtlasPage {
 
     /**
      * 淘汰页回收复用（{@link DynamicGlyphAtlas} 页池，{@code release()} 之后调用）：
-     * 清 shelf 分配游标与脏队列，staging direct 缓冲保留复用——页 staging 为
+     * 清 shelf 分配游标与脏队列，staging direct 缓冲清零复用——页 staging 为
      * 4MB direct 内存，淘汰即丢弃会让回收依赖 GC Cleaner（ZGC + DisableExplicitGC
      * 下无保障，长程运行堆积至 OOM）；复用使 direct 占用恒有界（≤ maxPages 在役
-     * + maxPages 池内）。staging 旧像素保留无害：复用方首次 ensureTexture 整页
-     * 标脏全量回传，旧 cell 区域无任何存活槽位/quad 引用。
+     * + maxPages 池内）。
+     * <p>
+     * 为什么必须清零而非保留旧像素：复用方首次 ensureTexture 会整页标脏全量回传，
+     * 而 {@link #writeBitmap} 只写字形矩形、从不写 cell 间 1px padding——新布局的
+     * padding 行列若残留旧布局的字形像素，会随全量回传进纹理，LINEAR 采样在字形
+     * 边缘把残留亮色渗进 1px 边缘线（固定出现于图集 LRU 淘汰复用之后的字形边缘）。
      */
     synchronized void resetForReuse() {
         shelfY = 0;
         shelfX = 0;
         shelfHeight = 0;
         dirtyRects.clear();
+        final ByteBuffer view = staging.duplicate();
+        view.clear();
+        final byte[] zeros = new byte[8192];
+        while (view.hasRemaining()) {
+            view.put(zeros, 0, Math.min(zeros.length, view.remaining()));
+        }
     }
 
     /**

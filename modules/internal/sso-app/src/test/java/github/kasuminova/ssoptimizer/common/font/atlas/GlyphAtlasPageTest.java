@@ -132,6 +132,32 @@ class GlyphAtlasPageTest {
         assertEquals(1, queue.submitted.size(), "整页标脏 → 一条上传命令");
     }
 
+    /**
+     * 淘汰页回收复用必须清零 staging：复用方首次 ensureTexture 会整页标脏全量回传，
+     * 而 writeBitmap 只写字形矩形、从不写 cell 间 1px padding——若残留旧布局字形
+     * 像素，会随全量回传进纹理，LINEAR 采样在字形边缘渗出 1px 异常色线。
+     */
+    @Test
+    void resetForReuseZeroesStaging() {
+        final GlyphAtlasPage page = new GlyphAtlasPage(64);
+        page.writeBitmap(0, 0, solid4x4());
+
+        final byte[] written = page.stagingSnapshot();
+        boolean hasNonZero = false;
+        for (final byte b : written) {
+            hasNonZero |= b != 0;
+        }
+        assertTrue(hasNonZero, "写入后 staging 应含非零字形像素");
+
+        page.resetForReuse();
+
+        final byte[] snapshot = page.stagingSnapshot();
+        assertEquals(64 * 64, snapshot.length);
+        for (int i = 0; i < snapshot.length; i++) {
+            assertEquals(0, snapshot[i], "回收复用后 staging 必须全零（含 padding 区域），下标 " + i);
+        }
+    }
+
     @Test
     void flushDirtyOnNonMainRecordingThreadOnlyKeepsDirtyMarks() throws Exception {
         final GlyphAtlasPage page = new GlyphAtlasPage(64);
