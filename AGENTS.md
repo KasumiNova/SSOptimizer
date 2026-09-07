@@ -15,7 +15,9 @@
 - 功能模块：`:modules:internal:sso-render`（渲染线程）、`:modules:internal:sso-ai`（异步 AI）、
   `:modules:internal:sso-loading`（加载优化）、`:modules:internal:sso-font`（字体渲染）、
   `:modules:internal:sso-ime`（输入法）、`:modules:internal:sso-save`（存档读写）、
-  `:modules:internal:sso-modopt`（第三方模组优化）、`:modules:internal:sso-automation`（自动化/基准）。
+  `:modules:internal:sso-modopt`（第三方模组优化）、`:modules:internal:sso-automation`（自动化/基准）、
+  `:modules:internal:sso-debug`（调试服务：localhost HTTP RPC、动态脚本编译执行、热重载，
+  默认关闭，`-Dssoptimizer.debug.enabled=true` 启用；设计见 docs/design/debug-capability-design.md）。
 - 含 C++ 支持的模块下设 `<域>/native/` 子模块（native-render/native-loading/
   native-font/native-ime；sso-loading 域下另有 native-texcompress，BC1/BC3/BC7
   纹理压缩），产物 `libssoptimizer_<module>.so`，
@@ -60,4 +62,10 @@
    对 Launch 域 bridge 类的引用，定义方加载器不可见即运行期 NoClassDefFoundError；
    且「全覆盖兜底」与 NanoForge 的显式域模型冲突。针对性适配的改写范围显式可控、
    失败在启动期可见。
+4. **调试会话例外**：sso-debug 的 L2 hotswap（`HotswapSupport`）允许使用
+   `Instrumentation.redefineClasses`，边界：
+   - 仅限 sso-debug 模块、仅 `-Dssoptimizer.debug.enabled=true` 调试会话可触达；
+   - 仅方法体级重定义（HotSpot 语义：不增删成员、不改签名），不注册 transformer、
+     不产出持久类变换；
+   - 自 attach 经 jdk.attach 运行期完成，禁止要求 `-javaagent:` 启动参数。
 

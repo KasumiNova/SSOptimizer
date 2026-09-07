@@ -114,6 +114,7 @@
     "save.MemoryRefResolveGuardMixin",
     "warroom.TaskIconManagerMixin",
     "debug.BaseGameStateNoWindowIdleMixin",
+    "debug.MainThreadTasksDrainMixin",
     "campaign.FleetDataSyncGuardMixin"
   ],
   "client": [],

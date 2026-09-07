@@ -96,6 +96,7 @@ dependencies {
     implementation(project(":modules:internal:sso-save"))
     implementation(project(":modules:internal:sso-modopt"))
     implementation(project(":modules:internal:sso-automation"))
+    implementation(project(":modules:internal:sso-debug"))
     implementation(project(":modules:internal:sso-loading"))
     implementation(project(":modules:internal:sso-render"))
     implementation(project(":modules:internal:sso-font"))
@@ -103,6 +104,8 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.13.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
+    // sso-debug 调试服务测试：钉住 Gson 版本（RFB/LaunchWrapper 传递的旧版 Gson 缺 parseString）
+    testImplementation("com.google.code.gson:gson:2.13.1")
     // 测试运行期的 org.apache.log4j 实现（生产运行期为 shade 的 log4j-1.2-api 桥接层）
     testImplementation("log4j:log4j:1.2.17")
     // 聚合过滤器（log4j2 层实现）测试：构造真实 Log4jLogEvent 走 decide()（生产运行时由 NanoForge 提供）
@@ -166,6 +169,8 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // hotswap 测试需要自 attach（JDK 启动期读取该属性，运行期 setProperty 无效）
+    jvmArgs("-Djdk.attach.allowAttachSelf=true")
     // *IT（真实 native 集成测试）拆到独立 JVM 任务 nativeIT：其加载的 native 库与
     // NativeRuntime 模块加载态缓存会驻留整个 test JVM，污染「无 native」语义的用例
     exclude("**/*IT.class")

@@ -25,6 +25,7 @@ import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
 import github.kasuminova.ssoptimizer.bridge.opengl.RenderThreadDispatch;
 import github.kasuminova.ssoptimizer.common.bench.DebugFrameCapture;
+import github.kasuminova.ssoptimizer.common.debug.DebugServerBootstrap;
 import github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides;
 import github.kasuminova.ssoptimizer.common.logging.VanillaLogNoiseConfigurator;
 import github.kasuminova.ssoptimizer.common.render.atlas.ShipWeaponAtlas;
@@ -77,6 +78,8 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         installRenderThreadSeparation();
         registerModuleServices();
         registerAllProcessors(HybridWeaverTransformer::registerProcessor);
+        // 调试服务（默认关闭）：onLoad 早于一切游戏类加载，使调试通道覆盖加载期场景
+        DebugServerBootstrap.startIfEnabled();
         LOGGER.info("[SSOptimizer] CoreMod loaded — Engine + AI + loading repair phase active, "
                 + HybridWeaverTransformer.getProcessorCount() + " processor registrations");
     }
