@@ -81,8 +81,6 @@ tasks.register<JavaExec>("saveBench") {
         namedGameJarBaseNames.none { baseName -> file.name.startsWith(baseName) }
     } + fileTree(sanitizedGameJarsDir) { include("*.jar") }
     mainClass.set("github.kasuminova.ssoptimizer.savebench.SaveBenchMain")
-    // 与游戏运行期一致：游戏 jar 内混淆器产物的 StackMapTable 有损坏帧，靠 -noverify 跳过校验
-    jvmArgs("-noverify")
     jvmArgs(
         "--add-opens=java.base/java.util=ALL-UNNAMED",
         "--add-opens=java.base/java.lang=ALL-UNNAMED",
