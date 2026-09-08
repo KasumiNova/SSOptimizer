@@ -44,14 +44,21 @@ import java.util.concurrent.ConcurrentHashMap;
  *       方法句柄（lambda/方法引用，如 {@code GL12::glDrawRangeElements}）适用同一
  *       白名单判据：桥未镜像时保持原 owner 链接真实 LWJGL 方法，盲改 owner 会在
  *       LambdaMetafactory 链接期以 NoSuchMethodError 收场；</li>
- *   <li>描述符类型改写仅限被改写的调用点：GLSync/Drawable/SharedDrawable 三类在
- *       bridge 化后对象身份不同，调用点描述符同步替换为 bridge 类型（含 indy
+ *   <li>描述符类型改写：GLSync/Drawable/SharedDrawable 三类在
+ *       bridge 化后对象身份不同，所有引用点统一替换为 bridge 类型——
+ *       含类声明（字段/方法描述符与泛型签名、implements 表）、帧条目、
+ *       调用点描述符（任意 Launch 域 owner，含模组内部互调与 indy
  *       bootstrap 参数里的 MethodType——泛型函数接口的具体实例化类型）。
+ *       声明不改写时跨声明持有这三类对象的模组（BoxUtil 的
+ *       GLWrapper$Operation$Sync 门面方法声明返回 lwjgl GLSync）会在
+ *       类链接期 VerifyError（实机崩溃签名：areturn 处 bridge GLSync
+ *       不可赋给 lwjgl GLSync）。
+ *       System 域 owner（{@code org/lwjgl/**}，如 opencl CLContext.create
+ *       的 Drawable 参数）的调用点描述符保持原样——其声明永不改写；
+ *       接口形态的身份类型（Drawable）按校验器宽松规则可安全流入。
  *       indy 站点整站一致：只要有一个描述符含身份类型的 impl Handle 不改写
- *       （未镜像或 owner 不在改写表），该站的 MethodType 参数也全部保持原样，
- *       半改写站必在 LambdaMetafactory 链接期类型不匹配；
- *       类声明（字段/方法签名）不改写——跨声明持有这三类对象的模组（BoxUtil 级）会因
- *       类型不一致校验失败，属已声明的 v1 不兼容范围；</li>
+ *       （System 域 owner，或桥未镜像），该站的 MethodType 参数也全部保持原样，
+ *       半改写站必在 LambdaMetafactory 链接期类型不匹配；</li>
  *   <li>visitLdcInsn 的字符串字面量绝不动；{@code Type} 型 class 字面量只在命中
  *       三个对象身份类型时改写；</li>
  *   <li>字段访问（GETSTATIC 等）不改写：javac 会把 GL 常量内联，运行期字段访问
@@ -77,7 +84,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *       其 org.lwjgl 调用必须被重定向入队。</li>
  * </ul>
  * 字节码帧不重算（不用 {@code COMPUTE_FRAMES}）：owner/描述符改写不改变操作数栈形状，
- * 原始帧原样保留有效。
+ * 仅帧条目内的身份类型名同步替换（visitFrame），其余帧原样保留有效。
  * <p>
  * feature flag：{@link RenderThreadMode#ENABLE_PROPERTY} 显式 {@code =false} 时
  * {@link #redirect} 原样返回（零开销零风险），镜像表也不会构建；默认启用。
@@ -102,6 +109,13 @@ public final class RenderThreadRedirector {
     private static final String BRIDGE_PREFIX = "github/kasuminova/ssoptimizer/bridge/opengl/";
     /** 排除规则前缀：bridge 包整体（命令体必须调真 GL）。 */
     private static final String BRIDGE_PACKAGE = "github/kasuminova/ssoptimizer/bridge/";
+    /**
+     * System 域 owner 前缀：{@code org/lwjgl/**} 的类由 System 类加载器加载、
+     * 永不经过本改写器，其成员声明中的身份类型保持 lwjgl 原样——指向这些 owner
+     * 的调用点/字段访问描述符不得替换身份类型（如 opencl CLContext.create 的
+     * Drawable 参数），否则运行期 NoSuchMethodError/NoSuchFieldError。
+     */
+    private static final String SYSTEM_LWJGL_PREFIX = "org/lwjgl/";
 
     /** owner 改写表覆盖的类名（org/lwjgl/opengl 下的简单名，与 bridge 类一一同名）。 */
     private static final String[] MIRRORED_CLASS_NAMES = {
@@ -314,7 +328,7 @@ public final class RenderThreadRedirector {
         }
     }
 
-    /** 类级改写 visitor：只在方法体内做指令改写，类结构原样保留。 */
+    /** 类级改写 visitor：声明（字段/方法/implements 表）与方法体指令同步改写。 */
     private static final class RedirectClassVisitor extends ClassVisitor {
         private boolean modified;
         private String className;
@@ -327,13 +341,55 @@ public final class RenderThreadRedirector {
         public void visit(int version, int access, String name, String signature,
                           String superName, String[] interfaces) {
             this.className = name;
-            super.visit(version, access, name, signature, superName, interfaces);
+            // 类头声明改写：泛型签名与 implements 表中的身份类型（模组实现
+            // lwjgl Drawable 时改实现 bridge Drawable，保持接口方法签名一致）
+            String remappedSignature = signature == null ? null : remapDescriptor(signature);
+            String remappedSuper = superName == null ? null : remapType(superName);
+            String[] remappedInterfaces = interfaces;
+            for (int i = 0; i < interfaces.length; i++) {
+                String remapped = remapType(interfaces[i]);
+                if (!remapped.equals(interfaces[i])) {
+                    if (remappedInterfaces == interfaces) {
+                        remappedInterfaces = interfaces.clone();
+                    }
+                    remappedInterfaces[i] = remapped;
+                }
+            }
+            if ((remappedSignature != null && !remappedSignature.equals(signature))
+                    || (remappedSuper != null && !remappedSuper.equals(superName))
+                    || remappedInterfaces != interfaces) {
+                modified = true;
+            }
+            super.visit(version, access, name, remappedSignature, remappedSuper, remappedInterfaces);
+        }
+
+        @Override
+        public org.objectweb.asm.FieldVisitor visitField(int access, String name, String desc,
+                                                         String signature, Object value) {
+            // 字段声明改写：模组持有身份类型字段（如 GLSync 句柄缓存）必须与
+            // 全部读写点同世界（bridge），否则 PUT/GETFIELD 链接期校验失败
+            String remappedDesc = remapDescriptor(desc);
+            String remappedSignature = signature == null ? null : remapDescriptor(signature);
+            if (!remappedDesc.equals(desc)
+                    || (remappedSignature != null && !remappedSignature.equals(signature))) {
+                modified = true;
+            }
+            return super.visitField(access, name, remappedDesc, remappedSignature, value);
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
                                          String signature, String[] exceptions) {
-            MethodVisitor delegate = super.visitMethod(access, name, desc, signature, exceptions);
+            // 方法声明改写：BoxUtil GLWrapper$Operation$Sync.glFenceSync(II) 声明返回
+            // lwjgl GLSync 而方法体已 bridge 化时的 areturn VerifyError 实机崩溃根因
+            String remappedDesc = remapDescriptor(desc);
+            String remappedSignature = signature == null ? null : remapDescriptor(signature);
+            if (!remappedDesc.equals(desc)
+                    || (remappedSignature != null && !remappedSignature.equals(signature))) {
+                modified = true;
+            }
+            MethodVisitor delegate = super.visitMethod(access, name, remappedDesc,
+                    remappedSignature, exceptions);
             return new RedirectMethodVisitor(delegate, className, this);
         }
     }
@@ -362,6 +418,17 @@ public final class RenderThreadRedirector {
             }
             String bridgeOwner = OWNER_REMAP.get(ownerName);
             if (bridgeOwner == null) {
+                // Launch 域 owner（模组/游戏类互调）：其成员声明经本改写器同步改写，
+                // 调用点描述符的身份类型必须跟随；System 域 owner（org/lwjgl/**，
+                // 如 opencl CLContext.create）声明永不改写，描述符保持原样
+                if (!ownerName.startsWith(SYSTEM_LWJGL_PREFIX)) {
+                    String remappedModDesc = remapDescriptor(desc);
+                    if (!remappedModDesc.equals(desc)) {
+                        super.visitMethodInsn(opcode, ownerName, name, remappedModDesc, itf);
+                        classVisitor.modified = true;
+                        return;
+                    }
+                }
                 super.visitMethodInsn(opcode, ownerName, name, desc, itf);
                 return;
             }
@@ -378,12 +445,51 @@ public final class RenderThreadRedirector {
 
         @Override
         public void visitFieldInsn(int opcode, String ownerName, String name, String desc) {
-            // 不改写：javac 内联 GL 常量，这些 owner 上不存在运行期字段访问；
+            // owner 不改写：javac 内联 GL 常量，这些 owner 上不存在运行期字段访问；
             // bridge 类不声明常量字段，改写 owner 会 NoSuchFieldError。记审计日志后原样保留。
             if (OWNER_REMAP.containsKey(ownerName)) {
                 warnUnmirrored(className, ownerName, name, desc);
+                super.visitFieldInsn(opcode, ownerName, name, desc);
+                return;
+            }
+            // Launch 域字段访问：字段声明已同步改写，访问点描述符跟随（与方法调用点同理）
+            if (!ownerName.startsWith(SYSTEM_LWJGL_PREFIX)) {
+                String remappedDesc = remapDescriptor(desc);
+                if (!remappedDesc.equals(desc)) {
+                    super.visitFieldInsn(opcode, ownerName, name, remappedDesc);
+                    classVisitor.modified = true;
+                    return;
+                }
             }
             super.visitFieldInsn(opcode, ownerName, name, desc);
+        }
+
+        @Override
+        public void visitFrame(int type, int numLocal, Object[] local, int numStack, Object[] stack) {
+            // 帧条目中的身份类型名同步替换：方法声明改写后，持有身份类型的局部变量/
+            // 栈槽在帧中的声明类型必须与指令推导出的 bridge 类型一致，否则链接期
+            // VerifyError（栈形状不变，仅类型名替换，无需重算帧）
+            super.visitFrame(type, numLocal, remapFrameEntries(local), numStack, remapFrameEntries(stack));
+        }
+
+        private Object[] remapFrameEntries(final Object[] entries) {
+            if (entries == null) {
+                return null;
+            }
+            Object[] remapped = entries;
+            for (int i = 0; i < entries.length; i++) {
+                if (entries[i] instanceof String typeName) {
+                    String mapped = remapType(typeName);
+                    if (!mapped.equals(typeName)) {
+                        if (remapped == entries) {
+                            remapped = entries.clone();
+                        }
+                        remapped[i] = mapped;
+                        classVisitor.modified = true;
+                    }
+                }
+            }
+            return remapped;
         }
 
         @Override
@@ -428,12 +534,14 @@ public final class RenderThreadRedirector {
             // 同样可能引用被改写 owner（如 GL11::glBegin 方法引用）
             String remappedDesc = remapDescriptor(desc);
             // 整站一致性预扫：indy 站点必须整站改写或整站保留。若某个描述符含身份
-            // 类型的 impl Handle 不会改写（owner 不在改写表——模组自有 lambda 体；
+            // 类型的 impl Handle 不会改写（System 域 owner——CLContext 方法引用等；
             // 或桥未镜像），则本站的 Type 参数（samMethodType/instantiatedMethodType）
             // 也必须保持原样——否则 impl 留在 lwjgl 世界而 instantiated 被改写进
             // 桥世界，LambdaMetafactory 链接期必然类型不匹配
             // （BoxUtil Operation$Sync.init:3308 崩溃签名：glGetSync buffer 形态
             // 未镜像时 instantiated 被单独改写）。
+            // 模组自有 lambda 体（Launch 域 owner）的声明经本改写器同步改写，
+            // 其句柄描述符跟随改写，不触发整站保留。
             boolean keepWholeSite = false;
             for (Object arg : bsmArgs) {
                 if (!(arg instanceof Handle handle)) {
@@ -443,13 +551,11 @@ public final class RenderThreadRedirector {
                 if (remappedHandleDesc.equals(handle.getDesc())) {
                     continue;
                 }
-                String bridgeOwner = OWNER_REMAP.get(handle.getOwner());
-                Set<String> mirrored = bridgeOwner == null ? null
-                        : mirrorTable.get(bridgeOwner.substring(BRIDGE_PREFIX.length()));
-                if (mirrored == null || !mirrored.contains(handle.getName() + remappedHandleDesc)) {
-                    keepWholeSite = true;
-                    break;
+                if (willRemapHandle(handle, remappedHandleDesc)) {
+                    continue;
                 }
+                keepWholeSite = true;
+                break;
             }
             Object[] remappedArgs = bsmArgs;
             for (int i = 0; i < bsmArgs.length; i++) {
@@ -473,13 +579,13 @@ public final class RenderThreadRedirector {
                         remappedArgs[i] = Type.getType(remappedTypeDesc);
                     }
                 } else if (arg instanceof Handle handle) {
+                    String remappedHandleDesc = remapDescriptor(handle.getDesc());
                     String bridgeOwner = OWNER_REMAP.get(handle.getOwner());
                     if (bridgeOwner != null) {
                         // 与 visitMethodInsn 同一白名单判据：桥未镜像的方法句柄保持原
                         // owner（lambda/方法引用链接到真实 LWJGL 方法）。盲改 owner 会让
                         // LambdaMetafactory 在链接期解析桥类不存在的方法签名，直接
                         // NoSuchMethodError（BoxUtil 1.0.6 GLWrapper$Drawcall.init 崩溃根因）
-                        String remappedHandleDesc = remapDescriptor(handle.getDesc());
                         Set<String> mirrored = mirrorTable.get(bridgeOwner.substring(BRIDGE_PREFIX.length()));
                         if (mirrored != null && mirrored.contains(handle.getName() + remappedHandleDesc)) {
                             if (remappedArgs == bsmArgs) {
@@ -490,14 +596,39 @@ public final class RenderThreadRedirector {
                         } else {
                             warnUnmirrored(className, handle.getOwner(), handle.getName(), handle.getDesc());
                         }
+                    } else if (!handle.getOwner().startsWith(SYSTEM_LWJGL_PREFIX)
+                            && !remappedHandleDesc.equals(handle.getDesc()) && !keepWholeSite) {
+                        // 模组自有句柄：目标方法声明经本改写器同步改写，句柄描述符跟随
+                        if (remappedArgs == bsmArgs) {
+                            remappedArgs = bsmArgs.clone();
+                        }
+                        remappedArgs[i] = new Handle(handle.getTag(), handle.getOwner(), handle.getName(),
+                                remappedHandleDesc, handle.isInterface());
                     }
                 }
             }
-            boolean changed = !remappedDesc.equals(desc) || remappedArgs != bsmArgs;
-            super.visitInvokeDynamicInsn(name, remappedDesc, bsm, remappedArgs);
+            boolean changed = (!keepWholeSite && !remappedDesc.equals(desc)) || remappedArgs != bsmArgs;
+            super.visitInvokeDynamicInsn(name, keepWholeSite ? desc : remappedDesc, bsm, remappedArgs);
             if (changed) {
                 classVisitor.modified = true;
             }
+        }
+
+        /**
+         * 句柄是否会随本改写器改写：owner 命中改写表且桥已镜像（含描述符身份类型
+         * 替换后存在于镜像表）；System 域 owner 永不改写；其余（Launch 域模组类）
+         * 声明同步改写故句柄跟随。
+         */
+        private boolean willRemapHandle(final Handle handle, final String remappedHandleDesc) {
+            if (handle.getOwner().startsWith(SYSTEM_LWJGL_PREFIX)) {
+                String bridgeOwner = OWNER_REMAP.get(handle.getOwner());
+                if (bridgeOwner == null) {
+                    return false;
+                }
+                Set<String> mirrored = mirrorTable.get(bridgeOwner.substring(BRIDGE_PREFIX.length()));
+                return mirrored != null && mirrored.contains(handle.getName() + remappedHandleDesc);
+            }
+            return true;
         }
     }
 }

@@ -625,9 +625,10 @@ class RenderThreadRedirectorTest {
     }
 
     @Test
-    void indySiteWithModOwnedIdentityHandleKeepsTypeArgs() {
-        // 模组自有 lambda 体（owner 不在改写表）签名引用身份类型时同样整站保留：
-        // 类声明不改写，模组方法的 GLSync 参数永远是 lwjgl 类型
+    void indySiteWithModOwnedIdentityHandleIsRemapped() {
+        // 声明级改写语义：模组自有 lambda 体（owner 不在改写表）所在类同样经过
+        // 本改写器，其方法声明中的身份类型同步改写为 bridge——句柄描述符与
+        // MethodType 参数必须跟随，否则 LambdaMetafactory 链接期类型不匹配
         byte[] source = buildClass("com/example/LambdaModOwnedSync", mv ->
                 visitSyncLambdaRef(mv, "com/example/SyncHelper", "lambda$sync$0"));
 
@@ -635,10 +636,11 @@ class RenderThreadRedirectorTest {
         List<String> types = new ArrayList<>();
         List<String> handles = new ArrayList<>();
         collectIndyArgs(result, types, handles);
-        assertTrue(handles.contains("com/example/SyncHelper.lambda$sync$0(Lorg/lwjgl/opengl/GLSync;)V"),
-                "模组自有句柄必须保持原样: " + handles);
-        assertTrue(types.contains("(Lorg/lwjgl/opengl/GLSync;)V"),
-                "MethodType 参数必须同步保持 lwjgl 原样: " + types);
+        assertTrue(handles.contains("com/example/SyncHelper.lambda$sync$0"
+                        + "(Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;)V"),
+                "模组自有句柄描述符的身份类型必须同步改写（其声明同被改写）: " + handles);
+        assertTrue(types.contains("(Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;)V"),
+                "MethodType 参数的身份类型必须同步改写: " + types);
     }
 
     @Test
@@ -672,5 +674,193 @@ class RenderThreadRedirectorTest {
                 "ARBSync 句柄必须改写到桥: " + handles);
         assertTrue(types.contains("(L" + bridge + "GLSync;I)I"),
                 "已镜像站点的 MethodType 身份类型必须同步改写: " + types);
+    }
+
+    // ------------------------------------------------------------------
+    // 声明级身份类型改写（BoxUtil GLWrapper$Operation$Sync VerifyError 回归）
+    // ------------------------------------------------------------------
+
+    /** 收集类的方法声明与字段声明（断言用）。 */
+    private static List<String> collectDeclarations(byte[] classBytes) {
+        List<String> declarations = new ArrayList<>();
+        new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
+            @Override
+            public org.objectweb.asm.FieldVisitor visitField(int access, String name, String desc,
+                                                             String signature, Object value) {
+                declarations.add("field " + name + ' ' + desc);
+                return null;
+            }
+
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc,
+                                             String signature, String[] exceptions) {
+                declarations.add("method " + name + desc);
+                return null;
+            }
+        }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return declarations;
+    }
+
+    @Test
+    void methodDeclarationWithIdentityTypeIsRemapped() {
+        // 实机崩溃签名回归：GLWrapper$Operation$Sync.glFenceSync(II) 声明返回
+        // lwjgl GLSync，方法体经 bridge 化（checkcast 目标改写）后 areturn 处
+        // VerifyError。方法声明的身份类型必须与调用点同世界改写。
+        ClassWriter writer = new ClassWriter(0);
+        writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "com/example/SyncFacade", null,
+                "java/lang/Object", null);
+        MethodVisitor mv = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                "glFenceSync", "(II)Lorg/lwjgl/opengl/GLSync;", null, null);
+        mv.visitCode();
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL32",
+                "glFenceSync", "(II)Lorg/lwjgl/opengl/GLSync;", false);
+        mv.visitInsn(Opcodes.ARETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+        writer.visitEnd();
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.SyncFacade", writer.toByteArray());
+        List<String> declarations = collectDeclarations(result);
+        assertTrue(declarations.contains("method glFenceSync(II)"
+                        + "Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;"),
+                "方法声明的 GLSync 返回类型必须改写为 bridge: " + declarations);
+        assertFalse(declarations.stream().anyMatch(d -> d.contains("org/lwjgl/opengl/GLSync")),
+                "声明中不得残留 lwjgl GLSync: " + declarations);
+    }
+
+    @Test
+    void fieldDeclarationAndAccessSiteAreRemappedTogether() {
+        // 模组持有身份类型字段：声明与读写点（同 owner 的 Launch 域访问）必须同步改写，
+        // 否则 GETFIELD/PUTFIELD 链接期类型不一致
+        ClassWriter writer = new ClassWriter(0);
+        writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "com/example/SyncHolder", null,
+                "java/lang/Object", null);
+        writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "sync",
+                "Lorg/lwjgl/opengl/GLSync;", null, null);
+        MethodVisitor mv = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                "run", "()V", null, null);
+        mv.visitCode();
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "com/example/SyncHolder", "sync",
+                "Lorg/lwjgl/opengl/GLSync;");
+        mv.visitInsn(Opcodes.POP);
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+        writer.visitEnd();
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.SyncHolder", writer.toByteArray());
+        List<String> declarations = collectDeclarations(result);
+        assertTrue(declarations.contains("field sync "
+                        + "Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;"),
+                "字段声明的身份类型必须改写为 bridge: " + declarations);
+        List<String> accesses = new ArrayList<>();
+        new ClassReader(result).accept(new ClassVisitor(Opcodes.ASM9, null) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc,
+                                             String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9, null) {
+                    @Override
+                    public void visitFieldInsn(int opcode, String owner, String fieldName,
+                                               String fieldDesc) {
+                        accesses.add(owner + '.' + fieldName + ' ' + fieldDesc);
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        assertTrue(accesses.contains("com/example/SyncHolder.sync "
+                        + "Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;"),
+                "字段访问点的身份类型必须跟随声明改写: " + accesses);
+    }
+
+    @Test
+    void modInternalCallSiteDescriptorIsRemapped() {
+        // 模组内部互调：被调方法声明经本改写器改写，调用点描述符必须跟随，
+        // 否则运行期 NoSuchMethodError（BoxUtil 内部调 Operation$Sync.glFenceSync 的形态）
+        byte[] source = buildClass("com/example/SyncCaller", mv -> {
+            mv.visitInsn(Opcodes.ICONST_0);
+            mv.visitInsn(Opcodes.ICONST_0);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/boxutil/define/GLWrapper$Operation$Sync",
+                    "glFenceSync", "(II)Lorg/lwjgl/opengl/GLSync;", false);
+            mv.visitInsn(Opcodes.POP);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.SyncCaller", source);
+        List<String> calls = collectMethodCalls(result);
+        assertTrue(calls.contains("org/boxutil/define/GLWrapper$Operation$Sync.glFenceSync"
+                        + "(II)Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;"),
+                "模组内部调用点的身份类型必须跟随声明改写: " + calls);
+    }
+
+    @Test
+    void systemDomainOwnerDescriptorIsPreserved() {
+        // System 域 owner（org/lwjgl/opencl/CLContext）永不经过改写器，其方法声明
+        // 保持 lwjgl 类型——调用点描述符不得替换身份类型，否则 NoSuchMethodError
+        // （KernelCore 的 CLContext.create(..., Drawable, ...) 形态）
+        byte[] source = buildClass("com/example/ClInterop", mv -> {
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opencl/CLContext", "create",
+                    "(Lorg/lwjgl/opencl/CLPlatform;Ljava/util/List;"
+                            + "Lorg/lwjgl/opencl/CLContextCallback;Lorg/lwjgl/opengl/Drawable;"
+                            + "Ljava/nio/IntBuffer;)Lorg/lwjgl/opencl/CLContext;", false);
+            mv.visitInsn(Opcodes.POP);
+        });
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.ClInterop", source);
+        List<String> calls = collectMethodCalls(result);
+        assertTrue(calls.stream().anyMatch(c -> c.startsWith("org/lwjgl/opencl/CLContext.create")
+                        && c.contains("Lorg/lwjgl/opengl/Drawable;")),
+                "System 域调用点描述符必须保持 lwjgl 原样: " + calls);
+    }
+
+    @Test
+    void frameIdentityTypeEntriesAreRemapped() {
+        // 方法声明改写后，帧条目中持有身份类型的局部变量声明类型必须同步替换，
+        // 否则与指令推导出的 bridge 类型不一致，链接期 VerifyError
+        ClassWriter writer = new ClassWriter(0);
+        writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "com/example/SyncFrames", null,
+                "java/lang/Object", null);
+        MethodVisitor mv = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                "run", "()V", null, null);
+        mv.visitCode();
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL32",
+                "glFenceSync", "(II)Lorg/lwjgl/opengl/GLSync;", false);
+        mv.visitVarInsn(Opcodes.ASTORE, 0);
+        org.objectweb.asm.Label label = new org.objectweb.asm.Label();
+        mv.visitLabel(label);
+        mv.visitFrame(Opcodes.F_FULL, 1, new Object[]{"org/lwjgl/opengl/GLSync"}, 0, new Object[0]);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitInsn(Opcodes.POP);
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(1, 1);
+        mv.visitEnd();
+        writer.visitEnd();
+
+        byte[] result = RenderThreadRedirector.redirect("com.example.SyncFrames", writer.toByteArray());
+        List<String> frameTypes = new ArrayList<>();
+        new ClassReader(result).accept(new ClassVisitor(Opcodes.ASM9, null) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String desc,
+                                             String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9, null) {
+                    @Override
+                    public void visitFrame(int type, int numLocal, Object[] local,
+                                           int numStack, Object[] stack) {
+                        if (local != null) {
+                            for (Object entry : local) {
+                                frameTypes.add(String.valueOf(entry));
+                            }
+                        }
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG);
+        assertTrue(frameTypes.contains("github/kasuminova/ssoptimizer/bridge/opengl/GLSync"),
+                "帧条目中的身份类型必须改写为 bridge: " + frameTypes);
+        assertFalse(frameTypes.contains("org/lwjgl/opengl/GLSync"),
+                "帧条目不得残留 lwjgl GLSync: " + frameTypes);
     }
 }
