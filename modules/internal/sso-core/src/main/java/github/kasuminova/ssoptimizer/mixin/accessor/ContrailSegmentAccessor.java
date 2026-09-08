@@ -31,11 +31,12 @@ public interface ContrailSegmentAccessor {
     void ssoptimizer$setWidth(float width);
 
     /**
-     * 宽度基值字段在运行时名为 {@code oO0000}（named 管线对该字段保留混淆名——
-     * 反编译 named 仓 jar 确认：{@code addSegment} 中 {@code segment.oO0000 =
-     * group.width}，即宽度公式的输入基值），非 {@code baseWidth}。
+     * 宽度基值字段：段宽度公式的输入基值（{@code advance} 中
+     * {@code segment.width = baseWidth * (progress*widthMultiplier+1)}）。
+     * named 命名为 {@code baseWidth}（Paragon d2038e1 修正了 legacy 表错命名 width
+     * 导致的撞名丢弃问题；早期管线残留混淆名 oO0000 的 workaround 已随该修正废弃）。
      */
-    @Accessor(value = "oO0000", remap = false)
+    @Accessor(value = "baseWidth", remap = false)
     float ssoptimizer$getBaseWidth();
 
     @Accessor(value = "maxAge", remap = false)
