@@ -215,26 +215,33 @@ class FastResourceImageDecoderTest {
         final Path cacheDir = tempDir.resolve("cache");
         System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, cacheDir.toString());
 
-        final Path sourceFile = tempDir.resolve("graphics/direct_index.png");
+        // 指纹解析走游戏 ResourceLoader 合并视图（与运行期 resolveManagedFile 一致），
+        // 因此把 sourceRoot 登记为资源根，让相对资源路径可解析到磁盘文件。
+        final Path sourceRoot = tempDir.resolve("modroot");
+        final Path sourceFile = sourceRoot.resolve("graphics/direct_index.png");
         Files.createDirectories(sourceFile.getParent());
 
         final byte[] imageBytes = pngBytes(new Color(77, 88, 99, 255));
         Files.write(sourceFile, imageBytes);
+        com.fs.util.ResourceLoader.getInstance().addDirectoryResource(sourceRoot.toString());
+
+        final String resourcePath = "graphics/direct_index.png";
+        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint =
+                LazyTextureManager.probeManagedFingerprint(resourcePath, resourcePath);
+        assertNotNull(sourceFingerprint);
 
         final BufferedImage source = ImageIO.read(new ByteArrayInputStream(imageBytes));
-        final TextureConversionCache.TextureSourceFingerprint sourceFingerprint = TextureConversionCache.probeFingerprint(sourceFile.toString());
-        assertNotNull(sourceFingerprint);
 
         TexturePixelConversionResult seeded = TexturePixelConverter.convert(
                 TrackedResourceImage.wrap(
-                        sourceFile.toString(),
+                        resourcePath,
                         TrackedResourceImage.computeSourceHash(imageBytes),
                         source,
                         sourceFingerprint)
         );
 
         BufferedImage decoded = FastResourceImageDecoder.decode(
-                sourceFile.toString(),
+                resourcePath,
                 new InputStream() {
                     @Override
                     public int read() {
@@ -254,5 +261,62 @@ class FastResourceImageDecoderTest {
         assertEquals(Byte.toUnsignedInt(seeded.buffer().get(1)), Byte.toUnsignedInt(buffer.get(1)));
         assertEquals(Byte.toUnsignedInt(seeded.buffer().get(2)), Byte.toUnsignedInt(buffer.get(2)));
         assertEquals(Byte.toUnsignedInt(seeded.buffer().get(3)), Byte.toUnsignedInt(buffer.get(3)));
+    }
+
+    /**
+     * 回归：模组以同相对路径文件覆盖原版贴图时，按原版文件指纹落盘的缓存索引
+     * 不得命中（指纹必须取自合并视图解析出的模组文件），解码必须读取调用方
+     * 提供的模组字节流。
+     */
+    @Test
+    void modOverrideFileInvalidatesStaleVanillaFingerprintIndex() throws Exception {
+        final Path cacheDir = tempDir.resolve("cache");
+        System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, cacheDir.toString());
+
+        final Path coreRoot = tempDir.resolve("core");
+        final Path modRoot = tempDir.resolve("mod");
+        final Path coreFile = coreRoot.resolve("graphics/override.png");
+        final Path modFile = modRoot.resolve("graphics/override.png");
+        Files.createDirectories(coreFile.getParent());
+        Files.createDirectories(modFile.getParent());
+
+        final byte[] coreBytes = pngBytes(new Color(10, 20, 30, 255));
+        final byte[] modBytes = pngBytes(new Color(200, 210, 220, 255));
+        Files.write(coreFile, coreBytes);
+        Files.write(modFile, modBytes);
+
+        // 模组根插入队首（高优先级），core 根追加队尾——与游戏启动注册顺序一致
+        com.fs.util.ResourceLoader.getInstance().addDirectoryResource(coreRoot.toString());
+        com.fs.util.ResourceLoader.getInstance().addResourceSpec(modRoot.toString(), true, null);
+
+        final String resourcePath = "graphics/override.png";
+
+        // 指纹必须解析到模组文件
+        final TextureConversionCache.TextureSourceFingerprint managedFingerprint =
+                LazyTextureManager.probeManagedFingerprint(resourcePath, resourcePath);
+        assertNotNull(managedFingerprint);
+        assertEquals(modFile.toAbsolutePath().normalize().toString(), managedFingerprint.resolvedSourcePath());
+
+        // 模拟旧行为遗留：按原版文件指纹落盘的缓存索引条目
+        final TextureConversionCache.TextureSourceFingerprint staleCoreFingerprint =
+                TextureConversionCache.probeFingerprint(coreFile.toString());
+        assertNotNull(staleCoreFingerprint);
+        TexturePixelConverter.convert(
+                TrackedResourceImage.wrap(
+                        resourcePath,
+                        TrackedResourceImage.computeSourceHash(coreBytes),
+                        ImageIO.read(new ByteArrayInputStream(coreBytes)),
+                        staleCoreFingerprint)
+        );
+
+        // 解码：索引不得命中旧条目，必须读取调用方提供的模组字节流
+        BufferedImage decoded = FastResourceImageDecoder.decode(
+                resourcePath,
+                new BufferedInputStream(new ByteArrayInputStream(modBytes))
+        );
+
+        assertNotNull(decoded);
+        final BufferedImage modImage = ImageIO.read(new ByteArrayInputStream(modBytes));
+        assertEquals(modImage.getRGB(0, 0), decoded.getRGB(0, 0));
     }
 }

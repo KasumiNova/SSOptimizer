@@ -38,9 +38,11 @@ public final class FastResourceImageDecoder {
         final boolean fontOverride = fontOverrideService != null
                 && fontOverrideService.isEnabled()
                 && fontOverrideService.isOverriddenPath(fontOverrideService.normalize(path));
+        // 指纹必须经合并视图解析（模组覆盖优先），与下方实际读取的 InputStream
+        // 来源一致；CWD 直连探测会让游戏根目录下的原版文件指纹压过模组覆盖文件。
         final TextureConversionCache.TextureSourceFingerprint sourceFingerprint =
                 (!fontOverride && TextureConversionCache.isEnabled())
-                        ? TextureConversionCache.probeFingerprint(path)
+                        ? LazyTextureManager.probeManagedFingerprint(path, path)
                         : null;
         if (sourceFingerprint != null) {
             final TextureConversionCache.ResourceMetadataHit metadataHit =

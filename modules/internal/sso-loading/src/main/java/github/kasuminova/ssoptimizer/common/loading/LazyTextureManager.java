@@ -16,6 +16,7 @@ import org.lwjgl.opengl.GLContext;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -124,6 +125,7 @@ public final class LazyTextureManager {
     private static final    Method                                                       ORIGINAL_LAZY_MODE_METHOD           = resolveOriginalLazyModeMethod();
     private static final    Method                                                       RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
     private static final    Method                                                       RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
+    private static final    Method                                                       RESOURCE_MANAGER_GET_FILE_METHOD    = resolveResourceManagerGetFileMethod();
     /**
      * 延迟上传回写 textureId 的反射通道：named jar 的 TextureObject 无 public
      * setter，写字段只能反射（每纹理生命周期一次，非热路径）。
@@ -759,7 +761,7 @@ public final class LazyTextureManager {
         }
 
         final TextureConversionCache.TextureSourceFingerprint sourceFingerprint =
-                TextureConversionCache.probeFingerprint(resourcePath);
+                probeManagedFingerprint(resourcePath, resourcePath);
         final BufferedImage tracked = TrackedResourceImage.wrap(resourcePath, rebuiltHash, decoded, sourceFingerprint);
         final TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
         return new ResolvedDeferredTexture(
@@ -968,7 +970,7 @@ public final class LazyTextureManager {
                 new CompressedTextureCache.Key(sourceHash,
                         result.textureWidth(), result.textureHeight(), generateMipmaps, format,
                         TextureCompressionScheduler.resolveQuality(resourcePath)),
-                containerBytes, resourcePath, TextureConversionCache.probeFingerprint(resourcePath));
+                containerBytes, resourcePath, probeManagedFingerprint(resourcePath, resourcePath));
         return SsobcContainer.parse(containerBytes);
     }
 
@@ -1266,10 +1268,10 @@ public final class LazyTextureManager {
 
         TextureConversionCache.TextureSourceFingerprint sourceFingerprint = null;
         if (!fontOverride) {
-            sourceFingerprint = TextureConversionCache.probeFingerprint(originalPath);
-            if (sourceFingerprint == null && !normalizedPath.equals(originalPath)) {
-                sourceFingerprint = TextureConversionCache.probeFingerprint(normalizedPath);
-            }
+            // 指纹必须取自合并视图解析出的权威文件（模组覆盖优先），而非 CWD 直连：
+            // CWD 直连会让游戏根目录下的原版文件指纹压过模组覆盖文件，
+            // 导致缓存索引命中原版像素、模组贴图覆盖静默失效。
+            sourceFingerprint = probeManagedFingerprint(originalPath, normalizedPath);
         }
         if (sourceFingerprint != null) {
             final TextureConversionCache.ResourceMetadataHit metadataHit =
@@ -1316,6 +1318,27 @@ public final class LazyTextureManager {
             }
         }
 
+        // 合并视图优先：与原版 ResourceLoader 优先级一致（模组目录 > CWD > res 目录），
+        // 保证模组以同相对路径文件覆盖原版资源时读取到覆盖文件。CWD 直连必须先于
+        // 合并视图尝试会导致游戏根目录下的原版文件永远压过模组覆盖文件。
+        File managedFile = resolveManagedFile(originalPath);
+        if (managedFile == null && !normalizedPath.equals(originalPath)) {
+            managedFile = resolveManagedFile(normalizedPath);
+        }
+        if (managedFile != null) {
+            return new FileInputStream(managedFile);
+        }
+
+        // classpath 内资源（getResourceFile 无法解析为磁盘文件的情形）
+        InputStream input = openManagedStream(originalPath);
+        if (input == null && !normalizedPath.equals(originalPath)) {
+            input = openManagedStream(normalizedPath);
+        }
+        if (input != null) {
+            return input;
+        }
+
+        // ResourceLoader 不可用（如启动极早期反射未就绪）时的直连兜底
         try {
             return new FileInputStream(originalPath);
         } catch (IOException ignored) {
@@ -1326,14 +1349,6 @@ public final class LazyTextureManager {
                 return new FileInputStream(normalizedPath);
             } catch (IOException ignored) {
             }
-        }
-
-        InputStream input = openManagedStream(originalPath);
-        if (input == null && !normalizedPath.equals(originalPath)) {
-            input = openManagedStream(normalizedPath);
-        }
-        if (input != null) {
-            return input;
         }
 
         final ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
@@ -2204,6 +2219,59 @@ public final class LazyTextureManager {
             LOGGER.warn("[SSOptimizer] Could not resolve resource manager stream accessor", e);
             return null;
         }
+    }
+
+    private static Method resolveResourceManagerGetFileMethod() {
+        try {
+            final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, TextureLoader.class.getClassLoader());
+            final Method method = findDeclaredMethod(resourceManagerClass, File.class, false, String.class, boolean.class);
+            method.setAccessible(true);
+            return method;
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            LOGGER.warn("[SSOptimizer] Could not resolve resource manager file accessor", e);
+            return null;
+        }
+    }
+
+    /**
+     * 经游戏 ResourceLoader 合并视图解析资源的权威磁盘文件，优先级与原版
+     * {@code openStream} 完全一致（模组目录 > CWD > res 目录）。模组以同相对路径
+     * 文件覆盖原版资源时，此处返回模组目录下的文件。
+     *
+     * <p>仅 classpath 内资源、任何根均未命中、或 ResourceLoader 不可用时返回 null
+     * （游戏 getResourceFile 在这些情形下抛 RuntimeException，归一化为「无法解析
+     * 为磁盘文件」语义，调用方回退流式读取）。</p>
+     */
+    static File resolveManagedFile(final String resourcePath) {
+        final Method factoryMethod = RESOURCE_MANAGER_FACTORY_METHOD;
+        final Method getFileMethod = RESOURCE_MANAGER_GET_FILE_METHOD;
+        if (factoryMethod == null || getFileMethod == null || resourcePath == null || resourcePath.isBlank()) {
+            return null;
+        }
+
+        try {
+            final Object manager = factoryMethod.invoke(null);
+            if (manager == null) {
+                return null;
+            }
+            return (File) getFileMethod.invoke(manager, resourcePath, true);
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 按合并视图解析后的权威文件探测磁盘指纹。指纹必须与 {@link #openStream} 实际
+     * 读取的字节来源一致，否则模组覆盖资源时指纹指向原版文件，缓存索引会命中
+     * 原版像素导致覆盖静默失效。
+     */
+    static TextureConversionCache.TextureSourceFingerprint probeManagedFingerprint(final String originalPath,
+                                                                                   final String normalizedPath) {
+        File resolved = resolveManagedFile(originalPath);
+        if (resolved == null && !normalizedPath.equals(originalPath)) {
+            resolved = resolveManagedFile(normalizedPath);
+        }
+        return resolved != null ? TextureConversionCache.probeFingerprint(resolved.getAbsolutePath()) : null;
     }
 
     private static Field resolveField(final Class<?> owner,

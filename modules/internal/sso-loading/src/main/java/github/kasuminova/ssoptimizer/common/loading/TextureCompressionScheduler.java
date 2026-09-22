@@ -500,7 +500,7 @@ public final class TextureCompressionScheduler {
 
         final java.awt.image.BufferedImage tracked = TrackedResourceImage.wrap(
                 resourcePath, actualHash, decoded,
-                TextureConversionCache.probeFingerprint(resourcePath));
+                LazyTextureManager.probeManagedFingerprint(resourcePath, resourcePath));
         final TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
         if (result.textureWidth() != key.width() || result.textureHeight() != key.height()) {
             FAILED.incrementAndGet();
@@ -524,7 +524,7 @@ public final class TextureCompressionScheduler {
                                      final byte[] container,
                                      final long startNanos) {
         CompressedTextureCache.store(task.key(), container, task.resourcePath(),
-                TextureConversionCache.probeFingerprint(task.resourcePath()));
+                LazyTextureManager.probeManagedFingerprint(task.resourcePath(), task.resourcePath()));
         final long completed = COMPLETED.incrementAndGet();
 
         final CompressionCompletionListener listener = completionListener;
