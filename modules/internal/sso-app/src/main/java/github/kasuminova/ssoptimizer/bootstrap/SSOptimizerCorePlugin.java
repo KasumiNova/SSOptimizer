@@ -142,6 +142,13 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         RenderQueueImpl queue = new RenderQueueImpl();
         // BridgeSupport 安装是全局共享的，任一 bridge 入口类的 install 等价
         GL11.install(queue);
+        // 有序映射写入通道（BoxUtil 静态尾迹等持久映射直写子系统的流序化）：
+        // 服务注册 + 帧尾标记钩子安装；模组侧 Mixin 经 ServiceRegistry 解析，
+        // 未注册（非 RT 模式）时回退原版直写语义
+        ServiceRegistry.register(github.kasuminova.ssoptimizer.api.render.MappedWriteBridge.class,
+                github.kasuminova.ssoptimizer.bridge.opengl.MappedWriteBridgeImpl.get());
+        RenderQueueImpl.frameEndMarkerHook(
+                github.kasuminova.ssoptimizer.bridge.opengl.MappedWriteBridgeImpl::frameEndMarker);
         LOGGER.info("[SSOptimizer] 渲染线程分离模式已启用：RenderQueue 已安装，"
                 + "GL 调用将经 ASM 重定向录制到 " + RenderQueueImpl.RENDER_THREAD_NAME);
     }

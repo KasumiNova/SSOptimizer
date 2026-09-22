@@ -31,4 +31,9 @@ final class RealSyncOpsImpl implements RealSyncOps {
     public void deleteSync(final Object sync) {
         org.lwjgl.opengl.GL32.glDeleteSync((org.lwjgl.opengl.GLSync) sync);
     }
+
+    @Override
+    public void memoryBarrier(final int barriers) {
+        org.lwjgl.opengl.GL42.glMemoryBarrier(barriers);
+    }
 }

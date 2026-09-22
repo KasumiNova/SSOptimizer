@@ -180,6 +180,9 @@ public final class GL15 {
             return true;
         }
         github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace("UNMAP_REAL", target, 0, 0, null);
+        // 必须先于真实 unmap 失效映射令牌：在途的有序映射写入命令执行时据此跳过，
+        // 否则可能写向已释放的映射内存
+        RealMappingRegistry.invalidateBuffer(BufferMapEmulator.boundBufferForCurrentThread(target));
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL15.glUnmapBuffer(target));
     }
 

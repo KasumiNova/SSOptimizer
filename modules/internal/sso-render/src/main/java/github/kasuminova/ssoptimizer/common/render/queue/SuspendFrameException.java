@@ -13,8 +13,12 @@ package github.kasuminova.ssoptimizer.common.render.queue;
  * 悬挂恢复期的每次重试零分配。
  */
 public final class SuspendFrameException extends RuntimeException {
-    /** 全局唯一实例（控制流信号无载荷，复用避免恢复期逐毫秒分配）。 */
-    static final SuspendFrameException INSTANCE = new SuspendFrameException();
+    /**
+     * 全局唯一实例（控制流信号无载荷，复用避免恢复期逐毫秒分配）。
+     * 公开原因：bridge 侧的有序映射写入命令（{@code MappedWriteBridgeImpl}）用它做
+     * 「上一帧悬挂未排完则本帧重排」的帧序会合，与 {@link WaitFenceCommand} 同语义。
+     */
+    public static final SuspendFrameException INSTANCE = new SuspendFrameException();
 
     private SuspendFrameException() {
         super(null, null, false, false);

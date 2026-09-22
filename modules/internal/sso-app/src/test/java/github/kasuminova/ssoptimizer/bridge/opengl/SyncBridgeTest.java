@@ -54,6 +54,11 @@ class SyncBridgeTest {
         public void deleteSync(final Object sync) {
             deleted.add(sync);
         }
+
+        @Override
+        public void memoryBarrier(final int barriers) {
+            // 同步测试不覆盖内存屏障路径，空实现即可
+        }
     }
 
     /** 记录调用的假真实共享上下文。 */

@@ -32,6 +32,13 @@ public final class RenderFrame {
      * 去重跳过才是安全的；序号变化即视为状态可能已被其他路径改变。
      */
     private volatile int commitSeq;
+    /**
+     * 帧序号：由 {@code RenderQueueImpl} 在帧成为当前录制帧时指派（单调递增）。
+     * 用途：有序映射写入（bridge 侧 MappedWriteBridgeImpl）的帧尾 fence 发布与
+     * 「上一帧悬挂未排完则本帧重排」判定需要稳定的帧身份；池化复用不影响语义
+     * （每次成为当前帧时重新指派）。
+     */
+    private long sequence = -1;
 
     /**
      * 默认容量构造：命令列表按 {@link #DEFAULT_COMMAND_CAPACITY} 起步。
@@ -92,6 +99,18 @@ public final class RenderFrame {
      */
     public int commitSeq() {
         return commitSeq;
+    }
+
+    /** 指派帧序号（{@code RenderQueueImpl} 在帧成为当前录制帧时调用，持 frameLock）。 */
+    void assignSequence(final long sequence) {
+        this.sequence = sequence;
+    }
+
+    /**
+     * @return 本帧序号（单调递增；有序映射写入的帧序会合判定用）
+     */
+    public long sequence() {
+        return sequence;
     }
 
     /**

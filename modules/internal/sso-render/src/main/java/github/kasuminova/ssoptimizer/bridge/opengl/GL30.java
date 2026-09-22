@@ -161,8 +161,14 @@ public final class GL30 {
         if (mirror != null) {
             return mirror;
         }
-        return BridgeSupport.blockingGet(() ->
+        final ByteBuffer mapped = BridgeSupport.blockingGet(() ->
                 org.lwjgl.opengl.GL30.glMapBufferRange(target, offset, length, access, oldBuffer));
+        // 真实映射登记生命周期令牌：持久映射的流序写入（MappedWriteBridgeImpl）执行时
+        // 凭令牌复查映射存活，避免写向池扩容/销毁后已释放的映射内存
+        if (mapped != null) {
+            RealMappingRegistry.track(BufferMapEmulator.boundBufferForCurrentThread(target), mapped);
+        }
+        return mapped;
     }
 
     public static void glUniform1ui(int location, int v0) {

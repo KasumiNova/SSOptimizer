@@ -22,4 +22,10 @@ interface RealSyncOps {
 
     /** 删除真实 sync 句柄。 */
     void deleteSync(Object sync);
+
+    /**
+     * 真实 glMemoryBarrier：有序映射写入（{@link MappedWriteBridgeImpl}）落笔后
+     * 在本上下文建立「CPU 写 → 后续 GPU 命令」的可见性（非相干持久映射语义）。
+     */
+    void memoryBarrier(int barriers);
 }

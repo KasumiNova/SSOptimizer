@@ -63,6 +63,7 @@
     "loading.TextureObjectMixin",
     "ui.PositionImplMixin",
     "modopt.dcr.DcrCompressionUtilMixin",
+    "modopt.boxutil.StaticTrailMemoryPoolMixin",
     "render.BitmapFontRendererMixin",
     "render.BaseTiledTerrainRenderMixin",
     "render.HyperspaceTerrainPluginMixin",

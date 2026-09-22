@@ -112,6 +112,8 @@ final class BufferMapEmulator {
         final Integer vbo = BOUND.get(pendingKey(target));
         if (vbo != null && vbo != 0) {
             SIZES.put(vbo, (int) Math.min(size, Integer.MAX_VALUE));
+            // 存储重建即杀死既有映射（spec：bufferData 后旧映射失效），同步失效登记
+            RealMappingRegistry.invalidateBuffer(vbo);
         }
     }
 
@@ -119,6 +121,17 @@ final class BufferMapEmulator {
     static synchronized void onDeleteBuffer(final int buffer) {
         MIRRORS.remove(buffer);
         SIZES.remove(buffer);
+        RealMappingRegistry.invalidateBuffer(buffer);
+    }
+
+    /**
+     * 本线程在该 target 上当前绑定的 VBO id（无绑定返回 0）。
+     * 供真实映射生命周期登记（{@link RealMappingRegistry}）在 map/unmap 扼流点
+     * 解析调用方绑定的 buffer——与 {@link #tryEmulateMapRange} 的绑定解析同源。
+     */
+    static synchronized int boundBufferForCurrentThread(final int target) {
+        final Integer vbo = BOUND.get(pendingKey(target));
+        return vbo == null ? 0 : vbo;
     }
 
     /**

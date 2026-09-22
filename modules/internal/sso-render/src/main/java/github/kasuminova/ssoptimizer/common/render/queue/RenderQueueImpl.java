@@ -60,6 +60,27 @@ public final class RenderQueueImpl implements RenderQueue {
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
     /**
+     * 帧尾标记钩子：帧提交时在帧尾追加一条标记命令（或返回 null 跳过）。
+     * 由 bridge 侧有序映射写入通道（MappedWriteBridgeImpl）安装——标记命令执行到
+     * 即「本帧全部命令已进入 GPU 队列」，是该通道发布帧尾 fence 的序列点。
+     * 静态语义与 {@link #mainThread} 同级（队列进程级单例）。
+     */
+    public interface FrameEndMarkerHook {
+        /**
+         * @param frameSequence 待提交帧的帧序号（{@link RenderFrame#sequence()}）
+         * @return 追加到帧尾的标记命令；null = 本帧不需要标记
+         */
+        GlCommand markerFor(long frameSequence);
+    }
+
+    private static volatile FrameEndMarkerHook frameEndMarkerHook;
+
+    /** 安装帧尾标记钩子（装配模块在启用有序映射写入通道时调用；null 卸载）。 */
+    public static void frameEndMarkerHook(final FrameEndMarkerHook hook) {
+        frameEndMarkerHook = hook;
+    }
+
+    /**
      * 主录制线程：初值为加载本类的线程（coremod onLoad 阶段，launcher 主线程），
      * 首个 {@link #swapFramesAndSync()} 调用时由游戏主循环线程认领——游戏循环实际跑在
      * {@code StarfarerLauncher$LaunchGameRunnable} 派生线程，类初始化时的线程并非
@@ -100,6 +121,10 @@ public final class RenderQueueImpl implements RenderQueue {
 
     /** 当前录制帧；仅主线程 swap 时更换。 */
     private RenderFrame currentFrame;
+    /** 帧序号发号器（frameLock 内访问）；帧在成为当前录制帧时领号。 */
+    private long frameSequenceCounter;
+    /** 最近一次提交帧的帧序号（有序映射写入通道的挂载初始化读取）。 */
+    private volatile long lastSubmittedSequence = -1;
     /**
      * 最近一次提交帧的完成 Future；swapFramesAndSync 等待的是它的前一帧。
      * 必须在提交（offer）之前从帧上捕获——帧执行完归还池后 reset 会换发新 Future，
@@ -145,6 +170,7 @@ public final class RenderQueueImpl implements RenderQueue {
         this.glErrorProbe = glErrorProbe;
         this.glErrorSource = glErrorSource;
         this.currentFrame = framePool.acquire();
+        this.currentFrame.assignSequence(this.frameSequenceCounter++);
         this.renderThread = new Thread(this::renderLoop, RENDER_THREAD_NAME);
         this.renderThread.setDaemon(true);
         this.renderThread.start();
@@ -357,10 +383,28 @@ public final class RenderQueueImpl implements RenderQueue {
         // 必须先捕获完成 Future 再 offer：offer 之后渲染线程随时可能执行完并把帧
         // 归还池（reset 换发新 Future），届时再读帧上的 Future 已不是本周期的实例
         CompletableFuture<Void> completion = submitted.completionFuture();
+        // 帧尾标记必须在 offer 前追加进本帧：标记是「本帧命令已全部进 GPU 队列」的
+        // 序列点，有序映射写入通道（MappedWriteBridgeImpl）据此发布帧尾 fence
+        final FrameEndMarkerHook markerHook = frameEndMarkerHook;
+        if (markerHook != null) {
+            final GlCommand marker = markerHook.markerFor(submitted.sequence());
+            if (marker != null) {
+                submitted.addUnlocked(marker);
+            }
+        }
+        lastSubmittedSequence = submitted.sequence();
         RtTrace.frameBoundary();
         offerOrThrow(new FrameTask(submitted));
         currentFrame = framePool.acquire();
+        currentFrame.assignSequence(frameSequenceCounter++);
         lastSubmittedCompletion = completion;
+    }
+
+    /**
+     * @return 最近一次提交帧的帧序号（无提交时为 -1；有序映射写入通道的挂载初始化用）
+     */
+    public long lastSubmittedSequence() {
+        return lastSubmittedSequence;
     }
 
     /**
