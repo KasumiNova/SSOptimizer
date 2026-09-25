@@ -8,7 +8,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
  * 动机同 {@link GL11}。盘点结论：游戏本体使用 glBlendEquation（×18），
  * 必须覆盖；GL14 其余面（glBlendFuncSeparate/glPointParameter 等）本阶段不做。
  */
-public final class GL14 {
+public final class GL14 extends GL14Gen {
     private GL14() {
     }
 

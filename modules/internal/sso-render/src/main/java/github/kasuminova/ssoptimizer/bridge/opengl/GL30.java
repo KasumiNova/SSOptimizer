@@ -14,7 +14,7 @@ import java.nio.IntBuffer;
  * {@link EXTFramebufferObject} 类 javadoc。GL30 其余面（VAO/transform feedback
  * 等）本阶段不做。
  */
-public final class GL30 {
+public final class GL30 extends GL30Gen {
     private GL30() {
     }
 

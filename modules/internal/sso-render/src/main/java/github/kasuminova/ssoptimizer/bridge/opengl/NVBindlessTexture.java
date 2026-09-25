@@ -12,7 +12,7 @@ import java.nio.LongBuffer;
  * 与 {@link ARBBindlessTexture} 同语义（功能等价的厂商扩展对），BoxUtil 按
  * 驱动能力二选一，两个入口都必须覆盖。
  */
-public final class NVBindlessTexture {
+public final class NVBindlessTexture extends NVBindlessTextureGen {
     private NVBindlessTexture() {
     }
 

@@ -13,7 +13,7 @@ import java.nio.ShortBuffer;
  * 二选一，两个入口都必须覆盖。索引 buffer 参数在录制时刻快照
  * （防调用方随后改写）；VBO 偏移形态传值即可。
  */
-public final class ARBDrawInstanced {
+public final class ARBDrawInstanced extends ARBDrawInstancedGen {
     private ARBDrawInstanced() {
     }
 

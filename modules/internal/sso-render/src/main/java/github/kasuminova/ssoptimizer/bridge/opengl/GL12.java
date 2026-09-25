@@ -15,7 +15,7 @@ import java.nio.ShortBuffer;
  * GLWrapper$Drawcall 以方法引用解析 glDrawRangeElements 全重载。语义与
  * {@link GL11} 一致：像素/索引数据在录制时刻深拷贝入池化快照，渲染线程执行后归还。
  */
-public final class GL12 {
+public final class GL12 extends GL12Gen {
     private GL12() {
     }
 

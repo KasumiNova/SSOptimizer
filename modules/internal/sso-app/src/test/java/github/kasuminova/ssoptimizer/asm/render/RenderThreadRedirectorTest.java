@@ -175,10 +175,11 @@ class RenderThreadRedirectorTest {
 
     @Test
     void unmirroredMethodKeepsOriginalOwner() {
-        // GL44.glBufferStorage 不在 bridge 镜像面内（BoxUtil 级高端面）
+        // 全量镜像后真实方法面已完整覆盖（glBufferStorage 已镜像），改用桥必然
+        // 未镜像的假想签名固定「未镜像保持原 owner」判据
         byte[] source = buildClass("com/example/UsesGl44", mv ->
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL44",
-                        "glBufferStorage", "(IJLjava/nio/ByteBuffer;I)V", false));
+                        "glFutureOp", "(IJLjava/nio/ByteBuffer;I)V", false));
 
         byte[] result = RenderThreadRedirector.redirect("com.example.UsesGl44", source);
         assertSame(source, result, "未镜像调用保持原字节（无任何改写点）");
@@ -186,17 +187,17 @@ class RenderThreadRedirectorTest {
 
     @Test
     void mixedMirroredAndUnmirroredCallsOnlyRewriteMirrored() {
-        // GL11.glBegin 已镜像；GL11.glGetTexParameterf（假定未镜像）保持原样
+        // GL11.glBegin 已镜像；假想签名 glFutureOp（桥必然未镜像）保持原样
         byte[] source = buildClass("com/example/Mixed", mv -> {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glBegin", "(I)V", false);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11",
-                    "glGetTexParameterf", "(II)F", false);
+                    "glFutureOp", "(II)F", false);
         });
 
         byte[] result = RenderThreadRedirector.redirect("com.example.Mixed", source);
         List<String> calls = collectMethodCalls(result);
         assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL11.glBegin(I)V"));
-        assertTrue(calls.contains("org/lwjgl/opengl/GL11.glGetTexParameterf(II)F"),
+        assertTrue(calls.contains("org/lwjgl/opengl/GL11.glFutureOp(II)F"),
                 "未镜像的 GL11 方法必须保持原 owner");
     }
 
@@ -485,7 +486,7 @@ class RenderThreadRedirectorTest {
         byte[] source = buildClass("com/example/LambdaRefs", mv -> {
             visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glDrawArrays", "(III)V");
             visitLambdaRef(mv, "org/lwjgl/opengl/GL12", "glDrawRangeElements", "(IIIIIJ)V");
-            visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glGetTexParameterf", "(II)F");
+            visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glFutureOp", "(II)F");
         });
 
         byte[] result = RenderThreadRedirector.redirect("com.example.LambdaRefs", source);
@@ -496,15 +497,15 @@ class RenderThreadRedirectorTest {
         assertTrue(handles.contains(
                 "github/kasuminova/ssoptimizer/bridge/opengl/GL12.glDrawRangeElements(IIIIIJ)V"),
                 "补齐覆盖后的崩溃现场 API 必须改写到桥: " + handles);
-        assertTrue(handles.contains("org/lwjgl/opengl/GL11.glGetTexParameterf(II)F"),
-                "未镜像句柄必须保持原 owner（链接真实 LWJGL 方法）: " + handles);
+        assertTrue(handles.contains("org/lwjgl/opengl/GL11.glFutureOp(II)F"),
+                "未镜像句柄（假想签名）必须保持原 owner（链接真实 LWJGL 方法）: " + handles);
     }
 
     @Test
     void indyHandleToUnmirroredMethodAloneIsNoOp() {
-        // 唯一引用是未镜像方法句柄时整类无改写点，原样返回
+        // 唯一引用是未镜像方法句柄（假想签名）时整类无改写点，原样返回
         byte[] source = buildClass("com/example/LambdaUnmirrored", mv ->
-                visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glGetTexParameterf", "(II)F"));
+                visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glFutureOp", "(II)F"));
 
         byte[] result = RenderThreadRedirector.redirect("com.example.LambdaUnmirrored", source);
         assertSame(source, result, "未镜像方法句柄不得改写（无改写点时原样返回）");

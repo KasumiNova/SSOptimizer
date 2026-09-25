@@ -10,7 +10,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
  * （glCompressedTexImage2D，BC 族 GPU 纹理压缩的落点，见
  * docs/design/gpu-texture-compression.md）随 T1 地基一并镜像。
  */
-public final class GL13 {
+public final class GL13 extends GL13Gen {
     private GL13() {
     }
 

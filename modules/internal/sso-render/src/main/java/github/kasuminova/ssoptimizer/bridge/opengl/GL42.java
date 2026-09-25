@@ -8,7 +8,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
  * 动机：BoxUtil 的纹理分配（glTexStorage*）与 image store 路径走 GL42 入口。
  * 语义同 {@link GL11}：全部为状态/分配命令，按提交序入队。
  */
-public final class GL42 {
+public final class GL42 extends GL42Gen {
     private GL42() {
     }
 

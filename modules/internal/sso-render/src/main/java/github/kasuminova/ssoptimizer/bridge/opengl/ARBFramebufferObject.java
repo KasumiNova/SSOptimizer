@@ -11,7 +11,7 @@ import java.nio.IntBuffer;
  * 同功能的扩展/核心别名），GraphicsLib 运行时三选一，全部必须覆盖。
  * 阻塞通道语义见 {@link EXTFramebufferObject} 类 javadoc。
  */
-public final class ARBFramebufferObject {
+public final class ARBFramebufferObject extends ARBFramebufferObjectGen {
     private ARBFramebufferObject() {
     }
 

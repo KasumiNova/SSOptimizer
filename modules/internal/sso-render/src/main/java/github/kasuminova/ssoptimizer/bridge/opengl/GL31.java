@@ -8,7 +8,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
  * 动机：BoxUtil 的实例化渲染与 UBO 绑定走 GL31 入口。语义同 {@link GL11}：
  * 状态命令按提交序入队，索引查询走阻塞通道。
  */
-public final class GL31 {
+public final class GL31 extends GL31Gen {
     private GL31() {
     }
 

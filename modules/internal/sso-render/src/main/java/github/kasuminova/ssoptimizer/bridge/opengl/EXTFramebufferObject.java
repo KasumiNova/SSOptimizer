@@ -16,7 +16,7 @@ import java.nio.IntBuffer;
  * id 分配（glGenFramebuffersEXT/glGenRenderbuffersEXT）与状态查询
  * （glCheckFramebufferStatusEXT）走阻塞通道，语义同 {@link GL11} 的 getter。
  */
-public final class EXTFramebufferObject {
+public final class EXTFramebufferObject extends EXTFramebufferObjectGen {
     private EXTFramebufferObject() {
     }
 

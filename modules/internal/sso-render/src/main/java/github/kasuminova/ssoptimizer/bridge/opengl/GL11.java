@@ -67,7 +67,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * 安装真实队列；单测安装假队列验证录制行为）。未安装时调用直接抛
  * {@link IllegalStateException}——桥接类没有可回退的直通路径。
  */
-public final class GL11 {
+public final class GL11 extends GL11Gen {
     /**
      * glGetString 录制侧缓存：五类结果在同一 GL context 生命周期内不变，
      * 槽位见 {@link #glGetString(int)}；{@link #uninstall()} 时清空。

@@ -15,7 +15,7 @@ import java.nio.ShortBuffer;
  * ARB 扩展路径，与 {@link GL15} 同语义、同功能别名，必须覆盖。buffer 数据参数
  * 的快照语义与 glGenBuffersARB 的阻塞通道语义同 {@link GL15}。
  */
-public final class ARBVertexBufferObject {
+public final class ARBVertexBufferObject extends ARBVertexBufferObjectGen {
     private ARBVertexBufferObject() {
     }
 

@@ -24,7 +24,7 @@ import java.nio.IntBuffer;
  *   <li>GL20 其余面（顶点属性/矩阵 uniform/多重 draw buffer 等）本阶段不做。</li>
  * </ul>
  */
-public final class GL20 {
+public final class GL20 extends GL20Gen {
     private GL20() {
     }
 

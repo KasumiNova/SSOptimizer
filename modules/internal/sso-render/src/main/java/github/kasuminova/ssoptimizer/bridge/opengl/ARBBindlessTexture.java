@@ -12,7 +12,7 @@ import java.nio.LongBuffer;
  * 动机：BoxUtil 的 bindless 纹理路径走本族入口。句柄获取/驻留查询是返回值
  * 语义，走阻塞通道取回真实值；驻留状态变更换入队按提交序执行。
  */
-public final class ARBBindlessTexture {
+public final class ARBBindlessTexture extends ARBBindlessTextureGen {
     private ARBBindlessTexture() {
     }
 

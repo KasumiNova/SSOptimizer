@@ -17,7 +17,7 @@ import java.nio.ShortBuffer;
  * 走录制侧预生成 stash（{@link BridgeSupport#acquireBufferId()}，命中零阻塞，
  * 空时一次阻塞批量补货 64 个），批量形式仍阻塞直通；查询/map 面本阶段不做。
  */
-public final class GL15 {
+public final class GL15 extends GL15Gen {
     private GL15() {
     }
 

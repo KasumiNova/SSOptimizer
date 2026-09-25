@@ -22,7 +22,7 @@ import java.nio.LongBuffer;
  * （防调用方随后改写）；资源分配/查询走阻塞通道（调用方阻塞期间其 buffer
  * 不被触碰，渲染线程直接写入）。
  */
-public final class GL33 {
+public final class GL33 extends GL33Gen {
     private GL33() {
     }
 

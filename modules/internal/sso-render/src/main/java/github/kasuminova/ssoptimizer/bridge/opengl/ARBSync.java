@@ -11,7 +11,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
  * sync 身份族在折叠模型下是纯 Java 会合点（见 {@link GL32} 类 javadoc），
  * 本类只做入口对齐，语义全部由 {@link GL32} 承载。
  */
-public final class ARBSync {
+public final class ARBSync extends ARBSyncGen {
     private ARBSync() {
     }
 

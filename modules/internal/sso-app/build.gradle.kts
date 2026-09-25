@@ -165,6 +165,9 @@ dependencies {
     namedGameJarBaseNames.forEach { baseName ->
         testImplementation("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
     }
+    // GL bridge 全量镜像覆盖率测试：ASM 解析真实 lwjgl 的 org/lwjgl/opengl 类
+    // （与 sso-render 的 lwjgl_util 同款坐标，见 BridgeMirrorCoverageTest）
+    testImplementation("starsector.game:lwjgl:0.98a-RC8-SNAPSHOT")
 }
 
 tasks.test {

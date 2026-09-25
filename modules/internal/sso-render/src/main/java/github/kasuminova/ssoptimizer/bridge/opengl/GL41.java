@@ -7,7 +7,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
  * <p>
  * 动机：BoxUtil 的 program 级 uniform 设置走 GL41 入口。语义同 {@link GL11}。
  */
-public final class GL41 {
+public final class GL41 extends GL41Gen {
     private GL41() {
     }
 

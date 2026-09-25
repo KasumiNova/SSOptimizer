@@ -67,4 +67,35 @@ public final class GLContext {
         }
         return capabilities;
     }
+
+    /**
+     * 阻塞通道：LWJGL 内部的上下文使用追踪（模组一般传 {@code null} 解除），
+     * 收口渲染线程与真实上下文持有者保持一致。
+     *
+     * @throws LWJGLException 渲染线程上的真实调用失败
+     */
+    public static void useContext(Object context) throws org.lwjgl.LWJGLException {
+        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.GLContext.useContext(context));
+    }
+
+    /** {@link #useContext(Object)} 的显式套接字选择重载。 */
+    public static void useContext(Object context, boolean isSurfaceless)
+            throws org.lwjgl.LWJGLException {
+        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.GLContext.useContext(context, isSurfaceless));
+    }
+
+    /**
+     * 阻塞通道：OpenGL 动态库加载是进程级一次性动作，收口渲染线程与后续
+     * 上下文创建保持同线程序。
+     *
+     * @throws LWJGLException 渲染线程上的真实调用失败
+     */
+    public static void loadOpenGLLibrary() throws org.lwjgl.LWJGLException {
+        BridgeSupport.blockingWaitLwjgl(org.lwjgl.opengl.GLContext::loadOpenGLLibrary);
+    }
+
+    /** 阻塞通道：卸载语义同 {@link #loadOpenGLLibrary()}（关停路径）。 */
+    public static void unloadOpenGLLibrary() {
+        BridgeSupport.blockingWait(org.lwjgl.opengl.GLContext::unloadOpenGLLibrary);
+    }
 }

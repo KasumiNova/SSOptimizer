@@ -28,7 +28,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.WaitFenceCommand;
  *       删除命令，aux 线程原生直执）。</li>
  * </ul>
  */
-public final class GL32 {
+public final class GL32 extends GL32Gen {
     private GL32() {
     }
 

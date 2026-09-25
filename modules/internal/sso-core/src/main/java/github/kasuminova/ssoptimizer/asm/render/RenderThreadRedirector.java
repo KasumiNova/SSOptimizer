@@ -33,10 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * 改写规则：
  * <ul>
- *   <li>owner 改写表：{@code org/lwjgl/opengl/{GL11~GL15,GL20,GL30~GL32,
- *       GL40~GL44,ARBVertexBufferObject,EXTFramebufferObject,ARBFramebufferObject,
- *       ARBTextureStorage,ARBBindlessTexture,NVBindlessTexture,ARBSync,Display,GLContext,
- *       Drawable,SharedDrawable,GLSync,Util}} → bridge/opengl 同名类；</li>
+ *   <li>owner 改写表：{@code org/lwjgl/opengl/<Name>} → bridge/opengl 同名类，
+ *       覆盖 jar 内全部 GL 调用类（全量镜像，清单见 MIRRORED_CLASS_NAMES，
+ *       由 tools/gen_gl_bridge.py 生成，见 docs/design/gl-bridge-full-mirror.md）；</li>
  *   <li>只改写 bridge 实际镜像了的方法（镜像表在首次使用时解析 bridge 类自身字节码
  *       构建，方法名+描述符匹配）；未镜像的调用保持原 owner 并按调用签名首次
  *       记 warn 日志——未镜像调用在分离模式下会在无 context 的调用线程执行真实 GL，
@@ -117,14 +116,49 @@ public final class RenderThreadRedirector {
      */
     private static final String SYSTEM_LWJGL_PREFIX = "org/lwjgl/";
 
-    /** owner 改写表覆盖的类名（org/lwjgl/opengl 下的简单名，与 bridge 类一一同名）。 */
-    private static final String[] MIRRORED_CLASS_NAMES = {
-            "GL11", "GL12", "GL13", "GL14", "GL15", "GL20", "GL30", "GL31", "GL32", "GL33",
-            "GL40", "GL41", "GL42", "GL43", "GL44",
-            "ARBVertexBufferObject", "EXTFramebufferObject", "ARBFramebufferObject",
-            "ARBTextureStorage", "ARBBindlessTexture", "NVBindlessTexture",
-            "ARBInstancedArrays", "ARBDrawInstanced", "ARBSync",
-            "Display", "GLContext", "Drawable", "SharedDrawable", "GLSync", "Util"
+    /**
+     * owner 改写表覆盖的类名（org/lwjgl/opengl 下的简单名，与 bridge 类一一同名）。
+     * 全量镜像清单：由 tools/gen_gl_bridge.py 打印输出（24 个手写 GL 调用类
+     * + ARBCLEvent + 纯生成类 + 6 个手写基建类），jar 换版重新生成时同步更新。
+     * 包内可见供覆盖率测试读取（BridgeMirrorCoverageTest）。
+     */
+    static final String[] MIRRORED_CLASS_NAMES = {
+            "AMDDebugOutput", "AMDDrawBuffersBlend", "AMDInterleavedElements", "AMDMultiDrawIndirect", "AMDNameGenDelete", "AMDPerformanceMonitor",
+            "AMDSamplePositions", "AMDSparseTexture", "AMDStencilOperationExtended", "AMDVertexShaderTessellator", "APPLEElementArray", "APPLEFence",
+            "APPLEFlushBufferRange", "APPLEObjectPurgeable", "APPLETextureRange", "APPLEVertexArrayObject", "APPLEVertexArrayRange", "APPLEVertexProgramEvaluators",
+            "ARBBaseInstance", "ARBBindlessTexture", "ARBBlendFuncExtended", "ARBBufferObject", "ARBBufferStorage", "ARBCLEvent",
+            "ARBClearBufferObject", "ARBClearTexture", "ARBClipControl", "ARBColorBufferFloat", "ARBComputeShader", "ARBComputeVariableGroupSize",
+            "ARBCopyBuffer", "ARBCopyImage", "ARBDebugOutput", "ARBDirectStateAccess", "ARBDrawBuffers", "ARBDrawBuffersBlend",
+            "ARBDrawElementsBaseVertex", "ARBDrawIndirect", "ARBDrawInstanced", "ARBES2Compatibility", "ARBES31Compatibility", "ARBFragmentProgram",
+            "ARBFramebufferNoAttachments", "ARBFramebufferObject", "ARBGeometryShader4", "ARBGetProgramBinary", "ARBGetTextureSubImage", "ARBGpuShaderFp64",
+            "ARBImaging", "ARBIndirectParameters", "ARBInstancedArrays", "ARBInternalformatQuery", "ARBInternalformatQuery2", "ARBInvalidateSubdata",
+            "ARBMapBufferRange", "ARBMatrixPalette", "ARBMultiBind", "ARBMultiDrawIndirect", "ARBMultisample", "ARBMultitexture",
+            "ARBOcclusionQuery", "ARBPixelBufferObject", "ARBPointParameters", "ARBProgram", "ARBProgramInterfaceQuery", "ARBProvokingVertex",
+            "ARBRobustness", "ARBSampleShading", "ARBSamplerObjects", "ARBSeparateShaderObjects", "ARBShaderAtomicCounters", "ARBShaderImageLoadStore",
+            "ARBShaderObjects", "ARBShaderStorageBufferObject", "ARBShaderSubroutine", "ARBShadingLanguageInclude", "ARBSparseBuffer", "ARBSparseTexture",
+            "ARBSync", "ARBTessellationShader", "ARBTextureBarrier", "ARBTextureBufferObject", "ARBTextureBufferRange", "ARBTextureCompression",
+            "ARBTextureMultisample", "ARBTextureStorage", "ARBTextureStorageMultisample", "ARBTextureView", "ARBTimerQuery", "ARBTransformFeedback2",
+            "ARBTransformFeedback3", "ARBTransformFeedbackInstanced", "ARBTransposeMatrix", "ARBUniformBufferObject", "ARBVertexArrayObject", "ARBVertexAttrib64bit",
+            "ARBVertexAttribBinding", "ARBVertexBlend", "ARBVertexBufferObject", "ARBVertexProgram", "ARBVertexShader", "ARBVertexType2_10_10_10_REV",
+            "ARBViewportArray", "ARBWindowPos", "ATIDrawBuffers", "ATIElementArray", "ATIEnvmapBumpmap", "ATIFragmentShader",
+            "ATIMapObjectBuffer", "ATIPnTriangles", "ATISeparateStencil", "ATIVertexArrayObject", "ATIVertexAttribArrayObject", "ATIVertexStreams",
+            "Display", "Drawable", "EXTBindableUniform", "EXTBlendColor", "EXTBlendEquationSeparate", "EXTBlendFuncSeparate",
+            "EXTBlendMinmax", "EXTCompiledVertexArray", "EXTDepthBoundsTest", "EXTDrawBuffers2", "EXTDrawInstanced", "EXTDrawRangeElements",
+            "EXTFogCoord", "EXTFramebufferBlit", "EXTFramebufferMultisample", "EXTFramebufferObject", "EXTGeometryShader4", "EXTGpuProgramParameters",
+            "EXTGpuShader4", "EXTMultiDrawArrays", "EXTPalettedTexture", "EXTPixelBufferObject", "EXTPointParameters", "EXTProvokingVertex",
+            "EXTSecondaryColor", "EXTSeparateShaderObjects", "EXTShaderImageLoadStore", "EXTStencilClearTag", "EXTStencilTwoSide", "EXTTextureArray",
+            "EXTTextureBufferObject", "EXTTextureInteger", "EXTTimerQuery", "EXTTransformFeedback", "EXTVertexAttrib64bit", "EXTVertexShader",
+            "EXTVertexWeighting", "GL11", "GL12", "GL13", "GL14", "GL15",
+            "GL20", "GL21", "GL30", "GL31", "GL32", "GL33",
+            "GL40", "GL41", "GL42", "GL43", "GL44", "GL45",
+            "GLContext", "GLSync", "GREMEDYFrameTerminator", "GREMEDYStringMarker", "INTELMapTexture", "KHRDebug",
+            "KHRRobustness", "NVBindlessMultiDrawIndirect", "NVBindlessTexture", "NVBlendEquationAdvanced", "NVConditionalRender", "NVCopyImage",
+            "NVDepthBufferFloat", "NVDrawTexture", "NVEvaluators", "NVExplicitMultisample", "NVFence", "NVFragmentProgram",
+            "NVFramebufferMultisampleCoverage", "NVGeometryProgram4", "NVGpuProgram4", "NVGpuShader5", "NVHalfFloat", "NVOcclusionQuery",
+            "NVParameterBufferObject", "NVPathRendering", "NVPixelDataRange", "NVPointSprite", "NVPresentVideo", "NVPrimitiveRestart",
+            "NVProgram", "NVRegisterCombiners", "NVRegisterCombiners2", "NVShaderBufferLoad", "NVTextureBarrier", "NVTextureMultisample",
+            "NVTransformFeedback", "NVTransformFeedback2", "NVVertexArrayRange", "NVVertexAttribInteger64bit", "NVVertexBufferUnifiedMemory", "NVVertexProgram",
+            "NVVideoCapture", "SharedDrawable", "Util"
     };
 
     /** owner 改写表：org/lwjgl/opengl/X → bridge/opengl/X。 */
@@ -292,29 +326,47 @@ public final class RenderThreadRedirector {
     /**
      * 解析 bridge 类自身字节码构建镜像方法表（方法名+描述符）。
      * 以 bridge 类为唯一事实源，bridge 扩面时本表自动跟随，无需维护静态清单。
+     * <p>
+     * 沿 bridge 包内 superName 链递归收集：手写类（如 GL11）extends 生成基类
+     * （GL11Gen），invokestatic 的方法解析先命中手写类自身声明、未覆盖落到 Gen
+     * 基类，镜像表必须把整条链的方法并入同一简单名集合。extends 了就必须有——
+     * 链上资源缺失直接报错（生成物与手写类的 extends 关系失配是构建期错误，
+     * 不得静默降级为覆盖面缺口）。
      */
     private static Map<String, Set<String>> buildMirrorTable() {
         Map<String, Set<String>> table = new HashMap<>();
         ClassLoader loader = RenderThreadRedirector.class.getClassLoader();
         for (String simpleName : MIRRORED_CLASS_NAMES) {
-            String resource = BRIDGE_PREFIX + simpleName + ".class";
-            try (InputStream in = loader.getResourceAsStream(resource)) {
-                if (in == null) {
-                    throw new IllegalStateException("[SSOptimizer] bridge 类资源缺失: " + resource);
-                }
-                Set<String> methods = new HashSet<>();
-                new ClassReader(in).accept(new ClassVisitor(Opcodes.ASM9, null) {
-                    @Override
-                    public MethodVisitor visitMethod(int access, String name, String desc,
-                                                     String signature, String[] exceptions) {
-                        methods.add(name + desc);
-                        return null;
+            Set<String> methods = new HashSet<>();
+            String internalName = BRIDGE_PREFIX + simpleName;
+            while (internalName != null && internalName.startsWith(BRIDGE_PREFIX)) {
+                String resource = internalName + ".class";
+                final Set<String> collected = methods;
+                final String[] superName = new String[1];
+                try (InputStream in = loader.getResourceAsStream(resource)) {
+                    if (in == null) {
+                        throw new IllegalStateException("[SSOptimizer] bridge 类资源缺失: " + resource);
                     }
-                }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-                table.put(simpleName, methods);
-            } catch (IOException e) {
-                throw new IllegalStateException("[SSOptimizer] 读取 bridge 类资源失败: " + resource, e);
+                    new ClassReader(in).accept(new ClassVisitor(Opcodes.ASM9, null) {
+                        @Override
+                        public void visit(int version, int access, String name, String signature,
+                                          String superNameArg, String[] interfaces) {
+                            superName[0] = superNameArg;
+                        }
+
+                        @Override
+                        public MethodVisitor visitMethod(int access, String name, String desc,
+                                                         String signature, String[] exceptions) {
+                            collected.add(name + desc);
+                            return null;
+                        }
+                    }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+                } catch (IOException e) {
+                    throw new IllegalStateException("[SSOptimizer] 读取 bridge 类资源失败: " + resource, e);
+                }
+                internalName = superName[0];
             }
+            table.put(simpleName, methods);
         }
         return table;
     }

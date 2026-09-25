@@ -106,6 +106,26 @@ final class GetBufferFill {
         }
     }
 
+    /** {@link #fillInts} 的 DoubleBuffer 版本（glGetDouble 族，固定下限 16）。 */
+    static void fillDoubles(final java.nio.DoubleBuffer params, final int minElements,
+                            final Consumer<java.nio.DoubleBuffer> realCall) {
+        if (params.remaining() >= minElements) {
+            realCall.accept(params);
+            return;
+        }
+        final java.nio.DoubleBuffer staging = STAGING.get().asDoubleBuffer();
+        staging.clear();
+        for (int i = 0; i < STAGING_ELEMENTS; i++) {
+            staging.put(i, 0.0);
+        }
+        realCall.accept(staging);
+        final int count = Math.min(params.remaining(), STAGING_ELEMENTS);
+        final int base = params.position();
+        for (int i = 0; i < count; i++) {
+            params.put(base + i, staging.get(i));
+        }
+    }
+
     /** {@link #fillInts} 的 LongBuffer 版本（glGetInteger64 族，固定下限 16）。 */
     static void fillLongs(final java.nio.LongBuffer params, final int minElements,
                           final Consumer<java.nio.LongBuffer> realCall) {

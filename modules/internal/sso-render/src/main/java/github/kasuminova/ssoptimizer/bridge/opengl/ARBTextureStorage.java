@@ -8,7 +8,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
  * 与 {@link GL42} 的 glTexStorage 族同语义（扩展版入口），BoxUtil 按驱动能力
  * 选择扩展或核心入口。语义同 {@link GL11}。
  */
-public final class ARBTextureStorage {
+public final class ARBTextureStorage extends ARBTextureStorageGen {
     private ARBTextureStorage() {
     }
 

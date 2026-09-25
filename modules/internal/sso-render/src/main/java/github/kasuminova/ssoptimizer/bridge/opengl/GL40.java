@@ -10,7 +10,7 @@ import java.nio.IntBuffer;
  * 动机：BoxUtil 的多 draw buffer 独立混合与 shader subroutine 查询走 GL40 入口。
  * 语义同 {@link GL11}。
  */
-public final class GL40 {
+public final class GL40 extends GL40Gen {
     private GL40() {
     }
 

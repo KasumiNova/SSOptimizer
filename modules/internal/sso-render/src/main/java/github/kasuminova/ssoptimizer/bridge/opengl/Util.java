@@ -40,4 +40,9 @@ public final class Util {
             throw new OpenGLException(error);
         }
     }
+
+    /** 直通：错误码翻译是纯字符串查表，无 GL 依赖。 */
+    public static String translateGLErrorString(int errorCode) {
+        return org.lwjgl.opengl.Util.translateGLErrorString(errorCode);
+    }
 }

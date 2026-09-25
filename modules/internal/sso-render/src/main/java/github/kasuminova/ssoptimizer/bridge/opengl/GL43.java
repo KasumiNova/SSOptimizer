@@ -12,7 +12,7 @@ import java.nio.IntBuffer;
  * 语义同 {@link GL11}；调试回调注册本身入队到渲染线程执行（回调随后在
  * 渲染线程上触发，调用方线程模型与折叠架构一致）。
  */
-public final class GL43 {
+public final class GL43 extends GL43Gen {
     private GL43() {
     }
 

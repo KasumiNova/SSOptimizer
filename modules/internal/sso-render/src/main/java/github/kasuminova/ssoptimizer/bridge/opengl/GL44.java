@@ -11,7 +11,7 @@ import java.nio.FloatBuffer;
  * 动机：BoxUtil 的持久映射缓冲分配走 GL44 glBufferStorage。语义同 {@link GL11}：
  * 初始数据在录制时刻深拷贝入池化快照。
  */
-public final class GL44 {
+public final class GL44 extends GL44Gen {
     private GL44() {
     }
 

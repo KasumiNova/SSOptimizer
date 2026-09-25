@@ -8,7 +8,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
  * 动机：GL33.glVertexAttribDivisor 的 ARB 扩展别名（LWJGL2 中同功能），模组按
  * 能力探测二选一（Particle Engine 即如此），两个入口都必须覆盖。
  */
-public final class ARBInstancedArrays {
+public final class ARBInstancedArrays extends ARBInstancedArraysGen {
     private ARBInstancedArrays() {
     }
 
