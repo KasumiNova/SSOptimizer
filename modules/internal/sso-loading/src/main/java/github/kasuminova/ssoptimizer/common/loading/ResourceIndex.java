@@ -166,7 +166,10 @@ public final class ResourceIndex {
         while (normalized.endsWith("/")) {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
-        return normalized;
+        // 折叠段间重复斜杠：原版 File 对 "a//b" 与 "a/b" 透明，而快照键由
+        // relativize 生成不含空段，查询侧必须同构归一（模组音乐路径实机出现
+        // sounds/music//xxx.ogg 的写法）
+        return normalized.replaceAll("/{2,}", "/");
     }
 
     private static Entry lookup(final File root, final String relPath) {

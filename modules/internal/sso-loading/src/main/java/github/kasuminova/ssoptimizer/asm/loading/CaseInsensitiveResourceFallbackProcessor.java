@@ -19,6 +19,13 @@ import org.objectweb.asm.*;
  * 包装——当原始加载抛出 {@link RuntimeException} 时，通过
  * {@link github.kasuminova.ssoptimizer.common.loading.CaseInsensitiveResourceFallback}
  * 尝试大小写不敏感路径匹配，成功则返回匹配到的资源流并记录告警，失败则重新抛出原始异常。
+ * <p>
+ * 隔离状态捕获：原版 {@code openResource(String, boolean)} 对 source filter /
+ * suppressCustomResources 的消费（读取即清除）发生在 openStream 调用链内部，
+ * 且异常消息的根目录列表不过滤——包装方法必须在进入 try <b>之前</b>从
+ * {@link github.kasuminova.ssoptimizer.common.loading.ResourceLoaderThreadState}
+ * 捕获这两个状态并传给兜底通道，否则兜底会把「只允许看某个模组目录」的隔离加载
+ * 跨模组解析到其他模组的同名文件（ASTD 实机回归）。
  */
 public final class CaseInsensitiveResourceFallbackProcessor implements AsmClassProcessor {
 
@@ -47,6 +54,12 @@ public final class CaseInsensitiveResourceFallbackProcessor implements AsmClassP
      */
     public static final String HELPER_OWNER =
             "github/kasuminova/ssoptimizer/common/loading/CaseInsensitiveResourceFallback";
+
+    /**
+     * 隔离状态线程封闭存储的内部名（包装方法在进入 try 前捕获 filter/suppress）。
+     */
+    private static final String THREAD_STATE_OWNER =
+            "github/kasuminova/ssoptimizer/common/loading/ResourceLoaderThreadState";
 
     @Override
     public byte[] process(final byte[] classfileBuffer) {
@@ -100,10 +113,13 @@ public final class CaseInsensitiveResourceFallbackProcessor implements AsmClassP
      * 生成的字节码等效于：
      * <pre>
      * InputStream openStream(String path) {
+     *     // 隔离状态必须先于 try 捕获：openResource 的消费（读取即清除）在调用链内部
+     *     String filter = ResourceLoaderThreadState.getSourceFilter();
+     *     boolean suppress = ResourceLoaderThreadState.isSuppressCustomResources();
      *     try {
      *         return ssoptimizer$openStreamCaseImpl(path);
      *     } catch (RuntimeException e) {
-     *         InputStream fallback = CaseInsensitiveResourceFallback.tryResolve(path, e);
+     *         InputStream fallback = CaseInsensitiveResourceFallback.tryResolve(path, e, filter, suppress);
      *         if (fallback != null) return fallback;
      *         throw e;
      *     }
@@ -126,6 +142,16 @@ public final class CaseInsensitiveResourceFallbackProcessor implements AsmClassP
 
         final int pathSlot = isStatic ? 0 : 1;
         final int exceptionSlot = isStatic ? 1 : 2;
+        final int filterSlot = isStatic ? 2 : 3;
+        final int suppressSlot = isStatic ? 3 : 4;
+
+        // -- 隔离状态捕获（必须先于 try：openResource 消费后 ThreadLocal 已清空） --
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, THREAD_STATE_OWNER, "getSourceFilter",
+                "()Ljava/lang/String;", false);
+        mv.visitVarInsn(Opcodes.ASTORE, filterSlot);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, THREAD_STATE_OWNER, "isSuppressCustomResources",
+                "()Z", false);
+        mv.visitVarInsn(Opcodes.ISTORE, suppressSlot);
 
         // -- try 块：调用重命名后的内部实现 --
         mv.visitLabel(tryStart);
@@ -148,11 +174,13 @@ public final class CaseInsensitiveResourceFallbackProcessor implements AsmClassP
         mv.visitLabel(catchHandler);
         mv.visitVarInsn(Opcodes.ASTORE, exceptionSlot); // 保存异常
 
-        // 调用回退辅助方法：CaseInsensitiveResourceFallback.tryResolve(path, exception)
+        // 调用回退辅助方法：CaseInsensitiveResourceFallback.tryResolve(path, exception, filter, suppress)
         mv.visitVarInsn(Opcodes.ALOAD, pathSlot);
         mv.visitVarInsn(Opcodes.ALOAD, exceptionSlot);
+        mv.visitVarInsn(Opcodes.ALOAD, filterSlot);
+        mv.visitVarInsn(Opcodes.ILOAD, suppressSlot);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER, "tryResolve",
-                "(Ljava/lang/String;Ljava/lang/RuntimeException;)Ljava/io/InputStream;", false);
+                "(Ljava/lang/String;Ljava/lang/RuntimeException;Ljava/lang/String;Z)Ljava/io/InputStream;", false);
 
         // 检查返回值是否为 null
         mv.visitInsn(Opcodes.DUP);

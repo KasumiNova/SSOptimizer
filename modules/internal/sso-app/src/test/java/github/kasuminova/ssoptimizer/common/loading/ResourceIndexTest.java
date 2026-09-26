@@ -58,6 +58,9 @@ class ResourceIndexTest {
         assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls/onslaught.ship"));
         assertTrue(ResourceIndex.exists(root.toFile(), "data\\hulls\\onslaught.ship"));
         assertTrue(ResourceIndex.exists(root.toFile(), "/data/hulls/onslaught.ship"));
+        // 段间重复斜杠（模组音乐路径实机写法 sounds/music//xxx.ogg）：
+        // 原版 File 对其与单斜杠透明，索引查询必须同构命中
+        assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls//onslaught.ship"));
         assertFalse(ResourceIndex.exists(root.toFile(), "data/hulls/missing.ship"));
     }
 
