@@ -61,6 +61,13 @@ class ResourceIndexTest {
         // 段间重复斜杠（模组音乐路径实机写法 sounds/music//xxx.ogg）：
         // 原版 File 对其与单斜杠透明，索引查询必须同构命中
         assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls//onslaught.ship"));
+        // 父目录引用（游戏经济加载实机写法 data/campaign/econ/../starmap.json）：
+        // 原版 File 由文件系统解析 ".."，索引查询必须同构命中
+        assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls/skins/../onslaught.ship"));
+        assertTrue(ResourceIndex.exists(root.toFile(), "data/../data/hulls/./onslaught.ship"));
+        assertNotNull(ResourceIndex.file(root.toFile(), "data/variants/../variants/Mixed_Case.variant"));
+        // 逃逸根目录的 .. 段无法被索引命中，按不存在处理
+        assertFalse(ResourceIndex.exists(root.toFile(), "../data/hulls/onslaught.ship"));
         assertFalse(ResourceIndex.exists(root.toFile(), "data/hulls/missing.ship"));
     }
 

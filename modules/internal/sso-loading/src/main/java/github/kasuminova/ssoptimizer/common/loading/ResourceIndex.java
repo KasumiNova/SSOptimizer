@@ -158,18 +158,29 @@ public final class ResourceIndex {
         if (relPath == null || relPath.isEmpty()) {
             return "";
         }
-        String normalized = relPath.replace('\\', '/');
-        while (normalized.startsWith("/")) {
-            normalized = normalized.substring(1);
+        // 词法归一：反斜杠转 /，折叠空段（模组音乐路径实机出现 sounds/music//xxx.ogg
+        // 的写法，原版 File 对其透明），解析 . 与 .. 段（游戏经济加载以
+        // "data/campaign/econ/../starmap.json" 形式引用父目录资源，原版 File 由
+        // 文件系统解析 ".."，快照键由 relativize 生成不含此类段，查询侧必须同构归一）。
+        // 逃逸根目录的前导 .. 段保留：索引内必然未命中，调用方按不存在处理。
+        final String[] segments = relPath.replace('\\', '/').split("/");
+        final List<String> stack = new ArrayList<>(segments.length);
+        for (final String segment : segments) {
+            if (segment.isEmpty() || ".".equals(segment)) {
+                continue;
+            }
+            if ("..".equals(segment)) {
+                final int last = stack.size() - 1;
+                if (last >= 0 && !"..".equals(stack.get(last))) {
+                    stack.remove(last);
+                } else {
+                    stack.add(segment);
+                }
+                continue;
+            }
+            stack.add(segment);
         }
-        // 目录参数允许以 / 结尾（原版 File 语义对此透明），快照键不带尾斜杠
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        // 折叠段间重复斜杠：原版 File 对 "a//b" 与 "a/b" 透明，而快照键由
-        // relativize 生成不含空段，查询侧必须同构归一（模组音乐路径实机出现
-        // sounds/music//xxx.ogg 的写法）
-        return normalized.replaceAll("/{2,}", "/");
+        return String.join("/", stack);
     }
 
     private static Entry lookup(final File root, final String relPath) {
