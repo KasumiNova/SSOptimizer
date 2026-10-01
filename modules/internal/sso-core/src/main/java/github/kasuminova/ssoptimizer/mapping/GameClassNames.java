@@ -39,6 +39,7 @@ public final class GameClassNames {
     public static final String COLLISION_GRID_QUERY_DOTTED         = "com.fs.starfarer.combat.CollisionGridQuery";
     public static final String SHIELD                              = "com/fs/starfarer/combat/systems/Shield";
     public static final String SHIELD_DOTTED                       = "com.fs.starfarer.combat.systems.Shield";
+    public static final String EMP_ARC_ENTITY_DOTTED               = "com.fs.starfarer.combat.systems.EmpArcEntity";
     public static final String TESSELATOR                          = "com/fs/starfarer/util/Tesselator";
     public static final String TESSELATOR_DOTTED                   = "com.fs.starfarer.util.Tesselator";
     public static final String COMBAT_STATE                        = "com/fs/starfarer/combat/CombatState";

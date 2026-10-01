@@ -42,6 +42,7 @@
     "combat.CollisionImpulseNaNTraceMixin",
     "combat.CombatEngineNaNGuardMixin",
     "combat.CombatEngineScopeMixin",
+    "combat.EmpArcEntityRenderMixin",
     "combat.FluxTrackerNaNGuardMixin",
     "combat.MutableStatMutationMixin",
     "combat.ShieldRenderMixin",
