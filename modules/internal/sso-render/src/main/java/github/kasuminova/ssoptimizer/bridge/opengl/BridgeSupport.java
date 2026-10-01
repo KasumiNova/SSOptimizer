@@ -20,6 +20,7 @@ import java.nio.ShortBuffer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 
 /**
@@ -136,6 +137,62 @@ final class BridgeSupport {
      */
     private static volatile int executedArrayBufferBinding;
     /**
+     * 渲染线程侧 client attrib 栈的 ARRAY_BUFFER 绑定快照（glPush/PopClientAttrib
+     * 命令体维护）：GL 1.5+ 起 ARRAY_BUFFER 绑定属 client 状态，随
+     * {@code GL_CLIENT_VERTEX_ARRAY_BIT} 压栈/恢复——与录制侧
+     * {@link SimulatedGlState#onPushClientAttrib} 的模型一致，执行侧必须同构，
+     * 否则 pop 之后簿记与真实绑定失真。
+     */
+    private static final int CLIENT_ATTRIB_STACK_MAX = 64;
+    private static final int[] clientAttribMasks       = new int[CLIENT_ATTRIB_STACK_MAX];
+    private static final int[] clientAttribArrayBuffer = new int[CLIENT_ATTRIB_STACK_MAX];
+    private static int clientAttribDepth;
+
+    /**
+     * 簿记写入线程守卫：生产队列（RenderQueueImpl）上仅渲染线程可写执行侧簿记——
+     * aux native 线程内联执行的绑定作用于各自共享上下文（与渲染上下文互不可见），
+     * 写入只会污染簿记。测试 Fake 队列（非 RenderQueueImpl）不施加线程限制。
+     */
+    private static boolean isBookkeepingThread() {
+        final RenderQueue q = queue;
+        return !(q instanceof RenderQueueImpl) || q.isRenderThread();
+    }
+
+    /**
+     * ARRAY_BUFFER 绑定溯源环：每次经簿记的绑定执行在环上覆写一条事件
+     * （origin = bridge 入口类名，recordThread = 录制侧发起线程名，均为既有
+     * String 引用，记录零分配）。常开——绑定执行相对 draw 是低频事件，单次
+     * 有界数组写可忽略；帧失败时由
+     * {@link #reconcileArrayBufferBindingAfterFailure()} 读出用于定位失真来源。
+     */
+    private static final int BIND_TRACE_CAPACITY = 64;
+    private static final int BIND_TRACE_MASK     = BIND_TRACE_CAPACITY - 1;
+    private static final BindTraceEvent[] BIND_TRACE = createBindTrace();
+    private static final AtomicLong BIND_TRACE_SEQ = new AtomicLong();
+    /**
+     * 真实 GL_ARRAY_BUFFER 绑定回读 seam（帧失败校验用；默认真实
+     * glGetInteger，单测注入桩避免无 context 环境触碰真实 GL——与
+     * {@link #stateSnapshotSource} 桩同模式）。
+     */
+    private static volatile java.util.function.IntSupplier arrayBufferBindingProbe =
+            () -> org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER_BINDING);
+
+    /** 绑定溯源事件槽（原位覆写，无逐事件分配）。 */
+    private static final class BindTraceEvent {
+        long   seq;
+        int    buffer;
+        String origin;
+        String recordThread;
+    }
+
+    private static BindTraceEvent[] createBindTrace() {
+        final BindTraceEvent[] events = new BindTraceEvent[BIND_TRACE_CAPACITY];
+        for (int i = 0; i < events.length; i++) {
+            events[i] = new BindTraceEvent();
+        }
+        return events;
+    }
+    /**
      * 渲染线程侧簿记：display list 编译窗口的嵌套深度（glNewList/glEndList 命令
      * 体在渲染线程执行序上增减）。GL 规范中 display list 编译对客户端数组
      * （glVertexPointer/glTexCoordPointer 等）按<b>指针捕获</b>、不回拷数据——
@@ -195,15 +252,36 @@ final class BridgeSupport {
      */
     static void install(RenderQueue renderQueue) {
         queue = renderQueue;
+        if (renderQueue instanceof RenderQueueImpl) {
+            ((RenderQueueImpl) renderQueue).setFrameFailureHook(
+                    BridgeSupport::reconcileArrayBufferBindingAfterFailure);
+        } else if (renderQueue != null) {
+            // 非生产实现（测试 Fake 队列）属预期形态；其他未知实现必须显式可见
+            LOGGER.warn("[SSOptimizer] 命令消费者不是 RenderQueueImpl（"
+                    + renderQueue.getClass().getName() + "），帧失败簿记自愈钩子未注册");
+        }
     }
 
     /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
     static void uninstall() {
+        if (queue instanceof RenderQueueImpl) {
+            ((RenderQueueImpl) queue).setFrameFailureHook(null);
+        }
         queue = null;
         CONTEXT_RECREATED_LISTENERS.clear();
         RECORDING_CONTEXT.remove();
         mainRecordingContext = null;
         executedArrayBufferBinding = 0;
+        clientAttribDepth = 0;
+        BIND_TRACE_SEQ.set(0);
+        for (final BindTraceEvent event : BIND_TRACE) {
+            event.seq = 0;
+            event.buffer = 0;
+            event.origin = null;
+            event.recordThread = null;
+        }
+        arrayBufferBindingProbe =
+                () -> org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER_BINDING);
         displayListCompileDepth = 0;
         frameSubmitSeq = 0;
         stateSnapshotSource = GlStateSnapshot::capture;
@@ -825,9 +903,116 @@ final class BridgeSupport {
         return executedArrayBufferBinding;
     }
 
-    /** 渲染线程簿记更新（bind 命令执行体调用）。 */
-    static void executedArrayBufferBinding(int buffer) {
+    /**
+     * 渲染线程簿记更新（bind 命令执行体调用）：更新命令流当前位置的绑定值，
+     * 并在溯源环覆写一条事件。渲染线程自发的恢复性绑定（PointerSnapshotGroup/
+     * VertexArrayBatch 的解绑-恢复编排）不经此方法——它们保证净效果为零。
+     *
+     * @param buffer 新绑定值
+     * @param origin bridge 入口类名（常量引用）
+     * @param recordThread 录制侧发起线程名（录制时刻捕获；非 ARRAY_BUFFER 绑定为 null）
+     */
+    static void executedArrayBufferBinding(int buffer, String origin, String recordThread) {
+        if (!isBookkeepingThread()) {
+            return;
+        }
         executedArrayBufferBinding = buffer;
+        final long seq = BIND_TRACE_SEQ.incrementAndGet();
+        final BindTraceEvent event = BIND_TRACE[(int) (seq & BIND_TRACE_MASK)];
+        event.seq = seq;
+        event.buffer = buffer;
+        event.origin = origin;
+        event.recordThread = recordThread;
+    }
+
+    /**
+     * 渲染线程侧：glPushClientAttrib 命令体压入 ARRAY_BUFFER 绑定快照（与真实 GL
+     * 的压栈语义配对；栈满时真实 GL 报 GL_STACK_OVERFLOW 且栈不变，簿记同样空操作）。
+     */
+    static void onExecutedPushClientAttrib(int mask) {
+        if (!isBookkeepingThread() || clientAttribDepth >= CLIENT_ATTRIB_STACK_MAX) {
+            return;
+        }
+        clientAttribMasks[clientAttribDepth] = mask;
+        clientAttribArrayBuffer[clientAttribDepth] = executedArrayBufferBinding;
+        clientAttribDepth++;
+    }
+
+    /**
+     * 渲染线程侧：glPopClientAttrib 命令体恢复 ARRAY_BUFFER 绑定簿记（压栈掩码含
+     * {@code GL_CLIENT_VERTEX_ARRAY_BIT} 时）。栈下溢时真实 GL 为空操作，簿记保持不变。
+     *
+     * @param recordThread 录制侧发起线程名（溯源环记录用，可为 null）
+     */
+    static void onExecutedPopClientAttrib(String recordThread) {
+        if (!isBookkeepingThread() || clientAttribDepth <= 0) {
+            return;
+        }
+        final int mask = clientAttribMasks[--clientAttribDepth];
+        if ((mask & org.lwjgl.opengl.GL11.GL_CLIENT_VERTEX_ARRAY_BIT) != 0) {
+            executedArrayBufferBinding(clientAttribArrayBuffer[clientAttribDepth],
+                    "GL11.glPopClientAttrib", recordThread);
+        }
+    }
+
+    /**
+     * 帧命令执行失败后的 GL_ARRAY_BUFFER 簿记校验与自愈（RenderQueueImpl 帧失败
+     * 钩子，install 时注册）。开心路径零成本：只在帧失败时执行一次真实绑定回读；
+     * 簿记与真实一致时静默返回。不一致说明存在未簿记的绑定来源（镜像面缺口、
+     * bridge 外直调 LWJGL、native 直调），输出 ERROR 溯源日志（真实值、簿记值、
+     * 最近绑定事件环）并把簿记校准为真实值——不校准会让后续每帧的 client
+     * pointer 重放持续误判绑定（「Cannot use Buffers when Array Buffer Object
+     * is enabled」级联失败）。
+     *
+     * @return 是否发生了簿记失真（测试断言用）
+     */
+    static boolean reconcileArrayBufferBindingAfterFailure() {
+        final int real = arrayBufferBindingProbe.getAsInt();
+        final int booked = executedArrayBufferBinding;
+        if (real == booked) {
+            return false;
+        }
+        executedArrayBufferBinding = real;
+        final StringBuilder dump = new StringBuilder(512);
+        dump.append("[SSOptimizer] GL_ARRAY_BUFFER 簿记失真：簿记=").append(booked)
+                .append(" 真实=").append(real)
+                .append("（已校准簿记=真实值，防止后续帧级联失败）。最近绑定事件（新→旧）：");
+        int emitted = 0;
+        for (long seq = BIND_TRACE_SEQ.get(); seq >= 1 && emitted < 16; seq--, emitted++) {
+            final BindTraceEvent event = BIND_TRACE[(int) (seq & BIND_TRACE_MASK)];
+            if (event.seq != seq) {
+                break; // 槽位被回绕覆写或从未写入
+            }
+            dump.append("\n  #").append(event.seq)
+                    .append(" buffer=").append(event.buffer)
+                    .append(" via=").append(event.origin)
+                    .append(" recordedBy=").append(event.recordThread);
+        }
+        if (emitted == 0) {
+            dump.append("（空）");
+        }
+        dump.append("\n  若事件环无法解释真实值 ").append(real)
+                .append("，失真来源在 bridge 之外（native 直调 / 渲染线程直调 LWJGL），请携日志上报。");
+        LOGGER.error(dump.toString());
+        return true;
+    }
+
+    /** 测试用：注入真实绑定回读桩（无 GL context 环境）。 */
+    static void arrayBufferBindingProbeForTesting(final java.util.function.IntSupplier probe) {
+        arrayBufferBindingProbe = probe;
+    }
+
+    /** 测试用：读取最近一条溯源事件（无事件时返回 null）。 */
+    static String latestBindTraceForTesting() {
+        final long seq = BIND_TRACE_SEQ.get();
+        if (seq == 0) {
+            return null;
+        }
+        final BindTraceEvent event = BIND_TRACE[(int) (seq & BIND_TRACE_MASK)];
+        if (event.seq != seq) {
+            return null;
+        }
+        return event.seq + "|" + event.buffer + "|" + event.origin + "|" + event.recordThread;
     }
 
     /**

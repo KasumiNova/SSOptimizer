@@ -699,78 +699,94 @@ final class VertexArrayBatch implements VertexSink {
         }
         sealBuffers();
 
-        boolean pointersSet = false;
-        boolean vertexArrayOn = false;
-        boolean texOn = false;
-        boolean colorOn = false;
-        boolean normOn = false;
-        for (int i = 0; i < opCount; i++) {
-            final int base = i * OP_STRIDE;
-            switch (ops[base]) {
-                case OP_DRAW -> {
-                    if (!pointersSet) {
-                        GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
-                        probeOpError("enableClientState(VERTEX_ARRAY)");
-                        vertexArrayOn = true;
-                        GL11.glVertexPointer(3, 0, posBuf);
-                        probeOpError("glVertexPointer(3,0,pos)");
-                        GL11.glTexCoordPointer(2, 0, texBuf);
-                        probeOpError("glTexCoordPointer(2,0,tex)");
-                        GL11.glColorPointer(4, GL11.GL_UNSIGNED_BYTE, 0, colorBuf);
-                        probeOpError("glColorPointer(4,UB,0,color)");
-                        // LWJGL2 双参重载 glNormalPointer(int stride, FloatBuffer)：首参是 stride 而非 type（type 硬编码 GL_FLOAT）
-                        GL11.glNormalPointer(0, normBuf);
-                        probeOpError("glNormalPointer(0,norm)");
-                        pointersSet = true;
+        // 模组在 immediate 流外侧保持 VBO 绑定在 vanilla 合法（immediate 不触碰
+        // client pointer），而本回放经 client 数组提交：pointer 设置要求
+        // GL_ARRAY_BUFFER 未绑定。按命令流簿记解绑、批末恢复（编排与
+        // PointerSnapshotGroup.apply 同构）；簿记为 0 的常规路径零额外 GL 调用。
+        final int streamBinding = BridgeSupport.executedArrayBufferBinding();
+        if (streamBinding != 0) {
+            org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 0);
+        }
+        try {
+            boolean pointersSet = false;
+            boolean vertexArrayOn = false;
+            boolean texOn = false;
+            boolean colorOn = false;
+            boolean normOn = false;
+            for (int i = 0; i < opCount; i++) {
+                final int base = i * OP_STRIDE;
+                switch (ops[base]) {
+                    case OP_DRAW -> {
+                        if (!pointersSet) {
+                            GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
+                            probeOpError("enableClientState(VERTEX_ARRAY)");
+                            vertexArrayOn = true;
+                            GL11.glVertexPointer(3, 0, posBuf);
+                            probeOpError("glVertexPointer(3,0,pos)");
+                            GL11.glTexCoordPointer(2, 0, texBuf);
+                            probeOpError("glTexCoordPointer(2,0,tex)");
+                            GL11.glColorPointer(4, GL11.GL_UNSIGNED_BYTE, 0, colorBuf);
+                            probeOpError("glColorPointer(4,UB,0,color)");
+                            // LWJGL2 双参重载 glNormalPointer(int stride, FloatBuffer)：首参是 stride 而非 type（type 硬编码 GL_FLOAT）
+                            GL11.glNormalPointer(0, normBuf);
+                            probeOpError("glNormalPointer(0,norm)");
+                            pointersSet = true;
+                        }
+                        final int flags = opFlags[i];
+                        texOn = switchClientState(GL11.GL_TEXTURE_COORD_ARRAY, (flags & FLAG_TEX) != 0, texOn);
+                        colorOn = switchClientState(GL11.GL_COLOR_ARRAY, (flags & FLAG_COLOR) != 0, colorOn);
+                        normOn = switchClientState(GL11.GL_NORMAL_ARRAY, (flags & FLAG_NORM) != 0, normOn);
+                        GL11.glDrawArrays(ops[base + 1], ops[base + 2], ops[base + 3]);
                     }
-                    final int flags = opFlags[i];
-                    texOn = switchClientState(GL11.GL_TEXTURE_COORD_ARRAY, (flags & FLAG_TEX) != 0, texOn);
-                    colorOn = switchClientState(GL11.GL_COLOR_ARRAY, (flags & FLAG_COLOR) != 0, colorOn);
-                    normOn = switchClientState(GL11.GL_NORMAL_ARRAY, (flags & FLAG_NORM) != 0, normOn);
-                    GL11.glDrawArrays(ops[base + 1], ops[base + 2], ops[base + 3]);
+                    case OP_ENABLE -> GL11.glEnable(ops[base + 1]);
+                    case OP_DISABLE -> GL11.glDisable(ops[base + 1]);
+                    case OP_BLEND_FUNC -> GL11.glBlendFunc(ops[base + 1], ops[base + 2]);
+                    case OP_BIND_TEXTURE -> GL11.glBindTexture(GL11.GL_TEXTURE_2D, ops[base + 1]);
+                    case OP_PUSH_MATRIX -> GL11.glPushMatrix();
+                    case OP_POP_MATRIX -> GL11.glPopMatrix();
+                    case OP_LOAD_IDENTITY -> GL11.glLoadIdentity();
+                    case OP_TRANSLATE_F -> GL11.glTranslatef(
+                            Float.intBitsToFloat(ops[base + 1]),
+                            Float.intBitsToFloat(ops[base + 2]),
+                            Float.intBitsToFloat(ops[base + 3]));
+                    case OP_ROTATE_F -> GL11.glRotatef(
+                            Float.intBitsToFloat(ops[base + 1]),
+                            Float.intBitsToFloat(ops[base + 2]),
+                            Float.intBitsToFloat(ops[base + 3]),
+                            Float.intBitsToFloat(ops[base + 4]));
+                    case OP_SCALE_F -> GL11.glScalef(
+                            Float.intBitsToFloat(ops[base + 1]),
+                            Float.intBitsToFloat(ops[base + 2]),
+                            Float.intBitsToFloat(ops[base + 3]));
+                    case OP_MATRIX_MODE -> GL11.glMatrixMode(ops[base + 1]);
+                    case OP_NOOP -> {
+                        // 批次内去重抵消的状态对：无 GL 调用
+                    }
+                    default -> throw new IllegalStateException("[SSOptimizer] 顶点数组批次损坏：未知操作种类 " + ops[base]);
                 }
-                case OP_ENABLE -> GL11.glEnable(ops[base + 1]);
-                case OP_DISABLE -> GL11.glDisable(ops[base + 1]);
-                case OP_BLEND_FUNC -> GL11.glBlendFunc(ops[base + 1], ops[base + 2]);
-                case OP_BIND_TEXTURE -> GL11.glBindTexture(GL11.GL_TEXTURE_2D, ops[base + 1]);
-                case OP_PUSH_MATRIX -> GL11.glPushMatrix();
-                case OP_POP_MATRIX -> GL11.glPopMatrix();
-                case OP_LOAD_IDENTITY -> GL11.glLoadIdentity();
-                case OP_TRANSLATE_F -> GL11.glTranslatef(
-                        Float.intBitsToFloat(ops[base + 1]),
-                        Float.intBitsToFloat(ops[base + 2]),
-                        Float.intBitsToFloat(ops[base + 3]));
-                case OP_ROTATE_F -> GL11.glRotatef(
-                        Float.intBitsToFloat(ops[base + 1]),
-                        Float.intBitsToFloat(ops[base + 2]),
-                        Float.intBitsToFloat(ops[base + 3]),
-                        Float.intBitsToFloat(ops[base + 4]));
-                case OP_SCALE_F -> GL11.glScalef(
-                        Float.intBitsToFloat(ops[base + 1]),
-                        Float.intBitsToFloat(ops[base + 2]),
-                        Float.intBitsToFloat(ops[base + 3]));
-                case OP_MATRIX_MODE -> GL11.glMatrixMode(ops[base + 1]);
-                case OP_NOOP -> {
-                    // 批次内去重抵消的状态对：无 GL 调用
+                if (OP_PROBE) {
+                    probeOpError(String.format("op=%d a=%d b=%d c=%d flags=%d",
+                            ops[base], ops[base + 1], ops[base + 2], ops[base + 3], opFlags[i]));
                 }
-                default -> throw new IllegalStateException("[SSOptimizer] 顶点数组批次损坏：未知操作种类 " + ops[base]);
             }
-            if (OP_PROBE) {
-                probeOpError(String.format("op=%d a=%d b=%d c=%d flags=%d",
-                        ops[base], ops[base + 1], ops[base + 2], ops[base + 3], opFlags[i]));
+            if (texOn) {
+                GL11.glDisableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
             }
-        }
-        if (texOn) {
-            GL11.glDisableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
-        }
-        if (colorOn) {
-            GL11.glDisableClientState(GL11.GL_COLOR_ARRAY);
-        }
-        if (normOn) {
-            GL11.glDisableClientState(GL11.GL_NORMAL_ARRAY);
-        }
-        if (vertexArrayOn) {
-            GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
+            if (colorOn) {
+                GL11.glDisableClientState(GL11.GL_COLOR_ARRAY);
+            }
+            if (normOn) {
+                GL11.glDisableClientState(GL11.GL_NORMAL_ARRAY);
+            }
+            if (vertexArrayOn) {
+                GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
+            }
+        } finally {
+            // 恢复命令流簿记的绑定（含异常路径：本帧随即被丢弃，但真实绑定不得
+            // 滞留中间态，否则与 BridgeSupport 簿记失真并级联后续帧）
+            if (streamBinding != 0) {
+                org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, streamBinding);
+            }
         }
         syncCurrentValues();
         // 排干已执行内容（去重状态/current 快照/definedFlags 保留至串首重置）

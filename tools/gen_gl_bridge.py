@@ -159,13 +159,27 @@ def merged_methods(info, infos):
 
 def classify(method):
     """按设计文档分类规则判定通道类别，返回 (类别, 备注)。类别：
-    command / command_string / command_string_array / command_callback /
-    get_fill / gen_resource / snapshot / passthrough / resource_get / value_get /
+    command / command_bind_buffer / command_delete_buffer / snapshot_delete_buffer /
+    command_string / command_string_array / command_callback / get_fill /
+    gen_resource / snapshot / passthrough / resource_get / value_get /
     skip_glsync / downgrade_longbuffer
     """
     types = list(method.params)
     if GLSYNC_TYPE in types or method.ret == GLSYNC_TYPE:
         return 'skip_glsync', '签名含 GLSync（对象身份类型，需手写）'
+    # ARRAY_BUFFER 绑定入口特判：凡能改变 GL_ARRAY_BUFFER 真实绑定的方法必须
+    # 生成与手写类同构的簿记（录制侧 pointerState/仿真状态 + 执行侧簿记与溯源环），
+    # 否则渲染线程簿记与真实绑定失真，client pointer 重放级联失败
+    if (method.name in ('glBindBuffer', 'glBindBufferARB')
+            and types == ['int', 'int'] and method.ret == 'void'):
+        return 'command_bind_buffer', None
+    # GL 规范：删除当前绑定的 buffer，其绑定重置为 0——delete 同属绑定变更入口
+    if (method.name in ('glDeleteBuffers', 'glDeleteBuffersARB')
+            and method.ret == 'void'):
+        if types == ['int']:
+            return 'command_delete_buffer', None
+        if types == ['java.nio.IntBuffer']:
+            return 'snapshot_delete_buffer', None
     buffers = [t for t in types if t in BUFFER_TYPES]
     callbacks = [t for t in types if t in CALLBACK_TYPES]
     is_void = method.ret == 'void'
@@ -203,7 +217,61 @@ def render_method(owner, method, category):
     real = f'org.lwjgl.opengl.{owner}.{method.name}'
     sig = f'public static {method.ret} {method.name}({params_decl})'
     lines = []
-    if category == 'command':
+    if category == 'command_bind_buffer':
+        const = ('org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER' if method.name == 'glBindBuffer'
+                 else 'org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB')
+        lines.append('    // 命令型（ARRAY_BUFFER 绑定簿记：录制侧 pointerState/仿真状态'
+                     ' + 执行侧簿记与溯源环；不含 BufferMapEmulator——ARB 路径既定不喂'
+                     ' map 仿真器，与手写 ARBVertexBufferObject 对齐）')
+        lines.append(f'    {sig} {{')
+        lines.append('        BridgeSupport.simulatedState().onBindBuffer(p0, p1);')
+        lines.append('        final String recordThread;')
+        lines.append(f'        if (p0 == {const}) {{')
+        lines.append('            BridgeSupport.pointerState().setArrayBufferBinding(p1);')
+        lines.append('            recordThread = Thread.currentThread().getName();')
+        lines.append('        } else {')
+        lines.append('            recordThread = null;')
+        lines.append('        }')
+        lines.append('        BridgeSupport.enqueue(() -> {')
+        lines.append(f'            {real}({args});')
+        lines.append(f'            if (p0 == {const}) {{')
+        lines.append(f'                BridgeSupport.executedArrayBufferBinding(p1, "{owner}", recordThread);')
+        lines.append('            }')
+        lines.append('        });')
+    elif category == 'command_delete_buffer':
+        lines.append('    // 命令型（删除当前绑定的 buffer 会重置 ARRAY_BUFFER 绑定：录制/执行侧簿记同步）')
+        lines.append(f'    {sig} {{')
+        lines.append('        if (BridgeSupport.pointerState().arrayBufferBinding() == p0) {')
+        lines.append('            BridgeSupport.pointerState().setArrayBufferBinding(0);')
+        lines.append('        }')
+        lines.append('        final String recordThread = Thread.currentThread().getName();')
+        lines.append('        BridgeSupport.enqueue(() -> {')
+        lines.append(f'            {real}({args});')
+        lines.append('            if (BridgeSupport.executedArrayBufferBinding() == p0) {')
+        lines.append(f'                BridgeSupport.executedArrayBufferBinding(0, "{owner}.{method.name}", recordThread);')
+        lines.append('            }')
+        lines.append('        });')
+    elif category == 'snapshot_delete_buffer':
+        lines.append('    // 快照命令型（删除当前绑定的 buffer 会重置 ARRAY_BUFFER 绑定：录制/执行侧簿记同步）')
+        lines.append(f'    {sig} {{')
+        lines.append('        while (p0.hasRemaining()) {')
+        lines.append('            if (BridgeSupport.pointerState().arrayBufferBinding() == p0.get()) {')
+        lines.append('                BridgeSupport.pointerState().setArrayBufferBinding(0);')
+        lines.append('            }')
+        lines.append('        }')
+        lines.append('        p0.rewind();')
+        lines.append('        final String recordThread = Thread.currentThread().getName();')
+        lines.append('        BridgeSupport.enqueueSnapshot(p0, snapshot -> {')
+        lines.append('            final java.nio.IntBuffer view = snapshot.asIntBuffer();')
+        lines.append('            final int count = view.remaining();')
+        lines.append(f'            {real}(view);')
+        lines.append('            for (int i = 0; i < count; i++) {')
+        lines.append('                if (BridgeSupport.executedArrayBufferBinding() == view.get(i)) {')
+        lines.append(f'                    BridgeSupport.executedArrayBufferBinding(0, "{owner}.{method.name}", recordThread);')
+        lines.append('                }')
+        lines.append('            }')
+        lines.append('        });')
+    elif category == 'command':
         lines.append('    // 命令型')
         lines.append(f'    {sig} {{')
         lines.append(f'        BridgeSupport.enqueue(() -> {real}({args}));')

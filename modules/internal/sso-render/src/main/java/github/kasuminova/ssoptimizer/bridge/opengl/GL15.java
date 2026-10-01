@@ -40,18 +40,24 @@ public final class GL15 extends GL15Gen {
                 "BIND_BUF", target, buffer, 0, null);
         BufferMapEmulator.onBindBuffer(target, buffer);
         BridgeSupport.simulatedState().onBindBuffer(target, buffer);
+        final String recordThread;
         if (target == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
             // 录制侧跟踪 ARRAY_BUFFER 绑定：offset 形式的 client pointer 调用
             // 在真实 GL 中会捕获调用时刻的绑定（LazyFont 等「绑定→设 pointer→解绑→
             // draw」序列依赖该语义），bridge 把 pointer 重放推迟到 draw 时必须
-            // 显式恢复该绑定（见 PointerSnapshotGroup.apply）
+            // 显式恢复该绑定（见 PointerSnapshotGroup.apply）；
+            // 同时捕获录制线程名供执行侧溯源环记录（帧失败失真定位用）
             BridgeSupport.pointerState().setArrayBufferBinding(buffer);
+            recordThread = Thread.currentThread().getName();
+        } else {
+            recordThread = null;
         }
         BridgeSupport.enqueue(() -> {
             org.lwjgl.opengl.GL15.glBindBuffer(target, buffer);
             if (target == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
-                // 渲染线程簿记：pointer 快照重放据此恢复录制时刻的绑定
-                BridgeSupport.executedArrayBufferBinding(buffer);
+                // 渲染线程簿记 + 溯源环：pointer 快照重放据此恢复录制时刻的绑定，
+                // 帧失败簿记校验据此定位失真来源
+                BridgeSupport.executedArrayBufferBinding(buffer, "GL15", recordThread);
             }
         });
     }
@@ -154,16 +160,39 @@ public final class GL15 extends GL15Gen {
 
     public static void glDeleteBuffers(int buffer) {
         BufferMapEmulator.onDeleteBuffer(buffer);
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glDeleteBuffers(buffer));
+        if (BridgeSupport.pointerState().arrayBufferBinding() == buffer) {
+            // GL 规范：删除当前绑定的 buffer，其绑定重置为 0——录制侧跟踪同步
+            BridgeSupport.pointerState().setArrayBufferBinding(0);
+        }
+        final String recordThread = Thread.currentThread().getName();
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL15.glDeleteBuffers(buffer);
+            if (BridgeSupport.executedArrayBufferBinding() == buffer) {
+                BridgeSupport.executedArrayBufferBinding(0, "GL15.glDeleteBuffers", recordThread);
+            }
+        });
     }
 
     public static void glDeleteBuffers(IntBuffer buffers) {
         while (buffers.hasRemaining()) {
-            BufferMapEmulator.onDeleteBuffer(buffers.get());
+            final int id = buffers.get();
+            BufferMapEmulator.onDeleteBuffer(id);
+            if (BridgeSupport.pointerState().arrayBufferBinding() == id) {
+                BridgeSupport.pointerState().setArrayBufferBinding(0);
+            }
         }
         buffers.rewind();
-        BridgeSupport.enqueueSnapshot(buffers, snapshot ->
-                org.lwjgl.opengl.GL15.glDeleteBuffers(snapshot.asIntBuffer()));
+        final String recordThread = Thread.currentThread().getName();
+        BridgeSupport.enqueueSnapshot(buffers, snapshot -> {
+            final IntBuffer view = snapshot.asIntBuffer();
+            final int count = view.remaining();
+            org.lwjgl.opengl.GL15.glDeleteBuffers(view);
+            for (int i = 0; i < count; i++) {
+                if (BridgeSupport.executedArrayBufferBinding() == view.get(i)) {
+                    BridgeSupport.executedArrayBufferBinding(0, "GL15.glDeleteBuffers", recordThread);
+                }
+            }
+        });
     }
 
     /**

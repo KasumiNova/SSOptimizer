@@ -131,6 +131,25 @@ class RenderQueueImplTest {
     }
 
     @Test
+    void frameFailureHookRunsOnCommandFailure() {
+        queue = new RenderQueueImpl();
+        AtomicInteger hookCalls = new AtomicInteger();
+        queue.setFrameFailureHook(hookCalls::incrementAndGet);
+        queue.submit(() -> {
+            throw new IllegalArgumentException("boom");
+        });
+        queue.swapFrames();
+        assertThrows(IllegalStateException.class, queue::swapFramesAndSync);
+        assertEquals(1, hookCalls.get(), "帧命令失败必须触发一次帧失败钩子");
+
+        // 正常帧不触发钩子
+        queue.submit(() -> {
+        });
+        queue.swapFramesAndSync();
+        assertEquals(1, hookCalls.get());
+    }
+
+    @Test
     void multiProducerSubmitIsThreadSafe() throws Exception {
         queue = new RenderQueueImpl();
         int producers = 4;

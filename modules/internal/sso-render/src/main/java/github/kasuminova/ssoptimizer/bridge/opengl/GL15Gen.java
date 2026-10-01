@@ -17,9 +17,22 @@ public class GL15Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glBeginQuery(p0, p1));
     }
 
-    // 命令型
+    // 命令型（ARRAY_BUFFER 绑定簿记：录制侧 pointerState/仿真状态 + 执行侧簿记与溯源环；不含 BufferMapEmulator——ARB 路径既定不喂 map 仿真器，与手写 ARBVertexBufferObject 对齐）
     public static void glBindBuffer(int p0, int p1) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glBindBuffer(p0, p1));
+        BridgeSupport.simulatedState().onBindBuffer(p0, p1);
+        final String recordThread;
+        if (p0 == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
+            BridgeSupport.pointerState().setArrayBufferBinding(p1);
+            recordThread = Thread.currentThread().getName();
+        } else {
+            recordThread = null;
+        }
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL15.glBindBuffer(p0, p1);
+            if (p0 == org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER) {
+                BridgeSupport.executedArrayBufferBinding(p1, "GL15", recordThread);
+            }
+        });
     }
 
     // 快照命令型（录制时刻深拷贝）
@@ -77,14 +90,39 @@ public class GL15Gen {
         BridgeSupport.enqueueSnapshot(p2, snapshot -> org.lwjgl.opengl.GL15.glBufferSubData(p0, p1, snapshot.asShortBuffer()));
     }
 
-    // 命令型
+    // 命令型（删除当前绑定的 buffer 会重置 ARRAY_BUFFER 绑定：录制/执行侧簿记同步）
     public static void glDeleteBuffers(int p0) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL15.glDeleteBuffers(p0));
+        if (BridgeSupport.pointerState().arrayBufferBinding() == p0) {
+            BridgeSupport.pointerState().setArrayBufferBinding(0);
+        }
+        final String recordThread = Thread.currentThread().getName();
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL15.glDeleteBuffers(p0);
+            if (BridgeSupport.executedArrayBufferBinding() == p0) {
+                BridgeSupport.executedArrayBufferBinding(0, "GL15.glDeleteBuffers", recordThread);
+            }
+        });
     }
 
-    // 快照命令型（录制时刻深拷贝）
+    // 快照命令型（删除当前绑定的 buffer 会重置 ARRAY_BUFFER 绑定：录制/执行侧簿记同步）
     public static void glDeleteBuffers(java.nio.IntBuffer p0) {
-        BridgeSupport.enqueueSnapshot(p0, snapshot -> org.lwjgl.opengl.GL15.glDeleteBuffers(snapshot.asIntBuffer()));
+        while (p0.hasRemaining()) {
+            if (BridgeSupport.pointerState().arrayBufferBinding() == p0.get()) {
+                BridgeSupport.pointerState().setArrayBufferBinding(0);
+            }
+        }
+        p0.rewind();
+        final String recordThread = Thread.currentThread().getName();
+        BridgeSupport.enqueueSnapshot(p0, snapshot -> {
+            final java.nio.IntBuffer view = snapshot.asIntBuffer();
+            final int count = view.remaining();
+            org.lwjgl.opengl.GL15.glDeleteBuffers(view);
+            for (int i = 0; i < count; i++) {
+                if (BridgeSupport.executedArrayBufferBinding() == view.get(i)) {
+                    BridgeSupport.executedArrayBufferBinding(0, "GL15.glDeleteBuffers", recordThread);
+                }
+            }
+        });
     }
 
     // 命令型

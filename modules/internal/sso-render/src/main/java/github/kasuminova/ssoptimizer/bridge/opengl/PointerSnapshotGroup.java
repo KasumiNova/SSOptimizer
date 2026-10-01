@@ -43,20 +43,26 @@ final class PointerSnapshotGroup {
     void apply() {
         final int streamBinding = BridgeSupport.executedArrayBufferBinding();
         int current = streamBinding;
-        for (int i = 0; i < count; i++) {
-            PointerSnapshot snapshot = snapshots[i];
-            // buffer 形式（含 INTERLEAVED）要求未绑定；偏移形式要求绑定录制时刻的 VBO
-            final int required = snapshot.data == null ? snapshot.vboId : 0;
-            if (current != required) {
-                org.lwjgl.opengl.GL15.glBindBuffer(
-                        org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, required);
-                current = required;
+        try {
+            for (int i = 0; i < count; i++) {
+                PointerSnapshot snapshot = snapshots[i];
+                // buffer 形式（含 INTERLEAVED）要求未绑定；偏移形式要求绑定录制时刻的 VBO
+                final int required = snapshot.data == null ? snapshot.vboId : 0;
+                if (current != required) {
+                    org.lwjgl.opengl.GL15.glBindBuffer(
+                            org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, required);
+                    current = required;
+                }
+                snapshot.apply();
             }
-            snapshot.apply();
-        }
-        if (current != streamBinding) {
-            org.lwjgl.opengl.GL15.glBindBuffer(
-                    org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, streamBinding);
+        } finally {
+            // try/finally 保底：单个快照重放抛异常（本帧随即被丢弃）时也必须把
+            // 绑定恢复到命令流簿记值，否则真实绑定滞留在中间态，与
+            // BridgeSupport.executedArrayBufferBinding 簿记失真并级联后续帧
+            if (current != streamBinding) {
+                org.lwjgl.opengl.GL15.glBindBuffer(
+                        org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, streamBinding);
+            }
         }
     }
 

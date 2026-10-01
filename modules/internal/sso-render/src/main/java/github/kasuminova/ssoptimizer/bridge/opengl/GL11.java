@@ -581,12 +581,23 @@ public final class GL11 extends GL11Gen {
 
     public static void glPushClientAttrib(int mask) {
         BridgeSupport.simulatedState().onPushClientAttrib(mask);
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glPushClientAttrib(mask));
+        // GL 1.5+ 起 ARRAY_BUFFER 绑定属 client 状态，随 CLIENT_VERTEX_ARRAY_BIT
+        // 压栈/恢复：录制侧 pointerState 与执行侧簿记同步压栈（模型同 SimulatedGlState）
+        BridgeSupport.pointerState().pushClientAttrib(mask);
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL11.glPushClientAttrib(mask);
+            BridgeSupport.onExecutedPushClientAttrib(mask);
+        });
     }
 
     public static void glPopClientAttrib() {
         BridgeSupport.simulatedState().onPopClientAttrib();
-        BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glPopClientAttrib);
+        BridgeSupport.pointerState().popClientAttrib();
+        final String recordThread = Thread.currentThread().getName();
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.GL11.glPopClientAttrib();
+            BridgeSupport.onExecutedPopClientAttrib(recordThread);
+        });
     }
 
     public static void glFlush() {

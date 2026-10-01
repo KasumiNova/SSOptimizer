@@ -24,6 +24,15 @@ final class ClientPointerState {
     private PointerSnapshot interleaved;
     /** 录制侧跟踪的 GL_ARRAY_BUFFER 绑定（offset 指针重放时恢复用，见 PointerSnapshotGroup.apply）。 */
     private int arrayBufferBinding;
+    /**
+     * client attrib 栈的 ARRAY_BUFFER 绑定快照（glPush/PopClientAttrib 录制侧簿记）：
+     * GL 1.5+ 起 ARRAY_BUFFER 绑定属 client 状态，随 CLIENT_VERTEX_ARRAY_BIT
+     * 压栈/恢复——与 {@link SimulatedGlState#onPushClientAttrib} 同模型。
+     */
+    private static final int ATTRIB_STACK_MAX = 64;
+    private final int[] attribMasks       = new int[ATTRIB_STACK_MAX];
+    private final int[] attribArrayBuffer = new int[ATTRIB_STACK_MAX];
+    private int attribDepth;
 
     int arrayBufferBinding() {
         return arrayBufferBinding;
@@ -31,6 +40,27 @@ final class ClientPointerState {
 
     void setArrayBufferBinding(int buffer) {
         this.arrayBufferBinding = buffer;
+    }
+
+    /** glPushClientAttrib 录制侧簿记（栈满时真实 GL 报 GL_STACK_OVERFLOW 且栈不变，簿记同样空操作）。 */
+    void pushClientAttrib(int mask) {
+        if (attribDepth >= ATTRIB_STACK_MAX) {
+            return;
+        }
+        attribMasks[attribDepth] = mask;
+        attribArrayBuffer[attribDepth] = arrayBufferBinding;
+        attribDepth++;
+    }
+
+    /** glPopClientAttrib 录制侧簿记（掩码含 CLIENT_VERTEX_ARRAY_BIT 时恢复绑定；下溢空操作）。 */
+    void popClientAttrib() {
+        if (attribDepth <= 0) {
+            return;
+        }
+        final int mask = attribMasks[--attribDepth];
+        if ((mask & org.lwjgl.opengl.GL11.GL_CLIENT_VERTEX_ARRAY_BIT) != 0) {
+            arrayBufferBinding = attribArrayBuffer[attribDepth];
+        }
     }
 
     void setVertex(PointerSnapshot snapshot) {

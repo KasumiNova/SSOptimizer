@@ -143,6 +143,18 @@ public final class RenderQueueImpl implements RenderQueue {
     /** 已输出过录制点堆栈的站点指纹（前 6 帧拼串），仅渲染线程访问。 */
     private final java.util.Set<String> probeSiteKeys = new java.util.HashSet<>();
 
+    /**
+     * 帧失败钩子：帧命令/续跑命令执行抛异常时在渲染线程调用（bridge 侧
+     * GL_ARRAY_BUFFER 簿记自愈注册于此，见 BridgeSupport.install）。
+     * 钩子自身抛异常只记 WARN，不得击穿渲染线程主循环。
+     */
+    private volatile Runnable frameFailureHook;
+
+    /** 注入帧失败钩子（bridge install/uninstall 时注册/清除；测试可替换）。 */
+    public void setFrameFailureHook(final Runnable hook) {
+        this.frameFailureHook = hook;
+    }
+
     public RenderQueueImpl() {
         this(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector());
     }
@@ -466,6 +478,9 @@ public final class RenderQueueImpl implements RenderQueue {
                 frame.signalAllFences();
                 // 失败帧的 GL 状态诊断价值最高，同样探一轮
                 probeFrameErrors();
+                // 簿记自愈钩子放在探针之后：钩子自身的真实 glGetInteger 不得
+                // 污染帧尾错误排空（避免被探针误记为帧内残留错误）
+                runFrameFailureHook();
                 frame.completeExceptionally(t);
             } finally {
                 framePool.release(frame);
@@ -493,7 +508,21 @@ public final class RenderQueueImpl implements RenderQueue {
                 runOrRequeue(commands);
             } catch (Throwable t) {
                 LOGGER.error("[SSOptimizer] 渲染线程执行悬挂帧的续跑命令失败，余下命令已丢弃", t);
+                runFrameFailureHook();
             }
+        }
+    }
+
+    /** 帧失败钩子调用点：钩子异常只记 WARN，不得击穿渲染线程主循环。 */
+    private void runFrameFailureHook() {
+        final Runnable hook = frameFailureHook;
+        if (hook == null) {
+            return;
+        }
+        try {
+            hook.run();
+        } catch (Throwable hookError) {
+            LOGGER.warn("[SSOptimizer] 帧失败钩子执行异常（已忽略，不影响渲染线程主循环）", hookError);
         }
     }
 

@@ -35,14 +35,19 @@ public final class ARBVertexBufferObject extends ARBVertexBufferObjectGen {
 
     public static void glBindBufferARB(int target, int buffer) {
         BridgeSupport.simulatedState().onBindBuffer(target, buffer);
+        final String recordThread;
         if (target == org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB) {
-            // 同 GL15.glBindBuffer：录制侧跟踪 ARRAY_BUFFER 绑定供 offset 指针重放恢复
+            // 同 GL15.glBindBuffer：录制侧跟踪 ARRAY_BUFFER 绑定供 offset 指针重放恢复；
+            // 同时捕获录制线程名供执行侧溯源环记录
             BridgeSupport.pointerState().setArrayBufferBinding(buffer);
+            recordThread = Thread.currentThread().getName();
+        } else {
+            recordThread = null;
         }
         BridgeSupport.enqueue(() -> {
             org.lwjgl.opengl.ARBVertexBufferObject.glBindBufferARB(target, buffer);
             if (target == org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB) {
-                BridgeSupport.executedArrayBufferBinding(buffer);
+                BridgeSupport.executedArrayBufferBinding(buffer, "ARBVertexBufferObject", recordThread);
             }
         });
     }
@@ -113,11 +118,38 @@ public final class ARBVertexBufferObject extends ARBVertexBufferObjectGen {
     }
 
     public static void glDeleteBuffersARB(int buffer) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBVertexBufferObject.glDeleteBuffersARB(buffer));
+        if (BridgeSupport.pointerState().arrayBufferBinding() == buffer) {
+            // GL 规范：删除当前绑定的 buffer，其绑定重置为 0——录制侧跟踪同步
+            BridgeSupport.pointerState().setArrayBufferBinding(0);
+        }
+        final String recordThread = Thread.currentThread().getName();
+        BridgeSupport.enqueue(() -> {
+            org.lwjgl.opengl.ARBVertexBufferObject.glDeleteBuffersARB(buffer);
+            if (BridgeSupport.executedArrayBufferBinding() == buffer) {
+                BridgeSupport.executedArrayBufferBinding(
+                        0, "ARBVertexBufferObject.glDeleteBuffersARB", recordThread);
+            }
+        });
     }
 
     public static void glDeleteBuffersARB(IntBuffer buffers) {
-        BridgeSupport.enqueueSnapshot(buffers, snapshot ->
-                org.lwjgl.opengl.ARBVertexBufferObject.glDeleteBuffersARB(snapshot.asIntBuffer()));
+        while (buffers.hasRemaining()) {
+            if (BridgeSupport.pointerState().arrayBufferBinding() == buffers.get()) {
+                BridgeSupport.pointerState().setArrayBufferBinding(0);
+            }
+        }
+        buffers.rewind();
+        final String recordThread = Thread.currentThread().getName();
+        BridgeSupport.enqueueSnapshot(buffers, snapshot -> {
+            final IntBuffer view = snapshot.asIntBuffer();
+            final int count = view.remaining();
+            org.lwjgl.opengl.ARBVertexBufferObject.glDeleteBuffersARB(view);
+            for (int i = 0; i < count; i++) {
+                if (BridgeSupport.executedArrayBufferBinding() == view.get(i)) {
+                    BridgeSupport.executedArrayBufferBinding(
+                            0, "ARBVertexBufferObject.glDeleteBuffersARB", recordThread);
+                }
+            }
+        });
     }
 }
