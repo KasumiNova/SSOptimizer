@@ -117,6 +117,7 @@
     "save.MemoryRefResolveGuardMixin",
     "warroom.TaskIconManagerMixin",
     "debug.BaseGameStateNoWindowIdleMixin",
+    "debug.CombatStateMainThreadDrainMixin",
     "debug.MainThreadTasksDrainMixin",
     "campaign.FleetDataSyncGuardMixin"
   ],
