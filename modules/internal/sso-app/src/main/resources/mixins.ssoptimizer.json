@@ -45,6 +45,7 @@
     "combat.EmpArcEntityRenderMixin",
     "combat.FluxTrackerNaNGuardMixin",
     "combat.MutableStatMutationMixin",
+    "combat.ShieldAlwaysOnNullShieldMixin",
     "combat.ShieldRenderMixin",
     "combat.ShipDamageNaNGuardMixin",
     "econ.CommodityOnMarketMixin",
