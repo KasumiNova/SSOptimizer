@@ -10,7 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
  * <p>
  * 覆盖：换算公式正确性（原始纹理空间 → 图集空间）、幂等重推导（同贴图重复
  * setTexture 从缓存原始值重新推导 == 首次结果）、叠加 bug 机制复现（把图集值
- * 当原始值再换算会二次平移进入相邻 Region——修复前 setTexture 的串图根因）。
+ * 当原始值再换算会二次平移进入相邻 Region——修复前 setTexture 的串图根因）、
+ * 访问器透明换算（originalToAtlas/atlasToOriginal 往返恒等、跨度量 origin=0
+ * 语义、模组写原始空间 UV 仍落在图集区域内——LWE 机甲武器串图修复）。
  */
 class AtlasUvMapperTest {
 
@@ -83,5 +85,59 @@ class AtlasUvMapperTest {
         assertNotEquals(first.texX(), buggy.texX(), 1e-6f);
         assertNotEquals(first.texY(), buggy.texY(), 1e-6f);
         assertEquals(0.625f, buggy.texX(), 1e-6f);
+    }
+
+    @Test
+    void remapFromOriginExposesAccessorConversionParams() {
+        // 访问器换算参数随重映射一并产出：region 原点 + 原始→图集缩放
+        AtlasUvMapper.RemappedUv uv = AtlasUvMapper.remapFromOrigin(
+                0.0f, 0.0f, 0.5f, 0.5f, SRC_W, SRC_H, REGION_X, REGION_Y, ATLAS_SIZE);
+
+        // 512 / 1024 = 0.5；768 / 1024 = 0.75
+        assertEquals(0.5f, uv.originU(), 1e-6f);
+        assertEquals(0.75f, uv.originV(), 1e-6f);
+        // 256 / 1024 = 0.25
+        assertEquals(0.25f, uv.scaleU(), 1e-6f);
+        assertEquals(0.25f, uv.scaleV(), 1e-6f);
+        // 换算参数与主公式一致：texX = originU + originX * scaleU
+        assertEquals(uv.originU(), AtlasUvMapper.originalToAtlas(uv.originU(), uv.scaleU(), 0.0f), 1e-6f);
+    }
+
+    @Test
+    void accessorConversionRoundTrips() {
+        // setter/getter 换算对称：original → atlas → original 恒等（读写往返）
+        AtlasUvMapper.RemappedUv uv = AtlasUvMapper.remapFromOrigin(
+                0.25f, 0.5f, 0.5f, 0.5f, SRC_W, SRC_H, REGION_X, REGION_Y, ATLAS_SIZE);
+
+        // 坐标量：origin + v * scale，再 (atlas - origin) / scale 还原
+        float atlasX = AtlasUvMapper.originalToAtlas(uv.originU(), uv.scaleU(), 0.25f);
+        assertEquals(uv.texX(), atlasX, 1e-6f);
+        assertEquals(0.25f, AtlasUvMapper.atlasToOriginal(uv.originU(), uv.scaleU(), atlasX), 1e-6f);
+
+        // 跨度量（宽/高）：origin = 0
+        float atlasW = AtlasUvMapper.originalToAtlas(0.0f, uv.scaleU(), 0.5f);
+        assertEquals(uv.texWidth(), atlasW, 1e-6f);
+        assertEquals(0.5f, AtlasUvMapper.atlasToOriginal(0.0f, uv.scaleU(), atlasW), 1e-6f);
+    }
+
+    @Test
+    void modWrittenOriginalSpaceUvStaysInsideRegion() {
+        // LWE 机甲场景复现与修复验证：模组 hullmod 逐帧 setTexWidth(0/1.0)
+        // 切换武器显隐——写的是原始空间值。修复前直接落到图集字段：1.0 采满
+        // 整页宽度（串图/拉伸条纹）；修复后经访问器换算仍落在本区域内，
+        // 且 getter 读回原始空间值。
+        AtlasUvMapper.RemappedUv uv = AtlasUvMapper.remapFromOrigin(
+                0.0f, 0.0f, 1.0f, 1.0f, SRC_W, SRC_H, REGION_X, REGION_Y, ATLAS_SIZE);
+
+        // setter：mod setTexWidth(1.0) → 图集字段 = 0.25（= scaleU），区域右缘 0.75 未越界
+        float writtenWidth = AtlasUvMapper.originalToAtlas(0.0f, uv.scaleU(), 1.0f);
+        assertEquals(uv.texWidth(), writtenWidth, 1e-6f);
+        assertEquals(uv.originU() + uv.scaleU(), uv.originU() + writtenWidth, 1e-6f);
+
+        // getter：图集值读回原始空间 1.0，模组语义不受图集化影响
+        assertEquals(1.0f, AtlasUvMapper.atlasToOriginal(0.0f, uv.scaleU(), writtenWidth), 1e-6f);
+
+        // 隐藏写法 setTexWidth(0) → 图集宽度 0，不采样任何像素
+        assertEquals(0.0f, AtlasUvMapper.originalToAtlas(0.0f, uv.scaleU(), 0.0f), 1e-6f);
     }
 }

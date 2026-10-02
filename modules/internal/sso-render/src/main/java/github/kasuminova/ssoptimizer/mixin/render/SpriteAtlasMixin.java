@@ -8,6 +8,7 @@ import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -48,6 +49,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *       （原版 texX/texY 恒为 0 时行为不变），图集化后原点必须加上区域偏移，
  *       否则会渲染图集左下角内容。{@code renderRegion} 由 {@link SpriteMixin}
  *       整体覆写为合批/单 JNI 路径，图集原点与边缘内缩在覆写方法内联处理。</li>
+ *   <li>UV 访问器（{@code setTexX/setTexY/setTexWidth/setTexHeight} 与对应
+ *       getter）<b>透明换算</b>：原版语义下 UV 域即整张独立纹理，模组
+ *       （实机案例：LWE 机甲 hullmod {@code lwe_gear_control} 逐帧
+ *       {@code setTexWidth(0/1.0)} 切换武器显隐）读写的都是原始空间值；
+ *       不换算则写入的 1.0 会以图集页为采样域（采满整页宽度，串图/拉伸条纹）。
+ *       覆写后 setter 把原始空间值换算进图集区域并同步幂等基准缓存（保持
+ *       setTexture 幂等重推导语义），getter 反向换算回原始空间（读写往返
+ *       恒等）；换算参数（region 原点 + 缩放）在重映射时由
+ *       {@link AtlasUvMapper.RemappedUv} 一并产出。内部渲染路径直接读字段
+ *       不经访问器，不受换算影响。</li>
  * </ol>
  */
 @Mixin(targets = GameClassNames.SPRITE_DOTTED)
@@ -107,6 +118,20 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     /** 上次换算产出的图集 texY。 */
     @Unique
     private transient float ssoptimizer$atlasLastTexY;
+
+    // ── 访问器换算参数（模组经 setTexX/setTexWidth 等访问器读写 UV 时原始↔图集透明换算）──
+    /** 图集区域原点 U（regionX / atlasSize）。 */
+    @Unique
+    private transient float ssoptimizer$atlasOriginU;
+    /** 图集区域原点 V（regionY / atlasSize）。 */
+    @Unique
+    private transient float ssoptimizer$atlasOriginV;
+    /** 原始空间→图集空间 U 缩放（srcW / atlasSize）。 */
+    @Unique
+    private transient float ssoptimizer$atlasScaleU;
+    /** 原始空间→图集空间 V 缩放（srcH / atlasSize）。 */
+    @Unique
+    private transient float ssoptimizer$atlasScaleV;
 
     /**
      * @author KasumiNova
@@ -274,10 +299,133 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
         // 换算到图集 UV 域保持像素等价
         this.ssoptimizer$atlasInsetU = uv.insetU();
         this.ssoptimizer$atlasInsetV = uv.insetV();
+        // 访问器换算参数：模组经 setTexX/setTexWidth 等写入的原始空间值以此为基准换算
+        this.ssoptimizer$atlasOriginU = uv.originU();
+        this.ssoptimizer$atlasOriginV = uv.originV();
+        this.ssoptimizer$atlasScaleU = uv.scaleU();
+        this.ssoptimizer$atlasScaleV = uv.scaleV();
         // 记录本次产出的图集 texX/texY：下次 setTexture 判定 texX/texY 是否被
         // setTexX/setTexY 改动过（未改动才走幂等路径）
         this.ssoptimizer$atlasLastTexX = this.texX;
         this.ssoptimizer$atlasLastTexY = this.texY;
         return true;
+    }
+
+    // ── UV 访问器覆写：图集化后对模组保持原始纹理空间语义 ────────────────────
+    // 原版语义下 UV 域就是整张独立纹理，模组（实机案例：LWE 机甲 lwe_gear_control
+    // 逐帧 setTexWidth(0/1.0) 切换武器显隐与换臂动画）读写的都是原始空间值；
+    // 不换算的话写入值会以图集页为采样域——texWidth=1.0 采满整页宽度（串图/
+    // 拉伸条纹），getTexWidth 读到图集值回写则二次缩放。覆写后读写均为原始空间，
+    // 内部渲染路径（render/renderRegion/renderWithCorners 等）直接读字段，
+    // 不经访问器，不受换算影响。
+
+    /**
+     * @author KasumiNova
+     * @reason 模组按原版语义写原始空间 UV，图集化后必须换算进区域。
+     */
+    @Overwrite(remap = false)
+    public void setTexX(final float x) {
+        if (this.ssoptimizer$atlasRemapped) {
+            this.ssoptimizer$atlasOriginTexX = x;
+            this.texX = AtlasUvMapper.originalToAtlas(
+                    this.ssoptimizer$atlasOriginU, this.ssoptimizer$atlasScaleU, x);
+            this.ssoptimizer$atlasLastTexX = this.texX;
+        } else {
+            this.texX = x;
+        }
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 同 setTexX。
+     */
+    @Overwrite(remap = false)
+    public void setTexY(final float y) {
+        if (this.ssoptimizer$atlasRemapped) {
+            this.ssoptimizer$atlasOriginTexY = y;
+            this.texY = AtlasUvMapper.originalToAtlas(
+                    this.ssoptimizer$atlasOriginV, this.ssoptimizer$atlasScaleV, y);
+            this.ssoptimizer$atlasLastTexY = this.texY;
+        } else {
+            this.texY = y;
+        }
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 同 setTexX（跨度量无原点）。
+     */
+    @Overwrite(remap = false)
+    public void setTexWidth(final float width) {
+        if (this.ssoptimizer$atlasRemapped) {
+            this.ssoptimizer$atlasOriginTexWidth = width;
+            this.texWidth = AtlasUvMapper.originalToAtlas(0.0F, this.ssoptimizer$atlasScaleU, width);
+        } else {
+            this.texWidth = width;
+        }
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 同 setTexX（跨度量无原点）。
+     */
+    @Overwrite(remap = false)
+    public void setTexHeight(final float height) {
+        if (this.ssoptimizer$atlasRemapped) {
+            this.ssoptimizer$atlasOriginTexHeight = height;
+            this.texHeight = AtlasUvMapper.originalToAtlas(0.0F, this.ssoptimizer$atlasScaleV, height);
+        } else {
+            this.texHeight = height;
+        }
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 读取器与 setter 换算对称，模组读到原始空间值（读写往返恒等）。
+     */
+    @Overwrite(remap = false)
+    public float getTexX() {
+        if (this.ssoptimizer$atlasRemapped) {
+            return AtlasUvMapper.atlasToOriginal(
+                    this.ssoptimizer$atlasOriginU, this.ssoptimizer$atlasScaleU, this.texX);
+        }
+        return this.texX;
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 同 getTexX。
+     */
+    @Overwrite(remap = false)
+    public float getTexY() {
+        if (this.ssoptimizer$atlasRemapped) {
+            return AtlasUvMapper.atlasToOriginal(
+                    this.ssoptimizer$atlasOriginV, this.ssoptimizer$atlasScaleV, this.texY);
+        }
+        return this.texY;
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 同 getTexX（跨度量无原点）。
+     */
+    @Overwrite(remap = false)
+    public float getTexWidth() {
+        if (this.ssoptimizer$atlasRemapped) {
+            return AtlasUvMapper.atlasToOriginal(0.0F, this.ssoptimizer$atlasScaleU, this.texWidth);
+        }
+        return this.texWidth;
+    }
+
+    /**
+     * @author KasumiNova
+     * @reason 同 getTexX（跨度量无原点）。
+     */
+    @Overwrite(remap = false)
+    public float getTexHeight() {
+        if (this.ssoptimizer$atlasRemapped) {
+            return AtlasUvMapper.atlasToOriginal(0.0F, this.ssoptimizer$atlasScaleV, this.texHeight);
+        }
+        return this.texHeight;
     }
 }
