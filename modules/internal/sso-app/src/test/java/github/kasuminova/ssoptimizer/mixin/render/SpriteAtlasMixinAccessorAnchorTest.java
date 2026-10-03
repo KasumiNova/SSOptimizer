@@ -34,6 +34,9 @@ class SpriteAtlasMixinAccessorAnchorTest {
             {"getTexHeight", "()F"},
     };
 
+    /** 惰性治愈注入目标（@Inject HEAD）。 */
+    private static final String[] HEAL_TARGET = {"renderWithCorners", "(FFFFFFFF)V"};
+
     @Test
     void spriteDeclaresAllOverwrittenUvAccessors() throws IOException {
         final ClassNode node = readClasspathClass(TARGET_CLASS);
@@ -41,6 +44,13 @@ class SpriteAtlasMixinAccessorAnchorTest {
             assertNotNull(findMethod(node, accessor[0], accessor[1]),
                     "Sprite." + accessor[0] + accessor[1] + " 必须存在（@Overwrite 目标）");
         }
+    }
+
+    @Test
+    void spriteDeclaresRenderWithCornersHealTarget() throws IOException {
+        final ClassNode node = readClasspathClass(TARGET_CLASS);
+        assertNotNull(findMethod(node, HEAL_TARGET[0], HEAL_TARGET[1]),
+                "Sprite." + HEAL_TARGET[0] + HEAL_TARGET[1] + " 必须存在（惰性治愈 @Inject HEAD 目标）");
     }
 
     private static MethodNode findMethod(final ClassNode node, final String name, final String desc) {

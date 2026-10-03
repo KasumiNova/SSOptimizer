@@ -34,4 +34,15 @@ public interface AtlasUvState {
      * @return V 向内缩量
      */
     float ssoptimizer$atlasInsetV();
+
+    /**
+     * 渲染路径入口的惰性治愈：当前精灵未重映射但其贴图已入图集时
+     * （图集构建前创建并被缓存的陈旧实例），立即以当前 UV 为原始基准
+     * 重映射进图集空间并输出 {@link AtlasRenderDiag} 溯源日志。
+     * 已重映射 / 贴图未入图集 / 无贴图时为零开销快速返回。
+     *
+     * @param renderMethod 触发渲染的方法名（用于诊断日志）
+     * @return 调用结束后 UV 是否为图集空间（true 表示可补图集原点偏移）
+     */
+    boolean ssoptimizer$ensureAtlasRemapped(String renderMethod);
 }

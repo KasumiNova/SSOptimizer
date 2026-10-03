@@ -96,6 +96,8 @@ public abstract class SpriteMixin {
         if (texture == null) {
             return;
         }
+        // 陈旧实例（图集构建前创建并被缓存）渲染前惰性重映射，见 AtlasRenderDiag
+        ((AtlasUvState) this).ssoptimizer$ensureAtlasRemapped("render");
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, false);
         }
@@ -155,7 +157,8 @@ public abstract class SpriteMixin {
             return;
         }
         final AtlasUvState atlas = (AtlasUvState) this;
-        final boolean remapped = atlas.ssoptimizer$isAtlasRemapped();
+        // 陈旧实例渲染前惰性重映射（结果决定 UV 是否补图集原点与内缩取值）
+        final boolean remapped = atlas.ssoptimizer$ensureAtlasRemapped("renderRegion");
         final float insetU = remapped ? atlas.ssoptimizer$atlasInsetU() : 0.001F;
         final float insetV = remapped ? atlas.ssoptimizer$atlasInsetV() : 0.001F;
 
@@ -222,6 +225,8 @@ public abstract class SpriteMixin {
         if (texture == null) {
             return;
         }
+        // 同 render：陈旧实例渲染前惰性重映射
+        ((AtlasUvState) this).ssoptimizer$ensureAtlasRemapped("renderNoBind");
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, true);
         }

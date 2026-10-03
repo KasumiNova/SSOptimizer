@@ -1,10 +1,12 @@
 package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.TextureObject;
+import github.kasuminova.ssoptimizer.common.render.atlas.AtlasRenderDiag;
 import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvMapper;
 import github.kasuminova.ssoptimizer.common.render.atlas.AtlasUvState;
 import github.kasuminova.ssoptimizer.api.loading.WeaponAtlasLookup;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
@@ -59,6 +61,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *       恒等）；换算参数（region 原点 + 缩放）在重映射时由
  *       {@link AtlasUvMapper.RemappedUv} 一并产出。内部渲染路径直接读字段
  *       不经访问器，不受换算影响。</li>
+ *   <li>渲染路径入口的<b>惰性治愈</b>（{@link #ssoptimizer$ensureAtlasRemapped}）：
+ *       图集构建（{@code ResourceLoaderState.init} 返回点）前创建并被缓存的
+ *       陈旧 Sprite 此后不再经历 setTexture，永远停留在未重映射状态，渲染时
+ *       以原始空间 UV 采样整页图集（缩略图串图/条纹的根因类别）。实例持有者
+ *       分散且不可枚举，故在渲染入口（SpriteMixin 的 render/renderNoBind/
+ *       renderRegion 覆写、本类的 renderWithCorners HEAD 注入与 glTexCoord2f
+ *       重定向）惰发现：贴图已入图集而未重映射时以当前 UV 为原始基准即时
+ *       重映射，并输出 {@link AtlasRenderDiag} 带调用栈的溯源日志
+ *       （每路径+方法一次）。命中判定按贴图路径缓存，未入图集的 UI 精灵
+ *       每帧零 map 查询。</li>
  * </ol>
  */
 @Mixin(targets = GameClassNames.SPRITE_DOTTED)
@@ -133,6 +145,14 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     @Unique
     private transient float ssoptimizer$atlasScaleV;
 
+    // ── 惰性治愈判定缓存（渲染路径上陈旧实例的图集命中判定，见 ssoptimizer$ensureAtlasRemapped）──
+    /** 上次判定「贴图是否已入图集」时的贴图路径。 */
+    @Unique
+    private transient String ssoptimizer$diagCheckedPath;
+    /** diagCheckedPath 对应的判定结果（true=已入图集，渲染时必须重映射）。 */
+    @Unique
+    private transient boolean ssoptimizer$diagAtlased;
+
     /**
      * @author KasumiNova
      * @reason 已入图集的贴图在 setTexture 时把 UV 映射进图集区域；同贴图重复
@@ -193,6 +213,21 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
 
     /**
      * @author KasumiNova
+     * @reason renderWithCorners 是未被覆写的原版渲染方法（装配界面舰船/武器图标
+     * 渲染热点路径），直接读 UV 字段并经 texture.bind()（重定向到图集页）采样；
+     * 入口惰性治愈陈旧未重映射实例（见 ssoptimizer$ensureAtlasRemapped）。
+     */
+    @Inject(method = "renderWithCorners(FFFFFFFF)V", at = @At("HEAD"), remap = false)
+    private void ssoptimizer$healBeforeRenderWithCorners(final float x1, final float y1,
+                                                         final float x2, final float y2,
+                                                         final float x3, final float y3,
+                                                         final float x4, final float y4,
+                                                         final CallbackInfo ci) {
+        ssoptimizer$ensureAtlasRemapped("renderWithCorners");
+    }
+
+    /**
+     * @author KasumiNova
      * @reason renderNoBlendOrRotate/renderAtCenterWithCornerColors 的
      * UV 计算假设原点 (0,0)，图集化后必须补区域原点偏移；未重映射的精灵保持原样
      * （原版行为对 setTexX 后的精灵同样忽略 texX，不擅自改变）。
@@ -204,7 +239,7 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexCoord2f(FF)V"),
             remap = false, require = 0)
     private void ssoptimizer$texCoordWithAtlasOrigin(final float u, final float v) {
-        if (this.ssoptimizer$atlasRemapped) {
+        if (this.ssoptimizer$ensureAtlasRemapped("texCoordOriginFixup")) {
             GL11.glTexCoord2f(u + this.texX, v + this.texY);
         } else {
             GL11.glTexCoord2f(u, v);
@@ -243,6 +278,50 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
     @Override
     public float ssoptimizer$atlasInsetV() {
         return this.ssoptimizer$atlasInsetV;
+    }
+
+    /**
+     * 渲染路径入口的惰性治愈（{@link AtlasUvState#ssoptimizer$ensureAtlasRemapped} 契约）：
+     * 图集构建前创建并被缓存的陈旧精灵此后不再经历 setTexture，永远停留在未重映射
+     * 状态；渲染时其贴图绑定已重定向到图集页，原始空间 UV 会采样整页——缩略图
+     * 串图/条纹的根因类别。此处以当前 UV 为原始基准即时重映射，并输出
+     * {@link AtlasRenderDiag} 溯源日志（每路径+方法一次）。
+     * <p>
+     * 判定缓存：图集命中判定按贴图路径缓存（未入图集的 UI 精灵每帧零 map 查询）；
+     * 加载期（图集尚未构建）不缓存未命中判定，避免「加载期未命中」遮蔽
+     * 「加载后入图集」的实例。
+     */
+    @Override
+    public boolean ssoptimizer$ensureAtlasRemapped(final String renderMethod) {
+        if (this.ssoptimizer$atlasRemapped) {
+            return true;
+        }
+        if (this.texture == null) {
+            return false;
+        }
+        final String path = this.texture.getTexturePath();
+        if (path == null) {
+            return false;
+        }
+        if (!path.equals(this.ssoptimizer$diagCheckedPath)) {
+            final WeaponAtlasLookup lookup = ServiceRegistry.getOrNull(WeaponAtlasLookup.class);
+            final boolean atlased = lookup != null && lookup.lookupRegion(path) != null;
+            // 仅缓存命中判定与「图集已构建后的未命中」（加载期未命中可能是图集未构建）
+            if (atlased || RenderThreadMode.isLoadingFinished()) {
+                this.ssoptimizer$diagCheckedPath = path;
+                this.ssoptimizer$diagAtlased = atlased;
+            }
+            if (!atlased) {
+                return false;
+            }
+        } else if (!this.ssoptimizer$diagAtlased) {
+            return false;
+        }
+        // 陈旧实例：UV 四元组仍是原始纹理空间（原版语义），以此为基准惰性重映射
+        AtlasRenderDiag.warnUnremappedSample(path, renderMethod,
+                this.texX, this.texY, this.texWidth, this.texHeight);
+        this.ssoptimizer$atlasRemapped = this.ssoptimizer$cacheOriginAndRemap(this.texture);
+        return this.ssoptimizer$atlasRemapped;
     }
 
     /**
