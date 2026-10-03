@@ -5,9 +5,11 @@ import net.minecraft.launchwrapper.IClassTransformer;
 import org.apache.log4j.Logger;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 混合织入变换器，NanoForge coremod 的 ASM 分发 transformer。
@@ -27,6 +29,15 @@ public final class HybridWeaverTransformer implements IClassTransformer {
 
     /** 类名（内部格式）→ 处理器注册表，onLoad 写入、transform 懒读。 */
     private static final Map<String, AsmClassProcessor> PROCESSORS = new ConcurrentHashMap<>();
+
+    /**
+     * 全局处理器注册表：对 Launch 域全部类执行（不按类名匹配）。
+     * 仅适合自带字节级预过滤、未命中时零分配快速返回 {@code null} 的处理器
+     * （如 {@code ColorCtorSanitizeProcessor} 的 ASCII 关键字预扫描），
+     * 否则逐类全量解析的开销不可接受。onLoad 写入、transform 懒读，
+     * 与 {@link #PROCESSORS} 同款安全时序。
+     */
+    private static final List<AsmClassProcessor> GLOBAL_PROCESSORS = new CopyOnWriteArrayList<>();
 
     /**
      * 正在处理中的类名（按线程）。防护场景：处理器的内部类在执行期被懒加载，
@@ -65,17 +76,30 @@ public final class HybridWeaverTransformer implements IClassTransformer {
     }
 
     /**
-     * 获取当前已注册的处理器数量。
+     * 注册全局 ASM 字节码处理器（对 Launch 域全部类执行）。
+     * <p>
+     * 处理器必须自带廉价预过滤：未命中时返回 {@code null}，命中时返回改写后字节。
+     * 全局处理器先于按类名精确匹配的处理器执行，输出作为后者的输入字节。
+     *
+     * @param processor 处理器实例
+     */
+    public static void registerGlobalProcessor(AsmClassProcessor processor) {
+        GLOBAL_PROCESSORS.add(processor);
+    }
+
+    /**
+     * 获取当前已注册的处理器数量（含全局处理器）。
      */
     public static int getProcessorCount() {
-        return PROCESSORS.size();
+        return PROCESSORS.size() + GLOBAL_PROCESSORS.size();
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * 以 {@code transformedName}（优先）或 {@code name} 做纯 named 匹配，命中即执行对应
-     * {@link AsmClassProcessor}。
+     * 先执行全部全局处理器（{@link #GLOBAL_PROCESSORS}，逐类执行，自带预过滤），
+     * 再以 {@code transformedName}（优先）或 {@code name} 做纯 named 匹配，命中即执行对应
+     * {@link AsmClassProcessor}。全局处理器的输出字节作为按名处理器的输入。
      * <p>
      * <b>RFB 契约警告</b>：RFB 的 {@code runTransformers} 无条件采纳返回值
      * （{@code basicClass = newKlass}），返回 {@code null} 会把类字节丢弃，
@@ -93,27 +117,47 @@ public final class HybridWeaverTransformer implements IClassTransformer {
             return basicClass;
         }
 
-        AsmClassProcessor processor = PROCESSORS.get(normalizeClassName(className));
-        if (processor == null) {
+        String key = normalizeClassName(className);
+        AsmClassProcessor processor = PROCESSORS.get(key);
+        if (processor == null && GLOBAL_PROCESSORS.isEmpty()) {
             return basicClass;
         }
 
         Set<String> inFlight = IN_FLIGHT.get();
-        String key = normalizeClassName(className);
         if (!inFlight.add(key)) {
             // 同类重入（见 IN_FLIGHT 注释）：透传未处理字节
             return basicClass;
         }
         try {
-            byte[] result = processor.process(basicClass);
-            if (result != null) {
-                LOGGER.debug("[SSOptimizer] Processed class: " + className);
-                return result;
+            byte[] current = basicClass;
+            boolean processed = false;
+            // 全局处理器先行：输出作为后续处理器的输入
+            for (AsmClassProcessor global : GLOBAL_PROCESSORS) {
+                try {
+                    byte[] result = global.process(current);
+                    if (result != null) {
+                        current = result;
+                        processed = true;
+                    }
+                } catch (Throwable t) {
+                    LOGGER.error("[SSOptimizer] Global ASM processor failed for " + className, t);
+                }
             }
-            return basicClass;
-        } catch (Throwable t) {
-            LOGGER.error("[SSOptimizer] ASM processor failed for " + className, t);
-            return basicClass;
+            if (processor != null) {
+                try {
+                    byte[] result = processor.process(current);
+                    if (result != null) {
+                        current = result;
+                        processed = true;
+                    }
+                } catch (Throwable t) {
+                    LOGGER.error("[SSOptimizer] ASM processor failed for " + className, t);
+                }
+            }
+            if (processed) {
+                LOGGER.debug("[SSOptimizer] Processed class: " + className);
+            }
+            return current;
         } finally {
             inFlight.remove(key);
         }

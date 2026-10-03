@@ -21,6 +21,7 @@ import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcess
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
+import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
 import github.kasuminova.ssoptimizer.bridge.opengl.RenderThreadDispatch;
@@ -78,6 +79,7 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         installRenderThreadSeparation();
         registerModuleServices();
         registerAllProcessors(HybridWeaverTransformer::registerProcessor);
+        registerGlobalProcessors();
         // 调试服务（默认关闭）：onLoad 早于一切游戏类加载，使调试通道覆盖加载期场景
         DebugServerBootstrap.startIfEnabled();
         LOGGER.info("[SSOptimizer] CoreMod loaded — Engine + AI + loading repair phase active, "
@@ -231,6 +233,21 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
             LOGGER.info("[SSOptimizer] Registered external mod optimizer '" + featureKey
                     + "' processor for " + className);
         });
+    }
+
+    /**
+     * 注册全局 ASM 处理器（对 Launch 域全部类执行，不按类名匹配）。
+     * <p>
+     * 与 {@link #registerIf} 同样支持 {@code ssoptimizer.disable.<key>} 开关。
+     * 仅可注册自带廉价字节级预过滤的处理器（见
+     * {@link HybridWeaverTransformer#registerGlobalProcessor} 的契约说明）。
+     */
+    private static void registerGlobalProcessors() {
+        if (Boolean.getBoolean("ssoptimizer.disable.colorsanitize")) {
+            LOGGER.info("[SSOptimizer] Processor DISABLED via system property: colorsanitize");
+            return;
+        }
+        HybridWeaverTransformer.registerGlobalProcessor(new ColorCtorSanitizeProcessor());
     }
 
     private static void registerIf(BiConsumer<String, AsmClassProcessor> registrator,
