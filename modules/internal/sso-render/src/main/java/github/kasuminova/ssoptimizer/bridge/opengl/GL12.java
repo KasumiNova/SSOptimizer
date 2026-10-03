@@ -33,13 +33,18 @@ public final class GL12 extends GL12Gen {
         BridgeSupport.uninstall();
     }
 
-    /** 像素数据录制时刻快照入队。 */
+    /** pixels 允许为 null（仅分配纹理存储），此时无快照直接录制。 */
     public static void glTexImage3D(int target, int level, int internalFormat,
                                     int width, int height, int depth,
                                     int border, int format, int type, ByteBuffer pixels) {
-        BridgeSupport.enqueueSnapshot(pixels, snapshot ->
-                org.lwjgl.opengl.GL12.glTexImage3D(target, level, internalFormat,
-                        width, height, depth, border, format, type, snapshot));
+        if (pixels == null) {
+            BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL12.glTexImage3D(target, level,
+                    internalFormat, width, height, depth, border, format, type, (ByteBuffer) null));
+        } else {
+            BridgeSupport.enqueueSnapshot(pixels, snapshot ->
+                    org.lwjgl.opengl.GL12.glTexImage3D(target, level, internalFormat,
+                            width, height, depth, border, format, type, snapshot));
+        }
     }
 
     /** 像素数据录制时刻快照入队。 */

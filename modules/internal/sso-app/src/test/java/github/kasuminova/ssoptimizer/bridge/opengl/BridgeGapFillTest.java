@@ -58,6 +58,17 @@ class BridgeGapFillTest {
     // ------------------------------------------------------------------
 
     @Test
+    void gl12TexImage3DNullPixelsRecordedWithoutSnapshot() {
+        // 实机崩溃现场：模组 hullmod（NoiseTextureGenerator）以 null pixels 调
+        // glTexImage3D 仅分配纹理存储——必须无快照直接录制，不得在池快照处 NPE
+        GL12.glTexImage3D(org.lwjgl.opengl.GL12.GL_TEXTURE_3D, 0,
+                org.lwjgl.opengl.GL11.GL_RGBA8, 64, 64, 64, 0,
+                org.lwjgl.opengl.GL11.GL_RGBA, org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE,
+                (ByteBuffer) null);
+        assertEquals(1, queue.recorded.size(), "null pixels 必须直接录制一条命令");
+    }
+
+    @Test
     void gl12DrawRangeElementsAllOverloadsRecorded() {
         int triangles = org.lwjgl.opengl.GL11.GL_TRIANGLES;
         GL12.glDrawRangeElements(triangles, 0, 10, bytes(12));
