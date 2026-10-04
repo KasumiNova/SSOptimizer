@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
+import org.jctools.queues.SpscArrayQueue;
 
 /**
  * 录制侧单个生产者线程的帧录制上下文：收敛主线程 GL 录制热路径上分散在
@@ -23,8 +24,17 @@ final class RecordingContext {
     final ClientPointerState pointerState = new ClientPointerState();
     /** 录制侧逐线程的 FRAMEBUFFER 绑定跟踪（供 bridge 的 getter 短路，免阻塞往返）。 */
     final int[] framebufferBinding = new int[1];
+    /**
+     * 渲染线程 SPSC 返还的顶点流缓冲 inbox（{@link VertexStreamBufferPool}
+     * 类 javadoc A6 节）：渲染线程执行完本线程录制的顶点批次后把缓冲直接
+     * offer 回本队列——渲染线程是唯一生产者、本线程是唯一消费者，借出侧
+     * 零竞争 drain（先于全局 MPMC 池）。声明必须先于 {@link #vertexStream}
+     * （其构造注入本 inbox）。
+     */
+    final SpscArrayQueue<byte[]> returnedVertexBuffers =
+            new SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
     /** 录制侧逐线程的 immediate 顶点流缓冲（glBegin/glVertex* 族，见 {@link VertexStream}）。 */
-    final VertexStream vertexStream = new VertexStream();
+    final VertexStream vertexStream = new VertexStream(returnedVertexBuffers);
     /** 状态命令去重（连续相同的高频状态命令只入队一次，见 {@link StateDedup}）。 */
     final StateDedup stateDedup = new StateDedup();
     /** 录制侧 GL 状态仿真（getter 回读短路，见 {@link SimulatedGlState}）。 */

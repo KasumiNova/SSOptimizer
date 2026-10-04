@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import org.jctools.queues.SpscArrayQueue;
+
 import java.util.Arrays;
 
 /**
@@ -101,6 +103,22 @@ final class VertexStream {
      * {@code Arrays.copyOf} 1,893 样本的消除目标）。
      */
     private int prewarmCapacity = INITIAL_CAPACITY;
+    /**
+     * 本线程的 SPSC 返还 inbox（渲染线程归还的缓冲，{@code RecordingContext}
+     * 注入；测试直建为 null）：{@link #transferBuffer()} 换缓冲时随借取需求
+     * 传给 {@link VertexStreamBufferPool#acquire(int, SpscArrayQueue)}，
+     * 优先零竞争 drain 本线程 inbox 再回落全局池。
+     */
+    private final SpscArrayQueue<byte[]> returnInbox;
+
+    /** 测试与无返还通道路径：无 SPSC 返还 inbox，借出直走全局池。 */
+    VertexStream() {
+        this(null);
+    }
+
+    VertexStream(final SpscArrayQueue<byte[]> returnInbox) {
+        this.returnInbox = returnInbox;
+    }
 
     boolean isEmpty() {
         return pos == 0;
@@ -383,7 +401,7 @@ final class VertexStream {
     byte[] transferBuffer() {
         byte[] out = buffer;
         recordBatchLength(pos);
-        buffer = BridgeSupport.acquireVertexStreamBuffer(prewarmCapacity);
+        buffer = BridgeSupport.acquireVertexStreamBuffer(prewarmCapacity, returnInbox);
         pos = 0;
         pendingStateOps = false;
         return out;

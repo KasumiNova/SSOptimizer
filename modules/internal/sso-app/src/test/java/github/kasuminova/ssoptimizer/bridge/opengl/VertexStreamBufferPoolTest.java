@@ -184,4 +184,45 @@ class VertexStreamBufferPoolTest {
         // 稳态下 10 轮借还不应有任何丢荒（保留上限覆盖需求）
         assertEquals(0, pool.droppedBufferCount(), "稳态需求下不得丢荒重建");
     }
+
+    @Test
+    void acquireDrainsReturnInboxBeforeGlobalPool() {
+        // SPSC 返还通道（A6）：本线程 inbox 中渲染线程直还的缓冲必须优先于
+        // 全局池/新建被借出（零竞争路径，见池类 javadoc）
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        org.jctools.queues.SpscArrayQueue<byte[]> inbox =
+                new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
+        byte[] returned = new byte[VertexStreamBufferPool.MIN_CAPACITY];
+        inbox.offer(returned);
+
+        byte[] acquired = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY, inbox);
+
+        assertSame(returned, acquired, "SPSC inbox 返还的缓冲必须优先被借出");
+        assertTrue(inbox.isEmpty(), "drain 后 inbox 应为空");
+        assertEquals(0, pool.totalAllocations(), "inbox 命中不得新建缓冲");
+    }
+
+    @Test
+    void inboxOverflowFallsBackToGlobalPoolWhenLocalStackFull() {
+        // drain 时本地栈满：inbox 溢出的缓冲必须落回全局池（计数平衡：
+        // inbox 中的缓冲视同「在途借出」，仅落池时走 inFlight 递减）
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        final int min = VertexStreamBufferPool.MIN_CAPACITY;
+        for (int i = 0; i < 40; i++) {
+            pool.release(new byte[min]);
+        }
+        pool.acquire(min); // 补货 32 进栈后取 1：栈 31、全局 8
+
+        org.jctools.queues.SpscArrayQueue<byte[]> inbox =
+                new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
+        inbox.offer(new byte[min]);
+        inbox.offer(new byte[min]);
+
+        // 请求更大档迫使栈未命中 → drain：第一个填满栈（32），第二个溢出落全局池
+        pool.acquire(min * 2, inbox);
+
+        assertTrue(inbox.isEmpty(), "drain 后 inbox 应为空");
+        assertEquals(9, pool.pooledBufferCount(),
+                "栈满时 inbox 溢出的缓冲必须落回全局池（8 存量 + 1 溢出），实际 " + pool.pooledBufferCount());
+    }
 }

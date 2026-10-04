@@ -43,6 +43,12 @@ final class VertexBatchCommand implements MergedBatchCommand {
      * 回放——见 {@link #requiresImmediateReplay(boolean)}。
      */
     private boolean immediate;
+    /**
+     * 缓冲的 SPSC 返还目标（来源录制线程的 inbox，{@link #setData} 时捕获）：
+     * 渲染线程执行完优先把缓冲直接还回来源线程（零竞争），inbox 满才落
+     * 全局池（见 {@link VertexStreamBufferPool} 类 javadoc A6 节）。
+     */
+    private org.jctools.queues.SpscArrayQueue<byte[]> returnTo;
 
     /**
      * 回放分流判定：批次是否必须走 {@link ImmediateVertexSink} 逐指令回放。
@@ -62,11 +68,13 @@ final class VertexBatchCommand implements MergedBatchCommand {
         return immediateFlag || BridgeSupport.isCompilingDisplayList();
     }
 
-    /** 接管顶点流移交的缓冲。 */
-    void setData(byte[] data, int length, boolean immediate) {
+    /** 接管顶点流移交的缓冲，并记录渲染线程执行完的 SPSC 返还目标。 */
+    void setData(byte[] data, int length, boolean immediate,
+                 org.jctools.queues.SpscArrayQueue<byte[]> returnTo) {
         this.data = data;
         this.length = length;
         this.immediate = immediate;
+        this.returnTo = returnTo;
     }
 
     /**
@@ -115,8 +123,9 @@ final class VertexBatchCommand implements MergedBatchCommand {
                 VERTEX_ARRAYS.executeGl();
             }
         } finally {
-            BridgeSupport.releaseVertexStreamBuffer(data);
+            BridgeSupport.releaseVertexStreamBuffer(data, returnTo);
             data = null;
+            returnTo = null;
             BridgeSupport.releaseVertexBatch(this);
         }
     }

@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import org.apache.log4j.Logger;
 import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
+import org.jctools.queues.SpscArrayQueue;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,6 +34,17 @@ import java.util.concurrent.atomic.AtomicLong;
  * {@link java.util.concurrent.ConcurrentLinkedDeque} 消除了链表节点 CAS
  * （v36 pollFirst 热点）。
  * <p>
+ * <b>SPSC 返还通道（A6）</b>：v52 profile 显示 {@link #acquire(int)} 自身时间
+ * 13.5s——全局 MPMC 队列的 poll/offer 跨核竞争与 per-buffer 原子计数是主因。
+ * 每个生产者线程（{@code RecordingContext}）持有有界 SPSC 返还 inbox：
+ * 渲染线程执行完顶点批次后把缓冲直接 offer 回<b>来源线程</b>的 inbox
+ * （渲染线程是每个 inbox 的唯一生产者、来源线程是唯一消费者，无 CAS 只有
+ * 有序写）；{@link #acquire(int, SpscArrayQueue)} 优先 drain 本线程 inbox
+ * （零竞争），inbox 溢出才落全局池的既有归还路径。inbox 中的缓冲视同
+ * 「在途借出」（离开全局池时已计入 inFlight，溢出落池时才走归还递减），
+ * 保留上限启发式不受影响。全局补货的借出计数按桶聚合为单次
+ * {@code addAndGet}（原 per-buffer 32×2 次原子 → 每补货 1~2 次）。
+ * <p>
  * <b>有界保留（A5）</b>：v46 池降频改造后全局桶无界——任何归还的缓冲都会
  * 永久滞留（为避免 v44 固定容量池「归还即丢弃」的日志洪泛而走向另一极端），
  * 峰值帧借出的大容量缓冲（2MB~4MB 档）全部保留，JProfiler 实机 dump 显示
@@ -52,6 +64,8 @@ final class VertexStreamBufferPool {
     private static final int PER_BUCKET_INITIAL_CAPACITY = 256;
     /** 每线程本地预借栈容量与单次补货预算。 */
     private static final int LOCAL_BATCH = 32;
+    /** 每线程 SPSC 返还 inbox 容量（渲染线程→来源生产者线程，见类 javadoc A6 节）。 */
+    static final int RETURN_INBOX_CAPACITY = LOCAL_BATCH;
     /**
      * 每桶保留上限相对借出峰值（{@link #peakInFlight}）的松弛量：覆盖本地栈
      * 补货突发（一次 refill = {@link #LOCAL_BATCH}）与多线程同时 refill 的
@@ -101,18 +115,28 @@ final class VertexStreamBufferPool {
 
     /**
      * 借出容量不小于 {@code minCapacity} 的缓冲（调用方随后独占写入，归还前
-     * 不得再被借用）。优先命中本地预借栈（O(1) 数量级的数组搜索，零 CAS）；
-     * 未命中时从需求档向下批量补货：任何归还缓冲都能被复用（旧实现从需求档
-     * 向上找，低档归还缓冲永远不命中大需求，造成每帧新建大块且被池持有，
-     * v44b 实测内存涨至 7.9GB OOM），恰合需求或更大档位的缓冲返回、容量不足
-     * 的入栈供更小需求；补货仍空则新建档位容量缓冲（稳态不触发——预热
+     * 不得再被借用）。无 SPSC 返还 inbox 的调用形态（测试与无上下文路径），
+     * 等价于 {@link #acquire(int, SpscArrayQueue)} 的 inbox=null。
+     */
+    byte[] acquire(int minCapacity) {
+        return acquire(minCapacity, null);
+    }
+
+    /**
+     * 借出容量不小于 {@code minCapacity} 的缓冲。查找顺序：本地预借栈
+     * （数组操作，零 CAS）→ 本线程 SPSC 返还 inbox（渲染线程直还，
+     * 单生产者单消费者，零竞争 drain 进本地栈）→ 全局池按需求档向下
+     * 批量补货（任何归还缓冲都能被复用——旧实现从需求档向上找，低档归还
+     * 缓冲永远不命中大需求，造成每帧新建大块且被池持有，v44b 实测内存涨至
+     * 7.9GB OOM）→ 新建档位容量缓冲（稳态不触发——预热
      * {@link VertexStream#transferBuffer()} 保证需求与近期批次峰值同量级，
      * 命中即零扩容零分配）。
      *
      * @param minCapacity 需要的最小容量（字节）
+     * @param inbox       本线程的 SPSC 返还 inbox（渲染线程归还的缓冲），可为 null
      * @return 容量 >= minCapacity 的缓冲
      */
-    byte[] acquire(int minCapacity) {
+    byte[] acquire(int minCapacity, SpscArrayQueue<byte[]> inbox) {
         LocalBufferStack stack = local.get();
         byte[] hit = stack.findAndRemove(minCapacity);
         if (hit != null) {
@@ -120,25 +144,42 @@ final class VertexStreamBufferPool {
             // 本地栈持有期间视同「在途」（它们确实不在池内）
             return hit;
         }
+        if (inbox != null) {
+            // SPSC 返还通道 drain：inbox 中的缓冲离开全局池时已计入 inFlight，
+            // 迁入本地栈不做账；本地栈满溢出的落全局归还路径（计数平衡）
+            byte[] returned;
+            while ((returned = inbox.poll()) != null) {
+                if (!stack.push(returned)) {
+                    release(returned);
+                }
+            }
+            hit = stack.findAndRemove(minCapacity);
+            if (hit != null) {
+                return hit;
+            }
+        }
         // 批量补货：从需求档向下 poll（预算 LOCAL_BATCH），全部入本地栈
         // （容量不匹配的留栈供更小需求），随后从栈中取合适的——本地栈由此
-        // 积累「在途预借」，后续 acquire 命中零队列访问
+        // 积累「在途预借」，后续 acquire 命中零队列访问；借出计数按桶聚合
         int budget = LOCAL_BATCH;
         int start = Math.min(bucketIndexFor(minCapacity), BUCKET_COUNT - 1);
         for (int i = start; i >= 0 && budget > 0; i--) {
+            int borrowed = 0;
             while (budget > 0) {
                 byte[] buffer = buckets[i].poll();
                 if (buffer == null) {
                     break;
                 }
                 budget--;
-                trackBorrow(buffer);
                 if (!stack.push(buffer)) {
-                    // 栈满：放回对应档（无界队列，不丢对象），补记归还保持计数平衡
-                    buckets[bucketIndexFor(buffer.length)].offer(buffer);
-                    trackReturn(buffer);
+                    // 栈满：放回本档（无界队列，不丢对象），不计借出账
+                    buckets[i].offer(buffer);
                     break;
                 }
+                borrowed++;
+            }
+            if (borrowed > 0) {
+                trackBorrowBatch(i, borrowed);
             }
         }
         byte[] fromStack = stack.findAndRemove(minCapacity);
@@ -171,11 +212,17 @@ final class VertexStreamBufferPool {
         }
     }
 
-    /** {@link #trackBorrow(byte[])} 的反向补记（仅栈满放回全局池的罕见路径）。 */
-    private void trackReturn(byte[] buffer) {
-        final int capacity = buffer.length;
-        if (capacity >= MIN_CAPACITY && capacity <= MAX_CAPACITY) {
-            inFlight[bucketIndexFor(capacity)].decrementAndGet();
+    /**
+     * 按桶批量借出计数（全局补货路径）：单次 {@code addAndGet} 替代原
+     * per-buffer 的 {@link #trackBorrow(byte[])} 循环（补 32 个 = 64+ 次原子
+     * 操作 → 1~2 次）。峰值语义同 {@link #trackBorrow(byte[])}（启发式高水位，
+     * 并发下允许丢失更新）。
+     */
+    private void trackBorrowBatch(int bucket, int count) {
+        final int cur = inFlight[bucket].addAndGet(count);
+        final AtomicInteger peak = peakInFlight[bucket];
+        if (cur > peak.get()) {
+            peak.set(cur);
         }
     }
 
@@ -204,6 +251,8 @@ final class VertexStreamBufferPool {
             maintainBucket(bucket, now);
             maybeLogDrops(now);
         }
+        // 保留上限检查保持逐次精确（size() 为 O(1) 两次 volatile 读，
+        // 采样化会打破「超限归还即丢」语义，收益不抵语义损失）
         if (buckets[bucket].size() < peakInFlight[bucket].get() + RETENTION_SLACK) {
             buckets[bucket].offer(buffer);
         } else {

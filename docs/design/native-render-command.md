@@ -157,9 +157,10 @@ cache-line 竞争；`trackBorrow` 在补货循环内 per-buffer 做原子计数
    时才走既有 `inFlight` 递减。保留上限启发式不受影响。
 4. **原子计数批量化**：全局补货按桶聚合成每补货一次
    `addAndGet(n)` + 峰值检查一次（原 per-buffer 32×2 次原子 → 1~2 次）。
-5. **`size()` 采样化**：`release` 的保留上限检查改为每 8 次 release
-   采样一次 `buckets[bucket].size()`（保留上限本是启发式，不要求精确）；
-   超限丢弃语义不变。
+5. ~~**`size()` 采样化**~~（实施时回退）：评估后发现
+   `MpmcUnboundedXaddArrayQueue.size()` 为 O(1) 两次 volatile 读，
+   采样化会打破「超限归还即丢」的精确语义（既有测试基线），
+   收益不抵语义损失，保留逐次检查。
 
 ## 测试策略
 

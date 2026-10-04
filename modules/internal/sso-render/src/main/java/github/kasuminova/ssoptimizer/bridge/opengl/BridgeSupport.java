@@ -516,12 +516,12 @@ final class BridgeSupport {
             try {
                 VertexStream.replayBody(data, length, ImmediateVertexSink.INSTANCE);
             } finally {
-                releaseVertexStreamBuffer(data);
+                releaseVertexStreamBuffer(data, ctx.returnedVertexBuffers);
             }
             return;
         }
         VertexBatchCommand batch = vertexBatches.acquire();
-        batch.setData(data, length, startsOpen || endsOpen);
+        batch.setData(data, length, startsOpen || endsOpen, ctx.returnedVertexBuffers);
         queue().submit(batch);
     }
 
@@ -1104,14 +1104,23 @@ final class BridgeSupport {
         vertexBatches.release(batch);
     }
 
-    /** 顶点流换缓冲时从池借取（{@link VertexStream#transferBuffer()} 用）。 */
-    static byte[] acquireVertexStreamBuffer(int minCapacity) {
-        return vertexStreamBuffers.acquire(minCapacity);
+    /** 顶点流换缓冲时从池借取（{@link VertexStream#transferBuffer()} 用；inbox 为本线程 SPSC 返还通道，可空）。 */
+    static byte[] acquireVertexStreamBuffer(int minCapacity,
+                                            org.jctools.queues.SpscArrayQueue<byte[]> inbox) {
+        return vertexStreamBuffers.acquire(minCapacity, inbox);
     }
 
-    /** 归还顶点流缓冲（仅 {@link VertexBatchCommand#execute()} 的 finally 调用）。 */
-    static void releaseVertexStreamBuffer(byte[] data) {
-        vertexStreamBuffers.release(data);
+    /**
+     * 归还顶点流缓冲（{@link VertexBatchCommand#executeMerged} 的 finally 与
+     * aux 直执路径）：优先 offer 回来源线程的 SPSC 返还 inbox（渲染线程→来源
+     * 线程零竞争），inbox 为 null 或已满时落全局池既有归还路径（计数平衡：
+     * inbox 中的缓冲视同「在途借出」，仅落池时才走 inFlight 递减）。
+     */
+    static void releaseVertexStreamBuffer(byte[] data,
+                                          org.jctools.queues.SpscArrayQueue<byte[]> returnTo) {
+        if (returnTo == null || !returnTo.offer(data)) {
+            vertexStreamBuffers.release(data);
+        }
     }
 
     /** 测试用：更换全新快照池，避免用例间经静态单例池串扰。 */
