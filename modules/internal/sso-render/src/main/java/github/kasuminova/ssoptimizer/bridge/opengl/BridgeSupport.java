@@ -8,6 +8,7 @@ import github.kasuminova.ssoptimizer.common.render.queue.ProbeSiteCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
+import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
 
@@ -851,6 +852,30 @@ final class BridgeSupport {
     /** 测试用：替换真实 sync 操作实现（无 GL 上下文环境注入桩）。 */
     static void syncOpsForTesting(final RealSyncOps ops) {
         syncOps = ops;
+    }
+
+    /**
+     * 渲染线程真实 GL 上下文就绪回调（{@link Display#create} 族在渲染线程
+     * 创建成功后、同一阻塞任务内调用，此时 context 在当前线程 current）：
+     * 初始化 glad 渲染线程直执通道并把 sync ops 切换为 native 直调——
+     * LWJGL 静态调用的 per-call ThreadLocal 能力查找（v52 profile：
+     * glMemoryBarrier 路径 ThreadLocal.get 自身 12.1%）由此消除。
+     * glad 未就绪或驱动缺函数指针时保持 LWJGL 默认实现并记日志。
+     * 幂等：glad 指针进程全局，context 重建后重复调用只是重装同一实现。
+     */
+    static void onRenderThreadGlContextReady() {
+        if (!NativeRuntime.ensureQueueGlReady()) {
+            LOGGER.warn("[SSOptimizer] 渲染线程 glad 未就绪，sync ops 保持 LWJGL 路径");
+            return;
+        }
+        if (!NativeSyncOpsImpl.isSupported()) {
+            LOGGER.warn("[SSOptimizer] 渲染线程驱动缺少 sync/memoryBarrier 函数指针，sync ops 保持 LWJGL 路径");
+            return;
+        }
+        if (syncOps != NativeSyncOpsImpl.INSTANCE) {
+            syncOps = NativeSyncOpsImpl.INSTANCE;
+            LOGGER.info("[SSOptimizer] 渲染线程 glad 就绪：sync ops 切换 native 直调");
+        }
     }
 
     /**

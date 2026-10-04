@@ -61,7 +61,10 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实 {@code Display.create()} 失败
      */
     public static void create() throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(org.lwjgl.opengl.Display::create);
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            org.lwjgl.opengl.Display.create();
+            BridgeSupport.onRenderThreadGlContextReady();
+        });
         // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
@@ -75,7 +78,10 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实 {@code Display.create(PixelFormat)} 失败
      */
     public static void create(PixelFormat pixelFormat) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.create(pixelFormat));
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            org.lwjgl.opengl.Display.create(pixelFormat);
+            BridgeSupport.onRenderThreadGlContextReady();
+        });
         // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
@@ -312,7 +318,10 @@ public final class Display {
      */
     public static void create(PixelFormat pixelFormat,
                               org.lwjgl.opengl.ContextAttribs attribs) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.create(pixelFormat, attribs));
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            org.lwjgl.opengl.Display.create(pixelFormat, attribs);
+            BridgeSupport.onRenderThreadGlContextReady();
+        });
         // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
@@ -327,7 +336,10 @@ public final class Display {
 
     /** PixelFormatLWJGL 接口形态的创建重载，语义同 {@link #create(PixelFormat)}。 */
     public static void create(org.lwjgl.opengl.PixelFormatLWJGL pixelFormat) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.create(pixelFormat));
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            org.lwjgl.opengl.Display.create(pixelFormat);
+            BridgeSupport.onRenderThreadGlContextReady();
+        });
         // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
@@ -336,7 +348,10 @@ public final class Display {
     /** GLES 属性形态的创建重载（游戏走 GL 路径不会触达，镜像仅为覆盖面完整）。 */
     public static void create(org.lwjgl.opengl.PixelFormatLWJGL pixelFormat,
                               org.lwjgl.opengles.ContextAttribs attribs) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.create(pixelFormat, attribs));
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            org.lwjgl.opengl.Display.create(pixelFormat, attribs);
+            BridgeSupport.onRenderThreadGlContextReady();
+        });
         // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();

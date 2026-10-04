@@ -32,6 +32,14 @@ public final class NativeRuntime {
     private static volatile boolean glReady;
 
     /**
+     * 渲染线程 GL 直执通道的就绪状态：0=未探测，1=就绪，-1=不可用。
+     * 与 {@link #glReady} 语义独立——后者是「主线程可直接 glad 调用」
+     * （非分离模式），本状态是「渲染线程命令执行侧可 glad 调用」：
+     * 分离模式下 glReady 恒 false 而本通道可用（渲染线程持有真实 context）。
+     */
+    private static volatile int queueGlReadyState;
+
+    /**
      * Windows 下需要预加载的依赖 DLL 列表（按依赖顺序排列：被依赖者在前）。
      * 缺少某个 DLL 不影响加载流程，只会跳过。
      */
@@ -61,8 +69,38 @@ public final class NativeRuntime {
         return ensureLoaded() && glReady;
     }
 
-    /** glad 一次性加载 GL 函数指针（不要求当前线程持有 GL context）。 */
+    /** glad 一次性加载 GL 函数指针（内部经 glGetString 探测版本，调用线程须持有 GL context）。 */
     private static native boolean nativeInitGl();
+
+    /**
+     * 渲染线程 GL 直执通道（native sync ops / NativeRenderCommand）的 glad 就绪。
+     * 必须在持有真实 GL context 的线程调用（渲染线程，Display.create 之后）：
+     * gladLoadGL 内部经 glGetString(GL_VERSION) 探测版本以决定加载哪些函数
+     * 指针，无 context 时版本串为 NULL、全部指针留空（静默加载为零）。
+     * 结果进程级缓存：glad 函数指针进程全局，context 重建（显示模式切换）不失效。
+     *
+     * @return glad 函数指针是否可用于渲染线程直执通道
+     */
+    public static boolean ensureQueueGlReady() {
+        final int state = queueGlReadyState;
+        if (state != 0) {
+            return state > 0;
+        }
+        return initQueueGl();
+    }
+
+    private static synchronized boolean initQueueGl() {
+        if (queueGlReadyState != 0) {
+            return queueGlReadyState > 0;
+        }
+        final boolean ready = ensureLoaded() && nativeInitGl();
+        queueGlReadyState = ready ? 1 : -1;
+        if (!ready) {
+            LOGGER.warn("[SSOptimizer] 渲染线程 glad 初始化失败，native GL 直执通道"
+                    + "（sync ops / NativeRenderCommand）不可用，回退 LWJGL/Java 录制路径");
+        }
+        return ready;
+    }
 
     /** 加载主模块 render（含 glad 初始化与全部 GL 渲染器），语义与拆分前 ensureLoaded() 一致。 */
     public static synchronized boolean ensureLoaded() {
