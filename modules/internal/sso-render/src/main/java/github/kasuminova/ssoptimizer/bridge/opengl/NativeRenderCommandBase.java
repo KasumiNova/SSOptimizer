@@ -38,4 +38,9 @@ public abstract class NativeRenderCommandBase implements NativeRenderCommand {
      * @param encoded 录制侧编码的批次数据（position=0）
      */
     protected abstract void executeNative(ByteBuffer encoded);
+
+    /** 录制侧编码缓冲（仅供实现类自检与测试；执行归还后不得再引用）。 */
+    protected final ByteBuffer encodedBuffer() {
+        return encoded;
+    }
 }

@@ -39,13 +39,20 @@ public final class EngineNativeRenderCommand extends NativeRenderCommandBase {
         EngineNativeExecutor.INSTANCE.execute(encoded, commandCount, vertexBytes, indexBytes);
     }
 
+    /** 测试用：执行前读取编码缓冲（执行归还后不得再引用）。 */
+    final ByteBuffer encodedBufferForTest() {
+        return encodedBuffer();
+    }
+
     /**
      * 录制侧装配：扁平化批次并产生命令（编码缓冲借自共享快照池）。
      * 抽成静态工厂以便单测不触碰 {@link EngineBatchImpl} 的游戏对象读取路径。
      */
     public static EngineNativeRenderCommand of(final EngineInstanceCollector.CollectedBatch batch) {
         final int requiredBytes = EngineInstanceCollector.flattenedBytes(batch);
-        final ByteBuffer encoded = GlDispatch.snapshotPool().borrow(requiredBytes);
+        // 池化缓冲默认大端序，flatten 布局与 C++ 结构体一一对应，必须 nativeOrder
+        final ByteBuffer encoded = GlDispatch.snapshotPool().borrow(requiredBytes)
+                .order(java.nio.ByteOrder.nativeOrder());
         final int commandCount = EngineInstanceCollector.flatten(batch, encoded);
         return new EngineNativeRenderCommand(encoded, commandCount,
                 EngineInstanceCollector.expandedVertexBytes(batch),
