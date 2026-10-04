@@ -45,7 +45,17 @@ import java.util.concurrent.atomic.AtomicLong;
  * 保留上限启发式不受影响。全局补货的借出计数按桶聚合为单次
  * {@code addAndGet}（原 per-buffer 32×2 次原子 → 每补货 1~2 次）。
  * <p>
- * <b>有界保留（A5）</b>：v46 池降频改造后全局桶无界——任何归还的缓冲都会
+ * <b>直还快速路径（A7）</b>：v52+ profile 显示 A6 后 {@code acquire} 自身
+     * 时间反升至 21.3s——ThreadLocal 查找、本地栈线性扫描（逐条目指针解引用
+     * 读 length）与 drain/补货循环摊在每次借出上。{@link #acquire(int,
+     * SpscArrayQueue)} 首先单元素 poll 本线程 inbox：渲染线程直还的首个缓冲
+     * 即本线程上次落帧移交的缓冲，容量恒为本线程预热档（{@link VertexStream}
+     * 按窗口峰值借取，稳态全员同档），长度比较通过即直接返回——稳态借出
+     * 成本降为一次 SPSC poll（两次 volatile 读），ThreadLocal、栈扫描、
+     * 全局补货与原子计数全部留在未命中的慢路径。升档过渡期 poll 到的小
+     * 缓冲入本地栈供更小需求，语义与 A6 drain 一致。
+     * <p>
+     * <b>有界保留（A5）</b>：v46 池降频改造后全局桶无界——任何归还的缓冲都会
  * 永久滞留（为避免 v44 固定容量池「归还即丢弃」的日志洪泛而走向另一极端），
  * 峰值帧借出的大容量缓冲（2MB~4MB 档）全部保留，JProfiler 实机 dump 显示
  * 池内 byte[] 累计 6,335 MB（约 80% 堆）。修复：按桶以「历史并发借出峰值 +
@@ -123,8 +133,9 @@ final class VertexStreamBufferPool {
     }
 
     /**
-     * 借出容量不小于 {@code minCapacity} 的缓冲。查找顺序：本地预借栈
-     * （数组操作，零 CAS）→ 本线程 SPSC 返还 inbox（渲染线程直还，
+     * 借出容量不小于 {@code minCapacity} 的缓冲。查找顺序：inbox 单元素
+     * 直还快速路径（A7，稳态唯一路径）→ 本地预借栈（数组操作，零 CAS）→
+     * 本线程 SPSC 返还 inbox 全量 drain（渲染线程直还，
      * 单生产者单消费者，零竞争 drain 进本地栈）→ 全局池按需求档向下
      * 批量补货（任何归还缓冲都能被复用——旧实现从需求档向上找，低档归还
      * 缓冲永远不命中大需求，造成每帧新建大块且被池持有，v44b 实测内存涨至
@@ -137,6 +148,22 @@ final class VertexStreamBufferPool {
      * @return 容量 >= minCapacity 的缓冲
      */
     byte[] acquire(int minCapacity, SpscArrayQueue<byte[]> inbox) {
+        // A7 快速路径：渲染线程直还的首个缓冲即上次落帧移交的缓冲，容量
+        // 恒为本线程预热档（稳态统一），命中即返回——零 ThreadLocal、
+        // 零栈扫描、零原子操作（v52+ profile：acquire 自身时间 21.3s，
+        // 快路径把稳态成本压到一次 SPSC poll + 长度比较）
+        if (inbox != null) {
+            byte[] head = inbox.poll();
+            if (head != null) {
+                if (head.length >= minCapacity) {
+                    return head;
+                }
+                // 预热升档过渡期的小缓冲：入本地栈供更小需求，继续常规路径
+                if (!local.get().push(head)) {
+                    release(head);
+                }
+            }
+        }
         LocalBufferStack stack = local.get();
         byte[] hit = stack.findAndRemove(minCapacity);
         if (hit != null) {
@@ -296,7 +323,8 @@ final class VertexStreamBufferPool {
         final long sinceLast = total - droppedAtLastLog.getAndSet(total);
         if (sinceLast > 0) {
             LOGGER.warn("[SSOptimizer] VertexStreamBufferPool 丢弃 " + sinceLast
-                    + " 个缓冲（保留上限收紧，累计 " + total + " 个）");
+                    + " 个缓冲（保留上限收紧，累计 " + total + " 个，累计新建 "
+                    + allocations.get() + " 个）");
         }
     }
 

@@ -203,6 +203,47 @@ class VertexStreamBufferPoolTest {
     }
 
     @Test
+    void inboxHeadFastPathReturnsSingleBufferLeavingRestForNextAcquire() {
+        // 直还快速路径（A7）：inbox 首元素容量满足即直接返回，不 drain 余量、
+        // 不触碰全局池与新建——稳态逐次借出各取一个直还缓冲
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        org.jctools.queues.SpscArrayQueue<byte[]> inbox =
+                new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
+        byte[] first = new byte[VertexStreamBufferPool.MIN_CAPACITY * 4];
+        byte[] second = new byte[VertexStreamBufferPool.MIN_CAPACITY * 4];
+        inbox.offer(first);
+        inbox.offer(second);
+
+        assertSame(first, pool.acquire(VertexStreamBufferPool.MIN_CAPACITY * 4, inbox),
+                "快路径必须返回 inbox 首元素");
+        assertEquals(1, inbox.size(), "快路径单元素 poll，余量留给下次借出");
+        assertSame(second, pool.acquire(VertexStreamBufferPool.MIN_CAPACITY * 4, inbox),
+                "下次借出继续命中直还缓冲");
+        assertEquals(0, pool.totalAllocations(), "快路径全程不得新建缓冲");
+        assertEquals(0, pool.pooledBufferCount(), "快路径不得触碰全局池");
+    }
+
+    @Test
+    void undersizedInboxHeadFallsToLocalStackAndServesSmallerRequest() {
+        // 升档过渡期：inbox 首元素容量不足需求 → 入本地栈供更小需求，
+        // 本次借出走常规路径新建满足需求的容量
+        VertexStreamBufferPool pool = new VertexStreamBufferPool();
+        org.jctools.queues.SpscArrayQueue<byte[]> inbox =
+                new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
+        byte[] small = new byte[VertexStreamBufferPool.MIN_CAPACITY];
+        inbox.offer(small);
+
+        byte[] large = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY * 8, inbox);
+        assertTrue(large.length >= VertexStreamBufferPool.MIN_CAPACITY * 8,
+                "快路径未命中时必须经常规路径满足需求容量");
+        assertTrue(inbox.isEmpty(), "未命中的 inbox 首元素必须被消费（入栈）");
+
+        assertSame(small, pool.acquire(VertexStreamBufferPool.MIN_CAPACITY, inbox),
+                "入栈的小缓冲必须供更小需求命中");
+        assertEquals(1, pool.totalAllocations(), "仅升档新建一次，小缓冲复用不再新建");
+    }
+
+    @Test
     void inboxOverflowFallsBackToGlobalPoolWhenLocalStackFull() {
         // drain 时本地栈满：inbox 溢出的缓冲必须落回全局池（计数平衡：
         // inbox 中的缓冲视同「在途借出」，仅落池时走 inFlight 递减）
