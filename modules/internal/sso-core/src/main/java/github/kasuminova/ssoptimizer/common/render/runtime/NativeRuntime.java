@@ -89,6 +89,16 @@ public final class NativeRuntime {
         return initQueueGl();
     }
 
+    /**
+     * 渲染线程 GL 直执通道是否已就绪（只读，不触发初始化）。
+     * 录制侧（主线程）以此分流 native 命令路径——初始化只能由渲染线程
+     * 经 {@link #ensureQueueGlReady()} 完成（glad 版本探测需 GL context）。
+     * 未就绪时录制侧必须走 Java 录制回退路径。
+     */
+    public static boolean isQueueGlReady() {
+        return queueGlReadyState > 0;
+    }
+
     private static synchronized boolean initQueueGl() {
         if (queueGlReadyState != 0) {
             return queueGlReadyState > 0;

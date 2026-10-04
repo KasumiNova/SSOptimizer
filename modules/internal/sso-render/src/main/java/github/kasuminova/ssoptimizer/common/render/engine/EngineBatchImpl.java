@@ -6,6 +6,7 @@ import com.fs.graphics.util.GLListManager;
 import com.fs.graphics.util.RenderStateUtils;
 import com.fs.starfarer.combat.entities.Engine.EngineGlowType;
 import com.fs.starfarer.loading.specs.EngineSlot;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.CollectedBatch;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.CoreGroup;
 import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.CoreInstance;
@@ -37,15 +38,20 @@ import java.util.List;
  * 引擎渲染合批实现：{@code Engine.render(float)} / {@code renderFighter(float)} 的替换路径。
  * <p>
  * 工作流程：收集（{@link EngineInstanceCollector}，纯 CPU）→ 按 阶段×纹理ID 分组 →
- * 按当前生效模式 flush（VBO_BATCH CPU 展开 / IMMEDIATE 回退
- * {@link EngineRenderHelper}）。每次 flush 在当前矩阵栈内进行（Ship push/pop 栈内被调，
+ * 按当前生效模式 flush。渲染线程分离模式下走渲染队列 native 命令通道
+ * （收集/扁平化在录制线程，{@link EngineNativeRenderCommand} 承载
+ * {@code nativeFlushBatch} 在渲染线程执行）；非分离模式按 GL 能力选
+ * VBO_BATCH（CPU 展开 / native 环形写入）或 IMMEDIATE 回退
+ * {@link EngineRenderHelper}。每次 flush 在当前矩阵栈内进行（Ship push/pop 栈内被调，
  * 不缓存矩阵），结束后完整恢复 blend / 纹理绑定 / VBO 绑定 / client state。
  * <p>
  * 开关：
  * <ul>
  *   <li>{@code -Dssoptimizer.render.shipengine.enable}（默认 true，false 时退回立即模式等价路径）</li>
  *   <li>{@code -Dssoptimizer.render.shipengine.mode=vbo|immediate}（默认 vbo，
- *       按 GL 能力自动降级）</li>
+ *       仅非分离模式；按 GL 能力自动降级）</li>
+ *   <li>{@code -Dssoptimizer.render.shipengine.queue}（默认 true，仅分离模式；
+ *       false 时退回 {@link EngineRenderHelper} immediate 录制路径）</li>
  *   <li>{@code -Dssoptimizer.render.shipengine.stats=true}（默认 false，每 300 次渲染输出一次
  *       实例数与 display list 回退计数；首个非空批次无条件输出一次摘要）</li>
  * </ul>
@@ -59,6 +65,13 @@ public final class EngineBatchImpl implements EngineBatch {
     public static final String ENABLE_PROPERTY = "ssoptimizer.render.shipengine.enable";
     public static final String MODE_PROPERTY   = "ssoptimizer.render.shipengine.mode";
     public static final String STATS_PROPERTY  = "ssoptimizer.render.shipengine.stats";
+    /**
+     * 渲染队列 native 命令通道开关（仅分离模式生效，默认 true）：引擎合批的
+     * 收集/扁平化在录制线程完成，native flush 作为
+     * {@link EngineNativeRenderCommand} 在渲染线程执行（glad 直调）。
+     * false 时回退 {@link EngineRenderHelper} 的 immediate 录制路径。
+     */
+    public static final String QUEUE_PROPERTY  = "ssoptimizer.render.shipengine.queue";
 
     /** 引擎贴图诊断开关（{@code -Dssoptimizer.debug.enginestyle=true}）：每个不同纹理对象仅记录一次。 */
     private static final boolean DEBUG_ENGINE_STYLE =
@@ -95,6 +108,7 @@ public final class EngineBatchImpl implements EngineBatch {
     private static final int INDEX_VBO_CAPACITY    = 128 * 1024;
 
     private final boolean enabled;
+    private final boolean queueNativeEnabled;
     private final boolean statsEnabled;
     private final GlCapability.Mode requestedMode;
 
@@ -120,15 +134,15 @@ public final class EngineBatchImpl implements EngineBatch {
     private EngineBatchImpl() {
         String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
         boolean enable = !"false".equalsIgnoreCase(rawEnable.trim());
-        if (enable && RenderThreadMode.isEnabled()) {
-            // 分离模式：Java 回退 flush 每帧有两次 buffer binding 回读
-            // （glGetInteger(GL_ARRAY_BUFFER_BINDING) 等），每次回读都是阻塞通道
-            // 全管线 drain；禁用合批回退原版引擎渲染（GL 调用被重定向录制）。
-            LOGGER.info("[SSOptimizer] 渲染线程分离模式：禁用引擎合批"
-                    + "（Java 回退 flush 的 binding 回读在分离模式下为全管线 drain）");
-            enable = false;
-        }
         this.enabled = enable;
+        this.queueNativeEnabled = !"false".equalsIgnoreCase(
+                System.getProperty(QUEUE_PROPERTY, "true").trim());
+        if (enable && queueNativeEnabled && RenderThreadMode.isEnabled()) {
+            // 分离模式：合批收集/扁平化在录制线程（纯 CPU），native flush 作为
+            // 渲染队列命令执行——旧「Java 回退 flush 每帧两次 binding 回读 =
+            // 全管线 drain」的禁用理由随命令化消除
+            LOGGER.info("[SSOptimizer] 渲染线程分离模式：引擎合批走渲染队列 native 命令通道");
+        }
         this.statsEnabled = Boolean.parseBoolean(System.getProperty(STATS_PROPERTY, "false"));
 
         String rawMode = System.getProperty(MODE_PROPERTY, "vbo");
@@ -153,21 +167,31 @@ public final class EngineBatchImpl implements EngineBatch {
             EngineRenderHelper.renderEngines(engineObject, alphaScale);
             return;
         }
-        if (activeMode == null) {
-            activeMode = GlCapability.detectBest(requestedMode);
-        }
-        GlCapability.Mode mode = activeMode;
-        if (mode == GlCapability.Mode.IMMEDIATE) {
-            EngineRenderHelper.renderEngines(engineObject, alphaScale);
-            return;
-        }
         if (GLListManager.buildingList) {
-            // display list 编译区间内禁止使用 VBO/着色器路径（glBufferSubData 等不会被记录且语义错乱）
+            // display list 编译区间内禁止使用 VBO/着色器/native 命令路径
+            // （glBufferSubData 等不可编译、客户端数组按指针捕获，语义必错）
             displayListFallbacks++;
             if (!buildingListLogged) {
                 buildingListLogged = true;
                 LOGGER.info("[SSOptimizer] 检测到 display list 编译，引擎合批退回立即模式");
             }
+            EngineRenderHelper.renderEngines(engineObject, alphaScale);
+            return;
+        }
+        if (RenderThreadMode.isEnabled()) {
+            // 分离模式：渲染队列 native 命令通道（glad 未就绪时回退 immediate 录制）
+            if (queueNativeEnabled && NativeRuntime.isQueueGlReady()) {
+                renderQueuedNative((EngineBridge) engineObject, alphaScale);
+            } else {
+                EngineRenderHelper.renderEngines(engineObject, alphaScale);
+            }
+            return;
+        }
+        if (activeMode == null) {
+            activeMode = GlCapability.detectBest(requestedMode);
+        }
+        GlCapability.Mode mode = activeMode;
+        if (mode == GlCapability.Mode.IMMEDIATE) {
             EngineRenderHelper.renderEngines(engineObject, alphaScale);
             return;
         }
@@ -186,6 +210,28 @@ public final class EngineBatchImpl implements EngineBatch {
             return;
         }
         flushVboBatch(batch);
+    }
+
+    /**
+     * 渲染队列 native 命令路径（分离模式）：收集/扁平化在录制线程完成
+     * （纯 CPU），native flush 作为 {@link EngineNativeRenderCommand} 落帧，
+     * 渲染线程经单次 JNI 完成绘制。录制侧唯一 GL 交互是原版语义的三条
+     * 状态设置（经 bridge 录制，与命令的执行序保持原调用序列顺序）。
+     */
+    private void renderQueuedNative(EngineBridge engine, float alphaScale) {
+        CollectedBatch batch = gather(engine, alphaScale);
+
+        // 原版无论是否有可渲染槽都会执行这三个状态设置且不恢复，逐条复刻以保持一致
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(770, 1);
+
+        logBatchStats(GlCapability.Mode.VBO_BATCH, batch);
+
+        if (batch.isEmpty()) {
+            return;
+        }
+        GlDispatch.submit(EngineNativeRenderCommand.of(batch));
     }
 
     // ---------------------------------------------------------------------

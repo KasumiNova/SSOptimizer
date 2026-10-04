@@ -79,10 +79,14 @@ public interface NativeRenderExecutor {
     boolean ensureInitialized();
     /** 单次 JNI 批次绘制；glad 直调，恢复自身触碰的全部 GL 状态。 */
     void executeNative(ByteBuffer encoded);
-    /** display list 编译窗口的 Java 回退（immediate 等价路径）。 */
-    void executeFallback(ByteBuffer encoded);
 }
 ```
+
+> 实施注记：初版未抽 executor 接口——display list 编译窗口的分流改在
+> **录制侧**判定（`GLListManager.buildingList` 是游戏主线程可读静态标记，
+> 命令执行序与录制序一致，窗口内永不产生 native 命令），原设计的
+> `executeFallback` 失去存在必要；多类型接入前仅保留 `NativeRenderCommand`
+> 命令契约 + bridge 侧基类（缓冲生命周期/合并器失效横切），避免投机性抽象。
 
 ### 与渲染队列体系的并入点
 

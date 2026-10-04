@@ -29,6 +29,16 @@ final class VertexBatchCommand implements MergedBatchCommand {
      */
     private static final VertexArrayBatch VERTEX_ARRAYS = new VertexArrayBatch();
 
+    /**
+     * 外部 GL 直执（native 渲染命令等绕过本合并器簿记的 glad 调用）后的
+     * 状态失效钩子（{@link GlDispatch#onExternalGlStateChange()} 的落点）：
+     * 与 immediate 兜底回放后的处理一致，作废合并器的跨批次去重缓存。
+     * 仅渲染线程调用。
+     */
+    static void onExternalGlStateChange() {
+        VERTEX_ARRAYS.onExternalStateChange();
+    }
+
     /** 本命令持有的流缓冲（执行完归还缓冲池，归还后不得再引用）。 */
     private byte[] data;
     private int length;

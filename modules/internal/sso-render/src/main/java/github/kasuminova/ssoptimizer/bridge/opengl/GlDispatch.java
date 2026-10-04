@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPool;
 import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 
@@ -87,5 +88,24 @@ public final class GlDispatch {
      */
     public static void registerContextRecreatedListener(final Runnable listener) {
         BridgeSupport.registerContextRecreatedListener(listener);
+    }
+
+    /**
+     * 共享直接缓冲快照池（{@link BufferSnapshotPool}）：native 渲染命令
+     * （{@code NativeRenderCommand}）的编码缓冲来源。借用/归还契约见
+     * {@link BufferSnapshotPool} 接口 javadoc。
+     */
+    public static BufferSnapshotPool snapshotPool() {
+        return BridgeSupport.snapshotPool();
+    }
+
+    /**
+     * 外部 GL 直执后的顶点合并器状态失效钩子：native 渲染命令等绕过
+     * {@code VertexArrayBatch} 簿记的执行（glad 直调）完毕后必须调用——
+     * 合并器的 current 值/去重缓存基于「帧内全部状态改动都经它回放」的
+     * 假设，外部执行会让缓存与真实 GL 状态脱节。仅渲染线程调用。
+     */
+    public static void onExternalGlStateChange() {
+        VertexBatchCommand.onExternalGlStateChange();
     }
 }

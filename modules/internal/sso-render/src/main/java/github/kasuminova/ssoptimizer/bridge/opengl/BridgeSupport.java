@@ -1128,6 +1128,11 @@ final class BridgeSupport {
         pool = new BufferSnapshotPoolImpl();
     }
 
+    /** 共享快照池（{@link GlDispatch#snapshotPool()} 的开放落点）。 */
+    static BufferSnapshotPool snapshotPool() {
+        return pool;
+    }
+
     static void releaseSnapshot(ByteBuffer snapshot) {
         pool.release(snapshot);
     }
