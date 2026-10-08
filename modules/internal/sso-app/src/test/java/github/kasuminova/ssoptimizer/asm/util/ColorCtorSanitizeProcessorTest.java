@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,16 +78,98 @@ class ColorCtorSanitizeProcessorTest {
                 "外层夹具类的目标构造调用必须全部改写、无残留");
         assertEveryFactoryCallHasSiteArg(woven);
 
-        // 织入产物必须通过 ASM 数据流校验（帧重算后栈结构合法）
+        // 织入产物必须通过 ASM 结构校验
         java.io.StringWriter analysisOut = new java.io.StringWriter();
         org.objectweb.asm.util.CheckClassAdapter.verify(
                 new ClassReader(woven), false, new java.io.PrintWriter(analysisOut));
         assertEquals("", analysisOut.toString(), "织入产物必须零校验错误: " + analysisOut);
 
+        // 织入产物必须通过 JVM 链接验证（三元参数合流帧的未初始化栈项已剔除）
+        assertLinks("github.kasuminova.ssoptimizer.asm.util.ColorCtorFixture", woven);
+
         // 链式子类同样必须被正确处理（其 super 调用保持原样、不织入）
         assertNull(new ColorCtorSanitizeProcessor()
                 .process(readClassBytes("github/kasuminova/ssoptimizer/asm/util/ColorCtorFixture$Chained")),
                 "仅含 super 链式调用的子类无可改写调用点，必须返回 null");
+    }
+
+    /**
+     * 回归：合流帧的精确类型不得在织入后降级为 {@code java/lang/Object}。
+     * <p>
+     * 实机案例：{@code WeaponSpecLoader.loadWeaponSpec} 中 ProjectileWeaponSpec 与
+     * 其子类 PulseWeaponSpec 的合流帧，经 COMPUTE_FRAMES + 固定 Object 的
+     * getCommonSuperClass 重算后降级为 Object，开启字节码校验的 JVM 在
+     * 加载期抛 VerifyError。处理器改为保留原始帧后，帧内类型集合必须与原类一致，
+     * 且织入产物必须通过 JVM 链接验证。
+     */
+    @Test
+    void mergeFramesKeepPreciseTypesAfterWeaving() throws IOException {
+        final String target = "com/fs/starfarer/loading/WeaponSpecLoader";
+        byte[] original = readClassBytes(target);
+        byte[] woven = new ColorCtorSanitizeProcessor().process(original);
+        assertNotNull(woven, "目标类必须被改写");
+
+        assertEquals(frameTypeNames(original, "loadWeaponSpec"), frameTypeNames(woven, "loadWeaponSpec"),
+                "织入后 loadWeaponSpec 的帧内类型集合必须与原类一致（不得降级为 Object）");
+        assertLinks(target.replace('/', '.'), woven);
+    }
+
+    /** 收集指定方法全部帧的 locals/stack 类型名集合（未初始化项记为 uninitialized）。 */
+    private static java.util.Set<String> frameTypeNames(final byte[] classBytes, final String methodName) {
+        java.util.Set<String> types = new java.util.TreeSet<>();
+        for (MethodNode method : classNode(classBytes).methods) {
+            if (!method.name.equals(methodName)) {
+                continue;
+            }
+            for (AbstractInsnNode insn : method.instructions) {
+                if (insn instanceof org.objectweb.asm.tree.FrameNode) {
+                    org.objectweb.asm.tree.FrameNode frame = (org.objectweb.asm.tree.FrameNode) insn;
+                    collectFrameTypes(types, frame.local);
+                    collectFrameTypes(types, frame.stack);
+                }
+            }
+        }
+        return types;
+    }
+
+    private static void collectFrameTypes(final java.util.Set<String> types, final List<Object> entries) {
+        if (entries == null) {
+            return;
+        }
+        for (Object entry : entries) {
+            if (entry instanceof String) {
+                types.add((String) entry);
+            } else if (entry instanceof Integer) {
+                types.add("const:" + entry);
+            } else {
+                types.add("uninitialized");
+            }
+        }
+    }
+
+    /**
+     * 在子优先类加载器中定义织入产物并触发 JVM 链接（含字节码验证）。
+     * 目标类之外的引用（游戏类、ColorSanitizer）委托父加载器解析。
+     */
+    private static void assertLinks(final String binaryName, final byte[] bytes) {
+        ClassLoader parent = ColorCtorSanitizeProcessorTest.class.getClassLoader();
+        ClassLoader loader = new ClassLoader(parent) {
+            @Override
+            public Class<?> loadClass(final String name) throws ClassNotFoundException {
+                if (!name.equals(binaryName)) {
+                    return super.loadClass(name);
+                }
+                synchronized (getClassLoadingLock(name)) {
+                    Class<?> loaded = findLoadedClass(name);
+                    return loaded != null ? loaded : defineClass(name, bytes, 0, bytes.length);
+                }
+            }
+        };
+        try {
+            Class.forName(binaryName, false, loader);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** 统计四种目标描述符的 Color 构造调用数。 */

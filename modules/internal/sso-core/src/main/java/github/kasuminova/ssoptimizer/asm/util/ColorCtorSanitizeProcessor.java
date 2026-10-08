@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.asm.util;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
+import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -15,6 +16,8 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,9 +40,19 @@ import java.util.Map;
  * 调用点标识（{@code 类名#方法名@序号}）以 LDC 烧录为工厂末参。<br>
  * 适用范围约束：仅 Launch 域类经过本处理器（System 域 JDK/lwjgl 类不经过），
  * 净化器自身类显式排除（防止自改写递归）。无 Color 常量引用的类经字节级
- * 预过滤直接跳过，不进 ASM 解析。
+ * 预过滤直接跳过，不进 ASM 解析。<br>
+ * 栈帧策略：改写前后每个指令位置的栈/局部变量形态完全等价（NEW+DUP+init
+ * 与 LDC+INVOKESTATIC 净效果一致），故不重算帧（COMPUTE_FRAMES 需要
+ * 类层级解析，变换期游戏类不可加载，降级为 Object 会产生 VerifyError，
+ * 实机案例：WeaponSpecLoader.loadWeaponSpec 的 ProjectileWeaponSpec/
+ * PulseWeaponSpec 合流帧）。原始帧原样保留，仅当参数求值窗口内存在帧
+ * （如三元表达式参数的合流帧）时，从中剔除本调用点 NEW/DUP 对应的两条
+ * 未初始化栈项；帧形态不符预期时放弃该调用点并记录 WARN（保留原版字节码，
+ * 语义不受影响）。
  */
 public final class ColorCtorSanitizeProcessor implements AsmClassProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(ColorCtorSanitizeProcessor.class);
 
     /** 净化工厂 owner（内部名）。 */
     public static final String HELPER_OWNER = "github/kasuminova/ssoptimizer/common/util/ColorSanitizer";
@@ -58,10 +71,10 @@ public final class ColorCtorSanitizeProcessor implements AsmClassProcessor {
             "(FFFF)V", "(FFFFLjava/lang/String;)Ljava/awt/Color;");
 
     static {
-        // 预热一次真实改写，强制本类的匿名 ClassWriter 子类在注册期完成加载。
-        // 否则其首次加载发生在游戏类变换回调内：懒加载重入 transformer 链，
-        // Mixin 反读游戏类字节时再次进入本处理器，撞上该子类的「定义中」状态，
-        // 以 ClassCircularityError 收场（实机已验证），且此后全部调用点织入失败。
+        // 预热一次真实改写，把 process 织入路径用到的 ASM tree/Writer 类
+        // 提前到注册期完成加载。否则其首次加载发生在游戏类变换回调内：
+        // 懒加载重入 transformer 链，撞上「定义中」状态会以 ClassCircularityError
+        // 收场（实机已验证），且此后全部调用点织入失败。
         warmUp();
     }
 
@@ -100,6 +113,11 @@ public final class ColorCtorSanitizeProcessor implements AsmClassProcessor {
                     // 无 NEW/DUP 配对（子类 super(...) 链式调用等），保持原样
                     continue;
                 }
+                if (!fixWindowFrames(pair[0], init)) {
+                    LOGGER.warn("[SSOptimizer] Color 构造调用点帧形态不符预期，保持原版字节码: "
+                            + className + "#" + method.name + "@" + siteIndex);
+                    continue;
+                }
                 final InsnList replacement = new InsnList();
                 replacement.add(new LdcInsnNode(className + "#" + method.name + "@" + siteIndex++));
                 replacement.add(new MethodInsnNode(Opcodes.INVOKESTATIC, HELPER_OWNER, "create", factoryDesc, false));
@@ -114,14 +132,72 @@ public final class ColorCtorSanitizeProcessor implements AsmClassProcessor {
             return null;
         }
 
-        final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES) {
-            @Override
-            protected String getCommonSuperClass(final String type1, final String type2) {
-                return "java/lang/Object";
-            }
-        };
+        // 不重算帧：改写前后栈/局部变量形态等价，原始帧（含精确合流类型）原样保留，
+        // 窗口内帧已在上方剔除本调用点的未初始化栈项。maxs 沿用原值（改写只会降低峰值）。
+        final ClassWriter writer = new ClassWriter(0);
         node.accept(writer);
         return writer.toByteArray();
+    }
+
+    /**
+     * 修补 NEW/DUP 与 init 之间的窗口内帧：剔除本调用点 NEW/DUP 对应的两条
+     * 未初始化栈项（帧中以 NEW 处标签表示）。
+     * <p>
+     * 参数求值含分支时（如三元表达式），合流点帧的栈底部带有两条指向 NEW
+     * 标签的未初始化项；NEW/DUP 被移除后这两条项不再存在，必须同步剔除。
+     * 嵌套构造场景下内层 init 先于外层处理，每轮只剔除属于自己 NEW 标签的
+     * 两条项，互不干扰。
+     *
+     * @param newInsn 配对的 NEW 指令
+     * @param init    Color 构造调用
+     * @return 全部窗口帧修补成功（或无窗口帧）返回 true；帧形态不符预期返回 false
+     */
+    private static boolean fixWindowFrames(final AbstractInsnNode newInsn, final AbstractInsnNode init) {
+        LabelNode newLabel = null;
+        final List<FrameNode> windowFrames = new ArrayList<>();
+        for (AbstractInsnNode cur = newInsn.getNext(); cur != null && cur != init; cur = cur.getNext()) {
+            if (cur instanceof FrameNode) {
+                windowFrames.add((FrameNode) cur);
+            }
+        }
+        if (windowFrames.isEmpty()) {
+            return true;
+        }
+        // 帧以标签表示未初始化项，存在窗口帧则 NEW 处必有标签（帧解析时会创建）
+        for (AbstractInsnNode cur = newInsn.getPrevious(); cur != null; cur = cur.getPrevious()) {
+            if (cur instanceof LabelNode) {
+                newLabel = (LabelNode) cur;
+                break;
+            }
+            if (!(cur instanceof LineNumberNode) && !(cur instanceof FrameNode)) {
+                break;
+            }
+        }
+        if (newLabel == null) {
+            return false;
+        }
+        final LabelNode label = newLabel;
+        // 先全量校验再统一剔除：中途失败不得留下改了一半的帧
+        for (FrameNode frame : windowFrames) {
+            if (frame.type != Opcodes.F_FULL || frame.stack == null || countRefs(frame, label) != 2) {
+                return false;
+            }
+        }
+        for (FrameNode frame : windowFrames) {
+            frame.stack.removeIf(entry -> entry == label);
+        }
+        return true;
+    }
+
+    /** 帧栈中指向 NEW 标签的未初始化项数量。 */
+    private static int countRefs(final FrameNode frame, final LabelNode newLabel) {
+        int count = 0;
+        for (Object entry : frame.stack) {
+            if (entry == newLabel) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -175,8 +251,8 @@ public final class ColorCtorSanitizeProcessor implements AsmClassProcessor {
 
     /**
      * 注册期预热：用 ASM 现造一个含 {@code new Color(int,int,int)} 的微型类，
-     * 完整走一遍 {@link #process} 织入路径（含 COMPUTE_FRAMES 的匿名 ClassWriter
-     * 子类实例化），把全部懒加载内部类提前到静态初始化期加载。
+     * 完整走一遍 {@link #process} 织入路径，把 ASM tree/Writer 等懒加载类
+     * 提前到静态初始化期加载。
      */
     private static void warmUp() {
         final ClassWriter cw = new ClassWriter(0);
