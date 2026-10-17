@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * <b>借出降频（A2）</b>：每个生产者线程带一个本地预借栈。{@link #acquire(int)}
  * 优先在本地栈中按容量搜索（数组操作，零 CAS 零队列访问）；未命中时从全局
  * 池批量补货（按需求档向下找，恰合当前 minCapacity 的缓冲直接返回、容量
- * 不足的入本地栈供更小需求、栈满放回对应档），补货仍空才新建档位容量缓冲。
+ * 不足的入本地栈供更小需求、<b>栈满时逐出栈底最老缓冲回全局池腾位</b>——
+ * 预热窗口把需求钉在峰值档时低档缓冲永远等不到匹配需求，不放逐则栈只进
+ * 不出、补货整体卡死），补货仍空才新建档位容量缓冲。
  * 借出的缓冲最终经命令消费后由渲染线程 {@link #release(byte[])} 归还全局池，
  * 本地栈是「在途预借」，不会积压不回。
  * <p>
@@ -156,7 +158,7 @@ final class VertexStreamBufferPool {
             byte[] head = inbox.poll();
             if (head != null) {
                 if (head.length >= minCapacity) {
-                    return head;
+                            return head;
                 }
                 // 预热升档过渡期的小缓冲：入本地栈供更小需求，继续常规路径
                 if (!local.get().push(head)) {
@@ -182,12 +184,17 @@ final class VertexStreamBufferPool {
             }
             hit = stack.findAndRemove(minCapacity);
             if (hit != null) {
-                return hit;
+                    return hit;
             }
         }
         // 批量补货：从需求档向下 poll（预算 LOCAL_BATCH），全部入本地栈
         // （容量不匹配的留栈供更小需求），随后从栈中取合适的——本地栈由此
-        // 积累「在途预借」，后续 acquire 命中零队列访问；借出计数按桶聚合
+        // 积累「在途预借」，后续 acquire 命中零队列访问；借出计数按桶聚合。
+        // 栈满时逐出栈底最老缓冲回全局池（在册缓冲正常走 release 递减），
+        // 为补货腾位——预热窗口把需求钉在窗口峰值时，低档缓冲「留栈供更小
+        // 需求」永远等不到需求，栈只进不出填满后补货整体卡死（poll 一个、
+        // 放回、break、未命中、新建），借出退化为每次新建、全局归还堆积
+        // 超限丢荒（v53 实机事故：每秒约 3 万次新建/丢荒）
         int budget = LOCAL_BATCH;
         int start = Math.min(bucketIndexFor(minCapacity), BUCKET_COUNT - 1);
         for (int i = start; i >= 0 && budget > 0; i--) {
@@ -199,9 +206,8 @@ final class VertexStreamBufferPool {
                 }
                 budget--;
                 if (!stack.push(buffer)) {
-                    // 栈满：放回本档（无界队列，不丢对象），不计借出账
-                    buckets[i].offer(buffer);
-                    break;
+                    release(stack.evictBottom());
+                    stack.push(buffer);
                 }
                 borrowed++;
             }
@@ -258,12 +264,19 @@ final class VertexStreamBufferPool {
         return allocations.get();
     }
 
+
     /**
      * 归还缓冲（渲染线程执行完顶点批次命令后）。容量落在池化区间内则按容量
      * 进位入档；保留量超过该档上限（借出峰值 + 松弛量）的缓冲直接丢弃——
      * 峰值由 {@link #acquire(int)} 侧即时抬升、按时间衰减回落，稳态下池保留
      * 量收敛于实际并发借出水平（JProfiler 实测修复前无界保留 6,335 MB）。
      * 归还路径常态零日志；丢荒仅在约每分钟一次的维护点上汇总输出。
+     * <p>
+     * 账目不变量：归还的缓冲必须是借出自本池的同一数组（{@link VertexStream}
+     * 的池化初始缓冲与池化扩容路径保证）——静默丢弃在册缓冲（借出计数永久
+     * 挂账、衰减失效）或归还未登记数组（无配对递减、大容量桶负漂移塌缩）
+     * 都会击穿保留上限启发式（实机事故：池驻留 4.6GB + 每秒约 3 万次
+     * 新建/丢荒，根因是 VertexStream 编码中途裸 Arrays.copyOf 扩容）。
      */
     void release(byte[] buffer) {
         int capacity = buffer.length;
@@ -351,6 +364,11 @@ final class VertexStreamBufferPool {
         return total;
     }
 
+    /** 测试用：指定容量档桶内的空闲缓冲数（分桶借还账目断言）。 */
+    int pooledInBucketForTest(int capacity) {
+        return buckets[bucketIndexFor(capacity)].size();
+    }
+
     /** 向上取整到不小于 {@code bytes} 的 2 的幂（且不小于最小档容量）。 */
     private static int capacityFor(int bytes) {
         if (bytes <= MIN_CAPACITY) {
@@ -394,6 +412,18 @@ final class VertexStreamBufferPool {
             }
             items[size++] = buffer;
             return true;
+        }
+
+        /**
+         * 逐出栈底最老缓冲（{@link #findAndRemove} 从栈顶取，最老条目沉底——
+         * 预热档钉死后沉底条目即永远等不到匹配需求的死缓冲，逐出回全局池
+         * 让保留上限启发式处置）。仅在栈满时调用（调用方保证 size > 0）。
+         */
+        byte[] evictBottom() {
+            byte[] bottom = items[0];
+            System.arraycopy(items, 1, items, 0, size - 1);
+            items[--size] = null;
+            return bottom;
         }
     }
 }

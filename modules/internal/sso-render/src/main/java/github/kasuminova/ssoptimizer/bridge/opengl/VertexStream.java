@@ -2,8 +2,6 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import org.jctools.queues.SpscArrayQueue;
 
-import java.util.Arrays;
-
 /**
  * immediate 顶点流的录制缓冲（glBegin/glEnd 与 glVertex/glTexCoord/glColor/
  * glNormal3f 族），每个生产者线程持有一份（见 {@link BridgeSupport#vertexStream()}）。
@@ -78,7 +76,7 @@ final class VertexStream {
     /** 预热统计窗口（批次 = 每次 {@link #transferBuffer()} 移交的段）。 */
     static final int PREWARM_WINDOW = 64;
 
-    private byte[] buffer = new byte[INITIAL_CAPACITY];
+    private byte[] buffer;
     private int pos;
     /** 未收口的 glBegin 段深度（跨落帧保留，见 {@link #hasOpenSegment()}）。 */
     private int beginDepth;
@@ -118,6 +116,10 @@ final class VertexStream {
 
     VertexStream(final SpscArrayQueue<byte[]> returnInbox) {
         this.returnInbox = returnInbox;
+        // 初始缓冲同样走池借取：保持「每次 release 都有配对 trackBorrow」的
+        // 池账目不变量——直建数组移交落帧后归还是无配对 inFlight 递减，
+        // 与编码中途扩容（见 #ensure）同源的账目漂移根因
+        this.buffer = BridgeSupport.acquireVertexStreamBuffer(INITIAL_CAPACITY, returnInbox);
     }
 
     boolean isEmpty() {
@@ -578,7 +580,20 @@ final class VertexStream {
 
     private void ensure(int additional) {
         if (pos + additional > buffer.length) {
-            buffer = Arrays.copyOf(buffer, Math.max(buffer.length * 2, pos + additional));
+            // 扩容必须走池借还，严禁裸 Arrays.copyOf 丢弃旧缓冲：旧缓冲是池
+            // 在册资产，静默丢弃使其借出计数永久挂账（inFlight 只涨不消、衰减
+            // 失效 → 保留上限失控，实机 JProfiler 池驻留 4.6GB）；拷贝出的新
+            // 数组事后归还是无配对递减（大容量桶计数负漂移 → 峰值塌缩 →
+            // 归还即丢荒、借出即新建，实机每秒约 3 万次新建/丢荒）。
+            // 扩容拷贝已写入的 pos 字节（含未写完的 op 前缀），op 边界语义不变。
+            // 中继档借还绕开 SPSC inbox 直走全局池（inbox=null）：升档中继缓冲
+            // 灌进 inbox 只会被下次借出判为「预热档以下」压入本地栈占座，
+            // 全局桶按档归档才是中继缓冲的正确归处。
+            final int needed = Math.max(buffer.length * 2, pos + additional);
+            final byte[] grown = BridgeSupport.acquireVertexStreamBuffer(needed, null);
+            System.arraycopy(buffer, 0, grown, 0, pos);
+            BridgeSupport.releaseVertexStreamBuffer(buffer, null);
+            buffer = grown;
         }
     }
 

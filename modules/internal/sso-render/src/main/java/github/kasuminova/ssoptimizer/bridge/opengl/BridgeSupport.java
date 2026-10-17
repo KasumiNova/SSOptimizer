@@ -1110,6 +1110,11 @@ final class BridgeSupport {
         return vertexStreamBuffers.acquire(minCapacity, inbox);
     }
 
+    /** 测试用：顶点流编码缓冲池（借还账目断言）。 */
+    static VertexStreamBufferPool vertexStreamBufferPool() {
+        return vertexStreamBuffers;
+    }
+
     /**
      * 归还顶点流缓冲（{@link VertexBatchCommand#executeMerged} 的 finally 与
      * aux 直执路径）：优先 offer 回来源线程的 SPSC 返还 inbox（渲染线程→来源
