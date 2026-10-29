@@ -224,6 +224,11 @@ public final class GameMixinSignatures {
                 "reportBattleOccurred(Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;Lcom/fs/starfarer/api/campaign/BattleAPI;)V";
         public static final String GET_EVENT_LISTENERS_TARGET =
                 "Lcom/fs/starfarer/api/campaign/CampaignFleetAPI;getEventListeners()Ljava/util/List;";
+        public static final String GET_ENTITY_BY_ID =
+                "getEntityById(Ljava/lang/String;)Lcom/fs/starfarer/api/campaign/SectorEntityToken;";
+        public static final String REBUILD_ID_TO_ENTITY_MAP = "rebuildIDToEntityMap()V";
+        public static final String OBJECT_ADDED = "objectAdded(Ljava/lang/Object;)V";
+        public static final String OBJECT_REMOVED = "objectRemoved(Ljava/lang/Object;)V";
 
         private CampaignEngine() {
         }
