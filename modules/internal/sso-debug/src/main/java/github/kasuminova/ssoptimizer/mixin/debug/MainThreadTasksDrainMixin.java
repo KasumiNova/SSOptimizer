@@ -19,6 +19,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * RT 分支的 RenderThreadRedirect 会先把 traverse 里的 lwjgl 调用改写为 bridge
  * 调用，Mixin 匹配不到原始目标；SoundManager 是游戏自身类，两条分支形态一致。<br>
  * 注入效果：每循环迭代前排空主线程任务队列；队列空时仅为一次 poll，开销可忽略。
+ * 补充锚点 {@code InputState.getEvents()}：SoundManager.advance 只在窗口非聚焦
+ * 空转分支命中，正常渲染路径不经过它（{@code BaseGameStateNoWindowIdleMixin}
+ * 禁用空转后原锚点完全失效）；getEvents 在正常路径每迭代必达一次，
+ * 且为游戏自身类，不受 RenderThreadRedirect 的 lwjgl 改写影响。
  */
 @Mixin(targets = GameClassNames.BASE_GAME_STATE_DOTTED)
 public abstract class MainThreadTasksDrainMixin {
@@ -26,6 +30,13 @@ public abstract class MainThreadTasksDrainMixin {
             at = @At(value = "INVOKE",
                     target = "Lcom/fs/starfarer/SoundManager;advance(FFFFFI)V"))
     private void ssoptimizer$drainMainThreadTasks(final CallbackInfoReturnable<String> cir) {
+        MainThreadTasks.drain();
+    }
+
+    @Inject(method = "traverse", remap = false,
+            at = @At(value = "INVOKE",
+                    target = "Lcom/fs/starfarer/util/InputState;getEvents()Lcom/fs/starfarer/util/InputEventList;"))
+    private void ssoptimizer$drainMainThreadTasksNormalPath(final CallbackInfoReturnable<String> cir) {
         MainThreadTasks.drain();
     }
 }

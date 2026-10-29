@@ -118,6 +118,7 @@
     "warroom.TaskIconManagerMixin",
     "debug.BaseGameStateNoWindowIdleMixin",
     "debug.CombatStateMainThreadDrainMixin",
+    "debug.CombatStateNoWindowIdleMixin",
     "debug.MainThreadTasksDrainMixin",
     "campaign.FleetDataSyncGuardMixin"
   ],

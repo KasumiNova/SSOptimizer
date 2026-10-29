@@ -19,14 +19,16 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * 不直接重定向 {@code Display.isActive()} 的原因：rt 分支的 RenderThreadRedirector
  * 会先把 traverse 里的 lwjgl 调用改写为 bridge 调用，Mixin 匹配不到原始目标；
  * getBoolean 是游戏自身 API，两条分支字节码形态一致。<br>
- * 注入效果：仅当 {@code -Dssoptimizer.debug.nowindowidle=true} 时，
+ * 注入效果：仅当 {@code -Dssoptimizer.debug.nowindowidle=true} 或
+ * {@code -Dssoptimizer.debug.enabled=true} 时，
  * {@code idleWhileWindowNotVisible} 键恒返回 false（不进入空转分支）；
  * 其余键与未配置时完全透传原行为。
  */
 @Mixin(targets = GameClassNames.BASE_GAME_STATE_DOTTED)
 public abstract class BaseGameStateNoWindowIdleMixin {
-    /** 调试开关（{@code -Dssoptimizer.debug.nowindowidle=true}）：窗口非聚焦时不空转暂停。 */
-    private static final boolean NO_WINDOW_IDLE = Boolean.getBoolean("ssoptimizer.debug.nowindowidle");
+    /** 调试开关：窗口非聚焦时不空转暂停（debug 会话默认开启）。 */
+    private static final boolean NO_WINDOW_IDLE = Boolean.getBoolean("ssoptimizer.debug.nowindowidle")
+            || Boolean.getBoolean("ssoptimizer.debug.enabled");
 
     @Redirect(method = "traverse", remap = false,
             at = @At(value = "INVOKE",
