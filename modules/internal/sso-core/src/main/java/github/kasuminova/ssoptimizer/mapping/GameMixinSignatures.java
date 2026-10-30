@@ -229,6 +229,7 @@ public final class GameMixinSignatures {
         public static final String REBUILD_ID_TO_ENTITY_MAP = "rebuildIDToEntityMap()V";
         public static final String OBJECT_ADDED = "objectAdded(Ljava/lang/Object;)V";
         public static final String OBJECT_REMOVED = "objectRemoved(Ljava/lang/Object;)V";
+        public static final String READD_CHANGE_LISTENERS = "readdChangeListeners()V";
 
         private CampaignEngine() {
         }

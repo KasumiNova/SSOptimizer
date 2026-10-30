@@ -35,6 +35,8 @@ class CampaignEngineGetEntityByIdAnchorTest {
                 "缺少 objectAdded(Object) 锚点");
         assertNotNull(findMethod(node, "objectRemoved", "(Ljava/lang/Object;)V"),
                 "缺少 objectRemoved(Object) 锚点");
+        assertNotNull(findMethod(node, "readdChangeListeners", "()V"),
+                "缺少 readdChangeListeners() 锚点");
 
         FieldNode idToEntity = null;
         for (final FieldNode field : node.fields) {
