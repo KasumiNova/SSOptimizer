@@ -7,38 +7,38 @@ import static org.junit.jupiter.api.Assertions.*;
 class StallDetectorTest {
 
     @Test
-    void belowThresholdDoesNotThrow() {
+    void belowThresholdDoesNotTrip() {
         StallDetector detector = new StallDetector(60, 30);
-        // 28 个 stall 帧（每帧一次阻塞调用 + swap 推进）不触发熔断，
+        // 28 个 stall 帧（每帧一次阻塞调用 + swap 推进）不触发熔断信号，
         // 第 29 个 stall 帧仍低于阈值 30
         for (int i = 0; i < 28; i++) {
-            detector.onStall();
+            assertFalse(detector.onStall());
             detector.onSwap();
         }
-        assertDoesNotThrow(detector::onStall);
+        assertFalse(detector.onStall());
         assertEquals(29, detector.currentWindowStalls());
     }
 
     @Test
-    void reachingThresholdThrowsWithDiagnostics() {
+    void reachingThresholdTripsWithDiagnostics() {
         StallDetector detector = new StallDetector(60, 30);
         for (int i = 0; i < 29; i++) {
-            detector.onStall();
+            assertFalse(detector.onStall());
             detector.onSwap();
         }
-        IllegalStateException ex = assertThrows(IllegalStateException.class, detector::onStall);
-        String message = String.valueOf(ex.getMessage());
-        assertTrue(message.contains("60"));
-        assertTrue(message.contains("30"));
+        assertTrue(detector.onStall(), "第 30 个 stall 帧达到阈值，必须发出熔断信号");
+        String diagnostics = detector.tripDiagnostics();
+        assertTrue(diagnostics.contains("60"));
+        assertTrue(diagnostics.contains("30"));
     }
 
     @Test
-    void singleFrameBurstDoesNotThrow() {
+    void singleFrameBurstDoesNotTrip() {
         // 单帧内的成批一次性阻塞调用（如战斗初始化时的 shader 编译状态轮询）
-        // 只计为 1 个 stall 帧，不熔断
+        // 只计为 1 个 stall 帧，不触发熔断信号
         StallDetector detector = new StallDetector(4, 3);
         for (int i = 0; i < 10; i++) {
-            assertDoesNotThrow(detector::onStall);
+            assertFalse(detector.onStall());
         }
         assertEquals(10, detector.currentWindowStalls());
     }
@@ -55,12 +55,12 @@ class StallDetectorTest {
             detector.onSwap();
         }
         assertEquals(0, detector.currentWindowStalls());
-        // 过期后重新累计：2 个 stall 帧不抛，第 3 个抛
-        detector.onStall();
+        // 过期后重新累计：2 个 stall 帧不触发，第 3 个触发
+        assertFalse(detector.onStall());
         detector.onSwap();
-        detector.onStall();
+        assertFalse(detector.onStall());
         detector.onSwap();
-        assertThrows(IllegalStateException.class, detector::onStall);
+        assertTrue(detector.onStall());
     }
 
     @Test
@@ -72,7 +72,7 @@ class StallDetectorTest {
         // 仍在窗口内，累计 2 次
         assertEquals(2, detector.currentWindowStalls());
         detector.onSwap();
-        assertThrows(IllegalStateException.class, detector::onStall);
+        assertTrue(detector.onStall());
     }
 
     @Test

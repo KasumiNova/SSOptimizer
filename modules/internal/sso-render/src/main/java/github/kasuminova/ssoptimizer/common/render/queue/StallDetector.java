@@ -2,12 +2,14 @@ package github.kasuminova.ssoptimizer.common.render.queue;
 
 /**
  * 阻塞式调用熔断器：滑动窗口统计主线程在 swap 之间发生阻塞式 GL 调用
- * （{@link RenderQueue#get}/{@link RenderQueue#wait}）的<b>帧密度</b>，超阈值即抛异常。
+ * （{@link RenderQueue#get}/{@link RenderQueue#wait}）的<b>帧密度</b>，达到阈值时
+ * 经 {@link #onStall()} 返回值向调用方发出熔断信号（处置策略由调用方决定，
+ * 见 RenderQueueImpl 的 stall 策略：默认限频 WARN 放行，crash 模式抛异常）。
  * <p>
  * 动机（照搬 FR 的设计意图）：每一次阻塞式调用都是一次全管线 drain，模组若用
  * getter 回读做每帧逻辑（未仿真的 pname），会把双线程管线打回串行甚至造成隐性
- * 死锁。这类问题静默发生时极难排查，因此在窗口内 stall 密度超过阈值时直接以
- * 带诊断信息的异常暴露。默认窗口 {@value #DEFAULT_WINDOW_FRAMES} 帧、阈值
+ * 死锁。这类问题静默发生时极难排查，因此窗口内 stall 密度达到阈值时必须以
+ * 带诊断信息的信号暴露。默认窗口 {@value #DEFAULT_WINDOW_FRAMES} 帧、阈值
  * {@value #DEFAULT_THRESHOLD} 帧（FR 同参数）。
  * <p>
  * 计数单位为「stall 帧」而非调用次数：一帧内无论发生多少次阻塞调用（战斗初始化时
@@ -26,7 +28,7 @@ package github.kasuminova.ssoptimizer.common.render.queue;
 public final class StallDetector {
     /** 默认滑动窗口大小（帧）。 */
     public static final int DEFAULT_WINDOW_FRAMES = 60;
-    /** 默认窗口内 stall 帧阈值（达到即抛异常）。 */
+    /** 默认窗口内 stall 帧阈值（达到即触发熔断信号）。 */
     public static final int DEFAULT_THRESHOLD = 30;
 
     private final int windowFrames;
@@ -45,7 +47,7 @@ public final class StallDetector {
 
     /**
      * @param windowFrames 滑动窗口大小（帧），至少为 1
-     * @param threshold    窗口内允许的 stall 帧上限（达到即抛），至少为 1
+     * @param threshold    窗口内允许的 stall 帧上限（达到即触发熔断信号），至少为 1
      */
     public StallDetector(int windowFrames, int threshold) {
         if (windowFrames < 1 || threshold < 1) {
@@ -58,23 +60,30 @@ public final class StallDetector {
     }
 
     /**
-     * 记录一次阻塞式调用；当前帧是窗口内首个 stall 时将其计为一个 stall 帧，
-     * 窗口内 stall 帧数达到阈值时抛 {@link IllegalStateException}。
+     * 记录一次阻塞式调用；当前帧是窗口内首个 stall 时将其计为一个 stall 帧。
+     *
+     * @return 本次记录后窗口内 stall 帧数是否已达到阈值——true 即熔断条件成立，
+     *         处置策略（限频告警放行 / 抛异常）由调用方决定
      */
-    public synchronized void onStall() {
+    public synchronized boolean onStall() {
         int slot = (int) (frameIndex % windowFrames);
         if (stallsPerFrame[slot] == 0) {
             windowStallFrames++;
         }
         stallsPerFrame[slot]++;
         windowTotal++;
-        if (windowStallFrames >= threshold) {
-            throw new IllegalStateException(
-                    "[SSOptimizer] 最近 " + windowFrames + " 帧内有 " + windowStallFrames
-                            + " 帧发生阻塞式 GL 调用（阈值 " + threshold + " 帧，窗口内共 " + windowTotal + " 次）。"
-                            + "有模组在主线程持续做 getter 回读/同步调用，正在打穿渲染管线；"
-                            + "请为该调用补状态仿真或改为帧级一次性调用，勿静默放行以免演变为隐性死锁。");
-        }
+        return windowStallFrames >= threshold;
+    }
+
+    /**
+     * @return 熔断条件成立时的诊断文本（窗口统计与修复指引），
+     *         供调用方拼上站点信息后输出告警或异常消息
+     */
+    public synchronized String tripDiagnostics() {
+        return "最近 " + windowFrames + " 帧内有 " + windowStallFrames
+                + " 帧发生阻塞式 GL 调用（阈值 " + threshold + " 帧，窗口内共 " + windowTotal + " 次）。"
+                + "有模组在主线程持续做 getter 回读/同步调用，正在打穿渲染管线；"
+                + "请为该调用补状态仿真或改为帧级一次性调用，勿静默放行以免演变为隐性死锁。";
     }
 
     /**

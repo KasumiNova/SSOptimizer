@@ -31,7 +31,7 @@ FR 的架构与「逻辑线程/渲染线程各自推进」有本质区别：
 | 资源 id | `ResourceGenerator` 预生成 stash（主线程 pop，空才阻塞） | 照搬；直接解「advance 内 Ship.init 分配 VBO」硬阻塞 |
 | buffer 参数 | `BufferPool` 录制时深拷贝（2 的幂分级池） | 照搬 |
 | 显示列表 | `ListManager` 命令帧重放 | 按需（原版 GLListManager 路径） |
-| 熔断 | `StallDetector`：60 帧窗口 stall ≥30 次抛异常 | 照搬，防模组把管线打死锁 |
+| 熔断 | `StallDetector`：60 帧窗口 stall ≥30 帧触发熔断信号，策略分级——默认限频 WARN 放行（`ssoptimizer.renderthread.stallPolicy`），`crash` 模式抛异常 | 照搬窗口/阈值参数；处置从 FR 的直接抛异常改为策略化（玩家环境的击穿源是第三方模组，崩溃不解决任何问题，告警保留定位能力） |
 | 分层归并 | `commitLayer` 按 (mode, texture, blend) 分组批量绘制 | 与我们段内归并量化方向一致，FR 实证了层内重排在视觉上是可接受的 |
 | 帧尾 vsync | sleep 粗调 + 自旋精调的微秒级同步 | 照搬 |
 

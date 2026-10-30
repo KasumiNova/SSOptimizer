@@ -154,6 +154,7 @@
 | `ssoptimizer.textdiagnostics.enable` | `false` | 启用 v2 文本渲染诊断统计（render 接管的 pass/quad 聚合） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.renderthread.glErrorProbe` | `"off"` | RT 管线 GL 错误探针：`frame`（每帧末尾排空滞留 glGetError 并记 WARN）/ `command`（逐命令排空，重，仅定位用；该模式下录制侧把命令包装为 `ProbeSiteCommand` 捕获录制点堆栈，出错时输出去重后的录制点）。用于定位「滞留 GL 错误被模组健康校验（如 BoxUtil aux 线程 glInit）读到」类问题 | `common/render/queue/RenderQueueImpl.java`（`GL_ERROR_PROBE_PROPERTY`）、`ProbeSiteCommand.java` |
+| `ssoptimizer.renderthread.stallPolicy` | `"warn"` | 阻塞式 GL 调用熔断策略（窗口 60 帧内 stall 帧 ≥30 触发）：`warn` 记限频 WARN（10s 冷却，附窗口统计与累计阻塞站点 top5）后放行——调用仍被正确服务，仅失去管线并行收益；`crash` 直接抛 `IllegalStateException`（开发排障用，非法值按 warn 处理并记 WARN） | `common/render/queue/RenderQueueImpl.java`（`STALL_POLICY_PROPERTY`）、`StallDetector.java` |
 | `ssoptimizer.render.deferredGlEnd` | `true` | glEnd 延迟落帧：顶点流段在 glEnd 只记 OP_END，落帧推迟到非流式命令/帧尾/容量阈值（false 回退每 glEnd 立即落帧）；auxNative 路径强制保持立即落帧 | `bridge/opengl/BridgeSupport.java`、`GL11.java` |
 | `ssoptimizer.render.deferredGlEnd.thresholdBytes` | `1048576`（1MB） | 延迟落帧容量阈值：挂起流字节数达到即落帧兜底 | `bridge/opengl/BridgeSupport.java` |
 | `ssoptimizer.render.streamMatrixOps` | `true` | 流内矩阵指令：glPushMatrix/glPopMatrix/glLoadIdentity/glTranslatef/glRotatef/glScalef/glMatrixMode 在簿记后编码进顶点流（false 回退逐条 enqueue 老路径，glMatrixMode 回退路径保留去重）；auxNative 路径强制保持 enqueue 立即执行 | `bridge/opengl/BridgeSupport.java`、`GL11.java`、`VertexStream.java` |

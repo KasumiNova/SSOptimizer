@@ -198,13 +198,15 @@ class RenderQueueImplTest {
 
     @Test
     void blockingCallsCountedByStallDetector() {
-        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(60, 2));
+        StallDetector detector = new StallDetector(60, 2);
+        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), detector);
         RenderThreadMode.markLoadingFinished();
         queue.get(() -> null);
         // 熔断语义为 stall 帧密度：跨帧的第二次阻塞调用才计入第二个 stall 帧
         queue.swapFramesAndSync();
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
-        assertTrue(String.valueOf(ex.getMessage()).contains("阻塞式 GL 调用"));
+        // 达到阈值触发熔断信号；默认 warn 策略放行，调用仍被正确服务
+        assertDoesNotThrow(() -> queue.get(() -> null));
+        assertEquals(2, detector.currentWindowStalls());
     }
 
     @Test
@@ -219,9 +221,11 @@ class RenderQueueImplTest {
         RenderThreadMode.markLoadingFinished();
         queue.get(() -> null);
         assertEquals(1, detector.currentWindowStalls(), "加载期结束后恢复计数");
-        // stall 帧密度语义：推进一帧后的阻塞调用计入第二个 stall 帧，达到阈值熔断
+        // stall 帧密度语义：推进一帧后的阻塞调用计入第二个 stall 帧，达到阈值触发
+        // 熔断信号；默认 warn 策略放行，调用仍被正确服务
         queue.swapFramesAndSync();
-        assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
+        assertDoesNotThrow(() -> queue.get(() -> null));
+        assertEquals(2, detector.currentWindowStalls());
     }
 
     @Test
@@ -243,7 +247,9 @@ class RenderQueueImplTest {
         queue.get(() -> null);
         assertEquals(1, detector.currentWindowStalls(), "回读类调用保持计数");
         queue.swapFramesAndSync();
-        assertThrows(IllegalStateException.class, () -> queue.get(() -> null));
+        // 达到阈值触发熔断信号；默认 warn 策略放行，调用仍被正确服务
+        assertDoesNotThrow(() -> queue.get(() -> null));
+        assertEquals(2, detector.currentWindowStalls());
     }
 
     @Test
@@ -388,5 +394,37 @@ class RenderQueueImplTest {
         assertThrows(IllegalArgumentException.class,
                 () -> RenderQueueImpl.GlErrorProbe.parse("verbose"));
         assertEquals(RenderQueueImpl.GlErrorProbe.FRAME, RenderQueueImpl.GlErrorProbe.parse(" Frame "));
+    }
+
+    @Test
+    void stallTripWarnPolicyServesCallWithoutThrowing() {
+        // 窗口 2 帧、阈值 1：加载期结束后第一次阻塞调用即触发熔断信号；
+        // 默认 warn 策略放行——调用仍被正确服务并返回结果，不抛异常
+        RenderThreadMode.markLoadingFinished();
+        queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(2, 1));
+        assertEquals(42, (int) queue.get(() -> 42));
+        assertEquals(43, (int) queue.get(() -> 43), "持续击穿期间后续调用仍须正常服务");
+    }
+
+    @Test
+    void stallTripCrashPolicyThrows() {
+        RenderThreadMode.markLoadingFinished();
+        System.setProperty(RenderQueueImpl.STALL_POLICY_PROPERTY, "crash");
+        try {
+            queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(2, 1));
+            IllegalStateException ex = assertThrows(IllegalStateException.class,
+                    () -> queue.get(() -> 42));
+            assertTrue(String.valueOf(ex.getMessage()).contains("top5"));
+        } finally {
+            System.clearProperty(RenderQueueImpl.STALL_POLICY_PROPERTY);
+        }
+    }
+
+    @Test
+    void stallPolicyParsing() {
+        assertTrue(RenderQueueImpl.parseStallTripCrash("crash"));
+        assertTrue(RenderQueueImpl.parseStallTripCrash(" CRASH ".trim()));
+        assertFalse(RenderQueueImpl.parseStallTripCrash("warn"));
+        assertFalse(RenderQueueImpl.parseStallTripCrash("verbose"), "非法值按 warn 处理");
     }
 }

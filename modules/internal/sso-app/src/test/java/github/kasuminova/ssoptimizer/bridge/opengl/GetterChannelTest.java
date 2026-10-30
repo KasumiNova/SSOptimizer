@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * （起真实渲染线程），但命令体是纯 Java 断言/取值，不触碰真实 GL。
  * <p>
  * 验证点：getter 在渲染线程执行并回传结果；每次阻塞调用计入 StallDetector，
- * 超阈值熔断；渲染线程内的嵌套 get 直接执行不自死锁。
+ * 达到阈值触发熔断信号（默认 warn 策略放行）；渲染线程内的嵌套 get 直接执行不自死锁。
  */
 class GetterChannelTest {
 
@@ -49,10 +49,11 @@ class GetterChannelTest {
         github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode.markLoadingFinished();
         queue.get(() -> 1);
         assertEquals(1, detector.currentWindowStalls(), "每次阻塞调用计入 StallDetector");
-        // 熔断语义为 stall 帧密度：推进一帧后的第二次阻塞调用才达到阈值
+        // 熔断语义为 stall 帧密度：推进一帧后的第二次阻塞调用才达到阈值；
+        // 达到阈值触发熔断信号，默认 warn 策略放行——调用仍被正确服务并返回结果
         queue.swapFramesAndSync();
-        assertThrows(IllegalStateException.class, () -> queue.get(() -> 2),
-                "达到阈值的阻塞调用必须被熔断");
+        assertEquals(2, (int) queue.get(() -> 2), "达到阈值的阻塞调用在 warn 策略下仍须正常服务");
+        assertEquals(2, detector.currentWindowStalls());
     }
 
     @Test

@@ -28,6 +28,11 @@ import java.util.stream.Collectors;
  * （语义参考 common/concurrent/FrameParallelExecutorImpl 的失败收集模式，载体从
  * 失败列表换成帧 Future）。
  * <p>
+ * stall 熔断策略：{@link StallDetector} 检测到阻塞式 GL 调用的帧密度达到阈值时，
+ * 由 {@link #STALL_POLICY_PROPERTY} 决定处置——默认 {@code warn}（限频 WARN 放行，
+ * 阻塞调用仍被正确服务，仅失去管线并行收益），{@code crash} 抛异常（开发排障用，
+ * 附累计阻塞站点 top5）。
+ * <p>
  * 并发要点：{@link #frameLock} 只保护「当前帧指针 + 提交」这一小段临界区，
  * 保证 aux-context 生产者线程的 {@link #submit(GlCommand)} 与主线程 swap 不会把
  * 命令丢进已提交的帧；帧内列表本身的并发追加由 {@link RenderFrame#add} 的
@@ -56,6 +61,12 @@ public final class RenderQueueImpl implements RenderQueue {
 
     /** GL 错误探针系统属性：off（默认）/ frame（帧尾排空）/ command（逐命令排空）。 */
     public static final String GL_ERROR_PROBE_PROPERTY = "ssoptimizer.renderthread.glErrorProbe";
+
+    /** stall 熔断策略系统属性：warn（默认，限频告警放行）/ crash（达到阈值直接抛异常，开发排障用）。 */
+    public static final String STALL_POLICY_PROPERTY = "ssoptimizer.renderthread.stallPolicy";
+
+    /** warn 策略下熔断告警的限频间隔（纳秒）：持续击穿期间至多每 10 秒一条，避免刷屏。 */
+    private static final long STALL_WARN_COOLDOWN_NANOS = 10_000_000_000L;
 
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
@@ -103,6 +114,10 @@ public final class RenderQueueImpl implements RenderQueue {
 
     private final FramePool framePool;
     private final StallDetector stallDetector;
+    /** stall 熔断策略（构造时从 {@link #STALL_POLICY_PROPERTY} 解析）：true = 达到阈值抛异常。 */
+    private final boolean stallTripCrash;
+    /** 上一次熔断 WARN 的时间戳（纳秒，限频用；stall 事件可多线程触发，volatile 足够）。 */
+    private volatile long lastStallWarnNanos;
     /**
      * 提交队列：MPSC 无锁有界数组队列（JCTools，项目既有依赖）。生产者为主线程
      * （帧/同步任务）、aux-context 生产者线程（同步任务）与渲染线程自身（悬挂
@@ -179,6 +194,7 @@ public final class RenderQueueImpl implements RenderQueue {
                     GlErrorProbe glErrorProbe, IntSupplier glErrorSource) {
         this.framePool = framePool;
         this.stallDetector = stallDetector;
+        this.stallTripCrash = parseStallTripCrash(System.getProperty(STALL_POLICY_PROPERTY, "warn"));
         this.glErrorProbe = glErrorProbe;
         this.glErrorSource = glErrorSource;
         this.currentFrame = framePool.acquire();
@@ -252,13 +268,50 @@ public final class RenderQueueImpl implements RenderQueue {
         blockingSites.computeIfAbsent(site, k -> new LongAdder()).increment();
     }
 
-    /** @return 累计阻塞调用站点 top5（熔断异常的诊断后缀） */
+    /** @return 累计阻塞调用站点 top5（熔断诊断后缀） */
     private String topBlockingSites() {
         return blockingSites.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue().sum(), a.getValue().sum()))
                 .limit(5)
                 .map(e -> e.getKey() + " x" + e.getValue().sum())
                 .collect(Collectors.joining(", "));
+    }
+
+    /**
+     * 熔断条件成立的处置：crash 策略抛 {@link IllegalStateException}（带窗口诊断与
+     * 站点 top5，开发排障用）；warn 策略按 {@link #STALL_WARN_COOLDOWN_NANOS} 限频
+     * 记 WARN 后放行——阻塞调用本身仍会被正确服务，持续击穿只是失去双线程管线
+     * 收益，不应因此打断游戏（熔断信号可能由任一录制线程触发，故冷却用时间戳
+     * 而非帧计数）。
+     */
+    private void onStallTrip() {
+        String diagnostics = stallDetector.tripDiagnostics()
+                + " 累计阻塞调用站点 top5: " + topBlockingSites();
+        if (stallTripCrash) {
+            throw new IllegalStateException("[SSOptimizer] " + diagnostics);
+        }
+        long now = System.nanoTime();
+        if (now - lastStallWarnNanos >= STALL_WARN_COOLDOWN_NANOS) {
+            lastStallWarnNanos = now;
+            LOGGER.warn("[SSOptimizer] " + diagnostics
+                    + "（warn 策略：调用仍被正确服务，仅失去管线并行收益；开发排障可设 -D"
+                    + STALL_POLICY_PROPERTY + "=crash 直接抛出）");
+        }
+    }
+
+    /**
+     * 解析 stall 熔断策略属性：{@code "crash"} 达到阈值直接抛异常（开发排障）；
+     * 默认与非法值均为 warn（限频告警后放行，非法值记 WARN）。
+     */
+    static boolean parseStallTripCrash(String value) {
+        if ("crash".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if (!"warn".equalsIgnoreCase(value)) {
+            LOGGER.warn("[SSOptimizer] 无法识别的 stall 熔断策略 '" + value
+                    + "'，按 warn 处理（可选 warn/crash，属性 " + STALL_POLICY_PROPERTY + "）");
+        }
+        return false;
     }
 
     /**
@@ -302,11 +355,8 @@ public final class RenderQueueImpl implements RenderQueue {
         // 资源申请类调用（getUncounted）任何时期都不计数（见 RenderQueue 接口注释）
         if (countStall && RenderThreadMode.isLoadingFinished()) {
             recordBlockingSite();
-            try {
-                stallDetector.onStall();
-            } catch (IllegalStateException trip) {
-                throw new IllegalStateException(
-                        trip.getMessage() + " 累计阻塞调用站点 top5: " + topBlockingSites(), trip);
+            if (stallDetector.onStall()) {
+                onStallTrip();
             }
         }
         SyncTask<T> task = new SyncTask<>(getter);
