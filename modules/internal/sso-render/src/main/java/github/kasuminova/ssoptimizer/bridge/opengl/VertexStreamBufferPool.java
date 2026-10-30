@@ -364,11 +364,6 @@ final class VertexStreamBufferPool {
         return total;
     }
 
-    /** 测试用：指定容量档桶内的空闲缓冲数（分桶借还账目断言）。 */
-    int pooledInBucketForTest(int capacity) {
-        return buckets[bucketIndexFor(capacity)].size();
-    }
-
     /** 向上取整到不小于 {@code bytes} 的 2 的幂（且不小于最小档容量）。 */
     private static int capacityFor(int bytes) {
         if (bytes <= MIN_CAPACITY) {
