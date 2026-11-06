@@ -1,13 +1,13 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
 import com.fs.graphics.TextureLoader;
-import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
+import com.fs.graphics.TextureManager;
+import com.fs.util.ResourceLoader;
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.common.render.atlas.ShipWeaponAtlas;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
-import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
+import github.kasuminova.ssoptimizer.mixin.loading.TextureObjectAccessor;
 import org.apache.log4j.Logger;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -20,10 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
@@ -50,7 +47,6 @@ public final class LazyTextureManager {
     static final         String   COMPOSITION_REPORT_INTERVAL_MILLIS_PROPERTY = "ssoptimizer.texturecomposition.reportintervalmillis";
     static final         String   MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY     = "ssoptimizer.texturemanager.logintervalmillis";
     static final         String   HOT_RELOAD_PROPERTY                         = "ssoptimizer.texcompress.hotreload";
-    static final         String   RESOURCE_MANAGER_CLASS_NAME                 = ResourceLoaderFileAccessProcessor.TARGET_CLASS.replace('/', '.');
     static final         String   DEFAULT_COMPOSITION_REPORT_FILE             = "ssoptimizer-texture-composition.tsv";
     private static final Logger   LOGGER                                      = Logger.getLogger(LazyTextureManager.class);
     private static final int      TARGET_2D                                   = 3553;
@@ -75,7 +71,6 @@ public final class LazyTextureManager {
     private static final String   TRACE_PATH                                  = System.getProperty(TRACE_PATH_PROPERTY, "");
     private static final Set<String> TRACE_ALL_SEEN                           = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final String   FONTS_PREFIX                                = "graphics/fonts/";
-    private static final String   ORIGINAL_EAGER_LOAD_METHOD_NAME             = "ssoptimizer$loadTextureEager";
     private static final String   INSIGNIA_PREFIX                             = FONTS_PREFIX + "insignia";
     private static final String   ORBITRON_PREFIX                             = FONTS_PREFIX + "orbitron";
     private static final String   VICTOR_PREFIX                               = FONTS_PREFIX + "victor";
@@ -106,15 +101,6 @@ public final class LazyTextureManager {
     private static final    AtomicLong                                                   TOTAL_EVICTED_TEXTURES              = new AtomicLong();
     private static final    AtomicLong                                                   PENDING_EVICTED_TEXTURES            = new AtomicLong();
     private static final    Object                                                       CONTEXT_GENERATION_LOCK             = new Object();
-    private static final    Method                                                       EAGER_PATH_LOAD_METHOD              = resolveEagerLoadMethod();
-    private static final    Method                                                       IN_PLACE_LOAD_METHOD                = resolveInPlaceLoadMethod();
-    private static final    Method                                                       ORIGINAL_LAZY_MODE_METHOD           = resolveOriginalLazyModeMethod();
-    private static final    Method                                                       RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
-    private static final    Method                                                       RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
-    private static final    Method                                                       RESOURCE_MANAGER_GET_FILE_METHOD    = resolveResourceManagerGetFileMethod();
-    // 必须直接读写 textureId 字段，调用 getTextureId 会重入懒加载管线。
-    private static final    Field                                                        TEXTURE_ID_FIELD                    = resolveField(com.fs.graphics.TextureObject.class, "textureId");
-    private static final    Field                                                        SPECIAL_MIPMAP_SET_FIELD            = resolveField(TextureLoader.class, GameMemberNames.TextureLoader.SPECIAL_MIPMAP_SET);
     private static volatile long                                                         nextSweepNanos                      = 0L;
     private static volatile long                                                         nextCompositionReportNanos          = 0L;
     private static volatile long                                                         nextManagementLogNanos              = 0L;
@@ -154,8 +140,8 @@ public final class LazyTextureManager {
             try {
                 final Path exported = exportTextureCompositionReport(configured);
                 LOGGER.info("[SSOptimizer] Exported texture composition report to " + exported);
-            } catch (Throwable t) {
-                LOGGER.warn("[SSOptimizer] Failed to export texture composition report", t);
+            } catch (IOException | RuntimeException e) {
+                LOGGER.warn("[SSOptimizer] Failed to export texture composition report", e);
             }
         }, "SSOptimizer-TextureCompositionReport"));
     }
@@ -550,15 +536,7 @@ public final class LazyTextureManager {
     }
 
     public static boolean isOriginalLazyModeEnabled() {
-        final Method method = ORIGINAL_LAZY_MODE_METHOD;
-        if (method == null) {
-            return false;
-        }
-        try {
-            return Boolean.TRUE.equals(method.invoke(null));
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            return false;
-        }
+        return TextureManager.isLazyLoadingEnabled();
     }
 
     private static void maybeSweepIdleTextures(final com.fs.graphics.TextureObject currentTexture,
@@ -1005,43 +983,24 @@ public final class LazyTextureManager {
         if (imageWidth <= 1024 && imageHeight <= 1024) {
             return true;
         }
-        final Field field = SPECIAL_MIPMAP_SET_FIELD;
-        if (field == null) {
-            return false;
-        }
-        try {
-            final Object value = field.get(null);
-            return value instanceof Set<?> set && set.contains(resourcePath);
-        } catch (IllegalAccessException e) {
-            return false;
-        }
+        return TextureLoader.specialMipmapSet.contains(resourcePath);
     }
 
     private static com.fs.graphics.TextureObject eagerLoad(final TextureLoader loader,
                                                            final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                                            final String loadPath,
                                                            final String requestedPath) throws IOException {
-        final Method eagerLoadMethod = EAGER_PATH_LOAD_METHOD;
-        if (eagerLoadMethod == null) {
-            throw new IOException("Unable to resolve TextureLoader eager load method for " + requestedPath);
-        }
-
-        try {
-            final com.fs.graphics.TextureObject texture = (com.fs.graphics.TextureObject) eagerLoadMethod.invoke(
-                    loader,
-                    loadPath
-            );
-            cacheTexture(textureCache, requestedPath, loadPath, texture);
-            return texture;
-        } catch (InvocationTargetException e) {
-            final Throwable cause = e.getCause();
-            if (cause instanceof IOException ioException) {
-                throw ioException;
-            }
-            throw new IOException("Failed to eagerly load texture " + requestedPath, cause);
-        } catch (IllegalAccessException e) {
-            throw new IOException("Unable to invoke TextureLoader eager load for " + requestedPath, e);
-        }
+        final com.fs.graphics.TextureObject texture = loader.loadTextureData(
+                null,
+                loadPath,
+                TARGET_2D,
+                INTERNAL_FORMAT_RGBA,
+                minFilterForResourcePath(loadPath),
+                magFilterForResourcePath(loadPath),
+                false
+        );
+        cacheTexture(textureCache, requestedPath, loadPath, texture);
+        return texture;
     }
 
     private static com.fs.graphics.TextureObject loadPreparedTexture(final TextureLoader loader,
@@ -1169,15 +1128,15 @@ public final class LazyTextureManager {
             return input;
         }
 
-        try {
-            return new FileInputStream(originalPath);
-        } catch (IOException ignored) {
+        final File originalFile = new File(originalPath);
+        if (originalFile.isFile()) {
+            return new FileInputStream(originalFile);
         }
 
         if (!normalizedPath.equals(originalPath)) {
-            try {
-                return new FileInputStream(normalizedPath);
-            } catch (IOException ignored) {
+            final File normalizedFile = new File(normalizedPath);
+            if (normalizedFile.isFile()) {
+                return new FileInputStream(normalizedFile);
             }
         }
 
@@ -1196,25 +1155,14 @@ public final class LazyTextureManager {
     }
 
     private static InputStream openManagedStream(final String resourcePath) throws IOException {
-        final Method factoryMethod = RESOURCE_MANAGER_FACTORY_METHOD;
-        final Method openStreamMethod = RESOURCE_MANAGER_OPEN_STREAM_METHOD;
-        if (factoryMethod == null || openStreamMethod == null || resourcePath == null || resourcePath.isBlank()) {
+        if (resourcePath == null || resourcePath.isBlank()) {
             return null;
         }
-
         try {
-            final Object manager = factoryMethod.invoke(null);
-            if (manager == null) {
-                return null;
-            }
-            return (InputStream) openStreamMethod.invoke(manager, resourcePath);
-        } catch (InvocationTargetException e) {
-            final Throwable cause = e.getCause();
-            if (cause instanceof IOException ioException) {
-                throw ioException;
-            }
-            return null;
-        } catch (IllegalAccessException e) {
+            return ResourceLoader.getInstance().openStream(resourcePath);
+        } catch (final RuntimeException e) {
+            // 原版以 RuntimeException 表示所有资源根均未命中，缺失时沿用既有回落链。
+            LOGGER.debug("[SSOptimizer] 托管资源未命中: " + resourcePath + ": " + e.getMessage());
             return null;
         }
     }
@@ -1360,38 +1308,53 @@ public final class LazyTextureManager {
         texture.setLowerHalfColor(metadata.lowerHalfColor);
     }
 
+    // 访问器直接读写字段，避免 getTextureId 重入懒加载管线；测试夹具未经 Mixin 变换，经 TextureIdAccess 替换实现。
+    private static volatile TextureIdAccess textureIdAccess = new MixinTextureIdAccess();
+
+    interface TextureIdAccess {
+        int read(com.fs.graphics.TextureObject texture);
+
+        void write(com.fs.graphics.TextureObject texture, int textureId);
+    }
+
+    private static final class MixinTextureIdAccess implements TextureIdAccess {
+        @Override
+        public int read(final com.fs.graphics.TextureObject texture) {
+            return ((TextureObjectAccessor) texture).ssoptimizer$readTextureId();
+        }
+
+        @Override
+        public void write(final com.fs.graphics.TextureObject texture, final int textureId) {
+            ((TextureObjectAccessor) texture).ssoptimizer$writeTextureId(textureId);
+        }
+    }
+
+    static void installTextureIdAccessForTests(final TextureIdAccess access) {
+        if (access == null) {
+            throw new IllegalArgumentException("access must not be null");
+        }
+        textureIdAccess = access;
+    }
+
+    static void resetTextureIdAccessForTests() {
+        textureIdAccess = new MixinTextureIdAccess();
+    }
+
     private static void setTextureId(final com.fs.graphics.TextureObject texture,
                                      final int textureId) {
-        final Field field = TEXTURE_ID_FIELD;
-        if (field == null) {
-            throw new IllegalStateException("Texture id field is unavailable for deferred upload");
-        }
-        try {
-            field.setInt(texture, textureId);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Unable to set deferred texture id", e);
-        }
+        textureIdAccess.write(texture, textureId);
     }
 
     private static int readTextureId(final com.fs.graphics.TextureObject texture,
                                      final int fallback) {
-        final Field field = TEXTURE_ID_FIELD;
-        if (field == null || texture == null) {
+        if (texture == null) {
             return fallback;
         }
-        try {
-            return field.getInt(texture);
-        } catch (IllegalAccessException e) {
-            return fallback;
-        }
+        return textureIdAccess.read(texture);
     }
 
     private static boolean hasCurrentOpenGlContext() {
-        try {
-            return GLContext.getCapabilities() != null;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return currentOpenGlContextToken() != null;
     }
 
     private static long observeCurrentOpenGlContextGeneration() {
@@ -1415,7 +1378,8 @@ public final class LazyTextureManager {
     private static Object currentOpenGlContextToken() {
         try {
             return GLContext.getCapabilities();
-        } catch (Throwable ignored) {
+        } catch (RuntimeException | LinkageError e) {
+            LOGGER.debug("[SSOptimizer] OpenGL context is unavailable: " + e.getMessage(), e);
             return null;
         }
     }
@@ -1431,7 +1395,8 @@ public final class LazyTextureManager {
         }
         try {
             return GL11.glGetInteger(bindingParameter);
-        } catch (Throwable ignored) {
+        } catch (RuntimeException e) {
+            LOGGER.warn("[SSOptimizer] Failed to query the current texture binding for target " + target, e);
             return Integer.MIN_VALUE;
         }
     }
@@ -1564,35 +1529,19 @@ public final class LazyTextureManager {
     private static void reloadTextureInPlace(final com.fs.graphics.TextureObject texture,
                                              final int target,
                                              final String resourcePath) throws IOException {
-        final Method inPlaceLoadMethod = IN_PLACE_LOAD_METHOD;
-        if (inPlaceLoadMethod == null) {
-            throw new IOException("Unable to resolve TextureLoader in-place load method for " + resourcePath);
-        }
-
         final IntBuffer ids = BufferUtils.createIntBuffer(1);
         GL11.glGenTextures(ids);
         setTextureId(texture, ids.get(0));
 
-        try {
-            inPlaceLoadMethod.invoke(
-                    new TextureLoader(),
-                    texture,
-                    resourcePath,
-                    target,
-                    INTERNAL_FORMAT_RGBA,
-                    minFilterForResourcePath(resourcePath),
-                    magFilterForResourcePath(resourcePath),
-                    false
-            );
-        } catch (InvocationTargetException e) {
-            final Throwable cause = e.getCause();
-            if (cause instanceof IOException ioException) {
-                throw ioException;
-            }
-            throw new IOException("Failed to reload texture " + resourcePath + " after OpenGL context change", cause);
-        } catch (IllegalAccessException e) {
-            throw new IOException("Unable to invoke in-place texture reload for " + resourcePath, e);
-        }
+        new TextureLoader().loadTextureData(
+                texture,
+                resourcePath,
+                target,
+                INTERNAL_FORMAT_RGBA,
+                minFilterForResourcePath(resourcePath),
+                magFilterForResourcePath(resourcePath),
+                false
+        );
     }
 
     private static String normalizeResourcePath(final String resourcePath) {
@@ -1886,186 +1835,18 @@ public final class LazyTextureManager {
                 * compressionFormat.bitsPerPixel() / 8L;
     }
 
-    private static Method resolveEagerLoadMethod() {
-        return resolveEagerLoadMethod(TextureLoader.class);
-    }
-
-    static Method resolveEagerLoadMethod(final Class<?> textureLoaderClass) {
-        try {
-            final Method method = textureLoaderClass.getDeclaredMethod(ORIGINAL_EAGER_LOAD_METHOD_NAME, String.class);
-            method.setAccessible(true);
-            return method;
-        } catch (NoSuchMethodException ignored) {
-        }
-
-        final Method candidate = findUniqueTextureLoadCandidate(textureLoaderClass);
-        if (candidate != null) {
-            candidate.setAccessible(true);
-            LOGGER.warn("[SSOptimizer] TextureLoader eager alias missing; resolved fallback by signature: "
-                    + textureLoaderClass.getName() + '#' + candidate.getName() + "(String)");
-            return candidate;
-        }
-
-        try {
-            final Method fallback = textureLoaderClass.getDeclaredMethod(GameMemberNames.TextureLoader.LOAD_TEXTURE, String.class);
-            fallback.setAccessible(true);
-            LOGGER.warn("[SSOptimizer] Falling back to patched TextureLoader.loadTexture(String); eager alias missing");
-            return fallback;
-        } catch (NoSuchMethodException fallbackException) {
-            throw new IllegalStateException("Unable to resolve TextureLoader eager load method", fallbackException);
-        }
-    }
-
-    private static Method resolveInPlaceLoadMethod() {
-        try {
-            final Method method = findDeclaredMethod(
-                    TextureLoader.class,
-                    com.fs.graphics.TextureObject.class,
-                    false,
-                    com.fs.graphics.TextureObject.class,
-                    String.class,
-                    int.class,
-                    int.class,
-                    int.class,
-                    int.class,
-                    boolean.class
-            );
-            method.setAccessible(true);
-            return method;
-        } catch (NoSuchMethodException e) {
-            LOGGER.warn("[SSOptimizer] Could not resolve TextureLoader in-place load method", e);
-            return null;
-        }
-    }
-
-    private static Method resolveOriginalLazyModeMethod() {
-        try {
-            final Class<?> textureManagerClass = Class.forName(
-                    GameClassNames.TEXTURE_MANAGER_DOTTED,
-                    false,
-                    TextureLoader.class.getClassLoader());
-            return resolveOriginalLazyModeMethod(textureManagerClass);
-        } catch (ClassNotFoundException e) {
-            LOGGER.warn("[SSOptimizer] Could not resolve original lazy texture toggle", e);
-            return null;
-        }
-    }
-
-    static Method resolveOriginalLazyModeMethod(final Class<?> textureManagerClass) {
-        try {
-            final Method method = textureManagerClass.getDeclaredMethod(
-                    GameMemberNames.TextureManager.IS_LAZY_LOADING_ENABLED);
-            method.setAccessible(true);
-            return method;
-        } catch (NoSuchMethodException ignored) {
-        }
-
-        final Method candidate = findUniqueStaticBooleanNoArgMethod(textureManagerClass);
-        if (candidate != null) {
-            candidate.setAccessible(true);
-            LOGGER.warn("[SSOptimizer] TextureManager lazy toggle name mismatch; resolved fallback by signature: "
-                    + textureManagerClass.getName() + '#' + candidate.getName() + "()");
-            return candidate;
-        }
-
-        LOGGER.warn("[SSOptimizer] Could not resolve original lazy texture toggle for " + textureManagerClass.getName());
-        return null;
-    }
-
-    private static Method findUniqueTextureLoadCandidate(final Class<?> textureLoaderClass) {
-        Method uniqueCandidate = null;
-        for (Method method : textureLoaderClass.getDeclaredMethods()) {
-            if (Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
-            if (!com.fs.graphics.TextureObject.class.equals(method.getReturnType())) {
-                continue;
-            }
-            if (!Arrays.equals(method.getParameterTypes(), new Class<?>[]{String.class})) {
-                continue;
-            }
-            if (GameMemberNames.TextureLoader.LOAD_TEXTURE.equals(method.getName())) {
-                continue;
-            }
-            if (uniqueCandidate != null) {
-                return null;
-            }
-            uniqueCandidate = method;
-        }
-        return uniqueCandidate;
-    }
-
-    private static Method findUniqueStaticBooleanNoArgMethod(final Class<?> owner) {
-        Method uniqueCandidate = null;
-        for (Method method : owner.getDeclaredMethods()) {
-            if (!Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
-            if (!boolean.class.equals(method.getReturnType())) {
-                continue;
-            }
-            if (method.getParameterCount() != 0) {
-                continue;
-            }
-            if (uniqueCandidate != null) {
-                return null;
-            }
-            uniqueCandidate = method;
-        }
-        return uniqueCandidate;
-    }
-
-    private static Method resolveResourceManagerFactoryMethod() {
-        try {
-            final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, TextureLoader.class.getClassLoader());
-            final Method method = findDeclaredMethod(resourceManagerClass, resourceManagerClass, true);
-            method.setAccessible(true);
-            return method;
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            LOGGER.warn("[SSOptimizer] Could not resolve resource manager singleton accessor", e);
-            return null;
-        }
-    }
-
-    private static Method resolveResourceManagerOpenStreamMethod() {
-        try {
-            final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, TextureLoader.class.getClassLoader());
-            final Method method = findDeclaredMethod(resourceManagerClass, InputStream.class, false, String.class);
-            method.setAccessible(true);
-            return method;
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            LOGGER.warn("[SSOptimizer] Could not resolve resource manager stream accessor", e);
-            return null;
-        }
-    }
-
-    private static Method resolveResourceManagerGetFileMethod() {
-        try {
-            final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, TextureLoader.class.getClassLoader());
-            final Method method = findDeclaredMethod(resourceManagerClass, File.class, false, String.class, boolean.class);
-            method.setAccessible(true);
-            return method;
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            LOGGER.warn("[SSOptimizer] Could not resolve resource manager file accessor", e);
-            return null;
-        }
-    }
-
     static File resolveManagedFile(final String resourcePath) {
-        final Method factoryMethod = RESOURCE_MANAGER_FACTORY_METHOD;
-        final Method getFileMethod = RESOURCE_MANAGER_GET_FILE_METHOD;
-        if (factoryMethod == null || getFileMethod == null || resourcePath == null || resourcePath.isBlank()) {
+        if (resourcePath == null || resourcePath.isBlank()) {
             return null;
         }
-
         try {
-            final Object manager = factoryMethod.invoke(null);
-            if (manager == null) {
-                return null;
-            }
-            return (File) getFileMethod.invoke(manager, resourcePath, true);
-        } catch (InvocationTargetException | IllegalAccessException e) {
+            return ResourceLoader.getInstance().getResourceFile(resourcePath, true);
+        } catch (final RuntimeException e) {
+            // 原版以 RuntimeException 表示所有资源根均未命中，缺失时返回 null 沿用既有回落链。
+            LOGGER.debug("[SSOptimizer] 托管资源文件未命中: " + resourcePath + ": " + e.getMessage());
             return null;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to resolve managed texture resource " + resourcePath, e);
         }
     }
 
@@ -2076,37 +1857,6 @@ public final class LazyTextureManager {
             resolved = resolveManagedFile(normalizedPath);
         }
         return resolved != null ? TextureConversionCache.probeFingerprint(resolved.getAbsolutePath()) : null;
-    }
-
-    private static Field resolveField(final Class<?> owner,
-                                      final String name) {
-        try {
-            final Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException e) {
-            LOGGER.warn("[SSOptimizer] Deferred texture helper could not resolve field " + owner.getName() + '.' + name);
-            return null;
-        }
-    }
-
-    private static Method findDeclaredMethod(final Class<?> owner,
-                                             final Class<?> returnType,
-                                             final boolean requireStatic,
-                                             final Class<?>... parameterTypes) throws NoSuchMethodException {
-        for (Method candidate : owner.getDeclaredMethods()) {
-            if (candidate.getReturnType() != returnType) {
-                continue;
-            }
-            if (Modifier.isStatic(candidate.getModifiers()) != requireStatic) {
-                continue;
-            }
-            if (!Arrays.equals(candidate.getParameterTypes(), parameterTypes)) {
-                continue;
-            }
-            return candidate;
-        }
-        throw new NoSuchMethodException("No method matched signature in " + owner.getName());
     }
 
     private record SourceSnapshot(byte[] sourceBytes,

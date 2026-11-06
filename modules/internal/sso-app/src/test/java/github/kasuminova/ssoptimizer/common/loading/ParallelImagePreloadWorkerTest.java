@@ -6,35 +6,30 @@ import org.junit.jupiter.api.io.TempDir;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ParallelImagePreloadWorkerTest {
-    private static Method resolveMethod(final Class<?> owner,
-                                        final String methodName,
-                                        final Class<?> returnType,
-                                        final Class<?>... parameterTypes) throws Exception {
-        final Method method = owner.getDeclaredMethod(methodName, parameterTypes);
-        method.setAccessible(true);
-        assertEquals(returnType, method.getReturnType());
-        return method;
-    }
-
     @TempDir
     Path gameDir;
 
     @AfterEach
     void tearDown() {
         TexturePreparationRegistry.clear();
+        ParallelImagePreloadQueueTracker.clearPending();
+        ParallelImagePreloadWorker.resetAccessForTests();
     }
 
     @Test
@@ -44,14 +39,23 @@ class ParallelImagePreloadWorkerTest {
         Files.createDirectories(png.getParent());
         ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB), "png", png.toFile());
 
-        com.fs.util.ResourceLoader.getInstance().addDirectoryResource(gameDir.toAbsolutePath().toString());
-
         assertTrue(github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides
                         .isOverriddenPath(path),
                 "测试前提：该路径必须属于字体覆盖集");
 
+        final List<String> imageQueue = new ArrayList<>();
+        final Map<String, BufferedImage> imageResults = new ConcurrentHashMap<>();
+        final List<String> byteQueue = new ArrayList<>();
+        final Map<String, byte[]> byteResults = new ConcurrentHashMap<>();
+        final BufferedImage imageSentinel = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+        final byte[] byteSentinel = new byte[0];
+        ParallelImagePreloadWorker.installAccess(imageQueue, imageResults, byteQueue, byteResults,
+                imageSentinel, byteSentinel,
+                ignored -> ImageIO.read(png.toFile()),
+                ignored -> Files.readAllBytes(png));
+
         TexturePreparationRegistry.track(path);
-        com.fs.graphics.ParallelImagePreloader.enqueueImage(path);
+        ParallelImagePreloadQueueTracker.enqueueImage(imageQueue, path);
 
         new ParallelImagePreloadWorker().run();
 
@@ -65,30 +69,7 @@ class ParallelImagePreloadWorkerTest {
             executor.shutdownNow();
         }
 
-        com.fs.graphics.ParallelImagePreloader.awaitImage(path);
-    }
-
-    @Test
-    void resolvesNamedLoadBytesMethod() throws Exception {
-        final Method method = resolveMethod(FakeDeferredLoaderWithNamedLoader.class, "loadBytes", byte[].class, String.class);
-
-        assertEquals("loadBytes", method.getName());
-    }
-
-    @Test
-    void resolvesNamedDecodeImageMethod() throws Exception {
-        final Method method = resolveMethod(FakeDeferredLoaderWithNamedLoader.class, "decodeImage", java.awt.image.BufferedImage.class, String.class);
-
-        assertEquals("decodeImage", method.getName());
-    }
-
-    static final class FakeDeferredLoaderWithNamedLoader {
-        private static byte[] loadBytes(final String path) {
-            return path.getBytes();
-        }
-
-        private static java.awt.image.BufferedImage decodeImage(final String path) {
-            return new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-        }
+        assertNotNull(ParallelImagePreloadQueueTracker.awaitImage(imageResults, path, imageSentinel),
+                "字体覆盖路径应把解码结果交还给等待方");
     }
 }

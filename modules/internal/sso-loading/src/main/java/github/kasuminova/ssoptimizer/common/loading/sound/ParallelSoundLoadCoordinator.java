@@ -1,15 +1,13 @@
 package github.kasuminova.ssoptimizer.common.loading.sound;
 
+import com.fs.util.ResourceLoader;
 import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
-import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
+import github.kasuminova.ssoptimizer.mixin.loading.SoundManagerAccessor;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,18 +31,10 @@ public final class ParallelSoundLoadCoordinator {
     public static final String PARALLELISM_PROPERTY      = "ssoptimizer.soundload.parallelism";
     public static final String MAX_MEMORY_BYTES_PROPERTY = "ssoptimizer.soundload.cache.maxbytes";
 
-    static final String OBJECT_FAMILY_STREAM_METHOD   = GameMemberNames.SoundManager.LOAD_OBJECT_FAMILY_FROM_STREAM;
-    static final String O00000_FAMILY_STREAM_METHOD   = GameMemberNames.SoundManager.LOAD_O00000_FAMILY_FROM_STREAM;
-    static final String O_ACCENT_FAMILY_STREAM_METHOD = GameMemberNames.SoundManager.LOAD_O_ACCENT_FAMILY_FROM_STREAM;
-    static final String OBJECT_PATH_ORIGINAL   = "ssoptimizer$loadPathObjectFamily";
-    static final String O00000_PATH_ORIGINAL   = "ssoptimizer$loadPathO00000Family";
-    static final String O_ACCENT_PATH_ORIGINAL = "ssoptimizer$loadPathOAccentFamily";
-
     private static final Logger LOGGER = Logger.getLogger(ParallelSoundLoadCoordinator.class);
 
-    private static final String MODS_DIR_PROPERTY           = "com.fs.starfarer.settings.paths.mods";
-    private static final String RESOURCE_MANAGER_CLASS_NAME = GameClassNames.RESOURCE_LOADER.replace('/', '.');
-    private static final long   DEFAULT_MAX_MEMORY_BYTES    = 128L << 20;
+    private static final String MODS_DIR_PROPERTY        = "com.fs.starfarer.settings.paths.mods";
+    private static final long   DEFAULT_MAX_MEMORY_BYTES = 128L << 20;
 
     private static final Object MEMORY_CACHE_LOCK = new Object();
 
@@ -52,9 +42,6 @@ public final class ParallelSoundLoadCoordinator {
     private static final Map<String, Path>                      DISCOVERED_FILES = new ConcurrentHashMap<>();
     private static final LinkedHashMap<String, byte[]>          COMPLETED_BYTES  = new LinkedHashMap<>(16, 0.75f, true);
     private static final AtomicBoolean                          PREWARM_STARTED   = new AtomicBoolean(false);
-
-    private static final Method RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
-    private static final Method RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
 
     private static volatile Semaphore loadGate;
     private static volatile long      completedBytes;
@@ -64,17 +51,17 @@ public final class ParallelSoundLoadCoordinator {
 
     public static Object loadObjectFamily(final Object manager,
                                           final String resourcePath) {
-        return load(manager, resourcePath, OBJECT_FAMILY_STREAM_METHOD, OBJECT_PATH_ORIGINAL);
+        return load(manager, resourcePath, SoundFamily.OBJECT);
     }
 
     public static Object loadO00000Family(final Object manager,
                                           final String resourcePath) {
-        return load(manager, resourcePath, O00000_FAMILY_STREAM_METHOD, O00000_PATH_ORIGINAL);
+        return load(manager, resourcePath, SoundFamily.O00000);
     }
 
     public static Object loadOAccentFamily(final Object manager,
                                            final String resourcePath) {
-        return load(manager, resourcePath, O_ACCENT_FAMILY_STREAM_METHOD, O_ACCENT_PATH_ORIGINAL);
+        return load(manager, resourcePath, SoundFamily.O_ACCENT);
     }
 
     static void clearForTests() {
@@ -100,29 +87,38 @@ public final class ParallelSoundLoadCoordinator {
 
     private static Object load(final Object manager,
                                final String resourcePath,
-                               final String familyMethodName,
-                               final String originalPathMethodName) {
+                               final SoundFamily family) {
         if (manager == null || resourcePath == null || resourcePath.isBlank() || Boolean.getBoolean(DISABLE_PROPERTY)) {
-            return invokeOriginalPathMethod(manager, originalPathMethodName, resourcePath);
+            return null;
         }
 
         ensurePrewarmStarted();
 
-        final byte[] bytes = awaitOrLoadBytes(normalizeResourcePath(resourcePath));
-        if (bytes != null) {
-            final Object loaded = invokeStringAndStreamMethod(manager, familyMethodName, resourcePath, bytes);
-            if (loaded != null) {
-                return loaded;
-            }
+        final String normalizedPath = normalizeResourcePath(resourcePath);
+        final ByteLoadResult byteResult = awaitOrLoadBytes(normalizedPath);
+        if (byteResult.failure() != null) {
+            LOGGER.warn("[SSOptimizer] Parallel sound preload failed for " + normalizedPath
+                    + ", using original path loader", byteResult.failure());
+            return null;
+        }
+        if (byteResult.bytes() == null) {
+            return null;
         }
 
-        return invokeOriginalPathMethod(manager, originalPathMethodName, resourcePath);
+        try {
+            return family.loadFromStream((SoundManagerAccessor) manager,
+                    resourcePath, new ByteArrayInputStream(byteResult.bytes()));
+        } catch (IOException e) {
+            LOGGER.warn("[SSOptimizer] Sound stream decode failed for " + resourcePath
+                    + ", using original path loader", e);
+            return null;
+        }
     }
 
-    private static byte[] awaitOrLoadBytes(final String resourcePath) {
+    private static ByteLoadResult awaitOrLoadBytes(final String resourcePath) {
         final byte[] completed = lookupCompletedBytes(resourcePath);
         if (completed != null) {
-            return completed;
+            return new ByteLoadResult(completed, null);
         }
 
         final CompletableFuture<byte[]> future = INFLIGHT_LOADS.computeIfAbsent(resourcePath,
@@ -139,11 +135,10 @@ public final class ParallelSoundLoadCoordinator {
                 }, VtWorkers::submit));
 
         try {
-            return future.join();
+            return new ByteLoadResult(future.join(), null);
         } catch (CompletionException e) {
-            LOGGER.warn("[SSOptimizer] Parallel sound load failed for " + resourcePath
-                    + ", fallback to original path: " + e.getCause(), e);
-            return null;
+            final Throwable cause = e.getCause() != null ? e.getCause() : e;
+            return new ByteLoadResult(null, cause);
         } finally {
             INFLIGHT_LOADS.remove(resourcePath, future);
         }
@@ -177,7 +172,12 @@ public final class ParallelSoundLoadCoordinator {
                                 return null;
                             }
                         }, VtWorkers::submit);
-                        future.whenComplete((loaded, error) -> INFLIGHT_LOADS.remove(resource, future));
+                        future.whenComplete((loaded, error) -> {
+                            INFLIGHT_LOADS.remove(resource, future);
+                            if (error != null) {
+                                LOGGER.warn("[SSOptimizer] Sound preload failed for " + resource, error);
+                            }
+                        });
                         return future;
                     });
         }
@@ -257,39 +257,6 @@ public final class ParallelSoundLoadCoordinator {
 
         try (InputStream input = inputStream) {
             return input.readAllBytes();
-        }
-    }
-
-    private static Object invokeStringAndStreamMethod(final Object manager,
-                                                      final String methodName,
-                                                      final String resourcePath,
-                                                      final byte[] bytes) {
-        try {
-            final Method method = manager.getClass().getDeclaredMethod(methodName, String.class, InputStream.class);
-            method.setAccessible(true);
-            return method.invoke(manager, resourcePath, new ByteArrayInputStream(bytes));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            return null;
-        } catch (InvocationTargetException e) {
-            return null;
-        }
-    }
-
-    private static Object invokeOriginalPathMethod(final Object manager,
-                                                   final String methodName,
-                                                   final String resourcePath) {
-        if (manager == null) {
-            return null;
-        }
-
-        try {
-            final Method method = manager.getClass().getDeclaredMethod(methodName, String.class);
-            method.setAccessible(true);
-            return method.invoke(manager, resourcePath);
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            return null;
-        } catch (InvocationTargetException e) {
-            return throwUnchecked(e.getCause());
         }
     }
 
@@ -388,60 +355,49 @@ public final class ParallelSoundLoadCoordinator {
     }
 
     private static InputStream openManagedStream(final String resourcePath) throws IOException {
-        final Method factoryMethod = RESOURCE_MANAGER_FACTORY_METHOD;
-        final Method openStreamMethod = RESOURCE_MANAGER_OPEN_STREAM_METHOD;
-        if (factoryMethod == null || openStreamMethod == null || resourcePath == null || resourcePath.isBlank()) {
+        if (resourcePath == null || resourcePath.isBlank()) {
             return null;
         }
-
         try {
-            final Object manager = factoryMethod.invoke(null);
-            if (manager == null) {
-                return null;
-            }
-            return (InputStream) openStreamMethod.invoke(manager, resourcePath);
-        } catch (InvocationTargetException e) {
-            final Throwable cause = e.getCause();
-            if (cause instanceof IOException ioException) {
-                throw ioException;
-            }
-            return null;
-        } catch (IllegalAccessException e) {
+            return ResourceLoader.getInstance().openStream(resourcePath);
+        } catch (final RuntimeException e) {
+            // 原版以 RuntimeException 表示所有资源根均未命中，缺失时沿用既有回落链。
+            LOGGER.debug("[SSOptimizer] 托管资源未命中: " + resourcePath + ": " + e.getMessage());
             return null;
         }
     }
 
-    private static Method resolveResourceManagerFactoryMethod() {
-        try {
-            final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, ParallelSoundLoadCoordinator.class.getClassLoader());
-            for (Method candidate : resourceManagerClass.getDeclaredMethods()) {
-                if (candidate.getReturnType() == resourceManagerClass
-                        && candidate.getParameterCount() == 0
-                        && java.lang.reflect.Modifier.isStatic(candidate.getModifiers())) {
-                    candidate.setAccessible(true);
-                    return candidate;
-                }
+    private enum SoundFamily {
+        OBJECT {
+            @Override
+            Object loadFromStream(final SoundManagerAccessor manager,
+                                  final String resourcePath,
+                                  final InputStream inputStream) throws IOException {
+                return manager.ssoptimizer$loadObjectFamilyFromStream(resourcePath, inputStream);
             }
-            return null;
-        } catch (ClassNotFoundException e) {
-            return null;
-        }
+        },
+        O00000 {
+            @Override
+            Object loadFromStream(final SoundManagerAccessor manager,
+                                  final String resourcePath,
+                                  final InputStream inputStream) throws IOException {
+                return manager.ssoptimizer$loadO00000FamilyFromStream(resourcePath, inputStream);
+            }
+        },
+        O_ACCENT {
+            @Override
+            Object loadFromStream(final SoundManagerAccessor manager,
+                                  final String resourcePath,
+                                  final InputStream inputStream) throws IOException {
+                return manager.ssoptimizer$loadOAccentFamilyFromStream(resourcePath, inputStream);
+            }
+        };
+
+        abstract Object loadFromStream(SoundManagerAccessor manager,
+                                       String resourcePath,
+                                       InputStream inputStream) throws IOException;
     }
 
-    private static Method resolveResourceManagerOpenStreamMethod() {
-        try {
-            final Class<?> resourceManagerClass = Class.forName(RESOURCE_MANAGER_CLASS_NAME, false, ParallelSoundLoadCoordinator.class.getClassLoader());
-            final Method method = resourceManagerClass.getDeclaredMethod("getStream", String.class);
-            method.setAccessible(true);
-            return method;
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            return null;
-        }
+    private record ByteLoadResult(byte[] bytes, Throwable failure) {
     }
-
-    @SuppressWarnings("unchecked")
-    private static <T, E extends Throwable> T throwUnchecked(final Throwable throwable) throws E {
-        throw (E) throwable;
-    }
-
 }

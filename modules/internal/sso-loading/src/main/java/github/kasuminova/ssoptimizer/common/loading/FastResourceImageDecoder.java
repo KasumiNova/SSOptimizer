@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
+import org.apache.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public final class FastResourceImageDecoder {
+    private static final Logger LOGGER = Logger.getLogger(FastResourceImageDecoder.class);
     private static final byte[] PNG_SIGNATURE = {
             (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
     };
@@ -77,7 +79,8 @@ public final class FastResourceImageDecoder {
 
         try {
             decoded = nativePngDecoder.decode(imageBytes);
-        } catch (IOException | UnsupportedOperationException ignored) {
+        } catch (IOException | UnsupportedOperationException e) {
+            LOGGER.warn("[SSOptimizer] Native PNG decode failed for " + path + ", using ImageIO", e);
             return TrackedResourceImage.wrap(path, sourceHash, ImageIO.read(new ByteArrayInputStream(imageBytes)), sourceFingerprint);
         }
 
@@ -91,7 +94,8 @@ public final class FastResourceImageDecoder {
 
         try {
             return NativePngDecoder.decode(imageBytes);
-        } catch (IOException | UnsupportedOperationException ignored) {
+        } catch (IOException | UnsupportedOperationException e) {
+            LOGGER.warn("[SSOptimizer] Native PNG decode failed for an untracked resource, using ImageIO", e);
             return ImageIO.read(new ByteArrayInputStream(imageBytes));
         }
     }

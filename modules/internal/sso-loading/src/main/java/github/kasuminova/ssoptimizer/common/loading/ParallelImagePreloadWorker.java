@@ -2,14 +2,10 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
-import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.apache.log4j.Logger;
 
 import java.awt.image.BufferedImage;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -21,63 +17,27 @@ public final class ParallelImagePreloadWorker implements Runnable {
     private final LoaderAccess access;
 
     public ParallelImagePreloadWorker() {
-        this.access = loaderAccess();
-    }
-
-    private static LoaderAccess loaderAccess() {
-        LoaderAccess access = cachedAccess;
-        if (access != null) {
-            return access;
+        final LoaderAccess installed = cachedAccess;
+        if (installed == null) {
+            throw new IllegalStateException("Parallel image preload access is not installed");
         }
-
-        synchronized (ParallelImagePreloadWorker.class) {
-            if (cachedAccess != null) {
-                return cachedAccess;
-            }
-
-            try {
-                ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                Class<?> deferredLoaderClass = Class.forName(GameClassNames.PARALLEL_IMAGE_PRELOADER.replace('/', '.'), true, loader);
-
-                cachedAccess = new LoaderAccess(
-                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.IMAGE_QUEUE),
-                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.IMAGE_RESULTS),
-                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.BYTE_QUEUE),
-                        field(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.BYTE_RESULTS),
-                        staticFieldValue(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.IMAGE_SENTINEL),
-                        staticFieldValue(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.BYTE_SENTINEL),
-                        method(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.DECODE_IMAGE, BufferedImage.class, String.class),
-                        method(deferredLoaderClass, GameMemberNames.ParallelImagePreloader.LOAD_BYTES, byte[].class, String.class)
-                );
-                return cachedAccess;
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Failed to access deferred preload worker internals", e);
-            }
-        }
+        this.access = installed;
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> T staticFieldValue(final Class<?> owner, final String fieldName) throws ReflectiveOperationException {
-        Field field = owner.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (T) field.get(null);
+    public static void installAccess(final List<String> imageQueue,
+                                     final Map<String, BufferedImage> imageResults,
+                                     final List<String> byteQueue,
+                                     final Map<String, byte[]> byteResults,
+                                     final BufferedImage imageSentinel,
+                                     final byte[] byteSentinel,
+                                     final ImageLoader imageLoader,
+                                     final ByteLoader byteLoader) {
+        cachedAccess = new LoaderAccess(imageQueue, imageResults, byteQueue, byteResults,
+                imageSentinel, byteSentinel, imageLoader, byteLoader);
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> T field(final Class<?> owner, final String fieldName) throws ReflectiveOperationException {
-        return staticFieldValue(owner, fieldName);
-    }
-
-    private static Method method(final Class<?> owner,
-                                 final String methodName,
-                                 final Class<?> returnType,
-                                 final Class<?>... parameterTypes) throws ReflectiveOperationException {
-        Method method = owner.getDeclaredMethod(methodName, parameterTypes);
-        method.setAccessible(true);
-        if (!returnType.isAssignableFrom(method.getReturnType())) {
-            throw new NoSuchMethodException(methodName + " return type mismatch");
-        }
-        return method;
+    static void resetAccessForTests() {
+        cachedAccess = null;
     }
 
     private static boolean isInterruptedFailure(final Throwable throwable) {
@@ -85,10 +45,6 @@ public final class ParallelImagePreloadWorker implements Runnable {
         while (current != null) {
             if (current instanceof InterruptedException) {
                 return true;
-            }
-            if (current instanceof InvocationTargetException invocationTargetException) {
-                current = invocationTargetException.getTargetException();
-                continue;
             }
             current = current.getCause();
         }
@@ -117,14 +73,13 @@ public final class ParallelImagePreloadWorker implements Runnable {
 
             try {
                 access.byteResults().put(path, access.loadBytes(path));
-            } catch (Throwable throwable) {
+            } catch (Exception exception) {
                 access.byteResults().remove(path);
-                if (isInterruptedFailure(throwable)) {
+                if (isInterruptedFailure(exception)) {
                     Thread.currentThread().interrupt();
-                    ParallelImagePreloadQueueTracker.completeBytes(path);
                     return;
                 }
-                LOGGER.error(throwable.getMessage(), throwable);
+                LOGGER.error("[SSOptimizer] Image preload byte load failed for " + path, exception);
             } finally {
                 ParallelImagePreloadQueueTracker.completeBytes(path);
             }
@@ -148,15 +103,14 @@ public final class ParallelImagePreloadWorker implements Runnable {
 
             try {
                 processImage(path);
-            } catch (Throwable throwable) {
+            } catch (Exception exception) {
                 access.imageResults().remove(path);
                 TexturePreparationRegistry.complete(path, null);
-                if (isInterruptedFailure(throwable)) {
+                if (isInterruptedFailure(exception)) {
                     Thread.currentThread().interrupt();
-                    ParallelImagePreloadQueueTracker.completeImage(path);
                     return;
                 }
-                LOGGER.error(throwable.getMessage(), throwable);
+                LOGGER.error("[SSOptimizer] Image preload decode failed for " + path, exception);
             } finally {
                 ParallelImagePreloadQueueTracker.completeImage(path);
             }
@@ -167,9 +121,8 @@ public final class ParallelImagePreloadWorker implements Runnable {
         }
     }
 
-    private void processImage(final String path) throws ReflectiveOperationException {
+    private void processImage(final String path) throws IOException {
         if (!TexturePreparationRegistry.isEnabled() || isFontOverridePath(path)) {
-            // 原版回写也必须完成预备 future，否则主线程 await 会一直阻塞。
             access.imageResults().put(path, access.loadImage(path));
             TexturePreparationRegistry.complete(path, null);
             return;
@@ -211,20 +164,30 @@ public final class ParallelImagePreloadWorker implements Runnable {
                 && fontOverrideService.isOverriddenPath(fontOverrideService.normalize(path));
     }
 
+    @FunctionalInterface
+    public interface ImageLoader {
+        BufferedImage load(String path) throws IOException;
+    }
+
+    @FunctionalInterface
+    public interface ByteLoader {
+        byte[] load(String path) throws IOException;
+    }
+
     private record LoaderAccess(List<String> imageQueue,
                                 Map<String, BufferedImage> imageResults,
                                 List<String> byteQueue,
                                 Map<String, byte[]> byteResults,
                                 BufferedImage imageSentinel,
                                 byte[] byteSentinel,
-                                Method loadImageMethod,
-                                Method loadBytesMethod) {
-        private BufferedImage loadImage(final String path) throws ReflectiveOperationException {
-            return (BufferedImage) loadImageMethod.invoke(null, path);
+                                ImageLoader imageLoader,
+                                ByteLoader byteLoader) {
+        private BufferedImage loadImage(final String path) throws IOException {
+            return imageLoader.load(path);
         }
 
-        private byte[] loadBytes(final String path) throws ReflectiveOperationException {
-            return (byte[]) loadBytesMethod.invoke(null, path);
+        private byte[] loadBytes(final String path) throws IOException {
+            return byteLoader.load(path);
         }
     }
 

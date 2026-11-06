@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.loading;
 import github.kasuminova.ssoptimizer.common.loading.FastResourceImageDecoder;
 import github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadCoordinator;
 import github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadQueueTracker;
+import github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadWorker;
 import github.kasuminova.ssoptimizer.common.loading.TexturePreparationRegistry;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,8 +38,27 @@ public abstract class ParallelImagePreloaderMixin {
     @Shadow(remap = false, aliases = "byteSentinel")
     private static byte[] ssoptimizer$byteSentinel;
 
+    @Shadow(remap = false)
+    private static BufferedImage decodeImage(final String path) throws IOException {
+        throw new UnsupportedOperationException("shadow");
+    }
+
+    @Shadow(remap = false)
+    private static byte[] loadBytes(final String path) throws IOException {
+        throw new UnsupportedOperationException("shadow");
+    }
+
     @Overwrite(remap = false)
     public static void start() {
+        ParallelImagePreloadWorker.installAccess(
+                ssoptimizer$imageQueue,
+                ssoptimizer$imageResults,
+                ssoptimizer$byteQueue,
+                ssoptimizer$byteResults,
+                ssoptimizer$imageSentinel,
+                ssoptimizer$byteSentinel,
+                ParallelImagePreloaderMixin::decodeImage,
+                ParallelImagePreloaderMixin::loadBytes);
         ParallelImagePreloadCoordinator.startWorkers();
     }
 

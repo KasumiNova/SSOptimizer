@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -65,10 +68,12 @@ public final class TextureConversionCache {
         synchronized (lockFor(sourceHash)) {
             try {
                 return decodeCompressed(sourceHash, compressedBytes);
-            } catch (IOException | RuntimeException ignored) {
+            } catch (IOException | RuntimeException e) {
                 final Path cacheFile = cacheFile(sourceHash);
-                deleteQuietly(cacheFile);
+                logCacheWarning("Discarding corrupt texture cache entry", cacheFile.toString(), e);
+                deleteWithWarning(cacheFile);
                 forgetCompressed(sourceHash);
+                METADATA_CACHE.remove(sourceHash);
                 return null;
             }
         }
@@ -94,9 +99,12 @@ public final class TextureConversionCache {
                 final CachedTextureMetadata metadata = decodeHeader(sourceHash, compressedBytes);
                 METADATA_CACHE.put(sourceHash, metadata);
                 return metadata;
-            } catch (IOException | RuntimeException ignored) {
-                deleteQuietly(cacheFile(sourceHash));
+            } catch (IOException | RuntimeException e) {
+                final Path cacheFile = cacheFile(sourceHash);
+                logCacheWarning("Discarding corrupt texture cache metadata", cacheFile.toString(), e);
+                deleteWithWarning(cacheFile);
                 forgetCompressed(sourceHash);
+                METADATA_CACHE.remove(sourceHash);
                 return null;
             }
         }
@@ -130,9 +138,11 @@ public final class TextureConversionCache {
                 final byte[] compressedBytes = Files.readAllBytes(cacheFile);
                 rememberCompressed(sourceHash, compressedBytes);
                 return compressedBytes;
-            } catch (IOException | RuntimeException ignored) {
-                deleteQuietly(cacheFile);
+            } catch (IOException | RuntimeException e) {
+                logCacheWarning("Discarding unreadable texture cache entry", cacheFile.toString(), e);
+                deleteWithWarning(cacheFile);
                 forgetCompressed(sourceHash);
+                METADATA_CACHE.remove(sourceHash);
                 return null;
             }
         }
@@ -153,7 +163,7 @@ public final class TextureConversionCache {
         final CachedTextureMetadata metadata = loadMetadata(indexEntry.sourceHash());
         if (metadata == null) {
             RESOURCE_INDEX_CACHE.remove(normalizedPath);
-            deleteQuietly(indexFile(normalizedPath));
+            deleteWithWarning(indexFile(normalizedPath));
             return null;
         }
 
@@ -178,7 +188,8 @@ public final class TextureConversionCache {
                         Files.getLastModifiedTime(path).toMillis(),
                         sizeBytes
                 );
-            } catch (IOException | RuntimeException ignored) {
+            } catch (IOException | RuntimeException e) {
+                logCacheWarning("Failed to probe texture source fingerprint", candidate, e);
             }
         }
 
@@ -209,7 +220,7 @@ public final class TextureConversionCache {
                 storeResourceIndex(image);
             } catch (IOException | RuntimeException e) {
                 LOGGER.error("[SSOptimizer] Failed to write texture cache entry for " + image.resourcePath(), e);
-                deleteQuietly(cacheFile);
+                deleteWithWarning(cacheFile);
                 forgetCompressed(image.sourceHash());
             }
         }
@@ -240,9 +251,18 @@ public final class TextureConversionCache {
             return true;
         }
         try {
-            future.get(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+            future.get(timeoutMillis, TimeUnit.MILLISECONDS);
             return true;
-        } catch (Exception ignored) {
+        } catch (TimeoutException e) {
+            LOGGER.warn("[SSOptimizer] Texture cache warmup timed out after " + timeoutMillis + " ms", e);
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("[SSOptimizer] Texture cache warmup was interrupted", e);
+            return false;
+        } catch (ExecutionException e) {
+            final Throwable cause = e.getCause() != null ? e.getCause() : e;
+            LOGGER.warn("[SSOptimizer] Texture cache warmup failed", cause);
             return false;
         }
     }
@@ -275,10 +295,13 @@ public final class TextureConversionCache {
                     try {
                         preloadIndexFile(indexFile);
                         indexCount++;
-                    } catch (IOException | RuntimeException ignored) {
+                    } catch (IOException | RuntimeException e) {
+                        logCacheWarning("Discarding unreadable texture cache index during warmup", indexFile.toString(), e);
+                        deleteWithWarning(indexFile);
                     }
                 }
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                logCacheWarning("Failed to scan texture cache index directory", indexDir.toString(), e);
             }
         }
 
@@ -298,10 +321,12 @@ public final class TextureConversionCache {
                     rememberCompressed(sourceHash, compressed);
                     totalBytes += compressed.length;
                     dataCount++;
-                } catch (IOException | RuntimeException ignored) {
+                } catch (IOException | RuntimeException e) {
+                    logCacheWarning("Failed to warm texture cache entry", dataFile.toString(), e);
                 }
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            logCacheWarning("Failed to scan texture cache directory", cacheDir.toString(), e);
         }
 
         final long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
@@ -323,7 +348,7 @@ public final class TextureConversionCache {
                     input.readUTF()
             );
             if (!INDEX_MAGIC.equals(magic) || version != INDEX_VERSION) {
-                return;
+                throw new IOException("Texture resource index header mismatch");
             }
             RESOURCE_INDEX_CACHE.put(entry.normalizedResourcePath(), entry);
         }
@@ -522,11 +547,24 @@ public final class TextureConversionCache {
         return bytes;
     }
 
-    private static void deleteQuietly(final Path path) {
+    private static void deleteWithWarning(final Path path) {
         try {
             Files.deleteIfExists(path);
-        } catch (IOException ignored) {
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[SSOptimizer] Failed to delete texture cache file at " + path + ": " + e.getMessage(), e);
         }
+    }
+
+    private static final java.util.Set<String> LOGGED_CACHE_WARNING_KEYS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    // 同一动作与路径只记录首次，避免预热扫描对同一损坏条目反复刷屏；不同路径的故障各自保留首次日志。
+    private static void logCacheWarning(final String action,
+                                        final String path,
+                                        final Exception error) {
+        if (!LOGGED_CACHE_WARNING_KEYS.add(action + '|' + path)) {
+            return;
+        }
+        LOGGER.warn("[SSOptimizer] " + action + " at " + path + ": " + error.getMessage(), error);
     }
 
     private static void storeResourceIndex(final TrackedResourceImage image) {
@@ -561,7 +599,7 @@ public final class TextureConversionCache {
             RESOURCE_INDEX_CACHE.put(normalizedResourcePath, indexEntry);
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("[SSOptimizer] 纹理资源索引写入失败（" + image.resourcePath() + "）", e);
-            deleteQuietly(indexFile);
+            deleteWithWarning(indexFile);
             RESOURCE_INDEX_CACHE.remove(normalizedResourcePath);
         }
     }
@@ -595,8 +633,9 @@ public final class TextureConversionCache {
 
             RESOURCE_INDEX_CACHE.put(normalizedResourcePath, loaded);
             return loaded;
-        } catch (IOException | RuntimeException ignored) {
-            deleteQuietly(indexFile);
+        } catch (IOException | RuntimeException e) {
+            logCacheWarning("Discarding corrupt texture resource index", indexFile.toString(), e);
+            deleteWithWarning(indexFile);
             RESOURCE_INDEX_CACHE.remove(normalizedResourcePath);
             return null;
         }

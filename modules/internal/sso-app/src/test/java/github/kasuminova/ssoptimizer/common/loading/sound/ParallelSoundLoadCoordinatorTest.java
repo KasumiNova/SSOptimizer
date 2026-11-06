@@ -1,9 +1,10 @@
 package github.kasuminova.ssoptimizer.common.loading.sound;
 
-import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
+import github.kasuminova.ssoptimizer.mixin.loading.SoundManagerAccessor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import sound.Audio;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +15,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -47,86 +49,46 @@ class ParallelSoundLoadCoordinatorTest {
     }
 
     @Test
-    void objectFamilyUsesItsMatchingStreamOverloadBeforeOriginalPathFallback() throws Exception {
-        final Path gameRoot = tempDir.resolve("game");
-        final Path modsDir = gameRoot.resolve("mods");
-        final Path soundFile = gameRoot.resolve("sounds/ui/cached.ogg");
-        Files.createDirectories(soundFile.getParent());
+    void objectFamilyLoadsPreloadedBytesThroughItsOwnStreamInvoker() throws Exception {
         final byte[] expected = new byte[]{1, 2, 3, 4, 5};
-        Files.write(soundFile, expected);
+        final FakeSoundManager manager = prepareSoundFile(expected);
 
-        System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
-        System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
-
-        final FakeSoundManager manager = new FakeSoundManager();
         final Object result = ParallelSoundLoadCoordinator.loadObjectFamily(manager, "sounds/ui/cached.ogg");
 
-        assertEquals("object-stream:sounds/ui/cached.ogg", result);
+        assertLoadedThrough(StreamFamily.OBJECT, "sounds/ui/cached.ogg", result, manager);
         assertArrayEquals(expected, manager.loadedBytes);
-        assertEquals(GameMemberNames.SoundManager.LOAD_OBJECT_FAMILY_FROM_STREAM, manager.lastStreamMethodUsed);
-        assertFalse(manager.originalPathFallbackUsed);
     }
 
     @Test
-    void o00000FamilyUsesItsMatchingStreamOverloadBeforeOriginalPathFallback() throws Exception {
-        final Path gameRoot = tempDir.resolve("game");
-        final Path modsDir = gameRoot.resolve("mods");
-        final Path soundFile = gameRoot.resolve("sounds/ui/cached.ogg");
-        Files.createDirectories(soundFile.getParent());
+    void o00000FamilyLoadsPreloadedBytesThroughItsOwnStreamInvoker() throws Exception {
         final byte[] expected = new byte[]{6, 7, 8, 9};
-        Files.write(soundFile, expected);
+        final FakeSoundManager manager = prepareSoundFile(expected);
 
-        System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
-        System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
-
-        final FakeSoundManager manager = new FakeSoundManager();
         final Object result = ParallelSoundLoadCoordinator.loadO00000Family(manager, "sounds/ui/cached.ogg");
 
-        assertEquals("o00000-stream:sounds/ui/cached.ogg", result);
+        assertLoadedThrough(StreamFamily.O00000, "sounds/ui/cached.ogg", result, manager);
         assertArrayEquals(expected, manager.loadedBytes);
-        assertEquals(GameMemberNames.SoundManager.LOAD_O00000_FAMILY_FROM_STREAM, manager.lastStreamMethodUsed);
-        assertFalse(manager.originalPathFallbackUsed);
     }
 
     @Test
-    void oAccentFamilyUsesItsMatchingStreamOverloadBeforeOriginalPathFallback() throws Exception {
-        final Path gameRoot = tempDir.resolve("game");
-        final Path modsDir = gameRoot.resolve("mods");
-        final Path soundFile = gameRoot.resolve("sounds/ui/cached.ogg");
-        Files.createDirectories(soundFile.getParent());
+    void oAccentFamilyLoadsPreloadedBytesThroughItsOwnStreamInvoker() throws Exception {
         final byte[] expected = new byte[]{10, 11, 12};
-        Files.write(soundFile, expected);
+        final FakeSoundManager manager = prepareSoundFile(expected);
 
-        System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
-        System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
-
-        final FakeSoundManager manager = new FakeSoundManager();
         final Object result = ParallelSoundLoadCoordinator.loadOAccentFamily(manager, "sounds/ui/cached.ogg");
 
-        assertEquals("object-stream:sounds/ui/cached.ogg", result);
+        assertLoadedThrough(StreamFamily.O_ACCENT, "sounds/ui/cached.ogg", result, manager);
         assertArrayEquals(expected, manager.loadedBytes);
-        assertEquals(GameMemberNames.SoundManager.LOAD_O_ACCENT_FAMILY_FROM_STREAM, manager.lastStreamMethodUsed);
-        assertFalse(manager.originalPathFallbackUsed);
     }
 
     @Test
-    void fallsBackToOriginalPathWhenPreloadedStreamLoadThrows() throws Exception {
-        final Path gameRoot = tempDir.resolve("game");
-        final Path modsDir = gameRoot.resolve("mods");
-        final Path soundFile = gameRoot.resolve("sounds/ui/cached.ogg");
-        Files.createDirectories(soundFile.getParent());
-        Files.write(soundFile, new byte[]{1, 2, 3});
-
-        System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
-        System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
-
-        final FakeSoundManager manager = new FakeSoundManager();
+    void returnsNullSoOriginalLoaderRunsWhenPreloadedStreamLoadThrows() throws Exception {
+        final FakeSoundManager manager = prepareSoundFile(new byte[]{1, 2, 3});
         manager.throwOnStreamLoad = true;
 
         final Object result = ParallelSoundLoadCoordinator.loadO00000Family(manager, "sounds/ui/cached.ogg");
 
-        assertEquals("fallback-o00000:sounds/ui/cached.ogg", result);
-        assertTrue(manager.originalPathFallbackUsed);
+        assertNull(result, "流加载失败应返回 null，由 SoundManagerMixin 放行原版路径加载");
     }
 
     @Test
@@ -171,6 +133,28 @@ class ParallelSoundLoadCoordinatorTest {
                 "预载失败条目也必须移除（future 不得滞留）");
     }
 
+    private FakeSoundManager prepareSoundFile(final byte[] content) throws IOException {
+        final Path gameRoot = tempDir.resolve("game");
+        final Path modsDir = gameRoot.resolve("mods");
+        final Path soundFile = gameRoot.resolve("sounds/ui/cached.ogg");
+        Files.createDirectories(soundFile.getParent());
+        Files.write(soundFile, content);
+
+        System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
+        System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
+        return new FakeSoundManager();
+    }
+
+    private static void assertLoadedThrough(final StreamFamily expectedFamily,
+                                            final String expectedPath,
+                                            final Object result,
+                                            final FakeSoundManager manager) {
+        final FakeAudio audio = assertInstanceOf(FakeAudio.class, result);
+        assertEquals(expectedFamily, audio.family);
+        assertEquals(expectedPath, audio.resourcePath);
+        assertEquals(expectedFamily, manager.lastFamily);
+    }
+
     private static void awaitInflightDrain() throws InterruptedException {
         final long deadline = System.nanoTime() + 5_000_000_000L;
         while (ParallelSoundLoadCoordinator.inflightLoadCountForTests() > 0 && System.nanoTime() < deadline) {
@@ -178,57 +162,132 @@ class ParallelSoundLoadCoordinatorTest {
         }
     }
 
-    @SuppressWarnings("unused")
-    private static final class FakeSoundManager {
-        private byte[]  loadedBytes;
-        private boolean originalPathFallbackUsed;
-        private String  lastStreamMethodUsed;
-        private boolean throwOnStreamLoad;
+    private enum StreamFamily {
+        OBJECT,
+        O00000,
+        O_ACCENT
+    }
 
-        private Object loadObjectFamilyFromStream(final String resourcePath,
-                                                  final InputStream inputStream) throws Exception {
-            return streamLoaded(GameMemberNames.SoundManager.LOAD_OBJECT_FAMILY_FROM_STREAM,
-                    "object-stream:", resourcePath, inputStream);
+    private static final class FakeSoundManager implements SoundManagerAccessor {
+        private byte[]       loadedBytes;
+        private StreamFamily lastFamily;
+        private boolean      throwOnStreamLoad;
+
+        @Override
+        public Audio ssoptimizer$loadObjectFamilyFromStream(final String resourcePath,
+                                                            final InputStream inputStream) throws IOException {
+            return streamLoaded(StreamFamily.OBJECT, resourcePath, inputStream);
         }
 
-        private Object loadO00000FamilyFromStream(final String resourcePath,
-                                                  final InputStream inputStream) throws Exception {
-            return streamLoaded(GameMemberNames.SoundManager.LOAD_O00000_FAMILY_FROM_STREAM,
-                    "o00000-stream:", resourcePath, inputStream);
+        @Override
+        public Audio ssoptimizer$loadO00000FamilyFromStream(final String resourcePath,
+                                                            final InputStream inputStream) throws IOException {
+            return streamLoaded(StreamFamily.O00000, resourcePath, inputStream);
         }
 
-        private Object loadOAccentFamilyFromStream(final String resourcePath,
-                                                   final InputStream inputStream) throws Exception {
-            return streamLoaded(GameMemberNames.SoundManager.LOAD_O_ACCENT_FAMILY_FROM_STREAM,
-                    "object-stream:", resourcePath, inputStream);
+        @Override
+        public Audio ssoptimizer$loadOAccentFamilyFromStream(final String resourcePath,
+                                                             final InputStream inputStream) throws IOException {
+            return streamLoaded(StreamFamily.O_ACCENT, resourcePath, inputStream);
         }
 
-        private Object streamLoaded(final String methodName,
-                                    final String prefix,
-                                    final String resourcePath,
-                                    final InputStream inputStream) throws Exception {
+        private Audio streamLoaded(final StreamFamily family,
+                                   final String resourcePath,
+                                   final InputStream inputStream) throws IOException {
             if (throwOnStreamLoad) {
                 throw new IOException("simulated preload failure");
             }
 
-            this.lastStreamMethodUsed = methodName;
+            this.lastFamily = family;
             this.loadedBytes = inputStream.readAllBytes();
-            return prefix + resourcePath;
+            return new FakeAudio(family, resourcePath);
+        }
+    }
+
+    private static final class FakeAudio implements Audio {
+        private final StreamFamily family;
+        private final String       resourcePath;
+
+        private FakeAudio(final StreamFamily family, final String resourcePath) {
+            this.family = family;
+            this.resourcePath = resourcePath;
         }
 
-        private Object ssoptimizer$loadPathObjectFamily(final String resourcePath) {
-            this.originalPathFallbackUsed = true;
-            return "fallback-object:" + resourcePath;
+        @Override
+        public void stop() {
         }
 
-        private Object ssoptimizer$loadPathO00000Family(final String resourcePath) {
-            this.originalPathFallbackUsed = true;
-            return "fallback-o00000:" + resourcePath;
+        @Override
+        public int getBufferId() {
+            return 0;
         }
 
-        private Object ssoptimizer$loadPathOAccentFamily(final String resourcePath) {
-            this.originalPathFallbackUsed = true;
-            return "fallback-oaccent:" + resourcePath;
+        @Override
+        public boolean isPlaying() {
+            return false;
+        }
+
+        @Override
+        public int play(final float pitch, final float gain, final boolean loop) {
+            return 0;
+        }
+
+        @Override
+        public void playManaged(final float pitch, final float gain, final boolean loop) {
+        }
+
+        @Override
+        public int play(final float pitch, final float gain, final boolean loop,
+                        final float x, final float y, final float z) {
+            return 0;
+        }
+
+        @Override
+        public int play(final float pitch, final float gain, final boolean loop,
+                        final float x, final float y, final float z,
+                        final float vx, final float vy, final float vz) {
+            return 0;
+        }
+
+        @Override
+        public boolean setTimeOffset(final float offset) {
+            return false;
+        }
+
+        @Override
+        public float getTimeOffset() {
+            return 0f;
+        }
+
+        @Override
+        public int getSourceId() {
+            return 0;
+        }
+
+        @Override
+        public void setVelocity(final float x, final float y, final float z) {
+        }
+
+        @Override
+        public void setPosition(final float x, final float y, final float z) {
+        }
+
+        @Override
+        public void setVolume(final float volume) {
+        }
+
+        @Override
+        public void setPitch(final float pitch) {
+        }
+
+        @Override
+        public float getLength() {
+            return 0f;
+        }
+
+        @Override
+        public boolean isMono() {
+            return false;
         }
     }
 }

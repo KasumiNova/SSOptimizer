@@ -64,6 +64,8 @@
     "loading.StarfarerSettingsApiImplMixin",
     "loading.StarfarerLauncherJarPathMixin",
     "loading.TextureObjectMixin",
+    "loading.TextureObjectAccessor",
+    "loading.SoundManagerAccessor",
     "ui.PositionImplMixin",
     "modopt.dcr.DcrCompressionUtilMixin",
     "modopt.boxutil.StaticTrailMemoryPoolMixin",

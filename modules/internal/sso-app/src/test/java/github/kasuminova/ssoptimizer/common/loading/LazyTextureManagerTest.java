@@ -2,17 +2,33 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import com.fs.graphics.TextureObject;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class LazyTextureManagerTest {
+    @BeforeEach
+    void installTextureIdAccess() {
+        LazyTextureManager.installTextureIdAccessForTests(new LazyTextureManager.TextureIdAccess() {
+            @Override
+            public int read(final TextureObject texture) {
+                return texture.getTextureId();
+            }
+
+            @Override
+            public void write(final TextureObject texture, final int textureId) {
+                throw new UnsupportedOperationException("测试夹具未经 Mixin 变换，TextureObject 无公开的 textureId 写入口");
+            }
+        });
+    }
+
     @AfterEach
     void tearDown() {
+        LazyTextureManager.resetTextureIdAccessForTests();
         System.clearProperty(LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY);
         System.clearProperty(LazyTextureManager.PREVIEW_PROTECT_MILLIS_PROPERTY);
         System.clearProperty(LazyTextureManager.MINIMAL_STARTUP_PROPERTY);
@@ -151,17 +167,6 @@ class LazyTextureManagerTest {
         System.setProperty(LazyTextureManager.MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY, "0");
 
         assertEquals(0L, LazyTextureManager.managementLogIntervalMillis());
-    }
-
-    @Test
-    void normalizesWindowsStyleResourcePaths() throws Exception {
-        final Method method = LazyTextureManager.class.getDeclaredMethod("normalizeResourcePath", String.class);
-        method.setAccessible(true);
-
-        assertEquals("graphics/icons/cargo/blueprint_hightech.png",
-                method.invoke(null, "graphics\\icons\\cargo\\blueprint_hightech.png"));
-        assertEquals("graphics/icons/cargo/blueprint_hightech.png",
-                method.invoke(null, "\\graphics\\icons\\cargo\\blueprint_hightech.png"));
     }
 
     @Test
@@ -365,40 +370,6 @@ class LazyTextureManagerTest {
     }
 
     @Test
-    void eagerLoadResolverPrefersInjectedAlias() {
-        final var method = LazyTextureManager.resolveEagerLoadMethod(FakeTextureLoaderWithAlias.class);
-
-        assertEquals("ssoptimizer$loadTextureEager", method.getName());
-    }
-
-    @Test
-    void eagerLoadResolverUsesUniqueHiddenSignatureFallback() {
-        final var method = LazyTextureManager.resolveEagerLoadMethod(FakeTextureLoaderWithUniqueHiddenCandidate.class);
-
-        assertEquals("hiddenLoad", method.getName());
-    }
-
-    @Test
-    void eagerLoadResolverFallsBackToPublicLoadWhenHiddenCandidatesAreAmbiguous() {
-        final var method = LazyTextureManager.resolveEagerLoadMethod(FakeTextureLoaderWithAmbiguousHiddenCandidates.class);
-
-        assertEquals("loadTexture", method.getName());
-    }
-
-    @Test
-    void originalLazyModeResolverUsesUniqueStaticBooleanFallback() {
-        final var method = LazyTextureManager.resolveOriginalLazyModeMethod(FakeTextureManagerWithUniqueToggle.class);
-
-        assertNotNull(method);
-        assertEquals("hiddenToggle", method.getName());
-    }
-
-    @Test
-    void originalLazyModeResolverReturnsNullWhenStaticBooleanCandidatesAreAmbiguous() {
-        assertNull(LazyTextureManager.resolveOriginalLazyModeMethod(FakeTextureManagerWithAmbiguousToggles.class));
-    }
-
-    @Test
     void managedTextureEntryIsDroppedAfterTextureGc() {
         final WeakReference<TextureObject> weak = new WeakReference<>(trackForTestAndReturn());
         assertTrue(LazyTextureManager.isTextureEvictable(weak.get()));
@@ -419,55 +390,5 @@ class LazyTextureManagerTest {
         final TextureObject texture = new TextureObject(3553, -1, "graphics/portraits/gc_test.png");
         LazyTextureManager.trackResidentTextureForTests(texture, "graphics/portraits/gc_test.png");
         return texture;
-    }
-
-    private static final class FakeTextureLoaderWithAlias {
-        public TextureObject loadTexture(final String resourcePath) {
-            return null;
-        }
-
-        private TextureObject ssoptimizer$loadTextureEager(final String resourcePath) {
-            return null;
-        }
-    }
-
-    private static final class FakeTextureLoaderWithUniqueHiddenCandidate {
-        public TextureObject loadTexture(final String resourcePath) {
-            return null;
-        }
-
-        private TextureObject hiddenLoad(final String resourcePath) {
-            return null;
-        }
-    }
-
-    private static final class FakeTextureLoaderWithAmbiguousHiddenCandidates {
-        public TextureObject loadTexture(final String resourcePath) {
-            return null;
-        }
-
-        private TextureObject firstHiddenLoad(final String resourcePath) {
-            return null;
-        }
-
-        private TextureObject secondHiddenLoad(final String resourcePath) {
-            return null;
-        }
-    }
-
-    private static final class FakeTextureManagerWithUniqueToggle {
-        private static boolean hiddenToggle() {
-            return true;
-        }
-    }
-
-    private static final class FakeTextureManagerWithAmbiguousToggles {
-        private static boolean firstToggle() {
-            return true;
-        }
-
-        private static boolean secondToggle() {
-            return false;
-        }
     }
 }
