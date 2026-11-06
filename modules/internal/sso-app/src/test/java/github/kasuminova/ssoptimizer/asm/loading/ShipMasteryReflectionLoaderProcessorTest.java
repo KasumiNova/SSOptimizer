@@ -5,22 +5,24 @@ import org.junit.jupiter.api.io.TempDir;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ShipMasteryReflectionLoaderProcessorTest {
 
     private static final String FIXTURE_CLASS = "shipmastery/plugin/ModPlugin$ReflectionEnabledClassLoader";
+    private static final String FACTORY_CLASS = FIXTURE_CLASS + "$TestFactory";
 
     @TempDir
     Path tempDir;
@@ -31,21 +33,23 @@ class ShipMasteryReflectionLoaderProcessorTest {
         assertNotNull(rewritten, "目标类应被注入");
 
         final ByteArrayLoader definingLoader = new ByteArrayLoader(getClass().getClassLoader());
-        final Class<?> fixtureType = definingLoader.define(FIXTURE_CLASS.replace('/', '.'), rewritten);
-        assertTrue(URLClassLoader.class.isAssignableFrom(fixtureType), "注入后仍应是 URLClassLoader 子类");
+        definingLoader.define(FIXTURE_CLASS.replace('/', '.'), rewritten);
+        final String factoryName = FACTORY_CLASS.replace('/', '.');
+        definingLoader.define(factoryName, factoryClassBytes());
+        final LoaderFactory factory = github.kasuminova.ssoptimizer.testing.ClassInstances.create(
+                LoaderFactory.class, definingLoader, factoryName);
 
         final Path probePath = tempDir.resolve("probe/Target.class");
         Files.createDirectories(probePath.getParent());
         Files.write(probePath, probeClassBytes());
-        final URLClassLoader loader = (URLClassLoader) fixtureType
-                .getDeclaredConstructor(URL[].class, ClassLoader.class)
-                .newInstance(new URL[]{tempDir.toUri().toURL()}, getClass().getClassLoader());
+        try (URLClassLoader loader = factory.create(
+                new URL[]{tempDir.toUri().toURL()}, getClass().getClassLoader())) {
+            final Class<?> loaded = loader.loadClass("probe.Target");
+            assertEquals("probe.Target", loaded.getName());
+            assertSame(loader, loaded.getClassLoader(), "probe.Target 应由注入后的 loader 自行定义");
 
-        final Class<?> loaded = loader.loadClass("probe.Target");
-        assertEquals("probe.Target", loaded.getName());
-        assertSame(loader, loaded.getClassLoader(), "probe.Target 应由注入后的 loader 自行定义");
-
-        assertThrows(ClassNotFoundException.class, () -> loader.loadClass("probe.Missing"));
+            assertThrows(ClassNotFoundException.class, () -> loader.loadClass("probe.Missing"));
+        }
     }
 
     @Test
@@ -58,7 +62,7 @@ class ShipMasteryReflectionLoaderProcessorTest {
                 new URL[]{tempDir.toUri().toURL()}, getClass().getClassLoader())) {
             final byte[] bytes = ShipMasteryLoaderSupport.loadTransformedBytes(loader, "probe.Target");
             assertNotNull(bytes);
-            assertTrue(bytes.length > 0);
+            assertArrayEquals(Files.readAllBytes(probePath), bytes);
 
             assertNull(ShipMasteryLoaderSupport.loadTransformedBytes(loader, "probe.Missing"));
         }
@@ -114,6 +118,35 @@ class ShipMasteryReflectionLoaderProcessorTest {
         return writer;
     }
 
+    private static byte[] factoryClassBytes() {
+        final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+        writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
+                FACTORY_CLASS, null, "java/lang/Object", new String[]{Type.getInternalName(LoaderFactory.class)});
+        final MethodVisitor constructor = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+        constructor.visitCode();
+        constructor.visitVarInsn(Opcodes.ALOAD, 0);
+        constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+        constructor.visitInsn(Opcodes.RETURN);
+        constructor.visitMaxs(0, 0);
+        constructor.visitEnd();
+
+        final MethodVisitor create = writer.visitMethod(Opcodes.ACC_PUBLIC, "create",
+                "([Ljava/net/URL;Ljava/lang/ClassLoader;)Ljava/net/URLClassLoader;", null, null);
+        create.visitCode();
+        create.visitTypeInsn(Opcodes.NEW, FIXTURE_CLASS);
+        create.visitInsn(Opcodes.DUP);
+        create.visitVarInsn(Opcodes.ALOAD, 1);
+        create.visitVarInsn(Opcodes.ALOAD, 2);
+        create.visitMethodInsn(Opcodes.INVOKESPECIAL, FIXTURE_CLASS,
+                "<init>", "([Ljava/net/URL;Ljava/lang/ClassLoader;)V", false);
+        create.visitInsn(Opcodes.ARETURN);
+        create.visitMaxs(0, 0);
+        create.visitEnd();
+
+        writer.visitEnd();
+        return writer.toByteArray();
+    }
+
     private static byte[] probeClassBytes() {
         final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "probe/Target", null, "java/lang/Object", null);
@@ -126,6 +159,10 @@ class ShipMasteryReflectionLoaderProcessorTest {
         constructor.visitEnd();
         writer.visitEnd();
         return writer.toByteArray();
+    }
+
+    public interface LoaderFactory {
+        URLClassLoader create(URL[] urls, ClassLoader parent);
     }
 
     private static final class ByteArrayLoader extends ClassLoader {

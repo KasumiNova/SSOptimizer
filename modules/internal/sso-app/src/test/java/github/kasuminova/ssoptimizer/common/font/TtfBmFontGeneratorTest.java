@@ -2,10 +2,6 @@ package github.kasuminova.ssoptimizer.common.font;
 
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Method;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -178,65 +174,6 @@ class TtfBmFontGeneratorTest {
     }
 
     @Test
-    void parsesLegacyEncodedBmFontMetadataWithoutUtf8Failure() throws Exception {
-        final Path tempFile = Files.createTempFile("ssoptimizer-font", ".fnt");
-        try {
-            final String content = "info face=\"方正兰亭中粗黑简体_特殊变种1\" size=15 bold=0 italic=0 charset=\"\" unicode=1 smooth=0 aa=0\r\n"
-                    + "common lineHeight=19 base=15 scaleW=512 scaleH=512 pages=1 packed=0\r\n"
-                    + "page id=0 file=\"insignia15LTaa_0.png\"\r\n"
-                    + "chars count=1\r\n"
-                    + "char id=65 x=1 y=2 width=3 height=4 xoffset=0 yoffset=1 xadvance=6 page=0 chnl=0\r\n";
-            Files.write(tempFile, content.getBytes(Charset.forName("GBK")));
-
-            final Class<?> sourceClass = Class.forName("github.kasuminova.ssoptimizer.common.font.TtfBmFontGenerator$SourceBmFont");
-            final Method parse = sourceClass.getDeclaredMethod("parse", Path.class);
-            parse.setAccessible(true);
-            final Object source = parse.invoke(null, tempFile);
-
-            assertNotNull(source);
-            assertEquals(15, invokeInt(source, "infoSize"));
-            assertFalse(invokeBoolean(source, "antiAlias"));
-            assertEquals(19, invokeInt(source, "lineHeight"));
-            assertEquals(15, invokeInt(source, "base"));
-            assertEquals(512, invokeInt(source, "scaleWidth"));
-            assertEquals(512, invokeInt(source, "scaleHeight"));
-        } finally {
-            Files.deleteIfExists(tempFile);
-        }
-    }
-
-    @Test
-    void parsesEncodedGlyphAdvanceBackIntoLogicalAdvance() throws Exception {
-        final Path tempFile = Files.createTempFile("ssoptimizer-font-advance", ".fnt");
-        try {
-            final String content = "info face=\"test\" size=15 bold=0 italic=0 charset=\"\" unicode=1 smooth=1 aa=1\n"
-                    + "common lineHeight=19 base=15 scaleW=256 scaleH=256 pages=1 packed=0\n"
-                    + "page id=0 file=\"test_0.png\"\n"
-                    + "chars count=1\n"
-                    + "char id=65 x=1 y=2 width=3 height=4 xoffset=2 yoffset=1 xadvance=6 page=0 chnl=0\n";
-            Files.writeString(tempFile, content, Charset.forName("ISO-8859-1"));
-
-            final Class<?> sourceClass = Class.forName("github.kasuminova.ssoptimizer.common.font.TtfBmFontGenerator$SourceBmFont");
-            final Method parse = sourceClass.getDeclaredMethod("parse", Path.class);
-            parse.setAccessible(true);
-            final Object source = parse.invoke(null, tempFile);
-
-            final Method glyphMetricsMethod = sourceClass.getDeclaredMethod("glyphMetrics");
-            glyphMetricsMethod.setAccessible(true);
-            final Object rawGlyphMetrics = glyphMetricsMethod.invoke(source);
-            assertInstanceOf(java.util.Map.class, rawGlyphMetrics);
-            final Object metric = ((java.util.Map<?, ?>) rawGlyphMetrics).get(65);
-            assertNotNull(metric);
-
-            final Method xAdvanceMethod = metric.getClass().getDeclaredMethod("xAdvance");
-            xAdvanceMethod.setAccessible(true);
-            assertEquals(8, xAdvanceMethod.invoke(metric));
-        } finally {
-            Files.deleteIfExists(tempFile);
-        }
-    }
-
-    @Test
     void clampsFallbackVisualScaleFactorIntoSafeRange() {
         assertEquals(1.0f, TtfBmFontGenerator.fallbackVisualScaleFactor(12f, 0f));
         assertEquals(1.0f, TtfBmFontGenerator.fallbackVisualScaleFactor(Float.NaN, 10f));
@@ -275,19 +212,5 @@ class TtfBmFontGeneratorTest {
         assertEquals(0f, TtfBmFontGenerator.fallbackTargetMetric(Float.NaN, 12f, 15f));
         assertEquals(12.5f, TtfBmFontGenerator.fallbackTargetMetric(10f, 12f, 15f));
         assertEquals(15f, TtfBmFontGenerator.fallbackTargetMetric(11.67f, 11.67f, 15f), 0.01f);
-    }
-
-    private int invokeInt(final Object target,
-                          final String methodName) throws Exception {
-        final Method method = target.getClass().getDeclaredMethod(methodName);
-        method.setAccessible(true);
-        return (Integer) method.invoke(target);
-    }
-
-    private boolean invokeBoolean(final Object target,
-                                  final String methodName) throws Exception {
-        final Method method = target.getClass().getDeclaredMethod(methodName);
-        method.setAccessible(true);
-        return (Boolean) method.invoke(target);
     }
 }

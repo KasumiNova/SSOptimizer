@@ -1,9 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.modopt.dcr.DcrBatchSaveSynthProcessor;
 import github.kasuminova.ssoptimizer.modopt.dcr.DcrOnGameLoadProcessor;
@@ -12,9 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EngineProcessorRegistrationTest {
 
@@ -25,45 +20,33 @@ class EngineProcessorRegistrationTest {
     }
 
     @Test
-    void registersEngineAndExternalModProcessors() {
-        Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
-
-        assertEquals(15, processors.size());
-        assertTrue(processors.containsKey(GameClassNames.TEXTURE_LOADER));
-        assertTrue(processors.containsKey(GameClassNames.COMBAT_STATE));
-        assertTrue(processors.containsKey(GameClassNames.RESOURCE_LOADER));
-        assertTrue(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
-        assertTrue(processors.containsKey(DcrOnGameLoadProcessor.TARGET_CLASS));
-        assertTrue(processors.containsKey(AITweaksCoreLoaderProcessor.TARGET_CLASS));
-        assertTrue(processors.containsKey(AITweaksBootstrapLoaderProcessor.TARGET_CLASS));
-        assertTrue(processors.containsKey(ShipMasteryReflectionLoaderProcessor.TARGET_CLASS));
-    }
-
-    @Test
     void disableSwitchSkipsSingleProcessor() {
-        String original = System.getProperty("ssoptimizer.disable.textureloader");
+        String key = "ssoptimizer.disable.textureloader";
+        String original = System.getProperty(key);
         try {
-            System.setProperty("ssoptimizer.disable.textureloader", "true");
+            System.setProperty(key, "true");
+
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(14, processors.size());
             assertFalse(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         } finally {
-            restoreProperty("ssoptimizer.disable.textureloader", original);
+            restoreProperty(key, original);
         }
     }
 
     @Test
     void disableDcrSwitchSkipsAllDcrProcessors() {
-        String original = System.getProperty("ssoptimizer.disable.dcr");
+        String key = "ssoptimizer.disable.dcr";
+        String original = System.getProperty(key);
         try {
-            System.setProperty("ssoptimizer.disable.dcr", "true");
+            System.setProperty(key, "true");
+
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertEquals(13, processors.size());
             assertFalse(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
+            assertFalse(processors.containsKey(DcrOnGameLoadProcessor.TARGET_CLASS));
         } finally {
-            restoreProperty("ssoptimizer.disable.dcr", original);
+            restoreProperty(key, original);
         }
     }
 

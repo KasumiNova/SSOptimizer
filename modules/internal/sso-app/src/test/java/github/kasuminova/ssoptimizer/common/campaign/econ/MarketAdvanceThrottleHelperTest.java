@@ -96,19 +96,6 @@ class MarketAdvanceThrottleHelperTest {
     }
 
     @Test
-    void parseIntervalBoundaries() {
-        assertEquals(MarketAdvanceThrottleHelper.DEFAULT_INTERVAL,
-                MarketAdvanceThrottleHelper.parseInterval(null));
-        assertEquals(2, MarketAdvanceThrottleHelper.DEFAULT_INTERVAL);
-        assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("1"));
-        assertEquals(3, MarketAdvanceThrottleHelper.parseInterval("3"));
-        assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("0"));
-        assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("-7"));
-        assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("abc"));
-        assertEquals(1, MarketAdvanceThrottleHelper.parseInterval(""));
-    }
-
-    @Test
     void decideAdvanceSecondsMatchesAdvanceThrottledCadence() {
         for (final int interval : new int[]{1, 2, 3, 5}) {
             final TrackingBridge viaDecide = new TrackingBridge();

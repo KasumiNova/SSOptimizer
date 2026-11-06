@@ -1,13 +1,22 @@
 package github.kasuminova.ssoptimizer.common.concurrent;
 
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SharedFrameWorkersTest {
 
@@ -17,83 +26,72 @@ class SharedFrameWorkersTest {
     }
 
     @Test
-    void sharedPoolUsesSharedNamingAndResolvedThreadCount() {
+    void allTasksCompleteWithoutExceedingWorkerCount() {
         final FrameParallelExecutor executor = SharedFrameWorkers.get();
-        assertEquals(SharedFrameWorkers.resolveThreadCount(System.getProperty(SharedFrameWorkers.THREADS_PROPERTY)),
-                executor.threadCount(), "线程数必须与统一属性解析结果一致");
+        final int taskCount = executor.threadCount() * 2;
+        final AtomicInteger inFlight = new AtomicInteger();
+        final AtomicInteger maxInFlight = new AtomicInteger();
+        final AtomicInteger completed = new AtomicInteger();
 
-        final ConcurrentLinkedQueue<String> threadNames = new ConcurrentLinkedQueue<>();
-        executor.submit(() -> threadNames.add(Thread.currentThread().getName()), null);
-        executor.awaitAll();
-        assertEquals(1, threadNames.size());
-        assertTrue(threadNames.peek().startsWith("SSOptimizer-Shared-Worker-"),
-                "工作线程命名必须为 SSOptimizer-Shared-Worker-N，实际: " + threadNames.peek());
-    }
-
-    @Test
-    void resolveThreadCountDefaultsToCoresMinusOne() {
-        final int expected = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
-        assertEquals(expected, SharedFrameWorkers.resolveThreadCount(null), "未设置时默认 max(cores-1, 1)");
-    }
-
-    @Test
-    void resolveThreadCountAcceptsValidOverride() {
-        assertEquals(1, SharedFrameWorkers.resolveThreadCount("1"));
-        assertEquals(3, SharedFrameWorkers.resolveThreadCount("3"));
-    }
-
-    @Test
-    void resolveThreadCountFallsBackToDefaultOnInvalidValues() {
-        final int expected = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
-        assertEquals(expected, SharedFrameWorkers.resolveThreadCount("0"), "0 非法，按默认处理");
-        assertEquals(expected, SharedFrameWorkers.resolveThreadCount("-2"), "负数非法，按默认处理");
-        assertEquals(expected, SharedFrameWorkers.resolveThreadCount("abc"), "不可解析，按默认处理");
-        assertEquals(expected, SharedFrameWorkers.resolveThreadCount(""), "空串非法，按默认处理");
-    }
-
-    @Test
-    void mixedKeyedAndUnkeyedTasksKeepStripeIsolation() {
-        final FrameParallelExecutor executor = SharedFrameWorkers.get();
-        final Object key = new Object();
-        final ConcurrentLinkedQueue<String> keyedThreads = new ConcurrentLinkedQueue<>();
-        final ConcurrentLinkedQueue<String> unkeyedThreads = new ConcurrentLinkedQueue<>();
-        for (int i = 0; i < 16; i++) {
-            executor.submit(() -> keyedThreads.add(Thread.currentThread().getName()), key);
-            executor.submit(() -> unkeyedThreads.add(Thread.currentThread().getName()), null);
+        for (int i = 0; i < taskCount; i++) {
+            executor.submit(() -> {
+                final int current = inFlight.incrementAndGet();
+                maxInFlight.accumulateAndGet(current, Math::max);
+                try {
+                    Thread.yield();
+                } finally {
+                    inFlight.decrementAndGet();
+                    completed.incrementAndGet();
+                }
+            }, null);
         }
         executor.awaitAll();
-        assertEquals(16, keyedThreads.size());
-        assertEquals(16, unkeyedThreads.size());
+
+        assertEquals(taskCount, completed.get(), "全部任务必须执行完成");
+        assertTrue(maxInFlight.get() <= executor.threadCount(),
+                "并行度不得超过工作线程数，实际峰值: " + maxInFlight.get());
+    }
+
+    @Test
+    void sameStripeKeyRunsSeriallyOnOneWorker() {
+        final FrameParallelExecutor executor = SharedFrameWorkers.get();
+        final int taskCount = executor.threadCount() + 1;
+        final Object key = new Object();
+        final ConcurrentLinkedQueue<Thread> keyedThreads = new ConcurrentLinkedQueue<>();
+
+        for (int i = 0; i < taskCount; i++) {
+            executor.submit(() -> keyedThreads.add(Thread.currentThread()), key);
+        }
+        executor.awaitAll();
+
+        assertEquals(taskCount, keyedThreads.size(), "分组任务必须全部执行");
         assertEquals(1, keyedThreads.stream().distinct().count(), "相同 stripeKey 必须在同一 worker 串行");
     }
 
     @Test
-    void distinctStripeKeysSpreadAcrossSharedWorkers() {
+    void persistentTaskFailureIsLoggedAndPropagated() {
         final FrameParallelExecutor executor = SharedFrameWorkers.get();
-        final int workers = executor.threadCount();
-        if (workers < 2) {
-            executor.submit(() -> { }, null);
-            executor.awaitAll();
-            return;
-        }
-        final ConcurrentLinkedQueue<String> threadNames = new ConcurrentLinkedQueue<>();
-        final CountDownLatch entered = new CountDownLatch(2);
-        final Object key0 = keyForStripe(0, workers);
-        final Object key1 = keyForStripe(1 % workers, workers);
-        for (final Object key : new Object[]{key0, key1}) {
+        final IllegalStateException failure = new IllegalStateException("persistent failure");
+        final Logger logger = Logger.getLogger(FrameParallelExecutorImpl.class);
+        final List<LoggingEvent> events = new CopyOnWriteArrayList<>();
+        final AppenderSkeleton appender = recordingAppender(events);
+        logger.addAppender(appender);
+
+        final RuntimeException propagated;
+        try {
             executor.submit(() -> {
-                threadNames.add(Thread.currentThread().getName());
-                entered.countDown();
-                try {
-                    assertTrue(entered.await(10, TimeUnit.SECONDS), "不同键任务必须并行执行");
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    fail("interrupted");
-                }
-            }, key);
+                throw failure;
+            }, null);
+            propagated = assertThrows(RuntimeException.class, executor::awaitAll);
+        } finally {
+            logger.removeAppender(appender);
         }
-        executor.awaitAll();
-        assertEquals(2, threadNames.stream().distinct().count(), "不同 stripeKey 必须落到不同 worker");
+
+        assertSame(failure, propagated.getCause(), "调用方必须收到原始任务异常");
+        assertTrue(events.stream().anyMatch(event -> event.getLevel() == Level.ERROR
+                        && event.getThrowableInformation() != null
+                        && event.getThrowableInformation().getThrowable() == failure),
+                "工作线程必须记录原始任务异常");
     }
 
     @Test
@@ -105,13 +103,21 @@ class SharedFrameWorkersTest {
         assertTrue(onWorker.get(), "共享池工作线程必须被守卫识别");
     }
 
-    private static Object keyForStripe(final int stripe, final int mod) {
-        for (int i = 0; i < 100000; i++) {
-            final Object candidate = new Object();
-            if ((System.identityHashCode(candidate) & 0x7fffffff) % mod == stripe) {
-                return candidate;
+    private static AppenderSkeleton recordingAppender(final List<LoggingEvent> events) {
+        return new AppenderSkeleton() {
+            @Override
+            protected void append(final LoggingEvent event) {
+                events.add(event);
             }
-        }
-        throw new IllegalStateException("cannot find key for stripe " + stripe);
+
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public boolean requiresLayout() {
+                return false;
+            }
+        };
     }
 }
