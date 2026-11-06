@@ -40,7 +40,7 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.disable.dcr` | `false` | 为 true 时跳过 DCR 优化集合整体注册（key 取自 `DcrModOptimizer.featureKey()`） | `modopt/dcr/DcrModOptimizer.java:25`，`bootstrap/SSOptimizerCorePlugin.java:103` |
+| `ssoptimizer.disable.dcr` | `false` | 为 true 时跳过 DCR 读档批量保存的两个 Mixin（织入期门控，不影响压缩替换 Mixin） | `mixin/SSOptimizerMixinConfigPlugin.java` |
 
 ## 字体
 
@@ -78,22 +78,22 @@
 | `ssoptimizer.texcompress.highQualityPaths` | 空 | 高质量路径模式（逗号分隔子串，大小写不敏感）：命中的贴图强制 `high` 质量档，优先于全局 `quality`。默认空——背景/特效类贴图实测 high 档 BC7 仍有可见色阶，已由 `excludePaths` 默认排除面绕过压缩；本属性留给「宁可压缩也要省显存」的自定义场景 | `common/loading/TextureCompressionScheduler.java` |
 | `ssoptimizer.texcompress.excludePaths` | `background,starscape,nebula,illustration,/fx/` | 压缩排除路径模式（逗号分隔子串，大小写不敏感）：命中的贴图完全不压缩，保持 RGBA8 上传。默认排除背景/插画/星云/特效类大面积平滑渐变贴图（实测色阶不可接受）；置空字符串恢复全量压缩 | `common/loading/TextureCompressionEligibility.java` |
 | `ssoptimizer.texcompress.mode` | `background` | 压缩时机：`background`（后台线程压缩，首轮未压缩上传）/ `eager`（加载时同步压缩，首轮即压缩形态上传，首轮加载耗时显著增加，建议搭配 `quality=fast`） | `common/loading/TextureCompressionSupport.java` |
-| `ssoptimizer.texcompress.hotreload` | `true` | 热重传：后台压缩完成后，已驻留的未压缩纹理进入待升级队列；绑定路径按时间间隔与单次预算主动排空队列并原地重传，不依赖同一纹理再次绑定 | `common/loading/TextureResidency.java` |
+| `ssoptimizer.texcompress.hotreload` | `true` | 热重传：后台压缩完成后，已驻留的未压缩纹理进入待升级队列；绑定路径按时间间隔与单次预算主动排空队列并原地重传，不依赖同一纹理再次绑定 | `common/loading/TextureResidencyPolicy.java` |
 | `ssoptimizer.texcompress.bc1ForOpaque` | `false` | BC1 显存优先：BC7 可用时，实际像素全不透明的大图（最长边 ≥256）也选 BC1（画质换显存）；BC3 回退场景下非 FULL alpha 的大图走 BC1，不受此开关影响 | `common/loading/TextureCompressionSupport.java` |
 | `ssoptimizer.texcompress.deferredPrepass` | `true` | 延迟上传（deferred）纹理的后台压缩预处理：不持有像素、等首绑的纹理提前在后台完成解码+转换+压缩，首绑直接吃压缩缓存 | `common/loading/TextureCompressionScheduler.java` |
 | `ssoptimizer.bctexcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/textures-bc/<formatTag>/v1`） | 自定义压缩纹理（SSOBC+zstd）缓存根目录（覆盖后仍按 formatTag/v1 分层） | `common/loading/CompressedTextureCache.java` |
 | `ssoptimizer.bctexcache.memory.maxbytes` | `67108864`（64 MiB，下限 0） | 压缩纹理缓存内存上限 | `common/loading/CompressedTextureCache.java` |
 | `ssoptimizer.disable.nativepngdecoder` | `false` | 禁用 JNI 原生 PNG 解码器 | `common/loading/NativePngDecoder.java:57` |
-| `ssoptimizer.disable.lazytextureupload` | `false` | 禁用惰性纹理上传（启动只留元数据，首次绑定才传 GPU） | `common/loading/TextureResidency.java:164-166` |
-| `ssoptimizer.lazytextureupload.minimalstartup` | `true` | 最小化启动纹理（managed 图形资源且 ≥ trackminbytes）延迟上传 | `common/loading/TextureResidency.java:186-189` |
-| `ssoptimizer.lazytextureupload.minbytes` | `1048576`（1 MiB，下限 262144） | GPU 估算字节数低于此值的纹理不延迟上传 | `common/loading/TextureResidency.java:223-226` |
-| `ssoptimizer.lazytextureupload.trackminbytes` | `65536`（64 KiB，下限 16384） | 纳入驻留跟踪的最小 GPU 字节数 | `common/loading/TextureResidency.java:228-232` |
-| `ssoptimizer.lazytextureupload.idleunloadmillis` | `0` | 纹理空闲多少毫秒后卸载（0 = 不按空闲卸载） | `common/loading/TextureResidency.java:207-210` |
-| `ssoptimizer.lazytextureupload.previewprotectmillis` | `300000`（5 分钟） | 舰船/空间站/武器预览纹理的额外保护期，不被空闲卸载 | `common/loading/TextureResidency.java:212-220` |
-| `ssoptimizer.lazytextureupload.sweepintervalmillis` | `1000`（下限 250） | 驻留扫描周期 | `common/loading/TextureResidency.java:234-238` |
-| `ssoptimizer.texturecomposition.reportintervalmillis` | `5000` | 纹理组成报告输出周期 | `common/loading/TextureResidency.java:240-244` |
-| `ssoptimizer.texturemanager.logintervalmillis` | `15000` | 纹理管理器汇总日志周期 | `common/loading/TextureResidency.java:246-250` |
-| `ssoptimizer.texturecomposition.reportfile` | `"ssoptimizer-texture-composition.tsv"` | 纹理组成报告文件路径 | `common/loading/TextureResidency.java:156-162` |
+| `ssoptimizer.disable.lazytextureupload` | `false` | 禁用惰性纹理上传（启动只留元数据，首次绑定才传 GPU） | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.lazytextureupload.minimalstartup` | `true` | 最小化启动纹理（managed 图形资源且 ≥ trackminbytes）延迟上传 | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.lazytextureupload.minbytes` | `1048576`（1 MiB，下限 262144） | GPU 估算字节数低于此值的纹理不延迟上传 | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.lazytextureupload.trackminbytes` | `65536`（64 KiB，下限 16384） | 纳入驻留跟踪的最小 GPU 字节数 | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.lazytextureupload.idleunloadmillis` | `0` | 纹理空闲多少毫秒后卸载（0 = 不按空闲卸载） | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.lazytextureupload.previewprotectmillis` | `300000`（5 分钟） | 舰船/空间站/武器预览纹理的额外保护期，不被空闲卸载 | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.lazytextureupload.sweepintervalmillis` | `1000`（下限 250） | 驻留扫描周期 | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.texturecomposition.reportintervalmillis` | `5000` | 纹理组成报告输出周期 | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.texturemanager.logintervalmillis` | `15000` | 纹理管理器汇总日志周期 | `common/loading/TextureResidencyPolicy.java` |
+| `ssoptimizer.texturecomposition.reportfile` | `"ssoptimizer-texture-composition.tsv"` | 纹理组成报告文件路径 | `common/loading/TextureResidencyPolicy.java` |
 | `ssoptimizer.atlas.shipweapon` | `true` | 舰船/武器贴图动态图集总开关。settings.json graphics 段引用的贴图构建期整体排除（模组裸 UV 消费面）；`getTextureId` 不感知图集（模组消费者恒拿独立纹理 id），图集 id 仅经 `AtlasTextureResolver` 对 Sprite 渲染路径可见 | `common/render/atlas/ShipWeaponAtlas.java:62` |
 | `ssoptimizer.atlas.shipweapon.dumpdir` | 无（`null` → 不导出） | 图集构建时把每页写成 PNG 到指定目录，供检查空间利用率 | `common/render/atlas/ShipWeaponAtlas.java:63` |
 | `ssoptimizer.texture.tracepath` | 空（关闭） | 定点诊断：路径含该子串的纹理在 getTextureId/bindTexture 时输出 INFO 轨迹；特殊值 `ALL` 每路径记一次并附调用栈 | `common/loading/TextureBinding.java:29` |

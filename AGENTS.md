@@ -48,6 +48,10 @@
    - 类结构级修改（追加 implements 接口、新增字段/方法）。Mixin 的接口注入
      （mixin 类直接 implements 目标接口）可覆盖大部分场景，优先用 Mixin。
 3. 禁止为同一目标同时注册 Mixin 与 ASM 处理器造成重复改写。
+4. 执行顺序：ASM transformer（`HybridWeaverTransformer`、`RenderThreadRedirectTransformer`）先于 Mixin。
+   渲染线程分离开启时，Mixin 看到的 GL 调用已被改写为 `bridge/opengl/GL11` 等 bridge 调用，关闭时仍是原始 LWJGL 调用。
+   因此涉及 GL 调用的 Mixin 必须拆成 bridge 与 direct 两个变体，由 `SSOptimizerMixinConfigPlugin` 按 `RenderThreadMode.isEnabled()` 择一织入。
+5. `ssoptimizer.disable.<key>` 开关：ASM 处理器在 `SSOptimizerCorePlugin` 注册时读取，Mixin 在 `SSOptimizerMixinConfigPlugin` 织入期读取。
 
 ## 类变换通道：禁止 javaagent 模式
 

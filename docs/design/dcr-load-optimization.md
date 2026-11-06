@@ -2,160 +2,75 @@
 
 ## 目标
 
-消除第三方模组 **DetailedCombatResults（DCR，id `DetailedCombatResults`，v5.4.2）** 在读档时 `onGameLoad` 的性能热点，并通过 `:modules:api:sso-api` 与 `:modules:internal:sso-modopt` 隔离外部模组优化契约和实现，由 `:modules:internal:sso-app` 统一装配。
+消除第三方模组 DetailedCombatResults（DCR，id `DetailedCombatResults`，v5.4.2）读档时 `onGameLoad` 的性能热点。优化全部经 Mixin 实施，不修改 DCR 的任何文件，实现位于 `:modules:internal:sso-modopt`。
 
-本优化通过 NanoForge 的 RFB/LaunchWrapper transformer 链实施 ASM 改写，压缩方法通过 Mixin 替换，**不修改 DCR 的任何文件**。
-
-## 根因（Profile + 字节码双证据）
+## 根因
 
 性能报告 `.references/热点_加载.xml`（JProfiler 调用树）：
 
 | 节点 | 占比 / 耗时 |
 |---|---|
 | `DetailedCombatResultsModPlugin.onGameLoad(Z)V` | 48.8% / 16,992 ms |
-| └ `SerializationManager.saveCombatResult`（聚合循环内 N 次调用） | 46.8% / 16,295 ms |
-| 　└ `compress` → `Deflater.deflate`（级别 9） | 25.8% / 8,973 ms |
-| 　└ `XStream.toXML` | 19.6% / 6,820 ms |
+| 聚合循环内 N 次 `SerializationManager.saveCombatResult` | 46.8% / 16,295 ms |
+| 其中 `compress` 的 `Deflater.deflate`（级别 9） | 25.8% / 8,973 ms |
+| 其中 `XStream.toXML` | 19.6% / 6,820 ms |
 
-字节码（`javap -p -c`，本仓 jar 构建）证实 `onGameLoad(Z)V` 的 trim 重写循环：
+`onGameLoad(Z)V` 的裁剪重写循环：`clearSavedData()` 之后遍历裁剪后的列表，对每条战报调用一次 `saveCombatResult`（方法内唯一调用点）。`saveCombatResult` 内部依次执行 `getAllSavedCombatResults().add`、`Collections.sort`、`getSerializer().toXML(整份列表)`、`saveValue(KEY, xml)`，整体包在 `Throwable` 捕获中，失败时记录日志并调用 `Helpers.printErrorMessage`。循环第 k 次序列化并压缩 k 条记录，总量为 N(N+1)/2，即 O(N²)。
 
-```
-145: invokestatic SerializationManager.clearSavedData:()V     // store="", _resultCache=null
-148..155: List.iterator (var4 = 已裁剪列表)
-157: 循环顶 (Iterator.hasNext)
-164: ifeq 187 (出循环)
-181: invokestatic SerializationManager.saveCombatResult:(Ldata/.../CombatResult;)V   // 唯一调用点
-184: goto 157
-226: return                                                   // 唯一 return
-```
+命中战报数量上限、存在过期模拟记录或数据损坏时，每次读档都会触发该循环。
 
-`saveCombatResult` 内部：`getAllSavedCombatResults().add(cr)` → `Collections.sort` → `getSerializer().toXML(整份列表)` → `saveValue(KEY, xml)` →（`compress` = `Deflater(9)` + Base64）。
+同一 `saveCombatResult` 也在每场战斗后调用一次，每战重序列化全史，属 L3，本轮不做。
 
-因此循环第 k 次序列化/压缩 k 条记录，∑k = N(N+1)/2 ⇒ **O(N²)**。命中战报上限（`removeOldestEntriesIfOverSize`>0）或有过期模拟记录（`removeAgedSimulationData`>0）或数据损坏（`dataIsCorrupt`）时**每次读档都触发**，N≈上限，实测约 16.3 s。
+## 模块结构与开关
 
-> 同一 `saveCombatResult` 亦被每场战斗后（`CampaignEventListener.reportPlayerEngagement` / `SimulationCompleteListener`）调用一次，即每战重序列化+压缩全史（结构性 O(N)/次），属 L3，本轮不做。
+- `modopt.dcr.DcrBatchSaveWindow`：批量保存窗口，只持有线程与剩余次数。
+- `modopt.dcr.DcrCompressionHelper`：压缩内核。
+- `mixin.modopt.dcr.DcrOnGameLoadBatchMixin`、`DcrSerializationManagerBatchMixin`：L1。
+- `mixin.modopt.dcr.DcrCompressionUtilMixin`：L2。
+- 三个 Mixin 均注册在 `mixins.ssoptimizer.json`。`-Dssoptimizer.disable.dcr=true` 由 `SSOptimizerMixinConfigPlugin` 在织入期跳过 L1 的两个 Mixin，不影响 L2。
 
-## 模块结构
+DCR 的类不在编译类路径上，Mixin 以字符串目标指定，`@Redirect` 的参数与返回类型只使用 JDK 与 XStream 类型。
 
-```
-:modules:api:sso-api          跨域契约
-  ├─ api.AsmClassProcessor
-  ├─ api.CompositeAsmClassProcessor
-  └─ api.ExternalModOptimizer（featureKey() + processors()）
-:modules:internal:sso-modopt  外部模组优化实现
-  └─ modopt.dcr.*（DCR 处理器、Zstd helper、DcrModOptimizer）
-:modules:internal:sso-app     装配模块
-  implementation(:modules:api:sso-api) + implementation(:modules:internal:sso-modopt)
-  SSOptimizerCorePlugin 直接实例化并注册 DcrModOptimizer，提供 -Dssoptimizer.disable.<featureKey> 总开关
-```
+## L1：消除 O(N²) 批量重写
 
-`:modules:internal:sso-app` 的 `jar` 任务合并 `runtimeClasspath` 与 `shade` 依赖生成 `SSOptimizer.jar`。装配模块直接引用外部模组优化实现，不需要服务声明文件。
+`DcrOnGameLoadBatchMixin` 重定向 `onGameLoad` 内唯一的 `List.iterator()`，以裁剪后列表的长度开启批量窗口；在方法 `RETURN` 处关闭窗口。
 
-`ExternalModOptimizer` SPI：
+`DcrSerializationManagerBatchMixin` 对 `saveCombatResult` 做三处重定向：
 
-```java
-public interface ExternalModOptimizer {
-    String featureKey();                          // 对应 -Dssoptimizer.disable.<key> 总开关
-    Map<String, AsmClassProcessor> processors();  // 目标类内部名 → 处理器（已按类组合）
-}
-```
+1. 保存入口的 `getAllSavedCombatResults()`：登记一次保存并判定是否跳过。计数放在入口，保存内部后续步骤抛出异常也不会漏计。
+2. `XStream.toXML`：被判定跳过时返回 `null`，不序列化。
+3. `saveValue`：序列化结果为 `null` 时不落盘。
 
-`SSOptimizerCorePlugin.registerExternalModOptimizers` 直接注册 DCR 实现：
-```java
-registerModOptimizer(registrator, new DcrModOptimizer());
-```
+窗口内除最后一次外的保存只追加并排序列表，最后一次沿用原方法的完整路径，包括异常捕获与错误提示。全部保存都未抛出异常时，`_resultCache` 与存档内容和逐条保存的最终结果一致。磁盘格式不变，卸载 SSOptimizer 无副作用。
 
-`registerModOptimizer` 检查 `-Dssoptimizer.disable.<featureKey>`，禁用时记录日志并跳过；启用时遍历 `processors()`，将目标类内部名与处理器逐项注册到 `HybridWeaverTransformer`。
+窗口只允许持有线程关闭，不支持重入；非持有线程的保存不受影响。
 
-## 类加载器约束（注入形态的决定因素）
+## L2：压缩层 Deflater(9) 改为 Zstd
 
-跨加载器调用的 helper 方法签名只能使用双方都可解析的中立类型（游戏 API / JDK / `String` / 基本类型），不能出现 `CombatResult` 等 mod 类型，避免 DCR 类型进入 SSOptimizer 的公开方法签名。
+DCR 的 `util/Base64` 是非标准自定义编码，因此替换点下沉到 `CompressionUtil.compress(String):byte[]` 与 `decompress(byte[]):String`，只处理 `byte[]`，不触碰外层编码。
 
-实现约束：
-- ASM 改写经 NanoForge 的 RFB/LaunchWrapper transformer 链执行，不使用 javaagent 或 `Instrumentation` transformer。
-- `HybridWeaverTransformer` 实现 `IClassTransformer`，按 JVM 内部名精确匹配处理器；`SSOptimizerCorePlugin.onLoad` 调用 `registerAllProcessors` 完成 DCR 处理器注册。
-- L1 使用帧中立编辑、asm-tree 与 `COMPUTE_MAXS`，为新增方法手工维护栈帧，不重算目标类既有方法的栈帧。
+- 写：Zstd 压缩，帧自带魔数 `28 B5 2F FD`。
+- 读：先检查前 4 字节是否为 zstd 魔数，是则 Zstd 解压，否则按旧 Deflate 流解压。
+- 迁移：旧存档读出后，下一次保存转为 Zstd。
 
-## L1：【核心，默认开，零格式风险】消除 O(N²) 批量重写
+`DcrCompressionUtilMixin` 以 `@Overwrite` 整体替换这两个方法并委派 `DcrCompressionHelper`。
 
-向 **`SerializationManager`** 注入合成静态成员（同类内可访问其 private 成员）：
+权衡：压缩串随存档落盘，卸载 SSOptimizer 后 DCR 原生 `Inflater` 无法解 Zstd 串，会判定数据损坏并清空战报历史，存档本体不受影响。README 已注明。
 
-```java
-// 伪代码（实际以 ASM 生成）
-static boolean ssoptimizer$dirty;
+## L3：消除每场战后的全史重序列化
 
-public static void ssoptimizer$collect(CombatResult cr) {   // 替代循环里的 saveCombatResult
-    getAllSavedCombatResults().add(cr);   // 重建并增长 _resultCache，与原逻辑一致
-    ssoptimizer$dirty = true;             // 不序列化
-}
+需要改为追加式或分片存储，涉及 DCR 数据模型与存档结构，风险面大，本轮不做。
 
-public static void ssoptimizer$flush() {                    // onGameLoad return 前调用一次
-    if (!ssoptimizer$dirty) return;
-    java.util.List l = getAllSavedCombatResults();           // 返回 collect 重建后的非空 _resultCache
-    java.util.Collections.sort(l);
-    saveValue("CombatAnalytics_CombatResults_V4", getSerializer().toXML(l));  // 一次序列化+一次压缩
-    ssoptimizer$dirty = false;
-}
-```
+## 失败语义与风险
 
-向 **`DetailedCombatResultsModPlugin`**：将 `onGameLoad(Z)V` 内 offset 181 的 `saveCombatResult` 调用 **redirect → `ssoptimizer$collect`**；在 offset 226 的 `return` 前 **inject `ssoptimizer$flush`**。
+- 批量窗口中最后一次保存失败时，存档不会保留逐条保存留下的中间快照；原方法照常记录错误并返回。
+- `onGameLoad` 异常逃逸时窗口不会被 `RETURN` 注入点关闭，但读档已经失败，窗口也不会被复用，再次开窗时 `begin` 会重置状态。
+- DCR 版本变化后，调用点形状可能改变。`DcrBatchMixinAnchorTest` 读取随仓库提供的真实 DCR 字节码，校验 `onGameLoad` 内 `List.iterator` 以及 `saveCombatResult` 内 `getAllSavedCombatResults`、`toXML`、`saveValue` 调用点各恰有一个。Mixin 的 `expect = 1` 在织入期提供第二层保护。
 
-**等价性证明**：原循环每次 = `getAllSavedCombatResults().add(cr)` + sort + toXML + compress + saveValue；末态 = 全列表序列化压缩入 store + `_resultCache`=全列表。我的版本：collect 同样 add（`_resultCache` 同样重建增长），flush 末次序列化全列表入 store。**最终 `_resultCache` 与 store 与原循环逐字节等价**，仅省去 N−1 次中间写。要点：
+## 验证
 
-- flush 用 `getAllSavedCombatResults()`（返回被 collect 重建的非空 `_resultCache`），**不**直接 `getstatic _resultCache`（`clearSavedData` 已置 null，靠 collect 重建）。
-- `COMBATRESULTS_KEY` 是编译期常量被内联，flush 须 `ldc "CombatAnalytics_CombatResults_V4"` 字面量。
-- 必须复用 `getSerializer()`（StaxDriver + PureJavaReflectionProvider + 全套 alias）与 `saveValue`（内部 `compress`+Base64），否则写出的 XML/格式 DCR 读不回。
-- 非 trim 路径（offset 211 跳过循环）collect 不被调用，dirty 保持 false，flush no-op，store 不变，无冗余写。
-
-收益：16.3 s ≈→ 0.4 s；**磁盘仍 Deflater 格式，卸载 SSOptimizer 无副作用**。
-
-## L2：【增益，默认开，可关】压缩层 Deflater(9) → Zstd
-
-**关键约束：DCR 的 `util/Base64` 是非标准自定义编码**（字母表 `'?'..'~'`，含控制字符分帧逻辑），非 RFC Base64。若在 `SerializationManager.compress/decompress(String):String` 边界 redirect，则旧存档回退读必须忠实复刻这套诡异编解码，风险极高（读错=数据损坏，比性能问题更糟）。
-
-因此 L2 下沉一层，在 **`CompressionUtil.compress(String):byte[]` / `decompress(byte[]):String`** 边界做替换（仅 JDK 类型 `String`/`byte[]`，跨加载器安全）：将 `CompressionUtil` 的这两个方法体改写为委派到 `modopt.dcr.DcrCompressionHelper`。DCR 的自定义 Base64 层原封不动地包在我的字节外（对我透明），helper 只处理 `byte[]`：
-
-- **写**：`compress(xml)` = `Zstd(xml.utf8)`（zstd 帧自带魔数 `28 B5 2F FD`，无需额外前缀）。外层仍由 DCR 的 `Base64.convert(byte[])` 编码、落入存档。
-- **读**：`decompress(bytes)` 先看前 4 字节是否 zstd 魔数 → 是则 Zstd 解；否则按旧 Deflate 流 `Inflater` 解（复刻 `CompressionUtil.decompress` 的 inflate→UTF8）。bytes 由 DCR 的 `Base64.convert(String)` 自定义解码而来，helper 不碰 Base64。
-- **迁移**：旧存档读出后，下一次保存即转 Zstd（单向迁移）。
-
-L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.compress` 自动走 L2，二层一致。L2 仅改 `CompressionUtil`（独立于 L1 改的 SerializationManager/plugin），故各处理器目标类互不相同、**无需 CompositeAsmClassProcessor**。
-
-实现方式：`CompressionUtil` 的这两个方法体由 Mixin（`mixin.modopt.dcr.DcrCompressionUtilMixin`，@Overwrite）整体替换为委派 `modopt.dcr.DcrCompressionHelper`（不再经 `DcrModOptimizer.processors()` 注册，原 `-Dssoptimizer.disable.dcrzstd` 子开关随之移除）。
-
-**权衡（默认开，用户已确认）**：压缩串经游戏 XStream 落入存档文件；卸载 SSOptimizer（或迁移前已存档）后 DCR 原生 `Inflater` 无法解已迁移的 Zstd 串 → 判 `dataIsCorrupt` → 清空战报历史。README 须注明。
-
-## L3：【未来，结构性】消除每场战后的全史重序列化
-
-改单键大 blob 为追加式/分片存储，需改 DCR 数据模型与存档结构，风险面大，本轮不做。
-
-## 兼容性与风险
-
-- L1 零格式变更（仍 Deflater），卸载安全。
-- L2 前缀标签 + Deflater 读回退；卸载后丢历史（已接受）。
-- 注入失败模式：`HybridWeaverTransformer` 记录处理器异常并保留当前字节码，处理器仍需记录 success/failure 日志，确保误注入可观测。
-- 字节码 offset / 常量池索引随 DCR 版本变化 → ASM 按方法名+描述符+指令模式匹配，**不**硬编码 offset；处理器 `reader.getClassName().equals(target)` 守卫。
-
-## 验证方案
-
-1. **TDD**（DCR jar 不在 test classpath → ClassWriter 手搓 fixture，mimic onGameLoad/SerializationManager 形状，transform→load→invoke）：
-   - L1：fixture 模拟「N 次调用 saveCombatResult」的循环 + 一个可观测的「序列化计数器」，断言注入后序列化仅发生 1 次、最终列表与 store 内容等价。
-   - L1 synth：断言注入后 SerializationManager 含 `ssoptimizer$collect/flush` 且行为正确。
-   - L2：`DcrCompressionHelper` 往返（Zstd 写→读、旧 Deflater 串→读）、前缀识别、迁移；参考 `TerrainTileCompressionHelperTest`。
-   - SPI：`SSOptimizerCorePlugin` 直接实例化并注册 `DcrModOptimizer`，`processors()` 键覆盖两个目标类（压缩内核已迁移为 Mixin，不在集合内）。
-2. **jmh**（参考 `SaveXmlWriterQueueBenchmark`）：N=上限的列表，对比「逐条重写 vs 合并一次」「Deflate-9 vs Zstd」吞吐。
-3. **游戏烟测**（pure 装 `/mnt/windows_data/Games/Starsector098-linux-pure`）：
-   - `SSOPTIMIZER_GAME_DIR=<pure> ./gradlew deployMod` 部署新 jar；
-   - `cp -r .../Starsector098-linux/mods/DetailedCombatResults <pure>/mods/` 并加入 `enabled_mods.json`（DCR 标 RC5 / install RC8，必要时改 mod_info gameVersion）；
-   - 拷有战史存档（`save_Dev_3782943583724635391`，328 markers，19 MB，最快）；
-   - `tools/smoke_test_game_launch.sh <pure> 120 game` 进主菜单后**手动** Continue/Load（仓库无读档自动化）；
-   - `grep 'prior battle results using' <pure>/starsector.log` 取 `in <N>ms`，前后对比。
-
-## 实施清单
-
-1. `:modules:api:sso-api`：提供 `AsmClassProcessor`、`CompositeAsmClassProcessor` 与 `ExternalModOptimizer` 契约。
-2. `:modules:internal:sso-app`：以 `implementation` 依赖 API 与 `sso-modopt`，由 `SSOptimizerCorePlugin` 直接实例化 `DcrModOptimizer` 并注册其处理器。
-3. `:modules:internal:sso-modopt`：`DcrBatchSaveSynthProcessor` 为 SerializationManager 注入 `ssoptimizer$collect/flush` 与 `ssoptimizer$dirty`，`DcrOnGameLoadProcessor` 对 plugin 执行 redirect 与 inject；`DcrCompressionUtilMixin` 替换 CompressionUtil 的 compress/decompress 方法并委派 `DcrCompressionHelper`。ASM 处理器使用帧中立编辑、asm-tree 与 `COMPUTE_MAXS`，新增方法手工维护栈帧。
-4. TDD + jmh。
-5. `./gradlew :modules:internal:sso-app:jar` 构建；`deployMod` 部署 pure；烟测取数。
-6. README 增 L2 卸载权衡说明。
+- `DcrBatchMixinAnchorTest`：锚点唯一性。
+- `DcrBatchSaveWindowTest`：窗口的跳过、关闭与线程归属逻辑。
+- `DcrCompressionHelperTest`：Zstd 往返、旧 Deflate 读取与损坏数据处理。
+- 游戏烟测：渲染线程开启与关闭两种模式下启动均通过，日志无 Mixin 织入错误。
+- 读档裁剪路径的运行期行为与耗时没有实机验证，需要带战史存档读档，并用 `prior battle results using` 日志对比耗时。

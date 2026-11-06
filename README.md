@@ -60,13 +60,13 @@ SSOptimizer 的可选开关均为 JVM 系统属性，在 NanoForge 启动脚本�
 
 ### 外部模组优化：DetailedCombatResults（DCR）
 
-第三方模组优化位于 `:modules:internal:sso-modopt` 模块。DCR 的读档历史合并由 `ExternalModOptimizer` 注册 ASM 处理器，压缩内核由 Mixin 替换：
+第三方模组优化位于 `:modules:internal:sso-modopt` 模块，DCR 的读档历史合并与压缩内核均由 Mixin 实现：
 
 - **读档历史合并**：DCR 在裁剪战报后会清空并逐条重写整份历史，产生 O(N²) 的重序列化与压缩。SSOptimizer 将多次历史更新合并为一次落盘，不改变存档格式，卸载 SSOptimizer 后 DCR 仍可正常读档。
 - **Zstd 压缩**：将 DCR 的 `Deflater` 级别 9 压缩替换为 Zstd，读取时自动识别 Zstd 与旧 Deflate 两种格式。旧存档读出后，下一次保存会迁移为 Zstd。
   - **兼容性影响**：DCR 战报压缩串会随存档落盘。迁移为 Zstd 后，无 SSOptimizer 环境中的 DCR 原生 `Inflater` 无法读取这些战报，会判定数据损坏并清空历史战报记录，但不影响存档本体。
   - 当前没有通过 JVM 属性单独关闭 Zstd 写出的开关；需要保留无 SSOptimizer 环境兼容性时，应先备份存档。
-- `-Dssoptimizer.disable.dcr=true` 仅关闭 `DcrModOptimizer` 注册的读档历史合并处理器，不会禁用压缩替换 Mixin。
+- `-Dssoptimizer.disable.dcr=true` 仅在织入期跳过读档历史合并的两个 Mixin，不会禁用压缩替换 Mixin。
 
 ## 从源码构建
 
