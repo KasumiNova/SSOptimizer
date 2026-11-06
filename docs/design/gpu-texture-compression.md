@@ -1,49 +1,52 @@
 # GPU 纹理压缩设计（BC 族压缩纹理接入）
 
-状态：**正式设计，未实施**。前置条件已全部满足（字体重写收官）。平台范围：Linux / Windows，
-不考虑 macOS。事实基线来自 2026-08 纹理管线调研（代码引用见各节）；
+状态：**部分落地**。T1（GL 能力探测、诊断、bridge 转发）与 T2（native 编码、压缩缓存、
+普通纹理上传分流、后台/同步压缩及热重传）已实现；T3（舰船/武器图集页压缩、压缩纹理的
+上下文重建）未实现；T4 尚余压缩缓存启动预热与收尾验收。平台范围：Linux / Windows，
+不考虑 macOS。事实基线来自 2026-08 纹理管线调研，描述接入前代码，不代表现有实现；
 体积/质量/耗时数字来自 2026-08-22 离线实验室实测（`.dev/texcompress-lab/REPORT.md`，
 269 张游戏+mod 真实贴图，bc7enc + rgbcx + bcdec roundtrip）。
 
 ## 1. 背景与动机
 
-游戏贴图（舰船/武器图集、背景、UI）当前以未压缩 RGBA8 常驻显存：`uploadConverted`
-恒以 `GL_RGBA + GL_UNSIGNED_BYTE` 上传（LazyTextureManager.java:717-746），
-图集页 8192² 单页即 256MB 显存（ShipWeaponAtlas.composeAndUpload:324-348）。
-接入 BC 族压缩纹理的收益：
+2026-08 调研时，游戏贴图（舰船/武器图集、背景、UI）以未压缩 RGBA8 常驻显存：
+`TextureResidency.uploadConverted` 仅以 `GL_RGBA + GL_UNSIGNED_BYTE` 上传，
+图集页 8192² 单页占 256MB 显存（当时 `ShipWeaponAtlas.composeAndUpload` 实现）。
+接入 BC 族压缩纹理的预期收益：
 
 - **显存 1/4~1/8**：BC7/BC3 = 8bpp（8192² → 64MB/页），BC1 = 4bpp。
-  **实测（269 张真实贴图）：显存估算 137.1MB → 30.2MB（4.5×）；磁盘形态经 zstd 二压后
+  **当时实测（269 张真实贴图）：显存估算 137.1MB → 30.2MB（4.5×）；磁盘形态经 zstd 二压后
   仅为原始 RGBA 的 10.9%（BC7）/ 7.7%（BC3）/ 5.7%（BC1）**；
 - **上传带宽同比下降**：RT 模式下像素在入队时快照拷贝（BufferSnapshotPoolImpl），
   压缩后快照体积同步缩小；
-- **采样缓存友好**：压缩纹理解压在京厂 GPU 纹理单元内完成，显存占用与随机访问
-  局部性均改善。
+- **采样缓存友好**：压缩纹理由 GPU 纹理单元解压，显存占用与随机访问局部性均改善。
 
-## 2. 原版/现状管线事实基线（已调研证实）
+## 2. 原版管线与 2026-08 调研基线
 
-- **上传汇聚点两处**：PNG 纹理（原版+mod 同路，TextureLoader.loadTexture 唯一入口）
-  → `LazyTextureManager.uploadConverted`；图集页 → `ShipWeaponAtlas.composeAndUpload`。
+以下均为接入前的历史基线；现有实现的差异见 §4 与 §6。
+
+- **当时上传汇聚点两处**：PNG 纹理（原版+mod 同路，TextureLoader.loadTexture 唯一入口）
+  → `TextureResidency.uploadConverted`；图集页 → `ShipWeaponAtlas.composeAndUpload`。
   旁路：程序化贴图 `loadTexture(String,BufferedImage)`、FontAtlasGl（ALPHA8 单通道，
   不宜 BC）、RadarCompositeCache（生成型纹理）。
-- **internal format 恒 6408**，无 `glCompressedTexImage2D` 调用痕迹；mipmap 走
-  `GL_GENERATE_MIPMAP`（≤1024² 或 specialMipmapSet 命中时，LazyTextureManager.java:748-767；
-  图集页强制生成，ShipWeaponAtlas.java:344）。
+- **当时 internal format 固定为 6408**，代码中未出现 `glCompressedTexImage2D` 调用；
+  mipmap 走 `GL_GENERATE_MIPMAP`（≤1024² 或 specialMipmapSet 命中时；图集页强制生成）。
+  现有普通纹理上传已增加压缩分流，详见 §4.1。
 - **NPOT 常态存在**：`TextureDimensionSupport` 在 GL20/ARB_NPOT 下保留原尺寸
   （现代 GPU 全命中），BC 4×4 块对齐需在编码器输入侧 pad。
-- **GL 能力探测几乎为零**：全库仅 TextureDimensionSupport 查过一次 ContextCapabilities，
-  S3TC/BPTC 探测需新建。
-- **缓存体系可照搬**：TextureConversionCache（`mods/ssoptimizer/cache/textures/zstd/v4/`——
+- **当时 GL 能力探测几乎为零**：全库仅 TextureDimensionSupport 查过一次 ContextCapabilities；
+  现有 `TextureCompressionSupport` 已补充 S3TC/BPTC 探测。
+- **缓存体系可照搬**：TextureConversionCache（`mods/ssoptimizer/cache/textures/zstd/v4/`，
   v3 → v4：头部追加实际像素 alpha 内容 alphaKind，见 §3.1；
   源字节 SHA-256 键 + path|mtime|size 指纹 + 内存 LRU + 后台预热）与 FontPackCache
   「引擎形态入指纹」模式。
-- **上下文重建路径硬编码 6408**：`reloadTextureInPlace`（LazyTextureManager.java:1327）
-  反射调原版 in-place load，压缩后必须同步改造，否则重建前后形态不一致。
+- **当时上下文重建路径硬编码 6408**：调研记录中的 `TextureContextTracker.reloadTextureInPlace`
+  通过反射调用原版 in-place load。现有实现已改为直接调用 `TextureLoader.loadTextureData`，
+  但仍固定按 RGBA 重建，压缩形态重建属于 T3 待办。
 - **诊断已有估算基线**：`estimatedGpuBytes`（4B/px + mip 链）+ TSV 组成报表 + bind 统计，
-  可直接做压缩前后对照；无真实显存查询（GL_NVX_gpu_memory_info 可作增强，非必须）。
-- **native 侧 glad 已加载 `glCompressedTexImage2D` 指针**（glad.cpp:4850），native 模块
-  新增仅需 settings.gradle.kts + 子目录 build.gradle.kts + Java 桥接模块
-  headerOutputDirectory 三处。
+  可直接做压缩前后对照；当时没有真实显存查询，现有 `VramProbe` 已补充扩展探测。
+- **当时 native 侧 glad 已加载 `glCompressedTexImage2D` 指针**（glad.cpp:4850）；
+  现有 native-texcompress 模块与 Java 桥接已落地。
 
 ## 3. 方案选型
 
@@ -64,7 +67,7 @@
    bptc 可用时实际全不透明的大图（max(w,h) ≥ 256）也用 BC1，显存再减半，
    代价是平滑渐变可能出现 4bpp 块效应色带。
 
-三者皆不可用 → 不压缩走现状路径（记一次 info 日志）。不引入 BC6H（游戏无 HDR 纹理源）。
+三者皆不可用 → 不压缩走未压缩路径（记一次 info 日志）。不引入 BC6H（游戏无 HDR 纹理源）。
 
 **AlphaKind 实际像素检测**（2026-08-22 实机暴露问题驱动）：`ColorModel.hasAlpha()`
 只说明图片「声明了 alpha 通道」，大量贴图声明 RGBA 但 alpha 实际全 255——
@@ -97,32 +100,32 @@ ssotex 元数据（schema v3 → **v4**，头部 `hasAlpha` 后追加 1 字节 a
 | NVTT 3 | NVIDIA 官方，BC1–BC7/BC6H/ASTC 全族，C99/C++ API | **否决**（2026-08 查证）：闭源二进制 SDK，下载需 NVIDIA 开发者账号过登录墙，专有 EULA；无 macOS、无 vcpkg/Conan 配方（vcpkg 仅老版 2.1.2），CI 无法复现构建；差异化价值是 GPU 加速，但 BC7 最高质量档（Production/Highest）恰为 CPU-only，与本项目「离线后台预压」场景的匹配度并不优于开源方案 |
 | 自研编码器 | — | 不采用：BC7 模式搜索空间工程量大，无差异化价值 |
 
-### 3.3 压缩时机：**预压 + 缓存，运行时零压缩**
+### 3.3 压缩时机：**默认后台预压 + 缓存，可选 eager 同步压缩**
 
-- BC7 编码 8192² 图集页需秒级~十秒级，运行时/首帧路径不可接受
-  （实测：独立 bc7enc normal 档 16.6 MB/s 单线程，推算 8192² 页 ≈ 15s/页；
+- BC7 编码 8192² 图集页需秒级~十秒级，默认运行时/首帧路径不可接受
+  （2026-08 实测：独立 bc7enc normal 档 16.6 MB/s 单线程，推算 8192² 页 ≈ 15s/页；
   2048² 单图 1.35s）；
-- 策略：**缓存未命中时本轮以未压缩路径上传（行为=现状），后台线程压缩并写磁盘缓存；
+- 默认 background 策略：**缓存未命中时本轮以未压缩路径上传，后台线程压缩并写磁盘缓存；
   下次启动（或同会话重载）命中缓存走压缩上传**——「首次未压缩、二次压缩」，
-  无任何帧时间风险，实现简单；
-- 后台压缩走独立低优先级线程池（与 TexturePreparationRegistry worker 体系并列，
-  不复用——避免压缩长任务挤占加载预备）。首轮全量压缩估算 20~40 分钟（单线程，
-  对照现有 28753 文件缓存），多线程线性缩短，后台进行不影响游玩；
+  无额外帧时间风险；
+- 后台压缩走独立低优先级单线程队列（与 TexturePreparationRegistry worker 体系并列，
+  不复用——避免压缩长任务挤占加载预备）。2026-08 估算首轮全量压缩 20~40 分钟
+  （单线程，对照当时 28753 文件缓存），多线程线性缩短是后续扩展方向；
 - **会话内热重传（T2 落地，替代原「初版不做」决策）**：后台压缩完成后，按
   resourcePath+源哈希匹配给驻留的未压缩受管纹理打升级键**并入待升级队列**
-  （`LazyTextureManager.noteCompressedTextureAvailable`）；绑定路径（每帧必经的
-  `bindTexture` 尾部）按节流（~5ms 间隔、单次 8 张预算）主动 drain 队列，在持
+  （`TextureResidency.noteCompressedTextureAvailable`）；绑定路径（每帧必经的
+  `TextureBinding.bindTexture` 尾部）按节流（~5ms 间隔、单次 8 张预算）主动 drain 队列，在持
   GL 上下文线程上以同一 textureId 用 `glCompressedTexImage2D` 重指定存储
-  （`maybeUpgradeToCompressed`，复用延迟上传同款的上下文检查与绑定捕获/恢复）。
+  （`TextureResidency.maybeUpgradeToCompressed`，复用延迟上传同款的上下文检查与绑定捕获/恢复）。
   **主动 drain 不依赖该纹理再次被绑定**——短期渲染后不再绑定的纹理也会在驻留
   期间被升级，避免未压缩形态常驻显存；条目在 drain 前被驱逐则清标记跳过
   （重载时自然命中压缩缓存）。**drain 执行过升级后必须显式恢复调用方期望的绑定**
   （RT 模式逐次 capture/restore 是空转，不恢复会把后续绘制留在升级纹理上——
   串贴图事故根因）。内容逐像素一致、视觉无缝；键过期/缓存失效则清除
   标记不再重试。开关：`ssoptimizer.texcompress.hotreload=false` 关闭；
-- **deferred prepass「仅压缩」预压**：对已进入 LazyTextureManager 索引但尚未加载的
+- **deferred prepass「仅压缩」预压**：对已进入 TextureResidency 驻留索引但尚未加载的
   贴图（deferred-awaiting-first-bind，TSV 报告显示占大头），在两个 pending 登记点
-  （`loadTexture` / `loadPreparedTexture`）按登记元数据（尺寸 + alphaKind + mip 标志）
+  （`TextureResourceLoader.loadTexture` / `TextureResourceLoader.loadPreparedTexture`）按登记元数据（尺寸 + alphaKind + mip 标志）
   确定性格式选择后，向 TextureCompressionScheduler 投递 prepass 任务——worker 侧
   解码→转换（顺带写 ssotex 缓存与 alphaKind 元数据）→压缩→落盘缓存，
   **不做 GL 上传**，使首次 bind 直接命中压缩缓存，首轮会话即享受压缩形态。
@@ -135,7 +138,7 @@ ssotex 元数据（schema v3 → **v4**，头部 `hasAlpha` 后追加 1 字节 a
 
 ### 3.4 压缩适用范围（实测修正后的排除面）
 
-以下纹理**不压缩**，全程现状路径：
+以下纹理**不压缩**，全程未压缩路径：
 - 尺寸低于下限：max(w,h) < 64 或原始 RGBA < 16KB（小精灵质量洼地，见 §3.1）；
 - 材质/法线贴图：文件名后缀 `_normal` / `_surface` / `_material`
   （离线样本中已发现混入案例；法线应走 BC5 或不压缩，初版不引入 BC5）；
@@ -151,30 +154,33 @@ ssotex 元数据（schema v3 → **v4**，头部 `hasAlpha` 后追加 1 字节 a
 
 ## 4. 接入设计
 
-### 4.1 上传路径改造
+### 4.1 上传路径改造（已实现）
 
-`LazyTextureManager.uploadConverted`（LazyTextureManager.java:717-746）在
-`TexturePixelConverter.convert` 之后分流：
+`TextureResidency.uploadConverted` 已在 `TexturePixelConverter.convert` 之后分流：
 
 ```
 压缩可用(GL 探测通过) 且命中压缩缓存
   → glCompressedTexImage2D 逐级上传（含预生成 mip 链），textureId 形态=压缩
-未命中
-  → 现状 GL_RGBA 上传 + 投递后台压缩任务（源像素已在内存，直接复用）
+未命中且 mode=eager
+  → 加载线程同步压缩并写缓存，成功后按压缩级别上传
+未命中且 mode=background，或同步压缩未产出有效结果
+  → GL_RGBA 上传 + 投递后台压缩任务（源像素已在内存，直接复用）
 ```
 
 - **mipmap 必须预生成**：压缩格式不可依赖 `GL_GENERATE_MIPMAP`（多数驱动对压缩
   格式不生成）。编码器输入侧逐级下采样（box/lanczos）→ 逐级压缩 → 容器落盘；
-  上传时按级别 `glCompressedTexImage2D`。**仅对现状会生成 mip 的纹理类别生成链**
-  （判定沿用 `shouldGenerateMipmaps`），无 mip 纹理只压 base 级。
+  上传时按级别 `glCompressedTexImage2D`。**仅对未压缩路径中会生成 mip 的纹理类别生成链**
+  （判定沿用 `TextureResidency.shouldGenerateMipmaps`），无 mip 纹理只压 base 级。
 - **4×4 对齐**：编码器输入 pad 到 4 的倍数（边缘复制，与图集 16px padding 防渗色
   同策略）；GL 侧允许非 4 倍数尺寸的压缩纹理（边缘块裁剪），texImage 尺寸仍传原尺寸。
-- RT 模式兼容：压缩数据入队快照体积更小，路径不变（bridge GL11 需补
-  `glCompressedTexImage2D` 转发——当前 bridge 未覆盖此方法，属新增桥接面）。
+- **RT 模式兼容（已实现）**：bridge `GL13.glCompressedTexImage2D` 已提供 ByteBuffer 与
+  PBO offset 两种重载；ByteBuffer 路径经 `BridgeSupport.enqueueSnapshot` 深拷贝并入队，
+  同时更新模拟纹理状态。
 
-### 4.2 图集页压缩
+### 4.2 图集页压缩（T3 待办）
 
-`ShipWeaponAtlas.composeAndUpload` 同样分流。图集是收益主体（单页 256MB→64MB）：
+`ShipWeaponAtlas.composeAndUpload` 尚未接入压缩分流。目标设计如下，图集是预期收益主体
+（单页 256MB→64MB）：
 - 页在 CPU 合成后即得完整像素，压缩输入现成；
 - 图集缓存键需含「页组成指纹」（参与贴图清单 hash）——AtlasPacker 输出确定性
   则页内容确定性，可直接对合成后页像素 SHA-256；
@@ -182,61 +188,61 @@ ssotex 元数据（schema v3 → **v4**，头部 `hasAlpha` 后追加 1 字节 a
   （padding 16px 在深 mip 层不够——图集页 8192² 仅生成有限层级或提高 padding，
   实现时以 dumpdir 导出验证）。
 
-### 4.3 上下文重建路径
+### 4.3 上下文重建路径（T3 待办）
 
-`reloadTextureInPlace` 硬编码 6408 的反射调用必须替换：压缩纹理的重建 =
-重新 `glGenTextures` + 按缓存的压缩数据 `glCompressedTexImage2D`（不再走原版
-in-place load）。未压缩纹理维持现状。ManagedTextureEntry 需记录纹理形态
-（压缩格式/级别数），供重建与显存估算共用。
+现有 `TextureContextTracker.reloadTextureInPlace` 直接调用 `TextureLoader.loadTextureData`，
+internal format 仍固定为 6408，未按压缩形态重建。目标设计为：压缩纹理重新
+`glGenTextures` + 按缓存的压缩数据 `glCompressedTexImage2D`，不再走原版 in-place load；
+未压缩纹理维持现有路径。`TextureResidency.ManagedTextureEntry` 已记录 `compressionFormat`
+并用于显存估算，T3 仍需让重建路径消费该形态并恢复对应 mip 级别。
 
 ### 4.4 磁盘缓存与现有 ssotex 缓存的职责调整
 
-新缓存域：`mods/ssoptimizer/cache/textures-bc/<formatTag>/v1/`（与
+已实现缓存域：`mods/ssoptimizer/cache/textures-bc/<formatTag>/v1/`（与
 TextureConversionCache 并列）：
 
-- 键 = 源字节 SHA-256 + 尺寸 + mip 标志 + 压缩格式 + 编码器版本
-  （`ENCODER_VERSION`；格式选择逻辑或编码器输出语义变更时递增，当前 2）；
-- 容器：自研轻量头（MAGIC + 级别表 + 各级压缩块），zstd 二次压缩——**实测二压收益
-  45~60%**（BC7 块 25%→10.9% 原始，游戏贴图大面积透明/纯色使块数据高度冗余），必须做；
+- 键 = 源字节 SHA-256 + 尺寸 + mip 标志 + 压缩格式 + 质量档 + 编码器版本
+  （`CompressedTextureCache.ENCODER_VERSION`；格式选择逻辑或编码器输出语义变更时递增，现为 2）；
+- 容器：自研轻量头（MAGIC + 级别表 + 各级压缩块），zstd 二次压缩——**2026-08 实测二压收益
+  45~60%**（BC7 块 25%→10.9% 原始，游戏贴图大面积透明/纯色使块数据高度冗余）；
   不采用 DDS 容器——mip 语义自定义更直接，DDS 的 FourCC/头兼容包袱无收益；
-- 目录覆盖 `-Dssoptimizer.bctexcache.dir`；指纹/索引/内存 LRU/预热机制
-  照搬 TextureConversionCache。
+- 目录覆盖 `-Dssoptimizer.bctexcache.dir`；指纹、索引与内存 LRU 已实现，
+  启动期预热仍属 T4 待办。
 
-**对现有 TextureConversionCache（ssotex v4）的格式/职责调整**（实测驱动）：
+**TextureConversionCache（ssotex v4）的职责调整与剩余目标**：
 
-1. **职责收窄**：ssotex 现状全量 1823MB（28753 文件，zstd 后 ≈ 原始 RGBA 的 39%）。
-   BC 缓存是有损「最终形态」缓存，命中后不再需要同源的 RGBA 解码缓存——
-   **可压缩纹理完成压缩后停止写入 ssotex**，ssotex 仅服务不可压缩类别
-   （§3.4 排除面：小精灵/材质贴图/字体/程序化纹理）。全量落地后缓存目录合计
-   约降至 500MB 量级（实测推算），且 BC 命中路径免去「zstd 解压整图 RGBA」的
-   CPU 开销，直接上传压缩块。
-2. **堆内存同比例受益**：BC 命中路径的驻留数据为压缩块（1B/px），不再驻留
-   RGBA DirectBuffer（4B/px），Java 侧堆外内存占用同步降到 1/4。
-3. **原子写入修复**（对现有 ssotex 同样适用）：实测抽样发现 34/400 个 ssotex 文件
-   流式解压报错（疑似写入中残件）。两级缓存统一改为「临时文件 + fsync + rename」
-   原子落盘，杜绝崩溃/中断留下半文件。
-4. **估算口径**：`estimateTextureGpuBytes` 按纹理形态改算（BC7/BC3=1B/px，
-   BC1=0.5B/px，mip 链 ×1.33），TSV 报表加 `compression` 列（none/bc1/bc3/bc7）。
+1. **职责收窄（已部分实现）**：2026-08 调研样本为 1823MB（28753 文件，zstd 后约为原始
+   RGBA 的 39%）。`TexturePixelConverter` 已在同源 BC 缓存可用时抑制新的 ssotex 写入；
+   压缩任务仅投递而未完成时仍保留 ssotex。当时推算全量落地后缓存目录合计约降至
+   500MB 量级。BC 命中路径完全绕开 RGBA 解压与转换仍是后续优化目标，并非现有行为。
+2. **堆内存目标（未实现）**：现有 `uploadConverted` 仍接收含 RGBA DirectBuffer 的
+   `CachedTextureData`，不能将「BC 命中后只驻留压缩块、堆外内存降至 1/4」计为已获收益；
+   该目标需要另行改造像素供给路径。
+3. **原子写入（已实现）**：2026-08 实测抽样曾发现 34/400 个 ssotex 文件流式解压报错。
+   两级缓存现经 `AtomicFileWriter` 使用临时文件、`FileChannel.force(true)` 与 rename 落盘。
+4. **估算口径（已实现）**：`TextureResidency.estimateTextureGpuBytes` 按纹理形态改算
+   （BC7/BC3=1B/px，BC1=0.5B/px，mip 链累计），TSV 报表已包含 `compression` 列
+   （none/bc1/bc3/bc7）。
 
-### 4.5 GL 能力探测
+### 4.5 GL 能力探测（已实现）
 
-新增 `TextureCompressionSupport`（sso-loading）：
+`TextureCompressionSupport`（sso-loading）已实现：
 - 探测 `GL_ARB_texture_compression_bptc`（BC7）与 `GL_EXT_texture_compression_s3tc`
-  （BC3/BC1），静态缓存结果（参考 TextureDimensionSupport 模式）；
-- RT 模式下经 bridge `glGetString(GL_EXTENSIONS)` 阻塞回读一次（罕见操作，可接受）；
-- 探测失败/全不支持：整特性静默降级未压缩路径 + 一次 info 日志。
+  （BC3/BC1），缓存成功探测的结果；
+- RT 模式下经 bridge `glGetString(GL_EXTENSIONS)` 阻塞回读，普通模式读取
+  `GLContext.getCapabilities()`；
+- 无 GL 上下文导致探测失败时记一次 WARN，本次按不支持处理并在后续持上下文线程重试；
+  探测成功后输出 BC7/S3TC、总开关与首选格式日志。
 
-### 4.6 native 模块
+### 4.6 native 模块（已实现）
 
-新增 `libssoptimizer_texcompress`（挂在 sso-loading 域下
-`modules/internal/sso-loading/native-texcompress/`）：
+`libssoptimizer_texcompress` 位于 `modules/internal/sso-loading/native-texcompress/`：
 
-- 内嵌 bc7enc 族单文件库；接口：`nativeCompressBC7/BC3/BC1(pixels, w, h, mipLevels, quality)` →
-  级别化压缩块数组；mip 链下采样也在 native 侧做（避免 Java 侧逐层拷贝）；
-- `NativeRuntime.loadModule("texcompress")` 懒加载；构建改动三处
-  （settings.gradle.kts include + 新目录 build.gradle.kts + sso-loading
-  headerOutputDirectory 已有无需动）；
-- 编码耗时入账诊断（每纹理压缩 ms、MB/s）。
+- 内嵌 bc7enc 与 rgbcx；Java 入口为 `NativeTextureCompressor.compress(format, rgbaPixels,
+  width, height, mipLevels, quality, useAlpha)`，返回 SSOBC 容器字节；
+  mip 链下采样在 native 侧完成；
+- `NativeRuntime.loadModule("texcompress")` 懒加载，链接失败与压缩异常均记日志；
+- 调度器记录编码进度、失败与耗时诊断。
 
 ### 4.7 诊断与验收基线
 
@@ -252,7 +258,7 @@ TextureConversionCache 并列）：
 2. **视觉回归防线**：BC7 对 UI/舰船/背景/行星贴图实测质量达标（PSNR 中位 37dB，
    大图 P5 ≥31dB）；小精灵/材质贴图/小尺寸 BC1 已按 §3.4 排除面规避；
    联调期用 ShipWeaponAtlas dumpdir + 图集页导出 A/B 对比。
-3. **能力缺失降级**：GL 探测不过 → 全程现状路径；缓存损坏 → 指纹不匹配即重压，
+3. **能力缺失降级**：GL 探测不过 → 全程未压缩路径；缓存损坏 → 指纹不匹配即重压，
    不留静默失败（日志必备）。
 4. **配置面**：`ssoptimizer.texcompress.enable`（总开关，默认 true）、
    `.format`（auto/bc7/bc3，默认 auto）、`.quality`（fast/normal/high，
@@ -269,25 +275,24 @@ TextureConversionCache 并列）：
 
 ## 6. 实施阶段
 
-| 阶段 | 内容 | 验收 |
-|---|---|---|
-| T1 | GL 能力探测（TextureCompressionSupport）+ 诊断基线（形态列/显存改算）+ bridge `glCompressedTexImage2D` 转发 | 日志输出探测结果；诊断报表含压缩列（全 none） |
-| T2 | native-texcompress 模块（bc7enc 内嵌 + mip 链生成）+ 压缩缓存域 + `uploadConverted` 分流 + 后台压缩线程池 | 单元测试（压缩块尺寸/解码roundtrip 容差）；二次启动纹理走压缩上传；显存估算下降可见 |
-| T3 | 图集页压缩 + `reloadTextureInPlace` 压缩形态重建 | dumpdir A/B 无渗色；显示模式切换后压缩纹理正常重建 |
-| T4 | 预热/收尾：启动期缓存预热接入、诊断对照报告、文档与 system-properties 同步 | save_load_smoke + 长程测试无回归；residentMiB 对照留档 |
+| 阶段 | 内容 | 状态 | 验收或剩余工作 |
+|---|---|---|---|
+| T1 | GL 能力探测（TextureCompressionSupport）+ 诊断基线（形态列/显存改算）+ bridge `glCompressedTexImage2D` 转发 | 代码已完成 | 探测日志与诊断报表已具备对应输出 |
+| T2 | native-texcompress 模块（bc7enc/rgbcx + mip 链生成）+ 压缩缓存域 + `TextureResidency.uploadConverted` 分流 + 后台/同步压缩与热重传 | 代码已完成 | 压缩块 roundtrip、二次启动压缩上传与显存估算对照 |
+| T3 | 图集页压缩 + `TextureContextTracker.reloadTextureInPlace` 压缩形态重建 | 未完成 | 实现后执行 dumpdir A/B 渗色检查与显示模式切换重建验证 |
+| T4 | 预热/收尾：启动期缓存预热接入、诊断对照报告、文档与 system-properties 同步 | 部分完成 | 诊断与文档已同步；压缩缓存启动预热、save_load_smoke 长程回归及 residentMiB 对照留档未完成 |
 
-每阶段独立可部署；`ssoptimizer.texcompress.enable=false` 随时整体回到现状路径。
+`ssoptimizer.texcompress.enable=false` 可整体回到未压缩路径。
 
 ## 7. 风险与开放问题
 
 - **深 mip 层图集渗色**：16px padding 在 level≥4 后不足，需在 T3 实测决定
   「限制图集 mip 层级」还是「加大 padding」（影响 UV remap 常量，改动面大，优先前者）。
-- **编码耗时与磁盘成本**：首轮全量压缩实测估算 20~40 分钟（单线程，可并行），
-  后台进行不影响游玩；zstd 二压后磁盘写入量小（~11% 原始）。
-  缓存目录体积上限策略（是否加 LRU 清理）T2 定。
-- **bridge 新增转发面**：`glCompressedTexImage2D` 入队快照语义与既有
-  glTexImage2D 一致，但级别循环上传要小心命令顺序（同纹理按级别顺序追加即可）。
+- **编码耗时与磁盘成本**：2026-08 估算首轮全量压缩 20~40 分钟（单线程，可并行），
+  zstd 二压后磁盘写入量约为原始的 11%。压缩缓存目录的磁盘 LRU 清理策略仍未实现。
+- **bridge 转发面（已实现）**：`glCompressedTexImage2D` 入队快照语义与既有
+  glTexImage2D 一致；级别循环上传按纹理与级别顺序入队。
 - **编码器 alpha 质量上限**：独立 bc7enc（modes 1/5/6/7）对硬边 sprite alpha 偏弱
-  （实测 alpha 中位 37.4dB，低于 BC3 的 42.5dB）；若实机观感不达标，升级路径为
-  bc7enc_rdo 内的 bc7e.ispc（全模式、更快更高质量，代价是引入 ispc 构建链）——
-  T2 先用独立 bc7enc 上线，ispc 评估留作质量预案。
+  （2026-08 实测 alpha 中位 37.4dB，低于 BC3 的 42.5dB）；若实机观感不达标，升级路径为
+  bc7enc_rdo 内的 bc7e.ispc（全模式、更快更高质量，代价是引入 ispc 构建链）。
+  T2 已使用独立 bc7enc，ispc 评估留作质量预案。

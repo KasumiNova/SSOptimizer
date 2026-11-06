@@ -1,7 +1,8 @@
 # 字体渲染体系重写设计（Font Rendering Rewrite）
 
-状态：**全部落地**（2026-08）。v2 管线（TextLayoutEngine + TextStreamEmitter + TTF 动态图集）
-为唯一文本渲染路径并实机验证通过；P4 已拆除 legacy 路径（drawGlyph @Overwrite、
+状态：**除图集上下文代际重建外已落地**。P1-P5 已于 2026-08 完成，图集统一接入
+`TextureContextTracker` 的代际重建列为 P6 待办。v2 管线（TextLayoutEngine + TextStreamEmitter
++ TTF 动态图集）为唯一文本渲染路径并实机验证通过；P4 已拆除 legacy 路径（drawGlyph @Overwrite、
 RuntimeScaledFontCache 反射换字体、`ssoptimizer.font.engine` 开关、fnt overlay、Java2D 降级链）；
 P5 描边/阴影栅格化合成已随 P3 观感对齐工作一并实现（见 §7 阶段表）。
 
@@ -162,8 +163,10 @@ codepoint + kerning + scale 的层级完整接管：
   draw call；文本与 sprite 共用同一批发射基础设施。
 - 阴影/边框多 pass 在同一纹理分组内顺序追加，批次边界自然对齐，**顺序确定性由 stream 顺序保证**
   （不再有 display list 按值捕获窗口）。
-- 图集贴图需纳入上下文代际管理（显示模式切换重建）——现有图集纹理未接入
-  LazyTextureManager 代际重建是已知遗留，本轮一并补。
+- 图集贴图需纳入统一的上下文代际管理。现有 `FontGlyphSources` 已通过
+  `GlDispatch.registerContextRecreatedListener` 触发 `DynamicGlyphAtlas.onContextRecreated`，
+  `GlyphAtlasPage` 保留 CPU staging 并将整页标脏，`DynamicGlyphAtlas` 递增 `textureGeneration`；
+  但图集尚未接入 `TextureContextTracker`，统一两套代际重建语义列为 P6 待办。
 
 ### 4.5 描边毛边：根因与对策（已定案）
 
@@ -259,6 +262,7 @@ bucket ≈ 每字体族 5~7 个，而非理论上限 28 个，无需为「多份
 | P3 | DynamicGlyphAtlas + native FreeType 扩展（批量/stroke）+ TTF 字体切换 | ✅ 完成 |
 | P4 | 旧路径拆除：drawGlyph @Overwrite、RuntimeScaledFontCache（反射）、fnt overlay、双后端降级链 | ✅ 完成（2026-08） |
 | P5 | 描边/阴影栅格化合成（多 pass → 单 pass）A/B 优化 | ✅ 完成（2026-08，实现随 P3 观感对齐一并落地；视觉无回归已经实机验证，automation 基准留档为可选后续） |
+| P6 | 图集接入 `TextureContextTracker` 上下文代际重建，统一其与 `GlDispatch` 重建回调的失效语义 | 待办：显示模式切换后纹理 id、槽位缓存与 CPU staging 整页回传保持一致 |
 
 每阶段独立可部署、可回滚（配置开关切回旧路径，开关随 P4 完成移除——已执行，`ssoptimizer.font.engine` 已删除）。
 

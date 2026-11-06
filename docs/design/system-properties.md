@@ -59,7 +59,7 @@
 | `ssoptimizer.disable.fontcache` | `false` | 禁用生成的字体包持久缓存 | `common/font/FontPackCache.java:35` |
 | `ssoptimizer.fontcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/fonts/zstd/v6`） | 自定义字体包缓存目录 | `common/font/FontPackCache.java:181` |
 | `ssoptimizer.font.atlas.pageSize` | `2048` | TTF 动态字形图集单页边长（像素，GL_ALPHA8） | `common/font/atlas/DynamicGlyphAtlas.java` |
-| `ssoptimizer.font.atlas.maxPages` | `16` | 图集全局页数上限，超限按 (face, bucket) 整组 LRU 淘汰 | `common/font/atlas/DynamicGlyphAtlas.java` |
+| `ssoptimizer.font.atlas.maxPages` | `32` | 图集全局页数上限，超限按 (face, sizeBucket, strokeBucket) 整组 LRU 淘汰 | `common/font/atlas/DynamicGlyphAtlas.java` |
 | `ssoptimizer.font.atlas.debug` | `false` | 图集命中/未命中/页数/上传量诊断日志 | `common/font/atlas/FontAtlasDiagnostics.java` |
 | `ssoptimizer.font.stroke.synthesize` | `true` | TTF 源下描边/边框在栅格化层合成（单 pass 剪影）；false 回退原版多 pass | `common/font/layout/TextLayoutEngine.java` |
 
@@ -73,31 +73,31 @@
 | `ssoptimizer.disable.texturecache.warmup` | `false` | 禁用启动期后台把磁盘缓存预热到内存 | `common/loading/TextureConversionCache.java:191` |
 | `ssoptimizer.disable.npot` | `false` | 禁用 NPOT 探测，纹理尺寸统一向上取 2 的幂 | `common/loading/TextureDimensionSupport.java:34` |
 | `ssoptimizer.force.npot` | `false` | 强制启用 NPOT，跳过 GL 能力探测 | `common/loading/TextureDimensionSupport.java:37` |
-| `ssoptimizer.texcompress.enable` | `true` | GPU 纹理压缩（BC 族）总开关；false 时整特性视为不可用（全程未压缩路径） | `common/loading/TextureCompressionSupport.java:29` |
-| `ssoptimizer.texcompress.format` | `auto` | 压缩格式收窄：`auto`（bc7 优先、bc3 回退）/ `bc7` / `bc3`（强制 bc3 时即便 bc7 可用也用 BC3）；T2 生效 | `common/loading/TextureCompressionSupport.java:30` |
-| `ssoptimizer.texcompress.quality` | `normal` | 后台压缩质量档：`fast` / `normal` / `high`，投递压缩任务时读取 | `common/loading/TextureCompressionScheduler.java:40` |
-| `ssoptimizer.texcompress.highQualityPaths` | 空 | 高质量路径模式（逗号分隔子串，大小写不敏感）：命中的贴图强制 `high` 质量档，优先于全局 `quality`。默认空——背景/特效类贴图实测 high 档 BC7 仍有可见色阶，已由 `excludePaths` 默认排除面绕过压缩；本属性留给「宁可压缩也要省显存」的自定义场景 | `common/loading/TextureCompressionScheduler.java:47` |
-| `ssoptimizer.texcompress.excludePaths` | `background,starscape,nebula,illustration,/fx/` | 压缩排除路径模式（逗号分隔子串，大小写不敏感）：命中的贴图完全不压缩，保持 RGBA8 上传。默认排除背景/插画/星云/特效类大面积平滑渐变贴图（实测色阶不可接受）；置空字符串恢复全量压缩 | `common/loading/TextureCompressionEligibility.java:45` |
-| `ssoptimizer.texcompress.mode` | `background` | 压缩时机：`background`（后台线程压缩，首轮未压缩上传）/ `eager`（加载时同步压缩，首轮即压缩形态上传，首轮加载耗时显著增加，建议搭配 `quality=fast`） | `common/loading/TextureCompressionSupport.java:38` |
-| `ssoptimizer.texcompress.hotreload` | `true` | 热重传：后台压缩完成后，已驻留的未压缩纹理在下一次绑定时原地升级为压缩形态 | `common/loading/LazyTextureManager.java:55` |
-| `ssoptimizer.texcompress.bc1ForOpaque` | `false` | BC1 显存优先：BC7 可用时，实际像素全不透明的大图（最长边 ≥256）也选 BC1（画质换显存）；BC3 回退场景下非 FULL alpha 的大图恒走 BC1，不受此开关影响 | `common/loading/TextureCompressionSupport.java:38` |
-| `ssoptimizer.texcompress.deferredPrepass` | `true` | 延迟上传（deferred）纹理的后台压缩预处理：不持有像素、等首绑的纹理提前在后台完成解码+转换+压缩，首绑直接吃压缩缓存 | `common/loading/TextureCompressionScheduler.java:44` |
-| `ssoptimizer.bctexcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/textures-bc/<formatTag>/v1`） | 自定义压缩纹理（SSOBC+zstd）缓存根目录（覆盖后仍按 formatTag/v1 分层） | `common/loading/CompressedTextureCache.java:41` |
-| `ssoptimizer.bctexcache.memory.maxbytes` | `67108864`（64 MiB，下限 0） | 压缩纹理缓存内存上限 | `common/loading/CompressedTextureCache.java:42` |
+| `ssoptimizer.texcompress.enable` | `true` | GPU 纹理压缩（BC 族）总开关；false 时整特性视为不可用（全程未压缩路径） | `common/loading/TextureCompressionSupport.java` |
+| `ssoptimizer.texcompress.format` | `auto` | 压缩格式收窄：`auto`（bc7 优先、bc3 回退）/ `bc7` / `bc3`（强制 bc3 时即便 bc7 可用也用 BC3） | `common/loading/TextureCompressionSupport.java` |
+| `ssoptimizer.texcompress.quality` | `normal` | 后台压缩质量档：`fast` / `normal` / `high`，投递压缩任务时读取 | `common/loading/TextureCompressionScheduler.java` |
+| `ssoptimizer.texcompress.highQualityPaths` | 空 | 高质量路径模式（逗号分隔子串，大小写不敏感）：命中的贴图强制 `high` 质量档，优先于全局 `quality`。默认空——背景/特效类贴图实测 high 档 BC7 仍有可见色阶，已由 `excludePaths` 默认排除面绕过压缩；本属性留给「宁可压缩也要省显存」的自定义场景 | `common/loading/TextureCompressionScheduler.java` |
+| `ssoptimizer.texcompress.excludePaths` | `background,starscape,nebula,illustration,/fx/` | 压缩排除路径模式（逗号分隔子串，大小写不敏感）：命中的贴图完全不压缩，保持 RGBA8 上传。默认排除背景/插画/星云/特效类大面积平滑渐变贴图（实测色阶不可接受）；置空字符串恢复全量压缩 | `common/loading/TextureCompressionEligibility.java` |
+| `ssoptimizer.texcompress.mode` | `background` | 压缩时机：`background`（后台线程压缩，首轮未压缩上传）/ `eager`（加载时同步压缩，首轮即压缩形态上传，首轮加载耗时显著增加，建议搭配 `quality=fast`） | `common/loading/TextureCompressionSupport.java` |
+| `ssoptimizer.texcompress.hotreload` | `true` | 热重传：后台压缩完成后，已驻留的未压缩纹理进入待升级队列；绑定路径按时间间隔与单次预算主动排空队列并原地重传，不依赖同一纹理再次绑定 | `common/loading/TextureResidency.java` |
+| `ssoptimizer.texcompress.bc1ForOpaque` | `false` | BC1 显存优先：BC7 可用时，实际像素全不透明的大图（最长边 ≥256）也选 BC1（画质换显存）；BC3 回退场景下非 FULL alpha 的大图走 BC1，不受此开关影响 | `common/loading/TextureCompressionSupport.java` |
+| `ssoptimizer.texcompress.deferredPrepass` | `true` | 延迟上传（deferred）纹理的后台压缩预处理：不持有像素、等首绑的纹理提前在后台完成解码+转换+压缩，首绑直接吃压缩缓存 | `common/loading/TextureCompressionScheduler.java` |
+| `ssoptimizer.bctexcache.dir` | 无（`null` → `<mods>/ssoptimizer/cache/textures-bc/<formatTag>/v1`） | 自定义压缩纹理（SSOBC+zstd）缓存根目录（覆盖后仍按 formatTag/v1 分层） | `common/loading/CompressedTextureCache.java` |
+| `ssoptimizer.bctexcache.memory.maxbytes` | `67108864`（64 MiB，下限 0） | 压缩纹理缓存内存上限 | `common/loading/CompressedTextureCache.java` |
 | `ssoptimizer.disable.nativepngdecoder` | `false` | 禁用 JNI 原生 PNG 解码器 | `common/loading/NativePngDecoder.java:57` |
-| `ssoptimizer.disable.lazytextureupload` | `false` | 禁用惰性纹理上传（启动只留元数据，首次绑定才传 GPU） | `common/loading/LazyTextureManager.java:296` |
-| `ssoptimizer.lazytextureupload.minimalstartup` | `true` | 最小化启动纹理（managed 图形资源且 ≥ trackminbytes）延迟上传 | `common/loading/LazyTextureManager.java:318` |
-| `ssoptimizer.lazytextureupload.minbytes` | `1048576`（1 MiB，下限 262144） | GPU 估算字节数低于此值的纹理不延迟上传 | `common/loading/LazyTextureManager.java:354` |
-| `ssoptimizer.lazytextureupload.trackminbytes` | `65536`（64 KiB，下限 16384） | 纳入驻留跟踪的最小 GPU 字节数 | `common/loading/LazyTextureManager.java:359` |
-| `ssoptimizer.lazytextureupload.idleunloadmillis` | `0` | 纹理空闲多少毫秒后卸载（0 = 不按空闲卸载） | `common/loading/LazyTextureManager.java:339` |
-| `ssoptimizer.lazytextureupload.previewprotectmillis` | `300000`（5 分钟） | 舰船/空间站/武器预览纹理的额外保护期，不被空闲卸载 | `common/loading/LazyTextureManager.java:349` |
-| `ssoptimizer.lazytextureupload.sweepintervalmillis` | `1000`（下限 250） | 驻留扫描周期 | `common/loading/LazyTextureManager.java:364` |
-| `ssoptimizer.texturecomposition.reportintervalmillis` | `5000` | 纹理组成报告输出周期 | `common/loading/LazyTextureManager.java:369` |
-| `ssoptimizer.texturemanager.logintervalmillis` | `15000` | 纹理管理器汇总日志周期 | `common/loading/LazyTextureManager.java:375` |
-| `ssoptimizer.texturecomposition.reportfile` | `"ssoptimizer-texture-composition.tsv"` | 纹理组成报告文件路径 | `common/loading/LazyTextureManager.java:288` |
+| `ssoptimizer.disable.lazytextureupload` | `false` | 禁用惰性纹理上传（启动只留元数据，首次绑定才传 GPU） | `common/loading/TextureResidency.java:164-166` |
+| `ssoptimizer.lazytextureupload.minimalstartup` | `true` | 最小化启动纹理（managed 图形资源且 ≥ trackminbytes）延迟上传 | `common/loading/TextureResidency.java:186-189` |
+| `ssoptimizer.lazytextureupload.minbytes` | `1048576`（1 MiB，下限 262144） | GPU 估算字节数低于此值的纹理不延迟上传 | `common/loading/TextureResidency.java:223-226` |
+| `ssoptimizer.lazytextureupload.trackminbytes` | `65536`（64 KiB，下限 16384） | 纳入驻留跟踪的最小 GPU 字节数 | `common/loading/TextureResidency.java:228-232` |
+| `ssoptimizer.lazytextureupload.idleunloadmillis` | `0` | 纹理空闲多少毫秒后卸载（0 = 不按空闲卸载） | `common/loading/TextureResidency.java:207-210` |
+| `ssoptimizer.lazytextureupload.previewprotectmillis` | `300000`（5 分钟） | 舰船/空间站/武器预览纹理的额外保护期，不被空闲卸载 | `common/loading/TextureResidency.java:212-220` |
+| `ssoptimizer.lazytextureupload.sweepintervalmillis` | `1000`（下限 250） | 驻留扫描周期 | `common/loading/TextureResidency.java:234-238` |
+| `ssoptimizer.texturecomposition.reportintervalmillis` | `5000` | 纹理组成报告输出周期 | `common/loading/TextureResidency.java:240-244` |
+| `ssoptimizer.texturemanager.logintervalmillis` | `15000` | 纹理管理器汇总日志周期 | `common/loading/TextureResidency.java:246-250` |
+| `ssoptimizer.texturecomposition.reportfile` | `"ssoptimizer-texture-composition.tsv"` | 纹理组成报告文件路径 | `common/loading/TextureResidency.java:156-162` |
 | `ssoptimizer.atlas.shipweapon` | `true` | 舰船/武器贴图动态图集总开关。settings.json graphics 段引用的贴图构建期整体排除（模组裸 UV 消费面）；`getTextureId` 不感知图集（模组消费者恒拿独立纹理 id），图集 id 仅经 `AtlasTextureResolver` 对 Sprite 渲染路径可见 | `common/render/atlas/ShipWeaponAtlas.java:62` |
 | `ssoptimizer.atlas.shipweapon.dumpdir` | 无（`null` → 不导出） | 图集构建时把每页写成 PNG 到指定目录，供检查空间利用率 | `common/render/atlas/ShipWeaponAtlas.java:63` |
-| `ssoptimizer.texture.tracepath` | 空（关闭） | 定点诊断：路径含该子串的纹理在 getTextureId/bindTexture 时输出 INFO 轨迹；特殊值 `ALL` 每路径记一次并附调用栈 | `common/loading/LazyTextureManager.java:79` |
+| `ssoptimizer.texture.tracepath` | 空（关闭） | 定点诊断：路径含该子串的纹理在 getTextureId/bindTexture 时输出 INFO 轨迹；特殊值 `ALL` 每路径记一次并附调用栈 | `common/loading/TextureBinding.java:29` |
 | `ssoptimizer.loading.workerClass` | `github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadWorker` | 自定义延迟图片预加载 worker 类（须实现 `Runnable` 且有无参构造） | `common/loading/ParallelImagePreloadCoordinator.java:57` |
 | `ssoptimizer.loading.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 延迟图片预加载并行度；Wave 3 起兼作 Spec DAG 加载与 Variant 解析（`SpecLoadScheduler` / `SpecStoreMixin.loadVariants`）的 Semaphore 最大并发闸门（任务跑在 VtWorkers 虚拟线程上，闸门约束加载期 CPU/磁盘争抢） | `common/loading/ParallelImagePreloadCoordinator.java:77`，`common/loading/SpecLoadScheduler.java` |
 | `ssoptimizer.disable.parallelpreload` | `false` | 禁用并行图片预加载（并行度降为 1） | `common/loading/ParallelImagePreloadCoordinator.java:73` |
@@ -124,7 +124,7 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.disable.xstream.fastfieldaccess` | `false` | 禁用 XStream 字段访问快路径（回退纯反射访问） | `common/save/XStreamFieldAccessHelper.java:28` |
+| `ssoptimizer.disable.xstream.fastfieldaccess` | `false` | 禁用 XStream 字段访问快路径（禁用后字段读写记录日志并抛出 `ObjectAccessException`，不再回退反射） | `common/save/XStreamFieldAccessHelper.java:28` |
 | `ssoptimizer.disable.txw2.queuedwriter` | `false` | 禁用 txw2 XML 批量队列写入器 | `common/save/Txw2CompactXmlWriterHelper.java:44` |
 | `ssoptimizer.txw2.queuedwriter.queuecapacity` | `16384`（下限 256） | 批量队列事件容量 | `common/save/Txw2CompactXmlWriterHelper.java:50` |
 | `ssoptimizer.txw2.queuedwriter.batchsize` | `256`（下限 16） | 批量队列批大小 | `common/save/Txw2CompactXmlWriterHelper.java:51` |
@@ -139,7 +139,7 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.render.allowFinish` | `false` | 战斗渲染循环中强制调用 `glFinish()`（调试用 GPU 同步） | `common/render/CombatStateTraversalHook.java:20` |
-| `ssoptimizer.render.shipengine.enable` | `true` | 舰船引擎火焰合批渲染总开关（设 `false` 回退立即模式等价路径） | `common/render/ShipEngineRenderOptimizationToggle.java:21` |
+| `ssoptimizer.render.shipengine.enable` | `true` | 舰船引擎火焰合批渲染总开关（设 `false` 回退立即模式等价路径） | `common/render/ShipEngineRenderToggle.java:10-11` |
 | `ssoptimizer.render.shipengine.mode` | `"vbo"` | 引擎合批模式：`vbo` / `immediate`（GL 能力不足自动降级；曾有的 `instanced` 模式因游戏上下文内属性获取异常已移除） | `common/render/engine/GlCapability.java`，`EngineBatchImpl.java` |
 | `ssoptimizer.render.shipengine.stats` | `false` | 引擎合批周期统计日志（每 300 次渲染输出实例数与 display list 回退计数） | `common/render/engine/EngineBatchImpl.java` |
 | `ssoptimizer.render.warroomtasks.enable` | `true` | 指挥界面任务连线帧内合批（`TaskIconManager.render` 边界收集，单次提交） | `common/render/warroom/WarroomTaskLineBatch.java` |
@@ -148,9 +148,9 @@
 | `ssoptimizer.render.shield.enable` | `true` | 护盾渲染优化开关（旋转递推 + 顶点缓存 + 合批） | `common/render/shield/ShieldRenderHelper.java` |
 | `ssoptimizer.render.shield.algo` | `"recurrence"` | 护盾顶点算法：`recurrence` / `raycast`（对照实现，实测约 8 倍劣化） | `common/render/shield/ShieldArcGeometry.java` |
 | `ssoptimizer.render.shipmasktess.enable` | `true` | Ship 蒙版三角化缓存开关（耳切 + WeakHashMap 缓存；false 走原 GLU 路径） | `common/render/tessellation/ShipMaskTessellationToggle.java` |
-| `ssoptimizer.render.contrail.lod` | `true` | 战役尾迹视口距离 LOD 总开关（false 时视口外舰队尾迹照常渲染，回退原版行为） | `common/render/campaign/CampaignFleetPerformanceHelper.java` |
-| `ssoptimizer.render.contrail.lod.margin` | `3000` | 尾迹 LOD 视口外扩边距：舰队位置超出可视矩形该边距时整条尾迹跳过渲染；默认远大于尾迹实际长度，屏幕边缘无可见截断 | `common/render/campaign/CampaignFleetPerformanceHelper.java` |
-| `ssoptimizer.render.contrail.maxpoints` | `256`（≤0 关闭上限） | 单条战役尾迹点数上限：超限后 `ContrailEngineV2.addPoint` 丢弃新点（旧点照常老化移除），约束 hyperspace/冲刺补点膨胀；稳态百级点数不触发 | `common/render/campaign/CampaignFleetPerformanceHelper.java`，`mixin/render/ContrailEngineV2Mixin.java` |
+| `ssoptimizer.render.contrail.lod` | `true` | 战役尾迹视口距离 LOD 总开关（false 时视口外舰队尾迹照常渲染，回退原版行为） | `common/render/campaign/CampaignContrailFrame.java:10-11` |
+| `ssoptimizer.render.contrail.lod.margin` | `3000` | 尾迹 LOD 视口外扩边距：舰队位置超出可视矩形该边距时整条尾迹跳过渲染；默认远大于尾迹实际长度，屏幕边缘无可见截断 | `common/render/campaign/CampaignContrailFrame.java:13-14` |
+| `ssoptimizer.render.contrail.maxpoints` | `256`（≤0 关闭上限） | 单条战役尾迹点数上限：超限后 `ContrailEngineV2.addPoint` 丢弃新点（旧点照常老化移除），约束 hyperspace/冲刺补点膨胀；稳态百级点数不触发 | `common/render/campaign/CampaignContrailPointCap.java:6-7`，`mixin/render/ContrailEngineV2Mixin.java` |
 | `ssoptimizer.textdiagnostics.enable` | `false` | 启用 v2 文本渲染诊断统计（render 接管的 pass/quad 聚合） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.textdiagnostics.logintervalmillis` | `5000` | 文本渲染诊断汇总日志周期（≤0 停用） | `common/render/engine/TextLayoutDiagnostics.java` |
 | `ssoptimizer.renderthread.glErrorProbe` | `"off"` | RT 管线 GL 错误探针：`frame`（每帧末尾排空滞留 glGetError 并记 WARN）/ `command`（逐命令排空，重，仅定位用；该模式下录制侧把命令包装为 `ProbeSiteCommand` 捕获录制点堆栈，出错时输出去重后的录制点）。用于定位「滞留 GL 错误被模组健康校验（如 BoxUtil aux 线程 glInit）读到」类问题 | `common/render/queue/RenderQueueImpl.java`（`GL_ERROR_PROBE_PROPERTY`）、`ProbeSiteCommand.java` |
