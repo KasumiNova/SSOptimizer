@@ -24,7 +24,8 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
             ".render.OriginalFontResourceStreamMixin", "originalfontstream",
             ".loading.TextureLoaderMixin", "textureloader",
             ".loading.TextureLoaderUploadMixin", "textureloader",
-            ".loading.TextureLoaderUploadDirectMixin", "textureloader");
+            ".loading.TextureLoaderUploadDirectMixin", "textureloader",
+            ".loading.ResourceLoaderOpenStreamFallbackMixin", "caseinsensitiveresource");
 
     @Override
     public void onLoad(final String mixinPackage) {

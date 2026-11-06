@@ -32,7 +32,7 @@
 | `ssoptimizer.disable.settingstextfieldime` | `SettingsTextFieldFactoryMixin` | 跳过设置页文本域 IME 注入（Mixin 织入期门控） |
 | `ssoptimizer.disable.textfieldimplime` | `TextFieldImplementationMixin` | 跳过文本域实现 IME 注入（Mixin 织入期门控） |
 | `ssoptimizer.disable.originalfontstream` | `OriginalFontResourceStreamMixin` | 跳过原版字体资源流替换（Mixin 织入期门控） |
-| `ssoptimizer.disable.caseinsensitiveresource` | `CaseInsensitiveResourceFallbackProcessor` | 跳过大小写不敏感资源回退替换（Composite） |
+| `ssoptimizer.disable.caseinsensitiveresource` | `ResourceLoaderOpenStreamFallbackMixin` | 跳过大小写不敏感资源回退（Mixin 织入期门控） |
 
 > 注：批次 1 已把 Sprite/BitmapFontRenderer/TexturedStrip/ContrailEngine/CollisionGridQuery/粒子三件套/TextureObject/LoadingUtils/LinuxEvent 的处理器迁移为 Mixin（`mixins.ssoptimizer.json` 对应条目），相关 `ssoptimizer.disable.*` 开关随 ASM 注册一并移除，不再可配置。
 

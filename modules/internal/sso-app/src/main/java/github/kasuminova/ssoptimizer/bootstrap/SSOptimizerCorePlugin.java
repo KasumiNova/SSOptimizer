@@ -1,7 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
-import github.kasuminova.ssoptimizer.api.CompositeAsmClassProcessor;
 import github.kasuminova.ssoptimizer.api.ExternalModOptimizer;
 import github.kasuminova.ssoptimizer.api.automation.FrameCaptureHook;
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
@@ -15,7 +14,6 @@ import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
@@ -36,8 +34,6 @@ import io.github.nanoforged.api.INanoCorePlugin;
 import org.apache.log4j.Logger;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.BiConsumer;
 
 public final class SSOptimizerCorePlugin implements INanoCorePlugin {
@@ -120,9 +116,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "aitweaksbootstraploader", AITweaksBootstrapLoaderProcessor.TARGET_CLASS, new AITweaksBootstrapLoaderProcessor());
         registerIf(registrator, "aitweakscoreloader", AITweaksCoreLoaderProcessor.TARGET_CLASS, new AITweaksCoreLoaderProcessor());
         registerIf(registrator, "shipmasteryreflectionloader", ShipMasteryReflectionLoaderProcessor.TARGET_CLASS, new ShipMasteryReflectionLoaderProcessor());
-        registerCompositeIf(registrator,
-                GameClassNames.RESOURCE_LOADER,
-                new ProcessorToggle("caseinsensitiveresource", new CaseInsensitiveResourceFallbackProcessor()));
         registerIf(registrator, "shipdamagestagetwo", GameClassNames.SHIP, new ShipDamageStageTwoProcessor());
         registerIf(registrator, "collisionimpulseclamp", GameClassNames.COLLISION_HANDLER_IMPL, new CollisionImpulseClampProcessor());
     }
@@ -171,24 +164,4 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         LOGGER.info("[SSOptimizer] Registered system-domain ASM processor '" + key + "' for " + className);
     }
 
-    private static void registerCompositeIf(BiConsumer<String, AsmClassProcessor> registrator,
-                                            String className,
-                                            ProcessorToggle... toggles) {
-        List<AsmClassProcessor> enabled = new ArrayList<>(toggles.length);
-        for (ProcessorToggle toggle : toggles) {
-            if (Boolean.getBoolean("ssoptimizer.disable." + toggle.key())) {
-                LOGGER.info("[SSOptimizer] Processor DISABLED via system property: " + toggle.key());
-                continue;
-            }
-            enabled.add(toggle.processor());
-        }
-        if (enabled.isEmpty()) {
-            return;
-        }
-        registrator.accept(className, CompositeAsmClassProcessor.of(enabled.toArray(AsmClassProcessor[]::new)));
-    }
-
-    private record ProcessorToggle(String key,
-                                   AsmClassProcessor processor) {
-    }
 }
