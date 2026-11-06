@@ -95,7 +95,7 @@ final class TextureResourceLoader {
         applyMetadata(texture, metadata);
         cacheTexture(textureCache, resourcePath, effectivePath, texture);
         TextureResidency.trackPending(texture, effectivePath, source.sourceHash(), metadata, now, true);
-        TextureResidency.maybeScheduleDeferredPrepass(effectivePath, source.sourceHash(), metadata);
+        TextureUploader.maybeScheduleDeferredPrepass(effectivePath, source.sourceHash(), metadata);
         return TextureContextTracker.markTextureLoadedInCurrentContext(texture, effectivePath);
     }
 
@@ -201,7 +201,7 @@ final class TextureResourceLoader {
         if (trackResidency && defer) {
             cacheTexture(textureCache, requestedPath, effectivePath, texture);
             TextureResidency.trackPending(texture, effectivePath, prepared.sourceHash(), metadata, now, true);
-            TextureResidency.maybeScheduleDeferredPrepass(effectivePath, prepared.sourceHash(), metadata);
+            TextureUploader.maybeScheduleDeferredPrepass(effectivePath, prepared.sourceHash(), metadata);
             return TextureContextTracker.markTextureLoadedInCurrentContext(texture, effectivePath);
         }
 
@@ -213,7 +213,7 @@ final class TextureResourceLoader {
                     eagerLoad(loader, textureCache, effectivePath, requestedPath), effectivePath);
         }
 
-        final TextureCompressionSupport.Format usedFormat = TextureResidency.uploadConverted(
+        final TextureCompressionSupport.Format usedFormat = TextureUploader.uploadConverted(
                 texture, TARGET_2D, effectivePath, prepared.sourceHash(), pixels);
         cacheTexture(textureCache, requestedPath, effectivePath, texture);
         if (trackResidency) {
@@ -431,7 +431,7 @@ final class TextureResourceLoader {
                 metadata.averageColor(),
                 metadata.upperHalfColor(),
                 metadata.lowerHalfColor(),
-                TextureResidency.estimateTextureGpuBytes(resourcePath,
+                TextureUploader.estimateTextureGpuBytes(resourcePath,
                         metadata.imageWidth(),
                         metadata.imageHeight(),
                         metadata.textureWidth(),
@@ -455,7 +455,7 @@ final class TextureResourceLoader {
                 result.averageColor(),
                 result.upperHalfColor(),
                 result.lowerHalfColor(),
-                TextureResidency.estimateTextureGpuBytes(resourcePath,
+                TextureUploader.estimateTextureGpuBytes(resourcePath,
                         imageWidth,
                         imageHeight,
                         result.textureWidth(),

@@ -170,7 +170,7 @@ public final class LazyTextureManager {
     static boolean shouldGenerateMipmaps(final String resourcePath,
                                          final int imageWidth,
                                          final int imageHeight) {
-        return TextureResidency.shouldGenerateMipmaps(resourcePath, imageWidth, imageHeight);
+        return TextureUploader.shouldGenerateMipmaps(resourcePath, imageWidth, imageHeight);
     }
 
     static boolean shouldTrackContextBoundTexture(final String resourcePath) {
@@ -255,7 +255,7 @@ public final class LazyTextureManager {
                                         final int textureWidth,
                                         final int textureHeight,
                                         final TextureCompressionSupport.Format compressionFormat) {
-        return TextureResidency.estimateTextureGpuBytes(
+        return TextureUploader.estimateTextureGpuBytes(
                 resourcePath, imageWidth, imageHeight, textureWidth, textureHeight, compressionFormat);
     }
 
