@@ -54,6 +54,9 @@ class CoreModJarTest {
             assertNotNull(jar.getEntry("org/jctools/queues/MpscArrayQueue.class"), "jctools 必须 shade 进 jar");
             assertNotNull(jar.getEntry("com/github/luben/zstd/Zstd.class"), "zstd-jni 必须 shade 进 jar");
             assertNotNull(jar.getEntry("org/apache/log4j/Logger.class"), "log4j-1.2-api 桥接层必须 shade 进 jar");
+            assertTrue(jar.stream().noneMatch(entry -> entry.getName().startsWith("org/apache/logging/log4j/")
+                            && entry.getName().endsWith(".class")),
+                    "log4j-1.2-api 的传递依赖 log4j2 API 不应 shade 进 jar");
 
             assertNull(jar.getEntry("org/objectweb/asm/ClassReader.class"), "ASM 由 NanoForge 运行时提供，不应 shade");
             assertNull(jar.getEntry("org/spongepowered/asm/mixin/Mixin.class"), "sponge-mixin 由 NanoForge 运行时提供，不应 shade");

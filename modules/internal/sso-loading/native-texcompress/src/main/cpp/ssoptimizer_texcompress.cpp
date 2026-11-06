@@ -5,6 +5,7 @@
 #include <jni.h>
 
 #include "github_kasuminova_ssoptimizer_common_loading_NativeTextureCompressor.h"
+#include "github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime.h"
 #include "texcompress_core.h"
 #include "vendor/bc7enc.h"
 #include "vendor/rgbcx.h"
@@ -40,6 +41,12 @@ bool selfTest() {
 }
 
 extern "C" {
+
+JNIEXPORT jint JNICALL
+Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeTexcompressAbiVersion(
+        JNIEnv*, jclass) {
+    return static_cast<jint>(github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_NATIVE_ABI_VERSION);
+}
 
 JNIEXPORT jboolean JNICALL
 Java_github_kasuminova_ssoptimizer_common_loading_NativeTextureCompressor_nativeIsSupported(

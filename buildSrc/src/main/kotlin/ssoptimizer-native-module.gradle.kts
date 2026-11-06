@@ -137,36 +137,50 @@ fun resolveWindowsLibrary(libDirRoot: File?, vararg candidates: String): String?
     return null
 }
 
-fun runPkgConfig(vararg args: String): List<String> {
+fun runPkgConfig(required: Boolean, vararg args: String): List<String> {
+    val command = listOf("pkg-config", *args)
     val output = ByteArrayOutputStream()
     val process = try {
-        ProcessBuilder(listOf("pkg-config", *args))
+        ProcessBuilder(command)
             .redirectErrorStream(true)
             .start()
-    } catch (_: Exception) {
+    } catch (exception: Exception) {
+        if (required) {
+            throw GradleException(
+                "pkg-config 启动失败：命令=${command.joinToString(" ")}，退出码=不可用（进程未启动），输出=${exception.message ?: exception.javaClass.name}",
+                exception
+            )
+        }
         return emptyList()
     }
 
     process.inputStream.use { it.copyTo(output) }
-    if (process.waitFor() != 0) {
+    val exitCode = process.waitFor()
+    val processOutput = output.toString()
+    if (exitCode != 0) {
+        if (required) {
+            throw GradleException(
+                "pkg-config 执行失败：命令=${command.joinToString(" ")}，退出码=$exitCode，输出=${processOutput.trim().ifEmpty { "<无>" }}"
+            )
+        }
         return emptyList()
     }
 
-    return output.toString()
+    return processOutput
         .trim()
         .split(Regex("\\s+"))
         .filter { it.isNotBlank() }
 }
 
-val libpngCompilerArgs = runPkgConfig("--cflags", "libpng")
-val libpngLinkerArgs = runPkgConfig("--libs", "libpng")
-val hasLibpng = libpngLinkerArgs.isNotEmpty()
-val freetypeCompilerArgs = runPkgConfig("--cflags", "freetype2")
-val freetypeLinkerArgs = runPkgConfig("--libs", "freetype2")
-val hasFreetype = freetypeLinkerArgs.isNotEmpty()
-val x11CompilerArgs = runPkgConfig("--cflags", "x11")
-val x11LinkerArgs = runPkgConfig("--libs", "x11")
-val hasX11 = x11LinkerArgs.isNotEmpty()
+val libpngCompilerArgs by lazy { runPkgConfig(ssoNative.libpng.get(), "--cflags", "libpng") }
+val libpngLinkerArgs by lazy { runPkgConfig(ssoNative.libpng.get(), "--libs", "libpng") }
+val hasLibpng by lazy { libpngLinkerArgs.isNotEmpty() }
+val freetypeCompilerArgs by lazy { runPkgConfig(ssoNative.freetype.get(), "--cflags", "freetype2") }
+val freetypeLinkerArgs by lazy { runPkgConfig(ssoNative.freetype.get(), "--libs", "freetype2") }
+val hasFreetype by lazy { freetypeLinkerArgs.isNotEmpty() }
+val x11CompilerArgs by lazy { runPkgConfig(ssoNative.x11.get(), "--cflags", "x11") }
+val x11LinkerArgs by lazy { runPkgConfig(ssoNative.x11.get(), "--libs", "x11") }
+val hasX11 by lazy { x11LinkerArgs.isNotEmpty() }
 
 val windowsLibpngRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("libpng") else null
 val windowsFreetypeRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("freetype") else null
@@ -299,7 +313,7 @@ fun resolveLinuxRuntimeSharedLibs(): List<File> {
 // ssoNative 在模块脚本中配置，运行时依赖收集必须延后求值。
 afterEvaluate {
     extra["windowsRuntimeDlls"] = resolveWindowsRuntimeDlls()
-    extra["linuxRuntimeSharedLibs"] = resolveLinuxRuntimeSharedLibs()
+    extra["linuxRuntimeSharedLibs"] = providers.provider { resolveLinuxRuntimeSharedLibs() }
 }
 
 library {
@@ -416,9 +430,9 @@ tasks.withType<LinkSharedLibrary>().configureEach {
         if (enableFreetype) linkerArgs.addAll(windowsFreetypeLinkerArgs)
     } else {
         linkerArgs.addAll(linuxSystemLibs.map { "-l$it" })
-        if (enableLibpng) linkerArgs.addAll(libpngLinkerArgs)
-        if (enableFreetype) linkerArgs.addAll(freetypeLinkerArgs)
-        if (enableX11) linkerArgs.addAll(x11LinkerArgs)
+        linkerArgs.addAll(providers.provider { if (enableLibpng) libpngLinkerArgs else emptyList() })
+        linkerArgs.addAll(providers.provider { if (enableFreetype) freetypeLinkerArgs else emptyList() })
+        linkerArgs.addAll(providers.provider { if (enableX11) x11LinkerArgs else emptyList() })
         // RPATH 指向 $ORIGIN：随模组部署的 .so 依赖运行时按同目录解析
         linkerArgs.addAll(listOf("-Wl,-rpath,\$ORIGIN"))
     }
@@ -430,9 +444,47 @@ if (useWindowsCrossCompileTask) {
         description = "Compile Windows native objects on Linux using a MinGW-compatible cross toolchain"
         dependsOn(":modules:internal:sso-app:compileJava")
 
+        val compilerArgs = providers.provider {
+            val commonArgs = mutableListOf(
+                "-std=c++20",
+                "-O3",
+                "-fno-math-errno",
+                "-fno-trapping-math",
+                "-DWIN32_LEAN_AND_MEAN",
+                "-DNOMINMAX",
+                "-D_CRT_SECURE_NO_WARNINGS",
+                "-I${jniIncludeDir.absolutePath}",
+                "-I${jniPlatformIncludeDir.absolutePath}"
+            )
+            nativeHeaderDirs.forEach { headerDir ->
+                commonArgs.add("-I${headerDir.absolutePath}")
+            }
+            if (ssoNative.libpng.get()) {
+                commonArgs.addAll(windowsLibpngCompilerArgs)
+                if (hasWindowsLibpng) {
+                    commonArgs.add("-DSSOPTIMIZER_HAVE_LIBPNG=1")
+                }
+            }
+            if (ssoNative.freetype.get()) {
+                commonArgs.addAll(windowsFreetypeCompilerArgs)
+                if (hasWindowsFreetype) {
+                    commonArgs.add("-DSSOPTIMIZER_HAVE_FREETYPE=1")
+                }
+            }
+            commonArgs
+        }
+
         inputs.files(windowsCrossSources)
         inputs.dir(jniIncludeDir)
         inputs.dir(jniPlatformIncludeDir)
+        nativeHeaderDirs.forEach { inputs.dir(it) }
+        if (ssoNative.libpng.get()) {
+            windowsLibpngRoot?.let { inputs.dir(it.resolve("include")) }
+        }
+        if (ssoNative.freetype.get()) {
+            windowsFreetypeRoot?.let { inputs.dir(it.resolve("include")) }
+        }
+        inputs.property("compilerArgs", compilerArgs)
         outputs.dir(windowsCrossObjectDir)
 
         doFirst {
@@ -461,32 +513,7 @@ if (useWindowsCrossCompileTask) {
                 "CXX" to windowsCrossCxx,
                 "RC" to windowsCrossRc
             )
-            val commonArgs = mutableListOf(
-                "-std=c++20",
-                "-O3",
-                "-fno-math-errno",
-                "-fno-trapping-math",
-                "-DWIN32_LEAN_AND_MEAN",
-                "-DNOMINMAX",
-                "-D_CRT_SECURE_NO_WARNINGS",
-                "-I${jniIncludeDir.absolutePath}",
-                "-I${jniPlatformIncludeDir.absolutePath}"
-            )
-            nativeHeaderDirs.forEach { headerDir ->
-                commonArgs.add("-I${headerDir.absolutePath}")
-            }
-            if (ssoNative.libpng.get()) {
-                commonArgs.addAll(windowsLibpngCompilerArgs)
-                if (hasWindowsLibpng) {
-                    commonArgs.add("-DSSOPTIMIZER_HAVE_LIBPNG=1")
-                }
-            }
-            if (ssoNative.freetype.get()) {
-                commonArgs.addAll(windowsFreetypeCompilerArgs)
-                if (hasWindowsFreetype) {
-                    commonArgs.add("-DSSOPTIMIZER_HAVE_FREETYPE=1")
-                }
-            }
+            val commonArgs = compilerArgs.get()
 
             windowsCrossSources.forEach { source ->
                 val objectFile = objectDir.resolve(source.nameWithoutExtension + ".o")
@@ -501,28 +528,11 @@ if (useWindowsCrossCompileTask) {
         description = "Link the Windows native shared library on Linux using a MinGW-compatible cross toolchain"
         dependsOn(compileWindowsCrossObjects)
 
-        inputs.dir(windowsCrossObjectDir)
-        outputs.file(windowsCrossOutputFile)
-
-        doFirst {
+        val linkerArgs = providers.provider {
             val outputFile = windowsCrossOutputFile.get().asFile
-            outputFile.parentFile.mkdirs()
-        }
-
-        doLast {
-            val workingDir = project.projectDir
-            val environment = mapOf(
-                "PATH" to windowsCrossPath,
-                "CC" to windowsCrossCc,
-                "CXX" to windowsCrossCxx,
-                "RC" to windowsCrossRc
-            )
-            val outputFile = windowsCrossOutputFile.get().asFile
-
             val objectFiles = windowsCrossSources.map { source ->
                 windowsCrossObjectDir.get().asFile.resolve(source.nameWithoutExtension + ".o").absolutePath
             }
-
             val argsList = mutableListOf(
                 "-shared",
                 "-static-libgcc",
@@ -541,8 +551,40 @@ if (useWindowsCrossCompileTask) {
                 argsList.addAll(windowsBzip2LinkerArgs)
                 argsList.addAll(windowsBrotliLinkerArgs)
             }
+            argsList
+        }
+        val linkedLibraryFiles = providers.provider {
+            val files = mutableListOf<File>()
+            if (ssoNative.libpng.get()) {
+                files.addAll((windowsLibpngLinkerArgs + windowsZlibLinkerArgs).map { File(it) })
+            }
+            if (ssoNative.freetype.get()) {
+                files.addAll((windowsFreetypeLinkerArgs + windowsBzip2LinkerArgs + windowsBrotliLinkerArgs).map { File(it) })
+            }
+            files
+        }
 
-            runCommand(workingDir, environment, listOf(windowsCrossCxx) + argsList)
+        inputs.dir(windowsCrossObjectDir)
+        inputs.files(linkedLibraryFiles)
+        inputs.property("windowsSystemLibs", ssoNative.windowsSystemLibs)
+        inputs.property("linkerArgs", linkerArgs)
+        outputs.file(windowsCrossOutputFile)
+
+        doFirst {
+            val outputFile = windowsCrossOutputFile.get().asFile
+            outputFile.parentFile.mkdirs()
+        }
+
+        doLast {
+            val workingDir = project.projectDir
+            val environment = mapOf(
+                "PATH" to windowsCrossPath,
+                "CC" to windowsCrossCc,
+                "CXX" to windowsCrossCxx,
+                "RC" to windowsCrossRc
+            )
+
+            runCommand(workingDir, environment, listOf(windowsCrossCxx) + linkerArgs.get())
         }
     }
 

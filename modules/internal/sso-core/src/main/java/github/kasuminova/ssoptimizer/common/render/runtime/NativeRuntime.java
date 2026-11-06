@@ -15,6 +15,7 @@ public final class NativeRuntime {
     private static final Logger LOGGER = Logger.getLogger(NativeRuntime.class);
 
     private static final String MAIN_MODULE = NativeLibraryResolver.MAIN_MODULE;
+    private static final int NATIVE_ABI_VERSION = 1;
 
     private static final Map<String, Boolean> MODULE_LOAD_STATE = new HashMap<>();
 
@@ -45,6 +46,16 @@ public final class NativeRuntime {
 
     private static native boolean nativeInitGl();
 
+    private static native int nativeRenderAbiVersion();
+
+    private static native int nativeLoadingAbiVersion();
+
+    private static native int nativeTexcompressAbiVersion();
+
+    private static native int nativeFontAbiVersion();
+
+    private static native int nativeImeAbiVersion();
+
     /** 仅限持有真实 GL context 的渲染线程调用；初始化结果在进程内缓存。 */
     public static boolean ensureQueueGlReady() {
         final int state = queueGlReadyState;
@@ -63,7 +74,14 @@ public final class NativeRuntime {
         if (queueGlReadyState != 0) {
             return queueGlReadyState > 0;
         }
-        final boolean ready = ensureLoaded() && nativeInitGl();
+        final boolean ready;
+        try {
+            ready = ensureLoaded() && nativeInitGl();
+        } catch (UnsatisfiedLinkError e) {
+            queueGlReadyState = -1;
+            LOGGER.error("[SSOptimizer] 渲染线程 native GL 初始化符号链接失败，回退 LWJGL/Java 录制路径", e);
+            return false;
+        }
         queueGlReadyState = ready ? 1 : -1;
         if (!ready) {
             LOGGER.warn("[SSOptimizer] 渲染线程 glad 初始化失败，native GL 直执通道"
@@ -97,6 +115,9 @@ public final class NativeRuntime {
 
             preloadWindowsDependencies(nativePath.getParent());
             System.load(nativePath.toString());
+            if (!hasCompatibleAbi(moduleName)) {
+                return false;
+            }
             LOGGER.info("[SSOptimizer] Native library loaded: " + nativePath);
             if (MAIN_MODULE.equals(moduleName)) {
                 if (RenderThreadMode.isEnabled()) {
@@ -113,10 +134,30 @@ public final class NativeRuntime {
                 }
             }
             return true;
+        } catch (UnsatisfiedLinkError e) {
+            LOGGER.error("[SSOptimizer] Failed to link native module '" + moduleName + "'", e);
+            return false;
         } catch (Throwable t) {
             LOGGER.warn("[SSOptimizer] Failed to load native module '" + moduleName + "': " + t.getMessage());
             return false;
         }
+    }
+
+    private static boolean hasCompatibleAbi(final String moduleName) {
+        final int actualVersion = switch (moduleName) {
+            case "render" -> nativeRenderAbiVersion();
+            case "loading" -> nativeLoadingAbiVersion();
+            case "texcompress" -> nativeTexcompressAbiVersion();
+            case "font" -> nativeFontAbiVersion();
+            case "ime" -> nativeImeAbiVersion();
+            default -> throw new IllegalArgumentException("Unknown native module: " + moduleName);
+        };
+        if (actualVersion == NATIVE_ABI_VERSION) {
+            return true;
+        }
+        LOGGER.error("[SSOptimizer] Native module '" + moduleName + "' ABI mismatch: expected="
+                + NATIVE_ABI_VERSION + ", actual=" + actualVersion + "; module disabled.");
+        return false;
     }
 
     private static void preloadWindowsDependencies(final Path nativeDir) {

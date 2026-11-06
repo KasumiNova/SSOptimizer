@@ -17,25 +17,17 @@ fun hostPlatformId(): String {
     return if (osName.contains("win")) "windows" else "linux"
 }
 
-fun detectRuntimePlatform(gameDir: File?): String {
-    if (gameDir != null) {
-        if (gameDir.resolve("starsector-core").isDirectory) {
-            return "windows"
-        }
-        if (gameDir.resolve("starsector.sh").isFile
-                || gameDir.resolve("zulu25_linux").isDirectory
-                || gameDir.resolve("jbr25_linux").isDirectory) {
-            return "linux"
-        }
-    }
-    return hostPlatformId()
-}
-
 val configuredGameDirProvider = providers.gradleProperty("starsector.gameDir")
     .orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR"))
-val targetPlatformProvider = configuredGameDirProvider
-    .map { detectRuntimePlatform(file(it)) }
-    .orElse(providers.provider { hostPlatformId() })
+val requestedNativeTarget = providers.gradleProperty("ssoptimizer.native.target").orNull?.lowercase()
+val requestedBuildPlatform = providers.gradleProperty("starsector.platform").orNull?.lowercase()
+val targetPlatformProvider = providers.provider {
+    when {
+        requestedNativeTarget == "windows" || requestedBuildPlatform == "windows" -> "windows"
+        requestedNativeTarget == "linux" || requestedBuildPlatform == "linux" -> "linux"
+        else -> hostPlatformId()
+    }
+}
 
 allprojects {
     repositories {
@@ -122,7 +114,7 @@ val nativeWindowsRuntimeDlls: List<File> by lazy {
 val nativeLinuxRuntimeSharedLibs: List<File> by lazy {
     nativeModules.flatMap { module ->
         @Suppress("UNCHECKED_CAST")
-        (nativeProject(module).extra["linuxRuntimeSharedLibs"] as? List<File>) ?: emptyList()
+        (nativeProject(module).extra["linuxRuntimeSharedLibs"] as Provider<List<File>>).get()
     }.distinct()
 }
 val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
@@ -333,10 +325,8 @@ tasks.register("runClient") {
 tasks.register<Copy>("installNativeRuntime") {
     group = "dev workflow"
     description = "Deploy native runtime libraries into the deployed mod directory"
-    if (targetPlatformProvider.get() == "linux") {
-        nativeModules.forEach { module ->
-            dependsOn("${nativeProjectPaths.getValue(module)}:assembleRelease")
-        }
+    nativeModules.forEach { module ->
+        dependsOn("${nativeProjectPaths.getValue(module)}:assembleRelease")
     }
 
     from(project.provider {

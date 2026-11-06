@@ -95,7 +95,9 @@ dependencies {
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("com.github.luben:zstd-jni:1.5.7-3")
     implementation("tools.profiler:async-profiler:4.5")
-    shade("org.apache.logging.log4j:log4j-1.2-api:2.25.2")
+    shade("org.apache.logging.log4j:log4j-1.2-api:2.25.2") {
+        isTransitive = false
+    }
 
     compileOnly("io.github.nanoforged:NanoForge:0.1.0-SNAPSHOT") {
         isTransitive = false
@@ -158,6 +160,13 @@ tasks.test {
 tasks.register<Test>("nativeIT") {
     group = "verification"
     description = "Run native-library integration tests (*IT) in a dedicated JVM"
+    dependsOn(
+        ":modules:internal:sso-render:native-render:assembleRelease",
+        ":modules:internal:sso-loading:native-loading:assembleRelease",
+        ":modules:internal:sso-loading:native-texcompress:assembleRelease",
+        ":modules:internal:sso-font:native-font:assembleRelease",
+        ":modules:internal:sso-ime:native-ime:assembleRelease"
+    )
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform()
@@ -191,12 +200,6 @@ val jmhSourceSet = sourceSets.create("jmh") {
     runtimeClasspath += output + compileClasspath
 }
 
-configurations[docsTestSourceSet.implementationConfigurationName].extendsFrom(
-    configurations.testImplementation.get()
-)
-configurations[docsTestSourceSet.runtimeOnlyConfigurationName].extendsFrom(
-    configurations.testRuntimeOnly.get()
-)
 configurations[jmhSourceSet.implementationConfigurationName].extendsFrom(
     configurations.implementation.get()
 )
@@ -224,9 +227,11 @@ tasks.register<Test>("docsTest") {
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
 }
 
-tasks.register<JavaExec>("jmh") {    group = "benchmark"
+tasks.register<JavaExec>("jmh") {
+    group = "benchmark"
     description = "Run JMH benchmarks"
     dependsOn(":modules:internal:sso-render:native-render:assemble")
+    dependsOn(":modules:internal:sso-loading:native-loading:assemble")
     dependsOn(tasks.named(jmhSourceSet.classesTaskName))
     classpath = jmhSourceSet.runtimeClasspath
     mainClass.set("org.openjdk.jmh.Main")
@@ -243,6 +248,9 @@ tasks.register<JavaExec>("jmh") {    group = "benchmark"
     val jmhSaveCorpusDir = providers.gradleProperty("jmhSaveCorpusDir").orNull
     val nativeLibraryPath = providers.gradleProperty("jmhNativePath").orElse(
         layout.projectDirectory.file("../sso-render/native/build/lib/main/debug/${System.mapLibraryName("ssoptimizer_render")}").asFile.absolutePath
+    )
+    val nativeLoadingLibraryPath = providers.gradleProperty("jmhNativeLoadingPath").orElse(
+        layout.projectDirectory.file("../sso-loading/native/build/lib/main/debug/${System.mapLibraryName("ssoptimizer_loading")}").asFile.absolutePath
     )
     val extraArgs = mutableListOf<String>()
     if (jmhCorpus != null) {
@@ -263,7 +271,7 @@ tasks.register<JavaExec>("jmh") {    group = "benchmark"
         "-r", measurementTime.get(),
         "-bm", "avgt",
         "-tu", timeUnit.get(),
-        "-jvmArgsAppend", "-Dssoptimizer.native.path=${nativeLibraryPath.get()}",
+        "-jvmArgsAppend", "-Dssoptimizer.native.path=${nativeLibraryPath.get()} -Dssoptimizer.native.path.loading=${nativeLoadingLibraryPath.get()}",
         *if (jmhSaveCorpusDir != null) arrayOf("-jvmArgsAppend", "-Dssoptimizer.saveCorpusDir=$jmhSaveCorpusDir") else emptyArray(),
         *extraArgs.toTypedArray()
     )

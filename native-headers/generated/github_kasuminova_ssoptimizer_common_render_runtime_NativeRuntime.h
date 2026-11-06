@@ -7,12 +7,54 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_NATIVE_ABI_VERSION
+#define github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_NATIVE_ABI_VERSION 1L
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime
  * Method:    nativeInitGl
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeInitGl
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime
+ * Method:    nativeRenderAbiVersion
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeRenderAbiVersion
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime
+ * Method:    nativeLoadingAbiVersion
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeLoadingAbiVersion
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime
+ * Method:    nativeTexcompressAbiVersion
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeTexcompressAbiVersion
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime
+ * Method:    nativeFontAbiVersion
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeFontAbiVersion
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime
+ * Method:    nativeImeAbiVersion
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeImeAbiVersion
   (JNIEnv *, jclass);
 
 #ifdef __cplusplus

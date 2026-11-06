@@ -1,15 +1,10 @@
 # DetailedCombatResults 读档热点优化设计
 
-> **历史文档注记（2026-08-02）**：本文成文于 javaagent 时代，文中 `:agent-api` /
-> `:mod-optimizations` 模块、`SSOptimizerAgent` 装配点已随 NanoForge R4 coremod 化
-> 收编进 `:app`（装配点改为 `SSOptimizerCorePlugin`）。优化本身的根因分析与字节码
-> 方案仍然有效，下文保留原始记录。
-
 ## 目标
 
-消除第三方模组 **DetailedCombatResults（DCR，id `DetailedCombatResults`，v5.4.2）** 在读档时 `onGameLoad` 的性能热点，并为「面向外部模组的性能优化」建立一个独立、可插拔的模块结构（`:agent-api` + `:mod-optimizations`），与游戏自身优化（`:app`）和自动化（未来独立模块）解耦。
+消除第三方模组 **DetailedCombatResults（DCR，id `DetailedCombatResults`，v5.4.2）** 在读档时 `onGameLoad` 的性能热点，并通过 `:modules:api:sso-api` 与 `:modules:internal:sso-modopt` 隔离外部模组优化契约和实现，由 `:modules:internal:sso-app` 统一装配。
 
-本优化通过 SSOptimizer 的 `-javaagent` ASM 注入实现，**不修改 DCR 的任何文件**。
+本优化通过 NanoForge 的 RFB/LaunchWrapper transformer 链实施 ASM 改写，压缩方法通过 Mixin 替换，**不修改 DCR 的任何文件**。
 
 ## 根因（Profile + 字节码双证据）
 
@@ -38,24 +33,23 @@
 
 因此循环第 k 次序列化/压缩 k 条记录，∑k = N(N+1)/2 ⇒ **O(N²)**。命中战报上限（`removeOldestEntriesIfOverSize`>0）或有过期模拟记录（`removeAgedSimulationData`>0）或数据损坏（`dataIsCorrupt`）时**每次读档都触发**，N≈上限，实测约 16.3 s。
 
-> 同一 `saveCombatResult` 亦被每场战斗后（`CampaignEventListener.reportPlayerEngagement` / `SimulationCompleteListener`）调用一次，即每战重序列化+压缩全史（结构性 O(N)/次）——属 L3，本轮不做。
+> 同一 `saveCombatResult` 亦被每场战斗后（`CampaignEventListener.reportPlayerEngagement` / `SimulationCompleteListener`）调用一次，即每战重序列化+压缩全史（结构性 O(N)/次），属 L3，本轮不做。
 
 ## 模块结构
 
 ```
-:agent-api            共享 SPI（无生产依赖）
-  ├─ api.AsmClassProcessor          （从 :app bootstrap 上移）
-  ├─ api.CompositeAsmClassProcessor （从 :app bootstrap 上移；多处理器组合）
-  └─ api.ExternalModOptimizer       （新 SPI：featureKey() + processors()）
-:mod-optimizations    外部模组「性能优化」专属（不含自动化）
-  └─ modopt.dcr.*  （DCR 处理器 + Zstd helper + DcrModOptimizer，经 ServiceLoader 注册）
-:app                  implementation(:agent-api) + runtimeOnly(:mod-optimizations)
-                      SSOptimizerAgent 经 ServiceLoader 装配，-Dssoptimizer.disable.<featureKey> 网关
-(:native    不变)
-(未来 :mod-automation  ASTD 自动化——自动化不属于优化，另开模块)
+:modules:api:sso-api          跨域契约
+  ├─ api.AsmClassProcessor
+  ├─ api.CompositeAsmClassProcessor
+  └─ api.ExternalModOptimizer（featureKey() + processors()）
+:modules:internal:sso-modopt  外部模组优化实现
+  └─ modopt.dcr.*（DCR 处理器、Zstd helper、DcrModOptimizer）
+:modules:internal:sso-app     装配模块
+  implementation(:modules:api:sso-api) + implementation(:modules:internal:sso-modopt)
+  SSOptimizerCorePlugin 直接实例化并注册 DcrModOptimizer，提供 -Dssoptimizer.disable.<featureKey> 总开关
 ```
 
-为何不让模块 `implementation(project(":app"))`：`:app` 的 `jar` 任务是手工胖 agent jar（合并整个 `runtimeClasspath` 的 `zipTree`，`DuplicatesStrategy.EXCLUDE`，写 `Premain-Class`），依赖它会拖整包并成环。故引入中立的 `:agent-api`。`runtimeOnly(:mod-optimizations)` 即可让其类 + `META-INF/services` 并入 `SSOptimizer.jar`（模块依赖经 runtimeClasspath 并入胖 jar 的打包路径已有多模块先例验证）。
+`:modules:internal:sso-app` 的 `jar` 任务合并 `runtimeClasspath` 与 `shade` 依赖生成 `SSOptimizer.jar`。装配模块直接引用外部模组优化实现，不需要服务声明文件。
 
 `ExternalModOptimizer` SPI：
 
@@ -66,27 +60,23 @@ public interface ExternalModOptimizer {
 }
 ```
 
-`SSOptimizerAgent.registerEngineProcessors` 内新增：
+`SSOptimizerCorePlugin.registerExternalModOptimizers` 直接注册 DCR 实现：
 ```java
-for (ExternalModOptimizer opt : ServiceLoader.load(ExternalModOptimizer.class, ExternalModOptimizer.class.getClassLoader())) {
-    if (Boolean.getBoolean("ssoptimizer.disable." + opt.featureKey())) { /* log skip */ continue; }
-    opt.processors().forEach(transformer::registerProcessor);
-}
+registerModOptimizer(registrator, new DcrModOptimizer());
 ```
-（ServiceLoader 的 classloader 用 `ExternalModOptimizer.class.getClassLoader()` = agent/system loader，确保看见 `:mod-optimizations` 实现。）
+
+`registerModOptimizer` 检查 `-Dssoptimizer.disable.<featureKey>`，禁用时记录日志并跳过；启用时遍历 `processors()`，将目标类内部名与处理器逐项注册到 `HybridWeaverTransformer`。
 
 ## 类加载器约束（注入形态的决定因素）
 
-注入进 DCR 的 `INVOKESTATIC helper` 运行在 DCR 的 **mod 类加载器**上下文，而 helper 由 **agent 父加载器**定义。父看不到子（mod）类，故 helper 方法签名只能用双方都可解析的中立类型（游戏 API / JDK / `String` / 基本类型），**不能出现 `CombatResult` 等 mod 类型**——与现有 `AutomationScreenshotHelper`（只收游戏 API 类型）一致。
+跨加载器调用的 helper 方法签名只能使用双方都可解析的中立类型（游戏 API / JDK / `String` / 基本类型），不能出现 `CombatResult` 等 mod 类型，避免 DCR 类型进入 SSOptimizer 的公开方法签名。
 
-已证（workflow 验证）：
-- `SSOptimizer.jar` 仅经 `-javaagent` 加载 → JVM 自动并入 system/app classloader；mod 类加载器父委派可解析 `github/kasuminova/...`。ASTD（Janino loader）与 DCR（jar loader）皆走标准父委派，技术等价。
-- `HybridWeaverTransformer` 是全局 `ClassFileTransformer`，按内部名精确匹配注册表；运行期 remap 由 NanoForge（`NanoRemapTransformer`，消费 SourceSector 全量表）承担，DCR 名不在映射表中 → 对 DCR 是 no-op，不会损坏字节码。
-- `SanitizingTransformer`/`ReflectionSanitizingTransformer` 对 DCR 均 no-op（仅改非法标识符/反射调用点）；`MixinBridgeTransformer` 跳过非 `com/fs/` 且非显式第三方目标的类（DCR 被跳过）。
-- premain 在 `StarfarerLauncher.main` 前装好全部 transformer，早于 DCR 类加载。
-- 注入须用 `COMPUTE_FRAMES` + override `getCommonSuperClass→java/lang/Object`；JDK 25 下 retransform 返回非 null 会强制校验，帧必须正确。
+实现约束：
+- ASM 改写经 NanoForge 的 RFB/LaunchWrapper transformer 链执行，不使用 javaagent 或 `Instrumentation` transformer。
+- `HybridWeaverTransformer` 实现 `IClassTransformer`，按 JVM 内部名精确匹配处理器；`SSOptimizerCorePlugin.onLoad` 调用 `registerAllProcessors` 完成 DCR 处理器注册。
+- L1 使用帧中立编辑、asm-tree 与 `COMPUTE_MAXS`，为新增方法手工维护栈帧，不重算目标类既有方法的栈帧。
 
-## L1 —【核心，默认开，零格式风险】消除 O(N²) 批量重写
+## L1：【核心，默认开，零格式风险】消除 O(N²) 批量重写
 
 向 **`SerializationManager`** 注入合成静态成员（同类内可访问其 private 成员）：
 
@@ -115,18 +105,18 @@ public static void ssoptimizer$flush() {                    // onGameLoad return
 - flush 用 `getAllSavedCombatResults()`（返回被 collect 重建的非空 `_resultCache`），**不**直接 `getstatic _resultCache`（`clearSavedData` 已置 null，靠 collect 重建）。
 - `COMBATRESULTS_KEY` 是编译期常量被内联，flush 须 `ldc "CombatAnalytics_CombatResults_V4"` 字面量。
 - 必须复用 `getSerializer()`（StaxDriver + PureJavaReflectionProvider + 全套 alias）与 `saveValue`（内部 `compress`+Base64），否则写出的 XML/格式 DCR 读不回。
-- 非 trim 路径（offset 211 跳过循环）collect 不被调用，dirty 保持 false，flush no-op，store 不变——无冗余写。
+- 非 trim 路径（offset 211 跳过循环）collect 不被调用，dirty 保持 false，flush no-op，store 不变，无冗余写。
 
 收益：16.3 s ≈→ 0.4 s；**磁盘仍 Deflater 格式，卸载 SSOptimizer 无副作用**。
 
-## L2 —【增益，默认开，可关】压缩层 Deflater(9) → Zstd
+## L2：【增益，默认开，可关】压缩层 Deflater(9) → Zstd
 
 **关键约束：DCR 的 `util/Base64` 是非标准自定义编码**（字母表 `'?'..'~'`，含控制字符分帧逻辑），非 RFC Base64。若在 `SerializationManager.compress/decompress(String):String` 边界 redirect，则旧存档回退读必须忠实复刻这套诡异编解码，风险极高（读错=数据损坏，比性能问题更糟）。
 
 因此 L2 下沉一层，在 **`CompressionUtil.compress(String):byte[]` / `decompress(byte[]):String`** 边界做替换（仅 JDK 类型 `String`/`byte[]`，跨加载器安全）：将 `CompressionUtil` 的这两个方法体改写为委派到 `modopt.dcr.DcrCompressionHelper`。DCR 的自定义 Base64 层原封不动地包在我的字节外（对我透明），helper 只处理 `byte[]`：
 
 - **写**：`compress(xml)` = `Zstd(xml.utf8)`（zstd 帧自带魔数 `28 B5 2F FD`，无需额外前缀）。外层仍由 DCR 的 `Base64.convert(byte[])` 编码、落入存档。
-- **读**：`decompress(bytes)` 先看前 4 字节是否 zstd 魔数 → 是则 Zstd 解；否则按旧 Deflate 流 `Inflater` 解（复刻 `CompressionUtil.decompress` 的 inflate→UTF8）。bytes 由 DCR 的 `Base64.convert(String)` 自定义解码而来——helper 不碰 Base64。
+- **读**：`decompress(bytes)` 先看前 4 字节是否 zstd 魔数 → 是则 Zstd 解；否则按旧 Deflate 流 `Inflater` 解（复刻 `CompressionUtil.decompress` 的 inflate→UTF8）。bytes 由 DCR 的 `Base64.convert(String)` 自定义解码而来，helper 不碰 Base64。
 - **迁移**：旧存档读出后，下一次保存即转 Zstd（单向迁移）。
 
 L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.compress` 自动走 L2，二层一致。L2 仅改 `CompressionUtil`（独立于 L1 改的 SerializationManager/plugin），故各处理器目标类互不相同、**无需 CompositeAsmClassProcessor**。
@@ -135,7 +125,7 @@ L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.co
 
 **权衡（默认开，用户已确认）**：压缩串经游戏 XStream 落入存档文件；卸载 SSOptimizer（或迁移前已存档）后 DCR 原生 `Inflater` 无法解已迁移的 Zstd 串 → 判 `dataIsCorrupt` → 清空战报历史。README 须注明。
 
-## L3 —【未来，结构性】消除每场战后的全史重序列化
+## L3：【未来，结构性】消除每场战后的全史重序列化
 
 改单键大 blob 为追加式/分片存储，需改 DCR 数据模型与存档结构，风险面大，本轮不做。
 
@@ -143,7 +133,7 @@ L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.co
 
 - L1 零格式变更（仍 Deflater），卸载安全。
 - L2 前缀标签 + Deflater 读回退；卸载后丢历史（已接受）。
-- 注入失败模式：HybridWeaver 吞异常返回 null（类不改而非崩溃）→ 处理器内须显式 success/failure 日志，使误注入可观测（遵守 Fail-Fast，不空 catch）。
+- 注入失败模式：`HybridWeaverTransformer` 记录处理器异常并保留当前字节码，处理器仍需记录 success/failure 日志，确保误注入可观测。
 - 字节码 offset / 常量池索引随 DCR 版本变化 → ASM 按方法名+描述符+指令模式匹配，**不**硬编码 offset；处理器 `reader.getClassName().equals(target)` 守卫。
 
 ## 验证方案
@@ -152,7 +142,7 @@ L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.co
    - L1：fixture 模拟「N 次调用 saveCombatResult」的循环 + 一个可观测的「序列化计数器」，断言注入后序列化仅发生 1 次、最终列表与 store 内容等价。
    - L1 synth：断言注入后 SerializationManager 含 `ssoptimizer$collect/flush` 且行为正确。
    - L2：`DcrCompressionHelper` 往返（Zstd 写→读、旧 Deflater 串→读）、前缀识别、迁移；参考 `TerrainTileCompressionHelperTest`。
-   - SPI：`ServiceLoader` 能发现 `DcrModOptimizer`，`processors()` 键覆盖两个目标类（压缩内核已迁移为 Mixin，不在集合内）。
+   - SPI：`SSOptimizerCorePlugin` 直接实例化并注册 `DcrModOptimizer`，`processors()` 键覆盖两个目标类（压缩内核已迁移为 Mixin，不在集合内）。
 2. **jmh**（参考 `SaveXmlWriterQueueBenchmark`）：N=上限的列表，对比「逐条重写 vs 合并一次」「Deflate-9 vs Zstd」吞吐。
 3. **游戏烟测**（pure 装 `/mnt/windows_data/Games/Starsector098-linux-pure`）：
    - `SSOPTIMIZER_GAME_DIR=<pure> ./gradlew deployMod` 部署新 jar；
@@ -163,9 +153,9 @@ L1 的 flush→saveValue→`SerializationManager.compress`→`CompressionUtil.co
 
 ## 实施清单
 
-1. `:agent-api`：建模块 + build.gradle；上移 `AsmClassProcessor`、`CompositeAsmClassProcessor` 到 `api` 包；新增 `ExternalModOptimizer`。
-2. `:app`：`settings.gradle.kts` include；`build.gradle.kts` 加 `implementation(:agent-api)` + `runtimeOnly(:mod-optimizations)`；修 28 改 + 4 加 import；`SSOptimizerAgent` 加 ServiceLoader 装配。
-3. `:mod-optimizations`：建模块 + build.gradle；三个目标类各一处理器——`DcrBatchSaveSynthProcessor`（SerializationManager：注入 `ssoptimizer$collect/flush` + `ssoptimizer$dirty`）、`DcrOnGameLoadProcessor`（plugin：redirect+inject）、`DcrCompressionProcessor`（CompressionUtil：改写 compress/decompress 体委派 helper）；`DcrCompressionHelper`、`DcrModOptimizer` + `META-INF/services`。注入用帧中立编辑 + asm-tree + COMPUTE_MAXS（flush 仅一处 `F_SAME` 帧），避免对复杂既有方法跑 COMPUTE_FRAMES。
+1. `:modules:api:sso-api`：提供 `AsmClassProcessor`、`CompositeAsmClassProcessor` 与 `ExternalModOptimizer` 契约。
+2. `:modules:internal:sso-app`：以 `implementation` 依赖 API 与 `sso-modopt`，由 `SSOptimizerCorePlugin` 直接实例化 `DcrModOptimizer` 并注册其处理器。
+3. `:modules:internal:sso-modopt`：`DcrBatchSaveSynthProcessor` 为 SerializationManager 注入 `ssoptimizer$collect/flush` 与 `ssoptimizer$dirty`，`DcrOnGameLoadProcessor` 对 plugin 执行 redirect 与 inject；`DcrCompressionUtilMixin` 替换 CompressionUtil 的 compress/decompress 方法并委派 `DcrCompressionHelper`。ASM 处理器使用帧中立编辑、asm-tree 与 `COMPUTE_MAXS`，新增方法手工维护栈帧。
 4. TDD + jmh。
-5. `./gradlew :app:jar` 构建；`deployMod` 部署 pure；烟测取数。
+5. `./gradlew :modules:internal:sso-app:jar` 构建；`deployMod` 部署 pure；烟测取数。
 6. README 增 L2 卸载权衡说明。

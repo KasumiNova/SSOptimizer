@@ -10,7 +10,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class NativeStrokedRasterizerTest {
+class NativeStrokedRasterizerIT {
     private static final float PIXEL_SIZE = 24.0f;
     private static final int   BASELINE   = 24;
     private static final float STROKE_PX  = 2.0f;
@@ -49,11 +49,12 @@ class NativeStrokedRasterizerTest {
     static void createFace() {
         Assumptions.assumeTrue(fontPath != null && Files.isRegularFile(fontPath),
                 "测试字体 game-fonts/ttf/MiSans-Regular.ttf 不存在");
-        Assumptions.assumeTrue(NativeFontRasterizer.isAvailable(),
-                "native font 栅格化后端不可用（未构建 libssoptimizer_font.so 或 FreeType 缺失）");
+        assertTrue(NativeFontRasterizer.isAvailable(),
+                "native font 栅格化后端必须可用；nativeIT 已依赖 libssoptimizer_font.so release 产物构建");
 
         faceHandle = NativeFontRasterizer.createFace(fontPath, PIXEL_SIZE, true);
-        Assumptions.assumeTrue(faceHandle != 0L, "createFace 失败");
+        assertTrue(faceHandle != 0L,
+                "createFace 失败，无法创建 native 字体句柄: " + fontPath + ", pixelSize=" + PIXEL_SIZE);
     }
 
     @AfterAll

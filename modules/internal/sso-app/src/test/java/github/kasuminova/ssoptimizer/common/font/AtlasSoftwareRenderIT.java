@@ -140,8 +140,8 @@ class AtlasSoftwareRenderIT {
         Assumptions.assumeTrue(Files.isRegularFile(ttfPath), "测试字体不存在: " + ttfPath);
         Assumptions.assumeTrue(Files.isRegularFile(misansPath), "测试字体不存在: " + misansPath);
         Assumptions.assumeTrue(Files.isRegularFile(fntPath), "原版 fnt fixture 不存在: " + fntPath);
-        Assumptions.assumeTrue(NativeFontRasterizer.isAvailable(),
-                "native font 栅格化后端不可用（未构建 libssoptimizer_font.so）");
+        assertTrue(NativeFontRasterizer.isAvailable(),
+                "native font 栅格化后端必须可用；nativeIT 已依赖 libssoptimizer_font.so release 产物构建");
 
         if (Files.isDirectory(dumpDir)) {
             try (var stream = Files.list(dumpDir)) {
@@ -943,9 +943,9 @@ class AtlasSoftwareRenderIT {
         final float cjkPixelSize = provider.calibratedPixelSize(misansPath, 1000);
         final int baseline = Math.round(fixtureFont.getBase());
         final long face = NativeFontRasterizer.createFace(ttfPath, pixelSize, true);
-        assertTrue(face != 0L);
+        assertTrue(face != 0L, "createFace(lte50549) 失败，pixelSize=" + pixelSize);
         final long cjkFace = NativeFontRasterizer.createFace(misansPath, cjkPixelSize, true);
-        assertTrue(cjkFace != 0L);
+        assertTrue(cjkFace != 0L, "createFace(MiSans) 失败，pixelSize=" + cjkPixelSize);
         try {
             final Random random = new Random(42);
             final List<Integer> sampled = new ArrayList<>(slotted);

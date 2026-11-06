@@ -1,4 +1,5 @@
 #include "github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative.h"
+#include "github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime.h"
 
 #include <jni.h>
 
@@ -302,6 +303,13 @@ jstring newString(JNIEnv* env,
 }
 
 } // namespace
+
+#if defined(_WIN32)
+extern "C" JNIEXPORT jint JNICALL
+Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeImeAbiVersion(JNIEnv*, jclass) {
+    return static_cast<jint>(github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_NATIVE_ABI_VERSION);
+}
+#endif
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeIsSupported(JNIEnv* env,

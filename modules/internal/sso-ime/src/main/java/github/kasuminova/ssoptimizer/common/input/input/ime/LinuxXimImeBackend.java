@@ -1,18 +1,21 @@
 package github.kasuminova.ssoptimizer.common.input.ime;
 
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
+import org.apache.log4j.Logger;
 
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
 public final class LinuxXimImeBackend implements ImeBackend {
+    private static final Logger LOGGER = Logger.getLogger(LinuxXimImeBackend.class);
     private static final int DEFAULT_INPUT_STYLE = 0;
 
     private final LinuxXimNativeBridge bridge;
     private final BooleanSupplier      nativeLoadedSupplier;
 
-    private volatile long   contextHandle;
-    private volatile String lastAttachFailureReason = "";
+    private volatile long    contextHandle;
+    private volatile String  lastAttachFailureReason = "";
+    private volatile boolean nativeLinkFailed;
 
     public LinuxXimImeBackend() {
         this(LinuxXimNative.bridge(), () -> NativeRuntime.loadModule("ime"));
@@ -42,7 +45,17 @@ public final class LinuxXimImeBackend implements ImeBackend {
 
     @Override
     public boolean isAvailable() {
-        return isLinux() && nativeLoadedSupplier.getAsBoolean() && bridge.nativeIsSupported();
+        if (!isLinux() || nativeLinkFailed || !nativeLoadedSupplier.getAsBoolean()) {
+            return false;
+        }
+        try {
+            return bridge.nativeIsSupported();
+        } catch (UnsatisfiedLinkError e) {
+            nativeLinkFailed = true;
+            lastAttachFailureReason = "native-link-error";
+            LOGGER.error("[SSOptimizer] Linux XIM native support probe link failed; backend disabled.", e);
+            return false;
+        }
     }
 
     @Override

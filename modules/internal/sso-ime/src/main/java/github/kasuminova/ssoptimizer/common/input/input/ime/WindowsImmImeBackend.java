@@ -1,17 +1,21 @@
 package github.kasuminova.ssoptimizer.common.input.ime;
 
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
+import org.apache.log4j.Logger;
 
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
 public final class WindowsImmImeBackend implements ImeBackend {
+    private static final Logger LOGGER = Logger.getLogger(WindowsImmImeBackend.class);
+
     private final WindowsImmNativeBridge bridge;
     private final BooleanSupplier        nativeLoadedSupplier;
     private final BooleanSupplier        windowsSupplier;
 
-    private volatile long   contextHandle;
-    private volatile String lastAttachFailureReason = "";
+    private volatile long    contextHandle;
+    private volatile String  lastAttachFailureReason = "";
+    private volatile boolean nativeLinkFailed;
 
     public WindowsImmImeBackend() {
         this(WindowsImmNative.bridge(), () -> NativeRuntime.loadModule("ime"), WindowsImmImeBackend::isWindows);
@@ -43,7 +47,17 @@ public final class WindowsImmImeBackend implements ImeBackend {
 
     @Override
     public boolean isAvailable() {
-        return windowsSupplier.getAsBoolean() && nativeLoadedSupplier.getAsBoolean() && bridge.nativeIsSupported();
+        if (!windowsSupplier.getAsBoolean() || nativeLinkFailed || !nativeLoadedSupplier.getAsBoolean()) {
+            return false;
+        }
+        try {
+            return bridge.nativeIsSupported();
+        } catch (UnsatisfiedLinkError e) {
+            nativeLinkFailed = true;
+            lastAttachFailureReason = "native-link-error";
+            LOGGER.error("[SSOptimizer] Windows IMM native support probe link failed; backend disabled.", e);
+            return false;
+        }
     }
 
     @Override

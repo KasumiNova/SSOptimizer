@@ -1,4 +1,5 @@
 #include "github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer.h"
+#include "github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime.h"
 
 #include <algorithm>
 #include <cmath>
@@ -398,6 +399,11 @@ jobject rasterizeGlyphStroked(JNIEnv* env,
 }
 #endif
 
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeFontAbiVersion(JNIEnv*, jclass) {
+    return static_cast<jint>(github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_NATIVE_ABI_VERSION);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL

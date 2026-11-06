@@ -36,9 +36,14 @@ public final class NativeTextureCompressor {
                 return nativeBackendSupported;
             }
 
-            boolean supported = nativeIsSupported();
-            nativeBackendSupported = supported;
-            return supported;
+            try {
+                boolean supported = nativeIsSupported();
+                nativeBackendSupported = supported;
+                return supported;
+            } catch (UnsatisfiedLinkError e) {
+                markUnavailable("support probe", e);
+                return false;
+            }
         }
     }
 
@@ -60,10 +65,19 @@ public final class NativeTextureCompressor {
         }
         try {
             return nativeCompress(format, rgbaPixels, width, height, mipLevels, quality, useAlpha);
+        } catch (UnsatisfiedLinkError e) {
+            markUnavailable("compression", e);
+            return null;
         } catch (RuntimeException e) {
             LOGGER.warn("[SSOptimizer] native BC 压缩失败: format=" + format + " " + width + "x" + height, e);
             return null;
         }
+    }
+
+    private static void markUnavailable(final String operation, final UnsatisfiedLinkError error) {
+        nativeBackendSupported = false;
+        LOGGER.error("[SSOptimizer] Native texture compressor " + operation
+                + " link failed; compressor disabled.", error);
     }
 
     private static native boolean nativeIsSupported();

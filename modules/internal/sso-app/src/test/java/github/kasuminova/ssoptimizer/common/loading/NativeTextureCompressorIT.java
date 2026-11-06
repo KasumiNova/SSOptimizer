@@ -1,6 +1,5 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.BufferUtils;
@@ -26,8 +25,8 @@ class NativeTextureCompressorIT {
         final Path lib = Path.of(configured != null && !configured.isBlank()
                 ? configured
                 : DEFAULT_LIB_PATH).toAbsolutePath().normalize();
-        Assumptions.assumeTrue(Files.isRegularFile(lib),
-                "native texcompress 产物缺失，跳过集成测试: " + lib);
+        assertTrue(Files.isRegularFile(lib),
+                "native texcompress release 产物必须存在；nativeIT 已依赖 assembleRelease 构建: " + lib);
         System.setProperty("ssoptimizer.native.path.texcompress", lib.toString());
     }
 

@@ -1,7 +1,7 @@
 package github.kasuminova.ssoptimizer.common.save;
 
-import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
-import com.thoughtworks.xstream.mapper.Mapper;
+import com.thoughtworks.xstream.core.SequenceGenerator;
+import org.apache.log4j.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class XStreamReferenceIdHelper {
     static final String MAX_PRECOMPUTED_REFERENCE_ID_PROPERTY = "ssoptimizer.save.referenceid.cache.max";
 
+    private static final Logger LOGGER = Logger.getLogger(XStreamReferenceIdHelper.class);
     private static final int REFERENCE_ID_CHUNK_SHIFT = 16;
     private static final int REFERENCE_ID_CHUNK_SIZE = 1 << REFERENCE_ID_CHUNK_SHIFT;
     private static final int REFERENCE_ID_CHUNK_MASK = REFERENCE_ID_CHUNK_SIZE - 1;
@@ -28,20 +29,14 @@ public final class XStreamReferenceIdHelper {
     private static volatile int precomputedReferenceIdLimit = REFERENCE_ID_CHUNK_SIZE;
     private static volatile CompletableFuture<Void> warmupFuture;
 
-    private static final Class<?> SEQUENCE_GENERATOR_CLASS = resolveSequenceGeneratorClass();
+    private static final Class<SequenceGenerator> SEQUENCE_GENERATOR_CLASS = SequenceGenerator.class;
     private static final VarHandle SEQUENCE_COUNTER_HANDLE = resolveSequenceCounterHandle();
-    private static final Class<?> TREE_MARSHALLER_CLASS = resolveTreeMarshallerClass();
-    private static final VarHandle TREE_MARSHALLER_MAPPER_HANDLE = resolveTreeMarshallerMapperHandle();
-    private static final VarHandle TREE_MARSHALLER_WRITER_HANDLE = resolveTreeMarshallerWriterHandle();
 
     private XStreamReferenceIdHelper() {
     }
 
     public static boolean supportsOptimizedIds(final Object generator) {
-        return generator != null
-                && SEQUENCE_GENERATOR_CLASS != null
-                && SEQUENCE_COUNTER_HANDLE != null
-                && generator.getClass() == SEQUENCE_GENERATOR_CLASS;
+        return generator != null && generator.getClass() == SEQUENCE_GENERATOR_CLASS;
     }
 
     public static int readSequenceCounter(final Object generator) {
@@ -53,21 +48,6 @@ public final class XStreamReferenceIdHelper {
 
     public static String nextReferenceId(final int value) {
         return toCompactString(value);
-    }
-
-    public static String resolveIdAttributeAlias(final Object marshaller) {
-        final Mapper mapper = readMapper(marshaller);
-        return mapper == null ? null : mapper.aliasForSystemAttribute("id");
-    }
-
-    public static void writeReferenceIdAttribute(final Object marshaller,
-                                                 final String attributeName,
-                                                 final Object item) {
-        final HierarchicalStreamWriter writer = readWriter(marshaller);
-        if (writer == null || attributeName == null) {
-            return;
-        }
-        writer.addAttribute(attributeName, item.toString());
     }
 
     static String toCompactString(final int value) {
@@ -231,77 +211,21 @@ public final class XStreamReferenceIdHelper {
         return chunk;
     }
 
-    private static Class<?> resolveSequenceGeneratorClass() {
-        try {
-            return Class.forName("com.thoughtworks.xstream.core.SequenceGenerator");
-        } catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    private static Class<?> resolveTreeMarshallerClass() {
-        try {
-            return Class.forName("com.thoughtworks.xstream.core.TreeMarshaller");
-        } catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
     private static VarHandle resolveSequenceCounterHandle() {
-        final Class<?> generatorClass = SEQUENCE_GENERATOR_CLASS;
-        if (generatorClass == null) {
-            return null;
-        }
-
         try {
-            return MethodHandles.privateLookupIn(generatorClass, MethodHandles.lookup())
-                    .findVarHandle(generatorClass, "counter", int.class);
-        } catch (ReflectiveOperationException e) {
-            return null;
+            return MethodHandles.privateLookupIn(SEQUENCE_GENERATOR_CLASS, MethodHandles.lookup())
+                    .findVarHandle(SEQUENCE_GENERATOR_CLASS, "counter", int.class);
+        } catch (final ReflectiveOperationException | SecurityException e) {
+            throw initializationFailure("SequenceGenerator.counter 字段解析失败", e);
         }
     }
 
-    private static VarHandle resolveTreeMarshallerMapperHandle() {
-        final Class<?> treeMarshallerClass = TREE_MARSHALLER_CLASS;
-        if (treeMarshallerClass == null) {
-            return null;
-        }
-
-        try {
-            return MethodHandles.privateLookupIn(treeMarshallerClass, MethodHandles.lookup())
-                    .findVarHandle(treeMarshallerClass, "mapper", Mapper.class);
-        } catch (ReflectiveOperationException e) {
-            return null;
-        }
-    }
-
-    private static VarHandle resolveTreeMarshallerWriterHandle() {
-        final Class<?> treeMarshallerClass = TREE_MARSHALLER_CLASS;
-        if (treeMarshallerClass == null) {
-            return null;
-        }
-
-        try {
-            return MethodHandles.privateLookupIn(treeMarshallerClass, MethodHandles.lookup())
-                    .findVarHandle(treeMarshallerClass, "writer", HierarchicalStreamWriter.class);
-        } catch (ReflectiveOperationException e) {
-            return null;
-        }
-    }
-
-    private static Mapper readMapper(final Object marshaller) {
-        final VarHandle handle = TREE_MARSHALLER_MAPPER_HANDLE;
-        if (handle == null || marshaller == null) {
-            return null;
-        }
-        return (Mapper) handle.get(marshaller);
-    }
-
-    private static HierarchicalStreamWriter readWriter(final Object marshaller) {
-        final VarHandle handle = TREE_MARSHALLER_WRITER_HANDLE;
-        if (handle == null || marshaller == null) {
-            return null;
-        }
-        return (HierarchicalStreamWriter) handle.get(marshaller);
+    private static ExceptionInInitializerError initializationFailure(final String reason,
+                                                                     final Throwable cause) {
+        final String message = "无法初始化 XStream 引用 ID 优化: " + reason;
+        LOGGER.error("[SSOptimizer] " + message, cause);
+        final ExceptionInInitializerError failure = new ExceptionInInitializerError(message);
+        failure.initCause(cause);
+        return failure;
     }
 }

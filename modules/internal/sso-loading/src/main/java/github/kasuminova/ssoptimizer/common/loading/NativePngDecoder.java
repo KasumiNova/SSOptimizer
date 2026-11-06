@@ -1,11 +1,14 @@
 package github.kasuminova.ssoptimizer.common.loading;
 
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
+import org.apache.log4j.Logger;
 
 import java.awt.image.*;
 import java.io.IOException;
 
 public final class NativePngDecoder {
+    private static final Logger LOGGER = Logger.getLogger(NativePngDecoder.class);
+
     private static final String DISABLE_PROPERTY = "ssoptimizer.disable.nativepngdecoder";
     private static final int[]  ARGB_MASKS       = {
             0x00FF0000,
@@ -35,7 +38,11 @@ public final class NativePngDecoder {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("native PNG decoder unavailable");
         }
-        return decodePng0(imageBytes);
+        try {
+            return decodePng0(imageBytes);
+        } catch (UnsatisfiedLinkError e) {
+            throw unavailable("decode", e);
+        }
     }
 
     static NativeDecodedImage benchmarkBridge(final byte[] imageBytes,
@@ -44,7 +51,11 @@ public final class NativePngDecoder {
         if (!isAvailable()) {
             throw new UnsupportedOperationException("native PNG decoder unavailable");
         }
-        return benchmarkBridge0(imageBytes, width, height);
+        try {
+            return benchmarkBridge0(imageBytes, width, height);
+        } catch (UnsatisfiedLinkError e) {
+            throw unavailable("benchmark bridge", e);
+        }
     }
 
     public static boolean isAvailable() {
@@ -65,10 +76,26 @@ public final class NativePngDecoder {
                 return nativeBackendSupported;
             }
 
-            boolean supported = nativeIsSupported();
-            nativeBackendSupported = supported;
-            return supported;
+            try {
+                boolean supported = nativeIsSupported();
+                nativeBackendSupported = supported;
+                return supported;
+            } catch (UnsatisfiedLinkError e) {
+                markUnavailable("support probe", e);
+                return false;
+            }
         }
+    }
+
+    private static UnsupportedOperationException unavailable(final String operation,
+                                                              final UnsatisfiedLinkError error) {
+        markUnavailable(operation, error);
+        return new UnsupportedOperationException("native PNG decoder unavailable", error);
+    }
+
+    private static void markUnavailable(final String operation, final UnsatisfiedLinkError error) {
+        nativeBackendSupported = false;
+        LOGGER.error("[SSOptimizer] Native PNG decoder " + operation + " link failed; decoder disabled.", error);
     }
 
     private static BufferedImage toBufferedImage(final NativeDecodedImage decoded) {

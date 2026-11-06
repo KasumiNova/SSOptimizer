@@ -3,8 +3,11 @@ package github.kasuminova.ssoptimizer.api.loading;
 /**
  * 按原始资源路径查询舰船或武器贴图在图集中的区域，供渲染模块重定向纹理绑定与 UV。
  * <p>
- * 查询无副作用且位于逐帧路径，实现须支持渲染线程高频调用，不得阻塞或触发资源加载。
- * 未注册 = 图集查询不可用；可选渲染路径应保留原始纹理与 UV，强制依赖图集的路径应报告服务缺失。
+ * 服务由装配模块始终注册。可选探测路径通过 {@code ServiceRegistry.getOrNull} 获取服务，
+ * 未注册等价于贴图未入图集；强制重映射路径通过 {@code ServiceRegistry.require} 获取服务，
+ * 未注册属于装配错误，抛出 {@link IllegalStateException}。
+ * <p>
+ * 查询在渲染线程的逐帧路径执行，无副作用；实现须支持高频调用，不得阻塞或触发资源加载。
  */
 public interface WeaponAtlasLookup {
 

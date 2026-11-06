@@ -6,6 +6,8 @@
 
 #include <jni.h>
 
+#include "github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime.h"
+
 #if defined(SSOPTIMIZER_HAVE_LIBPNG) && __has_include(<png.h>)
 #include <png.h>
 #define SSOPTIMIZER_NATIVE_LIBPNG_AVAILABLE 1
@@ -247,6 +249,11 @@ jobject benchmarkBridge(JNIEnv* env,
 }
 #endif
 
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_nativeLoadingAbiVersion(JNIEnv*, jclass) {
+    return static_cast<jint>(github_kasuminova_ssoptimizer_common_render_runtime_NativeRuntime_NATIVE_ABI_VERSION);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
