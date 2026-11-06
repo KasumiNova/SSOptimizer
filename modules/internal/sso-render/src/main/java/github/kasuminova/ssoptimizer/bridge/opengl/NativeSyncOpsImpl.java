@@ -1,8 +1,11 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
+import org.apache.log4j.Logger;
 
 final class NativeSyncOpsImpl implements RealSyncOps {
+    private static final Logger LOGGER = Logger.getLogger(NativeSyncOpsImpl.class);
+
     static final NativeSyncOpsImpl INSTANCE = new NativeSyncOpsImpl();
 
     static {
@@ -13,7 +16,12 @@ final class NativeSyncOpsImpl implements RealSyncOps {
     }
 
     static boolean isSupported() {
-        return nativeSyncOpsSupported();
+        try {
+            return nativeSyncOpsSupported();
+        } catch (UnsatisfiedLinkError e) {
+            LOGGER.error("[SSOptimizer] Native sync support probe link failed; retaining LWJGL sync ops.", e);
+            return false;
+        }
     }
 
     @Override
