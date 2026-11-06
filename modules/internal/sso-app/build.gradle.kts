@@ -141,7 +141,13 @@ tasks.test {
     exclude("**/*IT.class")
     dependsOn(tasks.named("jar"))
     dependsOn("modProduction")
+    dependsOn(":stageWindowsOverlay")
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
+    doFirst {
+        systemProperty("ssoptimizer.coremod.jar", tasks.named<Jar>("jar").get().archiveFile.get().asFile.absolutePath)
+        systemProperty("ssoptimizer.windowsOverlay.dir",
+            rootProject.layout.buildDirectory.dir("user-package/windows-overlay").get().asFile.absolutePath)
+    }
     // JDK 25 的 XStream 集成测试需要与游戏运行时相同的模块开放。
     jvmArgs(
         "--add-opens=java.base/java.util=ALL-UNNAMED",

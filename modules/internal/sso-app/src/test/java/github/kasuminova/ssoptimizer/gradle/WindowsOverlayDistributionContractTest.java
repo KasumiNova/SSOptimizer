@@ -2,60 +2,64 @@ package github.kasuminova.ssoptimizer.gradle;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
+import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WindowsOverlayDistributionContractTest {
-
-    private static Path repositoryRoot() {
-        Path current = Path.of("").toAbsolutePath().normalize();
-        while (current != null) {
-            if (current.resolve("settings.gradle.kts").toFile().isFile()
-                    && current.resolve("build.gradle.kts").toFile().isFile()
-                    && current.resolve("modules/internal/sso-app").toFile().isDirectory()) {
-                return current;
-            }
-            current = current.getParent();
-        }
-        throw new IllegalStateException("未能定位 SSOptimizer 仓库根目录");
+    private static Path overlayRoot() {
+        final String dir = System.getProperty("ssoptimizer.windowsOverlay.dir");
+        assertNotNull(dir, "构建脚本必须通过 ssoptimizer.windowsOverlay.dir 传入 stageWindowsOverlay 产物目录");
+        final Path root = Path.of(dir);
+        assertTrue(Files.isDirectory(root), "stageWindowsOverlay 产物目录不存在: " + root);
+        return root;
     }
 
     @Test
-    void repositoryKeepsWindowsOverlayInstallerArtifacts() throws Exception {
-        Path repoRoot = repositoryRoot();
-        Path buildScript = repoRoot.resolve("build.gradle.kts");
-        Path releaseWorkflow = repoRoot.resolve(".github/workflows/release.yml");
-        Path readme = repoRoot.resolve("README.md");
-        Path log4jConfig = repoRoot.resolve("log4j.properties");
+    void modDirectoryIsStagedUnderRootMods() throws IOException {
+        final Path mod = overlayRoot().resolve("mods/ssoptimizer");
+        assertTrue(Files.isRegularFile(mod.resolve("mod_info.json")), "缺少 mod_info.json");
+        assertTrue(Files.isRegularFile(mod.resolve("nanoforge.mod.toml")), "缺少 nanoforge.mod.toml");
+        assertTrue(Files.isRegularFile(mod.resolve("jars/SSOptimizer.jar")), "缺少模组 jar");
 
-        assertTrue(Files.exists(log4jConfig), "必须提供随安装包分发的 log4j.properties");
+        final Path fonts = mod.resolve("fonts");
+        assertTrue(Files.isDirectory(fonts), "缺少 fonts 目录");
+        try (Stream<Path> files = Files.list(fonts)) {
+            assertTrue(files.anyMatch(file -> file.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".ttf")),
+                    "fonts 目录必须包含 TTF 字体");
+        }
+    }
 
-        String buildScriptText = Files.readString(buildScript);
-        assertTrue(buildScriptText.contains("stageWindowsOverlay"), "必须提供 Windows overlay staging 任务");
-        assertTrue(buildScriptText.contains("packageWindowsOverlayZip"), "必须提供 Windows overlay 打包任务");
-        assertTrue(buildScriptText.contains("into(\"mods/$modId\")"), "Windows overlay 必须将模组放在根 mods 目录");
-        assertFalse(buildScriptText.contains("into(\"starsector-core/mods/$modId\")"), "Windows overlay 不应把模组错误打到 starsector-core/mods");
-        assertTrue(buildScriptText.contains("into(\"mods/coremods\")"), "Windows overlay 必须包含 NanoForge coremod 入口 jar");
-        assertTrue(buildScriptText.contains("into(\"fonts\")"), "模组打包必须包含 fonts 目录");
-        assertTrue(buildScriptText.contains("from(log4jConfigFile)"), "overlay 打包必须包含 log4j.properties");
+    @Test
+    void coreModEntryJarIsIdenticalToModJar() throws IOException {
+        final Path root = overlayRoot();
+        final Path entry = root.resolve("mods/coremods/SSOptimizer.jar");
+        assertTrue(Files.isRegularFile(entry), "缺少 NanoForge coremod 入口 jar");
+        assertEquals(-1L, Files.mismatch(entry, root.resolve("mods/ssoptimizer/jars/SSOptimizer.jar")),
+                "coremod 入口 jar 必须与模组目录内的 jar 内容一致");
+    }
 
-        String releaseWorkflowText = Files.readString(releaseWorkflow);
-        assertTrue(releaseWorkflowText.contains("mods/coremods"), "Release workflow 必须包含 NanoForge coremod 入口 jar");
-        assertTrue(releaseWorkflowText.contains("WINDOWS_MOD_STAGE=\"${WINDOWS_STAGE}/mods/${MOD_ID}\""), "Release workflow 必须将 Windows 模组放在根 mods 目录");
-        assertTrue(releaseWorkflowText.contains("cp game-fonts/ttf/* \"${LINUX_MOD_STAGE}/fonts/\""), "Release workflow 必须将 Linux TTF 打包到模组 fonts 目录");
-        assertTrue(releaseWorkflowText.contains("cp game-fonts/ttf/* \"${WINDOWS_MOD_STAGE}/fonts/\""), "Release workflow 必须将 Windows TTF 打包到模组 fonts 目录");
-        assertTrue(releaseWorkflowText.contains("cp log4j.properties \"${LINUX_STAGE}/log4j.properties\""), "Release workflow 必须为 Linux 安装包写入 log4j.properties");
-        assertTrue(releaseWorkflowText.contains("cp log4j.properties \"${WINDOWS_STAGE}/starsector-core/log4j.properties\""), "Release workflow 必须为 Windows 启动目录写入 log4j.properties");
+    @Test
+    void log4jConfigIsPlacedInStarsectorCore() throws IOException {
+        final String rootDir = System.getProperty("project.rootDir");
+        assertNotNull(rootDir, "缺少 project.rootDir");
+        final Path staged = overlayRoot().resolve("starsector-core/log4j.properties");
+        assertTrue(Files.isRegularFile(staged), "缺少 starsector-core/log4j.properties");
+        assertEquals(-1L, Files.mismatch(staged, Path.of(rootDir, "log4j.properties")),
+                "安装包内的 log4j.properties 必须与仓库根目录一致");
+    }
 
-        String readmeText = Files.readString(readme);
-        assertTrue(readmeText.contains("mods/coremods/SSOptimizer.jar"), "README 必须说明 coremod 入口 jar 的安装位置");
-        assertTrue(readmeText.contains("mods/ssoptimizer/fonts"), "README 必须说明 TTF 字体位于模组目录下");
-        assertTrue(readmeText.contains("解压后应得到 `mods/ssoptimizer/`"), "README 必须说明 Windows 模组位于根 mods 目录");
-        assertFalse(readmeText.contains("starsector-core/mods/ssoptimizer"), "README 不应继续声明 Windows 模组位于 starsector-core/mods");
-        assertTrue(readmeText.contains("log4j.properties"), "README 必须说明安装包携带 log4j 配置文件");
-        assertTrue(readmeText.contains("packageWindowsOverlayZip"), "README 必须说明 Windows overlay 打包入口");
+    @Test
+    void overlayContainsNoLinuxNativesAndNoMisplacedModDirectory() {
+        final Path root = overlayRoot();
+        assertFalse(Files.exists(root.resolve("mods/ssoptimizer/native/linux")), "Windows overlay 不应包含 Linux 原生库");
+        assertFalse(Files.exists(root.resolve("starsector-core/mods")), "Windows overlay 不应把模组放进 starsector-core/mods");
     }
 }
