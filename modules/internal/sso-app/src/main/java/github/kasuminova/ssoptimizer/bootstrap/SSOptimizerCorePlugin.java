@@ -16,7 +16,6 @@ import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
@@ -125,7 +124,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "shipmasteryreflectionloader", ShipMasteryReflectionLoaderProcessor.TARGET_CLASS, new ShipMasteryReflectionLoaderProcessor());
         registerCompositeIf(registrator,
                 GameClassNames.RESOURCE_LOADER,
-                new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()),
                 new ProcessorToggle("caseinsensitiveresource", new CaseInsensitiveResourceFallbackProcessor()));
         registerIf(registrator, "shipdamagestagetwo", GameClassNames.SHIP, new ShipDamageStageTwoProcessor());
         registerIf(registrator, "collisionimpulseclamp", GameClassNames.COLLISION_HANDLER_IMPL, new CollisionImpulseClampProcessor());

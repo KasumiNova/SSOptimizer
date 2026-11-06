@@ -16,27 +16,6 @@ class RealBytecodeIntegrationTest {
     }
 
     @Test
-    void resourceLoaderRewritesRealFileAccessBytecode() {
-        var processor = new github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor();
-        byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor.TARGET_CLASS);
-        assumeTrue(original != null, "Resource loader class not on classpath");
-
-        byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "Resource loader processor should handle real resource-loader bytecode");
-        assertNotNull(rewritten, "Processor should rewrite File metadata accesses in the resource loader");
-
-        int helperCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor.HELPER_OWNER,
-                "exists", "(Ljava/io/File;)Z");
-        assertTrue(helperCalls > 0, "Rewritten resource loader should call ResourceFileCache.exists");
-
-        int listCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor.HELPER_OWNER,
-                "listFiles", "(Ljava/io/File;Ljava/io/FilenameFilter;)[Ljava/io/File;");
-        assertTrue(listCalls > 0, "Rewritten resource loader should call ResourceFileCache.listFiles for filtered directory scans");
-    }
-
-    @Test
     void textureLoaderRewritesRealPixelConversionBytecode() {
         var processor = new github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor();
         byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.TARGET_CLASS);

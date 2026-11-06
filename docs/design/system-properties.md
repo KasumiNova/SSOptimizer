@@ -32,7 +32,6 @@
 | `ssoptimizer.disable.settingstextfieldime` | `SettingsTextFieldFactoryMixin` | 跳过设置页文本域 IME 注入（Mixin 织入期门控） |
 | `ssoptimizer.disable.textfieldimplime` | `TextFieldImplementationMixin` | 跳过文本域实现 IME 注入（Mixin 织入期门控） |
 | `ssoptimizer.disable.originalfontstream` | `OriginalFontResourceStreamMixin` | 跳过原版字体资源流替换（Mixin 织入期门控） |
-| `ssoptimizer.disable.resourcefilecache` | `ResourceLoaderFileAccessProcessor` | 跳过 ResourceLoader 文件访问替换（Composite） |
 | `ssoptimizer.disable.caseinsensitiveresource` | `CaseInsensitiveResourceFallbackProcessor` | 跳过大小写不敏感资源回退替换（Composite） |
 
 > 注：批次 1 已把 Sprite/BitmapFontRenderer/TexturedStrip/ContrailEngine/CollisionGridQuery/粒子三件套/TextureObject/LoadingUtils/LinuxEvent 的处理器迁移为 Mixin（`mixins.ssoptimizer.json` 对应条目），相关 `ssoptimizer.disable.*` 开关随 ASM 注册一并移除，不再可配置。
@@ -101,7 +100,6 @@
 | `ssoptimizer.loading.workerClass` | `github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadWorker` | 自定义延迟图片预加载 worker 类（须实现 `Runnable` 且有无参构造） | `common/loading/ParallelImagePreloadCoordinator.java:57` |
 | `ssoptimizer.loading.parallelism` | `max(2, CPU 核数/2)`（下限 1） | 延迟图片预加载并行度；Wave 3 起兼作 Spec DAG 加载与 Variant 解析（`SpecLoadScheduler` / `SpecStoreMixin.loadVariants`）的 Semaphore 最大并发闸门（任务跑在 VtWorkers 虚拟线程上，闸门约束加载期 CPU/磁盘争抢） | `common/loading/ParallelImagePreloadCoordinator.java:77`，`common/loading/SpecLoadScheduler.java` |
 | `ssoptimizer.disable.parallelpreload` | `false` | 禁用并行图片预加载（并行度降为 1） | `common/loading/ParallelImagePreloadCoordinator.java:73` |
-| `ssoptimizer.disable.resourcefilecache` | `false` | 禁用 ResourceLoader 文件元数据缓存（`exists`/`lastModified` 快照）。注意：既是 ASM 处理器开关（见上），又是运行时缓存开关，双重读取 | `common/loading/ResourceFileCache.java:80`，`bootstrap/SSOptimizerCorePlugin.java:104` |
 
 ## 声音加载
 
