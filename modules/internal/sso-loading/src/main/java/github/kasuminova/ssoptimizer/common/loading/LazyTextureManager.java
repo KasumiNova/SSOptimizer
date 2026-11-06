@@ -43,7 +43,7 @@ public final class LazyTextureManager {
     static Path exportTextureCompositionReport(final List<TextureCompositionReport.TextureEntry> entries,
                                                final String outputPath,
                                                final Instant generatedAt) throws IOException {
-        return TextureResidency.exportTextureCompositionReport(entries, outputPath, generatedAt);
+        return TextureManagementReport.exportTextureCompositionReport(entries, outputPath, generatedAt);
     }
 
     public static com.fs.graphics.TextureObject loadTexture(final TextureLoader loader,
@@ -246,7 +246,7 @@ public final class LazyTextureManager {
     static String formatManagementSummary(final List<TextureCompositionReport.TextureEntry> entries,
                                           final long recentlyEvictedTextures,
                                           final long totalEvictedTextures) {
-        return TextureResidency.formatManagementSummary(entries, recentlyEvictedTextures, totalEvictedTextures);
+        return TextureManagementReport.formatManagementSummary(entries, recentlyEvictedTextures, totalEvictedTextures);
     }
 
     static long estimateTextureGpuBytes(final String resourcePath,
