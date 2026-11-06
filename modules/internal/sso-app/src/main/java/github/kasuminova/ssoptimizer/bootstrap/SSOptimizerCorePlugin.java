@@ -1,7 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
-import github.kasuminova.ssoptimizer.api.ExternalModOptimizer;
 import github.kasuminova.ssoptimizer.api.automation.FrameCaptureHook;
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
 import github.kasuminova.ssoptimizer.api.loading.WeaponAtlasLookup;
@@ -28,7 +27,6 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.common.save.UnmarshalPhaseTimer;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.modopt.dcr.DcrModOptimizer;
 import io.github.nanoforged.api.CoreModContext;
 import io.github.nanoforged.api.INanoCorePlugin;
 import org.apache.log4j.Logger;
@@ -47,7 +45,7 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         VanillaLogNoiseConfigurator.configure();
         installRenderThreadSeparation();
         registerModuleServices();
-        registerAllProcessors(HybridWeaverTransformer::registerProcessor);
+        registerEngineProcessors(HybridWeaverTransformer::registerProcessor);
         registerGlobalProcessors();
         DebugServerBootstrap.startIfEnabled();
         LOGGER.info("[SSOptimizer] CoreMod loaded — Engine + AI + loading repair phase active, "
@@ -100,11 +98,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
                 + "GL 调用将经 ASM 重定向录制到 " + RenderQueueImpl.RENDER_THREAD_NAME);
     }
 
-    static void registerAllProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
-        registerEngineProcessors(registrator);
-        registerExternalModOptimizers(registrator);
-    }
-
     static void registerEngineProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
         registerIf(registrator, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
         // LWJGL 由 RFB 系统类加载器加载，Launch 域 transformer 无法改写，必须经 SystemAsmBridge 注册。
@@ -118,24 +111,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "shipmasteryreflectionloader", ShipMasteryReflectionLoaderProcessor.TARGET_CLASS, new ShipMasteryReflectionLoaderProcessor());
         registerIf(registrator, "shipdamagestagetwo", GameClassNames.SHIP, new ShipDamageStageTwoProcessor());
         registerIf(registrator, "collisionimpulseclamp", GameClassNames.COLLISION_HANDLER_IMPL, new CollisionImpulseClampProcessor());
-    }
-
-    private static void registerExternalModOptimizers(BiConsumer<String, AsmClassProcessor> registrator) {
-        registerModOptimizer(registrator, new DcrModOptimizer());
-    }
-
-    private static void registerModOptimizer(BiConsumer<String, AsmClassProcessor> registrator,
-                                             ExternalModOptimizer optimizer) {
-        String featureKey = optimizer.featureKey();
-        if (Boolean.getBoolean("ssoptimizer.disable." + featureKey)) {
-            LOGGER.info("[SSOptimizer] External mod optimizer DISABLED via system property: " + featureKey);
-            return;
-        }
-        optimizer.processors().forEach((className, processor) -> {
-            registrator.accept(className, processor);
-            LOGGER.info("[SSOptimizer] Registered external mod optimizer '" + featureKey
-                    + "' processor for " + className);
-        });
     }
 
     private static void registerGlobalProcessors() {

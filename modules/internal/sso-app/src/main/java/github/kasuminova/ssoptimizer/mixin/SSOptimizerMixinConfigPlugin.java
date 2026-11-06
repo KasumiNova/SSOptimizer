@@ -25,7 +25,9 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
             ".loading.TextureLoaderMixin", "textureloader",
             ".loading.TextureLoaderUploadMixin", "textureloader",
             ".loading.TextureLoaderUploadDirectMixin", "textureloader",
-            ".loading.ResourceLoaderOpenStreamFallbackMixin", "caseinsensitiveresource");
+            ".loading.ResourceLoaderOpenStreamFallbackMixin", "caseinsensitiveresource",
+            ".modopt.dcr.DcrOnGameLoadBatchMixin", "dcr",
+            ".modopt.dcr.DcrSerializationManagerBatchMixin", "dcr");
 
     @Override
     public void onLoad(final String mixinPackage) {

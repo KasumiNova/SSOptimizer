@@ -2,8 +2,6 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import github.kasuminova.ssoptimizer.modopt.dcr.DcrBatchSaveSynthProcessor;
-import github.kasuminova.ssoptimizer.modopt.dcr.DcrOnGameLoadProcessor;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -15,7 +13,7 @@ class EngineProcessorRegistrationTest {
 
     private static Map<String, AsmClassProcessor> collectRegisteredProcessors() {
         Map<String, AsmClassProcessor> processors = new LinkedHashMap<>();
-        SSOptimizerCorePlugin.registerAllProcessors(processors::put);
+        SSOptimizerCorePlugin.registerEngineProcessors(processors::put);
         return processors;
     }
 
@@ -29,22 +27,6 @@ class EngineProcessorRegistrationTest {
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
             assertFalse(processors.containsKey(GameClassNames.STARFARER_LAUNCHER));
-        } finally {
-            restoreProperty(key, original);
-        }
-    }
-
-    @Test
-    void disableDcrSwitchSkipsAllDcrProcessors() {
-        String key = "ssoptimizer.disable.dcr";
-        String original = System.getProperty(key);
-        try {
-            System.setProperty(key, "true");
-
-            Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
-
-            assertFalse(processors.containsKey(DcrBatchSaveSynthProcessor.TARGET_CLASS));
-            assertFalse(processors.containsKey(DcrOnGameLoadProcessor.TARGET_CLASS));
         } finally {
             restoreProperty(key, original);
         }

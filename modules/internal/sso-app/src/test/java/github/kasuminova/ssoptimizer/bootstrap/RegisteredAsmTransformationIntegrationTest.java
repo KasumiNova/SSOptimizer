@@ -33,7 +33,7 @@ class RegisteredAsmTransformationIntegrationTest {
 
     private static Map<String, AsmClassProcessor> registeredProcessors() {
         Map<String, AsmClassProcessor> processors = new LinkedHashMap<>();
-        SSOptimizerCorePlugin.registerAllProcessors(processors::put);
+        SSOptimizerCorePlugin.registerEngineProcessors(processors::put);
         return processors;
     }
 
