@@ -17,6 +17,7 @@ class WindowsDisplayImeProcessorTest {
         final List<String> createKeyboardCalls = new ArrayList<>();
         final List<String> destroyKeyboardCalls = new ArrayList<>();
         final List<String> appActivateCalls = new ArrayList<>();
+        final List<String> createKeyboardFields = new ArrayList<>();
 
         new ClassReader(rewritten).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
@@ -41,11 +42,23 @@ class WindowsDisplayImeProcessorTest {
                             appActivateCalls.add(call);
                         }
                     }
+
+                    @Override
+                    public void visitFieldInsn(final int opcode,
+                                               final String owner,
+                                               final String fieldName,
+                                               final String fieldDesc) {
+                        if ("createKeyboard".equals(name)) {
+                            createKeyboardFields.add(owner + "#" + fieldName + fieldDesc);
+                        }
+                    }
                 };
             }
         }, 0);
 
-        assertTrue(createKeyboardCalls.contains(WindowsDisplayImeProcessor.HOOK_OWNER + "#afterCreateKeyboard(Ljava/lang/Object;)V"));
+        assertTrue(createKeyboardCalls.contains(WindowsDisplayImeProcessor.HOOK_OWNER + "#afterCreateKeyboard(J)V"));
+        assertTrue(createKeyboardFields.contains(WindowsDisplayImeProcessor.TARGET_CLASS + "#hwndJ"),
+                "afterCreateKeyboard 的参数必须取自 WindowsDisplay.hwnd");
         assertTrue(destroyKeyboardCalls.contains(WindowsDisplayImeProcessor.HOOK_OWNER + "#beforeDestroyKeyboard(Ljava/lang/Object;)V"));
         assertTrue(appActivateCalls.contains(WindowsDisplayImeProcessor.HOOK_OWNER + "#onFocusChanged(Ljava/lang/Object;Z)V"));
     }
@@ -54,19 +67,21 @@ class WindowsDisplayImeProcessorTest {
         final ClassWriter cw = new ClassWriter(0);
         cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, WindowsDisplayImeProcessor.TARGET_CLASS, null, "java/lang/Object", null);
 
-        MethodVisitor createKeyboard = cw.visitMethod(Opcodes.ACC_PUBLIC, "createKeyboard", "()V", null, null);
+        cw.visitField(Opcodes.ACC_PRIVATE, "hwnd", "J", null, null).visitEnd();
+
+        final MethodVisitor createKeyboard = cw.visitMethod(Opcodes.ACC_PUBLIC, "createKeyboard", "()V", null, null);
         createKeyboard.visitCode();
         createKeyboard.visitInsn(Opcodes.RETURN);
         createKeyboard.visitMaxs(0, 1);
         createKeyboard.visitEnd();
 
-        MethodVisitor destroyKeyboard = cw.visitMethod(Opcodes.ACC_PUBLIC, "destroyKeyboard", "()V", null, null);
+        final MethodVisitor destroyKeyboard = cw.visitMethod(Opcodes.ACC_PUBLIC, "destroyKeyboard", "()V", null, null);
         destroyKeyboard.visitCode();
         destroyKeyboard.visitInsn(Opcodes.RETURN);
         destroyKeyboard.visitMaxs(0, 1);
         destroyKeyboard.visitEnd();
 
-        MethodVisitor appActivate = cw.visitMethod(Opcodes.ACC_PRIVATE, "appActivate", "(ZJ)V", null, null);
+        final MethodVisitor appActivate = cw.visitMethod(Opcodes.ACC_PRIVATE, "appActivate", "(ZJ)V", null, null);
         appActivate.visitCode();
         appActivate.visitInsn(Opcodes.RETURN);
         appActivate.visitMaxs(0, 4);

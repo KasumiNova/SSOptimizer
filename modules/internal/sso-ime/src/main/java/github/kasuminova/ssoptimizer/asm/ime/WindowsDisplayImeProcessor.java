@@ -5,7 +5,10 @@ import org.objectweb.asm.*;
 
 /**
  * 在 LWJGL WindowsDisplay 中注入 IME 生命周期钩子。
- * org.lwjgl 由系统类加载器加载，Launch 域 Mixin 无法改写。
+ *
+ * <p>Mixin 不可行：org.lwjgl 由 RFB 系统类加载器加载（LaunchClassLoader 构造器硬编码
+ * {@code org.lwjgl.} 为类加载例外），Launch 域 Mixin 不可达，只能经 SystemAsmBridge 改写。
+ * hwnd 为私有字段，由注入字节码在类内读取后传给钩子。</p>
  */
 public final class WindowsDisplayImeProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "org/lwjgl/opengl/WindowsDisplay";
@@ -37,11 +40,11 @@ public final class WindowsDisplayImeProcessor implements AsmClassProcessor {
                 final MethodVisitor delegate = super.visitMethod(access, name, desc, signature, exceptions);
                 if ("createKeyboard".equals(name) && "()V".equals(desc)) {
                     modified[0] = true;
-                    return new ReturnHookMethodVisitor(delegate, "afterCreateKeyboard", "(Ljava/lang/Object;)V");
+                    return new CreateKeyboardHookMethodVisitor(delegate);
                 }
                 if ("destroyKeyboard".equals(name) && "()V".equals(desc)) {
                     modified[0] = true;
-                    return new ReturnHookMethodVisitor(delegate, "beforeDestroyKeyboard", "(Ljava/lang/Object;)V");
+                    return new DestroyKeyboardHookMethodVisitor(delegate);
                 }
                 if ("appActivate".equals(name) && "(ZJ)V".equals(desc)) {
                     modified[0] = true;
@@ -58,23 +61,32 @@ public final class WindowsDisplayImeProcessor implements AsmClassProcessor {
         return modified[0] ? writer.toByteArray() : null;
     }
 
-    private static class ReturnHookMethodVisitor extends MethodVisitor {
-        private final String hookMethod;
-        private final String hookDesc;
-
-        private ReturnHookMethodVisitor(final MethodVisitor delegate,
-                                        final String hookMethod,
-                                        final String hookDesc) {
+    private static final class CreateKeyboardHookMethodVisitor extends MethodVisitor {
+        private CreateKeyboardHookMethodVisitor(final MethodVisitor delegate) {
             super(Opcodes.ASM9, delegate);
-            this.hookMethod = hookMethod;
-            this.hookDesc = hookDesc;
         }
 
         @Override
         public void visitInsn(final int opcode) {
             if (opcode == Opcodes.RETURN) {
                 visitVarInsn(Opcodes.ALOAD, 0);
-                visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, hookMethod, hookDesc, false);
+                visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, "hwnd", "J");
+                visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, "afterCreateKeyboard", "(J)V", false);
+            }
+            super.visitInsn(opcode);
+        }
+    }
+
+    private static final class DestroyKeyboardHookMethodVisitor extends MethodVisitor {
+        private DestroyKeyboardHookMethodVisitor(final MethodVisitor delegate) {
+            super(Opcodes.ASM9, delegate);
+        }
+
+        @Override
+        public void visitInsn(final int opcode) {
+            if (opcode == Opcodes.RETURN) {
+                visitVarInsn(Opcodes.ALOAD, 0);
+                visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, "beforeDestroyKeyboard", "(Ljava/lang/Object;)V", false);
             }
             super.visitInsn(opcode);
         }

@@ -2,38 +2,22 @@ package github.kasuminova.ssoptimizer.common.input.ime;
 
 import org.apache.log4j.Logger;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-
 public final class LinuxDisplayImeHooks {
     private static final Logger LOGGER = Logger.getLogger(LinuxDisplayImeHooks.class);
 
-    private static final Method         LINUX_DISPLAY_GET_DISPLAY   = findMethod("org.lwjgl.opengl.LinuxDisplay", "getDisplay");
-    private static final Method         LINUX_DISPLAY_GET_WINDOW    = findMethod("org.lwjgl.opengl.LinuxDisplay", "getWindow");
-    private static final Method         LINUX_EVENT_GET_TYPE        = findMethod("org.lwjgl.opengl.LinuxEvent", "getType");
-    private static final Method         LINUX_EVENT_GET_WINDOW      = findMethod("org.lwjgl.opengl.LinuxEvent", "getWindow");
-    private static final Method         LINUX_EVENT_GET_KEY_ADDRESS = findMethod("org.lwjgl.opengl.LinuxEvent", "getKeyAddress");
-    private static final Class<?>       LINUX_EVENT_CLASS           = findClass("org.lwjgl.opengl.LinuxEvent");
-    private static final Method         LINUX_EVENT_COPY_FROM       = LINUX_EVENT_CLASS != null
-            ? findMethod("org.lwjgl.opengl.LinuxEvent", "copyFrom", LINUX_EVENT_CLASS)
-            : null;
-    private static final Constructor<?> LINUX_EVENT_CONSTRUCTOR     = findConstructor("org.lwjgl.opengl.LinuxEvent");
-    private static final int            KEY_PRESS                   = findStaticInt("org.lwjgl.opengl.LinuxEvent", "KeyPress", 2);
-    private static final int            KEY_RELEASE                 = findStaticInt("org.lwjgl.opengl.LinuxEvent", "KeyRelease", 3);
-
-    private static volatile Object blankLinuxEvent;
+    // X11 协议事件类型，见 X.h。
+    private static final int KEY_PRESS   = 2;
+    private static final int KEY_RELEASE = 3;
 
     private LinuxDisplayImeHooks() {
     }
 
-    public static void afterCreateKeyboard(final Object linuxDisplay) {
+    public static void afterCreateKeyboard(final long display,
+                                           final long window) {
         final ImeCoordinator coordinator = ImeCoordinator.getInstance();
         final ImeBackend backend = coordinator.backend();
 
         try {
-            final long display = invokeStaticLong(LINUX_DISPLAY_GET_DISPLAY);
-            final long window = invokeStaticLong(LINUX_DISPLAY_GET_WINDOW);
             backend.attach(display, window);
             final ImeCaretRect rect = coordinator.computeCurrentCaretRect();
             if (rect != null) {
@@ -63,29 +47,25 @@ public final class LinuxDisplayImeHooks {
         }
     }
 
-    public static void onXEvent(final Object linuxDisplay,
-                                final Object linuxEvent,
-                                final boolean filteredByXim) {
-        if (linuxEvent == null) {
-            return;
-        }
-
+    /**
+     * 处理 LWJGL 窗口 ID 校验通过后的 X 事件。返回 {@code true} 表示事件已被 XIM 消费，调用方必须清空事件缓冲。
+     */
+    public static boolean onXEvent(final int eventType,
+                                   final long keyEventAddress,
+                                   final long eventWindow,
+                                   final long displayWindow) {
         final ImeCoordinator coordinator = ImeCoordinator.getInstance();
-        final ImeBackend backend = coordinator.backend();
         if (!coordinator.shouldCaptureImeInput()) {
-            return;
+            return false;
         }
+        final ImeBackend backend = coordinator.backend();
 
         try {
-            final int eventType = invokeInt(linuxEvent, LINUX_EVENT_GET_TYPE);
-
             // XIM 要求所有 X 事件经过 XFilterEvent，以处理焦点、协议消息和文本提交。
-            final long keyEventAddress = invokeLong(linuxEvent, LINUX_EVENT_GET_KEY_ADDRESS);
-            boolean consumed = backend.onX11KeyEvent(keyEventAddress, eventType);
+            final boolean consumed = backend.onX11KeyEvent(keyEventAddress, eventType);
+            final boolean keyEvent = eventType == KEY_PRESS || eventType == KEY_RELEASE;
 
-            if (eventType == KEY_PRESS || eventType == KEY_RELEASE) {
-                final long eventWindow = invokeLong(linuxEvent, LINUX_EVENT_GET_WINDOW);
-                final long displayWindow = invokeStaticLong(LINUX_DISPLAY_GET_WINDOW);
+            if (keyEvent) {
                 ImeDiagnostics.logX11KeyEvent(eventType, displayWindow, eventWindow, false, consumed);
                 final String keyEventSummary = backend.lastKeyEventSummary();
                 if (ImeProperties.diagnosticsEnabled() && keyEventSummary != null && !keyEventSummary.isBlank()) {
@@ -100,138 +80,32 @@ public final class LinuxDisplayImeHooks {
             }
             coordinator.pollAndApplyCommittedText();
             // 非键盘事件即使被 XIM 消费也必须交给 LWJGL 维护窗口状态。
-            if (consumed && (eventType == KEY_PRESS || eventType == KEY_RELEASE)) {
-                clearEvent(linuxEvent);
-            }
+            return consumed && keyEvent;
         } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to process X11 IME event: " + t.getMessage());
+            return false;
         }
     }
 
-    // 在 LWJGL 窗口 ID 校验前转发 XIM 协议事件，避免不同窗口 ID 的 ClientMessage 被丢弃。
-    public static void onRawXEvent(final Object linuxEvent) {
-        if (linuxEvent == null) {
-            return;
+    /**
+     * 在 LWJGL 窗口 ID 校验前转发 XIM 协议事件，避免不同窗口 ID 的 ClientMessage 被丢弃。
+     * 返回 {@code true} 表示事件已被 XIM 消费，调用方必须清空事件缓冲。
+     */
+    public static boolean onRawXEvent(final int eventType,
+                                      final long eventAddress) {
+        final ImeCoordinator coordinator = ImeCoordinator.getInstance();
+        if (!coordinator.shouldCaptureImeInput()) {
+            return false;
         }
-        final ImeBackend backend = ImeCoordinator.getInstance().backend();
-        if (!ImeCoordinator.getInstance().shouldCaptureImeInput()) {
-            return;
+        // 键盘事件由 onXEvent 处理，避免重复进入 XFilterEvent。
+        if (eventType == KEY_PRESS || eventType == KEY_RELEASE) {
+            return false;
         }
         try {
-            final int eventType = invokeInt(linuxEvent, LINUX_EVENT_GET_TYPE);
-            // 键盘事件由 onXEvent 处理，避免重复进入 XFilterEvent。
-            if (eventType == KEY_PRESS || eventType == KEY_RELEASE) {
-                return;
-            }
-            final long addr = invokeLong(linuxEvent, LINUX_EVENT_GET_KEY_ADDRESS);
-            final boolean consumed = backend.filterXimProtocolEvent(addr);
-            if (consumed) {
-                clearEvent(linuxEvent);
-            }
+            return coordinator.backend().filterXimProtocolEvent(eventAddress);
         } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to process raw X11 IME event.", t);
-        }
-    }
-
-    private static Method findMethod(final String className,
-                                     final String methodName,
-                                     final Class<?>... parameterTypes) {
-        try {
-            final Class<?> clazz = Class.forName(className);
-            final Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
-            method.setAccessible(true);
-            return method;
-        } catch (Exception | LinkageError t) {
-            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME method: " + className + "." + methodName, t);
-            return null;
-        }
-    }
-
-    private static Class<?> findClass(final String className) {
-        try {
-            return Class.forName(className);
-        } catch (Exception | LinkageError t) {
-            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME class: " + className, t);
-            return null;
-        }
-    }
-
-    private static Constructor<?> findConstructor(final String className,
-                                                  final Class<?>... parameterTypes) {
-        try {
-            final Class<?> clazz = Class.forName(className);
-            final Constructor<?> constructor = clazz.getDeclaredConstructor(parameterTypes);
-            constructor.setAccessible(true);
-            return constructor;
-        } catch (Exception | LinkageError t) {
-            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME constructor: " + className, t);
-            return null;
-        }
-    }
-
-    private static int findStaticInt(final String className,
-                                     final String fieldName,
-                                     final int defaultValue) {
-        try {
-            final Class<?> clazz = Class.forName(className);
-            final Field field = clazz.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return field.getInt(null);
-        } catch (Exception | LinkageError t) {
-            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME constant: " + className + "." + fieldName, t);
-            return defaultValue;
-        }
-    }
-
-    private static long invokeStaticLong(final Method method) throws ReflectiveOperationException {
-        if (method == null) {
-            return 0L;
-        }
-        return ((Number) method.invoke(null)).longValue();
-    }
-
-    private static int invokeInt(final Object target,
-                                 final Method method) throws ReflectiveOperationException {
-        if (method == null) {
-            return -1;
-        }
-        return ((Number) method.invoke(target)).intValue();
-    }
-
-    private static long invokeLong(final Object target,
-                                   final Method method) throws ReflectiveOperationException {
-        if (method == null) {
-            return 0L;
-        }
-        return ((Number) method.invoke(target)).longValue();
-    }
-
-    private static void clearEvent(final Object linuxEvent) throws ReflectiveOperationException {
-        if (linuxEvent == null || LINUX_EVENT_COPY_FROM == null) {
-            return;
-        }
-        final Object blankEvent = blankLinuxEvent();
-        if (blankEvent == null) {
-            return;
-        }
-        LINUX_EVENT_COPY_FROM.invoke(linuxEvent, blankEvent);
-    }
-
-    private static Object blankLinuxEvent() throws ReflectiveOperationException {
-        Object current = blankLinuxEvent;
-        if (current != null) {
-            return current;
-        }
-        if (LINUX_EVENT_CONSTRUCTOR == null) {
-            return null;
-        }
-        synchronized (LinuxDisplayImeHooks.class) {
-            current = blankLinuxEvent;
-            if (current == null) {
-                current = LINUX_EVENT_CONSTRUCTOR.newInstance();
-                blankLinuxEvent = current;
-            }
-            return current;
+            return false;
         }
     }
 }
