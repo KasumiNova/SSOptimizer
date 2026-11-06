@@ -16,7 +16,6 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
 
     public static final String AI_PARALLEL_DISABLE_PROPERTY = "ssoptimizer.disable.aiparallel";
 
-    /** Mixin 类名后缀到 {@code ssoptimizer.disable.<key>} 织入开关键的映射。 */
     private static final Map<String, String> DISABLE_KEYS = Map.of(
             ".ime.TooltipTextFieldFactoryMixin", "tooltiptextfieldime",
             ".ime.SettingsTextFieldFactoryMixin", "settingstextfieldime",

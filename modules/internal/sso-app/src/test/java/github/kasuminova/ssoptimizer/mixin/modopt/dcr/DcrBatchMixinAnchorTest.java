@@ -34,6 +34,8 @@ class DcrBatchMixinAnchorTest {
         assertEquals(1, countCalls(save, SERIALIZATION_MANAGER, "saveValue",
                         "(Ljava/lang/String;Ljava/lang/String;)V"),
                 "saveCombatResult 内必须恰有一个 saveValue 调用点");
+        assertEquals(1, countCalls(save, SERIALIZATION_MANAGER, "getAllSavedCombatResults", "()Ljava/util/List;"),
+                "saveCombatResult 内必须恰有一个 getAllSavedCombatResults 调用点（保存入口计数锚点）");
     }
 
     private static int countCalls(final MethodNode method, final String owner, final String name, final String desc) {

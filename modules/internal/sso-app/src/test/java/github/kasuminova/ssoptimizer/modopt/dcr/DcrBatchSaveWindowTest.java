@@ -45,6 +45,27 @@ class DcrBatchSaveWindowTest {
     }
 
     @Test
+    void deferralDecisionFollowsLatestRegisteredSave() {
+        DcrBatchSaveWindow.begin(2);
+
+        DcrBatchSaveWindow.deferCurrentSave();
+        assertTrue(DcrBatchSaveWindow.isCurrentSaveDeferred());
+        DcrBatchSaveWindow.deferCurrentSave();
+        assertFalse(DcrBatchSaveWindow.isCurrentSaveDeferred(), "最后一次保存必须真正执行");
+    }
+
+    @Test
+    void endFromOtherThreadKeepsWindowOpen() throws Exception {
+        DcrBatchSaveWindow.begin(3);
+
+        final Thread other = new Thread(DcrBatchSaveWindow::end);
+        other.start();
+        other.join();
+
+        assertTrue(DcrBatchSaveWindow.deferCurrentSave(), "非持有线程不得关闭窗口");
+    }
+
+    @Test
     void otherThreadsAreNeverDeferred() throws Exception {
         DcrBatchSaveWindow.begin(3);
         final AtomicBoolean deferredOnOtherThread = new AtomicBoolean(true);

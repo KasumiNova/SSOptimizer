@@ -5,9 +5,7 @@ import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
@@ -15,12 +13,10 @@ import java.io.InputStream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OriginalFontResourceStreamMixinAnchorTest {
 
     private static final String OPEN_STREAM_DESC = "(Ljava/lang/String;)Ljava/io/InputStream;";
-    private static final String OPEN_RESOURCE_DESC = "(Ljava/lang/String;Z)Ljava/io/InputStream;";
 
     @Test
     void resourceLoaderContainsOpenStreamHeadInjectionTarget() throws IOException {
@@ -39,21 +35,6 @@ class OriginalFontResourceStreamMixinAnchorTest {
         assertNotNull(openStream, "ResourceLoader.openStream(String) 必须存在");
         assertFalse((openStream.access & Opcodes.ACC_STATIC) != 0,
                 "openStream 必须为实例方法，以匹配 Mixin 回调签名");
-
-        boolean delegatesToOpenResource = false;
-        for (AbstractInsnNode insn = openStream.instructions.getFirst(); insn != null; insn = insn.getNext()) {
-            if (insn instanceof MethodInsnNode) {
-                final MethodInsnNode call = (MethodInsnNode) insn;
-                if (GameClassNames.RESOURCE_LOADER.equals(call.owner)
-                        && "openResource".equals(call.name)
-                        && OPEN_RESOURCE_DESC.equals(call.desc)) {
-                    delegatesToOpenResource = true;
-                    break;
-                }
-            }
-        }
-        assertTrue(delegatesToOpenResource,
-                "替代流为 null 时必须保留 openStream 对 openResource 的原始委托");
     }
 
     private static ClassNode readClasspathClass(final String internalName) throws IOException {

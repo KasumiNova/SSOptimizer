@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 
 /**
- * 像素转换、纹理尺寸与路径加载整体交给 loading 模块的实现；图片解码改走快速解码器。
- * 原 ASM 拆出的 eager 原实现没有调用方，迁移时不再保留。
  * GL 上传调用的织入目标随渲染线程模式变化，见 TextureLoaderUploadMixin 与 TextureLoaderUploadDirectMixin。
  */
 @Mixin(targets = GameClassNames.TEXTURE_LOADER_DOTTED)

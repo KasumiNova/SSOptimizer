@@ -14,11 +14,11 @@
 | `Integer.getInteger(key, n)` / `Long.getLong(key, n)` | `n`（部分读取点还带下限钳制，见各条目） |
 | `Boolean.parseBoolean(System.getProperty(key, "true"))` | `true` |
 
-## ASM 处理器开关
+## ASM 与 Mixin 改写开关
 
-所有引擎级 ASM 处理器与外部模组优化集合都支持 `-Dssoptimizer.disable.<key>=true` 单独禁用，读取点在 `bootstrap/SSOptimizerCorePlugin.java`（`registerIf` 第 117 行、`registerCompositeIf` 第 126 行、外部模组第 103 行）。**`combatstate` 处理器没有开关，直接注册**（第 79 行）。
+引擎级改写都支持 `-Dssoptimizer.disable.<key>=true` 单独禁用。ASM 处理器的开关由 `bootstrap/SSOptimizerCorePlugin.java` 的 `registerIf` 与 `registerSystemIf` 在注册时读取；Mixin 的开关由 `mixin/SSOptimizerMixinConfigPlugin` 在织入期读取。
 
-引擎级 key（对应处理器，均在 `SSOptimizerCorePlugin.java:76-86` 注册）：
+引擎级 key：
 
 | 属性 | 对应处理器 | 作用 |
 |---|---|---|
