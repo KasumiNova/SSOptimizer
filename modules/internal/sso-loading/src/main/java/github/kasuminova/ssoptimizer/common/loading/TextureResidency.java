@@ -36,28 +36,6 @@ final class TextureResidency {
     private static final int FILTER_LINEAR_MIPMAP_LINEAR = 9987;
     private static final int GENERATE_MIPMAP = 33169;
     private static final int TYPE_UNSIGNED_BYTE = 5121;
-    private static final long DEFAULT_MIN_GPU_BYTES = 1L << 20;
-    private static final long DEFAULT_TRACK_MIN_GPU_BYTES = 64L << 10;
-    private static final long DEFAULT_IDLE_UNLOAD_MILLIS = 0L;
-    private static final long DEFAULT_PREVIEW_PROTECT_MILLIS = 300_000L;
-    private static final long DEFAULT_SWEEP_INTERVAL_MILLIS = 1_000L;
-    private static final long DEFAULT_COMPOSITION_REPORT_INTERVAL_MILLIS = 5_000L;
-    private static final long DEFAULT_MANAGEMENT_LOG_INTERVAL_MILLIS = 15_000L;
-    private static final boolean DEFAULT_MINIMAL_STARTUP = true;
-    private static final String GRAPHICS_PREFIX = "graphics/";
-    private static final String[] PREVIEW_PROTECTED_PREFIXES = {
-            "graphics/ships/",
-            "graphics/stations/",
-            "graphics/weapons/"
-    };
-    private static final String[] EAGER_PREFIXES = {
-            "graphics/icons/",
-            "graphics/ui/",
-            "graphics/hud/",
-            "graphics/cursors/",
-            "graphics/fonts/",
-            "graphics/warroom/"
-    };
     private static final WeakKeyMap<com.fs.graphics.TextureObject, ManagedTextureEntry> MANAGED_TEXTURES =
             new WeakKeyMap<>();
     private static final AtomicBoolean COMPOSITION_REPORT_HOOK_INSTALLED = new AtomicBoolean(false);
@@ -76,7 +54,7 @@ final class TextureResidency {
     }
 
     static void installCompositionReportHookIfConfigured() {
-        final String configured = configuredCompositionReportPath();
+        final String configured = TextureResidencyPolicy.configuredCompositionReportPath();
         if (!COMPOSITION_REPORT_HOOK_INSTALLED.compareAndSet(false, true)) {
             return;
         }
@@ -153,131 +131,9 @@ final class TextureResidency {
         return entry == null ? null : entry.compressedUpgradeKey;
     }
 
-    static String configuredCompositionReportPath() {
-        final String configured = System.getProperty(LazyTextureManager.COMPOSITION_REPORT_FILE_PROPERTY);
-        if (configured == null || configured.isBlank()) {
-            return LazyTextureManager.DEFAULT_COMPOSITION_REPORT_FILE;
-        }
-        return configured.trim();
-    }
-
-    static boolean isEnabled() {
-        return TextureConversionCache.isEnabled() && !Boolean.getBoolean(LazyTextureManager.DISABLE_PROPERTY);
-    }
-
-    static boolean shouldDefer(final String resourcePath,
-                               final int sourceBytes,
-                               final long estimatedGpuBytes) {
-        if (isMinimalStartupTexture(resourcePath, estimatedGpuBytes)) {
-            return true;
-        }
-        if (estimatedGpuBytes < minimumGpuBytes()) {
-            return false;
-        }
-        if (sourceBytes < 131_072
-                && !resourcePath.startsWith("graphics/backgrounds/")
-                && !resourcePath.startsWith("graphics/terrain/")
-                && !resourcePath.startsWith("graphics/planets/")) {
-            return false;
-        }
-        return !isAlwaysEager(resourcePath);
-    }
-
-    static boolean minimalStartupEnabled() {
-        return Boolean.parseBoolean(System.getProperty(LazyTextureManager.MINIMAL_STARTUP_PROPERTY,
-                Boolean.toString(DEFAULT_MINIMAL_STARTUP)));
-    }
-
-    static boolean isMinimalStartupTexture(final String resourcePath,
-                                           final long estimatedGpuBytes) {
-        return minimalStartupEnabled()
-                && isManagedGraphicsTexture(resourcePath)
-                && estimatedGpuBytes >= trackMinimumGpuBytes();
-    }
-
-    static boolean shouldTrackResidency(final String resourcePath,
-                                        final int sourceBytes,
-                                        final long estimatedGpuBytes) {
-        if (!isManagedGraphicsTexture(resourcePath)) {
-            return false;
-        }
-        return estimatedGpuBytes >= trackMinimumGpuBytes();
-    }
-
-    static long idleUnloadMillis() {
-        return Math.max(0L, Long.getLong(
-                LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY, DEFAULT_IDLE_UNLOAD_MILLIS));
-    }
-
-    static long effectiveIdleUnloadMillis(final String resourcePath) {
-        final long baseIdleMillis = idleUnloadMillis();
-        if (!isPreviewProtectedTexture(resourcePath)) {
-            return baseIdleMillis;
-        }
-
-        final long protectedMillis = Math.max(0L, Long.getLong(
-                LazyTextureManager.PREVIEW_PROTECT_MILLIS_PROPERTY, DEFAULT_PREVIEW_PROTECT_MILLIS));
-        return Math.max(baseIdleMillis, protectedMillis);
-    }
-
-    private static long minimumGpuBytes() {
-        final long configured = Long.getLong(LazyTextureManager.MIN_GPU_BYTES_PROPERTY, DEFAULT_MIN_GPU_BYTES);
-        return Math.max(262_144L, configured);
-    }
-
-    static long trackMinimumGpuBytes() {
-        final long configured = Long.getLong(
-                LazyTextureManager.TRACK_MIN_GPU_BYTES_PROPERTY, DEFAULT_TRACK_MIN_GPU_BYTES);
-        return Math.max(16_384L, configured);
-    }
-
-    private static long sweepIntervalMillis() {
-        final long configured = Long.getLong(
-                LazyTextureManager.SWEEP_INTERVAL_MILLIS_PROPERTY, DEFAULT_SWEEP_INTERVAL_MILLIS);
-        return Math.max(250L, configured);
-    }
-
-    static long compositionReportIntervalMillis() {
-        final long configured = Long.getLong(LazyTextureManager.COMPOSITION_REPORT_INTERVAL_MILLIS_PROPERTY,
-                DEFAULT_COMPOSITION_REPORT_INTERVAL_MILLIS);
-        return Math.max(0L, configured);
-    }
-
-    static long managementLogIntervalMillis() {
-        final long configured = Long.getLong(LazyTextureManager.MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY,
-                DEFAULT_MANAGEMENT_LOG_INTERVAL_MILLIS);
-        return Math.max(0L, configured);
-    }
-
-    private static boolean isAlwaysEager(final String resourcePath) {
-        for (String prefix : EAGER_PREFIXES) {
-            if (resourcePath.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isManagedGraphicsTexture(final String resourcePath) {
-        return resourcePath != null
-                && !resourcePath.isEmpty()
-                && resourcePath.startsWith(GRAPHICS_PREFIX)
-                && !isAlwaysEager(resourcePath);
-    }
-
-    static boolean isPreviewProtectedTexture(final String resourcePath) {
-        final String normalized = TextureResourceLoader.normalizeResourcePath(resourcePath);
-        for (final String prefix : PREVIEW_PROTECTED_PREFIXES) {
-            if (normalized.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static void maybeSweepIdleTextures(final com.fs.graphics.TextureObject currentTexture,
                                        final long now) {
-        final long idleMillis = idleUnloadMillis();
+        final long idleMillis = TextureResidencyPolicy.idleUnloadMillis();
         if (idleMillis <= 0L || MANAGED_TEXTURES.isEmpty()) {
             return;
         }
@@ -286,7 +142,7 @@ final class TextureResidency {
         if (now < sweepAt) {
             return;
         }
-        nextSweepNanos = now + sweepIntervalMillis() * 1_000_000L;
+        nextSweepNanos = now + TextureResidencyPolicy.sweepIntervalMillis() * 1_000_000L;
 
         final int[] evicted = {0};
         synchronized (MANAGED_TEXTURES) {
@@ -306,7 +162,7 @@ final class TextureResidency {
                     entry.markPendingUpload();
                     return;
                 }
-                final long candidateIdleNanos = effectiveIdleUnloadMillis(entry.resourcePath) * 1_000_000L;
+                final long candidateIdleNanos = TextureResidencyPolicy.effectiveIdleUnloadMillis(entry.resourcePath) * 1_000_000L;
                 if (now - entry.lastBindNanos() < candidateIdleNanos) {
                     return;
                 }
@@ -516,7 +372,7 @@ final class TextureResidency {
 
     static void noteCompressedTextureAvailable(final String resourcePath,
                                                final CompressedTextureCache.Key key) {
-        if (!isHotReloadEnabled() || key == null) {
+        if (!TextureResidencyPolicy.isHotReloadEnabled() || key == null) {
             return;
         }
         final String normalized = TextureResourceLoader.normalizeResourcePath(resourcePath);
@@ -581,10 +437,6 @@ final class TextureResidency {
 
     static int pendingCompressionUpgradeCountForTests() {
         return PENDING_COMPRESSION_UPGRADES.size();
-    }
-
-    static boolean isHotReloadEnabled() {
-        return !"false".equalsIgnoreCase(System.getProperty(LazyTextureManager.HOT_RELOAD_PROPERTY, "true"));
     }
 
     private static void maybeUpgradeToCompressed(final com.fs.graphics.TextureObject texture,
@@ -801,7 +653,7 @@ final class TextureResidency {
 
         if (shouldWriteReport) {
             try {
-                exportTextureCompositionReport(snapshot, configuredCompositionReportPath(), generatedAt);
+                exportTextureCompositionReport(snapshot, TextureResidencyPolicy.configuredCompositionReportPath(), generatedAt);
             } catch (IOException e) {
                 LOGGER.warn("[SSOptimizer] Failed to refresh texture composition report", e);
             }
@@ -823,7 +675,7 @@ final class TextureResidency {
     }
 
     private static boolean shouldWriteCompositionReport(final long now) {
-        final long intervalMillis = compositionReportIntervalMillis();
+        final long intervalMillis = TextureResidencyPolicy.compositionReportIntervalMillis();
         if (intervalMillis <= 0L) {
             return false;
         }
@@ -837,7 +689,7 @@ final class TextureResidency {
     }
 
     private static boolean shouldLogManagementSummary(final long now) {
-        final long intervalMillis = managementLogIntervalMillis();
+        final long intervalMillis = TextureResidencyPolicy.managementLogIntervalMillis();
         if (intervalMillis <= 0L) {
             return false;
         }

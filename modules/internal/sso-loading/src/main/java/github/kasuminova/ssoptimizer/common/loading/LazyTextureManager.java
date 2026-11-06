@@ -89,56 +89,56 @@ public final class LazyTextureManager {
     }
 
     static String configuredCompositionReportPath() {
-        return TextureResidency.configuredCompositionReportPath();
+        return TextureResidencyPolicy.configuredCompositionReportPath();
     }
 
     static boolean isEnabled() {
-        return TextureResidency.isEnabled();
+        return TextureResidencyPolicy.isEnabled();
     }
 
     static boolean shouldDefer(final String resourcePath,
                                final int sourceBytes,
                                final long estimatedGpuBytes) {
-        return TextureResidency.shouldDefer(resourcePath, sourceBytes, estimatedGpuBytes);
+        return TextureResidencyPolicy.shouldDefer(resourcePath, sourceBytes, estimatedGpuBytes);
     }
 
     static boolean minimalStartupEnabled() {
-        return TextureResidency.minimalStartupEnabled();
+        return TextureResidencyPolicy.minimalStartupEnabled();
     }
 
     static boolean isMinimalStartupTexture(final String resourcePath,
                                            final long estimatedGpuBytes) {
-        return TextureResidency.isMinimalStartupTexture(resourcePath, estimatedGpuBytes);
+        return TextureResidencyPolicy.isMinimalStartupTexture(resourcePath, estimatedGpuBytes);
     }
 
     static boolean shouldTrackResidency(final String resourcePath,
                                         final int sourceBytes,
                                         final long estimatedGpuBytes) {
-        return TextureResidency.shouldTrackResidency(resourcePath, sourceBytes, estimatedGpuBytes);
+        return TextureResidencyPolicy.shouldTrackResidency(resourcePath, sourceBytes, estimatedGpuBytes);
     }
 
     static long idleUnloadMillis() {
-        return TextureResidency.idleUnloadMillis();
+        return TextureResidencyPolicy.idleUnloadMillis();
     }
 
     static long effectiveIdleUnloadMillis(final String resourcePath) {
-        return TextureResidency.effectiveIdleUnloadMillis(resourcePath);
+        return TextureResidencyPolicy.effectiveIdleUnloadMillis(resourcePath);
     }
 
     static long trackMinimumGpuBytes() {
-        return TextureResidency.trackMinimumGpuBytes();
+        return TextureResidencyPolicy.trackMinimumGpuBytes();
     }
 
     static long compositionReportIntervalMillis() {
-        return TextureResidency.compositionReportIntervalMillis();
+        return TextureResidencyPolicy.compositionReportIntervalMillis();
     }
 
     static long managementLogIntervalMillis() {
-        return TextureResidency.managementLogIntervalMillis();
+        return TextureResidencyPolicy.managementLogIntervalMillis();
     }
 
     static boolean isPreviewProtectedTexture(final String resourcePath) {
-        return TextureResidency.isPreviewProtectedTexture(resourcePath);
+        return TextureResidencyPolicy.isPreviewProtectedTexture(resourcePath);
     }
 
     public static boolean isOriginalLazyModeEnabled() {
@@ -164,7 +164,7 @@ public final class LazyTextureManager {
     }
 
     static boolean isHotReloadEnabled() {
-        return TextureResidency.isHotReloadEnabled();
+        return TextureResidencyPolicy.isHotReloadEnabled();
     }
 
     static boolean shouldGenerateMipmaps(final String resourcePath,

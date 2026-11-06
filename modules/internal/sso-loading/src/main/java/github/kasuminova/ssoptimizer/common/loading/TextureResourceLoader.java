@@ -53,7 +53,7 @@ final class TextureResourceLoader {
             return TextureContextTracker.markTextureLoadedInCurrentContext(texture, effectivePath);
         }
 
-        if (!TextureResidency.isEnabled()) {
+        if (!TextureResidencyPolicy.isEnabled()) {
             return TextureContextTracker.markTextureLoadedInCurrentContext(
                     eagerLoad(loader, textureCache, effectivePath, resourcePath), effectivePath);
         }
@@ -75,9 +75,9 @@ final class TextureResourceLoader {
                     eagerLoad(loader, textureCache, effectivePath, resourcePath), effectivePath);
         }
 
-        final boolean defer = TextureResidency.shouldDefer(
+        final boolean defer = TextureResidencyPolicy.shouldDefer(
                 effectivePath, source.sourceByteLength(), metadata.estimatedGpuBytes);
-        final boolean trackResidency = TextureResidency.shouldTrackResidency(
+        final boolean trackResidency = TextureResidencyPolicy.shouldTrackResidency(
                 effectivePath, source.sourceByteLength(), metadata.estimatedGpuBytes);
         if (!trackResidency) {
             return TextureContextTracker.markTextureLoadedInCurrentContext(
@@ -190,8 +190,8 @@ final class TextureResourceLoader {
         final TextureConversionCache.CachedTextureMetadata preparedMetadata = prepared.metadata();
         final LazyTextureMetadata metadata = metadataFrom(effectivePath, preparedMetadata);
         final int sourceBytes = (int) Math.min(Integer.MAX_VALUE, Math.max(0L, prepared.sourceByteLength()));
-        final boolean defer = TextureResidency.shouldDefer(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
-        final boolean trackResidency = TextureResidency.shouldTrackResidency(
+        final boolean defer = TextureResidencyPolicy.shouldDefer(effectivePath, sourceBytes, metadata.estimatedGpuBytes);
+        final boolean trackResidency = TextureResidencyPolicy.shouldTrackResidency(
                 effectivePath, sourceBytes, metadata.estimatedGpuBytes);
         final long now = System.nanoTime();
 
