@@ -56,17 +56,12 @@ class XStreamObjectIdDictionaryHelperTest {
         assertEquals("ref-2", XStreamObjectIdDictionaryHelper.lookupId(map, secondKey, probe));
     }
 
-    private static final class WrapperLike {
-        private final Object target;
-        private final int    hashCode;
+    private static final class WrapperLike extends WeakReference<Object> {
+        private final int hashCode;
 
         private WrapperLike(final Object target) {
-            this.target = target;
+            super(target);
             this.hashCode = System.identityHashCode(target);
-        }
-
-        public Object get() {
-            return target;
         }
 
         @Override
@@ -76,22 +71,17 @@ class XStreamObjectIdDictionaryHelperTest {
 
         @Override
         public boolean equals(final Object other) {
-            return other instanceof WrapperLike wrapper && wrapper.target == target;
+            return other instanceof WrapperLike wrapper && wrapper.get() == get();
         }
     }
 
-    private static final class ClearedWrapperLike {
-        private final WeakReference<Object> reference;
-        private final int                   hashCode;
+    private static final class ClearedWrapperLike extends WeakReference<Object> {
+        private final int hashCode;
 
         private ClearedWrapperLike(final Object target) {
-            this.reference = new WeakReference<>(target);
-            this.reference.clear();
+            super(target);
+            clear();
             this.hashCode = System.identityHashCode(target);
-        }
-
-        public Object get() {
-            return reference.get();
         }
 
         @Override
@@ -101,7 +91,7 @@ class XStreamObjectIdDictionaryHelperTest {
 
         @Override
         public boolean equals(final Object other) {
-            return other instanceof ClearedWrapperLike wrapper && wrapper.reference.get() == reference.get();
+            return other instanceof ClearedWrapperLike wrapper && wrapper.get() == get();
         }
     }
 }

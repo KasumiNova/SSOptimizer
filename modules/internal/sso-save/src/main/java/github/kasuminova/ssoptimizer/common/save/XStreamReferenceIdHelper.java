@@ -1,20 +1,19 @@
 package github.kasuminova.ssoptimizer.common.save;
 
 import com.thoughtworks.xstream.core.SequenceGenerator;
-import org.apache.log4j.Logger;
+import github.kasuminova.ssoptimizer.mixin.save.XStreamSequenceGeneratorAccessor;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class XStreamReferenceIdHelper {
     static final String MAX_PRECOMPUTED_REFERENCE_ID_PROPERTY = "ssoptimizer.save.referenceid.cache.max";
 
-    private static final Logger LOGGER = Logger.getLogger(XStreamReferenceIdHelper.class);
     private static final int REFERENCE_ID_CHUNK_SHIFT = 16;
     private static final int REFERENCE_ID_CHUNK_SIZE = 1 << REFERENCE_ID_CHUNK_SHIFT;
     private static final int REFERENCE_ID_CHUNK_MASK = REFERENCE_ID_CHUNK_SIZE - 1;
@@ -30,7 +29,6 @@ public final class XStreamReferenceIdHelper {
     private static volatile CompletableFuture<Void> warmupFuture;
 
     private static final Class<SequenceGenerator> SEQUENCE_GENERATOR_CLASS = SequenceGenerator.class;
-    private static final VarHandle SEQUENCE_COUNTER_HANDLE = resolveSequenceCounterHandle();
 
     private XStreamReferenceIdHelper() {
     }
@@ -43,7 +41,7 @@ public final class XStreamReferenceIdHelper {
         if (!supportsOptimizedIds(generator)) {
             throw new IllegalArgumentException("Unsupported XStream ID generator: " + generator);
         }
-        return (int) SEQUENCE_COUNTER_HANDLE.get(generator);
+        return ((XStreamSequenceGeneratorAccessor) generator).ssoptimizer$getCounter();
     }
 
     public static String nextReferenceId(final int value) {
@@ -106,8 +104,13 @@ public final class XStreamReferenceIdHelper {
         try {
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);
             return true;
-        } catch (Exception ignored) {
+        } catch (final TimeoutException e) {
             return false;
+        } catch (final ExecutionException e) {
+            throw new IllegalStateException("XStream 引用 ID 预热任务执行失败", e.getCause());
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("等待 XStream 引用 ID 预热时被中断", e);
         }
     }
 
@@ -209,23 +212,5 @@ public final class XStreamReferenceIdHelper {
             chunk[offset] = toCompactStringUncached(startValue + offset);
         }
         return chunk;
-    }
-
-    private static VarHandle resolveSequenceCounterHandle() {
-        try {
-            return MethodHandles.privateLookupIn(SEQUENCE_GENERATOR_CLASS, MethodHandles.lookup())
-                    .findVarHandle(SEQUENCE_GENERATOR_CLASS, "counter", int.class);
-        } catch (final ReflectiveOperationException | SecurityException e) {
-            throw initializationFailure("SequenceGenerator.counter 字段解析失败", e);
-        }
-    }
-
-    private static ExceptionInInitializerError initializationFailure(final String reason,
-                                                                     final Throwable cause) {
-        final String message = "无法初始化 XStream 引用 ID 优化: " + reason;
-        LOGGER.error("[SSOptimizer] " + message, cause);
-        final ExceptionInInitializerError failure = new ExceptionInInitializerError(message);
-        failure.initCause(cause);
-        return failure;
     }
 }

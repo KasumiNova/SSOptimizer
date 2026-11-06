@@ -8,6 +8,8 @@ import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
+import org.lwjgl.LWJGLException;
+import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GLContext;
 
 import java.util.Locale;
@@ -225,7 +227,7 @@ public final class SaveProgressOverlayCoordinator {
             try {
                 ServiceRegistry.require(RenderFramePump.class)
                         .runOnRenderThread(() -> replayFrame(currentDialog, snapshot, sequence, now));
-            } catch (final Throwable throwable) {
+            } catch (final RuntimeException throwable) {
                 LOGGER.error("[SSOptimizer] 保存/读档进度渲染线程回放调度失败，已自动回退为无 UI 保底模式", throwable);
                 clearState();
             }
@@ -256,7 +258,7 @@ public final class SaveProgressOverlayCoordinator {
             if (snapshot.completed()) {
                 clearState();
             }
-        } catch (final Throwable throwable) {
+        } catch (final RuntimeException throwable) {
             LOGGER.error("[SSOptimizer] 保存/读档进度重放原版界面失败，已自动回退为无 UI 保底模式", throwable);
             clearState();
         } finally {
@@ -303,12 +305,16 @@ public final class SaveProgressOverlayCoordinator {
                 return DisplayRefreshConfig.DEFAULT;
             }
 
-            final boolean vsync = readBooleanSetting(settings, "vsync");
-            final int fps = readIntSetting(settings, "fps");
-            final int refreshRateOverride = readRefreshRateOverride(settings);
+            final boolean vsync = settings.getBoolean("vsync");
+            final int fps = settings.getInt("fps");
+            final JSONObject settingsJson = settings.getSettingsJSON();
+            final int refreshRateOverride = settingsJson != null
+                    ? settingsJson.optInt("refreshRateOverride", 0)
+                    : 0;
             return new DisplayRefreshConfig(vsync, fps, refreshRateOverride);
-        } catch (final Throwable ignored) {
-            return DisplayRefreshConfig.DEFAULT;
+        } catch (final RuntimeException e) {
+            LOGGER.error("[SSOptimizer] 读取保存进度界面刷新配置失败", e);
+            throw e;
         }
     }
 
@@ -363,16 +369,27 @@ public final class SaveProgressOverlayCoordinator {
                 return cachedRenderIntervalNanos;
             }
 
-            cachedRenderIntervalNanos = resolveRenderIntervalNanos(readDisplayRefreshConfig());
+            long resolvedIntervalNanos;
+            try {
+                resolvedIntervalNanos = resolveRenderIntervalNanos(readDisplayRefreshConfig());
+            } catch (final RuntimeException e) {
+                LOGGER.warn("[SSOptimizer] 保存进度界面刷新配置不可用，本周期使用默认刷新间隔", e);
+                resolvedIntervalNanos = DEFAULT_MIN_RENDER_INTERVAL_NANOS;
+            }
+            cachedRenderIntervalNanos = resolvedIntervalNanos;
             cachedRenderIntervalExpiresAtNanos = refreshedNow + RENDER_INTERVAL_CACHE_NANOS;
             return cachedRenderIntervalNanos;
         }
     }
 
     private static boolean hasCurrentOpenGlContext() {
+        if (!Display.isCreated()) {
+            return false;
+        }
         try {
-            return GLContext.getCapabilities() != null;
-        } catch (final Throwable ignored) {
+            return Display.isCurrent() && GLContext.getCapabilities() != null;
+        } catch (final LWJGLException | RuntimeException e) {
+            LOGGER.warn("[SSOptimizer] 检查保存进度界面 OpenGL 上下文失败", e);
             return false;
         }
     }
@@ -390,33 +407,6 @@ public final class SaveProgressOverlayCoordinator {
     private static long intervalForFramesPerSecond(final int framesPerSecond) {
         final int clampedFps = Math.max(MIN_TARGET_FPS, Math.min(framesPerSecond, MAX_TARGET_FPS));
         return Math.max(1L, 1_000_000_000L / clampedFps);
-    }
-
-    private static int readIntSetting(final SettingsAPI settings,
-                                      final String key) {
-        try {
-            return settings.getInt(key);
-        } catch (final Throwable ignored) {
-            return 0;
-        }
-    }
-
-    private static boolean readBooleanSetting(final SettingsAPI settings,
-                                              final String key) {
-        try {
-            return settings.getBoolean(key);
-        } catch (final Throwable ignored) {
-            return false;
-        }
-    }
-
-    private static int readRefreshRateOverride(final SettingsAPI settings) {
-        try {
-            final JSONObject settingsJson = settings.getSettingsJSON();
-            return settingsJson != null ? settingsJson.optInt("refreshRateOverride", 0) : 0;
-        } catch (final Throwable ignored) {
-            return 0;
-        }
     }
 
     private static void resetRefreshRateCacheForTests() {

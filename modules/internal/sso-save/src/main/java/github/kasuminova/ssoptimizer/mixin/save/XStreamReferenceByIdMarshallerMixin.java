@@ -46,7 +46,7 @@ public abstract class XStreamReferenceByIdMarshallerMixin extends AbstractRefere
         final ReferenceByIdMarshaller.IDGenerator generator = idGenerator;
         if (XStreamReferenceIdHelper.supportsOptimizedIds(generator)) {
             if (!ssoptimizer$optimizedSequenceInitialized) {
-                ssoptimizer$nextReferenceId = XStreamReferenceIdHelper.readSequenceCounter(generator);
+                ssoptimizer$nextReferenceId = ((XStreamSequenceGeneratorAccessor) generator).ssoptimizer$getCounter();
                 ssoptimizer$optimizedSequenceInitialized = true;
             }
             return XStreamReferenceIdHelper.nextReferenceId(ssoptimizer$nextReferenceId++);

@@ -104,6 +104,7 @@
     "save.Txw2IndentingXmlStreamWriterMixin",
     "save.XStreamDefaultConverterLookupMixin",
     "save.XStreamReferenceByIdMarshallerMixin",
+    "save.XStreamSequenceGeneratorAccessor",
     "save.XStreamFieldAliasingMapperMixin",
     "save.XStreamFieldDictionaryMixin",
     "save.XStreamFieldsMixin",

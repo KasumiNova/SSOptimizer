@@ -15,11 +15,8 @@ class XStreamReferenceIdHelperTest {
     }
 
     @Test
-    void readsDefaultSequenceGeneratorCounter() {
-        final SequenceGenerator generator = new SequenceGenerator(73);
-
-        assertTrue(XStreamReferenceIdHelper.supportsOptimizedIds(generator));
-        assertEquals(73, XStreamReferenceIdHelper.readSequenceCounter(generator));
+    void acceptsDefaultSequenceGenerator() {
+        assertTrue(XStreamReferenceIdHelper.supportsOptimizedIds(new SequenceGenerator(73)));
     }
 
     @Test

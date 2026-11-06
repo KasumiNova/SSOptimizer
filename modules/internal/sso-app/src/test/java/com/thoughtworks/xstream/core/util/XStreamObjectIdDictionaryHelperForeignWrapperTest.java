@@ -12,16 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class XStreamObjectIdDictionaryHelperForeignWrapperTest {
     @Test
-    void supportsPackagePrivateWrapperFromForeignPackage() {
-        Object key = new Object();
-        Map<Object, Object> map = new HashMap<>();
-        map.put(new ForeignPackageWrapper(key), "ref-foreign");
-
-        assertEquals("ref-foreign", XStreamObjectIdDictionaryHelper.lookupId(map, key));
-        assertTrue(XStreamObjectIdDictionaryHelper.containsId(map, key));
-    }
-
-    @Test
     void supportsPackagePrivateWrapperWithInheritedGetMethod() {
         Object key = new Object();
         Map<Object, Object> map = new HashMap<>();
@@ -29,33 +19,6 @@ class XStreamObjectIdDictionaryHelperForeignWrapperTest {
 
         assertEquals("ref-inherited", XStreamObjectIdDictionaryHelper.lookupId(map, key));
         assertTrue(XStreamObjectIdDictionaryHelper.containsId(map, key));
-    }
-
-    static final class ForeignPackageWrapper {
-        private final Object target;
-        private final int    hashCode;
-
-        ForeignPackageWrapper(final Object target) {
-            this.target = target;
-            this.hashCode = System.identityHashCode(target);
-        }
-
-        public Object get() {
-            return target;
-        }
-
-        @Override
-        public int hashCode() {
-            return hashCode;
-        }
-
-        @Override
-        public boolean equals(final Object other) {
-            if (other instanceof ForeignPackageWrapper wrapper) {
-                return wrapper.target == target;
-            }
-            return false;
-        }
     }
 
     static final class ForeignInheritedWrapper extends WeakReference<Object> {
