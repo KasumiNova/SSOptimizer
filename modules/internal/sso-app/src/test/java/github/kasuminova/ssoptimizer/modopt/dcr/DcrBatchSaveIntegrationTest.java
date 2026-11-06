@@ -82,9 +82,10 @@ class DcrBatchSaveIntegrationTest {
                         PLUGIN, new DcrOnGameLoadProcessor()));
         final ByteArrayLoader factoryLoader = new ByteArrayLoader(pluginLoader);
         final String factoryName = PLUGIN_FACTORY.replace('/', '.');
-        factoryLoader.define(factoryName, pluginFactoryBytes());
-        final PluginFactory factory = github.kasuminova.ssoptimizer.testing.ClassInstances.create(
-                PluginFactory.class, factoryLoader, factoryName);
+        final Class<?> factoryClass = factoryLoader.define(factoryName,
+                github.kasuminova.ssoptimizer.testing.ClassInstances.publishInstanceOnInit(pluginFactoryBytes()));
+        final PluginFactory factory = github.kasuminova.ssoptimizer.testing.ClassInstances.instantiate(
+                PluginFactory.class, factoryClass);
         return factory.create(itemCount);
     }
 

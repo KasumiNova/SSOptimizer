@@ -23,9 +23,10 @@ class AITweaksBootstrapLoaderProcessorTest {
 
         final DefiningLoader loader = new DefiningLoader();
         loader.define(AITweaksBootstrapLoaderProcessor.TARGET_CLASS, rewritten);
-        loader.define(FACTORY_CLASS, factoryClassBytes());
-        final LoaderFactory factory = github.kasuminova.ssoptimizer.testing.ClassInstances.create(
-                LoaderFactory.class, loader, FACTORY_CLASS.replace('/', '.'));
+        final Class<?> factoryClass = loader.define(FACTORY_CLASS,
+                github.kasuminova.ssoptimizer.testing.ClassInstances.publishInstanceOnInit(factoryClassBytes()));
+        final LoaderFactory factory = github.kasuminova.ssoptimizer.testing.ClassInstances.instantiate(
+                LoaderFactory.class, factoryClass);
 
         try (URLClassLoader instance = factory.create()) {
             assertSame(loader, instance.getParent(), "改写后 BootstrapLoader 的父加载器应为其定义类加载器");

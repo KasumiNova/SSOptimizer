@@ -35,9 +35,10 @@ class ShipMasteryReflectionLoaderProcessorTest {
         final ByteArrayLoader definingLoader = new ByteArrayLoader(getClass().getClassLoader());
         definingLoader.define(FIXTURE_CLASS.replace('/', '.'), rewritten);
         final String factoryName = FACTORY_CLASS.replace('/', '.');
-        definingLoader.define(factoryName, factoryClassBytes());
-        final LoaderFactory factory = github.kasuminova.ssoptimizer.testing.ClassInstances.create(
-                LoaderFactory.class, definingLoader, factoryName);
+        final Class<?> factoryClass = definingLoader.define(factoryName,
+                github.kasuminova.ssoptimizer.testing.ClassInstances.publishInstanceOnInit(factoryClassBytes()));
+        final LoaderFactory factory = github.kasuminova.ssoptimizer.testing.ClassInstances.instantiate(
+                LoaderFactory.class, factoryClass);
 
         final Path probePath = tempDir.resolve("probe/Target.class");
         Files.createDirectories(probePath.getParent());

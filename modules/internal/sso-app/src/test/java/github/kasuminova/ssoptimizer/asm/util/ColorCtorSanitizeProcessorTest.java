@@ -127,8 +127,9 @@ class ColorCtorSanitizeProcessorTest {
         final ByteArrayLoader loader = new ByteArrayLoader(ColorCtorSanitizeProcessorTest.class.getClassLoader());
         loader.define(FIXTURE_CLASS.replace('/', '.'), fixtureBytes);
         final String callerName = FIXTURE_CALLER_CLASS.replace('/', '.');
-        loader.define(callerName, fixtureCallerBytes());
-        return github.kasuminova.ssoptimizer.testing.ClassInstances.create(FixtureCaller.class, loader, callerName);
+        final Class<?> callerClass = loader.define(callerName,
+                github.kasuminova.ssoptimizer.testing.ClassInstances.publishInstanceOnInit(fixtureCallerBytes()));
+        return github.kasuminova.ssoptimizer.testing.ClassInstances.instantiate(FixtureCaller.class, callerClass);
     }
 
     private static byte[] fixtureCallerBytes() {
