@@ -2,59 +2,48 @@ package github.kasuminova.ssoptimizer.common.save;
 
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 class XStreamFieldAccessHelperTest {
     @Test
-    void readsAndWritesPrivateInstanceFields() throws Exception {
-        Sample sample = new Sample();
-        Field numberField = Sample.class.getDeclaredField("number");
-        Field textField = Sample.class.getDeclaredField("text");
-        numberField.setAccessible(true);
-        textField.setAccessible(true);
+    void readsAndWritesPrivateInstanceFields() throws Throwable {
+        final Sample sample = new Sample();
+        final MethodHandles.Lookup lookup = MethodHandles.lookup();
+        final XStreamFieldAccessHelper.FieldAccessor numbers = XStreamFieldAccessHelper.createAccessor(
+                lookup.findVarHandle(Sample.class, "number", int.class), false);
+        final XStreamFieldAccessHelper.FieldAccessor texts = XStreamFieldAccessHelper.createAccessor(
+                lookup.findVarHandle(Sample.class, "text", String.class), false);
 
-        assertEquals(Integer.valueOf(7), XStreamFieldAccessHelper.read(numberField, sample));
-        assertEquals("alpha", XStreamFieldAccessHelper.read(textField, sample));
+        assertEquals(sample.number, numbers.read(sample));
+        assertEquals(sample.text, texts.read(sample));
 
-        XStreamFieldAccessHelper.write(numberField, sample, 42);
-        XStreamFieldAccessHelper.write(textField, sample, "beta");
+        numbers.write(sample, 42);
+        texts.write(sample, "beta");
 
         assertEquals(42, sample.number);
         assertEquals("beta", sample.text);
     }
 
     @Test
-    void readsAndWritesPrivateStaticFields() throws Exception {
-        Field counterField = Sample.class.getDeclaredField("counter");
-        counterField.setAccessible(true);
-        long original = Sample.counter;
+    void readsAndWritesPrivateStaticFields() throws Throwable {
+        final VarHandle counterHandle = MethodHandles.lookup().findStaticVarHandle(
+                Sample.class, "counter", long.class);
+        final XStreamFieldAccessHelper.FieldAccessor counter =
+                XStreamFieldAccessHelper.createAccessor(counterHandle, true);
+        final long original = Sample.counter;
         try {
-            assertEquals(Long.valueOf(original), XStreamFieldAccessHelper.read(counterField, null));
+            assertEquals(original, counter.read(null));
 
-            XStreamFieldAccessHelper.write(counterField, null, 99L);
+            counter.write(null, original + 1L);
 
-            assertEquals(99L, Sample.counter);
-            assertEquals(Long.valueOf(99L), XStreamFieldAccessHelper.read(counterField, null));
+            assertEquals(original + 1L, Sample.counter);
+            assertEquals(Sample.counter, counter.read(null));
         } finally {
             Sample.counter = original;
         }
-    }
-
-    @Test
-    void reusesCachedAccessorInstances() throws Exception {
-        Field numberField = Sample.class.getDeclaredField("number");
-        numberField.setAccessible(true);
-        Method accessorFor = XStreamFieldAccessHelper.class.getDeclaredMethod("accessorFor", Field.class);
-        accessorFor.setAccessible(true);
-
-        Object first = accessorFor.invoke(null, numberField);
-        Object second = accessorFor.invoke(null, numberField);
-
-        assertSame(first, second);
     }
 
     private static final class Sample {

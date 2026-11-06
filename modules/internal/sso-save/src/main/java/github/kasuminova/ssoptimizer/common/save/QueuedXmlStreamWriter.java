@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.common.save;
 
+import org.apache.log4j.Logger;
 import org.jctools.queues.SpscArrayQueue;
 
 import javax.xml.namespace.NamespaceContext;
@@ -8,6 +9,8 @@ import javax.xml.stream.XMLStreamWriter;
 import java.util.concurrent.locks.LockSupport;
 
 final class QueuedXmlStreamWriter implements XMLStreamWriter {
+    private static final Logger LOGGER = Logger.getLogger(QueuedXmlStreamWriter.class);
+
     private static final byte OP_WRITE_START_ELEMENT_LOCAL = 1;
     private static final byte OP_WRITE_START_ELEMENT_NAMESPACE = 2;
     private static final byte OP_WRITE_START_ELEMENT_PREFIX = 3;
@@ -40,7 +43,7 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
     private final XMLStreamWriter               delegate;
     private final SpscArrayQueue<CommandBatch> freeQueue;
     private final SpscArrayQueue<CommandBatch> readyQueue;
-    private final Thread                        workerThread;
+    final Thread                        workerThread;
 
     private volatile boolean   running = true;
     private volatile boolean   closed;
@@ -405,10 +408,17 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
                 for (int i = 0; i < batch.size; i++) {
                     execute(batch, i);
                 }
-            } catch (final Throwable throwable) {
-                failure = throwable;
+            } catch (final XMLStreamException | RuntimeException e) {
+                LOGGER.error("[SSOptimizer] 后台 XML 写出失败", e);
+                failure = e;
                 completedBarrierSequence = Long.MAX_VALUE;
                 running = false;
+            } catch (final Error e) {
+                LOGGER.error("[SSOptimizer] 后台 XML 写出发生错误", e);
+                failure = e;
+                completedBarrierSequence = Long.MAX_VALUE;
+                running = false;
+                throw e;
             } finally {
                 recycleBatch(batch);
             }

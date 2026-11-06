@@ -85,11 +85,26 @@ public final class XStreamReferenceIdHelper {
     }
 
     static void resetAdaptiveCacheForTests() {
-        REQUESTED_WARMUP_LIMIT.set(REFERENCE_ID_CHUNK_SIZE);
-        precomputedReferenceIdChunks = buildInitialPrecomputedChunks();
-        precomputedReferenceIdLimit = REFERENCE_ID_CHUNK_SIZE;
-        warmupFuture = null;
-        WARMUP_RUNNING.set(false);
+        while (true) {
+            final CompletableFuture<Void> inFlightWarmup;
+            synchronized (XStreamReferenceIdHelper.class) {
+                if (!WARMUP_RUNNING.get()) {
+                    REQUESTED_WARMUP_LIMIT.set(REFERENCE_ID_CHUNK_SIZE);
+                    precomputedReferenceIdChunks = buildInitialPrecomputedChunks();
+                    precomputedReferenceIdLimit = REFERENCE_ID_CHUNK_SIZE;
+                    warmupFuture = null;
+                    return;
+                }
+                inFlightWarmup = warmupFuture;
+            }
+
+            if (inFlightWarmup == null) {
+                throw new IllegalStateException("XStream 引用 ID 预热运行状态缺少任务句柄");
+            }
+            if (!awaitWarmup(inFlightWarmup, 10_000L)) {
+                throw new IllegalStateException("等待 XStream 引用 ID 在途预热结束超时");
+            }
+        }
     }
 
     static void requestWarmupToForTests(final int maxValue) {
@@ -98,9 +113,11 @@ public final class XStreamReferenceIdHelper {
 
     static boolean awaitWarmup(final long timeoutMillis) {
         final CompletableFuture<Void> future = warmupFuture;
-        if (future == null) {
-            return true;
-        }
+        return future == null || awaitWarmup(future, timeoutMillis);
+    }
+
+    private static boolean awaitWarmup(final CompletableFuture<Void> future,
+                                       final long timeoutMillis) {
         try {
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);
             return true;
@@ -119,30 +136,35 @@ public final class XStreamReferenceIdHelper {
     }
 
     private static void requestAdaptiveWarmup(final int maxValue) {
-        final int targetLimit = clampWarmupLimit(roundUpToChunkBoundary(maxValue + 1));
-        if (targetLimit <= precomputedReferenceIdLimit) {
-            return;
-        }
+        synchronized (XStreamReferenceIdHelper.class) {
+            final int targetLimit = clampWarmupLimit(roundUpToChunkBoundary(maxValue + 1));
+            if (targetLimit <= precomputedReferenceIdLimit) {
+                return;
+            }
 
-        REQUESTED_WARMUP_LIMIT.accumulateAndGet(targetLimit, Math::max);
-        startWarmupIfNeeded();
+            REQUESTED_WARMUP_LIMIT.accumulateAndGet(targetLimit, Math::max);
+            startWarmupIfNeeded();
+        }
     }
 
     private static void startWarmupIfNeeded() {
-        if (!WARMUP_RUNNING.compareAndSet(false, true)) {
-            return;
-        }
-
-        warmupFuture = CompletableFuture.runAsync(() -> {
-            try {
-                warmupRequestedChunks();
-            } finally {
-                WARMUP_RUNNING.set(false);
-                if (REQUESTED_WARMUP_LIMIT.get() > precomputedReferenceIdLimit) {
-                    startWarmupIfNeeded();
-                }
+        synchronized (XStreamReferenceIdHelper.class) {
+            if (REQUESTED_WARMUP_LIMIT.get() <= precomputedReferenceIdLimit
+                    || !WARMUP_RUNNING.compareAndSet(false, true)) {
+                return;
             }
-        });
+
+            warmupFuture = CompletableFuture.runAsync(() -> {
+                try {
+                    warmupRequestedChunks();
+                } finally {
+                    WARMUP_RUNNING.set(false);
+                    if (REQUESTED_WARMUP_LIMIT.get() > precomputedReferenceIdLimit) {
+                        startWarmupIfNeeded();
+                    }
+                }
+            });
+        }
     }
 
     private static void warmupRequestedChunks() {

@@ -8,7 +8,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.lang.reflect.Field;
 import java.io.StringWriter;
 import java.time.Duration;
 
@@ -70,13 +69,13 @@ class QueuedXmlStreamWriterTest {
                 "closing queued writer should flush pending XML structure");
     }
 
-        @Test
-        void flushAfterEndDocumentAutoClosesWorkerThread() throws Exception {
+    @Test
+    void flushAfterEndDocumentAutoClosesWorkerThread() throws Exception {
         StringWriter output = new StringWriter();
         QueuedXmlStreamWriter writer = new QueuedXmlStreamWriter(
-            XMLOutputFactory.newFactory().createXMLStreamWriter(output),
-            64,
-            16
+                XMLOutputFactory.newFactory().createXMLStreamWriter(output),
+                64,
+                16
         );
 
         writer.writeStartDocument();
@@ -89,10 +88,10 @@ class QueuedXmlStreamWriterTest {
 
         String xml = output.toString();
         assertTrue(xml.contains("<root>done</root>"),
-            "flush after endDocument should still drain the queued XML content before auto-closing");
+                "flush after endDocument should still drain the queued XML content before auto-closing");
         assertTrue(awaitWorkerShutdown(writer, Duration.ofSeconds(2)),
-            "flush after endDocument should automatically terminate the queued writer worker thread");
-        }
+                "flush after endDocument should automatically terminate the queued writer worker thread");
+    }
 
     @Test
     void helperCanReturnOriginalWriterWhenDisabled() throws Exception {
@@ -177,9 +176,7 @@ class QueuedXmlStreamWriterTest {
                 "失败后的 close 必须继续抛出失败而非静默关闭");
     }
 
-    private static Thread extractWorkerThread(final QueuedXmlStreamWriter writer) throws Exception {
-        final Field workerField = QueuedXmlStreamWriter.class.getDeclaredField("workerThread");
-        workerField.setAccessible(true);
-        return (Thread) workerField.get(writer);
+    private static Thread extractWorkerThread(final QueuedXmlStreamWriter writer) {
+        return writer.workerThread;
     }
 }

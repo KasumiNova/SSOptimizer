@@ -17,7 +17,8 @@ import java.util.Map;
 @Mixin(targets = "com.thoughtworks.xstream.converters.reflection.FieldDictionary")
 public abstract class XStreamFieldDictionaryMixin {
     @Unique
-    private final XStreamFieldDictionaryLookupCache ssoptimizer$lookupCache = new XStreamFieldDictionaryLookupCache();
+    private final XStreamFieldDictionaryLookupCache<Field> ssoptimizer$lookupCache =
+            new XStreamFieldDictionaryLookupCache<>();
 
     @Invoker("buildMap")
     protected abstract Map<?, Field> ssoptimizer$invokeBuildMap(Class<?> type, boolean keyedByFieldKey);

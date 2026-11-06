@@ -3,72 +3,52 @@ package github.kasuminova.ssoptimizer.common.save;
 import com.thoughtworks.xstream.converters.reflection.ObjectAccessException;
 import org.apache.log4j.Logger;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.WrongMethodTypeException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 public final class XStreamFieldAccessHelper {
     public static final String DISABLE_FAST_ACCESS_PROPERTY = "ssoptimizer.disable.xstream.fastfieldaccess";
 
     private static final Logger LOGGER = Logger.getLogger(XStreamFieldAccessHelper.class);
-    private static final long FALLBACK_LOG_INTERVAL_NANOS = 5_000_000_000L;
     private static final boolean FAST_ACCESS_ENABLED = !Boolean.getBoolean(DISABLE_FAST_ACCESS_PROPERTY);
     private static final ConcurrentMap<Field, FieldAccessor> ACCESSOR_CACHE = new ConcurrentHashMap<>();
-    private static final AtomicLong LAST_FALLBACK_LOG_NANOS = new AtomicLong();
 
     private XStreamFieldAccessHelper() {
     }
 
     public static Object read(final Field field, final Object target) {
-        if (!FAST_ACCESS_ENABLED) {
-            return reflectRead(field, target);
-        }
-
         final FieldAccessor accessor = accessorFor(field);
-        if (accessor instanceof ReflectionFieldAccessor reflectionAccessor) {
-            return reflectionAccessor.read(target);
-        }
-
         try {
             return accessor.read(target);
-        } catch (final IllegalAccessException | WrongMethodTypeException | ClassCastException e) {
-            logHandleFallback("读取", field, e);
-            return reflectReadAfterHandleFailure(field, target, e);
-        } catch (final RuntimeException | Error e) {
+        } catch (final WrongMethodTypeException | ClassCastException e) {
+            throw fail("读取", "Cannot read field", field, e);
+        } catch (final RuntimeException e) {
             throw e;
-        } catch (final Throwable t) {
-            throw wrap("Cannot read field", field.getType(), field.getName(), t);
+        } catch (final Error e) {
+            throw e;
         }
     }
 
     public static void write(final Field field, final Object target, final Object value) {
-        if (!FAST_ACCESS_ENABLED || Modifier.isFinal(field.getModifiers())) {
-            reflectWrite(field, target, value);
-            return;
+        if (Modifier.isFinal(field.getModifiers())) {
+            throw fail("写入", "Cannot write final field without reflection", field,
+                    new IllegalAccessException("VarHandle 不支持写入 final 字段"));
         }
 
         final FieldAccessor accessor = accessorFor(field);
-        if (accessor instanceof ReflectionFieldAccessor reflectionAccessor) {
-            reflectionAccessor.write(target, value);
-            return;
-        }
-
         try {
             accessor.write(target, value);
-        } catch (final IllegalAccessException | WrongMethodTypeException | ClassCastException e) {
-            logHandleFallback("写入", field, e);
-            reflectWriteAfterHandleFailure(field, target, value, e);
-        } catch (final RuntimeException | Error e) {
+        } catch (final WrongMethodTypeException | ClassCastException e) {
+            throw fail("写入", "Cannot write field", field, e);
+        } catch (final RuntimeException e) {
             throw e;
-        } catch (final Throwable t) {
-            throw wrap("Cannot write field", field.getType(), field.getName(), t);
+        } catch (final Error e) {
+            throw e;
         }
     }
 
@@ -84,8 +64,9 @@ public final class XStreamFieldAccessHelper {
     }
 
     private static FieldAccessor createAccessor(final Field field) {
-        if (!FAST_ACCESS_ENABLED || Modifier.isFinal(field.getModifiers())) {
-            return new ReflectionFieldAccessor(field, null);
+        if (!FAST_ACCESS_ENABLED) {
+            throw fail("初始化", "Fast field access is disabled", field,
+                    new IllegalStateException("XStream 字段句柄访问已被禁用"));
         }
 
         try {
@@ -94,83 +75,25 @@ public final class XStreamFieldAccessHelper {
                     MethodHandles.lookup()
             );
             final VarHandle handle = privateLookup.unreflectVarHandle(field);
-            // 预先适配固定签名，避免 VarHandle 多态调用点反复重定制 LambdaForm。
-            if (Modifier.isStatic(field.getModifiers())) {
-                final MethodHandle getter = handle.toMethodHandle(VarHandle.AccessMode.GET)
-                        .asType(MethodType.methodType(Object.class));
-                final MethodHandle setter = handle.toMethodHandle(VarHandle.AccessMode.SET)
-                        .asType(MethodType.methodType(void.class, Object.class));
-                return new StaticVarHandleFieldAccessor(getter, setter);
-            }
-            final MethodHandle getter = handle.toMethodHandle(VarHandle.AccessMode.GET)
-                    .asType(MethodType.methodType(Object.class, Object.class));
-            final MethodHandle setter = handle.toMethodHandle(VarHandle.AccessMode.SET)
-                    .asType(MethodType.methodType(void.class, Object.class, Object.class));
-            return new InstanceVarHandleFieldAccessor(getter, setter);
-        } catch (final IllegalAccessException | SecurityException | WrongMethodTypeException | ClassCastException e) {
-            logHandleFallback("初始化", field, e);
-            return new ReflectionFieldAccessor(field, e);
+            return createAccessor(handle, Modifier.isStatic(field.getModifiers()));
+        } catch (final IllegalAccessException | SecurityException e) {
+            throw fail("初始化", "Cannot create field accessor", field, e);
         }
     }
 
-    private static Object reflectReadAfterHandleFailure(final Field field,
-                                                        final Object target,
-                                                        final Throwable handleFailure) {
-        try {
-            return reflectRead(field, target);
-        } catch (final RuntimeException reflectionFailure) {
-            reflectionFailure.addSuppressed(handleFailure);
-            throw reflectionFailure;
-        }
+    static FieldAccessor createAccessor(final VarHandle handle, final boolean staticField) {
+        return staticField
+                ? new StaticVarHandleFieldAccessor(handle)
+                : new InstanceVarHandleFieldAccessor(handle);
     }
 
-    private static void reflectWriteAfterHandleFailure(final Field field,
-                                                       final Object target,
-                                                       final Object value,
-                                                       final Throwable handleFailure) {
-        try {
-            reflectWrite(field, target, value);
-        } catch (final RuntimeException reflectionFailure) {
-            reflectionFailure.addSuppressed(handleFailure);
-            throw reflectionFailure;
-        }
-    }
-
-    private static Object reflectRead(final Field field, final Object target) {
-        try {
-            return field.get(target);
-        } catch (final SecurityException
-                       | IllegalArgumentException
-                       | IllegalAccessException
-                       | NoClassDefFoundError e) {
-            throw wrap("Cannot read field", field.getType(), field.getName(), e);
-        }
-    }
-
-    private static void reflectWrite(final Field field, final Object target, final Object value) {
-        try {
-            field.set(target, value);
-        } catch (final SecurityException
-                       | IllegalArgumentException
-                       | IllegalAccessException
-                       | NoClassDefFoundError e) {
-            throw wrap("Cannot write field", field.getType(), field.getName(), e);
-        }
-    }
-
-    private static void logHandleFallback(final String operation,
-                                          final Field field,
-                                          final Throwable cause) {
-        final long now = System.nanoTime();
-        final long lastLog = LAST_FALLBACK_LOG_NANOS.get();
-        if (lastLog != 0L && now - lastLog < FALLBACK_LOG_INTERVAL_NANOS) {
-            return;
-        }
-        if (!LAST_FALLBACK_LOG_NANOS.compareAndSet(lastLog, now)) {
-            return;
-        }
-        LOGGER.warn("[SSOptimizer] XStream 字段" + operation + "句柄访问失败，回退反射: "
+    private static ObjectAccessException fail(final String operation,
+                                              final String message,
+                                              final Field field,
+                                              final Throwable cause) {
+        LOGGER.error("[SSOptimizer] XStream 字段" + operation + "句柄访问失败: "
                 + field.getDeclaringClass().getName() + '.' + field.getName(), cause);
+        return wrap(message, field.getType(), field.getName(), cause);
     }
 
     private static ObjectAccessException wrap(final String message,
@@ -182,54 +105,33 @@ public final class XStreamFieldAccessHelper {
         return exception;
     }
 
-    private interface FieldAccessor {
-        Object read(Object target) throws Throwable;
+    interface FieldAccessor {
+        Object read(Object target);
 
-        void write(Object target, Object value) throws Throwable;
+        void write(Object target, Object value);
     }
 
-    private record ReflectionFieldAccessor(Field field, Throwable handleFailure) implements FieldAccessor {
+    private record InstanceVarHandleFieldAccessor(VarHandle handle) implements FieldAccessor {
         @Override
         public Object read(final Object target) {
-            if (handleFailure != null) {
-                return reflectReadAfterHandleFailure(field, target, handleFailure);
-            }
-            return reflectRead(field, target);
+            return handle.get(target);
         }
 
         @Override
         public void write(final Object target, final Object value) {
-            if (handleFailure != null) {
-                reflectWriteAfterHandleFailure(field, target, value, handleFailure);
-                return;
-            }
-            reflectWrite(field, target, value);
+            handle.set(target, value);
         }
     }
 
-    private record InstanceVarHandleFieldAccessor(MethodHandle getter, MethodHandle setter)
-            implements FieldAccessor {
+    private record StaticVarHandleFieldAccessor(VarHandle handle) implements FieldAccessor {
         @Override
-        public Object read(final Object target) throws Throwable {
-            return getter.invokeExact(target);
+        public Object read(final Object target) {
+            return handle.get();
         }
 
         @Override
-        public void write(final Object target, final Object value) throws Throwable {
-            setter.invokeExact(target, value);
-        }
-    }
-
-    private record StaticVarHandleFieldAccessor(MethodHandle getter, MethodHandle setter)
-            implements FieldAccessor {
-        @Override
-        public Object read(final Object target) throws Throwable {
-            return getter.invokeExact();
-        }
-
-        @Override
-        public void write(final Object target, final Object value) throws Throwable {
-            setter.invokeExact(value);
+        public void write(final Object target, final Object value) {
+            handle.set(value);
         }
     }
 }

@@ -3,11 +3,10 @@ package github.kasuminova.ssoptimizer.common.save;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
-import java.lang.reflect.Field;
 import java.util.function.Supplier;
 
 /** 底层字典缓存清空时必须同步清空此缓存。 */
-public final class XStreamFieldDictionaryLookupCache {
+public final class XStreamFieldDictionaryLookupCache<T> {
     private static final Object MISSING = new Object();
 
     private final Reference2ObjectOpenHashMap<Class<?>, OwnerFieldCache> ownerCaches =
@@ -16,23 +15,24 @@ public final class XStreamFieldDictionaryLookupCache {
     private Class<?>        lastOwnerType;
     private OwnerFieldCache lastOwnerCache;
 
-    public Field getOrResolve(final Class<?> ownerType,
-                              final String fieldName,
-                              final Class<?> definedIn,
-                              final Supplier<Field> resolver) {
+    @SuppressWarnings("unchecked")
+    public T getOrResolve(final Class<?> ownerType,
+                          final String fieldName,
+                          final Class<?> definedIn,
+                          final Supplier<T> resolver) {
         final Object2ObjectOpenHashMap<String, Object> fieldCache = ownerCacheFor(ownerType).fieldCacheFor(definedIn);
         final Object cached = fieldCache.get(fieldName);
         if (cached != null) {
-            return cached == MISSING ? null : (Field) cached;
+            return cached == MISSING ? null : (T) cached;
         }
 
         synchronized (fieldCache) {
             final Object rechecked = fieldCache.get(fieldName);
             if (rechecked != null) {
-                return rechecked == MISSING ? null : (Field) rechecked;
+                return rechecked == MISSING ? null : (T) rechecked;
             }
 
-            final Field resolved = resolver.get();
+            final T resolved = resolver.get();
             fieldCache.put(fieldName, resolved != null ? resolved : MISSING);
             return resolved;
         }

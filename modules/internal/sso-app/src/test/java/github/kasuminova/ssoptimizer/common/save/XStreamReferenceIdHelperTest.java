@@ -20,16 +20,13 @@ class XStreamReferenceIdHelperTest {
     }
 
     @Test
-    void compactIdsUseBase36Strings() {
-        assertEquals("0", XStreamReferenceIdHelper.toCompactString(0));
-        assertEquals("z", XStreamReferenceIdHelper.toCompactString(35));
-        assertEquals("10", XStreamReferenceIdHelper.toCompactString(36));
-        assertEquals("11", XStreamReferenceIdHelper.toCompactString(37));
-        assertEquals("100", XStreamReferenceIdHelper.toCompactString(36 * 36));
-        assertEquals("21", XStreamReferenceIdHelper.nextReferenceId(73));
-        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(4096), XStreamReferenceIdHelper.toCompactString(4096));
-        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(65_535), XStreamReferenceIdHelper.toCompactString(65_535));
-        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(262_144), XStreamReferenceIdHelper.toCompactString(262_144));
+    void compactIdsMatchIndependentBase36Conversion() {
+        final int[] values = {0, 1, 7, 35, 36, 1_000, 100_000, 300_000};
+        for (final int value : values) {
+            final String expected = Integer.toString(value, 36);
+            assertEquals(expected, XStreamReferenceIdHelper.toCompactString(value));
+            assertEquals(expected, XStreamReferenceIdHelper.nextReferenceId(value));
+        }
     }
 
     @Test
@@ -39,19 +36,33 @@ class XStreamReferenceIdHelperTest {
 
     @Test
     void helperWarmsAdditionalChunksForLargeReferenceIds() {
-        assertEquals(65_535, XStreamReferenceIdHelper.cachedReferenceIdUpperBound());
+        final int initialUpperBound = XStreamReferenceIdHelper.cachedReferenceIdUpperBound();
+        final int firstUncachedValue = initialUpperBound + 1;
 
-        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(262_144), XStreamReferenceIdHelper.toCompactString(262_144));
+        assertEquals(
+                Integer.toString(firstUncachedValue, 36),
+                XStreamReferenceIdHelper.toCompactString(firstUncachedValue)
+        );
         assertTrue(XStreamReferenceIdHelper.awaitWarmup(5_000L));
-        assertTrue(XStreamReferenceIdHelper.cachedReferenceIdUpperBound() >= 262_143);
-        assertEquals(XStreamReferenceIdHelper.toCompactStringUncached(131_072), XStreamReferenceIdHelper.toCompactString(131_072));
+        assertTrue(XStreamReferenceIdHelper.cachedReferenceIdUpperBound() > initialUpperBound);
+
+        final int cachedValue = XStreamReferenceIdHelper.cachedReferenceIdUpperBound();
+        assertEquals(
+                Integer.toString(cachedValue, 36),
+                XStreamReferenceIdHelper.toCompactString(cachedValue)
+        );
     }
 
     @Test
-    void explicitWarmupCanExpandCacheUpToConfiguredLimit() {
-        XStreamReferenceIdHelper.requestWarmupToForTests(700_000);
+    void explicitWarmupExpandsCacheToRequestedValue() {
+        final int requestedValue = XStreamReferenceIdHelper.cachedReferenceIdUpperBound() + 1_000;
+        XStreamReferenceIdHelper.requestWarmupToForTests(requestedValue);
 
         assertTrue(XStreamReferenceIdHelper.awaitWarmup(10_000L));
-        assertTrue(XStreamReferenceIdHelper.cachedReferenceIdUpperBound() >= 720_895);
+        assertTrue(XStreamReferenceIdHelper.cachedReferenceIdUpperBound() >= requestedValue);
+        assertEquals(
+                Integer.toString(requestedValue, 36),
+                XStreamReferenceIdHelper.toCompactString(requestedValue)
+        );
     }
 }
