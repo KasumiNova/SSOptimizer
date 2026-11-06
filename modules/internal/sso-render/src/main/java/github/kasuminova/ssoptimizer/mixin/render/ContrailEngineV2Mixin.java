@@ -3,7 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.starfarer.campaign.fleet.ContrailEngineV2;
 import github.kasuminova.ssoptimizer.common.render.campaign.CampaignContrailAdvanceHelper;
 import github.kasuminova.ssoptimizer.common.render.campaign.CampaignContrailBatchHelper;
-import github.kasuminova.ssoptimizer.common.render.campaign.CampaignFleetPerformanceHelper;
+import github.kasuminova.ssoptimizer.common.render.campaign.CampaignContrailPointCap;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,8 +38,8 @@ public abstract class ContrailEngineV2Mixin {
                                                final Vector2f vel,
                                                final float brightness,
                                                final CallbackInfo ci) {
-        if (CampaignFleetPerformanceHelper.isContrailPointCapReached(
-                contrails.get(source), CampaignFleetPerformanceHelper.CONTRAIL_MAX_POINTS)) {
+        if (CampaignContrailPointCap.isContrailPointCapReached(
+                contrails.get(source), CampaignContrailPointCap.CONTRAIL_MAX_POINTS)) {
             ci.cancel();
         }
     }

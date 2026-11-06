@@ -3,7 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.campaign.fleet.CampaignFleetView;
 import com.fs.starfarer.campaign.fleet.ContrailEngineV2;
-import github.kasuminova.ssoptimizer.common.render.campaign.CampaignFleetPerformanceHelper;
+import github.kasuminova.ssoptimizer.common.render.campaign.CampaignContrailFrame;
 import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,7 +17,7 @@ public abstract class CampaignFleetViewMixin {
             remap = false)
     private void ssoptimizer$advanceContrailsIfNeeded(final ContrailEngineV2 contrails,
                                                       final float amount) {
-        CampaignFleetPerformanceHelper.advanceContrailsIfNeeded(contrails, amount);
+        CampaignContrailFrame.advanceContrailsIfNeeded(contrails, amount);
     }
 
     @Redirect(
@@ -27,7 +27,7 @@ public abstract class CampaignFleetViewMixin {
     private void ssoptimizer$renderContrailsIfNeeded(final ContrailEngineV2 contrails,
                                                      final float alphaMult) {
         final CampaignFleetView self = (CampaignFleetView) (Object) this;
-        CampaignFleetPerformanceHelper.renderContrailsIfNeeded(
+        CampaignContrailFrame.renderContrailsIfNeeded(
                 contrails, alphaMult,
                 self.getFleet().getLocation(),
                 Global.getSector().getViewport());

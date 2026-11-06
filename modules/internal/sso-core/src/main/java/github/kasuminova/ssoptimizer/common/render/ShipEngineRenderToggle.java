@@ -1,10 +1,9 @@
 package github.kasuminova.ssoptimizer.common.render;
 
-/** 控制舰船引擎火焰合批渲染，默认启用，可通过系统属性显式关闭。 */
-public final class ShipEngineRenderOptimizationToggle {
+public final class ShipEngineRenderToggle {
     public static final String ENABLE_PROPERTY = "ssoptimizer.render.shipengine.enable";
 
-    private ShipEngineRenderOptimizationToggle() {
+    private ShipEngineRenderToggle() {
     }
 
     public static boolean isEnabled() {

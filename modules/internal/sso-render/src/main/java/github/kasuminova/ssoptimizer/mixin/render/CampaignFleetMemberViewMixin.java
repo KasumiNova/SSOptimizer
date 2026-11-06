@@ -3,7 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.starfarer.campaign.fleet.CampaignFleetMemberView;
 import com.fs.starfarer.util.ColorShifter;
 import com.fs.starfarer.util.ValueShifter;
-import github.kasuminova.ssoptimizer.common.render.campaign.CampaignFleetPerformanceHelper;
+import github.kasuminova.ssoptimizer.common.render.campaign.CampaignFleetMemberViewShifters;
 import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,7 +17,7 @@ public abstract class CampaignFleetMemberViewMixin {
             remap = false)
     private void ssoptimizer$advanceColorShifterIfNeeded(final ColorShifter shifter,
                                                          final float amount) {
-        CampaignFleetPerformanceHelper.advanceColorShifterIfNeeded(shifter, amount);
+        CampaignFleetMemberViewShifters.advanceColorShifterIfNeeded(shifter, amount);
     }
 
     @Redirect(
@@ -26,6 +26,6 @@ public abstract class CampaignFleetMemberViewMixin {
             remap = false)
     private void ssoptimizer$advanceValueShifterIfNeeded(final ValueShifter shifter,
                                                          final float amount) {
-        CampaignFleetPerformanceHelper.advanceValueShifterIfNeeded(shifter, amount);
+        CampaignFleetMemberViewShifters.advanceValueShifterIfNeeded(shifter, amount);
     }
 }

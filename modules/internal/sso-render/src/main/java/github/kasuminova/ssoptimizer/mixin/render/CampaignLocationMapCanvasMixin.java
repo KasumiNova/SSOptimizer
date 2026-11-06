@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin.render;
 
-import github.kasuminova.ssoptimizer.common.render.campaign.CampaignLocationMapCanvasPerformanceHelper;
+import github.kasuminova.ssoptimizer.common.render.campaign.CampaignMapEntityRetention;
 import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,6 +17,6 @@ public abstract class CampaignLocationMapCanvasMixin {
             remap = false)
     private boolean ssoptimizer$retainLiveEntitiesWithLookupSet(final Set<?> targetSet,
                                                                 final Collection<?> liveEntities) {
-        return CampaignLocationMapCanvasPerformanceHelper.retainLiveEntities(targetSet, liveEntities);
+        return CampaignMapEntityRetention.retainLiveEntities(targetSet, liveEntities);
     }
 }

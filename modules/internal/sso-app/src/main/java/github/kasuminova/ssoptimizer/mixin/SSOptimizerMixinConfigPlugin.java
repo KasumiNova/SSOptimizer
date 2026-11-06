@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin;
 
-import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderOptimizationToggle;
+import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderToggle;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
@@ -27,9 +27,9 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(final String targetClassName,
                                     final String mixinClassName) {
-        if (mixinClassName.endsWith(".render.EngineRenderMixin") && !ShipEngineRenderOptimizationToggle.isEnabled()) {
-            LOGGER.info("[SSOptimizer] Ship engine render optimization mixin disabled by default; enable with -D"
-                + ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY + "=true");
+        if (mixinClassName.endsWith(".render.EngineRenderMixin") && !ShipEngineRenderToggle.isEnabled()) {
+            LOGGER.info("[SSOptimizer] Ship engine render optimization mixin disabled via -D"
+                + ShipEngineRenderToggle.ENABLE_PROPERTY + "=false");
             return false;
         }
         // 渲染线程模式关闭时 bridge 不会安装，因此必须禁用依赖顶点流或纹理上传通道的 Mixin。

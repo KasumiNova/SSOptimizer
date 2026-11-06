@@ -4,11 +4,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public final class CampaignLocationMapCanvasPerformanceHelper {
+public final class CampaignMapEntityRetention {
     private static final ThreadLocal<HashSet<Object>> RETAIN_LOOKUP_SET =
             ThreadLocal.withInitial(HashSet::new);
 
-    private CampaignLocationMapCanvasPerformanceHelper() {
+    private CampaignMapEntityRetention() {
     }
 
     public static boolean retainLiveEntities(final Set<?> targetSet,

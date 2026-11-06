@@ -1,6 +1,6 @@
 package github.kasuminova.ssoptimizer.mixin;
 
-import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderOptimizationToggle;
+import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderToggle;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SSOptimizerMixinConfigPluginTest {
     @AfterEach
     void clearEngineRenderProperty() {
-        System.clearProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY);
+        System.clearProperty(ShipEngineRenderToggle.ENABLE_PROPERTY);
         System.clearProperty(SSOptimizerMixinConfigPlugin.AI_PARALLEL_DISABLE_PROPERTY);
         System.clearProperty(RenderThreadMode.ENABLE_PROPERTY);
     }
@@ -27,7 +27,7 @@ class SSOptimizerMixinConfigPluginTest {
 
     @Test
     void skipsEngineRenderMixinWhenExplicitlyDisabled() {
-        System.setProperty(ShipEngineRenderOptimizationToggle.ENABLE_PROPERTY, "false");
+        System.setProperty(ShipEngineRenderToggle.ENABLE_PROPERTY, "false");
         SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
 
         assertFalse(plugin.shouldApplyMixin(
