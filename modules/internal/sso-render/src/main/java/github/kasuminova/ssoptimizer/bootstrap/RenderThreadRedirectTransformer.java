@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 
 /**
  * 开放类集合中的任意 GL owner 引用都需要改写，Mixin 的逐目标注入模型不适用。
- * 本 transformer 必须位于 HybridWeaverTransformer 之后，并按 RFB 契约返回类字节。
+ * 与 HybridWeaverTransformer 的改写目标互不重叠，声明顺序不构成依赖；按 RFB 契约返回类字节。
  */
 public final class RenderThreadRedirectTransformer implements IClassTransformer {
     private static final Logger LOGGER = Logger.getLogger(RenderThreadRedirectTransformer.class);

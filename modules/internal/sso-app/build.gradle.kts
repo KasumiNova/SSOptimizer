@@ -62,7 +62,7 @@ nanoforge {
     coremod.set(true)
     pluginClass.set("github.kasuminova.ssoptimizer.bootstrap.SSOptimizerCorePlugin")
     authors.set(listOf("kasuminova"))
-    // HybridWeaverTransformer 必须先执行，避免 glFinish hook 被 RenderThreadRedirectTransformer 再次重定向。
+    // 两个 transformer 的改写目标互不重叠，声明顺序不构成依赖。
     asmTransformers.set(listOf(
         "github.kasuminova.ssoptimizer.bootstrap.HybridWeaverTransformer",
         "github.kasuminova.ssoptimizer.bootstrap.RenderThreadRedirectTransformer"

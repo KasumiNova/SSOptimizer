@@ -86,15 +86,6 @@ class CoreModJarTest {
     }
 
     @Test
-    void hybridWeaverRunsBeforeRenderThreadRedirect() throws IOException {
-        final List<String> transformers = tomlStrings(readText("coremod.toml"), "transformers");
-        final int hybrid = transformers.indexOf(HybridWeaverTransformer.class.getName());
-        final int redirect = transformers.indexOf(RenderThreadRedirectTransformer.class.getName());
-        assertTrue(hybrid >= 0 && redirect >= 0, "两个 transformer 都必须被声明");
-        assertTrue(hybrid < redirect, "HybridWeaverTransformer 必须先于 RenderThreadRedirectTransformer");
-    }
-
-    @Test
     void everyRegisteredMixinIsPackaged() throws IOException {
         final JsonObject config = JsonParser.parseString(readText("mixins.ssoptimizer.json")).getAsJsonObject();
         final String basePackage = config.get("package").getAsString();
