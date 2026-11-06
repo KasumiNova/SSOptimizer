@@ -28,10 +28,10 @@
 | `ssoptimizer.disable.linuxkeyboardime` | `LinuxKeyboardImeProcessor` | 跳过 Linux 键盘 IME 注入 |
 | `ssoptimizer.disable.astdautomation` | `ASTDAutomationCombatPluginProcessor` | 跳过 ASTD 自动化战斗插件注入（配套属性见「自动化」节） |
 | `ssoptimizer.disable.windowsdisplayime` | `WindowsDisplayImeProcessor` | 跳过 Windows 显示层 IME 注入 |
-| `ssoptimizer.disable.tooltiptextfieldime` | `TooltipTextFieldFactoryProcessor` | 跳过提示框文本域 IME 注入 |
-| `ssoptimizer.disable.settingstextfieldime` | `SettingsTextFieldFactoryProcessor` | 跳过设置页文本域 IME 注入 |
-| `ssoptimizer.disable.textfieldimplime` | `TextFieldImplementationProcessor` | 跳过文本域实现 IME 注入 |
-| `ssoptimizer.disable.originalfontstream` | `OriginalFontResourceStreamProcessor` | 跳过原版字体资源流替换（Composite，第 87-91 行） |
+| `ssoptimizer.disable.tooltiptextfieldime` | `TooltipTextFieldFactoryMixin` | 跳过提示框文本域 IME 注入（Mixin 织入期门控，`SSOptimizerMixinConfigPlugin`） |
+| `ssoptimizer.disable.settingstextfieldime` | `SettingsTextFieldFactoryMixin` | 跳过设置页文本域 IME 注入（Mixin 织入期门控） |
+| `ssoptimizer.disable.textfieldimplime` | `TextFieldImplementationMixin` | 跳过文本域实现 IME 注入（Mixin 织入期门控） |
+| `ssoptimizer.disable.originalfontstream` | `OriginalFontResourceStreamMixin` | 跳过原版字体资源流替换（Mixin 织入期门控） |
 | `ssoptimizer.disable.resourcefilecache` | `ResourceLoaderFileAccessProcessor` | 跳过 ResourceLoader 文件访问替换（Composite） |
 | `ssoptimizer.disable.caseinsensitiveresource` | `CaseInsensitiveResourceFallbackProcessor` | 跳过大小写不敏感资源回退替换（Composite） |
 

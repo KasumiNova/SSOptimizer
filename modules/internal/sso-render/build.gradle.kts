@@ -15,6 +15,8 @@ dependencies {
         testImplementation("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
     }
     testImplementation("starsector.game:lwjgl_util:0.98a-RC8-SNAPSHOT")
+    testImplementation("org.ow2.asm:asm-tree:9.8")
+    testRuntimeOnly("log4j:log4j:1.2.17")
 }
 
 tasks.named<JavaCompile>("compileJava") {

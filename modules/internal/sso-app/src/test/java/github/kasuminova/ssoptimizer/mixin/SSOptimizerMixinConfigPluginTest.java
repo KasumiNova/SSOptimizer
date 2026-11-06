@@ -92,4 +92,37 @@ class SSOptimizerMixinConfigPluginTest {
                 "com.fs.starfarer.loading.ResourceLoader",
                 "github.kasuminova.ssoptimizer.mixin.loading.SoundManagerMixin"));
     }
+
+    @Test
+    void combatStateTraversalMixinFollowsRenderThreadMode() {
+        SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
+        final String bridgeMixin = "github.kasuminova.ssoptimizer.mixin.render.CombatStateTraversalMixin";
+        final String directMixin = "github.kasuminova.ssoptimizer.mixin.render.CombatStateTraversalDirectMixin";
+
+        assertTrue(plugin.shouldApplyMixin("com.fs.starfarer.combat.CombatState", bridgeMixin));
+        assertFalse(plugin.shouldApplyMixin("com.fs.starfarer.combat.CombatState", directMixin));
+
+        System.setProperty(RenderThreadMode.ENABLE_PROPERTY, "false");
+
+        assertFalse(plugin.shouldApplyMixin("com.fs.starfarer.combat.CombatState", bridgeMixin));
+        assertTrue(plugin.shouldApplyMixin("com.fs.starfarer.combat.CombatState", directMixin));
+    }
+
+    @Test
+    void disableKeySkipsOnlyTheMatchingMigratedMixin() {
+        final String key = "ssoptimizer.disable.textfieldimplime";
+        System.setProperty(key, "true");
+        try {
+            SSOptimizerMixinConfigPlugin plugin = new SSOptimizerMixinConfigPlugin();
+
+            assertFalse(plugin.shouldApplyMixin(
+                    "com.fs.starfarer.ui.TextFieldImpl",
+                    "github.kasuminova.ssoptimizer.mixin.ime.TextFieldImplementationMixin"));
+            assertTrue(plugin.shouldApplyMixin(
+                    "com.fs.starfarer.ui.StandardTooltipV2Expandable",
+                    "github.kasuminova.ssoptimizer.mixin.ime.TooltipTextFieldFactoryMixin"));
+        } finally {
+            System.clearProperty(key);
+        }
+    }
 }

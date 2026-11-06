@@ -37,24 +37,6 @@ class RealBytecodeIntegrationTest {
     }
 
     @Test
-    void resourceLoaderRewritesRealOpenStreamBytecodeForOriginalFontOverrides() {
-        var processor = new github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor();
-        byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.TARGET_CLASS);
-        assumeTrue(original != null, "Resource loader class not on classpath");
-
-        byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "Original font resource processor should handle real resource-loader bytecode");
-        assertNotNull(rewritten, "Processor should rewrite managed resource openStream for original font overrides");
-
-        int helperCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.HELPER_OWNER,
-                github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.HELPER_METHOD,
-                github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor.TARGET_DESC);
-        assertTrue(helperCalls > 0,
-                "Rewritten resource loader should consult OriginalGameFontOverrides.openStream before default resource lookup");
-    }
-
-    @Test
     void textureLoaderRewritesRealPixelConversionBytecode() {
         var processor = new github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor();
         byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.TARGET_CLASS);

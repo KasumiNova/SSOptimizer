@@ -11,7 +11,6 @@ import github.kasuminova.ssoptimizer.api.save.SavePhaseTelemetry;
 import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
 import github.kasuminova.ssoptimizer.asm.combat.CollisionImpulseClampProcessor;
 import github.kasuminova.ssoptimizer.asm.combat.ShipDamageStageTwoProcessor;
-import github.kasuminova.ssoptimizer.asm.font.OriginalFontResourceStreamProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
@@ -20,7 +19,6 @@ import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallback
 import github.kasuminova.ssoptimizer.asm.loading.ResourceLoaderFileAccessProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
-import github.kasuminova.ssoptimizer.asm.render.CombatStateProcessor;
 import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
@@ -116,7 +114,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
     static void registerEngineProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
         registerIf(registrator, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
         registerIf(registrator, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
-        registrator.accept(GameClassNames.COMBAT_STATE, new CombatStateProcessor());
         // LWJGL 由 RFB 系统类加载器加载，Launch 域 transformer 无法改写，必须经 SystemAsmBridge 注册。
         registerSystemIf("linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
         registerSystemIf("linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
@@ -126,12 +123,8 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "aitweaksbootstraploader", AITweaksBootstrapLoaderProcessor.TARGET_CLASS, new AITweaksBootstrapLoaderProcessor());
         registerIf(registrator, "aitweakscoreloader", AITweaksCoreLoaderProcessor.TARGET_CLASS, new AITweaksCoreLoaderProcessor());
         registerIf(registrator, "shipmasteryreflectionloader", ShipMasteryReflectionLoaderProcessor.TARGET_CLASS, new ShipMasteryReflectionLoaderProcessor());
-        registerIf(registrator, "tooltiptextfieldime", GameClassNames.STANDARD_TOOLTIP_V2_EXPANDABLE, new TooltipTextFieldFactoryProcessor());
-        registerIf(registrator, "settingstextfieldime", GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER, new SettingsTextFieldFactoryProcessor());
-        registerIf(registrator, "textfieldimplime", GameClassNames.TEXT_FIELD_IMPL, new TextFieldImplementationProcessor());
         registerCompositeIf(registrator,
                 GameClassNames.RESOURCE_LOADER,
-                new ProcessorToggle("originalfontstream", new OriginalFontResourceStreamProcessor()),
                 new ProcessorToggle("resourcefilecache", new ResourceLoaderFileAccessProcessor()),
                 new ProcessorToggle("caseinsensitiveresource", new CaseInsensitiveResourceFallbackProcessor()));
         registerIf(registrator, "shipdamagestagetwo", GameClassNames.SHIP, new ShipDamageStageTwoProcessor());
