@@ -13,6 +13,7 @@ public final class ParallelImagePreloadWorker implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(ParallelImagePreloadWorker.class);
 
     private static volatile LoaderAccess cachedAccess;
+    private static volatile FontResourceOverride fontResourceOverrideForTests;
 
     private final LoaderAccess access;
 
@@ -38,6 +39,17 @@ public final class ParallelImagePreloadWorker implements Runnable {
 
     static void resetAccessForTests() {
         cachedAccess = null;
+    }
+
+    static void installFontResourceOverrideForTests(final FontResourceOverride fontResourceOverride) {
+        if (fontResourceOverride == null) {
+            throw new IllegalArgumentException("fontResourceOverride must not be null");
+        }
+        fontResourceOverrideForTests = fontResourceOverride;
+    }
+
+    static void resetFontResourceOverrideForTests() {
+        fontResourceOverrideForTests = null;
     }
 
     private static boolean isInterruptedFailure(final Throwable throwable) {
@@ -192,6 +204,7 @@ public final class ParallelImagePreloadWorker implements Runnable {
     }
 
     private static FontResourceOverride fontResourceOverride() {
-        return ServiceRegistry.getOrNull(FontResourceOverride.class);
+        final FontResourceOverride installed = fontResourceOverrideForTests;
+        return installed != null ? installed : ServiceRegistry.getOrNull(FontResourceOverride.class);
     }
 }

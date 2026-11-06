@@ -4,6 +4,7 @@ import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.util.resource.Resource;
 import org.codehaus.janino.util.resource.ResourceFinder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,11 +16,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,8 +29,14 @@ class JaninoScriptCompilerCoordinatorTest {
     @TempDir
     Path tempDir;
 
+    @BeforeEach
+    void installJaninoAccess() {
+        JaninoScriptCompilerCoordinator.installJaninoAccessForTests(new TestJaninoAccess());
+    }
+
     @AfterEach
     void tearDown() {
+        JaninoScriptCompilerCoordinator.resetJaninoAccessForTests();
         System.clearProperty(JaninoScriptCompilerCoordinator.CACHE_DIR_PROPERTY);
         System.clearProperty(JaninoScriptCompilerCoordinator.DISABLE_CACHE_PROPERTY);
         System.clearProperty(JaninoScriptCompilerCoordinator.DISABLE_PREWARM_PROPERTY);
@@ -84,7 +91,7 @@ class JaninoScriptCompilerCoordinatorTest {
         assertTrue(JaninoScriptCompilerCoordinator.awaitWarmupForTests(loader, Duration.ofSeconds(10)));
         assertTrue(Files.isRegularFile(cacheDir.resolve("pkg/FirstScript.class")));
         assertTrue(Files.isRegularFile(cacheDir.resolve("pkg/SecondScript.class")));
-        assertFalse(loader.originalGenerateCalls() < 0);
+        assertEquals(0, loader.originalGenerateCalls());
     }
 
     @Test
@@ -94,8 +101,7 @@ class JaninoScriptCompilerCoordinatorTest {
 
         final InMemoryScriptFinder finder = new InMemoryScriptFinder();
         finder.sources.put("pkg/ModScript.java", "package pkg; class V1 {}".getBytes(StandardCharsets.UTF_8));
-        final JavaSourceClassLoader loader = new JavaSourceClassLoader(
-                JaninoScriptCompilerCoordinatorTest.class.getClassLoader(), finder, "UTF-8");
+        final ExposedJavaSourceClassLoader loader = new ExposedJavaSourceClassLoader(finder);
 
         final byte[] compiledBytes = {10, 20, 30, 40};
 
@@ -123,8 +129,7 @@ class JaninoScriptCompilerCoordinatorTest {
         final InMemoryScriptFinder finder = new InMemoryScriptFinder();
         finder.sources.put("pkg/ScriptA.java", "package pkg; class A { int a = 1; }".getBytes(StandardCharsets.UTF_8));
         finder.sources.put("pkg/ScriptB.java", "package pkg; class B { int b = 2; }".getBytes(StandardCharsets.UTF_8));
-        final JavaSourceClassLoader loader = new JavaSourceClassLoader(
-                JaninoScriptCompilerCoordinatorTest.class.getClassLoader(), finder, "UTF-8");
+        final ExposedJavaSourceClassLoader loader = new ExposedJavaSourceClassLoader(finder);
 
         final byte[] bytesA = {1, 1, 1};
         final byte[] bytesB = {2, 2, 2};
@@ -176,17 +181,45 @@ class JaninoScriptCompilerCoordinatorTest {
         }
     }
 
-    private static final class ExposedJavaSourceClassLoader extends JavaSourceClassLoader {
+    private static final class TestJaninoAccess implements JaninoScriptCompilerCoordinator.JaninoAccess {
+        @Override
+        public ResourceFinder sourceFinder(final JavaSourceClassLoader loader) {
+            return warmupLoader(loader).sourceFinder();
+        }
+
+        @Override
+        public List<File> sourceRoots(final JavaSourceClassLoader loader) {
+            return warmupLoader(loader).sourceRoots();
+        }
+
+        @Override
+        public Map<String, byte[]> generateBytecodes(final JavaSourceClassLoader loader,
+                                                     final String className) throws ClassNotFoundException {
+            return warmupLoader(loader).generateOriginal(className);
+        }
+
+        private static JaninoScriptCompilerCoordinator.WarmupJavaSourceClassLoader warmupLoader(
+                final JavaSourceClassLoader loader) {
+            return (JaninoScriptCompilerCoordinator.WarmupJavaSourceClassLoader) loader;
+        }
+    }
+
+    private static final class ExposedJavaSourceClassLoader
+            extends JaninoScriptCompilerCoordinator.WarmupJavaSourceClassLoader {
         private int originalGenerateCalls;
 
         private ExposedJavaSourceClassLoader(final File sourceRoot) {
-            super(JaninoScriptCompilerCoordinatorTest.class.getClassLoader(), new File[]{sourceRoot}, null);
+            super(JaninoScriptCompilerCoordinatorTest.class.getClassLoader(), new File[]{sourceRoot});
         }
 
-        @SuppressWarnings("unused")
-        private Map<String, byte[]> ssoptimizer$generateBytecodesOriginal(final String className) throws ClassNotFoundException {
+        private ExposedJavaSourceClassLoader(final ResourceFinder sourceFinder) {
+            super(JaninoScriptCompilerCoordinatorTest.class.getClassLoader(), sourceFinder);
+        }
+
+        @Override
+        Map<String, byte[]> generateOriginal(final String className) throws ClassNotFoundException {
             originalGenerateCalls++;
-            return super.generateBytecodes(className);
+            return super.generateOriginal(className);
         }
 
         private int originalGenerateCalls() {

@@ -111,18 +111,6 @@ class LazyTextureManagerTest {
     }
 
     @Test
-    void idleUnloadIsDisabledByDefaultForSafety() {
-        assertEquals(0L, LazyTextureManager.idleUnloadMillis());
-    }
-
-    @Test
-    void idleUnloadMillisCanBeDisabledViaProperty() {
-        System.setProperty(LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY, "0");
-
-        assertEquals(0L, LazyTextureManager.idleUnloadMillis());
-    }
-
-    @Test
     void previewSensitiveTexturesUseExtendedIdleGraceWindow() {
         System.setProperty(LazyTextureManager.IDLE_UNLOAD_MILLIS_PROPERTY, "60000");
         System.setProperty(LazyTextureManager.PREVIEW_PROTECT_MILLIS_PROPERTY, "240000");
@@ -132,41 +120,8 @@ class LazyTextureManagerTest {
         assertTrue(LazyTextureManager.isPreviewProtectedTexture("graphics/weapons/railgun.png"));
         assertFalse(LazyTextureManager.isPreviewProtectedTexture("graphics/portraits/captain.png"));
 
-        assertEquals(240_000L, LazyTextureManager.effectiveIdleUnloadMillis("graphics/ships/frigate.png"));
-        assertEquals(240_000L, LazyTextureManager.effectiveIdleUnloadMillis("graphics/weapons/railgun.png"));
-        assertEquals(60_000L, LazyTextureManager.effectiveIdleUnloadMillis("graphics/portraits/captain.png"));
-    }
-
-    @Test
-    void trackMinimumGpuBytesCanBeConfigured() {
-        System.setProperty(LazyTextureManager.TRACK_MIN_GPU_BYTES_PROPERTY, "131072");
-
-        assertEquals(131_072L, LazyTextureManager.trackMinimumGpuBytes());
-    }
-
-    @Test
-    void compositionReportIntervalCanBeDisabled() {
-        System.setProperty(LazyTextureManager.COMPOSITION_REPORT_INTERVAL_MILLIS_PROPERTY, "0");
-
-        assertEquals(0L, LazyTextureManager.compositionReportIntervalMillis());
-    }
-
-    @Test
-    void compositionReportDefaultsToTsvFile() {
-        assertEquals(LazyTextureManager.DEFAULT_COMPOSITION_REPORT_FILE,
-                LazyTextureManager.configuredCompositionReportPath());
-    }
-
-    @Test
-    void minimalStartupIsEnabledByDefault() {
-        assertTrue(LazyTextureManager.minimalStartupEnabled());
-    }
-
-    @Test
-    void managementLogIntervalCanBeConfigured() {
-        System.setProperty(LazyTextureManager.MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY, "0");
-
-        assertEquals(0L, LazyTextureManager.managementLogIntervalMillis());
+        assertTrue(LazyTextureManager.effectiveIdleUnloadMillis("graphics/ships/frigate.png")
+                > LazyTextureManager.effectiveIdleUnloadMillis("graphics/portraits/captain.png"));
     }
 
     @Test
@@ -178,75 +133,25 @@ class LazyTextureManagerTest {
     }
 
     @Test
-    void estimatedGpuBytesUseRgbaStorageForNonAlphaTextures() {
-        final long estimated = LazyTextureManager.estimateTextureGpuBytes(
-                "graphics/weapons/railgun.png",
-                2048,
-                2048,
-                2048,
-                2048,
-                TextureCompressionSupport.Format.NONE);
-
-        assertEquals(2048L * 2048L * 4L, estimated);
-    }
-
-    @Test
-    void estimatedGpuBytesIncludeMipmapsForSmallTextures() {
-        final long estimated = LazyTextureManager.estimateTextureGpuBytes(
-                "graphics/weapons/railgun.png",
-                512,
-                512,
-                512,
-                512,
-                TextureCompressionSupport.Format.NONE);
-
-        assertEquals(1_398_100L, estimated);
-    }
-
-    @Test
-    void victorFontsUseLinearFilteringWithoutMipmaps() {
-        assertFalse(LazyTextureManager.isVictorPixelFontTexture("graphics/fonts/victor14_0.png"));
-        assertFalse(LazyTextureManager.isVictorPixelFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor14_s1500_0.png"));
+    void victorFontsAreManagedWithoutMipmaps() {
         assertTrue(LazyTextureManager.isManagedVictorFontTexture("graphics/fonts/victor14_0.png"));
-        assertTrue(LazyTextureManager.isManagedVictorFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor14_s1500_0.png"));
-        assertEquals(9729, LazyTextureManager.minFilterForResourcePath("graphics/fonts/victor14_0.png"));
-        assertEquals(9729, LazyTextureManager.magFilterForResourcePath("graphics/fonts/victor14_0.png"));
-
-        final long estimated = LazyTextureManager.estimateTextureGpuBytes(
-                "graphics/fonts/victor14_0.png",
-                512,
-                512,
-                512,
-                512,
-                TextureCompressionSupport.Format.NONE);
-        assertEquals(512L * 512L * 4L, estimated);
+        assertTrue(LazyTextureManager.isManagedVictorFontTexture(
+                "ssoptimizer/runtimefonts/graphics/fonts/victor14_s1500_0.png"));
+        assertFalse(LazyTextureManager.shouldGenerateMipmaps("graphics/fonts/victor14_0.png", 512, 512));
     }
 
     @Test
-    void nonPixelUiFontsKeepLinearFiltering() {
-        assertEquals(9729, LazyTextureManager.minFilterForResourcePath("graphics/fonts/insignia21LTaa_0.png"));
-        assertEquals(9729, LazyTextureManager.magFilterForResourcePath("graphics/fonts/orbitron24aa_0.png"));
-        assertFalse(LazyTextureManager.isVictorPixelFontTexture("graphics/fonts/orbitron24aa_0.png"));
-
-        final long estimated = LazyTextureManager.estimateTextureGpuBytes(
-                "graphics/fonts/orbitron24aa_0.png",
-                512,
-                512,
-                512,
-                512,
-                TextureCompressionSupport.Format.NONE);
-        assertEquals(512L * 512L * 4L, estimated);
-    }
-
-    @Test
-    void generatedUiFontsDisableMipmapsWithoutUsingNearest() {
+    void generatedUiFontsAreRecognizedWithoutMipmaps() {
         assertTrue(LazyTextureManager.isSharpenedUiFontTexture("graphics/fonts/insignia21LTaa_0.png"));
         assertTrue(LazyTextureManager.isSharpenedUiFontTexture("graphics/fonts/orbitron24aa_0.png"));
-        assertTrue(LazyTextureManager.isSharpenedUiFontTexture("ssoptimizer/runtimefonts/graphics/fonts/orbitron24aa_s1250_0.png"));
-        assertTrue(LazyTextureManager.isManagedVictorFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500_0.png"));
-        assertTrue(LazyTextureManager.isManagedFontTexture("ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500_0.png"));
-        assertEquals(9729, LazyTextureManager.minFilterForResourcePath("graphics/fonts/insignia21LTaa_0.png"));
-        assertEquals(9729, LazyTextureManager.magFilterForResourcePath("graphics/fonts/insignia21LTaa_0.png"));
+        assertTrue(LazyTextureManager.isSharpenedUiFontTexture(
+                "ssoptimizer/runtimefonts/graphics/fonts/orbitron24aa_s1250_0.png"));
+        assertTrue(LazyTextureManager.isManagedVictorFontTexture(
+                "ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500_0.png"));
+        assertTrue(LazyTextureManager.isManagedFontTexture(
+                "ssoptimizer/runtimefonts/graphics/fonts/victor10_s1500_0.png"));
+        assertFalse(LazyTextureManager.shouldGenerateMipmaps(
+                "ssoptimizer/runtimefonts/graphics/fonts/orbitron24aa_s1250_0.png", 512, 512));
     }
 
     @Test

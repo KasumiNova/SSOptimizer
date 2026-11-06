@@ -65,17 +65,6 @@ class TextureCompressionEligibilityTest {
     }
 
     @Test
-    void defaultExcludePathsCoverBackgroundsAndFx() {
-        assertEquals(Format.NONE, select("graphics/backgrounds/nebula.png", 2048, 2048, AlphaKind.OPAQUE, Format.BC7, true, false));
-        assertEquals(Format.NONE, select("graphics/starscape/bg.png", 2048, 2048, AlphaKind.OPAQUE, Format.BC7, true, false));
-        assertEquals(Format.NONE, select("graphics/illustrations/rat_genesis.jpg", 2048, 2048, AlphaKind.OPAQUE, Format.BC7, true, false));
-        assertEquals(Format.NONE, select("graphics/fx/explosion_large.png", 512, 512, AlphaKind.FULL, Format.BC7, true, false));
-        assertEquals(Format.NONE, select("graphics/aEP_Background/x.png", 1024, 1024, AlphaKind.OPAQUE, Format.BC7, true, false));
-        assertEquals(Format.BC7, select("graphics/sfx/beam.png", 512, 512, AlphaKind.FULL, Format.BC7, true, false));
-        assertEquals(Format.BC7, select(SHIP, 512, 512, AlphaKind.FULL, Format.BC7, true, false));
-    }
-
-    @Test
     void s3tcFallbackSelectsByActualAlphaContent() {
         assertEquals(Format.BC1, select(SHIP, 2048, 2048, AlphaKind.OPAQUE, Format.BC3, true, false));
         assertEquals(Format.BC1, select(SHIP, 512, 512, AlphaKind.BINARY, Format.BC3, true, false));

@@ -12,13 +12,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ParallelSoundLoadCoordinatorTest {
     @TempDir
@@ -115,13 +115,20 @@ class ParallelSoundLoadCoordinatorTest {
     void inflightEntryRemovedWhenPrewarmLoadFails() throws Exception {
         final Path gameRoot = tempDir.resolve("game");
         final Path modsDir = gameRoot.resolve("mods");
+        final String brokenResource = "sounds/broken.ogg";
         Files.createDirectories(gameRoot.resolve("sounds"));
         Files.writeString(gameRoot.resolve("sounds/good.ogg"), "good", StandardCharsets.UTF_8);
-        final Path broken = gameRoot.resolve("sounds/broken.ogg");
-        Files.writeString(broken, "broken", StandardCharsets.UTF_8);
-        assumeTrue(broken.toFile().setReadable(false),
-                "平台不支持文件权限位（如 Windows），跳过预载失败路径断言");
+        Files.writeString(gameRoot.resolve(brokenResource), "broken", StandardCharsets.UTF_8);
 
+        final IOException failure = new IOException("injected sound read failure");
+        final AtomicInteger failedReads = new AtomicInteger();
+        ParallelSoundLoadCoordinator.installBytesLoaderForTests(resourcePath -> {
+            if (brokenResource.equals(resourcePath)) {
+                failedReads.incrementAndGet();
+                throw failure;
+            }
+            return Files.readAllBytes(gameRoot.resolve(resourcePath));
+        });
         System.setProperty("com.fs.starfarer.settings.paths.mods", modsDir.toString());
         System.setProperty(ParallelSoundLoadCoordinator.PARALLELISM_PROPERTY, "2");
 
@@ -129,6 +136,7 @@ class ParallelSoundLoadCoordinatorTest {
         ParallelSoundLoadCoordinator.loadObjectFamily(manager, "sounds/good.ogg");
 
         awaitInflightDrain();
+        assertTrue(failedReads.get() > 0, "预载必须执行注入的 IOException 故障路径");
         assertEquals(0, ParallelSoundLoadCoordinator.inflightLoadCountForTests(),
                 "预载失败条目也必须移除（future 不得滞留）");
     }

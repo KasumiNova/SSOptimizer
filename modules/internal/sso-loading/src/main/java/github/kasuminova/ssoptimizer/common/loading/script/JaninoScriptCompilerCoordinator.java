@@ -3,20 +3,22 @@ package github.kasuminova.ssoptimizer.common.loading.script;
 import github.kasuminova.ssoptimizer.asm.render.RenderThreadRedirector;
 import github.kasuminova.ssoptimizer.common.concurrent.VtWorkers;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
+import github.kasuminova.ssoptimizer.mixin.loading.JaninoDirectoryResourceFinderAccessor;
+import github.kasuminova.ssoptimizer.mixin.loading.JaninoJavaSourceClassLoaderAccessor;
+import github.kasuminova.ssoptimizer.mixin.loading.JaninoJavaSourceIClassLoaderAccessor;
+import github.kasuminova.ssoptimizer.mixin.loading.JaninoMultiResourceFinderAccessor;
 import org.apache.log4j.Logger;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.JavaSourceIClassLoader;
 import org.codehaus.janino.util.resource.DirectoryResourceFinder;
 import org.codehaus.janino.util.resource.MultiResourceFinder;
+import org.codehaus.janino.util.resource.PathResourceFinder;
 import org.codehaus.janino.util.resource.Resource;
 import org.codehaus.janino.util.resource.ResourceFinder;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -53,19 +55,14 @@ public final class JaninoScriptCompilerCoordinator {
     public static final String DISABLE_PREWARM_PROPERTY = "ssoptimizer.disable.scriptprewarm";
     public static final String PARALLELISM_PROPERTY     = "ssoptimizer.scriptcompile.parallelism";
     public static final String DEBUG_PROPERTY           = "ssoptimizer.debug.scriptcache";
-    public static final String ORIGINAL_METHOD_NAME     = "ssoptimizer$generateBytecodesOriginal";
 
     private static final Logger LOGGER = Logger.getLogger(JaninoScriptCompilerCoordinator.class);
 
     private static final int HASH_BYTES = 32;
 
-    private static final Field ICLASS_LOADER_FIELD    = resolveField(JavaSourceClassLoader.class, "iClassLoader");
-    private static final Field SOURCE_FINDER_FIELD    = resolveField(JavaSourceIClassLoader.class, "sourceFinder");
-    private static final Field RESOURCE_FINDERS_FIELD = resolveField(MultiResourceFinder.class, "resourceFinders");
-    private static final Field DIRECTORY_FIELD        = resolveField(DirectoryResourceFinder.class, "directory");
-
     private static final Map<JavaSourceClassLoader, WarmupState> WARMUP_STATES = Collections.synchronizedMap(new WeakHashMap<>());
     private static final ConcurrentHashMap<String, byte[]> IN_MEMORY_CACHE = new ConcurrentHashMap<>();
+    private static volatile JaninoAccess janinoAccess = new MixinJaninoAccess();
 
     private JaninoScriptCompilerCoordinator() {
     }
@@ -321,21 +318,10 @@ public final class JaninoScriptCompilerCoordinator {
     }
 
     private static ResourceFinder resolveSourceFinder(final JavaSourceClassLoader loader) {
-        if (loader == null || ICLASS_LOADER_FIELD == null || SOURCE_FINDER_FIELD == null) {
+        if (loader == null) {
             return null;
         }
-
-        try {
-            final Object iClassLoader = ICLASS_LOADER_FIELD.get(loader);
-            if (iClassLoader == null) {
-                return null;
-            }
-            final Object sourceFinder = SOURCE_FINDER_FIELD.get(iClassLoader);
-            return sourceFinder instanceof ResourceFinder resourceFinder ? resourceFinder : null;
-        } catch (IllegalAccessException e) {
-            LOGGER.debug("[SSOptimizer] 无法访问 Janino sourceFinder", e);
-            return null;
-        }
+        return janinoAccess.sourceFinder(loader);
     }
 
     private static byte[] hashSource(final ResourceFinder sourceFinder,
@@ -370,76 +356,35 @@ public final class JaninoScriptCompilerCoordinator {
         if (loader == null) {
             return null;
         }
-
-        try {
-            final Method method = resolveOriginalGenerateMethod(loader.getClass());
-            return castBytecodeMap(method.invoke(loader, className));
-        } catch (InvocationTargetException e) {
-            final Throwable cause = e.getCause();
-            if (cause instanceof ClassNotFoundException classNotFoundException) {
-                throw classNotFoundException;
-            }
-            if (cause instanceof RuntimeException runtimeException) {
-                throw runtimeException;
-            }
-            throw new ClassNotFoundException(className, cause);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Unable to invoke original Janino bytecode generator", e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, byte[]> castBytecodeMap(final Object value) {
-        return (Map<String, byte[]>) value;
-    }
-
-    private static Method resolveOriginalGenerateMethod(final Class<?> type) {
-        for (Class<?> current = type; current != null; current = current.getSuperclass()) {
-            try {
-                final Method method = current.getDeclaredMethod(ORIGINAL_METHOD_NAME, String.class);
-                method.setAccessible(true);
-                return method;
-            } catch (NoSuchMethodException e) {
-                // 本类未声明原始生成方法，继续向父类查找
-            }
-        }
-        throw new IllegalStateException("Original Janino bytecode generator method is unavailable");
+        return janinoAccess.generateBytecodes(loader, className);
     }
 
     private static List<File> resolveSourceRoots(final JavaSourceClassLoader loader) {
-        final ResourceFinder sourceFinder = resolveSourceFinder(loader);
-        if (sourceFinder == null) {
+        if (loader == null) {
             return List.of();
         }
-
-        try {
-            final LinkedHashSet<File> roots = new LinkedHashSet<>();
-            collectSourceRoots(sourceFinder, roots);
-            return new ArrayList<>(roots);
-        } catch (IllegalAccessException e) {
-            LOGGER.debug("[SSOptimizer] 无法遍历 Janino sourceFinder", e);
-            return List.of();
-        }
+        return janinoAccess.sourceRoots(loader);
     }
 
-    private static void collectSourceRoots(final Object sourceFinder,
-                                           final Set<File> roots) throws IllegalAccessException {
+    private static void collectSourceRoots(final ResourceFinder sourceFinder,
+                                           final Set<File> roots) {
         if (sourceFinder == null) {
             return;
         }
-        if (sourceFinder instanceof DirectoryResourceFinder && DIRECTORY_FIELD != null) {
-            final File directory = (File) DIRECTORY_FIELD.get(sourceFinder);
+        if (sourceFinder instanceof DirectoryResourceFinder directoryFinder) {
+            final File directory = ((JaninoDirectoryResourceFinderAccessor) directoryFinder).ssoptimizer$getDirectory();
             if (directory != null) {
                 roots.add(directory.getAbsoluteFile());
             }
             return;
         }
-        if (sourceFinder instanceof MultiResourceFinder && RESOURCE_FINDERS_FIELD != null) {
-            final Collection<?> resourceFinders = (Collection<?>) RESOURCE_FINDERS_FIELD.get(sourceFinder);
+        if (sourceFinder instanceof MultiResourceFinder multiFinder) {
+            final Collection<ResourceFinder> resourceFinders =
+                    ((JaninoMultiResourceFinderAccessor) multiFinder).ssoptimizer$getResourceFinders();
             if (resourceFinders == null) {
                 return;
             }
-            for (Object nestedFinder : resourceFinders) {
+            for (ResourceFinder nestedFinder : resourceFinders) {
                 collectSourceRoots(nestedFinder, roots);
             }
         }
@@ -516,15 +461,52 @@ public final class JaninoScriptCompilerCoordinator {
         }
     }
 
-    private static Field resolveField(final Class<?> owner,
-                                      final String name) {
-        try {
-            final Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException e) {
-            LOGGER.warn("[SSOptimizer] Failed to resolve Janino reflection field " + owner.getName() + '.' + name, e);
-            return null;
+    interface JaninoAccess {
+        ResourceFinder sourceFinder(JavaSourceClassLoader loader);
+
+        List<File> sourceRoots(JavaSourceClassLoader loader);
+
+        Map<String, byte[]> generateBytecodes(JavaSourceClassLoader loader, String className) throws ClassNotFoundException;
+    }
+
+    static void installJaninoAccessForTests(final JaninoAccess access) {
+        if (access == null) {
+            throw new IllegalArgumentException("access must not be null");
+        }
+        janinoAccess = access;
+    }
+
+    static void resetJaninoAccessForTests() {
+        janinoAccess = new MixinJaninoAccess();
+    }
+
+    private static final class MixinJaninoAccess implements JaninoAccess {
+        @Override
+        public ResourceFinder sourceFinder(final JavaSourceClassLoader loader) {
+            final JavaSourceIClassLoader iClassLoader =
+                    ((JaninoJavaSourceClassLoaderAccessor) loader).ssoptimizer$getIClassLoader();
+            if (iClassLoader == null) {
+                return null;
+            }
+            return ((JaninoJavaSourceIClassLoaderAccessor) iClassLoader).ssoptimizer$getSourceFinder();
+        }
+
+        @Override
+        public List<File> sourceRoots(final JavaSourceClassLoader loader) {
+            final ResourceFinder sourceFinder = sourceFinder(loader);
+            if (sourceFinder == null) {
+                return List.of();
+            }
+
+            final LinkedHashSet<File> roots = new LinkedHashSet<>();
+            collectSourceRoots(sourceFinder, roots);
+            return new ArrayList<>(roots);
+        }
+
+        @Override
+        public Map<String, byte[]> generateBytecodes(final JavaSourceClassLoader loader,
+                                                     final String className) throws ClassNotFoundException {
+            return ((JaninoJavaSourceClassLoaderAccessor) loader).ssoptimizer$generateBytecodes(className);
         }
     }
 
@@ -551,14 +533,37 @@ public final class JaninoScriptCompilerCoordinator {
         }
     }
 
-    private static final class WarmupJavaSourceClassLoader extends JavaSourceClassLoader {
-        private WarmupJavaSourceClassLoader(final ClassLoader parentLoader,
-                                            final File[] sourcePath) {
-            super(parentLoader, sourcePath, null);
+    static class WarmupJavaSourceClassLoader extends JavaSourceClassLoader {
+        private final ResourceFinder sourceFinder;
+        private final File[] sourcePath;
+
+        WarmupJavaSourceClassLoader(final ClassLoader parentLoader,
+                                    final File[] sourcePath) {
+            this(parentLoader, new PathResourceFinder(sourcePath), sourcePath);
         }
 
-        @SuppressWarnings("unused")
-        private Map<String, byte[]> ssoptimizer$generateBytecodesOriginal(final String className) throws ClassNotFoundException {
+        WarmupJavaSourceClassLoader(final ClassLoader parentLoader,
+                                    final ResourceFinder sourceFinder) {
+            this(parentLoader, sourceFinder, new File[0]);
+        }
+
+        private WarmupJavaSourceClassLoader(final ClassLoader parentLoader,
+                                            final ResourceFinder sourceFinder,
+                                            final File[] sourcePath) {
+            super(parentLoader, sourceFinder, null);
+            this.sourceFinder = sourceFinder;
+            this.sourcePath = sourcePath.clone();
+        }
+
+        final ResourceFinder sourceFinder() {
+            return sourceFinder;
+        }
+
+        final List<File> sourceRoots() {
+            return List.of(sourcePath);
+        }
+
+        Map<String, byte[]> generateOriginal(final String className) throws ClassNotFoundException {
             return super.generateBytecodes(className);
         }
     }

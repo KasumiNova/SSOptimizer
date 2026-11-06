@@ -42,9 +42,11 @@ public final class ParallelSoundLoadCoordinator {
     private static final Map<String, Path>                      DISCOVERED_FILES = new ConcurrentHashMap<>();
     private static final LinkedHashMap<String, byte[]>          COMPLETED_BYTES  = new LinkedHashMap<>(16, 0.75f, true);
     private static final AtomicBoolean                          PREWARM_STARTED   = new AtomicBoolean(false);
+    private static final BytesLoader                            DEFAULT_BYTES_LOADER = ParallelSoundLoadCoordinator::loadBytes;
 
-    private static volatile Semaphore loadGate;
-    private static volatile long      completedBytes;
+    private static volatile Semaphore   loadGate;
+    private static volatile long        completedBytes;
+    private static volatile BytesLoader bytesLoader = DEFAULT_BYTES_LOADER;
 
     private ParallelSoundLoadCoordinator() {
     }
@@ -73,10 +75,15 @@ public final class ParallelSoundLoadCoordinator {
             completedBytes = 0L;
         }
         loadGate = null;
+        bytesLoader = DEFAULT_BYTES_LOADER;
     }
 
     static int inflightLoadCountForTests() {
         return INFLIGHT_LOADS.size();
+    }
+
+    static void installBytesLoaderForTests(final BytesLoader loader) {
+        bytesLoader = loader;
     }
 
     static List<String> discoverSoundResourcesForTests(final Path gameRoot,
@@ -307,7 +314,7 @@ public final class ParallelSoundLoadCoordinator {
             throw new CompletionException(e);
         }
         try {
-            return loadBytes(resourcePath);
+            return bytesLoader.load(resourcePath);
         } finally {
             gate.release();
         }
@@ -365,6 +372,11 @@ public final class ParallelSoundLoadCoordinator {
             LOGGER.debug("[SSOptimizer] 托管资源未命中: " + resourcePath + ": " + e.getMessage());
             return null;
         }
+    }
+
+    @FunctionalInterface
+    interface BytesLoader {
+        byte[] load(String resourcePath) throws IOException;
     }
 
     private enum SoundFamily {
