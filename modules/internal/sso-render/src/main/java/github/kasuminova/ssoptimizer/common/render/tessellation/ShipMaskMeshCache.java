@@ -11,48 +11,21 @@ import org.lwjgl.util.glu.tessellation.GLUtessellatorImpl;
 import java.util.List;
 import java.util.WeakHashMap;
 
-/**
- * 舰船形状蒙版三角网格缓存与 GL 提交。
- * <p>
- * 动机：{@code Tesselator.renderTriangles}（唯一调用方 {@code Ship.clipToBounds}，stencil 蒙版）
- * 每帧每艘船执行一次 GLU 剖分；船体 {@code Bounds.origSegments} 内容静态
- * （{@code splitShip} 会整体替换 Bounds 对象），三角化结果可按 Bounds 身份缓存。
- * <p>
- * 缓存策略：{@link WeakHashMap} 以 Bounds 为键（游戏不覆盖 equals/hashCode，即身份语义，
- * 且船体销毁后条目随 GC 自动回收）；值内附带内容指纹双保险——每帧对
- * {@code origSegments} 做纳秒级位哈希校验，原地改坐标导致指纹失配时重算。
- * <p>
- * 耳切失败（自交/数值退化）时按 Bounds 限频输出 WARN 日志并降级到原版 GLU 剖分路径
- * （{@link #renderWithGlu}，逐行复刻原版 {@code renderTriangles} 行为，
- * 顶点数据用 {@code double[]} 替代包私有的 {@code TessellationVertex}）。
- * <p>
- * 颜色语义：原版回调首顶点用环境色、其余用参数色；所有调用方均传 (1,1,1) 且环境色为白，
- * 故快路径统一一次 {@code glColor3f(r,g,b)} 后批量 {@code glVertex2f}。
- */
 public final class ShipMaskMeshCache {
 
-    /** 单例：Mixin 入口使用的全局缓存。 */
     private static final ShipMaskMeshCache INSTANCE = new ShipMaskMeshCache(new EarClippingTriangulator());
     private static final Logger LOGGER = Logger.getLogger(ShipMaskMeshCache.class);
-    /** 同一 Bounds 耳切失败 WARN 的最小间隔（纳秒），避免逐帧刷屏。 */
     private static final long WARN_INTERVAL_NS = 10_000_000_000L;
 
     private final Triangulator triangulator;
-    /** 身份键缓存；值携带内容指纹与三角化结果（triangles 为 null 表示该指纹下耳切失败）。 */
     private final WeakHashMap<Bounds, CachedMesh> cache = new WeakHashMap<>();
-    /** 耳切失败 WARN 的按 Bounds 限频时间戳。 */
     private final WeakHashMap<Bounds, Long> warnTimestamps = new WeakHashMap<>();
 
     public ShipMaskMeshCache(Triangulator triangulator) {
         this.triangulator = triangulator;
     }
 
-    /**
-     * 渲染入口：取（或算）三角形 soup 后以单次 glBegin(GL_TRIANGLES) 批量提交；
-     * 耳切失败时限频 WARN 并降级 GLU 路径。
-     */
     public static void render(Bounds bounds, float r, float g, float b) {
-        // Sprite 合批顺序边界：clipToBounds 掩码绘制前 flush 已累积批次
         SpriteBatch.getInstance().flushPending();
         INSTANCE.renderInternal(bounds, r, g, b);
     }
@@ -77,11 +50,6 @@ public final class ShipMaskMeshCache {
         GL11.glEnd();
     }
 
-    /**
-     * 取缓存的三角形 soup；指纹失配或首次见到时重新三角化并更新缓存。
-     *
-     * @return 三角形 soup；耳切失败返回 null（结果同样入缓存，同指纹下不重复尝试）
-     */
     float[] getOrTriangulate(Bounds bounds, List<Bounds.BoundsSegment> segments, float[] xy) {
         long fingerprint = computeFingerprint(segments);
         synchronized (cache) {
@@ -98,12 +66,6 @@ public final class ShipMaskMeshCache {
         return triangles;
     }
 
-    /**
-     * 顶点抽取：与游戏 {@code Tesselator.getVertices} 等价——
-     * 首段 p1 + 逐段 p2，闭合轮廓输出首点=末点。
-     *
-     * @return x,y 交错顶点数组；空轮廓返回长度 0 数组
-     */
     static float[] extractVertices(List<Bounds.BoundsSegment> segments) {
         if (segments.isEmpty()) {
             return new float[0];
@@ -120,10 +82,6 @@ public final class ShipMaskMeshCache {
         return xy;
     }
 
-    /**
-     * 内容指纹：段数 + 逐段 p1.x/p1.y/p2.x/p2.y 的位哈希。
-     * 每帧调用，成本为段数级数次位运算（纳秒级）。
-     */
     static long computeFingerprint(List<Bounds.BoundsSegment> segments) {
         long hash = segments.size();
         for (Bounds.BoundsSegment seg : segments) {
@@ -135,7 +93,6 @@ public final class ShipMaskMeshCache {
         return hash;
     }
 
-    /** 按 Bounds 限频输出耳切失败 WARN。 */
     private void warnThrottled(Bounds bounds, int segmentCount) {
         long now = System.nanoTime();
         synchronized (warnTimestamps) {
@@ -150,11 +107,6 @@ public final class ShipMaskMeshCache {
                 segmentCount, WARN_INTERVAL_NS / 1_000_000_000L));
     }
 
-    /**
-     * GLU 降级路径：复刻原版 {@code Tesselator.renderTriangles} 的完整调用序列
-     * （gluNewTess + 4 回调 + ODD 环绕规则 + 逐顶点提交 + 删除）。
-     * 供 Mixin 在优化开关关闭时直接调用，以及耳切失败时降级使用。
-     */
     public static void renderWithGlu(Bounds bounds, float r, float g, float b) {
         renderWithGlu(extractVertices(bounds.origSegments), r, g, b);
     }
@@ -192,10 +144,6 @@ public final class ShipMaskMeshCache {
         tess.gluDeleteTess();
     }
 
-    /**
-     * GLU 剖分回调：行为与游戏 {@code TessellationCallback} 逐行一致
-     * （顶点数据以 {@code double[]} 承载，替代游戏中包私有的 {@code TessellationVertex}）。
-     */
     private static final class GluMaskCallback extends GLUtessellatorCallbackAdapter {
         @Override
         public void begin(int type) {
@@ -222,7 +170,6 @@ public final class ShipMaskMeshCache {
         }
     }
 
-    /** 缓存条目：内容指纹 + 三角化结果（null 表示该指纹下耳切失败，直接走降级）。 */
     private static final class CachedMesh {
         final long fingerprint;
         final float[] triangles;

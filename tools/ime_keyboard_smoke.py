@@ -144,7 +144,6 @@ def wait_for_window(root, pattern: re.Pattern[str], timeout: float) -> Optional[
     while time.monotonic() < deadline:
         last_seen = find_matching_windows(root, pattern)
         if last_seen:
-            # Prefer the first exact match, otherwise the first visible hit.
             return last_seen[0]
         time.sleep(0.25)
     return None

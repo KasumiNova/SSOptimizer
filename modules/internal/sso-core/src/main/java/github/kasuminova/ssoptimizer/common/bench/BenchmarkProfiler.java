@@ -10,13 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
-/**
- * async-profiler 采样接口。
- *
- * <p>native 库（libasyncProfiler）随 coremod jar 内嵌（linux-x64 / linux-arm64 / macos），
- * 首次启动时按平台提取到临时目录并以显式路径加载；采样数据以 JFR 与 collapsed 两种
- * 格式写入基准输出目录，前者可在 IDEA 中直接打开，后者用于脚本化热点分析。</p>
- */
+/** async-profiler 采样器，负责加载内嵌原生库并输出 JFR 与 collapsed 报告。 */
 public final class BenchmarkProfiler {
     private static final Logger LOGGER = Logger.getLogger(BenchmarkProfiler.class);
 
@@ -66,11 +60,6 @@ public final class BenchmarkProfiler {
         }
     }
 
-    /**
-     * 启动采样。
-     *
-     * @param event 采样事件（cpu / wall / alloc 等）
-     */
     public void start(final String event) {
         try {
             Files.createDirectories(jfrPath.getParent());
@@ -82,7 +71,6 @@ public final class BenchmarkProfiler {
         }
     }
 
-    /** 停止采样并写出 JFR 与 collapsed 报告。 */
     public void stopAndDump() {
         if (!running) {
             return;

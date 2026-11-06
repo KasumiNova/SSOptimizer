@@ -11,20 +11,7 @@ import java.lang.reflect.Modifier;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-/**
- * XStream 字段访问加速辅助类。
- * <p>
- * 职责：为 {@code com.thoughtworks.xstream.core.util.Fields} 提供带缓存的字段读写快路径，优先使用
- * {@link VarHandle} 访问实例/静态字段，失败时回退到 XStream 原本的反射语义。<br>
- * 设计动机：存档保存热点中会高频调用 {@code Fields.read(Field, Object)}，原实现每次都会走
- * {@link Field#get(Object)}；这里把字段解析成本前移到首次访问，并保留系统属性开关作为回退阀门。<br>
- * 兼容性策略：若 {@link VarHandle} 建立失败、字段为 {@code final}、或用户显式禁用快路径，则继续使用
- * 反射路径，避免破坏 XStream 既有读写行为。
- */
 public final class XStreamFieldAccessHelper {
-    /**
-     * 禁用 XStream 字段访问快路径的系统属性。
-     */
     public static final String DISABLE_FAST_ACCESS_PROPERTY = "ssoptimizer.disable.xstream.fastfieldaccess";
 
     private static final boolean FAST_ACCESS_ENABLED = !Boolean.getBoolean(DISABLE_FAST_ACCESS_PROPERTY);
@@ -33,13 +20,6 @@ public final class XStreamFieldAccessHelper {
     private XStreamFieldAccessHelper() {
     }
 
-    /**
-     * 读取指定字段的值。
-     *
-     * @param field  要读取的字段
-     * @param target 字段所属对象；静态字段时可为 {@code null}
-     * @return 字段当前值；原始类型会按 Java 反射语义装箱后返回
-     */
     public static Object read(final Field field, final Object target) {
         if (!FAST_ACCESS_ENABLED) {
             return reflectRead(field, target);
@@ -57,13 +37,6 @@ public final class XStreamFieldAccessHelper {
         }
     }
 
-    /**
-     * 向指定字段写入值。
-     *
-     * @param field  要写入的字段
-     * @param target 字段所属对象；静态字段时可为 {@code null}
-     * @param value  新值
-     */
     public static void write(final Field field, final Object target, final Object value) {
         if (!FAST_ACCESS_ENABLED || Modifier.isFinal(field.getModifiers())) {
             reflectWrite(field, target, value);
@@ -105,8 +78,7 @@ public final class XStreamFieldAccessHelper {
                     MethodHandles.lookup()
             );
             final VarHandle handle = privateLookup.unreflectVarHandle(field);
-            // 一次性把访问句柄适配到固定签名并固化 LambdaForm，避免运行期
-            // 经 VarHandle.get/set 多态调用点反复触发 LambdaForm 重定制（checkCustomized）。
+            // 预先适配固定签名，避免 VarHandle 多态调用点反复重定制 LambdaForm。
             if (Modifier.isStatic(field.getModifiers())) {
                 final MethodHandle getter = handle.toMethodHandle(VarHandle.AccessMode.GET)
                         .asType(MethodType.methodType(Object.class));

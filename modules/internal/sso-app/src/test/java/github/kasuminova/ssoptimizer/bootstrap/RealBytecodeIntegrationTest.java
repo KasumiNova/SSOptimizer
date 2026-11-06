@@ -11,12 +11,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class RealBytecodeIntegrationTest {
 
-    /**
-     * 读取运行期 named 视图字节码（ASM 处理器的工作视图），来源见 {@link RuntimeViewFixtures}。
-     * <p>
-     * coremod 化后该视图就是测试 classpath 上 SourceSector named jar 中的字节码本身
-     * （运行期由 NanoForge 在类加载前完成 obf→named 全量 remap）。
-     */
     private byte[] loadClassBytes(String internalName) {
         return RuntimeViewFixtures.readRuntimeNamedBytes(internalName);
     }

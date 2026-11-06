@@ -1,16 +1,3 @@
-/**
- * Linux XIM 输入法原生实现（JNI 实现）。
- *
- * 对应 Java 类: LinuxXimNative
- * 通过 X11 Input Method (XIM) 协议实现中文输入，
- * 包含 XIC 创建/销毁、XFilterEvent 调度、Xutf8LookupString 查找、
- * 光标位置更新等完整的 XIM 客户端实现。
- *
- * 内存管理策略：
- * - ImeContext 通过 createContext 分配，destroyContext 释放
- * - XIM/XIC 生命周期绑定在 ImeContext 上
- * - FontSet 随 XIC 一起释放
- */
 #include "github_kasuminova_ssoptimizer_common_input_ime_LinuxXimNative.h"
 
 #include <jni.h>
@@ -172,7 +159,6 @@ XFontSet createMinimalFontSet(Display* display) {
     int missingCount = 0;
     char* defaultString = nullptr;
 
-    // Try common font patterns that are almost always available
     const char* fontPatterns[] = {
         "-*-*-*-*-*-*-*-*-*-*-*-*-*-*",
         "fixed",
@@ -220,8 +206,7 @@ XIC createIcForStyle(XIM xim,
             } else {
                 setLastError("XVaCreateNestedList returned null for XNSpotLocation+XNFontSet");
             }
-            // FontSet is owned by the XIC now for PreeditPosition; don't free it here.
-            // If XCreateIC failed, free the fontSet.
+            // XIC 创建成功后接管 FontSet，失败时仍由当前函数释放。
             if (xic == nullptr) {
                 XFreeFontSet(display, fontSet);
             }
@@ -418,15 +403,8 @@ bool handleKeyEvent(LinuxXimContext* context,
         return false;
     }
 
-    // SSOptimizer is the sole caller of XFilterEvent — the LWJGL native
-    // nFilterEvent has been replaced to always return false, so the IM
-    // server only sees each event once through our XIC.
-    //
-    // The XIM protocol requires ALL X events (not just key events) to pass
-    // through XFilterEvent.  The IM uses FocusIn/Out, ClientMessage, and
-    // other event types to manage its internal state and deliver commits.
+    // 所有 X 事件仅由当前 XIC 过滤一次，非键盘协议事件也依赖此调用维持输入法状态。
     if (XFilterEvent(event, None)) {
-        // The input method consumed this event.
         if (event->type == KeyPress || event->type == KeyRelease) {
             context->composing = true;
             std::ostringstream oss;
@@ -438,16 +416,13 @@ bool handleKeyEvent(LinuxXimContext* context,
         return true;
     }
 
-    // For non-KeyPress events, we only needed the XFilterEvent call above.
     if (event->type != KeyPress) {
         return false;
     }
 
-    // The IM did not consume this KeyPress — look up committed text.
     context->committedText.clear();
     context->composing = false;
 
-    // Check if this is a synthetic event (sent by the IM via XSendEvent)
     const bool isSynthetic = event->xkey.send_event != 0;
 
     KeySym keySym = 0;

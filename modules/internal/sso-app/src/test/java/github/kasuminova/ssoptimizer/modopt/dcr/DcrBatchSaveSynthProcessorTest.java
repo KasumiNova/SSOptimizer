@@ -13,10 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link DcrBatchSaveSynthProcessor} 结构验证（基于编译好的 SerializationManager 夹具）：
- * 注入了 {@code ssoptimizer$dirty:Z} 字段与 {@code ssoptimizer$collect/flush} 方法，且幂等。无反射。
- */
 class DcrBatchSaveSynthProcessorTest {
 
     @Test

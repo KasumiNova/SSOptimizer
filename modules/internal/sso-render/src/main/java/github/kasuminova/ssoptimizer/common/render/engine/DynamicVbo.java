@@ -4,13 +4,7 @@ import org.lwjgl.opengl.GL15;
 
 import java.nio.ByteBuffer;
 
-/**
- * GL_STREAM_DRAW 环形动态 VBO。
- * <p>
- * 渲染线程每帧多次小批量写入（每艘舰一次 flush 若干组）。写入指针单调前进，
- * 回绕时通过 {@code glBufferData(size, null)} 孤儿化旧存储，避免 CPU-GPU 同步；
- * 单次写入超过容量时整体扩容（记日志，正常战斗规模不应触发）。
- */
+/** 环形 VBO 回绕时孤儿化旧存储，避免覆盖 GPU 尚未消费的数据。 */
 public final class DynamicVbo {
     private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(DynamicVbo.class);
 
@@ -20,12 +14,6 @@ public final class DynamicVbo {
     private int       capacityBytes;
     private int       writeOffset;
 
-    /**
-     * 创建并分配环形 VBO。
-     *
-     * @param target        GL 绑定目标（GL_ARRAY_BUFFER / GL_ELEMENT_ARRAY_BUFFER）
-     * @param capacityBytes 初始容量（字节）
-     */
     public DynamicVbo(int target, int capacityBytes) {
         this(target, capacityBytes, GL15.GL_STREAM_DRAW);
     }
@@ -40,12 +28,6 @@ public final class DynamicVbo {
         GL15.glBindBuffer(target, 0);
     }
 
-    /**
-     * 将数据写入环形缓冲区。
-     *
-     * @param data 待写入数据（position..limit 为有效区间）
-     * @return 本次写入的起始字节偏移（供 glVertexPointer / glDrawElements 偏移使用）
-     */
     public int write(ByteBuffer data) {
         int length = data.remaining();
         if (length > capacityBytes) {
@@ -53,7 +35,6 @@ public final class DynamicVbo {
         }
         GL15.glBindBuffer(target, bufferId);
         if (writeOffset + length > capacityBytes) {
-            // 回绕：孤儿化旧存储，避免覆盖尚未被 GPU 消费的数据
             GL15.glBufferData(target, capacityBytes, usage);
             writeOffset = 0;
         }
@@ -63,26 +44,19 @@ public final class DynamicVbo {
         return result;
     }
 
-    /** 绑定本 VBO（绘制前调用）。 */
     public void bind() {
         GL15.glBindBuffer(target, bufferId);
     }
 
-    /** GL 缓冲对象 ID（供 native flush 直接绑定）。 */
     public int getBufferId() {
         return bufferId;
     }
 
-    /** 当前容量（字节）。 */
     public int getCapacityBytes() {
         return capacityBytes;
     }
 
-    /**
-     * 确保容量至少为 requiredBytes（不足时整体扩容）。
-     *
-     * @return true 表示发生了扩容（写入指针已重置，native 侧偏移必须同步清零）
-     */
+    /** @return 是否扩容并重置写入偏移；调用方须同步重置 native 偏移。 */
     public boolean ensureCapacity(int requiredBytes) {
         if (requiredBytes <= capacityBytes) {
             return false;
@@ -91,12 +65,10 @@ public final class DynamicVbo {
         return true;
     }
 
-    /** 解绑本 VBO 目标。 */
     public void unbind() {
         GL15.glBindBuffer(target, 0);
     }
 
-    /** 释放 GL 缓冲对象。 */
     public void dispose() {
         if (bufferId != 0) {
             GL15.glDeleteBuffers(bufferId);

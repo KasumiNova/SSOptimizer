@@ -13,14 +13,6 @@ import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * {@link ShieldAlwaysOnNullShieldMixin} 注入锚点核验。
- * <p>
- * 重定向正确性取决于「{@code ShieldAlwaysOn.advanceInCombat(Lcom/fs/starfarer/api/combat/ShipAPI;F)V}
- * 内 {@code ShieldAPI.isOn()Z} 调用点恰好唯一」（Mixin 声明 require=1）；
- * 用 ASM 解析测试 classpath 上 named jar 的真实字节码核验，
- * 目标缺失/签名漂移/锚点数量变化都会在构建期暴露而非运行时静默失败。
- */
 class ShieldAlwaysOnNullShieldMixinAnchorTest {
 
     private static final String TARGET_CLASS  = "com/fs/starfarer/api/impl/hullmods/ShieldAlwaysOn";

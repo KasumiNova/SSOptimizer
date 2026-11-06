@@ -11,12 +11,6 @@ import java.nio.ShortBuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 桥层覆盖面补齐（BoxUtil 1.0.6 缺口清单）的录制行为验证。
- * <p>
- * 新增桥方法全部走录制/阻塞通道，不在调用线程触碰真实 GL：录制命令入队、
- * 快照在录制时刻深拷贝、查询走阻塞取值、fence 等待在调用线程自旋。
- */
 class BridgeGapFillTest {
 
     private FakeRenderQueue queue;
@@ -53,14 +47,8 @@ class BridgeGapFillTest {
         return ByteBuffer.allocateDirect(n * Double.BYTES).asDoubleBuffer();
     }
 
-    // ------------------------------------------------------------------
-    // GL12 glDrawRangeElements 族（崩溃现场 API）
-    // ------------------------------------------------------------------
-
     @Test
     void gl12TexImage3DNullPixelsRecordedWithoutSnapshot() {
-        // 实机崩溃现场：模组 hullmod（NoiseTextureGenerator）以 null pixels 调
-        // glTexImage3D 仅分配纹理存储——必须无快照直接录制，不得在池快照处 NPE
         GL12.glTexImage3D(org.lwjgl.opengl.GL12.GL_TEXTURE_3D, 0,
                 org.lwjgl.opengl.GL11.GL_RGBA8, 64, 64, 64, 0,
                 org.lwjgl.opengl.GL11.GL_RGBA, org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE,
@@ -79,10 +67,6 @@ class BridgeGapFillTest {
         assertEquals(0, queue.blockingTasks.size());
         assertEquals(0, queue.getCallCount);
     }
-
-    // ------------------------------------------------------------------
-    // GL31/GL32/GL40/GL42/GL43 绘制族
-    // ------------------------------------------------------------------
 
     @Test
     void gl31DrawElementsInstancedRecorded() {
@@ -182,10 +166,6 @@ class BridgeGapFillTest {
         assertEquals(17, queue.recorded.size());
     }
 
-    // ------------------------------------------------------------------
-    // GL13/GL14/GL15/GL30/GL44 + ARB/EXT FBO 状态缓冲族
-    // ------------------------------------------------------------------
-
     @Test
     void gl13CompressedTextureFamilyRecorded() {
         int texture2d = org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
@@ -256,10 +236,8 @@ class BridgeGapFillTest {
     @Test
     void gl30FlushMappedBufferRangeNoOpsOnlyUnderEmulatedMap() {
         int target = org.lwjgl.opengl.GL31.GL_TEXTURE_BUFFER;
-        // 无在途映射：入队真实 flush
         GL30.glFlushMappedBufferRange(target, 0L, 64L);
         assertEquals(1, queue.recorded.size());
-        // 有在途仿真映射：no-op（unmap 时整区间快照上传，flush 区间是其子集）
         BufferMapEmulator.onBindBuffer(target, 7);
         assertNotNull(BufferMapEmulator.tryEmulateMapRange(target, 0, 64,
                 org.lwjgl.opengl.GL30.GL_MAP_WRITE_BIT | org.lwjgl.opengl.GL30.GL_MAP_FLUSH_EXPLICIT_BIT));
@@ -275,11 +253,10 @@ class BridgeGapFillTest {
         queue.getHandler = callable -> 7;
         assertEquals(7, GL31.glGetActiveUniformBlocki(1, 0,
                 org.lwjgl.opengl.GL31.GL_UNIFORM_BLOCK_DATA_SIZE));
-        assertEquals(7, GL31.glGetActiveUniformsi(1, 0, 0x8A37 /* GL_UNIFORM_TYPE */));
+        assertEquals(7, GL31.glGetActiveUniformsi(1, 0, 0x8A37));
         assertEquals(2, queue.getCallCount, "单值查询走计数阻塞取值通道");
         assertEquals(7, GL31.glGetUniformBlockIndex(1, "Block"));
         assertEquals(1, queue.uncountedGetCallCount, "名称查询走资源通道（不计数）");
-        // ByteBuffer 名称形态：NUL 结尾字节在录制时刻读出，position 不被消费
         ByteBuffer name = bytes(16);
         name.put(new byte[]{'B', 'l', 'o', 'c', 'k', 0, 'x', 'y'}).flip();
         int pos = name.position();
@@ -290,13 +267,12 @@ class BridgeGapFillTest {
     @Test
     void gl32ClientWaitSyncSatisfiedAndTimeout() {
         GLSync sync = GL32.glFenceSync(org.lwjgl.opengl.GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        // fake queue 只录不执行：SignalFenceCommand 不会运行，fence 保持未 signal
         long start = System.nanoTime();
         assertEquals(org.lwjgl.opengl.GL32.GL_TIMEOUT_EXPIRED,
                 GL32.glClientWaitSync(sync, 0, 2_000_000L), "未 signal 必须等到超时");
         assertTrue(System.nanoTime() - start >= 2_000_000L, "等待时长不得短于 timeout");
 
-        sync.fence().signal(); // 模拟渲染线程/CPU 生产者会合
+        sync.fence().signal();
         assertEquals(org.lwjgl.opengl.GL32.GL_CONDITION_SATISFIED,
                 GL32.glClientWaitSync(sync, 0, 1_000_000L));
     }
@@ -317,8 +293,6 @@ class BridgeGapFillTest {
 
     @Test
     void gl32GetSyncBufferAndScalarForms() {
-        // BoxUtil Operation$Sync.init:3308 崩溃现场 API：buffer 形态必须与
-        // glGetSynci 同一语义源（折叠模型纯 CPU 查询）
         GLSync sync = GL32.glFenceSync(org.lwjgl.opengl.GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         IntBuffer values = ints(2);
         IntBuffer length = ints(1);
@@ -347,7 +321,6 @@ class BridgeGapFillTest {
 
     @Test
     void arbSyncFamilyDelegatesToGl32() {
-        // ARB 回退分支（BoxUtil Operation$Sync 的 GL_ARB_sync 路径）走同一折叠语义
         GLSync sync = ARBSync.glFenceSync(org.lwjgl.opengl.GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         assertTrue(ARBSync.glIsSync(sync));
         assertEquals(org.lwjgl.opengl.GL32.GL_UNSIGNALED,

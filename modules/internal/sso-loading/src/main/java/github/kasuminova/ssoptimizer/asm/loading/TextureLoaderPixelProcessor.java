@@ -7,12 +7,8 @@ import github.kasuminova.ssoptimizer.mapping.GameMemberNames;
 import org.objectweb.asm.*;
 
 /**
- * 纹理像素转换处理器。
- * <p>
- * 注入目标：{@code com.fs.graphics.TextureLoader}<br>
- * 注入动机：原版把 {@link java.awt.image.BufferedImage} 转为上传缓冲区时频繁调用
- * Raster API，CPU 开销较高；同时还需要接入延迟纹理加载和尺寸修正逻辑。<br>
- * 注入效果：替换像素转换、路径加载、尺寸计算与部分上传调用，统一走优化 helper。
+ * 整体替换像素转换与尺寸计算方法体，并将路径加载方法拆分为包装与原实现。
+ * Mixin 无法保留原实现并生成这种拆分结构，因此使用 ASM。
  */
 public final class TextureLoaderPixelProcessor implements AsmClassProcessor {
     public static final  String TARGET_CLASS             = GameClassNames.TEXTURE_LOADER;

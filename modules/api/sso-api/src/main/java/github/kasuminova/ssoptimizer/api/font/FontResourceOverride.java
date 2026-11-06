@@ -4,43 +4,43 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * 原版字体资源覆盖查询：loading 域解码贴图/字体资源时判定并读取 TTF 字体覆盖。
+ * 查询并读取 TTF 字体包对原版字体描述和贴图资源的覆盖，使资源加载模块无需依赖字体模块。
  * <p>
- * 动机：font 域的 TTF 字体包会覆盖原版字体资源（.fnt/.png），loading 域的
- * 资源解码/预载路径需要感知覆盖关系（命中覆盖的资源必须改从字体包读取并跳过
- * 转换缓存），但 loading 不允许直接依赖 font——跨域行为调用经本接口。
- * <p>
- * 实现由 font 域提供（桥接 OriginalGameFontOverrides），在 coremod 装配期经
- * {@code ServiceRegistry} 注册；语义上允许缺省（未注册=无字体覆盖，如单元测试/
- * 离线工具场景），调用点经 {@code ServiceRegistry.getOrNull} 显式判空。
+ * 方法可由资源加载线程并发调用，实现须保证覆盖表查询与延迟初始化的线程安全。
+ * 未注册 = 无字体覆盖，调用方继续读取原始资源。
  */
 public interface FontResourceOverride {
 
     /**
-     * 规范化资源路径（统一分隔符/大小写等与覆盖表对齐的形式）。
+     * 将资源路径转换为覆盖表使用的形式，仅移除路径开头的一个 {@code /}。
      *
-     * @param resourcePath 原始资源路径
-     * @return 规范化后的路径
+     * @param resourcePath 原始资源路径，可为 {@code null}
+     * @return 规范化路径；{@code null} 输入返回空字符串
      */
     String normalize(String resourcePath);
 
     /**
-     * @return TTF 字体覆盖总开关是否启用
+     * 查询字体覆盖总开关，不触发资源生成。
+     *
+     * @return 启用时返回 {@code true}；关闭时 {@link #openStream(String)} 返回 {@code null}
      */
     boolean isEnabled();
 
     /**
-     * @param normalizedPath 经 {@link #normalize} 规范化后的资源路径
-     * @return 该路径是否被字体包覆盖
+     * 判定规范化路径是否属于覆盖表，不检查总开关，也不生成资源。
+     *
+     * @param normalizedPath 经 {@link #normalize(String)} 处理的资源路径
+     * @return 属于覆盖表时返回 {@code true}；空白路径返回 {@code false}
      */
     boolean isOverriddenPath(String normalizedPath);
 
     /**
-     * 打开覆盖资源的流。
+     * 打开原始资源路径对应的覆盖资源流，调用方负责关闭返回的流。
+     * 首次命中覆盖路径可能触发字体资源的延迟生成。
      *
      * @param resourcePath 原始资源路径
-     * @return 覆盖资源流；未覆盖或读取失败返回 {@code null}
-     * @throws IOException 读取过程中的 IO 错误
+     * @return 覆盖资源流；功能关闭、路径未覆盖或覆盖资源未生成时返回 {@code null}
+     * @throws IOException 打开覆盖资源时发生 I/O 错误
      */
     InputStream openStream(String resourcePath) throws IOException;
 }

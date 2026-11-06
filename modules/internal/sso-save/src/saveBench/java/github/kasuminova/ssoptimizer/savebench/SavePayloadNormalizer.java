@@ -11,32 +11,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
-/**
- * 离线基准的存档 payload 格式归一化。
- *
- * <p>SSOptimizer 游戏内通过 Mixin 把 {@code BaseTiledTerrain}/{@code HyperspaceAutomaton}
- * 的 tile 压缩格式扩展为 {@code SSOZ1:} + Zstd（见
- * {@link TerrainTileCompressionHelper}）。离线基准不应用任何 Mixin，游戏类
- * {@code readResolve} 走原版解码路径，无法识别新前缀；且 classpath 上 jaxb-api
- * 内嵌 {@code DatatypeConverterImpl.guessLength} 对非四字节对齐的拼接 base64
- * 存在低估缺陷，会直接 {@code ArrayIndexOutOfBoundsException}。</p>
- *
- * <p>因此离线 unmarshal 前先把存档文本中所有 {@code SSOZ1:} 字段值回译为旧版
- * Deflater 分块格式（语义等价，仅压缩层不同）。转换产物写入临时文件，
- * 不修改原始存档。</p>
- */
+/** 离线读档前回译 SSOZ1 字段，避免原版解码与 JAXB 拼接 Base64 长度缺陷。 */
 public final class SavePayloadNormalizer {
     private static final Pattern ZSTD_FIELD = Pattern.compile(">SSOZ1:([A-Za-z0-9+/=]+)<");
 
     private SavePayloadNormalizer() {
     }
 
-    /**
-     * 把存档主档中全部 {@code SSOZ1:} 字段值回译为旧版格式，写入临时文件。
-     *
-     * @param source 原始 campaign.xml
-     * @return 归一化后的临时文件路径；无 {@code SSOZ1:} 字段时直接返回原路径
-     */
     public static Path normalizeToLegacyFile(final Path source) throws IOException {
         final String xml = Files.readString(source, StandardCharsets.UTF_8);
         if (!xml.contains(">SSOZ1:")) {

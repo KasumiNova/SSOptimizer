@@ -8,11 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-/**
- * 热重传标记（{@link LazyTextureManager#noteCompressedTextureAvailable}）行为测试：
- * 匹配路径+源哈希的驻留条目被标记升级键；路径/哈希不匹配、开关关闭均不标记。
- * 实际 GL 重传（maybeUpgradeToCompressed）依赖 GL 上下文，由实机联调覆盖。
- */
 class TextureCompressionHotReloadTest {
     @AfterEach
     void tearDown() {

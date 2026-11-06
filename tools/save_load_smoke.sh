@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# 读档冒烟测试：save_load_cycle 自动化场景，游戏读档后自退出，校验遥测。
 # 用法: tools/save_load_smoke.sh [GAME_DIR] [SAVE_DIR_NAME] [TIMEOUT_SEC]
 GAME_DIR="${1:-/mnt/store/Games/Starsector098-linux-rt}"
 SAVE_DIR_NAME="${2:-save_CascadeNova_1246447115782963985}"
@@ -26,9 +25,7 @@ if [[ ! -d "$GAME_DIR/saves/$SAVE_DIR_NAME" ]]; then
     exit 1
 fi
 
-# 写侧会执行真实保存。注意：游戏 saveGame 按战役内部存档名回写**原始槽位**而非 scratch
-# 目录，scratch 只保护读侧。为避免污染原档，默认关闭读后保存；需要写侧基线时设
-# SMOKE_SAVE_AFTER_LOAD=true 显式开启（仍会写原槽位，仅在确认可接受时使用）。
+# 读后保存会写回原始槽位；仅在允许修改原档时设置 SMOKE_SAVE_AFTER_LOAD=true。
 SCRATCH_SAVE_NAME="${SAVE_DIR_NAME}_ssbench"
 echo "Scratch:  $SCRATCH_SAVE_NAME (copy of $SAVE_DIR_NAME)"
 rm -rf "$GAME_DIR/saves/$SCRATCH_SAVE_NAME"

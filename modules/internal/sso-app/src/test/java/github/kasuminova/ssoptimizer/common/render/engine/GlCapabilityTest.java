@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** GL 能力模式解析与降级链映射测试（纯逻辑，不触碰 GL 上下文）。 */
 class GlCapabilityTest {
 
     @Test

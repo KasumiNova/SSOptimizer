@@ -1,12 +1,6 @@
 package github.kasuminova.ssoptimizer.mapping;
 
-/**
- * 游戏与外部运行时成员的可读符号表（纯 named 常量 holder）。
- * <p>
- * 游戏 jar 在磁盘上已是 named 版本（NanoForge 全量 deobf 运行时 + SourceSector
- * 三命名空间全量表），成员名直接以 named 名书写，无运行期查表；本类仅集中登记
- * ASM/Mixin 源码使用的成员名字符串，避免散落字面量。
- */
+/** ASM 与 Mixin 共用的游戏及外部运行时成员名常量。 */
 public final class GameMemberNames {
 
     public static final class ParallelImagePreloader {

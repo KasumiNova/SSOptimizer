@@ -18,16 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 验证 Ship Mastery System ReflectionEnabledClassLoader 字节码注入：
- * 追加的 findClass 覆盖经 ShipMasteryLoaderSupport 读字节 + 重定向后自行 defineClass，
- * loader 自身无此类时回退 super.findClass（ClassNotFoundException）。
- * <p>
- * 不止校验字节码形态：把注入后的类实际定义出来，挂一个含 probe/Target.class 的
- * 临时目录 URL 跑完整加载链路（findClass 覆盖 → 读字节 → definePackage → defineClass）。
- * 注：动态定义的类无法在编译期静态引用，实例化经构造器反射完成——这是类加载
- * 测试的固有需求（动态类系统场景），不涉及对实现细节的越权访问。
- */
 class ShipMasteryReflectionLoaderProcessorTest {
 
     private static final String FIXTURE_CLASS = "shipmastery/plugin/ModPlugin$ReflectionEnabledClassLoader";
@@ -40,13 +30,10 @@ class ShipMasteryReflectionLoaderProcessorTest {
         final byte[] rewritten = new ShipMasteryReflectionLoaderProcessor().process(fixtureClassBytes());
         assertNotNull(rewritten, "目标类应被注入");
 
-        // 把注入后的类定义进测试 loader（parent 为测试类加载器，
-        // 与运行时一致：ReflectionEnabledClassLoader 的 parent 链可见 ssoptimizer 类）
         final ByteArrayLoader definingLoader = new ByteArrayLoader(getClass().getClassLoader());
         final Class<?> fixtureType = definingLoader.define(FIXTURE_CLASS.replace('/', '.'), rewritten);
         assertTrue(URLClassLoader.class.isAssignableFrom(fixtureType), "注入后仍应是 URLClassLoader 子类");
 
-        // 造一个仅含 probe/Target.class 的 classpath 目录，实例化注入后的 loader
         final Path probePath = tempDir.resolve("probe/Target.class");
         Files.createDirectories(probePath.getParent());
         Files.write(probePath, probeClassBytes());
@@ -54,13 +41,10 @@ class ShipMasteryReflectionLoaderProcessorTest {
                 .getDeclaredConstructor(URL[].class, ClassLoader.class)
                 .newInstance(new URL[]{tempDir.toUri().toURL()}, getClass().getClassLoader());
 
-        // 完整链路：loadClass → 父委派未命中 → findClass 覆盖 → 读字节 → definePackage → defineClass
         final Class<?> loaded = loader.loadClass("probe.Target");
         assertEquals("probe.Target", loaded.getName());
         assertSame(loader, loaded.getClassLoader(), "probe.Target 应由注入后的 loader 自行定义");
 
-        // 回退路径：父委派与本级都没有的类 → findClass 覆盖 → 支撑返回 null
-        // → super.findClass → ClassNotFoundException
         assertThrows(ClassNotFoundException.class, () -> loader.loadClass("probe.Missing"));
     }
 
@@ -72,12 +56,10 @@ class ShipMasteryReflectionLoaderProcessorTest {
 
         try (URLClassLoader loader = new URLClassLoader(
                 new URL[]{tempDir.toUri().toURL()}, getClass().getClassLoader())) {
-            // 命中：读出与原字节等长的结果（probe 类无 GL 引用，redirect 原样透传）
             final byte[] bytes = ShipMasteryLoaderSupport.loadTransformedBytes(loader, "probe.Target");
             assertNotNull(bytes);
             assertTrue(bytes.length > 0);
 
-            // 未命中：返回 null（调用方回退 super.findClass）
             assertNull(ShipMasteryLoaderSupport.loadTransformedBytes(loader, "probe.Missing"));
         }
     }
@@ -98,7 +80,6 @@ class ShipMasteryReflectionLoaderProcessorTest {
         existing.visitEnd();
         writer.visitEnd();
 
-        // 已自带 findClass 覆盖（模组更新形态变化）→ 放弃注入
         assertNull(new ShipMasteryReflectionLoaderProcessor().process(writer.toByteArray()));
     }
 
@@ -110,7 +91,6 @@ class ShipMasteryReflectionLoaderProcessorTest {
         assertNull(new ShipMasteryReflectionLoaderProcessor().process(writer.toByteArray()));
     }
 
-    /** 与真实目标同形的夹具：URLClassLoader 子类 + (URL[], ClassLoader) 构造。 */
     private static byte[] fixtureClassBytes() {
         final ClassWriter writer = fixtureWriter();
         writer.visitEnd();
@@ -134,7 +114,6 @@ class ShipMasteryReflectionLoaderProcessorTest {
         return writer;
     }
 
-    /** 探针类：public class probe.Target（无 GL 引用，redirect 应原样透传）。 */
     private static byte[] probeClassBytes() {
         final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "probe/Target", null, "java/lang/Object", null);
@@ -149,7 +128,6 @@ class ShipMasteryReflectionLoaderProcessorTest {
         return writer.toByteArray();
     }
 
-    /** 内存字节码定义 loader：不经反射地把注入后的夹具类定义出来。 */
     private static final class ByteArrayLoader extends ClassLoader {
         ByteArrayLoader(final ClassLoader parent) {
             super(parent);

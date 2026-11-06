@@ -1,10 +1,3 @@
-/**
- * TrueType 字体栅格化器（JNI 实现）。
- *
- * 对应 Java 类: NativeFontRasterizer
- * 使用 FreeType 库将 TTF/OTF 字形渲染为灰度位图，
- * 支持 SDF 模式和子像素反锯齿。
- */
 #include "github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer.h"
 
 #include <algorithm>
@@ -33,8 +26,7 @@ constexpr const char* NATIVE_GLYPH_BITMAP_CLASS = "github/kasuminova/ssoptimizer
 struct NativeFaceHandle {
     FT_Library library = nullptr;
     FT_Face    face    = nullptr;
-    // 描边器：随 face 创建，供描边剪影栅格化复用。
-    // 注意：FT_Stroker 非线程安全，Java 调用方必须按 face 句柄同步访问，本层不加锁。
+    // FT_Stroker 非线程安全，Java 调用方必须按 face 句柄同步访问。
     FT_Stroker stroker = nullptr;
     bool       antiAlias = true;
     bool       forceAutoHint = false;
@@ -176,10 +168,6 @@ jobject createGlyphBitmap(JNIEnv* env,
             static_cast<jint>(xAdvance));
 }
 
-/**
- * 8-bit 灰度覆盖率位图（row-major），带 FreeType bearing（left/top，y 轴向上）。
- * 作为填充栅格化与描边外环合成的统一中间表示。
- */
 struct GrayBitmap {
     int left = 0;
     int top = 0;
@@ -192,10 +180,6 @@ struct GrayBitmap {
     }
 };
 
-/**
- * 将 FT_Bitmap 转换为 8-bit 灰度 GrayBitmap。
- * 支持 FT_PIXEL_MODE_GRAY（直接拷贝）与 FT_PIXEL_MODE_MONO（1-bit 展开为 0/255）。
- */
 GrayBitmap ftBitmapToGray(const FT_Bitmap& bitmap,
                           const int left,
                           const int top) {
@@ -230,10 +214,6 @@ GrayBitmap ftBitmapToGray(const FT_Bitmap& bitmap,
     return out;
 }
 
-/**
- * 将 GrayBitmap 转换为 NativeGlyphBitmap Java 对象（白底 alpha：(alpha<<24)|0xFFFFFF）。
- * xOffset 取位图 left，yOffset = baseline - top；空位图输出 argbPixels=null 且尺寸为 0。
- */
 jobject grayBitmapToJava(JNIEnv* env,
                          const GrayBitmap& bitmap,
                          const int baseline,
@@ -294,19 +274,6 @@ jobject rasterizeGlyph(JNIEnv* env,
     return grayBitmapToJava(env, fill, baseline, xAdvance);
 }
 
-/**
- * 描边剪影栅格化：填充字形 ∪ 轮廓向外扩张 strokeWidthPx 像素的外环。
- *
- * 流程：FT_Load_Char → 渲染填充字形并取其灰度位图与 advance →
- * FT_Get_Glyph 取轮廓副本 → FT_Stroker_Set（ROUND cap/join）→
- * FT_Glyph_StrokeBorder（仅外侧，不销毁原轮廓）→ FT_Glyph_To_Bitmap 得外环位图 →
- * 两张位图按各自 bearing 求包围盒并集，逐像素取 alpha 最大值合成。
- *
- * xAdvance 始终取填充字形的步进（描边不改变步进）；xOffset/yOffset 以并集包围盒为准。
- * strokeWidthPx <= 0、stroker 不可用或描边失败时退化为纯填充结果（填充总是合法输出）。
- *
- * 线程前提：FT_Stroker 非线程安全，调用方（Java 层）必须按 face 句柄串行调用。
- */
 jobject rasterizeGlyphStroked(JNIEnv* env,
                               NativeFaceHandle* handle,
                               const jint codePoint,
@@ -331,10 +298,7 @@ jobject rasterizeGlyphStroked(JNIEnv* env,
 
     FT_GlyphSlot slot = handle->face->glyph;
 
-    // 先取轮廓副本：FT_Render_Glyph 会把 slot 转为位图格式，
-    // 之后 FT_Get_Glyph 只能拿到位图而非轮廓，因此必须在渲染前提取。
-    // 轮廓副本独立于 slot，后续渲染 slot 不影响它。
-    // 内嵌位图字形没有轮廓（format 非 OUTLINE），此时退化纯填充。
+    // FT_Render_Glyph 会将 slot 转为位图，必须在渲染前提取独立轮廓副本。
     FT_Glyph outline = nullptr;
     if (FT_Get_Glyph(slot, &outline) != 0 || outline == nullptr
             || outline->format != FT_GLYPH_FORMAT_OUTLINE) {
@@ -344,7 +308,6 @@ jobject rasterizeGlyphStroked(JNIEnv* env,
         outline = nullptr;
     }
 
-    // 渲染填充字形（描边不改变 advance/bearing 基准，全部以填充字形为准）
     const FT_Render_Mode renderMode = freetypeRenderMode(handle->hintMode, handle->antiAlias);
     if (slot->format != FT_GLYPH_FORMAT_BITMAP) {
         if (FT_Render_Glyph(slot, renderMode) != 0) {
@@ -366,13 +329,11 @@ jobject rasterizeGlyphStroked(JNIEnv* env,
             FT_STROKER_LINECAP_ROUND,
             FT_STROKER_LINEJOIN_ROUND,
             0);
-    // inside=false：只保留外扩外环；destroy=false：失败时轮廓仍可安全释放
     if (FT_Glyph_StrokeBorder(&outline, handle->stroker, false, false) != 0) {
         FT_Done_Glyph(outline);
         return grayBitmapToJava(env, fill, baseline, xAdvance);
     }
-    // destroy=false：转换产出新位图字形写入 strokeBitmap，原轮廓句柄保持有效，
-    // 显式 FT_Done_Glyph 释放——destroy=true 的失败路径是否释放轮廓在不同版本语义含混，不用。
+    // destroy=false 保留原轮廓的显式释放责任，避开不同 FreeType 版本对失败路径所有权的含混语义。
     FT_Glyph strokeBitmap = outline;
     if (FT_Glyph_To_Bitmap(&strokeBitmap, renderMode, nullptr, false) != 0) {
         FT_Done_Glyph(outline);
@@ -388,7 +349,6 @@ jobject rasterizeGlyphStroked(JNIEnv* env,
         return grayBitmapToJava(env, fill, baseline, xAdvance);
     }
 
-    // 包围盒并集（y 轴向上：top 为上边缘，bottom = top - height）
     const int unionLeft = fill.empty() ? stroke.left : std::min(fill.left, stroke.left);
     const int unionTop = fill.empty() ? stroke.top : std::max(fill.top, stroke.top);
     const int unionRight = fill.empty()
@@ -403,19 +363,17 @@ jobject rasterizeGlyphStroked(JNIEnv* env,
     merged.top = unionTop;
     merged.width = std::max(0, unionRight - unionLeft);
     merged.height = std::max(0, unionTop - unionBottom);
-    // 注意不能用 merged.empty() 判断：此刻 alpha 尚未分配，empty() 恒为真
+    // alpha 尚未分配时 merged.empty() 恒为真，不能用其判断尺寸是否有效。
     if (merged.width > 0 && merged.height > 0) {
         merged.alpha.assign(
                 static_cast<size_t>(merged.width) * static_cast<size_t>(merged.height), 0);
     }
 
-    // 逐像素取两张位图的 alpha 最大值（同一坐标系：left/top bearing，y 轴向上）
     const auto blendInto = [&merged](const GrayBitmap& src) {
         if (src.empty()) {
             return;
         }
         for (int sy = 0; sy < src.height; sy++) {
-            // 源像素行的上边缘 y 坐标（向上为正）：src.top - sy
             const int dy = merged.top - (src.top - sy);
             if (dy < 0 || dy >= merged.height) {
                 continue;
@@ -440,17 +398,8 @@ jobject rasterizeGlyphStroked(JNIEnv* env,
 }
 #endif
 
-} // namespace
+}
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeIsAvailable()
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @return FreeType 原生字体栅格化后端是否可用
- *
- * 内存管理：仅做可用性探测；若初始化 FreeType 成功会在返回前释放。
- */
 extern "C" JNIEXPORT jboolean JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeIsAvailable(JNIEnv* env, jclass clazz) {
     (void) env;
@@ -468,21 +417,6 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeIsAvai
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeCreateFace(String, float, int, boolean, boolean, boolean)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param fontPath 字体文件路径
- * @param pixelSize 目标像素字号
- * @param hintMode Hinting 模式
- * @param forceAutoHint 是否强制自动 hint
- * @param antiAlias 是否启用抗锯齿
- * @param embeddedBitmaps 是否允许使用内嵌位图
- * @return NativeFaceHandle 指针编码后的 jlong；失败返回 0
- *
- * 内存管理：成功时由 Java 层后续调用 nativeDestroyFace 释放；失败路径在原生侧自行清理。
- */
 extern "C" JNIEXPORT jlong JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeCreateFace(JNIEnv* env,
                                                                               jclass clazz,
@@ -532,18 +466,6 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeCreate
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeRasterizeGlyph(long, int, int)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param faceHandle Java 层持有的字体句柄
- * @param codePoint 要栅格化的 Unicode code point
- * @param baseline 基线位置
- * @return NativeGlyphBitmap；失败时返回 null
- *
- * 内存管理：返回对象由 JVM 管理；不转移底层 FreeType 句柄所有权。
- */
 extern "C" JNIEXPORT jobject JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRasterizeGlyph(JNIEnv* env,
                                                                                   jclass clazz,
@@ -563,20 +485,6 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRaster
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeRasterizeGlyphStroked(long, int, int, float)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param faceHandle Java 层持有的字体句柄
- * @param codePoint 要栅格化的 Unicode code point
- * @param baseline 基线位置
- * @param strokeWidthPx 描边宽度（像素）；<= 0 时退化为纯填充
- * @return NativeGlyphBitmap；失败时返回 null
- *
- * 内存管理：返回对象由 JVM 管理；不转移底层 FreeType 句柄所有权。
- * 线程前提：FT_Stroker 非线程安全，调用方必须按 face 句柄串行调用。
- */
 extern "C" JNIEXPORT jobject JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRasterizeGlyphStroked(JNIEnv* env,
                                                                                          jclass clazz,
@@ -598,23 +506,6 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRaster
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeRasterizeGlyphs(long, int[], int, float)
- *
- * 批量栅格化：逐码点调用填充（strokeWidthPx <= 0）或描边剪影（strokeWidthPx > 0）路径，
- * 摊薄 JNI 边界开销。单码点失败（如 FT_Load_Char 失败）对应元素为 null，不中断其余。
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param faceHandle Java 层持有的字体句柄
- * @param codePoints 待栅格化的 Unicode code point 数组
- * @param baseline 基线位置
- * @param strokeWidthPx 描边宽度（像素）；<= 0 时为纯填充
- * @return NativeGlyphBitmap[]，长度与 codePoints 一致；入参非法或数组分配失败返回 null
- *
- * 内存管理：返回数组及元素由 JVM 管理；逐元素 DeleteLocalRef 防止大批量时撑爆局部引用表。
- * 线程前提：FT_Stroker 非线程安全，调用方必须按 face 句柄串行调用。
- */
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRasterizeGlyphs(JNIEnv* env,
                                                                                    jclass clazz,
@@ -654,7 +545,6 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRaster
                 ? rasterizeGlyphStroked(env, handle, codePointElements[i], baseline, strokeWidthPx)
                 : rasterizeGlyph(env, handle, codePointElements[i], baseline);
         if (bitmap == nullptr) {
-            // 单码点失败：元素保持 null，继续其余码点
             continue;
         }
         env->SetObjectArrayElement(result, i, bitmap);
@@ -677,20 +567,6 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeRaster
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeHasGlyph(long, int)
- *
- * 字形存在性查询：FT_Get_Char_Index(face, cp) != 0。码点 <= 0 恒 false（.notdef
- * 占位查询无意义）。face 链回退选择用，不改变任何栅格化语义。
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param faceHandle Java 层持有的字体句柄
- * @param codePoint 待查询的 Unicode code point
- * @return face 含该字形返回 JNI_TRUE
- *
- * 内存管理：纯查询，无资源分配/转移。
- */
 extern "C" JNIEXPORT jboolean JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeHasGlyph(JNIEnv* env,
                                                                             jclass clazz,
@@ -714,16 +590,6 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeHasGly
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.font.NativeFontRasterizer#nativeDestroyFace(long)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param faceHandle Java 层持有的字体句柄
- * @return 无返回值
- *
- * 内存管理：释放由 nativeCreateFace 分配的 NativeFaceHandle 及其关联 FreeType 资源。
- */
 extern "C" JNIEXPORT void JNICALL
 Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeDestroyFace(JNIEnv* env,
                                                                                jclass clazz,

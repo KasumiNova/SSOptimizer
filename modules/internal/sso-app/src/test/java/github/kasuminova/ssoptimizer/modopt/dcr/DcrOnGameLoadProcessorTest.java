@@ -16,11 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link DcrOnGameLoadProcessor} 结构验证（基于编译好的 plugin 夹具）：onGameLoad 中
- * {@code saveCombatResult} 调用已 redirect 为 {@code ssoptimizer$collect}，且每个 RETURN 前注入了
- * {@code ssoptimizer$flush}。无反射。
- */
 class DcrOnGameLoadProcessorTest {
 
     private static final String SM = "data/scripts/combatanalytics/SerializationManager";

@@ -13,13 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.SecureRandom;
 
-/**
- * {@link DebugServer} 的 jdk.httpserver 实现。
- *
- * <p>设计要点：只绑定回环地址（调试接口是「受信任的破坏力」，不暴露到外部网络）；
- * 全部请求要求 {@code Authorization: Bearer <token>}；HTTP 处理器跑在
- * {@link VtWorkers} 虚拟线程上，阻塞 IO 不占游戏主线程。</p>
- */
 public final class DebugServerImpl implements DebugServer {
     private static final Logger LOGGER = Logger.getLogger(DebugServerImpl.class);
 
@@ -29,12 +22,6 @@ public final class DebugServerImpl implements DebugServer {
     private volatile HttpServer server;
     private volatile String token;
 
-    /**
-     * 创建调试服务实例（未启动）。
-     *
-     * @param config 调试配置
-     * @param router RPC 路由器
-     */
     public DebugServerImpl(final DebugConfig config, final DebugRpcRouter router) {
         this.config = config;
         this.router = router;

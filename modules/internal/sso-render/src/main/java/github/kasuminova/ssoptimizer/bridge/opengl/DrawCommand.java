@@ -5,48 +5,27 @@ import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
 import java.nio.ByteBuffer;
 
 /**
- * 池化的 draw 命令（glDrawArrays/glDrawElements/glDrawRangeElements/glArrayElement 全变体）。
- * <p>
- * 动机：draw 是逐 sprite 的高频命令，原实现每条 draw 分配「draw lambda +
- * 包装 lambda」两个命令对象；池化后录制侧借出、渲染线程执行完（finally）
- * 归还，稳态零分配。生命周期安全性见 {@link CommandPool} 的 javadoc。
- * <p>
- * 语义与原 lambda 实现完全一致：执行时先 {@link PointerSnapshotGroup#apply()}
- * 重放录制时刻捕获的 pointer 快照组，再执行真实 draw；finally 中归还快照组、
- * 索引快照（buffer 变体）与本命令对象。
+ * 池化 draw 命令。录制线程设置参数，渲染线程执行后在 finally 中归还快照、快照组与命令对象。
  */
 final class DrawCommand implements GlCommand {
-    /** glDrawArrays(mode, first, count)。 */
     static final int DRAW_ARRAYS = 0;
-    /** glDrawElements(mode, indices快照)：索引 buffer 录制时刻深拷贝，执行后归还池。 */
     static final int DRAW_ELEMENTS_SNAPSHOT = 1;
-    /** glDrawElements(mode, count, type, offset)：VBO 索引偏移形式，无 buffer 快照。 */
     static final int DRAW_ELEMENTS_OFFSET = 2;
-    /** glArrayElement(index)。 */
     static final int ARRAY_ELEMENT = 3;
-    /** glDrawRangeElements(mode, start, end, indices快照)：语义同 DRAW_ELEMENTS_SNAPSHOT。 */
     static final int DRAW_RANGE_ELEMENTS_SNAPSHOT = 4;
-    /** glDrawRangeElements(mode, start, end, count, type, offset)：VBO 索引偏移形式。 */
     static final int DRAW_RANGE_ELEMENTS_OFFSET = 5;
 
-    /** 索引快照的视图种类：ByteBuffer 原样。 */
     static final int VIEW_BYTE = 0;
-    /** 索引快照的视图种类：IntBuffer 视图。 */
     static final int VIEW_INT = 1;
-    /** 索引快照的视图种类：ShortBuffer 视图。 */
     static final int VIEW_SHORT = 2;
 
     private int variant;
-    /** 复用字段：DRAW_ARRAYS 为 mode/first/count；DRAW_ELEMENTS_* 为 mode/count/type；ARRAY_ELEMENT 为 index。 */
     private int a;
     private int b;
     private int c;
-    /** DRAW_ELEMENTS_OFFSET 的索引偏移。 */
     private long offset;
-    /** DRAW_RANGE_ELEMENTS_OFFSET 的 count/type（range 变体比 elements 多 start/end 两个参数）。 */
     private int d;
     private int e;
-    /** DRAW_ELEMENTS_SNAPSHOT 的池化索引快照与其视图种类。 */
     private ByteBuffer indexSnapshot;
     private int indexView;
     private PointerSnapshotGroup group;
@@ -109,14 +88,7 @@ final class DrawCommand implements GlCommand {
     public void execute() {
         try {
             if (BridgeSupport.isCompilingDisplayList() && DrawCommandImmediateDecoder.canDecode(group)) {
-                // display list 编译窗口内：客户端数组按指针捕获、不回拷数据——
-                // buffer 形式快照是池化缓冲，draw 执行后归还池复用，列表重放会
-                // 读到陈旧内容（与 VertexArrayBatch 共享缓冲同类问题）。把快照
-                // 数据解码为 immediate 调用（按值捕获），见
-                // {@link DrawCommandImmediateDecoder}。VBO 偏移形式（canDecode
-                // 返回 false）走下方常规路径：服务器端数据指针捕获语义正确。
-                // range 变体不进本分支：display list 编译与 glDrawRangeElements
-                // 的组合在实际模组面不存在，命中即 default 快速失败（日志可查）。
+                // display list 只捕获客户端数组指针，池化快照必须在编译窗口内解码为按值捕获的 immediate 调用
                 switch (variant) {
                     case DRAW_ARRAYS -> DrawCommandImmediateDecoder.replayDrawArrays(
                             group, a, b, c, ImmediateVertexSink.INSTANCE);
@@ -163,7 +135,6 @@ final class DrawCommand implements GlCommand {
         }
     }
 
-    /** 归还池前清空引用，避免池内对象滞留快照/快照组的堆引用。 */
     private void clear() {
         group = null;
         indexSnapshot = null;

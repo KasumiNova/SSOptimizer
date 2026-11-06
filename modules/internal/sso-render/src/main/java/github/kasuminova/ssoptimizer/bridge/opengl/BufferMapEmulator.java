@@ -14,53 +14,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * buffer 映射写路径仿真：纯写映射（MAP_WRITE 且无 MAP_READ）不再走阻塞通道取真实
- * 映射指针，而是发还录制侧每 VBO 的直接镜像缓冲；unmap 时把写入区间快照成字节数组，
- * 随帧命令流入队到渲染线程做真实 {@code glBufferSubData} 上传。
+ * 纯写 buffer 映射的录制侧镜像。unmap 时快照写入区间并入队上传；含读取、持久或
+ * 相干映射的调用返回 null，由桥接层回退真实映射。
  * <p>
- * 动机：BoxUtil TrailEntity.submitNodes 等模组路径每帧对 GL_TEXTURE_BUFFER 做
- * {@code glMapBufferRange(WRITE|INVALIDATE[_RANGE|BUFFER][|UNSYNCHRONIZED])} 写映射——
- * 真实映射是一次全管线 drain（StallDetector 熔断的 top1 站点），而纯写+invalidate
- * 语义下调用方根本不读旧内容，镜像缓冲在语义上完全等价。
- * <p>
- * 内存安全：unmap 即快照（byte[] 拷贝），同一 VBO 跨帧重复映射复用镜像不产生跨帧
- * 数据竞争；上传任务在渲染线程先恢复/还原目标绑定，不污染录制侧绑定簿记。
- * <p>
- * 非仿真情形（含 MAP_READ、MAP_PERSISTENT/MAP_COHERENT 持久映射、同线程同 target
- * 重入映射、未跟踪的 target、未绑定 VBO）返回 null，由桥接回退真实阻塞映射——
- * 语义正确性优先于零阻塞。
- * <p>
- * 持久映射必须回退真实映射的动机：持久/相干映射的设计语义是「映射一次、跨帧常驻、
- * CPU 侧持续写、不经任何 GL 调用即对 GPU 可见」（BoxUtil 1.6.0 静态尾迹池
- * {@code BUtil_StaticTrailMemoryPool} 以 WRITE|PERSISTENT 映射后，逻辑线程直接向
- * 映射指针写节点数据，全程无 unmap/flush）。镜像仿真只在 unmap 时快照上传，
- * 此类映射永远不上传，GPU 缓冲保持初始零值——表现为尾迹完全不渲染且无任何报错。
- * <p>
- * 在途映射按（线程, target）为键隔离：BoxUtil 折叠进主帧后，其 logical/logical-aux/
- * rendering/主线程会在同一 GL target 上并发持有在途写映射（如多线程同时向不同 SSBO
- * 的 glMapBufferRange(37074, ...)——BoxUtil 仅以每 InstanceType 一把 GPU 锁互斥同池，
- * 跨池并发是设计内行为）。若按 target 单槽登记，unmap 配对会跨线程错位：先到的一方
- * 的 unmap 会消费另一方的在途登记，把另一方尚在写入的镜像提前快照上传（实例数据/节点
- * 数据部分为旧值或零），真实映射的一方反而丢失 unmap。按线程隔离后各方快照均在
- * 本线程写完之后产生，语义与非 RT 的多上下文模型等价。同理，绑定簿记也按
- * （线程, target）隔离：非 RT 下各 BoxUtil 线程各有独立 GL 上下文、绑定互不可见；
- * 折叠进单命令流后若共用一份绑定簿记，线程 A「bind SSBO-1」与线程 B「bind SSBO-2」
- * 交错会让 A 随后的 map 被错误归属到 SSBO-2 的镜像（A 的数据上传到 B 的池）。
+ * 绑定与在途映射按（线程, target）隔离，避免并发生产者的 unmap 与绑定错配。
  */
 final class BufferMapEmulator {
-    /** 录制侧簿记：（线程, target）复合键 → 该线程当前绑定的 VBO 名。 */
     private static final Map<Long, Integer> BOUND = new HashMap<>();
-    /** 录制侧簿记：VBO 名 → 最近 glBufferData 容量（字节）。 */
     private static final Map<Integer, Integer> SIZES = new HashMap<>();
-    /** 录制侧镜像：VBO 名 → 直接缓冲（按需增长复用）。 */
     private static final Map<Integer, ByteBuffer> MIRRORS = new HashMap<>();
-    /** 录制侧在途映射：（线程, target）复合键 → 待上传区间。 */
     private static final Map<Long, PendingMap> PENDING = new HashMap<>();
 
-    /** 渲染线程上传用直接 staging（仅渲染线程触碰，按需增长）。 */
     private static ByteBuffer staging;
 
-    /** 仿真诊断开关（{@code -Dssoptimizer.debug.buffermap=true}）：统计写映射仿真命中率。 */
     private static final boolean DEBUG =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.buffermap", "false"));
     private static final org.apache.log4j.Logger DEBUG_LOGGER =
@@ -74,7 +40,6 @@ final class BufferMapEmulator {
     private BufferMapEmulator() {
     }
 
-    /** 在途映射（录制侧）。 */
     private static final class PendingMap {
         final int vbo;
         final long offset;
@@ -87,7 +52,6 @@ final class BufferMapEmulator {
         }
     }
 
-    /** 待上传区间快照（unmap 时产生，随帧命令流入队）。 */
     static final class PendingUpload {
         final int    vbo;
         final int    target;
@@ -102,42 +66,32 @@ final class BufferMapEmulator {
         }
     }
 
-    /** 录制侧绑定簿记（桥接 glBindBuffer 调用），按调用线程隔离。 */
     static synchronized void onBindBuffer(final int target, final int buffer) {
         BOUND.put(pendingKey(target), buffer);
     }
 
-    /** 录制侧容量簿记（桥接 glBufferData 调用，作用于本线程当前绑定 VBO）。 */
     static synchronized void onBufferData(final int target, final long size) {
         final Integer vbo = BOUND.get(pendingKey(target));
         if (vbo != null && vbo != 0) {
             SIZES.put(vbo, (int) Math.min(size, Integer.MAX_VALUE));
-            // 存储重建即杀死既有映射（spec：bufferData 后旧映射失效），同步失效登记
+            // bufferData 会使既有映射失效
             RealMappingRegistry.invalidateBuffer(vbo);
         }
     }
 
-    /** 录制侧删除簿记（桥接 glDeleteBuffers 调用）：镜像随 VBO 一并失效。 */
     static synchronized void onDeleteBuffer(final int buffer) {
         MIRRORS.remove(buffer);
         SIZES.remove(buffer);
         RealMappingRegistry.invalidateBuffer(buffer);
     }
 
-    /**
-     * 本线程在该 target 上当前绑定的 VBO id（无绑定返回 0）。
-     * 供真实映射生命周期登记（{@link RealMappingRegistry}）在 map/unmap 扼流点
-     * 解析调用方绑定的 buffer——与 {@link #tryEmulateMapRange} 的绑定解析同源。
-     */
     static synchronized int boundBufferForCurrentThread(final int target) {
         final Integer vbo = BOUND.get(pendingKey(target));
         return vbo == null ? 0 : vbo;
     }
 
     /**
-     * 尝试以镜像缓冲仿真写映射。
-     *
-     * @return 映射镜像（position=0、limit=length），或 null 表示不可仿真（桥接回退阻塞通道）
+     * @return 映射镜像（position=0、limit=length），或 null 表示调用方必须回退真实映射
      */
     static synchronized ByteBuffer tryEmulateMapRange(final int target, final long offset,
                                                       final long length, final int access) {
@@ -178,8 +132,7 @@ final class BufferMapEmulator {
             maybeLogStatsLocked();
         }
         final ByteBuffer view = mirror.duplicate();
-        // duplicate() 会将字节序重置为 BIG_ENDIAN（JDK 行为），必须恢复镜像原序：
-        // 调用方可能经 asFloatBuffer() 等类型化视图写入，序错会以翻转字节序落盘并上传 GPU
+        // duplicate() 会重置字节序，类型化视图写入前必须恢复镜像原序
         view.order(mirror.order());
         view.position(0);
         view.limit(len);
@@ -193,7 +146,6 @@ final class BufferMapEmulator {
         }
     }
 
-    /** 周期性输出仿真统计（持有类锁期间调用，间隔门控，常态零开销）。 */
     private static void maybeLogStatsLocked() {
         final long now = System.nanoTime();
         if (debugLastStatsNanos != 0L && now - debugLastStatsNanos < DEBUG_STATS_INTERVAL_NANOS) {
@@ -209,9 +161,7 @@ final class BufferMapEmulator {
     }
 
     /**
-     * unmap 配对：取出<b>本线程</b>在该 target 上的在途映射并把镜像写入区间快照为字节数组。
-     *
-     * @return 待上传快照，或 null 表示本线程在该 target 无在途仿真映射（桥接回退真实 unmap）
+     * @return 待上传快照，或 null 表示本线程在该 target 无在途仿真映射
      */
     static synchronized PendingUpload pollEmulatedUnmap(final int target) {
         final PendingMap pending = PENDING.remove(pendingKey(target));
@@ -234,10 +184,7 @@ final class BufferMapEmulator {
         return new PendingUpload(pending.vbo, target, pending.offset, copy);
     }
 
-    /**
-     * 渲染线程上传：快照经 staging 直接缓冲做真实 {@code glBufferSubData}，
-     * 前后恢复目标绑定，不干扰录制流中的绑定序列。
-     */
+    /** 渲染线程上传前后恢复原 target 绑定。 */
     static void enqueueUpload(final PendingUpload upload) {
         if (upload.data == null) {
             return;
@@ -266,17 +213,14 @@ final class BufferMapEmulator {
         });
     }
 
-    /** 在途映射复合键：调用线程 id 高 32 位 | target 低 32 位（线程 id 在 JVM 内单调不复用）。 */
     private static long pendingKey(final int target) {
         return Thread.currentThread().getId() << 32 | target & 0xFFFFFFFFL;
     }
 
-    /** 本线程在该 target 上是否有在途仿真映射（{@code glFlushMappedBufferRange} 桥接判定用）。 */
     static synchronized boolean hasPendingMap(final int target) {
         return PENDING.containsKey(pendingKey(target));
     }
 
-    /** target 对应的绑定查询 pname；不认识的 target 返回 0（不可安全仿真）。 */
     private static int bindingQueryPname(final int target) {
         if (target == GL15.GL_ARRAY_BUFFER) {
             return GL15.GL_ARRAY_BUFFER_BINDING;
@@ -291,8 +235,7 @@ final class BufferMapEmulator {
             return GL21.GL_PIXEL_UNPACK_BUFFER_BINDING;
         }
         if (target == GL31.GL_TEXTURE_BUFFER) {
-            // GL_TEXTURE_BUFFER_BINDING 与 GL_TEXTURE_BUFFER 枚举值相同（0x8C2A），
-            // LWJGL2 未在 GL31 提供绑定常量，直接复用 target 值
+            // LWJGL2 未提供 GL_TEXTURE_BUFFER_BINDING，复用数值相同的 target 枚举
             return GL31.GL_TEXTURE_BUFFER;
         }
         if (target == GL31.GL_UNIFORM_BUFFER) {
@@ -304,7 +247,6 @@ final class BufferMapEmulator {
         return 0;
     }
 
-    /** 测试用：清空全部簿记与镜像，避免用例间静态状态串扰。 */
     static synchronized void reset() {
         BOUND.clear();
         SIZES.clear();

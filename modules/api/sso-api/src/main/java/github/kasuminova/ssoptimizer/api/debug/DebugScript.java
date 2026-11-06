@@ -3,25 +3,19 @@ package github.kasuminova.ssoptimizer.api.debug;
 import java.util.Map;
 
 /**
- * 调试脚本契约：游戏内动态编译执行的代码单元。
- *
- * <p>动机：Agent 调试需要「改一段逻辑 → 立刻在游戏内执行 → 读回状态」的秒级反馈环。
- * 脚本源码经 {@code script_compile} RPC 编译为独立类加载器中的类并实例化；
- * 同名 scriptId 再编译即替换实例（L1 热重载），脚本内可经
- * {@link DebugContext#gameClassLoader()} 加载游戏/模组类（运行时为 named 命名）。</p>
- *
- * <p>实现约束：公开无参构造；执行线程由调用方 threadMode 决定
- * （默认新线程；{@code main} 模式与游戏主循环串行）。</p>
+ * 游戏内动态编译脚本的执行契约。
+ * <p>
+ * 实现必须提供公开无参构造。默认在独立线程执行；选择 {@code main} 模式时与游戏主循环串行执行。
+ * 每次调用同步等待脚本完成，脚本不得假定其他线程模型。
  */
 public interface DebugScript {
     /**
-     * 执行脚本逻辑。
+     * 使用给定上下文和参数执行脚本逻辑，脚本产生的副作用由实现自行约束。
      *
-     * @param ctx  调试上下文（类加载器、日志、跨域服务解析）
-     * @param args 调用参数（JSON 反序列化的键值对，数值为 Double）
-     * @return 结果对象，须为 JSON 可序列化（基本类型/字符串/Map/List），
-     *         否则调用方以序列化错误返回
-     * @throws Exception 脚本内任何异常由引擎收敛为 RPC 内部错误返回
+     * @param ctx  调试上下文，提供类加载、日志和跨域服务访问
+     * @param args JSON 对象反序列化得到的参数，数值为 {@code Double}；无参数时为空映射
+     * @return 可由 JSON 序列化的结果对象；序列化失败由调试引擎作为调用错误返回
+     * @throws Exception 脚本执行失败时抛出，由调试引擎转换为 RPC 内部错误
      */
     Object invoke(DebugContext ctx, Map<String, Object> args) throws Exception;
 }

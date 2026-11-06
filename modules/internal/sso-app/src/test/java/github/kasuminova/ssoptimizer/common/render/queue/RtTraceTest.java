@@ -7,9 +7,6 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link RtTrace#parseWatchTex(String)} 的解析逻辑验证。
- */
 class RtTraceTest {
 
     @Test

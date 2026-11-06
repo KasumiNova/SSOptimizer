@@ -10,15 +10,6 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * NativeFontRasterizer 描边剪影与批量栅格化的行为验证。
- * <p>
- * 门控：native font 库不可用（未构建或加载失败）时整组测试经 Assumptions 跳过。
- * 库路径通过系统属性 {@code ssoptimizer.native.path.font} 指向
- * {@code modules/internal/sso-font/native/build/lib/main/release/libssoptimizer_font.so}
- * （{@link github.kasuminova.ssoptimizer.common.render.runtime.NativeLibraryResolver}
- * 的按模块覆盖入口），须在首次 isAvailable() 探测前注入，因此在静态块中设置。
- */
 class NativeStrokedRasterizerTest {
     private static final float PIXEL_SIZE = 24.0f;
     private static final int   BASELINE   = 24;
@@ -44,7 +35,6 @@ class NativeStrokedRasterizerTest {
         if (configured != null && !configured.isBlank()) {
             return Path.of(configured).toAbsolutePath();
         }
-        // 非 Gradle 启动（如 IDE 直跑）：从工作目录向上找带 game-fonts 的仓库根
         Path dir = Path.of("").toAbsolutePath();
         while (dir != null) {
             if (Files.isDirectory(dir.resolve("game-fonts"))) {
@@ -84,16 +74,13 @@ class NativeStrokedRasterizerTest {
                 NativeFontRasterizer.rasterizeGlyphStroked(faceHandle, 'A', BASELINE, STROKE_PX);
         assertNotNull(stroked, "描边剪影栅格化 'A' 失败");
 
-        // 描边向外扩张 STROKE_PX，包围盒必须大于纯填充
         assertTrue(stroked.width() > fill.width(),
                 "描边宽度(" + stroked.width() + ")应大于填充宽度(" + fill.width() + ")");
         assertTrue(stroked.height() > fill.height(),
                 "描边高度(" + stroked.height() + ")应大于填充高度(" + fill.height() + ")");
 
-        // 描边不改变步进
         assertEquals(fill.xAdvance(), stroked.xAdvance(), "描边不应改变 xAdvance");
 
-        // AA 合成位图边缘应存在非 0/255 的 alpha 中间值
         boolean hasIntermediateAlpha = false;
         for (final int argb : stroked.argbPixels()) {
             final int alpha = (argb >>> 24) & 0xFF;
@@ -131,7 +118,6 @@ class NativeStrokedRasterizerTest {
         assertTrue(results[0].width() > 0);
         assertNotNull(results[1], "'汉' 栅格化失败");
         assertTrue(results[1].width() > 0);
-        // 0x10FFFF 无对应字形：允许 null（FT_Load_Char 失败）或 .notdef 空位图，不断言内容
     }
 
     @Test
@@ -148,7 +134,6 @@ class NativeStrokedRasterizerTest {
         assertEquals(single.height(), batch[0].height());
         assertEquals(single.xAdvance(), batch[0].xAdvance());
 
-        // 批量描边结果同样应大于纯填充
         final NativeGlyphBitmap fill = NativeFontRasterizer.rasterizeGlyph(faceHandle, '汉', BASELINE);
         assertNotNull(fill);
         assertTrue(batch[0].width() > fill.width());

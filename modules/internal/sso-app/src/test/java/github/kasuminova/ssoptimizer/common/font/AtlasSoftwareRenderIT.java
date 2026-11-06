@@ -36,23 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 字体重写 P3（TTF 动态图集）的离线软件渲染隔离验证。
- * <p>
- * 动机：实机 RT 模式下字体被垂直压成 2-4px 横条（x 步进正常），本测试把
- * 「native 栅格化 → composeToFontBox 合成 → 图集 staging → 槽位 UV → 引擎 quad」
- * 全链路在纯软件下复现并逐环断言，产出 PNG 供人工比对，从而把问题隔离在
- * 栅格化/合成/图集/UV 数学层 还是 GL 发射/执行层。
- * <p>
- * 使用真实 native 后端（不经假实现）；native 库不可用或字体文件缺失时整组
- * Assumptions 跳过。PNG 产出到 {@code <root>/build/font-atlas-dump/}（先清空再写）。
- * <p>
- * fixture：直接解析 {@code game-fonts/fnt/insignia15LTaa.fnt}（原版真实 fnt，
- * GBK 元数据行只取数值字段故按 ISO-8859-1 读）装配 BitmapFont；TTF 源为
- * {@code game-fonts/ttf/lte50549.ttf}（original-match profile 的 insignia 族主字体）。
- * 屏幕缩放经 {@code ssoptimizer.font.screenscale.override=1.0} 钉死，
- * bucket 直接经 {@code forScale(bucket)} 指定。
- */
 class AtlasSoftwareRenderIT {
     private static final String INSIGNIA_PATH = "graphics/fonts/insignia15LTaa.fnt";
     private static final float[] BUCKETS      = {1.0f, 1.5f, 2.0f};
@@ -60,12 +43,10 @@ class AtlasSoftwareRenderIT {
     private static final float   STROKE_LOGICAL_PX = 1.0f;
     private static final int     ATLAS_PAGE_SIZE   = 1024;
     private static final String  RENDER_TEXT  = "Starsector 远行星号 123 ABC defg";
-    /** 软渲染画布尺寸与落笔点（任务书固定值）。 */
     private static final int     CANVAS_W = 800;
     private static final int     CANVAS_H = 120;
     private static final float   DRAW_X   = 10f;
     private static final float   DRAW_Y   = 60f;
-    /** 画布背景：深灰，白字与黑描边剪影都可见。 */
     private static final int     CANVAS_BG = 0xFF303030;
 
     private static Path   rootDir;
@@ -77,7 +58,6 @@ class AtlasSoftwareRenderIT {
     private static BitmapFontGlyphProvider fixtureMetrics;
     private static String faceKey;
 
-    /** 跨用例共享的 provider + 图集（glyph() 幂等，各用例自行补齐所需字形）。 */
     private static DynamicGlyphAtlas atlas;
     private static TtfGlyphProvider  provider;
 
@@ -96,7 +76,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    /** 桩队列：allocate 发假纹理 id（不执行 GL 命令体），submit 只记录。 */
     private static final class StubRenderQueue implements RenderQueue {
         final AtomicInteger nextTextureId = new AtomicInteger(100);
         private final RenderFrame frame = new RenderFrame();
@@ -164,7 +143,6 @@ class AtlasSoftwareRenderIT {
         Assumptions.assumeTrue(NativeFontRasterizer.isAvailable(),
                 "native font 栅格化后端不可用（未构建 libssoptimizer_font.so）");
 
-        // 清空并重建 PNG 产出目录
         if (Files.isDirectory(dumpDir)) {
             try (var stream = Files.list(dumpDir)) {
                 for (final Path file : stream.toList()) {
@@ -195,10 +173,6 @@ class AtlasSoftwareRenderIT {
         GL11.uninstall();
         System.clearProperty(EffectiveScreenScale.OVERRIDE_PROPERTY);
     }
-
-    // ------------------------------------------------------------------
-    // 原版 fnt 解析（数值字段；face 名为 GBK 故整文件按 ISO-8859-1 读）
-    // ------------------------------------------------------------------
 
     private static BitmapFont parseFnt(final Path path, final String resourcePath) throws IOException {
         final BitmapFont font = new BitmapFont(resourcePath);
@@ -231,7 +205,6 @@ class AtlasSoftwareRenderIT {
             glyph.setWidth(width);
             glyph.setHeight(height);
             glyph.setXOffset(intField(line, "xoffset"));
-            // 游戏解析器把 yoffset 原样写入 bearingY（见 BitmapFontManager 字节码）
             glyph.setBearingY(intField(line, "yoffset"));
             glyph.setXAdvance(intField(line, "xadvance"));
             glyph.setPage(intField(line, "page"));
@@ -244,7 +217,6 @@ class AtlasSoftwareRenderIT {
         return font;
     }
 
-    /** 抽取 {@code key=value} 的整数值（value 到下一个空白为止，允许负值）。 */
     private static int intField(final String line, final String key) {
         final int keyStart = line.indexOf(key + "=");
         if (keyStart < 0) {
@@ -261,22 +233,15 @@ class AtlasSoftwareRenderIT {
         return Integer.parseInt(line.substring(valueStart, valueEnd));
     }
 
-    // ------------------------------------------------------------------
-    // 任务 1：单字形合成验证（纯填充 + 描边剪影，bucket ∈ {1.0, 1.5, 2.0}）
-    // ------------------------------------------------------------------
-
     @Test
     void singleGlyphComposeMatchesFontBox() throws IOException {
         for (final float bucket : BUCKETS) {
             final int bucketMillis = Math.round(bucket * 1000);
-            // 与生产 face 一致：使用运行期校准后的像素字号，compose PNG 反映真实观感
             final float pixelSize = provider.calibratedPixelSize(ttfPath, bucketMillis);
             final float cjkPixelSize = provider.calibratedPixelSize(misansPath, bucketMillis);
             final int baseline = Math.round(fixtureFont.getBase() * bucket);
             final long latinFace = NativeFontRasterizer.createFace(ttfPath, pixelSize, true);
             assertTrue(latinFace != 0L, "createFace 失败: bucket=" + bucket);
-            // lte50549.ttf 只覆盖 Latin（生产 face 链的 CJK 由 MiSans fallback face
-            // 栅格化），此处手动分 face 验证合成数学
             final long cjkFace = NativeFontRasterizer.createFace(misansPath, cjkPixelSize, true);
             assertTrue(cjkFace != 0L, "createFace(MiSans) 失败: bucket=" + bucket);
             try {
@@ -293,7 +258,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    /** 单字形：native 墨迹 → composeToFontBox → PNG + 度量打印 + 画布尺寸/墨高断言。 */
     private static void verifyCompose(final long face,
                                       final int cp,
                                       final int baseline,
@@ -304,7 +268,6 @@ class AtlasSoftwareRenderIT {
         final GlyphMetrics base = fixtureMetrics.glyph(cp);
         assertNotNull(base, "fnt 缺失字形: " + cpLabel(cp));
 
-        // 量化描边设备像素（与 provider 内部同一换算：TextScaleBuckets.quantizeStrokeDevicePx）
         final int strokeBucketMillis = strokeWidthLogicalPx > 0f
                 ? Math.round(TextScaleBuckets.quantizeStrokeDevicePx(strokeWidthLogicalPx, bucket) * 1000f)
                 : 0;
@@ -318,7 +281,6 @@ class AtlasSoftwareRenderIT {
                 provider.composeToFontBox(ink, base, strokeBucketMillis, bucket);
 
         final int expand = Math.round(strokeBucketMillis / 1000f);
-        // 并集画布期望尺寸 = 「fnt 盒 × bucket + 描边外扩」∪ 墨迹包围盒
         final int boxLeft = Math.round(base.xOffset() * bucket) - expand;
         final int boxTop = Math.round(base.bearingY() * bucket) - expand;
         final int boxRight = boxLeft + Math.max(1, Math.round(base.width() * bucket) + expand * 2);
@@ -343,8 +305,6 @@ class AtlasSoftwareRenderIT {
         assertEquals(expectedLeft, canvas.xOffset(), cpLabel(cp) + " 画布原点 = 并集左缘");
         assertEquals(expectedTop, canvas.yOffset(), cpLabel(cp) + " 画布原点 = 并集顶缘");
 
-        // 零裁剪回归断言（bucket 1.5 CJK 右缘/顶缘裁切 bug 的护栏）：
-        // 墨迹逐像素落在画布 (ink 偏移 − 画布原点) 处，逐字节一致
         final int[] canvasPixels = canvas.argbPixels();
         final int[] inkPixels = ink.argbPixels();
         final int destX = ink.xOffset() - canvas.xOffset();
@@ -361,7 +321,6 @@ class AtlasSoftwareRenderIT {
         }
         assertTrue(clip < 0,
                 cpLabel(cp) + " " + kind + " 墨迹必须零裁剪落入画布，首个差异像素=" + clip);
-        // 压扁症状探针：除 '_'（天生薄条，fnt 高 4px）外，墨迹应覆盖画布高度的大部分
         if (cp != '_' && strokeWidthLogicalPx == 0f) {
             assertTrue(inkRows >= canvas.height() * 0.5,
                     cpLabel(cp) + " 墨迹行数(" + inkRows + ")不足画布高(" + canvas.height() + ")一半，疑似垂直压扁");
@@ -370,10 +329,6 @@ class AtlasSoftwareRenderIT {
         writePng(String.format("compose_%s_U+%04X_bucket%.3f.png", kind, cp, bucket),
                 alphaToGray(canvas.argbPixels()), canvas.width(), canvas.height(), 4);
     }
-
-    // ------------------------------------------------------------------
-    // 任务 2：图集页 staging 验证（ASCII 可打印 + 常用 CJK 200 字）
-    // ------------------------------------------------------------------
 
     @Test
     void atlasPageStagingDump() throws IOException {
@@ -395,8 +350,6 @@ class AtlasSoftwareRenderIT {
         final int slotCount = atlas.slotCount(faceKey, 1000, 0);
         System.out.println("[atlas] 请求字形=" + requested.size() + " 入槽=" + slotCount
                 + " 页数(bucket1.0,填充)=" + AtlasTestHooks.pagesOfGroup(atlas, faceKey, 1000, 0).size());
-        // 共享图集可能被其他用例（阴影/设备像素复现等）提前向同组写入额外字形，
-        // 故断言「不少于」而非「等于」：本用例请求的字形必须全部入槽
         assertTrue(slotCount >= expectedSlots,
                 "glyph() 成功的字形必须全部入槽: 成功=" + expectedSlots + " 入槽=" + slotCount);
         assertTrue(slotCount > 200, "ASCII + CJK 200 应产出 200+ 槽位");
@@ -406,8 +359,6 @@ class AtlasSoftwareRenderIT {
         for (int i = 0; i < pages.size(); i++) {
             final byte[] staging = AtlasTestHooks.stagingSnapshot(pages.get(i));
             assertEquals(ATLAS_PAGE_SIZE * ATLAS_PAGE_SIZE, staging.length);
-            // staging 行序直接映射 GL 纹理行序（行 0 = v 0 = 字形底），
-            // dump 时垂直翻转回 PNG 阅读约定（行 0 = 字形顶）
             writePng("atlas_fill_page" + i + ".png", alphaBytesToGray(flipStagingVertically(staging)),
                     ATLAS_PAGE_SIZE, ATLAS_PAGE_SIZE, 1);
             final int nonZero = countNonZero(staging);
@@ -416,7 +367,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    /** 常用 CJK 码点：取 fixture fnt 中 0x4E00..0x9FFF 区间的前 N 个。 */
     private static List<Integer> commonCjkCodePoints(final int count) {
         final List<Integer> codePoints = new ArrayList<>();
         final BitmapGlyph[] glyphs = fixtureFont.getGlyphs();
@@ -428,10 +378,6 @@ class AtlasSoftwareRenderIT {
         }
         return codePoints;
     }
-
-    // ------------------------------------------------------------------
-    // 任务 3：端到端软渲染（引擎 quad 流 → staging 采样 → alpha 混合）
-    // ------------------------------------------------------------------
 
     @Test
     void softwareRenderedTextIsReadable() throws IOException {
@@ -447,7 +393,6 @@ class AtlasSoftwareRenderIT {
         final List<TextPass> passes = TextLayoutEngine.layout(state, provider);
         assertFalse(passes.isEmpty());
 
-        // 纹理 id → staging 快照（填充组 + 描边组；stub 队列在写页时已发假 id）
         final Map<Integer, byte[]> textures = new HashMap<>();
         for (final GlyphAtlasPage page : AtlasTestHooks.pagesOfGroup(atlas, faceKey, 1000, 0)) {
             textures.put(page.textureId(), AtlasTestHooks.stagingSnapshot(page));
@@ -478,21 +423,17 @@ class AtlasSoftwareRenderIT {
 
         writePng("softrender_ttf.png", canvas, CANVAS_W, CANVAS_H, 1);
 
-        // 压扁症状探针：整行墨高跨度（白填充 + 黑剪影任一着色即算墨）
         final int[] span = inkedRowSpan(canvas);
         System.out.println("[softrender] 墨行区间=[" + span[0] + "," + span[1] + "] 跨度=" + (span[1] - span[0] + 1));
         assertTrue(span[1] - span[0] + 1 >= 12,
                 "15px 字整行墨高跨度应 ≥12px（压扁症状为 2-4px），实际=" + (span[1] - span[0] + 1));
 
-        // 逐字形探针：fnt 高 ≥10 的填充 quad，其区域内的墨行数不得 ≤4（压扁特征）。
-        // face 链已接入（lte50549 无 CJK → MiSans fallback face 栅格化），
-        // 入槽 quad 的槽位区域必须全部有墨，空白槽位计数恒为 0
         int tallGlyphs = 0;
         int blankSlotGlyphs = 0;
         for (final TextPass pass : passes) {
             for (final GlyphQuad quad : pass.quads()) {
                 if (quad.color() != 0xFFFFFFFF) {
-                    continue; // 只看白填充 quad
+                    continue;
                 }
                 final float quadHeight = quad.y1() - quad.y2();
                 if (quadHeight < 10f) {
@@ -515,7 +456,6 @@ class AtlasSoftwareRenderIT {
         assertEquals(0, blankSlotGlyphs,
                 "face 链接入后所有入槽 quad 的槽位区域必须有墨（CJK 由 MiSans fallback face 栅格化）");
 
-        // 位图源对照：fixture 无 png 页（game-fonts/fnt 只有 .fnt），按任务书跳过
         final Path bitmapPage = fntPath.resolveSibling("insignia15LTaa_0.png");
         if (Files.isRegularFile(bitmapPage)) {
             renderBitmapControl(bitmapPage);
@@ -524,15 +464,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 殖民地 UI 症状复现：白字黑描边 + 黄色高亮词（实机「基底文本发黑」）
-    // ------------------------------------------------------------------
-
-    /**
-     * 「星币： 22,701,414」式场景：border 描边 + 选区高亮（黄）混合文本。
-     * 实机症状是基底白字发黑、高亮黄字正常——本测试在软件复合层验证
-     * 布局产物的 quad 颜色与复合结果，把问题隔离在布局/图集层还是 GL 发射层。
-     */
     @Test
     void borderAndHighlightSoftRender() throws IOException {
         provider.forScale(1.0f);
@@ -551,7 +482,6 @@ class AtlasSoftwareRenderIT {
         final List<TextPass> passes = TextLayoutEngine.layout(state, provider);
         assertFalse(passes.isEmpty());
 
-        // quad 颜色断言：剪影全黑不透明；填充在选区前白、选区内黄
         int silhouetteCount = 0;
         final List<GlyphQuad> fills = new ArrayList<>();
         for (final GlyphQuad quad : passes.get(0).quads()) {
@@ -562,7 +492,6 @@ class AtlasSoftwareRenderIT {
             }
         }
         assertTrue(silhouetteCount > 0, "border 描边合成必须产出黑色剪影 quad");
-        // 内容驱动断言：选区「12345」5 个字符的填充必须是高亮黄，选区前的 CJK 填充必须是白
         int yellowFills = 0;
         GlyphQuad firstYellow = null;
         for (final GlyphQuad quad : fills) {
@@ -598,8 +527,6 @@ class AtlasSoftwareRenderIT {
         }
         writePng("softrender_border_highlight.png", canvas, CANVAS_W, CANVAS_H, 2);
 
-        // 复合结果断言：'远' 填充区域最亮像素必须接近纯白（发黑症状下会被剪影压暗）；
-        // '1' 填充区域必须存在黄像素（高亮生效）
         final int maxWhite = maxChannelInRegion(canvas, fills.get(0));
         assertTrue(maxWhite > 200,
                 "基底白字区域最亮像素应 >200（实机发黑症状下远低于此），实际=" + maxWhite);
@@ -615,14 +542,12 @@ class AtlasSoftwareRenderIT {
         assertTrue(yellowFound[0], "高亮词区域必须存在黄像素");
     }
 
-    /** quad 屏幕区域内像素的最大 R 通道值（亮度探针）。 */
     private static int maxChannelInRegion(final int[] canvas, final GlyphQuad quad) {
         final int[] max = {0};
         forEachPixelInRegion(canvas, quad, (rgb) -> max[0] = Math.max(max[0], (rgb >>> 16) & 0xFF));
         return max[0];
     }
 
-    /** 遍历 quad 屏幕区域（与 drawQuad 同坐标系）内全部像素。 */
     private static void forEachPixelInRegion(final int[] canvas, final GlyphQuad quad,
                                              final java.util.function.IntConsumer action) {
         final int x0 = Math.max(0, (int) Math.floor(quad.x1()));
@@ -636,20 +561,10 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 任务 3c：阴影 pass 软渲染复现（bucket 1.0 / 1.5，默认偏移 (1,-1)）
-    // ------------------------------------------------------------------
-
-    /**
-     * 阴影观感复现：同一文本在两个 bucket 下渲染「阴影 pass + 主 pass」，
-     * dump 2× 放大 PNG 供目检「阴影逐字形不一致 / 毛边」症状。
-     */
     @Test
     void shadowPassSoftRender() throws IOException {
         for (final float bucket : new float[]{1.0f, 1.5f}) {
             final int bucketMillis = Math.round(bucket * 1000);
-            // 引擎按 fontSize/nominal × EffectiveScreenScale 驱动 bucket（L69 forScale），
-            // 模拟 RT 的 150% UI 须改屏幕缩放覆盖属性而非直接 forScale
             System.setProperty(EffectiveScreenScale.OVERRIDE_PROPERTY, Float.toString(bucket));
             try {
                 final TextRenderState state = TextRenderState.builder("远行星号 Starsector 选项 MOD")
@@ -688,14 +603,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 任务 3d：阴影设备像素双线性复现（定位「逐字阴影不一致/毛边」）
-    // ------------------------------------------------------------------
-
-    /**
-     * 以设备分辨率 + 双线性采样渲染阴影文本——与游戏内 GL 管线的采样方式一致
-     * （任务 3c 的 1:1 最近邻复现不出亚像素相位问题）。PNG 即设备像素 1:1。
-     */
     @Test
     void shadowPassDevicePixelBilinear() throws IOException {
         final int logicalW = 520;
@@ -738,10 +645,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    /**
-     * 设备分辨率软渲染单个 quad：逻辑坐标 × deviceScale 得设备像素矩形，
-     * 双线性采样 staging alpha（texel 中心约定：c = v×page − 0.5），SRC_ALPHA 混合。
-     */
     private static void drawQuadDevice(final int[] canvas, final int devW, final int devH,
                                        final GlyphQuad quad, final byte[] staging,
                                        final float deviceScale) {
@@ -764,7 +667,6 @@ class AtlasSoftwareRenderIT {
         final int y0 = Math.max(0, (int) Math.floor(top));
         final int y1 = Math.min(devH, (int) Math.ceil(bottom));
         for (int y = y0; y < y1; y++) {
-            // 与 drawQuad 相同的采样方向：canvas 顶行（y2 侧）采 v1
             final float v = quad.v1() + ((y + 0.5f) - top) / quadH * (quad.v2() - quad.v1());
             final float texYf = v * ATLAS_PAGE_SIZE - 0.5f;
             final int ty0 = Math.min(ATLAS_PAGE_SIZE - 1, Math.max(0, (int) Math.floor(texYf)));
@@ -792,7 +694,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    /** 软件执行单个 quad：轴对齐矩形内按 UV 最近邻采样 staging，SRC_ALPHA 混合。 */
     private static void drawQuad(final int[] canvas, final GlyphQuad quad, final byte[] staging) {
         final float left = quad.x1();
         final float right = quad.x3();
@@ -813,9 +714,6 @@ class AtlasSoftwareRenderIT {
         final int y0 = Math.max(0, (int) Math.floor(top));
         final int y1 = Math.min(CANVAS_H, (int) Math.ceil(bottom));
         for (int y = y0; y < y1; y++) {
-            // 真实管线为 y-up（glOrtho 原点左下）：视觉顶点是 y 值大的 y1 侧，采样 v1（glyph 顶）。
-            // 本画布直接把屏幕 y 当 PNG 行（全局垂直镜像真实屏幕），为让字形在 PNG 中端正可读，
-            // 采样方向在 quad 内同步镜像：canvas 顶行（y2 侧）采 v1，底行（y1 侧）采 v2。
             final float v = quad.v1() + ((y + 0.5f) - top) / quadH * (quad.v2() - quad.v1());
             final int texY = Math.min(ATLAS_PAGE_SIZE - 1, Math.max(0, (int) (v * ATLAS_PAGE_SIZE)));
             for (int x = x0; x < x1; x++) {
@@ -832,7 +730,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    /** quad UV 对应的槽位区域内是否有任何非零 alpha（判断槽位是否为空白）。 */
     private static boolean slotRegionHasInk(final byte[] staging, final GlyphQuad quad) {
         final int tx0 = Math.max(0, (int) Math.floor(Math.min(quad.u1(), quad.u3()) * ATLAS_PAGE_SIZE));
         final int tx1 = Math.min(ATLAS_PAGE_SIZE, (int) Math.ceil(Math.max(quad.u1(), quad.u3()) * ATLAS_PAGE_SIZE));
@@ -848,7 +745,6 @@ class AtlasSoftwareRenderIT {
         return false;
     }
 
-    /** SRC_ALPHA/ONE_MINUS_SRC_ALPHA 混合（RGB 与 alpha 通道同式）。 */
     private static int blendSrcAlpha(final int dst,
                                      final float srcR, final float srcG, final float srcB,
                                      final float srcA) {
@@ -861,7 +757,6 @@ class AtlasSoftwareRenderIT {
         return (Math.min(255, a) << 24) | (Math.min(255, r) << 16) | (Math.min(255, g) << 8) | Math.min(255, b);
     }
 
-    /** 整画布内有墨（alpha 高于背景）的行区间：{首行, 末行}；无墨返回 {0,-1}。 */
     private static int[] inkedRowSpan(final int[] canvas) {
         int first = -1;
         int last = -1;
@@ -883,7 +778,6 @@ class AtlasSoftwareRenderIT {
         return new int[]{Math.max(0, first), last};
     }
 
-    /** 单个 quad 屏幕区域内着墨（与背景不同）的行数。 */
     private static int quadInkedRows(final int[] canvas, final GlyphQuad quad) {        final int x0 = Math.max(0, (int) Math.floor(quad.x1()));
         final int x1 = Math.min(CANVAS_W, (int) Math.ceil(quad.x3()));
         final int y0 = Math.max(0, (int) Math.floor(quad.y2()));
@@ -900,7 +794,6 @@ class AtlasSoftwareRenderIT {
         return rows;
     }
 
-    /** 位图源对照软渲染（仅 fixture png 存在时执行）：alpha 通道采样自 fnt 页 png。 */
     private static void renderBitmapControl(final Path pagePng) throws IOException {
         final BufferedImage page = ImageIO.read(pagePng.toFile());
         final int pageW = page.getWidth();
@@ -925,7 +818,6 @@ class AtlasSoftwareRenderIT {
         System.out.println("[softrender] 位图源对照已写出（页 " + pageW + "x" + pageH + "）");
     }
 
-    /** 位图路径 quad 采样：从 ARGB 页图取 alpha（fnt 页 chnl=15，字形在 alpha 通道）。 */
     private static void drawQuadFromArgbPage(final int[] canvas, final GlyphQuad quad,
                                              final BufferedImage page, final int pageW, final int pageH) {
         final float left = quad.x1();
@@ -946,8 +838,6 @@ class AtlasSoftwareRenderIT {
         final int y0 = Math.max(0, (int) Math.floor(top));
         final int y1 = Math.min(CANVAS_H, (int) Math.ceil(bottom));
         for (int y = y0; y < y1; y++) {
-            // 采样方向同 drawQuad（y-up 真实管线 → canvas 顶行采 v1）；
-            // fnt 页 png 按非翻转上传约定直接以 v*pageH 索引图像行
             final float v = quad.v1() + ((y + 0.5f) - top) / quadH * (quad.v2() - quad.v1());
             final int texY = Math.min(pageH - 1, Math.max(0, (int) (v * pageH)));
             for (int x = x0; x < x1; x++) {
@@ -963,10 +853,6 @@ class AtlasSoftwareRenderIT {
             }
         }
     }
-
-    // ------------------------------------------------------------------
-    // 任务 3b：CJK face 链回退（lte50549 只覆盖 Latin → MiSans fallback face）
-    // ------------------------------------------------------------------
 
     @Test
     void nativeHasGlyphDistinguishesFontCoverage() {
@@ -986,7 +872,6 @@ class AtlasSoftwareRenderIT {
         }
     }
 
-    /** 端到端：「远行星号」四字经 face 链回退到 MiSans 栅格化，软渲染必须有墨。 */
     @Test
     void cjkTextRendersInkViaFallbackFaceChain() throws IOException {
         provider.forScale(1.0f);
@@ -1028,10 +913,6 @@ class AtlasSoftwareRenderIT {
                 "远行星号四字经 fallback face 栅格化后必须有墨，实际有墨像素=" + inked);
     }
 
-    // ------------------------------------------------------------------
-    // 任务 4：UV 提取一致性（槽位 UV 提取块 ≡ composeToFontBox 画布，逐字节）
-    // ------------------------------------------------------------------
-
     @Test
     void slotUvExtractionMatchesComposeCanvas() {
         provider.forScale(1.0f);
@@ -1053,18 +934,14 @@ class AtlasSoftwareRenderIT {
         }
         assertTrue(slotted.size() >= 20, "入槽字形不足 20 个");
 
-        // 纹理 id → staging 快照
         final Map<Integer, byte[]> textures = new HashMap<>();
         for (final GlyphAtlasPage page : AtlasTestHooks.pagesOfGroup(atlas, faceKey, 1000, 0)) {
             textures.put(page.textureId(), AtlasTestHooks.stagingSnapshot(page));
         }
 
-        final float pixelSize = provider.calibratedPixelSize(ttfPath, 1000); // bucket 1.0
+        final float pixelSize = provider.calibratedPixelSize(ttfPath, 1000);
         final float cjkPixelSize = provider.calibratedPixelSize(misansPath, 1000);
         final int baseline = Math.round(fixtureFont.getBase());
-        // 与 provider 的 face 链同序（lte50549 → MiSans）：CJK 槽位由 fallback face
-        // 栅格化，期望像素块的重栅格化必须按同一链选择 face，否则必然不一致；
-        // 像素字号必须与 provider 实际建 face 所用一致（含运行期校准因子）
         final long face = NativeFontRasterizer.createFace(ttfPath, pixelSize, true);
         assertTrue(face != 0L);
         final long cjkFace = NativeFontRasterizer.createFace(misansPath, cjkPixelSize, true);
@@ -1078,13 +955,11 @@ class AtlasSoftwareRenderIT {
                 final byte[] staging = textures.get(gm.textureId());
                 assertNotNull(staging, cpLabel(cp) + " 的 textureId 无对应页");
 
-                // 槽位 UV → staging 像素块
                 final int slotX = Math.round(gm.texX() * ATLAS_PAGE_SIZE);
                 final int slotY = Math.round(gm.texY() * ATLAS_PAGE_SIZE);
                 final int slotW = Math.round(gm.texWidth() * ATLAS_PAGE_SIZE);
                 final int slotH = Math.round(gm.texHeight() * ATLAS_PAGE_SIZE);
 
-                // 同参数重栅格化（face 链选择同 provider）+ 重合成 = 期望像素块（alpha 通道）
                 final long inkFace = NativeFontRasterizer.hasGlyph(face, cp) ? face : cjkFace;
                 final NativeGlyphBitmap ink = NativeFontRasterizer.rasterizeGlyph(inkFace, cp, baseline);
                 assertNotNull(ink, cpLabel(cp) + " 重栅格化失败");
@@ -1098,8 +973,6 @@ class AtlasSoftwareRenderIT {
                 int mismatch = -1;
                 for (int row = 0; row < slotH && mismatch < 0; row++) {
                     for (int col = 0; col < slotW; col++) {
-                        // staging 行序 = GL 纹理行序（行 0 = v 0 = 字形底）：
-                        // compose 画布第 row 行（行 0 = 字形顶）对应槽位内第 slotH-1-row 行
                         final int staged = staging[(slotY + slotH - 1 - row) * ATLAS_PAGE_SIZE + slotX + col] & 0xFF;
                         final int composed = (argb[row * slotW + col] >>> 24) & 0xFF;
                         if (staged != composed) {
@@ -1118,17 +991,12 @@ class AtlasSoftwareRenderIT {
         System.out.println("[uvcheck] 20 个抽样字形槽位 UV 提取块与 compose 画布逐字节一致");
     }
 
-    // ------------------------------------------------------------------
-    // PNG 输出与像素工具
-    // ------------------------------------------------------------------
-
     private static String cpLabel(final int cp) {
         return cp >= 0x80
                 ? String.format("U+%04X", cp)
                 : "U+" + String.format("%04X", cp) + "('" + (char) cp + "')";
     }
 
-    /** ARGB 像素中 alpha > 16 的行数。 */
     private static int inkedRows(final int[] argb, final int width, final int height) {
         int rows = 0;
         for (int y = 0; y < height; y++) {
@@ -1152,7 +1020,6 @@ class AtlasSoftwareRenderIT {
         return count;
     }
 
-    /** ARGB → 灰度（取 alpha 通道，白字黑底）。 */
     private static int[] alphaToGray(final int[] argb) {
         final int[] gray = new int[argb.length];
         for (int i = 0; i < argb.length; i++) {
@@ -1162,7 +1029,6 @@ class AtlasSoftwareRenderIT {
         return gray;
     }
 
-    /** ALPHA8 字节 → 灰度。 */
     private static int[] alphaBytesToGray(final byte[] alpha) {
         final int[] gray = new int[alpha.length];
         for (int i = 0; i < alpha.length; i++) {
@@ -1172,7 +1038,6 @@ class AtlasSoftwareRenderIT {
         return gray;
     }
 
-    /** staging 页（GL 行序：行 0 = v 0 = 字形底）垂直翻转为 PNG 阅读行序（行 0 = 字形顶）。 */
     private static byte[] flipStagingVertically(final byte[] staging) {
         final byte[] flipped = new byte[staging.length];
         for (int y = 0; y < ATLAS_PAGE_SIZE; y++) {
@@ -1182,7 +1047,6 @@ class AtlasSoftwareRenderIT {
         return flipped;
     }
 
-    /** 写 PNG（scale 倍最近邻放大，便于人工检查）。 */
     private static void writePng(final String name,
                                  final int[] argb,
                                  final int width,

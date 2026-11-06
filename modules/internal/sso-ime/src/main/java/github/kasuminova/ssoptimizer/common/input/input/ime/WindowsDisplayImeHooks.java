@@ -5,13 +5,6 @@ import org.apache.log4j.Logger;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-/**
- * Windows 平台 IME 句柄解析辅助。
- * <p>
- * 通过反射读取 LWJGL 2 的 {@code Display -> WindowsDisplay} 实现对象，
- * 尝试解析当前窗口的 {@code HWND}，并在文本框聚焦时为
- * {@link WindowsImmImeBackend} 触发 attach。
- */
 public final class WindowsDisplayImeHooks {
     private static final Logger LOGGER = Logger.getLogger(WindowsDisplayImeHooks.class);
 
@@ -58,10 +51,6 @@ public final class WindowsDisplayImeHooks {
         }
     }
 
-    /**
-     * 每帧由 {@code WindowsDisplay.update()} 入口调用，
-     * 轮询 IME native 层缓冲的提交文本并分发到当前聚焦的文本框。
-     */
     public static void onUpdate() {
         try {
             final ImeService service = ImeService.getInstance();

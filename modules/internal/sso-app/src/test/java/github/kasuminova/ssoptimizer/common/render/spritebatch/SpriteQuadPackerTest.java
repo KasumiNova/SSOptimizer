@@ -7,10 +7,6 @@ import java.nio.ByteOrder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Sprite quad 顶点打包测试：几何公式与 {@code SpriteRenderHelper.fallbackRenderSprite}
- * 同式（枢轴/旋转/四角顺序），此处验证烘焙 modelview 后的观察空间坐标、UV 与颜色字节、索引模板。
- */
 class SpriteQuadPackerTest {
 
     private static ByteBuffer verts() {
@@ -34,7 +30,6 @@ class SpriteQuadPackerTest {
     void identityMatrixNoRotationPacksCornersAndUv() {
         ByteBuffer v = verts();
         ByteBuffer idx = indices();
-        // pos=(10,20) w=4 h=2 center=-1（取半宽半高）angle=0
         SpriteQuadPacker.packQuad(v, idx, 0, identity(),
                 10, 20, 4, 2, -1, -1, 0,
                 255, 128, 0, 200,
@@ -42,7 +37,6 @@ class SpriteQuadPackerTest {
         v.flip();
         idx.flip();
 
-        // 四角（左下→左上→右上→右下），无旋转时退化为轴对齐矩形
         float[][] expected = {{10, 20}, {10, 22}, {14, 22}, {14, 20}};
         float[][] expectedUv = {{0.25f, 0.5f}, {0.25f, 0.75f}, {0.75f, 0.75f}, {0.75f, 0.5f}};
         for (int i = 0; i < 4; i++) {
@@ -65,8 +59,6 @@ class SpriteQuadPackerTest {
     @Test
     void rotationMatchesHelperFormula() {
         ByteBuffer v = verts();
-        // w=h=2，pos=(0,0)，center 默认 → 枢轴 (1,1)，angle=90°
-        // 左下角局部 (-1,-1) 旋转 90° → (1,-1) → 世界 (2,0)
         SpriteQuadPacker.packQuad(v, indices(), 0, identity(),
                 0, 0, 2, 2, -1, -1, 90,
                 255, 255, 255, 255,
@@ -82,13 +74,11 @@ class SpriteQuadPackerTest {
         float[] mv = identity();
         mv[12] = 100.0f;
         mv[13] = 50.0f;
-        // pos=(0,0) w=4 h=4 center=(2,2)（与默认相同位置但走显式枢轴分支）angle=0
         SpriteQuadPacker.packQuad(v, indices(), 0, mv,
                 0, 0, 4, 4, 2, 2, 0,
                 255, 255, 255, 255,
                 0, 0, 1, 1);
         v.flip();
-        // 左下角 = (0,0) + modelview 平移 (100,50)
         assertEquals(100.0f, v.getFloat(), 1e-6, "mv 平移后 x");
         assertEquals(50.0f, v.getFloat(), 1e-6, "mv 平移后 y");
     }

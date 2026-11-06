@@ -5,22 +5,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-/**
- * 碰撞网格三实现墙钟基准（main 方法，沿用 {@link CollisionGridCollectors} 的 checksum 消费风格）。
- * <p>
- * 场景（参照游戏实测负载：每帧 5 份网格全量重建 + 大量 AABB 查询）：
- * <ul>
- *     <li>网格范围 ±17000（地图 ±16000 + 1000 余量），cellSize=300；</li>
- *     <li>每帧 500 实体全量 add 重建 + 1000 次混合范围查询（0.3k/0.9k/1.5k 常规 + 少量 5k/40k）；</li>
- *     <li>单独测量 5000 范围大查询（避导弹扫描量级，100 次/帧）。</li>
- * </ul>
- * 三实现：
- * <ol>
- *     <li>原版网格（{@link VanillaGridReference}，算法逐行移植）；</li>
- *     <li>现有 fastutil 收集（原版 add + {@link CollisionGridQueryHelper} 查询，即 BVH 关闭时的回退路径）；</li>
- *     <li>BVH（{@link CollisionGridBvhImpl}，懒构建 + tombstone/溢出）。</li>
- * </ol>
- */
 public final class CollisionGridBvhBenchmarkMain {
     private static final float GRID_MIN = -17000.0f;
     private static final float GRID_MAX = 17000.0f;
@@ -68,9 +52,6 @@ public final class CollisionGridBvhBenchmarkMain {
 
     private enum ImplKind {VANILLA, FASTUTIL, BVH}
 
-    /**
-     * @return {@code [add 总ns, 混合查询总ns, 大查询总ns, checksum]}
-     */
     private static long[] benchmark(final ImplKind kind,
                                     final List<Object> entities,
                                     final List<float[]> entityRects,
@@ -84,7 +65,6 @@ public final class CollisionGridBvhBenchmarkMain {
         for (int frame = 0; frame < WARMUP_FRAMES + MEASURE_FRAMES; frame++) {
             final boolean measure = frame >= WARMUP_FRAMES;
 
-            // 每帧全新网格实例（与游戏生命周期一致）。
             final VanillaGridReference grid =
                     new VanillaGridReference(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
             final CollisionGridBvhImpl bvh = kind == ImplKind.BVH ? newBvh() : null;
@@ -131,7 +111,6 @@ public final class CollisionGridBvhBenchmarkMain {
         return new long[]{addNs, mixedNs, largeNs, checksum};
     }
 
-    /** 消费一次查询结果并返回 checksum（防 JIT 消除）。 */
     private static long consume(final ImplKind kind,
                                 final VanillaGridReference grid,
                                 final CollisionGridBvhImpl bvh,
@@ -167,7 +146,6 @@ public final class CollisionGridBvhBenchmarkMain {
         return new CollisionGridBvhImpl(baseX, baseY, gridWidth, gridHeight, CELL);
     }
 
-    /** 实体矩形：位置覆盖网格全范围（含少量越界），尺寸 60~600，少量 5000。 */
     private static float[] randomEntityRect(final Random rng) {
         final float x = GRID_MIN - 1000.0f + rng.nextFloat() * (GRID_MAX - GRID_MIN + 2000.0f);
         final float y = GRID_MIN - 1000.0f + rng.nextFloat() * (GRID_MAX - GRID_MIN + 2000.0f);
@@ -175,7 +153,6 @@ public final class CollisionGridBvhBenchmarkMain {
         return new float[]{x, y, size, size};
     }
 
-    /** 查询矩形：常规 300/900/1500 混合；large 时固定 5000（避导弹扫描量级）。 */
     private static float[] randomQueryRect(final Random rng, final boolean large) {
         final float x = GRID_MIN + rng.nextFloat() * (GRID_MAX - GRID_MIN);
         final float y = GRID_MIN + rng.nextFloat() * (GRID_MAX - GRID_MIN);

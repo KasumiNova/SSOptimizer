@@ -23,25 +23,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * BC 压缩纹理缓存（设计：docs/design/gpu-texture-compression.md §4.4）。
- * <p>
- * 目录 {@code <mods>/ssoptimizer/cache/textures-bc/<formatTag>/v1/}（formatTag=bc7/bc3/bc1），
- * 可用 {@code -Dssoptimizer.bctexcache.dir} 覆盖根目录（覆盖后仍按 formatTag/v1 分层）。
- * <p>
- * 键 = 源字节 SHA-256 + w/h + mip 标志 + 压缩格式 + 质量档 + 编码器版本（{@link #ENCODER_VERSION}），
- * 键哈希即数据文件名；资源路径索引沿用 {@link TextureConversionCache} 的
- * path|mtime|size 指纹模式（额外记录键字段，供按路径反查）。
- * <p>
- * 落盘内容 = SSOBC 容器（见 {@link SsobcContainer}）经 zstd 二压（实测二压收益 45~60%）。
- * 写入一律 {@link AtomicFileWriter}（临时文件 + fsync + rename）；读侧损坏/指纹不匹配
- * 记 WARN 返回 miss 并删除残件。内存 LRU 模式照搬 {@link TextureConversionCache}
- * （默认 64MB，{@code ssoptimizer.bctexcache.memory.maxbytes} 覆盖）。
+ * 编码器版本参与缓存键；损坏或指纹不匹配的条目删除并视为未命中。
  */
 public final class CompressedTextureCache {
     static final String DIRECTORY_PROPERTY        = "ssoptimizer.bctexcache.dir";
     static final String MEMORY_MAX_BYTES_PROPERTY = "ssoptimizer.bctexcache.memory.maxbytes";
-    /** 编码器版本（键成分）：native 编码器输出语义或格式选择逻辑变更时递增，旧缓存自然失效。
-     * v2：格式选择改按实际像素 alpha 内容（AlphaKind）+ BC1 引入 1-bit punch-through alpha。 */
     static final int    ENCODER_VERSION           = 2;
 
     private static final Logger                      LOGGER                   = Logger.getLogger(CompressedTextureCache.class);
@@ -59,13 +45,6 @@ public final class CompressedTextureCache {
     private CompressedTextureCache() {
     }
 
-    /**
-     * 压缩缓存键：源字节 SHA-256 + 纹理尺寸 + mip 标志 + 压缩格式 + 质量档（编码器版本在
-     * {@link #keyId} 中并入）。尺寸取实际压缩输入（conversion result 的 textureWidth/Height），
-     * mip 标志取上传侧的 {@code shouldGenerateMipmaps} 结论。
-     * 质量档入键：路径分级质量（{@code ssoptimizer.texcompress.highQualityPaths}）或全局
-     * 质量属性变化时旧条目自动 miss，无需手动清缓存。
-     */
     record Key(String sourceHash,
                int width,
                int height,
@@ -78,12 +57,6 @@ public final class CompressedTextureCache {
         return TextureCompressionSupport.isEnabled();
     }
 
-    /**
-     * 读取压缩缓存条目：命中返回解析校验过的 {@link SsobcContainer}；
-     * 未命中/损坏/与键不符返回 null（损坏条目记 WARN 并删除，下轮自动重压）。
-     * <p>
-     * 命中条目驻留内存 LRU，同会话再次读取零磁盘 I/O。
-     */
     static SsobcContainer load(final Key key) {
         if (!isEnabled() || !isUsableKey(key)) {
             return null;
@@ -135,13 +108,6 @@ public final class CompressedTextureCache {
         }
     }
 
-    /**
-     * 写入压缩缓存条目。已存在条目直接跳过（同键内容确定性一致）。
-     * 容器与键不符（native 输出异常）时记 WARN 拒绝写入；IO 失败记 ERROR 并清理残件。
-     *
-     * @param resourcePath      资源路径（索引与日志用）
-     * @param sourceFingerprint 源文件指纹（可为 null，为 null 时跳过资源索引写入）
-     */
     static void store(final Key key,
                       final byte[] containerBytes,
                       final String resourcePath,
@@ -184,11 +150,6 @@ public final class CompressedTextureCache {
         RESOURCE_INDEX_CACHE.clear();
     }
 
-    /**
-     * 按资源路径 + 源文件指纹反查压缩缓存键（索引指纹模式照搬 TextureConversionCache）。
-     *
-     * @return 指纹匹配时返回键；索引缺失/指纹变更返回 null
-     */
     static Key probeKeyByResourcePath(final String resourcePath,
                                       final TextureConversionCache.TextureSourceFingerprint sourceFingerprint) {
         if (!isEnabled() || resourcePath == null || resourcePath.isBlank() || sourceFingerprint == null) {
@@ -208,7 +169,6 @@ public final class CompressedTextureCache {
                 TextureCompressionScheduler.resolveQuality(normalizedPath));
     }
 
-    /** 键哈希（数据/索引文件名）：源哈希 + 尺寸 + mip 标志 + 格式 + 质量档 + 编码器版本。 */
     static String keyId(final Key key) {
         final String material = key.sourceHash() + '|'
                 + key.width() + 'x' + key.height() + '|'
@@ -229,7 +189,6 @@ public final class CompressedTextureCache {
                 && key.width() > 0 && key.height() > 0;
     }
 
-    /** 容器与键的一致性校验：格式/尺寸一致，mip 层数与键的 mip 标志一致。 */
     private static boolean matchesKey(final SsobcContainer container, final Key key) {
         if (container.format() != key.format()
                 || container.width() != key.width()
@@ -260,10 +219,6 @@ public final class CompressedTextureCache {
         }
     }
 
-    /**
-     * zstd 解压（长度上限 {@code maxExpected}，超限返回 null 视为损坏——
-     * 容器长度由键完全确定，超限即非本管线产物）。
-     */
     private static byte[] zstdDecompress(final byte[] compressedBytes,
                                          final int maxExpected) throws IOException {
         try (DataInputStream input = new DataInputStream(new BufferedInputStream(
@@ -326,7 +281,6 @@ public final class CompressedTextureCache {
             return cached;
         }
 
-        // 索引按路径哈希命名，与格式无关：遍历三个格式目录找到即用
         for (final Format format : new Format[]{Format.BC7, Format.BC3, Format.BC1}) {
             final Path indexFile = indexFile(format, normalizedResourcePath);
             if (!Files.isRegularFile(indexFile)) {

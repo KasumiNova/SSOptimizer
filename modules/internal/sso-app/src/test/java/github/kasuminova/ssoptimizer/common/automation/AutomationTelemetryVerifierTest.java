@@ -10,9 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 验证 SSOptimizer 自动化配置读取与 telemetry 验收合同。
- */
 class AutomationTelemetryVerifierTest {
     @TempDir
     Path tempDir;

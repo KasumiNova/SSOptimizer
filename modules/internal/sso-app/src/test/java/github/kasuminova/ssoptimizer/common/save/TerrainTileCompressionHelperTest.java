@@ -11,11 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link TerrainTileCompressionHelper} 兼容性测试。
- * <p>
- * 约束新的 Zstd 写入格式必须能正确 round-trip，同时旧版 Deflater 压缩字符串也必须继续可读。
- */
 class TerrainTileCompressionHelperTest {
     @Test
     void binaryTilesRoundTripWithZstdPrefix() throws DataFormatException {
@@ -153,7 +148,6 @@ class TerrainTileCompressionHelperTest {
         String legacy = TerrainTileCompressionHelper.toLegacyDeflateFormat(zstdEncoded);
 
         assertFalse(legacy.startsWith("SSOZ1:"), "回译结果必须是旧版 Deflater 分块格式");
-        // 完整逻辑验证：旧版格式必须能被旧版解码链（Inflater）还原出相同矩阵
         assertMatrixEquals(tiles, TerrainTileCompressionHelper.decodeQuaternaryTiles(legacy, width, height));
     }
 

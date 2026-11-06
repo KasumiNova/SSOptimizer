@@ -1,14 +1,3 @@
-/**
- * SSOptimizer native 子模块共享约定：平台探测、依赖解析、编译链接与运行时依赖收集。
- *
- * 由原 :native 单模块 build.gradle.kts 抽取而成，各功能域子模块
- * （render/loading/font/ime）通过 ssoNative { ... } 声明自己的依赖开关，
- * 产物名为 libssoptimizer_<moduleName>.so / ssoptimizer_<moduleName>.dll。
- *
- * 平台选择：-Pssoptimizer.native.target / -Pstarsector.platform 覆盖，默认随宿主。
- * Windows 交叉编译（Linux 宿主 → Windows 目标）由 compileWindowsCrossObjects /
- * linkWindowsCrossSharedLibrary 两个任务承担，产物落在 build/lib/main/release/。
- */
 import org.gradle.language.cpp.tasks.CppCompile
 import org.gradle.nativeplatform.Linkage
 import org.gradle.nativeplatform.tasks.LinkSharedLibrary
@@ -28,7 +17,6 @@ ssoNative.x11.convention(false)
 ssoNative.windowsSystemLibs.convention(emptyList())
 ssoNative.linuxSystemLibs.convention(emptyList())
 
-// ---- 平台与工具链探测 ----
 val hostOs = System.getProperty("os.name", "").lowercase()
 val isWindowsHost = hostOs.contains("win")
 val isLinuxHost = hostOs.contains("linux")
@@ -170,7 +158,6 @@ fun runPkgConfig(vararg args: String): List<String> {
         .filter { it.isNotBlank() }
 }
 
-// pkg-config 探测（按模块开关决定是否进入编译/链接参数）
 val libpngCompilerArgs = runPkgConfig("--cflags", "libpng")
 val libpngLinkerArgs = runPkgConfig("--libs", "libpng")
 val hasLibpng = libpngLinkerArgs.isNotEmpty()
@@ -181,7 +168,6 @@ val x11CompilerArgs = runPkgConfig("--cflags", "x11")
 val x11LinkerArgs = runPkgConfig("--libs", "x11")
 val hasX11 = x11LinkerArgs.isNotEmpty()
 
-// Windows vcpkg 依赖解析
 val windowsLibpngRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("libpng") else null
 val windowsFreetypeRoot = if (buildTargetIsWindows) resolveWindowsPackageRoot("freetype") else null
 val windowsDependencyRoot = windowsLibpngRoot ?: windowsFreetypeRoot
@@ -233,7 +219,6 @@ val windowsBrotliLinkerArgs = if (buildTargetIsWindows) {
 val hasWindowsLibpng = windowsLibpngLinkerArgs.isNotEmpty() || !windowsLibpngCompilerArgs.isEmpty()
 val hasWindowsFreetype = windowsFreetypeLinkerArgs.isNotEmpty() || !windowsFreetypeCompilerArgs.isEmpty()
 
-// MinGW 交叉工具链
 val windowsToolchainBinDir = envOrProperty("ssoptimizer.native.windows.toolchainBinDir", "SSOPTIMIZER_NATIVE_WINDOWS_TOOLCHAIN_BIN")
 val windowsCrossPath = pathWithPrependedBin(windowsToolchainBinDir)
 val windowsCrossCc = resolveToolCommand(envOrProperty("ssoptimizer.native.windows.cc", "CC") ?: "x86_64-w64-mingw32-gcc", windowsToolchainBinDir)
@@ -248,23 +233,17 @@ val jniPlatformIncludeDir = when {
     else -> jniIncludeDir.resolve("linux")
 }
 
-// 产物路径：文件名跟随模块 baseName（libssoptimizer_<module>.so / ssoptimizer_<module>.dll）
 val windowsCrossOutputFile = layout.buildDirectory.file(
     providers.provider { "lib/main/release/ssoptimizer_${ssoNative.moduleName.get()}.dll" }
 )
 val windowsCrossObjectDir = layout.buildDirectory.dir("tmp/windows-cross/obj")
 val moduleHeaderDirs = listOf(file("src/main/headers")).filter { it.exists() }
-// JNI 生成头统一位于根级共享目录（core/render/loading/font/ime 的 compileJava -h 产出）
 val generatedHeaderDir = rootProject.layout.projectDirectory.dir("native-headers/generated")
 val nativeHeaderDirs = moduleHeaderDirs + listOf(generatedHeaderDir.asFile)
 val windowsCrossSources = fileTree("src/main/cpp") {
     include("**/*.cpp")
 }.files.sortedBy { it.absolutePath }
 
-/**
- * 收集需要随本模块 DLL 一起部署的运行时依赖 DLL 列表（按模块开关裁剪）。
- * libpng → libpng16.dll + zlib1.dll；freetype → freetype.dll + zlib1.dll + bz2.dll + brotli 系列。
- */
 fun resolveWindowsRuntimeDlls(): List<File> {
     if (!buildTargetIsWindows) return emptyList()
     val found = mutableSetOf<File>()
@@ -293,10 +272,6 @@ fun resolveWindowsRuntimeDlls(): List<File> {
     return found.toList()
 }
 
-/**
- * 收集需要随本模块 .so 一起部署的运行时共享库（从 pkg-config --libs 输出目录解析，按模块开关裁剪）。
- * 与 libpng/freetype 链接的模块各自收集；X11 为系统库，一般无需随模组部署。
- */
 fun resolveLinuxRuntimeSharedLibs(): List<File> {
     if (buildTargetIsWindows) return emptyList()
     val libDirs = mutableSetOf<File>()
@@ -321,7 +296,7 @@ fun resolveLinuxRuntimeSharedLibs(): List<File> {
     return found.toList()
 }
 
-// 运行时依赖收集依赖 ssoNative 开关，须在模块脚本配置完成后求值
+// ssoNative 在模块脚本中配置，运行时依赖收集必须延后求值。
 afterEvaluate {
     extra["windowsRuntimeDlls"] = resolveWindowsRuntimeDlls()
     extra["linuxRuntimeSharedLibs"] = resolveLinuxRuntimeSharedLibs()
@@ -332,7 +307,6 @@ library {
     linkage.set(listOf(Linkage.SHARED))
     baseName.set(providers.provider { "ssoptimizer_${ssoNative.moduleName.get()}" })
 
-    // 模块自身头（render 的 glad/KHR）+ 根级共享 JNI 生成头目录
     privateHeaders.from(nativeHeaderDirs)
 }
 

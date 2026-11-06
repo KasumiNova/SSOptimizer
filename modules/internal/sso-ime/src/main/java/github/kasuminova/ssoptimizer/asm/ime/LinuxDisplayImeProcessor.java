@@ -4,19 +4,8 @@ import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import org.objectweb.asm.*;
 
 /**
- * LWJGL {@code LinuxDisplay} 的 IME 相关 ASM 处理器。
- *
- * <p>注入目标：{@code org/lwjgl/opengl/LinuxDisplay} 的多个方法<br>
- * 注入动机：需要在 LWJGL 的事件循环中插入多个 IME Hook：
- * <ul>
- *   <li>{@code createKeyboard / destroyKeyboard}：键盘创建/销毁时通知 IME 服务</li>
- *   <li>{@code setFocused}：捕获焦点变化以驱动 {@code focusIn/focusOut}</li>
- *   <li>{@code processEvents}：在 {@code nextEvent()} 后注入 {@code onRawXEvent} 钩子
- *       （用于拦截 XIM 协议 ClientMessage 等非键盘事件），以及在 {@code filterEvent()} 后
- *       注入 {@code onXEvent} 钩子（传递过滤结果给 IME 处理）</li>
- * </ul>
- * Mixin 无法 Hook LWJGL 内部包级方法和精确控制方法内的插入位置。<br>
- * 注入效果：所有 Hook 委托给 {@link github.kasuminova.ssoptimizer.common.input.ime.LinuxDisplayImeHooks}。</p>
+ * 在 LWJGL LinuxDisplay 的事件循环中注入 IME 钩子。
+ * org.lwjgl 由系统类加载器加载，Launch 域 Mixin 无法改写。
  */
 public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "org/lwjgl/opengl/LinuxDisplay";
@@ -121,9 +110,7 @@ public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
                                     final String descriptor,
                                     final boolean isInterface) {
             super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-            // After nextEvent() returns, inject onRawXEvent to process XIM
-            // protocol events (especially ClientMessage type=33) that LWJGL's
-            // window check would skip before reaching filterEvent.
+            // 在 LWJGL 窗口 ID 校验前处理 XIM 协议事件，避免 ClientMessage 被跳过。
             if (opcode == Opcodes.INVOKEVIRTUAL
                     && LINUX_EVENT_OWNER.equals(owner)
                     && "nextEvent".equals(name)
@@ -137,23 +124,15 @@ public final class LinuxDisplayImeProcessor implements AsmClassProcessor {
                     && LINUX_EVENT_OWNER.equals(owner)
                     && "filterEvent".equals(name)
                     && "(J)Z".equals(descriptor)) {
-                // Stack: [... filterResult(int/boolean)]
-                // DUP the filter result so we can pass it to onXEvent while
-                // leaving the original on the stack for the IFNE branch.
+                // 调整参数栈序，并为 IFNE 分支保留原始 filterResult。
                 visitInsn(Opcodes.DUP);
-                // Stack: [... filterResult, filterResult]
                 visitVarInsn(Opcodes.ALOAD, 0);
-                // Stack: [... filterResult, filterResult, linuxDisplay]
                 visitInsn(Opcodes.SWAP);
-                // Stack: [... filterResult, linuxDisplay, filterResult]
                 visitVarInsn(Opcodes.ALOAD, 0);
                 visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS, EVENT_BUFFER_FIELD, EVENT_BUFFER_DESC);
-                // Stack: [... filterResult, linuxDisplay, filterResult, linuxEvent]
                 visitInsn(Opcodes.SWAP);
-                // Stack: [... filterResult, linuxDisplay, linuxEvent, filterResult]
                 super.visitMethodInsn(Opcodes.INVOKESTATIC, HOOK_OWNER, "onXEvent",
                         "(Ljava/lang/Object;Ljava/lang/Object;Z)V", false);
-                // Stack: [... filterResult]  — ready for IFNE
             }
         }
     }

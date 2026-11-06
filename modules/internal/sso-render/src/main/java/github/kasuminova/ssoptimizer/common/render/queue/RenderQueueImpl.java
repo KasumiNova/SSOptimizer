@@ -15,157 +15,67 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
-/**
- * {@link RenderQueue} 的默认实现。
- * <p>
- * 线程模型：单渲染线程（daemon，{@value #RENDER_THREAD_NAME}）从提交队列取任务
- * 执行。任务分两类：帧任务（执行整帧命令，完成后完成帧 Future 并把帧归还
- * {@link FramePool}）与同步任务（{@link #get}/{@link #wait} 的阻塞式调用，
- * 结果经 CompletableFuture 返回调用方）。
- * <p>
- * 失败传播：渲染线程上帧命令抛异常时记日志、中止本帧剩余命令（GL 状态已不可信），
- * 异常随帧 Future 在下一次 {@link #swapFramesAndSync()} 等待上一帧时向主线程重抛
- * （语义参考 common/concurrent/FrameParallelExecutorImpl 的失败收集模式，载体从
- * 失败列表换成帧 Future）。
- * <p>
- * stall 熔断策略：{@link StallDetector} 检测到阻塞式 GL 调用的帧密度达到阈值时，
- * 由 {@link #STALL_POLICY_PROPERTY} 决定处置——默认 {@code warn}（限频 WARN 放行，
- * 阻塞调用仍被正确服务，仅失去管线并行收益），{@code crash} 抛异常（开发排障用，
- * 附累计阻塞站点 top5）。
- * <p>
- * 并发要点：{@link #frameLock} 只保护「当前帧指针 + 提交」这一小段临界区，
- * 保证 aux-context 生产者线程的 {@link #submit(GlCommand)} 与主线程 swap 不会把
- * 命令丢进已提交的帧；帧内列表本身的并发追加由 {@link RenderFrame#add} 的
- * synchronized 兜底。
- * <p>
- * 帧悬挂协议：{@link WaitFenceCommand} 发现 fence 未 signal 时抛
- * {@link SuspendFrameException}，渲染线程不阻塞——剩余命令打包成续跑任务
- * requeue 到队尾，本帧正常完成释放主线程（否则 BoxUtil 的 Phaser 协调会与
- * 「main 等帧完成」形成三方死锁）；fence 信号到达后续跑任务会合执行余下命令。
- * <p>
- * 线程资源统合（Wave 3）有意<b>不迁移</b>到虚拟线程：渲染线程与 GL 上下文
- * 有固定亲和（LWJGL 上下文绑定平台线程），且须为具名的单一常驻线程。
- */
+/** 单一平台渲染线程持有 GL 上下文；frameLock 保护当前帧指针与提交。 */
 public final class RenderQueueImpl implements RenderQueue {
-    /** 渲染线程名，profiler / 日志诊断用。 */
     public static final String RENDER_THREAD_NAME = "SSOptimizer-Render";
 
-    /** 帧悬挂续跑任务 requeue 前的退避间隔（纳秒），避免 fence 长期未 signal 时续跑任务空转占满渲染线程。 */
     private static final long SUSPEND_REQUEUE_BACKOFF_NANOS = 1_000_000L;
 
-    /** 提交队列容量（见字段注释：正常深度为个位数到几十，打满即渲染线程已死）。 */
     private static final int SUBMISSION_QUEUE_CAPACITY = 65536;
 
-    /** 阻塞调用站点定位用的 StackWalker（无类引用保留需求，默认配置即可）。 */
     private static final StackWalker SITE_WALKER = StackWalker.getInstance();
 
-    /** GL 错误探针系统属性：off（默认）/ frame（帧尾排空）/ command（逐命令排空）。 */
     public static final String GL_ERROR_PROBE_PROPERTY = "ssoptimizer.renderthread.glErrorProbe";
 
-    /** stall 熔断策略系统属性：warn（默认，限频告警放行）/ crash（达到阈值直接抛异常，开发排障用）。 */
     public static final String STALL_POLICY_PROPERTY = "ssoptimizer.renderthread.stallPolicy";
 
-    /** warn 策略下熔断告警的限频间隔（纳秒）：持续击穿期间至多每 10 秒一条，避免刷屏。 */
     private static final long STALL_WARN_COOLDOWN_NANOS = 10_000_000_000L;
 
     private static final Logger LOGGER = Logger.getLogger(RenderQueueImpl.class);
 
-    /**
-     * 帧尾标记钩子：帧提交时在帧尾追加一条标记命令（或返回 null 跳过）。
-     * 由 bridge 侧有序映射写入通道（MappedWriteBridgeImpl）安装——标记命令执行到
-     * 即「本帧全部命令已进入 GPU 队列」，是该通道发布帧尾 fence 的序列点。
-     * 静态语义与 {@link #mainThread} 同级（队列进程级单例）。
-     */
+    /** 帧尾标记是有序映射写入通道发布 fence 的序列点。 */
     public interface FrameEndMarkerHook {
-        /**
-         * @param frameSequence 待提交帧的帧序号（{@link RenderFrame#sequence()}）
-         * @return 追加到帧尾的标记命令；null = 本帧不需要标记
-         */
         GlCommand markerFor(long frameSequence);
     }
 
     private static volatile FrameEndMarkerHook frameEndMarkerHook;
 
-    /** 安装帧尾标记钩子（装配模块在启用有序映射写入通道时调用；null 卸载）。 */
     public static void frameEndMarkerHook(final FrameEndMarkerHook hook) {
         frameEndMarkerHook = hook;
     }
 
-    /**
-     * 主录制线程：初值为加载本类的线程（coremod onLoad 阶段，launcher 主线程），
-     * 首个 {@link #swapFramesAndSync()} 调用时由游戏主循环线程认领——游戏循环实际跑在
-     * {@code StarfarerLauncher$LaunchGameRunnable} 派生线程，类初始化时的线程并非
-     * 游戏线程；帧边界推进本就由游戏循环线程唯一执行（aux 线程不调用 swap），认领安全。
-     * bridge 的帧录制上下文帧边界缓存（{@link BridgeSupport#recordingContext()}）
-     * 依赖此判定——aux-context 生产者线程不得命中主线程缓存。
-     */
+    /** 首个非渲染线程的 swap 调用者认领主录制线程，aux 不得命中其录制缓存。 */
     private static volatile Thread mainThread = Thread.currentThread();
 
-    /**
-     * aux 生产者线程活动纪元：非主录制线程且非渲染线程的 {@link #submit(GlCommand)}
-     * （BoxUtil 后台线程、字体预热 daemon 经 GlDispatch 等）每次提交递增。
-     * 用途：主录制线程的 getter 状态仿真（bridge 侧 SimulatedGlState）只镜像主线程
-     * 自己的命令流；aux 提交意味着命令流中混入了簿记外的状态改动，主线程仿真 getter
-     * 据此纪元失效并回退一次屏障再同步（见 bridge 侧 BridgeSupport 的再同步路径）。
-     * 静态语义与 {@link #mainThread} 同级（队列进程级单例）。
-     */
+    /** aux 提交递增该纪元，使主线程仿真 GL 状态失效并重新同步。 */
     private static final java.util.concurrent.atomic.AtomicLong AUX_SUBMISSION_EPOCH =
             new java.util.concurrent.atomic.AtomicLong();
 
     private final FramePool framePool;
     private final StallDetector stallDetector;
-    /** stall 熔断策略（构造时从 {@link #STALL_POLICY_PROPERTY} 解析）：true = 达到阈值抛异常。 */
     private final boolean stallTripCrash;
-    /** 上一次熔断 WARN 的时间戳（纳秒，限频用；stall 事件可多线程触发，volatile 足够）。 */
     private volatile long lastStallWarnNanos;
-    /**
-     * 提交队列：MPSC 无锁有界数组队列（JCTools，项目既有依赖）。生产者为主线程
-     * （帧/同步任务）、aux-context 生产者线程（同步任务）与渲染线程自身（悬挂
-     * 续跑 requeue），唯一消费者是渲染线程——语义恰好 MPSC；相对
-     * LinkedBlockingQueue 消除了每次 offer/take 的双锁与 Node 分配。
-     * 容量取 {@value #SUBMISSION_QUEUE_CAPACITY}：稳态深度为「在飞帧任务（≤2）
-     * + 阻塞中的同步任务（≈阻塞线程数）+ 在飞续跑任务」，正常为个位数到几十，
-     * 该容量下的 offer 失败只可能意味着渲染线程已死，属必须暴露的不变量破坏。
-     */
     private final MpscBlockingConsumerArrayQueue<RenderTask> submissionQueue =
             new MpscBlockingConsumerArrayQueue<>(SUBMISSION_QUEUE_CAPACITY);
-    /** 阻塞式调用的来源站点计数（进程生命周期累计，熔断异常时输出 top 供定位；站点基数有界）。 */
     private final ConcurrentHashMap<String, LongAdder> blockingSites = new ConcurrentHashMap<>();
     private final Object frameLock = new Object();
     private final Thread renderThread;
 
-    /** 当前录制帧；仅主线程 swap 时更换。 */
     private RenderFrame currentFrame;
-    /** 帧序号发号器（frameLock 内访问）；帧在成为当前录制帧时领号。 */
     private long frameSequenceCounter;
-    /** 最近一次提交帧的帧序号（有序映射写入通道的挂载初始化读取）。 */
     private volatile long lastSubmittedSequence = -1;
-    /**
-     * 最近一次提交帧的完成 Future；swapFramesAndSync 等待的是它的前一帧。
-     * 必须在提交（offer）之前从帧上捕获——帧执行完归还池后 reset 会换发新 Future，
-     * 持有帧引用事后现读会等到下一周期的 Future 而永远阻塞。
-     */
+    /** 必须在 offer 前捕获；帧归还池后 reset 会换发 Future。 */
     private CompletableFuture<Void> lastSubmittedCompletion;
 
     private volatile boolean running = true;
 
-    /** GL 错误探针模式（诊断设施，见 {@link #GL_ERROR_PROBE_PROPERTY}）。 */
     private final GlErrorProbe glErrorProbe;
-    /** 探针取错误的来源（测试注入桩，避免无 context 环境下触真 GL；与 BridgeSupport 的注入桩同模式）。 */
     private final IntSupplier glErrorSource;
-    /** 探针帧序号（仅诊断日志展示用）。 */
     private long probeFrameSequence;
-    /** 已输出过录制点堆栈的站点指纹（前 6 帧拼串），仅渲染线程访问。 */
     private final java.util.Set<String> probeSiteKeys = new java.util.HashSet<>();
 
-    /**
-     * 帧失败钩子：帧命令/续跑命令执行抛异常时在渲染线程调用（bridge 侧
-     * GL_ARRAY_BUFFER 簿记自愈注册于此，见 BridgeSupport.install）。
-     * 钩子自身抛异常只记 WARN，不得击穿渲染线程主循环。
-     */
     private volatile Runnable frameFailureHook;
 
-    /** 注入帧失败钩子（bridge install/uninstall 时注册/清除；测试可替换）。 */
     public void setFrameFailureHook(final Runnable hook) {
         this.frameFailureHook = hook;
     }
@@ -174,22 +84,13 @@ public final class RenderQueueImpl implements RenderQueue {
         this(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector());
     }
 
-    /**
-     * @param framePool     帧池
-     * @param stallDetector 阻塞式调用熔断器（仅统计资源加载期结束——
-     *                      RenderThreadMode.isLoadingFinished()——之后的
-     *                      get/wait 阻塞调用；加载期成批一次性分配豁免）
-     */
     public RenderQueueImpl(FramePool framePool, StallDetector stallDetector) {
         this(framePool, stallDetector,
                 GlErrorProbe.parse(System.getProperty(GL_ERROR_PROBE_PROPERTY, "off")),
-                // 上下文创建前渲染线程无 current context，glGetError 会抛
-                // 「No OpenGL context」——未创建期视为无错误跳过（此处引用会被
-                // RenderThreadRedirector 改写为 bridge 镜像，语义不变）
+                // Display 未创建时 glGetError 没有上下文，视为无错误。
                 () -> org.lwjgl.opengl.Display.isCreated() ? org.lwjgl.opengl.GL11.glGetError() : 0);
     }
 
-    /** 测试入口：注入探针模式与错误来源桩。 */
     RenderQueueImpl(FramePool framePool, StallDetector stallDetector,
                     GlErrorProbe glErrorProbe, IntSupplier glErrorSource) {
         this.framePool = framePool;
@@ -213,15 +114,11 @@ public final class RenderQueueImpl implements RenderQueue {
 
     @Override
     public void submit(GlCommand command) {
-        // aux 生产者线程提交即 bump 活动纪元：该命令进入主线程正在录制的帧，
-        // 其执行可能改变真实 GL 状态而不进主线程仿真簿记（详见字段注释）。
-        // 主线程与渲染线程（悬挂续跑 requeue 不经过本方法）之外的提交才计数。
         Thread producer = Thread.currentThread();
         if (producer != mainThread && producer != renderThread) {
             AUX_SUBMISSION_EPOCH.incrementAndGet();
         }
         synchronized (frameLock) {
-            // frameLock 已提供互斥与可见性，帧自身监视器在此冗余（addUnlocked）
             currentFrame.addUnlocked(command);
         }
     }
@@ -231,9 +128,7 @@ public final class RenderQueueImpl implements RenderQueue {
         synchronized (frameLock) {
             submitCurrentFrameLocked();
         }
-        // 注意：这里不推进 StallDetector 窗口——drain-first 阻塞通道每次调用都伴随
-        // 一次 swapFrames，窗口若以它前进会被「清下一槽」语义洗白/失真；
-        // 游戏帧边界由 swapFramesAndSync 唯一标记（见 get 的熔断门控注释）
+        // drain-first 通道不推进 stall 窗口，帧边界只由 swapFramesAndSync 标记。
     }
 
     @Override
@@ -250,11 +145,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /**
-     * 记录一次阻塞式调用的来源站点：取栈上第一个不属于队列/bridge 包的帧
-     * （即游戏/模组/功能代码调用 bridge GL 方法的位置）。开销仅在已确定要
-     * 走阻塞通道的调用上发生，相对队列往返可忽略。
-     */
     private void recordBlockingSite() {
         String site = SITE_WALKER.walk(frames -> frames
                 .filter(f -> {
@@ -268,7 +158,6 @@ public final class RenderQueueImpl implements RenderQueue {
         blockingSites.computeIfAbsent(site, k -> new LongAdder()).increment();
     }
 
-    /** @return 累计阻塞调用站点 top5（熔断诊断后缀） */
     private String topBlockingSites() {
         return blockingSites.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue().sum(), a.getValue().sum()))
@@ -277,13 +166,6 @@ public final class RenderQueueImpl implements RenderQueue {
                 .collect(Collectors.joining(", "));
     }
 
-    /**
-     * 熔断条件成立的处置：crash 策略抛 {@link IllegalStateException}（带窗口诊断与
-     * 站点 top5，开发排障用）；warn 策略按 {@link #STALL_WARN_COOLDOWN_NANOS} 限频
-     * 记 WARN 后放行——阻塞调用本身仍会被正确服务，持续击穿只是失去双线程管线
-     * 收益，不应因此打断游戏（熔断信号可能由任一录制线程触发，故冷却用时间戳
-     * 而非帧计数）。
-     */
     private void onStallTrip() {
         String diagnostics = stallDetector.tripDiagnostics()
                 + " 累计阻塞调用站点 top5: " + topBlockingSites();
@@ -299,10 +181,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /**
-     * 解析 stall 熔断策略属性：{@code "crash"} 达到阈值直接抛异常（开发排障）；
-     * 默认与非法值均为 warn（限频告警后放行，非法值记 WARN）。
-     */
     static boolean parseStallTripCrash(String value) {
         if ("crash".equalsIgnoreCase(value)) {
             return true;
@@ -314,11 +192,6 @@ public final class RenderQueueImpl implements RenderQueue {
         return false;
     }
 
-    /**
-     * 主线程用：阻塞至上一帧执行完。若上一帧在渲染线程抛过异常，在此以
-     * {@link IllegalStateException} 重抛（cause 为原始异常）——即
-     * 「渲染线程异常在下一次 swapFramesAndSync 时向主线程传播」的落点。
-     */
     private static void awaitCompletion(CompletableFuture<Void> completion) {
         try {
             completion.get();
@@ -342,17 +215,13 @@ public final class RenderQueueImpl implements RenderQueue {
 
     private <T> T getInternal(Callable<T> getter, boolean countStall) {
         if (isRenderThread()) {
-            // 渲染线程上的同步调用直接执行：再走提交队列必然自死锁
+            // 渲染线程上的同步调用必须直接执行，否则提交队列会自死锁。
             try {
                 return getter.call();
             } catch (Exception e) {
                 throw new IllegalStateException("[SSOptimizer] 渲染线程内同步执行任务失败", e);
             }
         }
-        // 加载期（ResourceLoaderState.init 完成前）的阻塞调用豁免熔断：加载推进
-        // 画面本身就在渲染帧，纹理/字体/shader 的成批一次性分配集中在该阶段属
-        // 正常形态；熔断只针对加载结束后的稳态逐帧 getter 回读。
-        // 资源申请类调用（getUncounted）任何时期都不计数（见 RenderQueue 接口注释）
         if (countStall && RenderThreadMode.isLoadingFinished()) {
             recordBlockingSite();
             if (stallDetector.onStall()) {
@@ -392,32 +261,18 @@ public final class RenderQueueImpl implements RenderQueue {
         return Thread.currentThread() == renderThread;
     }
 
-    /** @return 当前线程是否为主录制线程（帧边界推进线程，即游戏主循环线程）。 */
     public static boolean isMainThread() {
         return Thread.currentThread() == mainThread;
     }
 
-    /**
-     * @return aux 生产者线程活动纪元（见 {@link #AUX_SUBMISSION_EPOCH}）；
-     * bridge 主线程仿真 getter 的失效判据
-     */
     public static long auxSubmissionEpoch() {
         return AUX_SUBMISSION_EPOCH.get();
     }
 
-    /** 测试用：复位 aux 活动纪元，避免用例间静态状态串扰。 */
     public static void resetAuxSubmissionEpochForTesting() {
         AUX_SUBMISSION_EPOCH.set(0);
     }
 
-    /**
-     * 主录制线程认领：首个 {@link #swapFramesAndSync()} 调用线程即游戏主循环线程
-     * （生产环境中队列类可能由 launcher 线程加载，与游戏循环线程不是同一个），
-     * 迁移时输出 INFO 日志供实机诊断确认。
-     * 渲染线程豁免：加载期画面由渲染线程 pump（RenderFramePump 路径也会调到本方法），
-     * 渲染线程的帧推进只是加载期代跑，不得窃取主录制线程身份——否则游戏线程的
-     * getter 仿真门控会在加载后期失效（实机实测渲染线程曾短暂窃取后被游戏线程抢回）。
-     */
     private void claimMainThreadIfNeeded() {
         final Thread current = Thread.currentThread();
         if (current == renderThread) {
@@ -431,22 +286,15 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /**
-     * 停止渲染线程（测试/关停钩子用；游戏进程内渲染线程随 JVM 存活）。
-     */
     public void shutdown() {
         running = false;
         renderThread.interrupt();
     }
 
-    /** frameLock 内：提交当前帧到渲染线程并换发新帧。 */
     private void submitCurrentFrameLocked() {
         RenderFrame submitted = currentFrame;
-        // 必须先捕获完成 Future 再 offer：offer 之后渲染线程随时可能执行完并把帧
-        // 归还池（reset 换发新 Future），届时再读帧上的 Future 已不是本周期的实例
+        // 必须在 offer 前捕获 Future，帧归还池后 reset 会换发实例。
         CompletableFuture<Void> completion = submitted.completionFuture();
-        // 帧尾标记必须在 offer 前追加进本帧：标记是「本帧命令已全部进 GPU 队列」的
-        // 序列点，有序映射写入通道（MappedWriteBridgeImpl）据此发布帧尾 fence
         final FrameEndMarkerHook markerHook = frameEndMarkerHook;
         if (markerHook != null) {
             final GlCommand marker = markerHook.markerFor(submitted.sequence());
@@ -462,19 +310,11 @@ public final class RenderQueueImpl implements RenderQueue {
         lastSubmittedCompletion = completion;
     }
 
-    /**
-     * @return 最近一次提交帧的帧序号（无提交时为 -1；有序映射写入通道的挂载初始化用）
-     */
     public long lastSubmittedSequence() {
         return lastSubmittedSequence;
     }
 
-    /**
-     * 提交任务到渲染队列。MPSC 有界队列的 offer 在队列满时返回 false——正常深度
-     * 为个位数到几十（见 {@link #submissionQueue} 注释），打满只可能是渲染线程
-     * 已停止消费，属不变量破坏：记日志并抛异常，绝不静默丢任务（丢帧任务会让
-     * swapFramesAndSync 永久等待，丢同步任务会让调用线程永久阻塞）。
-     */
+    /** offer 失败必须抛异常，静默丢任务会造成永久等待。 */
     private void offerOrThrow(RenderTask task) {
         if (!submissionQueue.offer(task)) {
             IllegalStateException failure = new IllegalStateException(String.format(
@@ -500,12 +340,10 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /** 渲染线程任务：帧执行或同步调用。 */
     private interface RenderTask {
         void run();
     }
 
-    /** 一帧命令的执行任务。 */
     private final class FrameTask implements RenderTask {
         private final RenderFrame frame;
 
@@ -518,18 +356,12 @@ public final class RenderQueueImpl implements RenderQueue {
             try {
                 RtTrace.trace("FRAME_EXEC", frame.commands().size(), 0, 0, null);
                 runOrRequeue(frame.commands());
-                // 帧模式探针在 complete 之前：等待帧 Future 的一方由此确定探针已落地
                 probeFrameErrors();
-                // 帧悬挂（fence 未 signal）不视为失败：余下命令已由续跑任务接管，
-                // 本帧正常完成释放主线程——主线程推进后 fence 信号才会到来
                 frame.complete();
             } catch (Throwable t) {
                 LOGGER.error("[SSOptimizer] 渲染线程执行帧命令失败，本帧剩余命令已丢弃", t);
                 frame.signalAllFences();
-                // 失败帧的 GL 状态诊断价值最高，同样探一轮
                 probeFrameErrors();
-                // 簿记自愈钩子放在探针之后：钩子自身的真实 glGetInteger 不得
-                // 污染帧尾错误排空（避免被探针误记为帧内残留错误）
                 runFrameFailureHook();
                 frame.completeExceptionally(t);
             } finally {
@@ -538,12 +370,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /**
-     * 帧悬挂的续跑任务：携带上次悬挂点起的剩余命令，遇 fence 仍未 signal 则
-     * 再次打包 requeue，直至全部执行完。不关联任何帧 Future——原帧在首次悬挂时
-     * 已正常完成，续跑期间命令抛异常只记日志并丢弃余下命令（GL 状态已不可信，
-     * 与帧执行失败同语义，但主线程早已放行，无 Future 可传播）。
-     */
     private final class ContinuationTask implements RenderTask {
         private final List<GlCommand> commands;
 
@@ -563,7 +389,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /** 帧失败钩子调用点：钩子异常只记 WARN，不得击穿渲染线程主循环。 */
     private void runFrameFailureHook() {
         final Runnable hook = frameFailureHook;
         if (hook == null) {
@@ -576,16 +401,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /**
-     * 顺序执行命令列表；遇 {@link SuspendFrameException}（fence 未 signal）时
-     * 退避 {@link #SUSPEND_REQUEUE_BACKOFF_NANOS} 后把悬挂点起的剩余命令打包成
-     * {@link ContinuationTask} requeue 到提交队列队尾并返回。续跑任务排在队尾，
-     * 不阻塞后续帧任务与同步任务的执行。
-     * <p>
-     * 连续串合并：相邻且同实现的 {@link MergedBatchCommand}（顶点批次）构成
-     * 一个串，整串以 {@link MergedBatchCommand#executeMerged} 协议执行——串内
-     * 共享合并器（跨批次状态去重/DRAW 合并），真实 GL 调用延迟到串尾。
-     */
     private void runOrRequeue(List<GlCommand> commands) {
         boolean inMergedRun = false;
         for (int i = 0; i < commands.size(); i++) {
@@ -616,7 +431,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /** get/wait 的阻塞式同步任务。 */
     private static final class SyncTask<T> implements RenderTask {
         private final Callable<T> callable;
         private final CompletableFuture<T> result = new CompletableFuture<>();
@@ -635,7 +449,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /** 帧模式探针落点：帧命令执行完（无论成败）后、帧 Future 完成前排空一次。 */
     private void probeFrameErrors() {
         if (glErrorProbe == GlErrorProbe.FRAME) {
             probeFrameSequence++;
@@ -643,15 +456,6 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /**
-     * 排空滞留 GL 错误并按错误码聚合计数，有错误时记 WARN。
-     * 用途：诊断「真实上下文中滞留的 GL 错误被模组的 makeCurrent+glGetError
-     * 健康校验（如 BoxUtil aux 线程 glInit）读到」类问题——滞留错误意味着
-     * 渲染管线某处产生了失败的 GL 调用且无人察觉。
-     *
-     * @param site 探针位置描述（帧尾/某命令之后）
-     * @return 是否排空到任何错误
-     */
     private boolean drainGlErrors(final String site) {        final java.util.Map<Integer, Integer> counts = new java.util.LinkedHashMap<>();
         int guard = 0;
         int error;
@@ -668,7 +472,6 @@ public final class RenderQueueImpl implements RenderQueue {
         return true;
     }
 
-    /** 探针日志的命令名：录制点包装命令展示被包装命令的类型名。 */
     private static String probeCommandName(final GlCommand command) {
         if (command instanceof ProbeSiteCommand probe) {
             return probe.delegate().getClass().getSimpleName();
@@ -676,10 +479,6 @@ public final class RenderQueueImpl implements RenderQueue {
         return command.getClass().getSimpleName();
     }
 
-    /**
-     * 输出录制点包装命令的诊断堆栈（按前 6 帧指纹去重，同一录制点只打一次，
-     * 总量封顶 32 个站点——标题界面每帧重复的错误不会刷屏）。
-     */
     private void logProbeRecordingSite(final ProbeSiteCommand command) {
         final StackTraceElement[] trace = command.recordingSite().getStackTrace();
         final StringBuilder key = new StringBuilder();
@@ -694,13 +493,9 @@ public final class RenderQueueImpl implements RenderQueue {
         }
     }
 
-    /** GL 错误探针模式。 */
     enum GlErrorProbe {
-        /** 关闭（默认，零开销）。 */
         OFF,
-        /** 每帧命令执行完毕后排空一次。 */
         FRAME,
-        /** 每条命令执行后排空一次（重，仅定位用）。 */
         COMMAND;
 
         static GlErrorProbe parse(final String value) {

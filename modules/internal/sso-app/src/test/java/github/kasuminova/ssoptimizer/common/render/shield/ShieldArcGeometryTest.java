@@ -11,16 +11,11 @@ import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link ShieldArcGeometry} 的逻辑验证：旋转递推与 raycast 对照实现分别与双精度参考式逐点对比，
- * 边缘 alpha 与原版公式逐位相等，缓存命中/失效行为，以及两实现的耗时基准对比。
- */
 class ShieldArcGeometryTest {
     private static final int[]   SEGMENT_COUNTS = {2, 25, 37, 73, 100};
     private static final float[] RADII          = {32.0F, 128.0F, 260.0F};
     private static final float[] ARCS_DEG       = {45.0F, 120.0F, 360.0F, 370.0F};
 
-    /** (arcDeg, segmentCount, radius) 笛卡尔积参数。 */
     static List<float[]> fanCases() {
         List<float[]> cases = new ArrayList<>();
         for (float arc : ARCS_DEG) {
@@ -33,7 +28,6 @@ class ShieldArcGeometryTest {
         return cases;
     }
 
-    /** (arcDeg, segmentCount, phase) 参数，相位含负值。 */
     static List<float[]> texCoordCases() {
         List<float[]> cases = new ArrayList<>();
         float[] phases = {-2.4F, -0.3F, 0.0F, 1.7F};
@@ -58,7 +52,6 @@ class ShieldArcGeometryTest {
         float[] out = new float[segmentCount * 2];
         ShieldArcGeometry.fillFanVertices(out, arcDeg, segmentCount, radius);
 
-        // 双精度参考式：vertex_k = radius·1.07·(cos(kΔ), sin(kΔ))
         double delta = Math.toRadians(arcDeg) / (segmentCount - 1);
         double r = radius * 1.07;
         for (int k = 0; k < segmentCount; k++) {
@@ -104,7 +97,6 @@ class ShieldArcGeometryTest {
         float[] out = new float[segmentCount * 2];
         ShieldArcGeometry.fillFanTexCoords(out, arcDeg, segmentCount, phase);
 
-        // 双精度参考式：uv_k = 0.5 + (cos(kΔ + φ), sin(kΔ + φ)) / 2
         double delta = Math.toRadians(arcDeg) / (segmentCount - 1);
         for (int k = 0; k < segmentCount; k++) {
             double refU = 0.5 + Math.cos(k * delta + phase) / 2.0;
@@ -129,8 +121,6 @@ class ShieldArcGeometryTest {
         float tolerance = 1e-4F * (radius + scaleEff);
 
         float bandArcRad = ShieldArcGeometry.bandArcRadians(startDeg, arcDeg);
-        // 原版语义：(float)toRadians(h+a) − (float)toRadians(h) 后再经 normalizeAngle 的 float 取模链
-        // （(f % 360 + 360) % 360 在 360 量级有 ulp≈3e-5 的精度损失，属于原版固有行为，须逐位复刻）
         float radDiff = (float) Math.toRadians(startDeg + arcDeg) - (float) Math.toRadians(startDeg);
         float expectedArc = (radDiff % 360.0F + 360.0F) % 360.0F;
         assertEquals(expectedArc, bandArcRad, 0.0F, "bandArcRad 应与原版弧度序列逐位一致");
@@ -138,7 +128,6 @@ class ShieldArcGeometryTest {
         float[] out = new float[segmentCount * 4];
         ShieldArcGeometry.fillBandStrip(out, segmentCount, bandArcRad, radius, bandWidth, scaleEff, ringAngle);
 
-        // 双精度参考式：rOut = radius + scaleEff·sin(ringAngle·10 + k·Δ·10)
         double delta = bandArcRad / (double) (segmentCount - 1);
         for (int k = 0; k < segmentCount; k++) {
             double refROut = radius + scaleEff * (float) Math.sin(ringAngle * 10.0F + k * (float) delta * 10.0F);
@@ -149,7 +138,6 @@ class ShieldArcGeometryTest {
                     "k=" + k + " outer radius mismatch, arc=" + arcDeg + " n=" + segmentCount);
             assertEquals(refROut - bandWidth, innerR, tolerance,
                     "k=" + k + " inner radius mismatch, arc=" + arcDeg + " n=" + segmentCount);
-            // 顶点方向应与角度等分参考一致
             double refX = refROut * Math.cos(k * delta);
             double refY = refROut * Math.sin(k * delta);
             assertEquals(refX, out[base], tolerance,
@@ -238,7 +226,6 @@ class ShieldArcGeometryTest {
         float[] outA = new float[segmentCount * 2];
         float[] outB = new float[segmentCount * 2];
 
-        // 预热 JIT
         for (int i = 0; i < 10_000; i++) {
             ShieldArcGeometry.fillFanVertices(outA, arcDeg, segmentCount, radius);
             ShieldArcGeometry.fillFanVerticesRaycast(outB, arcDeg, segmentCount, radius);
@@ -260,7 +247,6 @@ class ShieldArcGeometryTest {
         }
         long rayNanos = System.nanoTime() - startRay;
 
-        // 两实现输出逐点误差统计（仅输出，不做阈值断言）
         float maxDiff = 0.0F;
         for (int i = 0; i < outA.length; i++) {
             maxDiff = Math.max(maxDiff, Math.abs(outA[i] - outB[i]));
@@ -271,17 +257,12 @@ class ShieldArcGeometryTest {
                 recNanos / (double) iterations, rayNanos / (double) iterations, maxDiff,
                 segmentCount, radius, arcDeg);
 
-        // 防止 JIT 将循环整体消除
         assertTrue(Float.isFinite(sinkRec) && Float.isFinite(sinkRay));
     }
 
-    /**
-     * 原版 render 扇形顶点 alpha 公式的独立转写（作为对照参考，非调用被测代码）。
-     */
     private static int originalFanAlpha(int k, int segmentCount, float arcDeg,
                                         float damageMult, float segmentAlpha, float segmentAlphaMax,
                                         int colorAlpha) {
-        // 原版 getSegmentBrightness(int)
         float segBrightness = 1.0F - 0.45F * segmentAlpha / segmentAlphaMax;
 
         float var15 = 1.0F;
@@ -297,9 +278,6 @@ class ShieldArcGeometryTest {
         return (int) (var16 * colorAlpha);
     }
 
-    /**
-     * 原版 renderBand 顶点 alpha 公式的独立转写（作为对照参考，非调用被测代码）。
-     */
     private static int originalBandAlpha(int k, int segmentCount, float bandArcRad,
                                          float damageMult, float segmentAlpha, float segmentAlphaMax) {
         float segBrightness = 1.0F - 0.45F * segmentAlpha / segmentAlphaMax;

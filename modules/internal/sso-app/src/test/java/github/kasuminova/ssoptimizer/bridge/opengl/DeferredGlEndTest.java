@@ -9,21 +9,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * glEnd 延迟落帧（{@code ssoptimizer.render.deferredGlEnd}，默认开）的录制行为验证。
- * <p>
- * 延迟模式下 glEnd 只写 OP_END 标记，落帧推迟到三个时机：任一非流式命令
- * enqueue（先入队先 flush，顺序保持）、帧尾 swap、容量阈值；aux 原生线程与
- * 开关关闭时保持「glEnd 立即落帧」旧行为。验证点：
- * <ul>
- *   <li>多段 begin..end 累积为一条批次，解码事件序列与逐段落帧拼接完全等价；</li>
- *   <li>非流式命令触发落帧的帧列表顺序（流段批次在命令之前）；</li>
- *   <li>容量阈值在 glEnd 处强制落帧；</li>
- *   <li>帧尾 swap 把挂起流段切进当前帧；</li>
- *   <li>挂起流内状态指令打断状态去重相邻性，纯顶点挂起流不打断；</li>
- *   <li>开关关闭 / aux 原生线程的落帧决策回退为立即落帧。</li>
- * </ul>
- */
 class DeferredGlEndTest {
 
     private FakeRenderQueue queue;
@@ -47,7 +32,6 @@ class DeferredGlEndTest {
         GL11.uninstall();
     }
 
-    /** 录制一个双顶点 QUADS 段（texCoord + vertex ×2），顶点坐标按 base 区分。 */
     private static void recordSegment(float base) {
         GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
         GL11.glTexCoord2f(base, 0f);
@@ -57,7 +41,6 @@ class DeferredGlEndTest {
         GL11.glEnd();
     }
 
-    /** 记录回放事件序列的 sink（begin/end/texCoord2f/vertex2f 之外不支持）。 */
     private static final class RecordingSink implements VertexSink {
         final List<String> events = new ArrayList<>();
 
@@ -154,7 +137,6 @@ class DeferredGlEndTest {
 
     @Test
     void multipleSegmentsAccumulateIntoOneBatchWithEquivalentByteStream() {
-        // 延迟模式：两段 begin..end 不在 glEnd 落帧，下一条非流式命令触发一次落帧
         recordSegment(0f);
         recordSegment(1f);
         assertEquals(0, queue.recorded.size(), "glEnd 不再立即落帧");
@@ -165,7 +147,6 @@ class DeferredGlEndTest {
         RecordingSink deferredSink = new RecordingSink();
         VertexStream.replayBody(deferredBatch.data(), deferredBatch.length(), deferredSink);
 
-        // 旧模式对照：逐段落帧为两条批次，拼接解码的事件序列必须完全等价
         GL11.uninstall();
         FakeRenderQueue legacyQueue = new FakeRenderQueue();
         GL11.install(legacyQueue);
@@ -203,7 +184,6 @@ class DeferredGlEndTest {
 
     @Test
     void capacityThresholdForcesFlushAtGlEnd() {
-        // 阈值压低到 8 字节：单个段（begin 5B + 2×(tex 9B + vertex 9B) + end 1B = 42B）必触线
         BridgeSupport.deferredGlEndThresholdBytes = 8;
         GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
         GL11.glVertex2f(0f, 0f);
@@ -211,7 +191,6 @@ class DeferredGlEndTest {
         GL11.glEnd();
         assertEquals(1, queue.recorded.size(), "容量阈值触线的 glEnd 必须强制落帧");
         assertInstanceOf(VertexBatchCommand.class, queue.recorded.get(0));
-        // 阈值兜底后流换新缓冲，后续段重新累积
         GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
         GL11.glVertex2f(1f, 1f);
         GL11.glEnd();
@@ -220,8 +199,6 @@ class DeferredGlEndTest {
 
     @Test
     void displayUpdateFlushesPendingStreamBeforeSwapCommand() {
-        // Display.update 是直交通道（不走 enqueue）：帧尾挂起流段必须先于
-        // update 命令（swapBuffers）落帧，否则内容执行在交换之后
         recordSegment(0f);
         Display.update();
         assertEquals(2, queue.recorded.size(), "挂起流段批次必须先于 Display.update 命令入帧");
@@ -246,8 +223,6 @@ class DeferredGlEndTest {
 
     @Test
     void pendingStreamStateOpsBreakDedupAdjacency() {
-        // 挂起流内的状态指令（streamBindTexture）回放时改变真实纹理绑定但不推进
-        // commitSeq：其后的相同 bind 命令不得被去重跳过（否则真实状态被架空）
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         GL11.streamBindTexture(7);
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
@@ -258,13 +233,11 @@ class DeferredGlEndTest {
 
     @Test
     void pureVertexPendingStreamKeepsDedupAdjacency() {
-        // 延迟落帧的去重收益：两段之间只挂起纯顶点流（不改变被去重的状态）时，
-        // 相同 bind 命令仍被跳过（旧模式 glEnd 落帧会无谓打断相邻性）
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         recordSegment(0f);
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         assertEquals(1, queue.recorded.size(), "纯顶点挂起流不打断相邻性，重复 bind 被去重");
-        GL11.glFlush(); // 触发落帧：流批次 + glFlush
+        GL11.glFlush();
         assertEquals(3, queue.recorded.size());
         assertInstanceOf(VertexBatchCommand.class, queue.recorded.get(1));
     }

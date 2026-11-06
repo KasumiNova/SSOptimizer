@@ -25,160 +25,58 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 
 /**
- * bridge 各入口类共享的静态支撑：队列句柄、录制/阻塞助手、缓冲快照池、
- * client pointer 快照状态。
- * <p>
- * 动机：bridge 的每个入口类（GL11/GL13/.../Display/GLContext）都需要同一套
- * 「提交命令 / 阻塞取回 / buffer 快照」原语，分散实现会产生十几份机械重复。
- * 收敛到本类后，入口方法体保持一行一命令的机械形态。
- * <p>
- * 快照池是进程级单例：直接缓冲池的价值在于跨帧复用，随用例新建会失去意义；
- * 池实现本身线程安全（录制在多生产者线程、归还在渲染线程）。
+ * OpenGL 桥接入口共享的队列、录制上下文、阻塞通道与快照池。录制侧状态按生产者线程隔离，
+ * 真实 GL 调用在渲染线程执行；aux 原生线程直接操作其共享上下文。
  */
 final class BridgeSupport {
     private static final Logger LOGGER = Logger.getLogger(BridgeSupport.class);
 
-    /**
-     * 状态命令去重开关：{@code -Dssoptimizer.render.statededup=false} 关闭，
-     * 默认开启（连续相同的高频状态命令只入队一次，见 {@link StateDedup}）。
-     * 静态可变字段供测试切换；uninstall 不重置（系统属性进程级语义）。
-     */
     static volatile boolean stateDedupEnabled =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.render.statededup", "true"));
 
-    /**
-     * glEnd 延迟落帧总开关：{@code -Dssoptimizer.render.deferredGlEnd=false} 回退
-     * 为「glEnd 立即落帧」的旧行为，默认开启。开启时 glEnd 只写 OP_END 标记，
-     * 落帧推迟到任一非流式命令 {@link #enqueue(GlCommand)} / 帧尾 swap /
-     * 容量阈值三个时机（见 {@link #flushVertexStreamOnGlEnd(RecordingContext)}）——
-     * 落帧次数从 O(glEnd 次数) 降到 O(flush 点)，消除逐段的 transferBuffer
-     * 换缓冲 acquire（JProfiler 实证超空间大地图 {@code VertexStreamBufferPool.acquire}
-     * 42% 自身时间）与逐段的批次命令分配 + synchronized(frameLock) 进入。
-     * 静态可变字段供测试切换；uninstall 不重置（系统属性进程级语义）。
-     */
     static volatile boolean deferredGlEndEnabled =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.render.deferredGlEnd", "true"));
 
-    /**
-     * 流内矩阵指令总开关：{@code -Dssoptimizer.render.streamMatrixOps=false} 回退
-     * 为「每条矩阵调用一个非流式命令经 enqueue」的旧行为，默认开启。开启时
-     * GL11 矩阵族（glPushMatrix/glPopMatrix/glLoadIdentity/glTranslatef/
-     * glRotatef/glScalef/glMatrixMode）在 SimulatedGlState 簿记后编码进顶点流
-     * （{@link VertexStream} 的 OP_PUSH_MATRIX 族），跟随流走到下一个落帧点，
-     * 回放按流内位置逐指令执行——消除每帧 400-1500 条矩阵命令各自的落帧
-     * flush + lambda 命令分配 + synchronized(frameLock) 进入（deferred glEnd
-     * 落地后 JProfiler 热点转移到 glPopMatrix 的根因）。glTranslated/glOrtho/
-     * glLoadMatrix/glMultMatrix（double 载荷与 buffer 快照的低频路径）保持
-     * enqueue 不变。
-     * 静态可变字段供测试切换；uninstall 不重置（系统属性进程级语义）。
-     */
     static volatile boolean streamMatrixOpsEnabled =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.render.streamMatrixOps", "true"));
 
-    /**
-     * glEnd 延迟落帧的容量阈值（字节）：{@code -Dssoptimizer.render.deferredGlEnd.thresholdBytes=N}
-     * 调整，默认 1MB。glEnd 处已编码字节数达到阈值即强制落帧——单帧缓冲
-     * 无限增长的兜底（纯流式序列在两个非流式命令之间不受其他落帧点约束）。
-     */
     static volatile int deferredGlEndThresholdBytes =
             Integer.getInteger("ssoptimizer.render.deferredGlEnd.thresholdBytes", 1 << 20);
 
-    /**
-     * 命令级 GL 错误探针（仅诊断）：{@code glErrorProbe=command} 时 enqueue 把
-     * 命令包装为 {@link ProbeSiteCommand} 并捕获录制点堆栈，供渲染线程侧探针
-     * 在排空到错误时输出定位（bridge 命令体多为匿名 lambda，类型名不可读）。
-     * 编译期常量属性名内联，不触发 RenderQueueImpl 类初始化。
-     */
     private static final boolean GL_ERROR_PROBE_COMMAND = "command".equals(
             System.getProperty(RenderQueueImpl.GL_ERROR_PROBE_PROPERTY, "off"));
 
     private static volatile BufferSnapshotPoolImpl pool = new BufferSnapshotPoolImpl();
-    /** 池化命令对象（录制线程借出、渲染线程归还，见 {@link CommandPool} 的生命周期约束）。 */
     private static volatile CommandPool<DrawCommand> drawCommands = new CommandPool<>(DrawCommand::new);
     private static volatile CommandPool<VertexBatchCommand> vertexBatches = new CommandPool<>(VertexBatchCommand::new);
     private static volatile CommandPool<PointerSnapshotGroup> snapshotGroups = new CommandPool<>(PointerSnapshotGroup::new);
-    /** 顶点流编码缓冲池（录制线程借出、渲染线程归还，见 {@link VertexStreamBufferPool}）。 */
     private static volatile VertexStreamBufferPool vertexStreamBuffers = new VertexStreamBufferPool();
-    /**
-     * 录制侧逐线程的帧录制上下文（见 {@link RecordingContext}）：统一持有
-     * client pointer 状态、FRAMEBUFFER 绑定跟踪与 immediate 顶点流。
-     */
     private static final ThreadLocal<RecordingContext> RECORDING_CONTEXT = ThreadLocal.withInitial(RecordingContext::new);
-    /**
-     * 主录制线程（游戏主线程）的帧录制上下文缓存：每帧边界（swap）获取一次
-     * 后帧内直读，录制热路径不再逐调用走 ThreadLocal 查找（v36 profile 热点）。
-     * 只由主线程写入；读者校验 owner 后再用，aux 生产者线程仍走各自实例。
-     */
+    /** 仅主录制线程在帧边界写入，其他线程仅在 owner 匹配时读取。 */
     private static volatile RecordingContext mainRecordingContext;
-    /**
-     * VBO id stash 单次批量预生成的个数。相对旧值 64 加大：v45c/v47 profile
-     * 显示 LazyLib LazyFont 每帧 createText 新建 SpriteBatch（glGenBuffers），
-     * stash 耗尽时主线程阻塞批量补货（getInternal park 1,065/535 样本的大头）；
-     * 512 覆盖多帧消耗，配合低水位异步补货（{@link #refillBufferIdStashIfLow()}）
-     * 使主线程 stash 恒有货。
-     */
     static final int BUFFER_ID_STASH_BATCH = 512;
-    /** stash 低水位阈值：渲染线程帧尾补货触发线（低于此值补一批 BATCH）。 */
     static final int BUFFER_ID_STASH_LOW_WATER = 256;
-    /**
-     * VBO id 预生成 stash：{@link GL15#glGenBuffers()}/{@link ARBVertexBufferObject#glGenBuffersARB()}
-     * 单值形式的录制侧 id 池。游戏战斗期逐帧创建 VBO（SpriteBatch/粒子等），
-     * 逐个走阻塞通道取 id 会把主线程耗在等渲染线程上（v35 profile：阻塞等待
-     * 占主线程约 25%，其中 glGenBuffers 占绝对大头）；stash 命中时零阻塞，
-     * 空时一次阻塞批量预生成 {@value #BUFFER_ID_STASH_BATCH} 个摊销往返。
-     * id 的唯一性由渲染线程的真实 glGenBuffers 保证，返回顺序无语义。
-     */
     private static volatile ConcurrentLinkedQueue<Integer> bufferIdStash = new ConcurrentLinkedQueue<>();
-    /** stash 当前元素计数（低水位补货判断用；随 offer/poll 增减，与 stash 内容一致）。 */
     private static volatile AtomicInteger bufferIdStashCount = new AtomicInteger();
-    /**
-     * 渲染线程侧簿记：命令流执行到当前位置的 GL_ARRAY_BUFFER 真实绑定。
-     * 只由 bind 命令执行体与 pointer 重放（{@link PointerSnapshotGroup#apply()}）
-     * 在渲染线程读写。
-     */
     private static volatile int executedArrayBufferBinding;
-    /**
-     * 渲染线程侧 client attrib 栈的 ARRAY_BUFFER 绑定快照（glPush/PopClientAttrib
-     * 命令体维护）：GL 1.5+ 起 ARRAY_BUFFER 绑定属 client 状态，随
-     * {@code GL_CLIENT_VERTEX_ARRAY_BIT} 压栈/恢复——与录制侧
-     * {@link SimulatedGlState#onPushClientAttrib} 的模型一致，执行侧必须同构，
-     * 否则 pop 之后簿记与真实绑定失真。
-     */
     private static final int CLIENT_ATTRIB_STACK_MAX = 64;
     private static final int[] clientAttribMasks       = new int[CLIENT_ATTRIB_STACK_MAX];
     private static final int[] clientAttribArrayBuffer = new int[CLIENT_ATTRIB_STACK_MAX];
     private static int clientAttribDepth;
 
-    /**
-     * 簿记写入线程守卫：生产队列（RenderQueueImpl）上仅渲染线程可写执行侧簿记——
-     * aux native 线程内联执行的绑定作用于各自共享上下文（与渲染上下文互不可见），
-     * 写入只会污染簿记。测试 Fake 队列（非 RenderQueueImpl）不施加线程限制。
-     */
+    /** 生产队列上只有渲染线程可写执行侧簿记，aux 原生线程的绑定属于各自共享上下文。 */
     private static boolean isBookkeepingThread() {
         final RenderQueue q = queue;
         return !(q instanceof RenderQueueImpl) || q.isRenderThread();
     }
 
-    /**
-     * ARRAY_BUFFER 绑定溯源环：每次经簿记的绑定执行在环上覆写一条事件
-     * （origin = bridge 入口类名，recordThread = 录制侧发起线程名，均为既有
-     * String 引用，记录零分配）。常开——绑定执行相对 draw 是低频事件，单次
-     * 有界数组写可忽略；帧失败时由
-     * {@link #reconcileArrayBufferBindingAfterFailure()} 读出用于定位失真来源。
-     */
     private static final int BIND_TRACE_CAPACITY = 64;
     private static final int BIND_TRACE_MASK     = BIND_TRACE_CAPACITY - 1;
     private static final BindTraceEvent[] BIND_TRACE = createBindTrace();
     private static final AtomicLong BIND_TRACE_SEQ = new AtomicLong();
-    /**
-     * 真实 GL_ARRAY_BUFFER 绑定回读 seam（帧失败校验用；默认真实
-     * glGetInteger，单测注入桩避免无 context 环境触碰真实 GL——与
-     * {@link #stateSnapshotSource} 桩同模式）。
-     */
     private static volatile java.util.function.IntSupplier arrayBufferBindingProbe =
             () -> org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER_BINDING);
 
-    /** 绑定溯源事件槽（原位覆写，无逐事件分配）。 */
     private static final class BindTraceEvent {
         long   seq;
         int    buffer;
@@ -193,77 +91,34 @@ final class BridgeSupport {
         }
         return events;
     }
-    /**
-     * 渲染线程侧簿记：display list 编译窗口的嵌套深度（glNewList/glEndList 命令
-     * 体在渲染线程执行序上增减）。GL 规范中 display list 编译对客户端数组
-     * （glVertexPointer/glTexCoordPointer 等）按<b>指针捕获</b>、不回拷数据——
-     * {@link VertexArrayBatch} 的共享单例直接缓冲跨批次复用，列表回放时
-     * {@code glDrawArrays} 会读到后续批次覆盖的内容（实机症状：对话框舰队
-     * 列表舰船图标串图）。编译窗口内的顶点批次因此必须逐指令 immediate 回放
-     * （glBegin/glVertex/glEnd 按数据捕获，回放正确）。
-     * <p>
-     * 归渲染线程执行序：glNewList/glEndList 命令的入队与执行之间隔着帧边界
-     * （命令在录制线程入队、渲染线程下一帧执行），录制侧维护会在入队序上
-     * 提前改变状态；此处由命令执行体维护，命令流当前位置的编译深度恒准确，
-     * 编译窗口跨帧也正确保持。
-     */
+    /** 由命令执行体在渲染线程维护，确保跨帧编译窗口的深度与命令流位置一致。 */
     private static volatile int displayListCompileDepth;
 
     private static volatile RenderQueue queue;
 
-    /**
-     * 帧提交序号：{@link #swapFrames()}/{@link #swapFramesAndSync()} 收口递增
-     * （含阻塞通道 drain-first 的帧切割）。用途：aux 再同步的「每提交段至多一次
-     * 屏障」滞后判据——屏障内部的 swapFrames 自身推进序号，再同步完成后记录新
-     * 序号，同段内后续仿真 getter 不再触发屏障（见
-     * {@link #resyncSimulatedStateIfAuxDirty()}）。
-     */
     private static volatile long frameSubmitSeq;
-    /**
-     * 渲染线程侧全量状态采样的来源（aux 再同步屏障的执行体）：生产为
-     * {@link GlStateSnapshot#capture()}（真实 GL 回读）；单测替换为桩以避免无
-     * 上下文环境触碰真实 GL（与 {@link RenderQueueImpl} 的 glErrorSource 注入桩同模式）。
-     */
     private static volatile java.util.function.Supplier<GlStateSnapshot> stateSnapshotSource =
             GlStateSnapshot::capture;
-    /** aux 再同步首次触发的一次性日志标记（诊断确认用，避免逐帧刷屏）。 */
     private static volatile boolean auxResyncLogged;
-    /**
-     * 真实 GL sync 操作 seam（SharedDrawable 解折叠后 fence 的 GPU 侧载体，
-     * 见 {@link RealSyncOps}）：默认委托真实 GL32，单测注入假实现（与
-     * {@link #stateSnapshotSource} 桩同模式）。
-     */
     private static volatile RealSyncOps syncOps = RealSyncOpsImpl.INSTANCE;
 
-    /**
-     * GL 上下文重建监听器（{@link GlDispatch#registerContextRecreatedListener(Runnable)}
-     * 的注册落点）：onContextRecreated 末尾逐个通知。CopyOnWrite 语义——注册在启动期
-     * 发生、通知在显示模式切换期发生，双方都不在帧热路径上，读多写极少。
-     */
     private static final java.util.List<Runnable> CONTEXT_RECREATED_LISTENERS =
             new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private BridgeSupport() {
     }
 
-    /**
-     * 安装命令消费者。各 bridge 入口类的 install 全部委托到此处，共享同一队列。
-     *
-     * @param renderQueue 渲染队列实例
-     */
     static void install(RenderQueue renderQueue) {
         queue = renderQueue;
         if (renderQueue instanceof RenderQueueImpl) {
             ((RenderQueueImpl) renderQueue).setFrameFailureHook(
                     BridgeSupport::reconcileArrayBufferBindingAfterFailure);
         } else if (renderQueue != null) {
-            // 非生产实现（测试 Fake 队列）属预期形态；其他未知实现必须显式可见
             LOGGER.warn("[SSOptimizer] 命令消费者不是 RenderQueueImpl（"
                     + renderQueue.getClass().getName() + "），帧失败簿记自愈钩子未注册");
         }
     }
 
-    /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
     static void uninstall() {
         if (queue instanceof RenderQueueImpl) {
             ((RenderQueueImpl) queue).setFrameFailureHook(null);
@@ -305,15 +160,7 @@ final class BridgeSupport {
         return q;
     }
 
-    /**
-     * 帧提交收口（不等待）：swap 后刷新主录制线程的帧上下文缓存——
-     * 主线程每帧此处获取一次 {@link RecordingContext}，帧内 GL 调用直读
-     * 缓存，不再逐调用走 ThreadLocal（v36 profile 热点）。
-     * <p>
-     * swap 前先落帧当前线程未落帧的顶点流：glEnd 延迟落帧模式下流段挂起到
-     * 帧尾是常态，必须在帧切割前进帧——否则本帧内容落入下一帧，帧边界语义
-     * 被破坏（空流早退，旧模式下此处恒为空流一次方法调用的代价）。
-     */
+    /** 提交前必须落帧挂起顶点流，避免本帧内容越过帧边界。 */
     static void swapFrames() {
         flushVertexStream();
         queue().swapFrames();
@@ -321,7 +168,6 @@ final class BridgeSupport {
         refreshMainRecordingContext();
     }
 
-    /** 帧提交收口（等待上一帧完成，Display.update 的帧尾调用形态）。 */
     static void swapFramesAndSync() {
         flushVertexStream();
         queue().swapFramesAndSync();
@@ -329,12 +175,7 @@ final class BridgeSupport {
         refreshMainRecordingContext();
     }
 
-    /**
-     * 主录制线程（游戏主循环线程，首个 swapFramesAndSync 调用时认领，见
-     * {@link RenderQueueImpl}）在帧边界缓存上下文与当前录制帧（状态命令去重的
-     * 相邻性判据），并重置去重缓存——跨帧不延续去重（GL 状态虽跨帧保持，
-     * 保守起见帧间状态命令照常入队）。
-     */
+    /** 帧边界重置去重缓存，状态命令不得跨帧去重。 */
     private static void refreshMainRecordingContext() {
         if (RenderQueueImpl.isMainThread()) {
             RecordingContext ctx = RECORDING_CONTEXT.get();
@@ -344,13 +185,7 @@ final class BridgeSupport {
         }
     }
 
-    /**
-     * 录制一条命令到当前帧。若当前线程的顶点流有未落帧的 immediate 操作，
-     * 先把它打包落帧——流段命令与本命令在帧列表中的顺序即录制顺序。
-     * <p>
-     * aux 原生线程（{@link RecordingContext#auxNative}，持有真实共享上下文的
-     * 模组后台线程）不入队：命令在调用线程立即执行，逐指令实时序即其原生语义。
-     */
+    /** 非流式命令前先落帧当前线程顶点流；aux 原生线程直接执行命令。 */
     static void enqueue(GlCommand command) {
         RecordingContext ctx = recordingContext();
         flushVertexStream(ctx);
@@ -358,30 +193,14 @@ final class BridgeSupport {
             command.execute();
             return;
         }
-        // 探针包装跳过 MergedBatchCommand：包装会打断渲染线程侧的串合并
-        // instance-of 判定，改变被诊断对象本身的执行形态
+        // 包装 MergedBatchCommand 会打断渲染线程的串合并判定
         if (GL_ERROR_PROBE_COMMAND && !(command instanceof MergedBatchCommand)) {
             command = new ProbeSiteCommand(command);
         }
         queue().submit(command);
     }
 
-    /**
-     * 录制一条可去重的状态命令（glBindTexture/glEnable/glDisable/glBlendFunc
-     * 等，见 {@link StateDedup} 的类型常量）：与上一条已入队的状态命令
-     * 类型参数完全相同、且期间帧命令列表无任何插入时跳过（不产生命令）；
-     * 否则按 {@link #enqueue(GlCommand)} 落帧并记录指纹。任何插入——含
-     * glCallList（显示列表执行绕过录制侧）、aux 生产者线程并发提交、顶点流
-     * 落帧、其他命令——都会经帧提交序号（{@code RenderFrame.commitSeq}）打断
-     * 相邻性，保证去重永不跨越「状态可能已被改变」的边界（旁路审计见
-     * docs/design/render-state-dedup.md）。挂起顶点流内的状态指令是唯一不
-     * 推进 commitSeq 的状态改动源，由 {@link VertexStream#hasPendingStateOps()}
-     * 显式失效补齐（见方法体注释）。
-     *
-     * @param type    状态命令类型（{@link StateDedup} 常量）
-     * @param a,b,c,d 参数槽（最多 4 个 int；float 由调用点转位模式）
-     * @param command 真实 GL 调用命令体
-     */
+    /** 仅跳过同一帧内相邻且参数相同的状态命令，任何状态改动插入都必须使去重失效。 */
     static void enqueueState(int type, int a, int b, int c, int d, GlCommand command) {
         RecordingContext ctx = recordingContext();
         if (!stateDedupEnabled) {
@@ -393,10 +212,7 @@ final class BridgeSupport {
             frame = queue().currentFrame();
         }
         StateDedup dedup = ctx.stateDedup;
-        // 挂起顶点流内的状态指令（流内 enable/disable/blendFunc/bindTexture）
-        // 回放时改变真实 GL 状态但不推进 commitSeq（glEnd 延迟落帧模式下挂起
-        // 窗口覆盖整段 begin..end）：相邻性判据看不到它，必须保守失效——否则
-        // 「相同状态命令跳过」会被挂起的流内状态改动架空（回放序上真实状态已变）
+        // 挂起顶点流会改变真实状态但不推进 commitSeq，必须使相邻性缓存失效
         if (ctx.vertexStream.hasPendingStateOps()) {
             dedup.invalidate();
         }
@@ -407,10 +223,6 @@ final class BridgeSupport {
         dedup.record(frame, type, a, b, c, d);
     }
 
-    /**
-     * 当前线程的帧录制上下文：主录制线程命中帧边界缓存（每帧一次
-     * ThreadLocal 获取，帧内直读），其他线程每次经 ThreadLocal 获取。
-     */
     static RecordingContext recordingContext() {
         RecordingContext cached = mainRecordingContext;
         if (cached != null && cached.owner == Thread.currentThread()) {
@@ -419,100 +231,45 @@ final class BridgeSupport {
         return RECORDING_CONTEXT.get();
     }
 
-    /** 当前线程的 immediate 顶点流（bridge 的 glBegin/glVertex* 族录制入口）。 */
     static VertexStream vertexStream() {
         return recordingContext().vertexStream;
     }
 
-    /**
-     * 顶点流落帧：当前线程已累计的 immediate 操作移交给池化的
-     * {@link VertexBatchCommand} 追加进当前帧（空流不产生任何命令）。触发点：
-     * 任一非流式命令（见 {@link #enqueue(GlCommand)}）、帧尾 swap（见
-     * {@link #swapFrames()}）、glEnd 的延迟落帧决策（见
-     * {@link #flushVertexStreamOnGlEnd(RecordingContext)}）、阻塞通道
-     * drain-first 之前——保证流段与其他命令/回读的相对顺序与原调用序列
-     * 逐指令等价。缓冲所有权移交（{@link VertexStream#transferBuffer()}），
-     * 渲染线程执行完经 {@link VertexStreamBufferPool} 归还，稳态零拷贝零分配。
-     */
+    /** 将当前线程挂起顶点流按录制顺序移交渲染线程。 */
     static void flushVertexStream() {
         flushVertexStream(recordingContext());
     }
 
-    /**
-     * glEnd 处的落帧决策（延迟落帧模式，开关见 {@link #deferredGlEndEnabled}）：
-     * 默认只让 glEnd 写 OP_END 标记段落结束，不立即落帧——多段 begin..end
-     * 累积在同一缓冲，推迟到任一非流式命令 {@link #enqueue(GlCommand)}
-     * （先入队先 flush，顺序天然保持）、帧尾 swap（{@link #swapFrames()} 收口）
-     * 或容量阈值（{@link #deferredGlEndThresholdBytes}，单帧缓冲增长兜底）
-     * 三个时机统一落帧。
-     * <p>
-     * 保持立即落帧（回退旧行为）的情形：
-     * <ul>
-     *   <li>开关关闭（一键回退）；</li>
-     *   <li>aux 原生线程（{@link RecordingContext#auxNative}）：其阻塞通道
-     *       （{@link #blockingGet} 等）在 aux 下内联直执、不经 flush——挂起
-     *       的流段会让随后的真实 GL 回读越过未回放的流，逐指令实时序被破坏，
-     *       aux 下必须维持「glEnd 即逐指令 immediate 回放」的原生语义；</li>
-     *   <li>容量阈值触线（{@code stream.length() >= 阈值}）。</li>
-     * </ul>
-     * 渲染线程侧等价性：延迟后相邻流段合入同一 {@link VertexBatchCommand}，
-     * 与旧模式「多条相邻批次经 {@link MergedBatchCommand} 串合并共享同一
-     * {@link VertexArrayBatch} 解码」的执行路径一致（{@link VertexStream#replayBody}
-     * 对多段流顺序解码，OP_BEGIN/OP_END 序列逐指令等价）；display list 编译
-     * 窗口的 immediate 强制分流在渲染线程执行序上判定
-     * （{@link VertexBatchCommand#requiresImmediateReplay(boolean)}），与录制侧
-     * 批次边界无关。
-     */
     static void flushVertexStreamOnGlEnd(RecordingContext ctx) {
         if (shouldFlushOnGlEnd(ctx)) {
             flushVertexStream(ctx);
         }
     }
 
-    /**
-     * glEnd 处是否立即落帧的判定（延迟落帧模式的决策本体，包内可见供单测
-     * 直接验证；aux 直执路径不可在无 GL 上下文环境回放，决策与执行分离）。
-     */
     static boolean shouldFlushOnGlEnd(RecordingContext ctx) {
         return !deferredGlEndEnabled
                 || ctx.auxNative
                 || ctx.vertexStream.length() >= deferredGlEndThresholdBytes;
     }
 
-    /**
-     * 矩阵调用是否编码进顶点流的判定（流内矩阵指令模式的决策本体，包内可见
-     * 供单测直接验证；aux 直执路径不可在无 GL 上下文环境回放，决策与执行分离）。
-     * <p>
-     * aux 原生线程（{@link RecordingContext#auxNative}）必须回退 enqueue
-     * （enqueue 在 aux 下调用线程立即执行）：其阻塞通道（{@link #blockingGet}
-     * 等）在 aux 下内联直执、不经 flush——矩阵指令若进流挂起，随后的真实
-     * GL 回读会越过未回放的矩阵操作读到滞后矩阵，逐指令实时序被破坏（与
-     * {@link #shouldFlushOnGlEnd(RecordingContext)} 对 aux 的既有分流同理由）。
-     */
+    /** aux 原生线程不得挂起矩阵操作，否则后续内联回读会越过未回放命令。 */
     static boolean shouldStreamMatrixOps(RecordingContext ctx) {
         return streamMatrixOpsEnabled && !ctx.auxNative;
     }
 
-    /**
-     * {@link #flushVertexStream()} 的上下文直传形式：调用点已持有本线程录制上下文
-     * （如 {@code GL11#glEnd()}）时免去第二次 {@link #recordingContext()} 获取。
-     */
     static void flushVertexStream(RecordingContext ctx) {
         VertexStream stream = ctx.vertexStream;
         if (stream.isEmpty()) {
             return;
         }
         int length = stream.length();
-        // 开放段切割检测：本批次以段开放开始（上一批次未收口）或结束时段仍
-        // 开放（非流式命令插入 begin..end 之间）→ 逐指令 immediate 兜底回放
+        // 跨批次开放的 begin/end 段必须逐指令回放，不能走数组合并
         final boolean startsOpen = ctx.vertexStreamStartsOpen;
         final boolean endsOpen = stream.hasOpenSegment();
         ctx.vertexStreamStartsOpen = endsOpen;
         byte[] data = stream.transferBuffer();
         if (ctx.auxNative) {
-            // aux 原生线程：逐指令 immediate 直执。不可走 VertexBatchCommand——
-            // 其回放经渲染线程共享单例 VertexArrayBatch（单线程假设），aux 线程
-            // 并发触碰会破坏数组合并器状态
+            // VertexArrayBatch 是渲染线程共享单例，aux 线程必须独立逐指令回放
             try {
                 VertexStream.replayBody(data, length, ImmediateVertexSink.INSTANCE);
             } finally {
@@ -525,32 +282,19 @@ final class BridgeSupport {
         queue().submit(batch);
     }
 
-    /**
-     * 阻塞式取值（getter 回读通道）：先把当前录制帧提交进渲染线程
-     * （{@link RenderQueue#swapFrames()}），再经阻塞通道执行 getter 并等待结果。
-     * <p>
-     * 先提交再取值是顺序正确性的关键：提交队列是 FIFO，帧任务排在同步任务之前执行，
-     * getter 读到的一定是「此前全部已录制命令执行完」的 GL 状态——否则 getter 会越过
-     * 尚未提交的录制命令读到滞后状态（如 glEnable 入队后立刻 glIsEnabled 返回旧值）。
-     * 每次调用在资源加载期结束后计入
-     * {@link github.kasuminova.ssoptimizer.common.render.queue.StallDetector}；
-     * 加载期的成批一次性分配豁免（见 RenderQueueImpl 的熔断门控）。
-     */
+    /** 非渲染线程先落帧并提交当前帧，保证 getter 读取此前全部命令执行后的状态。 */
     static <T> T blockingGet(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
             if (recordingContext().auxNative) {
                 return callInline(getter);
             }
-            // drain-first 必须包含未落帧的顶点流：getter 读到的是此前全部录制命令
-            // 执行完的 GL 状态，顶点流是其中一部分
             flushVertexStream();
             swapFrames();
         }
         return q.get(getter);
     }
 
-    /** aux 原生线程的阻塞通道内联执行（异常包装与渲染线程内同步执行同形态）。 */
     private static <T> T callInline(Callable<T> getter) {
         try {
             return getter.call();
@@ -559,7 +303,6 @@ final class BridgeSupport {
         }
     }
 
-    /** {@link #blockingGet(Callable)} 的无返回值形式。 */
     static void blockingWait(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
@@ -573,10 +316,6 @@ final class BridgeSupport {
         q.wait(task);
     }
 
-    /**
-     * 资源申请类阻塞取值（glGenBuffers/glCreateProgram/glGetUniformLocation 等），
-     * 不计入 StallDetector；顺序语义同 {@link #blockingGet}（先提交当前帧再取值）。
-     */
     static <T> T blockingGetResource(Callable<T> getter) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
@@ -589,7 +328,6 @@ final class BridgeSupport {
         return q.getUncounted(getter);
     }
 
-    /** {@link #blockingGetResource(Callable)} 的无返回值形式。 */
     static void blockingWaitResource(Runnable task) {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
@@ -603,20 +341,10 @@ final class BridgeSupport {
         q.waitUncounted(task);
     }
 
-    /**
-     * fence 等待通道（{@link GL32#glClientWaitSync}）：把当前录制帧（含未落帧的顶点流）
-     * 提交进渲染线程后返回，由调用方在<b>调用线程</b>自旋等待 fence。
-     * <p>
-     * 等待不得在渲染线程执行（即不能走 {@link #blockingGet} 的 getter 内自旋）：
-     * 折叠模型下 fence 的信号命令可能排在另一录制线程的帧里，渲染线程自旋会饿死
-     * 该帧的执行而互相死锁；调用线程自旋则与真实 glClientWaitSync 语义一致。
-     * 先提交当前帧保证本线程此前录制的 fence 信号命令已进入执行流。
-     */
+    /** fence 等待前提交当前帧；实际等待由调用线程执行，避免渲染线程自旋造成跨帧死锁。 */
     static void flushForFenceWait() {
         RenderQueue q = queue();
         if (!q.isRenderThread()) {
-            // aux 原生线程无帧可切：其 fence 是真实 GL sync（见 GL32.glFenceSync），
-            // 等待语义由真实 glClientWaitSync 直接承载
             if (recordingContext().auxNative) {
                 return;
             }
@@ -625,18 +353,9 @@ final class BridgeSupport {
         }
     }
 
-    /**
-     * 取一个 VBO id（{@link GL15#glGenBuffers()}/{@link ARBVertexBufferObject#glGenBuffersARB()}
-     * 单值形式的入口）：stash 非空零阻塞出队；空则走一次资源申请阻塞通道，
-     * 由渲染线程批量预生成 {@value #BUFFER_ID_STASH_BATCH} 个 id——返回首个，
-     * 其余入池。并发录制线程同时发现池空时会各自补货一批，id 唯一性由
-     * 真实 glGenBuffers 保证，多发一批无害。稳态下阻塞兜底几乎不触发：
-     * 渲染线程每帧帧尾经 {@link #refillBufferIdStashIfLow()} 低水位补货。
-     */
+    /** stash 空时由渲染线程批量生成，id 唯一性由真实 glGenBuffers 保证。 */
     static int acquireBufferId() {
         if (recordingContext().auxNative) {
-            // aux 原生线程：stash 的 id 由渲染线程预生成，与 aux 上下文共享同一
-            // 对象命名空间，原生直执单个 glGenBuffers 等价且无跨线程池依赖
             return org.lwjgl.opengl.GL15.glGenBuffers();
         }
         Integer stashed = bufferIdStash.poll();
@@ -645,8 +364,7 @@ final class BridgeSupport {
             return stashed;
         }
         int[] generated = blockingGetResource(() -> {
-            // nativeOrder 是硬契约：驱动按平台小端序写入，默认大端视图会把
-            // id 读成字节交换值（低字节 ≥0x80 时为负，BoxUtil 校验即死于斯）
+            // 驱动按平台字节序写入 id，直接缓冲必须使用 nativeOrder
             IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4)
                     .order(ByteOrder.nativeOrder()).asIntBuffer();
             org.lwjgl.opengl.GL15.glGenBuffers(ids);
@@ -662,20 +380,11 @@ final class BridgeSupport {
         return generated[0];
     }
 
-    /**
-     * stash 低水位补货（渲染线程调用，Display.update 命令体前置）：计数低于
-     * {@value #BUFFER_ID_STASH_LOW_WATER} 时直接在渲染线程真实 glGenBuffers
-     * 一批 {@value #BUFFER_ID_STASH_BATCH} 个入 stash——补货不经过主线程阻塞
-     * 通道，帧尾执行完后下一帧录制开始时 stash 已就位，主线程
-     * {@link #acquireBufferId()} 恒零阻塞（v45c/v47 profile：LazyFont 每帧
-     * createText 新建 SpriteBatch 的 glGenBuffers 高频路径）。
-     */
     static void refillBufferIdStashIfLow() {
         if (bufferIdStashCount.get() >= BUFFER_ID_STASH_LOW_WATER) {
             return;
         }
         int[] generated = new int[BUFFER_ID_STASH_BATCH];
-        // nativeOrder 契约同 acquireBufferId
         IntBuffer ids = ByteBuffer.allocateDirect(BUFFER_ID_STASH_BATCH * 4)
                 .order(ByteOrder.nativeOrder()).asIntBuffer();
         org.lwjgl.opengl.GL15.glGenBuffers(ids);
@@ -687,16 +396,7 @@ final class BridgeSupport {
         }
     }
 
-    /**
-     * 真实 glGenBuffers 批发结果的 fail-fast 校验（渲染线程上、生成点就地调用）。
-     * LWJGL2 不按 GL 错误抛异常：上下文异常/驱动故障时批发会静默写入 0，
-     * 死 id 流入调用方后在模组侧以隐晦形式爆发（BoxUtil runtimeBufferIDCheck
-     * 杀死逻辑线程），或成为幽灵绑定互踩渲染内容。此处拦截并附 GL 错误码。
-     *
-     * @param batch           批发出的 id 数组
-     * @param glErrorSupplier 渲染线程上的 glGetError 取值（测试注入桩，避免无
-     *                        上下文环境触碰真实 GL）
-     */
+    /** LWJGL2 不因 GL 错误自动抛异常，必须拒绝分发驱动生成的无效 id。 */
     static void validateGeneratedBufferIds(int[] batch, IntSupplier glErrorSupplier) {
         int invalidCount = 0;
         int firstInvalidIndex = -1;
@@ -718,20 +418,14 @@ final class BridgeSupport {
                 invalidCount, batch.length, firstInvalidIndex, glErrorSupplier.getAsInt()));
     }
 
-    /** 声明 {@link LWJGLException} 的阻塞任务。 */
     interface ThrowingTask {
         void run() throws LWJGLException;
     }
 
-    /** 声明 {@link LWJGLException} 的阻塞取值。 */
     interface ThrowingGetter<T> {
         T get() throws LWJGLException;
     }
 
-    /**
-     * 阻塞通道执行并原样透传 {@link LWJGLException}（Display 创建/显示模式等
-     * 调用方依赖受检异常做失败处理的场景）。
-     */
     static void blockingWaitLwjgl(ThrowingTask task) throws LWJGLException {
         LWJGLException[] failure = new LWJGLException[1];
         blockingWait(() -> {
@@ -746,7 +440,6 @@ final class BridgeSupport {
         }
     }
 
-    /** {@link #blockingWaitLwjgl(ThrowingTask)} 的取值版本。 */
     static <T> T blockingGetLwjgl(ThrowingGetter<T> getter) throws LWJGLException {
         LWJGLException[] failure = new LWJGLException[1];
         T result = blockingGet(() -> {
@@ -763,67 +456,33 @@ final class BridgeSupport {
         return result;
     }
 
-    /**
-     * 录制侧的 client pointer 快照状态（按生产者线程隔离）。
-     * 暴露给 bridge 包内与单测使用。
-     */
     static ClientPointerState pointerState() {
         return recordingContext().pointerState;
     }
 
-    /** 录制侧（当前线程）跟踪的 FRAMEBUFFER 绑定。 */
     static int framebufferBinding() {
         return recordingContext().framebufferBinding[0];
     }
 
-    /** 录制侧（当前线程）更新 FRAMEBUFFER 绑定跟踪（bridge 的 bindFramebuffer 调用点维护）。 */
     static void setFramebufferBinding(int framebuffer) {
         recordingContext().framebufferBinding[0] = framebuffer;
     }
 
-    /** 录制侧（当前线程）的 GL 状态仿真（bridge 各 setter/getter 调用点维护/查询）。 */
     static SimulatedGlState simulatedState() {
         return recordingContext().simulatedState;
     }
 
     /**
-     * 主录制线程仿真 getter 的 aux 活动失效检查（各 getter 仿真读之前调用；
-     * 调用点保证当前线程是主录制线程）。
-     * <p>
-     * 动机：{@link SimulatedGlState} 只镜像主线程自己的命令流；aux 生产者线程
-     * （BoxUtil 后台线程、字体预热 daemon 经 GlDispatch 等）经
-     * {@code RenderQueueImpl.submit} 提交的命令会插入主线程正在录制的帧，在渲染
-     * 线程上改变真实 GL 状态而不进主线程簿记（实机回归：ASTD TexTrailRenderer
-     * 逐帧保存/恢复惯用法读过期的 CURRENT_PROGRAM/TEXTURE_BINDING_2D/矩阵仿真值，
-     * finally 恢复错误状态——拖尾画坏并污染紧随的 HUD 字体绘制）。aux 提交由
-     * {@code RenderQueueImpl.auxSubmissionEpoch()} 纪元标记；纪元变化即簿记不可信。
-     * <p>
-     * 失效语义：纪元脏时经一次阻塞屏障（资源通道，不计 StallDetector——每帧至多
-     * 一次的有界再同步，与「模组逐帧轮询 getter」的打穿形态不同）在渲染线程批量
-     * 读回全部跟踪状态并采入簿记（{@link SimulatedGlState#adoptSnapshot}），同时
-     * 复位 FRAMEBUFFER 绑定跟踪。屏障的 drain-first 顺序保证采样点包含此前全部
-     * 已提交命令（含 aux 命令）的执行结果；屏障后重读纪元，若期间 aux 又提交则
-     * 下一检查点再同步（保守不错过）。
-     * <p>
-     * 性能分层：纯主线程流程 = 一次序号比较 + 一次纪元 volatile 读，零屏障；
-     * aux 活跃期每提交段至多一次屏障（序号滞后窗口），同段内后续 getter 直接
-     * 用再同步后的簿记。段中途 aux 新提交造成的段内残留污染不在本机制职责内。
-     * <p>
-     * SharedDrawable 解折叠后（见其类 javadoc），BoxUtil 后台线程持有真实共享
-     * 上下文、不再经队列提交；本机制保留服务残留的 aux 提交路径（GlDispatch
-     * 字体预热 daemon 等）。
+     * aux 纪元变化时通过一次阻塞屏障回读完整状态，每个提交段至多再同步一次。
+     * 主录制线程的仿真状态不包含 aux 队列提交。
      */
     static void resyncSimulatedStateIfAuxDirty() {
         final RecordingContext ctx = recordingContext();
-        // 滞后窗口只覆盖「已屏障再同步」的提交段：屏障是重操作，每段至多一次；
-        // 干净路径不做序号短路——纪元 volatile 读代价可忽略，段中途 aux 开始
-        // 活动必须被本段内下一个 getter 看见
         if (ctx.auxResyncSeq == frameSubmitSeq) {
             return;
         }
         final long epoch = RenderQueueImpl.auxSubmissionEpoch();
         if (ctx.auxStateEpoch == epoch) {
-            // 无 aux 活动：纯主线程流程零屏障
             return;
         }
         final GlStateSnapshot snapshot = blockingGetResource(stateSnapshotSource::get);
@@ -839,30 +498,19 @@ final class BridgeSupport {
         }
     }
 
-    /** 测试用：替换 aux 再同步屏障的采样来源（无 GL 上下文环境注入桩）。 */
     static void stateSnapshotSourceForTesting(final java.util.function.Supplier<GlStateSnapshot> source) {
         stateSnapshotSource = source;
     }
 
-    /** 真实 sync 操作入口（GL32 fence 族使用）。 */
     static RealSyncOps syncOps() {
         return syncOps;
     }
 
-    /** 测试用：替换真实 sync 操作实现（无 GL 上下文环境注入桩）。 */
     static void syncOpsForTesting(final RealSyncOps ops) {
         syncOps = ops;
     }
 
-    /**
-     * 渲染线程真实 GL 上下文就绪回调（{@link Display#create} 族在渲染线程
-     * 创建成功后、同一阻塞任务内调用，此时 context 在当前线程 current）：
-     * 初始化 glad 渲染线程直执通道并把 sync ops 切换为 native 直调——
-     * LWJGL 静态调用的 per-call ThreadLocal 能力查找（v52 profile：
-     * glMemoryBarrier 路径 ThreadLocal.get 自身 12.1%）由此消除。
-     * glad 未就绪或驱动缺函数指针时保持 LWJGL 默认实现并记日志。
-     * 幂等：glad 指针进程全局，context 重建后重复调用只是重装同一实现。
-     */
+    /** 上下文就绪后启用 native sync；缺少 glad 或函数指针时保留 LWJGL 实现并记录日志。 */
     static void onRenderThreadGlContextReady() {
         if (!NativeRuntime.ensureQueueGlReady()) {
             LOGGER.warn("[SSOptimizer] 渲染线程 glad 未就绪，sync ops 保持 LWJGL 路径");
@@ -878,24 +526,15 @@ final class BridgeSupport {
         }
     }
 
-    /**
-     * GL 上下文重建后的聚合簿记复位（Display.create/setDisplayMode/setFullscreen 成功
-     * 后由主线程调用）：录制侧状态仿真归零（{@link SimulatedGlState#onContextRecreated()}），
-     * 并清空 VBO id stash——stash 内预生成的 id 全部属于已销毁的旧上下文，
-     * 继续分发出去的都是死 id。清空后由渲染线程帧尾
-     * {@link #refillBufferIdStashIfLow()} 在新上下文里重新补货。
-     */
+    /** 上下文重建后复位状态仿真并清空旧上下文的 VBO id stash，再通知全部监听器。 */
     static void onContextRecreated() {
         simulatedState().onContextRecreated();
-        // 新上下文全部状态回到默认值：仿真簿记归零即真值——FBO 绑定跟踪复位为 0，
-        // aux 活动纪元标记为已同步（重建后簿记与真实状态一致，无需屏障再同步）
         final RecordingContext ctx = recordingContext();
         ctx.framebufferBinding[0] = 0;
         ctx.auxStateEpoch = RenderQueueImpl.auxSubmissionEpoch();
         bufferIdStash = new ConcurrentLinkedQueue<>();
         bufferIdStashCount = new AtomicInteger();
-        // 通知外部资源持有者（如字体动态图集）：单个监听器抛错不中断其余监听器——
-        // 上下文重建后所有持有者都必须有机会复位自身簿记，否则残留旧上下文的死 id
+        // 单个监听器失败不得阻止其他资源持有者清理旧上下文状态
         for (final Runnable listener : CONTEXT_RECREATED_LISTENERS) {
             try {
                 listener.run();
@@ -905,38 +544,24 @@ final class BridgeSupport {
         }
     }
 
-    /** 注册 GL 上下文重建监听器（供 {@link GlDispatch} 门面转发）。 */
     static void registerContextRecreatedListener(final Runnable listener) {
         CONTEXT_RECREATED_LISTENERS.add(listener);
     }
 
-    /** 已安装的队列（可为 null）；{@link GlDispatch#isRenderThread()} 的空安全判定用。 */
     static RenderQueue installedQueue() {
         return queue;
     }
 
-    /**
-     * 当前线程是否主录制线程（游戏主线程）：getter 仿真短路仅对主线程开放——
-     * aux 线程簿记不含主线程的状态流，一律回退阻塞通道保语义。
-     */
+    /** aux 线程簿记不含主线程状态流，只有主录制线程可直接读取仿真 getter。 */
     static boolean isMainRecordingThread() {
         return RenderQueueImpl.isMainThread();
     }
 
-    /** 渲染线程簿记：命令流当前位置的 GL_ARRAY_BUFFER 绑定。 */
     static int executedArrayBufferBinding() {
         return executedArrayBufferBinding;
     }
 
-    /**
-     * 渲染线程簿记更新（bind 命令执行体调用）：更新命令流当前位置的绑定值，
-     * 并在溯源环覆写一条事件。渲染线程自发的恢复性绑定（PointerSnapshotGroup/
-     * VertexArrayBatch 的解绑-恢复编排）不经此方法——它们保证净效果为零。
-     *
-     * @param buffer 新绑定值
-     * @param origin bridge 入口类名（常量引用）
-     * @param recordThread 录制侧发起线程名（录制时刻捕获；非 ARRAY_BUFFER 绑定为 null）
-     */
+    /** 渲染线程 bind 命令更新绑定并记录溯源；净效果为零的恢复性绑定不得调用此方法。 */
     static void executedArrayBufferBinding(int buffer, String origin, String recordThread) {
         if (!isBookkeepingThread()) {
             return;
@@ -950,10 +575,7 @@ final class BridgeSupport {
         event.recordThread = recordThread;
     }
 
-    /**
-     * 渲染线程侧：glPushClientAttrib 命令体压入 ARRAY_BUFFER 绑定快照（与真实 GL
-     * 的压栈语义配对；栈满时真实 GL 报 GL_STACK_OVERFLOW 且栈不变，簿记同样空操作）。
-     */
+    /** 栈满时与真实 GL 一样保持簿记不变。 */
     static void onExecutedPushClientAttrib(int mask) {
         if (!isBookkeepingThread() || clientAttribDepth >= CLIENT_ATTRIB_STACK_MAX) {
             return;
@@ -963,12 +585,7 @@ final class BridgeSupport {
         clientAttribDepth++;
     }
 
-    /**
-     * 渲染线程侧：glPopClientAttrib 命令体恢复 ARRAY_BUFFER 绑定簿记（压栈掩码含
-     * {@code GL_CLIENT_VERTEX_ARRAY_BIT} 时）。栈下溢时真实 GL 为空操作，簿记保持不变。
-     *
-     * @param recordThread 录制侧发起线程名（溯源环记录用，可为 null）
-     */
+    /** 栈下溢时与真实 GL 一样保持簿记不变。 */
     static void onExecutedPopClientAttrib(String recordThread) {
         if (!isBookkeepingThread() || clientAttribDepth <= 0) {
             return;
@@ -981,15 +598,9 @@ final class BridgeSupport {
     }
 
     /**
-     * 帧命令执行失败后的 GL_ARRAY_BUFFER 簿记校验与自愈（RenderQueueImpl 帧失败
-     * 钩子，install 时注册）。开心路径零成本：只在帧失败时执行一次真实绑定回读；
-     * 簿记与真实一致时静默返回。不一致说明存在未簿记的绑定来源（镜像面缺口、
-     * bridge 外直调 LWJGL、native 直调），输出 ERROR 溯源日志（真实值、簿记值、
-     * 最近绑定事件环）并把簿记校准为真实值——不校准会让后续每帧的 client
-     * pointer 重放持续误判绑定（「Cannot use Buffers when Array Buffer Object
-     * is enabled」级联失败）。
+     * 帧失败后回读真实绑定；不一致时输出溯源日志并校准簿记，避免后续 pointer 重放持续误判。
      *
-     * @return 是否发生了簿记失真（测试断言用）
+     * @return 是否发生了簿记失真
      */
     static boolean reconcileArrayBufferBindingAfterFailure() {
         final int real = arrayBufferBindingProbe.getAsInt();
@@ -1022,12 +633,10 @@ final class BridgeSupport {
         return true;
     }
 
-    /** 测试用：注入真实绑定回读桩（无 GL context 环境）。 */
     static void arrayBufferBindingProbeForTesting(final java.util.function.IntSupplier probe) {
         arrayBufferBindingProbe = probe;
     }
 
-    /** 测试用：读取最近一条溯源事件（无事件时返回 null）。 */
     static String latestBindTraceForTesting() {
         final long seq = BIND_TRACE_SEQ.get();
         if (seq == 0) {
@@ -1040,25 +649,13 @@ final class BridgeSupport {
         return event.seq + "|" + event.buffer + "|" + event.origin + "|" + event.recordThread;
     }
 
-    /**
-     * 渲染线程侧：进入 display list 编译窗口（glNewList 命令体调用）。
-     * 嵌套计数：display list 编译期间的 glNewList（合法场景为嵌套列表编译，
-     * 或异常序列）正确累加；窗口内深度恒 >0，跨帧保持。
-     */
     static void onDisplayListCompileStart() {
         displayListCompileDepth++;
     }
 
-    /**
-     * 渲染线程侧：离开 display list 编译窗口（glEndList 命令体调用）。
-     * 深度归零后渲染线程恢复数组化回放（编译窗口外行为完全不变）。
-     */
     static void onDisplayListCompileEnd() {
         if (displayListCompileDepth <= 0) {
-            // 防御：glEndList 命令体先于 glNewList 出现（非法 GL 序列或命令流被
-            // 帧边界/悬挂切割的异常态）——深度已归零时不得继续递减（负数会让
-            // 后续批次误判「编译中」恒真）。此路径不产生真实 GL 调用，仅簿记
-            // 提前损坏，记 WARN 便于诊断命令流异常。
+            // 深度为负会让后续批次一直处于编译窗口，异常序列必须记录 WARN
             if (displayListCompileDepth < 0) {
                 LOGGER.warn("[SSOptimizer] display list 编译深度异常为负（" + displayListCompileDepth
                         + "），复位为 0——命令流中 glEndList 多于 glNewList，GL 序列疑似非法");
@@ -1069,58 +666,44 @@ final class BridgeSupport {
         displayListCompileDepth--;
     }
 
-    /** 渲染线程侧：当前命令流位置是否处于 display list 编译窗口内。 */
     static boolean isCompilingDisplayList() {
         return displayListCompileDepth > 0;
     }
 
-    /** 缓冲快照池（包内与单测可见）。 */
     static BufferSnapshotPool pool() {
         return pool;
     }
 
-    /** 借出池化的 draw 命令（录制侧设置参数后落帧，渲染线程执行完归还）。 */
     static DrawCommand acquireDrawCommand() {
         return drawCommands.acquire();
     }
 
-    /** 归还 draw 命令（仅 {@link DrawCommand#execute()} 的 finally 调用）。 */
     static void releaseDrawCommand(DrawCommand command) {
         drawCommands.release(command);
     }
 
-    /** 借出池化的 pointer 快照组（{@link ClientPointerState#capture()} 用）。 */
     static PointerSnapshotGroup acquireSnapshotGroup() {
         return snapshotGroups.acquire();
     }
 
-    /** 归还快照组（仅 {@link PointerSnapshotGroup#release()} 调用）。 */
     static void releaseSnapshotGroup(PointerSnapshotGroup group) {
         snapshotGroups.release(group);
     }
 
-    /** 归还顶点流回放命令（仅 {@link VertexBatchCommand#execute()} 的 finally 调用）。 */
     static void releaseVertexBatch(VertexBatchCommand batch) {
         vertexBatches.release(batch);
     }
 
-    /** 顶点流换缓冲时从池借取（{@link VertexStream#transferBuffer()} 用；inbox 为本线程 SPSC 返还通道，可空）。 */
     static byte[] acquireVertexStreamBuffer(int minCapacity,
                                             org.jctools.queues.SpscArrayQueue<byte[]> inbox) {
         return vertexStreamBuffers.acquire(minCapacity, inbox);
     }
 
-    /** 测试用：顶点流编码缓冲池（借还账目断言）。 */
     static VertexStreamBufferPool vertexStreamBufferPool() {
         return vertexStreamBuffers;
     }
 
-    /**
-     * 归还顶点流缓冲（{@link VertexBatchCommand#executeMerged} 的 finally 与
-     * aux 直执路径）：优先 offer 回来源线程的 SPSC 返还 inbox（渲染线程→来源
-     * 线程零竞争），inbox 为 null 或已满时落全局池既有归还路径（计数平衡：
-     * inbox 中的缓冲视同「在途借出」，仅落池时才走 inFlight 递减）。
-     */
+    /** inbox 中的缓冲仍计为在途借出，只有进入全局池时才递减 inFlight。 */
     static void releaseVertexStreamBuffer(byte[] data,
                                           org.jctools.queues.SpscArrayQueue<byte[]> returnTo) {
         if (returnTo == null || !returnTo.offer(data)) {
@@ -1128,12 +711,10 @@ final class BridgeSupport {
         }
     }
 
-    /** 测试用：更换全新快照池，避免用例间经静态单例池串扰。 */
     static void resetPoolForTesting() {
         pool = new BufferSnapshotPoolImpl();
     }
 
-    /** 共享快照池（{@link GlDispatch#snapshotPool()} 的开放落点）。 */
     static BufferSnapshotPool snapshotPool() {
         return pool;
     }
@@ -1142,35 +723,27 @@ final class BridgeSupport {
         pool.release(snapshot);
     }
 
-    /** 快照命令体：在渲染线程拿到池化快照执行，执行后归还。 */
     interface SnapshotCommand {
         void execute(ByteBuffer snapshot);
     }
 
-    /**
-     * 把 {@code src} 深拷贝入池后录制一条携带快照的命令；命令执行完（无论
-     * 成败）归还快照。拷贝发生在录制时刻，调用方随后改写源 buffer 不影响命令。
-     */
+    /** 录制时深拷贝源 buffer，命令执行结束后无论成败都归还快照。 */
     static void enqueueSnapshot(ByteBuffer src, SnapshotCommand command) {
         enqueueSnapshotCommand(pool.snapshot(src), command);
     }
 
-    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link DoubleBuffer} 版本。 */
     static void enqueueSnapshot(DoubleBuffer src, SnapshotCommand command) {
         enqueueSnapshotCommand(pool.snapshot(src), command);
     }
 
-    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link FloatBuffer} 版本。 */
     static void enqueueSnapshot(FloatBuffer src, SnapshotCommand command) {
         enqueueSnapshotCommand(pool.snapshot(src), command);
     }
 
-    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link IntBuffer} 版本。 */
     static void enqueueSnapshot(IntBuffer src, SnapshotCommand command) {
         enqueueSnapshotCommand(pool.snapshot(src), command);
     }
 
-    /** {@link #enqueueSnapshot(ByteBuffer, SnapshotCommand)} 的 {@link ShortBuffer} 版本。 */
     static void enqueueSnapshot(ShortBuffer src, SnapshotCommand command) {
         enqueueSnapshotCommand(pool.snapshot(src), command);
     }

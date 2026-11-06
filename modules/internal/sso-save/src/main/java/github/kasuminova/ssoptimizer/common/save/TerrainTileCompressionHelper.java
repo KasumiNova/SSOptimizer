@@ -13,20 +13,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-/**
- * 战役地形 tile 压缩辅助类。
- * <p>
- * 职责：复用原版 {@code BaseTiledTerrain}/{@code HyperspaceAutomaton} 的位打包语义，
- * 仅把最终压缩层从默认 {@link Deflater} 扩展为“Zstd 优先、旧 Deflater 回退”的双格式实现。<br>
- * 设计动机：热点显示大存档保存时，超空间与基础 tiled 地形的 {@code encodeTiles()} 在 Deflater 上消耗稳定 CPU；
- * 这些方法本质上只是把已经位打包好的小字节流压缩后再 Base64 编码，适合改为更快的 Zstd。<br>
- * 兼容性策略：新格式统一写成带前缀的 Base64 文本，读取时优先识别新前缀；若没有前缀，则完整回退到原版
- * Deflater/Inflater 路径，保证旧存档仍可读取；同时保留系统属性开关以便紧急退回旧写入格式。
- */
 public final class TerrainTileCompressionHelper {
-    /**
-     * 禁用地形 tile Zstd 写入格式的系统属性。
-     */
     public static final String DISABLE_ZSTD_PROPERTY = "ssoptimizer.disable.save.terrain.zstd";
 
     private static final String ZSTD_PREFIX = "SSOZ1:";
@@ -36,70 +23,27 @@ public final class TerrainTileCompressionHelper {
     private TerrainTileCompressionHelper() {
     }
 
-    /**
-     * 编码仅含“有 / 无”两态的地形 tile 数组。
-     *
-     * @param tiles 原始 tile 网格；外层索引为 x，内层索引为 y
-     * @return 可直接写入存档字段的压缩字符串
-     */
     public static String encodeBinaryTiles(final int[][] tiles) {
         return encodePackedPayload(packBinaryTiles(tiles));
     }
 
-    /**
-     * 解码仅含“有 / 无”两态的地形 tile 数组。
-     *
-     * @param encoded 压缩字符串
-     * @param width   tile 网格宽度（x 轴）
-     * @param height  tile 网格高度（y 轴）
-     * @return 解码后的 tile 网格
-     * @throws DataFormatException 当压缩内容损坏、被截断或格式非法时抛出
-     */
     public static int[][] decodeBinaryTiles(final String encoded,
                                             final int width,
                                             final int height) throws DataFormatException {
         return unpackBinaryTiles(decodePackedPayload(encoded), width, height);
     }
 
-    /**
-     * 编码四态的超空间 tile 数组。
-     *
-     * @param tiles 原始 tile 网格；外层索引为 x，内层索引为 y
-     * @return 可直接写入存档字段的压缩字符串
-     */
     public static String encodeQuaternaryTiles(final int[][] tiles) {
         return encodePackedPayload(packQuaternaryTiles(tiles));
     }
 
-    /**
-     * 解码四态的超空间 tile 数组。
-     *
-     * @param encoded 压缩字符串
-     * @param width   tile 网格宽度（x 轴）
-     * @param height  tile 网格高度（y 轴）
-     * @return 解码后的 tile 网格
-     * @throws DataFormatException 当压缩内容损坏、被截断或格式非法时抛出
-     */
     public static int[][] decodeQuaternaryTiles(final String encoded,
                                                 final int width,
                                                 final int height) throws DataFormatException {
         return unpackQuaternaryTiles(decodePackedPayload(encoded), width, height);
     }
 
-    /**
-     * 将任意支持格式（{@code SSOZ1:} Zstd 或旧版 Deflater 分块）的 tile 压缩串
-     * 规范化为旧版 Deflater 分块 Base64 格式。
-     *
-     * <p>动机：离线存档基准（saveBench）不应用 Mixin，游戏类的 {@code decodeTiles}
-     * 走原版 {@code DatatypeConverter.parseBase64Binary} 路径，无法识别 {@code SSOZ1:}
-     * 前缀；且该 JAXB 实现的 {@code guessLength} 对拼接 base64 存在低估缺陷，
-     * 非对齐串会直接溢出。基准开始前用本方法把存档中的新格式字段回译为
-     * 原版可读的等价 payload，保证离线 unmarshal 语义与游戏内一致。</p>
-     *
-     * @param encoded 存档中的 tile 压缩字符串
-     * @return 旧版 Deflater 分块 Base64 格式的等价字符串；非 {@code SSOZ1:} 前缀时原样返回
-     * @throws DataFormatException 当压缩内容损坏、被截断或格式非法时抛出
-     */
+    /** 将 SSOZ1 数据回译为旧 Deflater 格式，绕过离线 JAXB 的 Base64 长度缺陷。 */
     public static String toLegacyDeflateFormat(final String encoded) throws DataFormatException {
         if (encoded == null || !encoded.startsWith(ZSTD_PREFIX)) {
             return encoded;

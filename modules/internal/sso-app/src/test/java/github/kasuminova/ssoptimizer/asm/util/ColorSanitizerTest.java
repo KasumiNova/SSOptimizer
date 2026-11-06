@@ -7,9 +7,6 @@ import java.awt.Color;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * {@link ColorSanitizer} 分量钳制与 warn-once 行为验证。
- */
 class ColorSanitizerTest {
 
     @BeforeEach
@@ -35,11 +32,9 @@ class ColorSanitizerTest {
         assertEquals(255, c.getAlpha());
         assertEquals(1, ColorSanitizer.warnedSiteCount());
 
-        // 同一调用点再次越界不重复告警
         ColorSanitizer.create(-5, 300, 128, 999, "site-clamp");
         assertEquals(1, ColorSanitizer.warnedSiteCount(), "同一 site 必须 warn-once");
 
-        // 不同调用点独立告警
         ColorSanitizer.create(0, 0, 0, 256, "site-clamp-other");
         assertEquals(2, ColorSanitizer.warnedSiteCount());
     }
@@ -67,7 +62,6 @@ class ColorSanitizerTest {
 
     @Test
     void nanFloatComponentGoesToZeroInsteadOfThrowing() {
-        // 原版 new Color(NaN, ...) 抛 IllegalArgumentException，净化语义为钳 0
         Color c = ColorSanitizer.create(Float.NaN, 0.5f, 0.5f, "site-float-nan");
         assertEquals(new Color(0.0f, 0.5f, 0.5f), c);
         assertEquals(1, ColorSanitizer.warnedSiteCount());

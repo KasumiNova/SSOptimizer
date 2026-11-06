@@ -17,19 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link AiUtilsEscortTargetGuardMixin} 注入配置正确性验证。
- * <p>
- * 游戏类 AIUtils 无法脱离引擎实例化，不直接调用织入后的方法；用 ASM 解析
- * 测试 classpath 上的真实字节码做两级校验（非源码文本匹配）：
- * <ol>
- *   <li>游戏侧：私有递归版 {@code isEscortTargetOf(Ship,Ship,int)} 必须存在
- *       且为 private static（否则注入静默失败）；</li>
- *   <li>Mixin 侧：两个处理器必须为 private static（Mixin 运行时校验拒绝非
- *       private 静态处理器），{@code @Inject}（arg 守卫）与
- *       {@code @Redirect}（maneuver 守卫）的 method/remap 与目标一致。</li>
- * </ol>
- */
 class AiUtilsEscortTargetGuardMixinTest {
     private static final String PRIVATE_DESC =
             "(Lcom/fs/starfarer/combat/entities/Ship;Lcom/fs/starfarer/combat/entities/Ship;I)Z";
@@ -53,7 +40,6 @@ class AiUtilsEscortTargetGuardMixinTest {
         assertNotNull(privateOverload, "私有递归版 isEscortTargetOf(Ship,Ship,int) 必须存在（注入点）");
         assertTrue((privateOverload.access & Opcodes.ACC_PRIVATE) != 0, "注入目标应为私有方法");
         assertTrue((privateOverload.access & Opcodes.ACC_STATIC) != 0, "注入目标应为静态方法");
-        // 私有版内部必须真实调用 EscortTargetManeuverV3.getTargetShip()（@Redirect 的注入点）
         boolean hasGetTargetShip = false;
         for (org.objectweb.asm.tree.AbstractInsnNode insn : privateOverload.instructions) {
             if (insn instanceof org.objectweb.asm.tree.MethodInsnNode methodInsn
@@ -143,7 +129,6 @@ class AiUtilsEscortTargetGuardMixinTest {
             } else if ("remap".equals(key)) {
                 remap = Boolean.TRUE.equals(value);
             } else if ("at".equals(key)) {
-                // @Redirect 的 at 为单个 At（非 @Inject 的 At[] 数组），兼容两种形态
                 AnnotationNode atNode = null;
                 if (value instanceof AnnotationNode node) {
                     atNode = node;

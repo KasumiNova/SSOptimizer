@@ -4,30 +4,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 组合多个 {@link AsmClassProcessor} 的复合处理器，按顺序串联执行。
+ * 将同一目标类的多个 {@link AsmClassProcessor} 组成有序处理链，适配只接受单处理器的注册入口。
  * <p>
- * Applies multiple bytecode processors to the same class in sequence.
+ * 实例不可变，处理过程在调用线程同步完成；实例能否并发使用取决于链中各处理器。
  */
 public final class CompositeAsmClassProcessor implements AsmClassProcessor {
     private final List<AsmClassProcessor> processors;
 
     /**
-     * 构造复合处理器。
+     * 按给定顺序构造处理链，并防御性复制处理器列表。
      *
-     * @param processors 处理器列表，将被防御性复制
+     * @param processors 按执行顺序排列的处理器，列表及其元素均不得为 {@code null}
+     * @throws NullPointerException 列表或任一元素为 {@code null}
      */
     public CompositeAsmClassProcessor(final List<AsmClassProcessor> processors) {
         this.processors = List.copyOf(processors);
     }
 
     /**
-     * 从多个处理器创建复合处理器。
-     * <p>
-     * 自动过滤 {@code null} 处理器；若只有一个有效处理器，直接返回该处理器而非包装。
+     * 创建处理链，忽略 {@code null} 元素；仅有一个有效处理器时直接返回该实例。
      *
-     * @param processors 处理器数组，允许包含 {@code null} 元素
-     * @return 复合处理器或唯一有效的处理器
-     * @throws IllegalArgumentException 若无任何有效处理器
+     * @param processors 处理器数组，数组本身不得为 {@code null}，元素可为 {@code null}
+     * @return 多个有效处理器组成的复合处理器，或唯一有效的处理器
+     * @throws IllegalArgumentException 没有任何有效处理器
+     * @throws NullPointerException     处理器数组为 {@code null}
      */
     public static AsmClassProcessor of(final AsmClassProcessor... processors) {
         final List<AsmClassProcessor> chain = new ArrayList<>(processors.length);
@@ -46,13 +46,11 @@ public final class CompositeAsmClassProcessor implements AsmClassProcessor {
     }
 
     /**
-     * 按注册顺序依次执行所有处理器。
-     * <p>
-     * 每个处理器的输出作为下一个处理器的输入；若任一处理器返回非 {@code null}，
-     * 最终返回累积处理后的字节码，否则返回 {@code null}。
+     * 按构造顺序执行处理链，每个非 {@code null} 返回值作为后续处理器的输入。
+     * 任一处理器抛出异常时中止后续处理并向调用方传播。
      *
      * @param classfileBuffer 原始类文件字节码
-     * @return 处理后的字节码；若所有处理器均未修改则返回 {@code null}
+     * @return 至少一个处理器修改时返回累积处理后的完整字节码；全部未修改时返回 {@code null}
      */
     @Override
     public byte[] process(final byte[] classfileBuffer) {

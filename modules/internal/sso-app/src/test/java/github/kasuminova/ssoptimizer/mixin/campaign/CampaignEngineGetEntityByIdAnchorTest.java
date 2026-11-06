@@ -12,14 +12,6 @@ import java.io.InputStream;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * {@code CampaignEngineGetEntityByIdMixin} 的字节码锚点核验。
- * <p>
- * 对测试 classpath 上 named jar 的真实 {@code CampaignEngine} 逐一核验
- * Mixin 依赖的方法/字段签名：{@code getEntityById}、{@code rebuildIDToEntityMap}、
- * {@code objectAdded}/{@code objectRemoved} 与字段 {@code idToEntity}。
- * 签名在游戏版本更新后漂移时此处直接失败，避免静默注入失效。
- */
 class CampaignEngineGetEntityByIdAnchorTest {
 
     @Test

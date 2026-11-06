@@ -4,10 +4,6 @@ import org.lwjgl.opengl.GL11;
 
 import java.nio.ByteBuffer;
 
-/**
- * Ensures tightly-packed Java ByteBuffer texture uploads use a compatible
- * unpack state when NPOT textures are enabled.
- */
 public final class TextureUploadHelper {
     private static final int GL_UNPACK_ROW_LENGTH  = 3314;
     private static final int GL_UNPACK_SKIP_ROWS   = 3315;

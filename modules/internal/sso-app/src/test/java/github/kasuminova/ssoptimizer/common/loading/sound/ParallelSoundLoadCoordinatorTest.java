@@ -144,8 +144,6 @@ class ParallelSoundLoadCoordinatorTest {
         final FakeSoundManager manager = new FakeSoundManager();
         ParallelSoundLoadCoordinator.loadObjectFamily(manager, "sounds/a.ogg");
 
-        // 加载/预载完成后 INFLIGHT_LOADS 必须清空：滞留的 future 持有已加载字节
-        // （单项 12MB 级，JProfiler 实测 522 MB 泄露的根因）。
         awaitInflightDrain();
         assertEquals(0, ParallelSoundLoadCoordinator.inflightLoadCountForTests(),
                 "加载与预载完成后 INFLIGHT_LOADS 应清空");
@@ -168,13 +166,11 @@ class ParallelSoundLoadCoordinatorTest {
         final FakeSoundManager manager = new FakeSoundManager();
         ParallelSoundLoadCoordinator.loadObjectFamily(manager, "sounds/good.ogg");
 
-        // 正常预载完成 + 不可读文件预载失败：两者的 INFLIGHT 条目都必须移除
         awaitInflightDrain();
         assertEquals(0, ParallelSoundLoadCoordinator.inflightLoadCountForTests(),
                 "预载失败条目也必须移除（future 不得滞留）");
     }
 
-    /** 轮询等待全部在途 future 完成并从 INFLIGHT_LOADS 摘除（5s 上限）。 */
     private static void awaitInflightDrain() throws InterruptedException {
         final long deadline = System.nanoTime() + 5_000_000_000L;
         while (ParallelSoundLoadCoordinator.inflightLoadCountForTests() > 0 && System.nanoTime() < deadline) {

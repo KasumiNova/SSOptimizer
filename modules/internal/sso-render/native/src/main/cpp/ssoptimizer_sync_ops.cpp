@@ -1,12 +1,3 @@
-/**
- * GL sync 操作的 glad 直调 JNI 入口（Java 侧 NativeSyncOpsImpl / RealSyncOps）。
- *
- * 动机：LWJGL 静态调用每次经 GLContext.getCapabilities() 做 ThreadLocal 查找
- * 取函数指针（v52 profile：渲染线程 glMemoryBarrier 路径 ThreadLocal.get 自身
- * 12.1%）；glad 函数指针进程全局，JNI 一次直达。
- * 调用线程约束同 Java 侧 RealSyncOps：仅持有 GL context 的线程
- * （渲染线程 / aux 原生线程）。
- */
 #include "github_kasuminova_ssoptimizer_bridge_opengl_NativeSyncOpsImpl.h"
 #include <glad/glad.h>
 
@@ -49,4 +40,4 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_bridge_opengl_NativeSy
     glad_glMemoryBarrier(static_cast<GLbitfield>(barriers));
 }
 
-} // extern "C"
+}

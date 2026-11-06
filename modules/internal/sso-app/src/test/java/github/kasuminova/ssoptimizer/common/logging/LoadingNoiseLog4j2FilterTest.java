@@ -12,14 +12,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 验证生产链路的 log4j2 层聚合过滤器：真实构造 {@link Log4jLogEvent} 走
- * {@code filter(LogEvent)} 逻辑——噪音 INFO 返回 DENY、计数 flush 产出汇总行、
- * WARN/ERROR 不压制、非目标日志 NEUTRAL。
- *
- * <p>汇总输出经注入的 reporter 收集，不依赖真实 appender（Gradle worker 的 log4j
- * 为 no-op 桥接，无法观测 appender 输出）。</p>
- */
 class LoadingNoiseLog4j2FilterTest {
 
     @Test
@@ -36,7 +28,6 @@ class LoadingNoiseLog4j2FilterTest {
                 Level.INFO, "Loading JSON from [data/weapons/naginata.wpn]")));
         assertTrue(reports.isEmpty(), "DENY 计数期间不得输出汇总行");
 
-        // 非聚合 INFO 到达：flush 前一组计数并放行自身
         assertEquals(Filter.Result.NEUTRAL, filter.filter(event(
                 "github.kasuminova.ssoptimizer.bootstrap.SSOptimizerCorePlugin",
                 Level.INFO, "[SSOptimizer] CoreMod loaded")));

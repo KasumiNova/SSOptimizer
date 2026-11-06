@@ -17,17 +17,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link DynamicGlyphAtlas} / {@link GlyphAtlasPage} 的分配、淘汰与上传行为验证。
- * <p>
- * GL 环境：经 {@link GL11#install(RenderQueue)} 安装桩队列——资源申请通道返回
- * 假纹理 id（不执行 callable，执行体会触碰真实 GL），submit 只记录命令。
- */
 class DynamicGlyphAtlasTest {
 
     private static final String FACE = "graphics/fonts/insignia15LTaa.fnt";
 
-    /** 桩队列：allocate 通道发假纹理 id 并计数，submit 记录命令（不执行）。 */
     private static final class StubRenderQueue implements RenderQueue {
         final List<GlCommand> submitted = new ArrayList<>();
         final AtomicInteger nextTextureId = new AtomicInteger(100);
@@ -88,7 +81,6 @@ class DynamicGlyphAtlasTest {
         GL11.uninstall();
     }
 
-    /** 固定 4×4 实心位图的栅格化桩。 */
     private static GlyphRasterizer solid4x4() {
         return solid4x4(new AtomicInteger());
     }
@@ -101,8 +93,6 @@ class DynamicGlyphAtlasTest {
             return new NativeGlyphBitmap(4, 4, pixels, 0, 0, 0);
         };
     }
-
-    // ── shelf 分配 ──────────────────────────────────────────────────────
 
     @Test
     void shelfAllocationAdvancesWithOnePixelPadding() {
@@ -122,7 +112,6 @@ class DynamicGlyphAtlasTest {
     @Test
     void rowFullStartsNewShelf() {
         final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(16, 16);
-        // 每行 3 个（4+1 步进：0/5/10），第 4 个换 shelf：y = 4+1 = 5
         final GlyphSlot[] slots = new GlyphSlot[4];
         for (int i = 0; i < 4; i++) {
             slots[i] = atlas.request(FACE, 1000, 0, 0x4E00 + i, 13, solid4x4());
@@ -137,7 +126,6 @@ class DynamicGlyphAtlasTest {
     @Test
     void pageFullOpensNewPage() {
         final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(9, 16);
-        // 9px 页：4px 字形每行 2 个（x=0/5），两行（y=0/5），共 4 个后页满
         final GlyphSlot first = atlas.request(FACE, 1000, 0, 0x4E00, 13, solid4x4());
         for (int i = 1; i < 4; i++) {
             assertSame(first.page(), atlas.request(FACE, 1000, 0, 0x4E00 + i, 13, solid4x4()).page(),
@@ -150,8 +138,6 @@ class DynamicGlyphAtlasTest {
         assertEquals(0, fifth.x());
         assertEquals(0, fifth.y(), "新页从 (0,0) 开始分配");
     }
-
-    // ── 缓存命中 / 失败 ──────────────────────────────────────────────────
 
     @Test
     void cacheHitSkipsRasterizationAndReturnsSameSlot() {
@@ -190,19 +176,15 @@ class DynamicGlyphAtlasTest {
         assertEquals(3, atlas.groupCount(), "同 face 不同 (bucket, stroke) 各占一组");
     }
 
-    // ── LRU 整组淘汰 ────────────────────────────────────────────────────
-
     @Test
     void lruEvictsLeastRecentlyUsedGroupAndReleasesTextures() {
         final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(9, 2);
-        // 组 A（bucket 1000）填满 2 页（9px 页每页 4 个 4px 字形）
         for (int i = 0; i < 5; i++) {
             atlas.request(FACE, 1000, 0, 0x4E00 + i, 13, solid4x4());
         }
         assertEquals(2, atlas.pageCount());
         final int commandsBeforeEvict = queue.submitted.size();
 
-        // 组 B（bucket 1125）开页 → 总页数 3 > 2，淘汰最久未用的整组 A
         atlas.request(FACE, 1125, 0, 0x4E00, 13, solid4x4());
 
         assertEquals(0, atlas.slotCount(FACE, 1000, 0), "组 A 槽位整体清除");
@@ -215,12 +197,10 @@ class DynamicGlyphAtlasTest {
     @Test
     void recentlyTouchedGroupSurvivesEviction() {
         final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(8, 2);
-        // 8px 页每页只容 1 个 4px 字形：组 A 1 页、组 B 1 页；随后命中 A 使其成为最近使用
         atlas.request(FACE, 1000, 0, 0x4E00, 13, solid4x4());
         atlas.request(FACE, 1125, 0, 0x4E00, 13, solid4x4());
         atlas.request(FACE, 1000, 0, 0x4E00, 13, solid4x4());
 
-        // 组 C 开页 → 淘汰最久未用的 B（而非最近命中的 A）
         atlas.request("graphics/fonts/orbitron20aa.fnt", 1000, 0, 0x4E00, 13, solid4x4());
 
         assertEquals(1, atlas.slotCount(FACE, 1000, 0), "最近命中的组 A 保留");
@@ -231,25 +211,20 @@ class DynamicGlyphAtlasTest {
     @Test
     void evictedPagesAreRecycledForNewGroups() {
         final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(9, 2);
-        // 组 A 填满 2 页
         for (int i = 0; i < 5; i++) {
             atlas.request(FACE, 1000, 0, 0x4E00 + i, 13, solid4x4());
         }
         assertEquals(2, atlas.pageCount());
         final List<GlyphAtlasPage> groupAPages = new ArrayList<>(atlas.pagesOfGroup(FACE, 1000, 0));
 
-        // 组 B 开页 → 淘汰组 A（2 页释放入回收池）
         atlas.request(FACE, 1125, 0, 0x4E00, 13, solid4x4());
         assertEquals(0, atlas.slotCount(FACE, 1000, 0));
 
-        // 组 C 开页 → 复用组 A 淘汰的页实例（staging direct 不重新分配，回收不依赖 GC）
         final GlyphSlot slot = atlas.request("graphics/fonts/orbitron20aa.fnt", 1000, 0, 0x4E00, 13, solid4x4());
         assertTrue(groupAPages.contains(slot.page()), "新组的页来自淘汰回收池（direct staging 复用）");
         assertEquals(0, slot.x());
         assertEquals(0, slot.y(), "复用页的 shelf 分配游标已重置");
     }
-
-    // ── 脏矩形上传 / 上下文重建 ─────────────────────────────────────────
 
     @Test
     void flushDirtyUploadsOnceAndClears() {
@@ -283,8 +258,6 @@ class DynamicGlyphAtlasTest {
         assertEquals(rebuiltTexture, hit.textureId());
     }
 
-    // ── 命中路径的零纹理窗口（R3） ──────────────────────────────────────
-
     @Test
     void cacheHitWithZeroTextureIdRecreatesTextureOnMainThread() {
         final DynamicGlyphAtlas atlas = new DynamicGlyphAtlas(64, 16);
@@ -308,7 +281,6 @@ class DynamicGlyphAtlasTest {
         final Throwable[] failure = new Throwable[1];
         final Thread warmupLike = new Thread(() -> {
             try {
-                // 预热线程形态：建槽 + 命中都不建纹理（allocate 会切割主线程录制帧）
                 slot[0] = atlas.request(FACE, 1000, 0, 0x4E00, 13, solid4x4());
                 atlas.request(FACE, 1000, 0, 0x4E00, 13, solid4x4());
             } catch (Throwable t) {
@@ -325,7 +297,6 @@ class DynamicGlyphAtlasTest {
         assertEquals(0, slot[0].textureId(), "非主录制线程建槽不建纹理");
         assertEquals(0, queue.allocateCalls.get(), "全程零 allocate");
 
-        // 主录制线程命中时补齐纹理
         final GlyphSlot hit = atlas.request(FACE, 1000, 0, 0x4E00, 13, solid4x4());
         assertTrue(hit.textureId() != 0, "主录制线程命中补齐纹理");
         assertEquals(1, queue.allocateCalls.get());

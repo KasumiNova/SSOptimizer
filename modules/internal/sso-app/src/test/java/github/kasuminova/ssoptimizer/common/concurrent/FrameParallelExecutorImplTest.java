@@ -41,7 +41,6 @@ class FrameParallelExecutorImplTest {
         FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         ConcurrentLinkedQueue<String> threadNames = new ConcurrentLinkedQueue<>();
         CountDownLatch entered = new CountDownLatch(2);
-        // 确定性选择落在不同 worker 的两个分组键（身份哈希奇偶各一）
         Object key0 = keyForStripe(0, 2);
         Object key1 = keyForStripe(1, 2);
         for (Object key : new Object[]{key0, key1}) {
@@ -57,7 +56,6 @@ class FrameParallelExecutorImplTest {
             }, key);
         }
         executor.awaitAll();
-        // 两个任务并行完成（若落在同一 worker 串行执行，entered.await 会超时失败）
         assertEquals(2, threadNames.size());
         assertEquals(2, threadNames.stream().distinct().count());
     }
@@ -85,7 +83,6 @@ class FrameParallelExecutorImplTest {
         assertTrue(String.valueOf(ex.getMessage()).contains("Parallel AI failed"));
         assertInstanceOf(IllegalStateException.class, ex.getCause());
         assertEquals(2, completed.get());
-        // 异常清理后下一帧可正常工作
         executor.submit(completed::incrementAndGet, null);
         assertDoesNotThrow(executor::awaitAll);
         assertEquals(3, completed.get());
@@ -114,8 +111,6 @@ class FrameParallelExecutorImplTest {
     void failedPooledTasksAreNotRecycledUntilRerun() {
         FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 1);
         AtomicInteger recycled = new AtomicInteger();
-        // 首次执行抛异常：失败任务不归还（主线程重跑时字段必须保持原值）；
-        // 重跑在主线程直接 run()，同样不触发 recycle
         executor.submit(new TrackingPooledTask(recycled, true), null);
         assertDoesNotThrow(executor::awaitAll);
         assertEquals(0, recycled.get(), "失败任务不得归还池");
@@ -126,7 +121,6 @@ class FrameParallelExecutorImplTest {
         assertThrows(IllegalArgumentException.class, () -> new FrameParallelExecutorImpl("AI", 0));
     }
 
-    /** 池化任务测试桩：记录 recycle 次数；failFirst 时首次 run 抛异常。 */
     private static final class TrackingPooledTask implements Runnable, FrameParallelExecutor.PooledTask {
         private final AtomicInteger recycled;
         private final boolean failFirst;

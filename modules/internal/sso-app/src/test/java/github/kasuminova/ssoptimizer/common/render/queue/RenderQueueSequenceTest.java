@@ -11,18 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link RenderQueueImpl} 帧序号与帧尾标记钩子（{@code frameEndMarkerHook}）的行为验证：
- * 帧序单调递增、{@code lastSubmittedSequence} 与已提交帧一致、marker 追加在帧尾执行、
- * hook 返回 null 时零开销不炸。
- */
 class RenderQueueSequenceTest {
 
     private RenderQueueImpl queue;
 
     @AfterEach
     void tearDown() {
-        // 静态 hook 必须复位：进程级单例语义，残留会串扰其他用例
         RenderQueueImpl.frameEndMarkerHook(null);
         if (queue != null) {
             queue.shutdown();
@@ -47,24 +41,22 @@ class RenderQueueSequenceTest {
         });
 
         queue.submit(() -> events.add("cmd-0"));
-        queue.swapFrames(); // 提交帧 0
+        queue.swapFrames();
         assertEquals(0, queue.lastSubmittedSequence(), "提交帧 0 后已提交序号为 0");
 
         queue.submit(() -> events.add("cmd-1"));
-        queue.swapFramesAndSync(); // 提交帧 1，等待帧 0 执行完
+        queue.swapFramesAndSync();
         assertEquals(1, queue.lastSubmittedSequence());
-        // 渲染线程可能已提前执行后续帧，只断言确定成立的事实：帧 0 已执行完、
-        // 且 marker 在同帧命令之后（帧尾）
         assertTrue(events.contains("marker-0"), "等待帧 0 完成后其 marker 必然已执行");
         assertTrue(events.indexOf("cmd-0") < events.indexOf("marker-0"),
                 "帧 0 的 marker 必须追加在帧尾（本帧全部命令之后）执行");
 
-        queue.swapFramesAndSync(); // 提交帧 2，等待帧 1
+        queue.swapFramesAndSync();
         assertTrue(events.contains("marker-1"));
         assertTrue(events.indexOf("cmd-1") < events.indexOf("marker-1"),
                 "帧 1 的 marker 同样在帧尾");
 
-        queue.swapFramesAndSync(); // 提交帧 3，等待帧 2
+        queue.swapFramesAndSync();
         assertTrue(events.contains("marker-2"), "空帧同样携带帧尾 marker");
         assertEquals(List.of(0L, 1L, 2L, 3L), hookSeqs, "帧序号按提交顺序单调递增");
         assertEquals(3, queue.lastSubmittedSequence(), "lastSubmittedSequence 与已提交帧一致");

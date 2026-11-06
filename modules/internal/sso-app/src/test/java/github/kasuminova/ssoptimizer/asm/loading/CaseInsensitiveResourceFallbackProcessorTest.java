@@ -17,13 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link CaseInsensitiveResourceFallbackProcessor} 的真实游戏字节码驱动核验。
- * <p>
- * 包装方法的隔离状态捕获（filter/suppress 先于 try）、内部实现重命名、
- * 兜底调用签名，任一漂移在运行期表现为 VerifyError/NoSuchMethodError 或
- * 跨模组资源泄漏——构建期用 ASM 解析产物结构直接核验。
- */
 class CaseInsensitiveResourceFallbackProcessorTest implements Opcodes {
 
     private static final String THREAD_STATE_OWNER =
@@ -40,7 +33,6 @@ class CaseInsensitiveResourceFallbackProcessorTest implements Opcodes {
         final ClassNode node = new ClassNode();
         new ClassReader(rewritten).accept(node, 0);
 
-        // 原始方法体必须重命名为 private synthetic 内部实现
         final MethodNode impl = findMethod(node, CaseInsensitiveResourceFallbackProcessor.IMPL_METHOD,
                 CaseInsensitiveResourceFallbackProcessor.TARGET_DESC);
         assertTrue((impl.access & ACC_PRIVATE) != 0 && (impl.access & ACC_SYNTHETIC) != 0,

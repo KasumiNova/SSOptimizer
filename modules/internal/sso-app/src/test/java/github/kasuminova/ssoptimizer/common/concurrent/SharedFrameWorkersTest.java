@@ -9,13 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link SharedFrameWorkers} 共享帧内工作池门面验证。
- * <p>
- * 覆盖：单例语义（重复获取同一实例）、统一线程数属性解析（含非法值按默认处理）、
- * 共享池工作线程命名、混合 stripeKey/无键任务在新共享池上的分组隔离、
- * 工作线程守卫识别。
- */
 class SharedFrameWorkersTest {
 
     @Test
@@ -60,8 +53,6 @@ class SharedFrameWorkersTest {
 
     @Test
     void mixedKeyedAndUnkeyedTasksKeepStripeIsolation() {
-        // 新旧两域混合提交场景：AI 域的 stripeKey 任务与 Econ 域的无键任务交错投递，
-        // 同键任务仍必须固定到同一工作线程串行执行
         final FrameParallelExecutor executor = SharedFrameWorkers.get();
         final Object key = new Object();
         final ConcurrentLinkedQueue<String> keyedThreads = new ConcurrentLinkedQueue<>();
@@ -80,7 +71,6 @@ class SharedFrameWorkersTest {
     void distinctStripeKeysSpreadAcrossSharedWorkers() {
         final FrameParallelExecutor executor = SharedFrameWorkers.get();
         final int workers = executor.threadCount();
-        // 单 worker 时无法验证跨 worker 分布（环境核数过少），仅验证可正常执行
         if (workers < 2) {
             executor.submit(() -> { }, null);
             executor.awaitAll();

@@ -19,19 +19,12 @@ import java.time.Instant;
 import java.util.*;
 import java.util.List;
 
-/**
- * TrueType 字体位图生成器。
- * <p>
- * 将 TTF/OTF 字体文件栅格化为 Starsector 使用的 {@code .fnt + .png} 位图字体格式，
- * 支持高 DPI 缩放和完整 CJK 字符集。
- */
 final class TtfBmFontGenerator {
     private static final Logger LOGGER                          = Logger.getLogger(TtfBmFontGenerator.class);
     private static final int    SPACE_CODE_POINT                = ' ';
     private static final int    LEFT_BRACE_CODE_POINT           = '{';
     private static final int    RIGHT_BRACE_CODE_POINT          = '}';
     private static final String PRIMARY_VISUAL_SAMPLE           = "HNM0";
-    // 运行期 face 校准（TtfGlyphProvider）复用这两个采样串与缩放钳制区间
     static final String PRIMARY_ADVANCE_SAMPLE          = "HNM0UI";
     static final String FALLBACK_VISUAL_SAMPLE          = "汉界测港";
     private static final String VICTOR_PRIMARY_SAMPLE           = "ABMWQJ";
@@ -40,9 +33,6 @@ final class TtfBmFontGenerator {
     private static final int    MAX_RUNTIME_PAGE_STEP           = 512;
     static final float  MIN_PRIMARY_ADVANCE_SCALE       = 0.88f;
     static final float  MAX_PRIMARY_ADVANCE_SCALE       = 1.08f;
-    // 下界必须容纳原版 fnt 的合法小 CJK 烘焙：insignia21LTaa 的 CJK 步进/名义比
-    // 低至 13/18 ≈ 0.722（CJK 按 13px 烘进 18px 行），若钳到 0.88 会把 CJK 墨迹
-    // 放大 22%，表现为图鉴正文/键位列表字号偏大、字距拥挤、行距过矮。
     static final float  MIN_FALLBACK_VISUAL_SCALE       = 0.70f;
     static final float  MAX_FALLBACK_VISUAL_SCALE       = 1.36f;
     private static final float  MIN_VICTOR_PRIMARY_VISUAL_SCALE = 0.94f;
@@ -63,12 +53,6 @@ final class TtfBmFontGenerator {
         });
     }
 
-    /**
-     * 字库捐赠：把同族捐赠字体（见 {@link OriginalGameFontOverrides#charsetDonorPaths}）
-     * 持有而源 fnt 缺失的码点并入字符集，并按行高比缩放捐赠方度量作为合成源度量——
-     * 捐赠字形随后与原生字形走同一条「度量协调 + 源度量对齐」管线（CJK 由 MiSans 承担墨迹，
-     * advance/offset 继承捐赠方换算值）。多捐赠方持有同一码点时，行高最接近源字体者优先。
-     */
     private static SourceBmFont withDonatedCharset(final SourceBmFont source,
                                                    final OriginalGameFontOverrides.FontOverrideSpec spec)
             throws IOException {
@@ -113,18 +97,10 @@ final class TtfBmFontGenerator {
                 List.copyOf(codePoints), Map.copyOf(metrics));
     }
 
-    /**
-     * 捐赠码点可打印性过滤：剔除控制字符（&lt; 0x20 / 0x7F，布局层无可打印语义）
-     * 与 BMP 外码点（运行期布局按 UTF-16 code unit 迭代，无法寻址增补平面）。
-     */
     static boolean isDonatableCodePoint(final int codePoint) {
         return codePoint >= 0x20 && codePoint != 0x7F && codePoint <= 0xFFFF;
     }
 
-    /**
-     * 捐赠度量按行高比缩放（int[] 形式便于测试锚定）：宽度/高度/步进钳非负，
-     * 偏移允许负值（悬挂笔画）。返回 [width, height, xOffset, yOffset, xAdvance]。
-     */
     static int[] scaledDonorGlyphMetrics(final int width,
                                          final int height,
                                          final int xOffset,
@@ -275,24 +251,6 @@ final class TtfBmFontGenerator {
         }
     }
 
-    /**
-     * 协调 fallback 字体（如 MiSans）的大小，使其与源 .fnt 中的中文字形比例一致。
-     *
-     * <p>优先使用 advance（水平间距）缩放：advance 直接决定文本排版密度，是最关键的视觉指标。
-     * 高度缩放仅在源 .fnt 缺少 fallback 采样字符的 advance 数据时作为回退方案。</p>
-     *
-     * @param calibrated           已校准到目标 lineHeight 的 fallback 字体
-     * @param source               源 .fnt 文件的解析结果
-     * @param primaryVisualHeight  主字体渲染的视觉高度（最后回退方案）
-     * @param primaryAverageHeight 主字体渲染的平均字形高度
-     * @param primaryAverageAdvance 主字体渲染的平均 advance
-     * @param victorManaged      victor 族（像素字体义）：水平步进由源逻辑 advance 单元格直接驱动
-     *                           （墨迹居中 reconcile），advance 比例换算会因解析层 xoffset 解码
-     *                           与 victor 主字体视觉校准双重失真，须跳过 advance 路径走高度比例
-     * @param antiAlias            是否抗锯齿
-     * @param fractionalMetrics    是否使用小数度量
-     * @return 缩放后的 fallback 字体
-     */
     private static Font harmonizeFallbackMetrics(final Font calibrated,
                                                  final SourceBmFont source,
                                                  final float primaryVisualHeight,
@@ -306,7 +264,6 @@ final class TtfBmFontGenerator {
         }
 
         if (useAdvanceHarmonization(victorManaged)) {
-            // 优先使用 advance 缩放：advance 控制水平间距，是文本排版中最关键的视觉指标
             final float sourcePrimaryAdvance = source.averageAdvance(PRIMARY_ADVANCE_SAMPLE);
             final float sourceAverageAdvance = source.averageAdvance(FALLBACK_VISUAL_SAMPLE);
             final float renderedAverageAdvance = measureAverageAdvance(calibrated, FALLBACK_VISUAL_SAMPLE,
@@ -322,7 +279,6 @@ final class TtfBmFontGenerator {
             }
         }
 
-        // 回退方案：通过高度比例缩放（源 .fnt 中缺少 fallback 采样字符的 advance 数据时使用）
         final float sourcePrimaryHeight = source.averageHeight(PRIMARY_VISUAL_SAMPLE);
         final float sourceAverageHeight = source.averageHeight(FALLBACK_VISUAL_SAMPLE);
         final float renderedAverageHeight = measureAverageHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
@@ -337,7 +293,6 @@ final class TtfBmFontGenerator {
             return calibrated.deriveFont(Math.max(1f, calibrated.getSize2D() * scaleFactor));
         }
 
-        // 最终回退：匹配主字体的视觉高度
         if (primaryVisualHeight > 0f) {
             final float fallbackVisualHeight = measureVisualHeight(calibrated, FALLBACK_VISUAL_SAMPLE, antiAlias,
                     fractionalMetrics);
@@ -350,12 +305,6 @@ final class TtfBmFontGenerator {
         return calibrated;
     }
 
-    /**
-     * fallback 协调是否采用 advance 比例路径。victor 族（像素字体义）的水平步进由源逻辑
-     * advance 单元格直接驱动（墨迹居中 reconcile，见 {@link #reconcileVictorGlyphToCell}），
-     * advance 比例换算会因解析层 xoffset 解码（{@link #decodedXAdvanceFromRuntimeLayout}）
-     * 与 victor 主字体视觉校准双重失真而给出过小的目标值，必须走高度比例路径。
-     */
     static boolean useAdvanceHarmonization(final boolean victorManaged) {
         return !victorManaged;
     }
@@ -467,8 +416,6 @@ final class TtfBmFontGenerator {
 
     static boolean isVictorManagedFontPath(final String fontPath) {
         final String normalized = OriginalGameFontOverrides.normalize(fontPath).toLowerCase(Locale.ROOT);
-        // 全族纳管：视觉尺寸对齐与小写字形替换对 victor10/12/14/16/21 一致生效，
-        // 缺任何一个都会让 MapEntityIcon 等按缩放切字体的调用点观感断裂
         return normalized.startsWith("graphics/fonts/victor");
     }
 
@@ -593,8 +540,6 @@ final class TtfBmFontGenerator {
                         rasterizer.rasterizeGlyph(rasterCodePoint, source.base(), fonts),
                         codePoint
                 );
-                // victor 族（像素字体义）：原字体按「恒定侧边距」设计单元格，替换字体的
-                // 自然字宽会破坏该节奏（窄字后跟大空档），须把墨迹居中到 advance 单元格
                 glyphs.add(fonts.substituteLowercaseWithUppercase()
                         ? reconcileVictorGlyphToCell(rasterized, sourceMetric)
                         : reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric));
@@ -636,8 +581,7 @@ final class TtfBmFontGenerator {
         if (shouldTreatAsSpaceGlyph(codePoint)) {
             return spaceEquivalentSourceMetric(spaceMetric);
         }
-        // 控制字符（NUL/GS 等）不可打印，原版 fnt 条目是纯占位度量（如 1×3 零墨迹），
-        // 直接保留不栅格化——字体链对它们本就无覆盖，栅格化只会落到链末 Dialog 兜底报 warn
+        // 控制字符在原版 fnt 中只有占位度量，跳过栅格化以保留步进且不产生墨迹。
         if (sourceMetric != null && shouldPreserveControlGlyph(codePoint)) {
             return sourceMetric;
         }
@@ -651,10 +595,6 @@ final class TtfBmFontGenerator {
         return codePoint == LEFT_BRACE_CODE_POINT || codePoint == RIGHT_BRACE_CODE_POINT;
     }
 
-    /**
-     * 控制字符（码点 &lt; 空格）判定：不可打印，原版 fnt 中的条目仅为占位度量，
-     * 布局层保留其 xadvance 语义但不产生任何墨迹，生成期应跳过栅格化。
-     */
     static boolean shouldPreserveControlGlyph(final int codePoint) {
         return codePoint >= 0 && codePoint < SPACE_CODE_POINT;
     }
@@ -679,7 +619,6 @@ final class TtfBmFontGenerator {
                                               final int yOffset,
                                               final int xAdvance) {
         final GlyphRaster glyph = preserveSourceSpecialGlyph(
-                // 用可打印码点隔离「按维度判定占位符」逻辑，避免与控制字符保留分支叠加
                 'A',
                 new SourceGlyphMetric(width, height, xOffset, yOffset, xAdvance),
                 null,
@@ -753,12 +692,6 @@ final class TtfBmFontGenerator {
                 box.xAdvance());
     }
 
-    /**
-     * victor 族单元格居中对齐：水平方向抛弃栅格自然 bearing，墨迹居中到源逻辑 advance
-     * 单元格（inkLeft = (advance − inkWidth) / 2），advance 恒取源值不膨胀——
-     * 对齐原版像素字体「恒定侧边距」的视觉节奏。垂直方向维持源盒 ∪ 墨迹盒并集
-     * （baseline/悬挂笔画语义不变）。墨迹宽于单元格时对称负溢出，由 quad 重叠承载。
-     */
     private static GlyphRaster reconcileVictorGlyphToCell(final GlyphRaster rasterized,
                                                           final SourceGlyphMetric sourceMetric) {
         if (rasterized == null || sourceMetric == null || sourceMetric.isSpecialPlaceholder()) {
@@ -768,7 +701,6 @@ final class TtfBmFontGenerator {
         final int[] metrics = victorCenteredGlyphMetrics(
                 rasterized.width(), rasterized.height(), rasterized.yOffset(),
                 sourceMetric.height(), sourceMetric.yOffset(), sourceMetric.xAdvance());
-        // 把栅格 bearing 改写为居中落点后复用通用画布对齐（水平 destX 恒 0）
         final GlyphRaster centered = new GlyphRaster(
                 rasterized.codePoint(), rasterized.sourceName(), rasterized.faceName(),
                 rasterized.image(),
@@ -782,10 +714,6 @@ final class TtfBmFontGenerator {
                 box.width(), box.height(), box.xOffset(), box.yOffset(), box.xAdvance());
     }
 
-    /**
-     * 居中度量计算（int[] 形式便于测试锚定）。
-     * 返回 [width, height, xOffset=墨迹居中落点, yOffset=垂直并集顶, xAdvance=源逻辑 advance]。
-     */
     static int[] victorCenteredGlyphMetrics(final int rasterWidth,
                                             final int rasterHeight,
                                             final int rasterYOffset,
@@ -1057,11 +985,6 @@ final class TtfBmFontGenerator {
         return new GlyphLayout(pages, rasterized.backendName(), rasterized.backendDetails());
     }
 
-    /**
-     * TTF 覆盖包生成只走 native FreeType 后端（P4 拆除 Java2D 降级链）。
-     * native 不可用时直接抛错：由 {@code OriginalGameFontOverrides.ensureInitialized}
-     * 的 {@code catch (Throwable)} 记 warn 并回退原版位图字体，不做静默降级。
-     */
     private static GlyphRasterizer createRasterizer() {
         if (!NativeFontRasterizer.isAvailable()) {
             throw new IllegalStateException("[SSOptimizer] native FreeType 栅格化不可用，无法生成 TTF 字体覆盖包"
@@ -1438,24 +1361,18 @@ final class TtfBmFontGenerator {
                                           final FontChain chain) {
             final LoadedFont loadedFont = chain.selectFont(codePoint);
             if (loadedFont.sourcePath() == null) {
-                // 链末 AWT Dialog 逻辑字体兜底（无 TTF 文件可交 native 栅格化）：
-                // 属单字形缺失而非家族级失败——留空墨迹，度量由 reconcileRasterizedGlyphToSourceMetrics
-                // 对齐原版 fnt 盒，与单字形栅格化失败路径同语义
                 LOGGER.warn("[SSOptimizer] 字形无任何 TTF 源可显示，保留空字形: codePoint=" + codePoint);
                 return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(),
                         null, 0, 0, 0, 0, 0);
             }
             final long faceHandle = resolveFaceHandle(loadedFont, chain.antiAlias());
             if (faceHandle == 0L) {
-                // createFace 失败已在 NativeFontRasterizer 记 warn；生成无法继续，整族回退位图字体
                 throw new IllegalStateException("[SSOptimizer] native createFace 失败，无法栅格化字体: "
                         + loadedFont.sourcePath());
             }
 
             final NativeGlyphBitmap bitmap = NativeFontRasterizer.rasterizeGlyph(faceHandle, codePoint, baseline);
             if (bitmap == null) {
-                // 单字形栅格化失败（NativeFontRasterizer 已记 warn）：保留度量、留空墨迹，
-                // 由 reconcileRasterizedGlyphToSourceMetrics 对齐原版 fnt 盒
                 LOGGER.warn("[SSOptimizer] 单字形 native 栅格化失败，保留空字形: codePoint=" + codePoint
                         + " font=" + loadedFont.sourceName());
                 return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(),

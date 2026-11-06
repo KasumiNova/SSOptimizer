@@ -42,24 +42,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
-/**
- * SpecStore 加载路径的 Mixin 重写。
- * <p>
- * 注入目标：{@code com.fs.starfarer.loading.SpecStore}<br>
- * 注入动机：原版 {@code loadStarmap} 是 30+ 个 load 方法的扁平串行序列，
- * 其中绝大多数相互独立；同时 {@code specsByClass} 的懒初始化 HashMap
- * 在并行场景下不是线程安全的。<br>
- * 注入效果：
- * <ul>
- *   <li>{@code getSpecMap} 换为 ConcurrentHashMap 外层 + 原样 LinkedHashMap 内层，
- *       并行初始化安全；</li>
- *   <li>{@code loadStarmap} 重写为 {@link SpecLoadScheduler} 的 DAG 并行调度
- *       （依赖关系见方法内注释），{@code -Dssoptimizer.disable.parallelspec=true}
- *       时回退原版串行序列；</li>
- *   <li>{@code loadVariants} 的逐文件 JSON 解析 + HullVariantSpec 构造搬到虚拟线程并行
- *       （Semaphore 闸门限流），注册动作保持调用线程串行且顺序不变。</li>
- * </ul>
- */
 @Mixin(targets = GameClassNames.SPEC_STORE_DOTTED)
 public abstract class SpecStoreMixin {
     @Unique
@@ -103,26 +85,11 @@ public abstract class SpecStoreMixin {
         throw new UnsupportedOperationException("shadow");
     }
 
-    /**
-     * 线程安全的 spec map 获取。
-     *
-     * @param cls spec 类型
-     * @return 该类型对应的 id → spec map（LinkedHashMap，保持插入序）
-     * @author KasumiNova
-     * @reason 原版外层 HashMap 懒初始化在并行加载下可能并发 put 损坏；
-     * 内层 map 同一时刻只有一个任务写入，保持原版 LinkedHashMap 语义。
-     */
     @Overwrite(remap = false)
     public static Map<String, Object> getSpecMap(Class<?> cls) {
         return ssoptimizer$specMaps.computeIfAbsent(cls, key -> new LinkedHashMap<>());
     }
 
-    /**
-     * 并行版 loadStarmap：按依赖 DAG 调度全部 load 方法。
-     *
-     * @author KasumiNova
-     * @reason 原版扁平串行序列中绝大多数 load 相互独立，DAG 并行可显著缩短启动时间。
-     */
     @Overwrite(remap = false)
     public static void loadStarmap(ResourceLoaderState state) throws IOException, JSONException {
         if (!SpecLoadScheduler.isEnabled()) {
@@ -132,14 +99,6 @@ public abstract class SpecStoreMixin {
 
         ssoptimizer$registerPluginScripts();
 
-        // 依赖关系（对照原版调用顺序与 spec 引用链）：
-        //   projectiles/hulls ← styles；weapons ← projectiles；weapon_data ← weapons
-        //   ship_data ← hulls+weapon_data（默认 Variant 构造会解析武器 spec）；skins ← ship_data；wing_data ← skins；shipSystems ← wings（且反向清理 hulls）
-        //   simulationVariants ← hulls+weapons；variants ← simulationVariants（containsVariant 跳过语义依赖原版顺序）
-        //   factions ← hulls/weapons/hullmods/variants/commodities；skills ← aptitudes+hullmods（SkillEffectSpec
-        //   构造内 HullModUnlockComparator 会解析 hullmod spec，实测竞态 NPE）
-        //   procgen ← weapons/wings/commodities/specialItems/customEntities/marketConditions
-        //   campaignData/titleVariants ← variants；其余全部独立
         SpecLoadScheduler.newDag()
                 .task("styles", () -> SpecStore.loadEngineAndHullStyles(state))
                 .task("missions", () -> loadMissions(state))
@@ -189,12 +148,6 @@ public abstract class SpecStoreMixin {
         ssoptimizer$dumpEngineStyleDiagnostics();
     }
 
-    /**
-     * 引擎样式 spec 链诊断（{@code -Dssoptimizer.debug.enginestyle=true}）：
-     * 在 loadStarmap 完成后转储 EngineStyle 注册表与全部 hull 的 CUSTOM 槽位
-     * glowTexture 解析结果——用于定位「模组引擎样式贴图未生效」是 spec 链
-     * 未挂接（glowTexture 为空）还是纹理加载/绑定链断裂（路径正常）。
-     */
     @Unique
     private static void ssoptimizer$dumpEngineStyleDiagnostics() {
         if (!Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.enginestyle", "false"))) {
@@ -242,14 +195,6 @@ public abstract class SpecStoreMixin {
         }
     }
 
-    /**
-     * 并行版 loadVariants：逐文件 JSON 解析与 HullVariantSpec 构造在虚拟线程并行
-     * （Semaphore 闸门限流），registerVariant 注册保持调用线程串行且文件顺序不变。
-     *
-     * @author KasumiNova
-     * @reason variants 是 spec 加载中最大的单方法热点（数百个小 JSON 文件），
-     * 解析/构造是纯 CPU 且无共享状态，注册轻量但涉及共享 store，必须串行。
-     */
     @Overwrite(remap = false)
     public static void loadVariants() throws IOException, JSONException {
         if (!SpecLoadScheduler.isEnabled()) {
@@ -264,9 +209,6 @@ public abstract class SpecStoreMixin {
 
         ssoptimizer$logger.info("Loading ship & fighter variants");
 
-        // Wave 3 起解析任务跑在 VtWorkers 虚拟线程上；Semaphore 闸门保留原
-        // 「每次调用现建现拆固定池」的并发上限语义（CPU 密集解析，上限见
-        // SpecLoadScheduler.parallelism()）
         final Semaphore gate = new Semaphore(SpecLoadScheduler.parallelism());
         final List<CompletableFuture<HullVariantSpec>> futures = new ArrayList<>(files.size());
         for (final String path : files) {
@@ -302,9 +244,7 @@ public abstract class SpecStoreMixin {
                 throw e;
             }
             if (spec != null) {
-                // containsVariant 跳过语义必须在串行注册阶段判定：
-                // 并行解析领先于注册，同 id 的覆盖文件可能在先注册变体尚未
-                // 入账时就通过检查，导致重复注册（"already exists"）。
+                // containsVariant 必须在串行注册阶段判定，避免并行解析让同 id 覆盖文件绕过重复检查。
                 if (HullVariantSpecStore.containsVariant(spec.getHullVariantId())) {
                     continue;
                 }

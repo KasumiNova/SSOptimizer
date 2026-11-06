@@ -8,14 +8,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link ContrailSegmentStore} 的容器语义验证：数组后备 List 相对原版
- * LinkedList 的等价契约（尾插保序、头删保序、索引访问、迭代顺序、容量增长）。
- * <p>
- * 语义等价论证：原版对段容器只使用 List API（add 尾插、get(i)、size、
- * isEmpty、remove(0)、iterator），本测试逐条验证这些操作的可观察行为与
- * 顺序语义（段 0 = 最旧，段 size-1 = 最新）。
- */
 class ContrailSegmentStoreTest {
 
     @Test
@@ -49,7 +41,7 @@ class ContrailSegmentStoreTest {
 
     @Test
     void growthBeyondInitialCapacityKeepsOrderAndContent() {
-        ContrailSegmentStore store = new ContrailSegmentStore(); // 初始容量 8
+        ContrailSegmentStore store = new ContrailSegmentStore();
         for (int i = 0; i < 40; i++) {
             store.add(segment(i));
         }
@@ -57,7 +49,6 @@ class ContrailSegmentStoreTest {
         for (int i = 0; i < 40; i++) {
             assertEquals(segment(i), store.get(i));
         }
-        // 头删 + 追加混合（原版死亡移除 + 新段追加的稳态形态）
         for (int i = 0; i < 10; i++) {
             store.remove(0);
             store.add(segment(100 + i));

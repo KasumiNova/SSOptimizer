@@ -4,45 +4,29 @@ import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 
 import java.nio.IntBuffer;
 
-/**
- * org.lwjgl.opengl.ARBFramebufferObject 的 bridge 镜像。
- * <p>
- * 与 {@link EXTFramebufferObject}/{@link GL30} 的 FBO 族同语义（LWJGL2 中三者是
- * 同功能的扩展/核心别名），GraphicsLib 运行时三选一，全部必须覆盖。
- * 阻塞通道语义见 {@link EXTFramebufferObject} 类 javadoc。
- */
 public final class ARBFramebufferObject extends ARBFramebufferObjectGen {
     private ARBFramebufferObject() {
     }
 
-    /**
-     * 安装命令消费者，语义同 {@link GL11#install(RenderQueue)}。
-     *
-     * @param renderQueue 渲染队列实例
-     */
     public static void install(RenderQueue renderQueue) {
         BridgeSupport.install(renderQueue);
     }
 
-    /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
     static void uninstall() {
         BridgeSupport.uninstall();
     }
 
     public static void glBindFramebuffer(int target, int framebuffer) {
         if (target == org.lwjgl.opengl.ARBFramebufferObject.GL_FRAMEBUFFER) {
-            // 同 EXTFramebufferObject.glBindFramebufferEXT：录制侧 FRAMEBUFFER 绑定跟踪
             BridgeSupport.setFramebufferBinding(framebuffer);
         }
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject.glBindFramebuffer(target, framebuffer));
     }
 
-    /** 资源分配：阻塞通道取回真实 FBO id。 */
     public static int glGenFramebuffers() {
         return BridgeSupport.blockingGetResource(org.lwjgl.opengl.ARBFramebufferObject::glGenFramebuffers);
     }
 
-    /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenFramebuffers(IntBuffer framebuffers) {
         BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.ARBFramebufferObject.glGenFramebuffers(framebuffers));
     }
@@ -56,7 +40,6 @@ public final class ARBFramebufferObject extends ARBFramebufferObjectGen {
                 org.lwjgl.opengl.ARBFramebufferObject.glDeleteFramebuffers(snapshot.asIntBuffer()));
     }
 
-    /** 状态查询：阻塞通道取回（FBO 完整性校验语义强依赖执行完成）。 */
     public static int glCheckFramebufferStatus(int target) {
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBFramebufferObject.glCheckFramebufferStatus(target));
     }
@@ -79,12 +62,10 @@ public final class ARBFramebufferObject extends ARBFramebufferObjectGen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBFramebufferObject.glBindRenderbuffer(target, renderbuffer));
     }
 
-    /** 资源分配：阻塞通道取回真实 renderbuffer id。 */
     public static int glGenRenderbuffers() {
         return BridgeSupport.blockingGetResource(org.lwjgl.opengl.ARBFramebufferObject::glGenRenderbuffers);
     }
 
-    /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenRenderbuffers(IntBuffer renderbuffers) {
         BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.ARBFramebufferObject.glGenRenderbuffers(renderbuffers));
     }
@@ -103,9 +84,6 @@ public final class ARBFramebufferObject extends ARBFramebufferObjectGen {
                 .glRenderbufferStorage(target, internalformat, width, height));
     }
 
-    // ------------------------------------------------------------------
-    // 盘点补面：BoxUtil 引用的 blit / 其余附着点 / 多重采样 renderbuffer
-    // ------------------------------------------------------------------
 
     public static void glBlitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1,
                                          int dstX0, int dstY0, int dstX1, int dstY1,

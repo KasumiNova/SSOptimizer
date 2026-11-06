@@ -15,24 +15,6 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link CampaignContrailBatchHelper#encodeContrail} 的 B1 老化零亮度点简化路径验证。
- * <p>
- * 简化条件：{@code fadeOut && maxBrightness == 0}（encode 期间 maxBrightness 无人
- * 改写）。验证面：
- * <ul>
- *   <li>简化路径与完整路径的输出顶点位级一致（顶点位置/UV 照常计算，alpha 字节
- *       恒 0——原版 baseAlpha × 0 × brightness 经 (int) 转换恒为 0，brightness 为
- *       NaN 亦同）；</li>
- *   <li>状态副作用等价：fadeSource 跨尾迹传递（fadeOut 点即成为自己的参照）与
- *       lastProximityMult 的 min 钳制写回在简化路径下逐字保留；相交/折返检测的
- *       markFadeOut 对已 fadeOut 点恒为 no-op；</li>
- *   <li>不满足条件的点（未 fadeOut / maxBrightness 衰减中）仍走完整路径，proximity
- *       对 fadeSource 的距离衰减照常发生。</li>
- * </ul>
- * 参考实现逐行转写自反编译原版 {@code ContrailEngineV2.render(float)} 内层
- * （named 仓 {@code ContrailEngineV2.java:264-416}），与优化实现独立防漂移。
- */
 class CampaignContrailBatchHelperAgedPathTest {
 
     @BeforeEach
@@ -40,11 +22,6 @@ class CampaignContrailBatchHelperAgedPathTest {
         CampaignContrailBatchHelper.beginStrip();
     }
 
-    // ------------------------------------------------------------------
-    // 简化路径直接验证
-    // ------------------------------------------------------------------
-
-    /** 老化零亮度点：alpha 字节恒 0，几何/UV 照常编码，fadeSource 更新为本点。 */
     @Test
     void agedZeroBrightnessPointEmitsZeroAlphaWithFullGeometry() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(255, 128, 64, 200));
@@ -63,7 +40,6 @@ class CampaignContrailBatchHelperAgedPathTest {
         assertSame(aged, fadeSource, "简化路径的 fadeOut 点仍须成为 fadeSource");
         assertEquals(0.0f, aged.lastProximityMult, 1e-6f,
                 "fadeSource==本点 ⇒ mult 恒 0，min 钳制写回 0");
-        // 简化点顶点对（索引 2/3）：point(10,0) ± perp(0,1) × width/2(2)
         CampaignContrailBatchHelper.EncodedVertex left = CampaignContrailBatchHelper.vertexAt(2);
         assertEquals(10f, left.x(), 1e-4f);
         assertEquals(-2f, left.y(), 1e-4f);
@@ -77,7 +53,6 @@ class CampaignContrailBatchHelperAgedPathTest {
         assertEquals(0, right.a());
     }
 
-    /** lastProximityMult 的 min 钳制：负值保持（0 > 负值 ⇒ 维持原值），正值归零。 */
     @Test
     void simplifiedPathKeepsLastProximityMultClampSemantics() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(1, 2, 3, 255));
@@ -100,7 +75,6 @@ class CampaignContrailBatchHelperAgedPathTest {
         assertEquals(0.0f, positive.lastProximityMult, "0.7 ⇒ 钳为 0");
     }
 
-    /** 不满足简化条件的点走完整路径：maxBrightness 衰减中的点 alpha 非 0。 */
     @Test
     void fadingPointStillUsesFullPath() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(10, 20, 30, 255));
@@ -114,18 +88,10 @@ class CampaignContrailBatchHelperAgedPathTest {
 
         CampaignContrailBatchHelper.encodeContrail(contrail, 1f, null);
 
-        // 完整路径：elapsed 钳到 elapsedWhenFadeOut=1，brightness=(3-1)/(3-0.1)=2/2.9；
-        // fadeSource==本点，fadeRatio=1-0.5/1=0.5，dist=0 ⇒ mult=0.5；
-        // alpha=(int)(255 × 0.5 × 2/2.9 × 0.5)=43
         assertEquals(43, CampaignContrailBatchHelper.vertexAt(2).a(),
                 "衰减中的 fadeOut 点必须走完整路径（亮度公式 + proximity）");
     }
 
-    /**
-     * fadeSource 经简化点跨尾迹传递：第一条尾迹末点为老化零亮度点（简化路径），
-     * 第二条尾迹的活跃点 proximity 仍以它为参照（dist 决定 mult），与参考实现
-     * 位级一致。
-     */
     @Test
     void fadeSourcePropagatesThroughSimplifiedPointAcrossContrails() {
         ContrailEngineV2.Contrail first = contrail(new Color(10, 20, 30, 255));
@@ -140,7 +106,6 @@ class CampaignContrailBatchHelperAgedPathTest {
 
         ContrailEngineV2.Contrail second = contrail(new Color(10, 20, 30, 255));
         second.points.add(point(300f, 0f, 0f, 1f, 2f, 3f, 0f, 0f));
-        // 距 agedTail(10,0) 距离 0.5：fadeRatio=1-0/0.8=1，mult=0+1×min(1,0.01)=0.01
         ContrailEngineV2.ContrailPoint near = point(10f, 0.5f, 0f, 1f, 2f, 3f, 2f, 0.75f);
         near.maxBrightness = 1f;
         second.points.add(near);
@@ -151,23 +116,11 @@ class CampaignContrailBatchHelperAgedPathTest {
         fadeSource = CampaignContrailBatchHelper.encodeContrail(second, 1f, fadeSource);
         assertSame(agedTail, fadeSource, "第二条尾迹无 fadeOut 点时参照不变");
 
-        // near 点（第二条第 2 点，顶点索引 4+2+2=8）：brightness=(3-2)/2.9，
-        // mult=0.01 ⇒ alpha=(int)(255 × 1/2.9 × 0.01)=0
         assertEquals(0.01f, near.lastProximityMult, 1e-6f,
                 "活跃点 proximity 仍以简化路径的 fadeOut 点为参照");
         assertEquals(0, CampaignContrailBatchHelper.vertexAt(8).a());
     }
 
-    // ------------------------------------------------------------------
-    // 随机状态位级等价（对照独立转写的原版参考实现）
-    // ------------------------------------------------------------------
-
-    /**
-     * 随机尾迹集（高比例混入老化零亮度点以命中简化路径，含 duration=0 的 NaN
-     * 亮度边界）上，helper 编码输出（顶点位置/UV/颜色字节）与渲染期状态写回
-     * （fadeOut/origMax/elapsedWhenFadeOut/lastProximityMult）必须与原版参考实现
-     * 位级一致。
-     */
     @Test
     void encodedOutputMatchesReferenceBitwiseAcrossAgedStates() {
         Random random = new Random(0xA6ED_00L);
@@ -184,12 +137,10 @@ class CampaignContrailBatchHelperAgedPathTest {
             }
             float alphaMult = random.nextFloat() * 2f;
 
-            // 参考路径：原版逐条渲染（GL 调用替换为顶点记录）
             List<RecordedVertex> expected = new ArrayList<>();
             ContrailEngineV2.ContrailPoint refFadeSource = null;
             for (ContrailEngineV2.Contrail contrail : reference) {
                 if (!expected.isEmpty()) {
-                    // 连接点：重复上一组末顶点两次
                     RecordedVertex last = expected.get(expected.size() - 1);
                     expected.add(last);
                     expected.add(last);
@@ -239,10 +190,6 @@ class CampaignContrailBatchHelperAgedPathTest {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 参考实现：逐行转写反编译原版 render(float) 内层（GL 调用替换为记录）
-    // 相交判定调用真实 VectorMathUtils.segmentIntersection，与优化实现独立。
-    // ------------------------------------------------------------------
 
     private static ContrailEngineV2.ContrailPoint referenceEncodeContrail(
             ContrailEngineV2.Contrail contrail, float alphaMult,
@@ -342,7 +289,6 @@ class CampaignContrailBatchHelperAgedPathTest {
                 var12 *= var36;
             }
 
-            // RenderStateUtils.setGlColor(color, (int)(alpha*maxBrightness*var12))
             int r = var15.getRed();
             int g = var15.getGreen();
             int b = var15.getBlue();
@@ -375,10 +321,6 @@ class CampaignContrailBatchHelperAgedPathTest {
         return fadeSource;
     }
 
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
-
     private record RecordedVertex(float x, float y, float u, float v, int r, int g, int b, int a) {
     }
 
@@ -406,12 +348,6 @@ class CampaignContrailBatchHelperAgedPathTest {
         return point;
     }
 
-    /**
-     * 老化向随机尾迹：约半数点为「fadeOut 完成 + maxBrightness==0」的简化路径
-     * 目标态（origMax/elapsedWhenFadeOut/lastProximityMult 随机，含 duration=0
-     * 的 NaN 亮度边界）；其余为活跃/衰减中/未 fadeOut 老化点，保持完整路径覆盖。
-     * 点列小步随机游 + 大宽度，提高相交/折返检测命中率。
-     */
     private static ContrailEngineV2.Contrail agingContrail(Random random) {
         ContrailEngineV2.Contrail contrail = contrail(new Color(
                 random.nextInt(256), random.nextInt(256), random.nextInt(256),
@@ -442,15 +378,13 @@ class CampaignContrailBatchHelperAgedPathTest {
             texCoord += random.nextFloat() * 0.5f;
             point.texCoord = texCoord;
             switch (random.nextInt(6)) {
-                // 简化路径目标态：fadeOut 完成且 maxBrightness==0（origMax 含 0 边界）
                 case 0, 1, 2 -> {
                     point.fadeOut = true;
                     point.origMax = random.nextInt(4) == 0 ? 0.0f : random.nextFloat() * 1.5f;
                     point.maxBrightness = 0.0f;
                     point.elapsedWhenFadeOut = random.nextFloat() * 3f;
-                    point.lastProximityMult = random.nextFloat() * 2f - 1f; // 含负值
+                    point.lastProximityMult = random.nextFloat() * 2f - 1f;
                 }
-                // 衰减中的 fadeOut 点（完整路径）
                 case 3 -> {
                     point.fadeOut = true;
                     point.origMax = random.nextFloat() * 1.5f;
@@ -458,7 +392,6 @@ class CampaignContrailBatchHelperAgedPathTest {
                     point.elapsedWhenFadeOut = random.nextFloat() * 3f;
                     point.lastProximityMult = random.nextFloat();
                 }
-                // 活跃点
                 default -> point.maxBrightness = random.nextFloat() * 1.5f;
             }
             contrail.points.add(point);

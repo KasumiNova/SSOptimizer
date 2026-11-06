@@ -15,26 +15,12 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link ContrailBatchHelper} 的编码逻辑验证。
- * <p>
- * 覆盖批次合并的核心：段对编码（位置/UV/颜色）、尾点对（alpha 0、宽度 1/4）、
- * 同混合模式组拼接进同一条 strip 时的退化连接点（重复上一组末顶点两次）、
- * 首组无连接点、不可绘制组不产生顶点。GL 侧的 flush/混合切换/纹理绑定编排
- * 走 {@code org.lwjgl.opengl.GL11}（生产由重定向器改写到 bridge 录制），无 GL
- * 上下文环境下不可触达，其命令结构由 bridge 层单测（GL11BridgeTest）与接入
- * 游戏后的 A/B 验证兜底——本测试只验证纯编码路径（含连接点的时序布局）。
- */
 class ContrailBatchHelperTest {
 
     @BeforeEach
     void resetBatch() {
         ContrailBatchHelper.beginStrip();
     }
-
-    // ------------------------------------------------------------------
-    // 标量工具
-    // ------------------------------------------------------------------
 
     @Test
     void clampColorComponentKeepsAlphaInByteRange() {
@@ -56,15 +42,6 @@ class ContrailBatchHelperTest {
         NORMAL
     }
 
-    // ------------------------------------------------------------------
-    // 单组编码
-    // ------------------------------------------------------------------
-
-    /**
-     * 单组 = 段对（V_MIN/V_MAX）+ 尾点对（alpha 0、宽度为段的 1/4）。
-     * 颜色 alpha 来自 fadeWindow 亮度公式：progress ≥ fadeWindow 时
-     * brightness = (1 - progress) / (1 - fadeWindow)。
-     */
     @Test
     void singleGroupEncodesSegmentThenTailPair() {
         FakeGroup group = groupWith(
@@ -74,7 +51,6 @@ class ContrailBatchHelperTest {
         assertTrue(ContrailBatchHelper.encodeGroup(group, 1f));
         assertEquals(4, ContrailBatchHelper.getNumVertices());
 
-        // 段：position(10,20) ± normal(1,0) × halfWidth(2)
         ContrailBatchHelper.EncodedVertex v0 = ContrailBatchHelper.vertexAt(0);
         assertEquals(8f, v0.x(), 1e-4f);
         assertEquals(20f, v0.y(), 1e-4f);
@@ -92,8 +68,6 @@ class ContrailBatchHelperTest {
         assertEquals(0.99f, v1.v(), 1e-4f);
         assertEquals(105, v1.a());
 
-        // 尾点：tail(30,40) ± normal(1,0) × (width×0.25=1)，alpha 恒 0
-        // （原版尾点偏移 = width/4，作为左右各 1 的半个偏移直接使用）
         ContrailBatchHelper.EncodedVertex v2 = ContrailBatchHelper.vertexAt(2);
         assertEquals(29f, v2.x(), 1e-4f);
         assertEquals(40f, v2.y(), 1e-4f);
@@ -107,32 +81,26 @@ class ContrailBatchHelperTest {
         assertEquals(0, v3.a());
     }
 
-    /** 亮度公式的另一分支：progress < fadeWindow 时 brightness = progress × 10。 */
     @Test
     void fadeInSegmentAlphaUsesProgressTimesTen() {
         FakeGroup group = groupWith(
                 segment(0f, 0f, 1f, 0f, 2f, 1f, 0.02f, 1f, 0.25f),
                 null);
-        // 无尾点：只有段对
         assertTrue(ContrailBatchHelper.encodeGroup(group, 1f));
         assertEquals(2, ContrailBatchHelper.getNumVertices());
-        // brightness = 0.02 × 10 = 0.1999999955f；baseAlpha 200 × = 39.9999991 → 39
         ContrailBatchHelper.EncodedVertex v0 = ContrailBatchHelper.vertexAt(0);
         assertEquals(39, v0.a());
     }
 
-    /** alphaScale 全局缩放参与 alpha 计算（原版 render(float alphaScale) 语义）。 */
     @Test
     void alphaScaleScalesSegmentBrightness() {
         FakeGroup group = groupWith(
                 segment(0f, 0f, 1f, 0f, 2f, 1f, 0.02f, 1f, 0.25f),
                 null);
         assertTrue(ContrailBatchHelper.encodeGroup(group, 0.5f));
-        // brightness = 0.02×10×0.5 = 0.0999999978f；200 × = 19.9999995 → 19
         assertEquals(19, ContrailBatchHelper.vertexAt(0).a());
     }
 
-    /** 颜色为 null 的组不可绘制：不产生任何顶点，也不视为批次异常。 */
     @Test
     void groupWithNullColorEmitsNoVertices() {
         FakeGroup group = new FakeGroup();
@@ -144,7 +112,6 @@ class ContrailBatchHelperTest {
         assertEquals(0, ContrailBatchHelper.getNumVertices());
     }
 
-    /** 段 position/normal 为 null 的段被跳过（原版行为），不打断后续段。 */
     @Test
     void segmentWithNullGeometryIsSkipped() {
         FakeSegment invalid = new FakeSegment();
@@ -162,15 +129,6 @@ class ContrailBatchHelperTest {
         assertEquals(9f, v0.x(), 1e-4f);
     }
 
-    // ------------------------------------------------------------------
-    // 批次合并（连接点）
-    // ------------------------------------------------------------------
-
-    /**
-     * 同混合模式组拼接进同一条 strip：连接点 = 重复上一组末顶点两次
-     * （GL_QUAD_STRIP 退化四边形，零面积不产生碎片），随后新组的段对继续。
-     * 连接点不改变末顶点跟踪（下一组连接点仍引用本组尾点右顶点）。
-     */
     @Test
     void joiningGroupsRepeatsLastVertexTwiceAsDegenerateConnector() {
         FakeGroup groupA = groupWith(
@@ -185,7 +143,6 @@ class ContrailBatchHelperTest {
         assertTrue(ContrailBatchHelper.encodeGroup(groupB, 1f));
         assertEquals(10, ContrailBatchHelper.getNumVertices(), "4 + 2 连接点 + 4");
 
-        // 连接点：v4 = v5 = A 的末顶点（尾点右顶点 v3）
         ContrailBatchHelper.EncodedVertex v3 = ContrailBatchHelper.vertexAt(3);
         ContrailBatchHelper.EncodedVertex v4 = ContrailBatchHelper.vertexAt(4);
         ContrailBatchHelper.EncodedVertex v5 = ContrailBatchHelper.vertexAt(5);
@@ -199,7 +156,6 @@ class ContrailBatchHelperTest {
         assertEquals(v4.x(), v5.x(), 1e-4f);
         assertEquals(v4.y(), v5.y(), 1e-4f);
 
-        // B 的段对从 v6 继续（position(100,0) ± normal(0,1) × halfWidth(1)）
         ContrailBatchHelper.EncodedVertex v6 = ContrailBatchHelper.vertexAt(6);
         assertEquals(100f, v6.x(), 1e-4f);
         assertEquals(-1f, v6.y(), 1e-4f);
@@ -216,7 +172,6 @@ class ContrailBatchHelperTest {
         assertEquals(0.99f, v7.v(), 1e-4f);
     }
 
-    /** 批次首组无连接点：v0 就是首段左顶点，而非上一组的重复顶点。 */
     @Test
     void firstGroupOfBatchHasNoJoinConnector() {
         FakeGroup group = groupWith(
@@ -230,7 +185,6 @@ class ContrailBatchHelperTest {
         assertNotEquals(v0.x(), v0.y(), "首组 v0 是段左顶点，非连接点");
     }
 
-    /** 多组连续拼接：每处连接点都精确重复「当前批次最后一个已编码顶点」。 */
     @Test
     void everyJoinConnectorRepeatsTheBatchTailVertex() {
         FakeGroup groupA = groupWith(
@@ -247,7 +201,6 @@ class ContrailBatchHelperTest {
         ContrailBatchHelper.encodeGroup(groupB, 1f);
         ContrailBatchHelper.encodeGroup(groupC, 1f);
 
-        // 三组各 4 顶点 + 两处连接点各 2 顶点 = 16
         assertEquals(16, ContrailBatchHelper.getNumVertices());
         ContrailBatchHelper.EncodedVertex v3 = ContrailBatchHelper.vertexAt(3);
         ContrailBatchHelper.EncodedVertex v4 = ContrailBatchHelper.vertexAt(4);
@@ -266,7 +219,6 @@ class ContrailBatchHelperTest {
         assertEquals(v10.y(), v11.y(), 1e-4f);
     }
 
-    /** 无尾点的组拼接：连接点重复上一组的段右顶点（无尾点时最后顶点即末段右顶点）。 */
     @Test
     void joinWithoutTailRepeatsLastSegmentVertex() {
         FakeGroup groupA = groupWith(
@@ -289,7 +241,6 @@ class ContrailBatchHelperTest {
         assertEquals(v1.y(), v3.y(), 1e-4f);
     }
 
-    /** beginStrip 重置批次：连接点跟踪与新批次隔离（不跨批次复用末顶点）。 */
     @Test
     void beginStripResetsBatchState() {
         FakeGroup groupA = groupWith(
@@ -309,17 +260,6 @@ class ContrailBatchHelperTest {
         assertEquals(-1f, v0.y(), 1e-4f);
     }
 
-    // ------------------------------------------------------------------
-    // fadeWindow 组级提升的位级一致性（P2：encode 瘦身）
-    // ------------------------------------------------------------------
-
-    /**
-     * P2 把 fadeWindow 从「每段读 maxAge 重算」提升为「组级从 segmentDuration
-     * 算一次」。游戏不变量：每段 maxAge 恒等于组 segmentDuration（原版
-     * addSegment 赋值），两者位级同值。本测试用随机段状态对照逐段公式参考实现，
-     * 验证 encode 输出的每个顶点 alpha 位级一致（含 segmentDuration=0/负值的
-     * fadeWindow 钳制边界——提升版与逐段版走同一守卫）。
-     */
     @Test
     void hoistedFadeWindowMatchesPerSegmentFormulaAcrossRandomStates() {
         Random random = new Random(0xCAFE_BEEFL);
@@ -350,7 +290,7 @@ class ContrailBatchHelperTest {
                 s.position = new Vector2f(random.nextFloat() * 100f, random.nextFloat() * 100f);
                 s.normal = new Vector2f(random.nextFloat() * 2f - 1f, random.nextFloat() * 2f - 1f);
                 s.width = random.nextFloat() * 10f;
-                s.maxAge = segmentDuration; // 游戏不变量：maxAge == segmentDuration
+                s.maxAge = segmentDuration;
                 s.progress = random.nextFloat();
                 s.alphaMult = random.nextFloat();
                 s.u = random.nextFloat();
@@ -360,7 +300,6 @@ class ContrailBatchHelperTest {
             group.tail = new Vector2f(random.nextFloat() * 100f, random.nextFloat() * 100f);
             float alphaScale = random.nextFloat() * 2f;
 
-            // 参考实现：逐段 maxAge 计算 fadeWindow（A1 版本公式），产出期望 alpha
             int[] expectedAlpha = new int[segmentCount];
             for (int i = 0; i < segmentCount; i++) {
                 FakeSegment s = segments[i];
@@ -392,15 +331,10 @@ class ContrailBatchHelperTest {
                 assertEquals(expectedAlpha[i], right.a(), "段 " + i + " 右顶点 alpha 与逐段公式位级一致");
             }
 
-            // 尾点对 alpha 恒 0
             assertEquals(0, ContrailBatchHelper.vertexAt(segmentCount * 2).a());
             assertEquals(0, ContrailBatchHelper.vertexAt(segmentCount * 2 + 1).a());
         }
     }
-
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
 
     private static FakeGroup groupWith(FakeSegment segment, Vector2f tail) {
         return groupWith(new Color(255, 128, 64, 200), segment, tail);
@@ -410,7 +344,7 @@ class ContrailBatchHelperTest {
         FakeGroup group = new FakeGroup();
         group.color = color;
         group.tail = tail;
-        group.segmentDuration = 1f; // 与原版一致：段 maxAge 恒等于组 segmentDuration
+        group.segmentDuration = 1f;
         group.segments.add(segment);
         return group;
     }
@@ -491,7 +425,6 @@ class ContrailBatchHelperTest {
 
         @Override
         public boolean ssoptimizer$removeExpiredSegment() {
-            // 编码测试不触达死亡移除，夹具直接返回 false
             return false;
         }
     }

@@ -5,15 +5,8 @@ import org.lwjgl.opengl.GL11;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link VertexArrayBatch} 的合并构建逻辑验证（无 GL 环境，只断言段/操作/顶点
- * 数组内容；真实 {@code glDrawArrays} 提交侧保持薄逻辑，由冒烟与基准验收）：
- * 顶点属性快照、状态指令的段分隔顺序、属性段内激活切分、颜色精度收窄、
- * 空段剔除与回放回调重置。
- */
 class VertexArrayBatchTest {
 
-    /** 经 VertexStream 编码-回放闭环驱动合并器（同时验证 startReplay/finishReplay 接线）。 */
     private static VertexArrayBatch replay(VertexStream stream) {
         VertexArrayBatch batch = new VertexArrayBatch();
         byte[] data = new byte[stream.length()];
@@ -45,15 +38,12 @@ class VertexArrayBatchTest {
         assertEquals(VertexArrayBatch.FLAG_TEX | VertexArrayBatch.FLAG_COLOR, batch.opDrawFlags(0));
 
         assertEquals(4, batch.vertexCount());
-        // 顶点 0 快照的是录制时的 tex/color 状态
         assertEquals(0.25f, batch.texAt(0, 0));
         assertEquals(0.75f, batch.texAt(0, 1));
         assertEquals(10, batch.colorAt(0, 0));
         assertEquals(40, batch.colorAt(0, 3));
-        // 顶点 2 的 tex 已更新，颜色保持
         assertEquals(0.5f, batch.texAt(2, 0));
         assertEquals(10, batch.colorAt(2, 0));
-        // z 分量补 0
         assertEquals(0.0f, batch.posAt(0, 2));
     }
 
@@ -77,7 +67,6 @@ class VertexArrayBatchTest {
         assertEquals(VertexArrayBatch.OP_BIND_TEXTURE, batch.opKind(1));
         assertEquals(1234, batch.opArg(1, 0));
         assertEquals(VertexArrayBatch.OP_DRAW, batch.opKind(2));
-        // 第二段 DRAW 的 first 指向顶点 2
         assertEquals(2, batch.opArg(2, 1));
         assertEquals(2, batch.opArg(2, 2));
     }
@@ -95,14 +84,12 @@ class VertexArrayBatchTest {
         VertexArrayBatch batch = replay(stream);
 
         assertEquals(2, batch.opCount());
-        // 前半段顶点无 tex 数组（用回放现场外部当前值），后半段启用
         assertEquals(0, batch.opDrawFlags(0));
         assertEquals(0, batch.opArg(0, 1));
         assertEquals(2, batch.opArg(0, 2));
         assertEquals(VertexArrayBatch.FLAG_TEX, batch.opDrawFlags(1));
         assertEquals(2, batch.opArg(1, 1));
         assertEquals(1, batch.opArg(1, 2));
-        // 段内激活后的顶点带着激活时的 tex 快照
         assertEquals(0.5f, batch.texAt(2, 0));
     }
 
@@ -182,7 +169,6 @@ class VertexArrayBatchTest {
         second.copyTo(secondData);
         VertexStream.replay(secondData, secondData.length, batch);
 
-        // 第二次回放从零开始：上一批次的顶点计数/颜色定义不残留
         assertEquals(1, batch.vertexCount());
         assertEquals(1, batch.opCount());
         assertEquals(0, batch.opDrawFlags(0));
@@ -191,8 +177,6 @@ class VertexArrayBatchTest {
 
     @Test
     void spriteSequenceCollapsesToOneDrawPerStateRun() {
-        // 模拟 SpriteRenderHelper.fallbackRenderSprite 的每 sprite 流内状态对：
-        // 三个同混合状态的连续 sprite 应收敛为「一组状态调用 + 单次合并 DRAW + 收尾 disable」。
         VertexStream stream = new VertexStream();
         for (int i = 0; i < 3; i++) {
             stream.color4ub((byte) 255, (byte) 255, (byte) 255, (byte) 255);
@@ -217,11 +201,9 @@ class VertexArrayBatchTest {
         assertEquals(VertexArrayBatch.OP_ENABLE, batch.opKind(1));
         assertEquals(GL11.GL_BLEND, batch.opArg(1, 0));
         assertEquals(VertexArrayBatch.OP_BLEND_FUNC, batch.opKind(2));
-        // 三个 quad 合并为一次 draw（12 顶点）
         assertEquals(VertexArrayBatch.OP_DRAW, batch.opKind(3));
         assertEquals(0, batch.opArg(3, 1));
         assertEquals(12, batch.opArg(3, 2));
-        // 中间两对 disable/enable 被抵消为 NOOP，末位 disable 保留以复原状态
         assertEquals(VertexArrayBatch.OP_NOOP, batch.opKind(4));
         assertEquals(VertexArrayBatch.OP_NOOP, batch.opKind(5));
         assertEquals(VertexArrayBatch.OP_DISABLE, batch.opKind(6));
@@ -243,7 +225,6 @@ class VertexArrayBatchTest {
 
         VertexArrayBatch batch = replay(stream);
 
-        // disable 被中间的 draw 观测，状态对不可抵消，两段 DRAW 也不得跨其合并
         assertEquals(5, batch.opCount());
         assertEquals(VertexArrayBatch.OP_ENABLE, batch.opKind(0));
         assertEquals(VertexArrayBatch.OP_DRAW, batch.opKind(1));
@@ -266,7 +247,6 @@ class VertexArrayBatchTest {
 
         VertexArrayBatch batch = replay(stream);
 
-        // 第一条 blendFunc 未被任何 draw 观测：原地改写为后值，不产生第二条
         assertEquals(2, batch.opCount());
         assertEquals(VertexArrayBatch.OP_BLEND_FUNC, batch.opKind(0));
         assertEquals(GL11.GL_SRC_ALPHA, batch.opArg(0, 0));
@@ -292,9 +272,6 @@ class VertexArrayBatchTest {
 
         VertexArrayBatch batch = replay(stream);
 
-        // 首次绑定保留，第二次同值绑定跳过，其后两段完整 quad（各 4 顶点，
-        // 图元边界对齐）合并为一次 draw——注意段内顶点数不足 4 的 QUADS 段
-        // 不得合并（跨段拼凑出的 quad 是分开绘制时不存在几何）
         assertEquals(3, batch.opCount());
         assertEquals(VertexArrayBatch.OP_DRAW, batch.opKind(0));
         assertEquals(4, batch.opArg(0, 2));
@@ -319,7 +296,6 @@ class VertexArrayBatchTest {
         assertEquals(GL11.GL_QUADS, batch.opArg(0, 0));
         assertEquals(4, batch.opArg(0, 2));
         assertEquals(VertexArrayBatch.FLAG_TEX | VertexArrayBatch.FLAG_COLOR, batch.opDrawFlags(0));
-        // 角点 tex 与逐顶点展开语义一致
         assertEquals(0.25f, batch.texAt(0, 0));
         assertEquals(0.5f, batch.texAt(0, 1));
         assertEquals(0.75f, batch.texAt(1, 1));
@@ -331,8 +307,6 @@ class VertexArrayBatchTest {
 
     @Test
     void mergedRunDeduplicatesAcrossBatchBoundary() {
-        // 模拟渲染线程串协议（VertexBatchCommand.executeMerged）：两条相邻批次
-        // 共享合并器——跨批次的 disable→enable 状态对被抵消，相邻 DRAW 跨批次合并。
         VertexArrayBatch batch = new VertexArrayBatch();
         batch.startReplay();
         for (int i = 0; i < 2; i++) {
@@ -353,11 +327,9 @@ class VertexArrayBatchTest {
 
         assertEquals(4, batch.opCount());
         assertEquals(VertexArrayBatch.OP_ENABLE, batch.opKind(0));
-        // 两个批次的 quad 合并为一次 draw（8 顶点）
         assertEquals(VertexArrayBatch.OP_DRAW, batch.opKind(1));
         assertEquals(0, batch.opArg(1, 1));
         assertEquals(8, batch.opArg(1, 2));
-        // 跨批次的 disable→enable 对抵消为 NOOP，末位 disable 保留
         assertEquals(VertexArrayBatch.OP_NOOP, batch.opKind(2));
         assertEquals(VertexArrayBatch.OP_DISABLE, batch.opKind(3));
         assertEquals(8, batch.vertexCount());
@@ -365,8 +337,6 @@ class VertexArrayBatchTest {
 
     @Test
     void startReplayResetsSealedBufferLimits() {
-        // 模拟生产路径：小批次回放后 executeGl 收窄 limit，随后更大批次
-        // 必须能完整写入（游戏加载画面第二帧即触发此序列的越界崩溃）。
         VertexArrayBatch batch = new VertexArrayBatch();
         VertexStream small = new VertexStream();
         small.begin(GL11.GL_QUADS);
@@ -411,20 +381,15 @@ class VertexArrayBatchTest {
 
     @Test
     void oddLineSegmentIsNotMergedAcrossPrimitiveBoundary() {
-        // 复现实机「线段对角交叉」bug（战役地图刻度线错乱 / 战斗目标框画成 X 形）：
-        // 前一段 GL_LINES 顶点数为奇数（3，AB 一条线 + C 悬空被 GL 忽略），若与
-        // 后一段（2 顶点 DE）合并为一次 glDrawArrays，顶点配对整体偏移一位——
-        // 本应悬空的 C 与后一段首顶点 D 错误配对成对角交叉线。
-        // 断言两段保持独立 DRAW 且顶点序列与录制顺序完全一致。
         VertexStream stream = new VertexStream();
         stream.begin(GL11.GL_LINES);
-        stream.vertex2f(0.0f, 0.0f); // A
-        stream.vertex2f(1.0f, 0.0f); // B（AB 一条线）
-        stream.vertex2f(2.0f, 0.0f); // C（悬空，分开绘制时 GL 忽略）
+        stream.vertex2f(0.0f, 0.0f);
+        stream.vertex2f(1.0f, 0.0f);
+        stream.vertex2f(2.0f, 0.0f);
         stream.end();
         stream.begin(GL11.GL_LINES);
-        stream.vertex2f(0.0f, 1.0f); // D
-        stream.vertex2f(1.0f, 1.0f); // E（DE 一条线）
+        stream.vertex2f(0.0f, 1.0f);
+        stream.vertex2f(1.0f, 1.0f);
         stream.end();
 
         VertexArrayBatch batch = replay(stream);
@@ -438,7 +403,6 @@ class VertexArrayBatchTest {
         assertEquals(GL11.GL_LINES, batch.opArg(1, 0));
         assertEquals(3, batch.opArg(1, 1));
         assertEquals(2, batch.opArg(1, 2));
-        // 重放后的顶点序列与录制一致（顺序未被打乱/偏移）
         assertEquals(5, batch.vertexCount());
         assertEquals(0.0f, batch.posAt(0, 0));
         assertEquals(1.0f, batch.posAt(1, 0));
@@ -451,8 +415,6 @@ class VertexArrayBatchTest {
 
     @Test
     void lineStripIsNeverMerged() {
-        // 连续型图元合并会在两段顶点之间引入跨段连线：段1 [A,B,C]（AB、BC）
-        // + 段2 [D,E]（DE）合并后多出 CD 连线——无条件禁止合并。
         VertexStream stream = new VertexStream();
         stream.begin(GL11.GL_LINE_STRIP);
         stream.vertex2f(0.0f, 0.0f);
@@ -478,8 +440,6 @@ class VertexArrayBatchTest {
 
     @Test
     void alignedLineSegmentsStillMerge() {
-        // 前一段顶点数恰为图元边界整数倍（4 = 2 条线）时合并保持合法：
-        // 线段类图元的合并优化不受影响。
         VertexStream stream = new VertexStream();
         stream.begin(GL11.GL_LINES);
         stream.vertex2f(0.0f, 0.0f);

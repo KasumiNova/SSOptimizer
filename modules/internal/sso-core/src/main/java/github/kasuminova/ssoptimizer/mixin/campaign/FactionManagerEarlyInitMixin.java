@@ -15,20 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 修复 {@code FactionManager} 被提前构造导致的 player faction 永久为空。
- * <p>
- * 注入目标：{@code com.fs.starfarer.campaign.FactionManager} 的
- * {@code getPlayerFaction()}/{@code getFaction(String)}/{@code getAllFactions()}<br>
- * 注入动机：{@code FactionManager} 构造器对 {@code SpecStore} 中的 {@code FactionSpec}
- * 做一次性快照并缓存 player faction；当脚本编译线程上的 mod 脚本类静态初始化
- * （如 SOTF 的 SOTFCEO_threatFabSwarm）在 faction spec 注册完成前触发
- * {@code CampaignEngine.getInstance()} 时，快照为空，player faction 永久为 {@code null}，
- * 标题界面 codex 初始化（{@code Misc.getBasePlayerColor()}）随即 NPE。<br>
- * 注入效果：读取路径上检测「player faction 为空但 player spec 已注册」的过期快照，
- * 重新执行 {@code readResolve()} 补齐全部阵营并重建 player faction 引用。
- * {@code readResolve()} 本身幂等（按 specId 去重），正常构造的实例不会触发自愈。
- */
+/** player spec 注册完成前创建的阵营快照必须在读取时重建。 */
 @Mixin(targets = GameMixinSignatures.FactionManager.TARGET_CLASS)
 public abstract class FactionManagerEarlyInitMixin {
     private static final Logger LOGGER = Logger.getLogger(FactionManagerEarlyInitMixin.class);
@@ -57,10 +44,6 @@ public abstract class FactionManagerEarlyInitMixin {
         ssoptimizer$ensureFactionsSnapshotted();
     }
 
-    /**
-     * 快照过期时重建阵营表。仅在 player faction 缺失且 player spec 已注册时触发，
-     * 触发即说明构造早于 spec 注册；重建后记录警告日志以便追踪提前创建的调用方。
-     */
     @Unique
     private synchronized void ssoptimizer$ensureFactionsSnapshotted() {
         if (playerFaction != null || !SpecStore.hasSpec(FactionSpec.class, "player")) {

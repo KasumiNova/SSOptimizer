@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Fast UTF-8 reader used to replace LoadingUtils' per-line text-loading path.
- */
 public final class LoadingTextResourceReader {
     private static final byte UTF8_BOM_0 = (byte) 0xEF;
     private static final byte UTF8_BOM_1 = (byte) 0xBB;

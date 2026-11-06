@@ -23,17 +23,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * ResourceLoader 文件探测路径的 Mixin 重写。
- * <p>
- * 注入目标：{@code com.fs.util.ResourceLoader}<br>
- * 注入动机：原版对 DIRECTORY 资源根目录的访问是「逐文件 exists stat 直到命中」，
- * 目录枚举还会按「子目录 × mod 根目录」重复 listFiles，mod 数量多时启动期产生
- * 大量文件系统调用。<br>
- * 注入效果：DIRECTORY 资源的打开、枚举、exists/lastModified 查询全部转交
- * {@link ResourceIndex} 的内存快照；ABSOLUTE_AND_CWD 与 CLASSPATH 资源保持原版逻辑。
- * {@code -Dssoptimizer.disable.resourceindex=true} 时逐方法回退原版文件访问。
- */
 @Mixin(targets = GameClassNames.RESOURCE_LOADER_DOTTED)
 public abstract class ResourceLoaderMixin {
     @Unique
@@ -42,14 +31,6 @@ public abstract class ResourceLoaderMixin {
     @Shadow(remap = false)
     private List<ResourceLoader.ResourceSpec> resourceSpecs;
 
-    /**
-     * resourcePath（source filter）读取重定向 → 线程本地。
-     * <p>
-     * 动机：原版 resourcePath 是实例级全局状态，「setResourcePath 写入 → 下次
-     * openResource 读取即置 null」的消费序列在并行加载下会跨线程泄漏（线程 A 的
-     * filter 被线程 B 消费，B 的合法资源被错误过滤报 not found）。改由
-     * {@link ResourceLoaderThreadState} 按线程封闭，同线程语义与原版一致。
-     */
     @Redirect(method = "openResource(Ljava/lang/String;Z)Ljava/io/InputStream;", remap = false,
             at = @At(value = "FIELD", opcode = Opcodes.GETFIELD,
                     target = "Lcom/fs/util/ResourceLoader;resourcePath:Ljava/lang/String;"))
@@ -57,12 +38,6 @@ public abstract class ResourceLoaderMixin {
         return ResourceLoaderThreadState.getSourceFilter();
     }
 
-    /**
-     * resourcePath 写入重定向 → 线程本地。
-     * <p>
-     * 覆盖两处写入：{@code setResourcePath(String)} 的设置与
-     * {@code openResource(String, boolean)} 消费后的置 null（均为方法内唯一锚点）。
-     */
     @Redirect(method = {"openResource(Ljava/lang/String;Z)Ljava/io/InputStream;",
             "setResourcePath(Ljava/lang/String;)V"}, remap = false,
             at = @At(value = "FIELD", opcode = Opcodes.PUTFIELD,
@@ -71,12 +46,6 @@ public abstract class ResourceLoaderMixin {
         ResourceLoaderThreadState.setSourceFilter(filter);
     }
 
-    /**
-     * suppressCustomResources 读取重定向 → 线程本地。
-     * <p>
-     * 原版为全局静态标记：loadCSV/loadJSON(path, false) 置 true，下次 openResource
-     * 读取后置 false。并行加载下同样存在跨线程泄漏，一并封闭到线程本地。
-     */
     @Redirect(method = "openResource(Ljava/lang/String;Z)Ljava/io/InputStream;", remap = false,
             at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC,
                     target = "Lcom/fs/util/ResourceLoader;suppressCustomResources:Z"))
@@ -84,7 +53,6 @@ public abstract class ResourceLoaderMixin {
         return ResourceLoaderThreadState.isSuppressCustomResources();
     }
 
-    /** suppressCustomResources 消费置 false 重定向 → 线程本地。 */
     @Redirect(method = "openResource(Ljava/lang/String;Z)Ljava/io/InputStream;", remap = false,
             at = @At(value = "FIELD", opcode = Opcodes.PUTSTATIC,
                     target = "Lcom/fs/util/ResourceLoader;suppressCustomResources:Z"))
@@ -92,16 +60,6 @@ public abstract class ResourceLoaderMixin {
         ResourceLoaderThreadState.setSuppressCustomResources(suppress);
     }
 
-    /**
-     * 按指定资源规格打开资源流。
-     *
-     * @param path 资源相对路径
-     * @param spec 资源规格
-     * @return 资源流；未命中时返回 null（原版语义）
-     * @throws FileNotFoundException 打开失败时抛出
-     * @author KasumiNova
-     * @reason DIRECTORY 资源改走 ResourceIndex 内存快照，消除逐文件 stat。
-     */
     @Overwrite(remap = false)
     public InputStream openResource(final String path,
                                     final ResourceLoader.ResourceSpec spec) throws FileNotFoundException {
@@ -142,12 +100,6 @@ public abstract class ResourceLoaderMixin {
         }
     }
 
-    /**
-     * 查询指定资源规格下资源的最后修改时间。
-     *
-     * @author KasumiNova
-     * @reason DIRECTORY 资源改走 ResourceIndex 内存快照。
-     */
     @Overwrite(remap = false)
     public long getResourceLastModified(final String path,
                                         final ResourceLoader.ResourceSpec spec) {
@@ -169,12 +121,6 @@ public abstract class ResourceLoaderMixin {
         }
     }
 
-    /**
-     * 查询指定资源规格下资源是否存在。
-     *
-     * @author KasumiNova
-     * @reason DIRECTORY 资源改走 ResourceIndex 内存快照。
-     */
     @Overwrite(remap = false)
     public boolean resourceExists(final String path,
                                   final ResourceLoader.ResourceSpec spec) {
@@ -200,12 +146,6 @@ public abstract class ResourceLoaderMixin {
         }
     }
 
-    /**
-     * 解析指定资源规格下资源的 File。
-     *
-     * @author KasumiNova
-     * @reason DIRECTORY 资源改走 ResourceIndex 内存快照。
-     */
     @Overwrite(remap = false)
     public File getResourceFile(final String path,
                                 final ResourceLoader.ResourceSpec spec) {
@@ -229,15 +169,6 @@ public abstract class ResourceLoaderMixin {
         }
     }
 
-    /**
-     * 枚举目录下指定后缀的文件路径（跨资源根去重，返回相对根目录路径）。
-     *
-     * @param dir 目录相对路径
-     * @param suffix 文件名后缀过滤
-     * @return 去重后的路径列表
-     * @author KasumiNova
-     * @reason DIRECTORY 资源改走 ResourceIndex 内存快照，消除「子目录 × mod 根目录」重复 listFiles。
-     */
     @Overwrite(remap = false)
     public List<String> getPathsInDir(final String dir, final String suffix) {
         final LinkedHashSet<String> seen = new LinkedHashSet<>();
@@ -285,16 +216,6 @@ public abstract class ResourceLoaderMixin {
         return new ArrayList<>(result);
     }
 
-    /**
-     * 枚举目录下指定后缀的文件路径。
-     *
-     * @param dir 目录相对路径
-     * @param suffix 文件名后缀过滤
-     * @param relative true 时走去重相对路径逻辑，false 时返回不去重的绝对路径
-     * @return 路径列表
-     * @author KasumiNova
-     * @reason DIRECTORY 资源改走 ResourceIndex 内存快照。
-     */
     @Overwrite(remap = false)
     public List<String> getPathsInDir(final String dir, final String suffix, final boolean relative) {
         if (relative) {
@@ -330,14 +251,6 @@ public abstract class ResourceLoaderMixin {
         return result;
     }
 
-    /**
-     * 枚举目录下的子目录（跨资源根去重）。
-     *
-     * @param dir 目录相对路径
-     * @return 子目录相对路径列表
-     * @author KasumiNova
-     * @reason DIRECTORY 资源改走 ResourceIndex 内存快照。
-     */
     @Overwrite(remap = false)
     public List<String> getSubdirectories(final String dir) {
         final LinkedHashSet<String> result = new LinkedHashSet<>();

@@ -3,10 +3,6 @@ package github.kasuminova.ssoptimizer.common.loading;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/**
- * 测试用 SSOBC 容器构造器：按契约布局（小端头 + 级别表 + 紧密块数据）
- * 生成合法容器字节，块数据填充确定性伪随机内容。
- */
 final class SsobcTestContainers {
     private SsobcTestContainers() {
     }
@@ -41,7 +37,6 @@ final class SsobcTestContainers {
         return buffer.array();
     }
 
-    /** 便捷重载：完整 mip 链。 */
     static byte[] buildFullChain(final int formatId, final int width, final int height) {
         return build(formatId, width, height, SsobcContainer.fullChainLevels(width, height));
     }

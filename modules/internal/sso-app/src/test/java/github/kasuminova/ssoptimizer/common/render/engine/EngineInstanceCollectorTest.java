@@ -17,17 +17,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 引擎实例收集器测试：参考实现逐行转写自反编译原版
- * {@code Engine.render(float)} / {@code renderFighter(float)}，与收集器输出逐位对比。
- */
 class EngineInstanceCollectorTest {
 
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
-
-    /** 常规舰船帧参数（非 omega、withSpread、非战机/导弹、无 shifter）。 */
     private static FrameInput shipFrame() {
         return new FrameInput(
                 1.0f, 5.0f,
@@ -52,10 +43,6 @@ class EngineInstanceCollectorTest {
                 field + " 应与原版公式逐位一致（expected=" + expected + ", actual=" + actual + "）");
     }
 
-    // ------------------------------------------------------------------
-    // 参考实现：逐行转写原版公式（与收集器相互独立，防漂移）
-    // ------------------------------------------------------------------
-
     private static final class VanillaRef {
         final float var5;
         final float var53;
@@ -77,7 +64,6 @@ class EngineInstanceCollectorTest {
             this.var53 = v53 * 0.75f;
         }
 
-        /** 原版 ship 槽位公共参数（var16/var22/var24 等）。 */
         float[] slotParams(FrameInput frame, SlotInput slot) {
             float var9 = slot.flameLevel();
             float var10 = slot.adjustedLevel();
@@ -134,8 +120,6 @@ class EngineInstanceCollectorTest {
             }
             float var29 = Math.min(var23 / 2.0f, var22 / 4.0f);
             float var30 = var29 / var22;
-            // 返回：edgeAlpha, stripLength, innerWidth, stripWidth, spreadRotation, passCount,
-            //       innerLength, texSpan, spread(重置后), maxSpread, primaryBrightness
             return new float[]{var16, var22, var23, var24, var50, var27, var29, var30, var13, var14, var19};
         }
 
@@ -208,10 +192,6 @@ class EngineInstanceCollectorTest {
         assertEquals(expected.textureId(), actual.textureId(), "textureId");
     }
 
-    // ------------------------------------------------------------------
-    // 条带实例：舰船 6 pass 逐位一致
-    // ------------------------------------------------------------------
-
     @Test
     void shipStripInstancesMatchVanillaFormulaBitExact() {
         FrameInput frame = shipFrame();
@@ -254,7 +234,6 @@ class EngineInstanceCollectorTest {
             assertStripEquals(ref.stripPass(frame, slot, p, texU, 0), instances.get(layer));
             texU += 1.0f;
         }
-        // omega：rotation1 为 omega 角速度公式、rotation2 恒 0
         float expectedRot1 = Math.signum(-5.0f)
                 * (float) Math.pow(Math.min(1.0f, 5.0f / 120.0f), 2) * 10.0f;
         assertEquals(0.0f, instances.get(0).rotation2());
@@ -283,10 +262,6 @@ class EngineInstanceCollectorTest {
             texU += 1.0f / 6.0f;
         }
     }
-
-    // ------------------------------------------------------------------
-    // 核心 / 辉光
-    // ------------------------------------------------------------------
 
     @Test
     void shipCoreInstanceMatchesVanillaFormula() {
@@ -325,7 +300,6 @@ class EngineInstanceCollectorTest {
         List<GlowInstance> glows = batch.glows.get(0).instances();
         assertEquals(2, glows.size(), "每槽 glow 为外圈 + 白芯两个 quad");
 
-        // 参考：var57 = var24*(2+var19)；var61 = min(var16, max(max(var19*0.25, spread/maxSpread*0.5), var53, 0.6)*0.75*f)
         VanillaRef ref = new VanillaRef(frame);
         float[] p = ref.slotParams(frame, slot);
         float var24 = p[3];
@@ -378,10 +352,6 @@ class EngineInstanceCollectorTest {
                 "原版 maxSpread==0 时条带宽度为 NaN");
     }
 
-    // ------------------------------------------------------------------
-    // 战机路径
-    // ------------------------------------------------------------------
-
     @Test
     void fighterSlotEmitsThreePassesAndNoCore() {
         FrameInput frame = new FrameInput(
@@ -397,7 +367,6 @@ class EngineInstanceCollectorTest {
         assertEquals(3, batch.strips.get(0).instances().size(), "战机每槽 3 个条带 pass");
         assertTrue(batch.cores.isEmpty(), "战机路径无火焰核心 pass");
 
-        // 参考：战机公式（passCount=3、midAlpha 系数 255、无 spread 旋转）
         float var7 = 0.5f;
         float var14 = Math.min(var7 / 0.4f, 1.0f);
         float var35 = Math.max(0.09f, var7 - 0.8f) / 0.19999999f;
@@ -432,24 +401,19 @@ class EngineInstanceCollectorTest {
             texU += 1.0f / 3.0f;
         }
 
-        // 战机 glow：无核心旋转与 0.9 缩放
         assertEquals(2, batch.glows.get(0).instances().size());
         GlowInstance glow = batch.glows.get(0).instances().get(0);
         assertFloatBits(1.0f, glow.scaleX(), "战机 glow 无 S(0.9,1)");
         assertFloatBits(0.0f, glow.coreRotation(), "战机 glow 无核心旋转");
     }
 
-    // ------------------------------------------------------------------
-    // 分组键与顺序
-    // ------------------------------------------------------------------
-
     @Test
     void groupingByStageAndTexturePreservesFirstAppearanceOrder() {
         FrameInput frame = shipFrame();
         List<SlotInput> slots = new ArrayList<>();
-        slots.add(slot(true));   // primary → 11
-        slots.add(slot(false));  // secondary → 22
-        slots.add(slot(true));   // primary → 11
+        slots.add(slot(true));
+        slots.add(slot(false));
+        slots.add(slot(true));
         CollectedBatch batch = new CollectedBatch();
         EngineInstanceCollector.collect(frame, slots, batch);
 
@@ -475,10 +439,6 @@ class EngineInstanceCollectorTest {
         assertTrue(batch.isEmpty());
     }
 
-    // ------------------------------------------------------------------
-    // alpha 截断边界
-    // ------------------------------------------------------------------
-
     @Test
     void glColorByteReplicatesVanillaTruncationAndWrap() {
         assertEquals(254, EngineInstanceCollector.glColorByte(254.99999f), "int 截断而非四舍五入");
@@ -490,10 +450,6 @@ class EngineInstanceCollectorTest {
         assertEquals(44, EngineInstanceCollector.glColorByte(300.5f), "300 → (byte)44");
         assertEquals(255, EngineInstanceCollector.glColorByte(-1.5f), "-1 → (byte)0xFF");
     }
-
-    // ------------------------------------------------------------------
-    // VBO 展开与索引
-    // ------------------------------------------------------------------
 
     private static float[] refRotate(float x, float y, float deg) {
         float radians = deg * 0.017453292519943295769f;

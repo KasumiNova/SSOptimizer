@@ -14,13 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link BufferMapEmulator} 仿真决策与在途映射生命周期验证。
- * <p>
- * 直接调用仿真入口做完整逻辑验证：access 标志判定、绑定簿记、镜像复用与增长、
- * unmap 快照内容、重入与未知 target 回退。GL 上传任务（enqueueUpload）依赖渲染
- * 线程上下文，不在单元测试覆盖范围。
- */
 class BufferMapEmulatorTest {
     private static final int TARGET = GL31.GL_TEXTURE_BUFFER;
     private static final int VBO = 7;
@@ -87,7 +80,6 @@ class BufferMapEmulatorTest {
         BufferMapEmulator.onBindBuffer(TARGET, VBO);
         assertNotNull(BufferMapEmulator.tryEmulateMapRange(TARGET, 0, 128, GL30.GL_MAP_WRITE_BIT));
         assertNotNull(BufferMapEmulator.pollEmulatedUnmap(TARGET));
-        // 需求翻倍后镜像增长；随后的小需求复用增长后的同一镜像（视图 capacity 反映底层容量）
         assertNotNull(BufferMapEmulator.tryEmulateMapRange(TARGET, 0, 1024, GL30.GL_MAP_WRITE_BIT));
         assertNotNull(BufferMapEmulator.pollEmulatedUnmap(TARGET));
         ByteBuffer view = BufferMapEmulator.tryEmulateMapRange(TARGET, 0, 512, GL30.GL_MAP_WRITE_BIT);
@@ -107,11 +99,6 @@ class BufferMapEmulatorTest {
         assertNull(upload.data, "映射期间 VBO 被删除：快照数据丢弃");
     }
 
-    /**
-     * 映射视图必须保留镜像字节序：{@code duplicate()} 会把序重置为 BIG_ENDIAN（JDK 行为），
-     * 若不复原，调用方经 {@code asFloatBuffer()} 写入的节点数据会以翻转字节序落进快照，
-     * 上传 GPU 后按原生序解读即成垃圾坐标（TrailEntity 弧拉成超长线段的根因）。
-     */
     @Test
     void mappedViewPreservesMirrorByteOrder() {
         BufferMapEmulator.onBindBuffer(TARGET, VBO);
@@ -124,7 +111,6 @@ class BufferMapEmulatorTest {
         mirror.asFloatBuffer().put(new float[]{1.0306f, 4.421f});
         BufferMapEmulator.PendingUpload upload = BufferMapEmulator.pollEmulatedUnmap(TARGET);
         assertNotNull(upload);
-        // 快照字节必须与原生序 putFloat 的落字节一致（翻转序会产生 BE 编码字节）
         ByteBuffer expected = ByteBuffer.allocate(8).order(java.nio.ByteOrder.nativeOrder());
         expected.putFloat(1.0306f).putFloat(4.421f);
         org.junit.jupiter.api.Assertions.assertArrayEquals(expected.array(), upload.data);
@@ -137,11 +123,6 @@ class BufferMapEmulatorTest {
                 GL15.GL_ARRAY_BUFFER, 0, 64, GL30.GL_MAP_WRITE_BIT), "ARRAY_BUFFER 必须可仿真");
     }
 
-    /**
-     * BoxUtil 折叠进主帧后的多线程在途映射：两条线程在同一 target（不同 VBO）上并发持有
-     * 写映射时，双方都必须独立仿真且 unmap 各配各对——后到 unmap 的一方不得消费另一方
-     * 的在途登记（否则另一方尚在写入的镜像会被提前快照上传，实例数据/节点数据错乱）。
-     */
     @Test
     void concurrentCrossThreadMappingsAreIsolated() throws InterruptedException {
         final int vboB = VBO + 1;
@@ -173,7 +154,6 @@ class BufferMapEmulatorTest {
         assertEquals(11, uploadB[0].data[0]);
         assertEquals(18, uploadB[0].data[7]);
 
-        // B 已 unmap 后 A 才写完：A 的快照必须取自 A 写完之后的镜像，且 VBO/偏移不被 B 串扰
         mirrorA.put(new byte[]{1, 2, 3, 4});
         BufferMapEmulator.PendingUpload uploadA = BufferMapEmulator.pollEmulatedUnmap(TARGET);
         assertNotNull(uploadA, "A 的 unmap 必须仍能找到自己的在途映射（未被 B 消费）");
@@ -185,12 +165,6 @@ class BufferMapEmulatorTest {
         assertNull(BufferMapEmulator.pollEmulatedUnmap(TARGET), "双方 unmap 后无残留登记");
     }
 
-    /**
-     * 持久/相干映射必须回退真实映射：此类映射常驻不 unmap，CPU 侧持续写、不经 GL 调用
-     * 即对 GPU 可见（BoxUtil 1.6.0 静态尾迹池 {@code BUtil_StaticTrailMemoryPool} 的
-     * WRITE|PERSISTENT 用法），镜像快照模型下数据永远不上传——尾迹完全不渲染且无报错
-     * 的根因。此处验证持久/相干标志位直接判退，不得进入仿真。
-     */
     @Test
     void persistentOrCoherentMappingFallsBack() {
         BufferMapEmulator.onBindBuffer(TARGET, VBO);
@@ -201,17 +175,11 @@ class BufferMapEmulatorTest {
                 TARGET, 0, 256, GL30.GL_MAP_WRITE_BIT | org.lwjgl.opengl.GL44.GL_MAP_PERSISTENT_BIT
                         | org.lwjgl.opengl.GL44.GL_MAP_COHERENT_BIT),
                 "WRITE|PERSISTENT|COHERENT 必须回退真实映射");
-        // 判退后未留下在途登记：随后的普通纯写映射不受影响，unmap 也不误配
         assertNotNull(BufferMapEmulator.tryEmulateMapRange(
                 TARGET, 0, 64, GL30.GL_MAP_WRITE_BIT), "持久映射判退不得影响后续仿真");
         assertNotNull(BufferMapEmulator.pollEmulatedUnmap(TARGET));
     }
 
-    /**
-     * 绑定簿记按线程隔离：线程 B 的 bind 不得覆盖线程 A 的绑定归属——非 RT 下各线程
-     * 各有独立 GL 上下文（BoxUtil SharedDrawable 模型），bind/map 交错时 A 的映射必须
-     * 仍归属 A 自己绑定的 VBO，否则 A 的数据会被上传到 B 的池。
-     */
     @Test
     void bindingBookkeepingIsPerThread() throws InterruptedException {
         final int vboB = VBO + 1;

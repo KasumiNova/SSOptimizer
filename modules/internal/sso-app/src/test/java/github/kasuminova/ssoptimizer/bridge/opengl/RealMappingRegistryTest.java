@@ -7,10 +7,6 @@ import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link RealMappingRegistry} 的真实映射生命周期登记验证：
- * 登记/查询/失效/清空四组静态操作的真实簿记行为。
- */
 class RealMappingRegistryTest {
 
     @AfterEach
@@ -71,7 +67,6 @@ class RealMappingRegistryTest {
         assertNull(RealMappingRegistry.tokenFor(mappingA), "reset 后全部登记清空");
         assertNull(RealMappingRegistry.tokenFor(mappingB));
 
-        // 清空后可正常重新登记（验证不是一次性卡死）
         RealMappingRegistry.Token token = RealMappingRegistry.track(7, mappingA);
         assertNotNull(token);
         assertSame(token, RealMappingRegistry.tokenFor(mappingA));

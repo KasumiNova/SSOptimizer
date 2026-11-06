@@ -8,10 +8,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Exports generated BMFont artifacts and a small manifest for manual A/B
- * inspection.
- */
 public final class FontArtifactExporter {
     public static final String EXPORT_PROPERTY     = "ssoptimizer.font.export";
     public static final String EXPORT_DIR_PROPERTY = "ssoptimizer.font.export.dir";

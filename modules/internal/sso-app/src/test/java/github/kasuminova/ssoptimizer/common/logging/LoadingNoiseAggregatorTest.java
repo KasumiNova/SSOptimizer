@@ -7,16 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 验证加载期噪音聚合器（与日志框架无关的核心逻辑）：模式命中计数、flush 汇总输出、
- * 非噪音消息不受影响、多分类输出顺序与空 flush 语义。
- *
- * <p>消息样本全部取自真实 starsector.log 行（仅去掉日志时间戳/线程/logger 前缀）。
- * 不依赖任何日志框架输出通道（reporter 注入收集器），与 log4j 实现无关。</p>
- */
 class LoadingNoiseAggregatorTest {
-
-    // ---- 模式清单覆盖：每条样本应命中且计入正确分类 ----
 
     @Test
     void aggregatesAllNoisePatternSamples() {
@@ -108,31 +99,23 @@ class LoadingNoiseAggregatorTest {
         assertEquals(List.of("[SSOptimizer] Loaded 1 JSON files"), reports, "第二次 flush 不再重复输出");
     }
 
-    // ---- 非噪音消息不受影响 ----
-
     @Test
     void nonNoiseMessagesAreNeverSuppressed() {
         final List<String> reports = new ArrayList<>();
         final LoadingNoiseAggregator aggregator = new LoadingNoiseAggregator(reports::add);
 
-        // 加载期诊断信息（有价值，必须保留）
         assertFalse(aggregator.decideSuppress("Ship hull spec [LTHS_AssemblyLine] not found in ship_data.csv"));
         assertFalse(aggregator.decideSuppress("Weapon spec [null] not found!"));
         assertFalse(aggregator.decideSuppress("Ship system [FM_FighterFlare] from ship_systems.csv not found in store"));
         assertFalse(aggregator.decideSuppress("Getting ready to load jar file [data/scripts/ModPlugin.jar]"));
         assertFalse(aggregator.decideSuppress("Compiling script [data/scripts/ModPlugin.java]"));
-        // 单条启动诊断（宽泛 Loading 前缀不得误伤；「Loading sound sets」命中 ^Loading sound
-        // 属同类加载噪音，聚合进 sounds 分类，不在此断言）
         assertFalse(aggregator.decideSuppress("Loading jar files"));
         assertFalse(aggregator.decideSuppress("Loading whitelisted factions"));
         assertFalse(aggregator.decideSuppress("Loading starsector update info"));
         assertFalse(aggregator.decideSuppress("Loading rules.csv"));
-        // 已有信息量的汇总行（不得二次聚合）
         assertFalse(aggregator.decideSuppress("Loaded 7 ship names for group JOKE"));
-        // SSOptimizer 自身与第三方 mod 日志
         assertFalse(aggregator.decideSuppress("[SSOptimizer] CoreMod loaded — Engine + AI + loading repair phase active"));
         assertFalse(aggregator.decideSuppress("  Range bonus: 12.3%"));
-        // null / 空消息
         assertFalse(aggregator.decideSuppress(null));
         assertFalse(aggregator.decideSuppress(""));
 
@@ -144,11 +127,8 @@ class LoadingNoiseAggregatorTest {
     void noiseMessagesDoNotMatchPartialSiblings() {
         final LoadingNoiseAggregator aggregator = new LoadingNoiseAggregator(reports -> {
         });
-        // 「Loading mission 」带尾空格，不吞掉单条的「Loading missions」启动行
         assertFalse(aggregator.decideSuppress("Loading missions"));
-        // 「Class ... already loaded」必须含 already loaded 段，纯「Class [x]」编译提示不吞
         assertFalse(aggregator.decideSuppress("Class [com.example.Script] compiling from source"));
-        // 「Loading rule: 」不吞规则文件单条
         assertFalse(aggregator.decideSuppress("Loading rules.csv"));
     }
 

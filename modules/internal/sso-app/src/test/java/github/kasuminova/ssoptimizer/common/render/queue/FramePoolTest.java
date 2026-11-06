@@ -27,7 +27,6 @@ class FramePoolTest {
         FramePool pool = new FramePool(1);
         RenderFrame first = pool.acquire();
         assertEquals(0, pool.idleCount());
-        // 池空：新建而不是阻塞
         RenderFrame second = pool.acquire();
         assertNotSame(first, second);
     }
@@ -39,7 +38,6 @@ class FramePoolTest {
         RenderFrame second = pool.acquire();
         pool.release(first);
         assertEquals(1, pool.idleCount());
-        // 池已满：归还的帧被丢弃，不扩容
         pool.release(second);
         assertEquals(1, pool.idleCount());
         assertSame(first, pool.acquire());
@@ -58,9 +56,8 @@ class FramePoolTest {
             first.add(() -> {
             });
         }
-        pool.release(first); // 记录窗口峰值 500
+        pool.release(first);
 
-        // 池内帧被取走后池空，下一次 acquire 走新建路径：命令列表容量取窗口峰值。
         final RenderFrame inFlight = pool.acquire();
         final RenderFrame fresh = pool.acquire();
         assertNotSame(first, fresh);
@@ -76,9 +73,8 @@ class FramePoolTest {
             peak.add(() -> {
             });
         }
-        pool.release(peak); // 窗口：峰值 500 位于最旧槽
+        pool.release(peak);
 
-        // 连续 64 帧小命令数把 500 挤出窗口，峰值回落至默认下限。
         for (int i = 0; i < FramePool.PREWARM_WINDOW; i++) {
             final RenderFrame frame = pool.acquire();
             frame.add(() -> {
@@ -98,7 +94,6 @@ class FramePoolTest {
         final RenderFrame frame = pool.acquire();
         pool.release(frame);
         final RenderFrame reused = pool.acquire();
-        // 复用帧不重新预热：容量沿用构造时的预定值，不被重置回默认。
         assertSame(frame, reused);
         assertEquals(0, reused.commandCount());
     }

@@ -1,11 +1,5 @@
 package github.kasuminova.ssoptimizer.common.input.ime;
 
-/**
- * Windows IMM32 原生 JNI 方法定义与桥接实例工厂。
- * <p>
- * 封装所有 {@code native} 方法并提供统一的 {@link WindowsImmNativeBridge}
- * 实例，供 {@link WindowsImmImeBackend} 调用。
- */
 public final class WindowsImmNative {
     private static final WindowsImmNativeBridge BRIDGE = new WindowsImmNativeBridge() {
         @Override

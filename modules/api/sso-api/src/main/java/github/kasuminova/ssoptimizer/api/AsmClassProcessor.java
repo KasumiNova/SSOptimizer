@@ -1,18 +1,18 @@
 package github.kasuminova.ssoptimizer.api;
 
 /**
- * ASM 字节码处理器的核心抽象接口。
+ * 对单个完整类文件执行字节码变换，将处理逻辑与织入注册入口解耦。
  * <p>
- * 函数式接口，接收原始类文件字节码，返回处理后的字节码。
- * 若处理器未修改字节码，应返回 {@code null} 表示无变更。
+ * 织入器在类加载线程同步调用实现；实现不得依赖游戏主线程或渲染线程上下文。
  */
 @FunctionalInterface
 public interface AsmClassProcessor {
     /**
-     * 处理给定类的字节码。
+     * 处理一个完整类文件，返回完整结果而非差异片段。
      *
      * @param classfileBuffer 原始类文件字节码
-     * @return 处理后的字节码；若未修改则返回 {@code null}
+     * @return 处理后的完整类文件字节码；未修改时返回 {@code null}
+     * @throws RuntimeException 无法完成变换时抛出，由织入调用方处理
      */
     byte[] process(byte[] classfileBuffer);
 }

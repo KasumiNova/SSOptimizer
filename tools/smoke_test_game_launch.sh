@@ -1,10 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# Smoke test: launch Starsector with SSOptimizer as a NanoForge coremod, check for fatal errors.
 GAME_DIR="${1:-/mnt/store/Games/Starsector098-linux}"
 TIMEOUT_SEC="${2:-15}"
-# 默认进入真实游戏（autostart 跳过启动器）；launcher 模式会永久卡在启动器 UI
+# launcher 模式无法自动完成启动，默认通过 autostart 进入游戏。
 MODE="${3:-game}"
 LAUNCH_SCRIPT="${SSOPTIMIZER_SMOKE_LAUNCH_SCRIPT:-launch_nanoforge_ss.sh}"
 LOG_FILE="$GAME_DIR/starsector.log"
@@ -386,7 +385,6 @@ print_progress() {
 
 trap cleanup_game EXIT INT TERM
 
-# Clear old log
 : > "$LOG_FILE" 2>/dev/null || true
 : > "$PROCESS_LOG_FILE" 2>/dev/null || true
 
@@ -422,7 +420,6 @@ if [[ "$MODE" == "game" || "$MODE" == "automation" ]]; then
     fi
 fi
 
-# Launch game in background
 cd "$GAME_DIR"
 if command -v setsid >/dev/null 2>&1; then
     setsid ./"$LAUNCH_SCRIPT" > "$PROCESS_LOG_FILE" 2>&1 &

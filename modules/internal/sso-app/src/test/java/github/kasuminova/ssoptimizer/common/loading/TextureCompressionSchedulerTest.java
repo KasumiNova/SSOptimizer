@@ -17,11 +17,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link TextureCompressionScheduler} 行为测试。测试环境无 native 压缩库，
- * worker 启动后即停用并丢弃任务——这正好覆盖「native 缺失降级」路径；
- * 去重与质量档解析为确定性断言。
- */
 class TextureCompressionSchedulerTest {
     @TempDir
     Path tempDir;
@@ -54,7 +49,6 @@ class TextureCompressionSchedulerTest {
             assertFalse(second, "同键在队/在压必须跳过（去重）");
             assertEquals(1L, TextureCompressionScheduler.submittedCount());
         }
-        // native 缺失时 worker 可能已停用（first=false），此时 second 同样不得入队
         assertFalse(second);
         assertTrue(TextureCompressionScheduler.awaitIdle(10_000L), "调度器应在超时前清空队列");
     }
@@ -69,14 +63,12 @@ class TextureCompressionSchedulerTest {
 
     @Test
     void rgbBufferIsAcceptedAndNothingIsPersistedWithoutNative() throws IOException {
-        // RGB（w*h*3）缓冲扩通道为 RGBA8，可正常投递
         TextureCompressionScheduler.submit(
                 "graphics/ships/eagle.png", "hash-rgb", 64, 64, false, Format.BC3, false, rgb8(64, 64));
         TextureCompressionScheduler.submit(
                 "graphics/ships/kite.png", "hash-rgba", 64, 64, true, Format.BC7, false, rgba8(64, 64));
 
         assertTrue(TextureCompressionScheduler.awaitIdle(10_000L));
-        // 测试环境无 native 库：任务被丢弃，缓存目录不得出现产物
         try (Stream<Path> paths = Files.walk(tempDir)) {
             assertTrue(paths.noneMatch(p -> p.getFileName().toString().endsWith(".ssobc.zst")),
                     "Without native compressor no cache entry may be written");
@@ -85,8 +77,6 @@ class TextureCompressionSchedulerTest {
 
     @Test
     void deferredPrepassDecodesConvertsAndStoresConversionMetadata() throws IOException {
-        // 直调 prepass 像素来源（worker 内部路径）：真实 PNG 解码→转换→ssotex 落盘，
-        // 元数据携带实际像素 alpha 内容；测试环境无 native 压缩库，不影响该链路
         final Path ssotexDir = tempDir.resolve("ssotex");
         System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, ssotexDir.toString());
 
@@ -107,7 +97,6 @@ class TextureCompressionSchedulerTest {
 
         assertNotNull(pixels, "prepass 应完成 解码→转换");
         assertEquals(64 * 64 * 4, pixels.length, "转换输出应规整为 RGBA8");
-        // 转换顺带落盘 ssotex（含 alphaKind 元数据），首次 bind 的兜底上传直接受益
         final TextureConversionCache.CachedTextureMetadata metadata =
                 TextureConversionCache.loadMetadata(sourceHash);
         assertNotNull(metadata, "prepass 转换应写入 ssotex 缓存");
@@ -165,20 +154,16 @@ class TextureCompressionSchedulerTest {
                 TextureCompressionScheduler.resolveQuality("graphics/illustrations/rat_genesis.jpg"));
         assertEquals(NativeTextureCompressor.QUALITY_HIGH,
                 TextureCompressionScheduler.resolveQuality("graphics/starscape/bg.png"));
-        // 模组背景（子串匹配，大小写不敏感）
         assertEquals(NativeTextureCompressor.QUALITY_HIGH,
                 TextureCompressionScheduler.resolveQuality("graphics/aEP_Background/x.png"));
-        // 普通舰船贴图不命中，走全局默认 normal
         assertEquals(NativeTextureCompressor.QUALITY_NORMAL,
                 TextureCompressionScheduler.resolveQuality("graphics/ships/kite.png"));
-        // "/fx/" 模式不误伤 "sfx/"（音效目录）
         assertEquals(NativeTextureCompressor.QUALITY_NORMAL,
                 TextureCompressionScheduler.resolveQuality("graphics/sfx/explosion.png"));
     }
 
     @Test
     void resolveQualityDefaultsToGlobalQualityWhenPatternsEmpty() {
-        // 默认 highQualityPaths 为空：背景/特效走 excludePaths 排除面而非升档
         assertEquals(NativeTextureCompressor.QUALITY_NORMAL,
                 TextureCompressionScheduler.resolveQuality("graphics/backgrounds/nebula01.jpg"));
     }
@@ -189,7 +174,6 @@ class TextureCompressionSchedulerTest {
         System.setProperty(TextureCompressionScheduler.HIGH_QUALITY_PATHS_PROPERTY, "background");
         assertEquals(NativeTextureCompressor.QUALITY_FAST,
                 TextureCompressionScheduler.resolveQuality("graphics/ships/kite.png"));
-        // 路径命中仍强制 high，优先于全局档
         assertEquals(NativeTextureCompressor.QUALITY_HIGH,
                 TextureCompressionScheduler.resolveQuality("graphics/backgrounds/nebula01.jpg"));
     }
@@ -199,7 +183,6 @@ class TextureCompressionSchedulerTest {
         System.setProperty(TextureCompressionScheduler.HIGH_QUALITY_PATHS_PROPERTY, "precious/");
         assertEquals(NativeTextureCompressor.QUALITY_HIGH,
                 TextureCompressionScheduler.resolveQuality("graphics/precious/x.png"));
-        // 覆盖属性后默认模式不再生效
         assertEquals(NativeTextureCompressor.QUALITY_NORMAL,
                 TextureCompressionScheduler.resolveQuality("graphics/backgrounds/nebula01.jpg"));
     }

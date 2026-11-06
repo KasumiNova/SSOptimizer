@@ -11,9 +11,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link CaseInsensitiveJarResolver} 的真实文件系统逻辑验证。
- */
 class CaseInsensitiveJarResolverTest {
 
     @TempDir
@@ -22,7 +19,6 @@ class CaseInsensitiveJarResolverTest {
     @Test
     void exactExistingPathPassesThroughUnchanged() throws Exception {
         final Path jar = Files.write(tempDir.resolve("mod.jar"), new byte[]{0});
-        // 声明路径带冗余 ./ 段时也与原版一致原样透传
         final String declared = tempDir + "/./mod.jar";
         assertEquals(declared, CaseInsensitiveJarResolver.resolve(declared));
         assertEquals(jar.toString(), CaseInsensitiveJarResolver.resolve(jar.toString()));
@@ -72,7 +68,6 @@ class CaseInsensitiveJarResolverTest {
         final Path b = Files.write(jarsDir.resolve("Beta.jar"), new byte[]{0});
 
         assertEquals(a.toString(), CaseInsensitiveJarResolver.resolve(tempDir + "/m/jars/alpha.jar"));
-        // 第二次解析命中目录清单缓存，结果一致
         assertEquals(b.toString(), CaseInsensitiveJarResolver.resolve(tempDir + "/m/jars/beta.jar"));
         assertTrue(a.toString().endsWith("Alpha.jar"));
     }

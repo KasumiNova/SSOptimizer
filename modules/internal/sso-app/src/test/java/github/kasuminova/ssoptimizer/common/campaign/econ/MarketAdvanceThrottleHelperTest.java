@@ -14,7 +14,6 @@ class MarketAdvanceThrottleHelperTest {
 
     @Test
     void newMarketAdvancesImmediately() {
-        // 即使降频间隔为 5，新市场首次出现也必须立即获得一次真实推进
         final TrackingBridge bridge = new TrackingBridge();
 
         MarketAdvanceThrottleHelper.advanceThrottled(bridge, DT, 5);
@@ -26,7 +25,6 @@ class MarketAdvanceThrottleHelperTest {
 
     @Test
     void intervalOneForwardsEveryFrameUnchanged() {
-        // interval=1 等价关闭降频：逐帧原样转发
         final TrackingBridge bridge = new TrackingBridge();
 
         advanceFrames(bridge, DT, 1, 3);
@@ -37,7 +35,6 @@ class MarketAdvanceThrottleHelperTest {
 
     @Test
     void intervalTwoCadence() {
-        // N=2：第 1 帧立即推进，第 2 帧推进，之后每 2 帧以累计 dt 转发
         final TrackingBridge bridge = new TrackingBridge();
 
         advanceFrames(bridge, DT, 2, 5);
@@ -46,15 +43,12 @@ class MarketAdvanceThrottleHelperTest {
         assertEquals(DT, bridge.advances.get(0), 1e-7F);
         assertEquals(DT, bridge.advances.get(1), 1e-7F);
         assertEquals(2.0 * DT, bridge.advances.get(2), 1e-7F);
-        // 第 5 帧被合并挂起
         assertEquals(DT, bridge.pending, 1e-9);
-        // 已转发 + 待推进 == 总请求 dt
         assertEquals(5.0 * DT, forwardedTotal(bridge) + bridge.pending, 1e-6);
     }
 
     @Test
     void intervalFiveCadence() {
-        // N=5：第 1 帧立即推进，第 5、10 帧各以累计 dt 转发
         final TrackingBridge bridge = new TrackingBridge();
 
         advanceFrames(bridge, DT, 5, 11);
@@ -69,8 +63,6 @@ class MarketAdvanceThrottleHelperTest {
 
     @Test
     void doubleAccumulationAvoidsPerFrameFloatDrift() {
-        // 100 帧 dt=0.1f：helper 以 double 累计，结果必须与 double 求和完全一致，
-        // 且与逐帧 float 累加的漂移结果不同
         final TrackingBridge bridge = new TrackingBridge();
         final int frames = 100;
 
@@ -83,7 +75,6 @@ class MarketAdvanceThrottleHelperTest {
             floatSum += DT;
         }
 
-        // 第 1 帧立即推进 DT，第 100 帧转发其余 99 帧的累计
         assertEquals(2, bridge.advances.size());
         assertNotEquals(floatSum, bridge.advances.get(1).floatValue());
         assertEquals((float) doubleSum, bridge.advances.get(1).floatValue(), 0.0F);
@@ -97,7 +88,6 @@ class MarketAdvanceThrottleHelperTest {
 
         MarketAdvanceThrottleHelper.advanceThrottled(first, DT, 3);
         MarketAdvanceThrottleHelper.advanceThrottled(first, DT, 3);
-        // second 是新市场：即便 first 已累计两帧，second 仍立即推进
         MarketAdvanceThrottleHelper.advanceThrottled(second, DT, 3);
 
         assertEquals(1, first.advances.size());
@@ -112,7 +102,6 @@ class MarketAdvanceThrottleHelperTest {
         assertEquals(2, MarketAdvanceThrottleHelper.DEFAULT_INTERVAL);
         assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("1"));
         assertEquals(3, MarketAdvanceThrottleHelper.parseInterval("3"));
-        // 非法值一律按 1（逐帧转发）处理
         assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("0"));
         assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("-7"));
         assertEquals(1, MarketAdvanceThrottleHelper.parseInterval("abc"));
@@ -121,8 +110,6 @@ class MarketAdvanceThrottleHelperTest {
 
     @Test
     void decideAdvanceSecondsMatchesAdvanceThrottledCadence() {
-        // decide 与 advanceThrottled 共用同一判定：非 NaN 返回序列必须与
-        // advanceThrottled 的推进序列完全一致，NaN 帧不推进
         for (final int interval : new int[]{1, 2, 3, 5}) {
             final TrackingBridge viaDecide = new TrackingBridge();
             final TrackingBridge viaThrottled = new TrackingBridge();
@@ -142,12 +129,9 @@ class MarketAdvanceThrottleHelperTest {
     void decideAdvanceSecondsReturnsNaNOnMergedFrames() {
         final TrackingBridge bridge = new TrackingBridge();
 
-        // 第 1 帧：新市场立即推进（非 NaN）
         assertEquals(DT, MarketAdvanceThrottleHelper.decideAdvanceSeconds(bridge, DT, 3), 1e-7F);
-        // 第 2 帧：被合并 → NaN，dt 挂起到 pending
         assertTrue(Double.isNaN(MarketAdvanceThrottleHelper.decideAdvanceSeconds(bridge, DT, 3)));
         assertEquals(DT, bridge.pending, 1e-9);
-        // 第 3 帧：以累计 dt 转发
         assertEquals(2.0 * DT, MarketAdvanceThrottleHelper.decideAdvanceSeconds(bridge, DT, 3), 1e-6F);
         assertEquals(0.0, bridge.pending);
     }
@@ -167,9 +151,6 @@ class MarketAdvanceThrottleHelperTest {
         return total;
     }
 
-    /**
-     * 桥接测试桩：状态字段与 Mixin 注入字段同构，记录每次真实推进的 dt。
-     */
     private static final class TrackingBridge implements MarketAdvanceThrottleBridge {
         private final List<Float> advances = new ArrayList<>();
         private double pending;

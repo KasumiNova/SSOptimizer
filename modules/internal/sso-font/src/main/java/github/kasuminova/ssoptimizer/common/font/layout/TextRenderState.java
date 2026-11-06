@@ -1,14 +1,5 @@
 package github.kasuminova.ssoptimizer.common.font.layout;
 
-/**
- * {@link TextLayoutEngine} 的一次绘制输入快照：原版 BitmapFontRenderer 的全部渲染相关字段
- * 在 render() 入口的逐值拷贝。
- * <p>
- * 动机：布局引擎需要在不触碰游戏类的前提下复刻原版渲染语义；快照在 Mixin 内组装，
- * 引擎消费后不再回读 renderer，保证布局结果只由本快照决定。
- * alpha 族字段（textAlpha/borderAlpha/shadowAlpha/highlightAlpha/colorAlphas）直接取原版
- * setAlpha 预算好的结果，不在引擎内重算幂次分解。
- */
 public record TextRenderState(
         String text,
         float drawX,
@@ -42,7 +33,6 @@ public record TextRenderState(
         return new Builder(text);
     }
 
-    /** 字段较多，按项目规范走 Builder；默认值与原版字段初始值一致。 */
     public static final class Builder {
         private final String text;
         private float drawX;

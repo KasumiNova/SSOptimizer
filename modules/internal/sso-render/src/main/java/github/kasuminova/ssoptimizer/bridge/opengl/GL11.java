@@ -9,84 +9,17 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-/**
- * org.lwjgl.opengl.GL11 的 bridge 镜像（游戏 + 已适配模组（BoxUtil 1.6.0 GLWrapper
- * 门面）使用面全集）。
- * <p>
- * 动机：ASM 重定向阶段会把游戏/模组字节码中 INVOKESTATIC owner
- * {@code org/lwjgl/opengl/GL11} 改写到本类，使所有固定管线调用不再直接触碰 GL
- * 上下文，而是封成 {@code GlCommand} 入队到 {@link RenderQueue} 当前帧，由渲染
- * 线程执行。本类与 LWJGL 保持同签名静态方法，保证改写后调用点无需额外适配。
- * 覆盖面依据 docs/design/gl-call-inventory.md 第一节的盘点结论。
- * <p>
- * 本阶段（bridge + 单测）的语义约定：
- * <ul>
- *   <li>immediate 顶点流（glBegin/glEnd 与 glVertex/glTexCoord/glColor/
- *       glNormal3f 族）：编码进逐线程 {@link VertexStream}，在任一非流式命令/
- *       帧尾 swap/阻塞通道 drain-first 之前打包成单条回放命令落帧（glEnd
- *       默认延迟落帧，见 {@link BridgeSupport#flushVertexStreamOnGlEnd}）——
- *       流段与命令对象在帧列表中共享同一有序序列，回放与原调用逐指令等价；</li>
- *   <li>无参/标量参数命令：1:1 录制一条命令，命令体调真
- *       {@link org.lwjgl.opengl.GL11}；</li>
- *   <li>buffer 参数命令（glTexImage/glBufferData/glLoadMatrix 等）：录制时经
- *       {@link BridgeSupport#pool()} 深拷贝为池化快照，命令执行后归还，调用方
- *       录制后改写源 buffer 不影响命令；</li>
- *   <li>client pointer（glVertexPointer 等）：录制时刻快照进
- *       {@link ClientPointerState}，draw 命令（glDrawArrays/glDrawElements/
- *       glArrayElement）携带快照组在执行前全量重放——简化语义与 FR
- *       ClientAttribTracker 的差异见 {@link PointerSnapshot} 的 javadoc；</li>
- *   <li>getter（glGetInteger/glGetFloat/glGetBoolean/glIsEnabled
- *       /glReadPixels/glGetError 等）与资源分配
- *       （glGenTextures/glGenLists）：走 {@link RenderQueue#get} 阻塞通道
- *       （自动计入 StallDetector）；后续演进点是把高频 pname/资源 id 换成
- *       主线程侧状态仿真与预生成 stash（见盘点文档 getter 清单）。例外：
- *       glGetString 的五类结果（供应商/渲染器/版本/扩展/着色语言版本）在同一
- *       GL context 生命周期内不变，首次阻塞取回后录制侧缓存——游戏的
- *       SpriteBatch 每次构造都经此探测 VBO 能力，不缓存会打成稳态热点；</li>
- *   <li>display list（glNewList/glEndList/glCallList）：按普通命令入队——即
- *       「渲染线程直接执行真实 display list 编译/调用」，语义等价于单线程，
- *       只是 display list 本体编译发生在渲染线程。渲染线程在编译窗口
- *       （glNewList..glEndList 命令执行序之间）内把<b>全部数据类命令</b>强制
- *       切到逐指令 immediate 回放：display list 编译对客户端数组按指针捕获、
- *       不回拷数据，{@link VertexArrayBatch} 的共享缓冲与 {@link DrawCommand}
- *       的池化 pointer 快照跨批次复用都会使列表回放读到陈旧内容（舰船图标
- *       串图 / 字体阴影层级反转的根因面），immediate 调用则按数据捕获、回放
- *       正确。窗口内顶点批次（{@link VertexBatchCommand}）禁止排干合并器
- *       （陈旧 current 值回同步会被列表按值捕获）；{@link DrawCommand} 的
- *       buffer 形式快照由 {@link DrawCommandImmediateDecoder} 解码为 immediate
- *       调用重放，VBO 偏移形式保持原样（服务器端数据，指针捕获语义正确）。
- *       ListManager 式命令帧重放（编译期展开为命令序列、跨帧复用）留待后续
- *       轮次。</li>
- * </ul>
- * 后续阶段计划：immediate 顶点流被顶点拦截器当场变换进批量缓冲（glEnd 转
- * draw 命令，取代本步的逐指令回放）；矩阵命令族已编码进顶点流（见「矩阵」
- * 分节，开关 {@code ssoptimizer.render.streamMatrixOps}），更远期是主线程
- * CPU 仿真栈直出；glFlush/glFinish 评估抹成 no-op（语义由帧同步点统一保证）。
- * <p>
- * 注入：{@link #install(RenderQueue)} 装配命令消费者（游戏接入时由 bootstrap
- * 安装真实队列；单测安装假队列验证录制行为）。未安装时调用直接抛
- * {@link IllegalStateException}——桥接类没有可回退的直通路径。
- */
 public final class GL11 extends GL11Gen {
-    /**
-     * glGetString 录制侧缓存：五类结果在同一 GL context 生命周期内不变，
-     * 槽位见 {@link #glGetString(int)}；{@link #uninstall()} 时清空。
-     */
+    /** 缓存上下文生命周期内不变的字符串；卸载时清空。 */
     private static final AtomicReferenceArray<String> STRING_CACHE = new AtomicReferenceArray<>(5);
 
     private GL11() {
     }
 
-    /**
-     * 安装命令消费者。游戏接入时由 bootstrap 在 ASM 重定向生效前调用。
-     *
-     * @param renderQueue 渲染队列实例
-     */
     public static void install(RenderQueue renderQueue) {
         BridgeSupport.install(renderQueue);
     }
 
-    /** 测试用：卸载已安装的队列，避免用例间静态状态串扰（跨包测试亦需要，故 public）。 */
     public static void uninstall() {
         BridgeSupport.uninstall();
         for (int i = 0; i < STRING_CACHE.length(); i++) {
@@ -94,77 +27,39 @@ public final class GL11 extends GL11Gen {
         }
     }
 
-    // ------------------------------------------------------------------
-    // draw：池化 DrawCommand 携带当前 client pointer 快照组
-    // ------------------------------------------------------------------
 
-    // ------------------------------------------------------------------
-    // immediate 顶点流（流式录制：编码进逐线程 VertexStream，非流式命令/帧尾
-    // swap/阻塞通道前打包成单条回放命令落帧，glEnd 默认延迟落帧，见
-    // BridgeSupport.flushVertexStreamOnGlEnd 与 VertexStream 的顺序语义）
-    // ------------------------------------------------------------------
 
     public static void glBegin(int mode) {
         BridgeSupport.recordingContext().vertexStream.begin(mode);
     }
 
     public static void glEnd() {
-        // 延迟落帧（默认开，见 BridgeSupport.flushVertexStreamOnGlEnd）：glEnd 只写
-        // OP_END 标记段落结束，落帧推迟到任一非流式命令/帧尾 swap/容量阈值——
-        // 逐段的 transferBuffer 换缓冲 acquire、批次命令分配与 frameLock 进入
-        // 全部摊销到少数落帧点（JProfiler 实证超空间大地图 acquire 42% 自身时间）。
-        // 已知取舍：挂起窗口内 aux 生产者线程（非 auxNative 的队列提交方，如字体
-        // 预热 daemon 经 GlDispatch）提交的命令会先于挂起流段入帧——实时序上
-        // 流段在先。该错序窗口与既有 sprite 流内指令路径（流挂起到下一命令才
-        // 落帧）同类，开关关闭即完全回退。
+        // 延迟落帧期间，aux 生产者命令可能先于挂起流段入帧；关闭该开关可恢复严格实时序。
         RecordingContext context = BridgeSupport.recordingContext();
         context.vertexStream.end();
         BridgeSupport.flushVertexStreamOnGlEnd(context);
     }
 
-    /**
-     * 流内 glEnable(cap)：把状态设置编码进顶点流（段外执行），供 sprite 渲染
-     * 路径（{@link SpriteRenderHelper}）把「每 sprite 一条非流式状态命令」改为
-     * 流内指令，避免打断连续同状态 sprite 的流段合并。
-     */
     public static void streamEnable(int cap) {
-        // 簿记在录制点（=回放序）更新：流内指令回放期才改真实状态，主线程 getter
-        // 仿真以命令流顺序为准（见 SimulatedGlState 类 javadoc）
+        // 流内状态在录制点更新簿记，保证 getter 按命令流顺序读取。
         BridgeSupport.simulatedState().onEnable(cap);
         BridgeSupport.recordingContext().vertexStream.enable(cap);
     }
 
-    /** 流内 glDisable(cap)，语义同 {@link #streamEnable(int)}。 */
     public static void streamDisable(int cap) {
         BridgeSupport.simulatedState().onDisable(cap);
         BridgeSupport.recordingContext().vertexStream.disable(cap);
     }
 
-    /** 流内 glBlendFunc(src, dst)，语义同 {@link #streamEnable(int)}。 */
     public static void streamBlendFunc(int src, int dst) {
         BridgeSupport.recordingContext().vertexStream.blendFunc(src, dst);
     }
 
-    /**
-     * 流内 glBindTexture(TEXTURE_2D, texture)：编码为段间指令（上一段 glEnd
-     * 之后、下一段 glBegin 之前执行——glBindTexture 在 begin/end 段内非法，
-     * 编码保证落在段边界）；同纹理连续 sprite 的重复绑定回放幂等，换纹理的
-     * 绑定打断的是流内位置而非流段，连续 sprite 的 begin..end 段仍合并为
-     * 一条流命令。
-     */
     public static void streamBindTexture(int texture) {
-        // 簿记在录制点更新（理由同 streamEnable）：保持 TEXTURE_BINDING_2D 仿真
-        // 与命令流逐指令一致
         BridgeSupport.simulatedState().onBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, texture);
         BridgeSupport.recordingContext().vertexStream.bindTexture(texture);
     }
 
-    /**
-     * 精灵四边形融合指令：sprite 渲染路径（{@link SpriteRenderHelper}）把
-     * begin(QUADS)+4×(texCoord+vertex)+end 的整组调用压成一条流指令
-     * （编码侧 13 次流调用 → 1 次），tex 角点顺序与
-     * {@link VertexSink#spriteQuad} 约定一致。
-     */
     public static void streamSpriteQuad(
             float x0, float y0, float x1, float y1,
             float x2, float y2, float x3, float y3,
@@ -225,7 +120,6 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glEdgeFlag(flag));
     }
 
-    /** immediate 矩形（独立于 glBegin/glEnd 的单命令图元）。 */
     public static void glRectf(float x1, float y1, float x2, float y2) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glRectf(x1, y1, x2, y2));
     }
@@ -234,33 +128,16 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glRectd(x1, y1, x2, y2));
     }
 
-    /** 选择读取缓冲（glReadPixels 的配对状态）。 */
     public static void glReadBuffer(int mode) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glReadBuffer(mode));
     }
 
-    /** 单元素绘制，同样携带 pointer 快照组（池化 {@link DrawCommand}）。 */
     public static void glArrayElement(int index) {
         DrawCommand command = BridgeSupport.acquireDrawCommand();
         command.setArrayElement(index, BridgeSupport.pointerState().capture());
         BridgeSupport.enqueue(command);
     }
 
-    // ------------------------------------------------------------------
-    // 矩阵
-    //
-    // 流内矩阵指令模式（开关 ssoptimizer.render.streamMatrixOps，默认开，
-    // 决策见 BridgeSupport.shouldStreamMatrixOps）：glPushMatrix/glPopMatrix/
-    // glLoadIdentity/glTranslatef/glRotatef/glScalef/glMatrixMode 在
-    // SimulatedGlState 簿记后编码进顶点流（录制点 = 回放序，簿记语义与
-    // streamEnable 同构），不再每条 enqueue 一个非流式命令；回放按流内
-    // 位置逐指令执行（VertexArrayBatch 先排挂起段保序 / ImmediateVertexSink
-    // 直执）。开关关闭或 aux 原生线程回退 enqueue 老路径（glMatrixMode
-    // 回退路径保留 enqueueState 去重）。
-    // glTranslated/glOrtho/glLoadMatrix/glMultMatrix（double 载荷与 buffer
-    // 快照的低频路径）保持 enqueue 不变——enqueue 先落帧挂起流，相对顺序
-    // 天然保持。
-    // ------------------------------------------------------------------
 
     public static void glMatrixMode(int mode) {
         RecordingContext ctx = BridgeSupport.recordingContext();
@@ -343,7 +220,6 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glScalef(x, y, z));
     }
 
-    /** buffer 参数录制时深拷贝（16 元素矩阵），执行后归还池。 */
     public static void glLoadMatrix(FloatBuffer matrix) {
         BridgeSupport.simulatedState().onLoadMatrix(matrix);
         BridgeSupport.enqueueSnapshot(matrix, snapshot ->
@@ -368,9 +244,6 @@ public final class GL11 extends GL11Gen {
                 org.lwjgl.opengl.GL11.glMultMatrix(snapshot.asDoubleBuffer()));
     }
 
-    // ------------------------------------------------------------------
-    // 状态
-    // ------------------------------------------------------------------
 
     public static void glEnable(int cap) {
         // 状态仿真簿记先行：enqueueState 去重丢弃重复命令时簿记仍正确（enable 幂等）
@@ -431,7 +304,6 @@ public final class GL11 extends GL11Gen {
                 () -> org.lwjgl.opengl.GL11.glDepthFunc(func));
     }
 
-    /** 深度范围映射：状态命令去重入队（两个 double 位模式各占两槽）。 */
     public static void glDepthRange(double zNear, double zFar) {
         final long nearBits = Double.doubleToRawLongBits(zNear);
         final long farBits = Double.doubleToRawLongBits(zFar);
@@ -581,8 +453,7 @@ public final class GL11 extends GL11Gen {
 
     public static void glPushClientAttrib(int mask) {
         BridgeSupport.simulatedState().onPushClientAttrib(mask);
-        // GL 1.5+ 起 ARRAY_BUFFER 绑定属 client 状态，随 CLIENT_VERTEX_ARRAY_BIT
-        // 压栈/恢复：录制侧 pointerState 与执行侧簿记同步压栈（模型同 SimulatedGlState）
+        // ARRAY_BUFFER 绑定随 CLIENT_VERTEX_ARRAY_BIT 压栈，录制侧与执行侧簿记同步恢复。
         BridgeSupport.pointerState().pushClientAttrib(mask);
         BridgeSupport.enqueue(() -> {
             org.lwjgl.opengl.GL11.glPushClientAttrib(mask);
@@ -608,9 +479,6 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(org.lwjgl.opengl.GL11::glFinish);
     }
 
-    // ------------------------------------------------------------------
-    // client state 与数组绘制
-    // ------------------------------------------------------------------
 
     public static void glEnableClientState(int cap) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glEnableClientState(cap));
@@ -620,8 +488,6 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDisableClientState(cap));
     }
 
-    // -- pointer：录制快照进 ClientPointerState，不产生队列命令；
-    //    快照由随后的 draw 命令携带（见类 javadoc 与 PointerSnapshot）。
 
     public static void glVertexPointer(int size, int stride, DoubleBuffer buffer) {
         BridgeSupport.pointerState().setVertex(PointerSnapshot.ofBuffer(PointerSnapshot.Kind.VERTEX,
@@ -648,7 +514,6 @@ public final class GL11 extends GL11Gen {
                 size, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glVertexPointer(int size, int type, int stride, long offset) {
         ClientPointerState state = BridgeSupport.pointerState();
         state.setVertex(
@@ -677,7 +542,6 @@ public final class GL11 extends GL11Gen {
                 size, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glColorPointer(int size, int type, int stride, long offset) {
         ClientPointerState state = BridgeSupport.pointerState();
         state.setColor(
@@ -710,7 +574,6 @@ public final class GL11 extends GL11Gen {
                 size, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glTexCoordPointer(int size, int type, int stride, long offset) {
         ClientPointerState state = BridgeSupport.pointerState();
         state.setTexCoord(
@@ -743,7 +606,6 @@ public final class GL11 extends GL11Gen {
                 0, type, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    /** VBO 偏移形式：无 buffer 可快照，记录偏移与录制时刻的 ARRAY_BUFFER 绑定。 */
     public static void glNormalPointer(int type, int stride, long offset) {
         ClientPointerState state = BridgeSupport.pointerState();
         state.setNormal(
@@ -777,7 +639,6 @@ public final class GL11 extends GL11Gen {
                 format, 0, stride, BridgeSupport.pool().snapshot(buffer)));
     }
 
-    // -- draw：池化 DrawCommand 携带 pointer 快照组
 
     public static void glDrawArrays(int mode, int first, int count) {
         github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
@@ -787,7 +648,6 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(command);
     }
 
-    /** 索引 buffer 同样录制时快照，执行后归还。 */
     public static void glDrawElements(int mode, ByteBuffer indices) {
         DrawCommand command = BridgeSupport.acquireDrawCommand();
         command.setDrawElementsSnapshot(mode, BridgeSupport.pool().snapshot(indices),
@@ -809,16 +669,12 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(command);
     }
 
-    /** VBO 索引偏移形式：无 buffer 可快照。 */
     public static void glDrawElements(int mode, int count, int type, long offset) {
         DrawCommand command = BridgeSupport.acquireDrawCommand();
         command.setDrawElementsOffset(mode, count, type, offset, BridgeSupport.pointerState().capture());
         BridgeSupport.enqueue(command);
     }
 
-    // ------------------------------------------------------------------
-    // 纹理
-    // ------------------------------------------------------------------
 
     public static void glBindTexture(int target, int texture) {
         github.kasuminova.ssoptimizer.common.render.queue.RtTrace.trace(
@@ -829,14 +685,12 @@ public final class GL11 extends GL11Gen {
                 () -> org.lwjgl.opengl.GL11.glBindTexture(target, texture));
     }
 
-    /** 资源分配：阻塞通道取回真实纹理 id，同时登记 isTexture 名字簿记（预生成 stash 为后续演进点）。 */
     public static int glGenTextures() {
         final int texture = BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL11::glGenTextures);
         BridgeSupport.simulatedState().onGenTexture(texture);
         return texture;
     }
 
-    /** 渲染线程直接把 id 写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenTextures(IntBuffer textures) {
         final int base = textures.position();
         final int count = textures.remaining();
@@ -861,7 +715,6 @@ public final class GL11 extends GL11Gen {
                 org.lwjgl.opengl.GL11.glDeleteTextures(snapshot.asIntBuffer()));
     }
 
-    /** pixels 允许为 null（仅分配纹理存储），此时无快照直接录制。 */
     public static void glTexImage1D(int target, int level, int internalformat, int width,
                                     int border, int format, int type, ByteBuffer pixels) {
         if (pixels == null) {
@@ -897,7 +750,6 @@ public final class GL11 extends GL11Gen {
                 target, level, internalformat, width, border, format, type, snapshot.asShortBuffer()));
     }
 
-    /** pixels 允许为 null（仅分配纹理存储），此时无快照直接录制。 */
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height,
                                     int border, int format, int type, ByteBuffer pixels) {
         BridgeSupport.simulatedState().onTexImage2D(target, level, internalformat, width, height);
@@ -1021,22 +873,16 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexParameterf(target, pname, param));
     }
 
-    /** 向量版纹理参数：buffer 快照后入队。 */
     public static void glTexParameter(int target, int pname, FloatBuffer params) {
         BridgeSupport.enqueueSnapshot(params, snapshot ->
                 org.lwjgl.opengl.GL11.glTexParameter(target, pname, snapshot.asFloatBuffer()));
     }
 
-    /** 向量版纹理参数：buffer 快照后入队（BoxUtil 1.6.0 GLWrapper$Texture 引用）。 */
     public static void glTexParameter(int target, int pname, IntBuffer params) {
         BridgeSupport.enqueueSnapshot(params, snapshot ->
                 org.lwjgl.opengl.GL11.glTexParameter(target, pname, snapshot.asIntBuffer()));
     }
 
-    // ------------------------------------------------------------------
-    // 盘点补面：指针形纹理上传（BoxUtil 1.6.0 GLWrapper$Texture 引用）。
-    // 指针指向的本地内存生命周期由调用方保证（GL 契约语义），无 buffer 可快照。
-    // ------------------------------------------------------------------
 
     public static void glTexImage1D(int target, int level, int internalformat, int width,
                                     int border, int format, int type, long pixels) {
@@ -1063,17 +909,11 @@ public final class GL11 extends GL11Gen {
                 target, level, xoffset, yoffset, width, height, format, type, pixels));
     }
 
-    /** 纹理环境参数（固定管线）。 */
     public static void glTexEnvf(int target, int pname, float param) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glTexEnvf(target, pname, param));
     }
 
-    /**
-     * 主线程对 TEXTURE_2D + level 0 + 已簿记纹理的 WIDTH/HEIGHT/INTERNAL_FORMAT/BORDER
-     * 走本地簿记（上传调用点登记，零阻塞）；其余 pname/level/target 回退阻塞通道。
-     * 仿真动机：BoxUtil UIBorderObject 等模组构造期经本方法读纹理尺寸，无缓存时
-     * 每次实例化都是一次管线 drain。
-     */
+    /** 已簿记纹理的 level 0 属性在主线程本地读取，其余情况阻塞查询。 */
     public static int glGetTexLevelParameteri(int target, int level, int pname) {
         if (BridgeSupport.isMainRecordingThread()) {
             BridgeSupport.resyncSimulatedStateIfAuxDirty();
@@ -1092,7 +932,6 @@ public final class GL11 extends GL11Gen {
                 () -> org.lwjgl.opengl.GL11.glPixelStorei(pname, param));
     }
 
-    /** 两个 buffer 参数分别快照，执行后逐一归还。 */
     public static void glPrioritizeTextures(IntBuffer textures, FloatBuffer priorities) {
         ByteBuffer textureSnapshot = BridgeSupport.pool().snapshot(textures);
         ByteBuffer prioritySnapshot = BridgeSupport.pool().snapshot(priorities);
@@ -1107,24 +946,12 @@ public final class GL11 extends GL11Gen {
         });
     }
 
-    // ------------------------------------------------------------------
-    // display list（本阶段按普通命令入队，ListManager 式重放后续轮再做）
-    // ------------------------------------------------------------------
 
-    /** 资源分配：阻塞通道取回真实 list 基址。 */
     public static int glGenLists(int range) {
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL11.glGenLists(range));
     }
 
-    /**
-     * 本阶段录制语义：渲染线程执行到本命令时才编译真实 display list——
-     * glNewList 到 glEndList 之间的命令在队列中天然有序，编译结果与单线程一致。
-     * <p>
-     * 命令体在渲染线程进入编译窗口前先递增编译深度（{@link BridgeSupport}）：
-     * 编译窗口内的顶点批次必须逐指令 immediate 回放（display list 对客户端
-     * 数组按指针捕获，数组化共享缓冲跨批次复用会在列表回放时读到陈旧数据，
-     * 见 {@link BridgeSupport#isCompilingDisplayList()}）。
-     */
+    /** 编译窗口内必须逐指令回放客户端数组，避免 display list 捕获复用缓冲中的陈旧数据。 */
     public static void glNewList(int list, int mode) {
         BridgeSupport.enqueue(() -> {
             BridgeSupport.onDisplayListCompileStart();
@@ -1147,26 +974,18 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDeleteLists(list, range));
     }
 
-    // ------------------------------------------------------------------
-    // getter（FBO 绑定与 SimulatedGlState 簿记命中走录制侧仿真，其余阻塞通道）
-    // ------------------------------------------------------------------
 
     public static int glGetInteger(int pname) {
-        // aux 活动纪元失效：主线程的仿真/跟踪簿记（含下方 FBO 跟踪分支）只镜像
-        // 主线程命令流，aux 线程提交使簿记过期时先屏障再同步（见 BridgeSupport）
+        // aux 提交会使主线程簿记失效，读取前必须屏障并重新同步。
         if (BridgeSupport.isMainRecordingThread()) {
             BridgeSupport.resyncSimulatedStateIfAuxDirty();
         }
         if (pname == org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT) {
-            // 录制侧跟踪值直接返回：FBO 保存/恢复惯用法（雷达合成缓存 bakeCell 等）
-            // 每帧多次调用，阻塞往返会把管线打回串行。游戏与模组的 FBO 绑定全部
-            // 经 bridge 镜像（EXTFramebufferObject/GL30/ARBFramebufferObject），
-            // 跟踪值与命令流一致（跨线程 FBO 使用存在记录序近似，见 BridgeSupport）
+            // FBO 绑定全部经 bridge 录制，主线程可直接读取跟踪值；跨线程使用仅为记录序近似。
             return BridgeSupport.framebufferBinding();
         }
         if (BridgeSupport.isMainRecordingThread()) {
-            // getter 回读状态仿真：簿记命中直接返回，未跟踪/失效回退阻塞通道；
-            // 失效场景把读回的权威值采入簿记再同步（一次性成本，见 SimulatedGlState adopt 族）
+            // 未跟踪或失效时阻塞读回权威值并重新采入簿记。
             final Integer simulated = BridgeSupport.simulatedState().getInteger(pname);
             if (simulated != null) {
                 return simulated;
@@ -1188,7 +1007,6 @@ public final class GL11 extends GL11Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glGetInteger(pname));
     }
 
-    /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGetInteger(int pname, IntBuffer params) {
         if (BridgeSupport.isMainRecordingThread()) {
             BridgeSupport.resyncSimulatedStateIfAuxDirty();
@@ -1196,8 +1014,7 @@ public final class GL11 extends GL11Gen {
                 return;
             }
             if (pname == org.lwjgl.opengl.GL11.GL_VIEWPORT) {
-                // VIEWPORT 失效再同步：阻塞读回后采入 4 值（写入起点即调用时 position）。
-                // 填充辅助保证小缓冲（4 元素读 VIEWPORT 是模组惯用法）拿到真值后再采入
+                // VIEWPORT 失效时经填充辅助读回 4 值并重新采入簿记。
                 final int base = params.position();
                 BridgeSupport.blockingWait(() -> GetBufferFill.fillInts(params, 16,
                         buf -> org.lwjgl.opengl.GL11.glGetInteger(pname, buf)));
@@ -1223,7 +1040,6 @@ public final class GL11 extends GL11Gen {
                 return;
             }
             if (pname == org.lwjgl.opengl.GL11.GL_ALPHA_TEST_REF) {
-                // ALPHA_TEST_REF 失效再同步（语义同 glGetInteger 的 VIEWPORT 分支）
                 final int base = params.position();
                 BridgeSupport.blockingWait(() -> GetBufferFill.fillFloats(params, 16,
                         buf -> org.lwjgl.opengl.GL11.glGetFloat(pname, buf)));
@@ -1231,7 +1047,6 @@ public final class GL11 extends GL11Gen {
                 return;
             }
         }
-        // 固定下限 16 检查同 glGetInteger，见 GetBufferFill
         BridgeSupport.blockingWait(() -> GetBufferFill.fillFloats(params, 16,
                 buf -> org.lwjgl.opengl.GL11.glGetFloat(pname, buf)));
     }
@@ -1239,8 +1054,7 @@ public final class GL11 extends GL11Gen {
     public static boolean glGetBoolean(int pname) {
         if (BridgeSupport.isMainRecordingThread()) {
             BridgeSupport.resyncSimulatedStateIfAuxDirty();
-            // enable 能力簿记命中直接返回（SpriteBatch 收集守卫等逐 sprite 回读）；
-            // 失效时阻塞读回并采入簿记再同步（一次性成本）
+            // enable 簿记失效时阻塞读回并重新采入。
             final Boolean simulated = BridgeSupport.simulatedState().getBoolean(pname);
             if (simulated != null) {
                 return simulated;
@@ -1253,17 +1067,11 @@ public final class GL11 extends GL11Gen {
     }
 
     public static void glGetBoolean(int pname, ByteBuffer params) {
-        // 固定下限 16 检查同 glGetInteger，见 GetBufferFill
         BridgeSupport.blockingWait(() -> GetBufferFill.fillBooleans(params, 16,
                 buf -> org.lwjgl.opengl.GL11.glGetBoolean(pname, buf)));
     }
 
-    /**
-     * 字符串查询：五类 pname（供应商/渲染器/版本/扩展/着色语言版本）的结果
-     * 在同一 GL context 生命周期内不变，首次走阻塞通道取回后录制侧缓存，
-     * 后续调用零往返——游戏的 SpriteBatch 每次构造都经此探测 VBO 能力，
-     * 逐次阻塞会把回读通道打成稳态热点。未识别的 pname 不缓存直通。
-     */
+    /** 上下文内不变的五类字符串首次阻塞查询后缓存，其他 pname 不缓存。 */
     public static String glGetString(int name) {
         int slot = switch (name) {
             case org.lwjgl.opengl.GL11.GL_VENDOR -> 0;
@@ -1289,10 +1097,7 @@ public final class GL11 extends GL11Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL11.glIsEnabled(cap));
     }
 
-    /**
-     * 主线程走 isTexture 名字簿记仿真（gen/bind 创建、delete 移除均经 bridge 镜像）；
-     * aux 线程回退阻塞通道。
-     */
+    /** 主线程读取名字簿记，aux 线程阻塞查询真实状态。 */
     public static boolean glIsTexture(int texture) {
         if (BridgeSupport.isMainRecordingThread()) {
             BridgeSupport.resyncSimulatedStateIfAuxDirty();
@@ -1309,7 +1114,6 @@ public final class GL11 extends GL11Gen {
         return BridgeSupport.blockingGet(org.lwjgl.opengl.GL11::glGetError);
     }
 
-    /** 回读语义强依赖执行完成，阻塞通道；渲染线程直接写入调用方 buffer。 */
     public static void glReadPixels(int x, int y, int width, int height, int format, int type, ByteBuffer pixels) {
         BridgeSupport.blockingWait(() -> org.lwjgl.opengl.GL11.glReadPixels(x, y, width, height, format, type, pixels));
     }
@@ -1338,7 +1142,6 @@ public final class GL11 extends GL11Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glColor4b(red, green, blue, alpha));
     }
 
-    /** 单缓冲 draw buffer 选择（GL20.glDrawBuffers 的单目标形态）。 */
     public static void glDrawBuffer(int mode) {
         BridgeSupport.simulatedState().onDrawBuffer(mode);
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL11.glDrawBuffer(mode));

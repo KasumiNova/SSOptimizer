@@ -18,12 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
 
-/**
- * DCR 战报压缩内核基准：对比 DCR 原版 {@link Deflater} 级别 9 与 {@link DcrCompressionHelper} 的 Zstd，
- * 为 L2（读档/存档热点压缩段 Deflate→Zstd）的收益提供可量化依据。
- * <p>
- * 负载为重复性较高的伪战报 XML（接近真实序列化产物的可压缩特征），按规模参数化。
- */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Fork(1)
@@ -31,7 +25,6 @@ public class DcrCompressionBenchmark {
 
     @State(Scope.Thread)
     public static class Payload {
-        /** 战报条数（决定 XML 规模）。 */
         @Param({"50", "200", "800"})
         public int combatResults;
 
@@ -66,7 +59,6 @@ public class DcrCompressionBenchmark {
         bh.consume(DcrCompressionHelper.compress(p.xml));
     }
 
-    /** 逐字节复刻 DCR {@code CompressionUtil.compress}（Deflater 级别 9）。 */
     private static byte[] legacyDeflate(final String text) {
         final byte[] raw = text.getBytes(StandardCharsets.UTF_8);
         final Deflater deflater = new Deflater(9);

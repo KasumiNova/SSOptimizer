@@ -7,15 +7,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * 声音管理器路径加载入口的 Mixin 注入。
- * <p>
- * 注入目标：{@code sound.SoundManager}<br>
- * 注入动机：通过 mapping 将原始混淆类 {@code sound.Object} 及其三个路径加载方法重命名后，
- * 这些入口已经可以稳定使用 Mixin 头部注入接管，不再需要整段方法替换式 ASM。<br>
- * 注入效果：当预读缓存命中时，三个路径加载家族直接走
- * {@link ParallelSoundLoadCoordinator} 的内存字节路径；否则继续执行原始声音加载逻辑。
- */
 @Mixin(targets = GameMixinSignatures.SoundManager.TARGET_CLASS)
 public abstract class SoundManagerMixin {
     @Inject(method = GameMixinSignatures.SoundManager.LOAD_OBJECT_FAMILY, at = @At("HEAD"), cancellable = true, remap = false)

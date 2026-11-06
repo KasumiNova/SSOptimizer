@@ -4,21 +4,8 @@ import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import org.objectweb.asm.*;
 
 /**
- * LWJGL {@code WindowsDisplay} 的 IME 生命周期处理器。
- *
- * <p>注入目标：{@code org/lwjgl/opengl/WindowsDisplay}<br>
- * 注入动机：Windows IMM32 后端需要在窗口句柄就绪时 attach，并在焦点变化和键盘销毁时
- * 维护上下文生命周期。LWJGL 2 的 {@code WindowsDisplay} 为包级实现，使用 ASM
- * 可以在精确的方法边界上插入 hook。<br>
- * 注入效果：
- * <ul>
- *   <li>{@code createKeyboard()} 返回前调用 {@code afterCreateKeyboard}</li>
- *   <li>{@code destroyKeyboard()} 返回前调用 {@code beforeDestroyKeyboard}</li>
- *   <li>{@code appActivate(boolean,long)} 入口调用 {@code onFocusChanged}</li>
- *   <li>{@code update()} 入口调用 {@code onUpdate}，用于每帧轮询提交文本</li>
- * </ul>
- * 所有 hook 均委托给
- * {@link github.kasuminova.ssoptimizer.common.input.ime.WindowsDisplayImeHooks}。</p>
+ * 在 LWJGL WindowsDisplay 中注入 IME 生命周期钩子。
+ * org.lwjgl 由系统类加载器加载，Launch 域 Mixin 无法改写。
  */
 public final class WindowsDisplayImeProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "org/lwjgl/opengl/WindowsDisplay";
@@ -107,10 +94,6 @@ public final class WindowsDisplayImeProcessor implements AsmClassProcessor {
         }
     }
 
-    /**
-     * 在 {@code update()} 方法入口注入 {@code onUpdate()} 调用，
-     * 用于每帧轮询 IME 提交文本并分发到聚焦的文本框。
-     */
     private static final class UpdateHookMethodVisitor extends MethodVisitor {
         private UpdateHookMethodVisitor(final MethodVisitor delegate) {
             super(Opcodes.ASM9, delegate);

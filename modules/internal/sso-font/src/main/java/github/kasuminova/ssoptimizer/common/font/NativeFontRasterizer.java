@@ -6,13 +6,6 @@ import org.apache.log4j.Logger;
 import java.nio.file.Path;
 import java.util.Locale;
 
-/**
- * Thin Java facade around the native FreeType rasterizer.
- * <p>
- * TTF 路径只保留 native 后端（P4 起）：库缺失或 JNI 符号不匹配时
- * {@link #isAvailable()} 为 false，调用方走显式回退（位图字形源/原版字体），
- * 不存在 Java2D 降级。
- */
 public final class NativeFontRasterizer {
     private static final Logger LOGGER = Logger.getLogger(NativeFontRasterizer.class);
 
@@ -26,11 +19,6 @@ public final class NativeFontRasterizer {
     private NativeFontRasterizer() {
     }
 
-    /**
-     * 请求的后端模式。P4 起 TTF 路径仅 native 可用，本属性只影响缓存指纹与
-     * 「显式要求 native 但不可用」时的诊断信息；{@code auto} 与 {@code native}
-     * 之外的取值按 {@code auto} 处理。
-     */
     public static RasterizerMode requestedMode() {
         final String configured = System.getProperty(RASTERIZER_PROPERTY, "auto");
         if (configured == null || configured.isBlank()) {
@@ -118,20 +106,6 @@ public final class NativeFontRasterizer {
         }
     }
 
-    /**
-     * 栅格化指定码点的「描边剪影」：填充字形 ∪ 轮廓向外扩张 {@code strokeWidthPx} 像素的外环。
-     * <p>
-     * 合成语义：填充位图与描边外环位图按各自 bearing 求包围盒并集，逐像素取 alpha 最大值
-     * （两者均为 8-bit 灰度覆盖率），输出并集尺寸的白底 alpha 位图。
-     * {@code xAdvance} 与纯填充一致（描边不改变步进），{@code xOffset}/{@code yOffset}
-     * 以并集包围盒为准。{@code strokeWidthPx <= 0} 或 native 描边器不可用时退化为纯填充结果。
-     *
-     * @param faceHandle    {@link #createFace} 返回的句柄
-     * @param codePoint     Unicode code point
-     * @param baseline      基线位置（与 {@link #rasterizeGlyph} 同语义）
-     * @param strokeWidthPx 描边宽度（像素），{@code <= 0} 时等价于纯填充
-     * @return 描边剪影位图；句柄非法或栅格化失败返回 {@code null}
-     */
     public static NativeGlyphBitmap rasterizeGlyphStroked(final long faceHandle,
                                                           final int codePoint,
                                                           final int baseline,
@@ -149,20 +123,6 @@ public final class NativeFontRasterizer {
         }
     }
 
-    /**
-     * 批量栅格化一组码点，摊薄 JNI 边界开销。
-     * <p>
-     * {@code strokeWidthPx > 0} 时逐字走描边剪影合成（语义同
-     * {@link #rasterizeGlyphStroked}），否则为纯填充。返回数组长度与 {@code codePoints}
-     * 严格一致；单个码点栅格化失败（如字体无该字形）时对应元素为 {@code null}，
-     * 不影响其余元素的栅格化。
-     *
-     * @param faceHandle    {@link #createFace} 返回的句柄
-     * @param codePoints    待栅格化的 Unicode code point 数组
-     * @param baseline      基线位置（与 {@link #rasterizeGlyph} 同语义）
-     * @param strokeWidthPx 描边宽度（像素），{@code <= 0} 时为纯填充
-     * @return 与入参等长的位图数组（失败元素为 {@code null}）；入参非法或整体失败返回 {@code null}
-     */
     public static NativeGlyphBitmap[] rasterizeGlyphs(final long faceHandle,
                                                       final int[] codePoints,
                                                       final int baseline,
@@ -180,15 +140,6 @@ public final class NativeFontRasterizer {
         }
     }
 
-    /**
-     * 查询 face 是否含指定码点的字形（TTF 动态图集 face 链回退选择用，
-     * 不改变任何栅格化语义）：{@code FT_Get_Char_Index(face, cp) != 0}。
-     * 码点 0（.notdef 占位查询无意义）、句柄非法或 native 不可用时返回 false。
-     *
-     * @param faceHandle {@link #createFace} 返回的句柄
-     * @param codePoint  Unicode code point
-     * @return face 含该字形返回 true
-     */
     public static boolean hasGlyph(final long faceHandle,
                                    final int codePoint) {
         if (faceHandle == 0L || codePoint == 0 || !isAvailable()) {

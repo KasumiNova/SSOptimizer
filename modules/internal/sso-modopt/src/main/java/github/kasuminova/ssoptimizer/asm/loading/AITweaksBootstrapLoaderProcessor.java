@@ -9,29 +9,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
- * 目标类：{@code com/genir/aitweaks/launcher/loading/CoreLoaderManager$BootstrapLoader}。<br>
- * 注入位置：构造函数内 {@code URLClassLoader.<init>([Ljava/net/URL;)V} 调用点。<br>
- * 注入动机：AITweaks 的 CoreLoader（负责加载 aitweaks-core.jar 并做混淆还原）由
- * CoreLoaderManager 静态块里的 BootstrapLoader 加载，而 BootstrapLoader 调
- * {@code URLClassLoader(URL[])} 单参构造——父加载器固定为系统类加载器，
- * 父优先委派在系统路径上找不到 aitweaks-launcher.jar，最终由 BootstrapLoader 自身
- * defineClass CoreLoader。<b>整条链路完全不经过 LaunchClassLoader 的 transformer 链</b>，
- * 导致 {@link AITweaksCoreLoaderProcessor} 的 defineClass 钩子从不触发，
- * aitweaks-core.jar 内全部类（如 ShieldAssistIndicator）的 lwjgl 调用在渲染线程分离
- * 模式下直奔真实 GL，主线程报 {@code No OpenGL context found in the current thread}。<br>
- * <p>
- * 为什么不用 Mixin：与 {@link AITweaksCoreLoaderProcessor} 同理——目标类位于
- * aitweaks-launcher.jar，Mixin 配置在游戏引导期解析目标时字节不可得，会被永久丢弃；
- * 且本改写是构造调用点的指令级替换（构造参数栈形变更），不属于 Mixin 注入模型。<br>
- * <p>
- * 注入效果：把单参构造调用替换为双参构造
- * {@code URLClassLoader.<init>([Ljava/net/URL;Ljava/lang/ClassLoader;)V}，
- * 父加载器传入 BootstrapLoader 自身的定义类加载器（即 LaunchClassLoader：
- * BootstrapLoader 由 CoreLoaderManager 引用，随之一同经 LaunchClassLoader 定义）。
- * 父优先委派随后把 CoreLoader 的加载送入 LaunchClassLoader transformer 链，
- * {@link AITweaksCoreLoaderProcessor} 得以生效。非分离模式下该改写同样安全：
- * 仅改变 CoreLoader 的定义类加载器归属，aitweaks-core.jar 的加载路径
- * （CoreLoader 自身构造与 loadClass 委派逻辑）不受影响。
+ * 将 BootstrapLoader 的父加载器改为 LaunchClassLoader，使 CoreLoader 进入类变换链。
+ * <p>目标类在 Mixin 解析时尚不可加载，且构造调用替换涉及参数栈调整，因此使用 ASM。</p>
  */
 public final class AITweaksBootstrapLoaderProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS =
@@ -77,9 +56,7 @@ public final class AITweaksBootstrapLoaderProcessor implements AsmClassProcessor
                                 && SUPER_OWNER.equals(owner)
                                 && "<init>".equals(name)
                                 && SINGLE_ARG_DESC.equals(descriptor)) {
-                            // 栈形 [this, urls]：追加父加载器实参（自身定义类加载器，即
-                            // LaunchClassLoader），再调双参构造。 ldc 自身类不触碰
-                            // 未初始化的 this，校验器允许作为 super() 实参表达式。
+                            // 追加父加载器参数时使用自身类常量，避免在 super() 实参中读取未初始化的 this。
                             modified[0] = true;
                             super.visitLdcInsn(Type.getObjectType(TARGET_CLASS));
                             super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class",

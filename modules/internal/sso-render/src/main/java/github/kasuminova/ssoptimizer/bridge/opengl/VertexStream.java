@@ -2,32 +2,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import org.jctools.queues.SpscArrayQueue;
 
-/**
- * immediate 顶点流的录制缓冲（glBegin/glEnd 与 glVertex/glTexCoord/glColor/
- * glNormal3f 族），每个生产者线程持有一份（见 {@link BridgeSupport#vertexStream()}）。
- * <p>
- * 动机：固定管线逐顶点调用是录制侧最高频路径（wall profile 显示 glVertex2f/
- * glTexCoord2f 占主线程录制耗时大头）——原先每次调用分配一条 lambda 命令入队，
- * 一帧数万命令对象既费 CPU 又制造 GC 压力。本类把同一线程相邻的 immediate
- * 调用编码进字节流（1 字节操作码 + 定长载荷，大端序），落帧点：任一非流式
- * 命令插入 / 阻塞通道 drain-first / 帧尾 swap 之前，以及 glEnd——glEnd 在
- * 延迟落帧模式（{@code ssoptimizer.render.deferredGlEnd}，默认开）下仅在
- * 容量阈值触线时落帧，否则多段 begin..end 累积在同一缓冲（见
- * {@link BridgeSupport#flushVertexStreamOnGlEnd(RecordingContext)}）——
- * 由 {@link BridgeSupport#flushVertexStream()} 移交进池化的
- * {@link VertexBatchCommand} 落帧——批次自身零分配（流的缓冲
- * 逐线程复用，命令对象与回放缓冲池化复用）。
- * <p>
- * 顺序语义：流段命令在帧命令列表中占据其录制位置，回放逐指令原样执行——
- * 即使批次被中间命令切开（如 glBegin 后插入其他命令），两段流与该命令的执行
- * 顺序仍与原调用序列完全一致（glBegin..glEnd 之间插入非顶点调用本身是非法
- * GL 序列，此设计保证语义不进一步劣化，见 glCallList-in-begin 这类合法怪
- * 序列也能按原序回放）。段外状态指令（enable/disable/blendFunc/bindTexture）
- * 与矩阵指令（pushMatrix/popMatrix/loadIdentity/translatef/rotatef/scalef/
- * matrixMode）同样编码进流、按流内位置回放，见各编码方法的 javadoc。
- * <p>
- * 本类非线程安全，线程隔离由 ThreadLocal 保证。
- */
+/** 每个生产者线程独占的 immediate 字节流；状态与矩阵指令也按录制位置编码。 */
 final class VertexStream {
     private static final byte OP_BEGIN = 1;
     private static final byte OP_END = 2;
@@ -43,82 +18,40 @@ final class VertexStream {
     private static final byte OP_COLOR4F = 12;
     private static final byte OP_COLOR3D = 13;
     private static final byte OP_NORMAL3F = 14;
-    /** 流内 glEnable(cap)：在 glBegin/glEnd 段外执行，回放时改变启用状态。 */
     private static final byte OP_ENABLE = 15;
-    /** 流内 glDisable(cap)：段外执行。 */
     private static final byte OP_DISABLE = 16;
-    /** 流内 glBlendFunc(src, dst)：段外执行。 */
     private static final byte OP_BLEND_FUNC = 17;
-    /** 流内 glBindTexture(TEXTURE_2D, texture)：段间（end..begin 之间）执行。 */
     private static final byte OP_BIND_TEXTURE = 18;
-    /**
-     * 精灵四边形融合指令（载荷 12 个 float：x0..y3 + texX/texY/texW/texH）：
-     * 等价 begin(QUADS)+4×(texCoord+vertex)+end，见 {@link VertexSink#spriteQuad}。
-     */
     private static final byte OP_SPRITE_QUAD = 19;
-    /** 流内 glPushMatrix()：段外执行，回放时改变真实 GL 矩阵栈（见类 javadoc 矩阵指令节）。 */
     private static final byte OP_PUSH_MATRIX = 20;
-    /** 流内 glPopMatrix()：段外执行。 */
     private static final byte OP_POP_MATRIX = 21;
-    /** 流内 glLoadIdentity()：段外执行。 */
     private static final byte OP_LOAD_IDENTITY = 22;
-    /** 流内 glTranslatef(x, y, z)：段外执行。 */
     private static final byte OP_TRANSLATE_F = 23;
-    /** 流内 glRotatef(angle, x, y, z)：段外执行。 */
     private static final byte OP_ROTATE_F = 24;
-    /** 流内 glScalef(x, y, z)：段外执行。 */
     private static final byte OP_SCALE_F = 25;
-    /** 流内 glMatrixMode(mode)：段外执行（切换当前矩阵栈）。 */
     private static final byte OP_MATRIX_MODE = 26;
 
-    /** 初始容量：一批典型 immediate 四边形组（百余顶点）约数 KB。 */
     private static final int INITIAL_CAPACITY = 4096;
-    /** 预热统计窗口（批次 = 每次 {@link #transferBuffer()} 移交的段）。 */
     static final int PREWARM_WINDOW = 64;
 
     private byte[] buffer;
     private int pos;
-    /** 未收口的 glBegin 段深度（跨落帧保留，见 {@link #hasOpenSegment()}）。 */
     private int beginDepth;
-    /**
-     * 当前未落帧内容中是否含状态类指令（OP_ENABLE/OP_DISABLE/OP_BLEND_FUNC/
-     * OP_BIND_TEXTURE 与流内矩阵指令 OP_PUSH_MATRIX/OP_POP_MATRIX/
-     * OP_LOAD_IDENTITY/OP_TRANSLATE_F/OP_ROTATE_F/OP_SCALE_F/OP_MATRIX_MODE——
-     * 回放时改变真实 GL 状态）：glEnd 延迟落帧模式下顶点流
-     * 挂起期间不推进帧 commitSeq，{@link BridgeSupport#enqueueState} 的相邻性
-     * 判据需凭本标记识别「挂起流内含状态改动」，保守失效去重缓存（否则挂起的
-     * 流内状态指令会被去重跳过架空，见 DeferredGlEndTest）。
-     */
+    /** 挂起流含状态指令时必须使相邻状态去重失效。 */
     private boolean pendingStateOps;
-    /** 近期批次的编码字节数环形记录（A3 预热：借新缓冲容量取窗口峰值，稳态零扩容）。 */
     private final int[] recentBatchLengths = new int[PREWARM_WINDOW];
     private int recentIndex;
-    /**
-     * 近期批次峰值（窗口内最大已编码字节数）：{@link #transferBuffer()} 换新
-     * 缓冲时作为借取容量需求——相对历史最大（单调不减，罕见大段永久撑大内存
-     * 需求），窗口峰值在突发批次滑出窗口后回落，借取容量与实际批次量级保持
-     * 同步，池内缓冲容量既不浪费也不触发编码端渐进扩容（v45c profile：
-     * {@code Arrays.copyOf} 1,893 样本的消除目标）。
-     */
     private int prewarmCapacity = INITIAL_CAPACITY;
-    /**
-     * 本线程的 SPSC 返还 inbox（渲染线程归还的缓冲，{@code RecordingContext}
-     * 注入；测试直建为 null）：{@link #transferBuffer()} 换缓冲时随借取需求
-     * 传给 {@link VertexStreamBufferPool#acquire(int, SpscArrayQueue)}，
-     * 优先零竞争 drain 本线程 inbox 再回落全局池。
-     */
+    /** 渲染线程单生产者、当前线程单消费者。 */
     private final SpscArrayQueue<byte[]> returnInbox;
 
-    /** 测试与无返还通道路径：无 SPSC 返还 inbox，借出直走全局池。 */
     VertexStream() {
         this(null);
     }
 
     VertexStream(final SpscArrayQueue<byte[]> returnInbox) {
         this.returnInbox = returnInbox;
-        // 初始缓冲同样走池借取：保持「每次 release 都有配对 trackBorrow」的
-        // 池账目不变量——直建数组移交落帧后归还是无配对 inFlight 递减，
-        // 与编码中途扩容（见 #ensure）同源的账目漂移根因
+        // 初始缓冲也必须经池借取，保证归还与借出计数配对。
         this.buffer = BridgeSupport.acquireVertexStreamBuffer(INITIAL_CAPACITY, returnInbox);
     }
 
@@ -126,23 +59,11 @@ final class VertexStream {
         return pos == 0;
     }
 
-    /**
-     * 当前是否有未收口的 glBegin 段（跨落帧追踪，不随 {@link #transferBuffer()}
-     * 复位）：落帧时刻若段仍开放，本批次与「段开放期间插入的其他命令」构成
-     * 病态切割序列（如 glCallList 插入 begin..end 之间），回放必须走逐指令
-     * immediate 兜底（{@link ImmediateVertexSink}），数组化无法保持
-     * 「真实 GL 段开放 + current 值逐指令推进」语义。
-     */
+    /** 开放段跨落帧时必须逐指令回放，不能使用顶点数组。 */
     boolean hasOpenSegment() {
         return beginDepth > 0;
     }
 
-    /**
-     * 当前未落帧内容中是否含状态类指令（流内 enable/disable/blendFunc/
-     * bindTexture 与矩阵指令族）：{@link BridgeSupport#enqueueState} 在去重
-     * 相邻性判定前据此保守失效——挂起流未推进 commitSeq，但其回放会改变真实
-     * GL 状态。
-     */
     boolean hasPendingStateOps() {
         return pendingStateOps;
     }
@@ -240,26 +161,18 @@ final class VertexStream {
         putFloat(nz);
     }
 
-    /**
-     * 流内 glEnable(cap)：在 glBegin/glEnd 段外执行（回放时改变启用状态）。
-     * 由 sprite 渲染路径（{@link GL11#streamEnable(int)}）等把状态设置编码进
-     * 顶点流，避免「每 sprite 一条非流式状态命令」打断流段合并（v49 profile：
-     * 主线程 flushVertexStream 4,253 样本，Sprite.render 2,432 的最大调用方）。
-     */
     void enable(int cap) {
         putOp(OP_ENABLE);
         putInt(cap);
         pendingStateOps = true;
     }
 
-    /** 流内 glDisable(cap)：段外执行，语义同 {@link #enable(int)}。 */
     void disable(int cap) {
         putOp(OP_DISABLE);
         putInt(cap);
         pendingStateOps = true;
     }
 
-    /** 流内 glBlendFunc(src, dst)：段外执行。 */
     void blendFunc(int src, int dst) {
         putOp(OP_BLEND_FUNC);
         putInt(src);
@@ -267,46 +180,27 @@ final class VertexStream {
         pendingStateOps = true;
     }
 
-    /**
-     * 流内 glBindTexture(TEXTURE_2D, texture)：段间（上一段 glEnd 之后、
-     * 下一段 glBegin 之前）执行——glBindTexture 在 glBegin/glEnd 段内非法，
-     * 编码保证落在段边界处；同纹理连续 sprite 的重复绑定在回放时幂等冗余，
-     * 换纹理的绑定打断的是「流内位置」而非「流段」——连续 sprite 的多个
-     * begin..end 段仍合并为一条流命令，段与段之间由本指令衔接。
-     */
     void bindTexture(int texture) {
         putOp(OP_BIND_TEXTURE);
         putInt(texture);
         pendingStateOps = true;
     }
 
-    /**
-     * 流内 glPushMatrix()：段外执行（矩阵指令在 glBegin/glEnd 段内非法，
-     * 与流内状态指令同约定）。矩阵命令族（GL11.glPushMatrix 等）由此编码进
-     * 顶点流，不再每条产生一个非流式命令——push/pop/transform 是 deferred
-     * glEnd 落地后剩下的唯一「每条即 flush」高频命令族（每帧 400-1500 条，
-     * 每条触发落帧 + lambda 命令分配 + frameLock 进入）；流内编码后跟随流
-     * 走到下一个落帧点，回放按流内位置逐指令执行（保序语义同 OP_ENABLE 族，
-     * 开关 {@code ssoptimizer.render.streamMatrixOps}）。
-     */
     void pushMatrix() {
         putOp(OP_PUSH_MATRIX);
         pendingStateOps = true;
     }
 
-    /** 流内 glPopMatrix()：段外执行，语义同 {@link #pushMatrix()}。 */
     void popMatrix() {
         putOp(OP_POP_MATRIX);
         pendingStateOps = true;
     }
 
-    /** 流内 glLoadIdentity()：段外执行，语义同 {@link #pushMatrix()}。 */
     void loadIdentity() {
         putOp(OP_LOAD_IDENTITY);
         pendingStateOps = true;
     }
 
-    /** 流内 glTranslatef(x, y, z)：段外执行，语义同 {@link #pushMatrix()}。 */
     void translatef(float x, float y, float z) {
         putOp(OP_TRANSLATE_F);
         putFloat(x);
@@ -315,7 +209,6 @@ final class VertexStream {
         pendingStateOps = true;
     }
 
-    /** 流内 glRotatef(angle, x, y, z)：段外执行，语义同 {@link #pushMatrix()}。 */
     void rotatef(float angle, float x, float y, float z) {
         putOp(OP_ROTATE_F);
         putFloat(angle);
@@ -325,7 +218,6 @@ final class VertexStream {
         pendingStateOps = true;
     }
 
-    /** 流内 glScalef(x, y, z)：段外执行，语义同 {@link #pushMatrix()}。 */
     void scalef(float x, float y, float z) {
         putOp(OP_SCALE_F);
         putFloat(x);
@@ -334,19 +226,12 @@ final class VertexStream {
         pendingStateOps = true;
     }
 
-    /** 流内 glMatrixMode(mode)：段外执行（切换当前矩阵栈），语义同 {@link #pushMatrix()}。 */
     void matrixMode(int mode) {
         putOp(OP_MATRIX_MODE);
         putInt(mode);
         pendingStateOps = true;
     }
 
-    /**
-     * 精灵四边形融合指令（{@link VertexSink#spriteQuad} 的编码侧）：
-     * sprite 渲染路径把 begin..end 整组调用压成一条流指令（1 字节操作码 +
-     * 48 字节载荷），替代 13 次流调用约 78 字节编码（主线程每 sprite 的
-     * 编码成本大头）。
-     */
     void spriteQuad(
             float x0, float y0, float x1, float y1,
             float x2, float y2, float x3, float y3,
@@ -366,40 +251,20 @@ final class VertexStream {
         putFloat(texHeight);
     }
 
-    /**
-     * @return 当前已编码的字节数
-     */
     int length() {
         return pos;
     }
 
-    /** 测试用：当前预热容量（近期批次峰值，借缓冲与扩容的容量基准）。 */
     int prewarmCapacity() {
         return prewarmCapacity;
     }
 
-    /**
-     * 把已编码内容拷贝到 {@code dst}（调用方保证容量足够）。内容拷贝后缓冲区
-     * 所有权不移交——本流继续持有并复用自己的缓冲，避免逐批次分配（渲染线程
-     * 侧的回放命令缓冲由 {@link VertexBatchCommand} 池化复用）。
-     *
-     * @param dst 目标缓冲，长度不得小于 {@link #length()}
-     */
+    /** dst 长度不得小于 length()。 */
     void copyTo(byte[] dst) {
         System.arraycopy(buffer, 0, dst, 0, pos);
     }
 
-    /**
-     * 移交当前缓冲的所有权给调用方（顶点批次落帧），本流换新缓冲继续编码。
-     * 移交零拷贝——录制热路径上原先逐批次 {@link System#arraycopy} 拷贝进
-     * 批次命令的耗时由此消除（v36 profile：{@code fillFrom} 2,303 样本）。
-     * 移交出的缓冲由渲染线程执行完批次命令后经
-     * {@link VertexStreamBufferPool} 归还，容量跨帧保留；新缓冲按近期批次
-     * 峰值（预热）从池借取，稳态命中即不触发扩容（v45c profile：
-     * {@code Arrays.copyOf} 1,893 样本的主要来源）。
-     *
-     * @return 已编码内容所在的缓冲（调用方接管所有权）
-     */
+    /** 移交当前缓冲所有权，调用方负责最终归还池。 */
     byte[] transferBuffer() {
         byte[] out = buffer;
         recordBatchLength(pos);
@@ -409,7 +274,6 @@ final class VertexStream {
         return out;
     }
 
-    /** 记录本批次编码字节数并维护预热容量（窗口峰值；峰值被滑出窗口时重算）。 */
     private void recordBatchLength(int length) {
         int evicted = recentBatchLengths[recentIndex];
         recentBatchLengths[recentIndex] = length;
@@ -426,32 +290,18 @@ final class VertexStream {
         }
     }
 
-    /** 清空已编码内容（容量保留，同量级批次不再触发扩容）。 */
     void reset() {
         pos = 0;
         pendingStateOps = false;
     }
 
-    /**
-     * 解码字节流并对 {@code sink} 逐条回放（含 {@link VertexSink#startReplay()}/
-     * {@link VertexSink#finishReplay()} 回调）；操作码未知说明流已损坏，直接抛异常。
-     */
     static void replay(byte[] data, int length, VertexSink sink) {
         sink.startReplay();
         replayBody(data, length, sink);
         sink.finishReplay();
     }
 
-    /**
-     * {@link #replay} 的裸解码形式（不含回放开始/结束回调）：跨批次串合并执行
-     * （{@link VertexBatchCommand#executeMerged}）时，串首/串尾回调由命令侧
-     * 按串边界管理，串内每条批次只做裸解码。
-     */
     static void replayBody(byte[] data, int length, VertexSink sink) {
-        // 游标直读（大端，与 put 族编码约定一致）：每批次一次 ByteBuffer.wrap 的
-        // HeapByteBuffer 分配与逐图元 getXxx 分派开销在渲染线程回放热路径上
-        // 占比可观（cpu4 profile：wrap/<init> 865 样本 + HeapByteBuffer.get 族
-        // 合计约占渲染线程 3.5%），此处消除。
         int p = 0;
         while (p < length) {
             switch (data[p++]) {
@@ -560,7 +410,6 @@ final class VertexStream {
         }
     }
 
-    /** 大端解码（与 {@link #putInt} 编码序一致）。 */
     private static int readInt(final byte[] data, final int p) {
         return (data[p] << 24) | ((data[p + 1] & 0xFF) << 16)
                 | ((data[p + 2] & 0xFF) << 8) | (data[p + 3] & 0xFF);
@@ -580,15 +429,7 @@ final class VertexStream {
 
     private void ensure(int additional) {
         if (pos + additional > buffer.length) {
-            // 扩容必须走池借还，严禁裸 Arrays.copyOf 丢弃旧缓冲：旧缓冲是池
-            // 在册资产，静默丢弃使其借出计数永久挂账（inFlight 只涨不消、衰减
-            // 失效 → 保留上限失控，实机 JProfiler 池驻留 4.6GB）；拷贝出的新
-            // 数组事后归还是无配对递减（大容量桶计数负漂移 → 峰值塌缩 →
-            // 归还即丢荒、借出即新建，实机每秒约 3 万次新建/丢荒）。
-            // 扩容拷贝已写入的 pos 字节（含未写完的 op 前缀），op 边界语义不变。
-            // 中继档借还绕开 SPSC inbox 直走全局池（inbox=null）：升档中继缓冲
-            // 灌进 inbox 只会被下次借出判为「预热档以下」压入本地栈占座，
-            // 全局桶按档归档才是中继缓冲的正确归处。
+            // 扩容必须经全局池借还，保证旧缓冲与新缓冲的借出计数配对。
             final int needed = Math.max(buffer.length * 2, pos + additional);
             final byte[] grown = BridgeSupport.acquireVertexStreamBuffer(needed, null);
             System.arraycopy(buffer, 0, grown, 0, pos);

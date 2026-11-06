@@ -28,12 +28,6 @@ class EngineProcessorRegistrationTest {
     void registersEngineAndExternalModProcessors() {
         Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-        // 16 个引擎级注册项（含 RESOURCE_LOADER 组合处理器）+ 2 个 DCR 处理器
-        // − 3 个 IME 处理器（ebd2ee9 起 lwjgl 目标迁移至 NanoForge SystemAsmBridge，
-        // 不再出现在 Launch 域注册表）
-        // （GL 显存账本模组埋点已整体移除：BoxUtil 1.6.0 移除 _INTERNAL_FORMAT/FORMAT
-        // 静态字段导致注入字节码运行期 NoSuchFieldError，该体系仅服务开发期显存观测，
-        // 不应承担生产环境模组兼容性风险）
         assertEquals(15, processors.size());
         assertTrue(processors.containsKey(GameClassNames.TEXTURE_LOADER));
         assertTrue(processors.containsKey(GameClassNames.COMBAT_STATE));

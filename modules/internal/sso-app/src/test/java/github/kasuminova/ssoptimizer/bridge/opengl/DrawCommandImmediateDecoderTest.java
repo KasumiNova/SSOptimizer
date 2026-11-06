@@ -13,19 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link DrawCommandImmediateDecoder} 的解码逻辑验证：display list 编译窗口内
- * 客户端数组快照 → immediate 调用（按值捕获）的逐顶点重放，以及「不可解码」
- * 快照（VBO 偏移 / INTERLEAVED）的排除判定。
- * <p>
- * 背景：display list 编译对客户端数组按指针捕获，{@link DrawCommand} 的 buffer
- * 形式快照是池化缓冲（draw 执行后归还复用），列表重放会读到陈旧内容——解码器
- * 把快照数据以 glBegin/glVertex 等 immediate 调用重放，列表在编译期按值捕获。
- * 解码器不触碰真实 GL（输出经 {@link VertexSink} 抽象），可无上下文完整验证。
- */
 class DrawCommandImmediateDecoderTest {
 
-    /** 记录桩：与 {@link VertexStreamTest} 同构，序列化回放调用便于精确断言。 */
     private static final class RecordingSink implements VertexSink {
         final List<String> calls = new ArrayList<>();
 
@@ -156,7 +145,6 @@ class DrawCommandImmediateDecoderTest {
 
     @Test
     void drawArraysDecodesVertexTexCoordColor() {
-        // 游戏 SpriteBatch/粒子的实际格式：顶点 2F + 纹理坐标 2F + 颜色 4UB（2 个顶点）
         PointerSnapshotGroup group = groupOf(
                 PointerSnapshot.ofBuffer(PointerSnapshot.Kind.VERTEX, 2, GL11.GL_FLOAT, 0,
                         floats(0.0f, 0.0f, 1.0f, 2.0f)),
@@ -191,7 +179,6 @@ class DrawCommandImmediateDecoderTest {
 
     @Test
     void explicitStrideIsHonored() {
-        // stride=16：顶点交错布局（x,y,pad,pad 每 16 字节一个顶点）
         ByteBuffer interleaved = ByteBuffer.allocateDirect(48).order(ByteOrder.nativeOrder());
         interleaved.putFloat(0.0f).putFloat(0.0f).putFloat(-1.0f).putFloat(-1.0f);
         interleaved.putFloat(1.0f).putFloat(1.0f).putFloat(-1.0f).putFloat(-1.0f);
@@ -212,7 +199,6 @@ class DrawCommandImmediateDecoderTest {
         PointerSnapshotGroup group = groupOf(
                 PointerSnapshot.ofBuffer(PointerSnapshot.Kind.VERTEX, 2, GL11.GL_FLOAT, 0,
                         floats(0.0f, 0.0f, 1.0f, 1.0f, 2.0f, 2.0f)));
-        // 索引 [0, 2, 1]（short 视图）
         ByteBuffer indices = ByteBuffer.allocateDirect(6).order(ByteOrder.nativeOrder());
         indices.putShort((short) 0).putShort((short) 2).putShort((short) 1);
         indices.flip();
@@ -228,8 +214,6 @@ class DrawCommandImmediateDecoderTest {
 
     @Test
     void drawElementsByteViewReadsUnsigned() {
-        // byte 视图：索引值以无符号读取——0x80 若按有符号字节读为 -128（越界崩溃），
-        // 无符号读为 128 并命中第 128 个顶点
         float[] vertexData = new float[129 * 2];
         for (int i = 0; i < 129; i++) {
             vertexData[i * 2] = i;
@@ -277,7 +261,6 @@ class DrawCommandImmediateDecoderTest {
 
     @Test
     void vboOffsetSnapshotIsNotDecodable() {
-        // VBO 偏移形式：数据在服务器端，display list 指针捕获语义正确，走常规路径
         PointerSnapshotGroup group = groupOf(
                 PointerSnapshot.ofOffset(PointerSnapshot.Kind.VERTEX, 2, GL11.GL_FLOAT, 0, 0L, 1),
                 PointerSnapshot.ofOffset(PointerSnapshot.Kind.TEX_COORD, 2, GL11.GL_FLOAT, 0, 8L, 1));
@@ -299,7 +282,6 @@ class DrawCommandImmediateDecoderTest {
 
     @Test
     void unsupportedVertexComponentCountFailsLoudly() {
-        // 4 分量顶点超出 VertexSink 方法集：显式拒绝而非静默错绘/指针捕获
         PointerSnapshotGroup group = groupOf(
                 PointerSnapshot.ofBuffer(PointerSnapshot.Kind.VERTEX, 4, GL11.GL_FLOAT, 0,
                         floats(0.0f, 0.0f, 0.0f, 1.0f)));

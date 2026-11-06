@@ -7,11 +7,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 测试用织入类加载器：对指定（二进制名 → 处理器）的类读取原始字节、应用处理器并 {@code defineClass}，
- * 其余类委派父加载器。属全局规范允许的「动态加载 / 注入框架」用途，仅在此承载 defineClass 管线，
- * 使转换后的字节码能被 JVM 实际加载并校验（栈帧合法性 / 链接正确性 的真实证明）。
- */
 final class TransformingClassLoader extends ClassLoader {
 
     private final Map<String, AsmClassProcessor> targets;

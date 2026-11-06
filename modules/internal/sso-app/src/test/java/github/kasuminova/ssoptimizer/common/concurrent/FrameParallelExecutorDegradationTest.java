@@ -6,10 +6,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 并行执行器失败串行降级的契约验证：全成功零降级路径、失败任务主线程串行
- * 重跑成功（已成功任务不重跑）、重跑仍失败时重抛（不吞异常）。
- */
 class FrameParallelExecutorDegradationTest {
 
     @Test
@@ -27,7 +23,6 @@ class FrameParallelExecutorDegradationTest {
     void failedTaskRerunsOnCallerThreadAndSucceeds() {
         FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 2);
         AtomicInteger runs = new AtomicInteger();
-        // 首次执行抛异常（并行窗口期并发读失败），主线程串行重跑成功
         executor.submit(() -> {
             if (runs.incrementAndGet() == 1) {
                 throw new NullPointerException("simulated concurrent read failure");
@@ -40,7 +35,6 @@ class FrameParallelExecutorDegradationTest {
     @Test
     void rerunStillFailingRethrowsWithFullContext() {
         FrameParallelExecutorImpl executor = new FrameParallelExecutorImpl("AI", 1);
-        // 每次执行都抛：重跑仍失败 → 必须重抛（禁止吞异常）
         executor.submit(() -> {
             throw new IllegalStateException("persistent failure");
         }, null);

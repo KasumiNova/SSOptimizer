@@ -44,35 +44,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-/**
- * SSOptimizer 的 NanoForge coremod 入口插件（{@code coremod.toml} 的 {@code pluginClass}）。
- * <p>
- * 取代 javaagent 时代的 {@code SSOptimizerAgent.premain}：NanoForge 在 tweaker
- * {@code injectIntoClassLoader} 阶段完成 transformer 注册与 Mixin config 登记后回调
- * {@link #onLoad}，此处把全部 ASM 处理器写入 {@link HybridWeaverTransformer} 的静态注册表。
- * 时序上 onLoad 早于任何游戏类加载，weaver 的 {@code transform} 只在游戏类加载时懒读
- * 注册表，故「onLoad 写、transform 读」是安全模式。
- * <p>
- * 本插件只接管字节码注入；ImageIO 配置、纹理缓存等运行时组件仍由游戏原生
- * {@code SSOptimizerModPlugin.onApplicationLoad} 负责（双轨保留）。日志降噪按产生时机
- * 分流：原版加载期噪音（早于任何游戏类加载）在 {@link #onLoad} 内处理；Mod 自身运行期
- * 噪音（如 LunaLib）仍在 {@code onApplicationLoad} 处理。
- */
 public final class SSOptimizerCorePlugin implements INanoCorePlugin {
     private static final Logger LOGGER = Logger.getLogger(SSOptimizerCorePlugin.class);
 
-    /**
-     * LaunchWrapper 实例化入口（公开无参构造）。
-     */
     public SSOptimizerCorePlugin() {
     }
 
-    /**
-     * coremod 装配完成回调：先压住原版加载期日志噪音（须早于游戏数据加载，否则
-     * 「Loading ...」类 INFO 日志已刷屏），再注册全部引擎级与外部模组 ASM 处理器。
-     *
-     * @param context NanoForge 运行上下文（当前不使用，路径均按既有系统属性约定解析）
-     */
     @Override
     public void onLoad(CoreModContext context) {
         VanillaLogNoiseConfigurator.configure();
@@ -80,29 +57,19 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerModuleServices();
         registerAllProcessors(HybridWeaverTransformer::registerProcessor);
         registerGlobalProcessors();
-        // 调试服务（默认关闭）：onLoad 早于一切游戏类加载，使调试通道覆盖加载期场景
         DebugServerBootstrap.startIfEnabled();
         LOGGER.info("[SSOptimizer] CoreMod loaded — Engine + AI + loading repair phase active, "
                 + HybridWeaverTransformer.getProcessorCount() + " processor registrations");
     }
 
-    /**
-     * 跨模块服务接线：api 接口的实现在此统一注册（模块化拆离后功能模块间
-     * 禁止直接依赖，跨域行为调用经 {@link ServiceRegistry} 解析）。
-     */
     private static void registerModuleServices() {
-        // save 域的存档进度覆盖层需要在渲染线程重放原版 UI 帧
         ServiceRegistry.register(RenderFramePump.class, RenderThreadDispatch::runBlocking);
-        // automation 域的存档读写自动化驱动需要 save 域的 unmarshal 阶段耗时
         ServiceRegistry.register(SavePhaseTelemetry.class, UnmarshalPhaseTimer::lastUnmarshalMs);
-        // render 域的 Sprite Mixin 需要 loading 域的图集区域查询（转换 record 类型）
         ServiceRegistry.register(WeaponAtlasLookup.class, path -> {
             final ShipWeaponAtlas.Region r = ShipWeaponAtlas.lookup(path);
             return r == null ? null : new WeaponAtlasLookup.Region(r.textureId(), r.atlasSize(), r.x(), r.y());
         });
-        // render 域的 Display 帧交换后通知 automation 域的调试帧捕获（允许缺省，调用点判空）
         ServiceRegistry.register(FrameCaptureHook.class, DebugFrameCapture::onDisplayUpdate);
-        // loading 域的资源解码/预载需要 font 域的字体覆盖查询（允许缺省，调用点判空）
         ServiceRegistry.register(FontResourceOverride.class, new FontResourceOverride() {
             @Override
             public String normalize(final String resourcePath) {
@@ -126,27 +93,13 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         });
     }
 
-    /**
-     * 渲染线程分离模式装配（默认启用；显式
-     * {@code -Dssoptimizer.renderthread.enable=false} 时跳过）。
-     * <p>
-     * 时序要求：onLoad 早于一切游戏类加载，此处创建 {@link RenderQueueImpl}（启动
-     * SSOptimizer-Render 线程）并安装进 bridge——此后游戏/模组类加载时经
-     * {@link RenderThreadRedirectTransformer} 改写到 bridge 的调用才有消费者，
-     * 主线程自始至终不持有 GL context（{@code Display.create} 经队列阻塞通道
-     * 延迟到渲染线程执行）。flag 关闭时什么都不做，bridge 保持未安装状态
-     * （bridge 方法被意外调用会以 ISE 快速失败）。
-     */
+    // 渲染队列必须在游戏类加载前安装，确保重定向后的 bridge 调用始终有消费者。
     private static void installRenderThreadSeparation() {
         if (!RenderThreadMode.isEnabled()) {
             return;
         }
         RenderQueueImpl queue = new RenderQueueImpl();
-        // BridgeSupport 安装是全局共享的，任一 bridge 入口类的 install 等价
         GL11.install(queue);
-        // 有序映射写入通道（BoxUtil 静态尾迹等持久映射直写子系统的流序化）：
-        // 服务注册 + 帧尾标记钩子安装；模组侧 Mixin 经 ServiceRegistry 解析，
-        // 未注册（非 RT 模式）时回退原版直写语义
         ServiceRegistry.register(github.kasuminova.ssoptimizer.api.render.MappedWriteBridge.class,
                 github.kasuminova.ssoptimizer.bridge.opengl.MappedWriteBridgeImpl.get());
         RenderQueueImpl.frameEndMarkerHook(
@@ -155,32 +108,16 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
                 + "GL 调用将经 ASM 重定向录制到 " + RenderQueueImpl.RENDER_THREAD_NAME);
     }
 
-    /**
-     * 注册全部 ASM 处理器到指定接收器。
-     * <p>
-     * 生产路径接收器为 {@link HybridWeaverTransformer#registerProcessor}；测试可传入
-     * 自有收集器以避免静态注册表污染。
-     *
-     * @param registrator 处理器注册接收器（类名可为点号或斜杠格式）
-     */
     static void registerAllProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
         registerEngineProcessors(registrator);
         registerExternalModOptimizers(registrator);
     }
 
-    /**
-     * 注册所有引擎级 ASM 处理器。
-     * <p>
-     * 每个处理器可通过系统属性 {@code ssoptimizer.disable.<key>} 单独禁用。
-     *
-     * @param registrator 处理器注册接收器
-     */
     static void registerEngineProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
         registerIf(registrator, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
         registerIf(registrator, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
         registrator.accept(GameClassNames.COMBAT_STATE, new CombatStateProcessor());
-        // lwjgl 目标类由 RFB 系统类加载器加载（classLoaderException 硬编码排除），
-        // Launch 域 transformer 链不可触及，必须经 NanoForge SystemAsmBridge（RFB 插件通道）注册
+        // LWJGL 由 RFB 系统类加载器加载，Launch 域 transformer 无法改写，必须经 SystemAsmBridge 注册。
         registerSystemIf("linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
         registerSystemIf("linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
         registerSystemIf("linuxeventime", LinuxEventImeProcessor.TARGET_CLASS, new LinuxEventImeProcessor());
@@ -201,26 +138,10 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registerIf(registrator, "collisionimpulseclamp", GameClassNames.COLLISION_HANDLER_IMPL, new CollisionImpulseClampProcessor());
     }
 
-    /**
-     * 注册外部模组性能优化处理器（DCR 优化集合 + GL 显存账本模组埋点集合）。
-     * <p>
-     *  javaagent 时代经 ServiceLoader SPI 发现；coremod 化后源码已收编进主模块，
-     * 此处直接实例化注册。总开关 {@code -Dssoptimizer.disable.<featureKey>=true}；
-     * 压缩内核（L2）已迁移为 Mixin（{@code mixin.modopt.dcr.DcrCompressionUtilMixin}），
-     * 不再经本集合注册，原 {@code -Dssoptimizer.disable.dcrzstd} 子开关随之移除。
-     *
-     * @param registrator 处理器注册接收器
-     */
     private static void registerExternalModOptimizers(BiConsumer<String, AsmClassProcessor> registrator) {
         registerModOptimizer(registrator, new DcrModOptimizer());
     }
 
-    /**
-     * 按 feature key 总开关注册单个外部模组优化集合的全部处理器。
-     *
-     * @param registrator 处理器注册接收器
-     * @param optimizer   优化集合
-     */
     private static void registerModOptimizer(BiConsumer<String, AsmClassProcessor> registrator,
                                              ExternalModOptimizer optimizer) {
         String featureKey = optimizer.featureKey();
@@ -235,13 +156,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         });
     }
 
-    /**
-     * 注册全局 ASM 处理器（对 Launch 域全部类执行，不按类名匹配）。
-     * <p>
-     * 与 {@link #registerIf} 同样支持 {@code ssoptimizer.disable.<key>} 开关。
-     * 仅可注册自带廉价字节级预过滤的处理器（见
-     * {@link HybridWeaverTransformer#registerGlobalProcessor} 的契约说明）。
-     */
     private static void registerGlobalProcessors() {
         if (Boolean.getBoolean("ssoptimizer.disable.colorsanitize")) {
             LOGGER.info("[SSOptimizer] Processor DISABLED via system property: colorsanitize");
@@ -259,13 +173,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
         registrator.accept(className, processor);
     }
 
-    /**
-     * 注册 System 域（RFB 系统类加载器）目标类的 ASM 处理器。
-     * <p>
-     * 与 {@link #registerIf} 同样支持 {@code ssoptimizer.disable.<key>} 开关，
-     * 但注册目标是 NanoForge 的 {@code SystemAsmBridge}（RFB 插件 transformer 通道），
-     * 用于改写 org.lwjgl. 等被 RFB 硬编码排除出 Launch 域的类。
-     */
     private static void registerSystemIf(String key, String className, AsmClassProcessor processor) {
         if (Boolean.getBoolean("ssoptimizer.disable." + key)) {
             LOGGER.info("[SSOptimizer] System ASM processor DISABLED via system property: " + key);

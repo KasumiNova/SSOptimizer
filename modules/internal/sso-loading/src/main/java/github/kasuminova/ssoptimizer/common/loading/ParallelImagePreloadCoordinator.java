@@ -6,11 +6,6 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Starts multiple instances of the base game's deferred image worker instead of
- * the original single background thread. This keeps the game's queue/result-map
- * protocol intact while parallelizing independent ImageIO decode work.
- */
 public final class ParallelImagePreloadCoordinator {
     static final String DEFAULT_WORKER_CLASS  = "github.kasuminova.ssoptimizer.common.loading.ParallelImagePreloadWorker";
     static final String WORKER_CLASS_PROPERTY = "ssoptimizer.loading.workerClass";

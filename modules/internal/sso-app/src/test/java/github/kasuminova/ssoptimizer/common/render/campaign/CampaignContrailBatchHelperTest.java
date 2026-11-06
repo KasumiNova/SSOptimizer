@@ -14,20 +14,6 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link CampaignContrailBatchHelper} 的编码逻辑与原版 {@code ContrailEngineV2
- * .render(float)} 逐条渲染的等价性验证。
- * <p>
- * 参考实现逐行转写自反编译原版（named 仓 {@code ContrailEngineV2.java:264-416}），
- * 相交判定直接调用真实的 {@link VectorMathUtils#segmentIntersection}（独立验证
- * helper 内联的标量版），GL 调用替换为顶点记录。覆盖：逐点亮度公式（淡入/淡出
- * 双段、首点强制 0）、fadeOut 检测（展开段相交 + 前点折返）与状态写回、
- * proximity 衰减与 lastProximityMult 单调钳制、proximity 参照点跨尾迹存续、
- * 尾点对（alpha 0、宽度 1/4）、同批退化连接点（重复上一组末顶点两次）、
- * 不可绘制尾迹（点数 ≤ 1）的 maxBrightness 清零。
- * GL 侧的 flush/混合切换/纹理绑定编排无 GL 上下文不可触达，由接入游戏后的
- * A/B 验证兜底——本测试只验证纯编码路径与渲染期状态改写。
- */
 class CampaignContrailBatchHelperTest {
 
     @BeforeEach
@@ -35,16 +21,10 @@ class CampaignContrailBatchHelperTest {
         CampaignContrailBatchHelper.beginStrip();
     }
 
-    // ------------------------------------------------------------------
-    // 标量工具
-    // ------------------------------------------------------------------
-
-    /** 内联标量版相交判定与真实 VectorMathUtils.segmentIntersection 结论一致。 */
     @Test
     void segmentsIntersectMatchesVectorMathUtilsAcrossRandomStates() {
         Random random = new Random(0xC0FF_EEL);
         for (int trial = 0; trial < 20_000; trial++) {
-            // 小坐标域提高共线/相交命中率；混入相等坐标制造退化段
             float ax = randCoord(random), ay = randCoord(random);
             float bx = randCoord(random), by = randCoord(random);
             float cx = randCoord(random), cy = randCoord(random);
@@ -66,11 +46,6 @@ class CampaignContrailBatchHelperTest {
         };
     }
 
-    // ------------------------------------------------------------------
-    // 单条尾迹编码
-    // ------------------------------------------------------------------
-
-    /** 单条尾迹 = 点对（V_MIN/V_MAX）+ 尾点对（alpha 0、宽度为点的 1/4）。 */
     @Test
     void singleContrailEncodesPointPairsThenTailPair() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(255, 128, 64, 200));
@@ -81,7 +56,6 @@ class CampaignContrailBatchHelperTest {
         assertNull(CampaignContrailBatchHelper.encodeContrail(contrail, 1f, null));
         assertEquals(6, CampaignContrailBatchHelper.getNumVertices());
 
-        // 首点：亮度强制 0
         CampaignContrailBatchHelper.EncodedVertex v0 = CampaignContrailBatchHelper.vertexAt(0);
         assertEquals(8f, v0.x(), 1e-4f, "point(10,20) - perp(1,0) × width/2(2)");
         assertEquals(20f, v0.y(), 1e-4f);
@@ -93,8 +67,6 @@ class CampaignContrailBatchHelperTest {
         assertEquals(0.99f, v1.v(), 1e-4f);
         assertEquals(0, v1.a());
 
-        // 第二点：elapsed(1) ≥ fadeWindow(min(0.1, duration/2=1)=0.1)，
-        // brightness=(2-1)/(2-0.1)=1/1.9；alpha=(int)(200×1×0.52631581)=105
         CampaignContrailBatchHelper.EncodedVertex v2 = CampaignContrailBatchHelper.vertexAt(2);
         assertEquals(28f, v2.x(), 1e-4f);
         assertEquals(1.5f, v2.u(), 1e-4f);
@@ -103,7 +75,6 @@ class CampaignContrailBatchHelperTest {
         assertEquals(128, v2.g());
         assertEquals(64, v2.b());
 
-        // 尾点对：lastPoint(40,20) ± perp(1,0) × width/4(1)，alpha 恒 0，u 取末点 texCoord
         CampaignContrailBatchHelper.EncodedVertex v4 = CampaignContrailBatchHelper.vertexAt(4);
         assertEquals(39f, v4.x(), 1e-4f);
         assertEquals(20f, v4.y(), 1e-4f);
@@ -116,20 +87,16 @@ class CampaignContrailBatchHelperTest {
         assertEquals(0, v5.a());
     }
 
-    /** 淡入分支：elapsed < fadeWindow 时 brightness = elapsed / fadeWindow。 */
     @Test
     void fadeInPointAlphaUsesElapsedOverFadeWindow() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(10, 20, 30, 255));
         contrail.points.add(point(0f, 0f, 0f, 1f, 2f, 2f, 0f, 0f));
-        // duration=2 → fadeWindow=0.1；elapsed=0.05 → brightness=0.5
         contrail.points.add(point(10f, 0f, 0f, 1f, 2f, 2f, 0.05f, 0.25f));
 
         CampaignContrailBatchHelper.encodeContrail(contrail, 1f, null);
-        // alpha = (int)(255 × 1 × 0.5) = 127
         assertEquals(127, CampaignContrailBatchHelper.vertexAt(2).a());
     }
 
-    /** alphaMult 全局缩放参与亮度计算（原版 render(float) 的 var1 语义）。 */
     @Test
     void alphaMultScalesPointBrightness() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(10, 20, 30, 255));
@@ -137,11 +104,9 @@ class CampaignContrailBatchHelperTest {
         contrail.points.add(point(10f, 0f, 0f, 1f, 2f, 2f, 0.05f, 0.25f));
 
         CampaignContrailBatchHelper.encodeContrail(contrail, 0.5f, null);
-        // brightness=0.5×0.5=0.25；alpha=(int)(255×0.25)=63
         assertEquals(63, CampaignContrailBatchHelper.vertexAt(2).a());
     }
 
-    /** 无尾点（lastPoint == null）：只有点对。 */
     @Test
     void contrailWithoutLastPointEmitsNoTailPair() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(1, 2, 3, 255));
@@ -153,11 +118,9 @@ class CampaignContrailBatchHelperTest {
         assertEquals(4, CampaignContrailBatchHelper.getNumVertices());
     }
 
-    /** fadeOut 检测：与后点展开段相交时写回 fadeOut/origMax/elapsedWhenFadeOut。 */
     @Test
     void intersectionWithNextMarksFadeOutAndSnapshotsState() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(10, 20, 30, 255));
-        // 三点折线回头：p1 的展开段与 p2 的展开段必相交（同位置、大宽度）
         contrail.points.add(point(0f, 0f, 0f, 1f, 4f, 3f, 0f, 0f));
         ContrailEngineV2.ContrailPoint p1 = point(10f, 0f, 0f, 1f, 40f, 3f, 1f, 0.5f);
         p1.maxBrightness = 0.8f;
@@ -170,12 +133,6 @@ class CampaignContrailBatchHelperTest {
         assertEquals(1f, p1.elapsedWhenFadeOut, 1e-6f, "首次标记时快照 elapsed");
     }
 
-    /**
-     * proximity 衰减：fadeOut 参照点跨尾迹存续；lastProximityMult 单调下降钳制
-     * 并写回；近距离点亮度被压低。参照点的 fadeOut 态预设（origMax 0.8、
-     * maxBrightness 0.4，模拟 advance 的 fadeOut 衰减后状态），几何取单调折线 +
-     * 小宽度，不触发本测试不关注的相交/折返检测。
-     */
     @Test
     void proximityFadeAppliesAcrossContrailsWithMonotonicClamp() {
         ContrailEngineV2.Contrail first = contrail(new Color(10, 20, 30, 255));
@@ -190,11 +147,9 @@ class CampaignContrailBatchHelperTest {
 
         ContrailEngineV2.Contrail second = contrail(new Color(10, 20, 30, 255));
         second.points.add(point(300f, 0f, 0f, 1f, 2f, 3f, 0f, 0f));
-        // 距 fadeSource(10,0) 约 190 → 超出 50 → mult=1（不衰减）
         ContrailEngineV2.ContrailPoint far = point(200f, 1f, 0f, 1f, 2f, 3f, 2f, 0.5f);
         far.maxBrightness = 1f;
         second.points.add(far);
-        // 距 fadeSource 距离 0.5 → fadeRatio=1-0.4/0.8=0.5，mult=0.5+0.5×0.01=0.505
         ContrailEngineV2.ContrailPoint near = point(10f, 0.5f, 0f, 1f, 2f, 3f, 2f, 0.75f);
         near.maxBrightness = 1f;
         second.points.add(near);
@@ -205,24 +160,12 @@ class CampaignContrailBatchHelperTest {
         fadeSource = CampaignContrailBatchHelper.encodeContrail(second, 1f, fadeSource);
         assertSame(source, fadeSource, "第二条尾迹无 fadeOut 点时参照不变");
 
-        // far 点（第二条第 2 点，左顶点索引 6+2+2=10）：brightness=(3-2)/(3-0.1)，
-        // mult=1 → alpha=(int)(255×1/2.9)=87
         assertEquals(87, CampaignContrailBatchHelper.vertexAt(10).a());
-        // near 点（第二条第 3 点，左顶点索引 12）：mult=0.505，
-        // alpha=(int)(255×(1/2.9)×0.505)=44
         assertEquals(44, CampaignContrailBatchHelper.vertexAt(12).a());
         assertEquals(0.505f, near.lastProximityMult, 1e-3f, "lastProximityMult 写回");
         assertEquals(1f, far.lastProximityMult, 1e-6f, "远距离点不衰减");
     }
 
-    // ------------------------------------------------------------------
-    // 批次合并（连接点）
-    // ------------------------------------------------------------------
-
-    /**
-     * 同批尾迹拼接进同一条 strip：连接点 = 重复上一组末顶点两次（GL_QUAD_STRIP
-     * 退化四边形，零面积不产生碎片），随后新尾迹的点对继续。
-     */
     @Test
     void joiningContrailsRepeatsLastVertexTwiceAsDegenerateConnector() {
         ContrailEngineV2.Contrail first = contrail(new Color(255, 128, 64, 200));
@@ -238,7 +181,6 @@ class CampaignContrailBatchHelperTest {
         CampaignContrailBatchHelper.encodeContrail(second, 1f, null);
         assertEquals(12, CampaignContrailBatchHelper.getNumVertices(), "6 + 2 连接点 + 4");
 
-        // 连接点：v6 = v7 = 第一条尾迹末顶点（尾点右顶点 v5）
         CampaignContrailBatchHelper.EncodedVertex v5 = CampaignContrailBatchHelper.vertexAt(5);
         CampaignContrailBatchHelper.EncodedVertex v6 = CampaignContrailBatchHelper.vertexAt(6);
         CampaignContrailBatchHelper.EncodedVertex v7 = CampaignContrailBatchHelper.vertexAt(7);
@@ -252,7 +194,6 @@ class CampaignContrailBatchHelperTest {
         assertEquals(v6.x(), v7.x(), 1e-4f);
         assertEquals(v6.y(), v7.y(), 1e-4f);
 
-        // 第二条首点对从 v8 继续
         CampaignContrailBatchHelper.EncodedVertex v8 = CampaignContrailBatchHelper.vertexAt(8);
         assertEquals(100f, v8.x(), 1e-4f);
         assertEquals(-1f, v8.y(), 1e-4f);
@@ -260,7 +201,6 @@ class CampaignContrailBatchHelperTest {
         assertEquals(0.01f, v8.v(), 1e-4f);
     }
 
-    /** 批次首条无连接点：v0 就是首点左顶点。 */
     @Test
     void firstContrailOfBatchHasNoJoinConnector() {
         ContrailEngineV2.Contrail contrail = contrail(new Color(1, 2, 3, 255));
@@ -272,7 +212,6 @@ class CampaignContrailBatchHelperTest {
         assertEquals(8f, CampaignContrailBatchHelper.vertexAt(0).x(), 1e-4f);
     }
 
-    /** beginStrip 重置批次：连接点跟踪不跨批次复用末顶点。 */
     @Test
     void beginStripResetsBatchState() {
         ContrailEngineV2.Contrail first = contrail(new Color(1, 2, 3, 255));
@@ -291,16 +230,6 @@ class CampaignContrailBatchHelperTest {
         assertEquals(-1f, CampaignContrailBatchHelper.vertexAt(0).y(), 1e-4f);
     }
 
-    // ------------------------------------------------------------------
-    // 随机状态位级等价（对照独立转写的原版参考实现）
-    // ------------------------------------------------------------------
-
-    /**
-     * 随机尾迹集上，helper 编码输出（顶点位置/UV/颜色字节）与渲染期状态改写
-     * （fadeOut/origMax/elapsedWhenFadeOut/lastProximityMult/maxBrightness）必须
-     * 与原版参考实现位级一致。连接点按「重复上一可绘制尾迹末顶点两次」插入期望
-     * 序列。全部尾迹同混合模式（GLOW），不触发 GL 耦合的批次 flush。
-     */
     @Test
     void encodedOutputMatchesReferenceBitwiseAcrossRandomStates() {
         Random random = new Random(0xFACE_CAFEL);
@@ -317,13 +246,11 @@ class CampaignContrailBatchHelperTest {
             }
             float alphaMult = random.nextFloat() * 2f;
 
-            // 参考路径：原版逐条渲染（GL 调用替换为顶点记录）
             List<RecordedVertex> expected = new ArrayList<>();
             ContrailEngineV2.ContrailPoint refFadeSource = null;
             for (ContrailEngineV2.Contrail contrail : reference) {
                 if (contrail.points.size() > 1) {
                     if (!expected.isEmpty()) {
-                        // 连接点：重复上一可绘制尾迹的末顶点两次
                         RecordedVertex last = expected.get(expected.size() - 1);
                         expected.add(last);
                         expected.add(last);
@@ -336,7 +263,6 @@ class CampaignContrailBatchHelperTest {
                 }
             }
 
-            // 优化路径
             ContrailEngineV2.ContrailPoint optFadeSource = null;
             for (ContrailEngineV2.Contrail contrail : optimized) {
                 if (contrail.points.size() > 1) {
@@ -385,13 +311,6 @@ class CampaignContrailBatchHelperTest {
         }
     }
 
-    /**
-     * 包围圆拒绝路径（R1）的位级对照：相邻点距 100~1000、宽度 0.5~4
-     * （半径和 ≤ 6，远小于点距），包围圆拒绝恒命中，展开段数学与 segmentsIntersect
-     * 被整体跳过。编码输出与 fadeOut/proximity 状态写回必须与逐行转写的原版参考
-     * 实现（真实 {@link VectorMathUtils#segmentIntersection}）位级一致——几何上
-     * 圆不相交 ⇒ 展开段必不相交 ⇒ 参考实现结论恒为 false、markFadeOut 恒不触发。
-     */
     @Test
     void boundingCircleRejectionMatchesReferenceOnSparseContrails() {
         Random random = new Random(0xB0DC_1EL);
@@ -412,7 +331,6 @@ class CampaignContrailBatchHelperTest {
             ContrailEngineV2.ContrailPoint refFadeSource = null;
             for (ContrailEngineV2.Contrail contrail : reference) {
                 if (!expected.isEmpty()) {
-                    // 连接点：重复上一可绘制尾迹的末顶点两次（稀疏尾迹恒可绘制）
                     RecordedVertex last = expected.get(expected.size() - 1);
                     expected.add(last);
                     expected.add(last);
@@ -459,10 +377,6 @@ class CampaignContrailBatchHelperTest {
         }
     }
 
-    /**
-     * 稀疏尾迹：相邻点距 100~1000（单轴步进），宽度 0.5~4（包围圆半径和 ≤ 6，
-     * 拒绝恒命中）；混入 fadeOut 预设态覆盖 proximity 写回。点数 2~6（恒可绘制）。
-     */
     private static ContrailEngineV2.Contrail sparseContrail(Random random) {
         ContrailEngineV2.Contrail contrail = contrail(new Color(
                 random.nextInt(256), random.nextInt(256), random.nextInt(256),
@@ -495,11 +409,6 @@ class CampaignContrailBatchHelperTest {
         }
         return contrail;
     }
-
-    // ------------------------------------------------------------------
-    // 参考实现：逐行转写反编译原版 render(float) 内层（GL 调用替换为记录）
-    // 相交判定调用真实 VectorMathUtils.segmentIntersection，独立验证标量版。
-    // ------------------------------------------------------------------
 
     private static ContrailEngineV2.ContrailPoint referenceEncodeContrail(
             ContrailEngineV2.Contrail contrail, float alphaMult,
@@ -599,7 +508,6 @@ class CampaignContrailBatchHelperTest {
                 var12 *= var36;
             }
 
-            // RenderStateUtils.setGlColor(color, (int)(alpha*maxBrightness*var12))
             int r = var15.getRed();
             int g = var15.getGreen();
             int b = var15.getBlue();
@@ -632,10 +540,6 @@ class CampaignContrailBatchHelperTest {
         return fadeSource;
     }
 
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
-
     private record RecordedVertex(float x, float y, float u, float v, int r, int g, int b, int a) {
     }
 
@@ -663,10 +567,6 @@ class CampaignContrailBatchHelperTest {
         return point;
     }
 
-    /**
-     * 随机尾迹：点列小步随机游 + 大宽度，提高展开段相交与折返判定命中率；
-     * 覆盖 0~6 点（含不可绘制分支）、duration=0 边界、fadeOut 预设态。
-     */
     private static ContrailEngineV2.Contrail randomContrail(Random random) {
         ContrailEngineV2.Contrail contrail = contrail(new Color(
                 random.nextInt(256), random.nextInt(256), random.nextInt(256),

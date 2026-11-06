@@ -7,21 +7,14 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link VertexStream} 的编解码往返验证：录制侧编码的 immediate 调用序列，
- * 经 {@link VertexStream#copyTo(byte[])} 取出后回放必须逐指令等价
- * （含 double 精度与 color4ub 的负字节值）。
- */
 class VertexStreamTest {
 
-    /** 把流的当前内容拷出并回放到 sink（生产路径是 VertexBatchCommand 池化命令，见 BridgeSupport）。 */
     private static void replayInto(VertexStream stream, VertexSink sink) {
         byte[] data = new byte[stream.length()];
         stream.copyTo(data);
         VertexStream.replay(data, data.length, sink);
     }
 
-    /** 记录桩：把回放调用序列化成字符串列表，便于精确断言顺序与参数值。 */
     private static final class RecordingSink implements VertexSink {
         final List<String> calls = new ArrayList<>();
 
@@ -157,7 +150,7 @@ class VertexStreamTest {
     @Test
     void growthAcrossCapacityPreservesAllOps() {
         VertexStream stream = new VertexStream();
-        int count = 10000; // 9 字节/顶点，远超 4096 初始容量，强制多次扩容
+        int count = 10000;
         stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
         for (int i = 0; i < count; i++) {
             stream.vertex2f(i, -i);
@@ -185,7 +178,6 @@ class VertexStreamTest {
         assertTrue(stream.isEmpty(), "reset 后流必须为空");
         assertEquals(0, stream.length());
 
-        // 第一批拷出后继续录第二批，再回放第一批拷贝：内容不受后续录制影响
         stream.begin(org.lwjgl.opengl.GL11.GL_LINES);
         stream.vertex2f(9f, 9f);
         stream.end();
@@ -202,8 +194,6 @@ class VertexStreamTest {
 
     @Test
     void transferBufferHandsOffContentAndStreamContinuesFresh() {
-        // 移交路径（生产 flush 的形态）：缓冲所有权移交零拷贝，移交后流为空并
-        // 换新缓冲继续编码，移交出的缓冲内容保持移交时刻的完整编码
         VertexStream stream = new VertexStream();
         stream.begin(org.lwjgl.opengl.GL11.GL_TRIANGLES);
         stream.vertex2f(1f, 2f);
@@ -222,7 +212,6 @@ class VertexStreamTest {
         assertTrue(stream.isEmpty(), "移交后流必须为空");
         assertEquals(0, stream.length());
 
-        // 移交出的缓冲不随流后续编码变化（所有权已转移）
         stream.begin(org.lwjgl.opengl.GL11.GL_LINES);
         stream.vertex2f(9f, 9f);
         stream.end();
@@ -237,8 +226,6 @@ class VertexStreamTest {
 
     @Test
     void streamStateInstructionsRoundtripInOrder() {
-        // 流内状态指令（sprite 渲染路径）：enable/disable/blendFunc 段外、
-        // bindTexture 段间，与顶点段按编码顺序回放
         VertexStream stream = new VertexStream();
         stream.bindTexture(42);
         stream.enable(org.lwjgl.opengl.GL11.GL_TEXTURE_2D);
@@ -272,10 +259,6 @@ class VertexStreamTest {
 
     @Test
     void consecutiveQuadsShareOneStreamBuffer() {
-        // VertexStream 层能力：连续两个独立 begin..end 段可编码进同一条流缓冲
-        // （sprite 的 quad 序列），transferBuffer 一次移交。当前 GL11.glEnd 保持
-        // 「段即批次」立即落帧（避免挂起流与 aux 提交的帧列表错序），本用例
-        // 验证流编码本身支持多段——若未来出现安全合并路径可直接复用。
         VertexStream stream = new VertexStream();
         for (int quad = 0; quad < 2; quad++) {
             stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
@@ -303,19 +286,15 @@ class VertexStreamTest {
 
     @Test
     void prewarmCapacityTracksRecentBatchPeak() {
-        // A3 预热：新缓冲借取容量 = 近期批次峰值；突发大段撑大预热容量，
-        // 峰值滑出窗口后回落（相对历史最大单调不减，避免罕见大段永久撑大内存）
         VertexStream stream = new VertexStream();
         int initial = stream.prewarmCapacity();
 
-        // 小批次不影响预热容量（低于初始值）
         stream.begin(org.lwjgl.opengl.GL11.GL_LINES);
         stream.vertex2f(1f, 2f);
         stream.end();
         stream.transferBuffer();
         assertEquals(initial, stream.prewarmCapacity(), "小批次不得改变预热容量");
 
-        // 大批次（远超初始容量）撑大峰值
         stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
         for (int i = 0; i < 2000; i++) {
             stream.vertex2f(i, -i);
@@ -328,7 +307,6 @@ class VertexStreamTest {
 
     @Test
     void prewarmPeakEvictsAfterWindowSlidesPast() {
-        // 峰值批次滑出 64 批次窗口后，预热容量回落到窗口内实际量级
         VertexStream stream = new VertexStream();
         stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
         for (int i = 0; i < 2000; i++) {
@@ -339,7 +317,6 @@ class VertexStreamTest {
         stream.transferBuffer();
         assertTrue(stream.prewarmCapacity() >= large);
 
-        // 连续 64 个小批次覆盖峰值槽位
         for (int i = 0; i < VertexStream.PREWARM_WINDOW; i++) {
             stream.begin(org.lwjgl.opengl.GL11.GL_LINES);
             stream.vertex2f(1f, 2f);

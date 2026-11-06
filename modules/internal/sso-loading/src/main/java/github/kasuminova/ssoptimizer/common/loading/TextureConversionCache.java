@@ -24,15 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
- * 贴图像素转换缓存。
- * <p>
- * 将解码后的 ARGB 像素数据经 Zstd 压缩缓存到磁盘，避免每次启动都重新解码和像素转换。
- * 缓存文件经 MD5 hash 校验，源文件变更后自动失效。
- * <p>
- * 读取分两级：{@link #loadMetadata} 仅解析头部元数据（尺寸/alpha/直方图颜色），
- * 不解压像素 payload，供预备管线和延迟贴图登记使用；{@link #load} 才会把像素
- * 解压到 DirectBuffer，仅在真正执行 GL 上传时调用，避免全部贴图预先解压吃满
- * 直接内存。
+ * 缓存以源内容哈希校验；loadMetadata 不解压像素，load 才分配 DirectBuffer。
  */
 public final class TextureConversionCache {
     static final String DISABLE_PROPERTY          = "ssoptimizer.disable.texturecache";
@@ -64,11 +56,6 @@ public final class TextureConversionCache {
         return !Boolean.getBoolean(DISABLE_PROPERTY);
     }
 
-    /**
-     * 完整读取缓存条目：解压像素 payload 到 DirectBuffer。
-     * <p>
-     * 仅在真正执行 GL 上传时调用；只需要尺寸/颜色等元数据时使用 {@link #loadMetadata}。
-     */
     static CachedTextureData load(final String sourceHash) {
         final byte[] compressedBytes = loadCompressedBytes(sourceHash);
         if (compressedBytes == null) {
@@ -87,12 +74,6 @@ public final class TextureConversionCache {
         }
     }
 
-    /**
-     * 仅读取缓存条目的元数据（尺寸/alpha/直方图颜色/payload 长度），不解压像素。
-     * <p>
-     * 元数据常驻小内存索引，首次读取时从压缩流头部解析（Zstd 按需解压，
-     * 只触及首个数据块）。
-     */
     static CachedTextureMetadata loadMetadata(final String sourceHash) {
         if (!isEnabled()) {
             return null;
@@ -121,9 +102,6 @@ public final class TextureConversionCache {
         }
     }
 
-    /**
-     * 取出缓存条目的压缩字节：优先内存缓存，未命中时读盘并回填内存缓存。
-     */
     private static byte[] loadCompressedBytes(final String sourceHash) {
         if (!isEnabled()) {
             return null;
@@ -160,9 +138,6 @@ public final class TextureConversionCache {
         }
     }
 
-    /**
-     * 按资源路径 + 源文件指纹解析缓存，仅返回元数据，不解压像素 payload。
-     */
     static ResourceMetadataHit probeMetadataByResourcePath(final String resourcePath,
                                                            final TextureSourceFingerprint sourceFingerprint) {
         if (!isEnabled() || resourcePath == null || resourcePath.isBlank() || sourceFingerprint == null) {
@@ -249,14 +224,6 @@ public final class TextureConversionCache {
         RESOURCE_INDEX_CACHE.clear();
     }
 
-    /**
-     * 在后台线程批量预热磁盘缓存到内存，降低后续主线程贴图加载的磁盘 I/O。
-     * <p>
-     * 同时预加载所有资源路径索引条目到 {@code RESOURCE_INDEX_CACHE}，
-     * 使 {@link #loadByResourcePath} 不需要逐个磁盘查找。
-     * <p>
-     * 仅在首次调用时生效；重复调用无效。
-     */
     public static void warmupMemoryCache() {
         if (!isEnabled()
                 || Boolean.getBoolean(DISABLE_WARMUP_PROPERTY)
@@ -267,12 +234,6 @@ public final class TextureConversionCache {
         warmupFuture = CompletableFuture.runAsync(TextureConversionCache::doWarmup);
     }
 
-    /**
-     * 等待预热完成（仅测试用途）。
-     *
-     * @param timeoutMillis 最大等待毫秒
-     * @return 预热是否在超时前完成
-     */
     static boolean awaitWarmup(final long timeoutMillis) {
         final CompletableFuture<Void> future = warmupFuture;
         if (future == null) {
@@ -303,7 +264,6 @@ public final class TextureConversionCache {
         int dataCount = 0;
         long totalBytes = 0L;
 
-        // 1. 预热资源路径索引
         final Path indexDir = cacheDir.resolve("index");
         if (Files.isDirectory(indexDir)) {
             try (Stream<Path> indexPaths = Files.walk(indexDir)) {
@@ -322,7 +282,6 @@ public final class TextureConversionCache {
             }
         }
 
-        // 2. 预热 zstd 压缩数据到内存
         try (Stream<Path> cachePaths = Files.walk(cacheDir)) {
             final List<Path> dataFiles = cachePaths
                     .filter(Files::isRegularFile)
@@ -456,7 +415,6 @@ public final class TextureConversionCache {
             output.writeInt(image.getWidth());
             output.writeInt(image.getHeight());
             output.writeBoolean(image.getColorModel().hasAlpha());
-            // v4 起随头部落盘实际像素 alpha 内容（压缩格式选择免二次像素扫描）
             output.writeByte(result.alphaKind().ordinal());
             output.writeInt(result.textureWidth());
             output.writeInt(result.textureHeight());
@@ -470,10 +428,6 @@ public final class TextureConversionCache {
         }
     }
 
-    /**
-     * 解析压缩流头部，返回元数据。Zstd 按需解压，只触及容纳头部的首个数据块，
-     * 不会解压像素 payload。
-     */
     private static CachedTextureMetadata decodeHeader(final String sourceHash,
                                                       final byte[] compressedBytes) throws IOException {
         try (DataInputStream input = new DataInputStream(new BufferedInputStream(
@@ -674,13 +628,6 @@ public final class TextureConversionCache {
         }
     }
 
-    /**
-     * 缓存条目元数据：尺寸/alpha/纹理尺寸/直方图颜色/payload 字节数。
-     * 不持有像素缓冲区，可常驻内存。
-     * <p>
-     * {@code hasAlpha} 是图片声明的 alpha 通道（决定未压缩上传 GL_RGB/GL_RGBA），
-     * {@code alphaKind} 是实际像素 alpha 内容（v4 起落盘，压缩格式选择用）。
-     */
     record CachedTextureMetadata(int imageWidth,
                                  int imageHeight,
                                  boolean hasAlpha,

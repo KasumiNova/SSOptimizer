@@ -15,13 +15,6 @@ import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * ResourceLoader / SettingsAPI 实现类线程封闭化的注入锚点唯一性核验。
- * <p>
- * 游戏类无法脱离引擎实例化，@Redirect 是否生效取决于锚点指令在游戏字节码中
- * 方法内唯一；用 ASM 解析测试 classpath 上的真实游戏字节码逐一核验（非源码文本匹配），
- * 任一锚点漂移都会在构建期暴露而非运行时静默失败。
- */
 class ResourceLoaderThreadStateMixinInjectionTest {
 
     private static final String OPEN_RESOURCE_DESC = "(Ljava/lang/String;Z)Ljava/io/InputStream;";
@@ -30,7 +23,6 @@ class ResourceLoaderThreadStateMixinInjectionTest {
 
     @Test
     void openResourceResourcePathReadAndConsumeWriteAnchorsUnique() throws IOException {
-        // ResourceLoaderMixin.ssoptimizer$getSourceFilter / ssoptimizer$setSourceFilter 的锚点
         MethodNode method = findMethod(GameClassNames.RESOURCE_LOADER, "openResource", OPEN_RESOURCE_DESC);
         assertEquals(1, countFieldInsn(method, Opcodes.GETFIELD,
                         GameClassNames.RESOURCE_LOADER, "resourcePath", "Ljava/lang/String;"),
@@ -42,7 +34,6 @@ class ResourceLoaderThreadStateMixinInjectionTest {
 
     @Test
     void setResourcePathWriteAnchorUnique() throws IOException {
-        // ResourceLoaderMixin.ssoptimizer$setSourceFilter 的第二处锚点
         MethodNode method = findMethod(GameClassNames.RESOURCE_LOADER,
                 "setResourcePath", "(Ljava/lang/String;)V");
         assertEquals(1, countFieldInsn(method, Opcodes.PUTFIELD,
@@ -52,7 +43,6 @@ class ResourceLoaderThreadStateMixinInjectionTest {
 
     @Test
     void openResourceSuppressCustomResourcesAnchorsUnique() throws IOException {
-        // ResourceLoaderMixin.ssoptimizer$is/setSuppressCustomResources 的锚点
         MethodNode method = findMethod(GameClassNames.RESOURCE_LOADER, "openResource", OPEN_RESOURCE_DESC);
         assertEquals(1, countFieldInsn(method, Opcodes.GETSTATIC,
                         GameClassNames.RESOURCE_LOADER, "suppressCustomResources", "Z"),
@@ -64,7 +54,6 @@ class ResourceLoaderThreadStateMixinInjectionTest {
 
     @Test
     void settingsApiImplSuppressWriteAnchorsUnique() throws IOException {
-        // StarfarerSettingsApiImplMixin.ssoptimizer$setSuppressCustomResources 的两处锚点
         MethodNode loadCSV = findMethod(SETTINGS_API_IMPL, "loadCSV",
                 "(Ljava/lang/String;Z)Lorg/json/JSONArray;");
         assertEquals(1, countFieldInsn(loadCSV, Opcodes.PUTSTATIC,

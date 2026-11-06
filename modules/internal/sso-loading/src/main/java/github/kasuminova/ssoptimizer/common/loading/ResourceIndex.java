@@ -26,30 +26,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 /**
- * 启动期资源索引：把游戏 ResourceLoader 的「逐 mod 目录 stat + 重复 listFiles」
- * 探测收敛为每个资源根目录一次性的全量快照。
- * <p>
- * 工作方式：每个 DIRECTORY 资源根目录在首次被查询时构建一次完整快照
- * （相对路径 → 文件元数据 + 目录 → 直接子项），之后的 exists/open/list 全部转为
- * 内存查找；同时对 {@code data/} 下的小文件做异步预读，文本类资源读取不再触碰磁盘。
- * 快照构建失败的根目录（不可读等）标记为未索引，调用方回退直接文件操作。
- * <p>
- * 线程模型（Wave 3 起）：后台任务（快照预构建、预读）提交 {@link VtWorkers} 虚拟线程。
- * 原固定池的并行上限只约束平台线程数，虚拟线程下无意义，故移除且不设闸门——
- * 并发任务数天然按资源根目录数封项（每根目录一个快照任务 + 一个串行预读任务），
- * 预读总量另有 {@code ssoptimizer.spec.prefetch.mb} 内存预算约束。
+ * 资源根快照与预读内容仅在 clear 后失效；索引构建失败的根目录回退直接文件访问。
  */
 public final class ResourceIndex {
     private static final Logger LOGGER = Logger.getLogger(ResourceIndex.class);
 
-    /** 全局禁用开关：{@code -Dssoptimizer.disable.resourceindex=true} 时调用方走原版文件逻辑。 */
     public static final  String DISABLE_PROPERTY             = "ssoptimizer.disable.resourceindex";
-    /** 预读总预算（MB）：{@code -Dssoptimizer.spec.prefetch.mb}，默认 512，0 表示关闭预读。 */
     public static final  String PREFETCH_BUDGET_MB_PROPERTY  = "ssoptimizer.spec.prefetch.mb";
     private static final long   DEFAULT_PREFETCH_BUDGET_MB   = 512L;
-    /** 单文件预读上限：超过 1MB 的文件不进入内存预读。 */
     private static final long   PREFETCH_FILE_MAX_BYTES      = 1L << 20;
-    /** 预读范围：仅 data/ 下的文本类资源目录。 */
     private static final String PREFETCH_PREFIX              = "data/";
 
     private static final ConcurrentMap<String, RootSnapshot> SNAPSHOTS        = new ConcurrentHashMap<>();
@@ -59,19 +44,10 @@ public final class ResourceIndex {
     private ResourceIndex() {
     }
 
-    /** 资源索引是否启用。 */
     public static boolean isEnabled() {
         return !Boolean.getBoolean(DISABLE_PROPERTY);
     }
 
-    /**
-     * 打开根目录下相对路径对应的资源流。
-     *
-     * @param root DIRECTORY 资源根目录
-     * @param relPath 资源相对路径（/ 或 \ 分隔均可）
-     * @return 资源流；文件不存在或是目录时返回 null（与原版 openResource 语义一致）
-     * @throws IOException 打开已索引文件失败时抛出
-     */
     public static InputStream open(final File root, final String relPath) throws IOException {
         final Entry entry = lookup(root, relPath);
         if (entry == null || entry.directory()) {
@@ -85,37 +61,20 @@ public final class ResourceIndex {
         return new BufferedInputStream(new FileInputStream(entry.file()));
     }
 
-    /**
-     * 解析根目录下相对路径对应的 File。
-     *
-     * @return 存在的文件 File；不存在时返回 null
-     */
     public static File file(final File root, final String relPath) {
         final Entry entry = lookup(root, relPath);
         return entry == null ? null : entry.file();
     }
 
-    /**
-     * 查询资源最后修改时间。
-     *
-     * @return 最后修改时间毫秒；不存在时返回 0（与原版语义一致）
-     */
     public static long lastModified(final File root, final String relPath) {
         final Entry entry = lookup(root, relPath);
         return entry == null ? 0L : entry.lastModified();
     }
 
-    /** 资源是否存在（文件或目录均算存在，与 File.exists 语义一致）。 */
     public static boolean exists(final File root, final String relPath) {
         return lookup(root, relPath) != null;
     }
 
-    /**
-     * 列出根目录下某个相对目录的直接子项。
-     *
-     * @param relDir 相对目录路径；空串表示根目录本身
-     * @return 直接子项列表；目录不存在时返回空列表
-     */
     public static List<Entry> children(final File root, final String relDir) {
         final RootSnapshot snapshot = snapshot(root);
         if (snapshot == null) {
@@ -124,9 +83,6 @@ public final class ResourceIndex {
         return snapshot.children(normalize(relDir));
     }
 
-    /**
-     * 后台并行预构建多个资源根目录的快照（已构建的自动跳过）。
-     */
     public static void warmupAsync(final Collection<File> roots) {
         for (final File root : roots) {
             if (root == null) {
@@ -136,15 +92,6 @@ public final class ResourceIndex {
         }
     }
 
-    /**
-     * 索引条目：一个文件或目录的快照元数据。
-     *
-     * @param relPath 相对根目录路径（/ 分隔，无前导 /）
-     * @param file 对应的磁盘文件
-     * @param directory 是否目录
-     * @param lastModified 最后修改时间毫秒
-     * @param size 文件字节数（目录恒为 0）
-     */
     public record Entry(String relPath, File file, boolean directory, long lastModified, long size) {
     }
 
@@ -158,11 +105,7 @@ public final class ResourceIndex {
         if (relPath == null || relPath.isEmpty()) {
             return "";
         }
-        // 词法归一：反斜杠转 /，折叠空段（模组音乐路径实机出现 sounds/music//xxx.ogg
-        // 的写法，原版 File 对其透明），解析 . 与 .. 段（游戏经济加载以
-        // "data/campaign/econ/../starmap.json" 形式引用父目录资源，原版 File 由
-        // 文件系统解析 ".."，快照键由 relativize 生成不含此类段，查询侧必须同构归一）。
-        // 逃逸根目录的前导 .. 段保留：索引内必然未命中，调用方按不存在处理。
+        // 快照键需与 File 的词法归一一致；保留逃逸根目录的 .. 段使查询必然未命中。
         final String[] segments = relPath.replace('\\', '/').split("/");
         final List<String> stack = new ArrayList<>(segments.length);
         for (final String segment : segments) {
@@ -250,7 +193,6 @@ public final class ResourceIndex {
             throw new UncheckedIOException(e);
         }
 
-        // 子项列表按名称排序，保证枚举结果跨运行确定（原版 listFiles 顺序依赖文件系统）。
         for (final List<Entry> childList : children.values()) {
             childList.sort(Comparator.comparing(Entry::relPath));
         }
@@ -295,11 +237,6 @@ public final class ResourceIndex {
         });
     }
 
-    /**
-     * 提交后台任务到 {@link VtWorkers}：任务体内部已逐文件记 WARN，此包装兜底
-     * 捕获未预期的 RuntimeException/Error 并记 ERROR 后原样重抛（Future 保留失败状态），
-     * 保证后台失败不静默。
-     */
     private static void submitBackground(final String description, final Runnable task) {
         VtWorkers.submit(() -> {
             try {
@@ -336,9 +273,6 @@ public final class ResourceIndex {
         return result;
     }
 
-    /**
-     * 单个资源根目录的全量快照。
-     */
     private static final class RootSnapshot {
         private static final RootSnapshot UNINDEXED = new RootSnapshot(Map.of(), Map.of());
 

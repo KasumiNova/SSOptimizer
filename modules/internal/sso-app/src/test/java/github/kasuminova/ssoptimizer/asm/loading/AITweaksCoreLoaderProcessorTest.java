@@ -10,10 +10,6 @@ import org.objectweb.asm.Opcodes;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 验证 AITweaks CoreLoader 字节码注入：defineClass 调用点改走合成重定向 helper，
- * 且 helper 内经 RenderThreadRedirector 改写后回调原 defineClass。
- */
 class AITweaksCoreLoaderProcessorTest {
     @Test
     void rewritesDefineClassCallSiteToRedirectHelper() {
@@ -104,7 +100,6 @@ class AITweaksCoreLoaderProcessorTest {
         constructor.visitMaxs(0, 0);
         constructor.visitEnd();
 
-        // public Class<?> loadClass(String name) { return defineClass(name, new byte[0], 0, 0); }
         MethodVisitor loadClass = writer.visitMethod(
                 Opcodes.ACC_PUBLIC,
                 AITweaksCoreLoaderProcessor.TARGET_METHOD,

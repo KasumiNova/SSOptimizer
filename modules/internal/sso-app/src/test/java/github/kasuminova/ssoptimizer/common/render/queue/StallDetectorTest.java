@@ -9,8 +9,6 @@ class StallDetectorTest {
     @Test
     void belowThresholdDoesNotTrip() {
         StallDetector detector = new StallDetector(60, 30);
-        // 28 个 stall 帧（每帧一次阻塞调用 + swap 推进）不触发熔断信号，
-        // 第 29 个 stall 帧仍低于阈值 30
         for (int i = 0; i < 28; i++) {
             assertFalse(detector.onStall());
             detector.onSwap();
@@ -34,8 +32,6 @@ class StallDetectorTest {
 
     @Test
     void singleFrameBurstDoesNotTrip() {
-        // 单帧内的成批一次性阻塞调用（如战斗初始化时的 shader 编译状态轮询）
-        // 只计为 1 个 stall 帧，不触发熔断信号
         StallDetector detector = new StallDetector(4, 3);
         for (int i = 0; i < 10; i++) {
             assertFalse(detector.onStall());
@@ -45,17 +41,14 @@ class StallDetectorTest {
 
     @Test
     void slidingWindowExpiresOldStalls() {
-        // 窗口 4 帧、阈值 3 个 stall 帧
         StallDetector detector = new StallDetector(4, 3);
         detector.onStall();
         detector.onStall();
         assertEquals(2, detector.currentWindowStalls());
-        // 窗口滑过 4 帧，最早一帧的 stall 帧过期
         for (int i = 0; i < 4; i++) {
             detector.onSwap();
         }
         assertEquals(0, detector.currentWindowStalls());
-        // 过期后重新累计：2 个 stall 帧不触发，第 3 个触发
         assertFalse(detector.onStall());
         detector.onSwap();
         assertFalse(detector.onStall());
@@ -69,7 +62,6 @@ class StallDetectorTest {
         detector.onStall();
         detector.onSwap();
         detector.onStall();
-        // 仍在窗口内，累计 2 次
         assertEquals(2, detector.currentWindowStalls());
         detector.onSwap();
         assertTrue(detector.onStall());

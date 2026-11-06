@@ -4,13 +4,6 @@ import org.apache.log4j.Logger;
 
 import java.lang.reflect.Method;
 
-/**
- * 自动化 profile 的标题界面任务启动器。
- *
- * <p>Starsector 的普通 mission 入口由标题界面持有，{@code missionAccepted(...)} 是公开实例方法。
- * 该类在 Mixin hook 中通过标题界面的 mission widget 查找目标任务对象并调用该公开入口，
- * 从而进入 {@code data/missions/<id>/MissionDefinition} 定义的战斗。</p>
- */
 public final class AutomationMissionLauncher {
     private static final Logger LOGGER = Logger.getLogger(AutomationMissionLauncher.class);
 
@@ -21,11 +14,6 @@ public final class AutomationMissionLauncher {
     private AutomationMissionLauncher() {
     }
 
-    /**
-     * 在标题界面 advance 尾部尝试启动配置的自动化 mission。
-     *
-     * @param titleScreenState 标题界面实例
-     */
     public static void tryLaunchFromTitleScreen(final Object titleScreenState) {
         final AutomationConfig config = AutomationConfig.fromSystemProperties();
         if (!config.enabled() || launched || titleScreenState == null) {
@@ -97,7 +85,6 @@ public final class AutomationMissionLauncher {
                 field.setAccessible(true);
                 return field.get(titleScreenState);
             } catch (NoSuchFieldException ignored) {
-                // Continue walking superclasses.
             } catch (IllegalAccessException e) {
                 LOGGER.warn("[SSO-Automation] failed to inspect title mission widget", e);
                 return null;
@@ -150,7 +137,7 @@ public final class AutomationMissionLauncher {
                         return found;
                     }
                 } catch (Throwable ignored) {
-                    // Obfuscated UI graphs contain many inaccessible/runtime-only fields; skip them.
+                    // 混淆 UI 对象图含不可访问或仅运行期生成的字段，遍历时跳过。
                 }
             }
         }
@@ -210,9 +197,6 @@ public final class AutomationMissionLauncher {
         }
     }
 
-    /**
-     * 重置测试状态。
-     */
     public static void resetForTests() {
         launched = false;
         reportedMissing = false;

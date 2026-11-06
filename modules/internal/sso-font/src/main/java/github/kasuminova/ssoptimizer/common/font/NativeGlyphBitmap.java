@@ -1,8 +1,5 @@
 package github.kasuminova.ssoptimizer.common.font;
 
-/**
- * Immutable glyph bitmap payload returned by the optional native rasterizer.
- */
 public record NativeGlyphBitmap(int width,
                                 int height,
                                 int[] argbPixels,

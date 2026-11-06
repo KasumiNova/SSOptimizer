@@ -11,14 +11,6 @@ import java.awt.Color;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link ShieldAlwaysOnGuard} 核心判定与报告节流逻辑验证。
- * <p>
- * 游戏实体无法脱离引擎实例化，注入锚点（advanceInCombat 内唯一 isOn() 调用点）
- * 由 ShieldAlwaysOnNullShieldMixinAnchorTest 以字节码核验覆盖；
- * 本测试直接调用逻辑入口验证：有盾原样委托、无盾按「已开启」放行、
- * 无盾报告按舰船实例/未知身份各仅输出一次。
- */
 class ShieldAlwaysOnGuardTest {
 
     @BeforeEach
@@ -55,7 +47,6 @@ class ShieldAlwaysOnGuardTest {
         assertTrue(ShieldAlwaysOnGuard.reportNullShieldOnce(null), "重置后必须允许再次报告");
     }
 
-    /** 最小 ShieldAPI 桩：仅 isOn() 携带状态与调用计数，其余方法不参与本守卫逻辑。 */
     private static final class StubShield implements ShieldAPI {
         private final boolean on;
         private int isOnCalls;

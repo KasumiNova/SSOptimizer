@@ -7,10 +7,7 @@ import org.apache.log4j.spi.LoggingEvent;
 import java.util.Enumeration;
 import java.util.Locale;
 
-/**
- * Suppresses high-volume LunaLib debug/info chatter while keeping WARN/ERROR visible.
- * Use -Dssoptimizer.logging.lunalib.level=DEBUG to re-enable full LunaLib logs.
- */
+/** 限制 LunaLib 的 DEBUG/INFO 输出，可通过系统属性恢复完整日志。 */
 public final class LogNoiseFilterConfigurator {
     public static final String LUNALIB_LEVEL_PROPERTY = "ssoptimizer.logging.lunalib.level";
 

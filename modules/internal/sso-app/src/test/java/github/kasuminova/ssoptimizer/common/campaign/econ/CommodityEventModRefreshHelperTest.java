@@ -52,7 +52,6 @@ class CommodityEventModRefreshHelperTest {
 
     @Test
     void signatureChangedWhenAnyGenerationDrifts() {
-        // 四个分量逐一验证：任一代际变化都必须被检出
         assertTrue(CommodityEventModRefreshHelper.isTradeModSignatureChanged(
                 true, 1, 2, 3, 4, 9, 2, 3, 4));
         assertTrue(CommodityEventModRefreshHelper.isTradeModSignatureChanged(
@@ -88,7 +87,6 @@ class CommodityEventModRefreshHelperTest {
 
     @Test
     void signatureCheckKeepsWritePathDirtyFlagWhenSignatureUnchanged() {
-        // addTradeMod* 写路径置脏后，推进检测不得因签名未变而清除该脏标记
         final TrackingBridge bridge = new TrackingBridge();
         CommodityEventModRefreshHelper.markDirtyIfSignatureChanged(bridge, 10, 20, 30, 40);
         bridge.dirty = true;
@@ -118,9 +116,6 @@ class CommodityEventModRefreshHelperTest {
         assertFalse(CommodityEventModRefreshHelper.shouldSkipReapply(-3.0F, false));
     }
 
-    /**
-     * 桥接测试桩：签名比较走真实 helper 纯函数，存储字段与 Mixin 实现同构。
-     */
     private static final class TrackingBridge implements CommodityEventModRefreshBridge {
         private boolean dirty;
         private int     reapplyCount;

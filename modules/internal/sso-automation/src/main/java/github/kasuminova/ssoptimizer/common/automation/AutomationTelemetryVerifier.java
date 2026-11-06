@@ -8,12 +8,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * 验收 ASTD 首版游戏内自动化 telemetry。
- *
- * <p>首版聚焦 Arc Flare + AOD-7：检查场景、舰船、武器、弹体、VFX preset、开火命令和截图证据。
- * 该类刻意保持零第三方 JSON 依赖，便于在烟测脚本和单元测试中直接复用。</p>
- */
 public final class AutomationTelemetryVerifier {
     private static final String EXPECTED_SCENARIO = "arc_flare_aod7_basic";
     private static final String EXPECTED_SHIP_ID = "astd_arc_flare";
@@ -24,13 +18,6 @@ public final class AutomationTelemetryVerifier {
     private AutomationTelemetryVerifier() {
     }
 
-    /**
-     * 验收指定 telemetry 文件。
-     *
-     * @param telemetryPath         ASTD telemetry JSON 路径
-     * @param requireScreenshotFile 是否要求真实截图文件
-     * @return 验收结果
-     */
     public static VerificationResult verify(final Path telemetryPath, final boolean requireScreenshotFile) {
         final List<String> errors = new ArrayList<>();
         final String json;
@@ -108,33 +95,13 @@ public final class AutomationTelemetryVerifier {
         return pattern.matcher(json).find();
     }
 
-    /**
-     * telemetry 验收结果。
-     *
-     * @param passed        是否通过
-     * @param telemetryPath telemetry 路径
-     * @param errors        失败原因
-     */
     public record VerificationResult(boolean passed,
                                      Path telemetryPath,
                                      List<String> errors) {
-        /**
-         * 创建通过结果。
-         *
-         * @param telemetryPath telemetry 路径
-         * @return 通过结果
-         */
         public static VerificationResult pass(final Path telemetryPath) {
             return new VerificationResult(true, telemetryPath, List.of());
         }
 
-        /**
-         * 创建失败结果。
-         *
-         * @param telemetryPath telemetry 路径
-         * @param errors        失败原因
-         * @return 失败结果
-         */
         public static VerificationResult fail(final Path telemetryPath, final List<String> errors) {
             return new VerificationResult(false, telemetryPath, List.copyOf(errors));
         }

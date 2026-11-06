@@ -7,10 +7,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link RenderThreadMode#isEnabled()} 开关语义验证：默认启用（RT 流水线稳定版起
- * 设为默认路径），仅显式 {@code =false} 回退。
- */
 class RenderThreadModeTest {
 
     private String previousFlag;

@@ -8,20 +8,11 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
- * L1（一）：改写 DCR {@code data/scripts/combatanalytics/DetailedCombatResultsModPlugin} 的
- * {@code onGameLoad(Z)V}，把 trim 重写循环里对 {@code SerializationManager.saveCombatResult} 的调用
- * redirect 为 {@code SerializationManager.ssoptimizer$collect}（仅入缓存、置脏，不序列化），并在每个
- * {@code RETURN} 前 inject 一次 {@code SerializationManager.ssoptimizer$flush}（合并为一次序列化+压缩）。
- * <p>
- * 动机：原循环每次 saveCombatResult 都全量重序列化整份历史 → O(N²)。redirect+inject 把它降为 O(N)。
- * 两处合成方法由 {@link DcrBatchSaveSynthProcessor} 注入 SerializationManager。
- * <p>
- * 帧安全：redirect 描述符不变（栈形不变）；inject 的 {@code flush()V} 无参无返回、在 return 前栈为空——
- * 两者均帧中立。故用 {@code ClassWriter(reader, 0)} 保留原帧，不触发 {@code COMPUTE_FRAMES}。
+ * 将 DCR 读档循环的逐条保存改为批量收集，并在返回前统一刷写。
+ * <p>调用替换保持描述符不变，刷写发生在空操作数栈上，因此保留原栈帧。</p>
  */
 public final class DcrOnGameLoadProcessor implements AsmClassProcessor {
 
-    /** 目标类 JVM 内部名。 */
     public static final String TARGET_CLASS = "data/scripts/combatanalytics/DetailedCombatResultsModPlugin";
 
     private static final String ON_GAME_LOAD_NAME = "onGameLoad";

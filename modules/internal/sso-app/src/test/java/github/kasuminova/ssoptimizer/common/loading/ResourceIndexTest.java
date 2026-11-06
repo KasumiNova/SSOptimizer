@@ -20,10 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * ResourceIndex 的完整逻辑验证：快照构建、精确/大小写查找、目录枚举、
- * 最后修改时间与预读流。
- */
 class ResourceIndexTest {
     private Path root;
 
@@ -58,15 +54,10 @@ class ResourceIndexTest {
         assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls/onslaught.ship"));
         assertTrue(ResourceIndex.exists(root.toFile(), "data\\hulls\\onslaught.ship"));
         assertTrue(ResourceIndex.exists(root.toFile(), "/data/hulls/onslaught.ship"));
-        // 段间重复斜杠（模组音乐路径实机写法 sounds/music//xxx.ogg）：
-        // 原版 File 对其与单斜杠透明，索引查询必须同构命中
         assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls//onslaught.ship"));
-        // 父目录引用（游戏经济加载实机写法 data/campaign/econ/../starmap.json）：
-        // 原版 File 由文件系统解析 ".."，索引查询必须同构命中
         assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls/skins/../onslaught.ship"));
         assertTrue(ResourceIndex.exists(root.toFile(), "data/../data/hulls/./onslaught.ship"));
         assertNotNull(ResourceIndex.file(root.toFile(), "data/variants/../variants/Mixed_Case.variant"));
-        // 逃逸根目录的 .. 段无法被索引命中，按不存在处理
         assertFalse(ResourceIndex.exists(root.toFile(), "../data/hulls/onslaught.ship"));
         assertFalse(ResourceIndex.exists(root.toFile(), "data/hulls/missing.ship"));
     }
@@ -85,7 +76,6 @@ class ResourceIndexTest {
                     new String(stream.readAllBytes(), StandardCharsets.UTF_8));
         }
         assertNull(ResourceIndex.open(root.toFile(), "data/hulls/missing.ship"));
-        // 目录命中索引但不可作为流打开（原版语义返回 null）
         assertNull(ResourceIndex.open(root.toFile(), "data/hulls"));
     }
 
@@ -100,7 +90,6 @@ class ResourceIndexTest {
         assertEquals(1, ResourceIndex.children(root.toFile(), "data/hulls/skins").size());
         assertTrue(ResourceIndex.children(root.toFile(), "data/missing").isEmpty());
 
-        // 尾斜杠目录参数必须与无尾斜杠等价（原版 File 语义对尾斜杠透明）
         assertEquals(2, ResourceIndex.children(root.toFile(), "data/hulls/").size());
         assertEquals(2, ResourceIndex.children(root.toFile(), "/data/hulls/").size());
     }
@@ -121,7 +110,6 @@ class ResourceIndexTest {
 
     @Test
     void prefetchServesSmallDataFilesFromMemory() throws IOException {
-        // 触发快照构建（内含异步预读调度），随后轮询等待预读完成
         assertTrue(ResourceIndex.exists(root.toFile(), "data/hulls/onslaught.ship"));
         final long deadline = System.currentTimeMillis() + 10_000L;
         while (System.currentTimeMillis() < deadline) {
@@ -137,7 +125,6 @@ class ResourceIndexTest {
                 return;
             }
         }
-        // 预读是异步优化而非功能保证：预算内未完成不应导致内容错误，仅验证内容一致即可
         try (InputStream stream = ResourceIndex.open(root.toFile(), "data/hulls/onslaught.ship")) {
             assertEquals("{\"id\":\"onslaught\"}",
                     new String(stream.readAllBytes(), StandardCharsets.UTF_8));

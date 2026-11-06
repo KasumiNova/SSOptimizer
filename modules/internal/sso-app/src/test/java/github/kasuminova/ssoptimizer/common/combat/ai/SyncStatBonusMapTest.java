@@ -18,11 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link SyncStatBonusMap} 并发与兼容语义验证：
- * 并发 put+values 迭代不产生 null 元素/不抛 CME（结构安全），
- * 视图快照不随后续写变化，null key/value 与原版 LinkedHashMap 一致。
- */
 class SyncStatBonusMapTest {
 
     private static MutableStat.StatMod mod(String source, float value) {

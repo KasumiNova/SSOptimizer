@@ -56,7 +56,6 @@ class LinuxDisplayImeProcessorTest {
         assertTrue(focusHook[0]);
         assertTrue(processEventsHook[0]);
         assertTrue(rawXEventHook[0], "onRawXEvent hook should be injected after nextEvent()");
-        // onRawXEvent must appear after nextEvent and before filterEvent
         int nextEventIdx = processEventsCalls.indexOf("org/lwjgl/opengl/LinuxEvent#nextEvent(J)V");
         String rawXEventCall = LinuxDisplayImeProcessor.HOOK_OWNER + "#onRawXEvent(Ljava/lang/Object;)V";
         int rawXEventIdx = processEventsCalls.indexOf(rawXEventCall);

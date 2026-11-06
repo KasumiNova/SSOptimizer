@@ -16,13 +16,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link RenderThreadRedirector} 的改写规则验证。
- * <p>
- * 用 ASM 现造调用点字节码（不加载真实类）：分别覆盖「镜像方法 owner 改写、
- * 未镜像方法保持原 owner、GLSync 描述符类型改写、Drawable INVOKEINTERFACE、
- * LDC 字符串字面量不动、bridge/LWJGL 包排除、flag 关闭 no-op、Janino 批量入口」。
- */
 class RenderThreadRedirectorTest {
     private String previousFlag;
 
@@ -41,7 +34,6 @@ class RenderThreadRedirectorTest {
         }
     }
 
-    /** 记录全部方法调用指令的 visitor（断言用）。 */
     private static List<String> collectMethodCalls(byte[] classBytes) {
         List<String> calls = new ArrayList<>();
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
@@ -60,7 +52,6 @@ class RenderThreadRedirectorTest {
         return calls;
     }
 
-    /** 收集全部 LDC 常量（断言字符串字面量未被改动）。 */
     private static List<Object> collectLdc(byte[] classBytes) {
         List<Object> constants = new ArrayList<>();
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
@@ -78,9 +69,6 @@ class RenderThreadRedirectorTest {
         return constants;
     }
 
-    /**
-     * 造一个只含 {@code run()V} 静态方法的类，方法体由 {@code body} 填充。
-     */
     private static byte[] buildClass(String internalName, java.util.function.Consumer<MethodVisitor> body) {
         ClassWriter writer = new ClassWriter(0);
         writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, internalName, null, "java/lang/Object", null);
@@ -115,9 +103,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void glClearDepthIsMirrored() {
-        // BoxUtil 1.6.0 GLWrapper$FBO.glClearDepth 的实际调用签名：
-        // 桥必须镜像 GL11.glClearDepth(D)V，否则渲染线程分离模式下
-        // 主线程执行真实 GL 报 No OpenGL context（实机标题界面崩溃根因）
         byte[] source = buildClass("org/boxutil/define/GLWrapper$FBO", mv -> {
             mv.visitVarInsn(Opcodes.DLOAD, 0);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11",
@@ -135,9 +120,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void boxUtil160FacadeSignaturesAreMirrored() {
-        // BoxUtil 1.6.0 GLWrapper 门面可达调用 ∩ 桥未镜像 的实机审计缺口全集
-        // （来源：渲染路径类字节码 × 运行期未镜像 warn 日志交叉分析）；
-        // 任一签名退化都会在分离模式下以 No OpenGL context 崩溃收场
         final String[][] signatures = {
                 {"org/lwjgl/opengl/GL11", "glDepthRange", "(DD)V"},
                 {"org/lwjgl/opengl/GL11", "glTexParameter", "(IILjava/nio/IntBuffer;)V"},
@@ -175,8 +157,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void unmirroredMethodKeepsOriginalOwner() {
-        // 全量镜像后真实方法面已完整覆盖（glBufferStorage 已镜像），改用桥必然
-        // 未镜像的假想签名固定「未镜像保持原 owner」判据
         byte[] source = buildClass("com/example/UsesGl44", mv ->
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL44",
                         "glFutureOp", "(IJLjava/nio/ByteBuffer;I)V", false));
@@ -187,7 +167,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void mixedMirroredAndUnmirroredCallsOnlyRewriteMirrored() {
-        // GL11.glBegin 已镜像；假想签名 glFutureOp（桥必然未镜像）保持原样
         byte[] source = buildClass("com/example/Mixed", mv -> {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glBegin", "(I)V", false);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11",
@@ -203,7 +182,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void glSyncDescriptorTypesAreRemappedAtCallSite() {
-        // GL32.glFenceSync 返回 GLSync：owner 与描述符类型同步改写
         byte[] source = buildClass("com/example/UsesFence", mv -> {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL32",
                     "glFenceSync", "(II)Lorg/lwjgl/opengl/GLSync;", false);
@@ -254,10 +232,7 @@ class RenderThreadRedirectorTest {
 
     @Test
     void fontAtlasGlIsExcludedFromRedirect() {
-        // 字体动态图集的真实 GL 操作体（bridge/opengl/FontAtlasGl）必须调真 GL：
-        // 该类在渲染线程执行纹理创建/上传/删除，若被重定向成 bridge 录制调用，
-        // 真实上传会被延迟到后续帧且绑定交错污染其他纹理（实机横条/贴图污染症状）。
-        // 用真实类名现造字节码，断言其裸 lwjgl 调用点不被改写。
+        // FontAtlasGl 在渲染线程直接执行 GL，不能被重定向为延迟录制调用。
         byte[] source = buildClass("github/kasuminova/ssoptimizer/bridge/opengl/FontAtlasGl", mv ->
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11",
                         "glBindTexture", "(II)V", false));
@@ -309,9 +284,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void gl33CallsAreRedirected() {
-        // GL33 曾整体缺席镜像表：Particle Engine 的 ParticleAllocator 调
-        // glVertexAttribDivisor 直奔真实 GL（No OpenGL context 崩溃签名）。
-        // 抽查实例化除数 + sampler 族 + 时间戳查询必须全部改写。
         byte[] source = buildClass("com/example/UsesGl33", mv -> {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL33",
                     "glVertexAttribDivisor", "(II)V", false);
@@ -333,7 +305,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void arbInstancedVariantsAreRedirected() {
-        // GL33/GL31 实例化入口的 ARB 扩展别名：模组按能力探测二选一，同语义必须同覆盖
         byte[] source = buildClass("com/example/UsesArbInstanced", mv -> {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/ARBInstancedArrays",
                     "glVertexAttribDivisorARB", "(II)V", false);
@@ -349,7 +320,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void mirrorTableCoversExpectedSurface() {
-        // 镜像表是改写覆盖面的事实源：抽查关键方法必须已镜像（防 bridge 重构漂移）
         byte[] source = buildClass("com/example/Probe", mv -> {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glGenTextures", "()I", false);
             mv.visitInsn(Opcodes.POP);
@@ -362,7 +332,6 @@ class RenderThreadRedirectorTest {
             mv.visitInsn(Opcodes.POP);
             mv.visitInsn(Opcodes.ARETURN);
         });
-        // 上面的 run()V 与 ARETURN 不匹配，仅为收集调用点，不做校验执行
         List<String> calls = collectMethodCalls(RenderThreadRedirector.redirect("com.example.Probe", source));
         assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL11.glGenTextures()I"), calls.toString());
         assertTrue(calls.contains("github/kasuminova/ssoptimizer/bridge/opengl/GL11.glNewList(II)V"), calls.toString());
@@ -373,11 +342,8 @@ class RenderThreadRedirectorTest {
 
     @Test
     void gluSphereDrawIsRedirectedToGluSupport() {
-        // ApproLight/LunaLib 等模组的 Sphere.draw 崩溃签名：Sphere 在 System 域，
-        // 内部裸调真实 GL11。调用类只引用 Sphere 而无任何 org/lwjgl/opengl 直接引用，
-        // 同时验证 GLU 前缀预筛必须放行此类（否则整类跳过改写）。
         byte[] source = buildClass("com/example/UsesGluSphere", mv -> {
-            mv.visitInsn(Opcodes.ACONST_NULL); // sphere receiver
+            mv.visitInsn(Opcodes.ACONST_NULL);
             mv.visitInsn(Opcodes.FCONST_1);
             mv.visitIntInsn(Opcodes.BIPUSH, 16);
             mv.visitIntInsn(Opcodes.BIPUSH, 8);
@@ -415,8 +381,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void gluSphereConfigMethodsAreUntouched() {
-        // setDrawStyle/setNormals/setOrientation/setTextureFlag 是纯 Java 配置，
-        // 必须保持同步原样执行（配置完成后 draw 才入队录制，顺序语义依赖这一点）
         byte[] source = buildClass("com/example/ConfiguresGluSphere", mv -> {
             mv.visitInsn(Opcodes.ACONST_NULL);
             mv.visitIntInsn(Opcodes.BIPUSH, 100);
@@ -432,11 +396,6 @@ class RenderThreadRedirectorTest {
         assertSame(source, result, "Sphere 纯配置方法不得改写");
     }
 
-    // ------------------------------------------------------------------
-    // invokedynamic 方法句柄（lambda/方法引用）的镜像表白名单判据
-    // ------------------------------------------------------------------
-
-    /** 收集全部 invokedynamic bootstrap 参数中引用 lwjgl 的方法句柄（断言用）。 */
     private static List<String> collectIndyHandles(byte[] classBytes) {
         List<String> handles = new ArrayList<>();
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
@@ -463,7 +422,6 @@ class RenderThreadRedirectorTest {
         return handles;
     }
 
-    /** LambdaMetafactory 形态的 invokedynamic（javac 方法引用产物）：{@code Owner::method}。 */
     private static void visitLambdaRef(MethodVisitor mv, String owner, String name, String desc) {
         org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
                 "java/lang/invoke/LambdaMetafactory", "metafactory",
@@ -480,9 +438,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void indyHandlesFollowMirrorWhitelist() {
-        // BoxUtil 1.0.6 GLWrapper$Drawcall.init 崩溃根因：方法引用（indy Handle）的
-        // owner 改写必须与 visitMethodInsn 共用镜像表白名单——桥未镜像的句柄盲改 owner
-        // 会在 LambdaMetafactory 链接期解析桥类不存在的方法签名，NoSuchMethodError
         byte[] source = buildClass("com/example/LambdaRefs", mv -> {
             visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glDrawArrays", "(III)V");
             visitLambdaRef(mv, "org/lwjgl/opengl/GL12", "glDrawRangeElements", "(IIIIIJ)V");
@@ -503,7 +458,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void indyHandleToUnmirroredMethodAloneIsNoOp() {
-        // 唯一引用是未镜像方法句柄（假想签名）时整类无改写点，原样返回
         byte[] source = buildClass("com/example/LambdaUnmirrored", mv ->
                 visitLambdaRef(mv, "org/lwjgl/opengl/GL11", "glFutureOp", "(II)F"));
 
@@ -513,10 +467,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void indyInstantiatedMethodTypeWithIdentityTypeIsRemapped() {
-        // BoxUtil Operation$Sync.init 崩溃签名回归：泛型 Fun 接口以具体 GLSync 实例化
-        // （XIntLongFun<GLSync>），instantiatedMethodType 含 Lorg/lwjgl/opengl/GLSync;。
-        // impl Handle 改写到桥后该 MethodType 必须同步改写，否则 LambdaMetafactory
-        // 校验报 LambdaConversionException（lwjgl GLSync 不可 convertible 到 bridge GLSync）
         byte[] source = buildClass("com/example/LambdaSyncRef", mv -> {
             org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
                     "java/lang/invoke/LambdaMetafactory", "metafactory",
@@ -565,7 +515,6 @@ class RenderThreadRedirectorTest {
                 "indy 参数不得残留 lwjgl GLSync: " + types);
     }
 
-    /** 收集 indy bootstrap 参数中的全部 Type 描述符与 Handle（断言用）。 */
     private static void collectIndyArgs(byte[] classBytes, List<String> types, List<String> handles) {
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
             @Override
@@ -588,7 +537,6 @@ class RenderThreadRedirectorTest {
         }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
     }
 
-    /** 带身份类型的 LambdaMetafactory 站点：sam 擦除 Object，instantiated 具体 GLSync。 */
     private static void visitSyncLambdaRef(MethodVisitor mv, String owner, String methodName) {
         org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
                 "java/lang/invoke/LambdaMetafactory", "metafactory",
@@ -606,10 +554,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void indySiteWithUnmirroredIdentityHandleKeepsTypeArgs() {
-        // BoxUtil Operation$Sync.init:3308 崩溃签名回归（glGetSync buffer 形态未镜像
-        // 时期的半改写站）：impl Handle 未镜像保持 lwjgl owner 时，instantiatedMethodType
-        // 必须同步保持 lwjgl——半改写站必在 LambdaMetafactory 链接期类型不匹配。
-        // 用一个桥必然未镜像的假想签名固定该判据（真实缺口修复后仍须守住整站一致性）
         byte[] source = buildClass("com/example/LambdaUnmirroredSync", mv ->
                 visitSyncLambdaRef(mv, "org/lwjgl/opengl/GL32", "glFutureSyncOp"));
 
@@ -627,9 +571,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void indySiteWithModOwnedIdentityHandleIsRemapped() {
-        // 声明级改写语义：模组自有 lambda 体（owner 不在改写表）所在类同样经过
-        // 本改写器，其方法声明中的身份类型同步改写为 bridge——句柄描述符与
-        // MethodType 参数必须跟随，否则 LambdaMetafactory 链接期类型不匹配
         byte[] source = buildClass("com/example/LambdaModOwnedSync", mv ->
                 visitSyncLambdaRef(mv, "com/example/SyncHelper", "lambda$sync$0"));
 
@@ -646,8 +587,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void arbSyncFamilyHandlesAreMirrored() {
-        // Operation$Sync 的 GL_ARB_sync 回退分支：ARBSync 入改写表后方法引用
-        // 必须改写到桥（含描述符身份类型替换），与 GL32 主分支同一语义
         byte[] source = buildClass("com/example/LambdaArbSync", mv -> {
             visitSyncLambdaRef(mv, "org/lwjgl/opengl/ARBSync", "glDeleteSync");
             org.objectweb.asm.Handle metafactory = new org.objectweb.asm.Handle(Opcodes.H_INVOKESTATIC,
@@ -677,11 +616,6 @@ class RenderThreadRedirectorTest {
                 "已镜像站点的 MethodType 身份类型必须同步改写: " + types);
     }
 
-    // ------------------------------------------------------------------
-    // 声明级身份类型改写（BoxUtil GLWrapper$Operation$Sync VerifyError 回归）
-    // ------------------------------------------------------------------
-
-    /** 收集类的方法声明与字段声明（断言用）。 */
     private static List<String> collectDeclarations(byte[] classBytes) {
         List<String> declarations = new ArrayList<>();
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9, null) {
@@ -704,9 +638,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void methodDeclarationWithIdentityTypeIsRemapped() {
-        // 实机崩溃签名回归：GLWrapper$Operation$Sync.glFenceSync(II) 声明返回
-        // lwjgl GLSync，方法体经 bridge 化（checkcast 目标改写）后 areturn 处
-        // VerifyError。方法声明的身份类型必须与调用点同世界改写。
         ClassWriter writer = new ClassWriter(0);
         writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "com/example/SyncFacade", null,
                 "java/lang/Object", null);
@@ -731,8 +662,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void fieldDeclarationAndAccessSiteAreRemappedTogether() {
-        // 模组持有身份类型字段：声明与读写点（同 owner 的 Launch 域访问）必须同步改写，
-        // 否则 GETFIELD/PUTFIELD 链接期类型不一致
         ClassWriter writer = new ClassWriter(0);
         writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "com/example/SyncHolder", null,
                 "java/lang/Object", null);
@@ -775,8 +704,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void modInternalCallSiteDescriptorIsRemapped() {
-        // 模组内部互调：被调方法声明经本改写器改写，调用点描述符必须跟随，
-        // 否则运行期 NoSuchMethodError（BoxUtil 内部调 Operation$Sync.glFenceSync 的形态）
         byte[] source = buildClass("com/example/SyncCaller", mv -> {
             mv.visitInsn(Opcodes.ICONST_0);
             mv.visitInsn(Opcodes.ICONST_0);
@@ -794,9 +721,7 @@ class RenderThreadRedirectorTest {
 
     @Test
     void systemDomainOwnerDescriptorIsPreserved() {
-        // System 域 owner（org/lwjgl/opencl/CLContext）永不经过改写器，其方法声明
-        // 保持 lwjgl 类型——调用点描述符不得替换身份类型，否则 NoSuchMethodError
-        // （KernelCore 的 CLContext.create(..., Drawable, ...) 形态）
+        // System 域 owner 不经过改写器，其调用点描述符必须保留 lwjgl 类型。
         byte[] source = buildClass("com/example/ClInterop", mv -> {
             mv.visitInsn(Opcodes.ACONST_NULL);
             mv.visitInsn(Opcodes.ACONST_NULL);
@@ -819,8 +744,6 @@ class RenderThreadRedirectorTest {
 
     @Test
     void frameIdentityTypeEntriesAreRemapped() {
-        // 方法声明改写后，帧条目中持有身份类型的局部变量声明类型必须同步替换，
-        // 否则与指令推导出的 bridge 类型不一致，链接期 VerifyError
         ClassWriter writer = new ClassWriter(0);
         writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, "com/example/SyncFrames", null,
                 "java/lang/Object", null);

@@ -15,21 +15,9 @@ import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * GL bridge 全量镜像的覆盖率断言（见 docs/design/gl-bridge-full-mirror.md）。
- * <p>
- * 对 {@link RenderThreadRedirector#MIRRORED_CLASS_NAMES} 的每个类：
- * 用 ASM 解析 classpath 上的真实 {@code org/lwjgl/opengl/<Name>.class}（含其
- * org/lwjgl/opengl 包内超类链，如 ARBVertexBufferObject → ARBBufferObject），
- * 收集全部 public static 方法的 name+desc（desc 经对象身份类型替换——
- * GLSync/Drawable/SharedDrawable 在桥世界是另一类型）；同法收集 bridge 类
- * （含 Gen 生成基类超类链）的方法集。断言 real ⊆ bridge，白名单为空——
- * 缺什么补什么，不允许豁免（漏镜像 = 分离模式下无 context 线程直触真实 GL）。
- */
 class BridgeMirrorCoverageTest {
     private static final String LWJGL_PREFIX = "org/lwjgl/opengl/";
     private static final String BRIDGE_PREFIX = "github/kasuminova/ssoptimizer/bridge/opengl/";
-    /** 与 RenderThreadRedirector.TYPE_REMAP 同款的对象身份类型替换。 */
     private static final Map<String, String> TYPE_REMAP = Map.of(
             "Lorg/lwjgl/opengl/GLSync;", "Lgithub/kasuminova/ssoptimizer/bridge/opengl/GLSync;",
             "Lorg/lwjgl/opengl/Drawable;", "Lgithub/kasuminova/ssoptimizer/bridge/opengl/Drawable;",
@@ -52,14 +40,6 @@ class BridgeMirrorCoverageTest {
                 "bridge 镜像覆盖面缺口（真实 lwjgl public static 方法未镜像）:\n" + failures);
     }
 
-    /**
-     * 收集类的静态方法 name+desc 集合，沿 superName 链递归（链限定在给定前缀包内）。
-     *
-     * @param internalName 起点类内部名
-     * @param chainPrefix  超类链延伸的包前缀（真实侧 org/lwjgl/opengl/，桥侧 bridge 包）
-     * @param publicOnly   真实侧只收 public static（javac 可见面）；桥侧收全部声明
-     *                     （生成物与手写均为 public static，宽收不影响超集判定）
-     */
     private static Set<String> collectPublicStatic(String internalName, String chainPrefix,
                                                    boolean publicOnly) {
         Set<String> methods = new TreeSet<>();

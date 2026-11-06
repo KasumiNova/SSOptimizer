@@ -12,33 +12,6 @@ import java.nio.FloatBuffer;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Batches original engine {@code ContrailEngine} strips and flushes them with
- * {@code glDrawArrays(GL_QUAD_STRIP)} calls.
- * <p>
- * 原版渲染器已经按（纹理、混合模式）分组（{@code ContrailGroup}），且每组的纹理
- * 都来自同一路径 {@code graphics/fx/contrail64b.png}（经进程级 {@code oOoO} 缓存
- * 取同一 {@code TextureObject} 实例）。本 helper 在此基础上做一次合并：
- * <ul>
- *   <li><b>批次合并</b>：混合模式相同的相邻组编码进同一条 {@code GL_QUAD_STRIP}，
- *       组间以 2 个退化顶点连接（重复上一组末顶点两次，零面积四边形不产生碎片），
- *       把「每组的 1 次 draw」折叠为「每段同混合模式连续组的 1 次 draw」——
- *       录制侧逐组的 buffer 快照拷贝（{@code glColorPointer/glVertexPointer/
- *       glTexCoordPointer} 各一次深拷贝）、draw 命令借出与 pointer 快照组捕获
- *       全部随之摊销；</li>
- *   <li><b>录制路径瘦身</b>：client attrib 压栈/出栈与三个 client array 使能
- *       从「每组一次」提升到「整次渲染一次」；纹理绑定仅在纹理实例变化时发生
- *       （原版逐组无条件 bind 同一纹理）；当前颜色恢复从「每组一次」收敛为
- *       「整次渲染结束一次」（组间无 immediate 绘制，current color 不被读取，
- *       仅最后一段的恢复对外可见，与原版行为一致）。</li>
- * </ul>
- * <b>时序语义</b>（v37-v43 黑屏教训：draw 命令不得数组化/延迟化，录制必须保持
- * 命令的时序语义）：本 helper 不做任何命令数组化——所有状态命令与 draw 命令仍
- * 按录制顺序逐条入队（bridge 侧 {@code glCallList} 等仍消费调用时刻的 current
- * 状态）；合并只改变「同混合模式连续组共享一次 draw」的边界，组间相对顺序、
- * 段内顶点顺序与原版逐组绘制逐指令等价。混合模式切换处先 flush 当前批次再切换，
- * 批次顺序即组的遍历顺序，不重排任何 draw。
- */
 public final class ContrailBatchHelper {
     private static final int   MAX_VERTICES           = 262_144;
     private static final float V_MIN                  = 0.01f;
@@ -52,17 +25,11 @@ public final class ContrailBatchHelper {
     private static FloatBuffer texCoordBuf;
     private static int         numVertices;
 
-    /** 批次是否已 flush 过（最终 current color 恢复只在有绘制时发生）。 */
     private static boolean hasFlushedStrip;
-    /** 最近一次 flush 的末顶点颜色（最终 current color 恢复的来源）。 */
     private static byte finalR;
     private static byte finalG;
     private static byte finalB;
     private static byte finalA;
-    /**
-     * 批次连接点需要的「上一对段末顶点」（恒为右顶点，V=V_MAX）：同混合模式组
-     * 拼接进同一 strip 时重复写入两次，形成零面积退化四边形。
-     */
     private static float lastU;
     private static float lastX;
     private static float lastY;
@@ -86,11 +53,6 @@ public final class ContrailBatchHelper {
         }
     }
 
-    /**
-     * 整次渲染：client attrib 压栈一次、三个 client array 使能一次，随后按组的
-     * 遍历顺序编码。混合模式变化处结束当前批次（flush 一次 draw）并切换混合，
-     * 纹理仅在实例变化时重新绑定；同混合模式的相邻组合并为同一条 strip。
-     */
     private static void renderAllGroups(Map<?, ?> groups, float alphaScale) {
         beginStrip();
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
@@ -107,8 +69,6 @@ public final class ContrailBatchHelper {
                     continue;
                 }
 
-                // 混合模式变化 = 批次边界：先结束当前 strip，再切换混合。
-                // 不可绘制组同样推进 blend 状态（原版对每个组无条件调用 glBlendFunc）。
                 Object blend = group.ssoptimizer$getBlendMode();
                 if (activeBlend != blend) {
                     flushStrip();
@@ -143,14 +103,6 @@ public final class ContrailBatchHelper {
         }
     }
 
-    /**
-     * 把一个组的全部段与尾点编码进当前批次缓冲。批次非空（已有其他组）时先补
-     * 连接点：重复上一组末顶点两次，GL_QUAD_STRIP 中形成两个零面积退化四边形，
-     * 之后的段按原顶点顺序继续，不产生任何连接碎片。
-     *
-     * @return false 表示组数据不完整且尾点法线缺失，调用方应结束当前批次并中止
-     *         后续组（原版逐组 flush+return 的同路径行为）
-     */
     static boolean encodeGroup(ContrailGroupAccessor group, float alphaScale) {
         Color color = group.ssoptimizer$getColor();
         if (color == null) {
@@ -164,11 +116,6 @@ public final class ContrailBatchHelper {
 
         emitJoinConnector();
 
-        // 组内 maxAge 恒定（原版 addSegment 恒以 group.segmentDuration 赋值段
-        // maxAge，advance 不再改写），fadeWindow 提升为组级常量——与逐段计算
-        // 位级一致（0.05/maxAge 与 0.05/segmentDuration 同值），省去每段 1 次
-        // maxAge 读取 + 1 次除法 + 1 次钳制（v49 profile：encodeGroup self
-        // 2,771 样本的逐段瘦身点之一）。
         float segmentDuration = group.ssoptimizer$getSegmentDuration();
         float fadeWindow = segmentDuration <= 0.0f ? 0.5f : 0.05f / segmentDuration;
         if (fadeWindow > 0.5f) {
@@ -177,9 +124,6 @@ public final class ContrailBatchHelper {
 
         List<Object> segments = group.ssoptimizer$getSegments();
         ContrailSegmentAccessor lastSegment = null;
-        // 迭代器遍历：segments 运行期类型是 LinkedList（游戏构造器实例化），
-        // 索引 get(i) 在其上退化为 O(n²)（v50 cpu profile：encodeGroup self
-        // 1,933 样本的主因之一）
         for (final Object segmentObj : segments) {
             ContrailSegmentAccessor segment = (ContrailSegmentAccessor) segmentObj;
 
@@ -257,10 +201,7 @@ public final class ContrailBatchHelper {
                                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
     }
 
-    /**
-     * 批次非空时补连接点：重复上一对段末顶点（右顶点）两次。批次为空（本组是
-     * 当前批次第一组）时无连接点。
-     */
+    /** 重复末顶点形成零面积四边形，避免连接不同组时产生碎片。 */
     private static void emitJoinConnector() {
         if (numVertices == 0) {
             return;
@@ -273,10 +214,7 @@ public final class ContrailBatchHelper {
         putVertex(lastU, lastX, lastY, lastR, lastG, lastB, lastA);
     }
 
-    /**
-     * 写入单个顶点（连接点用）：不更新 {@link #lastU}/{@link #lastX} 等末顶点
-     * 跟踪——连接点的重复顶点不是新的段末顶点。
-     */
+    /** 连接点不是新的段末顶点，不得更新 lastU、lastX 等跟踪字段。 */
     private static void putVertex(float u, float x, float y, byte r, byte g, byte b, byte a) {
         colorBuf.put(r).put(g).put(b).put(a);
         texCoordBuf.put(u).put(V_MAX);
@@ -326,10 +264,6 @@ public final class ContrailBatchHelper {
         vertexBuf.flip();
         texCoordBuf.flip();
 
-        // 捕获本段末顶点颜色供最终 current color 恢复（不在本段内恢复——
-        // 组间无 immediate 绘制，只有整次渲染结束时的恢复对外可见）。
-        // client attrib 压栈/出栈与 client array 使能已提升到整次渲染一次
-        // （renderAllGroups），本段只负责 pointer 设置与 draw。
         int finalColorIndex = (numVertices - 1) * 4;
         finalR = colorBuf.get(finalColorIndex);
         finalG = colorBuf.get(finalColorIndex + 1);
@@ -349,11 +283,7 @@ public final class ContrailBatchHelper {
         numVertices = 0;
     }
 
-    /**
-     * 整次渲染结束时的 current color 恢复：把当前颜色设为本批次最后一段的末顶点
-     * 颜色（原版逐组绘制结束时 current color 同样为该组末顶点颜色——尾点对
-     * alpha 为 0）。无任何绘制（全部组不可绘制）时不调用 glColor4ub，与原版一致。
-     */
+    /** 仅在发生绘制后恢复最后末顶点颜色，与原版 current color 的可见结果一致。 */
     private static void restoreCurrentColor() {
         if (!hasFlushedStrip) {
             return;
@@ -380,16 +310,10 @@ public final class ContrailBatchHelper {
         return Math.min(value, 255);
     }
 
-    // ------------------------------------------------------------------
-    // 包内测试触点（同包测试直接验证批次内容；生产路径零成本）
-    // ------------------------------------------------------------------
-
-    /** 当前批次已编码的顶点数。 */
     static int getNumVertices() {
         return numVertices;
     }
 
-    /** 第 index 个已编码顶点的完整内容（颜色按无符号字节展开）。 */
     static EncodedVertex vertexAt(int index) {
         if (index < 0 || index >= numVertices) {
             throw new IndexOutOfBoundsException(
@@ -408,7 +332,6 @@ public final class ContrailBatchHelper {
                 colorBuf.get(colorIndex + 3) & 0xFF);
     }
 
-    /** 已编码顶点内容（位置/UV/颜色）。 */
     record EncodedVertex(float x, float y, float u, float v, int r, int g, int b, int a) {
     }
 }

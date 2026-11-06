@@ -8,12 +8,6 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Windows 覆盖安装分发契约测试。
- * <p>
- * 该测试约束仓库必须持续提供 Windows overlay 打包入口，且发布产物采用
- * NanoForge coremod（mods/coremods）+ 游戏原生 mod（mods/ssoptimizer）双轨布局。
- */
 class WindowsOverlayDistributionContractTest {
 
     private static Path repositoryRoot() {

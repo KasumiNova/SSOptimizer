@@ -5,11 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link StateDedup} 的相邻性去重语义验证：同类型同参数且期间帧命令列表
- * 无任何插入才跳过；类型/参数不同、任何命令插入（含 aux 提交）、缓存失效
- * 都会使后续状态命令照常入队。
- */
 class StateDedupTest {
 
     @Test
@@ -42,24 +37,23 @@ class StateDedupTest {
         dedup.record(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 1, 0, 0);
 
         frame.add(() -> {
-        }); // 任意命令插入（模拟 draw/顶点流落帧/glCallList/aux 提交等一切插入）
+        });
         assertFalse(dedup.shouldSkip(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 1, 0, 0),
                 "帧命令列表有任何插入都必须打断相邻性");
     }
 
     @Test
     void recordAfterInterleavedCommandThenAdjacentSameIsSkipped() {
-        // 语义链：A 入队 → B 入队（状态改变）→ A 入队（恢复）→ A 紧邻跳过
         StateDedup dedup = new StateDedup();
         RenderFrame frame = new RenderFrame();
 
-        dedup.record(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 1, 0, 0); // A
+        dedup.record(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 1, 0, 0);
         frame.add(() -> {
-        }); // 任意命令
-        dedup.record(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 2, 0, 0); // B（A→B 恢复期先入队）
+        });
+        dedup.record(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 2, 0, 0);
         assertTrue(dedup.shouldSkip(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 2, 0, 0),
                 "B 后紧邻相同的 B 应跳过");
-        dedup.record(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 1, 0, 0); // A 恢复
+        dedup.record(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 1, 0, 0);
         assertTrue(dedup.shouldSkip(frame, StateDedup.TYPE_BIND_TEXTURE, 0, 1, 0, 0));
     }
 

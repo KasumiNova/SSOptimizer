@@ -6,10 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * GL20 最小集 bridge 的录制行为抽查：运行期命令（useProgram/uniform）按普通
- * 命令录制；创建/编译/链接期回读走阻塞通道。
- */
 class ShaderBridgeTest {
 
     private FakeRenderQueue queue;
@@ -50,7 +46,6 @@ class ShaderBridgeTest {
         mutable.setLength(0);
         mutable.append("corrupted");
         GL20.glShaderSource(2, new CharSequence[]{new StringBuilder("a"), "b"});
-        // 源码在录制时刻已固化为 String，调用方改写 StringBuilder 不影响命令
         assertEquals(2, queue.recorded.size());
     }
 

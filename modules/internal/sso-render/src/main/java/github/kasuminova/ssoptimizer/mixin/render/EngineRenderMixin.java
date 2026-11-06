@@ -15,17 +15,6 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-/**
- * 引擎实体（Engine）的渲染 Mixin，完整替换原始 {@code render()} 方法。
- *
- * <p>注入目标：{@code com.fs.starfarer.combat.entities.Engine}<br>
- * 注入动机：原始引擎渲染逻辑为逐实体独立绘制，存在大量重复 OpenGL 状态切换和纹理绑定；
- * 通过 {@code @Overwrite} 替换为合批渲染路径 ({@link EngineBatch})：
- * 每舰收集全部引擎槽实例并按 阶段×纹理ID 分组 flush，每舰最多 4 个 drawcall，
- * 同时接管 {@code renderFighter} 路径（合批器内建战机公式）。<br>
- * 注入效果：实现 {@link EngineBridge} 接口暴露 Shadow 字段，{@code render()} 委托给
- * {@link EngineBatch}；合批不可用时内部降级到立即模式等价路径（EngineRenderHelper）。</p>
- */
 @Mixin(targets = GameClassNames.ENGINE_DOTTED)
 public abstract class EngineRenderMixin implements EngineBridge {
     @Shadow(remap = false, aliases = "owner")
@@ -156,13 +145,6 @@ public abstract class EngineRenderMixin implements EngineBridge {
         ssoptimizer$invokeRenderFighter(alphaScale);
     }
 
-    /**
-     * @author GitHub Copilot
-     * @reason Replace per-slot immediate-mode engine rendering with a per-ship
-     * collect-and-flush batch path (VBO batch with automatic downgrade to
-     * immediate mode), covering both ship and fighter formulas while
-     * preserving the original visual math.
-     */
     @Overwrite(remap = false)
     public void render(float alphaScale) {
         EngineBatch.getInstance().render(this, alphaScale);

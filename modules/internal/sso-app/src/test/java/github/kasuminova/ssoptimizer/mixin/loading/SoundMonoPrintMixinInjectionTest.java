@@ -18,15 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Sound 构造器 println 重定向的注入锚点核验。
- * <p>
- * 用 ASM 解析测试 classpath 上的真实 {@code sound.Sound} 字节码（非源码文本匹配），
- * 核验 {@code Sound(String, String, InputStream)} 构造器内恰好两次
- * {@code PrintStream.println(String)} 调用（{@code SoundMonoPrintMixin} 以 ordinal 0/1
- * 区分两处锚点，数量漂移会导致 Mixin 运行时拒绝），且两个格式化模板常量的顺序为
- * 「UI sound」在前、「NOT mono」在后（与 ordinal 语义注释一致）。
- */
 class SoundMonoPrintMixinInjectionTest {
 
     private static final String CTOR_DESC = "(Ljava/lang/String;Ljava/lang/String;Ljava/io/InputStream;)V";

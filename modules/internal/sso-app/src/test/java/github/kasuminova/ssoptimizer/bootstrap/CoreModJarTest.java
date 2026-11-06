@@ -8,10 +8,6 @@ import java.util.jar.JarFile;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * coremod jar 产物契约测试：验证打出的 SSOptimizer.jar 是合法的 NanoForge coremod
- * （含 coremod.toml / mixin config / shade 依赖，且不再是 javaagent 胖 jar）。
- */
 class CoreModJarTest {
 
     private static File coreModJar() {
@@ -54,13 +50,11 @@ class CoreModJarTest {
     @Test
     void jarShadesRuntimeDependenciesButNotNanoForgeProvidedLibraries() throws Exception {
         try (JarFile jar = new JarFile(coreModJar())) {
-            // shade 进 jar 的运行时依赖
             assertNotNull(jar.getEntry("it/unimi/dsi/fastutil/ints/Int2ObjectOpenHashMap.class"), "fastutil 必须 shade 进 jar");
             assertNotNull(jar.getEntry("org/jctools/queues/MpscArrayQueue.class"), "jctools 必须 shade 进 jar");
             assertNotNull(jar.getEntry("com/github/luben/zstd/Zstd.class"), "zstd-jni 必须 shade 进 jar");
             assertNotNull(jar.getEntry("org/apache/log4j/Logger.class"), "log4j-1.2-api 桥接层必须 shade 进 jar");
 
-            // 运行时由 NanoForge 提供的库不得打进 jar
             assertNull(jar.getEntry("org/objectweb/asm/ClassReader.class"), "ASM 由 NanoForge 运行时提供，不应 shade");
             assertNull(jar.getEntry("org/spongepowered/asm/mixin/Mixin.class"), "sponge-mixin 由 NanoForge 运行时提供，不应 shade");
             assertNull(jar.getEntry("net/minecraft/launchwrapper/IClassTransformer.class"), "LaunchWrapper 由 RFB 提供，不应 shade");

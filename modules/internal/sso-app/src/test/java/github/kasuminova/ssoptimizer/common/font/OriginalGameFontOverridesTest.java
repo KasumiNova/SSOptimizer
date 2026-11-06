@@ -47,7 +47,6 @@ class OriginalGameFontOverridesTest {
                 "graphics/fonts/victor21.fnt"
         ), victor16Donors);
 
-        // 族内每个成员互为捐赠者；非族字体无捐赠
         assertEquals(4, OriginalGameFontOverrides.charsetDonorPaths("graphics/fonts/victor10.fnt").size());
         assertTrue(OriginalGameFontOverrides.charsetDonorPaths("graphics/fonts/insignia15LTaa.fnt").isEmpty());
         assertTrue(OriginalGameFontOverrides.charsetDonorPaths("graphics/fonts/orbitron20aa.fnt").isEmpty());

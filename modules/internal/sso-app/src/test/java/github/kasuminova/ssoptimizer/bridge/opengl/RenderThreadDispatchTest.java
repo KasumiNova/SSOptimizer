@@ -9,14 +9,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link RenderThreadDispatch} 的渲染线程同步派发语义验证：
- * <ul>
- *   <li>非渲染线程调用：drain-first（先把当前录制帧提交进渲染线程）且走不计入
- *   StallDetector 的阻塞通道（保存回放等有界非稳态场景豁免熔断，见类 javadoc）；</li>
- *   <li>任务体在渲染线程上执行；渲染线程上再次派发时直接执行（不自死锁）。</li>
- * </ul>
- */
 class RenderThreadDispatchTest {
 
     @AfterEach
@@ -49,7 +41,6 @@ class RenderThreadDispatchTest {
 
             RenderThreadDispatch.runBlocking(() -> {
                 taskThread.set(Thread.currentThread().getName());
-                // 渲染线程上再次派发：必须直接执行而不是走提交队列（否则自死锁）
                 RenderThreadDispatch.runBlocking(() -> nestedThread.set(Thread.currentThread().getName()));
             });
 

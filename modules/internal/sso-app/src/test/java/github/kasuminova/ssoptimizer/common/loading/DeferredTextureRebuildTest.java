@@ -13,11 +13,6 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 验证延迟贴图上传的缓存 miss 恢复路径：缓存未命中时必须能通过即时读源 + 解码
- * 完成重建，重建结果应回写压缩缓存使后续绑定直接命中；源不可读/解码失败时必须
- * 返回 null（由上传路径走 1x1 白图兜底），不得以黑采样或静默失败收场。
- */
 class DeferredTextureRebuildTest {
     @TempDir
     Path tempDir;

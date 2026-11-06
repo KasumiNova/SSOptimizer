@@ -26,15 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
- * 声音资源并行预读协调器。
- * <p>
- * 该协调器负责并行读取声音文件字节，并在声音管理器按路径创建声音对象时优先复用
- * 已预读的内存字节，避免启动阶段逐个串行打开大量声音文件。
- * <p>
- * 线程模型（Wave 3 起）：预读任务提交 {@link VtWorkers} 虚拟线程执行；
- * {@code ssoptimizer.soundload.parallelism} 保留为 Semaphore 最大并发闸门——
- * 声音文件单项可达 12MB 级，无闸门时一次性预读会把磁盘带宽与在途内存同时打满
- * （在途字节不计入 {@code cache.maxbytes} 账目），闸门保护的是真实资源瓶颈而非线程数。
+ * 完成的 future 必须立即从 INFLIGHT_LOADS 移除，避免已加载字节被重复持有。
  */
 public final class ParallelSoundLoadCoordinator {
     public static final String DISABLE_PROPERTY          = "ssoptimizer.disable.parallelsoundload";
@@ -70,37 +62,16 @@ public final class ParallelSoundLoadCoordinator {
     private ParallelSoundLoadCoordinator() {
     }
 
-    /**
-    * 通过 {@code loadObjectFamily(String)} 家族方法加载声音。
-     *
-     * @param manager      游戏声音管理器实例
-     * @param resourcePath 声音资源路径
-     * @return 已创建的声音对象
-     */
     public static Object loadObjectFamily(final Object manager,
                                           final String resourcePath) {
         return load(manager, resourcePath, OBJECT_FAMILY_STREAM_METHOD, OBJECT_PATH_ORIGINAL);
     }
 
-    /**
-    * 通过 {@code loadO00000Family(String)} 家族方法加载声音。
-     *
-     * @param manager      游戏声音管理器实例
-     * @param resourcePath 声音资源路径
-     * @return 已创建的声音对象
-     */
     public static Object loadO00000Family(final Object manager,
                                           final String resourcePath) {
         return load(manager, resourcePath, O00000_FAMILY_STREAM_METHOD, O00000_PATH_ORIGINAL);
     }
 
-    /**
-    * 通过 {@code loadOAccentFamily(String)} 家族方法加载声音。
-     *
-     * @param manager      游戏声音管理器实例
-     * @param resourcePath 声音资源路径
-     * @return 已创建的声音对象
-     */
     public static Object loadOAccentFamily(final Object manager,
                                            final String resourcePath) {
         return load(manager, resourcePath, O_ACCENT_FAMILY_STREAM_METHOD, O_ACCENT_PATH_ORIGINAL);
@@ -117,7 +88,6 @@ public final class ParallelSoundLoadCoordinator {
         loadGate = null;
     }
 
-    /** 测试用：当前在途声音加载 future 数（验证完成/失败后条目移除）。 */
     static int inflightLoadCountForTests() {
         return INFLIGHT_LOADS.size();
     }
@@ -175,8 +145,6 @@ public final class ParallelSoundLoadCoordinator {
                     + ", fallback to original path: " + e.getCause(), e);
             return null;
         } finally {
-            // 无论成功/失败/取消都必须移除条目：完成后的 future 持有已加载字节
-            // （单项可达 12MB），滞留会让 INFLIGHT_LOADS 永久持有全部已加载声音
             INFLIGHT_LOADS.remove(resourcePath, future);
         }
     }
@@ -209,8 +177,6 @@ public final class ParallelSoundLoadCoordinator {
                                 return null;
                             }
                         }, VtWorkers::submit);
-                        // 预载 future 完成（含失败）后立即摘除条目：结果已进 COMPLETED_BYTES
-                        // 缓存，滞留的 future 会永久持有已加载字节（12MB 级）
                         future.whenComplete((loaded, error) -> INFLIGHT_LOADS.remove(resource, future));
                         return future;
                     });
@@ -365,11 +331,6 @@ public final class ParallelSoundLoadCoordinator {
         return Math.max(0L, Long.getLong(MAX_MEMORY_BYTES_PROPERTY, DEFAULT_MAX_MEMORY_BYTES));
     }
 
-    /**
-     * 在并发闸门许可内读取声音文件字节：进入前 acquire、退出时 release；
-     * 等待许可被中断时恢复中断标记并以 {@link CompletionException} 传播
-     * （虚拟线程任务的中断语义与原平台线程池一致：任务失败、不吞中断）。
-     */
     private static byte[] loadBytesGated(final String resourcePath) throws IOException {
         final Semaphore gate = loadGate();
         try {
@@ -385,10 +346,6 @@ public final class ParallelSoundLoadCoordinator {
         }
     }
 
-    /**
-     * 预读并发闸门（懒创建，与属性读取时机同原懒建池一致；测试经
-     * {@link #clearForTests()} 重置后按新属性值重建）。
-     */
     private static Semaphore loadGate() {
         Semaphore current = loadGate;
         if (current != null) {

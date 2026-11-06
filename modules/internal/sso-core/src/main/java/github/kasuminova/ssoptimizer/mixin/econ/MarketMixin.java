@@ -11,24 +11,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/**
- * 市场推进阶段的商品事件修正延迟刷新 Mixin。
- * <p>
- * 注入目标：{@code com.fs.starfarer.campaign.econ.Market#advance(float)}<br>
- * 注入动机：原版会在市场推进中对每个商品立刻执行 {@code reapplyEventMod()}，
- * 即便该商品的事件修正输入在当前 tick 内毫无变化。<br>
- * 注入效果：推进阶段（四个统计 {@code advance()} 之后、temp mod 到期已发生）
- * 采样四个统计的修改代际签名，仅当签名与上次记录不同才将商品标记为待刷新，
- * 把真正的事件修正计算延后到读取 {@code available} 时再执行。
- * 代际读取为 O(1) 纯字段访问，不触发任何统计重算，签名比较无堆分配。
- * <p>
- * 同时承载 {@link MarketAdvanceThrottleBridge} 的降频状态（累计待推进时长与调用计数），
- * 供 {@code EconomyAdvanceThrottleMixin} 合并市场推进使用。
- */
 @Mixin(targets = GameMixinSignatures.Market.TARGET_CLASS)
 public abstract class MarketMixin implements MarketAdvanceThrottleBridge {
-    // transient：Market 随经济体进战役存档；降频状态是运行期派生值，读档后
-    // 归零等价于「无积压待推进」，下次 economy tick 正常推进，语义安全。
+    // 降频状态不随存档持久化，读档后按无积压处理。
     @Unique
     private transient double ssoptimizer$pendingAdvanceSeconds;
     @Unique
@@ -39,9 +24,7 @@ public abstract class MarketMixin implements MarketAdvanceThrottleBridge {
             at = @At(value = "INVOKE", target = GameMixinSignatures.CommodityOnMarket.REAPPLY_EVENT_MOD_TARGET),
             remap = false)
     private void ssoptimizer$markCommodityEventModDirty(final CommodityOnMarket commodity) {
-        // 采样点位于 4×stat.advance() 之后：temp mod 到期与 available 的直接改写
-        // 都能被代际签名捕捉，eMod 相对到期不再滞后一帧；
-        // getAvailableStat() 的 HEAD 注入会让待刷新商品先在此处（advance 之后）完成重算
+        // 必须在统计推进后采样，才能捕获临时修正到期与 available 的直接改写。
         CommodityEventModRefreshHelper.markDirtyIfSignatureChanged(
                 (CommodityEventModRefreshBridge) commodity,
                 CommodityEventModRefreshHelper.mutationGenerationOf(commodity.getAvailableStat()),

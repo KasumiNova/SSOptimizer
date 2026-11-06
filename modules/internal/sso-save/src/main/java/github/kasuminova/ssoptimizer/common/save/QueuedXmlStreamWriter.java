@@ -7,16 +7,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import java.util.concurrent.locks.LockSupport;
 
-/**
- * 基于批量 SPSC 队列的 XML 写入器包装器。
- * <p>
- * 职责：把调用线程提交的 XML 写指令批量转移到单独的后台写线程执行，以减少调用线程在大存档写出阶段
- * 直接承担的格式化与输出开销。<br>
- * 设计动机：JMH 基准表明，在真实 {@code campaign.xml} 量级的语料上，将写指令批量化后交给单独线程执行，
- * 相比调用线程直接写出与“每事件一个对象”的队列模型都有更稳定的收益。<br>
- * 兼容性策略：通过 {@link #flush()} 和 {@link #close()} 建立显式屏障，确保调用方在需要观察到底层输出状态时
- * 能等待前序所有写指令完成；若后台线程失败，则在前台调用点抛出异常并停止后续写入。
- */
 final class QueuedXmlStreamWriter implements XMLStreamWriter {
     private static final byte OP_WRITE_START_ELEMENT_LOCAL = 1;
     private static final byte OP_WRITE_START_ELEMENT_NAMESPACE = 2;
@@ -62,13 +52,6 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
     private CommandBatch producerBatch;
     private int         producerOperationCount;
 
-    /**
-     * 创建批量队列写入器。
-     *
-     * @param delegate      实际执行写出的底层 XML 写入器
-     * @param queueCapacity 目标事件容量，用于推导批次数量
-     * @param batchSize     单个批次的事件容量
-     */
     QueuedXmlStreamWriter(final XMLStreamWriter delegate,
                           final int queueCapacity,
                           final int batchSize) {
@@ -83,32 +66,21 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
             freeQueue.offer(new CommandBatch(effectiveBatchSize));
         }
 
-        // Wave 3 起后台写线程改为虚拟线程：写循环以 parkNanos 退避等待批次，
-        // 阻塞不占载体线程；join-on-close 与 awaitBarrier 屏障语义不变
         this.workerThread = Thread.ofVirtual()
                                   .name("ssoptimizer-txw2-queued-writer")
                                   .start(this::runLoop);
     }
 
-    /**
-     * 写入本地开始标签。
-     */
     @Override
     public void writeStartElement(final String localName) throws XMLStreamException {
         enqueue(OP_WRITE_START_ELEMENT_LOCAL, localName, null, null, null, 0L);
     }
 
-    /**
-     * 写入带命名空间的开始标签。
-     */
     @Override
     public void writeStartElement(final String namespaceURI, final String localName) throws XMLStreamException {
         enqueue(OP_WRITE_START_ELEMENT_NAMESPACE, namespaceURI, localName, null, null, 0L);
     }
 
-    /**
-     * 写入带前缀和命名空间的开始标签。
-     */
     @Override
     public void writeStartElement(final String prefix,
                                   final String localName,
@@ -116,17 +88,11 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
         enqueue(OP_WRITE_START_ELEMENT_PREFIX, prefix, localName, namespaceURI, null, 0L);
     }
 
-    /**
-     * 写入带命名空间的空标签。
-     */
     @Override
     public void writeEmptyElement(final String namespaceURI, final String localName) throws XMLStreamException {
         enqueue(OP_WRITE_EMPTY_ELEMENT_NAMESPACE, namespaceURI, localName, null, null, 0L);
     }
 
-    /**
-     * 写入带前缀和命名空间的空标签。
-     */
     @Override
     public void writeEmptyElement(final String prefix,
                                   final String localName,
@@ -134,34 +100,22 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
         enqueue(OP_WRITE_EMPTY_ELEMENT_PREFIX, prefix, localName, namespaceURI, null, 0L);
     }
 
-    /**
-     * 写入本地空标签。
-     */
     @Override
     public void writeEmptyElement(final String localName) throws XMLStreamException {
         enqueue(OP_WRITE_EMPTY_ELEMENT_LOCAL, localName, null, null, null, 0L);
     }
 
-    /**
-     * 写入结束标签。
-     */
     @Override
     public void writeEndElement() throws XMLStreamException {
         enqueue(OP_WRITE_END_ELEMENT, null, null, null, null, 0L);
     }
 
-    /**
-     * 写入文档结束。
-     */
     @Override
     public void writeEndDocument() throws XMLStreamException {
         documentEnded = true;
         enqueue(OP_WRITE_END_DOCUMENT, null, null, null, null, 0L);
     }
 
-    /**
-     * 关闭写入器并等待后台线程完成所有写出。
-     */
     @Override
     public void close() throws XMLStreamException {
         if (closed) {
@@ -171,9 +125,6 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
         finishAndJoin(OP_CLOSE);
     }
 
-    /**
-     * 刷新写入器并等待前序写指令全部完成。
-     */
     @Override
     public void flush() throws XMLStreamException {
         if (closed) {
@@ -184,17 +135,11 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
         finishAndJoin(documentEnded ? OP_CLOSE : OP_FLUSH);
     }
 
-    /**
-     * 写入本地属性。
-     */
     @Override
     public void writeAttribute(final String localName, final String value) throws XMLStreamException {
         enqueue(OP_WRITE_ATTRIBUTE_LOCAL, localName, value, null, null, 0L);
     }
 
-    /**
-     * 写入带前缀和命名空间的属性。
-     */
     @Override
     public void writeAttribute(final String prefix,
                                final String namespaceURI,
@@ -203,9 +148,6 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
         enqueue(OP_WRITE_ATTRIBUTE_PREFIX, prefix, namespaceURI, localName, value, 0L);
     }
 
-    /**
-     * 写入带命名空间的属性。
-     */
     @Override
     public void writeAttribute(final String namespaceURI,
                                final String localName,
@@ -213,155 +155,98 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
         enqueue(OP_WRITE_ATTRIBUTE_NAMESPACE, namespaceURI, localName, value, null, 0L);
     }
 
-    /**
-     * 写入命名空间声明。
-     */
     @Override
     public void writeNamespace(final String prefix, final String namespaceURI) throws XMLStreamException {
         enqueue(OP_WRITE_NAMESPACE, prefix, namespaceURI, null, null, 0L);
     }
 
-    /**
-     * 写入默认命名空间声明。
-     */
     @Override
     public void writeDefaultNamespace(final String namespaceURI) throws XMLStreamException {
         enqueue(OP_WRITE_DEFAULT_NAMESPACE, namespaceURI, null, null, null, 0L);
     }
 
-    /**
-     * 写入注释。
-     */
     @Override
     public void writeComment(final String data) throws XMLStreamException {
         enqueue(OP_WRITE_COMMENT, data, null, null, null, 0L);
     }
 
-    /**
-     * 写入只含目标的处理指令。
-     */
     @Override
     public void writeProcessingInstruction(final String target) throws XMLStreamException {
         enqueue(OP_WRITE_PROCESSING_INSTRUCTION_TARGET, target, null, null, null, 0L);
     }
 
-    /**
-     * 写入完整处理指令。
-     */
     @Override
     public void writeProcessingInstruction(final String target, final String data) throws XMLStreamException {
         enqueue(OP_WRITE_PROCESSING_INSTRUCTION_FULL, target, data, null, null, 0L);
     }
 
-    /**
-     * 写入 CDATA。
-     */
     @Override
     public void writeCData(final String data) throws XMLStreamException {
         enqueue(OP_WRITE_CDATA, data, null, null, null, 0L);
     }
 
-    /**
-     * 写入 DTD。
-     */
     @Override
     public void writeDTD(final String dtd) throws XMLStreamException {
         enqueue(OP_WRITE_DTD, dtd, null, null, null, 0L);
     }
 
-    /**
-     * 写入实体引用。
-     */
     @Override
     public void writeEntityRef(final String name) throws XMLStreamException {
         enqueue(OP_WRITE_ENTITY_REF, name, null, null, null, 0L);
     }
 
-    /**
-     * 写入 XML 文档头。
-     */
     @Override
     public void writeStartDocument() throws XMLStreamException {
         enqueue(OP_WRITE_START_DOCUMENT, null, null, null, null, 0L);
     }
 
-    /**
-     * 写入带版本号的 XML 文档头。
-     */
     @Override
     public void writeStartDocument(final String version) throws XMLStreamException {
         enqueue(OP_WRITE_START_DOCUMENT_VERSION, version, null, null, null, 0L);
     }
 
-    /**
-     * 写入带编码与版本号的 XML 文档头。
-     */
     @Override
     public void writeStartDocument(final String encoding, final String version) throws XMLStreamException {
         enqueue(OP_WRITE_START_DOCUMENT_ENCODING, encoding, version, null, null, 0L);
     }
 
-    /**
-     * 写入文本内容。
-     */
     @Override
     public void writeCharacters(final String text) throws XMLStreamException {
         enqueue(OP_WRITE_CHARACTERS, text, null, null, null, 0L);
     }
 
-    /**
-     * 写入字符数组内容。
-     */
     @Override
     public void writeCharacters(final char[] text, final int start, final int len) throws XMLStreamException {
         enqueue(OP_WRITE_CHARACTERS, new String(text, start, len), null, null, null, 0L);
     }
 
-    /**
-     * 获取指定命名空间前缀。
-     */
     @Override
     public String getPrefix(final String uri) throws XMLStreamException {
         flush();
         return delegate.getPrefix(uri);
     }
 
-    /**
-     * 设置命名空间前缀。
-     */
     @Override
     public void setPrefix(final String prefix, final String uri) throws XMLStreamException {
         enqueue(OP_SET_PREFIX, prefix, uri, null, null, 0L);
     }
 
-    /**
-     * 设置默认命名空间。
-     */
     @Override
     public void setDefaultNamespace(final String uri) throws XMLStreamException {
         enqueue(OP_SET_DEFAULT_NAMESPACE, uri, null, null, null, 0L);
     }
 
-    /**
-     * 设置命名空间上下文。
-     */
     @Override
     public void setNamespaceContext(final NamespaceContext context) throws XMLStreamException {
         enqueue(OP_SET_NAMESPACE_CONTEXT, null, null, null, context, 0L);
     }
 
-    /**
-     * 获取当前命名空间上下文。
-     */
     @Override
     public NamespaceContext getNamespaceContext() {
         flushUnchecked();
         return delegate.getNamespaceContext();
     }
 
-    /**
-     * 获取底层写入器属性。
-     */
     @Override
     public Object getProperty(final String name) throws IllegalArgumentException {
         flushUnchecked();
@@ -591,9 +476,6 @@ final class QueuedXmlStreamWriter implements XMLStreamWriter {
         return rounded;
     }
 
-    /**
-     * 可复用批量命令缓冲区。
-     */
     private static final class CommandBatch {
         private final byte[]   opcodes;
         private final String[] str0;

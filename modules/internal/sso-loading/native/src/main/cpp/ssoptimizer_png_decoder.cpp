@@ -1,10 +1,3 @@
-/**
- * 原生 PNG 解码器（JNI 实现）。
- *
- * 对应 Java 类: NativePngDecoder
- * 使用 libpng 解码 PNG 图片并将 RGBA 像素转换为 Java int[] ARGB 格式，
- * 在多线程环境下安全调用，可显著提升资源加载速度。
- */
 #include <cstring>
 #include <cstdint>
 #include <limits>
@@ -170,9 +163,7 @@ jobject decodePng(JNIEnv* env, const jbyte* imageBytes, const jsize imageLength)
     if (colorType == PNG_COLOR_TYPE_GRAY || colorType == PNG_COLOR_TYPE_GRAY_ALPHA) {
         png_set_gray_to_rgb(pngPtr);
     }
-    // Current native target is Linux x86_64. Writing BGRA bytes directly into the
-    // little-endian Java int[] storage yields packed ARGB ints without an extra
-    // post-decode channel shuffle or extra staging buffer.
+    // Linux x86_64 为小端环境，直接写入 BGRA 字节即可得到 Java int[] 的 ARGB 像素，无需额外通道转换。
     png_set_bgr(pngPtr);
 
     png_read_update_info(pngPtr, infoPtr);
@@ -256,17 +247,8 @@ jobject benchmarkBridge(JNIEnv* env,
 }
 #endif
 
-} // namespace
+}
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.loading.NativePngDecoder#nativeIsSupported()
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @return 原生 PNG 解码后端是否可用
- *
- * 内存管理：不分配需要调用方释放的原生资源。
- */
 extern "C" JNIEXPORT jboolean JNICALL
 Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_nativeIsSupported(JNIEnv* env, jclass clazz) {
     (void) env;
@@ -278,16 +260,6 @@ Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_nativeIsSuppo
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.loading.NativePngDecoder#decodePng0(byte[])
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param imageBytes PNG 文件字节数组
- * @return 解码后的 NativeDecodedImage；失败时返回 null，并由 JNI 抛出 Java 异常
- *
- * 内存管理：通过 JNI 获取的字节数组元素在返回前释放；返回对象由 JVM 管理。
- */
 extern "C" JNIEXPORT jobject JNICALL
 Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_decodePng0(JNIEnv* env,
                                                                        jclass clazz,
@@ -322,18 +294,6 @@ Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_decodePng0(JN
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.loading.NativePngDecoder#benchmarkBridge0(byte[], int, int)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param imageBytes PNG 文件字节数组
- * @param width 目标宽度
- * @param height 目标高度
- * @return 供基准测试使用的 NativeDecodedImage；失败时返回 null，并由 JNI 抛出 Java 异常
- *
- * 内存管理：通过 JNI 获取的字节数组元素在返回前释放；返回对象由 JVM 管理。
- */
 extern "C" JNIEXPORT jobject JNICALL
 Java_github_kasuminova_ssoptimizer_common_loading_NativePngDecoder_benchmarkBridge0(JNIEnv* env,
                                                                              jclass clazz,

@@ -20,13 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/**
- * 自动化截图与 telemetry 写入助手。
- *
- * <p>该类由 SSOptimizer jar 提供，并在 coremod / 模组类加载路径中执行，拥有普通文件 IO 权限。
- * ASTD 的脚本类只负责构造 telemetry JSON，然后把写入与 OpenGL 截图委托到这里，规避
- * Starsector 脚本沙盒对脚本源码的文件访问限制。</p>
- */
+/** 脚本沙盒限制文件访问，因此由该辅助类执行文件写入与 OpenGL 截图。 */
 public final class AutomationScreenshotHelper {
     private static final Logger LOGGER = Logger.getLogger(AutomationScreenshotHelper.class);
     private static final String SCREENSHOT_FILE = "astd-ingame-automation-screenshot.png";
@@ -49,13 +43,6 @@ public final class AutomationScreenshotHelper {
     private AutomationScreenshotHelper() {
     }
 
-    /**
-     * 写入自动化证据。Completed 状态会同步抓取当前 OpenGL framebuffer 并把路径写入 telemetry。
-     *
-     * @param state ASTD 自动化状态
-     * @param telemetryJson ASTD 构造的 telemetry JSON
-     * @return 写入成功返回 true
-     */
     public static boolean writeAutomationEvidence(final String state,
                                                   final String telemetryJson) {
         final AutomationConfig config = AutomationConfig.fromSystemProperties();
@@ -93,15 +80,6 @@ public final class AutomationScreenshotHelper {
         }
     }
 
-    /**
-     * 由 SSOptimizer Mixin 从 ASTD 战斗插件私有 telemetry 方法入口调用，直接在独立 helper 中写出证据。
-     *
-     * @param engine 战斗引擎
-     * @param state ASTD 自动化状态
-     * @param ship 被测舰船
-     * @param weapon 被测武器
-     * @return 写入成功返回 true
-     */
     public static boolean writeAutomationEvidence(final CombatEngineAPI engine,
                                                   final String state,
                                                   final ShipAPI ship,
@@ -253,9 +231,6 @@ public final class AutomationScreenshotHelper {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    /**
-     * 重置测试状态。
-     */
     public static void resetForTests() {
         screenshotCaptured = false;
         screenshotFrames = List.of();

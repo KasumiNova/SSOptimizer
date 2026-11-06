@@ -1,21 +1,16 @@
 package github.kasuminova.ssoptimizer.api.automation;
 
 /**
- * 帧捕获钩子：Display 帧交换（update）后的调试帧捕获回调。
+ * 在帧交换后向自动化模块提供同步捕获入口，使渲染模块无需依赖帧捕获实现。
  * <p>
- * 动机：render 域的 bridge Display 需要在每次帧交换后通知 automation 域的
- * 帧捕获（基准截图/调试帧 dump），但 render 不允许反向依赖 automation——
- * 跨域行为调用经本接口。
- * <p>
- * 实现由 automation 域提供（DebugFrameCapture），在 coremod 装配期经
- * {@code ServiceRegistry} 注册；语义上允许缺省（未注册=不捕获），
- * 调用点经 {@code ServiceRegistry.getOrNull} 显式判空。
+ * 回调在渲染线程执行，调用方会等待其完成；实现可读取帧缓冲并写出捕获文件，捕获失败不得中断后续帧。
+ * 未注册 = 不捕获帧，调用方跳过回调。
  */
 public interface FrameCaptureHook {
 
     /**
-     * Display.update 完成一次帧交换后回调（渲染线程上同步调用，实现必须轻量：
-     * 仅做状态标记/异步派发，不得在此做阻塞 IO）。
+     * 在一次 Display 帧交换完成后同步回调。
+     * 仅捕获配置命中时产生文件与日志副作用，调用线程会等待这些操作完成。
      */
     void onDisplayUpdate();
 }

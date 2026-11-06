@@ -9,32 +9,20 @@ java {
     }
 }
 
-/** 游戏本体 jar 基名——与 SourceSector 发布的本地仓库 artifactId 一一对应。 */
 val namedGameJarBaseNames = listOf("starfarer_obf", "starfarer.api", "fs.common_obf", "fs.sound_obf")
 
-/**
- * 需要 shade 进 coremod jar 的额外依赖（log4j 1.2 API 桥接层）。
- * 游戏自带 log4j-1.2.9.jar 已被 NanoForge 启动脚本排除，源码使用的 org.apache.log4j API
- * 由 log4j-1.2-api 桥接到 NanoForge 运行时提供的 log4j2。
- */
 val shade = configurations.create("shade") {
     isCanBeConsumed = false
 }
 
-// SDG wireGameLibraries（starsector.game:*）在插件 afterEvaluate 阶段才创建 gameLibraries
-// 配置，testRuntimeClasspath 扩展须推迟到 afterEvaluate（届时配置已就绪）。
-// xstream-1.4.10 残留旧版由 SDG 插件默认排除（starsectorDeps.gameLibraryExcludes）。
+// gameLibraries 由 SDG 在 afterEvaluate 中创建，扩展 testRuntimeClasspath 必须延后。
 project.afterEvaluate {
-    // 测试运行期（JUnit）没有游戏 classpath：DCR 集成测试的 XStream 夹具会真实 new XStream()，
-    // 将 SDG 供给的游戏第三方 jar 一并纳入 testRuntimeClasspath（xstream-1.4.10 已排除）。
     configurations.testRuntimeClasspath {
         extendsFrom(configurations.named("gameLibraries").get())
     }
 }
 
 repositories {
-    // RFB / LaunchWrapper（IClassTransformer 编译期依赖）
-    // （mavenLocal / mavenCentral / SourceSector named 仓由 SDG 插件统一注册）
     maven {
         url = uri("https://nexus.gtnewhorizons.com/repository/releases/")
     }
@@ -46,7 +34,6 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.named<JavaCompile>("compileJava") {
-    // 为后续 JNI 架构预留：自动导出头文件到根级共享目录（阶段 4 起各 native 子模块共用）
     options.headerOutputDirectory.set(layout.projectDirectory.dir("../../../native-headers/generated"))
 }
 
@@ -54,7 +41,6 @@ application {
     mainClass.set("github.kasuminova.ssoptimizer.App")
 }
 
-// ---- SDG：模组元数据唯一事实源（mod_info.json / nanoforge.mod.toml / coremod.toml 均由此派生） ----
 starsector {
     modId.set("ssoptimizer")
     modName.set("SSOptimizer")
@@ -62,15 +48,13 @@ starsector {
     description.set("Starsector rendering & performance optimizer")
     gameVersion.set("0.98a-RC8")
     modPlugin.set("github.kasuminova.ssoptimizer.SSOptimizerModPlugin")
-    // 游戏目录：-Pstarsector.gameDir 或 SSOPTIMIZER_GAME_DIR；空白视为未设置（CI 不部署）
     gameDir.set(layout.dir(providers.gradleProperty("starsector.gameDir")
         .orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR"))
         .filter { it.isNotBlank() }
         .map { file(it) }))
     manageEnabledMods.set(true)
-    // 部署保留运行时缓存目录（字体包/纹理转换缓存），避免每次 deployMod 后全量重建导致加载极慢
+    // 部署必须保留 cache，避免字体与纹理缓存被清空。
     deployPreserve.set(listOf("cache"))
-    // SourceSector named 仓路径覆盖（默认取同级 SourceSector 检出；CI 用 -Psourcesector.namedRepo 指定）
     providers.gradleProperty("sourcesector.namedRepo").orNull?.let { sourceRepo.set(file(it)) }
 }
 
@@ -78,8 +62,7 @@ nanoforge {
     coremod.set(true)
     pluginClass.set("github.kasuminova.ssoptimizer.bootstrap.SSOptimizerCorePlugin")
     authors.set(listOf("kasuminova"))
-    // 顺序敏感：HybridWeaver 的游戏类改写（如 glFinish→hook）必须先于
-    // RenderThreadRedirect 的 GL owner 重定向执行，保证 hook 调用点不被二次改写
+    // HybridWeaverTransformer 必须先执行，避免 glFinish hook 被 RenderThreadRedirectTransformer 再次重定向。
     asmTransformers.set(listOf(
         "github.kasuminova.ssoptimizer.bootstrap.HybridWeaverTransformer",
         "github.kasuminova.ssoptimizer.bootstrap.RenderThreadRedirectTransformer"
@@ -88,7 +71,6 @@ nanoforge {
 }
 
 dependencies {
-    // 模块装配：接口层 + 共享基础层（功能域模块随拆分逐步加入）
     implementation(project(":modules:api:sso-api"))
     implementation(project(":modules:internal:sso-core"))
     implementation(project(":modules:internal:sso-ai"))
@@ -104,27 +86,20 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.13.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
-    // sso-debug 调试服务测试：钉住 Gson 版本（RFB/LaunchWrapper 传递的旧版 Gson 缺 parseString）
+    // RFB/LaunchWrapper 传递的旧版 Gson 缺少 parseString，测试需固定此版本。
     testImplementation("com.google.code.gson:gson:2.13.1")
-    // 测试运行期的 org.apache.log4j 实现（生产运行期为 shade 的 log4j-1.2-api 桥接层）
     testImplementation("log4j:log4j:1.2.17")
-    // 聚合过滤器（log4j2 层实现）测试：构造真实 Log4jLogEvent 走 decide()（生产运行时由 NanoForge 提供）
     testImplementation("org.apache.logging.log4j:log4j-core:2.25.2")
 
-    // ---- 打进 coremod jar 的运行时依赖（NanoForge 未提供） ----
     implementation("it.unimi.dsi:fastutil:8.5.18")
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("com.github.luben:zstd-jni:1.5.7-3")
-    // async-profiler：API + 内嵌各平台 libasyncProfiler native（基准测试采样接口）
     implementation("tools.profiler:async-profiler:4.5")
     shade("org.apache.logging.log4j:log4j-1.2-api:2.25.2")
 
-    // ---- 运行时由 NanoForge 提供，编译期对齐其版本 ----
     compileOnly("io.github.nanoforged:NanoForge:0.1.0-SNAPSHOT") {
         isTransitive = false
     }
-    // RFB 仅需要 LaunchWrapper 的 IClassTransformer，其 pom 传递依赖（log4j 2.0-beta9-fixed
-    // 等 legacyfabric 私有构件）与本项目无关，不传递解析
     compileOnly("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12") {
         isTransitive = false
     }
@@ -132,14 +107,9 @@ dependencies {
     compileOnly("org.ow2.asm:asm-commons:9.8")
     compileOnly("org.ow2.asm:asm-tree:9.8")
     compileOnly("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7")
-    // 源码使用 org.apache.log4j（log4j 1.2 API），编译期用桥接层，运行时由 shade 产物提供
     compileOnly("org.apache.logging.log4j:log4j-1.2-api:2.25.2")
-    // INanoCorePlugin/CoreModContext 签名引用 log4j2 Logger（运行时由 NanoForge 提供）
     compileOnly("org.apache.logging.log4j:log4j-api:2.25.2")
 
-    // 测试与编译同版本对齐（NanoForge 运行时不进测试 classpath 的部分需要真实加载）
-    // NanoForge 只需要 API/CoreModContext 类，其传递运行时依赖（legacyfabric lwjgl 等）
-    // 由 NanoForge 自身部署管理，不进本项目的解析图
     testImplementation("io.github.nanoforged:NanoForge:0.1.0-SNAPSHOT") {
         isTransitive = false
     }
@@ -151,37 +121,26 @@ dependencies {
     testImplementation("org.ow2.asm:asm-tree:9.8")
     testImplementation("org.ow2.asm:asm-util:9.8")
     testImplementation("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7")
-    // DCR 执行集成测试中，XStream 夹具会真实 new XStream()（与 DCR 同版本）；运行时 XStream
-    // 类由 SDG wireGameLibraries 供给（见上方 gameLibraries 的 testRuntimeClasspath 扩展）。
-    // 无参 new XStream()（XppDriver）构造/反序列化需要 XML Pull 实现，miko jar 不携带
-    // （原版 Maven 坐标通过 xmlpull 传递依赖提供 API 类，MXParser 实现需 xpp3）；游戏官方
-    // 序列化路径使用 StaxDriver（见 CampaignGameManager.getXStream），不需要 xpp3，
-    // 故仅测试运行期补齐。
+    // 无参 XStream 使用 XppDriver，测试运行期需补充游戏 jar 未携带的 XML Pull API 与 MXParser。
     testRuntimeOnly("xmlpull:xmlpull:1.1.3.1")
     testRuntimeOnly("xpp3:xpp3_min:1.1.4c")
 
-    // named 游戏本体 jar（模块依赖，来自 SourceSector 本地仓库；附带 -sources.jar 供 IDE 索引）
-    // compileOnly 声明由 SDG 插件统一装配（NAMED_REPO 模式），此处仅补齐测试 classpath
     namedGameJarBaseNames.forEach { baseName ->
         testImplementation("starsector.named:$baseName:0.98a-RC8-SNAPSHOT")
     }
-    // GL bridge 全量镜像覆盖率测试：ASM 解析真实 lwjgl 的 org/lwjgl/opengl 类
-    // （与 sso-render 的 lwjgl_util 同款坐标，见 BridgeMirrorCoverageTest）
     testImplementation("starsector.game:lwjgl:0.98a-RC8-SNAPSHOT")
 }
 
 tasks.test {
     useJUnitPlatform()
-    // hotswap 测试需要自 attach（JDK 启动期读取该属性，运行期 setProperty 无效）
+    // JDK 仅在启动期读取自 attach 开关，运行期设置该属性无效。
     jvmArgs("-Djdk.attach.allowAttachSelf=true")
-    // *IT（真实 native 集成测试）拆到独立 JVM 任务 nativeIT：其加载的 native 库与
-    // NativeRuntime 模块加载态缓存会驻留整个 test JVM，污染「无 native」语义的用例
+    // nativeIT 的 native 库与模块加载缓存会驻留测试 JVM，必须与普通测试隔离。
     exclude("**/*IT.class")
     dependsOn(tasks.named("jar"))
-    // ModInfoJsonTest 校验 SDG 生成的发布元数据，需要完整产物布局
     dependsOn("modProduction")
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
-    // DCR 执行集成测试中的 XStream 夹具在 JDK 25 上需与游戏运行期相同的模块开放（见 launch_nanoforge_ss.sh）
+    // JDK 25 的 XStream 集成测试需要与游戏运行时相同的模块开放。
     jvmArgs(
         "--add-opens=java.base/java.util=ALL-UNNAMED",
         "--add-opens=java.base/java.lang=ALL-UNNAMED",
@@ -196,7 +155,6 @@ tasks.test {
     )
 }
 
-// 真实 native 产物集成测试（*IT）：独立 JVM 运行，native 产物缺失时用例内 Assumptions 跳过
 tasks.register<Test>("nativeIT") {
     group = "verification"
     description = "Run native-library integration tests (*IT) in a dedicated JVM"
@@ -316,8 +274,6 @@ tasks.named<Jar>("jar") {
     archiveVersion.set("")
     archiveClassifier.set("")
 
-    // NanoForge coremod jar：shade 运行时依赖（fastutil/jctools/zstd-jni/log4j-1.2-api），
-    // asm/mixin/RFB/log4j2/游戏 jar 为 compileOnly，由 NanoForge 运行时与游戏 classpath 提供
     dependsOn(configurations.runtimeClasspath, shade)
     from({
         (configurations.runtimeClasspath.get().files + shade.resolve())
@@ -326,11 +282,7 @@ tasks.named<Jar>("jar") {
     })
 
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
-    // 依赖携带的 JPMS 模块描述必须剔除：jar 一旦带 module-info，RFB 会按命名模块
-    // 加载本 jar，仅导出模块声明内的包（如 org.jctools.core 只导出 org/jctools/*），
-    // 其余包全部不可见，类加载报 "Class bytes are null"（运行时已验证）。
-    // META-INF/versions/** 是 multi-release 变体，RFB/LaunchClassLoader 不按 MR-jar 解析，
-    // 混入只会产生重复类，一并剔除。
+    // RFB 会将含 module-info 的 jar 按命名模块加载，且不解析 multi-release 变体，必须剔除这两类条目。
     exclude("module-info.class", "META-INF/versions/**")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

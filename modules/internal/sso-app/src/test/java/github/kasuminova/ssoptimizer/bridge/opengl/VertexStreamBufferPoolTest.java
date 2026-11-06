@@ -7,10 +7,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link VertexStreamBufferPool} 的借还语义验证：空池新建、归还复用、
- * 幂次分档匹配、超上限非池化缓冲的安全丢弃。
- */
 class VertexStreamBufferPoolTest {
 
     @Test
@@ -35,14 +31,12 @@ class VertexStreamBufferPoolTest {
 
         pool.release(small);
         pool.release(large);
-        // 归还后按容量各归各档
         assertSame(small, pool.acquire(1));
         assertSame(large, pool.acquire(VertexStreamBufferPool.MIN_CAPACITY + 1));
     }
 
     @Test
     void emptyPoolAllocatesCapacityMeetingRequest() {
-        // 空池（无任何归还缓冲）时新建的缓冲必须满足容量请求
         for (int requested : new int[]{1, 511, 512, 513, 4096, 4097, 65536, 1000000}) {
             VertexStreamBufferPool pool = new VertexStreamBufferPool();
             byte[] buffer = pool.acquire(requested);
@@ -52,17 +46,12 @@ class VertexStreamBufferPoolTest {
 
     @Test
     void acquireReusesAnyBucketBelowRequestWhenTargetBucketEmpty() {
-        // 旧实现从需求档向上找：低档归还的缓冲永远不命中大需求，导致每帧新建
-        // 大块且被池持有（v44b 实测内存涨至 7.9GB OOM）。修复后从需求档向下
-        // 找：不足需求的缓冲入本地栈供更小需求，补货仍空则新建满足需求的——
-        // acquire 返回值保证容量 >= 请求（编码端不再触发渐进扩容）
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         byte[] small = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY);
         pool.release(small);
         byte[] fromPool = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY * 8);
         assertTrue(fromPool.length >= VertexStreamBufferPool.MIN_CAPACITY * 8,
                 "补货找不到合适缓冲时必须新建满足需求的容量");
-        // 不足需求的小缓冲入本地栈，供更小需求复用
         assertSame(small, pool.acquire(VertexStreamBufferPool.MIN_CAPACITY),
                 "不足需求的小缓冲入栈后供更小需求命中");
     }
@@ -71,14 +60,12 @@ class VertexStreamBufferPoolTest {
     void localPrefetchServesConsecutiveAcquiresWithoutNewAllocation() {
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         int batch = 32;
-        // 直接灌入 32 个同档缓冲进全局池（模拟渲染线程归还的稳态库存）
         for (int i = 0; i < batch; i++) {
             pool.release(new byte[VertexStreamBufferPool.MIN_CAPACITY]);
         }
         assertEquals(batch, pool.pooledBufferCount());
         int before = pool.totalAllocations();
 
-        // 借出 32 个：首次触发批量预借（池 32 全进栈 → 取 1），其余 31 次命中本地栈
         for (int i = 0; i < batch; i++) {
             byte[] buffer = pool.acquire(VertexStreamBufferPool.MIN_CAPACITY);
             assertTrue(buffer.length >= VertexStreamBufferPool.MIN_CAPACITY);
@@ -105,8 +92,6 @@ class VertexStreamBufferPoolTest {
 
     @Test
     void retentionIsBoundedByPeakDemandAndDoesNotGrowAcrossRounds() {
-        // 无界保留回归点（JProfiler 实机 dump：池内 byte[] 6,335 MB）：高峰借出后
-        // 池保留量收敛于 peak + slack，相同需求量反复借还不随轮次增长。
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         final int size = VertexStreamBufferPool.MIN_CAPACITY;
         final List<byte[]> held = new ArrayList<>();
@@ -136,7 +121,6 @@ class VertexStreamBufferPoolTest {
 
     @Test
     void peakDecayDrainsExcessRetentionAndExcessReleaseIsDropped() {
-        // 需求回落后峰值衰减：池主动排空超限库存；之后超限归还被丢弃并计数。
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         final int size = VertexStreamBufferPool.MIN_CAPACITY;
         final List<byte[]> held = new ArrayList<>();
@@ -148,7 +132,6 @@ class VertexStreamBufferPoolTest {
         }
         assertEquals(100, pool.pooledBufferCount());
 
-        // 连续衰减把借出峰值收缩至 0：上限回落至 slack，池排空至 slack 以内
         for (int i = 0; i < 30; i++) {
             pool.decayPeaksForTest();
         }
@@ -164,8 +147,6 @@ class VertexStreamBufferPoolTest {
 
     @Test
     void steadyStateRetentionMatchesDemandWithoutDrops() {
-        // 稳态不抖动：需求 D 时池保留量在 [D, D+slack] 内波动，且不触发丢荒
-        // （保留上限 = 借出峰值 + slack 恒 ≥ 需求）。
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         final int size = VertexStreamBufferPool.MIN_CAPACITY;
         final int demand = 40;
@@ -181,14 +162,11 @@ class VertexStreamBufferPoolTest {
         }
         assertTrue(pool.pooledBufferCount() <= demand + VertexStreamBufferPool.RETENTION_SLACK,
                 "稳态保留量应 ≤ 需求+slack，实际 " + pool.pooledBufferCount());
-        // 稳态下 10 轮借还不应有任何丢荒（保留上限覆盖需求）
         assertEquals(0, pool.droppedBufferCount(), "稳态需求下不得丢荒重建");
     }
 
     @Test
     void acquireDrainsReturnInboxBeforeGlobalPool() {
-        // SPSC 返还通道（A6）：本线程 inbox 中渲染线程直还的缓冲必须优先于
-        // 全局池/新建被借出（零竞争路径，见池类 javadoc）
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         org.jctools.queues.SpscArrayQueue<byte[]> inbox =
                 new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
@@ -204,8 +182,6 @@ class VertexStreamBufferPoolTest {
 
     @Test
     void inboxHeadFastPathReturnsSingleBufferLeavingRestForNextAcquire() {
-        // 直还快速路径（A7）：inbox 首元素容量满足即直接返回，不 drain 余量、
-        // 不触碰全局池与新建——稳态逐次借出各取一个直还缓冲
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         org.jctools.queues.SpscArrayQueue<byte[]> inbox =
                 new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
@@ -225,8 +201,6 @@ class VertexStreamBufferPoolTest {
 
     @Test
     void undersizedInboxHeadFallsToLocalStackAndServesSmallerRequest() {
-        // 升档过渡期：inbox 首元素容量不足需求 → 入本地栈供更小需求，
-        // 本次借出走常规路径新建满足需求的容量
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         org.jctools.queues.SpscArrayQueue<byte[]> inbox =
                 new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
@@ -245,21 +219,18 @@ class VertexStreamBufferPoolTest {
 
     @Test
     void inboxOverflowFallsBackToGlobalPoolWhenLocalStackFull() {
-        // drain 时本地栈满：inbox 溢出的缓冲必须落回全局池（计数平衡：
-        // inbox 中的缓冲视同「在途借出」，仅落池时走 inFlight 递减）
         VertexStreamBufferPool pool = new VertexStreamBufferPool();
         final int min = VertexStreamBufferPool.MIN_CAPACITY;
         for (int i = 0; i < 40; i++) {
             pool.release(new byte[min]);
         }
-        pool.acquire(min); // 补货 32 进栈后取 1：栈 31、全局 8
+        pool.acquire(min);
 
         org.jctools.queues.SpscArrayQueue<byte[]> inbox =
                 new org.jctools.queues.SpscArrayQueue<>(VertexStreamBufferPool.RETURN_INBOX_CAPACITY);
         inbox.offer(new byte[min]);
         inbox.offer(new byte[min]);
 
-        // 请求更大档迫使栈未命中 → drain：第一个填满栈（32），第二个溢出落全局池
         pool.acquire(min * 2, inbox);
 
         assertTrue(inbox.isEmpty(), "drain 后 inbox 应为空");

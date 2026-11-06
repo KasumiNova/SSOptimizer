@@ -11,12 +11,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 验证 log4j 1.x 层聚合过滤器（真实 log4j-1.2.17 端到端验证脚本的适配层，不进生产链路）：
- * 真实构造 {@link LoggingEvent} 走 {@code decide(LoggingEvent)} 逻辑。
- *
- * <p>汇总输出经注入的 reporter 收集，不依赖真实 appender。</p>
- */
 class LoadingNoiseLog4j1FilterTest {
 
     @Test
@@ -29,7 +23,6 @@ class LoadingNoiseLog4j1FilterTest {
         assertEquals(Filter.DENY, filter.decide(event(Level.INFO, "Loading JSON from [b]")));
         assertEquals(Filter.DENY, filter.decide(event(Level.INFO, "Loading rule: defaultOpenDialog")));
 
-        // 非聚合 INFO 到达：flush 前一组计数并放行自身
         assertEquals(Filter.NEUTRAL, filter.decide(event(Level.INFO, "[SSOptimizer] Loaded on Java 25")));
         assertEquals(List.of(
                 "[SSOptimizer] Loaded 2 JSON files",

@@ -10,9 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 战役地图画布集合保留 helper 的语义测试。
- */
 class CampaignLocationMapCanvasPerformanceHelperTest {
     @Test
     void retainsOnlyLiveEntitiesFromListInput() {

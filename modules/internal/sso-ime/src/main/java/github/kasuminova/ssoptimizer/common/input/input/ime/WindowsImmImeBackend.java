@@ -5,11 +5,6 @@ import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
-/**
- * Windows IMM32 输入法后端（待实现）。
- * <p>
- * 当前先接入 JNI 桥接与生命周期骨架，为后续 Win32 IMM API 实现预留稳定接缝。
- */
 public final class WindowsImmImeBackend implements ImeBackend {
     private final WindowsImmNativeBridge bridge;
     private final BooleanSupplier        nativeLoadedSupplier;

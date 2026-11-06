@@ -6,12 +6,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link ResourceLoaderThreadState} 线程封闭语义测试。
- * <p>
- * 直调 handler 逻辑验证：同线程 set→consume 序列与原版一致（读取后需显式清除）、
- * 跨线程互不可见（并行加载干扰修复的核心语义）、null 写入即清除。
- */
 class ResourceLoaderThreadStateTest {
 
     @Test
@@ -20,7 +14,6 @@ class ResourceLoaderThreadStateTest {
         assertEquals("mod_dir", ResourceLoaderThreadState.getSourceFilter(),
                 "同线程 set 后必须可读（对应 openResource 开头的读取）");
 
-        // 消费语义：openResource 读取后原版置 null，本类以 set(null) 表达
         ResourceLoaderThreadState.setSourceFilter(null);
         assertNull(ResourceLoaderThreadState.getSourceFilter(), "set(null) 后必须恢复未设置状态");
     }

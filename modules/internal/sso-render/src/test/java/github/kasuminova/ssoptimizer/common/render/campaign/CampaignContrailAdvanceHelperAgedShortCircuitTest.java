@@ -13,34 +13,8 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link CampaignContrailAdvanceHelper} 的 B2 全老化短路与 removals 复用验证。
- * <p>
- * 短路条件（组内全部点满足，逐项保守）：elapsed==duration 且 duration!=0、
- * progress==1.0f、fadeOut 且 maxBrightness==+0.0f、width 已是稳态值、
- * 非 remove 组 vel 为零向量、amount>=0。验证面：
- * <ul>
- *   <li>全老化稳态组：跳过逐点推进后与逐点参考实现结果一致（移除行为、
- *       elapsed 钳制、map 清理）；</li>
- *   <li>条件逐项破坏（progress 未同步 / width 滞后 / vel 非零 / 未 fadeOut /
- *       duration==0 / amount<0 的逐帧语义不覆盖——负推进量不在原版语义内，
- *       仅以 amount>=0 守卫）：每组回退逐点路径，结果与参考实现位级一致；</li>
- *   <li>removals 复用：连续两次 advance 无跨帧残留（第二次调用不重复移除）。</li>
- * </ul>
- * 参考实现逐行转写自反编译原版 {@code ContrailEngineV2.advance(float)}
- * （named 仓 {@code ContrailEngineV2.java:197-258}），与优化实现独立防漂移。
- */
 class CampaignContrailAdvanceHelperAgedShortCircuitTest {
 
-    // ------------------------------------------------------------------
-    // 全老化稳态组短路
-    // ------------------------------------------------------------------
-
-    /**
-     * 全老化稳态组（remove=true、3 点）：跳过逐点推进后，removeFirstIfNecessary
-     * 头段移除循环照常执行并淘空至 < 3 点，尾迹进移除清单——与逐点参考实现
-     * 的 map 结果位级一致。
-     */
     @Test
     void fullyAgedSteadyGroupSkipsPointAdvanceButKeepsRemoval() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
@@ -57,7 +31,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
                 "remove+全老化尾迹应从头段移除循环淘空后进移除清单");
     }
 
-    /** 非 remove 的全老化稳态组（零速度）：点状态逐字段不变，尾迹保留。 */
     @Test
     void fullyAgedSteadyNonRemoveGroupLeavesPointsUntouched() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
@@ -65,7 +38,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
                 ContrailEngine.ContrailWidthMode.NARROW, 1.5f);
         optimized.put(contrail.source, contrail);
 
-        // 快照推进前状态
         List<ContrailEngineV2.ContrailPoint> before = new ArrayList<>();
         for (ContrailEngineV2.ContrailPoint point : contrail.points) {
             before.add(copyOf(point));
@@ -74,7 +46,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         CampaignContrailAdvanceHelper.advance(optimized, 0.5f);
 
         assertTrue(optimized.containsKey("steady"), "无 remove/autoCleanup 不清理");
-        // 头段移除循环：前 3 点全老化 ⇒ removeFirstIfNecessary 移除头点（原版行为保留）
         assertEquals(2, contrail.points.size(), "3 点全老化 ⇒ 头点被移除一次后 < 3 停止");
         for (int i = 0; i < contrail.points.size(); i++) {
             ContrailEngineV2.ContrailPoint after = contrail.points.get(i);
@@ -90,11 +61,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 短路条件逐项破坏 ⇒ 回退逐点路径
-    // ------------------------------------------------------------------
-
-    /** vel 非零的完全老化点：position 必须照常推进（冻结即语义偏差），回退逐点路径。 */
     @Test
     void agedGroupWithMovingPointsFallsBackToPerPointAdvance() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
@@ -112,13 +78,12 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         assertEquals(0.75f, point.point.x, 1e-6f, "零速度守卫不满足 ⇒ position 照常推进");
     }
 
-    /** progress 未同步（外部写入/反序列化截断）：必须重写为 1.0f，回退逐点路径。 */
     @Test
     void agedGroupWithStaleProgressFallsBack() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
         ContrailEngineV2.Contrail contrail = steadyContrail("staleProgress", false, false, 2,
                 ContrailEngine.ContrailWidthMode.WIDEN, 1f);
-        contrail.points.get(1).progress = 0.4f; // elapsed==duration 但 progress 未同步
+        contrail.points.get(1).progress = 0.4f;
         optimized.put(contrail.source, contrail);
 
         Map<Object, ContrailEngineV2.Contrail> reference = copyOf(optimized);
@@ -131,13 +96,12 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
                 "progress 必须由逐点路径重写为 1.0f");
     }
 
-    /** width 滞后（updateContrail 改写 widthMultiplier 后）：必须重算，回退逐点路径。 */
     @Test
     void agedGroupWithStaleWidthFallsBack() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
         ContrailEngineV2.Contrail contrail = steadyContrail("staleWidth", false, false, 2,
                 ContrailEngine.ContrailWidthMode.WIDEN, 1f);
-        contrail.widthMultiplier = 3f; // width 仍是 widthMultiplier=1 时的稳态值
+        contrail.widthMultiplier = 3f;
         optimized.put(contrail.source, contrail);
 
         Map<Object, ContrailEngineV2.Contrail> reference = copyOf(optimized);
@@ -150,7 +114,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
                 Float.floatToRawIntBits(point.width), "width 必须按新 widthMultiplier 重算");
     }
 
-    /** 未 fadeOut 的完全老化点（渲染侧仍有 fadeOut 检测价值）：回退逐点路径。 */
     @Test
     void agedGroupWithNonFadeOutPointFallsBack() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
@@ -168,7 +131,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         assertContrailsEqual(reference, optimized);
     }
 
-    /** duration==0（progress 0/0=NaN 语义）：回退逐点路径。 */
     @Test
     void agedGroupWithZeroDurationFallsBack() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
@@ -188,11 +150,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
                 "duration=0 必须保留 NaN progress 语义");
     }
 
-    // ------------------------------------------------------------------
-    // removals 复用
-    // ------------------------------------------------------------------
-
-    /** 复用缓冲无跨帧残留：第一帧移除一批，第二帧不得重复/残留移除。 */
     @Test
     void reusedRemovalsBufferLeavesNoResidueAcrossFrames() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
@@ -207,7 +164,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         assertFalse(optimized.containsKey("dying"));
         assertTrue(optimized.containsKey("survivor"));
 
-        // 第二帧：无新增可清理尾迹，survivor 不得因残留 key 被误删
         CampaignContrailAdvanceHelper.advance(optimized, 0.5f);
         assertTrue(optimized.containsKey("survivor"), "复用缓冲残留会误删存活尾迹");
 
@@ -220,15 +176,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         assertContrailsEqual(reference, optimized);
     }
 
-    // ------------------------------------------------------------------
-    // 随机状态位级等价（对照独立转写的原版参考实现）
-    // ------------------------------------------------------------------
-
-    /**
-     * 随机尾迹 map（高比例全老化稳态组 + 逐项条件破坏组 + 活跃组）上，
-     * {@link CampaignContrailAdvanceHelper#advance} 的 map 结果（键集、点数、
-     * 逐点全部字段、totalLength 簿记、distToPrev 清零）与原版参考实现位级一致。
-     */
     @Test
     void advanceMatchesReferenceBitwiseAcrossRandomMaps() {
         Random random = new Random(0xB2_5CA7L);
@@ -243,10 +190,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
             assertContrailsEqual(reference, optimized, "trial " + trial);
         }
     }
-
-    // ------------------------------------------------------------------
-    // 参考实现：逐行转写反编译原版 advance(float)（独立于优化实现）
-    // ------------------------------------------------------------------
 
     private static void referenceAdvancePoint(ContrailEngineV2.ContrailPoint p, float amount,
                                               boolean remove,
@@ -286,7 +229,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
             }
             if (contrail.points.size() >= 3) {
                 while (contrail.points.size() >= 3 && referenceRemoveFirstIfNecessary(contrail)) {
-                    // 头段移除由 referenceRemoveFirstIfNecessary 完成
                 }
             }
             if ((contrail.remove || contrail.autoCleanup) && contrail.points.size() < 3) {
@@ -306,7 +248,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         }
     }
 
-    /** 原版 Contrail.removeFirstIfNecessary 的独立转写（helper 侧调用真实游戏方法）。 */
     private static boolean referenceRemoveFirstIfNecessary(ContrailEngineV2.Contrail contrail) {
         ContrailEngineV2.ContrailPoint p0 = contrail.points.get(0);
         ContrailEngineV2.ContrailPoint p1 = contrail.points.get(1);
@@ -321,14 +262,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         return false;
     }
 
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
-
-    /**
-     * 全老化稳态组：全部点 elapsed==duration、progress==1、fadeOut 且
-     * maxBrightness==+0.0f、width 已是稳态值、vel 零向量（短路目标形态）。
-     */
     private static ContrailEngineV2.Contrail steadyContrail(Object source, boolean remove,
                                                             boolean autoCleanup, int pointCount,
                                                             ContrailEngine.ContrailWidthMode mode,
@@ -360,11 +293,6 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
         return contrail;
     }
 
-    /**
-     * 随机尾迹 map：约半数组为全老化稳态（随机 remove/autoCleanup/mode），其余
-     * 逐项破坏短路条件（活跃点、vel 非零、progress 未同步、width 滞后、未
-     * fadeOut、duration==0），覆盖短路命中与回退两路径及组级移除编排。
-     */
     private static Map<Object, ContrailEngineV2.Contrail> randomContrails(Random random) {
         Map<Object, ContrailEngineV2.Contrail> contrails = new HashMap<>();
         int contrailCount = 1 + random.nextInt(4);
@@ -381,11 +309,10 @@ class CampaignContrailAdvanceHelperAgedShortCircuitTest {
             ContrailEngineV2.Contrail contrail = steadyContrail("key-" + c, remove, autoCleanup,
                     pointCount, mode, widthMultiplier);
             if (random.nextBoolean() && pointCount > 0) {
-                // 破坏一项短路条件，回退逐点路径
                 ContrailEngineV2.ContrailPoint point =
                         contrail.points.get(random.nextInt(pointCount));
                 switch (random.nextInt(6)) {
-                    case 0 -> point.elapsed = random.nextFloat() * point.duration; // 未老化
+                    case 0 -> point.elapsed = random.nextFloat() * point.duration;
                     case 1 -> point.vel = new Vector2f(1f + random.nextFloat(), 0f);
                     case 2 -> point.progress = random.nextFloat();
                     case 3 -> point.width = 1f + random.nextFloat() * 5f;

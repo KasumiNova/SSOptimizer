@@ -1,33 +1,31 @@
 package github.kasuminova.ssoptimizer.api.debug;
 
 /**
- * 调试脚本执行上下文。
- *
- * <p>动机：脚本类由独立类加载器加载，与游戏/模组的交互入口统一收敛在本接口，
- * 避免脚本各自寻找入口句柄。实现由 sso-debug 模块提供（{@code DebugContextImpl}）。</p>
+ * 为动态脚本提供游戏类加载、日志和跨域服务访问入口，隔离脚本与调试模块实现。
+ * <p>
+ * 所有方法均在脚本当前执行线程同步运行，不切换线程；实现须支持不同脚本并发调用。
  */
 public interface DebugContext {
     /**
-     * 返回游戏运行时类加载器（生产环境为 LaunchClassLoader）。
-     * 脚本经 {@code Class.forName(name, true, gameClassLoader())} 加载游戏/模组类。
+     * 返回可加载游戏与模组类的运行时类加载器。
      *
-     * @return 游戏类加载器
+     * @return 游戏运行时类加载器，不会为脚本创建新的类加载器
      */
     ClassLoader gameClassLoader();
 
     /**
-     * 输出 INFO 级日志到游戏日志（logger 名 {@code SSOptimizer.DebugScript}）。
+     * 向游戏日志写入一条 INFO 记录，logger 名为 {@code SSOptimizer.DebugScript}。
      *
      * @param message 日志内容
      */
     void log(String message);
 
     /**
-     * 解析跨域服务（ServiceRegistry 语义）。
+     * 从跨域服务注册表解析服务，不执行服务初始化或线程切换。
      *
      * @param api 服务接口类型
      * @param <T> 服务类型
-     * @return 服务实例；未注册时返回 null（调用点须判空）
+     * @return 已注册的服务实例；未注册 = 服务不可用，返回 {@code null}，调用方必须判空
      */
     <T> T service(Class<T> api);
 }

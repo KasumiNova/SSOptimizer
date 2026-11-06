@@ -5,26 +5,6 @@
 #include <cstring>
 #include <vector>
 
-/**
- * 引擎合批 native flush：单次 JNI 完成整艘船的引擎绘制。
- *
- * 输入布局（与 EngineInstanceCollector 的扁平化常量一一对应）：
- * - 命令表：commandCount 条 16 字节记录（stage / textureId / instanceCount / dataOffset）
- * - 实例数据：条带 64B、核心 32B、辉光 44B 定长数组
- *
- * 顶点展开公式逐行对应 EngineInstanceCollector.expand*Vertices（Java 回退路径），
- * 顶点格式 20 字节（x,y,u,v float + rgba ubyte），索引为 uint16 GL_TRIANGLES。
- *
- * VBO 写入：环形偏移管理 + glBufferSubData（与 Java 路径同一驱动入口；
- * 老驱动兼容上下文上 glMapBufferRange(UNSYNCHRONIZED) 会产出扭曲顶点，
- * 已实测回归，勿再引入）；回绕时 glBufferData(NULL) 孤儿化旧存储。
- * 容量预检在 Java 侧完成，此处不扩容。
- *
- * VBO 绑定全程在本函数内恢复为进入时的值，不经 LWJGL：
- * LWJGL2 的 Buffer 校验基于 StateTracker 跟踪值，native 绑定不更新 tracker，
- * 只要恢复真实绑定，两者即保持一致。
- */
-
 using namespace ssoptimizer::render;
 
 namespace {
@@ -86,7 +66,6 @@ inline void putVertex(uint8_t*& out, const float x, const float y,
     out += VERTEX_BYTES;
 }
 
-/** 条带实例展开为 6 顶点：T(pos)·R(angle)·R(rotation1)·R(rotation2)·T(translateX)·S(scaleX,scaleY)。 */
 void expandStrip(const StripInstanceData& in, uint8_t*& out) {
     for (int vi = 0; vi < 6; vi++) {
         const float px = vi < 2 ? 0.0f : (vi < 4 ? in.innerLength : in.stripLength);
@@ -105,7 +84,6 @@ void expandStrip(const StripInstanceData& in, uint8_t*& out) {
     }
 }
 
-/** 核心实例展开为 4 顶点：T(pos)·R(angle)·R(coreRotation)·S(0.9,1)·R(omegaRotation)。 */
 void expandCore(const CoreInstanceData& in, uint8_t*& out) {
     for (int vi = 0; vi < 4; vi++) {
         const float px = vi < 2 ? 0.0f : in.stripLength;
@@ -124,7 +102,6 @@ void expandCore(const CoreInstanceData& in, uint8_t*& out) {
     }
 }
 
-/** 辉光实例展开为 4 顶点：T(pos)·R(angle)·R(coreRotation)·S(scaleX,1)·T(-S/2,-S/2)。 */
 void expandGlow(const GlowInstanceData& in, uint8_t*& out) {
     const float half = in.size * 0.5f;
     for (int vi = 0; vi < 4; vi++) {
@@ -148,7 +125,6 @@ inline void putIndex(uint8_t*& out, const uint16_t index) {
 }
 
 void appendStripIndices(uint8_t*& out, const uint16_t base) {
-    // quad0: (0,1,3,2)，quad1: (2,3,5,4)
     putIndex(out, base);
     putIndex(out, base + 1);
     putIndex(out, base + 3);
@@ -181,7 +157,6 @@ void appendGlowIndices(uint8_t*& out, const uint16_t base) {
     putIndex(out, base + 3);
 }
 
-/** 环形写入空间保障：回绕时孤儿化旧存储并重置偏移。 */
 void ensureRingSpace(const GLenum target, const GLuint vbo, const GLint capacity,
                      GLint& offset, const GLsizei bytes) {
     if (offset + bytes <= capacity) {
@@ -202,14 +177,13 @@ uint8_t* scratchSpace(std::vector<uint8_t>& scratch, const size_t bytes) {
     return scratch.data();
 }
 
-/** 展开数据写入环形区间（scratch + glBufferSubData，与 Java 路径同一驱动入口）。 */
 void ringWrite(const GLenum target, const GLuint vbo, const GLint offset, const GLsizei bytes,
                const uint8_t* data) {
     glBindBuffer(target, vbo);
     glBufferSubData(target, offset, bytes, data);
 }
 
-} // namespace
+}
 
 extern "C" {
 
@@ -269,7 +243,6 @@ JNIEXPORT jlong JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_
             ensureRingSpace(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLuint>(indexVbo), indexCapacity,
                     indexOffset, indexBytes);
 
-            // 顶点：scratch 展开后经 glBufferSubData 写入（与 Java 路径同一驱动入口）
             uint8_t* vout = scratchSpace(vertexScratch, vertexBytes);
             {
                 uint8_t* out = vout;
@@ -302,7 +275,6 @@ JNIEXPORT jlong JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_
             }
             ringWrite(GL_ARRAY_BUFFER, static_cast<GLuint>(vertexVbo), vertexOffset, vertexBytes, vout);
 
-            // 索引：chunk 内 baseVertex 从 0 重新开始（指针基址随 vertexOffset 移动）
             uint8_t* iout = scratchSpace(indexScratch, indexBytes);
             {
                 uint8_t* out = iout;
@@ -343,4 +315,4 @@ JNIEXPORT jlong JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_
             | (static_cast<jlong>(indexOffset) & 0xFFFFFFFFL);
 }
 
-} // extern "C"
+}

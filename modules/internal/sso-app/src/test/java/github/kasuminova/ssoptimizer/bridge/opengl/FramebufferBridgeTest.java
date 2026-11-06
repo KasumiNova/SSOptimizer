@@ -9,10 +9,6 @@ import java.nio.IntBuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * FBO 三族（EXTFramebufferObject/ARBFramebufferObject/GL30）bridge 的录制行为
- * 抽查：三者是同功能别名，逐类验证命令录制与阻塞通道路由。
- */
 class FramebufferBridgeTest {
 
     private FakeRenderQueue queue;
@@ -93,7 +89,6 @@ class FramebufferBridgeTest {
         GL30.glDeleteRenderbuffers(6);
         assertEquals(4, queue.recorded.size());
 
-        // IntBuffer 变体：gen 走不计数阻塞 wait、delete 走快照命令
         IntBuffer ids = ByteBuffer.allocateDirect(4).asIntBuffer();
         ids.put(6);
         ids.flip();
@@ -117,14 +112,12 @@ class FramebufferBridgeTest {
                 "三族 FBO 绑定共享同一跟踪值");
         assertEquals(0, queue.getCallCount, "短路路径不得触发阻塞通道");
 
-        // 仿真簿记覆盖的 pname 同样短路到录制侧（未绑定纹理 → 0），免阻塞往返
         assertEquals(0, GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D));
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 55);
         assertEquals(55, GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D),
                 "TEXTURE_BINDING_2D 短路到 SimulatedGlState 簿记");
         assertEquals(0, queue.getCallCount, "仿真短路不得触发阻塞通道");
 
-        // 未跟踪 pname 仍走阻塞通道
         queue.getHandler = callable -> 99;
         assertEquals(99, GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_BLEND));
         assertEquals(1, queue.getCallCount);

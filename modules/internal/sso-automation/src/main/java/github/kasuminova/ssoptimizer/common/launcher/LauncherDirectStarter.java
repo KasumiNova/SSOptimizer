@@ -6,11 +6,6 @@ import org.apache.log4j.Logger;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-/**
- * Uses the launcher's native static game-start method directly, bypassing the
- * launcher UI, so smoke tests can exercise real game loading without racing the
- * launcher's own UI/GL lifecycle.
- */
 public final class LauncherDirectStarter {
     public static final String AUTO_START_PROPERTY            = "ssoptimizer.launcher.autostart";
     public static final String AUTO_START_RESOLUTION_PROPERTY = "ssoptimizer.launcher.autostart.res";

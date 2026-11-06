@@ -88,7 +88,6 @@ class SSOptimizerMixinConfigPluginTest {
                 "com.fs.graphics.font.BitmapFontRenderer",
                 "github.kasuminova.ssoptimizer.mixin.render.BitmapFontRendererMixin"),
                 "RT 关闭时 v2 文本管线（动态图集 GlDispatch 上传）不可用，必须禁用回退原版");
-        // 其余 Mixin 不受 RT 开关影响
         assertTrue(plugin.shouldApplyMixin(
                 "com.fs.starfarer.loading.ResourceLoader",
                 "github.kasuminova.ssoptimizer.mixin.loading.SoundManagerMixin"));

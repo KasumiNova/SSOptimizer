@@ -8,11 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * aux 原生线程（{@link RecordingContext#auxNative}，经 SharedDrawable 持有真实
- * 共享 GL 上下文的模组后台线程）的 bridge choke 点旁路验证：enqueue/阻塞通道/
- * fence 等待 flush 全部直执，不触碰渲染队列，与主线程录制流完全隔离。
- */
 class AuxNativeBypassTest {
 
     private FakeRenderQueue queue;
@@ -60,7 +55,6 @@ class AuxNativeBypassTest {
 
     @Test
     void inlineExecutionWrapsFailure() {
-        // 内联执行的异常包装与渲染线程内同步执行同形态（不吞异常、不留空 catch）
         IllegalStateException e = assertThrows(IllegalStateException.class,
                 () -> BridgeSupport.blockingGet(() -> {
                     throw new Exception("boom");
@@ -70,8 +64,6 @@ class AuxNativeBypassTest {
 
     @Test
     void fenceWaitFlushIsNoOpOnAuxThread() {
-        // aux 线程无帧可切：fence 等待由真实 glClientWaitSync 承载，
-        // flushForFenceWait 不得触发 swap
         BridgeSupport.flushForFenceWait();
         assertEquals(0, queue.swapCount);
     }

@@ -17,14 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link SimulatedGlState} 簿记语义完整逻辑验证。
- * <p>
- * 直接调用记录点与 getter 仿真：矩阵族（单位阵/平移/缩放/旋转/正交/push/pop/
- * load/mult 双精度变体）、标量分组（program/activeTexture/drawBuffer/viewport/
- * matrixMode/纹理绑定）、attrib 快照恢复与下溢空操作语义、adopt 采入再同步、
- * 上下文重建复位。
- */
 class SimulatedGlStateTest {
     private static final float EPS = 1e-6f;
 
@@ -302,10 +294,6 @@ class SimulatedGlStateTest {
         assertEquals(1.0f, m[12], EPS, "溢出后栈顶保持（真实 GL 报 STACK_OVERFLOW 且栈不变）");
     }
 
-    // ------------------------------------------------------------------
-    // enable 位 / blendEquation / alphaFunc/ref / VBO 绑定（SpriteBatch 守卫覆盖面）
-    // ------------------------------------------------------------------
-
     @Test
     void enableCapsDefaultDisabledAndTracked() {
         final SimulatedGlState state = new SimulatedGlState();
@@ -495,7 +483,6 @@ class SimulatedGlStateTest {
         assertEquals(1, vp2.get());
         assertEquals(300, vp2.get(2));
 
-        // adoptBoolean/adoptInteger 直接写入并生效
         state.adoptBoolean(GL11.GL_BLEND, true);
         assertEquals(Boolean.TRUE, state.getBoolean(GL11.GL_BLEND));
         state.adoptInteger(GL14.GL_BLEND_EQUATION, GL14.GL_FUNC_REVERSE_SUBTRACT);
@@ -522,10 +509,6 @@ class SimulatedGlStateTest {
         assertTrue(state.getFloat(GL11.GL_ALPHA_TEST_REF, ref2));
         assertEquals(0.25f, ref2.get(0), EPS);
     }
-
-    // ------------------------------------------------------------------
-    // is* 名字簿记（glIsProgram/glIsTexture 仿真数据源）
-    // ------------------------------------------------------------------
 
     @Test
     void programNameLifecycle() {
@@ -577,10 +560,6 @@ class SimulatedGlStateTest {
         // 绑定簿记与名字簿记独立：删除后绑定槽清零
         assertEquals(0, state.getInteger(GL11.GL_TEXTURE_BINDING_2D));
     }
-
-    // ------------------------------------------------------------------
-    // 纹理 level-0 参数与 caps 常量缓存
-    // ------------------------------------------------------------------
 
     @Test
     void texLevel0ParamsTrackedAtUploadAndClearedAtDelete() {

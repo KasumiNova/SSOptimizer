@@ -20,15 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 模组可写 Map 的 null 兼容契约验证（ASM 解析真实字节码，模式同
- * StatBonusConcurrencyMixinTest）。
- * <p>
- * 背景：CombatEngine.customData 与 TimeoutTrackerMap.items 原版分别为 HashMap /
- * LinkedHashMap，允许 null key/value；模组（如 ls_grot_rigger 写入未初始化字段）
- * 依赖该行为。两处并发化 Mixin 必须使用 {@code Collections.synchronizedMap} 包装，
- * 不得回退为 ConcurrentHashMap（null 限制会让模组直接 NPE）。
- */
 class ModDataMapNullCompatMixinTest {
 
     @Test

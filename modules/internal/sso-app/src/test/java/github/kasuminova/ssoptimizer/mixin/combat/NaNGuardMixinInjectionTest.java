@@ -22,17 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * NaN 哨兵注入目标存在性与锚点唯一性核验。
- * <p>
- * 游戏类无法脱离引擎实例化，注入是否生效取决于目标方法签名与游戏字节码一致；
- * 用 ASM 解析测试 classpath 上的真实游戏字节码逐一核验（非源码文本匹配），
- * 任一目标缺失/签名漂移都会在构建期暴露而非运行时静默失败。
- * <p>
- * 第二阶段守卫（ShipDamageStageTwoProcessor / CollisionImpulseClampProcessor）的
- * 模式匹配窗口只追踪 INSN/VAR_INSN/METHOD_INSN/JUMP_INSN 四类真实指令，
- * 本测试的锚点计数采用完全相同的窗口语义，锁住「方法内唯一」这一前置假设。
- */
 class NaNGuardMixinInjectionTest {
 
     private static final String SHIP_APPLY_DAMAGE_INNER_DESC =
@@ -48,7 +37,6 @@ class NaNGuardMixinInjectionTest {
 
     @Test
     void shipApplyDamageInnerSixArgOverloadExists() throws IOException {
-        // 6 参重载是伤害结算的唯一收口（5 参委托至此），守卫必须钉在这一版上
         assertMethod(GameClassNames.SHIP, "applyDamageInner", SHIP_APPLY_DAMAGE_INNER_DESC, 0);
     }
 
@@ -64,7 +52,6 @@ class NaNGuardMixinInjectionTest {
 
     @Test
     void fluxTrackerDirectWriteEntriesExist() throws IOException {
-        // 写入口封闭：setHardFlux 委托 setMinFlux（报告 Q8），三者签名必须同时存在
         assertMethod(FLUX_TRACKER, "setCurrFlux", "(F)V", 0);
         assertMethod(FLUX_TRACKER, "setMinFlux", "(F)V", 0);
         assertMethod(FLUX_TRACKER, "setHardFlux", "(F)V", 0);
@@ -72,7 +59,6 @@ class NaNGuardMixinInjectionTest {
 
     @Test
     void fluxTrackerOwnerShipFieldExists() throws IOException {
-        // FluxTrackerNaNGuardMixin 的 @Shadow 字段：日志 owner 身份来源，禁反射
         ClassNode node = readClass(FLUX_TRACKER);
         boolean found = false;
         for (FieldNode field : node.fields) {
@@ -87,7 +73,6 @@ class NaNGuardMixinInjectionTest {
 
     @Test
     void collisionImpulseIsStatic() throws IOException {
-        // 静态目标的处理器必须为 static，签名漂移会导致 Mixin 运行时拒绝
         assertMethod(COLLISION_HANDLER_IMPL, "applyCollisionImpulse",
                 "(Lcom/fs/starfarer/combat/CollisionEntity;Lcom/fs/starfarer/combat/CollisionEntity;"
                         + "Lorg/lwjgl/util/vector/Vector2f;)F", Opcodes.ACC_STATIC);
@@ -95,14 +80,12 @@ class NaNGuardMixinInjectionTest {
 
     @Test
     void stageTwoShieldAnchorUniqueInApplyDamageInner() throws IOException {
-        // 锚点 A 序列：INVOKEVIRTUAL Shield.getFluxPerPointOfDamage()F; FMUL; FSTORE 13
         MethodNode method = findMethod(GameClassNames.SHIP, "applyDamageInner", SHIP_APPLY_DAMAGE_INNER_DESC);
         assertEquals(1, countWindow(method,
                 "M" + Opcodes.INVOKEVIRTUAL + ":" + GameClassNames.SHIELD + ".getFluxPerPointOfDamage()F",
                 "I" + Opcodes.FMUL,
                 "V" + Opcodes.FSTORE + ":13"), "护盾辐能当量锚点序列必须方法内唯一");
 
-        // 报告锚点佐证：Shield.shieldHit INVOKE 方法内唯一
         assertEquals(1, countWindow(method,
                 "M" + Opcodes.INVOKEVIRTUAL + ":" + GameClassNames.SHIELD
                         + ".shieldHit(Lorg/lwjgl/util/vector/Vector2f;FZF)V"),
@@ -111,7 +94,6 @@ class NaNGuardMixinInjectionTest {
 
     @Test
     void stageTwoArmorAnchorUniqueInApplyDamageInner() throws IOException {
-        // 锚点 B 序列：原版放行守卫 if (slot13<=0 && slot15<=0) return 的八指令 fall-through
         MethodNode method = findMethod(GameClassNames.SHIP, "applyDamageInner", SHIP_APPLY_DAMAGE_INNER_DESC);
         assertEquals(1, countWindow(method,
                 "V" + Opcodes.FLOAD + ":13",
@@ -123,7 +105,6 @@ class NaNGuardMixinInjectionTest {
                 "I" + Opcodes.FCMPL,
                 "J" + Opcodes.IFLE), "装甲路径放行守卫锚点序列必须方法内唯一");
 
-        // 报告锚点佐证：ArmorGrid.applyDamage INVOKE 方法内唯一
         assertEquals(1, countWindow(method,
                 "M" + Opcodes.INVOKEVIRTUAL + ":com/fs/starfarer/combat/entities/ship/ArmorGrid.applyDamage"
                         + "(FFLcom/fs/starfarer/combat/Damage;FLorg/lwjgl/util/vector/Vector2f;F"
@@ -134,7 +115,6 @@ class NaNGuardMixinInjectionTest {
 
     @Test
     void collisionImpulseStoreSlot16Unique() throws IOException {
-        // 钳制锚点：冲量标量 FSTORE 16 在方法内唯一（首次速度写入在其后）
         MethodNode method = findMethod(COLLISION_HANDLER_IMPL, "applyCollisionImpulse",
                 "(Lcom/fs/starfarer/combat/CollisionEntity;Lcom/fs/starfarer/combat/CollisionEntity;"
                         + "Lorg/lwjgl/util/vector/Vector2f;)F");
@@ -142,10 +122,6 @@ class NaNGuardMixinInjectionTest {
                 "FSTORE 16（冲量槽写入）必须方法内唯一");
     }
 
-    /**
-     * 以处理器同款窗口语义统计指令序列命中数：只追踪
-     * INSN/VAR_INSN/METHOD_INSN/JUMP_INSN 四类真实指令，标签/行号/帧不参与。
-     */
     private static int countWindow(final MethodNode method, final String... pattern) {
         List<String> window = new ArrayList<>();
         for (AbstractInsnNode insn : method.instructions) {

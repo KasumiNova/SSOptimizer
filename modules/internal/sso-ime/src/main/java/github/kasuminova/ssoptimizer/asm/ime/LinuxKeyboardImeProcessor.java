@@ -4,24 +4,8 @@ import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import org.objectweb.asm.*;
 
 /**
- * ASM processor that prevents LWJGL's {@code LinuxKeyboard} from creating its
- * own XIM/XIC pair.  By making the native {@code openIM}/{@code createIC} calls
- * return 0, the only XIC registered for the game window belongs to SSOptimizer.
- * This ensures that {@code XFilterEvent} dispatches every event to SSOptimizer's
- * XIC, allowing the input method (e.g.&nbsp;fcitx) to work correctly.
- *
- * <p>In the constructor ({@code <init>}), calls to:
- * <ul>
- *   <li>{@code openIM(J)J}           &rarr; replaced with constant 0L</li>
- *   <li>{@code createIC(JJ)J}        &rarr; replaced with constant 0L</li>
- *   <li>{@code setupIMEventMask(JJJ)V} &rarr; replaced with pop of three longs (no-op)</li>
- * </ul>
- *
- * <p>In {@code destroy(J)V}, calls to:
- * <ul>
- *   <li>{@code destroyIC(J)V}  &rarr; replaced with pop of one long (no-op)</li>
- *   <li>{@code closeIM(J)V}    &rarr; replaced with pop of one long (no-op)</li>
- * </ul>
+ * 禁用 LWJGL 自带的 XIM/XIC 生命周期，避免与 SSOptimizer 的输入上下文竞争。
+ * org.lwjgl 由系统类加载器加载，Launch 域 Mixin 无法改写。
  */
 public final class LinuxKeyboardImeProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "org/lwjgl/opengl/LinuxKeyboard";
@@ -65,9 +49,6 @@ public final class LinuxKeyboardImeProcessor implements AsmClassProcessor {
         return modified[0] ? writer.toByteArray() : null;
     }
 
-    /**
-     * Hooks the constructor to replace openIM/createIC/setupIMEventMask with no-ops.
-     */
     private static final class InitMethodVisitor extends MethodVisitor {
         private InitMethodVisitor(final MethodVisitor delegate) {
             super(Opcodes.ASM9, delegate);
@@ -81,23 +62,20 @@ public final class LinuxKeyboardImeProcessor implements AsmClassProcessor {
                                     final boolean isInterface) {
             if (opcode == Opcodes.INVOKESTATIC && TARGET_CLASS.equals(owner)) {
                 if ("openIM".equals(name) && "(J)J".equals(descriptor)) {
-                    // Stack: [display(long)] -> pop display, push 0L
                     visitInsn(Opcodes.POP2);
                     visitInsn(Opcodes.LCONST_0);
                     return;
                 }
                 if ("createIC".equals(name) && "(JJ)J".equals(descriptor)) {
-                    // Stack: [xim(long), window(long)] -> pop both, push 0L
-                    visitInsn(Opcodes.POP2); // pop window
-                    visitInsn(Opcodes.POP2); // pop xim
+                    visitInsn(Opcodes.POP2);
+                    visitInsn(Opcodes.POP2);
                     visitInsn(Opcodes.LCONST_0);
                     return;
                 }
                 if ("setupIMEventMask".equals(name) && "(JJJ)V".equals(descriptor)) {
-                    // Stack: [display(long), window(long), xic(long)] -> pop all three
-                    visitInsn(Opcodes.POP2); // pop xic
-                    visitInsn(Opcodes.POP2); // pop window
-                    visitInsn(Opcodes.POP2); // pop display
+                    visitInsn(Opcodes.POP2);
+                    visitInsn(Opcodes.POP2);
+                    visitInsn(Opcodes.POP2);
                     return;
                 }
             }
@@ -105,9 +83,6 @@ public final class LinuxKeyboardImeProcessor implements AsmClassProcessor {
         }
     }
 
-    /**
-     * Hooks destroy() to replace destroyIC/closeIM with no-ops.
-     */
     private static final class DestroyMethodVisitor extends MethodVisitor {
         private DestroyMethodVisitor(final MethodVisitor delegate) {
             super(Opcodes.ASM9, delegate);
@@ -121,12 +96,10 @@ public final class LinuxKeyboardImeProcessor implements AsmClassProcessor {
                                     final boolean isInterface) {
             if (opcode == Opcodes.INVOKESTATIC && TARGET_CLASS.equals(owner)) {
                 if ("destroyIC".equals(name) && "(J)V".equals(descriptor)) {
-                    // Stack: [xic(long)] -> pop
                     visitInsn(Opcodes.POP2);
                     return;
                 }
                 if ("closeIM".equals(name) && "(J)V".equals(descriptor)) {
-                    // Stack: [xim(long)] -> pop
                     visitInsn(Opcodes.POP2);
                     return;
                 }

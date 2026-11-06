@@ -43,18 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * XStream 反射转换器 doUnmarshal 解析计划缓存 Mixin。
- * <p>
- * 注入目标：{@code com.thoughtworks.xstream.converters.reflection.AbstractReflectionConverter}<br>
- * 注入动机：读档时 doUnmarshal 对每个子节点重复执行只依赖 (声明类, 节点名) 的静态解析
- * （字段名映射、隐式集合查询、字段查找与父类回退、序列化校验、默认实现类型、局部转换器），
- * 每次都要走完十余层 Mapper 包装链；同一 (类, 节点名) 组合在 72MB 存档中重复数十万次。<br>
- * 注入效果：整体覆写 doUnmarshal，静态解析结果按 (resultType, nodeName) 固化为
- * {@link XStreamUnmarshalPlan}，后续节点只执行动态部分（class 属性读取、值转换、
- * 写字段、seenFields 查重、隐式集合累积）。defined-in 属性路径与全部错误语义保持原版行为。<br>
- * 失效挂钩：{@code flushCache} 时清空计划缓存，与 XStream 自身缓存生命周期一致。
- */
 @Mixin(targets = "com.thoughtworks.xstream.converters.reflection.AbstractReflectionConverter")
 public abstract class XStreamReflectionConverterMixin {
     @Final
@@ -76,9 +64,6 @@ public abstract class XStreamReflectionConverterMixin {
     private final ConcurrentHashMap<Class<?>, XStreamMarshalPlan>
             ssoptimizer$marshalPlans = new ConcurrentHashMap<>();
 
-    /**
-     * serializedClass 的动态实际类型查询缓存（marshal 侧实际类型在计划外）。
-     */
     @Unique
     private final ConcurrentHashMap<Class<?>, String>
             ssoptimizer$serializedClassCache = new ConcurrentHashMap<>();
@@ -97,22 +82,10 @@ public abstract class XStreamReflectionConverterMixin {
         throw new AssertionError("Shadow method was not transformed");
     }
 
-    /**
-     * 覆写 doUnmarshal：静态解析结果计划化缓存。
-     *
-     * @param result  目标对象
-     * @param reader  XML 读取器
-     * @param context 反序列化上下文
-     * @return 填充完成的对象
-     * @author KasumiNova
-     * @reason 逐节点全链静态解析是读档 unmarshal 阶段的主要 CPU 开销之一，
-     * 计划缓存后每节点仅需一次 CHM 命中加动态转换。
-     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Overwrite(remap = false)
     public Object doUnmarshal(final Object result, final HierarchicalStreamReader reader,
                               final UnmarshallingContext context) {
-        // === 属性循环：与原版一致 ===
         final Class<?> resultType = result.getClass();
         final MemberDictionary seenFields = new MemberDictionary();
         final Iterator<String> it = reader.getAttributeNames();
@@ -146,7 +119,6 @@ public abstract class XStreamReflectionConverterMixin {
             reflectionProvider.writeField(result, attrName, value, field.getDeclaringClass());
         }
 
-        // === 子节点循环：静态解析走计划缓存 ===
         Map<XStreamImplicitState.Location, Collection<Object>> implicitCollectionsForCurrentObject = null;
         final ConcurrentHashMap<String, XStreamUnmarshalPlan> plans = ssoptimizer$plansFor(resultType);
         while (reader.hasMoreChildren()) {
@@ -163,7 +135,6 @@ public abstract class XStreamReflectionConverterMixin {
             String implicitFieldName = null;
 
             if (explicitDeclaringClass == null) {
-                // 快速路径：静态部分全部来自计划缓存
                 final XStreamUnmarshalPlan plan =
                         plans.computeIfAbsent(originalNodeName, n -> ssoptimizer$resolvePlan(resultType, n));
                 fieldName = plan.fieldName;
@@ -172,7 +143,6 @@ public abstract class XStreamReflectionConverterMixin {
                         field = plan.field;
                         final String classAttribute = HierarchicalStreams.readClassAttribute(reader, mapper);
                         type = classAttribute != null ? mapper.realClass(classAttribute) : plan.defaultType;
-                        // 等价于原版 unmarshallField：context.convertAnother(result, type, localConverter)
                         value = context.convertAnother(result, type, plan.localConverter);
                         final Class<?> definedType = field.getType();
                         if (!definedType.isPrimitive()) {
@@ -181,7 +151,6 @@ public abstract class XStreamReflectionConverterMixin {
                         break;
                     }
                     case UNCHECKED: {
-                        // 字段未通过序列化校验，原版行为为整体跳过该节点
                         value = null;
                         break;
                     }
@@ -229,7 +198,6 @@ public abstract class XStreamReflectionConverterMixin {
                         throw new IllegalStateException("Unknown unmarshal plan kind: " + plan.kind);
                 }
             } else {
-                // defined-in 属性路径：占比极低，完整执行原版慢速解析
                 fieldName = mapper.realMember(fieldDeclaringClass, originalNodeName);
                 final Mapper.ImplicitCollectionMapping implicitCollectionMapping =
                         mapper.getImplicitCollectionDefForFieldName(fieldDeclaringClass, fieldName);
@@ -246,7 +214,6 @@ public abstract class XStreamReflectionConverterMixin {
                                 implicitFieldName = mapper.getFieldNameForItemTypeAndName(
                                         fieldDeclaringClass, type, originalNodeName);
                             } catch (final CannotResolveClassException ignored) {
-                                // 原版行为：节点名不可解析时进入 handleUnknownField 路径，type 保持 null
                             }
                             if (type == null || implicitFieldName == null) {
                                 handleUnknownField(explicitDeclaringClass, fieldName,
@@ -297,7 +264,6 @@ public abstract class XStreamReflectionConverterMixin {
                 }
             }
 
-            // === 公共尾部：与原版一致 ===
             if (value != null && !type.isAssignableFrom(value.getClass())) {
                 throw new ConversionException(
                         "Cannot convert type " + value.getClass().getName() + " to type " + type.getName());
@@ -321,7 +287,6 @@ public abstract class XStreamReflectionConverterMixin {
             reader.moveUp();
         }
 
-        // === 隐式数组字段固化：与原版一致 ===
         if (implicitCollectionsForCurrentObject != null) {
             for (final Map.Entry<XStreamImplicitState.Location, Collection<Object>> entry
                     : implicitCollectionsForCurrentObject.entrySet()) {
@@ -346,17 +311,6 @@ public abstract class XStreamReflectionConverterMixin {
         ssoptimizer$serializedClassCache.clear();
     }
 
-    /**
-     * 覆写 doMarshal：字段级静态解析结果计划化缓存。
-     *
-     * @param source  待序列化对象
-     * @param writer  XML 写出器
-     * @param context 序列化上下文
-     * @author KasumiNova
-     * @reason 原版对每个对象重复 visitSerializableFields 全字段遍历与全 Mapper 链静态解析，
-     * 并伴随 FieldInfo/defaultFieldDefinition/writtenAttributes 逐对象分配；
-     * 计划缓存后每对象只做字段值读取与写出。
-     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Overwrite(remap = false)
     protected void doMarshal(final Object source, final HierarchicalStreamWriter writer,
@@ -365,7 +319,6 @@ public abstract class XStreamReflectionConverterMixin {
         final XStreamMarshalPlan plan = ssoptimizer$marshalPlans.computeIfAbsent(
                 sourceType, t -> ssoptimizer$buildMarshalPlan(t, source));
 
-        // === 属性阶段：与原版 visit 期间的属性写出一致 ===
         Set<String> writtenAttributes = plan.dupAttrFieldNames != null ? new HashSet<>() : null;
         for (final XStreamMarshalPlan.AttrEntry entry : plan.attrEntries) {
             final Object value = XStreamFieldAccessHelper.read(entry.field, source);
@@ -387,7 +340,6 @@ public abstract class XStreamReflectionConverterMixin {
             }
         }
 
-        // === 元素阶段 ===
         for (final XStreamMarshalPlan.ElemEntry entry : plan.elemEntries) {
             final Object value = XStreamFieldAccessHelper.read(entry.field, source);
             if (value == null) {
@@ -402,10 +354,6 @@ public abstract class XStreamReflectionConverterMixin {
         }
     }
 
-    /**
-     * 等价于原版匿名 FieldMarshaller.writeField：写单个字段元素节点。
-     * fieldType 为 entry.type 时全部静态量来自计划；隐式集合逐项调用时 fieldType 为动态项类型。
-     */
     @Unique
     private void ssoptimizer$writeFieldElement(final HierarchicalStreamWriter writer,
                                                final MarshallingContext context,
@@ -434,15 +382,11 @@ public abstract class XStreamReflectionConverterMixin {
             if (entry.definedInAttrValue != null && plan.definedInAttrName != null) {
                 writer.addAttribute(plan.definedInAttrName, entry.definedInAttrValue);
             }
-            // 等价于原版 marshallField：context.convertAnother(value, localConverter)
             context.convertAnother(value, entry.localConverter);
         }
         writer.endNode();
     }
 
-    /**
-     * 等价于原版匿名 FieldMarshaller.writeItem：隐式集合内 Map.Entry 的键/值项。
-     */
     @Unique
     private void ssoptimizer$writeImplicitItem(final HierarchicalStreamWriter writer,
                                                final MarshallingContext context,
@@ -458,9 +402,6 @@ public abstract class XStreamReflectionConverterMixin {
         }
     }
 
-    /**
-     * 等价复制原版 doMarshal 尾部的隐式集合逐项写出逻辑。
-     */
     @Unique
     private void ssoptimizer$marshalImplicitCollection(final HierarchicalStreamWriter writer,
                                                        final MarshallingContext context,
@@ -512,10 +453,6 @@ public abstract class XStreamReflectionConverterMixin {
         }
     }
 
-    /**
-     * 构建类的序列化计划：以首个实例执行一次原版 visitSerializableFields 遍历，
-     * 固化全部静态解析结果；隐式集合同名去重（原版 hiddenMappers 语义）在此静态完成。
-     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Unique
     private XStreamMarshalPlan ssoptimizer$buildMarshalPlan(final Class<?> sourceType,
@@ -562,7 +499,6 @@ public abstract class XStreamReflectionConverterMixin {
                 }
             }
         });
-        // 原版 hiddenMappers 语义：同名字段的重复隐式映射回落为普通字段写出
         final Map<String, Set<Mapper.ImplicitCollectionMapping>> seenMappings = new HashMap<>();
         for (final XStreamMarshalPlan.ElemEntry entry : elems) {
             if (entry.implicitMapping == null) {
@@ -590,26 +526,17 @@ public abstract class XStreamReflectionConverterMixin {
                 dupAttrFieldNames);
     }
 
-    /**
-     * serializedClass 动态查询缓存（实际值类型在计划外，按类固化）。
-     */
     @Unique
     private String ssoptimizer$serializedClass(final Class<?> type) {
         return ssoptimizer$serializedClassCache.computeIfAbsent(type, mapper::serializedClass);
     }
 
 
-    /**
-     * 取目标类的节点计划表，不存在时创建。
-     */
     @Unique
     private ConcurrentHashMap<String, XStreamUnmarshalPlan> ssoptimizer$plansFor(final Class<?> resultType) {
         return ssoptimizer$unmarshalPlans.computeIfAbsent(resultType, k -> new ConcurrentHashMap<>());
     }
 
-    /**
-     * 构建 (声明类, 节点名) 的静态解析计划，语义与原版 doUnmarshal 子节点解析段一一对应。
-     */
     @Unique
     private XStreamUnmarshalPlan ssoptimizer$resolvePlan(final Class<?> resultType, final String nodeName) {
         final String fieldName = mapper.realMember(resultType, nodeName);
@@ -631,11 +558,9 @@ public abstract class XStreamReflectionConverterMixin {
                 nodeImplicitFieldName =
                         mapper.getFieldNameForItemTypeAndName(resultType, nodeClass, nodeName);
             } catch (final CannotResolveClassException ignored) {
-                // 原版行为：节点名不可解析时进入 handleUnknownField 路径，type 保持 null
             }
             return XStreamUnmarshalPlan.unknown(fieldName, nodeClass, nodeImplicitFieldName);
         }
-        // 与原版一致：显式声明类缺失时沿父类链回退查找可序列化字段
         while (field != null && !(shouldUnmarshalField(field)
                 && mapper.shouldSerializeMember(field.getDeclaringClass(), fieldName))) {
             field = reflectionProvider.getFieldOrNull(field.getDeclaringClass().getSuperclass(), fieldName);
@@ -648,11 +573,6 @@ public abstract class XStreamReflectionConverterMixin {
                 mapper.getLocalConverter(field.getDeclaringClass(), fieldName));
     }
 
-    /**
-     * 隐式集合累积，等价复制原版私有 writeValueToImplicitCollection
-     * （原版依赖 private 内部类 FieldLocation/ArraysList/MappingList，编译期不可引用，
-     * 故以 {@link XStreamImplicitState} 中等价实现替代）。
-     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Unique
     private void ssoptimizer$writeValueToImplicitCollection(

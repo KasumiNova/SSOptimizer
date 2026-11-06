@@ -6,11 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * GLContext bridge 的缓存语义验证：getCapabilities 首次走阻塞通道、此后读缓存。
- * 真实 ContextCapabilities 依赖 GL 上下文无法构造，桩返回 null——这里验证的是
- * 通道路由与缓存计数（非空路径由接入游戏后的运行验证兜底）。
- */
 class GLContextBridgeTest {
 
     private FakeRenderQueue queue;

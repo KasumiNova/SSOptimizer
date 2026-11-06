@@ -3,11 +3,6 @@ package github.kasuminova.ssoptimizer.common.render.engine;
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import org.lwjgl.opengl.GL11;
 
-/**
- * Targeted single-sprite renderer that replaces the original Sprite.render/renderNoBind
- * GL call cascade (17–19 LWJGL JNI calls) with a single native JNI call.
- * Falls back to direct GL11 calls when the native library is not loaded.
- */
 public final class SpriteRenderHelper {
     private static final float DEG_TO_RAD = 0.017453292519943295769f;
 
@@ -22,10 +17,6 @@ public final class SpriteRenderHelper {
         return NativeRuntime.isGlReady();
     }
 
-    /**
-     * Render a textured quad with full matrix/state setup.
-     * Called from Mixin-rewritten {@code Sprite.render} / {@code Sprite.renderNoBind}.
-     */
     public static void renderSprite(
             float posX, float posY,
             float width, float height,
@@ -102,19 +93,14 @@ public final class SpriteRenderHelper {
 
         GL11.glColor4ub((byte) colorR, (byte) colorG, (byte) colorB, (byte) colorA);
 
-        /* ── GL state + textured quad（状态命令编码进顶点流，段外执行）─── */
-        // bridge 流内入口用全限定名：本类编译期引用 org.lwjgl.opengl.GL11（常量
-        // 内联 + ASM 重定向把方法调用改写为 bridge），流内状态指令是 bridge 专有
+        // 流内状态指令必须直接调用 bridge，不能再经 ASM 重定向。
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamEnable(GL11.GL_TEXTURE_2D);
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamEnable(GL11.GL_BLEND);
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamBlendFunc(blendSrc, blendDest);
 
-        // 整组 begin..end 压成一条流内融合指令（编码 13 次流调用 → 1 次；
-        // tex 角点顺序与原逐顶点序列一致）
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamSpriteQuad(
                 x0, y0, x1, y1, x2, y2, x3, y3, texX, texY, texWidth, texHeight);
 
-        /* ── Cleanup（流内 disable，段外执行，保持与原版一致的 blend 关闭）── */
         github.kasuminova.ssoptimizer.bridge.opengl.GL11.streamDisable(GL11.GL_BLEND);
     }
 

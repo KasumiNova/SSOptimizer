@@ -6,12 +6,7 @@ import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.objectweb.asm.*;
 
 /**
- * 设置界面文本框工厂的 ASM 处理器，在 {@code createTextField()} 返回后注册 IME 支持。
- *
- * <p>注入目标：{@code com.fs.starfarer.settings.StarfarerSettings$1.createTextField()}<br>
- * 注入动机：设置界面使用匿名内部类创建文本框，Mixin 无法精确匹配匿名类；
- * 需要在文本框创建后调用 {@code TextFieldImeHooks.registerCreatedTextField()} 进行 IME 注册。<br>
- * 注入效果：在方法每个 ARETURN 前插入 DUP + INVOKESTATIC 调用。</p>
+ * 在设置界面的文本框工厂返回时注册 IME；匿名工厂无法由 Mixin 精确匹配。
  */
 public final class SettingsTextFieldFactoryProcessor implements AsmClassProcessor {
     public static final String DEFAULT_TARGET_CLASS = GameClassNames.STARFARER_SETTINGS_TEXT_FIELD_OWNER;

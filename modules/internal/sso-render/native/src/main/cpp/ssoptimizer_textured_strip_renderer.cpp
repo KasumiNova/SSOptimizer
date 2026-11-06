@@ -8,10 +8,9 @@ using namespace ssoptimizer::render;
 namespace {
 
 constexpr int FLOATS_PER_STRIP = 9;
-// 每条带的三角扇（中心 + 4 角点 + 闭合顶点）展开为 4 个三角形、12 个顶点。
 constexpr int VERTICES_PER_STRIP = 12;
 
-} // namespace
+}
 
 extern "C" {
 
@@ -66,10 +65,6 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_T
     drawColoredTexturedArray(GL_TRIANGLE_FAN, vertices, texCoords, colors, 6, finalColor);
 }
 
-// 帧内批量渲染：将一帧收集到的所有任务连线条带展开为 GL_TRIANGLES 后单次 draw call 提交。
-// geometry 布局：每条带 9 个 float（startX, startY, endX, endY, startWidth, endWidth,
-// startEdgeAlphaScale, centerAlphaScale, endEdgeAlphaScale）。
-// colors 布局：每条带 1 个 0xRRGGBBAA 打包 int。
 JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_TexturedStripRenderHelper_nativeRenderTexturedStripBatch(
     JNIEnv* env, jclass,
     jfloatArray geometryArray,
@@ -121,7 +116,6 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_T
         const GLubyte startAlpha = scaleAlphaToByte(alpha, startEdgeAlphaScale);
         const GLubyte endAlpha = scaleAlphaToByte(alpha, endEdgeAlphaScale);
 
-        // 扇形顶点：c, s0, s1, e1, e0；展开为 (c,s0,s1) (c,s1,e1) (c,e1,e0) (c,e0,s0)。
         const GLfloat fanX[5] = {centerX, outer.x[0], outer.x[1], outer.x[2], outer.x[3]};
         const GLfloat fanY[5] = {centerY, outer.y[0], outer.y[1], outer.y[2], outer.y[3]};
         const GLfloat fanU[5] = {0.5f, 0.0f, 0.0f, 1.0f, 1.0f};
@@ -160,4 +154,4 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_T
                              stripCount * VERTICES_PER_STRIP, finalColor);
 }
 
-} // extern "C"
+}

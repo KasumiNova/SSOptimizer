@@ -12,35 +12,9 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
- * 伤害结算第二阶段 NaN/Inf 守卫的 ASM 处理器。
- * <p>
- * 注入目标：{@code Ship.applyDamageInner(Vector2f, Damage, boolean, boolean, float, Object)}
- * （六参重载，五参委托至此）。<br>
- * <b>为什么不用 Mixin</b>：检查值是方法中部经整条 damage-taken 修正链迭代写入的计算局部量
- * （槽 13/15/17），而混淆游戏 jar 的 LocalVariableTable 只保留方法参数（已用 javap 坐实），
- * Mixin locals capture 无表可依；项目亦无 MixinExtras（无 {@code @Local} 槽位捕获）。
- * 在 INVOKE 锚点读中段局部槽只能由 ASM 完成，属于项目规范允许的例外情形。<br>
- * 注入动机：第一阶段 HEAD 守卫只覆盖「调用方传入即为坏值」的场景；实测 35 条 NaN 辐能日志
- * 全部是入口有限、经目标侧修正链（dmg_vs_*、护盾/装甲 damage-taken、easyMult、
- * {@code shield.getFluxPerPointOfDamage} 等）后才变坏的值，HEAD 看不见。<br>
- * 注入效果（两个锚点覆盖「所有 modifier 应用后、首次 armor/hull/flux 副作用前」的全部写路径）：
- * <ul>
- *   <li>锚点 A（护盾/辐能路径）：护盾辐能当量最终写入处——指令序列
- *       {@code INVOKEVIRTUAL Shield.getFluxPerPointOfDamage()F; FMUL; FSTORE 13}
- *       （原版 bytecode 1237-1241，方法内唯一）之后。此时操作数栈为空，检查槽 13/15；
- *       锚 {@code Shield.shieldHit}（bytecode 1256）的替代位更靠前——shieldHit 本身就是
- *       本分支首个副作用，跳过它才不留半事件，故不选 increaseFlux（bytecode 1383）锚。</li>
- *   <li>锚点 B（装甲/结构路径）：原版放行守卫 {@code if (slot13<=0 && slot15<=0) return}
- *       的完整八指令序列 {@code FLOAD 13; FCONST_0; FCMPL; IFGT; FLOAD 15; FCONST_0; FCMPL; IFLE}
- *       （bytecode 1524-1535，方法内唯一）的 fall-through 处，操作数栈为空，检查槽 13/17/15。
- *       该位置同时覆盖 bypassShields 直伤分支（共用此 fall-through），优于锚
- *       {@code ArmorGrid.applyDamage} INVOKE（bytecode 1584，bypass 分支会绕过它）。</li>
- * </ul>
- * 命中即整单取消：先 {@code Profiler.end()} 配对方法头的 {@code Profiler.begin("Ship.applyDamage")}
- * （原版所有出口含 catch-any 兜底均如此），再返回空 {@code ApplyDamageResult}
- * （与原版 damage<=0 早退语义一致，公共无参构造已确认存在）。<br>
- * 锚点失配防护：预扫描要求两模式在目标方法内各恰好命中一次，否则原样返回并输出 ERROR
- * （游戏版本漂移时守卫宁可整体缺席也不半套织入）。
+ * 在伤害修正完成后、首次结算副作用前检查方法中部的伤害与辐能局部量。
+ * 混淆类缺少局部变量表，Mixin 无法捕获这些槽位，故使用 ASM 匹配两组指令锚点。
+ * 两组锚点均须唯一；命中坏值时结束 Profiler 配对并返回空结果，锚点漂移时保留原字节码并记录错误。
  */
 public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = GameClassNames.SHIP;
@@ -69,7 +43,6 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
             return null;
         }
 
-        // 预扫描：两锚点必须在目标方法内各恰好命中一次，漂移即放弃织入并留 ERROR
         final int[] anchors = countAnchors(reader);
         if (anchors[0] != 1 || anchors[1] != 1) {
             LOGGER.error("[SSOptimizer] 第二阶段伤害守卫锚点失配: shieldFlux=" + anchors[0]
@@ -97,7 +70,6 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
         return writer.toByteArray();
     }
 
-    /** 预扫描两个锚点模式在目标方法内的命中次数。 */
     private static int[] countAnchors(final ClassReader reader) {
         final int[] counts = new int[2];
         reader.accept(new ClassVisitor(Opcodes.ASM9) {
@@ -123,7 +95,6 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
         return counts;
     }
 
-    /** 目标方法的织入适配器。 */
     static final class StageTwoMethodAdapter extends AnchorWindow {
         StageTwoMethodAdapter(final MethodVisitor delegate) {
             super(delegate);
@@ -131,21 +102,15 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
 
         @Override
         void onShieldAnchor() {
-            // 栈空。检查槽 13（护盾辐能当量）与槽 15（EMP）
             emitGuard(SHIELD_GUARD_METHOD, SHIELD_GUARD_DESC, new int[]{13, 15});
         }
 
         @Override
         void onArmorAnchor() {
-            // 栈空。检查槽 13（最终伤害）、槽 17（装甲伤害量）、槽 15（EMP）
             emitGuard(ARMOR_GUARD_METHOD, ARMOR_GUARD_DESC, new int[]{13, 17, 15});
         }
 
-        /**
-         * 发射「守卫判定 → 命中则 Profiler.end() + 返回空 ApplyDamageResult」序列。
-         *
-         * @param floatSlots 依次 FLOAD 的局部槽（与 guard 方法前若干 float 参数一一对应）
-         */
+        /** 生成守卫判断；命中时先配对结束 Profiler，再返回空结算结果。 */
         private void emitGuard(final String method, final String desc, final int[] floatSlots) {
             for (final int slot : floatSlots) {
                 mv.visitVarInsn(Opcodes.FLOAD, slot);
@@ -157,7 +122,6 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, HELPER_OWNER, method, desc, false);
             final Label proceed = new Label();
             mv.visitJumpInsn(Opcodes.IFEQ, proceed);
-            // 整单取消：配对方法头 Profiler.begin，再按原版 damage<=0 早退语义返回空结果
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, PROFILER_OWNER, "end", "()V", false);
             mv.visitTypeInsn(Opcodes.NEW, RESULT_CLASS);
             mv.visitInsn(Opcodes.DUP);
@@ -167,12 +131,8 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
         }
     }
 
-    /**
-     * 锚点模式识别基类：维护最近 8 条真实指令的滚动窗口（行号/帧/标签不参与），
-     * 逐条透传并在命中模式后回调。
-     */
+    /** 以最近八条真实指令的滚动窗口匹配锚点。 */
     static abstract class AnchorWindow extends MethodVisitor {
-        /** 指令签名滚动窗口（最多 8 条）。 */
         private final String[] window = new String[8];
         private int size;
 
@@ -180,10 +140,8 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
             super(Opcodes.ASM9, delegate);
         }
 
-        /** 锚点 A 命中回调（当前指令为序列末位的 {@code FSTORE 13}，已透传）。 */
         abstract void onShieldAnchor();
 
-        /** 锚点 B 命中回调（当前指令为序列末位的 {@code IFLE}，已透传）。 */
         abstract void onArmorAnchor();
 
         @Override
@@ -245,7 +203,6 @@ public final class ShipDamageStageTwoProcessor implements AsmClassProcessor {
             window[window.length - 1] = insn;
         }
 
-        /** 最近 {@code count} 条指令是否与给定序列完全相等（窗口末位对齐）。 */
         private boolean matches(final int count, final String... expected) {
             if (size < count) {
                 return false;

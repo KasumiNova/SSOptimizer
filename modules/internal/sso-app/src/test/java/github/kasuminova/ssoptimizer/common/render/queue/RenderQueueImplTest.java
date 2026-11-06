@@ -50,7 +50,6 @@ class RenderQueueImplTest {
             });
         }
         queue.swapFrames();
-        // 第二次 swap 等待的正是上面提交的那一帧
         queue.swapFramesAndSync();
         assertEquals(100, executed.size());
         for (int i = 0; i < 100; i++) {
@@ -64,7 +63,6 @@ class RenderQueueImplTest {
         queue = new RenderQueueImpl();
         CountDownLatch frame1Gate = new CountDownLatch(1);
         CountDownLatch frame1Started = new CountDownLatch(1);
-        // 第 1 帧：阻塞渲染线程直到测试放行
         queue.submit(() -> {
             frame1Started.countDown();
             awaitLatch(frame1Gate);
@@ -78,11 +76,9 @@ class RenderQueueImplTest {
         });
         swapper.start();
         awaitLatch(frame1Started);
-        // 上一帧（第 1 帧）未完成 → swap 线程必须仍阻塞
         swapper.join(300);
         assertTrue(swapper.isAlive());
         assertFalse(swapReturned.get());
-        // 放行后 swap 线程通过
         frame1Gate.countDown();
         swapper.join(10_000);
         assertFalse(swapper.isAlive());
@@ -92,14 +88,12 @@ class RenderQueueImplTest {
     @Test
     void swapFramesAndSyncDoesNotWaitCurrentFrame() throws Exception {
         queue = new RenderQueueImpl();
-        // 第 1 帧：立即完成
         queue.submit(() -> {
         });
         CountDownLatch frame2Gate = new CountDownLatch(1);
         CountDownLatch frame2Started = new CountDownLatch(1);
         AtomicBoolean swapReturned = new AtomicBoolean(false);
         Thread swapper = new Thread(() -> {
-            // 提交第 2 帧（内含阻塞命令），只应等待已完成的第 1 帧而立即返回
             queue.submit(() -> {
                 frame2Started.countDown();
                 awaitLatch(frame2Gate);
@@ -109,7 +103,6 @@ class RenderQueueImplTest {
         });
         swapper.start();
         awaitLatch(frame2Started);
-        // 渲染线程已阻塞在第 2 帧命令内，但 swap 只等第 1 帧 → 必须已返回
         swapper.join(10_000);
         assertFalse(swapper.isAlive());
         assertTrue(swapReturned.get());
@@ -142,7 +135,6 @@ class RenderQueueImplTest {
         assertThrows(IllegalStateException.class, queue::swapFramesAndSync);
         assertEquals(1, hookCalls.get(), "帧命令失败必须触发一次帧失败钩子");
 
-        // 正常帧不触发钩子
         queue.submit(() -> {
         });
         queue.swapFramesAndSync();
@@ -189,7 +181,6 @@ class RenderQueueImplTest {
     void getOnRenderThreadExecutesDirectly() {
         queue = new RenderQueueImpl();
         AtomicBoolean nestedResult = new AtomicBoolean(false);
-        // 渲染线程内再次 get 必须直接执行，否则自死锁
         queue.submit(() -> nestedResult.set(queue.get(() -> true)));
         queue.swapFrames();
         assertDoesNotThrow(() -> queue.swapFramesAndSync());
@@ -202,17 +193,13 @@ class RenderQueueImplTest {
         queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), detector);
         RenderThreadMode.markLoadingFinished();
         queue.get(() -> null);
-        // 熔断语义为 stall 帧密度：跨帧的第二次阻塞调用才计入第二个 stall 帧
         queue.swapFramesAndSync();
-        // 达到阈值触发熔断信号；默认 warn 策略放行，调用仍被正确服务
         assertDoesNotThrow(() -> queue.get(() -> null));
         assertEquals(2, detector.currentWindowStalls());
     }
 
     @Test
     void loadingPhaseBlockingCallsAreExemptFromStallDetector() {
-        // 资源加载期（loadingFinished 标记置位前）的成批一次性分配不计入熔断窗口；
-        // 加载期结束后恢复计数并熔断
         StallDetector detector = new StallDetector(60, 2);
         queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), detector);
         queue.get(() -> null);
@@ -221,8 +208,6 @@ class RenderQueueImplTest {
         RenderThreadMode.markLoadingFinished();
         queue.get(() -> null);
         assertEquals(1, detector.currentWindowStalls(), "加载期结束后恢复计数");
-        // stall 帧密度语义：推进一帧后的阻塞调用计入第二个 stall 帧，达到阈值触发
-        // 熔断信号；默认 warn 策略放行，调用仍被正确服务
         queue.swapFramesAndSync();
         assertDoesNotThrow(() -> queue.get(() -> null));
         assertEquals(2, detector.currentWindowStalls());
@@ -230,8 +215,6 @@ class RenderQueueImplTest {
 
     @Test
     void resourceBlockingCallsAreExemptFromStallDetector() {
-        // 资源申请类调用（getUncounted/waitUncounted）在加载期结束后也不计入熔断窗口；
-        // 同帧穿插的回读类 get 仍正常计数并熔断
         StallDetector detector = new StallDetector(60, 2);
         queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), detector);
         RenderThreadMode.markLoadingFinished();
@@ -247,7 +230,6 @@ class RenderQueueImplTest {
         queue.get(() -> null);
         assertEquals(1, detector.currentWindowStalls(), "回读类调用保持计数");
         queue.swapFramesAndSync();
-        // 达到阈值触发熔断信号；默认 warn 策略放行，调用仍被正确服务
         assertDoesNotThrow(() -> queue.get(() -> null));
         assertEquals(2, detector.currentWindowStalls());
     }
@@ -259,8 +241,6 @@ class RenderQueueImplTest {
         queue.swapFrames();
         queue.swapFramesAndSync();
         queue.swapFramesAndSync();
-        // 两帧均已执行完并归还：池内至少有归还的帧。
-        // 归还（finally）发生在帧 Future 完成（complete）之后，需给渲染线程一个归还窗口
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
         while (pool.idleCount() < 1 && System.nanoTime() < deadline) {
             Thread.yield();
@@ -270,9 +250,6 @@ class RenderQueueImplTest {
 
     @Test
     void multiProducerSyncCallsAndFrameCommandsAllComplete() throws InterruptedException {
-        // MPSC 提交通道的多生产者压力：aux-context 生产者线程并发发同步任务
-        // （get）与帧命令（submit），主线程持续推进帧——全部任务必须执行且
-        // 同步结果正确（队列丢任务会体现为结果错误或命令计数不足）
         queue = new RenderQueueImpl();
         int producers = 4;
         int perProducer = 200;
@@ -304,7 +281,6 @@ class RenderQueueImplTest {
             thread.join(TimeUnit.SECONDS.toMillis(10));
             assertFalse(thread.isAlive(), "生产者线程未在期限内完成：" + thread.getName());
         }
-        // 排空生产者提交的全部帧命令
         while (executed.get() < producers * perProducer) {
             queue.swapFrames();
             queue.swapFramesAndSync();
@@ -330,7 +306,6 @@ class RenderQueueImplTest {
                 events.add(id + ":" + (runHead ? "H" : "-") + (runTail ? "T" : "-"));
             }
         }
-        // 同实现连续实例构成一个串（0:head, 1:tail）；普通命令切开串；孤立实例为单命令串
         queue.submit(new FakeBatch(0));
         queue.submit(new FakeBatch(1));
         queue.submit(() -> events.add("mid"));
@@ -342,7 +317,6 @@ class RenderQueueImplTest {
 
     @Test
     void frameProbeDrainsErrorsOncePerFrame() {
-        // 帧模式：每帧执行完后排空一次，错误源被脚本化为 [1281, 0]（首个错误 + 排空终止）
         List<Integer> scripted = new ArrayList<>(List.of(1281, 0));
         AtomicInteger sourceCalls = new AtomicInteger();
         IntSupplier source = () -> {
@@ -354,14 +328,12 @@ class RenderQueueImplTest {
         queue.submit(() -> { });
         queue.submit(() -> { });
         queue.swapFrames();
-        // 同步任务在提交队列中排在帧任务之后：它返回时首帧（含探针排空）必然已执行完
         queue.get(() -> null);
         assertEquals(2, sourceCalls.get(), "帧模式应在帧尾恰好排空一次（1281 + 终止 0）");
     }
 
     @Test
     void commandProbeDrainsAfterEachCommand() {
-        // 命令模式：每条命令后都探一轮；错误源恒 0，两条命令 → 恰好 2 次取错
         AtomicInteger sourceCalls = new AtomicInteger();
         queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(),
                 RenderQueueImpl.GlErrorProbe.COMMAND, () -> {
@@ -398,8 +370,6 @@ class RenderQueueImplTest {
 
     @Test
     void stallTripWarnPolicyServesCallWithoutThrowing() {
-        // 窗口 2 帧、阈值 1：加载期结束后第一次阻塞调用即触发熔断信号；
-        // 默认 warn 策略放行——调用仍被正确服务并返回结果，不抛异常
         RenderThreadMode.markLoadingFinished();
         queue = new RenderQueueImpl(new FramePool(FramePool.DEFAULT_CAPACITY), new StallDetector(2, 1));
         assertEquals(42, (int) queue.get(() -> 42));

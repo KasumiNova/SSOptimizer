@@ -1,8 +1,3 @@
-/**
- * 渲染器公共头文件。
- *
- * 提供 OpenGL 顶点结构体、颜色变换工具和 SIMD 优化的向量运算。
- */
 #pragma once
 
 #include <cmath>
@@ -22,9 +17,6 @@
 #include <windows.h>
 #endif
 
-// 全库 GL 入口统一走 glad（compatibility 3.0）：Windows 的 opengl32 仅导出 GL 1.1 符号，
-// glBindBuffer / glBlendEquation 等必须由 glad 在运行时取指针；gladLoadGL 在
-// NativeRuntime.nativeInitGl 中完成一次性加载
 #include <glad/glad.h>
 
 namespace ssoptimizer::render {
@@ -342,4 +334,4 @@ inline void computeTexturedStripOuterVertices(const float startX, const float st
 #endif
 }
 
-} // namespace ssoptimizer::render
+}

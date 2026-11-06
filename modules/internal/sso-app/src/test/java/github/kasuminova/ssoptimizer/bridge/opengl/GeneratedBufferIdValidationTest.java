@@ -4,11 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * VBO id 批发结果的 fail-fast 校验（{@link BridgeSupport#validateGeneratedBufferIds}）：
- * 全有效放行；含无效 id（<1）时在生成点抛出带 GL 错误码与定位信息的
- * IllegalStateException，拒绝把死 id 分发进 stash 或调用方。
- */
 class GeneratedBufferIdValidationTest {
 
     @Test

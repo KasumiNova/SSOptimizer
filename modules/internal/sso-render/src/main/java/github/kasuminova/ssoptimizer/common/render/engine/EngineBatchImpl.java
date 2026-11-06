@@ -34,56 +34,19 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 引擎渲染合批实现：{@code Engine.render(float)} / {@code renderFighter(float)} 的替换路径。
- * <p>
- * 工作流程：收集（{@link EngineInstanceCollector}，纯 CPU）→ 按 阶段×纹理ID 分组 →
- * 按当前生效模式 flush。渲染线程分离模式下走渲染队列 native 命令通道
- * （收集/扁平化在录制线程，{@link EngineNativeRenderCommand} 承载
- * {@code nativeFlushBatch} 在渲染线程执行）；非分离模式按 GL 能力选
- * VBO_BATCH（CPU 展开 / native 环形写入）或 IMMEDIATE 回退
- * {@link EngineRenderHelper}。每次 flush 在当前矩阵栈内进行（Ship push/pop 栈内被调，
- * 不缓存矩阵），结束后完整恢复 blend / 纹理绑定 / VBO 绑定 / client state。
- * <p>
- * 开关：
- * <ul>
- *   <li>{@code -Dssoptimizer.render.shipengine.enable}（默认 true，false 时退回立即模式等价路径）</li>
- *   <li>{@code -Dssoptimizer.render.shipengine.mode=vbo|immediate}（默认 vbo，
- *       仅非分离模式；按 GL 能力自动降级）</li>
- *   <li>{@code -Dssoptimizer.render.shipengine.queue}（默认 true，仅分离模式；
- *       false 时退回 {@link EngineRenderHelper} immediate 录制路径）</li>
- *   <li>{@code -Dssoptimizer.render.shipengine.stats=true}（默认 false，每 300 次渲染输出一次
- *       实例数与 display list 回退计数；首个非空批次无条件输出一次摘要）</li>
- * </ul>
- * display list 说明：舰船 display list 编译区间会包含引擎渲染调用，命中
- * {@link GLListManager#buildingList} 时退回立即模式等价路径（{@link EngineRenderHelper}，
- * 公式已与原版逐行校准），首次命中记一次日志。
- */
 public final class EngineBatchImpl implements EngineBatch {
     private static final Logger LOGGER = Logger.getLogger(EngineBatchImpl.class);
 
     public static final String ENABLE_PROPERTY = "ssoptimizer.render.shipengine.enable";
     public static final String MODE_PROPERTY   = "ssoptimizer.render.shipengine.mode";
     public static final String STATS_PROPERTY  = "ssoptimizer.render.shipengine.stats";
-    /**
-     * 渲染队列 native 命令通道开关（仅分离模式生效，默认 true）：引擎合批的
-     * 收集/扁平化在录制线程完成，native flush 作为
-     * {@link EngineNativeRenderCommand} 在渲染线程执行（glad 直调）。
-     * false 时回退 {@link EngineRenderHelper} 的 immediate 录制路径。
-     */
     public static final String QUEUE_PROPERTY  = "ssoptimizer.render.shipengine.queue";
 
-    /** 引擎贴图诊断开关（{@code -Dssoptimizer.debug.enginestyle=true}）：每个不同纹理对象仅记录一次。 */
     private static final boolean DEBUG_ENGINE_STYLE =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.enginestyle", "false"));
     private static final java.util.Set<Object> DEBUG_LOGGED =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    /**
-     * 合批路径纹理诊断：记录每个引擎纹理对象的路径/GL id/延迟加载标记，用于定位
-     * 「模组引擎样式贴图未生效」是纹理对象为 null（未注册）、id=-1（延迟加载未落地）
-     * 还是绑定正确但视觉异常。
-     */
     private static void debugLogTexture(final String label, final TextureObject texture) {
         if (!DEBUG_ENGINE_STYLE) {
             return;
@@ -112,7 +75,6 @@ public final class EngineBatchImpl implements EngineBatch {
     private final boolean statsEnabled;
     private final GlCapability.Mode requestedMode;
 
-    /** 实际生效模式（渲染线程惰性探测后确定）。 */
     private volatile GlCapability.Mode activeMode;
 
     private DynamicVbo      vertexVbo;
@@ -122,7 +84,6 @@ public final class EngineBatchImpl implements EngineBatch {
     private ByteBuffer indexScratch;
     private ByteBuffer flattenScratch;
 
-    /** native 环形写入偏移（仅 isGlReady 路径使用；DynamicVbo 内部偏移仅 Java 回退路径使用）。 */
     private int nativeVertexWriteOffset;
     private int nativeIndexWriteOffset;
 
@@ -138,9 +99,6 @@ public final class EngineBatchImpl implements EngineBatch {
         this.queueNativeEnabled = !"false".equalsIgnoreCase(
                 System.getProperty(QUEUE_PROPERTY, "true").trim());
         if (enable && queueNativeEnabled && RenderThreadMode.isEnabled()) {
-            // 分离模式：合批收集/扁平化在录制线程（纯 CPU），native flush 作为
-            // 渲染队列命令执行——旧「Java 回退 flush 每帧两次 binding 回读 =
-            // 全管线 drain」的禁用理由随命令化消除
             LOGGER.info("[SSOptimizer] 渲染线程分离模式：引擎合批走渲染队列 native 命令通道");
         }
         this.statsEnabled = Boolean.parseBoolean(System.getProperty(STATS_PROPERTY, "false"));
@@ -161,15 +119,13 @@ public final class EngineBatchImpl implements EngineBatch {
 
     @Override
     public void render(Object engineObject, float alphaScale) {
-        // Sprite 合批顺序边界：引擎（非 sprite 绘制）前 flush 已累积批次
         SpriteBatch.getInstance().flushPending();
         if (!enabled) {
             EngineRenderHelper.renderEngines(engineObject, alphaScale);
             return;
         }
         if (GLListManager.buildingList) {
-            // display list 编译区间内禁止使用 VBO/着色器/native 命令路径
-            // （glBufferSubData 等不可编译、客户端数组按指针捕获，语义必错）
+            // display list 编译窗口不能使用 VBO 或 native 命令，相关调用不可编译。
             displayListFallbacks++;
             if (!buildingListLogged) {
                 buildingListLogged = true;
@@ -179,7 +135,6 @@ public final class EngineBatchImpl implements EngineBatch {
             return;
         }
         if (RenderThreadMode.isEnabled()) {
-            // 分离模式：渲染队列 native 命令通道（glad 未就绪时回退 immediate 录制）
             if (queueNativeEnabled && NativeRuntime.isQueueGlReady()) {
                 renderQueuedNative((EngineBridge) engineObject, alphaScale);
             } else {
@@ -199,7 +154,6 @@ public final class EngineBatchImpl implements EngineBatch {
         EngineBridge engine = (EngineBridge) engineObject;
         CollectedBatch batch = gather(engine, alphaScale);
 
-        // 原版无论是否有可渲染槽都会执行这三个状态设置且不恢复，逐条复刻以保持一致
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(770, 1);
@@ -212,16 +166,9 @@ public final class EngineBatchImpl implements EngineBatch {
         flushVboBatch(batch);
     }
 
-    /**
-     * 渲染队列 native 命令路径（分离模式）：收集/扁平化在录制线程完成
-     * （纯 CPU），native flush 作为 {@link EngineNativeRenderCommand} 落帧，
-     * 渲染线程经单次 JNI 完成绘制。录制侧唯一 GL 交互是原版语义的三条
-     * 状态设置（经 bridge 录制，与命令的执行序保持原调用序列顺序）。
-     */
     private void renderQueuedNative(EngineBridge engine, float alphaScale) {
         CollectedBatch batch = gather(engine, alphaScale);
 
-        // 原版无论是否有可渲染槽都会执行这三个状态设置且不恢复，逐条复刻以保持一致
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(770, 1);
@@ -233,10 +180,6 @@ public final class EngineBatchImpl implements EngineBatch {
         }
         GlDispatch.submit(EngineNativeRenderCommand.of(batch));
     }
-
-    // ---------------------------------------------------------------------
-    // 诊断：首批次一次性摘要（无条件 INFO）+ 周期统计（stats 开关）
-    // ---------------------------------------------------------------------
 
     private void logBatchStats(GlCapability.Mode mode, CollectedBatch batch) {
         int stripCount = 0;
@@ -273,10 +216,6 @@ public final class EngineBatchImpl implements EngineBatch {
                     mode, stripCount, coreCount, glowCount, displayListFallbacks));
         }
     }
-
-    // ---------------------------------------------------------------------
-    // 收集：从游戏对象读取参数（accessor），公式全部在 EngineInstanceCollector
-    // ---------------------------------------------------------------------
 
     private CollectedBatch gather(EngineBridge engine, float alphaScale) {
         EngineOwnerAccessor owner = (EngineOwnerAccessor) engine.ssoptimizer$getOwner();
@@ -383,10 +322,6 @@ public final class EngineBatchImpl implements EngineBatch {
         return batch;
     }
 
-    // ---------------------------------------------------------------------
-    // VBO_BATCH flush：CPU 展开三角形写入环形 VBO，固定管线绘制
-    // ---------------------------------------------------------------------
-
     private void flushVboBatch(CollectedBatch batch) {
         if (vertexVbo == null) {
             vertexVbo = new DynamicVbo(GL15.GL_ARRAY_BUFFER, VERTEX_VBO_CAPACITY);
@@ -436,16 +371,12 @@ public final class EngineBatchImpl implements EngineBatch {
         }
     }
 
-    /**
-     * native flush：扁平化批次后单次 JNI 完成顶点展开、环形 VBO 写入与逐组绘制。
-     * VBO 绑定全程在 native 内恢复，不经 LWJGL（StateTracker 无失配风险）。
-     */
     private void flushVboBatchNative(CollectedBatch batch) {
         int requiredBytes = EngineInstanceCollector.flattenedBytes(batch);
         ByteBuffer commandBuffer = flattenScratch(requiredBytes);
         int commandCount = EngineInstanceCollector.flatten(batch, commandBuffer);
 
-        // native 环形写入不扩容，容量预检在 Java 侧完成（扩容后 native 偏移同步清零）
+        // native 写入不扩容，Java 侧预检后须同步重置扩容后的偏移。
         if (vertexVbo.ensureCapacity(EngineInstanceCollector.expandedVertexBytes(batch))) {
             nativeVertexWriteOffset = 0;
         }
@@ -501,7 +432,6 @@ public final class EngineBatchImpl implements EngineBatch {
         abstract void append(ByteBuffer out, int baseVertex);
     }
 
-    /** 展开一组实例并绘制；实例过多时按 16 位索引上限分块。 */
     private void flushExpanded(int textureId, int instanceCount, int vertsPerInstance,
                                VertexExpander expander, List<?> instances, IndexWriter indexWriter) {
         int maxInstancesPerChunk = 65535 / vertsPerInstance;

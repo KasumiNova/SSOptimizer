@@ -15,32 +15,13 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link CampaignEngineGlowRenderHelper} 的编码逻辑与原版
- * {@code CampaignShipEngineGlow.render} 逐槽路径的等价性验证。
- * <p>
- * 参考实现逐行转写自反编译原版（named 仓 {@code CampaignShipEngineGlow.java:237-305}），
- * 方向向量直接调用真实的 {@link Utils#rotate}（独立验证 helper 内联的标量表达式），
- * GL 调用替换为顶点记录。覆盖：逐槽 8 顶点（2 quad）的位置/UV/颜色字节、widthMult
- * 每船恒量钳制、computeScales 缩放公式、槽几何缓存的命中/过渡期 miss 回退位级
- * 等价、hitGlow 同船合批 quad（颜色合并为一次、尺寸公式位级一致、图集 UV 非 0..1、
- * null 纹理 no-op）、视口距离 LOD 边界与「非当前位置舰队不应用 LOD」语义。
- * GL 侧的 client array/draw/矩阵命令编排无 GL 上下文不可触达，由接入游戏后的
- * A/B 验证兜底——本测试只验证纯编码路径。
- */
 class CampaignEngineGlowRenderHelperTest {
 
-    // ------------------------------------------------------------------
-    // computeScales（原版 var5/var6）
-    // ------------------------------------------------------------------
-
-    /** 缩放公式与原版方法头逐行转写位级一致（含 0/0.75/1 边界）。 */
     @Test
     void computeScalesMatchesVanillaFormula() {
         final float[] brightness = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 0.33333334f};
         for (final float var4 : brightness) {
             for (final float accel : brightness) {
-                // 原版转写：var5/var6（CampaignShipEngineGlow.java:240-243）
                 float var5 = 1.0f + 0.75f * (1.0f - accel);
                 float var6 = 1.0f + (accel - 0.75f);
                 var5 *= 0.5f + 0.5f * var4;
@@ -56,29 +37,20 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 辉光条 quad 编码
-    // ------------------------------------------------------------------
-
-    /** 单槽 = 2 quad 共 8 顶点，位置/UV/颜色序列与手工核算一致。 */
     @Test
     void singleSlotEmitsTwoQuadsInVanillaOrder() {
-        // angle=180 → dir = rotate((0,1), 90°) = (-1, 0)，延伸端朝 -x
         FakeSlot slot = new FakeSlot(180.0f, 10.0f, 6.0f, 4.0f, new Vector2f(50.0f, 20.0f));
         Color color = new Color(100, 150, 200, 255);
 
         encodeOptimized(List.of(slot), color, 1.0f, 1.0f, 3.0f, 1.0f, 2.0f);
 
-        // widthMult=1 → halfWidth=4/2×1=2；len=10×3×2=60；head=(50+3, 20)；tail=(50-60, 20)
         assertEquals(8, CampaignEngineGlowRenderHelper.getNumVertices());
         List<CampaignEngineGlowRenderHelper.EncodedVertex> vs = vertices(8);
 
-        // quad1：内端（alpha 0，tex 1,*）→槽位（alpha 255，tex 0,*）
         assertVertex(vs.get(0), 53.0f, 21.0f, 1.0f, 1.0f, 0);
         assertVertex(vs.get(1), 53.0f, 19.0f, 1.0f, 0.0f, 0);
         assertVertex(vs.get(2), 50.0f, 18.0f, 0.0f, 0.0f, 255);
         assertVertex(vs.get(3), 50.0f, 22.0f, 0.0f, 1.0f, 255);
-        // quad2：槽位 →延伸端（alpha 0）
         assertVertex(vs.get(4), 50.0f, 18.0f, 0.0f, 0.0f, 255);
         assertVertex(vs.get(5), 50.0f, 22.0f, 0.0f, 1.0f, 255);
         assertVertex(vs.get(6), -10.0f, 21.0f, 1.0f, 1.0f, 0);
@@ -90,32 +62,18 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /** widthMult > 1 时按 fullBrightness 衰减钳制（原版 :256-258）。 */
     @Test
     void widthMultAboveOneIsDampedByFullBrightness() {
-        // fullBrightness=0 → widthMult 恒 1；fullBrightness=1 → widthMult 原样
         FakeSlot slot = new FakeSlot(180.0f, 10.0f, 6.0f, 4.0f, new Vector2f(0.0f, 0.0f));
         Color color = new Color(255, 255, 255, 255);
 
         encodeOptimized(List.of(slot), color, 1.0f, 0.0f, 1.0f, 2.0f, 1.0f);
-        // halfWidth = 4/2×1 = 2 → 槽位顶点 y = ±2
         assertEquals(-2.0f, CampaignEngineGlowRenderHelper.vertexAt(2).y(), 0.0f);
 
         encodeOptimized(List.of(slot), color, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f);
-        // halfWidth = 2×2 = 4
         assertEquals(-4.0f, CampaignEngineGlowRenderHelper.vertexAt(2).y(), 0.0f);
     }
 
-    /**
-     * 随机槽位集上，helper 编码输出（顶点位置/UV/颜色字节）必须与逐行转写的
-     * 原版参考实现位级一致。覆盖 widthMult 钳制两分支、angle 精确 90°（sin=0
-     * 的 ±0.0 语义）、alpha 字节截断（alphaMult > 1 时超出 255 的 byte 环绕）。
-     * <p>
-     * 多帧模拟（R3 缓存）：同一槽位集复用同一 {@code GlowGeometryCache} 连续编码
-     * 多帧，帧间 50% 保持 scale 元组不变（缓存命中路径）或整体重摇（过渡期 miss
-     * 回退路径），颜色/alphaMult 每帧独立重摇（颜色不入缓存键，命中路径必须写出
-     * 当帧颜色）。每帧输出都与参考实现位级对照。
-     */
     @Test
     void encodedOutputMatchesReferenceBitwiseAcrossRandomStates() {
         Random random = new Random(0xE661_0FFL);
@@ -138,7 +96,6 @@ class CampaignEngineGlowRenderHelperTest {
             int frames = 1 + random.nextInt(4);
             for (int frame = 0; frame < frames; frame++) {
                 if (frame > 0 && random.nextBoolean()) {
-                    // 过渡期：scale 元组逐帧变化 → 缓存 miss 回退全编码
                     fullBrightness = random.nextFloat();
                     lengthScale = random.nextFloat() * 2f;
                     widthMultCurr = random.nextBoolean()
@@ -150,12 +107,10 @@ class CampaignEngineGlowRenderHelperTest {
                         random.nextInt(256), random.nextInt(256));
                 float alphaMult = random.nextFloat() * 1.5f;
 
-                // 参考路径：原版逐槽 immediate（GL 调用替换为顶点记录）
                 List<RecordedVertex> expected = new ArrayList<>();
                 referenceEncode(slots, color, alphaMult, fullBrightness, lengthScale,
                         widthMultCurr, heightMultCurr, expected);
 
-                // 优化路径（复用同一缓存，命中/未命中都由位级对照覆盖）
                 encodeOptimized(slots, cache, color, alphaMult, fullBrightness, lengthScale,
                         widthMultCurr, heightMultCurr);
 
@@ -179,10 +134,6 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /**
-     * 缓存命中路径位级等价（R3）：同一槽位集 + 同一 scale 元组连续编码两次，
-     * 第二次必走缓存命中分支，输出与第一次（全编码写回路径）逐位一致。
-     */
     @Test
     void cachedSlotGeometryEmitsIdenticalBitsOnHit() {
         List<FakeSlot> slots = List.of(
@@ -209,10 +160,6 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /**
-     * 颜色不入缓存键（R3）：scale 元组不变（命中路径）仅换颜色/alphaMult 时，
-     * 命中的几何照写但当帧颜色字节必须生效，输出与参考实现位级一致。
-     */
     @Test
     void cacheHitPathWritesCurrentFrameColors() {
         List<FakeSlot> slots = List.of(
@@ -220,7 +167,6 @@ class CampaignEngineGlowRenderHelperTest {
         CampaignEngineGlowRenderHelper.GlowGeometryCache cache =
                 new CampaignEngineGlowRenderHelper.GlowGeometryCache(slots.size());
 
-        // 首帧建立缓存（颜色 A），次帧同 scale（命中）换颜色 B + alphaMult
         encodeOptimized(slots, cache, new Color(1, 2, 3, 255), 1.0f, 1.0f, 3.0f, 1.0f, 2.0f);
 
         Color colorB = new Color(200, 100, 50, 128);
@@ -243,10 +189,6 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /**
-     * 过渡期 miss 回退（R3）：fullBrightness 逐帧变化（Fader IN/OUT 期）导致缓存
-     * 逐帧 miss，每帧回退全编码的输出都必须与参考实现位级一致。
-     */
     @Test
     void transitionFramesMissCacheAndMatchReference() {
         List<FakeSlot> slots = List.of(
@@ -276,22 +218,12 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /** 空槽位集不编码任何顶点（原版 begin/end 为空操作）。 */
     @Test
     void emptySlotsEncodeNothing() {
         encodeOptimized(List.of(), new Color(1, 2, 3, 255), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
         assertEquals(0, CampaignEngineGlowRenderHelper.getNumVertices());
     }
 
-    // ------------------------------------------------------------------
-    // hitGlow 合批编码
-    // ------------------------------------------------------------------
-
-    /**
-     * hitGlow 合批编码：逐槽 setSize 状态写回保留且尺寸公式位级一致；
-     * 合批路径不再调用逐槽 renderAtCenter；空槽位集不触 hitGlow 任何状态。
-     * （颜色合并为循环外一次 setColor 由 null 纹理路径的全入口用例覆盖。）
-     */
     @Test
     void hitGlowBatchKeepsColorHoistAndPerSlotSetSize() {
         List<FakeSlot> slots = List.of(
@@ -312,7 +244,6 @@ class CampaignEngineGlowRenderHelperTest {
         assertEquals(0, hitGlow.renderAtCenterCalls, "合批路径不再逐槽 renderAtCenter");
         assertEquals(slots.size(), hitGlow.sizes.size());
         for (int i = 0; i < slots.size(); i++) {
-            // 原版：var21 = glowSize * var5 * glowSizeMult（:298）
             float expectedSize = slots.get(i).glowSize * sizeScale * glowSizeMult;
             assertEquals(Float.floatToRawIntBits(expectedSize),
                     Float.floatToRawIntBits(hitGlow.sizes.get(i)), "slot " + i + " size");
@@ -325,12 +256,6 @@ class CampaignEngineGlowRenderHelperTest {
         assertTrue(untouched.sizes.isEmpty());
     }
 
-    /**
-     * hitGlow 合批 quad 位级对照（R2）：随机槽位集 + 图集 UV（texX/texY 非 0、
-     * texWidth/texHeight 非 1，模拟 {@code SpriteAtlasMixin} 重映射后的状态）下，
-     * 编码输出必须与逐行转写的原版逐精灵 renderAtCenter→render immediate 路径
-     * （顶点序列 (0,0)(0,h)(w,h)(w,0)、UV 角点含图集偏移、var3 恒 0.0F）位级一致。
-     */
     @Test
     void hitGlowBatchedQuadsMatchVanillaReferenceWithAtlasUv() {
         Random random = new Random(0xA71A5L);
@@ -340,7 +265,6 @@ class CampaignEngineGlowRenderHelperTest {
             for (int i = 0; i < slotCount; i++) {
                 slots.add(randomSlot(random));
             }
-            // 图集 UV：原点非 0、尺寸非 1（一半用例）；其余为原始 0..1 空间
             boolean atlas = random.nextBoolean();
             float texX = atlas ? random.nextFloat() * 0.9f : 0.0f;
             float texY = atlas ? random.nextFloat() * 0.9f : 0.0f;
@@ -360,7 +284,6 @@ class CampaignEngineGlowRenderHelperTest {
             CampaignEngineGlowRenderHelper.encodeHitGlowQuads(
                     hitGlow, slots, sizeScale, glowSizeMult, true, r, g, b, a);
 
-            // 参考路径：原版逐精灵 renderAtCenter → render（GL 调用替换为顶点记录）
             List<RecordedVertex> expected = new ArrayList<>();
             referenceHitGlow(slots, sizeScale, glowSizeMult, alphaMult,
                     texX, texY, texWidth, texHeight, glowColor, expected);
@@ -384,10 +307,6 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /**
-     * 纹理缺失（R2）：原版 render 在 texture == null 时整体 no-op——setSize 状态
-     * 写回仍逐槽发生，但不编码任何顶点。
-     */
     @Test
     void hitGlowWithoutTextureKeepsSetSizeButEncodesNothing() {
         List<FakeSlot> slots = List.of(
@@ -396,7 +315,6 @@ class CampaignEngineGlowRenderHelperTest {
         TrackingSprite hitGlow = new TrackingSprite(0.0f, 0.0f, 1.0f, 1.0f);
         Color glowColor = new Color(10, 20, 30, 200);
 
-        // renderHitGlowSprites 的 null 纹理路径（无 GL 调用，可直接走全入口）
         CampaignEngineGlowRenderHelper.renderHitGlowSprites(
                 hitGlow, slots, glowColor, 1.25f, 0.8f, 1.0f);
 
@@ -406,11 +324,6 @@ class CampaignEngineGlowRenderHelperTest {
         assertEquals(0, CampaignEngineGlowRenderHelper.getNumVertices(), "不编码不绘制");
     }
 
-    // ------------------------------------------------------------------
-    // hitGlow 视口距离 LOD
-    // ------------------------------------------------------------------
-
-    /** 视口内舰队不跳过；边距必须原样透传给 isNearViewport。 */
     @Test
     void hitGlowRendersForFleetInsideLodMargin() {
         RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
@@ -422,7 +335,6 @@ class CampaignEngineGlowRenderHelperTest {
         assertEquals(CampaignEngineGlowRenderHelper.HIT_GLOW_LOD_MARGIN, viewport.lastMargin);
     }
 
-    /** 距视口远超边距的舰队跳过整船 hitGlow。 */
     @Test
     void hitGlowSkippedForFleetFarBeyondLodMargin() {
         RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
@@ -430,7 +342,6 @@ class CampaignEngineGlowRenderHelperTest {
                 true, new Vector2f(100000f, 100000f), viewport));
     }
 
-    /** 边界内 1 单位：不跳过。 */
     @Test
     void hitGlowRendersJustInsideLodMarginBoundary() {
         RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
@@ -439,7 +350,6 @@ class CampaignEngineGlowRenderHelperTest {
                 true, new Vector2f(1000f + margin - 1f, 500f), viewport));
     }
 
-    /** 边界外 1 单位：跳过。 */
     @Test
     void hitGlowSkippedJustBeyondLodMarginBoundary() {
         RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
@@ -448,10 +358,6 @@ class CampaignEngineGlowRenderHelperTest {
                 true, new Vector2f(1000f + margin + 1f, 500f), viewport));
     }
 
-    /**
-     * 编队展示等 UI 场景的 dummy fleet（不在当前位置）不应用 LOD：
-     * 位置远超边距也保持原版渲染，且不产生视口查询。
-     */
     @Test
     void hitGlowLodNotAppliedForFleetOutsideCurrentLocation() {
         RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
@@ -459,11 +365,6 @@ class CampaignEngineGlowRenderHelperTest {
                 false, new Vector2f(100000f, 100000f), viewport));
         assertEquals(0, viewport.nearChecks);
     }
-
-    // ------------------------------------------------------------------
-    // 参考实现：逐行转写反编译原版 render 内层（GL 调用替换为记录）。
-    // 方向向量调用真实 Utils.rotate，独立验证 helper 内联的标量表达式。
-    // ------------------------------------------------------------------
 
     private static void referenceEncode(final List<FakeSlot> slots,
                                         final Color var7,
@@ -494,28 +395,19 @@ class CampaignEngineGlowRenderHelperTest {
             int r = var7.getRed();
             int g = var7.getGreen();
             int b = var7.getBlue();
-            // RenderStateUtils.setGlColor(var7, 0.0F)
             int a0 = ((byte) (var7.getAlpha() * 0.0f)) & 0xFF;
             out.add(new RecordedVertex(var16.x, var16.y + var11 / 2.0f, 1.0f, 1.0f, r, g, b, a0));
             out.add(new RecordedVertex(var16.x, var16.y - var11 / 2.0f, 1.0f, 0.0f, r, g, b, a0));
-            // RenderStateUtils.setGlColor(var7, var3)
             int aF = ((byte) (var7.getAlpha() * var3)) & 0xFF;
             out.add(new RecordedVertex(var14.x, var14.y - var11, 0.0f, 0.0f, r, g, b, aF));
             out.add(new RecordedVertex(var14.x, var14.y + var11, 0.0f, 1.0f, r, g, b, aF));
             out.add(new RecordedVertex(var14.x, var14.y - var11, 0.0f, 0.0f, r, g, b, aF));
             out.add(new RecordedVertex(var14.x, var14.y + var11, 0.0f, 1.0f, r, g, b, aF));
-            // RenderStateUtils.setGlColor(var7, 0.0F)
             out.add(new RecordedVertex(var15.x, var15.y + var11 / 2.0f, 1.0f, 1.0f, r, g, b, a0));
             out.add(new RecordedVertex(var15.x, var15.y - var11 / 2.0f, 1.0f, 0.0f, r, g, b, a0));
         }
     }
 
-    /**
-     * 原版 hitGlow 逐精灵路径参考实现：{@code renderAtCenter(x, y) →
-     * render(x - width/2, y - height/2)} → translate(f + offsetX, g + offsetY)，
-     * angle=0 时顶点为平移后的 (0,0)(0,h)(w,h)(w,0)，UV 角点 = texX/texY +
-     * texWidth/texHeight（var3 恒 0.0F），颜色字节 (byte)(int)(alpha*alphaMult)。
-     */
     private static void referenceHitGlow(final List<FakeSlot> slots,
                                          final float sizeScale,
                                          final float glowSizeMult,
@@ -530,8 +422,7 @@ class CampaignEngineGlowRenderHelperTest {
         int a = ((byte) (int) (glowColor.getAlpha() * alphaMult)) & 0xFF;
         for (final FakeSlot slot : slots) {
             float size = slot.glowSize * sizeScale * glowSizeMult;
-            // renderAtCenter → render：f = x - width/2；translate(f + offsetX, ...)
-            float quadX = slot.offset.x - size / 2.0f + 0;   // hitGlow offsetX 恒 0
+            float quadX = slot.offset.x - size / 2.0f + 0;
             float quadY = slot.offset.y - size / 2.0f + 0;
             out.add(new RecordedVertex(quadX, quadY, texX, texY, r, g, b, a));
             out.add(new RecordedVertex(quadX, quadY + size, texX, texY + texHeight, r, g, b, a));
@@ -541,14 +432,9 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
-
     private record RecordedVertex(float x, float y, float u, float v, int r, int g, int b, int a) {
     }
 
-    /** SlotData 的等价 POJO（生产路径由 Mixin 把 SlotData 并入该接口）。 */
     private static final class FakeSlot implements EngineGlowSlotAccessor {
         private final float    angle;
         private final float    baseLength;
@@ -591,7 +477,6 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /** 记录 hitGlow 调用序列的 Sprite stub（无纹理加载），UV 四元组经 accessor 接口提供。 */
     private static final class TrackingSprite extends Sprite implements SpriteUvAccessor {
         private final float texX;
         private final float texY;
@@ -649,7 +534,6 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    /** 矩形视口 stub：按「可视矩形 ± margin」实现 isNearViewport 语义并记录查询。 */
     private static final class RectViewport implements ViewportAPI {
         private final float llx;
         private final float lly;
@@ -801,10 +685,6 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 测试辅助
-    // ------------------------------------------------------------------
-
     private static void encodeOptimized(final List<FakeSlot> slots,
                                         final Color color,
                                         final float alphaMult,
@@ -849,10 +729,6 @@ class CampaignEngineGlowRenderHelperTest {
         assertEquals(a, v.a(), "a");
     }
 
-    /**
-     * 随机槽位：angle 混入精确 90°（sin(0) 的 ±0.0 语义）与 180°（典型后置引擎），
-     * offset/baseLength/width 常规量级，width 偶尔取构造期下限 1。
-     */
     private static FakeSlot randomSlot(final Random random) {
         float angle = switch (random.nextInt(4)) {
             case 0 -> 90.0f;

@@ -16,14 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@code BaseLocationCombatPairingMixin} 的字节码锚点核验。
- * <p>
- * 全方法覆写的正确性前提是「覆写目标签名存在、@Shadow 成员在目标类中全部存在、
- * 被优化的『Checking combat initiation』段结构未被游戏版本改动」。
- * 此处对测试 classpath 上 named jar 的真实 {@code BaseLocation} 逐一核验，
- * 任何锚点漂移（游戏更新）都会在构建期失败，而不是运行期行为劣化。
- */
 class BaseLocationCombatPairingAnchorTest {
     private static final String TARGET = "com/fs/starfarer/campaign/BaseLocation";
     private static final String ADVANCE_DESC = "(FLcom/fs/starfarer/util/InputEventList;)V";

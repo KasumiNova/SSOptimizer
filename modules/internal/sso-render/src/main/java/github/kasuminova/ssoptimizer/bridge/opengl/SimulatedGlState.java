@@ -11,51 +11,11 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-/**
- * 录制侧 GL 状态仿真：把 getter 回读类调用（glGetInteger/glGetFloat）从
- * 「阻塞通道全管线 drain」降级为「录制线程本地簿记查询」。
- * <p>
- * 动机：ASTD TexTrailRenderer 等模组路径每帧做保存/恢复惯用法
- * （glGetInteger(CURRENT_PROGRAM/TEXTURE_BINDING_2D/ACTIVE_TEXTURE/DRAW_BUFFER/VIEWPORT)
- * + glGetFloat(PROJECTION/MODELVIEW_MATRIX)），每次回读在分离模式下都是一次
- * 全管线 drain，会触发 StallDetector 熔断。这些 pname 对应的状态全部经 bridge
- * 命令流镜像（glUseProgram/glBindTexture/glActiveTexture/glDrawBuffer/glViewport/
- * 矩阵族），录制侧簿记在命令流顺序下与真实状态逐指令一致。
- * <p>
- * 第二批覆盖面（SpriteBatch 收集守卫在分离模式下恢复所需的回读集）：
- * 五个 enable 能力（TEXTURE_2D/BLEND/ALPHA_TEST/STENCIL_TEST/SCISSOR_TEST，
- * glEnable/glDisable 与流内 streamEnable/streamDisable 镜像）、GL_BLEND_EQUATION
- * （glBlendEquation 镜像）、GL_ALPHA_TEST_FUNC/REF（glAlphaFunc 镜像）、
- * GL_ARRAY/ELEMENT_ARRAY_BUFFER_BINDING（glBindBuffer 镜像）。
- * pushAttrib 分组按规范双归属簿记：上述五个 enable 位同时归属 GL_ENABLE_BIT
- * 与各自功能组（TEXTURE/COLOR_BUFFER/STENCIL_BUFFER/SCISSOR_BIT），任一位入
- * mask 都做快照恢复；blendEquation 与 alphaFunc/ref 仅属 COLOR_BUFFER_BIT；
- * ARRAY_BUFFER 绑定属 client 状态，由 push/popClientAttrib 的
- * CLIENT_VERTEX_ARRAY_BIT 快照恢复。
- * <p>
- * 语义安全：glPushAttrib/glPopAttrib 对各覆盖位做按位快照恢复，
- * glDrawBuffers 按规范簿记首元素（GL_DRAW_BUFFER 单值查询即 DRAW_BUFFER0）。
- * attrib 栈溢出/下溢按 GL 规范为空操作（GL_STACK_OVERFLOW/UNDERFLOW 仅报错、
- * 状态不变），簿记同样保持不变；显示模式切换重建上下文时全部状态回到默认值。
- * getter 回退真实阻塞通道时会把读回的权威值采入簿记再同步（adopt 族），
- * 一次性成本而非永久回退。
- * 矩阵栈初始为单位阵（与全新 GL 上下文一致），视口在首个 glViewport 录制前无效。
- * <p>
- * 实例非线程安全，线程隔离由 {@link RecordingContext} 访问约定保证；
- * 仅主录制线程的 getter 走仿真（见桥接调用点），aux 线程一律回退阻塞。
- * aux 线程提交（{@code RenderQueueImpl.auxSubmissionEpoch()} 纪元）会使主线程
- * 簿记过期：主线程仿真 getter 在读簿记前经
- * {@code BridgeSupport.resyncSimulatedStateIfAuxDirty()} 检查纪元，脏则一次屏障
- * 读回全部跟踪状态并采入（{@link #adoptSnapshot(GlStateSnapshot)}），
- * 簿记从「aux 活跃即永久漂移」降为「aux 活跃期每提交段至多一次屏障再同步」。
- */
+/** 主录制线程本地簿记 GL 状态；aux 提交后必须通过屏障再同步，实例非线程安全。 */
 final class SimulatedGlState {
     private static final Logger LOGGER = Logger.getLogger(SimulatedGlState.class);
-    /** 跟踪的纹理单元数（GL_TEXTURE0+i，i&lt;32；越界绑定不跟踪，getter 回退）。 */
     static final int MAX_TEXTURE_UNITS = 32;
-    /** 矩阵栈深度上限（真实实现 MODELVIEW ≥32，此处统一 64，溢出保持栈顶不变）。 */
     static final int MAX_MATRIX_STACK  = 64;
-    /** attrib mask 栈深度上限（溢出/下溢按 GL 规范为空操作，簿记保持不变）。 */
     static final int MAX_ATTRIB_STACK  = 64;
 
     private static final int MODE_MODELVIEW  = 0;
@@ -63,48 +23,27 @@ final class SimulatedGlState {
     private static final int MODE_TEXTURE    = 2;
     private static final int MODE_COUNT      = 3;
 
-    /** GL_CURRENT_PROGRAM 簿记（glUseProgram 镜像），0=固定管线。 */
     private int currentProgram;
-    /** GL_ACTIVE_TEXTURE 簿记（glActiveTexture 镜像），初值 GL_TEXTURE0。 */
     private int activeTexture = GL13.GL_TEXTURE0;
-    /** GL_DRAW_BUFFER 簿记（glDrawBuffer 镜像），双缓冲默认 GL_BACK。 */
     private int drawBuffer = GL11.GL_BACK;
     private boolean drawBufferValid = true;
-    /** GL_VIEWPORT 簿记（glViewport 镜像），首个 glViewport 前无效。 */
     private final int[] viewport = new int[4];
     private boolean viewportValid;
-    /** 每纹理单元 GL_TEXTURE_BINDING_2D 簿记（glBindTexture/glDeleteTextures 镜像）。 */
     private final int[] texture2dBinding = new int[MAX_TEXTURE_UNITS];
-    /** GL_MATRIX_MODE 簿记（glMatrixMode 镜像），初值 MODELVIEW。 */
     private int matrixMode = GL11.GL_MODELVIEW;
     private boolean matrixModeValid = true;
 
-    /** 三个矩阵栈（MODELVIEW/PROJECTION/TEXTURE），每栈 MAX_MATRIX_STACK*16，列主序。 */
     private final float[][] matrixStacks = new float[MODE_COUNT][MAX_MATRIX_STACK * 16];
     private final int[]     matrixDepths = new int[MODE_COUNT];
     private final boolean[] matrixValid  = {true, true, true};
-    /** glPushAttrib 的 mask 栈与按位快照：pop 时按位恢复簿记值。 */
     private final int[] attribMasks = new int[MAX_ATTRIB_STACK];
-    /** 每槽 VIEWPORT_BIT 快照（mask 含位且 push 时 viewport 有效才记录）。 */
     private final int[] attribViewportSnaps = new int[MAX_ATTRIB_STACK * 4];
     private final boolean[] attribViewportSnapValid = new boolean[MAX_ATTRIB_STACK];
-    /** 每槽 TRANSFORM_BIT 快照（matrixMode 单值）。 */
     private final int[] attribMatrixModeSnaps = new int[MAX_ATTRIB_STACK];
     private final boolean[] attribMatrixModeSnapValid = new boolean[MAX_ATTRIB_STACK];
     private int     attribDepth;
 
-    // ------------------------------------------------------------------
-    // enable 位与标量状态跟踪（SpriteBatch 收集守卫等 glGetBoolean/glGetInteger
-    // 回读的仿真数据源；镜像点为 bridge glEnable/glDisable/glAlphaFunc/
-    // glBlendEquation/glBindBuffer 与流内 streamEnable/streamDisable/streamBindTexture）
-    // ------------------------------------------------------------------
-
-    /** 跟踪的 enable 能力槽数（槽位映射见 {@link #capSlot(int)}）。 */
     private static final int CAP_COUNT = 5;
-    /**
-     * 五个跟踪能力的 GL 常量（槽位序 = {@link #capSlot(int)} 返回值序）：
-     * {@link GlStateSnapshot#capture()} 按本表逐槽采样。
-     */
     static final int[] TRACKED_CAPS = {
             GL11.GL_TEXTURE_2D,
             GL11.GL_BLEND,
@@ -112,15 +51,9 @@ final class SimulatedGlState {
             GL11.GL_STENCIL_TEST,
             GL11.GL_SCISSOR_TEST,
     };
-    /** attrib 配对丢失的一次性告警标记（server/client 各一）。 */
     private boolean unpairedServerPopWarned;
     private boolean unpairedClientPopWarned;
-    /**
-     * 各槽位的 pushAttrib 覆盖位：GL 规范中这些 enable 位同时归属「enable 组」
-     * （{@code GL_ENABLE_BIT}）与各自功能组（TEXTURE_2D→TEXTURE_BIT、
-     * BLEND/ALPHA_TEST→COLOR_BUFFER_BIT、STENCIL_TEST→STENCIL_BUFFER_BIT、
-     * SCISSOR_TEST→SCISSOR_BIT），任一位入 mask 都会被 push/pop 快照恢复。
-     */
+    /** 每个能力同时归属于 GL_ENABLE_BIT 与对应功能组，任一位进入 mask 都需快照恢复。 */
     private static final int[] CAP_PUSH_MASKS = {
             GL11.GL_TEXTURE_BIT | GL11.GL_ENABLE_BIT,
             GL11.GL_COLOR_BUFFER_BIT | GL11.GL_ENABLE_BIT,
@@ -128,38 +61,29 @@ final class SimulatedGlState {
             GL11.GL_STENCIL_BUFFER_BIT | GL11.GL_ENABLE_BIT,
             GL11.GL_SCISSOR_BIT | GL11.GL_ENABLE_BIT,
     };
-    /** 各能力当前启用状态（全新 GL 上下文默认全 false）。 */
     private final boolean[] capEnabled = new boolean[CAP_COUNT];
-    /** 各能力簿记有效性（pop 恢复未快照能力时失效；绝对设置/adopt 采入使其重新生效）。 */
+    /** pop 恢复未快照能力时失效，绝对设置或采入权威值后重新生效。 */
     private final boolean[] capValid   = {true, true, true, true, true};
 
-    /** GL_BLEND_EQUATION 簿记（glBlendEquation 镜像），全新上下文默认 GL_FUNC_ADD。 */
     private int     blendEquation      = GL14.GL_FUNC_ADD;
     private boolean blendEquationValid = true;
-    /** GL_ALPHA_TEST_FUNC 簿记（glAlphaFunc 镜像），全新上下文默认 GL_ALWAYS。 */
     private int     alphaFunc      = GL11.GL_ALWAYS;
     private boolean alphaFuncValid = true;
-    /** GL_ALPHA_TEST_REF 簿记（glAlphaFunc 镜像），默认 0；与 func 各自独立有效位。 */
     private float   alphaRef;
     private boolean alphaRefValid = true;
 
-    /** GL_ARRAY_BUFFER_BINDING 簿记（glBindBuffer 镜像；client attrib 可快照恢复）。 */
     private int     arrayBufferBinding;
     private boolean arrayBufferBindingValid = true;
-    /** GL_ELEMENT_ARRAY_BUFFER_BINDING 簿记（server 状态，不入任何 attrib 组）。 */
     private int elementArrayBufferBinding;
 
-    /** attrib 栈每槽的能力快照：attribCapSnapSet 位图标记该槽快照了哪些能力。 */
     private final boolean[][] attribCapSnaps        = new boolean[MAX_ATTRIB_STACK][CAP_COUNT];
     private final int[]       attribCapSnapSet      = new int[MAX_ATTRIB_STACK];
-    /** attrib 栈每槽的 COLOR_BUFFER_BIT 标量快照（blendEquation 与 alphaFunc/ref 各自独立有效位）。 */
     private final int[]     attribBlendEqSnaps       = new int[MAX_ATTRIB_STACK];
     private final boolean[] attribBlendEqSnapValid   = new boolean[MAX_ATTRIB_STACK];
     private final int[]     attribAlphaFuncSnaps     = new int[MAX_ATTRIB_STACK];
     private final float[]   attribAlphaRefSnaps      = new float[MAX_ATTRIB_STACK];
     private final boolean[] attribAlphaSnapValid     = new boolean[MAX_ATTRIB_STACK];
 
-    /** client attrib 栈（仅跟踪 CLIENT_VERTEX_ARRAY_BIT 覆盖的 ARRAY_BUFFER 绑定）。 */
     private final int[]     clientMasks          = new int[MAX_ATTRIB_STACK];
     private final int[]     clientArrayBufSnaps  = new int[MAX_ATTRIB_STACK];
     private final boolean[] clientArraySnapValid = new boolean[MAX_ATTRIB_STACK];
@@ -171,10 +95,6 @@ final class SimulatedGlState {
             identity(matrixStacks[mode], 0);
         }
     }
-
-    // ------------------------------------------------------------------
-    // 标量记录点（桥接各 setter 调用）
-    // ------------------------------------------------------------------
 
     void onUseProgram(final int program) {
         currentProgram = program;
@@ -189,26 +109,11 @@ final class SimulatedGlState {
         }
     }
 
-    // ------------------------------------------------------------------
-    // is* 名字簿记：glIsProgram/glIsTexture 的本地仿真数据源。
-    // program/texture 名字的创建与删除全部经 bridge 调用点镜像，集合即权威答案；
-    // 模组（HaIoDynamics HSIInitPlugin 等）逐帧轮询 glIsProgram 若走阻塞通道
-    // 会把管线打回串行触发 StallDetector 熔断。
-    // ------------------------------------------------------------------
-
-    /** program 名字集合（glCreateProgram/glDeleteProgram 镜像）。 */
     private final java.util.Set<Integer> programNames = new java.util.HashSet<>();
-    /** 使用中删除（glDeleteProgram 时仍为 currentProgram）等待解绑销毁的 program。 */
     private final java.util.Set<Integer> pendingDeletePrograms = new java.util.HashSet<>();
-    /** texture 名字集合（glGenTextures/glBindTexture 创建语义 + glDeleteTextures 镜像）。 */
     private final java.util.Set<Integer> textureNames = new java.util.HashSet<>();
-    /** TEXTURE_2D level-0 参数簿记：texId → [width, height, internalFormat]。 */
     private final java.util.Map<Integer, int[]> texLevel0Params = new java.util.HashMap<>();
-    /**
-     * caps 常量缓存（GL_MAX_* 族，上下文生命周期内不变）：首次回退阻塞读回后采入，
-     * {@link #onContextRecreated()} 清空。修复自家 ShipWeaponAtlas.resolvePageSize
-     * 与模组同类常量查询的逐次管线 drain。
-     */
+    /** GL_MAX_* 常量缓存，在上下文重建时清空。 */
     private final java.util.Map<Integer, Integer> capsCache = new java.util.HashMap<>();
 
     void onCreateProgram(final int program) {
@@ -412,9 +317,6 @@ final class SimulatedGlState {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 矩阵记录点
-    // ------------------------------------------------------------------
 
     void onLoadIdentity() {
         final int mode = currentMatrixMode();
@@ -584,9 +486,6 @@ final class SimulatedGlState {
         // 深度 1 时真实 GL 报 GL_STACK_UNDERFLOW 且栈顶不变，簿记保持一致
     }
 
-    // ------------------------------------------------------------------
-    // attrib 记录点
-    // ------------------------------------------------------------------
 
     void onPushAttrib(final int mask) {
         if (attribDepth >= MAX_ATTRIB_STACK) {
@@ -634,9 +533,7 @@ final class SimulatedGlState {
 
     void onPopAttrib() {
         if (attribDepth == 0) {
-            // 真实 GL 报 GL_STACK_UNDERFLOW 且状态不变（空操作）；簿记同样不变。
-            // 实测游戏/模组存在真实下溢（探针残留 0x504），保守失效化会把
-            // 一次空操作放大为永久回退阻塞，故严格按规范语义处理
+            // GL 栈下溢是不改变状态的空操作，簿记同样保持不变。
             warnUnpairedPopOnce();
             return;
         }
@@ -758,9 +655,6 @@ final class SimulatedGlState {
         capsCache.clear();
     }
 
-    // ------------------------------------------------------------------
-    // getter 仿真（返回值/写出成功返回 true，未跟踪或失效返回 false→回退阻塞）
-    // ------------------------------------------------------------------
 
     /** 单值 glGetInteger 仿真；未跟踪或失效返回 null。 */
     Integer getInteger(final int pname) {
@@ -813,9 +707,6 @@ final class SimulatedGlState {
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // 失效再同步（getter 回退阻塞通道读回权威值后采入簿记）
-    // ------------------------------------------------------------------
 
     /**
      * glGetBoolean 回退读回后采入：簿记失效（push 时该能力未快照、pop 按位恢复
@@ -873,12 +764,7 @@ final class SimulatedGlState {
         alphaRefValid = true;
     }
 
-    /**
-     * aux 活动屏障再同步的整体采入：快照由渲染线程在排空命令流后采样（drain-first
-     * 语义保证采样点即「此前全部已提交命令——含 aux 线程命令——执行完」的真实状态），
-     * 直接覆盖全部跟踪簿记并置有效。矩阵栈深不可观测，只采栈顶、深度归 1；
-     * attrib 栈保持主线程视角原样（动机与残留见 {@link GlStateSnapshot} 类 javadoc）。
-     */
+    /** 屏障后的权威快照覆盖全部跟踪状态，矩阵深度重置为 1。 */
     void adoptSnapshot(final GlStateSnapshot snapshot) {
         currentProgram = snapshot.currentProgram;
         activeTexture = snapshot.activeTexture;
@@ -907,7 +793,6 @@ final class SimulatedGlState {
         elementArrayBufferBinding = snapshot.elementArrayBufferBinding;
     }
 
-    /** 矩阵栈顶整体采入：深度归 1（深层栈项不可经 getter 观测，见类 javadoc）。 */
     private void adoptMatrixTop(final int mode, final float[] top) {
         matrixDepths[mode] = 1;
         matrixValid[mode] = true;
@@ -948,9 +833,6 @@ final class SimulatedGlState {
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // 内部工具
-    // ------------------------------------------------------------------
 
     private void warnUnpairedPopOnce() {
         if (!unpairedServerPopWarned) {
@@ -960,7 +842,6 @@ final class SimulatedGlState {
         }
     }
 
-    /** 当前矩阵模式映射到跟踪栈；COLOR 等未跟踪模式返回 -1（操作忽略，getter 不受影响）。 */
     private int currentMatrixMode() {
         switch (matrixMode) {
             case GL11.GL_MODELVIEW:
@@ -974,7 +855,6 @@ final class SimulatedGlState {
         }
     }
 
-    /** 跟踪能力 → 槽位映射；未跟踪能力返回 -1（簿记忽略，getter 回退阻塞通道）。 */
     private static int capSlot(final int cap) {
         switch (cap) {
             case GL11.GL_TEXTURE_2D:

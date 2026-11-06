@@ -10,11 +10,6 @@ import java.nio.IntBuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * GL13/GL14/GL15/ARBVertexBufferObject bridge 的录制行为抽查。
- * GL15 与 ARBVertexBufferObject 是同语义别名对，验证各自镜像方法的录制与
- * 阻塞通道路由一致。
- */
 class BufferObjectBridgeTest {
 
     private FakeRenderQueue queue;

@@ -12,10 +12,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link TextStreamEmitter} 经 bridge 顶点流的编码验证：假 RenderQueue 截获落帧的
- * 池化批次命令，回放字节流到记录桩，断言与预期 GL 调用序列逐条一致（无 GL 上下文）。
- */
 class TextStreamEmitterTest {
 
     private FakeRenderQueue queue;
@@ -31,7 +27,6 @@ class TextStreamEmitterTest {
         GL11.uninstall();
     }
 
-    /** 记录桩：回放调用序列化为字符串，精确断言顺序与参数。 */
     private static final class RecordingSink implements VertexSink {
         final List<String> calls = new ArrayList<>();
 
@@ -136,7 +131,6 @@ class TextStreamEmitterTest {
                 0);
     }
 
-    /** 取出所有已落帧的顶点批次并顺序回放到一个 sink。 */
     private List<String> replayRecordedBatches() {
         RecordingSink sink = new RecordingSink();
         for (Object command : queue.recorded) {
@@ -147,7 +141,6 @@ class TextStreamEmitterTest {
         return sink.calls;
     }
 
-    /** 末尾的 streamDisable 滞留在线程流缓冲，用一条非流式命令触发落帧。 */
     private void flushTail() {
         GL11.glFlush();
     }
@@ -162,7 +155,6 @@ class TextStreamEmitterTest {
 
         List<String> calls = replayRecordedBatches();
         List<String> expected = List.of(
-                // 段1：blend 状态 + pass1（红→白变色）
                 "enable:3042", "blend:770,771",
                 "begin:7",
                 "c:-1,0,0,-1",
@@ -172,12 +164,10 @@ class TextStreamEmitterTest {
                 "t:0.0,1.0", "v:10.0,0.0", "t:0.0,0.0", "v:10.0,10.0",
                 "t:1.0,0.0", "v:18.0,10.0", "t:1.0,1.0", "v:18.0,0.0",
                 "end",
-                // 段2：pass2（同色延续，去重不再发 color）
                 "begin:7",
                 "t:0.0,1.0", "v:20.0,0.0", "t:0.0,0.0", "v:20.0,10.0",
                 "t:1.0,0.0", "v:28.0,10.0", "t:1.0,1.0", "v:28.0,0.0",
                 "end",
-                // 尾段：关 BLEND
                 "disable:3042");
         assertEquals(expected, calls);
     }
@@ -199,7 +189,6 @@ class TextStreamEmitterTest {
 
     @Test
     void colorChangesOnlyEmittedOnTransition() {
-        // 同色三连 quad + 一次变色：颜色指令只出现两次
         List<TextPass> passes = List.of(new TextPass(List.of(
                 quad(0f, 0xFF00FF00), quad(10f, 0xFF00FF00), quad(20f, 0xFF00FF00),
                 quad(30f, 0xFF0000FF))));

@@ -14,14 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * 碰撞网格的 Mixin 重写。
- * <p>
- * 注入目标：{@code com.fs.starfarer.combat.CollisionGridQuery}<br>
- * 注入动机：原版均匀网格每帧 5 份全量重建（上万次 addToCell + ArrayList 分配），
- * 查询需逐 cell 扫描收集，在每帧大量 AI 碰撞查询时产生性能瓶颈。<br>
- * 注入效果：默认委托 {@link CollisionGridBvh}（懒构建扁平 BVH + 帧内 tombstone/溢出增量）；
- * {@code -Dssoptimizer.collisionGridBvh=false} 时 addObject/removeObject 走原版网格写入逻辑、
- * getCheckIterator 回退 {@link CollisionGridQueryHelper} 的 fastutil 收集路径。
+ * 默认使用 {@link CollisionGridBvh} 处理碰撞网格写入和查询。
+ * {@code ssoptimizer.collisionGridBvh=false} 时保留均匀网格写入，并使用 fastutil 收集查询结果。
  */
 @Mixin(targets = GameClassNames.COLLISION_GRID_QUERY_DOTTED)
 public abstract class CollisionGridQueryMixin {
@@ -44,7 +38,6 @@ public abstract class CollisionGridQueryMixin {
     @Shadow(remap = false, aliases = "cellSize")
     private float ssoptimizer$cellSize;
 
-    /** BVH 状态；懒初始化（网格实例每帧新建，无需跨帧重置）。 */
     @Unique
     private CollisionGridBvh ssoptimizer$bvh;
 
@@ -59,12 +52,6 @@ public abstract class CollisionGridQueryMixin {
         return ssoptimizer$bvh;
     }
 
-    /**
-     * 添加碰撞实体。
-     *
-     * @author KasumiNova
-     * @reason BVH 开启时仅追加条目缓冲（懒构建）；关闭时逐位复刻原版 addObject 的网格写入。
-     */
     @Overwrite(remap = false)
     public void addObject(Object object, Vector2f location, float width, float height) {
         if (CollisionGridBvhImpl.isEnabled()) {
@@ -74,13 +61,6 @@ public abstract class CollisionGridQueryMixin {
         ssoptimizer$writeCells(object, location, width, height, true);
     }
 
-    /**
-     * 移除碰撞实体。
-     *
-     * @author KasumiNova
-     * @reason BVH 开启时按移除矩形消耗条目可用区域（幽灵条目语义与原版一致）；
-     * 关闭时逐位复刻原版 removeObject 的网格移除。
-     */
     @Overwrite(remap = false)
     public void removeObject(Object object, Vector2f location, float width, float height) {
         if (CollisionGridBvhImpl.isEnabled()) {
@@ -90,13 +70,6 @@ public abstract class CollisionGridQueryMixin {
         ssoptimizer$writeCells(object, location, width, height, false);
     }
 
-    /**
-     * 区域碰撞查询。
-     *
-     * @author GitHub Copilot
-     * @reason 原 ASM 处理器整体替换 getCheckIterator 方法体，迁移为等价的 @Overwrite；
-     * 本次改为默认委托 BVH，关闭时保留 fastutil 收集回退路径。
-     */
     @Overwrite(remap = false)
     public Iterator<Object> getCheckIterator(Vector2f center, float width, float height) {
         if (CollisionGridBvhImpl.isEnabled()) {
@@ -108,9 +81,6 @@ public abstract class CollisionGridQueryMixin {
                 center.x, center.y, width, height);
     }
 
-    /**
-     * 回退路径：原版 addObject/removeObject 的逐 cell 写入/移除（向零截断 + addToCell 式边界检查）。
-     */
     @Unique
     private void ssoptimizer$writeCells(final Object object,
                                         final Vector2f location,

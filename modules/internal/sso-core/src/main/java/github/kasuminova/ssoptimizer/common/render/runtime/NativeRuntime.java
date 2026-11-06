@@ -8,41 +8,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 原生运行时加载器。
- * <p>
- * 自阶段 4 起 SSOptimizer 的 C++ 原生库按功能域拆分为四个共享库：
- * render（glad + GL 渲染器）、loading（libpng 解码）、font（FreeType 栅格化）、ime（XIM/IMM32）。
- * 本类负责按模块加载，每模块全局只加载一次，并提供加载状态查询。
- * <p>
- * 各模块均为「可缺失」加速组件：加载失败只记日志并返回 false，调用方有 Java 回退路径。
- * Windows 下在加载某个 DLL 前，会预加载同目录下的依赖 DLL（libpng16、freetype 及其传递依赖），
- * 因为 {@code System.load()} 内部使用 LoadLibrary，其隐式依赖搜索路径不包含被加载 DLL 的所在目录。
- * 预加载使依赖 DLL 进入进程地址空间，后续主 DLL 的隐式引用会命中已加载的模块。
+ * 按模块加载原生库并缓存成功或失败结果，加载失败时返回 false 并记录日志。
+ * Windows 加载前预载同目录依赖，因为 {@code System.load()} 的隐式依赖搜索不包含目标 DLL 所在目录。
  */
 public final class NativeRuntime {
     private static final Logger LOGGER = Logger.getLogger(NativeRuntime.class);
 
-    /** 主模块名：glad 初始化与全部 GL 渲染器所在。 */
     private static final String MAIN_MODULE = NativeLibraryResolver.MAIN_MODULE;
 
-    /** 各模块加载结果缓存（失败态也缓存：加载失败后不重试）。 */
     private static final Map<String, Boolean> MODULE_LOAD_STATE = new HashMap<>();
 
-    /** glad GL 函数指针是否就绪（仅 GL 加速路径关心；非 GL 功能如 PNG/字体不看此标志）。 */
     private static volatile boolean glReady;
 
-    /**
-     * 渲染线程 GL 直执通道的就绪状态：0=未探测，1=就绪，-1=不可用。
-     * 与 {@link #glReady} 语义独立——后者是「主线程可直接 glad 调用」
-     * （非分离模式），本状态是「渲染线程命令执行侧可 glad 调用」：
-     * 分离模式下 glReady 恒 false 而本通道可用（渲染线程持有真实 context）。
-     */
+    /** 渲染线程 glad 状态独立于主线程状态，0 表示未探测，1 表示就绪，-1 表示不可用。 */
     private static volatile int queueGlReadyState;
 
-    /**
-     * Windows 下需要预加载的依赖 DLL 列表（按依赖顺序排列：被依赖者在前）。
-     * 缺少某个 DLL 不影响加载流程，只会跳过。
-     */
     private static final String[] WINDOWS_DEPENDENCY_DLLS = {
         "zlib1.dll",
         "brotlicommon.dll",
@@ -55,32 +35,17 @@ public final class NativeRuntime {
     private NativeRuntime() {
     }
 
-    /** 主模块（render）是否已加载。 */
     public static boolean isLoaded() {
         return ensureLoaded();
     }
 
-    /**
-     * GL 加速路径是否可用（render 模块已加载且 glad 函数指针就绪）。
-     * GL 相关的 helper 应以此为准；PNG 解码 / 字体栅格化等非 GL 功能应改用
-     * {@link #loadModule(String)} 按各自模块加载。
-     */
     public static boolean isGlReady() {
         return ensureLoaded() && glReady;
     }
 
-    /** glad 一次性加载 GL 函数指针（内部经 glGetString 探测版本，调用线程须持有 GL context）。 */
     private static native boolean nativeInitGl();
 
-    /**
-     * 渲染线程 GL 直执通道（native sync ops / NativeRenderCommand）的 glad 就绪。
-     * 必须在持有真实 GL context 的线程调用（渲染线程，Display.create 之后）：
-     * gladLoadGL 内部经 glGetString(GL_VERSION) 探测版本以决定加载哪些函数
-     * 指针，无 context 时版本串为 NULL、全部指针留空（静默加载为零）。
-     * 结果进程级缓存：glad 函数指针进程全局，context 重建（显示模式切换）不失效。
-     *
-     * @return glad 函数指针是否可用于渲染线程直执通道
-     */
+    /** 仅限持有真实 GL context 的渲染线程调用；初始化结果在进程内缓存。 */
     public static boolean ensureQueueGlReady() {
         final int state = queueGlReadyState;
         if (state != 0) {
@@ -89,12 +54,7 @@ public final class NativeRuntime {
         return initQueueGl();
     }
 
-    /**
-     * 渲染线程 GL 直执通道是否已就绪（只读，不触发初始化）。
-     * 录制侧（主线程）以此分流 native 命令路径——初始化只能由渲染线程
-     * 经 {@link #ensureQueueGlReady()} 完成（glad 版本探测需 GL context）。
-     * 未就绪时录制侧必须走 Java 录制回退路径。
-     */
+    /** 只读查询，不触发初始化；未就绪时录制侧使用 Java 命令路径。 */
     public static boolean isQueueGlReady() {
         return queueGlReadyState > 0;
     }
@@ -112,18 +72,10 @@ public final class NativeRuntime {
         return ready;
     }
 
-    /** 加载主模块 render（含 glad 初始化与全部 GL 渲染器），语义与拆分前 ensureLoaded() 一致。 */
     public static synchronized boolean ensureLoaded() {
         return loadModule(MAIN_MODULE);
     }
 
-    /**
-     * 按模块加载原生库。
-     *
-     * @param moduleName 模块名（render/loading/font/ime）
-     * @return 该模块是否可用；加载失败返回 false 且不抛异常（native 加速可缺失，调用方有 Java 回退路径），
-     *         成功与失败均写入日志
-     */
     public static synchronized boolean loadModule(final String moduleName) {
         final Boolean cached = MODULE_LOAD_STATE.get(moduleName);
         if (cached != null) {
@@ -148,11 +100,7 @@ public final class NativeRuntime {
             LOGGER.info("[SSOptimizer] Native library loaded: " + nativePath);
             if (MAIN_MODULE.equals(moduleName)) {
                 if (RenderThreadMode.isEnabled()) {
-                    // 分离模式：主线程自始至终没有 GL context，native（glad 直调）在
-                    // 主线程执行会崩。跳过 glad 函数指针加载，isGlReady() 恒 false，
-                    // 强制 SpriteRenderHelper/EngineBatch/字体等 native 加速路径全部落
-                    // Java 回退——回退路径里的 org.lwjgl 调用会被 ASM 重定向录制入队，
-                    // 语义正确（性能回退可接受，native 迁移留待后续轮次）。
+                    // 主线程没有 GL context，分离模式下仅初始化渲染线程使用的 glad 通道。
                     glReady = false;
                     LOGGER.info("[SSOptimizer] 渲染线程分离模式：跳过 glad 初始化，"
                             + "native GL 加速路径（SpriteBatch/SpriteRenderHelper/EngineBatch/"
@@ -171,12 +119,6 @@ public final class NativeRuntime {
         }
     }
 
-    /**
-     * Windows 平台下，预加载目标 DLL 同目录的依赖库到进程地址空间。
-     * 这样当 OS 加载 ssoptimizer_*.dll 时，其 import table 中引用的 DLL 已经在内存中，无需再搜索文件系统。
-     *
-     * @param nativeDir 目标原生库所在目录
-     */
     private static void preloadWindowsDependencies(final Path nativeDir) {
         if (!System.getProperty("os.name", "").toLowerCase().contains("win")) {
             return;

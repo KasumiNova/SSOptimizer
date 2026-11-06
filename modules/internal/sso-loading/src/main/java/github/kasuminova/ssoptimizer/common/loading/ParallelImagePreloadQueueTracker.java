@@ -6,11 +6,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-/**
- * Tracks pending deferred image/byte preload requests using per-path latches
- * so callers block without polling while preserving the base game's
- * queue/result-map protocol.
- */
 public final class ParallelImagePreloadQueueTracker {
     private static final Map<String, CountDownLatch> PENDING_IMAGE_LATCHES = new ConcurrentHashMap<>();
     private static final Map<String, CountDownLatch> PENDING_BYTE_LATCHES  = new ConcurrentHashMap<>();
@@ -90,10 +85,7 @@ public final class ParallelImagePreloadQueueTracker {
         return null;
     }
 
-    /**
-     * worker 完成（或跳过）某路径的加载后唤醒等待方。无论结果是否写入
-     * resultMap 都必须调用，否则 {@link #awaitImage}/{@link #awaitBytes} 会一直阻塞。
-     */
+    // 无论是否写入结果都必须调用完成方法，否则等待方不会唤醒。
     public static void completeImage(final String path) {
         final CountDownLatch latch = PENDING_IMAGE_LATCHES.remove(path);
         if (latch != null) {
@@ -101,7 +93,6 @@ public final class ParallelImagePreloadQueueTracker {
         }
     }
 
-    /** 字节队列版本的 {@link #completeImage}。 */
     public static void completeBytes(final String path) {
         final CountDownLatch latch = PENDING_BYTE_LATCHES.remove(path);
         if (latch != null) {

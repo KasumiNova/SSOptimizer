@@ -38,27 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 星域交战检测近距分桶 Mixin（B4，默认开，可回退）。
- * <p>
- * 注入目标：{@code com.fs.starfarer.campaign.BaseLocation#advance(float, InputEventList)}<br>
- * 注入动机：「Checking combat initiation」段对全部可交战舰队两两配对 O(F²)
- * （每对含距离 sqrt、battle XOR、interactionTarget 判定），密集舰队星域下是
- * {@code StarSystem.advance} 热点的重要组成部分；且非当前 location 每 60 帧轮转
- * 也会完整执行该段（{@code CampaignEngine.advance} 轮转 advance），开销随全星域舰队数平方增长。<br>
- * 为什么必须 @Overwrite 而不是锚点注入：配对枚举是方法中段的双层循环，
- * Mixin 无法在「保留循环体」的前提下替换「配对枚举方式」——
- * 循环体不是任何单一 INVOKE 调用点，{@code @Redirect}/{@code @Inject} 都无法跳过中段代码；
- * 项目编译期无 MixinExtras（{@code @WrapWithCondition} 等）可用。
- * 故逐行对照 named 源码覆写整个 {@code advance}，除配对枚举外一字不改。<br>
- * 注入效果：{@code -Dssoptimizer.campaign.combatPairing=true}（默认）时配对枚举走
- * {@link CombatPairingGridHelper} 格网分桶（同格+邻格 ∪ 全部 battle XOR 配对，
- * 被剪配对在原版语义下必然无效果，结果集合与原版完全一致，枚举顺序不变）；
- * {@code =false} 时走原版双层循环，逐字节等价回退。<br>
- * 配对体逻辑（距离上限、battle join 接力、遭遇创建）两行路径共用同一份
- * {@link #ssoptimizer$checkCombatPair} 转抄实现，杜绝双份漂移。<br>
- * 等价性论证与前提假设见 {@link CombatPairingGridHelper} 类注释。
- */
 @Mixin(targets = GameMixinSignatures.BaseLocation.TARGET_CLASS, remap = false)
 public abstract class BaseLocationCombatPairingMixin {
     @Shadow
@@ -92,10 +71,6 @@ public abstract class BaseLocationCombatPairingMixin {
     @Shadow
     public abstract void removeObject(Object entity);
 
-    /**
-     * @reason 配对枚举分桶化（动机与「为什么必须覆写」见类注释）；
-     *         除「Checking combat initiation」段的配对枚举外，逐行对照原版转抄。
-     */
     @Overwrite(remap = false)
     @SuppressWarnings("unchecked")
     public void advance(final float amount, final InputEventList input) {
@@ -203,8 +178,6 @@ public abstract class BaseLocationCombatPairingMixin {
             final int fleetCount = fleets.size();
 
             if (CombatPairingGridHelper.isEnabled() && fleetCount >= 2) {
-                // 分桶配对：坐标/战斗状态/selectionSize 上限快照进格网，
-                // 配对体经 ssoptimizer$checkCombatPair 共享，判定逻辑一行不改
                 final float[] xs = new float[fleetCount];
                 final float[] ys = new float[fleetCount];
                 final boolean[] inBattle = new boolean[fleetCount];
@@ -233,7 +206,6 @@ public abstract class BaseLocationCombatPairingMixin {
                             }
                         });
             } else {
-                // 原版回退路径：双层全配对循环，配对体与分桶路径共享同一份转抄实现
                 for (int i = 0; i < fleetCount; i++) {
                     final CampaignFleet fleetA = fleets.get(i);
                     if (!fleetA.canBeEngaged()) {
@@ -304,17 +276,6 @@ public abstract class BaseLocationCombatPairingMixin {
         }
     }
 
-    /**
-     * 「Checking combat initiation」段单配对判定体（原版内层循环体逐行转抄）。
-     * <p>
-     * 原版内层循环头的 {@code var38.canBeEngaged()} 惰性判定保留在方法头；
-     * 原版三处 {@code continue}（join 成功后跳过本对剩余判定）对应本方法的提前 return；
-     * 外层 {@code var22}（玩家遭遇已触发标志）以 {@code encounterFired[0]} 传递。
-     *
-     * @param fleetA         外层舰队（对应原版 var29）
-     * @param fleetB         内层舰队（对应原版 var38）
-     * @param encounterFired 玩家遭遇已触发标志（对应原版 var22）
-     */
     private void ssoptimizer$checkCombatPair(final CampaignFleet fleetA, final CampaignFleet fleetB,
                                              final boolean[] encounterFired) {
         if (!fleetB.canBeEngaged()) {
@@ -347,7 +308,7 @@ public abstract class BaseLocationCombatPairingMixin {
 
         if (fleetA.getInteractionTarget() == fleetB || fleetB.getInteractionTarget() == fleetA) {
             final boolean playerInvolved = fleetA.isPlayerFleet() || fleetB.isPlayerFleet();
-            // 原版死代码（计算结果从未使用），逐行保留以维持调用副作用时序
+            // 原版未使用计算结果，但调用本身可能有副作用。
             final float unusedDistToPlayer = Utils.getDistance(
                     Global.getSector().getPlayerFleet().getLocation(), fleetA.getLocation());
             if (fleetA.getBattle() != null ^ fleetB.getBattle() != null) {

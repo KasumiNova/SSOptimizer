@@ -7,51 +7,23 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
-/**
- * org.lwjgl.opengl.GL33 的 bridge 镜像（sampler 对象 / 实例化除数 / frag data
- * 位置 / 时间戳查询 / packed 顶点族）。
- * <p>
- * 动机：Particle Engine（Ship Mastery System 的粒子引擎依赖）的
- * {@code ParticleAllocator} 用 {@code glVertexAttribDivisor} 做实例化粒子渲染，
- * GL33 曾整体不在镜像表内，调用直奔真实 GL 即
- * {@code No OpenGL context found in the current thread}。本类一次盖全 LWJGL2
- * GL33 的全部公开方法面，避免后续模组命中其余入口再走
- * 「未镜像 WARN → 真实 GL → 崩溃」的老路。
- * <p>
- * 语义同 {@link GL11}：状态命令按提交序入队；buffer 参数在录制时刻快照
- * （防调用方随后改写）；资源分配/查询走阻塞通道（调用方阻塞期间其 buffer
- * 不被触碰，渲染线程直接写入）。
- */
 public final class GL33 extends GL33Gen {
     private GL33() {
     }
 
-    /**
-     * 安装命令消费者，语义同 {@link GL11#install(RenderQueue)}。
-     *
-     * @param renderQueue 渲染队列实例
-     */
     public static void install(RenderQueue renderQueue) {
         BridgeSupport.install(renderQueue);
     }
 
-    /** 测试用：卸载已安装的队列，避免用例间静态状态串扰。 */
     static void uninstall() {
         BridgeSupport.uninstall();
     }
 
-    // ------------------------------------------------------------------
-    // 实例化绘制
-    // ------------------------------------------------------------------
 
-    /** 实例化属性除数（Particle Engine 的粒子实例化渲染入口）。 */
     public static void glVertexAttribDivisor(int index, int divisor) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL33.glVertexAttribDivisor(index, divisor));
     }
 
-    // ------------------------------------------------------------------
-    // frag data 位置（双源混合）
-    // ------------------------------------------------------------------
 
     /** 名称 buffer 录制时刻快照（LWJGL 要求 NUL 结尾 ASCII，原样保留字节）。 */
     public static void glBindFragDataLocationIndexed(int program, int colorNumber, int index, ByteBuffer name) {
@@ -59,34 +31,26 @@ public final class GL33 extends GL33Gen {
                 org.lwjgl.opengl.GL33.glBindFragDataLocationIndexed(program, colorNumber, index, snapshot));
     }
 
-    /** 名称录制时刻固化为 String，防调用方随后改写 CharSequence。 */
     public static void glBindFragDataLocationIndexed(int program, int colorNumber, int index, CharSequence name) {
         String snapshot = name.toString();
         BridgeSupport.enqueue(() ->
                 org.lwjgl.opengl.GL33.glBindFragDataLocationIndexed(program, colorNumber, index, snapshot));
     }
 
-    /** 名称查询：阻塞通道取回；调用方阻塞期间 buffer 不被触碰。 */
     public static int glGetFragDataIndex(int program, ByteBuffer name) {
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL33.glGetFragDataIndex(program, name));
     }
 
-    /** 名称查询：阻塞通道取回。名称在录制时刻定稿。 */
     public static int glGetFragDataIndex(int program, CharSequence name) {
         String snapshot = name.toString();
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL33.glGetFragDataIndex(program, snapshot));
     }
 
-    // ------------------------------------------------------------------
-    // sampler 对象
-    // ------------------------------------------------------------------
 
-    /** 渲染线程直接写入调用方 buffer；调用方阻塞期间 buffer 不被触碰。 */
     public static void glGenSamplers(IntBuffer samplers) {
         BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL33.glGenSamplers(samplers));
     }
 
-    /** 资源分配：阻塞通道取回真实 sampler id。 */
     public static int glGenSamplers() {
         return BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL33::glGenSamplers);
     }
@@ -100,7 +64,6 @@ public final class GL33 extends GL33Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL33.glDeleteSamplers(sampler));
     }
 
-    /** 名称判定：阻塞通道取回。 */
     public static boolean glIsSampler(int sampler) {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL33.glIsSampler(sampler));
     }
@@ -137,7 +100,6 @@ public final class GL33 extends GL33Gen {
                 org.lwjgl.opengl.GL33.glSamplerParameterIu(sampler, pname, snapshot.asIntBuffer()));
     }
 
-    /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameter(int sampler, int pname, IntBuffer params) {
         // LWJGL2 对本族固定要求 remaining ≥ 4（BufferChecks），小缓冲经填充辅助
         // 暂存执行后拷回（见 GetBufferFill）；glGetQueryObject 族下限为 1，无需填充
@@ -149,9 +111,7 @@ public final class GL33 extends GL33Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL33.glGetSamplerParameteri(sampler, pname));
     }
 
-    /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameter(int sampler, int pname, FloatBuffer params) {
-        // 固定下限 4 检查同 IntBuffer 变体，见 GetBufferFill
         BridgeSupport.blockingWaitResource(() -> GetBufferFill.fillFloats(params, 4,
                 buf -> org.lwjgl.opengl.GL33.glGetSamplerParameter(sampler, pname, buf)));
     }
@@ -160,9 +120,7 @@ public final class GL33 extends GL33Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL33.glGetSamplerParameterf(sampler, pname));
     }
 
-    /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameterI(int sampler, int pname, IntBuffer params) {
-        // 固定下限 4 检查同上，见 GetBufferFill
         BridgeSupport.blockingWaitResource(() -> GetBufferFill.fillInts(params, 4,
                 buf -> org.lwjgl.opengl.GL33.glGetSamplerParameterI(sampler, pname, buf)));
     }
@@ -171,9 +129,7 @@ public final class GL33 extends GL33Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL33.glGetSamplerParameterIi(sampler, pname));
     }
 
-    /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetSamplerParameterIu(int sampler, int pname, IntBuffer params) {
-        // 固定下限 4 检查同上，见 GetBufferFill
         BridgeSupport.blockingWaitResource(() -> GetBufferFill.fillInts(params, 4,
                 buf -> org.lwjgl.opengl.GL33.glGetSamplerParameterIu(sampler, pname, buf)));
     }
@@ -182,15 +138,11 @@ public final class GL33 extends GL33Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL33.glGetSamplerParameterIui(sampler, pname));
     }
 
-    // ------------------------------------------------------------------
-    // 查询对象（时间戳/计数器）
-    // ------------------------------------------------------------------
 
     public static void glQueryCounter(int id, int target) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL33.glQueryCounter(id, target));
     }
 
-    /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetQueryObject(int id, int pname, LongBuffer params) {
         BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL33.glGetQueryObject(id, pname, params));
     }
@@ -203,7 +155,6 @@ public final class GL33 extends GL33Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL33.glGetQueryObjecti64(id, pname));
     }
 
-    /** 查询回写：渲染线程直接写入调用方 buffer；调用方阻塞期间不被触碰。 */
     public static void glGetQueryObjectu(int id, int pname, LongBuffer params) {
         BridgeSupport.blockingWaitResource(() -> org.lwjgl.opengl.GL33.glGetQueryObjectu(id, pname, params));
     }
@@ -216,10 +167,6 @@ public final class GL33 extends GL33Gen {
         return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL33.glGetQueryObjectui64(id, pname));
     }
 
-    // ------------------------------------------------------------------
-    // packed 顶点族（INT_2_10_10_10_REV 等压缩格式；值语义按提交序入队，
-    // buffer 指针形态录制时刻快照）
-    // ------------------------------------------------------------------
 
     public static void glVertexP2ui(int type, int coords) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL33.glVertexP2ui(type, coords));

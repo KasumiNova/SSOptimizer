@@ -38,10 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-/**
- * Keeps only texture metadata alive during startup and postpones GPU upload
- * until the texture is first bound.
- */
 public final class LazyTextureManager {
     public static final  String   COMPOSITION_REPORT_FILE_PROPERTY            = "ssoptimizer.texturecomposition.reportfile";
     static final         String   DISABLE_PROPERTY                            = "ssoptimizer.disable.lazytextureupload";
@@ -53,7 +49,6 @@ public final class LazyTextureManager {
     static final         String   SWEEP_INTERVAL_MILLIS_PROPERTY              = "ssoptimizer.lazytextureupload.sweepintervalmillis";
     static final         String   COMPOSITION_REPORT_INTERVAL_MILLIS_PROPERTY = "ssoptimizer.texturecomposition.reportintervalmillis";
     static final         String   MANAGEMENT_LOG_INTERVAL_MILLIS_PROPERTY     = "ssoptimizer.texturemanager.logintervalmillis";
-    /** 热重传开关：后台压缩完成后，已驻留的未压缩纹理在下一次绑定时原地升级为压缩形态（默认开）。 */
     static final         String   HOT_RELOAD_PROPERTY                         = "ssoptimizer.texcompress.hotreload";
     static final         String   RESOURCE_MANAGER_CLASS_NAME                 = ResourceLoaderFileAccessProcessor.TARGET_CLASS.replace('/', '.');
     static final         String   DEFAULT_COMPOSITION_REPORT_FILE             = "ssoptimizer-texture-composition.tsv";
@@ -76,10 +71,8 @@ public final class LazyTextureManager {
     private static final long     DEFAULT_MANAGEMENT_LOG_INTERVAL_MILLIS      = 15_000L;
     private static final boolean  DEFAULT_MINIMAL_STARTUP                     = true;
     private static final String   GRAPHICS_PREFIX                             = "graphics/";
-    /** 定点诊断：路径含该子串的纹理在 getTextureId/bindTexture 时输出 INFO 级轨迹（默认关）。 */
     static final         String   TRACE_PATH_PROPERTY                         = "ssoptimizer.texture.tracepath";
     private static final String   TRACE_PATH                                  = System.getProperty(TRACE_PATH_PROPERTY, "");
-    /** ALL 模式定点诊断的逐路径去重集。 */
     private static final Set<String> TRACE_ALL_SEEN                           = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final String   FONTS_PREFIX                                = "graphics/fonts/";
     private static final String   ORIGINAL_EAGER_LOAD_METHOD_NAME             = "ssoptimizer$loadTextureEager";
@@ -101,18 +94,11 @@ public final class LazyTextureManager {
     };
 
     private static final    WeakKeyMap<com.fs.graphics.TextureObject, ManagedTextureEntry>      MANAGED_TEXTURES                    = new WeakKeyMap<>();
-    // Texture ids are bound to the current OpenGL context. Launcher UI and the
-    // actual game can create different contexts within the same JVM, so cached
-    // texture objects need lazy in-place reload when the context generation changes.
+    // 纹理 id 属于当前 GL 上下文；上下文代际变化后必须在原对象上延迟重建。
     private static final    WeakKeyMap<com.fs.graphics.TextureObject, ContextBoundTextureEntry> CONTEXT_BOUND_TEXTURES              = new WeakKeyMap<>();
     private static final    ThreadLocal<Set<com.fs.graphics.TextureObject>>              CONTEXT_RELOAD_GUARD                =
             ThreadLocal.withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<>()));
-    /**
-     * 重入卫兵的全局活跃计数（任意线程持有卫兵即 >0）：{@code isContextReloadInProgress}
-     * 的稳态快速路径——上下文重建是罕见事件，但卫兵检查在纹理绑定热路径上逐次触发
-     * （ThreadLocal.get + Set.contains 的 profile 热点）；计数为 0 时一次 volatile
-     * 读即可否决，仅在真有重建进行时走 ThreadLocal 精确判断。
-     */
+    // 计数为 0 时无需读取 ThreadLocal，仅在上下文重建期间执行精确判断。
     private static final    AtomicInteger                                                CONTEXT_RELOAD_GUARD_ACTIVE         = new AtomicInteger();
     private static final    ThreadLocal<String>                                          CURRENT_BOUND_TEXTURE_PATH          =
             ThreadLocal.withInitial(() -> "");
@@ -126,15 +112,7 @@ public final class LazyTextureManager {
     private static final    Method                                                       RESOURCE_MANAGER_FACTORY_METHOD     = resolveResourceManagerFactoryMethod();
     private static final    Method                                                       RESOURCE_MANAGER_OPEN_STREAM_METHOD = resolveResourceManagerOpenStreamMethod();
     private static final    Method                                                       RESOURCE_MANAGER_GET_FILE_METHOD    = resolveResourceManagerGetFileMethod();
-    /**
-     * 延迟上传回写 textureId 的反射通道：named jar 的 TextureObject 无 public
-     * setter，写字段只能反射（每纹理生命周期一次，非热路径）。
-     * 读路径同样必须走字段而非 public getTextureId()：该 getter 已被懒加载管线
-     * 挂钩（重定向进 {@link #getTextureId} → ensureTextureReady → readTextureId），
-     * 直接调 getter 会无限递归（cpu10 实测 StackOverflowError）。
-     * 已知残余成本：Field.getInt 逐次访问检查（cpu9 profile 约 0.2~0.6% 全局），
-     * 无 Mixin 方案是因为单测环境无 Mixin 注入且用例构造真实 TextureObject。
-     */
+    // 必须直接读写 textureId 字段，调用 getTextureId 会重入懒加载管线。
     private static final    Field                                                        TEXTURE_ID_FIELD                    = resolveField(com.fs.graphics.TextureObject.class, "textureId");
     private static final    Field                                                        SPECIAL_MIPMAP_SET_FIELD            = resolveField(TextureLoader.class, GameMemberNames.TextureLoader.SPECIAL_MIPMAP_SET);
     private static volatile long                                                         nextSweepNanos                      = 0L;
@@ -144,27 +122,19 @@ public final class LazyTextureManager {
     private static final    AtomicLong                                                   BIND_STATS_REAL                      = new AtomicLong();
     private static final    AtomicLong                                                   BIND_STATS_DEDUPED                   = new AtomicLong();
     private static final    AtomicLong                                                   BIND_STATS_ATLAS                     = new AtomicLong();
-    /** 逐路径 bind 统计（诊断用，{@code -Dssoptimizer.bindstats.paths=true} 开启）：非图集 bind 的调用数按路径计数。 */
     private static final    boolean                                                      BIND_PATH_STATS                      = Boolean.getBoolean("ssoptimizer.bindstats.paths");
     private static final    java.util.concurrent.ConcurrentHashMap<String, AtomicLong>   BIND_PATH_COUNTS                     = BIND_PATH_STATS ? new java.util.concurrent.ConcurrentHashMap<>() : null;
     private static volatile long                                                         nextBindStatsLogNanos                = 0L;
     private static volatile Object                                                       lastOpenGlContextToken              = null;
     private static volatile long                                                         currentOpenGlContextGeneration      = 0L;
-    /** 热重传计数：后台压缩完成后原地升级为压缩形态的纹理数（诊断/TSV 对照用）。 */
     private static final AtomicLong                                                      HOT_RELOADED_TEXTURES               = new AtomicLong();
-    /**
-     * 热重传待升级队列：压缩完成时入队（entry 同时打升级键），由绑定路径按节流 drain——
-     * 主动重传不依赖该纹理「再次被绑定」（短期渲染后不再绑定的纹理也会在其仍驻留期间
-     * 被升级为压缩形态，避免未压缩形态常驻显存）。
-     */
+    // 升级键同时充当入队标记，重复通知不得产生重复项。
     private static final Queue<PendingCompressionUpgrade>                                PENDING_COMPRESSION_UPGRADES        = new ConcurrentLinkedQueue<>();
-    /** drain 节流：间隔 ~5ms（约每帧一次）、单次预算 8 张（单张全 mip 链上传亚毫秒级）。 */
     private static final long                                                            HOT_RELOAD_DRAIN_INTERVAL_NANOS     = 5_000_000L;
     private static final int                                                             HOT_RELOAD_DRAIN_BUDGET             = 8;
     private static volatile long                                                         nextHotReloadDrainNanos             = 0L;
 
     static {
-        // 热重传接线：后台压缩完成 → 标记同源驻留纹理，下一次绑定时原地升级（见 §3.3）
         TextureCompressionScheduler.setCompletionListener(LazyTextureManager::noteCompressedTextureAvailable);
     }
 
@@ -179,7 +149,7 @@ public final class LazyTextureManager {
 
         LOGGER.info("[SSOptimizer] Texture composition TSV export enabled: " + resolveReportPath(configured));
 
-        // shutdown hook 有意保留平台线程（Wave 3 不迁移）：关停阶段虚拟线程调度器已停用
+        // JVM 关停阶段虚拟线程调度器已停用，shutdown hook 必须使用平台线程。
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 final Path exported = exportTextureCompositionReport(configured);
@@ -213,8 +183,6 @@ public final class LazyTextureManager {
     public static com.fs.graphics.TextureObject loadTexture(final TextureLoader loader,
                                                             final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                                             final String resourcePath) throws IOException {
-        // T1 地基：首次贴图加载时触发一次压缩能力探测（结果静态缓存 + info 日志，
-        // 此后调用仅一次 volatile 读）；T2 压缩管线直接复用该探测结论
         TextureCompressionSupport.preferredFormat();
         final com.fs.graphics.TextureObject cached = (com.fs.graphics.TextureObject) textureCache.get(resourcePath);
         if (cached != null) {
@@ -248,7 +216,6 @@ public final class LazyTextureManager {
             return markTextureLoadedInCurrentContext(eagerLoad(loader, textureCache, resourcePath, resourcePath), resourcePath);
         }
 
-        // worker 预备管线：读源/哈希/缓存写入已在后台完成，这里直接消费元数据
         final TexturePreparationRegistry.Prepared prepared = TexturePreparationRegistry.await(effectivePath);
         if (prepared != null) {
             return loadPreparedTexture(loader, textureCache, resourcePath, effectivePath, prepared);
@@ -286,7 +253,6 @@ public final class LazyTextureManager {
         BIND_STATS_CALLS.incrementAndGet();
         final ShipWeaponAtlas.Region atlasRegion = ShipWeaponAtlas.lookup(texture.getTexturePath());
         if (atlasRegion != null) {
-            // 已入舰船/武器图集：直接绑定图集纹理，原始贴图不再上传
             traceTextureAccess("bindTexture", texture, atlasRegion.textureId(), true);
             bindTextureDeduped(target, atlasRegion.textureId());
             noteCurrentBoundTexture(texture);
@@ -317,7 +283,6 @@ public final class LazyTextureManager {
         maybeEmitTextureDiagnostics(now);
     }
 
-    /** 诊断：记录一次非图集 bind 的逐路径计数（仅在 BIND_PATH_STATS 开启时有效）。 */
     private static void noteBindPath(final com.fs.graphics.TextureObject texture) {
         if (BIND_PATH_COUNTS == null) {
             return;
@@ -327,20 +292,7 @@ public final class LazyTextureManager {
                 .incrementAndGet();
     }
 
-    /**
-     * 真实 GL 绑定去重：先向驱动查询当前绑定，仅当目标纹理不同才发起
-     * {@code glBindTexture}。图集化后大量精灵共享同一图集页纹理，连续绘制同页
-     * 内容时本方法可把真实 bind 调用压到接近零；非图集纹理的相邻重复绑定
-     * （UI 字体、粒子批次等）同样受益。
-     * <p>
-     * 正确性依赖 {@code glGetInteger(GL_TEXTURE_BINDING_2D)} 返回驱动侧真实状态，
-     * 因此游戏内任何绕过本管理器的直接 glBindTexture 调用都不会使去重失效。
-     * 仅对 {@code GL_TEXTURE_2D} 目标去重，其余目标保持无条件绑定。
-     * <p>
-     * 渲染线程分离模式下去重整体跳过：此时 {@code glGetInteger} 经 bridge 是一次
-     * 全管线 drain（还会计入 StallDetector 熔断窗口），而重复 bind 只是渲染线程
-     * 上一条廉价命令——去重的收益与成本倒挂，直接录制绑定命令。
-     */
+    // 渲染分离下 glGetInteger 会 drain 全管线，必须直接录制 bind。
     private static void bindTextureDeduped(final int target, final int textureId) {
         if (RenderThreadMode.isEnabled()) {
             GL11.glBindTexture(target, textureId);
@@ -364,16 +316,7 @@ public final class LazyTextureManager {
         return isManagedFontTexture(CURRENT_BOUND_TEXTURE_PATH.get());
     }
 
-    /**
-     * {@code TextureObject.getTextureId()} 的重写实现：纯惰性上传语义，
-     * <b>不感知图集</b>。图集化贴图的 Sprite 渲染路径（SpriteMixin 覆写方法）
-     * 经 render 域 {@code AtlasTextureResolver} 直接取图集页 id；本方法的其余
-     * 调用方（模组经 {@code SpriteAPI.getTextureId()} 取 id 后自行绑定并以
-     * 0..1 裸 UV 全图采样，如 BoxUtil MaterialData 默认漫反射槽、Polaris
-     * PLSP_BoxBasedUtil.genSDF）必须拿到独立纹理 id——若返回图集页 id 会采到
-     * 整页平铺（实证：BoxUtil 拖尾错乱成图集页、八胞簇船体辉光蓝块）。
-     * 因此图集注入收敛在 Sprite 渲染方法内，本方法对所有调用方一视同仁。
-     */
+    // 裸 UV 调用方必须获得独立纹理 id，图集 id 只允许由 Sprite 渲染路径解析。
     public static int getTextureId(final com.fs.graphics.TextureObject texture,
                                    final int target,
                                    final int currentTextureId) {
@@ -395,12 +338,6 @@ public final class LazyTextureManager {
         return result;
     }
 
-    /**
-     * 定点诊断（{@link #TRACE_PATH_PROPERTY}）：路径含子串的纹理输出访问轨迹，
-     * 用于定位图集 id 外泄/纹理 id 错乱类问题。
-     * 特殊值 {@code ALL}：每路径只记一次（去重），并附带真实调用方栈帧——
-     * 用于定位「图集 id 经 getTextureId 外泄给裸 UV 消费者」的泄漏源。
-     */
     private static void traceTextureAccess(final String op, final com.fs.graphics.TextureObject texture,
                                            final int resultId, final boolean atlasHit) {
         if (TRACE_PATH.isEmpty() || texture == null) {
@@ -437,10 +374,6 @@ public final class LazyTextureManager {
                 + (caller.length() == 0 ? "" : " caller=" + caller));
     }
 
-    /**
-     * 纹理绑定计数日志：每 10 秒输出一次 bindTexture 调用数、真实 glBindTexture 数、
-     * 去重跳过数与其中图集页命中数，用于基准对照图集的 bind 开销削减效果。
-     */
     private static void maybeLogBindStats() {
         final long now = System.nanoTime();
         if (now < nextBindStatsLogNanos) {
@@ -488,12 +421,10 @@ public final class LazyTextureManager {
                 ManagedTextureEntry.resident(normalizeResourcePath(resourcePath), "test-hash", metadata, System.nanoTime(), true));
     }
 
-    /** 测试用：当前受管纹理条目数（size 会先 expunge，返回存活数）。 */
     static int managedTextureCountForTests() {
         return MANAGED_TEXTURES.size();
     }
 
-    /** 测试用：查询纹理条目当前的热重传升级键（无标记/无条目返回 null）。 */
     static CompressedTextureCache.Key compressedUpgradeKeyForTests(final com.fs.graphics.TextureObject texture) {
         final ManagedTextureEntry entry = MANAGED_TEXTURES.get(texture);
         return entry == null ? null : entry.compressedUpgradeKey;
@@ -618,13 +549,6 @@ public final class LazyTextureManager {
         return false;
     }
 
-    /**
-     * 游戏设置中的原始延迟加载模式是否启用。
-     * 该模式下贴图元数据（尺寸/uScale）在 setTexture 时不可用，
-     * {@code ShipWeaponAtlas} 等依赖元数据的功能据此跳过。
-     *
-     * @return 启用返回 true；设置方法不可用时按未启用处理
-     */
     public static boolean isOriginalLazyModeEnabled() {
         final Method method = ORIGINAL_LAZY_MODE_METHOD;
         if (method == null) {
@@ -697,8 +621,7 @@ public final class LazyTextureManager {
         }
 
         if (!resolved.sourceHash().equals(entry.sourceHash)) {
-            // 重建后实际源哈希与登记键不一致（如 worker 与主线程读源路径不同）：
-            // 同步 entry 键，保证后续绑定（闲置卸载后再上传）直接命中缓存。
+            // 重建哈希变化后必须同步 entry 键，否则后续缓存查找仍使用旧键。
             entry.updateSourceHash(resolved.sourceHash());
         }
 
@@ -715,17 +638,6 @@ public final class LazyTextureManager {
         entry.applyCompressedFormat(usedFormat);
     }
 
-    /**
-     * 解析延迟上传所需的像素数据。
-     * <p>
-     * 优先按登记的 {@code registeredSourceHash} 命中压缩缓存；未命中时立即重建：
-     * 直接重读源字节并解码/转换为像素，同时尝试回写磁盘缓存（回写失败不阻塞本次上传）。
-     * 重建结果直接返回，不再依赖第二次缓存读取——旧实现中 {@code buildMetadata} 可能走
-     * 元数据短路（索引与数据文件不同步时成为空操作）、缓存写入失败被静默吞掉或重建哈希
-     * 与登记键不一致，都会导致重建后再次 miss，最终以 IOException 失败并黑采样。
-     *
-     * @return 像素数据与实际使用的源哈希；源不可读或解码失败时返回 null（调用方走 1x1 兜底上传）
-     */
     static ResolvedDeferredTexture resolveDeferredTextureData(final String resourcePath,
                                                               final String registeredSourceHash) {
         final TextureConversionCache.CachedTextureData cached = TextureConversionCache.load(registeredSourceHash);
@@ -773,10 +685,6 @@ public final class LazyTextureManager {
                 rebuiltHash);
     }
 
-    /**
-     * 延迟重建时重读源字节。缓存未命中后不再走资源索引指纹短路（索引与数据文件不同步时
-     * 该路径可能空转），直接从资源流读取原始字节。
-     */
     static byte[] readRebuildSourceBytes(final String resourcePath) {
         try (InputStream input = openStream(resourcePath, resourcePath)) {
             if (input == null) {
@@ -789,11 +697,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /**
-     * 源不可读/解码失败时上传 1x1 白色像素贴图，避免 GL 以未生成纹理 id 的不完整纹理
-     * 采样产生黑块；同时输出 ERROR 日志便于排查。白色对 normal map 是合法非零扰动，
-     * 对颜色贴图是可见占位，均优于黑采样。
-     */
     private static void uploadFallbackPixelTexture(final com.fs.graphics.TextureObject texture,
                                                    final int target,
                                                    final ManagedTextureEntry entry) {
@@ -807,18 +710,6 @@ public final class LazyTextureManager {
                 new TextureConversionCache.CachedTextureData(1, 1, true, result));
     }
 
-    /**
-     * 用已完成的像素转换结果执行纯 GL 上传（gen/bind/参数/texImage2D）。
-     * 调用方必须持有 OpenGL 上下文。
-     * <p>
-     * T2 压缩分流（设计 §4.1）：适用压缩且压缩缓存命中时，改走
-     * {@code glCompressedTexImage2D} 逐级上传（mip 链已随容器预生成，
-     * GL_GENERATE_MIPMAP 恒 0），并返回压缩形态供 {@link ManagedTextureEntry}
-     * 写真值；未命中走现状未压缩路径，并把可压缩纹理投递后台压缩线程池。
-     *
-     * @param sourceHash 源字节 SHA-256（压缩缓存键成分；无源哈希的兜底上传传 null）
-     * @return 实际使用的压缩形态；未压缩路径返回 {@link TextureCompressionSupport.Format#NONE}
-     */
     private static TextureCompressionSupport.Format uploadConverted(final com.fs.graphics.TextureObject texture,
                                                                     final int target,
                                                                     final String resourcePath,
@@ -851,8 +742,6 @@ public final class LazyTextureManager {
             return compressed.format();
         }
 
-        // eager 模式（ssoptimizer.texcompress.mode=eager）：缓存未命中时在加载线程
-        // 同步压缩并落盘，首轮即压缩形态上传；同步压缩失败回落未压缩路径 + 后台投递
         if (TextureCompressionSupport.isEagerMode()) {
             final SsobcContainer eagerCompressed = compressSynchronously(
                     resourcePath, sourceHash, generateMipmaps, cached, result);
@@ -877,25 +766,16 @@ public final class LazyTextureManager {
                 result.textureWidth(), result.textureHeight(), 0,
                 format, TYPE_UNSIGNED_BYTE, result.buffer());
 
-        // 上传完成后投递后台压缩（像素在投递处复制，不阻塞 GL 命令序列）；
-        // 缓存未命中首轮仍以未压缩路径上传，行为=现状
         maybeScheduleCompression(resourcePath, sourceHash, generateMipmaps, result);
         return TextureCompressionSupport.Format.NONE;
     }
 
-    /**
-     * 压缩纹理逐级上传（RT 模式下 {@code GL13.glCompressedTexImage2D} 调用点经
-     * RenderThreadRedirector 改写为 bridge 入队快照语义；同纹理按级别顺序追加即保持
-     * mip 链顺序，bridge 快照尺寸取 limit，故逐级切窗前先把 limit 收到块字节数）。
-     * 压缩纹理的 textureId 生命周期与未压缩一致（gen/bind 由调用方完成）。
-     */
+    // bridge 在入队时按 buffer limit 深拷贝；逐级上传前必须设置窗口并保持 mip 顺序。
     private static void uploadCompressedLevels(final int target,
                                                final String resourcePath,
                                                final boolean generateMipmaps,
                                                final SsobcContainer container) {
         final List<SsobcContainer.Level> levels = container.levels();
-        // 容器层数与键的 mip 标志在缓存读侧已校验一致；generateMipmaps 却仅 1 级理论上
-        // 不可达，保底把 min filter 收到 LINEAR，避免不完整 mip 链采样出黑块
         final boolean mipChainUploaded = generateMipmaps && levels.size() > 1;
         if (generateMipmaps && !mipChainUploaded) {
             LOGGER.warn("[SSOptimizer] 压缩纹理缺少 mip 链（" + resourcePath
@@ -906,8 +786,6 @@ public final class LazyTextureManager {
         GL11.glTexParameteri(target, 10240, magFilterForResourcePath(resourcePath));
         GL11.glTexParameteri(TARGET_2D, GENERATE_MIPMAP, 0);
 
-        // 块数据区一次拷入 direct buffer，逐级切窗上传（bridge 在入队时刻按窗快照深拷贝，
-        // 本方法返回后 buffer 即可被 GC）
         final byte[] raw = container.raw();
         final int dataRegionOffset = container.dataRegionOffset();
         final ByteBuffer blocks = BufferUtils.createByteBuffer(raw.length - dataRegionOffset);
@@ -926,11 +804,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /**
-     * eager 模式同步压缩（加载线程上执行）：像素规整为 RGBA8 后调
-     * {@link NativeTextureCompressor}，成功即写入 {@link CompressedTextureCache}
-     * 并返回容器供直接压缩上传。任一环节失败返回 null（compress 内部已记日志）。
-     */
     private static SsobcContainer compressSynchronously(final String resourcePath,
                                                         final String sourceHash,
                                                         final boolean generateMipmaps,
@@ -974,12 +847,6 @@ public final class LazyTextureManager {
         return SsobcContainer.parse(containerBytes);
     }
 
-    /**
-     * 热重传标记（后台压缩完成回调，worker 线程）：给同源、已驻留、尚未压缩的
-     * 受管纹理记录升级键并入待升级队列；实际重传由绑定路径节流 drain
-     * （{@link #drainCompressionUpgrades}）或该纹理下一次绑定
-     * （{@link #maybeUpgradeToCompressed}）执行，均在持 GL 上下文线程上。
-     */
     static void noteCompressedTextureAvailable(final String resourcePath,
                                                final CompressedTextureCache.Key key) {
         if (!isHotReloadEnabled() || key == null) {
@@ -997,7 +864,6 @@ public final class LazyTextureManager {
                         || !entry.sourceHash.equals(key.sourceHash())) {
                     return;
                 }
-                // 升级键即「已入队」标记：仅 null → key 跃迁时入队，重复通知不产生重复项
                 if (entry.compressedUpgradeKey == null) {
                     entry.compressedUpgradeKey = key;
                     PENDING_COMPRESSION_UPGRADES.add(new PendingCompressionUpgrade(texture, key));
@@ -1006,16 +872,7 @@ public final class LazyTextureManager {
         }
     }
 
-    /**
-     * 热重传 drain（绑定路径尾部调用）：节流（间隔/单次预算）取出待升级纹理，
-     * 在其仍驻留期间主动重传为压缩形态。无 GL 上下文时整批留待下一帧；
-     * 条目已驱逐（pendingUpload）时清除标记跳过——重载时会自然命中压缩缓存。
-     * <p>
-     * 执行过任何升级后必须显式把绑定恢复为 {@code expectedBinding}（调用方刚绑定、
-     * 后续绘制假定它仍有效）：非 RT 下逐次升级内的 capture/restore 已覆盖，但 RT 模式
-     * 的 captureBoundTexture 刻意空转（查询=全管线 drain），不恢复会把后续绘制留在
-     * 升级纹理上造成串贴图。
-     */
+    // 热重传后必须恢复调用方绑定；渲染分离下逐次 capture 为空转。
     private static void drainCompressionUpgrades(final int target,
                                                  final int expectedBinding,
                                                  final long now) {
@@ -1040,13 +897,12 @@ public final class LazyTextureManager {
             }
             synchronized (entry) {
                 if (entry.compressedUpgradeKey != upgrade.key()) {
-                    continue; // 已被消费或被更新的键替换
+                    continue;
                 }
                 if (entry.pendingUpload()) {
                     entry.compressedUpgradeKey = null;
                     continue;
                 }
-                // restoreBinding=false：恢复由下方统一执行（RT 模式逐次 capture 是空转）
                 maybeUpgradeToCompressed(upgrade.texture(), TARGET_2D, entry, false);
                 upgradedAny = true;
             }
@@ -1056,7 +912,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /** 测试用：待升级队列深度。 */
     static int pendingCompressionUpgradeCountForTests() {
         return PENDING_COMPRESSION_UPGRADES.size();
     }
@@ -1065,11 +920,6 @@ public final class LazyTextureManager {
         return !"false".equalsIgnoreCase(System.getProperty(HOT_RELOAD_PROPERTY, "true"));
     }
 
-    /**
-     * 热重传执行（绑定路径、持 GL 上下文线程）：缓存键仍匹配当前源哈希时，
-     * 在同一 textureId 上用压缩数据重指定存储（内容逐像素一致，视觉无缝）；
-     * 键过期/缓存失效/纹理已卸载则清除标记不再重试。无 GL 上下文时保留标记待下轮绑定。
-     */
     private static void maybeUpgradeToCompressed(final com.fs.graphics.TextureObject texture,
                                                  final int target,
                                                  final ManagedTextureEntry entry,
@@ -1109,7 +959,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /** 未命中压缩缓存时投递后台压缩任务；不适用（判定排除/GL 无能力/无源哈希）则跳过。 */
     private static void maybeScheduleCompression(final String resourcePath,
                                                  final String sourceHash,
                                                  final boolean generateMipmaps,
@@ -1129,11 +978,6 @@ public final class LazyTextureManager {
                 result.buffer());
     }
 
-    /**
-     * 延迟贴图登记（deferred-awaiting-first-bind）时投递「仅压缩」prepass 任务：
-     * 后台解码→转换→压缩→落盘缓存，不做 GL 上传，使首次 bind 直接命中压缩缓存。
-     * 格式与 mip 标志在登记元数据上即可完全确定；不适用压缩/开关关闭则跳过。
-     */
     private static void maybeScheduleDeferredPrepass(final String resourcePath,
                                                      final String sourceHash,
                                                      final LazyTextureMetadata metadata) {
@@ -1200,11 +1044,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /**
-     * 消费 worker 预备结果：defer 贴图只登记元数据；eager 贴图在此时才把像素
-     * 从 Zstd 缓存解压到 DirectBuffer 并执行纯 GL 上传，不再走
-     * {@code ssoptimizer$loadTextureEager} 的原版读图/转换路径。
-     */
     private static com.fs.graphics.TextureObject loadPreparedTexture(final TextureLoader loader,
                                                                      final HashMap<String, com.fs.graphics.TextureObject> textureCache,
                                                                      final String requestedPath,
@@ -1259,8 +1098,7 @@ public final class LazyTextureManager {
 
     private static SourceSnapshot readSource(final String normalizedPath,
                                              final String originalPath) throws IOException {
-        // 字体覆盖路径在内存中提供 PNG 数据，磁盘指纹对应的仍然是原版文件，
-        // 因此对字体覆盖路径跳过基于磁盘指纹的缓存查找。
+        // 字体覆盖使用内存 PNG，不得按磁盘原版文件指纹查缓存。
         final FontResourceOverride fontOverrideService = fontResourceOverride();
         final boolean fontOverride = fontOverrideService != null
                 && fontOverrideService.isEnabled()
@@ -1268,9 +1106,7 @@ public final class LazyTextureManager {
 
         TextureConversionCache.TextureSourceFingerprint sourceFingerprint = null;
         if (!fontOverride) {
-            // 指纹必须取自合并视图解析出的权威文件（模组覆盖优先），而非 CWD 直连：
-            // CWD 直连会让游戏根目录下的原版文件指纹压过模组覆盖文件，
-            // 导致缓存索引命中原版像素、模组贴图覆盖静默失效。
+            // 指纹必须来自合并视图解析出的权威文件，保证模组覆盖优先。
             sourceFingerprint = probeManagedFingerprint(originalPath, normalizedPath);
         }
         if (sourceFingerprint != null) {
@@ -1301,9 +1137,7 @@ public final class LazyTextureManager {
 
     private static InputStream openStream(final String originalPath,
                                           final String normalizedPath) throws IOException {
-        // 字体覆盖资源优先：SSOptimizer 运行时生成的字体 .fnt/.png 必须先于磁盘文件
-        // 被返回，否则 FileInputStream 会读取到磁盘上（可能是汉化包预制的）位图字体
-        // atlas，与 SSOptimizer 生成的 .fnt 坐标不匹配，导致渲染乱码。
+        // 内存字体覆盖必须优先于磁盘文件，确保图集与生成的 .fnt 坐标一致。
         final FontResourceOverride fontOverrideService = fontResourceOverride();
         if (fontOverrideService != null) {
             final InputStream fontOverride = fontOverrideService.openStream(originalPath);
@@ -1318,9 +1152,7 @@ public final class LazyTextureManager {
             }
         }
 
-        // 合并视图优先：与原版 ResourceLoader 优先级一致（模组目录 > CWD > res 目录），
-        // 保证模组以同相对路径文件覆盖原版资源时读取到覆盖文件。CWD 直连必须先于
-        // 合并视图尝试会导致游戏根目录下的原版文件永远压过模组覆盖文件。
+        // 合并视图保持模组目录 > CWD > res 的原版覆盖优先级。
         File managedFile = resolveManagedFile(originalPath);
         if (managedFile == null && !normalizedPath.equals(originalPath)) {
             managedFile = resolveManagedFile(normalizedPath);
@@ -1329,7 +1161,6 @@ public final class LazyTextureManager {
             return new FileInputStream(managedFile);
         }
 
-        // classpath 内资源（getResourceFile 无法解析为磁盘文件的情形）
         InputStream input = openManagedStream(originalPath);
         if (input == null && !normalizedPath.equals(originalPath)) {
             input = openManagedStream(normalizedPath);
@@ -1338,7 +1169,6 @@ public final class LazyTextureManager {
             return input;
         }
 
-        // ResourceLoader 不可用（如启动极早期反射未就绪）时的直连兜底
         try {
             return new FileInputStream(originalPath);
         } catch (IOException ignored) {
@@ -1427,7 +1257,6 @@ public final class LazyTextureManager {
                     }
                 }
             } else if (entry.compressedUpgradeKey != null) {
-                // 热重传：后台压缩已完成的驻留纹理，在本次绑定时原地升级为压缩形态
                 maybeUpgradeToCompressed(texture, target, entry, restoreBinding);
             }
         }
@@ -1546,7 +1375,6 @@ public final class LazyTextureManager {
 
     private static int readTextureId(final com.fs.graphics.TextureObject texture,
                                      final int fallback) {
-        // 必须读字段而非 getTextureId()：该 getter 已被懒加载管线挂钩（见 TEXTURE_ID_FIELD 注释）
         final Field field = TEXTURE_ID_FIELD;
         if (field == null || texture == null) {
             return fallback;
@@ -1598,9 +1426,7 @@ public final class LazyTextureManager {
             return Integer.MIN_VALUE;
         }
         if (RenderThreadMode.isEnabled()) {
-            // 分离模式下查询当前绑定是一次全管线 drain；上传路径之后所有绘制都会
-            // 经 bindTextureDeduped 重新绑定正确纹理（分离模式下它无条件录制 bind），
-            // 捕获/恢复旧绑定没有语义价值，直接跳过（返回哨兵使 restore 空转）
+            // 查询绑定会 drain 全管线，直接返回哨兵使 restore 空转。
             return Integer.MIN_VALUE;
         }
         try {
@@ -1864,7 +1690,6 @@ public final class LazyTextureManager {
             if (!snapshot.isEmpty() || recentlyEvicted > 0L || totalEvicted > 0L) {
                 PENDING_EVICTED_TEXTURES.getAndSet(0L);
                 String summary = formatManagementSummary(snapshot, recentlyEvicted, totalEvicted);
-                // 顺带输出驱动侧真实显存水位（RT 模式/无扩展时 VramProbe 返回 null）
                 final String vram = VramProbe.queryStatus();
                 if (vram != null) {
                     summary = summary + ' ' + vram;
@@ -1902,12 +1727,6 @@ public final class LazyTextureManager {
         return true;
     }
 
-    /**
-     * 受管贴图周期摘要。{@code managedResident} 口径只含 LazyTextureManager 受管
-     * （{@code MANAGED_TEXTURES}）且当前驻留的贴图估算字节：<b>不含</b>舰船/武器图集页
-     * （受管贴图入图集后单张永不上传，图集页在 {@code ShipWeaponAtlas} 单独上传）、
-     * 不含非受管贴图（非 graphics/ 前缀或低于驻留跟踪阈值）。
-     */
     static String formatManagementSummary(final List<TextureCompositionReport.TextureEntry> entries,
                                           final long recentlyEvictedTextures,
                                           final long totalEvictedTextures) {
@@ -2060,7 +1879,6 @@ public final class LazyTextureManager {
         return total;
     }
 
-    /** 按压缩形态折算单 mip 层字节数（none=4B/px、bc1=0.5B/px、bc3/bc7=1B/px）。 */
     private static long mipLevelBytes(final int textureWidth,
                                       final int textureHeight,
                                       final TextureCompressionSupport.Format compressionFormat) {
@@ -2233,15 +2051,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /**
-     * 经游戏 ResourceLoader 合并视图解析资源的权威磁盘文件，优先级与原版
-     * {@code openStream} 完全一致（模组目录 > CWD > res 目录）。模组以同相对路径
-     * 文件覆盖原版资源时，此处返回模组目录下的文件。
-     *
-     * <p>仅 classpath 内资源、任何根均未命中、或 ResourceLoader 不可用时返回 null
-     * （游戏 getResourceFile 在这些情形下抛 RuntimeException，归一化为「无法解析
-     * 为磁盘文件」语义，调用方回退流式读取）。</p>
-     */
     static File resolveManagedFile(final String resourcePath) {
         final Method factoryMethod = RESOURCE_MANAGER_FACTORY_METHOD;
         final Method getFileMethod = RESOURCE_MANAGER_GET_FILE_METHOD;
@@ -2260,11 +2069,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /**
-     * 按合并视图解析后的权威文件探测磁盘指纹。指纹必须与 {@link #openStream} 实际
-     * 读取的字节来源一致，否则模组覆盖资源时指纹指向原版文件，缓存索引会命中
-     * 原版像素导致覆盖静默失效。
-     */
     static TextureConversionCache.TextureSourceFingerprint probeManagedFingerprint(final String originalPath,
                                                                                    final String normalizedPath) {
         File resolved = resolveManagedFile(originalPath);
@@ -2332,9 +2136,6 @@ public final class LazyTextureManager {
         }
     }
 
-    /**
-     * 延迟上传解析结果：像素数据 + 实际生效的源哈希（重建后可能与登记键不同）。
-     */
     record ResolvedDeferredTexture(TextureConversionCache.CachedTextureData data,
                                    String sourceHash) {
     }
@@ -2343,7 +2144,7 @@ public final class LazyTextureManager {
                                             long contextGeneration) {
     }
 
-    /** 热重传待升级项：纹理对象 + 压缩缓存键（键实例与 entry.compressedUpgradeKey 同一引用，供幂等校验）。 */
+    // key 与 entry.compressedUpgradeKey 必须保持同一引用，供幂等校验。
     private record PendingCompressionUpgrade(com.fs.graphics.TextureObject texture,
                                              CompressedTextureCache.Key key) {
     }
@@ -2355,18 +2156,8 @@ public final class LazyTextureManager {
         private final    int     imageHeight;
         private final    int     textureWidth;
         private final    int     textureHeight;
-        /** 估算显存字节数：登记时按未压缩形态估算，压缩上传后由 {@link #applyCompressedFormat} 重算。 */
         private volatile long    estimatedGpuBytes;
-        /**
-         * 压缩纹理形态（T2 起由压缩上传分流写真值）：估算字节数与 TSV
-         * compression 列均以它为准，未走压缩上传的纹理恒 NONE。
-         */
         private volatile TextureCompressionSupport.Format compressionFormat = TextureCompressionSupport.Format.NONE;
-        /**
-         * 热重传升级键（兼「已入待升级队列」标记）：后台压缩完成回调写入
-         * （{@link LazyTextureManager#noteCompressedTextureAvailable}），由绑定路径节流
-         * drain 或下一次绑定时命中压缩缓存原地重传并清空；源哈希变化/缓存失效时清空不再重试。
-         */
         private volatile CompressedTextureCache.Key  compressedUpgradeKey;
         private volatile boolean evictable;
         private volatile boolean pendingUpload;
@@ -2446,19 +2237,11 @@ public final class LazyTextureManager {
             evictable = false;
         }
 
-        /**
-         * 延迟重建后同步实际源哈希（重建键与登记键不一致时调用），
-         * 使后续绑定可直接命中缓存。仅在持 entry 锁时调用。
-         */
+        // 仅在持有 entry 锁时调用。
         void updateSourceHash(final String sourceHash) {
             this.sourceHash = sourceHash;
         }
 
-        /**
-         * 压缩上传成功后写真值：记录压缩形态并按形态重算估算显存字节数
-         * （BC7/BC3=1B/px、BC1=0.5B/px，见 {@link #estimateTextureGpuBytes}）。
-         * NONE（未压缩路径）为无操作。
-         */
         void applyCompressedFormat(final TextureCompressionSupport.Format format) {
             if (format == null || format == TextureCompressionSupport.Format.NONE) {
                 return;
@@ -2504,7 +2287,6 @@ public final class LazyTextureManager {
                             metadata.imageHeight(),
                             metadata.textureWidth(),
                             metadata.textureHeight(),
-                            // 登记时按未压缩形态初估；压缩上传后由 ManagedTextureEntry.applyCompressedFormat 重算
                             TextureCompressionSupport.Format.NONE)
             );
         }
@@ -2529,7 +2311,6 @@ public final class LazyTextureManager {
                             imageHeight,
                             result.textureWidth(),
                             result.textureHeight(),
-                            // 登记时按未压缩形态初估；压缩上传后由 ManagedTextureEntry.applyCompressedFormat 重算
                             TextureCompressionSupport.Format.NONE)
             );
         }

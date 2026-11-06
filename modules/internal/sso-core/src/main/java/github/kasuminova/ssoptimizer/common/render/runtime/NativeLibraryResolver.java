@@ -4,26 +4,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * 原生库路径解析器。
- * <p>
- * 自阶段 4 起 native 按功能域拆分为多个共享库（libssoptimizer_render.so / libssoptimizer_loading.so /
- * libssoptimizer_font.so / libssoptimizer_ime.so），本类按模块名解析各自路径。
- * <p>
- * 查找优先级：
- * <ol>
- *   <li>系统属性 {@code ssoptimizer.native.path.<moduleName>} 指定路径（按模块覆盖）；</li>
- *   <li>系统属性 {@code ssoptimizer.native.path} 指定路径（仅对主模块 render 生效，历史语义）；</li>
- *   <li>mod 目录下平台相关子目录的约定文件名。</li>
- * </ol>
+ * 按模块解析原生库路径。
+ * 优先使用模块专属系统属性，其次使用 render 模块的通用路径属性，最后查找 mod 目录的平台子目录。
  */
 public final class NativeLibraryResolver {
-    /** 主模块名：包含 glad 初始化与全部 GL 渲染器。 */
     public static final String MAIN_MODULE = "render";
 
     private NativeLibraryResolver() {
     }
 
-    /** 主模块（render）路径解析，兼容历史调用方。 */
     public static Path resolve() {
         return resolve(MAIN_MODULE);
     }

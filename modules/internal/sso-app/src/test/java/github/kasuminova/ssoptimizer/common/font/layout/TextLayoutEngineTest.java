@@ -8,16 +8,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link TextLayoutEngine} 的原版语义复刻验证。
- * <p>
- * 基准：0.98a-RC8 named 源码 BitmapFontRenderer 的 render/drawText/renderText/drawGlyph/
- * drawUnderline 控制流（见引擎 javadoc 的对应表）；期望值全部按原版公式手工计算，
- * fixture 字形度量经假 {@link GlyphProvider} 注入，不依赖游戏类。
- */
 class TextLayoutEngineTest {
 
-    // ── fixture：固定度量的小字体（名义 15 / 行高 18）─────────────────────
     private static final GlyphMetrics GLYPH_A = new GlyphMetrics(1, 12, 11, 10, 12, 0.10f, 0.10f, 0.05f, 0.06f, 0);
     private static final GlyphMetrics GLYPH_B = new GlyphMetrics(0, 11, 11, 9, 12, 0.20f, 0.10f, 0.05f, 0.06f, 0);
     private static final GlyphMetrics GLYPH_Q = new GlyphMetrics(0, 8, 10, 7, 11, 0.30f, 0.10f, 0.05f, 0.06f, 0);
@@ -78,8 +70,6 @@ class TextLayoutEngineTest {
         return passes.get(passes.size() - 1).quads().get(quadIndex);
     }
 
-    // ── 基础几何 ────────────────────────────────────────────────────────
-
     @Test
     void basicLayoutMatchesVanillaGeometry() {
         List<TextPass> passes = TextLayoutEngine.layout(state("AB").build(), font());
@@ -87,7 +77,6 @@ class TextLayoutEngineTest {
         List<GlyphQuad> quads = passes.get(0).quads();
         assertEquals(2, quads.size());
 
-        // A：penX = xOffset 1；顶点按 drawGlyph 公式（scale=1）
         GlyphQuad a = quads.get(0);
         assertEquals(101f, a.x1());
         assertEquals(189f, a.y1());
@@ -101,7 +90,6 @@ class TextLayoutEngineTest {
         assertEquals(0.16f, a.v1(), 1e-6f);
         assertEquals(0xFFFFFFFF, a.color());
 
-        // B：penX = 12+1(A advance 累计) ... = 13 + xOffset 0 + kerning(-2) = 11
         GlyphQuad b = quads.get(1);
         assertEquals(111f, b.x1());
         assertEquals(120f, b.x3());
@@ -110,7 +98,6 @@ class TextLayoutEngineTest {
 
     @Test
     void newlineQuirkFixedTenPixelsAtSize18And15() {
-        // 18 号字双换行：第一行非空 → -1.2*18；第二空行且 size==18 → 固定 -10
         List<TextPass> passes = TextLayoutEngine.layout(
                 state("A\n\nB").fontSize(18f).build(), font());
         GlyphQuad b = onlyQuadOfMainPass(passes, 1);
@@ -118,29 +105,23 @@ class TextLayoutEngineTest {
         float lineY = -scale * 18f - 10f;
         assertEquals(200f - scale * 11f + lineY, b.y1(), 1e-4f);
 
-        // 15 号字双换行：-18 -10
         passes = TextLayoutEngine.layout(state("A\n\nB").fontSize(15f).build(), font());
         b = onlyQuadOfMainPass(passes, 1);
         assertEquals(200f - 11f - 18f - 10f, b.y1(), 1e-4f);
 
-        // 16 号字无怪癖：两行都按 scale*lineHeight
         passes = TextLayoutEngine.layout(state("A\n\nB").fontSize(16f).build(), font());
         b = onlyQuadOfMainPass(passes, 1);
         float s16 = 16f / 15f;
         assertEquals(200f - s16 * 11f - 2f * s16 * 18f, b.y1(), 1e-4f);
     }
 
-    // ── 缺失字形 ────────────────────────────────────────────────────────
-
     @Test
     void missingGlyphFallsBackToQuestionMark() {
         List<TextPass> passes = TextLayoutEngine.layout(state("AC").build(), font());
         List<GlyphQuad> quads = passes.get(0).quads();
         assertEquals(2, quads.size());
-        // C 缺失 → 用 '?'（63）的度量与 UV
         GlyphQuad c = quads.get(1);
         assertEquals(0.30f, c.u1());
-        // penX = A(13) + xOffset 0 = 13（无 kerning 对 65→67）
         assertEquals(113f, c.x1());
     }
 
@@ -150,24 +131,18 @@ class TextLayoutEngineTest {
         List<TextPass> passes = TextLayoutEngine.layout(state("ACA").build(), noFallback);
         List<GlyphQuad> quads = passes.get(0).quads();
         assertEquals(2, quads.size(), "C 与 '?' 都缺失时跳过，不产 quad 不推进");
-        // 第二个 A：prev 仍是 'A'（跳过的 C 不更新前驱）→ kerning(65,65)=-3 生效
-        // penX = 13(A) + xOffset 1 + kern(-3) = 11
         assertEquals(111f, quads.get(1).x1());
     }
-
-    // ── 选区 / 高亮 / 词色 ──────────────────────────────────────────────
 
     @Test
     void selectionStartAndEndSwitchColors() {
         int highlight = TextLayoutEngine.packColor(0xFF0000, 1f);
-        // 选区 [0,0]：A 高亮，isSelectionEnd(0) 后 B 回文本色
         List<TextPass> passes = TextLayoutEngine.layout(
                 state("AB").selection(0, 0).highlightColor(0xFF0000, 1f).build(), font());
         List<GlyphQuad> quads = passes.get(0).quads();
         assertEquals(highlight, quads.get(0).color());
         assertEquals(0xFFFFFFFF, quads.get(1).color());
 
-        // 选区 [0,1]：两个都高亮（终点颜色切换在该字形 quad 之后）
         passes = TextLayoutEngine.layout(
                 state("AB").selection(0, 1).highlightColor(0xFF0000, 1f).build(), font());
         quads = passes.get(0).quads();
@@ -198,8 +173,6 @@ class TextLayoutEngineTest {
             assertEquals(0xFFFFFFFF, q.color(), "visible=true 时选区着色关闭（原版 renderText 行为）");
         }
     }
-
-    // ── 边框 / 阴影 pass ────────────────────────────────────────────────
 
     @Test
     void borderEmitsFourOffsetPassesBeforeMain() {
@@ -244,11 +217,8 @@ class TextLayoutEngineTest {
         }
     }
 
-    // ── 描边放大副本（shadowCopies）─────────────────────────────────────
-
     @Test
     void outlineCopiesExpandWithAspectCorrection() {
-        // w=10 < h=12 → 横向扩张乘 w/h
         List<TextPass> passes = TextLayoutEngine.layout(
                 state("A").outline(2, 0.25f).build(), font());
         List<GlyphQuad> quads = passes.get(0).quads();
@@ -261,7 +231,6 @@ class TextLayoutEngineTest {
         assertEquals(100f + 1f - ex1, copy1.x2(), 1e-4f);
         assertEquals(200f - 12f - 11f + 2f * 0.25f, copy1.y2(), 1e-4f);
         assertEquals(100f + 1f + 10f + 2f * ex1, copy1.x3(), 1e-4f);
-        // 副本 UV 与主 quad 相同（同一张字形位图放大采样）
         assertEquals(copy1.u1(), quads.get(2).u1());
         assertEquals(copy1.v2(), quads.get(2).v2());
 
@@ -270,8 +239,6 @@ class TextLayoutEngineTest {
         assertEquals(100f + 1f - ex2, copy2.x1(), 1e-4f);
         assertEquals(200f - 11f - 0.5f, copy2.y1(), 1e-4f);
     }
-
-    // ── compact 字体 / 下划线 / shear ───────────────────────────────────
 
     @Test
     void compactFontRepeatsEveryPassThreeTimes() {
@@ -292,7 +259,6 @@ class TextLayoutEngineTest {
         List<GlyphQuad> quads = passes.get(0).quads();
         assertEquals(3, quads.size(), "A + 下划线 + B（下划线仅挂选区起点字形）");
         GlyphQuad ul = quads.get(1);
-        // '_' 度量：bearingY=-2 height=2，基准 y 局部 -2；宽拉伸到 A.width=10
         assertEquals(101f, ul.x1());
         assertEquals(200f + (-2f - (-2f)), ul.y1(), 1e-4f);
         assertEquals(200f + (-2f - 2f - (-2f)), ul.y2(), 1e-4f);
@@ -305,22 +271,17 @@ class TextLayoutEngineTest {
         List<TextPass> passes = TextLayoutEngine.layout(
                 state("A").shear(0.5f).build(), font());
         GlyphQuad a = passes.get(0).quads().get(0);
-        // x' = x + shear*yLocal；y 不变
         assertEquals(100f + 1f + 0.5f * -11f, a.x1(), 1e-4f);
         assertEquals(189f, a.y1());
         assertEquals(100f + 1f + 0.5f * -23f, a.x2(), 1e-4f);
         assertEquals(177f, a.y2());
     }
 
-    // ── 特殊字形（占位符语义已烘焙在 fnt 度量中）─────────────────────────
-
     @Test
     void bracePlaceholderAdvancesLikeSpaceWithoutQuad() {
-        // P3 语义对齐：零尺寸占位符不产 quad（原版 bake 后不产可见像素），只推进 penX
         List<TextPass> passes = TextLayoutEngine.layout(state("A{B").build(), font());
         List<GlyphQuad> quads = passes.get(0).quads();
         assertEquals(2, quads.size(), "零尺寸占位符不发射 quad");
-        // '{' 贡献 xAdvance 4：B 的 penX = 13 + 4 + 0 + kern(123,66)=null → 17
         assertEquals(117f, quads.get(1).x1());
     }
 }

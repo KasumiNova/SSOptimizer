@@ -6,11 +6,6 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
-/**
- * 动态字形图集的运行时诊断：命中/未命中、页创建/淘汰、上传量计数。
- * 默认关闭，{@code -Dssoptimizer.font.atlas.debug=true} 开启后按固定间隔汇总输出
- * （风格与 {@code TextLayoutDiagnostics} 一致）。
- */
 public final class FontAtlasDiagnostics {
     public static final String DEBUG_PROPERTY = "ssoptimizer.font.atlas.debug";
 
@@ -71,7 +66,6 @@ public final class FontAtlasDiagnostics {
         }
     }
 
-    /** 汇总快照（测试与日志共用；未启用时也能取到计数——record 族在关闭时不计数）。 */
     public static String snapshotSummary() {
         return String.format(Locale.ROOT,
                 "[SSOptimizer] Font atlas: hits=%d misses=%d pagesCreated=%d pagesEvicted=%d uploadBytes=%d uploadRects=%d rasterizeFailures=%d",
@@ -79,7 +73,6 @@ public final class FontAtlasDiagnostics {
                 UPLOAD_BYTES.sum(), UPLOAD_RECTS.sum(), RASTERIZE_FAILURES.sum());
     }
 
-    /** 测试用：清零全部计数，避免用例间静态状态串扰。 */
     public static void resetForTests() {
         HITS.reset();
         MISSES.reset();

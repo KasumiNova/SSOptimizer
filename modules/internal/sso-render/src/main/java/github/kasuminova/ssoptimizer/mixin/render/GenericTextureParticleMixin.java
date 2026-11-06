@@ -10,17 +10,6 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.awt.Color;
 
-/**
- * 通用贴图粒子（GenericTextureParticle）批量化渲染的 Mixin 重写。
- * <p>
- * 注入目标：{@code com.fs.graphics.particle.GenericTextureParticle} 的
- * {@code preBatch()/render()/postBatch()} 三方法<br>
- * 注入动机：原版每粒子渲染执行 glBlendFunc + 矩阵 + begin/end + 4×(tex+vert)，
- * 且按 renderCount 重复；通过整体替换为 {@link ParticleBatchHelper} 的缓冲批次，
- * 仅在混合模式变化时调用一次 glBlendFunc。<br>
- * 注入效果：render 内完成 brightness/fullyFadedIn/fullBrightnessFraction 分支逻辑后
- * 缓冲旋转顶点（含 renderCount 展开），postBatch 一次 {@code glDrawArrays} 并关闭纹理。
- */
 @Mixin(targets = GameClassNames.GENERIC_TEXTURE_PARTICLE_DOTTED)
 public abstract class GenericTextureParticleMixin {
 
@@ -63,12 +52,6 @@ public abstract class GenericTextureParticleMixin {
     @Shadow(remap = false, aliases = "fullBrightnessFraction")
     private float ssoptimizer$fullBrightnessFraction;
 
-    /**
-     * 建立 GL 状态并开始通用贴图粒子批次。
-     *
-     * @author GitHub Copilot
-     * @reason 原 ASM 处理器整体替换 preBatch()V 方法体，迁移为等价的 @Overwrite。
-     */
     @Overwrite(remap = false)
     public void preBatch() {
         GL11.glEnable(GL11.GL_TEXTURE_2D);
@@ -77,12 +60,6 @@ public abstract class GenericTextureParticleMixin {
         ParticleBatchHelper.beginGenericTextureBatch();
     }
 
-    /**
-     * 计算粒子亮度（含 fullyFadedIn/fullBrightnessFraction 分支）并缓冲旋转顶点。
-     *
-     * @author GitHub Copilot
-     * @reason 原 ASM 处理器整体替换 render()V 方法体，brightness 分支逻辑由字节码原样搬入 Java。
-     */
     @Overwrite(remap = false)
     public void render() {
         com.fs.graphics.particle.BaseParticle base = (com.fs.graphics.particle.BaseParticle) (Object) this;
@@ -110,12 +87,6 @@ public abstract class GenericTextureParticleMixin {
                 ssoptimizer$renderCount);
     }
 
-    /**
-     * 统一 flush 通用贴图粒子批次并关闭纹理。
-     *
-     * @author GitHub Copilot
-     * @reason 原 ASM 处理器整体替换 postBatch()V 方法体，迁移为等价的 @Overwrite。
-     */
     @Overwrite(remap = false)
     public void postBatch() {
         ParticleBatchHelper.flushGenericTextureBatch();

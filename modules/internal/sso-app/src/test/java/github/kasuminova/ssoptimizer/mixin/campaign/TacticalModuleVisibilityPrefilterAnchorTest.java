@@ -14,13 +14,6 @@ import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * {@code TacticalModuleVisibilityPrefilterMixin} 的字节码锚点核验。
- * <p>
- * 预过滤 @Redirect 的正确性前提是「{@code TacticalModule.advance(float)} 内
- * {@code ObjectRepository.getList(Class)} 调用点唯一」（另一处同名调用必须在
- * {@code hasEnoughStuffAround} 内而非 advance），以及 @Shadow 的 {@code fleet} 字段存在。
- */
 class TacticalModuleVisibilityPrefilterAnchorTest {
     private static final String TARGET = "com/fs/starfarer/campaign/ai/TacticalModule";
     private static final String GET_LIST_OWNER = "com/fs/util/container/repo/ObjectRepository";

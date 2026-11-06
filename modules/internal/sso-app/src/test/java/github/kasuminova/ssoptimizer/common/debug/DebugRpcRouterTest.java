@@ -6,9 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link DebugRpcRouter} 协议分发测试：内建方法、错误码收敛。
- */
 class DebugRpcRouterTest {
     private final DebugRpcRouter router = DebugRpcRouter.createDefault();
 

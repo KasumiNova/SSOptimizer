@@ -11,15 +11,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link WarroomTaskLineBatch} 的行为单测。
- * <p>
- * 通过记录型 {@link StripBatchRenderer} 伪执行器真实驱动 begin/add/end 全流程，
- * 验证顶点收集顺序、颜色打包、全透明剔除、纹理/混合模式切换分段与容量增长逻辑。
- */
 class WarroomTaskLineBatchTest {
 
-    /** 记录型伪执行器：保存每次 flush 的快照供断言。 */
     private static final class RecordingRenderer implements StripBatchRenderer {
         final List<TextureObject> textures = new ArrayList<>();
         final List<Boolean> additiveFlags = new ArrayList<>();
@@ -44,7 +37,6 @@ class WarroomTaskLineBatchTest {
 
     @AfterEach
     void resetBatch() {
-        // 用空收集周期复位静态状态，避免用例间串扰。
         WarroomTaskLineBatch.beginCollect();
         WarroomTaskLineBatch.endCollect(new RecordingRenderer());
     }
@@ -70,7 +62,6 @@ class WarroomTaskLineBatchTest {
         assertFalse(renderer.additiveFlags.get(0));
 
         float[] geometry = renderer.geometries.get(0);
-        // 第一条带的 9 个 float 必须按调用参数原样排布。
         assertArrayEquals(new float[]{1f, 2f, 3f, 4f, 5f, 6f, 0.1f, 0.2f, 0.3f},
                 Arrays.copyOfRange(geometry, 0, 9));
         assertArrayEquals(new float[]{11f, 12f, 13f, 14f, 15f, 16f, 0.4f, 0.5f, 0.6f},
@@ -89,16 +80,12 @@ class WarroomTaskLineBatchTest {
         TextureObject texture = new TextureObject(3553, 1);
 
         WarroomTaskLineBatch.beginCollect();
-        // 已摧毁舰船的连线：三段透明度缩放全为 0，不可见，应被剔除。
         WarroomTaskLineBatch.addStrip(texture, 0f, 0f, 1f, 1f, 2f, 2f,
                 new Color(255, 255, 255, 255), 0f, 0f, 0f, false, renderer);
-        // 负缩放会被钳制到 0，同样不可见。
         WarroomTaskLineBatch.addStrip(texture, 0f, 0f, 1f, 1f, 2f, 2f,
                 new Color(255, 255, 255, 255), -1f, -0.5f, 0f, false, renderer);
-        // 颜色 alpha 为 0：任何缩放下都不透明写入。
         WarroomTaskLineBatch.addStrip(texture, 0f, 0f, 1f, 1f, 2f, 2f,
                 new Color(255, 255, 255, 0), 1f, 1f, 1f, false, renderer);
-        // 可见条带：保留。
         WarroomTaskLineBatch.addStrip(texture, 0f, 0f, 1f, 1f, 2f, 2f,
                 new Color(255, 255, 255, 255), 0f, 0.5f, 1f, false, renderer);
         assertEquals(1, WarroomTaskLineBatch.getStripCount());
@@ -128,7 +115,6 @@ class WarroomTaskLineBatchTest {
         WarroomTaskLineBatch.beginCollect();
         WarroomTaskLineBatch.addStrip(textureA, 1f, 1f, 2f, 2f, 3f, 3f, color, 1f, 1f, 1f, false, renderer);
         WarroomTaskLineBatch.addStrip(textureA, 4f, 4f, 5f, 5f, 6f, 6f, color, 1f, 1f, 1f, false, renderer);
-        // 换纹理：应先 flush A 段两条，再开启 B 段。
         WarroomTaskLineBatch.addStrip(textureB, 7f, 7f, 8f, 8f, 9f, 9f, color, 1f, 1f, 1f, false, renderer);
         WarroomTaskLineBatch.endCollect(renderer);
 
@@ -176,7 +162,6 @@ class WarroomTaskLineBatchTest {
 
         WarroomTaskLineBatch.beginCollect();
         WarroomTaskLineBatch.addStrip(texture, 1f, 1f, 2f, 2f, 3f, 3f, color, 1f, 1f, 1f, false, renderer);
-        // 异常保护：上一次收集未 end 时再次 begin，丢弃残留重新计数。
         WarroomTaskLineBatch.beginCollect();
         assertEquals(0, WarroomTaskLineBatch.getStripCount());
         WarroomTaskLineBatch.endCollect(renderer);
@@ -202,7 +187,6 @@ class WarroomTaskLineBatchTest {
         assertEquals(1, renderer.stripCounts.size());
         assertEquals(total, renderer.stripCounts.get(0));
         float[] geometry = renderer.geometries.get(0);
-        // 容量翻倍扩容后，首尾条带数据均完整保序。
         assertEquals(0f, geometry[0]);
         int lastBase = (total - 1) * WarroomTaskLineBatch.FLOATS_PER_STRIP;
         assertEquals((float) (total - 1), geometry[lastBase]);

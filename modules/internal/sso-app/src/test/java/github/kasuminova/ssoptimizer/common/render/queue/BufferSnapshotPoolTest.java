@@ -9,10 +9,6 @@ import java.nio.IntBuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link BufferSnapshotPoolImpl} 的行为验证：借用/归还复用、容量分级扩容、
- * 快照与源 buffer 的隔离性、非池化大块的安全释放。
- */
 class BufferSnapshotPoolTest {
 
     @Test
@@ -41,7 +37,6 @@ class BufferSnapshotPoolTest {
         pool.release(small);
         pool.release(large);
         assertEquals(2, pool.pooledBufferCount());
-        // 归还后按容量各归各桶
         assertSame(small, pool.borrow(1));
         assertSame(large, pool.borrow(BufferSnapshotPoolImpl.MIN_CAPACITY + 1));
     }
@@ -67,7 +62,6 @@ class BufferSnapshotPoolTest {
         ByteBuffer snapshot = pool.snapshot(src);
         assertEquals(0, snapshot.position());
         assertEquals(16, snapshot.limit());
-        // 录制后改写源 buffer（模拟调用方复用）
         src.clear();
         for (int i = 0; i < 16; i++) {
             src.put((byte) 0x7F);

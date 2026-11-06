@@ -8,13 +8,7 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;
 
 /**
- * 原版字体资源流拦截处理器。
- * <p>
- * 注入目标：{@code com.fs.util.ResourceLoader}<br>
- * 注入动机：需要在不改动上层字体调用逻辑的前提下，把原版字体资源请求转发到
- * 运行时生成的 BMFont 产物；ASM 适合在资源流入口处做统一拦截。<br>
- * 注入效果：方法入口先尝试通过 {@code OriginalGameFontOverrides.openStream()} 返回
- * 自定义字体流，命中时直接返回，未命中则继续走原始资源加载逻辑。
+ * 在资源流入口替换原版字体流；启动早期资源加载类不能依赖 Mixin 的变换时序，因此使用 ASM。
  */
 public final class OriginalFontResourceStreamProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS  = GameClassNames.RESOURCE_LOADER;

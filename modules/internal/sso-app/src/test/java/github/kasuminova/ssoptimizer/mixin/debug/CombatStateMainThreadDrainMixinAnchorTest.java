@@ -14,13 +14,6 @@ import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link CombatStateMainThreadDrainMixin} 注入锚点核验。
- * <p>
- * 注入正确性取决于「{@code CombatState.traverse()Ljava/lang/String;} 内存在
- * {@code SoundManager.advance(FFFFFI)V} 调用点」；用 ASM 解析测试 classpath 上
- * named jar 的真实字节码核验，目标缺失/签名漂移在构建期暴露而非运行时静默失败。
- */
 class CombatStateMainThreadDrainMixinAnchorTest {
 
     private static final String ANCHOR_OWNER = "com/fs/starfarer/SoundManager";

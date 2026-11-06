@@ -1,10 +1,5 @@
 package github.kasuminova.ssoptimizer.common.input.ime;
 
-/**
- * Windows IMM32 原生方法桥接接口。
- * <p>
- * 抽象出 JNI 调用契约，便于在单元测试中使用 mock 实现替代真实原生库。
- */
 public interface WindowsImmNativeBridge {
     boolean nativeIsSupported();
 

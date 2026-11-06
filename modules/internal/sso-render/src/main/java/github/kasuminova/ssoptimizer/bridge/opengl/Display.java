@@ -10,31 +10,8 @@ import org.lwjgl.opengl.PixelFormat;
 import java.nio.ByteBuffer;
 
 /**
- * org.lwjgl.opengl.Display 的 bridge 镜像。
- * <p>
- * 动机同 {@link GL11}：ASM 重定向把游戏/模组字节码中
- * {@code org/lwjgl/opengl/Display} 的静态调用改写到本类。通道决策：
- * <ul>
- *   <li>{@link #update()} 是唯一携带 GL 语义的帧尾调用：入队一条真实
- *       {@code Display.update()}（交换缓冲，必须在持有上下文的渲染线程执行），
- *       随后 {@code swapFramesAndSync()} 完成帧提交与一帧重叠同步；</li>
- *   <li>{@link #create()}/{@link #setDisplayMode}/{@link #setFullscreen}/
- *       {@link #makeCurrent}/{@link #destroy}/{@link #setIcon}：窗口/上下文级
- *       变更，走阻塞通道在渲染线程执行（受检异常原样透传）。makeCurrent 在渲染
- *       线程上执行是幂等操作——上下文本来就归渲染线程持有，主线程调用只是
- *       「确认上下文可用」的语义占位，主线程自身从头到尾没有 GL context；</li>
- *   <li>{@link #setVSyncEnabled}/{@link #setTitle}/{@link #setLocation}：窗口
- *       属性变更无返回值依赖，按普通命令入队（X11 调用统一收口到渲染线程，
- *       避免跨线程操作同一 display connection）；</li>
- *   <li>{@link #getAvailableDisplayModes()}/{@link #getDesktopDisplayMode()}：
- *       实时查询 X11，走阻塞取值通道（同样为单线程化 X11 访问）；</li>
- *   <li>{@link #processMessages()}/{@link #isCloseRequested()}/{@link #isActive()}/
- *       {@link #isVisible()}/{@link #isFullscreen()}/{@link #isCreated()}/
- *       {@link #getDisplayMode()}/{@link #getWidth()}/{@link #getHeight()}/
- *       {@link #sync(int)}：读 LWJGL 缓存字段或纯 CPU 行为，无 GL/X11 依赖，
- *       直通真实 Display（注释保留：若后续把事件泵也迁到渲染线程，这里改为
- *       状态仿真或帧同步点读取）。</li>
- * </ul>
+ * LWJGL Display 的桥接入口。窗口和上下文操作收口到渲染线程，缓存状态查询与纯 CPU 操作
+ * 保留在调用线程执行。
  */
 public final class Display {
     private Display() {
@@ -55,8 +32,7 @@ public final class Display {
     }
 
     /**
-     * 在渲染线程创建 Display（含 GL 上下文），调用方阻塞至创建完成。
-     * 结构对齐 FR：主线程全程无 context，创建语义经队列的阻塞通道落实。
+     * 在渲染线程创建 Display 与 GL 上下文，调用方阻塞至创建完成。
      *
      * @throws LWJGLException 渲染线程上的真实 {@code Display.create()} 失败
      */
@@ -65,14 +41,12 @@ public final class Display {
             org.lwjgl.opengl.Display.create();
             BridgeSupport.onRenderThreadGlContextReady();
         });
-        // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
 
     /**
-     * 携带像素格式参数的创建重载（游戏实际入口：{@code create(PixelFormat)}）。
-     * 参数在主线程捕获（{@link PixelFormat} 是纯数据对象），真实创建在渲染线程执行。
+     * 像素格式由调用线程捕获，真实创建在渲染线程执行。
      *
      * @param pixelFormat 请求的像素格式
      * @throws LWJGLException 渲染线程上的真实 {@code Display.create(PixelFormat)} 失败
@@ -82,27 +56,10 @@ public final class Display {
             org.lwjgl.opengl.Display.create(pixelFormat);
             BridgeSupport.onRenderThreadGlContextReady();
         });
-        // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
 
-    /**
-     * 帧尾：落帧挂起的顶点流段后入队真实 {@code Display.update()}（渲染线程
-     * 交换缓冲），然后提交当前帧并只等待上一帧完成（一帧流水线重叠）。swap 收口处
-     * 同时刷新主录制线程的帧上下文缓存（见 {@link BridgeSupport#swapFramesAndSync()}）。
-     * 命令体在渲染线程执行时先做 VBO id stash 低水位补货（
-     * {@link BridgeSupport#refillBufferIdStashIfLow()}）——下一帧录制开始前
-     * stash 已就位，主线程 glGenBuffers 不再阻塞（v45c/v47 getInternal 热点）。
-     */
-    /**
-     * 调试帧抓取：渲染线程在 swap 前抓取 back buffer 写 PNG（主菜单/非战斗场景的
-     * 渲染取证手段，bench 的截图机制只覆盖任务内）。逻辑见
-     * automation 域的 DebugFrameCapture（经 {@link FrameCaptureHook} 钩子访问，
-     * 支持 frame 单帧 / frames 多帧采样）。
-     */
-
-    /** 触发帧捕获钩子（automation 域注册；未注册=不捕获，属可省略显式判空）。 */
     private static void fireFrameCaptureHook() {
         final FrameCaptureHook hook = ServiceRegistry.getOrNull(FrameCaptureHook.class);
         if (hook != null) {
@@ -112,9 +69,7 @@ public final class Display {
 
     public static void update() {
         RenderQueue q = BridgeSupport.queue();
-        // 落帧必须先于 update 命令入队：glEnd 延迟落帧模式下帧尾挂起流段是常态，
-        // 直接 submit 会让流段经 swap 收口处的落帧排在 swapBuffers 之后执行
-        // （内容晚一帧且画进新 back buffer）——本方法直交通道不走 enqueue，需显式落帧
+        // update 直交通道必须先落帧，避免挂起顶点流在 swapBuffers 后执行
         BridgeSupport.flushVertexStream();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
@@ -125,14 +80,12 @@ public final class Display {
     }
 
     /**
-     * 携带事件泵开关的帧尾重载（战斗主循环的实际调用形态）。
-     * 事件泵随 update 一起收口到渲染线程，X11 访问保持单线程化。
+     * 事件泵随 update 在渲染线程执行，X11 访问保持单线程化。
      *
      * @param processMessages 是否在交换缓冲前泵送窗口事件
      */
     public static void update(boolean processMessages) {
         RenderQueue q = BridgeSupport.queue();
-        // 落帧先于 update 命令入队（理由同 {@link #update()}）
         BridgeSupport.flushVertexStream();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
@@ -142,7 +95,7 @@ public final class Display {
         BridgeSupport.swapFramesAndSync();
     }
 
-    /** 直通：事件泵无 GL 依赖（后续若迁移事件泵，此处改帧同步点读取）。 */
+    /** 事件泵无 GL 依赖，保留在调用线程执行。 */
     public static void processMessages() {
         org.lwjgl.opengl.Display.processMessages();
     }
@@ -178,9 +131,7 @@ public final class Display {
     }
 
     /**
-     * 折叠模型下的 Display drawable：返回进程级单例登记对象（{@link DisplayDrawable}），
-     * 不产生 GL 命令。供 BoxUtil 类模组拿去包 {@link SharedDrawable} 的调用形态
-     * 正常走通；上下文语义见 {@link SharedDrawable} 类 javadoc。
+     * 返回 Display 本体 drawable 的进程级单例，不产生 GL 命令。
      *
      * @return Display 的 bridge drawable 单例
      */
@@ -237,9 +188,8 @@ public final class Display {
      */
     public static void setDisplayMode(DisplayMode mode) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setDisplayMode(mode));
-        // 显示模式切换重建 GL 上下文：录制侧状态簿记与 VBO id stash 全部复位
+        // 上下文重建后，录制状态、VBO id stash 与 capabilities 缓存一并失效
         BridgeSupport.onContextRecreated();
-        // capabilities 缓存随旧上下文一并失效（见 GLContext.invalidateCapabilities）
         GLContext.invalidateCapabilities();
     }
 
@@ -250,9 +200,8 @@ public final class Display {
      */
     public static void setFullscreen(boolean fullscreen) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setFullscreen(fullscreen));
-        // 全屏切换重建 GL 上下文：录制侧状态簿记与 VBO id stash 全部复位
+        // 上下文重建后，录制状态、VBO id stash 与 capabilities 缓存一并失效
         BridgeSupport.onContextRecreated();
-        // capabilities 缓存随旧上下文一并失效（见 GLContext.invalidateCapabilities）
         GLContext.invalidateCapabilities();
     }
 
@@ -272,8 +221,7 @@ public final class Display {
     }
 
     /**
-     * 阻塞通道：确认上下文在渲染线程可用（幂等——上下文本就归渲染线程持有；
-     * 主线程自身永远没有 context）。
+     * 确认上下文在渲染线程可用；调用线程自身不持有真实上下文。
      *
      * @throws LWJGLException 渲染线程上的真实调用失败
      */
@@ -287,8 +235,7 @@ public final class Display {
     }
 
     /**
-     * 阻塞通道：图标设置是 X11 窗口操作，收口渲染线程；调用方阻塞期间
-     * icons buffer 不被触碰，无需快照（启动期一次性调用，drain 可接受）。
+     * X11 图标设置在渲染线程执行，调用方阻塞期间 icons buffer 不被触碰。
      *
      * @return 真实 {@code Display.setIcon} 的返回值
      */
@@ -297,12 +244,9 @@ public final class Display {
     }
 
     /**
-     * 携带自定义 drawable 的创建重载。折叠模型下桥世界不存在可供真实
-     * {@code Display.create} 使用的 drawable——{@link DisplayDrawable} 只是登记壳；
-     * 模组能拿到的 drawable 只有 {@link #getDrawable()} 的 Display 本体单例，
-     * 语义等价于 {@link #create(PixelFormat)}，其余来源显式拒绝。
+     * 仅接受 {@link #getDrawable()} 返回的 Display 本体单例，其他 drawable 显式拒绝。
      *
-     * @param drawable   只接受 Display 本体 drawable（{@link #getDrawable()} 的返回值）
+     * @param drawable   Display 本体 drawable
      * @throws LWJGLException 渲染线程上的真实创建失败
      */
     public static void create(PixelFormat pixelFormat, Drawable drawable) throws LWJGLException {
@@ -322,7 +266,6 @@ public final class Display {
             org.lwjgl.opengl.Display.create(pixelFormat, attribs);
             BridgeSupport.onRenderThreadGlContextReady();
         });
-        // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
@@ -340,19 +283,16 @@ public final class Display {
             org.lwjgl.opengl.Display.create(pixelFormat);
             BridgeSupport.onRenderThreadGlContextReady();
         });
-        // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
 
-    /** GLES 属性形态的创建重载（游戏走 GL 路径不会触达，镜像仅为覆盖面完整）。 */
     public static void create(org.lwjgl.opengl.PixelFormatLWJGL pixelFormat,
                               org.lwjgl.opengles.ContextAttribs attribs) throws LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> {
             org.lwjgl.opengl.Display.create(pixelFormat, attribs);
             BridgeSupport.onRenderThreadGlContextReady();
         });
-        // 新上下文建立：录制侧簿记复位，capabilities 缓存随旧上下文一并失效
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
@@ -364,8 +304,6 @@ public final class Display {
         create(pixelFormat);
     }
 
-    /** GLES 属性形态的创建重载（游戏走 GL 路径不会触达，镜像仅为覆盖面完整；
-     *  折叠模型下无真实 drawable 可传，等价回落到 Display 本体创建）。 */
     public static void create(org.lwjgl.opengl.PixelFormatLWJGL pixelFormat, Drawable drawable,
                               org.lwjgl.opengles.ContextAttribs attribs) throws LWJGLException {
         requireDisplayDrawable(drawable);

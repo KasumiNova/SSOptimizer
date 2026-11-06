@@ -10,9 +10,6 @@ import org.objectweb.asm.Opcodes;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 验证 ASTD 自动化插件字节码注入会在 telemetry 入口调用 SSOptimizer 独立截图 helper。
- */
 class ASTDAutomationCombatPluginProcessorTest {
     @Test
     void injectsIndependentScreenshotHelperAtTelemetryEntry() {

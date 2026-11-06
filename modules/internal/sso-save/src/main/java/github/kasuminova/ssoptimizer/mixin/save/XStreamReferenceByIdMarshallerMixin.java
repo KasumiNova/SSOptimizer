@@ -8,15 +8,6 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
-/**
- * XStream 引用 ID 分配优化 Mixin。
- * <p>
- * 注入目标：{@code com.thoughtworks.xstream.core.ReferenceByIdMarshaller}<br>
- * 注入动机：更新后的热点报告显示默认 {@code SequenceGenerator.next()} 的十进制字符串分配已经成为保存阶段的头号热点；
- * 这些引用 ID 仅用于同一份 XML 内部的引用匹配，不需要保留十进制格式。<br>
- * 注入效果：当 marshaller 使用 XStream 默认 {@code SequenceGenerator} 时，改为生成更紧凑的 base36 引用 ID 对象；
- * 若上游传入自定义 {@code IDGenerator}，则仍完整回退到原始逻辑。
- */
 @Mixin(targets = "com.thoughtworks.xstream.core.ReferenceByIdMarshaller")
 public abstract class XStreamReferenceByIdMarshallerMixin {
     @Shadow(remap = false)
@@ -34,15 +25,6 @@ public abstract class XStreamReferenceByIdMarshallerMixin {
     @Unique
     private String ssoptimizer$idAttributeAlias;
 
-    /**
-     * 为当前对象生成引用 key。
-     *
-     * @param path 当前 XStream 路径
-     * @param item 当前对象
-     * @return 引用字典使用的 key
-     * @author GitHub Copilot
-     * @reason 当使用默认 SequenceGenerator 时，改为更紧凑的 base36 引用 ID，减少保存热点里的整数转字符串成本。
-     */
     @Overwrite(remap = false)
     protected Object createReferenceKey(final Path path,
                                         final Object item) {
@@ -57,28 +39,12 @@ public abstract class XStreamReferenceByIdMarshallerMixin {
         return generator.next(item);
     }
 
-    /**
-     * 将引用 key 格式化为真正写入 XML 的引用值。
-     *
-     * @param path 当前 XStream 路径
-     * @param item 引用 key
-     * @return 写入 XML 的引用字符串
-     * @author GitHub Copilot
-     * @reason 优化路径已经直接返回 String；这里优先走零额外分派的快速路径，并保留对非 String 自定义 key 的兼容回退。
-     */
     @Overwrite(remap = false)
     protected String createReference(final Path path,
                                      final Object item) {
         return item instanceof String string ? string : item.toString();
     }
 
-    /**
-     * 在当前节点上写入有效引用 ID。
-     *
-     * @param item 当前对象对应的引用 key
-     * @author GitHub Copilot
-     * @reason 缓存 mapper 对系统属性 `id` 的别名解析结果，并在优化路径下直接写入字符串引用值，减少保存阶段的重复查表与分派成本。
-     */
     @Overwrite(remap = false)
     protected void fireValidReference(final Object item) {
         if (!ssoptimizer$idAliasInitialized) {

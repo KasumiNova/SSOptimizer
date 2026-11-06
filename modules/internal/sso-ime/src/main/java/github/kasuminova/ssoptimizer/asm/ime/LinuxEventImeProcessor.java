@@ -4,17 +4,8 @@ import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import org.objectweb.asm.*;
 
 /**
- * LWJGL {@code LinuxEvent} 的 IME ASM 处理器。
- *
- * <p>注入目标：{@code org/lwjgl/opengl/LinuxEvent#filterEvent(J)Z}<br>
- * 注入动机：原版 {@code filterEvent} 调用 native {@code nFilterEvent}（即 {@code XFilterEvent}），
- * 使 IM 服务（如 fcitx）把每个事件看到两次——一次来自 LWJGL、一次来自 SSOptimizer 自身的 XIC，
- * 导致组字状态损坏。整体替换方法体为 {@code return false} 后，SSOptimizer 的 native 代码成为
- * {@code XFilterEvent} 的唯一调用方。<br>
- * 为什么不是 Mixin：{@code org.lwjgl.} 被 RFB 硬编码为 classLoaderException，由系统类加载器
- * 加载，Launch 域 Mixin 链不可触及——本处理器须经 NanoForge 的 SystemAsmBridge（RFB 插件
- * transformer）通道注册。<br>
- * 注入效果：{@code filterEvent(J)Z} 方法体替换为恒返回 {@code false}（事件未被消费）。</p>
+ * 禁用 LWJGL 原生事件过滤，确保仅由 SSOptimizer 的 XIC 调用 XFilterEvent。
+ * org.lwjgl 由系统类加载器加载，Launch 域 Mixin 无法改写。
  */
 public final class LinuxEventImeProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "org/lwjgl/opengl/LinuxEvent";

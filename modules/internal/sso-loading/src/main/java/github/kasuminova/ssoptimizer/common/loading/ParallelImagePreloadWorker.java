@@ -13,11 +13,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Replacement deferred preload worker that keeps the base-game queue/result-map
- * contract intact while pairing it with {@link ParallelImagePreloadQueueTracker}
- * to avoid repeated synchronized list contains scans on the main thread.
- */
 public final class ParallelImagePreloadWorker implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(ParallelImagePreloadWorker.class);
 
@@ -172,17 +167,9 @@ public final class ParallelImagePreloadWorker implements Runnable {
         }
     }
 
-    /**
-     * 处理单张图片：预备管线启用且非字体覆盖路径时，worker 完成读源/哈希/
-     * 磁盘缓存写入（未命中时含逐像素转换），但发布到 {@link TexturePreparationRegistry}
-     * 的只有元数据；像素始终保持 Zstd 压缩形态，直到主线程真正执行 GL 上传时
-     * 才解压到 DirectBuffer。其余情况保持原版队列协议。
-     */
     private void processImage(final String path) throws ReflectiveOperationException {
         if (!TexturePreparationRegistry.isEnabled() || isFontOverridePath(path)) {
-            // 原版回写分支：必须同时完结预备注册表中的 future，
-            // 否则主线程 TexturePreparationRegistry.await 会永久阻塞。
-            // complete(null) 表示该路径未走预备管线，主线程回退原版读取。
+            // 原版回写也必须完成预备 future，否则主线程 await 会一直阻塞。
             access.imageResults().put(path, access.loadImage(path));
             TexturePreparationRegistry.complete(path, null);
             return;
@@ -197,7 +184,6 @@ public final class ParallelImagePreloadWorker implements Runnable {
             return;
         }
 
-        // 磁盘缓存命中：像素仍保持压缩形态，只发布元数据。
         final TextureConversionCache.CachedTextureMetadata cachedMetadata = tracked.cachedMetadata();
         if (cachedMetadata != null) {
             TexturePreparationRegistry.complete(path, new TexturePreparationRegistry.Prepared(
@@ -207,8 +193,6 @@ public final class ParallelImagePreloadWorker implements Runnable {
             return;
         }
 
-        // 未命中：worker 线程完成逐像素转换并写入磁盘缓存；转换产生的
-        // DirectBuffer 随方法返回即失去引用，不会随结果滞留。
         final TexturePixelConversionResult result = TexturePixelConverter.convert(tracked);
         TexturePreparationRegistry.complete(path, new TexturePreparationRegistry.Prepared(
                 tracked.sourceHash(),
@@ -244,7 +228,6 @@ public final class ParallelImagePreloadWorker implements Runnable {
         }
     }
 
-    /** 字体覆盖服务（coremod 装配期注册；未注册=无字体覆盖，loading 不直接依赖 font 模块）。 */
     private static FontResourceOverride fontResourceOverride() {
         return ServiceRegistry.getOrNull(FontResourceOverride.class);
     }

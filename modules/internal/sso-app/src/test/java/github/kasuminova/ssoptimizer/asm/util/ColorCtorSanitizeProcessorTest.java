@@ -20,16 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-/**
- * {@link ColorCtorSanitizeProcessor} 对真实游戏字节码的织入验证。
- * <p>
- * 以测试 classpath 上的 named 游戏类字节驱动处理器，核验目标构造调用被逐一
- * 改写为 {@code ColorSanitizer.create} 工厂调用（含 LDC site 末参），以及
- * 无 Color 引用类的预过滤跳过与净化器自身排除。
- */
 class ColorCtorSanitizeProcessorTest {
 
-    /** 含大量 {@code new Color(int,int,int,int)} 的真实游戏类（渲染工具类）。 */
     private static final String SAMPLE_CLASS = "com/fs/graphics/util/RenderStateUtils";
 
     private static final String COLOR_OWNER = "java/awt/Color";
@@ -60,7 +52,6 @@ class ColorCtorSanitizeProcessorTest {
 
     @Test
     void sanitizerHelperItselfIsExcluded() throws IOException {
-        // 净化器自身引用 Color 构造，必须被显式排除防止自改写递归
         assertNull(new ColorCtorSanitizeProcessor()
                 .process(readClassBytes(ColorCtorSanitizeProcessor.HELPER_OWNER)));
     }
@@ -71,37 +62,24 @@ class ColorCtorSanitizeProcessorTest {
                 .process(readClassBytes("github/kasuminova/ssoptimizer/asm/util/ColorCtorFixture"));
         assertNotNull(woven, "夹具类的目标构造调用必须被改写");
 
-        // nested() 内层 (III) + 外层 (IIII) 两个调用点 + floatTernary() 一个 = 3 次工厂调用
         assertEquals(3, countSanitizerFactoryCalls(woven),
                 "嵌套构造与三元参数构造必须全部改写为工厂调用");
         assertEquals(0, countColorCtorInvocations(woven),
                 "外层夹具类的目标构造调用必须全部改写、无残留");
         assertEveryFactoryCallHasSiteArg(woven);
 
-        // 织入产物必须通过 ASM 结构校验
         java.io.StringWriter analysisOut = new java.io.StringWriter();
         org.objectweb.asm.util.CheckClassAdapter.verify(
                 new ClassReader(woven), false, new java.io.PrintWriter(analysisOut));
         assertEquals("", analysisOut.toString(), "织入产物必须零校验错误: " + analysisOut);
 
-        // 织入产物必须通过 JVM 链接验证（三元参数合流帧的未初始化栈项已剔除）
         assertLinks("github.kasuminova.ssoptimizer.asm.util.ColorCtorFixture", woven);
 
-        // 链式子类同样必须被正确处理（其 super 调用保持原样、不织入）
         assertNull(new ColorCtorSanitizeProcessor()
                 .process(readClassBytes("github/kasuminova/ssoptimizer/asm/util/ColorCtorFixture$Chained")),
                 "仅含 super 链式调用的子类无可改写调用点，必须返回 null");
     }
 
-    /**
-     * 回归：合流帧的精确类型不得在织入后降级为 {@code java/lang/Object}。
-     * <p>
-     * 实机案例：{@code WeaponSpecLoader.loadWeaponSpec} 中 ProjectileWeaponSpec 与
-     * 其子类 PulseWeaponSpec 的合流帧，经 COMPUTE_FRAMES + 固定 Object 的
-     * getCommonSuperClass 重算后降级为 Object，开启字节码校验的 JVM 在
-     * 加载期抛 VerifyError。处理器改为保留原始帧后，帧内类型集合必须与原类一致，
-     * 且织入产物必须通过 JVM 链接验证。
-     */
     @Test
     void mergeFramesKeepPreciseTypesAfterWeaving() throws IOException {
         final String target = "com/fs/starfarer/loading/WeaponSpecLoader";
@@ -114,7 +92,6 @@ class ColorCtorSanitizeProcessorTest {
         assertLinks(target.replace('/', '.'), woven);
     }
 
-    /** 收集指定方法全部帧的 locals/stack 类型名集合（未初始化项记为 uninitialized）。 */
     private static java.util.Set<String> frameTypeNames(final byte[] classBytes, final String methodName) {
         java.util.Set<String> types = new java.util.TreeSet<>();
         for (MethodNode method : classNode(classBytes).methods) {
@@ -147,10 +124,6 @@ class ColorCtorSanitizeProcessorTest {
         }
     }
 
-    /**
-     * 在子优先类加载器中定义织入产物并触发 JVM 链接（含字节码验证）。
-     * 目标类之外的引用（游戏类、ColorSanitizer）委托父加载器解析。
-     */
     private static void assertLinks(final String binaryName, final byte[] bytes) {
         ClassLoader parent = ColorCtorSanitizeProcessorTest.class.getClassLoader();
         ClassLoader loader = new ClassLoader(parent) {
@@ -172,7 +145,6 @@ class ColorCtorSanitizeProcessorTest {
         }
     }
 
-    /** 统计四种目标描述符的 Color 构造调用数。 */
     private static int countColorCtorInvocations(final byte[] classBytes) {
         int count = 0;
         for (MethodNode method : classNode(classBytes).methods) {
@@ -189,7 +161,6 @@ class ColorCtorSanitizeProcessorTest {
         return count;
     }
 
-    /** 统计净化工厂调用数。 */
     private static int countSanitizerFactoryCalls(final byte[] classBytes) {
         int count = 0;
         for (MethodNode method : classNode(classBytes).methods) {
@@ -205,7 +176,6 @@ class ColorCtorSanitizeProcessorTest {
         return count;
     }
 
-    /** 核验每个工厂调用的紧邻前驱都是 LDC 烧录的 site 字符串（{@code 类名#方法名@序号}）。 */
     private static void assertEveryFactoryCallHasSiteArg(final byte[] classBytes) {
         for (MethodNode method : classNode(classBytes).methods) {
             for (AbstractInsnNode insn : method.instructions) {

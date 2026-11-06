@@ -10,10 +10,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Startup image decoder for resource loads. PNG assets try the native backend
- * first, while non-PNG assets and native PNG failures fall back to ImageIO.
- */
 public final class FastResourceImageDecoder {
     private static final byte[] PNG_SIGNATURE = {
             (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
@@ -29,17 +25,12 @@ public final class FastResourceImageDecoder {
     static BufferedImage decode(final String path,
                                 final InputStream inputStream,
                                 final PngByteDecoder nativePngDecoder) throws IOException {
-        // 字体覆盖路径由 OriginalGameFontOverrides 在内存中提供 PNG 数据，
-        // 但磁盘上仍然是原版（或汉化包）的 PNG 文件。基于磁盘指纹的
-        // TextureConversionCache 会命中旧缓存，返回原版像素数据而非 SSO 生成的像素，
-        // 导致 .fnt 坐标与纹理内容不匹配、渲染乱码。
-        // 因此对字体覆盖路径跳过 probeFingerprint，强制走 InputStream 解码路径。
+        // 字体覆盖仅替换内存 PNG，必须跳过磁盘指纹缓存，避免命中原版像素。
         final FontResourceOverride fontOverrideService = fontResourceOverride();
         final boolean fontOverride = fontOverrideService != null
                 && fontOverrideService.isEnabled()
                 && fontOverrideService.isOverriddenPath(fontOverrideService.normalize(path));
-        // 指纹必须经合并视图解析（模组覆盖优先），与下方实际读取的 InputStream
-        // 来源一致；CWD 直连探测会让游戏根目录下的原版文件指纹压过模组覆盖文件。
+        // 指纹必须经模组覆盖优先的合并视图解析，与实际 InputStream 来源一致。
         final TextureConversionCache.TextureSourceFingerprint sourceFingerprint =
                 (!fontOverride && TextureConversionCache.isEnabled())
                         ? LazyTextureManager.probeManagedFingerprint(path, path)
@@ -123,7 +114,6 @@ public final class FastResourceImageDecoder {
         BufferedImage decode(byte[] imageBytes) throws IOException;
     }
 
-    /** 字体覆盖服务（coremod 装配期注册；未注册=无字体覆盖，loading 不直接依赖 font 模块）。 */
     private static FontResourceOverride fontResourceOverride() {
         return ServiceRegistry.getOrNull(FontResourceOverride.class);
     }

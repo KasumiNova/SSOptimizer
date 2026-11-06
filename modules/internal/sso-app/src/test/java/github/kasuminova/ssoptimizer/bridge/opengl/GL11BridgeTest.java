@@ -6,11 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * bridge GL11 的录制行为验证：每个静态方法把调用封成一条 GlCommand 入队到
- * 注入的 RenderQueue（假消费者只录制不执行——命令体是真实 GL 调用，无上下文
- * 环境不可执行；命令体的参数正确性由接入游戏后的截图验证兜底）。
- */
 class GL11BridgeTest {
 
     private FakeRenderQueue queue;
@@ -28,9 +23,6 @@ class GL11BridgeTest {
 
     @Test
     void immediateAndMatrixCallsAreRecordedInOrder() {
-        // 流内矩阵指令模式（默认开）：矩阵族调用编码进顶点流，不再逐条入队；
-        // glClear 之后的 matrixMode..popMatrix 与 begin..end 顶点段合入同一
-        // 挂起流，glFlush 触发一次落帧（流内矩阵指令的行为细节由 StreamMatrixOpsTest 覆盖）
         GL11.glClear(org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT);
         GL11.glMatrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
         GL11.glLoadIdentity();
@@ -43,23 +35,17 @@ class GL11BridgeTest {
         GL11.glEnd();
         GL11.glPopMatrix();
         GL11.glFlush();
-        // glClear + 流回放批次 + glFlush；矩阵与 immediate 调用全部编码进流
         assertEquals(3, queue.recorded.size());
         assertInstanceOf(VertexBatchCommand.class, queue.recorded.get(1), "矩阵与顶点段合入一条流回放命令");
-        // 只录制不执行：无 GL 上下文也未抛异常，证明调用被完整延迟
         assertEquals(0, queue.swapCount);
         assertEquals(0, queue.swapAndSyncCount);
     }
 
     @Test
     void nonStreamCommandFlushesPendingVertexStreamInOrder() {
-        // 钉住旧模式（glEnd 立即落帧）：本用例验证的是「非流式命令插入时先落帧
-        // 已累计流段」的顺序语义，延迟落帧的行为由 DeferredGlEndTest 覆盖
         boolean saved = BridgeSupport.deferredGlEndEnabled;
         try {
             BridgeSupport.deferredGlEndEnabled = false;
-            // 顶点流与命令对象混排：非流式命令插入时，先落帧已累计的流段，
-            // 帧列表顺序即录制顺序（段 1 = begin+2 顶点，其后 enable，其后段 2）
             GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
             GL11.glVertex2f(0f, 0f);
             GL11.glVertex2f(1f, 0f);
@@ -74,7 +60,6 @@ class GL11BridgeTest {
 
     @Test
     void blockingGetterFlushesPendingVertexStreamBeforeSwap() {
-        // drain-first 必须包含未落帧的顶点流：getter 读到此前全部录制命令执行完的状态
         GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
         GL11.glVertex2f(0f, 0f);
         queue.getHandler = callable -> 0;
@@ -97,14 +82,9 @@ class GL11BridgeTest {
 
     @Test
     void openSegmentBatchesAreMarkedImmediate() {
-        // 钉住旧模式（glEnd 立即落帧）：开放段切割标记的逐批判定语义；
-        // 延迟落帧下由 enqueue/swap 触发落帧走同一套 startsOpen/endsOpen 机制
         boolean saved = BridgeSupport.deferredGlEndEnabled;
         try {
             BridgeSupport.deferredGlEndEnabled = false;
-            // 开放段切割：glBegin 后插入非流式命令（glEnable）落帧时段仍开放；
-            // 该批次与后续「以开放段开始」的批次都必须走 immediate 兜底回放，
-            // 闭合段的普通批次不受影响
             GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
             GL11.glVertex2f(0f, 0f);
             GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
@@ -146,15 +126,12 @@ class GL11BridgeTest {
         GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
         GL11.glDisable(org.lwjgl.opengl.GL11.GL_DEPTH_TEST);
         GL11.glBlendFunc(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA);
-        // 流内矩阵指令模式：rotatef/scalef 编码进顶点流，由随后的 bindTexture
-        // （enqueueState → enqueue）触发一次落帧
         GL11.glRotatef(90f, 0f, 0f, 1f);
         GL11.glScalef(2f, 2f, 1f);
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         GL11.glOrtho(0, 800, 600, 0, -1, 1);
         GL11.glFlush();
         GL11.glFinish();
-        // 5 条状态命令 + 1 条流回放批次（rotatef/scalef）+ bind + ortho + flush + finish
         assertEquals(10, queue.recorded.size());
         assertInstanceOf(VertexBatchCommand.class, queue.recorded.get(5), "流内矩阵指令落帧为一条流回放命令");
     }
@@ -195,7 +172,6 @@ class GL11BridgeTest {
         GL11.glPopAttrib();
         GL11.glPushClientAttrib(org.lwjgl.opengl.GL11.GL_ALL_CLIENT_ATTRIB_BITS);
         GL11.glPopClientAttrib();
-        // 前 8 次 immediate 调用合并为 1 条流回放命令（在 glAlphaFunc 前落帧），其后 20 条逐条入队
         assertEquals(21, queue.recorded.size());
     }
 
@@ -306,8 +282,6 @@ class GL11BridgeTest {
         assertEquals(2, queue.recorded.size());
     }
 
-    // -- 状态命令去重（StateDedup）--
-
     @Test
     void consecutiveIdenticalStateCommandsAreDeduplicated() {
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
@@ -321,7 +295,7 @@ class GL11BridgeTest {
     @Test
     void stateCommandDedupBreaksOnInterleavedCommand() {
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
-        GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND); // 不同命令插入 → 打断相邻性
+        GL11.glEnable(org.lwjgl.opengl.GL11.GL_BLEND);
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         assertEquals(3, queue.recorded.size(), "插入命令后相同状态命令必须重新入队");
     }
@@ -338,15 +312,13 @@ class GL11BridgeTest {
 
     @Test
     void stateCommandDedupBreaksOnVertexStreamFlush() {
-        // 钉住旧模式（glEnd 立即落帧）：顶点流落帧命令打断相邻性的语义验证；
-        // 延迟落帧下的相邻性变化（纯顶点挂起流不打断）由 DeferredGlEndTest 覆盖
         boolean saved = BridgeSupport.deferredGlEndEnabled;
         try {
             BridgeSupport.deferredGlEndEnabled = false;
             GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
             GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
             GL11.glVertex2f(0f, 0f);
-            GL11.glEnd(); // glEnd 立即落帧，流命令插入打断 bind 相邻性
+            GL11.glEnd();
             GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
             assertEquals(3, queue.recorded.size(), "顶点流落帧命令必须打断相邻性");
         } finally {
@@ -369,17 +341,11 @@ class GL11BridgeTest {
         }
     }
 
-    // -- 流内状态指令（sprite 渲染路径，见 SpriteRenderHelper 的流内化）--
-
     @Test
     void streamStateInstructionsEncodeIntoOneVertexBatch() {
-        // 钉住旧模式（glEnd 立即落帧）：延迟模式下末尾的 streamDisable 会挂起到
-        // 下一命令才落帧，本用例验证的是「整组 sprite 调用编码进一条流命令」
         boolean saved = BridgeSupport.deferredGlEndEnabled;
         try {
             BridgeSupport.deferredGlEndEnabled = false;
-            // sprite 的完整绘制（bind + enable + blendFunc + quad 段 + disable）全部
-            // 编码进顶点流：glEnd 处一次落帧成 1 条流命令（状态命令数从 5 条降为 0）
             GL11.streamBindTexture(7);
             GL11.streamEnable(org.lwjgl.opengl.GL11.GL_TEXTURE_2D);
             GL11.streamEnable(org.lwjgl.opengl.GL11.GL_BLEND);
@@ -407,14 +373,9 @@ class GL11BridgeTest {
 
     @Test
     void consecutiveStreamSpritesEachProduceOneBatch() {
-        // 钉住旧模式（glEnd 立即落帧）：本用例验证「每 sprite 一条流命令」的
-        // 逐段落帧形态；延迟落帧下连续 sprite 合入一条批次由 DeferredGlEndTest 覆盖
         boolean saved = BridgeSupport.deferredGlEndEnabled;
         try {
             BridgeSupport.deferredGlEndEnabled = false;
-            // 连续两个 sprite：各自 glEnd 落帧为 1 条流命令（glEnd 保持「段即批次」
-            // 语义，避免挂起流与 aux 提交的帧列表错序）；状态命令已合并进流，
-            // 每 sprite 的命令数从 6 条（5 状态 + 1 流）降为 1 条流命令
             for (int sprite = 0; sprite < 2; sprite++) {
                 GL11.streamBindTexture(7);
                 GL11.streamEnable(org.lwjgl.opengl.GL11.GL_TEXTURE_2D);

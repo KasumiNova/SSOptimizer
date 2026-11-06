@@ -11,16 +11,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * XStream 引用 ID 生成辅助类。
- * <p>
- * 职责：为 {@code ReferenceByIdMarshaller} 的默认 {@code SequenceGenerator} 提供更紧凑的引用 ID 生成路径，
- * 避免每次都走十进制 {@link String#valueOf(int)} 的热点转换，并按需异步扩展预生成 ID 池。<br>
- * 设计动机：现有真实战役存档的对象引用序号普遍远超 64K；若只缓存一小段前缀，保存后半程仍会重新落回
- * `int -> String` 热点，因此这里改为“固定首块 + 后台分块补齐”的自适应池。<br>
- * 兼容性策略：仅当 marshaller 实际持有 XStream 默认的 {@code SequenceGenerator} 时才启用优化；
- * 若上游传入自定义 {@code IDGenerator}，则完全回退到原始生成逻辑，不改变外部行为。
- */
 public final class XStreamReferenceIdHelper {
     static final String MAX_PRECOMPUTED_REFERENCE_ID_PROPERTY = "ssoptimizer.save.referenceid.cache.max";
 
@@ -47,12 +37,6 @@ public final class XStreamReferenceIdHelper {
     private XStreamReferenceIdHelper() {
     }
 
-    /**
-     * 判断是否可以对当前 ID 生成器启用优化路径。
-     *
-     * @param generator XStream 引用 ID 生成器
-     * @return 若生成器是默认 {@code SequenceGenerator} 且可读取计数器，则返回 {@code true}
-     */
     public static boolean supportsOptimizedIds(final Object generator) {
         return generator != null
                 && SEQUENCE_GENERATOR_CLASS != null
@@ -60,12 +44,6 @@ public final class XStreamReferenceIdHelper {
                 && generator.getClass() == SEQUENCE_GENERATOR_CLASS;
     }
 
-    /**
-     * 读取默认 {@code SequenceGenerator} 的当前计数器。
-     *
-     * @param generator 默认 XStream 顺序 ID 生成器
-     * @return 当前下一个待分配的引用 ID 序号
-     */
     public static int readSequenceCounter(final Object generator) {
         if (!supportsOptimizedIds(generator)) {
             throw new IllegalArgumentException("Unsupported XStream ID generator: " + generator);
@@ -73,34 +51,15 @@ public final class XStreamReferenceIdHelper {
         return (int) SEQUENCE_COUNTER_HANDLE.get(generator);
     }
 
-    /**
-     * 创建新的紧凑引用 ID。
-     *
-     * @param value 顺序整数值
-     * @return 与原始 XStream 兼容的紧凑字符串 ID
-     */
     public static String nextReferenceId(final int value) {
         return toCompactString(value);
     }
 
-    /**
-     * 解析当前 marshaller 对系统属性 {@code id} 的别名。
-     *
-     * @param marshaller XStream 引用 marshaller
-     * @return 当前 mapper 配置下的 `id` 属性别名；若不可用则返回 {@code null}
-     */
     public static String resolveIdAttributeAlias(final Object marshaller) {
         final Mapper mapper = readMapper(marshaller);
         return mapper == null ? null : mapper.aliasForSystemAttribute("id");
     }
 
-    /**
-     * 直接向当前 marshaller 绑定的 writer 写入引用 ID 属性。
-     *
-     * @param marshaller XStream 引用 marshaller
-     * @param attributeName 属性名
-     * @param item 属性值对象
-     */
     public static void writeReferenceIdAttribute(final Object marshaller,
                                                  final String attributeName,
                                                  final Object item) {

@@ -8,10 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Lightweight startup-time virtual filesystem snapshot for the base-game
- * resource loader. It memoizes file metadata and directory children so the
- * engine's repeated "does this path exist?" and "list matching files" probes
- * collapse into in-memory lookups after the first hit.
+ * 文件元数据与目录清单按启动期快照缓存，仅在 clear 后重新探测。
  */
 public final class ResourceFileCache {
     private static final Map<String, FileMetadata>      FILE_CACHE      = new ConcurrentHashMap<>();

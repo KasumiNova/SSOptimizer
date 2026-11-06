@@ -5,11 +5,7 @@ import github.kasuminova.ssoptimizer.bootstrap.AsmCommonSuperClassResolver;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.objectweb.asm.*;
 
-/**
- * Injects an optional direct-start path into the launcher constructor, before
- * any UI is created, so automated smoke tests can enter the real game-loading
- * phase without competing with the launcher OpenGL context.
- */
+/** 需要在构造器特定常量指令前提前返回并读取局部变量，Mixin 无法稳定表达该注入位置，故使用 ASM。 */
 public final class LauncherDirectStartProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS  = GameClassNames.STARFARER_LAUNCHER;
     public static final String TARGET_METHOD = "<init>";

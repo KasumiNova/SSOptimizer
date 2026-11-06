@@ -8,27 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link ArcStripRenderHelper} 圆弧方向表缓存的等价性验证。
- * <p>
- * 核心断言：缓存内容必须与原版 {@code TexturedStripRenderer.renderArc}/
- * {@code renderLineArc} 循环内即时计算的 {@code (float) Math.cos/sin(step * i)}
- * 逐点位级一致（{@code floatToRawIntBits} 比较）——缓存本身就是同一公式的
- * 预计算结果，本测试以独立复刻的原版循环作为参照系验证这一点。
- */
 class ArcStripRenderHelperTest {
 
-    /** EntityIndicator 全圆弧调用形态的 span：normalizeAngle(toRadians(360) - toRadians(0))。 */
     private static final float FULL_CIRCLE_SPAN =
             Utils.normalizeAngle((float) Math.toRadians(360.0) - (float) Math.toRadians(0.0));
 
     @BeforeEach
     void isolateStaticCache() {
-        // 方向表缓存为静态共享：每个用例前清空，保证用例间互不影响（顺序无关）
         ArcStripRenderHelper.clearCache();
     }
 
-    /** 原版 renderArc/renderLineArc 顶点循环的独立复刻（参照系）：即时计算 sin/cos。 */
     private static float[] vanillaDirections(float step, int count) {
         float[] result = new float[(count + 1) * 2];
         for (float f = 0.0F; f < count + 1; f++) {
@@ -50,8 +39,6 @@ class ArcStripRenderHelperTest {
 
     @Test
     void directionsMatchImmediateTrigonometryBitwise() {
-        // 覆盖 EntityIndicator 形态（全圆弧、segLen=6.0、半径扫描出的各档 count）
-        // 与一般调用方形态（部分弧 span）
         float[] spans = {FULL_CIRCLE_SPAN, 1.0F, 3.7F, 0.5F, 2.0F};
         for (float span : spans) {
             for (int count : new int[]{36, 40, 52, 104, 256, 1024}) {
@@ -65,8 +52,6 @@ class ArcStripRenderHelperTest {
 
     @Test
     void cachedVertexSequenceMatchesVanillaLoop() {
-        // 模拟原版 renderArc 无纹理分支的完整顶点序列（cos/sin 即时计算后乘半径），
-        // 与缓存驱动的顶点序列逐点位级对比——验证「查表 + 同一乘法表达式」的渲染等价性
         float radius = 137.0F;
         float width = 1.75F;
         float count = ArcStripRenderHelper.arcSegmentCount(FULL_CIRCLE_SPAN, radius, 6.0F);
@@ -90,8 +75,6 @@ class ArcStripRenderHelperTest {
 
     @Test
     void intIndexEqualsFloatLoopCounter() {
-        // 位级等价性的前提：原版 float 循环计数器（每次 +1.0F）在可及段数范围内
-        // 与 (float) int 索引逐值相等（整数 ≤ 2^24 转 float 无精度损失）
         float counter = 0.0F;
         for (int i = 0; i <= 1_000_000; i++) {
             assertEquals(Float.floatToRawIntBits((float) i), Float.floatToRawIntBits(counter),
@@ -116,7 +99,6 @@ class ArcStripRenderHelperTest {
 
     @Test
     void arcSegmentCountMatchesVanillaRounding() {
-        // 对照原版表达式：ceil(span * radius / segmentLength) 后向上取整到 4 的倍数
         for (float radius = 1.0F; radius <= 2000.0F; radius += 0.5F) {
             float expected = (float) Math.ceil(FULL_CIRCLE_SPAN * radius / 6.0F);
             if ((int) expected % 4 != 0) {
@@ -130,7 +112,6 @@ class ArcStripRenderHelperTest {
 
     @Test
     void lineArcSegmentCountMatchesVanillaRounding() {
-        // 非虚线：同 renderArc 的 4 倍数取整；虚线：取整到 dashSegments 的倍数
         for (float radius = 1.0F; radius <= 500.0F; radius += 3.0F) {
             float base = (float) Math.ceil(FULL_CIRCLE_SPAN * radius / 6.0F);
             float expectedPlain = base;
@@ -164,22 +145,18 @@ class ArcStripRenderHelperTest {
 
     @Test
     void negativeCountYieldsZeroVertices() {
-        // 退化输入（负 radius → ceil 结果为负）：原版循环条件 var19 < count + 1
-        // 直接不满足，产出零顶点；缓存路径必须同样产出零顶点而非抛异常
         float[] directions = ArcStripRenderHelper.directions(1.0F, -3.0F);
         assertEquals(0, directions.length, "负段数必须等价于原版的零顶点输出");
     }
 
     @Test
     void cacheCapStopsGrowthButKeepsResultsCorrect() {
-        // 用连续变化的 step（模拟战斗电弧类跨帧变化 span 的调用方）灌满缓存
         for (int i = 0; i < ArcStripRenderHelper.MAX_ENTRIES + 100; i++) {
             ArcStripRenderHelper.directions(1.0F + i * 0.001F, 36.0F);
         }
         assertTrue(ArcStripRenderHelper.cacheSize() <= ArcStripRenderHelper.MAX_ENTRIES,
                 "缓存条目数不得超过上限");
 
-        // 满缓存后的新键：不入缓存，但内容仍必须与即时计算位级一致
         float step = 9876.5F;
         float[] uncached = ArcStripRenderHelper.directions(step, 36.0F);
         assertDirectionsBitwiseEqual(vanillaDirections(step, 36), uncached, "满缓存后的新键");

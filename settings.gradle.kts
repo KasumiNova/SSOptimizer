@@ -1,6 +1,6 @@
 pluginManagement {
     repositories {
-        // SDG 插件（io.github.nanoforged.sectordevgradle.*）以 SNAPSHOT 发布在 mavenLocal
+        // SDG SNAPSHOT 插件从 mavenLocal 解析。
         mavenLocal()
         gradlePluginPortal()
     }
@@ -25,8 +25,7 @@ include(":modules:internal:sso-render")
 include(":modules:internal:sso-font")
 include(":modules:internal:sso-app")
 
-// 四个功能域 native 子模块：目录 <域>/native/，Gradle 项目名显式改称 native-<域>，
-// 避免四个 "native" 撞名；产物 libssoptimizer_<域>.so / ssoptimizer_<域>.dll
+// native 子模块必须显式改名，避免多个项目使用相同的 Gradle 项目名。
 include(":modules:internal:sso-render:native")
 project(":modules:internal:sso-render:native").name = "native-render"
 include(":modules:internal:sso-loading:native")

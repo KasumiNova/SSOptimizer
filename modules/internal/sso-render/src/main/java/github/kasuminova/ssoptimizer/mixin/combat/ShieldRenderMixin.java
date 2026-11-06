@@ -16,20 +16,6 @@ import org.spongepowered.asm.mixin.Unique;
 
 import java.awt.*;
 
-/**
- * 舰船护盾（Shield）渲染方法的 Mixin 重写。
- * <p>
- * 注入目标：{@code com.fs.starfarer.combat.systems.Shield#render(float)}<br>
- * 注入动机：原版护盾渲染为两遍立即模式 TRIANGLE_FAN + 一遍 QUAD_STRIP，
- * 360° 盾单帧约 800 次三角函数与 800 次立即模式 JNI 调用，是帧时间热点。<br>
- * 注入效果：整体委托 {@link ShieldRenderHelper}，以旋转递推 + 顶点缓存 + 数组合批替换立即模式；
- * 优化关停或显示列表编译期间由 helper 回退到逐行复刻原版的立即模式路径。<br>
- * 可见性说明：{@code ShieldWeaponTracker} / {@code AimTracker} / {@code OffsetPoint}
- * 均为 public 类且所需方法 public，可直接 Shadow 并按需取 primitive 值传入 helper，
- * 无需 accessor。原版私有方法 {@code getSegmentBrightness(int)} 为单行公式
- * （1 − 0.45·segmentAlpha/segmentAlphaMax），由
- * {@link github.kasuminova.ssoptimizer.common.render.shield.ShieldArcGeometry#segmentBrightness} 复刻。
- */
 @Mixin(targets = GameClassNames.SHIELD_DOTTED)
 public abstract class ShieldRenderMixin {
     @Shadow(remap = false)
@@ -101,22 +87,12 @@ public abstract class ShieldRenderMixin {
     @Unique
     private final ShieldRenderHelper.Params ssoptimizer$renderParams = new ShieldRenderHelper.Params();
 
-    /**
-     * 将护盾渲染整体委托给 {@link ShieldRenderHelper}。
-     *
-     * @param amount 帧时间参数
-     * @author KasumiNova
-     * @reason 原版立即模式绘制是帧时间热点，替换为递推顶点生成 + 数组合批路径；
-     * 关停或显示列表编译期间由 helper 内部回退到等价立即模式。
-     */
     @Overwrite(remap = false)
     public void render(float amount) {
-        // 原版：if (!this.skipRendering) { ... }
         if (this.skipRendering) {
             return;
         }
 
-        // 原版：var4 = offsetPoint.computeLocation(ship); var4 -= ship.getLocation()
         Vector2f offset = this.offsetPoint.computeLocation(this.ship);
         Vector2f shipLoc = this.ship.getLocation();
 

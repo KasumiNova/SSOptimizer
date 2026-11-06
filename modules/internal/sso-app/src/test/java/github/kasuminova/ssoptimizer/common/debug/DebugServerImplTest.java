@@ -16,10 +16,6 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link DebugServerImpl} 集成测试：真实 HttpServer 绑定临时端口，
- * 验证鉴权、HTTP 方法约束、RPC 往返与 token 文件。
- */
 class DebugServerImplTest {
     @TempDir
     Path outputDir;

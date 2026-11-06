@@ -1,11 +1,3 @@
-/**
- * 原生 BC 纹理压缩器（JNI 实现）。
- *
- * 对应 Java 类: github.kasuminova.ssoptimizer.common.loading.NativeTextureCompressor
- * 编码核心在 texcompress_core（BC7 → vendor bc7enc，BC1/BC3 → vendor rgbcx），
- * 本文件只做 JNI 边界参数校验、direct ByteBuffer 取值与 byte[] 回传。
- * C++ 异常不越 JNI 边界；所有失败路径返回 nullptr 并在 stderr 留一行日志。
- */
 #include <cstdint>
 #include <cstdio>
 #include <vector>
@@ -19,7 +11,7 @@
 
 namespace {
 
-// 一次性自测：压缩一个 4x4 块走通三种格式的编码路径，防御 vendor 表初始化缺失。
+// 覆盖三种编码路径和 vendor 全局表初始化，避免初始化遗漏延迟到实际压缩时暴露。
 bool selfTest() {
     uint8_t pixels[64];
     for (int i = 0; i < 16; i++) {
@@ -35,7 +27,6 @@ bool selfTest() {
             return false;
         }
     }
-    // BC1 punch-through 路径：半块透明像素，走自实现 3-color + selector 3 编码
     for (int i = 8; i < 16; i++) {
         pixels[i * 4 + 3] = 0;
     }
@@ -46,7 +37,7 @@ bool selfTest() {
     return true;
 }
 
-} // namespace
+}
 
 extern "C" {
 
@@ -85,7 +76,7 @@ Java_github_kasuminova_ssoptimizer_common_loading_NativeTextureCompressor_native
             return nullptr; // core 内已记日志
         }
     } catch (...) {
-        // 防御：C++ 异常不得越 JNI 边界
+        // C++ 异常不得越过 JNI 边界。
         fprintf(stderr, "[SSOptimizer] texcompress: 未捕获的 C++ 异常 format=%d %dx%d\n",
                 format, width, height);
         return nullptr;
@@ -106,4 +97,4 @@ Java_github_kasuminova_ssoptimizer_common_loading_NativeTextureCompressor_native
     return result;
 }
 
-} // extern "C"
+}

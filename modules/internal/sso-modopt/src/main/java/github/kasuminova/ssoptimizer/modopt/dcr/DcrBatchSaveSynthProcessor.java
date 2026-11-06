@@ -19,27 +19,13 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
- * L1（二）：向 DCR {@code data/scripts/combatanalytics/SerializationManager} 注入两个合成静态方法与一个
- * 脏标志字段，配合 {@link DcrOnGameLoadProcessor} 把 trim 重写循环的 O(N²) 降为 O(N)：
- * <ul>
- *   <li>{@code ssoptimizer$collect(CombatResult)}：{@code getAllSavedCombatResults().add(cr)} + 置脏，不序列化。</li>
- *   <li>{@code ssoptimizer$flush()}：脏时一次 {@code sort → getSerializer().toXML → saveValue}，复刻原循环末态。</li>
- *   <li>{@code ssoptimizer$dirty}：private static boolean 脏标志。</li>
- * </ul>
- * 合成方法注入 SerializationManager 自身，故可合法访问其 private {@code getSerializer()/saveValue()}；
- * {@code getAllSavedCombatResults()} 为 public。flush 用 {@code getAllSavedCombatResults()}（collect 已重建的非空
- * {@code _resultCache}），不直接读 {@code _resultCache}（{@code clearSavedData} 会将其置 null）。
- * <p>
- * {@code COMBATRESULTS_KEY} 是被内联的编译期常量，故此处直接 {@code ldc "CombatAnalytics_CombatResults_V4"}。
- * flush 仅一处分支，手写一个 {@code F_SAME} 帧；collect 线性无帧；用 {@code COMPUTE_MAXS}（非 FRAMES）避免对
- * SerializationManager 既有复杂方法重算帧。
+ * 为 DCR SerializationManager 注入批量收集、统一刷写方法与脏标志。
+ * <p>合成成员需以固定 JVM 名称供另一处理器直接调用，并包含手工栈帧与异常表，Mixin 不提供所需的字节码级控制。</p>
  */
 public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
 
-    /** 目标类 JVM 内部名。 */
     public static final String TARGET_CLASS = "data/scripts/combatanalytics/SerializationManager";
 
-    /** DCR 持久化键（编译期常量，内联）。 */
     public static final String COMBATRESULTS_KEY = "CombatAnalytics_CombatResults_V4";
 
     public static final String COLLECT_NAME = "ssoptimizer$collect";
@@ -51,7 +37,6 @@ public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
     private static final String XSTREAM = "com/thoughtworks/xstream/XStream";
     private static final String LOGGER = "org/apache/log4j/Logger";
     private static final String HELPERS = "data/scripts/combatanalytics/util/Helpers";
-    /** 与 DCR 原 saveCombatResult catch 一致的错误文案。 */
     private static final String SAVE_ERROR_MSG = "Unable to save combat result";
 
     @Override
@@ -65,7 +50,7 @@ public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
         reader.accept(node, 0);
 
         if (hasMethod(node, COLLECT_NAME)) {
-            return null; // 幂等：已注入则不重复
+            return null;
         }
 
         node.fields.add(new FieldNode(
@@ -83,10 +68,6 @@ public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
         return node.methods.stream().anyMatch(m -> m.name.equals(name));
     }
 
-    /**
-     * {@code public static void ssoptimizer$collect(CombatResult cr)}：
-     * {@code getAllSavedCombatResults().add(cr); ssoptimizer$dirty = true;}
-     */
     private static MethodNode buildCollect() {
         final MethodNode m = new MethodNode(Opcodes.ASM9,
                 Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
@@ -104,26 +85,7 @@ public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
         return m;
     }
 
-    /**
-     * {@code public static void ssoptimizer$flush()}：
-     * <pre>{@code
-     * if (!ssoptimizer$dirty) return;
-     * try {
-     *     List l = getAllSavedCombatResults();
-     *     Collections.sort(l);
-     *     saveValue(KEY, getSerializer().toXML(l));
-     * } catch (Throwable e) {
-     *     log.error("Unable to save combat result", e);
-     *     Helpers.printErrorMessage("Unable to save combat result");
-     * }
-     * ssoptimizer$dirty = false;
-     * }</pre>
-     * try/catch(Throwable) 镜像 DCR 原 {@code saveCombatResult} 的每次保存保护：序列化/压缩失败时记录日志并
-     * 正常返回（不抛出 onGameLoad），保持原版「优雅降级」语义，符合 Fail-Fast 中「核心逻辑避免崩溃」的例外。
-     * <p>
-     * 栈帧（不用 COMPUTE_FRAMES）：{@code doFlush} = F_SAME；异常处理器 = F_SAME1[Throwable]；
-     * {@code after}（GOTO 与处理器汇合）= F_SAME。
-     */
+    /** doFlush 与 after 使用 F_SAME，handler 使用 F_SAME1[Throwable]，避免重算目标类既有栈帧。 */
     private static MethodNode buildFlush() {
         final MethodNode m = new MethodNode(Opcodes.ASM9,
                 Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
@@ -135,12 +97,10 @@ public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
         final LabelNode after = new LabelNode();
         final InsnList body = new InsnList();
 
-        // if (!ssoptimizer$dirty) return;
         body.add(new FieldInsnNode(Opcodes.GETSTATIC, TARGET_CLASS, DIRTY_FIELD, "Z"));
         body.add(new JumpInsnNode(Opcodes.IFNE, doFlush));
         body.add(new InsnNode(Opcodes.RETURN));
 
-        // doFlush: try { sort + toXML + saveValue }
         body.add(doFlush);
         body.add(new FrameNode(Opcodes.F_SAME, 0, null, 0, null));
         body.add(tryStart);
@@ -157,7 +117,6 @@ public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
         body.add(tryEnd);
         body.add(new JumpInsnNode(Opcodes.GOTO, after));
 
-        // catch (Throwable e) { log.error(MSG, e); Helpers.printErrorMessage(MSG); }
         body.add(handler);
         body.add(new FrameNode(Opcodes.F_SAME1, 0, null, 1, new Object[]{"java/lang/Throwable"}));
         body.add(new VarInsnNode(Opcodes.ASTORE, 1));
@@ -169,7 +128,6 @@ public final class DcrBatchSaveSynthProcessor implements AsmClassProcessor {
         body.add(new LdcInsnNode(SAVE_ERROR_MSG));
         body.add(new MethodInsnNode(Opcodes.INVOKESTATIC, HELPERS, "printErrorMessage", "(Ljava/lang/String;)V", false));
 
-        // after: ssoptimizer$dirty = false; return;
         body.add(after);
         body.add(new FrameNode(Opcodes.F_SAME, 0, null, 0, null));
         body.add(new InsnNode(Opcodes.ICONST_0));

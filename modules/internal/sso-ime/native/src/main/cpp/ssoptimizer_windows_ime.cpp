@@ -1,10 +1,3 @@
-/**
- * Windows IMM32 输入法原生实现（JNI 实现）。
- *
- * 对应 Java 类: WindowsImmNative
- * 负责绑定 LWJGL 2 的 HWND，接管 WM_IME_* 消息，维护候选窗位置，
- * 并向 Java 层暴露提交文本与组合串查询接口。
- */
 #include "github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative.h"
 
 #include <jni.h>
@@ -310,15 +303,6 @@ jstring newString(JNIEnv* env,
 
 } // namespace
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeIsSupported()
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @return Windows 主机返回 true，其他主机返回 false
- *
- * 内存管理：不分配需要调用方释放的原生资源。
- */
 extern "C" JNIEXPORT jboolean JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeIsSupported(JNIEnv* env,
                                                                                        jclass clazz) {
@@ -331,15 +315,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeIsSup
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeLastErrorMessage()
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @return 最近一次原生错误文本；非 Windows 主机返回不可用说明
- *
- * 内存管理：返回的 jstring 由 JVM 管理。
- */
 extern "C" JNIEXPORT jstring JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeLastErrorMessage(JNIEnv* env,
                                                                                              jclass clazz) {
@@ -351,16 +326,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeLastE
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeDebugSummary(long)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param handle 上下文句柄
- * @return 调试摘要文本
- *
- * 内存管理：返回的 jstring 由 JVM 管理。
- */
 extern "C" JNIEXPORT jstring JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeDebugSummary(JNIEnv* env,
                                                                                          jclass clazz,
@@ -376,17 +341,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeDebug
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeCreateContext(long, long)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param display 显示句柄（保留参数，当前未使用）
- * @param window LWJGL 2 暴露的 HWND
- * @return 成功时返回原生上下文句柄，失败返回 0
- *
- * 内存管理：不分配原生资源。
- */
 extern "C" JNIEXPORT jlong JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeCreateContext(JNIEnv* env,
                                                                                           jclass clazz,
@@ -416,15 +370,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeCreat
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeDestroyContext(long)
- *
- * @param env JNI 环境
- * @param clazz Java 类对象（未使用）
- * @param handle 上下文句柄（未使用）
- *
- * 内存管理：恢复窗口原始 WndProc，并释放 nativeCreateContext 分配的上下文对象。
- */
 extern "C" JNIEXPORT void JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeDestroyContext(JNIEnv* env,
                                                                                            jclass clazz,
@@ -442,9 +387,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeDestr
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeFocusIn(long)
- */
 extern "C" JNIEXPORT void JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeFocusIn(JNIEnv* env,
                                                                                     jclass clazz,
@@ -466,9 +408,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeFocus
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeFocusOut(long)
- */
 extern "C" JNIEXPORT void JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeFocusOut(JNIEnv* env,
                                                                                      jclass clazz,
@@ -493,9 +432,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeFocus
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeUpdateSpot(long, int, int, int)
- */
 extern "C" JNIEXPORT void JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeUpdateSpot(JNIEnv* env,
                                                                                        jclass clazz,
@@ -523,11 +459,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeUpdat
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativePollCommittedText(long)
- *
- * @return 下一段待消费的提交文本；没有提交文本时返回 null
- */
 extern "C" JNIEXPORT jstring JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativePollCommittedText(JNIEnv* env,
                                                                                               jclass clazz,
@@ -556,11 +487,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativePollC
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeCurrentPreeditText(long)
- *
- * @return 当前组合串；没有组合串时返回空字符串
- */
 extern "C" JNIEXPORT jstring JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeCurrentPreeditText(JNIEnv* env,
                                                                                                jclass clazz,
@@ -584,11 +510,6 @@ Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeCurre
 #endif
 }
 
-/**
- * 对应 Java 方法：github.kasuminova.ssoptimizer.common.input.ime.WindowsImmNative#nativeIsComposing(long)
- *
- * @return 当前是否处于输入法组合态
- */
 extern "C" JNIEXPORT jboolean JNICALL
 Java_github_kasuminova_ssoptimizer_common_input_ime_WindowsImmNative_nativeIsComposing(JNIEnv* env,
                                                                                         jclass clazz,

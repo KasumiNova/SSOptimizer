@@ -9,11 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-/**
- * Lazily generates TTF-backed BMFont-compatible resources for selected original
- * game font paths. Unmatched paths return {@code null}, so mod-provided fonts keep
- * using the legacy bitmap pipeline untouched.
- */
 public final class OriginalGameFontOverrides {
     static final String MOD_ID               = "ssoptimizer";
     static final String MOD_FONT_DIR_NAME    = "fonts";
@@ -23,11 +18,6 @@ public final class OriginalGameFontOverrides {
     public static final String EXPORT_PROPERTY     = FontArtifactExporter.EXPORT_PROPERTY;
     public static final String EXPORT_DIR_PROPERTY = FontArtifactExporter.EXPORT_DIR_PROPERTY;
 
-    /**
-     * 唯一内建 profile：字重统一策略为「CJK 全系 MiSans-Regular（Medium 在 CJK 正文
-     * 观感过重）；orbitron bold 角色映射到 semibold 字宽（bold 过粗发白）」。
-     * 声明位置必须在 {@link #OVERRIDES} 之前（clinit 顺序依赖）。
-     */
     private static final FontProfile DEFAULT_PROFILE = new FontProfile(
             "original-match",
             List.of("lte50549.ttf", "MiSans-Regular.ttf"),
@@ -194,7 +184,7 @@ public final class OriginalGameFontOverrides {
                 "graphics/fonts/insignia12bold.fnt"
         );
 
-        registerFamily(specs, profile, FontRole.ORBITRON_BOLD, // Bold 观感更好
+        registerFamily(specs, profile, FontRole.ORBITRON_BOLD,
                 "graphics/fonts/orbitron10.fnt",
                 "graphics/fonts/orbitron12condensed.fnt",
                 "graphics/fonts/orbitron12.fnt",
@@ -210,8 +200,6 @@ public final class OriginalGameFontOverrides {
                 "graphics/fonts/orbitron24aabold.fnt"
         );
 
-        // victor 族全量覆盖：MapEntityIcon 按缩放阈值在 victor14/victor16 间切换，
-        // 缺任何一个都会让星图实体标签回退到无 CJK 字形的原版位图管线
         for (String victorPath : List.of(
                 "graphics/fonts/victor10.fnt",
                 "graphics/fonts/victor12.fnt",
@@ -240,7 +228,6 @@ public final class OriginalGameFontOverrides {
                                        final FontRole role,
                                        final String... originalFontPaths) {
         final List<String> primary = primaryCandidates(profile, role);
-        // bold 角色走独立回退链（boldFallback），当前与 fallback 完全一致（全系 Regular）
         final List<String> fallback = role == FontRole.INSIGNIA_BOLD || role == FontRole.ORBITRON_BOLD
                 ? profile.boldFallback()
                 : profile.fallback();
@@ -270,10 +257,6 @@ public final class OriginalGameFontOverrides {
         specs.put(spec.originalFontPath(), spec);
     }
 
-    /**
-     * victor 族成员清单。汉化只为族内部分成员（10/14）烘焙了 CJK 字形，
-     * 12/16/21 的源 fnt 是纯 Latin-1——生成覆盖时以族内其他成员为字库捐赠者补齐。
-     */
     private static final List<String> VICTOR_FAMILY = List.of(
             "graphics/fonts/victor10.fnt",
             "graphics/fonts/victor12.fnt",
@@ -282,11 +265,6 @@ public final class OriginalGameFontOverrides {
             "graphics/fonts/victor21.fnt"
     );
 
-    /**
-     * 字库捐赠者：返回与指定字体同族的其他成员路径，生成期把捐赠者持有而源 fnt
-     * 缺失的码点补入烘焙字符集（典型：victor16 缺 CJK，由 victor10/14 捐赠）。
-     * 非同族字体返回空表。
-     */
     static List<String> charsetDonorPaths(final String resourcePath) {
         final String normalized = normalize(resourcePath);
         if (!VICTOR_FAMILY.contains(normalized)) {

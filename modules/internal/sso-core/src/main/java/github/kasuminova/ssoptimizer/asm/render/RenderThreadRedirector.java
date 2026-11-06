@@ -21,107 +21,27 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 渲染线程分离模式的 GL 调用 owner 重定向器（纯 ASM 改写逻辑，被 coremod transformer
- * 与 Janino 脚本字节码钩子共用）。
- * <p>
- * <b>为什么 Mixin 不可行</b>：本改写的目标是「加载进 LaunchClassLoader 的每一个游戏类、
- * 模组类、Janino 动态编译类」中对 {@code org.lwjgl.opengl.*} 静态入口的调用点——
- * 调用方集合是开放且不可枚举的（整个游戏 + 全部已启用模组），Mixin 要求逐目标类
- * 声明注入点，无法对「任意类的任意方法体内的 owner 引用」做全局重定向；这属于
- * 类加载期的横切字节码改写，只能落在 transformer 链上（项目规范允许的 ASM 兜底情形：
- * 跨类开放集的指令级 owner 改写）。
- * <p>
- * 改写规则：
- * <ul>
- *   <li>owner 改写表：{@code org/lwjgl/opengl/<Name>} → bridge/opengl 同名类，
- *       覆盖 jar 内全部 GL 调用类（全量镜像，清单见 MIRRORED_CLASS_NAMES，
- *       由 tools/gen_gl_bridge.py 生成，见 docs/design/gl-bridge-full-mirror.md）；</li>
- *   <li>只改写 bridge 实际镜像了的方法（镜像表在首次使用时解析 bridge 类自身字节码
- *       构建，方法名+描述符匹配）；未镜像的调用保持原 owner 并按调用签名首次
- *       记 warn 日志——未镜像调用在分离模式下会在无 context 的调用线程执行真实 GL，
- *       日志是覆盖面审计与崩溃定位的唯一依据。invokedynamic bootstrap 参数中的
- *       方法句柄（lambda/方法引用，如 {@code GL12::glDrawRangeElements}）适用同一
- *       白名单判据：桥未镜像时保持原 owner 链接真实 LWJGL 方法，盲改 owner 会在
- *       LambdaMetafactory 链接期以 NoSuchMethodError 收场；</li>
- *   <li>描述符类型改写：GLSync/Drawable/SharedDrawable 三类在
- *       bridge 化后对象身份不同，所有引用点统一替换为 bridge 类型——
- *       含类声明（字段/方法描述符与泛型签名、implements 表）、帧条目、
- *       调用点描述符（任意 Launch 域 owner，含模组内部互调与 indy
- *       bootstrap 参数里的 MethodType——泛型函数接口的具体实例化类型）。
- *       声明不改写时跨声明持有这三类对象的模组（BoxUtil 的
- *       GLWrapper$Operation$Sync 门面方法声明返回 lwjgl GLSync）会在
- *       类链接期 VerifyError（实机崩溃签名：areturn 处 bridge GLSync
- *       不可赋给 lwjgl GLSync）。
- *       System 域 owner（{@code org/lwjgl/**}，如 opencl CLContext.create
- *       的 Drawable 参数）的调用点描述符保持原样——其声明永不改写；
- *       接口形态的身份类型（Drawable）按校验器宽松规则可安全流入。
- *       indy 站点整站一致：只要有一个描述符含身份类型的 impl Handle 不改写
- *       （System 域 owner，或桥未镜像），该站的 MethodType 参数也全部保持原样，
- *       半改写站必在 LambdaMetafactory 链接期类型不匹配；</li>
- *   <li>visitLdcInsn 的字符串字面量绝不动；{@code Type} 型 class 字面量只在命中
- *       三个对象身份类型时改写；</li>
- *   <li>字段访问（GETSTATIC 等）不改写：javac 会把 GL 常量内联，运行期字段访问
- *       不存在于这些 owner 上；出现即 warn 保持原样（bridge 类不声明常量字段，
- *       改写 owner 会 NoSuchFieldError）。</li>
- *   <li>GLU Sphere 特例：{@code org/lwjgl/util/glu/Sphere.draw(FII)V}
- *       （INVOKEVIRTUAL）改写为 {@code GluSupport.enqueueSphereDraw} 的
- *       INVOKESTATIC——Sphere 随 lwjgl_util 由 System 类加载器加载、内部引用
- *       真实 GL11，owner 改写够不到 System 域；整段绘制录制为一条渲染队列命令
- *       （机制见 GluSupport 类注释）。操作数栈形状不变（receiver 变首参），
- *       帧原样保留。Sphere 的纯配置方法（setDrawStyle/setNormals/setOrientation/
- *       setTextureFlag）不触碰 GL，保持原样在调用线程同步执行。GLU 其余入口
- *       （GLU 静态类、GLUtessellator）经实机模组面扫描确认无需覆盖：gluErrorString
- *       为纯字符串查询；tessellator 本体纯 Java 几何计算，其回调实现位于模组
- *       自身类（Launch 域），GL 调用已被 owner 改写覆盖。</li>
- * </ul>
- * 排除规则：
- * <ul>
- *   <li>{@code org/lwjgl/**} 自身（LWJGL 内部类互相调用必须保持真实 GL）；</li>
- *   <li>{@code github/kasuminova/ssoptimizer/bridge/**}（bridge 命令体必须调真 GL）；</li>
- *   <li>common/render/** 不豁免：本阶段不存在「在渲染线程直调真 GL 的 common/render
- *       类」（渲染线程执行的命令体全部位于 bridge 包内），各渲染助手在主线程录制，
- *       其 org.lwjgl 调用必须被重定向入队。</li>
- * </ul>
- * 字节码帧不重算（不用 {@code COMPUTE_FRAMES}）：owner/描述符改写不改变操作数栈形状，
- * 仅帧条目内的身份类型名同步替换（visitFrame），其余帧原样保留有效。
- * <p>
- * feature flag：{@link RenderThreadMode#ENABLE_PROPERTY} 显式 {@code =false} 时
- * {@link #redirect} 原样返回（零开销零风险），镜像表也不会构建；默认启用。
+ * 将 Launch 域类中的 LWJGL GL 调用重定向到渲染命令桥。
+ * 调用方包含开放的游戏、模组与动态编译类集合，Mixin 无法逐类声明，故使用 ASM。
+ * 仅改写桥已镜像的方法；GLSync、Drawable、SharedDrawable 的声明、调用描述符与帧类型必须同步替换，
+ * System 域声明保持不变。invokedynamic 站点必须整体改写或整体保留，避免链接期类型不一致。
  */
 public final class RenderThreadRedirector {
     private static final Logger LOGGER = Logger.getLogger(RenderThreadRedirector.class);
 
-    /** LWJGL GL 包前缀（常量池 UTF8 预筛与 owner 判定共用）。 */
     private static final String LWJGL_PREFIX = "org/lwjgl/opengl/";
     private static final byte[] LWJGL_PREFIX_BYTES = LWJGL_PREFIX.getBytes(StandardCharsets.UTF_8);
-    /** GLU Sphere owner：System 域 lwjgl_util 类，draw 内部引用真实 GL11，需特例改写。 */
     private static final String GLU_SPHERE_OWNER = "org/lwjgl/util/glu/Sphere";
     private static final byte[] GLU_SPHERE_OWNER_BYTES = GLU_SPHERE_OWNER.getBytes(StandardCharsets.UTF_8);
-    /** Sphere.draw 的方法名与原始描述符。 */
     private static final String GLU_SPHERE_DRAW_NAME = "draw";
     private static final String GLU_SPHERE_DRAW_DESC = "(FII)V";
-    /** Sphere.draw 的整段入队转发入口（receiver 变首参，栈形状不变）。 */
     private static final String GLU_SUPPORT_OWNER =
             "github/kasuminova/ssoptimizer/bridge/opengl/GluSupport";
     private static final String GLU_SUPPORT_DRAW_DESC = "(Lorg/lwjgl/util/glu/Sphere;FII)V";
-    /** bridge GL 镜像包前缀（owner 改写目标）。 */
     private static final String BRIDGE_PREFIX = "github/kasuminova/ssoptimizer/bridge/opengl/";
-    /** 排除规则前缀：bridge 包整体（命令体必须调真 GL）。 */
     private static final String BRIDGE_PACKAGE = "github/kasuminova/ssoptimizer/bridge/";
-    /**
-     * System 域 owner 前缀：{@code org/lwjgl/**} 的类由 System 类加载器加载、
-     * 永不经过本改写器，其成员声明中的身份类型保持 lwjgl 原样——指向这些 owner
-     * 的调用点/字段访问描述符不得替换身份类型（如 opencl CLContext.create 的
-     * Drawable 参数），否则运行期 NoSuchMethodError/NoSuchFieldError。
-     */
     private static final String SYSTEM_LWJGL_PREFIX = "org/lwjgl/";
 
-    /**
-     * owner 改写表覆盖的类名（org/lwjgl/opengl 下的简单名，与 bridge 类一一同名）。
-     * 全量镜像清单：由 tools/gen_gl_bridge.py 打印输出（24 个手写 GL 调用类
-     * + ARBCLEvent + 纯生成类 + 6 个手写基建类），jar 换版重新生成时同步更新。
-     * 包内可见供覆盖率测试读取（BridgeMirrorCoverageTest）。
-     */
     static final String[] MIRRORED_CLASS_NAMES = {
             "AMDDebugOutput", "AMDDrawBuffersBlend", "AMDInterleavedElements", "AMDMultiDrawIndirect", "AMDNameGenDelete", "AMDPerformanceMonitor",
             "AMDSamplePositions", "AMDSparseTexture", "AMDStencilOperationExtended", "AMDVertexShaderTessellator", "APPLEElementArray", "APPLEFence",
@@ -161,12 +81,7 @@ public final class RenderThreadRedirector {
             "NVVideoCapture", "SharedDrawable", "Util"
     };
 
-    /** owner 改写表：org/lwjgl/opengl/X → bridge/opengl/X。 */
     private static final Map<String, String> OWNER_REMAP = new HashMap<>();
-    /**
-     * 描述符类型改写表：对象身份被 bridge 化的三类。只在被改写调用点的描述符
-     * 上做字符串级替换（含数组形态，如 {@code [Lorg/lwjgl/opengl/GLSync;}）。
-     */
     private static final Map<String, String> TYPE_REMAP = new HashMap<>();
 
     static {
@@ -179,32 +94,14 @@ public final class RenderThreadRedirector {
         }
     }
 
-    /** 镜像方法表：bridge 简单类名 → {@code name+desc} 集合（惰性构建，仅分离模式）。 */
     private static volatile Map<String, Set<String>> mirrorTable;
 
-    /** 已告警的未镜像调用（owner.方法名+描述符），每处只 warn 一次。 */
     private static final Set<String> WARNED_UNMIRRORED = ConcurrentHashMap.newKeySet();
 
     private RenderThreadRedirector() {
     }
 
-    /**
-     * 对单个类的字节码执行 GL owner 重定向。
-     * <p>
-     * flag 检查刻意不经 {@link RenderThreadMode#isEnabled()} 方法调用：本方法在
-     * transformer 链上执行，{@code ENABLE_PROPERTY} 是编译期内联的字符串常量，
-     * 直接读系统属性不产生对 RenderThreadMode 的类引用——
-     * 否则「正在改写 RenderThreadMode 类自身时触发其加载」会以
-     * {@link ClassCircularityError} 收场（运行时已验证）。
-     * 默认启用（RT 流水线已稳定），仅显式 {@code =false} 回退——判定式与
-     * {@link RenderThreadMode#isEnabled()} 保持逐字一致。
-     *
-     * @param internalClassName 类名（点号或斜杠分隔均可；可为 {@code null}，
-     *                          此时从字节码读取类名做排除判定）
-     * @param classBytes        类文件字节
-     * @return 改写后的字节码；flag 关闭 / 命中排除规则 / 无 LWJGL GL 引用 /
-     *         无实际改写点时原样返回入参
-     */
+    /** 直接读取开关常量，避免变换 {@code RenderThreadMode} 自身时触发其类加载。 */
     public static byte[] redirect(final String internalClassName, final byte[] classBytes) {
         if ("false".equalsIgnoreCase(System.getProperty(RenderThreadMode.ENABLE_PROPERTY, "true"))
                 || classBytes == null) {
@@ -230,13 +127,6 @@ public final class RenderThreadRedirector {
         return visitor.modified ? writer.toByteArray() : classBytes;
     }
 
-    /**
-     * 对 Janino {@code generateBytecodes} 的输出（类名 → 字节码）逐个重定向。
-     * flag 关闭或无任何改写时返回原 map（调用方零适配）。
-     *
-     * @param bytecodes Janino 编译输出（key 为点号类名）
-     * @return 重定向后的新 map，或原 map
-     */
     public static Map<String, byte[]> redirectAll(final Map<String, byte[]> bytecodes) {
         if ("false".equalsIgnoreCase(System.getProperty(RenderThreadMode.ENABLE_PROPERTY, "true"))
                 || bytecodes == null || bytecodes.isEmpty()) {
@@ -252,21 +142,13 @@ public final class RenderThreadRedirector {
         return any ? result : bytecodes;
     }
 
-    /** 排除规则：LWJGL 自身与 bridge 包（命令体必须调真 GL）。 */
     static boolean isExcluded(final String internalClassName) {
         return internalClassName.startsWith(LWJGL_PREFIX)
                 || internalClassName.startsWith(BRIDGE_PACKAGE)
-                // transformer/redirector 自身：避免对改写器实现类的无谓解析
-                // （其常量池含改写表字符串，预筛必然命中）
                 || internalClassName.startsWith("github/kasuminova/ssoptimizer/bootstrap/")
                 || internalClassName.equals("github/kasuminova/ssoptimizer/asm/render/RenderThreadRedirector");
     }
 
-    /**
-     * 常量池预筛：字节中不含 LWJGL GL 包名且不含 GLU Sphere 类名时，
-     * 不可能存在待改写引用（模组类可能只调 Sphere.draw 而无任何 org/lwjgl/opengl
-     * 直接引用，两个前缀都必须筛）。
-     */
     private static boolean containsRedirectableReference(final byte[] bytes) {
         return containsBytes(bytes, LWJGL_PREFIX_BYTES) || containsBytes(bytes, GLU_SPHERE_OWNER_BYTES);
     }
@@ -284,7 +166,6 @@ public final class RenderThreadRedirector {
         return false;
     }
 
-    /** 内部名中的对象身份类型替换（GLSync/Drawable/SharedDrawable → bridge）。 */
     private static String remapType(final String internalName) {
         switch (internalName) {
             case "org/lwjgl/opengl/GLSync":
@@ -323,16 +204,7 @@ public final class RenderThreadRedirector {
         }
     }
 
-    /**
-     * 解析 bridge 类自身字节码构建镜像方法表（方法名+描述符）。
-     * 以 bridge 类为唯一事实源，bridge 扩面时本表自动跟随，无需维护静态清单。
-     * <p>
-     * 沿 bridge 包内 superName 链递归收集：手写类（如 GL11）extends 生成基类
-     * （GL11Gen），invokestatic 的方法解析先命中手写类自身声明、未覆盖落到 Gen
-     * 基类，镜像表必须把整条链的方法并入同一简单名集合。extends 了就必须有——
-     * 链上资源缺失直接报错（生成物与手写类的 extends 关系失配是构建期错误，
-     * 不得静默降级为覆盖面缺口）。
-     */
+    /** 镜像表必须包含 bridge 继承链上的全部方法，链上资源缺失时直接报错。 */
     private static Map<String, Set<String>> buildMirrorTable() {
         Map<String, Set<String>> table = new HashMap<>();
         ClassLoader loader = RenderThreadRedirector.class.getClassLoader();
@@ -371,7 +243,6 @@ public final class RenderThreadRedirector {
         return table;
     }
 
-    /** 未镜像调用审计：保持原 owner，每个调用签名只 warn 一次。 */
     private static void warnUnmirrored(final String className, final String owner,
                                        final String name, final String desc) {
         if (WARNED_UNMIRRORED.add(owner + '.' + name + desc)) {
@@ -380,7 +251,6 @@ public final class RenderThreadRedirector {
         }
     }
 
-    /** 类级改写 visitor：声明（字段/方法/implements 表）与方法体指令同步改写。 */
     private static final class RedirectClassVisitor extends ClassVisitor {
         private boolean modified;
         private String className;
@@ -393,8 +263,6 @@ public final class RenderThreadRedirector {
         public void visit(int version, int access, String name, String signature,
                           String superName, String[] interfaces) {
             this.className = name;
-            // 类头声明改写：泛型签名与 implements 表中的身份类型（模组实现
-            // lwjgl Drawable 时改实现 bridge Drawable，保持接口方法签名一致）
             String remappedSignature = signature == null ? null : remapDescriptor(signature);
             String remappedSuper = superName == null ? null : remapType(superName);
             String[] remappedInterfaces = interfaces;
@@ -418,8 +286,6 @@ public final class RenderThreadRedirector {
         @Override
         public org.objectweb.asm.FieldVisitor visitField(int access, String name, String desc,
                                                          String signature, Object value) {
-            // 字段声明改写：模组持有身份类型字段（如 GLSync 句柄缓存）必须与
-            // 全部读写点同世界（bridge），否则 PUT/GETFIELD 链接期校验失败
             String remappedDesc = remapDescriptor(desc);
             String remappedSignature = signature == null ? null : remapDescriptor(signature);
             if (!remappedDesc.equals(desc)
@@ -432,8 +298,6 @@ public final class RenderThreadRedirector {
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc,
                                          String signature, String[] exceptions) {
-            // 方法声明改写：BoxUtil GLWrapper$Operation$Sync.glFenceSync(II) 声明返回
-            // lwjgl GLSync 而方法体已 bridge 化时的 areturn VerifyError 实机崩溃根因
             String remappedDesc = remapDescriptor(desc);
             String remappedSignature = signature == null ? null : remapDescriptor(signature);
             if (!remappedDesc.equals(desc)
@@ -446,7 +310,6 @@ public final class RenderThreadRedirector {
         }
     }
 
-    /** 方法体指令改写 visitor：owner 改写 + 调用点描述符改写。 */
     private static final class RedirectMethodVisitor extends MethodVisitor {
         private final String className;
         private final RedirectClassVisitor classVisitor;
@@ -460,7 +323,7 @@ public final class RenderThreadRedirector {
 
         @Override
         public void visitMethodInsn(int opcode, String ownerName, String name, String desc, boolean itf) {
-            // GLU Sphere 特例：整段绘制入队（owner 改写够不到 System 域的 Sphere 内部）
+            // GLU Sphere 的整段绘制入队，System 域内部调用无法经 owner 改写覆盖。
             if (opcode == Opcodes.INVOKEVIRTUAL && GLU_SPHERE_OWNER.equals(ownerName)
                     && GLU_SPHERE_DRAW_NAME.equals(name) && GLU_SPHERE_DRAW_DESC.equals(desc)) {
                 super.visitMethodInsn(Opcodes.INVOKESTATIC, GLU_SUPPORT_OWNER,
@@ -470,9 +333,7 @@ public final class RenderThreadRedirector {
             }
             String bridgeOwner = OWNER_REMAP.get(ownerName);
             if (bridgeOwner == null) {
-                // Launch 域 owner（模组/游戏类互调）：其成员声明经本改写器同步改写，
-                // 调用点描述符的身份类型必须跟随；System 域 owner（org/lwjgl/**，
-                // 如 opencl CLContext.create）声明永不改写，描述符保持原样
+                // System 域 owner 的声明不改写，调用描述符保持原样。
                 if (!ownerName.startsWith(SYSTEM_LWJGL_PREFIX)) {
                     String remappedModDesc = remapDescriptor(desc);
                     if (!remappedModDesc.equals(desc)) {
@@ -497,14 +358,12 @@ public final class RenderThreadRedirector {
 
         @Override
         public void visitFieldInsn(int opcode, String ownerName, String name, String desc) {
-            // owner 不改写：javac 内联 GL 常量，这些 owner 上不存在运行期字段访问；
-            // bridge 类不声明常量字段，改写 owner 会 NoSuchFieldError。记审计日志后原样保留。
+            // GL 字段访问的 owner 不改写，bridge 类未声明这些字段。
             if (OWNER_REMAP.containsKey(ownerName)) {
                 warnUnmirrored(className, ownerName, name, desc);
                 super.visitFieldInsn(opcode, ownerName, name, desc);
                 return;
             }
-            // Launch 域字段访问：字段声明已同步改写，访问点描述符跟随（与方法调用点同理）
             if (!ownerName.startsWith(SYSTEM_LWJGL_PREFIX)) {
                 String remappedDesc = remapDescriptor(desc);
                 if (!remappedDesc.equals(desc)) {
@@ -518,9 +377,7 @@ public final class RenderThreadRedirector {
 
         @Override
         public void visitFrame(int type, int numLocal, Object[] local, int numStack, Object[] stack) {
-            // 帧条目中的身份类型名同步替换：方法声明改写后，持有身份类型的局部变量/
-            // 栈槽在帧中的声明类型必须与指令推导出的 bridge 类型一致，否则链接期
-            // VerifyError（栈形状不变，仅类型名替换，无需重算帧）
+            // 帧中的身份类型名须与改写后的局部变量和操作数栈类型同步。
             super.visitFrame(type, numLocal, remapFrameEntries(local), numStack, remapFrameEntries(stack));
         }
 
@@ -557,7 +414,7 @@ public final class RenderThreadRedirector {
 
         @Override
         public void visitLdcInsn(Object value) {
-            // 字符串字面量绝不动；Type 字面量只在命中对象身份类型时改写
+            // 字符串字面量不改写，仅替换对象身份类型的 Type 字面量。
             if (value instanceof Type type && type.getSort() == Type.OBJECT) {
                 String remapped = remapType(type.getInternalName());
                 if (!remapped.equals(type.getInternalName())) {
@@ -582,18 +439,8 @@ public final class RenderThreadRedirector {
 
         @Override
         public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-            // lambda/方法引用场景兜底：indy 描述符与 bootstrap 参数中的 Handle/Type
-            // 同样可能引用被改写 owner（如 GL11::glBegin 方法引用）
             String remappedDesc = remapDescriptor(desc);
-            // 整站一致性预扫：indy 站点必须整站改写或整站保留。若某个描述符含身份
-            // 类型的 impl Handle 不会改写（System 域 owner——CLContext 方法引用等；
-            // 或桥未镜像），则本站的 Type 参数（samMethodType/instantiatedMethodType）
-            // 也必须保持原样——否则 impl 留在 lwjgl 世界而 instantiated 被改写进
-            // 桥世界，LambdaMetafactory 链接期必然类型不匹配
-            // （BoxUtil Operation$Sync.init:3308 崩溃签名：glGetSync buffer 形态
-            // 未镜像时 instantiated 被单独改写）。
-            // 模组自有 lambda 体（Launch 域 owner）的声明经本改写器同步改写，
-            // 其句柄描述符跟随改写，不触发整站保留。
+            // indy 描述符、Handle 与 Type 参数必须整站一致改写或保留。
             boolean keepWholeSite = false;
             for (Object arg : bsmArgs) {
                 if (!(arg instanceof Handle handle)) {
@@ -616,13 +463,6 @@ public final class RenderThreadRedirector {
                     if (keepWholeSite) {
                         continue;
                     }
-                    // samMethodType/instantiatedMethodType 等 MethodType 参数同样可能
-                    // 引用对象身份类型（BoxUtil 的泛型 Fun 接口以具体 GLSync 实例化，
-                    // 如 XIntLongFun<GLSync> 的 instantiatedMethodType 含具体 GLSync）。
-                    // 必须同步改写：否则 impl Handle 已指向 bridge 方法而 instantiated
-                    // 类型仍是 lwjgl GLSync，LambdaMetafactory 校验类型不 convertible
-                    // 直接 LambdaConversionException（Operation$Sync.init 崩溃签名）。
-                    // remapDescriptor 只替换三个身份类型，OBJECT/ARRAY/METHOD 全形态安全。
                     String remappedTypeDesc = remapDescriptor(type.getDescriptor());
                     if (!remappedTypeDesc.equals(type.getDescriptor())) {
                         if (remappedArgs == bsmArgs) {
@@ -634,10 +474,7 @@ public final class RenderThreadRedirector {
                     String remappedHandleDesc = remapDescriptor(handle.getDesc());
                     String bridgeOwner = OWNER_REMAP.get(handle.getOwner());
                     if (bridgeOwner != null) {
-                        // 与 visitMethodInsn 同一白名单判据：桥未镜像的方法句柄保持原
-                        // owner（lambda/方法引用链接到真实 LWJGL 方法）。盲改 owner 会让
-                        // LambdaMetafactory 在链接期解析桥类不存在的方法签名，直接
-                        // NoSuchMethodError（BoxUtil 1.0.6 GLWrapper$Drawcall.init 崩溃根因）
+                        // 未镜像 Handle 保留原 owner，避免链接到 bridge 类中不存在的方法。
                         Set<String> mirrored = mirrorTable.get(bridgeOwner.substring(BRIDGE_PREFIX.length()));
                         if (mirrored != null && mirrored.contains(handle.getName() + remappedHandleDesc)) {
                             if (remappedArgs == bsmArgs) {
@@ -650,7 +487,6 @@ public final class RenderThreadRedirector {
                         }
                     } else if (!handle.getOwner().startsWith(SYSTEM_LWJGL_PREFIX)
                             && !remappedHandleDesc.equals(handle.getDesc()) && !keepWholeSite) {
-                        // 模组自有句柄：目标方法声明经本改写器同步改写，句柄描述符跟随
                         if (remappedArgs == bsmArgs) {
                             remappedArgs = bsmArgs.clone();
                         }
@@ -666,11 +502,7 @@ public final class RenderThreadRedirector {
             }
         }
 
-        /**
-         * 句柄是否会随本改写器改写：owner 命中改写表且桥已镜像（含描述符身份类型
-         * 替换后存在于镜像表）；System 域 owner 永不改写；其余（Launch 域模组类）
-         * 声明同步改写故句柄跟随。
-         */
+        /** 未镜像的 System 域 Handle 保留，其余 Handle 随声明同步改写。 */
         private boolean willRemapHandle(final Handle handle, final String remappedHandleDesc) {
             if (handle.getOwner().startsWith(SYSTEM_LWJGL_PREFIX)) {
                 String bridgeOwner = OWNER_REMAP.get(handle.getOwner());

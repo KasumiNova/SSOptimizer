@@ -23,11 +23,12 @@
   纹理压缩），产物 `libssoptimizer_<module>.so`，
   JNI 生成头统一落在根级 `native-headers/generated/`。
 
-## 跨域调用：必须经 :api 接口
+## 跨域调用：必须经 `:modules:api:sso-api` 接口
 
 1. 功能模块只允许依赖 `:modules:api:sso-api` + `:modules:internal:sso-core`；
    功能模块之间**禁止直接依赖**
    （唯一既有例外：sso-font → sso-render 的动态图集纹理上传复用 GlDispatch）。
+   `:modules:internal:sso-app` 是装配模块，依赖全部功能模块，不受此限制。
 2. 跨域行为调用在 `:modules:api:sso-api` 定义接口，实现方模块提供实现，由
    `:modules:internal:sso-app` 的 `SSOptimizerCorePlugin.registerModuleServices()` 注册进
    core 的 `ServiceRegistry`；调用方经 `ServiceRegistry.require/getOrNull` 解析。
@@ -44,7 +45,7 @@
    「为什么 Mixin 不可行」。已知必须走 ASM 的情形：
    - 需要跨指令的上下文匹配（如「NEW 之后紧跟特定 PUTFIELD」的序列改写）；
      但优先评估 Mixin 的 `@Redirect` FIELD/INVOKE + `@Shadow` 替代写法。
-   - 类结构级修改（追加 implements 接口、新增字段/方法）——Mixin 的接口注入
+   - 类结构级修改（追加 implements 接口、新增字段/方法）。Mixin 的接口注入
      （mixin 类直接 implements 目标接口）可覆盖大部分场景，优先用 Mixin。
 3. 禁止为同一目标同时注册 Mixin 与 ASM 处理器造成重复改写。
 

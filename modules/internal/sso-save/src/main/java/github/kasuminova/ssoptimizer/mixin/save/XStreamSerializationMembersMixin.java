@@ -15,26 +15,11 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * XStream 序列化成员方法调用 MethodHandle 缓存 Mixin。
- * <p>
- * 注入目标：{@code com.thoughtworks.xstream.core.util.SerializationMembers}<br>
- * 注入动机：读档时 {@code callReadResolve} 对每个对象节点调用，存档同理
- * {@code callWriteReplace}；命中方法的调用走 {@code Method.invoke}，
- * 每次调用伴随访问检查与委派开销。<br>
- * 注入效果：按 (类, 方法名) 缓存已适配 {@code (Object)Object} 签名的 MethodHandle，
- * 调用开销接近普通虚方法调用。异常包装语义与原版一致。<br>
- * 反射使用说明：{@code MethodHandles.unreflect} 仅作用于 XStream 原版已完成
- * setAccessible 的方法句柄，属一次性的调用点适配，非运行期反射查找。
- */
 @Mixin(targets = "com.thoughtworks.xstream.core.util.SerializationMembers")
 public abstract class XStreamSerializationMembersMixin {
     @Unique
     private static final MethodType SSOBJECT_OBJECT = MethodType.methodType(Object.class, Object.class);
 
-    /**
-     * 无方法占位句柄，避免缓存 null 值。
-     */
     @Unique
     private static final MethodHandle SSNO_HANDLE = MethodHandles.dropArguments(
             MethodHandles.constant(Object.class, null), 0, Object.class);
@@ -50,15 +35,6 @@ public abstract class XStreamSerializationMembersMixin {
         throw new AssertionError("Shadow method was not transformed");
     }
 
-    /**
-     * 覆写 callReadResolve：MethodHandle 调用。
-     *
-     * @param result 反序列化完成的对象
-     * @return readResolve 返回值或原对象
-     * @author KasumiNova
-     * @reason 每对象节点的 Method.invoke 委派开销在百万级节点下可测，
-     * MethodHandle 缓存后调用开销接近直接调用。
-     */
     @Overwrite(remap = false)
     public Object callReadResolve(final Object result) {
         if (result == null) {
@@ -79,14 +55,6 @@ public abstract class XStreamSerializationMembersMixin {
         }
     }
 
-    /**
-     * 覆写 callWriteReplace：MethodHandle 调用。
-     *
-     * @param object 待序列化对象
-     * @return writeReplace 返回值或原对象
-     * @author KasumiNova
-     * @reason 同 callReadResolve，写侧对称优化。
-     */
     @Overwrite(remap = false)
     public Object callWriteReplace(final Object object) {
         if (object == null) {
@@ -115,9 +83,6 @@ public abstract class XStreamSerializationMembersMixin {
         }
     }
 
-    /**
-     * 解析并缓存方法句柄；目标类无对应方法时返回 null（以占位句柄缓存该结果）。
-     */
     @Unique
     private MethodHandle ssoptimizer$handleFor(final Map<String, MethodHandle> cache,
                                                final Class<?> type, final String name) {
@@ -129,7 +94,7 @@ public abstract class XStreamSerializationMembersMixin {
         MethodHandle handle = SSNO_HANDLE;
         if (method != null) {
             try {
-                // 原版 getRRMethod 命中时已完成 setAccessible，unreflect 跳过访问检查
+                // getRRMethod 已完成 setAccessible，unreflect 仅适配既有方法。
                 handle = MethodHandles.lookup().unreflect(method).asType(SSOBJECT_OBJECT);
             } catch (final IllegalAccessException e) {
                 final ObjectAccessException ex = new ObjectAccessException("Cannot access method", e);

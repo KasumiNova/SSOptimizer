@@ -103,7 +103,6 @@ class TextureConversionCacheTest {
 
     @Test
     void binaryAlphaKindSurvivesCacheRoundtrip() throws Exception {
-        // v4 schema：实际像素 alpha 内容随元数据落盘（压缩格式选择免二次像素扫描）
         System.setProperty(TextureConversionCache.DIRECTORY_PROPERTY, tempDir.toString());
 
         final BufferedImage source = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
@@ -116,7 +115,6 @@ class TextureConversionCacheTest {
         TexturePixelConverter.convert(TrackedResourceImage.wrap(
                 "graphics/portraits/test_binary_alpha.png", sourceHash, source));
 
-        // 清掉内存元数据索引，强制从磁盘重解析头部（真实回读路径）
         TextureConversionCache.clearMemoryCache();
 
         final TextureConversionCache.CachedTextureMetadata metadata = TextureConversionCache.loadMetadata(sourceHash);

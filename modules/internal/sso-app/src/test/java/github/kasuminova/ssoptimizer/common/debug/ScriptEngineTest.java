@@ -9,9 +9,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 脚本引擎测试：编译、调用、L1 热重载、threadMode 分发与 RPC 接线。
- */
 class ScriptEngineTest {
     private static final String ECHO_SOURCE = """
             public class EchoScript implements github.kasuminova.ssoptimizer.api.debug.DebugScript {
@@ -48,7 +45,6 @@ class ScriptEngineTest {
         final ScriptHandle v2 = registry.compile("echo", "EchoScript", ECHO_SOURCE.replace("echo:", "v2:"));
         assertEquals(2, v2.version());
         assertEquals("v2:1", registry.invoke("echo", Map.of("value", 1), ThreadMode.NEW));
-        // 重载后旧句柄实例不再被注册表持有：list 只有新句柄
         assertEquals(1, registry.list().size());
         assertSame(v2.instance(), registry.list().get(0).instance());
     }
@@ -63,7 +59,6 @@ class ScriptEngineTest {
 
     @Test
     void mismatchedPublicClassNameFailsCompile() {
-        // 公开类名必须与源文件名（取自 className）一致，否则 javac 直接拒绝
         assertThrows(ScriptCompiler.ScriptCompileException.class,
                 () -> registry.compile("echo", "NoSuchScript", ECHO_SOURCE));
     }
@@ -93,7 +88,6 @@ class ScriptEngineTest {
             }
         });
         caller.start();
-        // 等待任务入队后在当前线程（模拟游戏主线程）排空
         while (result.get() == null && caller.isAlive()) {
             MainThreadTasks.drain();
             Thread.sleep(1);

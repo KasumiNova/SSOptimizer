@@ -14,10 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * SpecLoadScheduler 虚拟线程迁移（Wave 3）验证：真实 VtWorkers 执行 DAG，
- * 覆盖 Semaphore 闸门限流语义、异常类型原样传播与依赖顺序。
- */
 class SpecLoadSchedulerTest {
     @AfterEach
     void tearDown() {
@@ -38,7 +34,6 @@ class SpecLoadSchedulerTest {
                 final int current = inFlight.incrementAndGet();
                 maxInFlight.accumulateAndGet(current, Math::max);
                 try {
-                    // 足够的驻留窗口保证无闸门时 6 个虚拟线程必然同时进入任务体
                     Thread.sleep(50L);
                 } finally {
                     inFlight.decrementAndGet();

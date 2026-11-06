@@ -73,7 +73,6 @@ class CampaignFleetPerformanceHelperTest {
         assertFalse(contrails.advanced);
         assertFalse(contrails.rendered);
         assertFalse(CampaignFleetPerformanceHelper.hasActiveContrails(contrails));
-        // 空集合短路必须先于视口 LOD 判定，不产生任何视口查询
         assertEquals(0, viewport.nearChecks);
     }
 
@@ -99,7 +98,6 @@ class CampaignFleetPerformanceHelperTest {
         CampaignFleetPerformanceHelper.renderContrailsIfNeeded(contrails, 1f, fleetLocation, viewport);
 
         assertTrue(contrails.rendered);
-        // LOD 判定必须把配置的边距原样传给视口查询
         assertEquals(1, viewport.nearChecks);
         assertEquals(fleetLocation, viewport.lastLocation);
         assertEquals(CampaignFleetPerformanceHelper.CONTRAIL_LOD_MARGIN, viewport.lastMargin);
@@ -176,7 +174,6 @@ class CampaignFleetPerformanceHelperTest {
 
     @Test
     void defaultPointCapDoesNotInterfereWithSteadyStateTrails() {
-        // 稳态尾迹点数（duration ≤2s × 补点速率）为百级，默认上限 256 不应拦截
         final ContrailEngineV2.Contrail contrail = new ContrailEngineV2.Contrail();
         for (int i = 0; i < 120; i++) {
             contrail.points.add(new ContrailEngineV2.ContrailPoint());
@@ -289,10 +286,6 @@ class CampaignFleetPerformanceHelperTest {
         }
     }
 
-    /**
-     * 矩形视口 stub：按「可视矩形 ± margin」实现 isNearViewport 语义，
-     * 并记录每次查询的位置与边距以验证 helper 的参数透传。
-     */
     private static final class RectViewport implements ViewportAPI {
         private final float llx;
         private final float lly;

@@ -7,9 +7,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link AtlasPacker} shelf 装箱逻辑验证：确定性、边界内、无重叠、超尺寸条目跳过。
- */
 class AtlasPackerTest {
 
     @Test
@@ -22,12 +19,10 @@ class AtlasPackerTest {
 
         assertEquals(1, result.pages().size());
         assertTrue(result.skipped().isEmpty());
-        // 高度降序：c(300) → b(150) → a(100)，同行依次排布
         List<AtlasPacker.Placement> placements = result.pages().get(0).placements();
         assertEquals("c.png", placements.get(0).path());
         assertEquals(16, placements.get(0).x());
         assertEquals(16, placements.get(0).y());
-        // 同行续排：下一内容原点 = 前一内容原点 + 前一内容宽 + 2×padding
         assertEquals(16 + (50 + 32), placements.get(1).x());
         assertEquals(16, placements.get(1).y());
         assertEquals(16 + (50 + 32) + (200 + 32), placements.get(2).x());
@@ -36,7 +31,6 @@ class AtlasPackerTest {
 
     @Test
     void wrapsToNewRowAndNewPage() {
-        // 单格 300+32=332，页宽 512 → 每行一个；页高 512 → 每页一个，共三页
         List<AtlasPacker.Entry> entries = List.of(
                 new AtlasPacker.Entry("a.png", 300, 300),
                 new AtlasPacker.Entry("b.png", 300, 300),
@@ -73,7 +67,6 @@ class AtlasPackerTest {
 
     @Test
     void affinityGroupsPackConsecutively() {
-        // 组按「组内最高条目」降序排列，同组条目在装箱顺序中连续（页局部性来源）
         List<AtlasPacker.Entry> entries = List.of(
                 new AtlasPacker.Entry("a1.png", 100, 100, "g/a"),
                 new AtlasPacker.Entry("b1.png", 100, 500, "g/b"),
@@ -85,7 +78,6 @@ class AtlasPackerTest {
         assertEquals(1, result.pages().size());
         List<String> order = result.pages().get(0).placements().stream()
                 .map(AtlasPacker.Placement::path).toList();
-        // free.png 组最高（600）最先；g/b（组高 500）整组先于 g/a（组高 100），组内高度降序
         assertEquals(List.of("free.png", "b1.png", "b2.png", "a1.png", "a2.png"), order);
     }
 
@@ -104,7 +96,6 @@ class AtlasPackerTest {
                 for (int j = i + 1; j < placements.size(); j++) {
                     AtlasPacker.Placement a = placements.get(i);
                     AtlasPacker.Placement b = placements.get(j);
-                    // 单元格（内容 + padding）不相交
                     boolean separated = a.x() + a.width() + 16 <= b.x() - 16
                             || b.x() + b.width() + 16 <= a.x() - 16
                             || a.y() + a.height() + 16 <= b.y() - 16

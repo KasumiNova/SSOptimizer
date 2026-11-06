@@ -19,19 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link EarClippingTriangulator} 的纯几何逻辑测试：
- * 凸/凹多边形面积一致性、顺时针输入、预处理（重复点/共线点）、自交返回 null，
- * 以及 vanilla .ship 真实船体轮廓语料的批量面积校验。
- */
 class EarClippingTriangulatorTest {
 
-    /** 面积校验相对容差。 */
     private static final double AREA_TOLERANCE = 1e-4;
 
     private final Triangulator triangulator = new EarClippingTriangulator();
-
-    // ---------- 凸多边形 ----------
 
     @Test
     void triangleYieldsSingleTriangleWithSameArea() {
@@ -61,11 +53,8 @@ class EarClippingTriangulatorTest {
         assertAreaConsistent(xy, n, soup);
     }
 
-    // ---------- 凹多边形 ----------
-
     @Test
     void lShapeYieldsConsistentArea() {
-        // L 形（6 顶点，含一个凹角）
         float[] xy = {0, 0, 40, 0, 40, 20, 20, 20, 20, 40, 0, 40};
         float[] soup = triangulator.triangulate(xy, 6);
         assertNotNull(soup);
@@ -76,7 +65,6 @@ class EarClippingTriangulatorTest {
 
     @Test
     void uShapeYieldsConsistentArea() {
-        // U 形（8 顶点，含两个凹角）
         float[] xy = {0, 0, 40, 0, 40, 30, 30, 30, 30, 10, 10, 10, 10, 30, 0, 30};
         float[] soup = triangulator.triangulate(xy, 8);
         assertNotNull(soup);
@@ -87,7 +75,6 @@ class EarClippingTriangulatorTest {
 
     @Test
     void starShapeYieldsConsistentArea() {
-        // 五角星轮廓（10 顶点交替内外半径，简单多边形但含 5 个凹角）
         int n = 10;
         float[] xy = new float[n * 2];
         for (int i = 0; i < n; i++) {
@@ -102,8 +89,6 @@ class EarClippingTriangulatorTest {
         assertAreaConsistent(xy, n, soup);
         assertSamplingOwnership(xy, n, soup);
     }
-
-    // ---------- 方向与预处理 ----------
 
     @Test
     void clockwiseInputYieldsEquivalentResult() {
@@ -122,20 +107,18 @@ class EarClippingTriangulatorTest {
 
     @Test
     void preprocessingRemovesClosingDuplicateConsecutiveDuplicatesAndCollinearPoints() {
-        // 矩形 + 闭合重复末点 + 连续重复点 + 底边共线中点
         float[] xy = {
                 0, 0,
-                0.05f, 0.05f,   // 与首点 epsilon 重复
-                25, 0,          // 底边共线中点
+                0.05f, 0.05f,
+                25, 0,
                 50, 0,
-                50, 0,          // 连续完全重复
+                50, 0,
                 50, 20,
                 0, 20,
-                0, 0            // 闭合重复末点
+                0, 0
         };
         float[] soup = triangulator.triangulate(xy, 8);
         assertNotNull(soup);
-        // 清理后回到 4 顶点矩形：2 个三角形
         assertEquals(2, soup.length / 6);
         assertEquals(50.0 * 20.0, soupArea(soup), 50.0 * 20.0 * AREA_TOLERANCE);
     }
@@ -148,15 +131,11 @@ class EarClippingTriangulatorTest {
         assertEquals(0, soup.length);
     }
 
-    // ---------- 自交 ----------
-
     @Test
     void bowtieSelfIntersectionReturnsNull() {
         float[] xy = {0, 0, 20, 20, 0, 20, 20, 0};
         assertNull(triangulator.triangulate(xy, 4));
     }
-
-    // ---------- 真实船体语料 ----------
 
     @Test
     void vanillaShipHullBoundsTriangulateWithConsistentArea() throws IOException {
@@ -187,8 +166,6 @@ class EarClippingTriangulatorTest {
             float[] soup = triangulator.triangulate(xy, vertexCount);
             String name = file.getFileName().toString();
             if (soup == null) {
-                // 仅允许确实自交/弱简单的轮廓返回 null（走 GLU 降级）；
-                // 用测试侧独立的逐边相交校验复核，防止误拒简单多边形
                 if (!selfIntersects(xy, vertexCount)) {
                     failures.append(name).append("(简单多边形意外耳切失败) ");
                 } else {
@@ -208,14 +185,9 @@ class EarClippingTriangulatorTest {
         }
         assertTrue(checked > 0, "未校验任何船体");
         assertEquals("", failures.toString(), "部分船体轮廓三角化校验失败");
-        // 哨兵：vanilla 语料中已知 wasp/paragon 为非简单轮廓，若未来 null 数异常膨胀需关注
         assertTrue(nullCount <= 4, "返回 null 的船体数量异常: " + nullCount);
     }
 
-    /**
-     * 测试侧独立的自交/弱简单校验：任意一对非相邻边相交（含端点触碰）即非简单多边形。
-     * 与实现侧算法相互独立，用于复核语料中返回 null 的合法性。
-     */
     private static boolean selfIntersects(float[] xy, int vertexCount) {
         for (int i = 0; i < vertexCount; i++) {
             int i2 = (i + 1) % vertexCount;
@@ -251,9 +223,6 @@ class EarClippingTriangulatorTest {
                 && py >= Math.min(xy[a * 2 + 1], xy[b * 2 + 1]) && py <= Math.max(xy[a * 2 + 1], xy[b * 2 + 1]);
     }
 
-    // ---------- 工具 ----------
-
-    /** 生成以原点为中心的正 n 边形顶点（逆时针）。 */
     private static float[] regularPolygon(int n, float radius) {
         float[] xy = new float[n * 2];
         for (int i = 0; i < n; i++) {
@@ -264,7 +233,6 @@ class EarClippingTriangulatorTest {
         return xy;
     }
 
-    /** 鞋带公式面积（取绝对值）。 */
     private static double shoelace(float[] xy, int vertexCount) {
         double sum = 0;
         for (int i = 0; i < vertexCount; i++) {
@@ -274,7 +242,6 @@ class EarClippingTriangulatorTest {
         return sum / 2.0;
     }
 
-    /** 三角形 soup 面积和。 */
     private static double soupArea(float[] soup) {
         double sum = 0;
         for (int i = 0; i + 5 < soup.length; i += 6) {
@@ -287,7 +254,6 @@ class EarClippingTriangulatorTest {
         return sum;
     }
 
-    /** 断言三角形 soup 面积和与多边形鞋带面积一致（相对容差 {@link #AREA_TOLERANCE}）。 */
     private static void assertAreaConsistent(float[] xy, int vertexCount, float[] soup) {
         double expected = Math.abs(shoelace(xy, vertexCount));
         double actual = soupArea(soup);
@@ -295,10 +261,6 @@ class EarClippingTriangulatorTest {
                 "三角形 soup 面积和与多边形面积不一致");
     }
 
-    /**
-     * 抽样点唯一归属校验：包围盒内随机抽样，偶奇规则判定在多边形内的点
-     * 必须恰好落在 1 个三角形内，外部点必须落在 0 个三角形内。
-     */
     private static void assertSamplingOwnership(float[] xy, int vertexCount, float[] soup) {
         float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE;
         float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
@@ -324,7 +286,6 @@ class EarClippingTriangulatorTest {
         }
     }
 
-    /** 偶奇规则点在多边形内判定。 */
     private static boolean evenOddContains(float[] xy, int vertexCount, double px, double py) {
         boolean inside = false;
         for (int i = 0, j = vertexCount - 1; i < vertexCount; j = i++) {
@@ -337,7 +298,6 @@ class EarClippingTriangulatorTest {
         return inside;
     }
 
-    /** 点在三角形内判定（叉积同号，容差贴近边界时按内部计）。 */
     private static boolean triangleContains(float[] soup, int offset, double px, double py) {
         double ax = soup[offset], ay = soup[offset + 1];
         double bx = soup[offset + 2], by = soup[offset + 3];

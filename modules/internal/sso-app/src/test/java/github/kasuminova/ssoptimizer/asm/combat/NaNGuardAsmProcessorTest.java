@@ -16,13 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-/**
- * {@link ShipDamageStageTwoProcessor} 与 {@link CollisionImpulseClampProcessor}
- * 对真实游戏字节码的织入验证。
- * <p>
- * 直接以测试 classpath 上的 named 游戏类字节驱动处理器，核验织入产物的结构
- * （守卫调用次数/位置、返回指令数变化），并核验非目标类与锚点失配时的放弃语义。
- */
 class NaNGuardAsmProcessorTest {
 
     private static final String GUARD_OWNER = "github/kasuminova/ssoptimizer/common/combat/CombatNaNGuard";
@@ -38,10 +31,8 @@ class NaNGuardAsmProcessorTest {
                 "护盾路径守卫必须恰好织入一次");
         assertEquals(1, countInvokeStatic(method, "shouldDiscardArmorDamage"),
                 "装甲路径守卫必须恰好织入一次");
-        // 原版 4 处 Profiler.end（三个出口 + catch-any 兜底）+ 两个守卫取消路径各 1 处
         assertEquals(6, countInvokeStaticOwner(method, "com/fs/profiler/Profiler", "end"),
                 "守卫取消路径必须配对 Profiler.end（方法头有 Profiler.begin）");
-        // 原版 3 处 areturn + 两个守卫取消路径各 1 处
         assertEquals(5, countOpcode(method, Opcodes.ARETURN),
                 "守卫取消路径必须直接返回空 ApplyDamageResult");
     }
@@ -62,7 +53,6 @@ class NaNGuardAsmProcessorTest {
                 CollisionImpulseClampProcessor.TARGET_DESC);
         assertEquals(1, countInvokeStatic(method, "shouldClampImpulse"),
                 "冲量钳制守卫必须恰好织入一次");
-        // 原版 4 处 freturn + 钳制降级路径 1 处
         assertEquals(5, countOpcode(method, Opcodes.FRETURN),
                 "钳制降级必须新增一条 return 0F 路径");
     }

@@ -11,18 +11,6 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.awt.Color;
 
-/**
- * 星云粒子（NebulaParticle）批量化渲染的 Mixin 重写。
- * <p>
- * 注入目标：{@code com.fs.graphics.particle.NebulaParticle} 的
- * {@code preBatch()/render()/postBatch()} 三方法<br>
- * 注入动机：原版每粒子渲染执行 glBlendFunc + pushMatrix + rotate + begin/end + 4×(tex+vert)
- * 约 8 次 GL 调用；通过整体替换为 {@link ParticleBatchHelper} 的缓冲批次（CPU 侧旋转 +
- * 自定义图集 UV），仅在混合模式变化时调用一次 glBlendFunc。<br>
- * 注入效果：render 内完成亮度分支逻辑后缓冲旋转顶点（含 tileX/tileY 图集 UV 展开），
- * postBatch 一次 {@code glDrawArrays} 并关闭纹理。negative 组的
- * {@code glBlendEquation(GL_FUNC_REVERSE_SUBTRACT)} 语义保持组级（由首粒子决定，与原版一致）。
- */
 @Mixin(targets = GameClassNames.NEBULA_PARTICLE_DOTTED)
 public abstract class NebulaParticleMixin {
 
@@ -68,12 +56,6 @@ public abstract class NebulaParticleMixin {
     @Shadow(remap = false, aliases = "fullBrightnessFraction")
     private float ssoptimizer$fullBrightnessFraction;
 
-    /**
-     * 建立 GL 状态并开始星云粒子批次（negative 组切换为反向相减混合方程）。
-     *
-     * @author KasumiNova
-     * @reason 整体替换原 preBatch()V：GL 状态建立原样保留，追加 beginNebulaBatch。
-     */
     @Overwrite(remap = false)
     public void preBatch() {
         if (ssoptimizer$negative) {
@@ -85,12 +67,6 @@ public abstract class NebulaParticleMixin {
         ParticleBatchHelper.beginNebulaBatch();
     }
 
-    /**
-     * 计算粒子亮度（含 fullyFadedIn/fullBrightnessFraction 分支）并缓冲图集 UV 旋转顶点。
-     *
-     * @author KasumiNova
-     * @reason 整体替换原 render()V：亮度分支与图集 UV 计算原样搬入，矩阵旋转改为 CPU 侧展开。
-     */
     @Overwrite(remap = false)
     public void render() {
         com.fs.graphics.particle.BaseParticle base = (com.fs.graphics.particle.BaseParticle) (Object) this;
@@ -122,12 +98,6 @@ public abstract class NebulaParticleMixin {
                 u0, v0, u0 + tileFrac, v0 + tileFrac);
     }
 
-    /**
-     * 统一 flush 星云粒子批次、关闭纹理并恢复混合方程。
-     *
-     * @author KasumiNova
-     * @reason 整体替换原 postBatch()V：状态恢复原样保留，flush 替代逐粒子绘制。
-     */
     @Overwrite(remap = false)
     public void postBatch() {
         ParticleBatchHelper.flushNebulaBatch();

@@ -1,4 +1,3 @@
-// texcompress_core 实现。详见 texcompress_core.h 的契约注释。
 #include "texcompress_core.h"
 
 #include <cstdio>
@@ -17,7 +16,6 @@ constexpr size_t SSOBC_LEVEL_ENTRY_SIZE = 16;
 
 std::once_flag g_encoderInitOnce;
 
-// quality → rgbcx level：fast/normal/high = 10/12/18（normal 对齐 .dev/texcompress-lab 实测档）。
 uint32_t rgbcxLevelForQuality(int quality) {
     switch (quality) {
         case QUALITY_FAST: return 10;
@@ -26,8 +24,6 @@ uint32_t rgbcxLevelForQuality(int quality) {
     }
 }
 
-// quality → bc7enc 参数。三档统一 perceptual 权重、alpha 走 modes 5/7（对齐实验室 normal 档），
-// 档间差异只在搜索广度：分区数 / uber level / 最小二乘 / 分区估计 filterbank。
 bc7enc_compress_block_params bc7ParamsForQuality(int quality) {
     bc7enc_compress_block_params params;
     bc7enc_compress_block_params_init(&params);
@@ -40,7 +36,7 @@ bc7enc_compress_block_params bc7ParamsForQuality(int quality) {
             params.m_uber_level = 1;
             params.m_mode_partition_estimation_filterbank = BC7ENC_FALSE;
             break;
-        default: // QUALITY_NORMAL：bc7enc 默认参数即实验室实测档（uber 0、64 分区、最小二乘开）
+        default:
             break;
     }
     return params;
@@ -50,7 +46,6 @@ size_t blockSizeForFormat(int format) {
     return format == FORMAT_BC1 ? 8 : 16;
 }
 
-// 逐级尺寸：每级宽高减半（下限 1），直到 1x1 或达到 mipLevels。
 int resolveMipCount(int width, int height, int mipLevels) {
     int count = 1;
     int w = width, h = height;
@@ -62,7 +57,6 @@ int resolveMipCount(int width, int height, int mipLevels) {
     return count;
 }
 
-// 边缘复制 pad 到 4 的倍数（压缩块要求整 4x4）。
 std::vector<uint8_t> padTo4(const uint8_t* px, int w, int h, int& pw, int& ph) {
     pw = (w + 3) & ~3;
     ph = (h + 3) & ~3;
@@ -82,9 +76,7 @@ std::vector<uint8_t> padTo4(const uint8_t* px, int w, int h, int& pw, int& ph) {
     return out;
 }
 
-// 2x2 box 下采样（RGBA 4 通道算术均值，边缘 clamp 取样）。
-// binaryAlpha（BC1 punch-through 专用）：alpha 通道不做均值（均值会产生 0/255 之外的
-// 中间值，punch-through 只有 1bit），按 4 源像素中透明（alpha < 128）多数决输出 0/255。
+// BC1 punch-through 的 mip alpha 必须保持 0/255，按透明像素多数决避免算术均值产生无法编码的中间值。
 std::vector<uint8_t> downsample2x(const uint8_t* src, int w, int h, bool binaryAlpha, int& dw, int& dh) {
     dw = w > 1 ? w / 2 : 1;
     dh = h > 1 ? h / 2 : 1;
@@ -117,8 +109,6 @@ std::vector<uint8_t> downsample2x(const uint8_t* src, int w, int h, bool binaryA
     return out;
 }
 
-// ---- BC1 1-bit punch-through alpha（rgbcx 不支持透明色板，该路径由本实现承担） ----
-
 uint16_t pack565(const uint8_t* rgb) {
     return static_cast<uint16_t>(((rgb[0] >> 3) << 11) | ((rgb[1] >> 2) << 5) | (rgb[2] >> 3));
 }
@@ -141,11 +131,6 @@ bool blockHasTransparentTexel(const uint8_t* block) {
     return false;
 }
 
-/**
- * BC1 punch-through 块编码（3-color 模式：c0 <= c1 时 selector 3 = 透明黑）。
- * 端点取不透明像素的近似亮度（2R+4G+B）极值色——该路径只覆盖含透明像素的
- * 边缘块，块内颜色自由度被透明占位天然压缩，端点质量要求远低于 rgbcx 主路径。
- */
 void encodeBc1PunchThroughBlock(uint8_t* dst, const uint8_t* block) {
     int minLum = INT32_MAX, maxLum = INT32_MIN;
     uint8_t minColor[3] = {0, 0, 0};
@@ -169,7 +154,6 @@ void encodeBc1PunchThroughBlock(uint8_t* dst, const uint8_t* block) {
     }
 
     if (opaqueCount == 0) {
-        // 全透明块：c0 = c1 = 0（c0 <= c1 → 3-color 模式），selector 全 3
         dst[0] = dst[1] = dst[2] = dst[3] = 0;
         dst[4] = dst[5] = dst[6] = dst[7] = static_cast<uint8_t>(0xFF);
         return;
@@ -177,7 +161,7 @@ void encodeBc1PunchThroughBlock(uint8_t* dst, const uint8_t* block) {
 
     uint16_t c0 = pack565(minColor);
     uint16_t c1 = pack565(maxColor);
-    // c0 <= c1 才进入 3-color punch-through 模式，否则 GPU 按 4-color 不透明解码
+    // 必须保持 c0 <= c1，否则 GPU 会按四色不透明模式解码。
     if (c0 > c1) {
         const uint16_t tmp = c0;
         c0 = c1;
@@ -194,7 +178,7 @@ void encodeBc1PunchThroughBlock(uint8_t* dst, const uint8_t* block) {
     uint32_t selectors = 0;
     for (int i = 0; i < 16; i++) {
         const uint8_t* p = block + i * 4;
-        uint32_t selector = 3; // 透明
+        uint32_t selector = 3;
         if (p[3] >= 128) {
             uint32_t bestDistance = UINT32_MAX;
             selector = 0;
@@ -222,7 +206,6 @@ void encodeBc1PunchThroughBlock(uint8_t* dst, const uint8_t* block) {
     dst[7] = static_cast<uint8_t>((selectors >> 24) & 0xFF);
 }
 
-// 压缩单级（输入为真实尺寸，内部 pad 到 4 倍数后逐块编码）。
 std::vector<uint8_t> encodeLevel(const uint8_t* px, int w, int h, int format, bool useAlpha,
                                  const bc7enc_compress_block_params& bc7Params, uint32_t rgbcxLevel) {
     int pw, ph;
@@ -263,7 +246,7 @@ void putU32LE(uint8_t* p, uint32_t v) {
     p[3] = static_cast<uint8_t>((v >> 24) & 0xFF);
 }
 
-} // namespace
+}
 
 void initEncoders() {
     std::call_once(g_encoderInitOnce, []() {
@@ -291,10 +274,8 @@ bool compressContainer(int format, const uint8_t* rgba, int width, int height,
         const bc7enc_compress_block_params bc7Params = bc7ParamsForQuality(quality);
         const uint32_t rgbcxLevel = rgbcxLevelForQuality(quality);
         const int mipCount = resolveMipCount(width, height, mipLevels);
-        // BC1 punch-through：mip 下采样的 alpha 保持二值（多数决），避免均值产生中间 alpha
         const bool binaryAlphaDownsample = format == FORMAT_BC1 && useAlpha;
 
-        // 逐级下采样 + 压缩。
         std::vector<std::vector<uint8_t>> levels;
         std::vector<std::pair<int, int>> levelDims;
         levels.reserve(mipCount);
@@ -313,7 +294,6 @@ bool compressContainer(int format, const uint8_t* rgba, int width, int height,
             levelDims.emplace_back(cw, ch);
         }
 
-        // 组装 SSOBC 容器。
         size_t total = SSOBC_HEADER_SIZE + SSOBC_LEVEL_ENTRY_SIZE * levels.size();
         for (const auto& level : levels) {
             total += level.size();
@@ -330,7 +310,6 @@ bool compressContainer(int format, const uint8_t* rgba, int width, int height,
 
         uint8_t* entry = header + SSOBC_HEADER_SIZE;
         uint8_t* data = entry + SSOBC_LEVEL_ENTRY_SIZE * levels.size();
-        // 级别表字段：w u32 | h u32 | dataLen u32 | reserved u32(0)
         for (size_t i = 0; i < levels.size(); i++) {
             uint8_t* e = entry + i * SSOBC_LEVEL_ENTRY_SIZE;
             putU32LE(e + 0, static_cast<uint32_t>(levelDims[i].first));
@@ -347,4 +326,4 @@ bool compressContainer(int format, const uint8_t* rgba, int width, int height,
     }
 }
 
-} // namespace ssotex
+}

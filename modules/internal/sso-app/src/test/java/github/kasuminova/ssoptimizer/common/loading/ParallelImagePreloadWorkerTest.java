@@ -18,9 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link ParallelImagePreloadWorker} 的反射入口选择回归测试。
- */
 class ParallelImagePreloadWorkerTest {
     private static Method resolveMethod(final Class<?> owner,
                                         final String methodName,
@@ -40,16 +37,6 @@ class ParallelImagePreloadWorkerTest {
         TexturePreparationRegistry.clear();
     }
 
-    /**
-     * 字体覆盖路径回归：worker 走原版回写分支时也必须完结
-     * {@link TexturePreparationRegistry} 中登记的 future，
-     * 否则主线程 {@code LazyTextureManager.loadTexture -> await} 会永久阻塞（死锁）。
-     * <p>
-     * 这里用真实游戏类驱动完整 worker 流程：字体图集 png 写入临时目录并注册为
-     * DIRECTORY 资源根，真实 {@code decodeImage} 读取成功后，
-     * 注册表 future 必须已完结（await 立即返回 null 表示回退原版路径）。
-     * 若 worker 回归漏调 complete，await 会超时使本测试失败。
-     */
     @Test
     void fontOverridePathStillCompletesPreparationFuture() throws Exception {
         final String path = "graphics/fonts/insignia12_0.png";
@@ -63,13 +50,11 @@ class ParallelImagePreloadWorkerTest {
                         .isOverriddenPath(path),
                 "测试前提：该路径必须属于字体覆盖集");
 
-        // 模拟 mixin 入队：登记预备 future，并把路径放入真实游戏类的预加载队列
         TexturePreparationRegistry.track(path);
         com.fs.graphics.ParallelImagePreloader.enqueueImage(path);
 
         new ParallelImagePreloadWorker().run();
 
-        // 直接 await 会在回归时永久阻塞，放执行器里加超时兜底
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             final Future<TexturePreparationRegistry.Prepared> awaiting =
@@ -80,7 +65,6 @@ class ParallelImagePreloadWorkerTest {
             executor.shutdownNow();
         }
 
-        // 清理真实游戏类结果表中的残留（vanilla awaitImage 取回即移除）
         com.fs.graphics.ParallelImagePreloader.awaitImage(path);
     }
 

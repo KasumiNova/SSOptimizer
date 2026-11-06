@@ -9,7 +9,6 @@ plugins {
 group = "github.kasuminova.ssoptimizer"
 version = "0.1.10-SNAPSHOT"
 
-// 模组元数据的唯一事实源在 :app 的 starsector {} DSL；此处仅保留打包所需的常量
 val modId = "ssoptimizer"
 val modReleaseVersion = project.version.toString()
 
@@ -97,8 +96,6 @@ tasks.register("devCycle") {
 
 val appJarFile = project(":modules:internal:sso-app").layout.buildDirectory.file("libs/SSOptimizer.jar")
 
-// 功能域 native 子模块：产物 libssoptimizer_<module>.so / ssoptimizer_<module>.dll，
-// runtime deps 按模块各自收集；texcompress 挂在 sso-loading 域下（独立库，懒加载）
 val nativeProjectPaths = mapOf(
     "render" to ":modules:internal:sso-render:native-render",
     "loading" to ":modules:internal:sso-loading:native-loading",
@@ -143,7 +140,6 @@ tasks.register<Sync>("stageUserMod") {
     from(appJarFile) {
         into("jars")
     }
-    // 四个功能域原生库平铺进 native/<platform>/（产物名即部署名，不再 rename）
     from(project.provider {
         nativeLinuxLibraryFiles.map { it.get().asFile }.filter { it.isFile }
     }) {
@@ -163,7 +159,6 @@ tasks.register<Sync>("stageUserMod") {
     from(packagedFontTtfDir) {
         into("fonts")
     }
-    // 元数据由 SDG 生成（mod_info.json + nanoforge.mod.toml，与部署产物同源）
     from(project(":modules:internal:sso-app").layout.buildDirectory.dir("mod_production")) {
         include("mod_info.json", "nanoforge.mod.toml")
     }
@@ -175,7 +170,6 @@ tasks.register<Sync>("stageUserMod") {
         check(appJarFile.get().asFile.isFile) {
             "未找到用户发布所需的 app 产物: ${appJarFile.get().asFile}"
         }
-        // 主库（render）存在即视为具备原生运行时；其余模块可缺失（Java 回退）
         val renderLinux = nativeLinuxLibraryFiles.first().get().asFile
         val renderWindows = nativeWindowsLibraryFiles.first().get().asFile
         check(renderLinux.isFile || renderWindows.isFile) {
@@ -201,7 +195,6 @@ tasks.register<Sync>("stageLinuxOverlay") {
         into("mods/$modId")
         exclude("native/windows/**")
     }
-    // NanoForge coremod 入口：游戏根 mods/coremods/ 由 NanoForge 发现装配
     from(appJarFile) {
         into("mods/coremods")
     }
@@ -223,7 +216,6 @@ tasks.register<Sync>("stageWindowsOverlay") {
         into("mods/$modId")
         exclude("native/linux/**")
     }
-    // NanoForge coremod 入口：游戏根 mods/coremods/ 由 NanoForge 发现装配
     from(appJarFile) {
         into("mods/coremods")
     }
@@ -364,7 +356,7 @@ tasks.register<Copy>("installNativeRuntime") {
 
     into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
 
-    // SDG deployMod 的 Sync 会清掉 native/，必须在其之后落位
+    // SDG deployMod 的 Sync 会清空 native/，本任务必须随后执行。
     mustRunAfter(":modules:internal:sso-app:deployMod")
 
     doFirst {
@@ -393,7 +385,7 @@ tasks.register<Copy>("installFontResources") {
 
     into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
 
-    // SDG deployMod 的 Sync 会清掉 fonts/，必须在其之后落位
+    // SDG deployMod 的 Sync 会清空 fonts/，本任务必须随后执行。
     mustRunAfter(":modules:internal:sso-app:deployMod")
 
     doFirst {

@@ -11,10 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-/**
- * {@link VramProbe} 扩展串解析测试（纯函数直调；GL 查询路径无上下文不可测，
- * 与 TextureCompressionSupport 探测的测试边界一致）。
- */
 class VramProbeTest {
 
     @Test
@@ -41,14 +37,12 @@ class VramProbeTest {
                 "GL_ARB_texture_compression_bptc GL_EXT_texture_filter_anisotropic"));
         assertEquals(VramProbe.Backend.NONE, VramProbe.detectBackend(null));
         assertEquals(VramProbe.Backend.NONE, VramProbe.detectBackend("  "));
-        // 前缀相似但不是完整扩展名不得误判
         assertEquals(VramProbe.Backend.NONE, VramProbe.detectBackend("GL_NVX_gpu_memory_info2"));
         assertEquals(VramProbe.Backend.NONE, VramProbe.detectBackend("GL_ATI_meminfo_ext"));
     }
 
     @Test
     void sysfsChannelReportsEachCard(@TempDir Path tempDir) throws IOException {
-        // 双卡布局：iGPU + dGPU，连接器子节点（card0-DP-4）必须被排除
         writeCard(tempDir, "card0", 2147483648L, 25235456L);
         writeCard(tempDir, "card1", 21458059264L, 10683400192L);
         Files.createDirectories(tempDir.resolve("card0-DP-4"));
@@ -61,7 +55,6 @@ class VramProbeTest {
 
     @Test
     void sysfsChannelSkipsCardsWithoutMemInfo(@TempDir Path tempDir) throws IOException {
-        // 无 mem_info 文件的卡（非 amdgpu 驱动）跳过；全部缺失时返回 null
         Files.createDirectories(tempDir.resolve("card0/device"));
         assertNull(VramProbe.querySysfs(tempDir));
 
@@ -76,7 +69,6 @@ class VramProbeTest {
 
     @Test
     void fdinfoChannelAggregatesProcessMemoryByMaxNotSum(@TempDir Path tempDir) throws IOException {
-        // 同一进程多个 DRM fd 重复计数（dma-buf 共享）：按 PCI 设备取最大值而非求和
         final Path fdinfo = Files.createDirectories(tempDir.resolve("fdinfo"));
         final String entry = """
                 pos:\t0
@@ -88,9 +80,8 @@ class VramProbeTest {
                 """;
         Files.writeString(fdinfo.resolve("52"), entry);
         Files.writeString(fdinfo.resolve("53"), entry);
-        Files.writeString(fdinfo.resolve("99"), "pos:\t0\nflags:\t02100002\n"); // 非 DRM fd
+        Files.writeString(fdinfo.resolve("99"), "pos:\t0\nflags:\t02100002\n");
 
-        // sysfs 夹具：card1/device 链接到 PCI 地址目录，验证 card 名映射
         final Path pciDevice = Files.createDirectories(tempDir.resolve("pci/0000:03:00.0"));
         final Path card1 = Files.createDirectories(tempDir.resolve("drm/card1"));
         Files.createSymbolicLink(card1.resolve("device"), pciDevice);

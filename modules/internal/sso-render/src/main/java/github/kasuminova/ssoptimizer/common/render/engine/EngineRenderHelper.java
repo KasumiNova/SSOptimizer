@@ -13,12 +13,6 @@ import org.lwjgl.util.vector.Vector2f;
 import java.awt.*;
 import java.util.List;
 
-/**
- * 引擎喷口批量渲染 helper。
- * <p>
- * 用于替换原版 {@code com.fs.starfarer.combat.entities.Engine.render(float)} 中
- * 大量重复的即时模式 GL 调用，统一走条带/核心批量绘制路径。
- */
 public final class EngineRenderHelper {
     private static final String                   RENDER_STATE_UTILS_CLASS = GameClassNames.RENDER_STATE_UTILS.replace('/', '.');
     private static final java.lang.reflect.Method BLEND_COLORS_METHOD      = resolveBlendColorsMethod();
@@ -30,7 +24,6 @@ public final class EngineRenderHelper {
     private EngineRenderHelper() {
     }
 
-    /** 引擎贴图诊断开关（{@code -Dssoptimizer.debug.enginestyle=true}）：每个不同纹理对象仅记录一次。 */
     private static final boolean DEBUG_ENGINE_STYLE =
             Boolean.parseBoolean(System.getProperty("ssoptimizer.debug.enginestyle", "false"));
     private static final java.util.Set<Integer> DEBUG_LOGGED_TEXTURES =
@@ -38,10 +31,6 @@ public final class EngineRenderHelper {
     private static final java.util.Set<String> DEBUG_LOGGED_GLOW_TYPES =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    /**
-     * 引擎 glow 贴图诊断：记录纹理路径与实际绑定的纹理 id，用于定位「样式 glow 未生效」
-     * 是 spec 链未覆盖（路径仍为默认 engineglow32）还是纹理加载/绑定链断裂（路径正确但 id 异常）。
-     */
     private static void debugLogGlowTexture(final com.fs.graphics.TextureObject texture, final boolean primary) {
         if (!DEBUG_ENGINE_STYLE || texture == null) {
             if (DEBUG_ENGINE_STYLE && texture == null && DEBUG_LOGGED_TEXTURES.add(-1)) {
@@ -58,7 +47,6 @@ public final class EngineRenderHelper {
         }
     }
 
-    /** glowType 分支诊断：记录实际拿到的枚举值（类名@name）及该枚举全部常量，每不同类仅记一次。 */
     private static void debugLogGlowType(final Object glowType) {
         if (glowType == null) {
             if (DEBUG_LOGGED_GLOW_TYPES.add("null")) {
@@ -188,8 +176,7 @@ public final class EngineRenderHelper {
             stripWidth *= 1.0f + spreadRatio * 0.25f;
         }
 
-        // 原版语义：omega 模式扩散角恒为 0（var50=0），单层火焰不做扇形展开；
-        // 非 omega 为 (1-stripLength/length)*spread（length=0 时原版得 Inf，防御归零）
+        // length 为 0 时归零，避免产生 Inf 扩散角。
         float spreadRotation = omegaMode || length == 0.0f ? 0.0f : (1.0f - stripLength / length) * spread;
         float textureAdvance = flameLevel;
         int passCount = omegaMode ? 1 : 6;

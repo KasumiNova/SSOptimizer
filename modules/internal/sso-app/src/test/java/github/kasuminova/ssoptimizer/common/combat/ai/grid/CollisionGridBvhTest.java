@@ -13,15 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link CollisionGridBvhImpl} 对照 {@link VanillaGridReference}（原版算法逐行移植夹具）的语义等价测试。
- * <p>
- * 覆盖：随机实体集 × 随机查询集合逐位相等、快照迭代、remove 幽灵条目、
- * 帧内交替删查（模拟 CollisionEngine 逐实体 remove+query）、BVH 结构校验。
- */
 class CollisionGridBvhTest {
 
-    /** 大地图网格参数：含负坐标与跨边界（cellSize=300 与游戏一致）。 */
     private static final float GRID_MIN = -10000.0f;
     private static final float GRID_MAX = 10000.0f;
     private static final float CELL     = 300.0f;
@@ -36,7 +29,6 @@ class CollisionGridBvhTest {
 
             final List<Object> objects = randomBulkAdd(rng, ref, bvh, size);
 
-            // 随机查询：越界、零宽高、巨大范围混合。
             for (int q = 0; q < 300; q++) {
                 final float[] query = randomRect(rng, true);
                 assertEquals(drainToSet(ref.getCheckIterator(query[0], query[1], query[2], query[3])),
@@ -49,14 +41,12 @@ class CollisionGridBvhTest {
 
     @Test
     void matchesReference_interleavedFuzz() {
-        // 模拟 CollisionEngine 帧内模式：全量 add 后交替 remove/add/query。
         final Random rng = new Random(987654321L);
         final VanillaGridReference ref = new VanillaGridReference(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
         final CollisionGridBvhImpl bvh = newBvh(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
 
         final List<Object> objects = randomBulkAdd(rng, ref, bvh, 500);
         final List<float[]> dims = new ArrayList<>();
-        // 重新记录 dims（randomBulkAdd 内部生成，这里再生成一份独立实体用于后续 add）。
         for (int i = 0; i < 200; i++) {
             dims.add(randomRect(rng, false));
         }
@@ -64,13 +54,11 @@ class CollisionGridBvhTest {
         for (int op = 0; op < 1500; op++) {
             final int kind = rng.nextInt(10);
             if (kind < 5) {
-                // 查询（含构建后触发与常规触发）
                 final float[] q = randomRect(rng, true);
                 assertEquals(drainToSet(ref.getCheckIterator(q[0], q[1], q[2], q[3])),
                         drainToSet(bvh.getCheckIterator(q[0], q[1], q[2], q[3])),
                         "fuzz query op#" + op);
             } else if (kind < 8) {
-                // remove：坐标随机抖动（0/±150/±300/±600），制造幽灵条目场景。
                 final int idx = rng.nextInt(objects.size());
                 final Object obj = objects.get(idx);
                 final float[] d = randomRect(rng, false);
@@ -79,7 +67,6 @@ class CollisionGridBvhTest {
                 ref.removeObject(obj, d[0] + jx, d[1] + jy, d[2], d[3]);
                 bvh.removeObject(obj, d[0] + jx, d[1] + jy, d[2], d[3]);
             } else {
-                // 帧内 add（BVH 构建后进入溢出区）
                 final Object obj = rng.nextInt(20) == 0 ? null : new Object();
                 objects.add(obj);
                 final float[] d = dims.get(rng.nextInt(dims.size()));
@@ -91,7 +78,6 @@ class CollisionGridBvhTest {
 
     @Test
     void ghostEntriesMatchReference() {
-        // 确定性幽灵场景：add 区间 1..3，remove 区间 2..4（X 轴），cell X=1 留幽灵。
         final VanillaGridReference ref = new VanillaGridReference(0, 6000, 0, 6000, CELL);
         final CollisionGridBvhImpl bvh = newBvh(0, 6000, 0, 6000, CELL);
         final Object ghost = new Object();
@@ -101,18 +87,16 @@ class CollisionGridBvhTest {
         ref.removeObject(ghost, 1050, 750, 600, 600);
         bvh.removeObject(ghost, 1050, 750, 600, 600);
 
-        // 幽灵 cell（X=1）可见；已移除 cell（X=2..3）不可见；两侧对比必须一致。
         final float[][] queries = {
-                {450, 750, 290, 290},   // 仅覆盖幽灵 cell
-                {1050, 750, 290, 290},  // 仅覆盖已移除 cell
-                {750, 750, 2000, 2000}, // 覆盖整个原区间
-                {750, 750, 0, 0},       // 零宽高
+                {450, 750, 290, 290},
+                {1050, 750, 290, 290},
+                {750, 750, 2000, 2000},
+                {750, 750, 0, 0},
         };
         for (final float[] q : queries) {
             assertEquals(drainToSet(ref.getCheckIterator(q[0], q[1], q[2], q[3])),
                     drainToSet(bvh.getCheckIterator(q[0], q[1], q[2], q[3])));
         }
-        // 参考实现确认幽灵确实存在（X=1 查询应命中），证明场景有效。
         assertTrue(drainToSet(ref.getCheckIterator(450, 750, 290, 290)).contains(ghost));
         assertFalse(drainToSet(ref.getCheckIterator(1050, 750, 290, 290)).contains(ghost));
     }
@@ -124,13 +108,11 @@ class CollisionGridBvhTest {
         final CollisionGridBvhImpl bvh = newBvh(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
         final List<Object> objects = randomBulkAdd(rng, ref, bvh, 200);
 
-        // 先触发一次查询（物化 BVH），再取快照迭代器。
         drainToSet(bvh.getCheckIterator(0, 0, 40000, 40000));
 
         final Iterator<Object> refSnapshot = ref.getCheckIterator(0, 0, 3000, 3000);
         final Iterator<Object> bvhSnapshot = bvh.getCheckIterator(0, 0, 3000, 3000);
 
-        // 快照取出后执行增删。
         for (int i = 0; i < 50; i++) {
             final Object obj = objects.get(rng.nextInt(objects.size()));
             final float[] d = randomRect(rng, false);
@@ -152,7 +134,6 @@ class CollisionGridBvhTest {
         ref.addObject(obj, 300, 300, 100, 100);
         bvh.addObject(obj, 300, 300, 100, 100);
 
-        // 非空结果与空结果的 remove() 都必须抛 UnsupportedOperationException。
         assertThrows(UnsupportedOperationException.class,
                 () -> bvh.getCheckIterator(300, 300, 300, 300).remove());
         assertThrows(UnsupportedOperationException.class,
@@ -160,15 +141,11 @@ class CollisionGridBvhTest {
         assertThrows(UnsupportedOperationException.class,
                 () -> ref.getCheckIterator(300, 300, 300, 300).remove());
 
-        // 空结果迭代器行为一致。
         assertFalse(bvh.getCheckIterator(5000, 5000, 100, 100).hasNext());
     }
 
     @Test
     void largeResultQueriesRemainCompletePastCollectionCapacity() {
-        // 结果数远超查询收集容器初始容量（64），覆盖预置容量后的多次扩容路径；
-        // 同时以 3000 条目物化 BVH，覆盖构建期容器预热（节点数上界 2*count-1）后的
-        // 完整构建。防止预置/扩容改动破坏结果完整性。
         final VanillaGridReference ref = new VanillaGridReference(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
         final CollisionGridBvhImpl bvh = newBvh(GRID_MIN, GRID_MAX, GRID_MIN, GRID_MAX, CELL);
         final int count = 3000;
@@ -180,8 +157,6 @@ class CollisionGridBvhTest {
             bvh.addObject(obj, d[0], d[1], d[2], d[3]);
         }
 
-        // 全图范围查询：命中全部登记实体（去重后），与参考实现逐一相等；
-        // 命中规模远超 64 的收集预置容量，确保确实走过多轮扩容。
         final HashSet<Object> expected = drainToSet(ref.getCheckIterator(0, 0, 40000, 40000));
         final HashSet<Object> actual = drainToSet(bvh.getCheckIterator(0, 0, 40000, 40000));
         assertEquals(expected, actual);
@@ -211,7 +186,6 @@ class CollisionGridBvhTest {
         }
     }
 
-    /** 递归校验：内部节点 AABB = 子节点并集；叶子 AABB = 其条目并集；条目恰好被覆盖一次。 */
     private static void validateNode(final CollisionGridBvhBuild.Tree tree,
                                      final int node,
                                      final int[] minX, final int[] minY,
@@ -252,22 +226,17 @@ class CollisionGridBvhTest {
         assertEquals(Math.max(tree.nMaxY[left], tree.nMaxY[right]), tree.nMaxY[node]);
     }
 
-    // ---- 工具方法 ----
-
-    /** 生成随机实体并同时加入参考网格与 BVH；返回对象列表（含 null 与重复 add）。 */
     private static List<Object> randomBulkAdd(final Random rng,
                                               final VanillaGridReference ref,
                                               final CollisionGridBvhImpl bvh,
                                               final int count) {
         final List<Object> objects = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            // ~5% null 对象（原版允许）。
             final Object obj = rng.nextInt(20) == 0 ? null : new Object();
             objects.add(obj);
             final float[] d = randomRect(rng, false);
             ref.addObject(obj, d[0], d[1], d[2], d[3]);
             bvh.addObject(obj, d[0], d[1], d[2], d[3]);
-            // ~5% 同一对象同位置重复 add（查询端去重）。
             if (rng.nextInt(20) == 0) {
                 ref.addObject(obj, d[0], d[1], d[2], d[3]);
                 bvh.addObject(obj, d[0], d[1], d[2], d[3]);
@@ -276,11 +245,6 @@ class CollisionGridBvhTest {
         return objects;
     }
 
-    /**
-     * 随机矩形 {@code {x, y, w, h}}。
-     *
-     * @param wideRange true 时坐标可大幅越界（查询用）；false 时集中在网格内及边缘（实体用）
-     */
     private static float[] randomRect(final Random rng, final boolean wideRange) {
         final float span = GRID_MAX - GRID_MIN;
         final float margin = wideRange ? span : 2000.0f;
@@ -294,13 +258,13 @@ class CollisionGridBvhTest {
     private static float randomSize(final Random rng, final boolean allowHuge) {
         final int pick = rng.nextInt(20);
         if (allowHuge && pick == 0) {
-            return 40000.0f; // 覆盖全图的巨大范围
+            return 40000.0f;
         }
         if (pick <= 2) {
-            return 0.0f;     // 零宽高
+            return 0.0f;
         }
         if (pick == 3) {
-            return 5000.0f;  // 超大半径（避导弹扫描量级）
+            return 5000.0f;
         }
         return 20.0f + rng.nextFloat() * 800.0f;
     }

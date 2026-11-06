@@ -12,14 +12,6 @@ import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * {@code StarfarerLauncherJarPathMixin} 的字节码锚点核验。
- * <p>
- * 修复的正确性前提是「{@code launchGame} 中 {@code ScriptStore.getJarFiles()}
- * 恰好只有一个调用点」——多于一个说明存在绕过解析视图的回填路径，
- * 零个则 redirect 静默失效。此处对测试 classpath 上 named jar 的真实
- * {@code StarfarerLauncher} 做核验。
- */
 class StarfarerLauncherJarPathAnchorTest {
 
     @Test

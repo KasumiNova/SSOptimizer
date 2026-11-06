@@ -17,19 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 「patch 成功」证明：对 <b>真实</b> DCR 字节运行处理器，断言——
- * (1) 处理器匹配并修改了目标类（patch 应用）；(2) 产物经 {@link CheckClassAdapter} 结构校验合法（可加载）；
- * (3) 关键结构注入到位（合成方法 / redirect / inject）。
- * <p>
- * 压缩内核处理器已迁移为 Mixin（{@code mixin.modopt.dcr.DcrCompressionUtilMixin}），其行为由
- * {@link DcrCompressionHelperTest} 覆盖，不再经本测试验证。
- * <p>
- * 真实 DCR 类字节随仓库 vendored 于 {@code src/test/resources/dcr/}（MIT 许可，见该目录 README），
- * 故本测试 <b>始终运行</b>（含 CI），不依赖本机游戏安装。栈帧合法性由 {@link DcrBatchSaveIntegrationTest}
- * 在等价转换模式上经 JVM 加载校验证明；此处用无数据流的 CheckClassAdapter 证明真实 DCR 字节的结构良构
- * （不需游戏类型可解析）。
- */
 class DcrRealBytecodePatchTest {
 
     private static final String SM = "data/scripts/combatanalytics/SerializationManager";
@@ -59,12 +46,10 @@ class DcrRealBytecodePatchTest {
                 "真实 onGameLoad 应注入 ssoptimizer$flush");
     }
 
-    /** 读真实类字节 → 运行处理器 → 断言修改 + CheckClassAdapter 结构合法 → 返回解析后的 ClassNode。 */
     private static ClassNode patch(final String internalName, final AsmClassProcessor processor) throws IOException {
         final byte[] original = readVendoredClass(internalName);
         final byte[] transformed = processor.process(original);
         assertNotNull(transformed, "处理器应匹配并修改真实类: " + internalName);
-        // 结构良构校验（无数据流，不需游戏类型可解析）：CheckClassAdapter 遍历不抛出即合法。
         new ClassReader(transformed).accept(new CheckClassAdapter(new ClassNode(), false), 0);
         final ClassNode node = new ClassNode();
         new ClassReader(transformed).accept(node, 0);

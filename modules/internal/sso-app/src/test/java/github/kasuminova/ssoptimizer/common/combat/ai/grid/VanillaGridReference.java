@@ -5,13 +5,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-/**
- * 原版 {@code com.fs.starfarer.combat.CollisionGridQuery} 的逐行移植参考实现（测试夹具）。
- * <p>
- * 算法与 deob 源码一一对应（向零截断 cell 映射、addToCell 越界跳过、removeFromCell 按
- * {@code List.remove} 消耗、查询构造时 LinkedHashSet 快照、迭代器 remove() 抛异常），
- * 仅把 {@code Vector2f} 参数拆为 float 以避免测试依赖游戏 jar。
- */
 final class VanillaGridReference {
     private final float            cellSize;
     private final List<Object>[][] cells;
@@ -82,8 +75,6 @@ final class VanillaGridReference {
             }
         }
     }
-
-    // ---- 供基准测试访问的网格内部状态 ----
 
     List<Object>[][] cells() {
         return cells;

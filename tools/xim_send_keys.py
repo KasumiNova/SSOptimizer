@@ -12,7 +12,6 @@ def send_key(d, win, keycode, state=0):
     """Send a KeyPress + KeyRelease to the window."""
     root = d.screen().root
     
-    # KeyPress
     ev = protocol.event.KeyPress(
         time=X.CurrentTime,
         root=root,
@@ -28,7 +27,6 @@ def send_key(d, win, keycode, state=0):
     d.sync()
     time.sleep(0.05)
     
-    # KeyRelease
     ev = protocol.event.KeyRelease(
         time=X.CurrentTime,
         root=root,
@@ -49,7 +47,7 @@ def main():
         print("  keys can be: 'hello' for character keys, 'ctrl+space' for modifier combos")
         sys.exit(1)
     
-    wid = int(sys.argv[1], 0)  # auto-detect hex/dec
+    wid = int(sys.argv[1], 0)
     keys = sys.argv[2]
     
     d = display.Display()

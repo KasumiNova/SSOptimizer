@@ -3,7 +3,6 @@
 
 #include <cstring>
 
-// 老 gl.h 可能缺失的常量（GL 1.4 混合方程 / GL 3.0 FBO 绑定查询）
 #ifndef GL_BLEND_EQUATION_RGB
 #define GL_BLEND_EQUATION_RGB 0x8009
 #endif
@@ -21,11 +20,10 @@ constexpr jint RESULT_INVALID_BUFFER    = -3;
 constexpr jint RESULT_EXTENDED_STATE    = -4;
 constexpr jint RESULT_STATE_MISMATCH    = -5;
 
-/** 单 quad 顶点字节数（4 顶点 × 20 字节）与索引字节数（6 × uint16）。 */
 constexpr size_t QUAD_VERTEX_BYTES = 80;
 constexpr size_t QUAD_INDEX_BYTES  = 12;
 
-} // namespace
+}
 
 extern "C" {
 
@@ -40,14 +38,12 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         jint colorR, jint colorG, jint colorB, jint colorA,
         jfloat texX, jfloat texY, jfloat texWidth, jfloat texHeight) {
 
-    // guard 与 Java 路径同序：矩阵模式 → stencil → scissor
     GLint matrixMode = 0;
     glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
     if (matrixMode != GL_MODELVIEW) {
         return RESULT_GUARD_REJECTED;
     }
-    // stencil 区拒绝合批：stencil 缓冲是跨绘制共享的读改写状态，
-    // 蒙版写入（NEVER/INCR 等）与读取和 sprite 绘制交错，延迟 flush 无法保证顺序
+    // stencil 的读写与其他绘制交错，延迟提交无法保证顺序，必须拒绝合批。
     if (glIsEnabled(GL_STENCIL_TEST) || glIsEnabled(GL_SCISSOR_TEST)) {
         return RESULT_GUARD_REJECTED;
     }
@@ -59,9 +55,6 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         return RESULT_INVALID_BUFFER;
     }
 
-    // FBO 离屏 pass（GraphicsLib 光照等）不再拒绝：渲染目标（FBO 绑定 + viewport）
-    // 纳入 run 状态键，flush 时回放收集时刻的捕获值。run 非空时与期望值比较，
-    // 不一致返回状态不匹配让 Java flush 后重试；空 run 则捕获写入
     GLint fboBinding = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fboBinding);
     GLint viewport[4];
@@ -80,8 +73,6 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         targetPtr[4] = viewport[3];
     }
 
-    // alpha test 构成扩展状态区：状态捕获与打包转交 Java 侧处理，
-    // 此处只判定区域归属并保证不向状态不一致的 run 写入
     const bool extendedState = glIsEnabled(GL_ALPHA_TEST) != GL_FALSE;
     if (extendedState) {
         return RESULT_EXTENDED_STATE;
@@ -96,8 +87,6 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         return RESULT_EQUATION_MISMATCH;
     }
 
-    // 收集时刻的 projection×modelview 2D 仿射（列主序槽位 0/1/4/5/12/13），
-    // 顶点直接烘焙到裁剪空间，flush 时两个矩阵均置单位矩阵
     GLfloat mv[16];
     GLfloat pj[16];
     glGetFloatv(GL_MODELVIEW_MATRIX, mv);
@@ -116,7 +105,6 @@ JNIEXPORT jint JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
     QuadVertices quad{};
     computeSpriteQuad(posX, posY, width, height, cx, cy, angle, quad);
 
-    // 原版 quad-strip 顶点序：左下 → 左上 → 右上 → 右下
     const float uvs[4][2] = {
             {texX,            texY},
             {texX,            texY + texHeight},
@@ -165,7 +153,6 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
         jboolean alphaTestEnabled, jint alphaFunc, jfloat alphaRef,
         jint colorR, jint colorG, jint colorB, jint colorA,
         jint prevMatrixMode) {
-    // FBO 绑定与 viewport 不在 pushAttrib 覆盖范围内（本段未含 GL_VIEWPORT_BIT），显式保存
     GLint prevFbo = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
     GLint prevViewport[4];
@@ -174,8 +161,7 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_CURRENT_BIT);
     glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
 
-    // 渲染目标回放收集时刻的捕获值：flush 可能延迟到 pass 切换之后触发
-    // （组切换 flush 发生在下一次 submit 时），必须落回收集时刻的 FBO 与 viewport
+    // 延迟 flush 必须回放收集时的 FBO 与 viewport，并在结束后恢复入口状态。
     glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(fbo));
     glViewport(viewportX, viewportY, viewportW, viewportH);
 
@@ -183,8 +169,6 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
     glEnable(GL_BLEND);
     glBlendFunc(static_cast<GLenum>(blendSrc), static_cast<GLenum>(blendDest));
     glBlendEquation(static_cast<GLenum>(blendEquation));
-    // stencil 区一律透传不参与合批，但 flush 可能由 stencil 区内的 guard 拒绝触发
-    // （落在调用方 stencil 开启区间），必须显式关闭避免波及当前 run
     glDisable(GL_STENCIL_TEST);
     if (alphaTestEnabled == JNI_TRUE) {
         glEnable(GL_ALPHA_TEST);
@@ -194,7 +178,6 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
     }
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture));
 
-    // 顶点已烘焙到裁剪空间：投影与模型视图均置单位矩阵，与 flush 时刻的矩阵栈完全解耦
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -221,16 +204,13 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_spriteba
 
     glPopClientAttrib();
     glPopAttrib();
-    // 恢复 flush 入口处的渲染目标（绘制期间绑定的是收集时刻捕获的 FBO 与 viewport）
     glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
     glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
-    // VBO 绑定恢复由 Java 侧经 LWJGL 完成：LWJGL2 的 Buffer 校验基于 StateTracker
-    // 跟踪值，此处经 glad 恢复不会更新 tracker，必须由 Java 侧重绑保持两者一致
-    // 原版逐 sprite glColor4ub 的残留语义：当前颜色 = 最后一个 sprite 的颜色
+    // glad 不更新 LWJGL2 StateTracker，VBO 绑定必须由 Java 侧经 LWJGL 恢复。
     glColor4ub(static_cast<GLubyte>(colorR & 0xFF),
                static_cast<GLubyte>(colorG & 0xFF),
                static_cast<GLubyte>(colorB & 0xFF),
                static_cast<GLubyte>(colorA & 0xFF));
 }
 
-} // extern "C"
+}

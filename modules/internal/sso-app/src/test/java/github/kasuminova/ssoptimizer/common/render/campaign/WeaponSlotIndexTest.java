@@ -63,7 +63,6 @@ class WeaponSlotIndexTest {
         index.find(slots, "WS001");
         assertEquals(1, slots.iterations);
 
-        // 命中已构建索引后不再遍历列表
         index.find(slots, "WS002");
         index.find(slots, "WS999");
         assertEquals(1, slots.iterations);
@@ -76,7 +75,6 @@ class WeaponSlotIndexTest {
         final WeaponSlotIndex index = new WeaponSlotIndex();
         assertNull(index.find(slots, "WS002"));
 
-        // 加载期原地 add：列表引用不变、长度变化，索引必须感知
         final WeaponSlot added = slot("WS002");
         slots.add(added);
 
@@ -86,8 +84,6 @@ class WeaponSlotIndexTest {
 
     @Test
     void replacedListTriggersRebuildEvenWithSameSize() {
-        // ShipHullSpec.clone() 场景：克隆体持有新列表（同长度、槽位为新实例），
-        // 索引不得继续返回原列表的旧槽位实例
         final List<WeaponSlot> original = new ArrayList<>();
         original.add(slot("WS001"));
         final WeaponSlotIndex index = new WeaponSlotIndex();
@@ -104,7 +100,6 @@ class WeaponSlotIndexTest {
         return new WeaponSlot(id, null, null, null, new Vector2f(), null, 0f, 0f);
     }
 
-    /** 统计遍历次数的列表：索引重建必然伴随一次完整遍历，借此从外部观测惰性构建语义。 */
     private static final class IterationCountingList extends ArrayList<WeaponSlot> {
         private int iterations;
 

@@ -7,67 +7,19 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
 
-/**
- * immediate 顶点流的顶点数组合并回放器（{@link VertexSink} 的生产实现）：
- * 把字节流解码进渲染线程共享的直接缓冲（位置 3f / UV 2f / 颜色 4ub / 法线 3f），
- * 按 begin/end 图元段合并为 {@code glDrawArrays} 提交，替代逐顶点 JNI 调用
- * （渲染线程 profile：{@code VertexStream.replay} 占 31.6%，其中逐顶点
- * glVertex2f 等 immediate JNI 为最大头；合并后每图元段一次 draw call）。
- * <p>
- * 顶点快照语义与 immediate 逐指令回放等价：每个顶点落入数组时快照当前
- * texcoord/color/normal 状态；流内状态指令（enable/disable/blendFunc/bindTexture）
- * 与流内矩阵指令（pushMatrix/popMatrix/loadIdentity/translatef/rotatef/scalef/
- * matrixMode）打断挂起图元段——先排出全部待绘段（此刻的 GL 状态正是这些段
- * 被录制时看到的状态），再执行真实状态/矩阵调用，相对顺序与原调用序列逐指令
- * 一致；矩阵指令同时打断相邻 DRAW 合并（矩阵改变顶点变换，跨其合并不等价）。
- * <p>
- * 属性激活规则：某属性（texcoord/color/normal）在本流内首次出现前，顶点必须
- * 使用回放现场的外部当前值——对应图元段不启用该属性数组；首次出现后按段切换
- * 启用（段内首次激活时切分段，保证同一段内属性数组语义一致）。
- * <p>
- * 精度说明：double 载荷（vertex2d/3d、texCoord2d、color3d）收窄为 float——
- * 屏幕/世界坐标在 float 24 位尾数下的误差远低于亚像素，视觉无损；颜色 float
- * 载荷按 GL 归一化语义转 4ub（clamp [0,1] 后 *255 四舍五入）。
- * <p>
- * 线程模型：仅渲染线程使用（{@link VertexBatchCommand#execute()} 的共享实例），
- * 单线程无需同步。缓冲容量跨批次保留；超过 {@link #MAX_RETAINED_VERTICES}
- * 的罕见巨型批次在下一批次回放开始时回落到初始容量，避免偶发大段永久撑大
- * 直接内存。
- * <p>
- * 批次内状态去重与 DRAW 合并：draw 不会改变 cap 开关 / blendFunc / 纹理绑定的
- * 值，因此批次内（= 帧命令列表中一段连续区间，外部命令必然已切开流）可安全
- * 做三件等价变换——
- * <ul>
- *   <li>冗余状态指令剔除：同值的重复 enable/disable/blendFunc/bindTexture 跳过；
- *   未被任何 draw 观测的 blendFunc/bindTexture 直接改写参数；
- *   disable→enable（及反向）且无 draw 间隔的状态对净效果为零，成对抵消；</li>
- *   <li>相邻 DRAW 合并：同图元模式、同属性标志、顶点区间相邻且中间仅隔着已抵消
- *   状态对的 DRAW 段合并为一次 {@code glDrawArrays}（sprite 序列从「每 sprite
- *   一组状态调用 + 一次 draw」收敛为「一组状态调用 + 每纹理一次 draw」，
- *   渲染线程 profile：流内 enable/disable 是回放侧第二大头）。</li>
- * </ul>
- */
+/** 仅渲染线程使用，将 immediate 顶点流合并为顶点数组和 DRAW 操作；double 载荷收窄为 float。 */
 final class VertexArrayBatch implements VertexSink {
-    /** 初始顶点容量（个）：覆盖典型 sprite 批次。 */
     private static final int INITIAL_VERTEX_CAPACITY = 1024;
-    /** 保留容量上限（顶点个）：超过的批次在下一批次回放开始时回落初始容量。 */
     private static final int MAX_RETAINED_VERTICES = 1 << 20;
 
-    /**
-     * 逐操作 GL 错误探针（诊断设施）：与 RenderQueueImpl 的 command 级探针同开关，
-     * 在 {@link #executeGl()} 的每个回放操作后取一次 glGetError，精确定位产生
-     * 错误的操作种类与参数（用于「VertexBatchCommand 执行后滞留 0x501」类定位）。
-     */
     private static final boolean OP_PROBE = "command".equals(System.getProperty(
             github.kasuminova.ssoptimizer.common.render.queue.RenderQueueImpl.GL_ERROR_PROBE_PROPERTY, "off"));
     private static final org.apache.log4j.Logger OP_PROBE_LOG = org.apache.log4j.Logger.getLogger(VertexArrayBatch.class);
 
-    // 绘制段属性标志（texcoord/color/normal 数组启用）
     static final int FLAG_TEX   = 1;
     static final int FLAG_COLOR = 2;
     static final int FLAG_NORM  = 4;
 
-    // 操作种类
     static final int OP_DRAW         = 0; // a=mode, b=first, c=count, flags=段属性标志
     static final int OP_ENABLE       = 1; // a=cap
     static final int OP_DISABLE      = 2; // a=cap
@@ -80,7 +32,6 @@ final class VertexArrayBatch implements VertexSink {
     static final int OP_ROTATE_F      = 9;  // a/b/c/d = angle/x/y/z 的 float 位模式
     static final int OP_SCALE_F       = 10; // a/b/c = x/y/z 的 float 位模式
     static final int OP_MATRIX_MODE   = 11; // a=mode
-    /** 被批次内状态去重抵消的操作（{@link #executeGl()} 跳过）。 */
     static final int OP_NOOP         = -1;
 
     private static final int SEG_STRIDE = 4; // mode, first, count, flags
@@ -95,39 +46,30 @@ final class VertexArrayBatch implements VertexSink {
     private ByteBuffer  colorBuf;
     private FloatBuffer normBuf;
 
-    /** 挂起图元段（mode, first, count, flags 四元组），状态指令插入时整批排出。 */
     private int[] segments = new int[SEG_STRIDE * 64];
     private int   segmentCount;
-    /** 回放操作列表（kind, a, b, c 四元组）与 DRAW 段属性标志平行数组。 */
     private int[] ops = new int[OP_STRIDE * 128];
     private int[] opFlags = new int[128];
     private int   opCount;
 
     private int vertexCount;
 
-    // ── 批次内状态去重（批次 = 帧命令列表中一段连续区间，外部命令必然已切开流，
-    //    因此批次内只有本批的 DRAW 与状态指令，无旁路状态变更）──
-    /** 已追加 DRAW 操作计数（合并也算）：「无 draw 间隔」抵消判定的时戳。 */
     private int drawStamp;
-    /** 各 cap 最近一次 enable/disable 的记录（线性扫描，批次内 cap 种类极少）。 */
     private int[]     capIds       = new int[8];
     private int[]     capOpIndex   = new int[8];
     private int[]     capDrawStamp = new int[8];
     private boolean[] capIsEnable  = new boolean[8];
     private int       capEntryCount;
-    /** 批次内最近一次 blendFunc（draw 不改变 blendFunc 值，同值重复恒冗余）。 */
     private boolean blendKnown;
     private int     lastBlendSrc;
     private int     lastBlendDst;
     private int     lastBlendOp;
     private int     lastBlendDrawStamp;
-    /** 批次内最近一次纹理绑定（同上）。 */
     private boolean bindKnown;
     private int     lastBind;
     private int     lastBindOp;
     private int     lastBindDrawStamp;
 
-    // 当前属性状态（顶点落入数组时快照）
     private float curS;
     private float curT;
     private byte  curR;
@@ -137,10 +79,9 @@ final class VertexArrayBatch implements VertexSink {
     private float curNx;
     private float curNy;
     private float curNz = 1.0f;
-    /** 本流内各属性是否已出现过（未出现的属性段不启用数组，顶点用外部当前值）。 */
+    /** 未出现的属性不启用数组，顶点沿用外部 current 值。 */
     private int   definedFlags;
 
-    // 打开中的图元段
     private int openMode = -1;
     private int openStart;
     private int openFlags;
@@ -160,14 +101,12 @@ final class VertexArrayBatch implements VertexSink {
         normBuf = normBytes.asFloatBuffer();
     }
 
-    /** 回放开始：清空上一批次的全部累积状态（由 {@link VertexStream#replay} 回调）。 */
     @Override
     public void startReplay() {
         if (vertexCapacity() > MAX_RETAINED_VERTICES) {
             allocateBuffers(INITIAL_VERTEX_CAPACITY);
         }
-        // 上一批次 executeGl 曾把 limit 收窄到已用区间（LWJGL 指针调用按
-        // remaining 取量）——绝对 put 按 limit 检查下标，跨批次必须复位为全容量。
+        // 跨批次复用前必须恢复完整 limit，绝对 put 也受 limit 约束。
         posBuf.clear();
         texBuf.clear();
         colorBuf.clear();
@@ -282,11 +221,6 @@ final class VertexArrayBatch implements VertexSink {
         curNz = nz;
     }
 
-    /**
-     * {@link VertexSink#spriteQuad} 的数组合并形态：tex 属性激活后 4 个顶点
-     * 直写数组（每顶点按角点 tex 快照，颜色/法线沿用当前快照语义），
-     * 段管理与逐指令展开等价（begin/end 对保证与相邻段的正常衔接与合并）。
-     */
     @Override
     public void spriteQuad(
             final float x0, final float y0, final float x1, final float y1,
@@ -306,11 +240,6 @@ final class VertexArrayBatch implements VertexSink {
         end();
     }
 
-    /**
-     * 流内 glEnable（批次内去重）：cap 在本批次已启用时重复 enable 恒冗余
-     * （draw 不改变 cap 状态）；若最近一条是同 cap 的 disable 且期间无 draw，
-     * 两条净效果为零，成对抵消（disable 标 {@link #OP_NOOP}，enable 不落）。
-     */
     @Override
     public void enable(final int cap) {
         flushSegmentsToOps();
@@ -329,7 +258,6 @@ final class VertexArrayBatch implements VertexSink {
         putCapEntry(cap, opCount - 1, true);
     }
 
-    /** 流内 glDisable：与 {@link #enable(int)} 镜像的去重/抵消。 */
     @Override
     public void disable(final int cap) {
         flushSegmentsToOps();
@@ -348,10 +276,6 @@ final class VertexArrayBatch implements VertexSink {
         putCapEntry(cap, opCount - 1, false);
     }
 
-    /**
-     * 流内 glBlendFunc（批次内去重）：与批次内当前值相同则跳过；上一条
-     * blendFunc 未被任何 draw 观测时直接改写其参数（中间值无观察者）。
-     */
     @Override
     public void blendFunc(final int src, final int dst) {
         flushSegmentsToOps();
@@ -375,7 +299,6 @@ final class VertexArrayBatch implements VertexSink {
         lastBlendDrawStamp = drawStamp;
     }
 
-    /** 流内 glBindTexture：去重规则同 {@link #blendFunc(int, int)}。 */
     @Override
     public void bindTexture(final int texture) {
         flushSegmentsToOps();
@@ -396,33 +319,24 @@ final class VertexArrayBatch implements VertexSink {
         lastBindDrawStamp = drawStamp;
     }
 
-    /**
-     * 流内 glPushMatrix（矩阵指令族统一形态）：先排出挂起图元段——此刻的矩阵
-     * 状态正是这些段被录制时看到的状态，再追加矩阵操作，回放相对顺序与原调用
-     * 序列逐指令一致。矩阵操作天然打断相邻 DRAW 合并（见 {@link #addOp}）；
-     * 矩阵不改变 cap/blend/纹理绑定，批次内状态去重缓存不受其影响。
-     */
     @Override
     public void pushMatrix() {
         flushSegmentsToOps();
         addOp(OP_PUSH_MATRIX, 0, 0, 0, 0, 0);
     }
 
-    /** 流内 glPopMatrix：语义同 {@link #pushMatrix()}。 */
     @Override
     public void popMatrix() {
         flushSegmentsToOps();
         addOp(OP_POP_MATRIX, 0, 0, 0, 0, 0);
     }
 
-    /** 流内 glLoadIdentity：语义同 {@link #pushMatrix()}。 */
     @Override
     public void loadIdentity() {
         flushSegmentsToOps();
         addOp(OP_LOAD_IDENTITY, 0, 0, 0, 0, 0);
     }
 
-    /** 流内 glTranslatef（float 参数以位模式存入 int 参数槽）：语义同 {@link #pushMatrix()}。 */
     @Override
     public void translatef(final float x, final float y, final float z) {
         flushSegmentsToOps();
@@ -430,7 +344,6 @@ final class VertexArrayBatch implements VertexSink {
                 Float.floatToRawIntBits(z), 0, 0);
     }
 
-    /** 流内 glRotatef：语义同 {@link #translatef(float, float, float)}。 */
     @Override
     public void rotatef(final float angle, final float x, final float y, final float z) {
         flushSegmentsToOps();
@@ -438,7 +351,6 @@ final class VertexArrayBatch implements VertexSink {
                 Float.floatToRawIntBits(y), Float.floatToRawIntBits(z), 0);
     }
 
-    /** 流内 glScalef：语义同 {@link #translatef(float, float, float)}。 */
     @Override
     public void scalef(final float x, final float y, final float z) {
         flushSegmentsToOps();
@@ -446,7 +358,6 @@ final class VertexArrayBatch implements VertexSink {
                 Float.floatToRawIntBits(z), 0, 0);
     }
 
-    /** 流内 glMatrixMode（切换当前矩阵栈）：语义同 {@link #pushMatrix()}。 */
     @Override
     public void matrixMode(final int mode) {
         flushSegmentsToOps();
@@ -484,7 +395,6 @@ final class VertexArrayBatch implements VertexSink {
         capEntryCount++;
     }
 
-    /** 抵消后移除 cap 记录（末位交换；条目内记录的是 ops 下标，与条目顺序无关）。 */
     private void removeCapEntry(final int idx) {
         final int last = capEntryCount - 1;
         capIds[idx] = capIds[last];
@@ -494,11 +404,7 @@ final class VertexArrayBatch implements VertexSink {
         capEntryCount = last;
     }
 
-    /**
-     * 属性首次激活：若当前段已累积顶点，按「激活前后属性数组语义不同」切分——
-     * 旧段以无该属性的标志收口，新段从当前顶点起带该属性继续；若当前段尚无
-     * 顶点，该属性对整段生效，直接更新段标志。
-     */
+    /** 属性在段中首次出现时先切分图元段，避免同段混用两种数组语义。 */
     private void activateAttribute(final int flag) {
         if ((definedFlags & flag) != 0) {
             return;
@@ -555,7 +461,6 @@ final class VertexArrayBatch implements VertexSink {
         openMode = -1;
     }
 
-    /** 把挂起图元段排出为 DRAW 操作（状态指令插入前 / 回放结束的段落收口）。 */
     private void flushSegmentsToOps() {
         closeOpenSegment();
         for (int i = 0; i < segmentCount; i++) {
@@ -565,24 +470,7 @@ final class VertexArrayBatch implements VertexSink {
         segmentCount = 0;
     }
 
-    /**
-     * 相邻 DRAW 合并的图元边界资格判定。
-     * <p>
-     * 离散型图元（POINTS/LINES/TRIANGLES/QUADS）的每图元顶点数固定，合并只是
-     * 把顶点序列接续——前一段顶点数必须是每图元顶点数的整数倍（前段末尾恰落在
-     * 图元边界上），合并后各图元配对才与分开绘制一致。若前一段顶点数不对齐
-     * （如 GL_LINES 奇数顶点），分开绘制时末尾未配对顶点被 GL 忽略，合并后该
-     * 顶点会与后一段首顶点错误配对、后续图元整体偏移一位——实机「线段对角
-     * 交叉」症状（战役地图刻度线交叉错乱、战斗目标框画成 X 形）的根因。
-     * <p>
-     * 连续型图元（LINE_STRIP/LINE_LOOP/TRIANGLE_STRIP/TRIANGLE_FAN/
-     * QUAD_STRIP/POLYGON）的图元结构跨段延续，合并会在两段顶点之间引入额外的
-     * 连接图元（如两个 LINE_STRIP 合并后中间多出一条连线），无论顶点数是否
-     * 对齐都不安全，一律不合并；未知图元模式按不安全处理。
-     *
-     * @param mode      前一段的图元模式（与当前段相同，调用方已校验）
-     * @param prevCount 前一段的顶点数
-     */
+    /** 仅合并固定顶点数且前段对齐图元边界的离散图元，连续图元一律不合并。 */
     private static boolean canMergeDraw(final int mode, final int prevCount) {
         final int stride = switch (mode) {
             case GL11.GL_POINTS -> 1;
@@ -596,12 +484,7 @@ final class VertexArrayBatch implements VertexSink {
 
     private void addOp(final int kind, final int a, final int b, final int c, final int d, final int flags) {
         if (kind == OP_DRAW) {
-            // 相邻 DRAW 合并：同图元模式/属性标志、顶点区间相邻，且中间仅隔着
-            // 已抵消（OP_NOOP）的状态对——NOOP 对净状态为零，跨它合并等价；
-            // 且前一段顶点数须与图元边界对齐（见 canMergeDraw）——否则合并后
-            // 顶点配对整体偏移，产生跨段错误图元（实机「线段对角交叉」根因）。
-            // 矩阵指令介于两 DRAW 之间时 prev 落在矩阵操作上，合并自然不成立
-            // （矩阵改变顶点变换，跨其合并语义不等价）。
+            // 只能跨已抵消状态合并相邻 DRAW，且不得跨矩阵操作或图元边界。
             int prev = opCount - 1;
             while (prev >= 0 && ops[prev * OP_STRIDE] == OP_NOOP) {
                 prev--;
@@ -665,8 +548,7 @@ final class VertexArrayBatch implements VertexSink {
         from.clear();
         from.limit(usedBytes);
         to.put(from);
-        // put 后 position 停在已用末尾——asFloatBuffer() 视图按剩余区间取界，
-        // 必须复位 position 才能让视图覆盖全容量（绝对 put 写入依赖完整界限）。
+        // 复位 position，确保后续视图覆盖完整容量。
         to.clear();
     }
 
@@ -674,35 +556,15 @@ final class VertexArrayBatch implements VertexSink {
         return posBytes.capacity() / 12;
     }
 
-    /**
-     * 在渲染线程执行本批次的全部回放操作（真实 GL 调用）。
-     * 客户端数组指针在整个批次内稳定（缓冲不迁移），首个 DRAW 操作时设置一次；
-     * 批次结束后客户端数组状态复原为全禁用——与 immediate 回放不持有客户端
-     * 数组状态的语义一致，避免影响后续执行路径（DrawCommand 的指针快照应用、
-     * 显示列表等）。
-     * <p>
-     * 执行完毕后排干操作/段/顶点计数（防止串内 immediate 兜底批次的排干调用
-     * 重复执行上一串的已执行操作）；current 值快照（cur*）与 definedFlags、
-     * 去重状态跨批次保留，由串首 {@link #startReplay()} 全量重置。
-     * <p>
-     * current 值回同步：段内 color/texCoord/normal 只烘焙进顶点数组，真实 GL
-     * 的 current 值必须在本批结束时推进到流内最后设置的值——批外消费者
-     * （glCallList 显示列表的调用时刻纹理调制、glGet 回读）依赖该语义
-     * （v37~v43 数组化黑屏的根因之一，
-     * 见 docs/design/render-logic-separation-feasibility.md）。
-     */
+    /** 执行后恢复客户端数组状态，并同步流内最终 current 值。 */
     void executeGl() {
         if (opCount == 0) {
-            // 纯属性流（无 draw 无状态指令）也要把 current 值落到真实 GL
             syncCurrentValues();
             return;
         }
         sealBuffers();
 
-        // 模组在 immediate 流外侧保持 VBO 绑定在 vanilla 合法（immediate 不触碰
-        // client pointer），而本回放经 client 数组提交：pointer 设置要求
-        // GL_ARRAY_BUFFER 未绑定。按命令流簿记解绑、批末恢复（编排与
-        // PointerSnapshotGroup.apply 同构）；簿记为 0 的常规路径零额外 GL 调用。
+        // client pointer 要求未绑定 ARRAY_BUFFER，批末必须恢复命令流簿记值。
         final int streamBinding = BridgeSupport.executedArrayBufferBinding();
         if (streamBinding != 0) {
             org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 0);
@@ -760,7 +622,6 @@ final class VertexArrayBatch implements VertexSink {
                             Float.intBitsToFloat(ops[base + 3]));
                     case OP_MATRIX_MODE -> GL11.glMatrixMode(ops[base + 1]);
                     case OP_NOOP -> {
-                        // 批次内去重抵消的状态对：无 GL 调用
                     }
                     default -> throw new IllegalStateException("[SSOptimizer] 顶点数组批次损坏：未知操作种类 " + ops[base]);
                 }
@@ -782,23 +643,17 @@ final class VertexArrayBatch implements VertexSink {
                 GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
             }
         } finally {
-            // 恢复命令流簿记的绑定（含异常路径：本帧随即被丢弃，但真实绑定不得
-            // 滞留中间态，否则与 BridgeSupport 簿记失真并级联后续帧）
+            // 异常时也必须恢复绑定，避免真实状态与命令流簿记分离。
             if (streamBinding != 0) {
                 org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, streamBinding);
             }
         }
         syncCurrentValues();
-        // 排干已执行内容（去重状态/current 快照/definedFlags 保留至串首重置）
         opCount = 0;
         segmentCount = 0;
         vertexCount = 0;
     }
 
-    /**
-     * 逐操作探针落点：取一次 glGetError，非 NO_ERROR 时记 WARN（含位置描述与错误码）。
-     * 仅 {@link #OP_PROBE} 开启时被调用；调用点必须位于渲染线程（executeGl 上下文）。
-     */
     private static void probeOpError(final String site) {
         if (!OP_PROBE) {
             return;
@@ -809,11 +664,6 @@ final class VertexArrayBatch implements VertexSink {
         }
     }
 
-    /**
-     * immediate 语义的 current 值回同步：把本串内最后设置的 color/texCoord/
-     * normal 落到真实 GL（仅处理本串出现过的属性，未出现的属性本就不该被
-     * 本回放触碰）。
-     */
     private void syncCurrentValues() {
         if ((definedFlags & FLAG_COLOR) != 0) {
             GL11.glColor4ub(curR, curG, curB, curA);
@@ -826,13 +676,7 @@ final class VertexArrayBatch implements VertexSink {
         }
     }
 
-    /**
-     * 串内 immediate 兜底批次执行后调用：其逐指令真实 GL 调用可能改变了
-     * cap/blend/纹理绑定与 current 值——去重缓存与 definedFlags 作废。
-     * definedFlags 清零后，后续数组批次的未定义属性顶点走「外部当前值」
-     * 语义（immediate 批次已把真实 GL current 推进到流内最新值），不会
-     * 把合并器内滞留的陈旧快照烘焙进顶点数组。
-     */
+    /** 外部逐指令回放后必须作废去重缓存和属性快照。 */
     void onExternalStateChange() {
         capEntryCount = 0;
         blendKnown = false;
@@ -840,11 +684,6 @@ final class VertexArrayBatch implements VertexSink {
         definedFlags = 0;
     }
 
-    /**
-     * 提交前把四个视图缓冲的 limit 收窄到已用区间（LWJGL2 的指针调用按
-     * {@code remaining()} 取量）；收窄后的 limit 由下一批次的
-     * {@link #startReplay()} 复位（{@link java.nio.Buffer#clear()}）。
-     */
     void sealBuffers() {
         posBuf.limit(vertexCount * 3);
         texBuf.limit(vertexCount * 2);
@@ -852,7 +691,6 @@ final class VertexArrayBatch implements VertexSink {
         normBuf.limit(vertexCount * 3);
     }
 
-    /** 按目标态调整客户端数组开关（仅在实际变化时产生 JNI 调用）。 */
     private static boolean switchClientState(final int array, final boolean want, final boolean current) {
         if (want == current) {
             return current;
@@ -865,42 +703,34 @@ final class VertexArrayBatch implements VertexSink {
         return want;
     }
 
-    /** 测试用：当前回放操作数。 */
     int opCount() {
         return opCount;
     }
 
-    /** 测试用：第 index 个操作的种类。 */
     int opKind(final int index) {
         return ops[index * OP_STRIDE];
     }
 
-    /** 测试用：第 index 个操作的参数槽（0-2：a/b/c）。 */
     int opArg(final int index, final int slot) {
         return ops[index * OP_STRIDE + 1 + slot];
     }
 
-    /** 测试用：第 index 个 DRAW 操作的段属性标志。 */
     int opDrawFlags(final int index) {
         return opFlags[index];
     }
 
-    /** 测试用：当前累积顶点数。 */
     int vertexCount() {
         return vertexCount;
     }
 
-    /** 测试用：第 vi 个顶点的位置分量（0-2）。 */
     float posAt(final int vi, final int component) {
         return posBuf.get(vi * 3 + component);
     }
 
-    /** 测试用：第 vi 个顶点的 UV 分量（0-1）。 */
     float texAt(final int vi, final int component) {
         return texBuf.get(vi * 2 + component);
     }
 
-    /** 测试用：第 vi 个顶点的颜色分量（0-3，无符号字节 0-255）。 */
     int colorAt(final int vi, final int component) {
         return colorBuf.get(vi * 4 + component) & 0xFF;
     }

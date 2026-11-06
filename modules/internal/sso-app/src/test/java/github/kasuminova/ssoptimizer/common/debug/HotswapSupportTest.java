@@ -8,10 +8,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link HotswapSupport} L2 热重定义测试：自 attach + redefineClasses 方法体替换。
- * 需要测试 JVM 携带 {@code -Djdk.attach.allowAttachSelf=true}（sso-app test jvmArgs 已配）。
- */
 class HotswapSupportTest {
     private static final String FQN = "github.kasuminova.ssoptimizer.common.debug.HotswapFixture";
 

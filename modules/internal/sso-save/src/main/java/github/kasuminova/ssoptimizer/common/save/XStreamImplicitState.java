@@ -11,21 +11,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * XStream 隐式集合累积状态。
- * <p>
- * {@code AbstractReflectionConverter} 原版的 FieldLocation / ArraysList / MappingList
- * 均为 private 内部类，Mixin 覆写代码在编译期无法引用，此处按原版语义等价复制，
- * 供 {@code XStreamReflectionConverterMixin} 的隐式集合分支使用。
- * 注意：本类仅在游戏实际注册隐式集合映射时才会被触发（当前游戏与模组均未注册）。
- */
 public final class XStreamImplicitState {
     private XStreamImplicitState() {
     }
 
-    /**
-     * 隐式字段定位键，等价于原版 private FieldLocation（equals/hashCode 逻辑一致）。
-     */
     public static final class Location {
         public final String fieldName;
         public final Class<?> definedIn;
@@ -59,9 +48,6 @@ public final class XStreamImplicitState {
         }
     }
 
-    /**
-     * 数组型隐式字段的元素收集器，等价于原版 private ArraysList。
-     */
     public static final class ArrayCollector extends ArrayList<Object> {
         private final Class<?> physicalFieldType;
 
@@ -69,11 +55,6 @@ public final class XStreamImplicitState {
             this.physicalFieldType = physicalFieldType;
         }
 
-        /**
-         * 将收集到的元素固化为字段声明类型的物理数组。
-         *
-         * @return 物理数组实例
-         */
         public Object toPhysicalArray() {
             final Object[] objects = toArray();
             final Object array = Array.newInstance(physicalFieldType.getComponentType(), objects.length);
@@ -88,9 +69,6 @@ public final class XStreamImplicitState {
         }
     }
 
-    /**
-     * Map 型隐式字段的元素收集器，等价于原版 private MappingList。
-     */
     public static final class MapCollector extends AbstractList<Object> {
         private final ReflectionProvider reflectionProvider;
         private final Map<Object, Object> map;

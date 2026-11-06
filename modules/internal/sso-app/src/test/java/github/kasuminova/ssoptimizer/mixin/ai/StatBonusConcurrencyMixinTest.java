@@ -18,13 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * StatBonus/FiringSolutionEval 并发快照守卫的注入配置正确性验证（ASM 解析
- * 真实字节码，模式同 AiUtilsEscortTargetGuardMixinTest）：
- * 游戏侧确认 @Redirect 的调用点（recompute 内 values()、computeIncoming
- * WeaponDamage 内 getGroups/getWeapons）存在；Mixin 侧确认处理器 private
- * static 且 @Redirect 的 method/target/remap 配置一致。
- */
 class StatBonusConcurrencyMixinTest {
 
     @Test

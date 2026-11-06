@@ -18,14 +18,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link CaseInsensitiveResourceFallback} 的真实逻辑测试。
- * <p>
- * 复现的场景：模组以 Windows 风格反斜杠路径引用基础游戏资源
- * （如 {@code graphics\icons\cargo\blueprint_hightech.png}），原版异常消息的根目录列表
- * 只包含模组目录与 CLASSPATH，不含游戏根目录（ABSOLUTE_AND_CWD 规格），
- * 回退逻辑必须无条件追加游戏工作目录才能命中文件。
- */
 class CaseInsensitiveResourceFallbackTest {
     @TempDir
     Path gameDir;
@@ -52,7 +44,6 @@ class CaseInsensitiveResourceFallbackTest {
         Files.createDirectories(target.getParent());
         Files.writeString(target, "fake-png-bytes", StandardCharsets.UTF_8);
 
-        // 异常消息只含模组根目录（与线上日志一致），文件实际在游戏根目录下
         final RuntimeException exception = new RuntimeException(
                 "Error loading [graphics\\icons\\cargo\\blueprint_hightech.png] resource, not found in ["
                         + modDir.toAbsolutePath() + ",CLASSPATH]");
@@ -92,7 +83,6 @@ class CaseInsensitiveResourceFallbackTest {
         Files.createDirectories(inGame.getParent());
         Files.writeString(inGame, "game-version", StandardCharsets.UTF_8);
 
-        // 模组根目录出现在异常消息里且能命中时，必须优先于游戏根目录
         final RuntimeException exception = new RuntimeException(
                 "Error loading [graphics/icons/cargo/overridden.png] resource, not found in ["
                         + modDir.toAbsolutePath() + ",CLASSPATH]");
@@ -118,9 +108,6 @@ class CaseInsensitiveResourceFallbackTest {
 
     @Test
     void exactCaseMatchLogsInfoInsteadOfCaseMismatchWarn() throws Exception {
-        // 复现线上误报场景：请求路径大小写完全正确、文件确实存在，
-        // 游戏原加载因 filter/suppress 状态干扰失败，兜底精确命中。
-        // 期望：不打「大小写不匹配」WARN，只打一次性 INFO 说明兜底接管。
         final Path target = gameDir.resolve("data/hulls/skins/exact_case_fallback.skin");
         Files.createDirectories(target.getParent());
         Files.writeString(target, "skin-json", StandardCharsets.UTF_8);
@@ -167,7 +154,6 @@ class CaseInsensitiveResourceFallbackTest {
 
     @Test
     void caseCorrectedMatchStillLogsCaseMismatchWarn() throws Exception {
-        // 真实大小写不匹配（Windows 模组在 Linux 运行）：WARN 语义必须保留
         final Path target = gameDir.resolve("data/hulls/skins/case_fixed_fallback.skin");
         Files.createDirectories(target.getParent());
         Files.writeString(target, "skin-json", StandardCharsets.UTF_8);
@@ -214,14 +200,6 @@ class CaseInsensitiveResourceFallbackTest {
         assertTrue(infos.isEmpty(), "大小写修正场景不得打精确命中 INFO");
     }
 
-    // ------------------------------------------------------------------
-    // 隔离语义：source filter / suppressCustomResources 生效时，
-    // 兜底通道不得越过原版 openResource 的根目录门控（ASTD 实机回归：
-    // loadCSV(path, modId) 查不存在的 csv 被兜底成按名称排序在前的
-    // 其他模组同名文件）。
-    // ------------------------------------------------------------------
-
-    /** 在 gameDir/mods 下建两个模组根并返回（modsA=AAA、modsB=BBB）。 */
     private Path[] createTwoModRoots() throws Exception {
         final Path modsA = gameDir.resolve("mods/AAA");
         final Path modsB = gameDir.resolve("mods/BBB");
@@ -233,7 +211,6 @@ class CaseInsensitiveResourceFallbackTest {
     @Test
     void filteredLoadDoesNotResolveAcrossModBoundary() throws Exception {
         final Path[] mods = createTwoModRoots();
-        // 文件只存在于 AAA（按名称排序在前），BBB 以 filter=BBB 隔离加载同名资源
         final Path target = mods[0].resolve("data/csv/only_in_aaa.csv");
         Files.createDirectories(target.getParent());
         Files.writeString(target, "aaa-content", StandardCharsets.UTF_8);
@@ -250,7 +227,6 @@ class CaseInsensitiveResourceFallbackTest {
     @Test
     void filteredLoadStillResolvesCaseMismatchInsideFilteredMod() throws Exception {
         final Path[] mods = createTwoModRoots();
-        // 大小写修正在被过滤模组内部仍然合法（Linux 上 Windows 模组的本修复目标）
         final Path target = mods[1].resolve("data/csv/wrong_case_inside_bbb.csv");
         Files.createDirectories(target.getParent());
         Files.writeString(target, "bbb-content", StandardCharsets.UTF_8);
@@ -280,7 +256,6 @@ class CaseInsensitiveResourceFallbackTest {
                 "data/csv/vanilla_only.csv", modOnly, null, true),
                 "suppress 生效时不得命中 mods/ 下的模组根");
 
-        // 游戏根目录资源在 suppress 下仍然可解析（对应原版 ABSOLUTE_AND_CWD 规格不被排除）
         final Path inGame = gameDir.resolve("data/csv/vanilla_core.csv");
         Files.createDirectories(inGame.getParent());
         Files.writeString(inGame, "game-content", StandardCharsets.UTF_8);
@@ -305,11 +280,9 @@ class CaseInsensitiveResourceFallbackTest {
                 "Error loading [data/csv/cache_miss_isolation.csv] resource, not found in ["
                         + mods[0].toAbsolutePath() + "," + mods[1].toAbsolutePath() + "]");
 
-        // 受限未命中（BBB 无此文件）：不得写入「不可解析」缓存
         assertNull(CaseInsensitiveResourceFallback.tryResolve(
                 "data/csv/cache_miss_isolation.csv", exception, "BBB", false));
 
-        // 后续非受限调用必须照常从 AAA 解析（被污染则会直接返回 null）
         try (InputStream stream = CaseInsensitiveResourceFallback.tryResolve(
                 "data/csv/cache_miss_isolation.csv", exception, null, false)) {
             assertNotNull(stream, "受限未命中不得污染非受限调用的解析缓存");
@@ -328,13 +301,11 @@ class CaseInsensitiveResourceFallbackTest {
                 "Error loading [data/csv/cache_hit_isolation.csv] resource, not found in ["
                         + mods[0].toAbsolutePath() + "," + mods[1].toAbsolutePath() + "]");
 
-        // 非受限调用先命中 AAA 并写入缓存
         try (InputStream stream = CaseInsensitiveResourceFallback.tryResolve(
                 "data/csv/cache_hit_isolation.csv", exception, null, false)) {
             assertNotNull(stream);
         }
 
-        // 同路径的受限调用必须绕过缓存（缓存键无隔离上下文），在 BBB 内找不到即 null
         assertNull(CaseInsensitiveResourceFallback.tryResolve(
                 "data/csv/cache_hit_isolation.csv", exception, "BBB", false),
                 "非受限缓存结果不得流入带 filter 的隔离调用");

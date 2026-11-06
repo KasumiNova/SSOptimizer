@@ -1,11 +1,6 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
-/**
- * Resolves common super classes for ASM frame computation when the involved
- * types are available to the current JVM, but safely falls back to
- * {@code java/lang/Object} for game-only classes that are not loadable during
- * transformation.
- */
+/** 计算 ASM 帧的公共父类；变换期无法加载的游戏类型按 {@code java/lang/Object} 处理。 */
 public final class AsmCommonSuperClassResolver {
     private AsmCommonSuperClassResolver() {
     }

@@ -9,10 +9,8 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
- * 目标类：{@code cn/kasuminova/astd/combat/effect/generic/ASTDAutomationCombatPlugin}。<br>
- * 注入位置：私有方法 {@code writeTelemetry(CombatEngineAPI, String, ShipAPI, WeaponAPI)} 的方法入口。<br>
- * 注入动机：ASTD 战斗插件由 Janino 脚本类加载器加载，Mixin 桥会跳过 Janino loader；脚本沙盒也会拦截 ASTD 侧文件写入与反射。<br>
- * 注入效果：在方法入口调用 SSOptimizer 独立 helper 写出截图和 telemetry，成功后直接返回，跳过脚本侧写入。
+ * 在 ASTD 脚本插件的遥测方法入口委托独立 helper，成功后跳过脚本写入。
+ * <p>目标由 Janino 脚本加载器定义，Mixin 桥不会处理该加载器，且脚本沙盒限制文件写入与反射，因此使用 ASM。</p>
  */
 public final class ASTDAutomationCombatPluginProcessor implements AsmClassProcessor {
     public static final String TARGET_CLASS = "cn/kasuminova/astd/combat/effect/generic/ASTDAutomationCombatPlugin";

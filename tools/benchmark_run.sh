@@ -1,10 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# SSOptimizer 自动化基准测试运行器：
-# 启动游戏（跳过启动器）→ 标题界面自动进入 gl_benchmark（GraphicsLib 基准测试）→
-# 抑制部署对话框 → 采样（周期截图 + async-profiler）→ 写 bench-summary.json → 退出。
-#
 # 用法: benchmark_run.sh [GAME_DIR] [DURATION_SEC]
 # 环境变量:
 #   SSOPTIMIZER_BENCH_MISSION     mission id（默认 gl_benchmark）
@@ -33,7 +29,6 @@ OUTPUT_DIR="${SSOPTIMIZER_BENCH_OUTPUT_DIR:-$GAME_DIR/ssoptimizer-bench-output}"
 SUMMARY_FILE="$OUTPUT_DIR/bench-summary.json"
 START_RES="${SSOPTIMIZER_START_RES:-1920x1080}"
 
-# 启动 + 标题界面 + 预热 + 采样 + 余量
 TIMEOUT_SEC=$((DURATION_SEC + WARMUP_SEC + 240))
 
 echo "=== SSOptimizer Benchmark Run ==="
@@ -68,8 +63,7 @@ cleanup_game() {
 
 trap cleanup_game EXIT INT TERM
 
-# 失焦停摆规避：原版在窗口失焦且满足暂停条件时主循环直接 continue，
-# 自动化必须关闭 idleWhileWindowNotVisible（备份后改，退出恢复）。
+# 原版失焦暂停会停止主循环，自动化必须关闭 idleWhileWindowNotVisible。
 if [[ -f "$SETTINGS_FILE" ]]; then
     SETTINGS_BACKUP=$(mktemp "$GAME_DIR/settings.json.bench.XXXXXX")
     cp "$SETTINGS_FILE" "$SETTINGS_BACKUP"
@@ -140,14 +134,12 @@ else
     PASS=false
 fi
 
-# GraphicsLib 内建统计（每秒 FPS / 每 10s 汇总 / 最终结果块）直接进 starsector.log
 if grep -q "基准测试结果" "$LOG_FILE" 2>/dev/null; then
     echo ""
     echo "--- GraphicsLib 基准测试结果 ---"
     grep -A 10 "基准测试结果" "$LOG_FILE" | tail -12
 fi
 
-# collapsed 采样转主线程火焰图 SVG（浏览器打开，可搜索/缩放）
 FLAMEGRAPH_PL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/flamegraph.pl"
 COLLAPSED_FILE="$OUTPUT_DIR/bench-profile.collapsed.txt"
 if [[ -f "$COLLAPSED_FILE" && -f "$FLAMEGRAPH_PL" ]]; then

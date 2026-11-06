@@ -7,13 +7,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link DcrModOptimizer} 的注册行为：featureKey 与 processors() 的目标类覆盖。
- * <p>
- * coremod 化后 DCR 源码已收编进主模块、由 {@code SSOptimizerCorePlugin} 直接注册，
- * 原 ServiceLoader SPI 发现机制（及对应测试）已随 javaagent 通道一并移除。
- * 压缩内核处理器已迁移为 Mixin，不再出现在 processors() 中。
- */
 class DcrModOptimizerTest {
 
     private static final String SM = "data/scripts/combatanalytics/SerializationManager";

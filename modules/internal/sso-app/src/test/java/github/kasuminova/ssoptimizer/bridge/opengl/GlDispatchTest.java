@@ -9,11 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link GlDispatch} 门面的录制行为验证：submit 顺序入队、allocate 走资源申请
- * （不计数）阻塞通道、isRenderThread 空安全、上下文重建监听器逐个通知且
- * 单点异常不中断其余监听器。
- */
 class GlDispatchTest {
 
     @AfterEach

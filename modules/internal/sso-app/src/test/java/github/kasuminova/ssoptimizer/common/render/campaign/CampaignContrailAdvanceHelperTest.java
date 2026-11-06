@@ -13,25 +13,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link CampaignContrailAdvanceHelper} 与原版 {@code ContrailEngineV2.advance(float)}
- * 的位级等价验证。
- * <p>
- * 参考实现逐行转写自反编译原版（named 仓 {@code ContrailEngineV2.java:197-258}），
- * 覆盖逐点更新公式（elapsed 推进/remove 加速老化/duration 钳制/progress 除法/
- * fadeOut 亮度衰减/WIDEN·NARROW 宽度/position 推进）与组级编排（头段死亡移除
- * 循环——参考实现独立转写 {@code removeFirstIfNecessary} 逻辑，helper 侧调用
- * 真实游戏方法，双向防漂移；remove/autoCleanup 尾迹清理；map 清理）。优化实现
- * 删除了仅写局部变量的死计算（var5/var6）、提升组内恒量与帧内恒量、并对完全
- * 老化点走 progress 短路径，本测试对随机点状态断言全部字段（含 Vector2f 分量、
- * totalLength 簿记、distToPrev 清零）的位级一致，含 duration=0（NaN 语义）、
- * mode=null 等边界。
- */
 class CampaignContrailAdvanceHelperTest {
-
-    // ------------------------------------------------------------------
-    // 单点更新：位级等价
-    // ------------------------------------------------------------------
 
     @Test
     void advancePointMatchesReferenceBitwiseAcrossRandomStates() {
@@ -53,13 +35,12 @@ class CampaignContrailAdvanceHelperTest {
         }
     }
 
-    /** 完全老化点（elapsed==duration）走 progress 短路径，输出与除法位级一致。 */
     @Test
     void fullyAgedPointUsesShortPathBitwiseEqualToDivision() {
         for (int i = 0; i < 500; i++) {
             ContrailEngineV2.ContrailPoint reference = new ContrailEngineV2.ContrailPoint();
             reference.duration = 1f + i * 0.37f;
-            reference.elapsed = reference.duration; // 已钳制的完全老化点
+            reference.elapsed = reference.duration;
             reference.maxWidth = 4f;
             reference.width = 4f;
             reference.point = new Vector2f(3f, -2f);
@@ -78,7 +59,6 @@ class CampaignContrailAdvanceHelperTest {
         }
     }
 
-    /** duration=0 时 0/0=NaN 语义必须保留（短路径守卫不得改写）。 */
     @Test
     void zeroDurationKeepsNanProgressSemantics() {
         ContrailEngineV2.ContrailPoint reference = new ContrailEngineV2.ContrailPoint();
@@ -100,14 +80,13 @@ class CampaignContrailAdvanceHelperTest {
         assertTrue(Float.isNaN(optimized.progress), "duration=0 时 progress 保持 NaN");
     }
 
-    /** fadeOut 点的亮度衰减与 0 钳制。 */
     @Test
     void fadeOutPointBrightnessDecaysAndClampsAtZero() {
         ContrailEngineV2.ContrailPoint reference = new ContrailEngineV2.ContrailPoint();
         reference.duration = 3f;
         reference.elapsed = 1f;
         reference.fadeOut = true;
-        reference.maxBrightness = 0.05f; // amount×2 超过它 → 钳 0
+        reference.maxBrightness = 0.05f;
         reference.maxWidth = 2f;
         reference.point = new Vector2f(0f, 0f);
         reference.vel = new Vector2f(1f, 1f);
@@ -124,10 +103,6 @@ class CampaignContrailAdvanceHelperTest {
         assertEquals(0.0f, optimized.maxBrightness, "衰减越界后钳 0");
     }
 
-    // ------------------------------------------------------------------
-    // 组级编排：迭代序 + 头段死亡移除 + remove/autoCleanup 尾迹清理
-    // ------------------------------------------------------------------
-
     @Test
     void advanceContrailsMatchesReferenceAcrossRandomMaps() {
         Random random = new Random(0xCAFE_BEEFL);
@@ -143,13 +118,12 @@ class CampaignContrailAdvanceHelperTest {
         }
     }
 
-    /** remove 且点数 < 3 且全部点完全老化时整条移除（原版清理分支）。 */
     @Test
     void removedContrailWithAllAgedPointsIsDroppedFromMap() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
         ContrailEngineV2.Contrail removed = contrail("removed", true, false, 2);
         for (ContrailEngineV2.ContrailPoint point : removed.points) {
-            point.elapsed = point.duration; // 完全老化
+            point.elapsed = point.duration;
         }
         optimized.put(removed.source, removed);
 
@@ -165,7 +139,6 @@ class CampaignContrailAdvanceHelperTest {
         assertTrue(optimized.containsKey("active"));
     }
 
-    /** autoCleanup 与 remove 走同一清理分支。 */
     @Test
     void autoCleanupContrailWithAllAgedPointsIsDroppedFromMap() {
         Map<Object, ContrailEngineV2.Contrail> optimized = new HashMap<>();
@@ -183,11 +156,6 @@ class CampaignContrailAdvanceHelperTest {
         assertTrue(optimized.isEmpty(), "autoCleanup+全老化尾迹应被移除");
     }
 
-    // ------------------------------------------------------------------
-    // 参考实现：逐行转写反编译原版（独立于优化实现，防漂移）
-    // ------------------------------------------------------------------
-
-    /** 原版逐点公式（含死计算外的全部可观察操作；var5/var6 仅写局部变量，无从观察）。 */
     private static void referenceAdvancePoint(ContrailEngineV2.ContrailPoint p, float amount,
                                               boolean remove,
                                               ContrailEngine.ContrailWidthMode mode,
@@ -217,7 +185,6 @@ class CampaignContrailAdvanceHelperTest {
         }
     }
 
-    /** 原版组级编排：逐点更新 → 头段死亡移除循环 → 清理清单 → map 清理。 */
     private static void referenceAdvanceAll(Map<Object, ContrailEngineV2.Contrail> contrails, float amount) {
         List<Object> removals = new ArrayList<>();
         for (ContrailEngineV2.Contrail contrail : contrails.values()) {
@@ -227,7 +194,6 @@ class CampaignContrailAdvanceHelperTest {
             }
             if (contrail.points.size() >= 3) {
                 while (contrail.points.size() >= 3 && referenceRemoveFirstIfNecessary(contrail)) {
-                    // 头段移除由 referenceRemoveFirstIfNecessary 完成
                 }
             }
             if ((contrail.remove || contrail.autoCleanup) && contrail.points.size() < 3) {
@@ -247,7 +213,6 @@ class CampaignContrailAdvanceHelperTest {
         }
     }
 
-    /** 原版 Contrail.removeFirstIfNecessary 的独立转写（helper 侧调用真实游戏方法）。 */
     private static boolean referenceRemoveFirstIfNecessary(ContrailEngineV2.Contrail contrail) {
         ContrailEngineV2.ContrailPoint p0 = contrail.points.get(0);
         ContrailEngineV2.ContrailPoint p1 = contrail.points.get(1);
@@ -261,10 +226,6 @@ class CampaignContrailAdvanceHelperTest {
         p0.maxBrightness = 0.0f;
         return false;
     }
-
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
 
     private static ContrailEngineV2.Contrail contrail(Object source, boolean remove,
                                                       boolean autoCleanup, int pointCount) {
@@ -293,7 +254,6 @@ class CampaignContrailAdvanceHelperTest {
         point.vel = new Vector2f(random.nextFloat() * 4f - 2f, random.nextFloat() * 4f - 2f);
         point.width = random.nextFloat() * 10f;
         point.maxWidth = random.nextFloat() * 10f;
-        // duration 覆盖 0/小/正常 边界 + 完全老化（elapsed==duration）
         point.duration = switch (random.nextInt(5)) {
             case 0 -> 0f;
             case 1 -> 0.01f;
@@ -312,7 +272,7 @@ class CampaignContrailAdvanceHelperTest {
         return switch (random.nextInt(3)) {
             case 0 -> ContrailEngine.ContrailWidthMode.WIDEN;
             case 1 -> ContrailEngine.ContrailWidthMode.NARROW;
-            default -> null; // 其他模式：宽度不变
+            default -> null;
         };
     }
 
@@ -326,10 +286,10 @@ class CampaignContrailAdvanceHelperTest {
             contrail.autoCleanup = random.nextBoolean();
             contrail.mode = randomWidthMode(random);
             contrail.widthMultiplier = random.nextFloat() * 2f;
-            int pointCount = random.nextInt(7); // 0~6，覆盖 <3 分支与头段移除
+            int pointCount = random.nextInt(7);
             for (int i = 0; i < pointCount; i++) {
                 ContrailEngineV2.ContrailPoint point = randomPoint(random);
-                point.duration = 0.5f + random.nextFloat() * 3f; // 死亡移除的时效区间
+                point.duration = 0.5f + random.nextFloat() * 3f;
                 contrail.points.add(point);
                 contrail.totalLength += point.distToPrev;
             }

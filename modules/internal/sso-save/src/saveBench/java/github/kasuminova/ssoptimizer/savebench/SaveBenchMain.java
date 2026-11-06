@@ -24,21 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.zip.ZipInputStream;
 
-/**
- * 离线存档序列化基准入口。
- *
- * <p>在普通 JVM 中复现游戏 {@code CampaignGameManager.getXStream} 的完整配置
- * （别名表 + converter + ID_REFERENCES + 模组 {@code configureXStream}），
- * 对指定真实存档执行 fromXML / toXML / roundtrip，输出分阶段耗时与
- * async-profiler 热点，作为序列化优化的基线与回归工具。</p>
- *
- * <p>注意：离线环境不应用 SSOptimizer 的任何 Mixin/ASM 改写，测得的是
- * <b>原版 XStream 内核</b>的基线；优化后的实机回归走 save_load_smoke 链路。</p>
- *
- * <p>roundtrip 模式的正确性判据：同一对象图两次 marshal 的字节必须完全一致
- * （确定性输出 = 语义保持），以及 marshal→unmarshal→marshal 的二次输出与一次输出
- * 字节一致（往返语义保持）。</p>
- */
 public final class SaveBenchMain {
     private static final Logger LOGGER = Logger.getLogger(SaveBenchMain.class);
 
@@ -60,39 +45,19 @@ public final class SaveBenchMain {
 
         LOGGER.info("[SaveBench] gameDir=" + gameDir + " saveDir=" + saveDir + " mode=" + mode);
 
-        // ---- 环境引导（顺序敏感，复刻 ResourceLoaderState 启动序列）----
         final List<? extends com.fs.starfarer.api.ModSpecAPI> enabledMods = GameEnvBootstrap.setup(gameDir);
         ScriptClassLoaderSetup.begin(gameDir, enabledMods);
         final List<ModPlugin> plugins = ModPluginBootstrap.setup();
 
-        // ---- 静态数据层（SpecStore）----
-        // 与游戏启动序列一致（ResourceLoaderState）：先 loadStarmap 再 onApplicationLoad。
-        // 传入哑 ResourceLoaderState（默认构造、不调 init()）：loadMissions 等方法会
-        // 无条件调用 queueResource 收集预载队列，null 会 NPE；queueResource 本身只是
-        // 向列表追加，无 GL 触碰，队列内容离线直接丢弃。
-        // 离线 unmarshal 的硬依赖：Faction.<clinit>（NO_FACTION）等会在类初始化时
-        // 访问 SpecStore，数据未加载即 NPE。
-        // 字符串/名称表：游戏启动序列（ResourceLoaderState）在 loadStarmap 前加载，
-        // 模组插件 onApplicationLoad 普遍依赖 StarfarerStrings（DMSUtil 等静态初始化即访问）。
+        // 哑 ResourceLoaderState 仅收集离线丢弃的预载队列，避免 loadMissions 空指针。
         ShipNameStore.loadNames();
         StarfarerStrings.load();
         long start = System.nanoTime();
         SpecStore.loadStarmap(new ResourceLoaderState());
         LOGGER.info(String.format(Locale.ROOT, "[SaveBench] spec store loaded: %.0f ms", elapsedMs(start)));
         MarkovNames.loadIfNeeded();
-        // 等待脚本加载线程（游戏顺序：资源加载后、onApplicationLoad 前 waitForLoading）
         ScriptClassLoaderSetup.finish();
-        // onApplicationLoad 必须执行：部分模组在其中向 SpecStore 注册运行期内容
-        // （如 custom entity spec），缺了会导致读档 readResolve 时 spec 缺失 NPE。
-        // 显式环境差异适配（非兜底）：模组插件在 onApplicationLoad 初始化 GL shader
-        // （GraphicsLib ShaderLib.init 等）在无 GL 上下文的离线 JVM 中必炸，
-        // 仅当根因确为「无 GL 上下文」时跳过该插件并记录；其余异常原样抛出。
-        // 显式环境差异适配（非兜底），两类已知差异分别记录：
-        // 1. 无 GL 上下文：模组插件在 onApplicationLoad 初始化 GL shader/纹理
-        //    （GraphicsLib ShaderLib.init、CombatEngine 单例触碰等），离线必炸；
-        // 2. 模组字节码未 remap：模组直接引用游戏混淆名类（如 loading.specs.g），
-        //    游戏运行期由 NanoForge remap 改写符号引用，离线 classpath 无 remap 层，
-        //    类解析失败。configureXStream 为独立方法仍会被调用，XStream 语义不受影响。
+        // 仅跳过无 GL 上下文或未 remap 导致的插件初始化失败，其余异常继续抛出。
         int glSkipped = 0;
         int remapSkipped = 0;
         for (final ModPlugin plugin : plugins) {
@@ -118,7 +83,6 @@ public final class SaveBenchMain {
                 + " remap-skipped=" + remapSkipped);
 
         if (MODE_DIAG_SPECS.equals(mode)) {
-            // 诊断模式：dump 全部 CustomEntitySpec id 到 outputDir/custom-entity-spec-ids.txt
             final Collection<String> ids = SpecStore.getSpecIds(CustomEntitySpec.class);
             final Path out = outputDir.resolve("custom-entity-spec-ids.txt");
             Files.writeString(out, ids.stream().sorted().collect(java.util.stream.Collectors.joining("\n")) + "\n");
@@ -137,7 +101,6 @@ public final class SaveBenchMain {
             summary.saveDir = saveDir.toString();
             summary.mode = mode;
 
-            // ---- descriptor ----
             start = System.nanoTime();
             final SaveGameData descriptor = readDescriptor(xstream, saveDir);
             summary.descriptorMs = elapsedMs(start);
@@ -147,7 +110,6 @@ public final class SaveBenchMain {
                     + " version=" + descriptor.getSaveFileVersion()
                     + " mods=" + descriptor.getEnabledMods().size());
 
-            // ---- campaign load ----
             start = System.nanoTime();
             final Object campaign = readCampaign(xstream, saveDir);
             summary.loadMs = elapsedMs(start);
@@ -156,7 +118,6 @@ public final class SaveBenchMain {
                     summary.loadMs, summary.payloadBytes / 1e6));
 
             if (MODE_SAVE.equals(mode) || MODE_ROUNDTRIP.equals(mode)) {
-                // ---- marshal #1 ----
                 start = System.nanoTime();
                 final byte[] first = marshal(xstream, campaign);
                 summary.saveMs = elapsedMs(start);
@@ -165,7 +126,6 @@ public final class SaveBenchMain {
                         summary.saveMs, first.length / 1e6));
 
                 if (MODE_ROUNDTRIP.equals(mode)) {
-                    // ---- roundtrip: unmarshal 回读 marshal 产物，再 marshal 比对字节 ----
                     start = System.nanoTime();
                     final Object reloaded = xstream.fromXML(new ByteArrayInputStream(first));
                     summary.reloadMs = elapsedMs(start);
@@ -187,16 +147,7 @@ public final class SaveBenchMain {
         }
     }
 
-    /**
-     * 遮蔽游戏的 CampaignEngineConverter（离线专用分歧点）。
-     *
-     * <p>游戏版 converter 的 {@code instantiateNewInstance} 在反序列化入口做运行期接线：
-     * {@code CampaignEngine.setInstance} → {@code CombatEngine.getInstance()} → 构造器
-     * 加载默认背景纹理 → lwjgl native，离线必炸。此处注册一个更高优先级的纯
-     * {@link ReflectionConverter}（Unsafe 实例化、无任何单例接线）遮蔽它。
-     * 序列化语义不变：游戏版继承 ReflectionConverter 且 marshal 路径无任何重写，
-     * 两者编组行为一致；反序列化仅差异在「不触发 GL 单例」，字段填充逻辑相同。</p>
-     */
+    /** 用纯 ReflectionConverter 避免游戏转换器在离线反序列化时初始化 GL 单例。 */
     private static void shadowCampaignEngineConverter(final XStream xstream) {
         xstream.registerConverter(new ReflectionConverter(xstream.getMapper(), xstream.getReflectionProvider()) {
             @Override
@@ -206,7 +157,6 @@ public final class SaveBenchMain {
         }, XStream.PRIORITY_VERY_HIGH);
     }
 
-    /** 判定异常链根因是否为「当前线程无 GL 上下文」（lwjgl GLContext 检查抛出）。 */
     private static boolean isMissingGlContext(final Throwable e) {
         Throwable current = e;
         while (current != null) {
@@ -234,11 +184,9 @@ public final class SaveBenchMain {
         }
     }
 
-    /** 读取战役主档（明文 campaign.xml 或 zip 容器内同名条目）。 */
     private static Object readCampaign(final XStream xstream, final Path saveDir) throws Exception {
         final Path plain = saveDir.resolve("campaign.xml");
         if (Files.isRegularFile(plain)) {
-            // SSOZ1 zstd 字段回译为原版 deflate 格式（离线无 Mixin，见 SavePayloadNormalizer）
             final Path normalized = SavePayloadNormalizer.normalizeToLegacyFile(plain);
             try (InputStream in = Files.newInputStream(normalized)) {
                 return xstream.fromXML(in);
@@ -289,7 +237,6 @@ public final class SaveBenchMain {
         final Path out = outputDir.resolve("savebench-summary.json");
         Files.writeString(out, json);
         LOGGER.info("[SaveBench] summary written: " + out.toAbsolutePath());
-        // 同步打到 stdout，供脚本 grep
         System.out.print("[SaveBench-Summary] " + json.replace("\n", " "));
     }
 

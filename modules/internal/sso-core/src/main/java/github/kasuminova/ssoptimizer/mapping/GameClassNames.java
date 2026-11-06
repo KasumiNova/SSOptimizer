@@ -1,12 +1,6 @@
 package github.kasuminova.ssoptimizer.mapping;
 
-/**
- * 游戏与外部运行时类的可读命名常量表。
- * <p>
- * 该表只暴露开发侧应当看到的 named 名称，禁止在业务或注入源码中继续散落
- * 混淆类名字符串。外部类必须保留上游命名空间，只做语义化去混淆，不得映射进
- * {@code github/kasuminova/ssoptimizer/**}。
- */
+/** 游戏与外部运行时类的 named 名称常量。 */
 public final class GameClassNames {
     public static final String SPRITE                              = "com/fs/graphics/Sprite";
     public static final String SPRITE_DOTTED                       = "com.fs.graphics.Sprite";
@@ -113,7 +107,6 @@ public final class GameClassNames {
     public static final String LINUX_KEYBOARD                      = "org/lwjgl/opengl/LinuxKeyboard";
     public static final String STANDARD_TOOLTIP_V2_EXPANDABLE      = "com/fs/starfarer/ui/impl/StandardTooltipV2Expandable";
     public static final String STARFARER_SETTINGS_TEXT_FIELD_OWNER = "com/fs/starfarer/settings/StarfarerSettings$SettingsTextFieldFactory";
-    /** SettingsAPI 匿名实现类（named 名 SettingsTextFieldFactory）的点分隔形式，供 Mixin targets 使用。 */
     public static final String STARFARER_SETTINGS_API_IMPL_DOTTED  = "com.fs.starfarer.settings.StarfarerSettings$SettingsTextFieldFactory";
     public static final String TEXT_FIELD_IMPL                     = "com/fs/starfarer/ui/TextFieldImpl";
     public static final String TEXT_FIELD_API                      = "com/fs/starfarer/api/ui/TextFieldAPI";

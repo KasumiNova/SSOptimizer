@@ -8,10 +8,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link SoundMonoNoticeAggregator} 聚合语义测试（直调真实 record/flush 逻辑，
- * reporter 注入收集器断言汇总行）。
- */
 class SoundMonoNoticeAggregatorTest {
 
     @Test

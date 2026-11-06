@@ -5,9 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link DebugConfig} 系统属性解析测试。
- */
 class DebugConfigTest {
     @AfterEach
     void cleanProperties() {

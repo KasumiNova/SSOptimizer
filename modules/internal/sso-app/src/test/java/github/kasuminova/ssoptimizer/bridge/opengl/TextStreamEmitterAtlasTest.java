@@ -12,11 +12,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link TextStreamEmitter#emit(List, int, int)}（图集路径）的编码验证：
- * pass 内按 textureId 连续分组换绑切段，同 id 连续 quad 不切断；
- * 假 RenderQueue 截获落帧批次回放到记录桩断言（无 GL 上下文）。
- */
 class TextStreamEmitterAtlasTest {
 
     private FakeRenderQueue queue;
@@ -146,14 +141,12 @@ class TextStreamEmitterAtlasTest {
         return sink.calls;
     }
 
-    /** 末尾的 streamDisable 滞留在线程流缓冲，用一条非流式命令触发落帧。 */
     private void flushTail() {
         GL11.glFlush();
     }
 
     @Test
     void groupsByTextureIdWithBindBetweenSegments() {
-        // 纹理序列 5,5,7,5：三段（5 连续合并、7 单独、回到 5 再切）
         final List<TextPass> passes = List.of(new TextPass(List.of(
                 quad(0f, 0xFFFFFFFF, 5),
                 quad(10f, 0xFFFFFFFF, 5),
@@ -190,7 +183,6 @@ class TextStreamEmitterAtlasTest {
 
     @Test
     void colorSwitchSurvivesAcrossTextureSegments() {
-        // 换纹理边界处颜色同时变化：颜色指令照常发（颜色状态与纹理分段正交）
         final List<TextPass> passes = List.of(new TextPass(List.of(
                 quad(0f, 0xFFFF0000, 5),
                 quad(10f, 0xFFFFFFFF, 7))));
@@ -199,7 +191,6 @@ class TextStreamEmitterAtlasTest {
 
         final List<String> calls = replayRecordedBatches();
         assertEquals(2, calls.stream().filter(c -> c.startsWith("c:")).count());
-        // 颜色切换发生在第二段的 begin 之后
         final int secondBegin = calls.lastIndexOf("begin:7");
         final int secondColor = calls.lastIndexOf("c:-1,-1,-1,-1");
         assertTrue(secondColor > secondBegin, "颜色指令在新纹理段内发射");

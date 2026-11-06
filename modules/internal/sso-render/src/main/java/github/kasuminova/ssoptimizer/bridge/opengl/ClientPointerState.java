@@ -1,20 +1,8 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
 /**
- * 录制侧（单个生产者线程）的 client pointer 当前状态。
- * <p>
- * 职责：保存最近一次 glVertexPointer/glColorPointer/glTexCoordPointer/
- * glNormalPointer/glInterleavedArrays 的快照，供 draw 命令
- * （glDrawArrays/glDrawElements/glArrayElement）在录制时刻整体捕获。
- * <p>
- * 简化语义（与真实 GL 的差异，javadoc 于 {@link PointerSnapshot} 亦有说明）：
- * 真实 GL 中 glInterleavedArrays 与离散 pointer 可以逐数组互相覆盖；本阶段
- * 简化为「设置 interleaved 使离散快照失效，设置任一离散 pointer 使 interleaved
- * 失效」——游戏的实际调用序列不依赖两者混用的细分覆盖，后续随
- * ClientAttribTracker 式仿真补全。
- * <p>
- * 非线程安全：每个生产者线程持有独立实例（{@link BridgeSupport#pointerState()}
- * 的 ThreadLocal）。
+ * 单个录制线程的 client pointer 状态。离散 pointer 与 interleaved 快照互斥；
+ * 实例非线程安全，每个生产者线程独立持有。
  */
 final class ClientPointerState {
     private PointerSnapshot vertex;
@@ -22,13 +10,7 @@ final class ClientPointerState {
     private PointerSnapshot texCoord;
     private PointerSnapshot normal;
     private PointerSnapshot interleaved;
-    /** 录制侧跟踪的 GL_ARRAY_BUFFER 绑定（offset 指针重放时恢复用，见 PointerSnapshotGroup.apply）。 */
     private int arrayBufferBinding;
-    /**
-     * client attrib 栈的 ARRAY_BUFFER 绑定快照（glPush/PopClientAttrib 录制侧簿记）：
-     * GL 1.5+ 起 ARRAY_BUFFER 绑定属 client 状态，随 CLIENT_VERTEX_ARRAY_BIT
-     * 压栈/恢复——与 {@link SimulatedGlState#onPushClientAttrib} 同模型。
-     */
     private static final int ATTRIB_STACK_MAX = 64;
     private final int[] attribMasks       = new int[ATTRIB_STACK_MAX];
     private final int[] attribArrayBuffer = new int[ATTRIB_STACK_MAX];
@@ -42,7 +24,6 @@ final class ClientPointerState {
         this.arrayBufferBinding = buffer;
     }
 
-    /** glPushClientAttrib 录制侧簿记（栈满时真实 GL 报 GL_STACK_OVERFLOW 且栈不变，簿记同样空操作）。 */
     void pushClientAttrib(int mask) {
         if (attribDepth >= ATTRIB_STACK_MAX) {
             return;
@@ -52,7 +33,6 @@ final class ClientPointerState {
         attribDepth++;
     }
 
-    /** glPopClientAttrib 录制侧簿记（掩码含 CLIENT_VERTEX_ARRAY_BIT 时恢复绑定；下溢空操作）。 */
     void popClientAttrib() {
         if (attribDepth <= 0) {
             return;
@@ -104,7 +84,6 @@ final class ClientPointerState {
         normal = null;
     }
 
-    /** 释放状态对旧快照的持有（与被捕获 draw 的引用计数配对，见 PointerSnapshot）。 */
     private static void releaseHeld(PointerSnapshot snapshot) {
         if (snapshot != null) {
             snapshot.release();
@@ -112,10 +91,8 @@ final class ClientPointerState {
     }
 
     /**
-     * 捕获当前快照组供一条 draw 命令携带：每个非 null 快照 {@link PointerSnapshot#retain()}
-     * 一次，draw 执行完后由 {@link PointerSnapshotGroup#release()} 配对归还。
-     * 组对象从命令池借出（{@link BridgeSupport#acquireSnapshotGroup()}），
-     * release 时归还。
+     * 捕获当前快照组并增加各快照的引用计数；draw 执行完后由
+     * {@link PointerSnapshotGroup#release()} 配对归还。
      *
      * @return 当前快照组（全未设置时为空组）
      */

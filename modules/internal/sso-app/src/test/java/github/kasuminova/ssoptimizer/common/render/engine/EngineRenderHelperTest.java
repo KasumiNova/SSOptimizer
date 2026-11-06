@@ -45,7 +45,6 @@ class EngineRenderHelperTest {
 
     @Test
     void computeStripVerticesMatchesExpectedZeroRotationLayout() {
-        // 原版公式：scaleX = 0.5 + 0.5*(pass+1)/passCount = 1.0，scaleY = (passCount-pass)/passCount = 0.25
         float[] vertices = EngineRenderHelper.computeStripVertices(
                 10.0f, 20.0f,
                 0.0f,
@@ -85,7 +84,6 @@ class EngineRenderHelperTest {
 
     @Test
     void computeGlowAlphaUsesVanillaConstantFlameFloor() {
-        // 原版在 glow 前将火焰强度重置为 1.0F：Math.max(base, 1.0F - 0.4F) * 0.75F * alphaScale
         float baseAlpha = EngineRenderHelper.computeGlowAlpha(0.0f, 0.5f, 1.0f);
         float hotBaseAlpha = EngineRenderHelper.computeGlowAlpha(0.9f, 1.0f, 1.0f);
 

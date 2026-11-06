@@ -9,13 +9,6 @@ import java.nio.FloatBuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * bridge GL11 的 buffer/pointer 快照语义验证。
- * <p>
- * 命令体是真实 GL 调用，无上下文环境不可执行；这里验证的是录制侧行为——
- * 快照与源 buffer 的隔离、pointer 状态的捕获/替换/引用计数。命令执行后的
- * 归还路径由 {@code RenderQueueImpl} 真实渲染线程测试覆盖（命令体为纯 Java）。
- */
 class GL11PointerBridgeTest {
 
     private FakeRenderQueue queue;
@@ -49,7 +42,6 @@ class GL11PointerBridgeTest {
         assertEquals(org.lwjgl.opengl.GL11.GL_FLOAT, snapshot.type);
         assertNotNull(snapshot.data);
 
-        // 录制后调用方改写源 buffer（复用场景），快照不受影响
         vertices.put(0, 99f);
         vertices.put(1, -99f);
         FloatBuffer view = snapshot.data.asFloatBuffer();
@@ -59,15 +51,12 @@ class GL11PointerBridgeTest {
         assertEquals(3f, view.get(2));
         assertEquals(4f, view.get(3));
 
-        // 引用计数语义：状态持有 1 份 + 本次捕获 1 份
         group.release();
         FloatBuffer spare = ByteBuffer.allocateDirect(4 * Float.BYTES).asFloatBuffer();
         spare.put(new float[4]);
         spare.flip();
         assertNotSame(snapshot.data, BridgeSupport.pool().snapshot(spare),
                 "状态仍持有时快照不得归还池");
-        // 替换 pointer：状态释放旧快照，引用归零归还池
-        // （池化后旧快照对象会被回收复用，先取出缓冲引用再触发释放）
         java.nio.ByteBuffer releasedData = snapshot.data;
         FloatBuffer vertices2 = ByteBuffer.allocateDirect(4 * Float.BYTES).asFloatBuffer();
         vertices2.put(new float[4]);
@@ -78,7 +67,6 @@ class GL11PointerBridgeTest {
         spare2.flip();
         assertSame(releasedData, BridgeSupport.pool().snapshot(spare2),
                 "状态与捕获引用都释放后快照应归还池并被复用");
-        // 清理：释放替换后的状态持有（ spare2 的快照借走了一块，无妨）
         BridgeSupport.pointerState().capture().release();
         GL11.glVertexPointer(2, org.lwjgl.opengl.GL11.GL_FLOAT, 0, 0L);
     }
@@ -97,7 +85,6 @@ class GL11PointerBridgeTest {
         GL11.glDrawArrays(org.lwjgl.opengl.GL11.GL_QUADS, 0, 1);
         assertEquals(1, queue.recorded.size(), "draw 录制为一条携带快照组的命令");
 
-        // 替换 pointer：旧快照的状态引用被释放，新快照成为当前状态
         FloatBuffer vertices2 = ByteBuffer.allocateDirect(4 * Float.BYTES).asFloatBuffer();
         vertices2.put(new float[]{5f, 6f, 7f, 8f});
         vertices2.flip();
@@ -153,8 +140,6 @@ class GL11PointerBridgeTest {
 
     @Test
     void vboOffsetPointerCapturesArrayBufferBindingAtRecordTime() {
-        // LazyFont 序列：绑定 VBO → 设 offset pointer → 解绑 → draw；
-        // 快照必须携带 pointer 调用时刻的绑定，供重放时恢复（见 PointerSnapshotGroup.apply）
         GL15.glBindBuffer(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER, 42);
         GL11.glVertexPointer(2, org.lwjgl.opengl.GL11.GL_FLOAT, 0, 16L);
         PointerSnapshotGroup group = BridgeSupport.pointerState().capture();

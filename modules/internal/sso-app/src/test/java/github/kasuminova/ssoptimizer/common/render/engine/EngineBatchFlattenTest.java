@@ -11,11 +11,6 @@ import java.nio.ByteOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * {@link EngineInstanceCollector#flatten} 的布局契约测试：
- * 命令表与三种实例记录的字段偏移、分组区段顺序必须与
- * {@code ssoptimizer_engine_batch.cpp} 的结构体保持一致。
- */
 class EngineBatchFlattenTest {
 
     private static ByteBuffer nativeBuffer(int capacity) {
@@ -34,19 +29,16 @@ class EngineBatchFlattenTest {
         int commandCount = EngineInstanceCollector.flatten(batch, out);
 
         assertEquals(3, commandCount);
-        // 命令 0：条带组，2 实例，数据紧随命令表之后
         assertEquals(EngineInstanceCollector.STAGE_STRIP, out.getInt(0));
         assertEquals(11, out.getInt(4));
         assertEquals(2, out.getInt(8));
         assertEquals(3 * EngineInstanceCollector.COMMAND_BYTES, out.getInt(12));
-        // 命令 1：核心组，数据在条带数组之后
         int coreOffset = 3 * EngineInstanceCollector.COMMAND_BYTES
                 + 2 * EngineInstanceCollector.STRIP_INSTANCE_BYTES;
         assertEquals(EngineInstanceCollector.STAGE_CORE, out.getInt(16));
         assertEquals(7, out.getInt(20));
         assertEquals(1, out.getInt(24));
         assertEquals(coreOffset, out.getInt(28));
-        // 命令 2：辉光组
         assertEquals(EngineInstanceCollector.STAGE_GLOW, out.getInt(32));
         assertEquals(9, out.getInt(36));
         assertEquals(1, out.getInt(40));

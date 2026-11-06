@@ -14,12 +14,6 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 验证模组导弹 AI（由原版 {@code Missile$GuidedMissileAIWrapper} /
- * {@code Missile$MissileAIWrapper} 包装）在 {@link ParallelAiDispatcher#dispatch}
- * 内联路径上持有 {@link ParallelAiDispatcher#MOD_SCRIPT_LOCK}，
- * 与 worker 线程上的模组脚本互斥，避免并发踩踏 LazyLib CombatCache 引发 CME。
- */
 class ParallelAiDispatcherModAiLockTest {
 
     private final ExecutorService pool = Executors.newSingleThreadExecutor();
@@ -67,7 +61,6 @@ class ParallelAiDispatcherModAiLockTest {
         try {
             assertTrue(holding.await(5, TimeUnit.SECONDS), "lock holder failed to start");
             Future<?> dispatched = pool.submit(() -> ParallelAiDispatcher.dispatch(wrapped, 0.1f));
-            // 锁被持有时 dispatch 必须阻塞在 MOD_SCRIPT_LOCK 上
             assertFalse(dispatched.isDone(), "mod missile AI must block on MOD_SCRIPT_LOCK");
             assertFalse(plugin.advanced, "advance must not run while lock is held");
             release.countDown();
@@ -95,7 +88,6 @@ class ParallelAiDispatcherModAiLockTest {
         return holder;
     }
 
-    /** 非 {@code com.fs.starfarer.} 包的探针插件，模拟模组导弹 AI。 */
     private static final class ProbeMissileAI implements MissileAIPlugin {
         private volatile boolean advanced;
 

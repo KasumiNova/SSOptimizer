@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Sprite 合批 P0 统计的纯逻辑测试（分组键打包、run 计数、帧折叠、报告生成）。 */
 class SpriteGroupStatsTest {
 
     @Test
@@ -22,7 +21,6 @@ class SpriteGroupStatsTest {
         SpriteGroupStats stats = new SpriteGroupStats();
         long texA = SpriteGroupStats.key(43, 770, 771);
         long texB = SpriteGroupStats.key(44, 770, 771);
-        // A A B B A → 3 个 run，2 个 distinct 组
         stats.record(texA, false, false);
         stats.record(texA, false, false);
         stats.record(texB, false, false);
@@ -42,7 +40,7 @@ class SpriteGroupStatsTest {
         SpriteGroupStats stats = new SpriteGroupStats();
         long texA = SpriteGroupStats.key(43, 770, 771);
         stats.record(texA, false, false);
-        stats.record(texA, false, true);   // 禁区：不计入分组，且打断 run
+        stats.record(texA, false, true);
         stats.record(texA, false, false);
         stats.endFrame();
 

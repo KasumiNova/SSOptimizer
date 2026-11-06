@@ -3,15 +3,7 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
 import org.lwjgl.opengl.ContextCapabilities;
 
-/**
- * org.lwjgl.opengl.GLContext 的 bridge 镜像（能力探测入口）。
- * <p>
- * 动机同 {@link GL11}。{@link #getCapabilities()} 是启动期能力探测的高频入口
- * （GraphicsLib 按 capabilities 选择 FBO 路径等）：首次调用走阻塞通道在渲染线程
- * 取回真实 {@link ContextCapabilities} 并缓存，此后主线程直接读缓存——
- * capabilities 在上下文生命周期内不变，是 getter 仿真清单里「一次性取回并缓存」
- * 策略的落点（见 gl-call-inventory.md getter 特殊处理清单）。
- */
+/** 桥接上下文能力查询；能力表在同一上下文生命周期内缓存。 */
 public final class GLContext {
     private static volatile ContextCapabilities capabilities;
     private static volatile boolean capabilitiesFetched;
@@ -19,43 +11,23 @@ public final class GLContext {
     private GLContext() {
     }
 
-    /**
-     * 安装命令消费者，语义同 {@link GL11#install(RenderQueue)}。
-     *
-     * @param renderQueue 渲染队列实例
-     */
     public static void install(RenderQueue renderQueue) {
         BridgeSupport.install(renderQueue);
     }
 
-    /** 测试用：卸载队列并清空 capabilities 缓存，避免用例间静态状态串扰。 */
     static void uninstall() {
         BridgeSupport.uninstall();
         capabilities = null;
         capabilitiesFetched = false;
     }
 
-    /**
-     * GL 上下文重建事件（{@code Display.create}/{@code setDisplayMode}/{@code setFullscreen}）
-     * 后使 capabilities 缓存失效：真实 {@link ContextCapabilities} 对象随上下文易主，
-     * 继续返回旧对象会让依赖引用比对做上下文代际检测的下游（LazyTextureManager
-     * 的纹理按代际重载）永远感知不到重建，已失效纹理 ID 不再重载。
-     * <p>
-     * 不在 {@code Display.destroy} 时调用：销毁后到下次创建前的窗口期内渲染线程
-     * 没有上下文，重新取回必然失败，保留旧缓存让此窗口期的调用安全返回。
-     */
+    /** 上下文重建后清空能力缓存；销毁期间保留旧缓存，避免无上下文时重新查询。 */
     static void invalidateCapabilities() {
         capabilities = null;
         capabilitiesFetched = false;
     }
 
-    /**
-     * 取回当前上下文的能力表。首次调用经阻塞通道在渲染线程执行真实
-     * {@code GLContext.getCapabilities()}（要求 {@link Display#create()} 已完成）
-     * 并缓存结果；后续调用零阻塞读缓存。
-     *
-     * @return 缓存的能力表（生命周期与上下文一致）
-     */
+    /** 首次调用在渲染线程阻塞取回并缓存，后续读取缓存。 */
     public static ContextCapabilities getCapabilities() {
         if (!capabilitiesFetched) {
             synchronized (GLContext.class) {
@@ -68,33 +40,19 @@ public final class GLContext {
         return capabilities;
     }
 
-    /**
-     * 阻塞通道：LWJGL 内部的上下文使用追踪（模组一般传 {@code null} 解除），
-     * 收口渲染线程与真实上下文持有者保持一致。
-     *
-     * @throws LWJGLException 渲染线程上的真实调用失败
-     */
     public static void useContext(Object context) throws org.lwjgl.LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.GLContext.useContext(context));
     }
 
-    /** {@link #useContext(Object)} 的显式套接字选择重载。 */
     public static void useContext(Object context, boolean isSurfaceless)
             throws org.lwjgl.LWJGLException {
         BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.GLContext.useContext(context, isSurfaceless));
     }
 
-    /**
-     * 阻塞通道：OpenGL 动态库加载是进程级一次性动作，收口渲染线程与后续
-     * 上下文创建保持同线程序。
-     *
-     * @throws LWJGLException 渲染线程上的真实调用失败
-     */
     public static void loadOpenGLLibrary() throws org.lwjgl.LWJGLException {
         BridgeSupport.blockingWaitLwjgl(org.lwjgl.opengl.GLContext::loadOpenGLLibrary);
     }
 
-    /** 阻塞通道：卸载语义同 {@link #loadOpenGLLibrary()}（关停路径）。 */
     public static void unloadOpenGLLibrary() {
         BridgeSupport.blockingWait(org.lwjgl.opengl.GLContext::unloadOpenGLLibrary);
     }

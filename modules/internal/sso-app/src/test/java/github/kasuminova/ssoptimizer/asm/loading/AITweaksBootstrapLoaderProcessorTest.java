@@ -15,11 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 验证 AITweaks BootstrapLoader 父加载器注入：单参 URLClassLoader 构造调用点
- * 改写为双参构造（父加载器 = 自身定义类加载器），并实际加载改写后的类实例化，
- * 断言父加载器确实易主。
- */
 class AITweaksBootstrapLoaderProcessorTest {
     @Test
     void rewritesConstructorToDualArgWithOwnClassLoader() throws Exception {
@@ -80,7 +75,6 @@ class AITweaksBootstrapLoaderProcessorTest {
         assertTrue(dualArgCall[0], "构造调用点应改写为双参 URLClassLoader 构造");
         assertTrue(parentPushed[0], "双参构造前应以自身类加载器作为父加载器实参");
 
-        // 行为验证：加载改写后的类并实例化，父加载器必须等于其定义类加载器
         final class DefiningLoader extends ClassLoader {
             Class<?> define() {
                 return defineClass(AITweaksBootstrapLoaderProcessor.TARGET_CLASS.replace('/', '.'),
@@ -99,7 +93,6 @@ class AITweaksBootstrapLoaderProcessorTest {
                 "非目标类不应被修改");
     }
 
-    /** 合成与真实 BootstrapLoader 同名的类：构造内调单参 URLClassLoader.<init>。 */
     private static byte[] targetClassBytes() {
         return bootstrapLoaderLikeBytes(AITweaksBootstrapLoaderProcessor.TARGET_CLASS);
     }
@@ -113,7 +106,6 @@ class AITweaksBootstrapLoaderProcessorTest {
         writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, internalName, null,
                 AITweaksBootstrapLoaderProcessor.SUPER_OWNER, null);
 
-        // public X() { super(new java.net.URL[0]); }
         final MethodVisitor constructor = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
         constructor.visitCode();
         constructor.visitVarInsn(Opcodes.ALOAD, 0);

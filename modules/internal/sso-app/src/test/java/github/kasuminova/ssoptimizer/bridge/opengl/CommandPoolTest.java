@@ -11,11 +11,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link CommandPool} 的借还语义验证：池空新建、归还复用、多线程并发借还
- * 不丢不重（录制线程借出与渲染线程归还的生产形态）、线程本地预借栈命中
- * 复用已归还对象且不触发新建。
- */
 class CommandPoolTest {
 
     @Test
@@ -37,7 +32,6 @@ class CommandPoolTest {
             created.incrementAndGet();
             return new Object();
         });
-        // 预置 32 个空闲对象进全局池（本地栈满额度，单次补货即可全部预借）
         Set<Object> released = new HashSet<>();
         for (int i = 0; i < 32; i++) {
             released.add(pool.acquire());
@@ -46,7 +40,6 @@ class CommandPoolTest {
             pool.release(object);
         }
 
-        // 重新借出 32 个：首次触发批量预借（栈 32 → 取 1），其余全部命中本地栈
         Set<Object> acquired = new HashSet<>();
         for (int i = 0; i < 32; i++) {
             acquired.add(pool.acquire());
@@ -86,8 +79,6 @@ class CommandPoolTest {
             worker.join(TimeUnit.SECONDS.toMillis(10));
             assertFalse(worker.isAlive());
         }
-        // 借还配对后全部借出成功（不丢）；release 全进全局池，线程本地栈
-        // 可预借持有部分实例——全局池不变量为「不超过流通实例数」（不凭空多实例）
         assertEquals(threads * perThread, seen.size(), "每次借出都必须成功");
         distinct.set(Set.copyOf(seen).size());
         assertTrue(pool.idleCount() <= distinct.get(), "全局池不得持有超过流通量的实例");

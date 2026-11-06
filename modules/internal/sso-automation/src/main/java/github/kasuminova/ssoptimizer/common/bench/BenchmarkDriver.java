@@ -12,15 +12,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 基准测试驱动：自动化运行指定 mission（默认 GraphicsLib {@code gl_benchmark}）并采样。
- *
- * <p>状态机由两处 Mixin hook 驱动：标题界面 advance 尾部调用
- * {@link #tryLaunchFromTitleScreen(Object)} 进入 mission；战斗内每帧帧末
- * （{@code Display.update} 前）调用 {@link #onCombatFrameEnd()} 推进计时、周期截图、
- * profiler 启停与结束退出。部署对话框由 CombatState Mixin 在 traverse 头部抑制，
- * 本类不感知该流程。</p>
- */
 public final class BenchmarkDriver {
     private static final Logger LOGGER = Logger.getLogger(BenchmarkDriver.class);
 
@@ -40,16 +31,10 @@ public final class BenchmarkDriver {
     private BenchmarkDriver() {
     }
 
-    /** 基准测试是否启用（供 Mixin 热路径快速判定）。 */
     public static boolean isEnabled() {
         return config().enabled();
     }
 
-    /**
-     * 标题界面 advance 尾部 hook：查找并启动配置的 mission。
-     *
-     * @param titleScreenState 标题界面实例（Mixin 传入 {@code this}）
-     */
     public static void tryLaunchFromTitleScreen(final Object titleScreenState) {
         final BenchmarkConfig cfg = config();
         if (!cfg.enabled() || missionLaunched) {
@@ -79,9 +64,6 @@ public final class BenchmarkDriver {
         }
     }
 
-    /**
-     * 战斗帧末 hook（{@code Display.update} 之前）：计时、截图、profiler 启停、结束退出。
-     */
     public static void onCombatFrameEnd() {
         final BenchmarkConfig cfg = config();
         if (!cfg.enabled() || !missionLaunched) {
@@ -144,7 +126,6 @@ public final class BenchmarkDriver {
         if (cfg.exitWhenDone()) {
             System.exit(0);
         }
-        // 不退出时只采样一次：复位以便下一次进入战斗重新计时
         combatActive = false;
         missionLaunched = false;
         frameCount = 0;
@@ -187,7 +168,6 @@ public final class BenchmarkDriver {
         return cached;
     }
 
-    /** 重置测试状态。 */
     public static void resetForTests() {
         config = null;
         missionLaunched = false;

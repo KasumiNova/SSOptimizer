@@ -16,21 +16,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * {@link ContrailAdvanceHelper} 与原版 advance 公式的位级等价验证。
- * <p>
- * 参考实现逐行转写自反编译原版 {@code ContrailEngine.advance(float)}（named
- * 版），覆盖单段更新公式（texU 推进/ended 加速老化/maxAge 钳制/progress 除法/
- * WIDEN·NARROW 宽度/vel 缩放与 position 推进）与组级编排（头段死亡移除循环、
- * ended 组移除、map 清理）。优化实现删除了仅写局部变量的死计算（f6/f7/f10）
- * 并对完全老化段走 progress 短路径，本测试对随机段状态断言全部字段
- * （含 Vector2f 分量）的位级一致，含 maxAge=0/负值、widthMode=null 等边界。
- */
 class ContrailAdvanceHelperTest {
-
-    // ------------------------------------------------------------------
-    // 单段更新：位级等价
-    // ------------------------------------------------------------------
 
     @Test
     void advanceSegmentMatchesReferenceBitwiseAcrossRandomStates() {
@@ -51,13 +37,12 @@ class ContrailAdvanceHelperTest {
         }
     }
 
-    /** 完全老化段（texU==maxAge）走 progress 短路径，输出与除法位级一致。 */
     @Test
     void fullyAgedSegmentUsesShortPathBitwiseEqualToDivision() {
         for (int i = 0; i < 500; i++) {
             FakeSegment reference = new FakeSegment();
             reference.maxAge = 1f + i * 0.37f;
-            reference.u = reference.maxAge; // 已钳制的完全老化段
+            reference.u = reference.maxAge;
             reference.baseWidth = 4f;
             reference.position = new Vector2f(3f, -2f);
             reference.vel = new Vector2f(0.5f, -1.5f);
@@ -73,7 +58,6 @@ class ContrailAdvanceHelperTest {
         }
     }
 
-    /** maxAge=0 时 0/0=NaN 语义必须保留（短路径守卫不得改写）。 */
     @Test
     void zeroMaxAgeKeepsNanProgressSemantics() {
         FakeSegment reference = new FakeSegment();
@@ -90,12 +74,7 @@ class ContrailAdvanceHelperTest {
 
         assertSegmentBitsEqual(reference, optimized);
         assertTrue(Float.isNaN(optimized.progress), "maxAge=0 时 progress 保持 NaN");
-        // 宽度公式在 NaN progress 下同样位级一致（NARROW 分支）
     }
-
-    // ------------------------------------------------------------------
-    // 组级编排：迭代序 + 死亡移除 + ended 组清理
-    // ------------------------------------------------------------------
 
     @Test
     void advanceGroupMatchesReferenceAcrossRandomMaps() {
@@ -112,7 +91,6 @@ class ContrailAdvanceHelperTest {
         }
     }
 
-    /** ended 组段数 < 2 时整组移除（原版组级 else-if 分支）。 */
     @Test
     void endedGroupWithFewerThanTwoSegmentsIsRemoved() {
         Map<Object, FakeGroup> groups = new HashMap<>();
@@ -136,11 +114,6 @@ class ContrailAdvanceHelperTest {
         assertGroupsEqual(reference, groups);
     }
 
-    // ------------------------------------------------------------------
-    // 参考实现：逐行转写反编译原版（独立于优化实现，防漂移）
-    // ------------------------------------------------------------------
-
-    /** 原版单段公式（含死计算外的全部可观察操作；f6/f7/f10 仅写局部变量，无从观察）。 */
     private static void referenceAdvanceSegment(FakeSegment s, float amount, boolean ended,
                                                 ContrailEngine.ContrailWidthMode widthMode,
                                                 float widthMultiplier) {
@@ -164,7 +137,6 @@ class ContrailAdvanceHelperTest {
         }
     }
 
-    /** 原版组级编排：逐段更新 → 头段死亡移除循环 → ended 组加入移除清单 → map 清理。 */
     private static void referenceAdvanceAll(Map<Object, FakeGroup> groups, float amount) {
         List<Object> removals = new ArrayList<>();
         for (FakeGroup group : groups.values()) {
@@ -174,7 +146,6 @@ class ContrailAdvanceHelperTest {
             }
             if (group.segments.size() >= 2) {
                 while (group.segments.size() >= 2 && group.removeExpiredFromStore()) {
-                    // 头段移除由 removeExpiredFromStore 完成
                 }
             } else if (group.ended) {
                 removals.add(group.key);
@@ -185,17 +156,12 @@ class ContrailAdvanceHelperTest {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 夹具
-    // ------------------------------------------------------------------
-
     private static FakeSegment randomSegment(Random random) {
         FakeSegment s = new FakeSegment();
         s.position = new Vector2f(random.nextFloat() * 100f - 50f, random.nextFloat() * 100f - 50f);
         s.vel = new Vector2f(random.nextFloat() * 4f - 2f, random.nextFloat() * 4f - 2f);
         s.width = random.nextFloat() * 10f;
         s.baseWidth = random.nextFloat() * 10f;
-        // maxAge 覆盖 0/负/正 边界 + 完全老化（u==maxAge）
         s.maxAge = switch (random.nextInt(5)) {
             case 0 -> 0f;
             case 1 -> -random.nextFloat();
@@ -211,7 +177,7 @@ class ContrailAdvanceHelperTest {
         return switch (random.nextInt(3)) {
             case 0 -> ContrailEngine.ContrailWidthMode.WIDEN;
             case 1 -> ContrailEngine.ContrailWidthMode.NARROW;
-            default -> null; // 其他模式：宽度不变
+            default -> null;
         };
     }
 
@@ -224,10 +190,10 @@ class ContrailAdvanceHelperTest {
             group.ended = random.nextBoolean();
             group.widthMode = randomWidthMode(random);
             group.widthMultiplier = random.nextFloat() * 2f;
-            int segmentCount = random.nextInt(6); // 0~5，覆盖 <2 分支
+            int segmentCount = random.nextInt(6);
             for (int i = 0; i < segmentCount; i++) {
                 FakeSegment s = randomSegment(random);
-                s.maxAge = 0.5f + random.nextFloat() * 3f; // 死亡移除的时效区间
+                s.maxAge = 0.5f + random.nextFloat() * 3f;
                 group.segments.add(s);
             }
             groups.put(group.key, group);
@@ -266,7 +232,6 @@ class ContrailAdvanceHelperTest {
         return copy;
     }
 
-    /** 测试夹具的 map（FakeGroup 值）直接传入 helper 的 Map<?,?> 入参。 */
     private static void assertSegmentBitsEqual(FakeSegment a, FakeSegment b, String message) {
         assertEquals(Float.floatToRawIntBits(a.u), Float.floatToRawIntBits(b.u), message + " texU");
         assertEquals(Float.floatToRawIntBits(a.progress), Float.floatToRawIntBits(b.progress), message + " progress");
@@ -307,7 +272,6 @@ class ContrailAdvanceHelperTest {
         float widthMultiplier;
         Object key;
 
-        /** 夹具的原版 removeExpiredSegment 等价实现（含 length 簿记与 alphaMult 清零）。 */
         boolean removeExpiredFromStore() {
             FakeSegment s0 = (FakeSegment) segments.get(0);
             FakeSegment s1 = (FakeSegment) segments.get(1);

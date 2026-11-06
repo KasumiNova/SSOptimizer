@@ -16,13 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@link DcrCompressionHelper} 的行为测试。
- * <p>
- * 该 helper 替换 DCR {@code CompressionUtil} 的 deflate/inflate 内核为 Zstd，仅在 {@code byte[]} 层工作；
- * DCR 自身的（非标准）Base64 层包在其外、对其透明。测试覆盖：Zstd 往返、zstd 帧魔数标识、旧 Deflate
- * 字节回退读、空串两路。
- */
 class DcrCompressionHelperTest {
 
     private static final String SAMPLE =
@@ -62,11 +55,9 @@ class DcrCompressionHelperTest {
         assertEquals("", DcrCompressionHelper.decompress(dcrLegacyCompress("")));
     }
 
-    // --- Fail-Fast 错误分支：损坏输入必须抛出，绝不静默返回部分/空内容 ---
 
     @Test
     void decompressRejectsSubFourByteGarbage() {
-        // 长度 < 4，不命中 zstd 魔数 → 走 Inflater 回退 → 非法 zlib 头 → IllegalStateException。
         assertThrows(IllegalStateException.class,
                 () -> DcrCompressionHelper.decompress(new byte[]{1, 2, 3}));
     }
@@ -85,7 +76,6 @@ class DcrCompressionHelperTest {
                 () -> DcrCompressionHelper.decompress(new byte[]{(byte) 0xAB, (byte) 0xCD, (byte) 0xEF, 0x12, 0x34}));
     }
 
-    // --- L1→L2：flush 实际产出的 XStream 序列化内容经 helper 往返应无损（两层一致） ---
 
     @Test
     void flushShapedXStreamXmlSurvivesZstdRoundTrip() {
@@ -99,10 +89,6 @@ class DcrCompressionHelperTest {
                 "flush 序列化产物经 Zstd 压缩→解压应无损");
     }
 
-    /**
-     * 逐字节复刻 {@code data.scripts.combatanalytics.util.CompressionUtil.compress}（{@link Deflater} 级别 9，
-     * zlib 包裹），用于构造「旧存档」字节以验证回退读路径。
-     */
     private static byte[] dcrLegacyCompress(final String text) {
         final byte[] raw = text.getBytes(StandardCharsets.UTF_8);
         final Deflater deflater = new Deflater(9);

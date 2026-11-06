@@ -15,15 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * {@code ListenerManagerSyncMixin} 的字节码锚点核验。
- * <p>
- * 线程安全化的正确性前提是「{@code ListenerManager} 的全部 API 方法都被
- * synchronized 覆写覆盖，不残留任何未互斥的并发入口」。此处对测试 classpath 上
- * named jar 的真实 {@code ListenerManager}/{@code ListenerManagerAPI} 逐一核验：
- * API 接口声明的每个方法必须恰好对应 Mixin 中一个带 {@code ACC_SYNCHRONIZED}
- * 的 {@code @Overwrite} 方法。
- */
 class ListenerManagerSyncAnchorTest {
 
     @Test

@@ -9,22 +9,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * 流内矩阵指令（{@code ssoptimizer.render.streamMatrixOps}，默认开）的录制与
- * 回放行为验证：GL11 矩阵族（glPushMatrix/glPopMatrix/glLoadIdentity/
- * glTranslatef/glRotatef/glScalef/glMatrixMode）在 SimulatedGlState 簿记后
- * 编码进顶点流，跟随流走到下一个落帧点，回放按流内位置逐指令执行。
- * 验证点：
- * <ul>
- *   <li>矩阵指令编码 → 回放往返逐指令等价（含 float 参数位模式精度）；</li>
- *   <li>「push → 顶点段 → pop」与外部非流式命令的相对顺序保持；</li>
- *   <li>矩阵指令打断 {@link VertexArrayBatch} 的 DRAW 合并、经
- *       MergedBatchCommand 串协议跨批次保序；</li>
- *   <li>开关关闭 / aux 原生线程回退 enqueue 老路径（glMatrixMode 回退路径
- *       保留去重）；</li>
- *   <li>挂起流内矩阵指令打断 StateDedup 相邻性（pendingStateOps 扩展语义）。</li>
- * </ul>
- */
 class StreamMatrixOpsTest {
 
     private FakeRenderQueue queue;
@@ -44,7 +28,6 @@ class StreamMatrixOpsTest {
         GL11.uninstall();
     }
 
-    /** 记录回放事件序列的 sink（顶点/矩阵/状态指令全量记录）。 */
     private static final class RecordingSink implements VertexSink {
         final List<String> events = new ArrayList<>();
 
@@ -174,7 +157,6 @@ class StreamMatrixOpsTest {
         }
     }
 
-    /** 录制一个双顶点 QUADS 段（texCoord + vertex ×2），顶点坐标按 base 区分。 */
     private static void recordSegment(float base) {
         GL11.glBegin(org.lwjgl.opengl.GL11.GL_QUADS);
         GL11.glTexCoord2f(base, 0f);
@@ -186,7 +168,6 @@ class StreamMatrixOpsTest {
 
     @Test
     void matrixOpsEncodeIntoStreamAndRoundtripExactly() {
-        // 矩阵调用不再逐条产生非流式命令：全部编码进顶点流，glFlush 时才随流落帧
         GL11.glMatrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
         GL11.glLoadIdentity();
         GL11.glPushMatrix();
@@ -215,8 +196,6 @@ class StreamMatrixOpsTest {
 
     @Test
     void pushSegmentPopKeepsOrderWithExternalCommands() {
-        // push → 顶点段 → pop → 外部 enable：前三者合入一条流批次且在 enable 之前
-        // 落帧；批次内回放顺序与录制序列逐指令一致
         GL11.glPushMatrix();
         recordSegment(3f);
         GL11.glPopMatrix();
@@ -237,8 +216,6 @@ class StreamMatrixOpsTest {
 
     @Test
     void nonStreamedMatrixCallsFlushPendingStreamInOrder() {
-        // glOrtho（保持 enqueue 的低频路径）插入时先落帧挂起的流内矩阵指令，
-        // 帧列表顺序即录制顺序
         GL11.glPushMatrix();
         GL11.glTranslatef(1f, 2f, 0f);
         GL11.glOrtho(0, 800, 600, 0, -1, 1);
@@ -251,8 +228,6 @@ class StreamMatrixOpsTest {
 
     @Test
     void matrixOpsBreakDrawMergeInArrayBatch() {
-        // 两段图元边界对齐的 QUADS 本可合并为一次 DRAW，中间的矩阵指令改变顶点
-        // 变换，合并语义不等价——必须保持 DRAW/PUSH/DRAW/POP 逐指令序
         VertexStream stream = new VertexStream();
         stream.begin(org.lwjgl.opengl.GL11.GL_QUADS);
         stream.vertex2f(0f, 0f);
@@ -291,9 +266,6 @@ class StreamMatrixOpsTest {
 
     @Test
     void matrixOpsKeepOrderAcrossMergedBatchBoundary() {
-        // 模拟渲染线程串协议（VertexBatchCommand.executeMerged）：两条相邻批次
-        // 共享同一合并器——批次 1 的 quad 与批次 2 的 quad 被批次 2 开头的矩阵
-        // 指令隔开，跨批次也不得合并；矩阵操作按串内位置穿插
         VertexArrayBatch batch = new VertexArrayBatch();
         batch.startReplay();
 
@@ -334,8 +306,6 @@ class StreamMatrixOpsTest {
 
     @Test
     void pendingMatrixOpsBreakStateDedupAdjacency() {
-        // 挂起流内的矩阵指令回放时改变真实 GL 状态但不推进 commitSeq：其后的
-        // 相同状态命令不得被去重跳过（pendingStateOps 语义扩展到矩阵指令族）
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
         GL11.glPushMatrix();
         GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 42);
@@ -360,7 +330,6 @@ class StreamMatrixOpsTest {
 
     @Test
     void disabledSwitchKeepsMatrixModeDedup() {
-        // 回退路径的 glMatrixMode 仍走 enqueueState：连续相同 mode 去重语义不变
         BridgeSupport.streamMatrixOpsEnabled = false;
         GL11.glMatrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);
         GL11.glMatrixMode(org.lwjgl.opengl.GL11.GL_MODELVIEW);

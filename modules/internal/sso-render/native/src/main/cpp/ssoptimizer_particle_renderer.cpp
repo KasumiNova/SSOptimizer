@@ -23,4 +23,4 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_P
     drawColoredTexturedImmediate(vertices, texCoords, colors, numVertices);
 }
 
-} // extern "C"
+}

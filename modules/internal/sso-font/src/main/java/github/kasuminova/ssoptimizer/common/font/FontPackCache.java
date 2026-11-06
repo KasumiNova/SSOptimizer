@@ -16,18 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Persistent cache for generated font packs.
- */
 public final class FontPackCache {
     public static final String DISABLE_PROPERTY   = "ssoptimizer.disable.fontcache";
     public static final String DIRECTORY_PROPERTY = "ssoptimizer.fontcache.dir";
 
     private static final String              MAGIC          = "SSOFONT";
-    // v7：victor 族字库捐赠改变了同 key 的生成产物（victor12/16/21 补入族内 CJK 码点）
-    // v8：victor 族墨迹居中到 advance 单元格，盒度量变化
-    // v9：victor 族 fallback 协调跳过 advance 比例路径（解析层 xoffset 解码 + 视觉校准双重失真），
-    //     捐赠 CJK 改走高度比例缩放，墨迹尺寸变化
     private static final int                 VERSION        = 9;
     private static final String              FILE_EXTENSION = ".ssofont.zst";
     private static final Map<String, Object> LOCKS          = new ConcurrentHashMap<>();
@@ -52,8 +45,7 @@ public final class FontPackCache {
         fingerprint.append("pageWidth=").append(spec == null ? 0 : spec.pageWidth()).append('\n');
         fingerprint.append("pageHeight=").append(spec == null ? 0 : spec.pageHeight()).append('\n');
         fingerprint.append("profile=").append(OriginalGameFontOverrides.activeProfile().name()).append('\n');
-        // 引擎形态入指纹：native 可用时缓存包页文件是 1×1 占位 PNG（见
-        // TtfBmFontGenerator.buildPack），与位图形态缓存不可互用
+        // 缓存键必须区分 native 占位页与位图页，避免两种产物互相命中。
         fingerprint.append("engine=")
                    .append(NativeFontRasterizer.isAvailable() ? "v2-atlas" : "bitmap")
                    .append('\n');

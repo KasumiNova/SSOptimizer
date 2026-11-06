@@ -10,15 +10,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
 
-/**
- * Janino 脚本类加载器的 Mixin 注入。
- * <p>
- * 注入目标：{@code org.codehaus.janino.JavaSourceClassLoader}<br>
- * 注入动机：该类只需要在公开编译入口前后插入缓存与预热逻辑，使用 Mixin 头尾注入即可稳定完成；
- * 相比整段改写方法体的 ASM，Mixin 更容易维护，也能避免校验器对栈帧的苛刻报错。<br>
- * 注入效果：在 {@code findClass(String)} 入口触发脚本缓存预热，并让
- * {@code generateBytecodes(String)} 先尝试命中磁盘缓存、再在原始 Janino 编译返回后写回缓存。
- */
 @Mixin(targets = "org.codehaus.janino.JavaSourceClassLoader")
 public abstract class JaninoJavaSourceClassLoaderMixin {
     @Inject(method = "findClass(Ljava/lang/String;)Ljava/lang/Class;", at = @At("HEAD"), remap = false)
@@ -42,9 +33,7 @@ public abstract class JaninoJavaSourceClassLoaderMixin {
     @Inject(method = "generateBytecodes(Ljava/lang/String;)Ljava/util/Map;", at = @At("RETURN"), cancellable = true, remap = false)
     private void ssoptimizer$persistGeneratedBytecodes(final String className,
                                                        final CallbackInfoReturnable<Map<String, byte[]>> cir) {
-        // 渲染线程分离模式：Janino 编译的脚本类不经过 LaunchClassLoader transformer 链，
-        // 在此对编译输出做同样的 GL owner 重定向（改写后入缓存，缓存目录已按模式分版，
-        // 见 JaninoScriptCompilerCoordinator.cacheDirectory）；非分离模式原样返回零开销
+        // Janino 编译输出不经过 LaunchClassLoader，需在此执行 GL owner 重定向后再写入按渲染模式隔离的缓存。
         final Map<String, byte[]> bytecodes = RenderThreadRedirector.redirectAll(cir.getReturnValue());
         if (bytecodes != cir.getReturnValue()) {
             cir.setReturnValue(bytecodes);

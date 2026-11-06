@@ -37,4 +37,4 @@ JNIEXPORT void JNICALL Java_github_kasuminova_ssoptimizer_common_render_engine_S
     glDisable(GL_BLEND);
 }
 
-} // extern "C"
+}

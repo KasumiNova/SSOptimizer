@@ -15,20 +15,6 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.awt.Color;
 
-/**
- * 单精灵（Sprite）渲染的 Mixin 重写。
- * <p>
- * 注入目标：{@code com.fs.graphics.Sprite#render(FF)} 与 {@code renderNoBind(FF)}<br>
- * 注入动机：原版渲染路径包含 17–19 次 LWJGL JNI 调用（颜色、矩阵、纹理坐标、顶点）；
- * 通过整体替换为 {@link SpriteRenderHelper#renderSprite} 的单次 native/GL 调用，
- * 显著降低单精灵渲染开销。<br>
- * 注入效果：两个方法体替换为「null 检查 →（render 仅）纹理绑定 → texClamp 开关 →
- * 字段解包调用 helper → texClamp 恢复」，语义与原 ASM 替换完全一致。
- * 纹理 id 一律经 {@link AtlasTextureResolver} 解析：已入图集的贴图取图集页 id
- * （UV 已由 SpriteAtlasMixin 重映射），未入图集走原版 getTextureId 惰性上传——
- * 图集注入收敛在 Sprite 渲染方法内，{@code TextureObject.getTextureId()} 的其余
- * 调用方（模组裸 UV 消费者）始终拿到独立纹理 id。
- */
 @Mixin(targets = GameClassNames.SPRITE_DOTTED)
 public abstract class SpriteMixin {
 
@@ -83,20 +69,11 @@ public abstract class SpriteMixin {
     @Shadow(remap = false)
     protected float texHeight;
 
-    /**
-     * 带纹理绑定的精灵渲染。
-     *
-     * @param x 目标 X（叠加 offsetX）
-     * @param y 目标 Y（叠加 offsetY）
-     * @author GitHub Copilot
-     * @reason 原 ASM 处理器整体替换 render(FF)V 方法体，迁移为等价的 @Overwrite。
-     */
     @Overwrite(remap = false)
     public void render(float x, float y) {
         if (texture == null) {
             return;
         }
-        // 陈旧实例（图集构建前创建并被缓存）渲染前惰性重映射，见 AtlasRenderDiag
         ((AtlasUvState) this).ssoptimizer$ensureAtlasRemapped("render");
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, false);
@@ -108,9 +85,6 @@ public abstract class SpriteMixin {
                 texX, texY, texWidth, texHeight, texClamp)) {
             return;
         }
-        // 纹理绑定编码进顶点流（段间执行）：同纹理连续 sprite 的重复绑定回放
-        // 幂等冗余，换纹理的绑定打断的是流内位置而非流段——连续 sprite 的
-        // begin..end 段合并为一条流命令（减少每 sprite 一次的 flush 边界）
         GL11.streamBindTexture(AtlasTextureResolver.textureIdForSpriteRender(texture));
         if (texClamp) {
             RenderStateUtils.enableTextureClamp();
@@ -129,35 +103,12 @@ public abstract class SpriteMixin {
         }
     }
 
-    /**
-     * 区域渲染（武器炮管、损伤贴花等子矩形绘制）。
-     * <p>
-     * 原版为 17-19 次 LWJGL JNI（bind/pushMatrix/rotate/立即模式 quad）；覆写后优先并入
-     * {@link SpriteBatch} 合批，拒绝时走 {@link SpriteRenderHelper} 单 JNI 路径。
-     * 几何等价变换：原版「平移到 (f,g) + 绕全图枢轴旋转 + 子矩形顶点/UV」等价于
-     * 「子矩形 quad + 枢轴平移 (pivot - h*w, i*h_) + 子矩形 UV」，
-     * 因此可直接复用整图渲染的 helper/合批接口。图集重映射精灵的 UV 补区域原点偏移，
-     * 边缘内缩取 {@link SpriteAtlasMixin} 缓存的像素等价值（未重映射保持原版 0.001F
-     * 且不补 texX/texY，忠实保留原版忽略 setTexX 的行为）。
-     *
-     * @param f  目标 X（叠加 offsetX）
-     * @param g  目标 Y（叠加 offsetY）
-     * @param h  区域 UV 起点 U 比例（0..1）
-     * @param i  区域 UV 起点 V 比例
-     * @param j  区域 UV 宽比例
-     * @param k  区域 UV 高比例
-     * @param bl 是否绑定纹理
-     * @author KasumiNova
-     * @reason 武器炮管 renderBarrel 每帧经 renderRegion 全量重绘（含 GraphicLib 三 pass），
-     * 原版立即模式开销显著；需与 render 一样接入合批/单 JNI 路径。
-     */
     @Overwrite(remap = false)
     public void renderRegion(float f, float g, float h, float i, float j, float k, boolean bl) {
         if (texture == null) {
             return;
         }
         final AtlasUvState atlas = (AtlasUvState) this;
-        // 陈旧实例渲染前惰性重映射（结果决定 UV 是否补图集原点与内缩取值）
         final boolean remapped = atlas.ssoptimizer$ensureAtlasRemapped("renderRegion");
         final float insetU = remapped ? atlas.ssoptimizer$atlasInsetU() : 0.001F;
         final float insetV = remapped ? atlas.ssoptimizer$atlasInsetV() : 0.001F;
@@ -173,13 +124,11 @@ public abstract class SpriteMixin {
             v1 += texY;
         }
 
-        // 原版旋转枢轴：centerX/centerY 有效时用其值，否则取全图中心
         final boolean hasCenter = centerX != -1.0F && centerY != -1.0F;
         final float pivotX = hasCenter ? centerX : width * 0.5F;
         final float pivotY = hasCenter ? centerY : height * 0.5F;
         final float subW = j * width;
         final float subH = k * height;
-        // 子矩形 quad 的位置与枢轴（换算到 helper 的「quad 左下角 + 局部枢轴」约定）
         final float posX = f + offsetX + (width - subW) * 0.5F;
         final float posY = g + offsetY + (height - subH) * 0.5F;
         final float subCenterX = pivotX - h * width;
@@ -192,7 +141,6 @@ public abstract class SpriteMixin {
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, !bl);
         }
-        // 原版 renderRegion 不处理 texClamp，合批提交同样按非 clamp 处理
         if (SpriteBatch.getInstance().submitIfActive(AtlasTextureResolver.textureIdForSpriteRender(texture),
                 posX, posY, subW, subH, subCenterX, subCenterY, angle,
                 r, gc, b, a, blendSrc, blendDest,
@@ -200,7 +148,6 @@ public abstract class SpriteMixin {
             return;
         }
         if (bl) {
-            // 流内绑定（段间执行），语义同 render 的 streamBindTexture
             GL11.streamBindTexture(AtlasTextureResolver.textureIdForSpriteRender(texture));
         }
         SpriteRenderHelper.renderSprite(
@@ -212,20 +159,11 @@ public abstract class SpriteMixin {
                 u0, v0, u1 - u0, v1 - v0);
     }
 
-    /**
-     * 不绑定纹理的精灵渲染（调用方已保证纹理绑定状态）。
-     *
-     * @param x 目标 X（叠加 offsetX）
-     * @param y 目标 Y（叠加 offsetY）
-     * @author GitHub Copilot
-     * @reason 原 ASM 处理器整体替换 renderNoBind(FF)V 方法体，迁移为等价的 @Overwrite。
-     */
     @Overwrite(remap = false)
     public void renderNoBind(float x, float y) {
         if (texture == null) {
             return;
         }
-        // 同 render：陈旧实例渲染前惰性重映射
         ((AtlasUvState) this).ssoptimizer$ensureAtlasRemapped("renderNoBind");
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onSpriteRender(AtlasTextureResolver.textureIdForSpriteRender(texture), blendSrc, blendDest, true);

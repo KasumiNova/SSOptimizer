@@ -11,23 +11,10 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * 跨平台 OpenGL 帧缓冲截图。
- *
- * <p>在帧渲染完成、swap buffers 之前通过 {@code glReadPixels} 读取 back buffer，
- * 纵向翻转后以 PNG 写出。仅依赖 LWJGL + ImageIO，Linux/Windows/macOS 行为一致。</p>
- */
 public final class FramebufferCapture {
     private FramebufferCapture() {
     }
 
-    /**
-     * 抓取当前 back buffer 并写出 PNG。
-     *
-     * @param outputPath 输出 PNG 路径（父目录自动创建）
-     * @return 实际写出的路径
-     * @throws IOException 尺寸非法或写出失败时抛出
-     */
     public static Path captureToPng(final Path outputPath) throws IOException {
         final BufferedImage image = capture();
         Files.createDirectories(outputPath.getParent());
@@ -37,24 +24,10 @@ public final class FramebufferCapture {
         return outputPath;
     }
 
-    /**
-     * 抓取当前 back buffer 为 ARGB 图像。
-     *
-     * @return 纵向翻转后的帧图像
-     * @throws IOException Display 尺寸非法时抛出
-     */
     public static BufferedImage capture() throws IOException {
         return capture(GL11.GL_BACK);
     }
 
-    /**
-     * 指定读取缓冲的抓取变体（rt 渲染线程取证用：back buffer 在 swap 前的管线时序下
-     * 可能读不到已呈现内容，GL_FRONT 读到的是当前实际显示帧）。
-     *
-     * @param readBuffer GL11.GL_BACK 或 GL11.GL_FRONT
-     * @return 纵向翻转后的帧图像
-     * @throws IOException Display 尺寸非法时抛出
-     */
     public static BufferedImage capture(final int readBuffer) throws IOException {
         final int width = Display.getWidth();
         final int height = Display.getHeight();
@@ -72,8 +45,7 @@ public final class FramebufferCapture {
             final int dstRow = (height - y - 1) * width;
             for (int x = 0; x < width; x++) {
                 final int index = (srcRow + x) * 4;
-                // alpha 通道强制 255：无 alpha 平面的 GLX 视觉下 glReadPixels 的 alpha
-                // 分量读回 0（Mesa 实证），截图是不透明帧，直接置不透明。
+                // 无 alpha 平面的 GLX 视觉会将 alpha 读为 0，因此截图像素固定为不透明。
                 argb[dstRow + x] = 0xFF000000
                         | ((pixels.get(index) & 0xFF) << 16)
                         | ((pixels.get(index + 1) & 0xFF) << 8)

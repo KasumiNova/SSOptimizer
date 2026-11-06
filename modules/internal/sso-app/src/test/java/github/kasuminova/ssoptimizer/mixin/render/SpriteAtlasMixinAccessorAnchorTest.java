@@ -10,15 +10,6 @@ import java.io.InputStream;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-/**
- * {@link SpriteAtlasMixin} UV 访问器覆写锚点核验。
- * <p>
- * 8 个 {@code @Overwrite}（setTexX/setTexY/setTexWidth/setTexHeight 与对应
- * getter）的正确性取决于 named jar 的 {@code com/fs/graphics/Sprite} 存在
- * 同名同签名方法（Mixin 覆写目标缺失会在运行期抛 InvalidMixinException）。
- * 用 ASM 解析测试 classpath 上 named jar 的真实字节码核验，
- * 方法缺失/签名漂移在构建期暴露而非运行时失败。
- */
 class SpriteAtlasMixinAccessorAnchorTest {
 
     private static final String TARGET_CLASS = "com/fs/graphics/Sprite";
@@ -34,7 +25,6 @@ class SpriteAtlasMixinAccessorAnchorTest {
             {"getTexHeight", "()F"},
     };
 
-    /** 惰性治愈注入目标（@Inject HEAD）。 */
     private static final String[] HEAL_TARGET = {"renderWithCorners", "(FFFFFFFF)V"};
 
     @Test

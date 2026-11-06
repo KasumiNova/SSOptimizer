@@ -3,10 +3,6 @@ package github.kasuminova.ssoptimizer.common.loading;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GLContext;
 
-/**
- * Determines whether texture uploads can keep their original dimensions instead
- * of rounding them up to the nearest power-of-two.
- */
 public final class TextureDimensionSupport {
     static final String DISABLE_PROPERTY = "ssoptimizer.disable.npot";
     static final String FORCE_PROPERTY   = "ssoptimizer.force.npot";

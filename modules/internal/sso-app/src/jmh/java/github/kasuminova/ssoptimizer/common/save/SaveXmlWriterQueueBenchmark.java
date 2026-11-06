@@ -35,21 +35,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 基于真实存档 XML 语料验证写出路径开销的 JMH 基准。
- * <p>
- * 基准目标不是测试 XStream 整体序列化，而是验证“XML 写出阶段”本身：
- * </p>
- * <ul>
- *     <li>直接写入普通 StAX Writer</li>
- *     <li>直接写入 txw2 {@link IndentingXMLStreamWriter}</li>
- *     <li>使用 JCTools SPSC 队列，把解析线程产出的写指令交给独立 Writer 线程执行</li>
- * </ul>
- * <p>
- * 默认语料目录优先读取系统属性 {@code ssoptimizer.saveCorpusDir}，
- * 未提供时回退到当前开发机的 {@code /mnt/windows_data/Games/Starsector098-linux/saves}。
- * </p>
- */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 3, time = 300, timeUnit = TimeUnit.MILLISECONDS)
@@ -62,52 +47,24 @@ public class SaveXmlWriterQueueBenchmark {
     private static final int MAX_INITIAL_OUTPUT_BUFFER = 8 * 1024 * 1024;
     private static final int MIN_INITIAL_OUTPUT_BUFFER = 64 * 1024;
 
-    /**
-     * 基准：流式解析真实 XML，并直接写入紧凑 StAX Writer。
-     *
-     * @param state 基准状态
-     * @param blackhole JMH 黑洞
-     * @throws Exception 当 XML 解析或写出失败时抛出
-     */
     @Benchmark
     public void directCompact(final CorpusState state, final Blackhole blackhole) throws Exception {
         BenchmarkSummary summary = replayDirect(state, false);
         consume(summary, blackhole);
     }
 
-    /**
-     * 基准：流式解析真实 XML，并写入 txw2 缩进 Writer。
-     *
-     * @param state 基准状态
-     * @param blackhole JMH 黑洞
-     * @throws Exception 当 XML 解析或写出失败时抛出
-     */
     @Benchmark
     public void txw2Indenting(final CorpusState state, final Blackhole blackhole) throws Exception {
         BenchmarkSummary summary = replayDirect(state, true);
         consume(summary, blackhole);
     }
 
-    /**
-     * 基准：流式解析真实 XML，并通过 JCTools SPSC 队列把写指令移交给独立 Writer 线程。
-     *
-     * @param state 基准状态
-     * @param blackhole JMH 黑洞
-     * @throws Exception 当 XML 解析或写出失败时抛出
-     */
     @Benchmark
     public void queuedSpscCompact(final CorpusState state, final Blackhole blackhole) throws Exception {
         BenchmarkSummary summary = state.worker.replay(state.documents, state.inputFactory);
         consume(summary, blackhole);
     }
 
-    /**
-     * 基准：流式解析真实 XML，并通过可复用批量 opcode 队列交给独立 Writer 线程。
-     *
-     * @param state 基准状态
-     * @param blackhole JMH 黑洞
-     * @throws Exception 当 XML 解析或写出失败时抛出
-     */
     @Benchmark
     public void queuedSpscBatchedCompact(final CorpusState state, final Blackhole blackhole) throws Exception {
         BenchmarkSummary summary = state.batchedWorker.replay(state.documents, state.inputFactory);
@@ -222,7 +179,6 @@ public class SaveXmlWriterQueueBenchmark {
             case XMLStreamConstants.END_ELEMENT -> sink.endElement();
             case XMLStreamConstants.END_DOCUMENT -> sink.endDocument();
             default -> {
-                // 其他事件（如实体引用）在当前存档 XML 里不会成为主要热点，这里显式忽略。
             }
         }
     }
@@ -231,31 +187,14 @@ public class SaveXmlWriterQueueBenchmark {
         return (value == null || value.isEmpty()) ? null : value;
     }
 
-    /**
-     * 单线程基准状态：缓存语料、XML 工厂与队列工作线程。
-     */
     @State(Scope.Thread)
     public static class CorpusState {
-        /**
-         * 语料配置：
-         * <ul>
-         *     <li>{@code descriptor-16}：选取 16 个真实 {@code descriptor.xml}</li>
-         *     <li>{@code campaign-medium}：选取一个 64-96 MiB 的 {@code campaign.xml}</li>
-         *     <li>{@code campaign-large}：选取一个 128-160 MiB 的 {@code campaign.xml}</li>
-         * </ul>
-         */
         @Param({"descriptor-16", "campaign-medium"})
         public String corpus;
 
-        /**
-         * JCTools SPSC 环形队列容量。
-         */
         @Param({"16384"})
         public int queueCapacity;
 
-        /**
-         * 批量 opcode 队列每批次可容纳的事件数。
-         */
         @Param({"256"})
         public int batchSize;
 
@@ -267,11 +206,6 @@ public class SaveXmlWriterQueueBenchmark {
         BatchedQueuedCopyWorker batchedWorker;
         String            previousXmlMaxElementDepth;
 
-        /**
-         * 加载真实 XML 语料并启动队列写线程。
-         *
-         * @throws IOException 当语料目录或 XML 文件无法读取时抛出
-         */
         @Setup(Level.Trial)
         public void setup() throws IOException {
             previousXmlMaxElementDepth = System.getProperty(XML_MAX_ELEMENT_DEPTH_PROPERTY);
@@ -290,9 +224,6 @@ public class SaveXmlWriterQueueBenchmark {
             batchedWorker = new BatchedQueuedCopyWorker(queueCapacity, batchSize);
         }
 
-        /**
-         * 关闭队列写线程。
-         */
         @TearDown(Level.Trial)
         public void tearDown() {
             if (worker != null) {
@@ -400,9 +331,6 @@ public class SaveXmlWriterQueueBenchmark {
     private record BenchmarkSummary(long totalBytes, int documentCount, int sampleChecksum) {
     }
 
-    /**
-     * XML 事件接收器：用于复用“解析事件 -> 写出动作”的逻辑。
-     */
     private interface XmlEventSink {
         void startDocument(String version) throws XMLStreamException;
 
@@ -427,9 +355,6 @@ public class SaveXmlWriterQueueBenchmark {
         void endDocument() throws XMLStreamException;
     }
 
-    /**
-     * 直接写入 {@link XMLStreamWriter} 的事件接收器。
-     */
     private static final class DirectXmlEventSink implements XmlEventSink {
         private final XMLStreamWriter writer;
 
@@ -524,9 +449,6 @@ public class SaveXmlWriterQueueBenchmark {
         }
     }
 
-    /**
-     * 使用 SPSC 队列桥接“解析线程 -> Writer 线程”的工作器。
-     */
     private static final class QueuedCopyWorker implements AutoCloseable {
         private static final ControlCommand BEGIN_DOCUMENT = new ControlCommand(ControlType.BEGIN_DOCUMENT, 0L);
         private static final ControlCommand END_DOCUMENT = new ControlCommand(ControlType.END_DOCUMENT, 0L);
@@ -674,9 +596,6 @@ public class SaveXmlWriterQueueBenchmark {
         }
     }
 
-    /**
-     * 队列生产端事件接收器。
-     */
     private static final class QueueXmlEventSink implements XmlEventSink {
         private final QueuedCopyWorker worker;
 
@@ -747,9 +666,6 @@ public class SaveXmlWriterQueueBenchmark {
         }
     }
 
-    /**
-     * 使用可复用批量缓冲区桥接“解析线程 -> Writer 线程”的工作器。
-     */
     private static final class BatchedQueuedCopyWorker implements AutoCloseable {
         private static final byte OP_BEGIN_BATCH = 1;
         private static final byte OP_BEGIN_DOCUMENT = 2;
@@ -972,9 +888,6 @@ public class SaveXmlWriterQueueBenchmark {
         }
     }
 
-    /**
-     * 批量队列生产端事件接收器。
-     */
     private static final class BatchQueueXmlEventSink implements XmlEventSink {
         private final BatchedQueuedCopyWorker worker;
         private CommandBatch                  currentBatch;
@@ -1079,9 +992,6 @@ public class SaveXmlWriterQueueBenchmark {
         }
     }
 
-    /**
-     * 可复用的批量命令缓冲区。
-     */
     private static final class CommandBatch {
         private final byte[]   opcodes;
         private final String[] str0;
@@ -1181,9 +1091,6 @@ public class SaveXmlWriterQueueBenchmark {
         }
     }
 
-    /**
-     * 队列中的 XML 写指令。
-     */
     private interface XmlCommand {
         void apply(XMLStreamWriter writer) throws XMLStreamException;
     }

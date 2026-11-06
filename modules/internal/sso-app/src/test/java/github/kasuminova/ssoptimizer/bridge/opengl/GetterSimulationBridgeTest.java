@@ -11,13 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * getter 仿真的桥接路由验证：glIsProgram/glIsTexture/glGetTexLevelParameteri/
- * caps 常量在主录制线程上命中本地簿记，完全不触阻塞通道。
- * <p>
- * 与 {@link GetterChannelTest} 的分工：那边验证阻塞通道本身的语义（真实渲染线程），
- * 本类验证「仿真命中时不进入阻塞通道」（FakeRenderQueue 计数断言）。
- */
 class GetterSimulationBridgeTest {
 
     private FakeRenderQueue queue;
@@ -36,18 +29,15 @@ class GetterSimulationBridgeTest {
 
     @Test
     void isProgramAnswersFromBookkeepingWithoutBlockingChannel() {
-        // glCreateProgram 走资源通道取回真实 id 并登记簿记
         queue.getHandler = callable -> 42;
         final int program = GL20.glCreateProgram();
         assertEquals(42, program);
         assertEquals(1, queue.uncountedGetCallCount);
 
-        // 簿记命中：不新增任何阻塞通道调用
         assertTrue(GL20.glIsProgram(42));
         assertFalse(GL20.glIsProgram(99), "未创建的名字必须为 false");
         assertEquals(0, queue.getCallCount, "isProgram 仿真命中不得进入计数阻塞通道");
 
-        // 删除（非当前 program）后立即失效
         GL20.glDeleteProgram(42);
         assertFalse(GL20.glIsProgram(42));
         assertEquals(0, queue.getCallCount);
@@ -97,7 +87,6 @@ class GetterSimulationBridgeTest {
                 org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 0, org.lwjgl.opengl.GL11.GL_TEXTURE_HEIGHT));
         assertEquals(0, queue.getCallCount, "已簿记纹理的 level-0 尺寸查询不得阻塞");
 
-        // 未跟踪 level 回退阻塞通道
         queue.getHandler = callable -> 16;
         assertEquals(16, GL11.glGetTexLevelParameteri(
                 org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 1, org.lwjgl.opengl.GL11.GL_TEXTURE_WIDTH));

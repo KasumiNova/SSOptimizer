@@ -7,13 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-/**
- * {@link ShipMaskMeshCache} 的缓存逻辑测试（不触碰 GL）：
- * 命中不重复三角化（注入计数 Triangulator）、原地改坐标指纹失配重算、不同 Bounds 互不串扰。
- */
 class ShipMaskMeshCacheTest {
 
-    /** 计数 Triangulator：委托真实耳切实现，仅记录调用次数。 */
     private static final class CountingTriangulator implements Triangulator {
         private final Triangulator delegate = new EarClippingTriangulator();
         int calls;
@@ -25,7 +20,6 @@ class ShipMaskMeshCacheTest {
         }
     }
 
-    /** 构造 50×20 矩形轮廓的 Bounds（4 段闭合）。 */
     private static Bounds rectBounds() {
         Bounds bounds = new Bounds();
         bounds.addSegment(0, 0, 50, 0);
@@ -48,7 +42,6 @@ class ShipMaskMeshCacheTest {
         assertEquals(1, counting.calls, "缓存命中不应重复三角化");
         assertSame(first, second, "缓存命中应返回同一数组实例");
         assertNotNull(first);
-        // 矩形 → 2 个三角形 × 6 个浮点数
         assertEquals(12, first.length);
     }
 
@@ -62,14 +55,12 @@ class ShipMaskMeshCacheTest {
                 ShipMaskMeshCache.extractVertices(bounds.origSegments));
         assertEquals(1, counting.calls);
 
-        // 原地改首段坐标（set 同步更新 p1/p2），指纹应失配并触发重算
         bounds.origSegments.get(0).set(0, 0, 60, 0);
         float[] second = cache.getOrTriangulate(bounds, bounds.origSegments,
                 ShipMaskMeshCache.extractVertices(bounds.origSegments));
 
         assertEquals(2, counting.calls, "原地改坐标后指纹失配应重新三角化");
         assertNotNull(second);
-        // 旧轮廓为 50×20 矩形（面积 1000）；改后轮廓 (0,0)→(60,0)→(50,20)→(0,20) 为梯形（面积 1100）
         assertEquals(1000.0, soupArea(first), 1e-3);
         assertEquals(1100.0, soupArea(second), 1e-3);
     }
@@ -78,7 +69,6 @@ class ShipMaskMeshCacheTest {
     void separateBoundsDoNotShareCacheEntries() {
         CountingTriangulator counting = new CountingTriangulator();
         ShipMaskMeshCache cache = new ShipMaskMeshCache(counting);
-        // 几何完全相同的两个独立 Bounds 实例
         Bounds a = rectBounds();
         Bounds b = rectBounds();
 
@@ -86,7 +76,6 @@ class ShipMaskMeshCacheTest {
         float[] meshB = cache.getOrTriangulate(b, b.origSegments, ShipMaskMeshCache.extractVertices(b.origSegments));
         assertEquals(2, counting.calls, "不同 Bounds 实例必须各自三角化");
 
-        // 修改 a 不影响 b 的缓存命中
         a.origSegments.get(0).set(0, 0, 60, 0);
         cache.getOrTriangulate(a, a.origSegments, ShipMaskMeshCache.extractVertices(a.origSegments));
         assertEquals(3, counting.calls);
@@ -117,7 +106,6 @@ class ShipMaskMeshCacheTest {
                 "段数变化后指纹应不同");
     }
 
-    /** 三角形 soup 面积和。 */
     private static double soupArea(float[] soup) {
         double sum = 0;
         for (int i = 0; i + 5 < soup.length; i += 6) {

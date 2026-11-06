@@ -45,19 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
- * Janino 脚本编译缓存与并行预热协调器。
- * <p>
- * 该协调器负责两件事：
- * <ul>
- *     <li>把 {@link JavaSourceClassLoader} 生成的 class 字节码落盘缓存，后续优先从缓存读取；</li>
- *     <li>在首次脚本类加载时后台并行预编译同一 source path 下的其他脚本，降低后续串行卡顿。</li>
- * </ul>
- * <p>
- * 缓存有效性以脚本源码内容哈希（SHA-256）判定：读取时经 loader 上的
- * {@link ResourceFinder} 取回（可能被剥离注解后的）源码字节并计算哈希，
- * 与缓存文件头部存储的哈希比对。游戏的 {@code ScriptSourceFinder} 并非目录型
- * finder，基于目录 mtime 的校验对它永远失效（缓存只写不读），故统一采用内容哈希。
- * 缓存文件格式为 {@code [32B 源码哈希][class 字节码]}，目录版本 v2。
+ * 缓存以各顶层类自身源码 SHA-256 校验；批量编译结果不得共用请求类哈希，渲染分离模式使用独立缓存目录。
  */
 public final class JaninoScriptCompilerCoordinator {
     public static final String CACHE_DIR_PROPERTY       = "ssoptimizer.scriptcache.dir";
@@ -69,7 +57,6 @@ public final class JaninoScriptCompilerCoordinator {
 
     private static final Logger LOGGER = Logger.getLogger(JaninoScriptCompilerCoordinator.class);
 
-    /** 缓存文件头部源码哈希长度（SHA-256）。 */
     private static final int HASH_BYTES = 32;
 
     private static final Field ICLASS_LOADER_FIELD    = resolveField(JavaSourceClassLoader.class, "iClassLoader");
@@ -83,14 +70,6 @@ public final class JaninoScriptCompilerCoordinator {
     private JaninoScriptCompilerCoordinator() {
     }
 
-    /**
-     * 生成或复用指定脚本类的字节码缓存。
-     *
-     * @param loader    Janino 脚本类加载器
-     * @param className 脚本类名
-     * @return 该类对应的编译字节码集合
-     * @throws ClassNotFoundException 当 Janino 无法编译或找不到类时抛出
-     */
     public static Map<String, byte[]> generateBytecodes(final JavaSourceClassLoader loader,
                                                         final String className) throws ClassNotFoundException {
         final Map<String, byte[]> cached = tryLoadCachedBytecodes(loader, className);
@@ -99,31 +78,18 @@ public final class JaninoScriptCompilerCoordinator {
         }
 
         final Map<String, byte[]> generated = invokeOriginalGenerate(loader, className);
-        // 分离模式：写入缓存前先完成 GL owner 重定向（缓存目录按模式分版，见
-        // cacheDirectory），保证 warmup 与主线程编译产物同样被改写
+        // 缓存前必须完成 GL owner 重定向，确保预热与按需编译产物一致。
         final Map<String, byte[]> redirected = RenderThreadRedirector.redirectAll(generated);
         cacheGeneratedBytecodes(loader, className, redirected);
         return redirected;
     }
 
-    /**
-     * 尝试从磁盘缓存读取指定脚本类的字节码。
-     * <p>
-     * 通过 loader 上的 {@link ResourceFinder} 取回源码并计算内容哈希，
-     * 与缓存文件头部的哈希比对，一致才视为命中；不依赖目录型 source root，
-     * 因此对游戏的 {@code ScriptSourceFinder} 同样有效。
-     *
-     * @param loader    Janino 脚本类加载器
-     * @param className 脚本类名
-     * @return 命中缓存时返回字节码集合，否则返回 {@code null}
-     */
     public static Map<String, byte[]> tryLoadCachedBytecodes(final JavaSourceClassLoader loader,
                                                              final String className) {
         if (loader == null || className == null || className.isBlank() || Boolean.getBoolean(DISABLE_CACHE_PROPERTY)) {
             return null;
         }
 
-        // 优先从内存缓存取（warmup 线程编译后直接写入，免磁盘 round-trip）
         final byte[] inMemory = IN_MEMORY_CACHE.get(className);
         if (inMemory != null) {
             return Map.of(className, inMemory);
@@ -156,16 +122,6 @@ public final class JaninoScriptCompilerCoordinator {
         }
     }
 
-    /**
-     * 将 Janino 原始编译结果写入磁盘缓存。
-     * <p>
-     * 磁盘缓存以源码内容哈希为有效性凭据；若此时无法取回源码
-     * （理论上刚编译过必然可读），记录告警并只保留内存缓存。
-     *
-     * @param loader     Janino 脚本类加载器
-     * @param className  脚本类名
-     * @param bytecodes  原始编译输出
-     */
     public static void cacheGeneratedBytecodes(final JavaSourceClassLoader loader,
                                                final String className,
                                                final Map<String, byte[]> bytecodes) {
@@ -185,12 +141,6 @@ public final class JaninoScriptCompilerCoordinator {
         storeCachedBytecodes(sourceFinder, bytecodes);
     }
 
-    /**
-     * 在首次脚本类查找时并行预热脚本编译缓存。
-     *
-     * @param loader             Janino 脚本类加载器
-     * @param requestedClassName 当前正在查找的脚本类名
-     */
     public static void warmup(final JavaSourceClassLoader loader,
                               final String requestedClassName) {
         if (loader == null || Boolean.getBoolean(DISABLE_PREWARM_PROPERTY)) {
@@ -223,9 +173,6 @@ public final class JaninoScriptCompilerCoordinator {
         final Path cacheDirectory = cacheDirectory();
         final File[] sourcePath = sourceRoots.toArray(File[]::new);
         final ClassLoader parentLoader = loader.getParent();
-        // Wave 3 起预热任务跑在 VtWorkers 虚拟线程上；Semaphore 闸门保留原固定池的
-        // 并发上限语义：每个预热任务持有一个独立的 WarmupJavaSourceClassLoader 编译器
-        // 实例，无闸门时数百脚本同时编译会造成明显的堆内存尖峰
         final Semaphore gate = new Semaphore(parallelism);
 
         state.setFuture(CompletableFuture.allOf(discoveredClasses.stream()
@@ -264,7 +211,6 @@ public final class JaninoScriptCompilerCoordinator {
         IN_MEMORY_CACHE.clear();
     }
 
-    /** 闸门许可内执行单类预热；等待许可被中断时恢复中断标记并终止该任务。 */
     private static void warmupClassGated(final Semaphore gate,
                                          final ClassLoader parentLoader,
                                          final File[] sourcePath,
@@ -294,19 +240,10 @@ public final class JaninoScriptCompilerCoordinator {
             );
             generateBytecodes(worker, className);
         } catch (ClassNotFoundException e) {
-            // 单个脚本编译失败（语法错误/依赖缺失等）属预热常态：该脚本回退主线程按需编译，
-            // 记 debug 日志后继续预热其余脚本
             LOGGER.debug("[SSOptimizer] Janino warmup skipped script " + className + ": " + e.getMessage());
         }
     }
 
-    /**
-     * 读取并校验磁盘缓存文件。
-     *
-     * @param cacheFile    缓存文件路径
-     * @param expectedHash 当前源码的内容哈希
-     * @return 哈希一致时返回 class 字节码，否则返回 {@code null}
-     */
     private static byte[] loadCachedClassFile(final Path cacheFile,
                                               final byte[] expectedHash) {
         if (!Files.isRegularFile(cacheFile)) {
@@ -328,22 +265,12 @@ public final class JaninoScriptCompilerCoordinator {
         }
     }
 
-    /**
-     * 将编译产物写入内存与磁盘缓存。
-     * <p>
-     * 游戏定制版 Janino 的 {@code generateBytecodes} 会累积编译所有已排队的
-     * 编译单元并一次性返回批量结果，因此 {@code bytecodes} 中可能包含与本次
-     * 请求类无关的其他脚本类。每个条目必须以其<strong>自身顶层类</strong>的
-     * 源码内容哈希为有效性凭据，否则批量写入会用错误哈希污染全部缓存文件，
-     * 导致后续启动永远无法命中。
-     */
     private static void storeCachedBytecodes(final ResourceFinder sourceFinder,
                                              final Map<String, byte[]> bytecodes) {
         if (bytecodes == null || bytecodes.isEmpty()) {
             return;
         }
 
-        // 同一顶层类的嵌套类共享源文件，哈希只算一次；null 哈希表示源码不可读，跳过磁盘写入
         final Map<String, byte[]> hashByTopLevel = new HashMap<>();
         int stored = 0;
         for (Map.Entry<String, byte[]> entry : bytecodes.entrySet()) {
@@ -353,7 +280,6 @@ public final class JaninoScriptCompilerCoordinator {
                 continue;
             }
 
-            // 同时写入内存缓存，使主线程可直接取用而无需再走磁盘
             IN_MEMORY_CACHE.put(className, bytes);
 
             if (sourceFinder == null) {
@@ -362,7 +288,7 @@ public final class JaninoScriptCompilerCoordinator {
 
             final String topLevel = topLevelClassName(className);
             if (hashByTopLevel.containsKey(topLevel)) {
-                // 已判定过：null 表示源码不可读
+                // null 哈希也已缓存，无需重复读取源码。
             } else {
                 hashByTopLevel.put(topLevel, hashSource(sourceFinder, topLevel));
             }
@@ -389,17 +315,11 @@ public final class JaninoScriptCompilerCoordinator {
         debugLog("batch", "写入磁盘缓存 " + stored + "/" + bytecodes.size() + " 个类");
     }
 
-    /** 取类名的顶层类（嵌套类 {@code Outer$Inner} 归一到 {@code Outer}）。 */
     private static String topLevelClassName(final String className) {
         final int nested = className.indexOf('$');
         return nested < 0 ? className : className.substring(0, nested);
     }
 
-    /**
-     * 从 loader 的 {@code iClassLoader.sourceFinder} 解析出 {@link ResourceFinder}。
-     *
-     * @return 解析失败时返回 {@code null}
-     */
     private static ResourceFinder resolveSourceFinder(final JavaSourceClassLoader loader) {
         if (loader == null || ICLASS_LOADER_FIELD == null || SOURCE_FINDER_FIELD == null) {
             return null;
@@ -418,14 +338,6 @@ public final class JaninoScriptCompilerCoordinator {
         }
     }
 
-    /**
-     * 通过 {@link ResourceFinder} 取回脚本源码并计算 SHA-256。
-     * <p>
-     * 对嵌套类名（{@code Outer$Inner}）逐级回退到顶层类名查找源文件，
-     * 与 Janino 的资源命名约定（{@code pkg/Outer.java}）一致。
-     *
-     * @return 源码内容哈希；源码不可定位或不可读时返回 {@code null}
-     */
     private static byte[] hashSource(final ResourceFinder sourceFinder,
                                      final String className) {
         for (final String candidate : sourceFileCandidates(className)) {
@@ -578,8 +490,6 @@ public final class JaninoScriptCompilerCoordinator {
         }
 
         final Path modsDir = Path.of(System.getProperty("com.fs.starfarer.settings.paths.mods", "./mods"));
-        // 分离模式的缓存产物是经过 GL owner 重定向的字节码，与普通模式字节码语义不同，
-        // 必须分目录隔离，避免跨模式复用（普通模式读到改写产物会因 bridge 未安装而 ISE）
         final String versionDir = RenderThreadMode.isEnabled() ? "v2-rt" : "v2";
         return modsDir.resolve("ssoptimizer")
                       .resolve("cache")

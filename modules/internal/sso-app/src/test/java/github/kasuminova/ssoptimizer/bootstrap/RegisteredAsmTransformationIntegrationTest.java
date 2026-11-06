@@ -13,12 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/**
- * 已注册 ASM 处理器的真实字节码转换测试。
- * <p>
- * 目标：覆盖 coremod onLoad 真正会注册的处理器集合，确保“给到真实 class bytes 时至少能稳定完成一次转换”。
- * 该集合随 ASM→Mixin 迁移批次自动缩小，充当迁移哨兵（迁移后同步移除对应用例）。
- */
 class RegisteredAsmTransformationIntegrationTest {
     @TestFactory
     Stream<DynamicTest> registeredProcessorsTransformRealTargetClasses() throws Exception {
@@ -43,9 +37,6 @@ class RegisteredAsmTransformationIntegrationTest {
         return processors;
     }
 
-    /**
-     * 读取运行期 named 视图字节码（处理器的工作视图），来源见 {@link RuntimeViewFixtures}。
-     */
     private static byte[] loadClassBytes(final String internalName) {
         return RuntimeViewFixtures.readRuntimeNamedBytes(internalName);
     }

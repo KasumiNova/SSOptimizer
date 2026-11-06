@@ -2,34 +2,10 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 
 import github.kasuminova.ssoptimizer.common.render.queue.RenderFrame;
 
-/**
- * 录制侧状态命令去重：对连续相同的高频状态命令（glBindTexture/glEnable/
- * glDisable/glBlendFunc 等，见 {@link BridgeSupport#enqueueState} 的调用点）
- * 只入队一次，渲染线程不再重复执行冗余的状态设置（v36 profile：状态变换
- * 10.9% + 纹理绑定 9.5% 的主线程录制热点）。
- * <p>
- * <b>去重模型（相邻性判定）</b>：本类跟踪「上一条已入队的状态命令」的类型与
- * 参数指纹，外加其入队时刻帧命令列表的 {@link RenderFrame#commitSeq()}。
- * 新状态命令仅在「类型与参数全部相同 <b>且</b> 自上次入队以来帧命令列表
- * 没有任何插入」时被跳过。任何其他命令——包括 glCallList（显示列表在渲染
- * 线程编译/执行，内部状态改变绕过录制侧）、aux 生产者线程的并发提交、
- * 顶点流落帧、draw/矩阵/纹理上传等——都会使 commitSeq 变化，从而打断
- * 相邻性，后续状态命令照常入队。这是对旁路审计结论（见
- * docs/design/render-state-dedup.md）的落地：dedup 状态跟踪无需感知具体旁路，
- * commitSeq 判据天然覆盖一切「命令流插入 = 状态可能已变」的边界。
- * <p>
- * 线程模型：本类随 {@link RecordingContext} 按生产者线程隔离；主线程在帧
- * 边界（swap）刷新 {@link RecordingContext#dedupFrame} 并 {@link #invalidate()}
- * 重置缓存（跨帧不延续去重——GL 状态虽跨帧保持，保守起见帧间状态命令
- * 照常入队，避免任何跨帧时序依赖）。非主线程每次经
- * {@link BridgeSupport#queue()} 取当前帧做相邻性校验（低频，可接受）。
- */
+/** 仅跳过同一录制帧内与上一条完全相邻且参数相同的状态命令；实例按生产者线程隔离。 */
 final class StateDedup {
-    /** 无有效缓存（未知/已失效）标记。 */
     private static final int UNKNOWN = -1;
 
-    // 去重状态命令类型（GL11 各状态入口在 enqueueState 处引用；参数统一按
-    // 最多 4 个 int 槽位打包，float 由调用点转 Float.floatToRawIntBits）
     static final int TYPE_BIND_TEXTURE = 0;
     static final int TYPE_ENABLE = 1;
     static final int TYPE_DISABLE = 2;
@@ -64,12 +40,6 @@ final class StateDedup {
     private int lastD;
     private int lastCommitSeq;
 
-    /**
-     * 判断新状态命令是否应被跳过（与上一条去重状态命令类型/参数相同，
-     * 且期间帧命令列表无任何插入）。
-     *
-     * @param frame 当前录制帧（相邻性判据的 commitSeq 来源）
-     */
     boolean shouldSkip(RenderFrame frame, int type, int a, int b, int c, int d) {
         if (lastType != type || lastA != a || lastB != b || lastC != c || lastD != d) {
             return false;
@@ -77,7 +47,6 @@ final class StateDedup {
         return frame.commitSeq() == lastCommitSeq;
     }
 
-    /** 记录一条已入队的状态命令（调用方需在提交后调用，commitSeq 含本命令）。 */
     void record(RenderFrame frame, int type, int a, int b, int c, int d) {
         lastType = type;
         lastA = a;
@@ -87,7 +56,6 @@ final class StateDedup {
         lastCommitSeq = frame.commitSeq();
     }
 
-    /** 使缓存失效（帧边界调用；此后任何状态命令照常入队）。 */
     void invalidate() {
         lastType = UNKNOWN;
     }

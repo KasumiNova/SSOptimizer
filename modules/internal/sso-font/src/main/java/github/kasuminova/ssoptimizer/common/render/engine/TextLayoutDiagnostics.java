@@ -8,11 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
-/**
- * v2 文本渲染管线（TextLayoutEngine + TextStreamEmitter）的运行期诊断。
- * 聚合每次 render 接管的 pass 数 / 发射 quad 数 / 请求字号分布，按周期间隔写汇总日志。
- * 默认关闭（{@link #ENABLE_PROPERTY}）。
- */
 public final class TextLayoutDiagnostics {
     static final String ENABLE_PROPERTY       = "ssoptimizer.textdiagnostics.enable";
     static final String LOG_INTERVAL_PROPERTY = "ssoptimizer.textdiagnostics.logintervalmillis";
@@ -28,12 +23,10 @@ public final class TextLayoutDiagnostics {
     private TextLayoutDiagnostics() {
     }
 
-    /** 诊断总开关（{@code ssoptimizer.textdiagnostics.enable}），供调用点规避统计开销。 */
     public static boolean isEnabled() {
         return Boolean.getBoolean(ENABLE_PROPERTY);
     }
 
-    /** v2 引擎单次 render 接管的聚合记录（pass 数 / 发射 quad 数 / 请求字号）。 */
     public static void recordV2Render(final int passCount, final int quadCount, final float fontSize) {
         if (!isEnabled()) {
             return;
