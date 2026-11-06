@@ -1,205 +1,60 @@
 package github.kasuminova.ssoptimizer.common.automation;
 
+import com.fs.starfarer.title.MissionDefinition;
+import com.fs.starfarer.title.MissionWidget;
+import com.fs.starfarer.title.TitleScreenState;
 import org.apache.log4j.Logger;
-
-import java.lang.reflect.Method;
 
 public final class AutomationMissionLauncher {
     private static final Logger LOGGER = Logger.getLogger(AutomationMissionLauncher.class);
 
     private static volatile boolean launched;
     private static volatile boolean reportedMissing;
-    private static volatile boolean reportedDiagnostics;
+    private static volatile boolean failed;
 
     private AutomationMissionLauncher() {
     }
 
-    public static void tryLaunchFromTitleScreen(final Object titleScreenState) {
+    public static void tryLaunchFromTitleScreen(final TitleScreenState titleScreenState,
+                                                final MissionWidget missionWidget) {
         final AutomationConfig config = AutomationConfig.fromSystemProperties();
-        if (!config.enabled() || launched || titleScreenState == null) {
-            return;
-        }
-
-        final Object mission = selectMissionPreview(titleScreenState, config.scenario());
-        if (mission == null) {
-            if (!reportedMissing) {
-                reportedMissing = true;
-                LOGGER.warn("[SSO-Automation] mission not found on title screen: " + config.scenario());
-            }
+        if (!config.enabled() || launched || failed || titleScreenState == null || missionWidget == null) {
             return;
         }
 
         try {
-            final Method missionAccepted = titleScreenState.getClass().getMethod("missionAccepted", mission.getClass());
-            missionAccepted.invoke(titleScreenState, mission);
-            launched = true;
-            LOGGER.info("[SSO-Automation] launched mission from title screen: " + config.scenario());
-        } catch (ReflectiveOperationException e) {
-            LOGGER.warn("[SSO-Automation] failed to invoke missionAccepted for scenario=" + config.scenario(), e);
-        }
-    }
-
-    private static Object selectMissionPreview(final Object titleScreenState, final String missionId) {
-        final Object missionWidget = getMissionWidget(titleScreenState);
-        if (missionWidget == null) {
-            return null;
-        }
-        try {
-            final Method getMissionList = missionWidget.getClass().getMethod("getMissionList");
-            final Object missionList = getMissionList.invoke(missionWidget);
-            if (missionList == null) {
-                return null;
-            }
-            final Method selectMission = missionList.getClass().getMethod("selectMission", String.class);
-            selectMission.invoke(missionList, missionId);
-
-            final Method getMissionDetail = missionWidget.getClass().getMethod("getMissionDetail");
-            final Object missionDetail = getMissionDetail.invoke(missionWidget);
-            if (missionDetail == null) {
-                return null;
-            }
-            final Method getPreview = missionDetail.getClass().getMethod("getPreview");
-            final Object preview = getPreview.invoke(missionDetail);
-            if (preview != null) {
-                LOGGER.info("[SSO-Automation] selected title mission preview: " + missionId + " type=" + preview.getClass().getName());
-                return preview;
-            }
-        } catch (ReflectiveOperationException e) {
-            LOGGER.warn("[SSO-Automation] failed to select title mission: " + missionId, e);
-        }
-        return findMissionById(titleScreenState, missionId);
-    }
-
-    private static Object findMissionById(final Object titleScreenState, final String missionId) {
-        final Object missionWidget = getMissionWidget(titleScreenState);
-        if (missionWidget != null) {
-            return findMissionInObjectGraph(missionWidget, missionId, 0);
-        }
-        return null;
-    }
-
-    private static Object getMissionWidget(final Object titleScreenState) {
-        for (Class<?> type = titleScreenState.getClass(); type != null; type = type.getSuperclass()) {
-            try {
-                final var field = type.getDeclaredField("missionWidget");
-                field.setAccessible(true);
-                return field.get(titleScreenState);
-            } catch (NoSuchFieldException ignored) {
-            } catch (IllegalAccessException e) {
-                LOGGER.warn("[SSO-Automation] failed to inspect title mission widget", e);
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private static Object findMissionInObjectGraph(final Object root, final String missionId, final int depth) {
-        if (root == null || depth > 5) {
-            return null;
-        }
-        if (missionId.equals(readStringId(root))) {
-            return root;
-        }
-        logMissionDiagnostics(root, depth);
-        final Class<?> type = root.getClass();
-        if (type.getName().startsWith("java.")) {
-            return null;
-        }
-        if (root instanceof Iterable<?> iterable) {
-            for (Object item : iterable) {
-                final Object found = findMissionInObjectGraph(item, missionId, depth + 1);
-                if (found != null) {
-                    return found;
+            final MissionDefinition mission = selectMissionPreview(missionWidget, config.scenario());
+            if (mission == null) {
+                if (!reportedMissing) {
+                    reportedMissing = true;
+                    LOGGER.warn("[SSO-Automation] mission not found on title screen: " + config.scenario());
                 }
+                return;
             }
-            return null;
-        }
-        if (type.isArray()) {
-            final int length = java.lang.reflect.Array.getLength(root);
-            for (int index = 0; index < length; index++) {
-                final Object found = findMissionInObjectGraph(java.lang.reflect.Array.get(root, index), missionId, depth + 1);
-                if (found != null) {
-                    return found;
-                }
-            }
-            return null;
-        }
-        for (Class<?> current = type; current != null; current = current.getSuperclass()) {
-            for (var field : current.getDeclaredFields()) {
-                if (field.getType().isPrimitive() || field.getName().startsWith("$")) {
-                    continue;
-                }
-                try {
-                    field.setAccessible(true);
-                    final Object value = field.get(root);
-                    final Object found = findMissionInObjectGraph(value, missionId, depth + 1);
-                    if (found != null) {
-                        return found;
-                    }
-                } catch (Throwable ignored) {
-                    // 混淆 UI 对象图含不可访问或仅运行期生成的字段，遍历时跳过。
-                }
-            }
-        }
-        return null;
-    }
 
-    private static String readStringId(final Object candidate) {
-        for (String methodName : new String[]{"getId", "getID", "getMissionId"}) {
-            try {
-                final Method method = candidate.getClass().getMethod(methodName);
-                if (method.getReturnType() == String.class) {
-                    return (String) method.invoke(candidate);
-                }
-            } catch (ReflectiveOperationException ignored) {
-            }
-        }
-        for (Class<?> current = candidate.getClass(); current != null; current = current.getSuperclass()) {
-            for (var field : current.getDeclaredFields()) {
-                if (field.getType() != String.class || field.getName().startsWith("$")) {
-                    continue;
-                }
-                try {
-                    field.setAccessible(true);
-                    final String value = (String) field.get(candidate);
-                    if (value != null && !value.isBlank() && value.length() <= 128) {
-                        return value;
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-        return null;
-    }
-
-    private static void logMissionDiagnostics(final Object candidate, final int depth) {
-        if (reportedDiagnostics || depth > 4 || candidate == null) {
+            titleScreenState.missionAccepted(mission);
+        } catch (final RuntimeException e) {
+            failed = true;
+            LOGGER.error("[SSO-Automation] mission launch from title screen failed, automation stops retrying: "
+                    + config.scenario(), e);
             return;
         }
-        final String typeName = candidate.getClass().getName();
-        if (!typeName.startsWith("com.fs.starfarer.title")) {
-            return;
+        launched = true;
+        LOGGER.info("[SSO-Automation] launched mission from title screen: " + config.scenario());
+    }
+
+    private static MissionDefinition selectMissionPreview(final MissionWidget missionWidget, final String missionId) {
+        missionWidget.getMissionList().selectMission(missionId);
+        final MissionDefinition preview = missionWidget.getMissionDetail().getPreview();
+        if (preview == null || !missionId.equals(preview.getSpec().getId())) {
+            return null;
         }
-        reportedDiagnostics = true;
-        LOGGER.info("[SSO-Automation] inspected title mission graph node type=" + typeName);
-        for (Class<?> current = candidate.getClass(); current != null; current = current.getSuperclass()) {
-            for (var field : current.getDeclaredFields()) {
-                if (field.getType() != String.class || field.getName().startsWith("$")) {
-                    continue;
-                }
-                try {
-                    field.setAccessible(true);
-                    final String value = (String) field.get(candidate);
-                    LOGGER.info("[SSO-Automation] title mission string field " + current.getName() + "#" + field.getName() + "=" + value);
-                } catch (Throwable ignored) {
-                }
-            }
-        }
+        LOGGER.info("[SSO-Automation] selected title mission preview: " + missionId);
+        return preview;
     }
 
     public static void resetForTests() {
         launched = false;
         reportedMissing = false;
-        reportedDiagnostics = false;
     }
 }

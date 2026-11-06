@@ -1,10 +1,7 @@
 package github.kasuminova.ssoptimizer.common.launcher;
 
-import github.kasuminova.ssoptimizer.mapping.GameClassNames;
+import com.fs.starfarer.StarfarerLauncher;
 import org.apache.log4j.Logger;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 public final class LauncherDirectStarter {
     public static final String AUTO_START_PROPERTY            = "ssoptimizer.launcher.autostart";
@@ -33,22 +30,14 @@ public final class LauncherDirectStarter {
         final boolean sound = resolveBoolean("startSound", AUTO_START_SOUND_PROPERTY, true);
 
         try {
-            final Class<?> launcherClass = Class.forName(GameClassNames.STARFARER_LAUNCHER.replace('/', '.'));
-            final Method method = launcherClass.getDeclaredMethod("launchGame",
-                    boolean.class, boolean.class, String.class, String.class);
-            method.setAccessible(true);
-            method.invoke(null, fullscreen, sound, dimensions[0], dimensions[1]);
+            StarfarerLauncher.launchGame(fullscreen, sound, dimensions[0], dimensions[1]);
             LOGGER.info("[SSOptimizer] Auto-started game loading through direct launcher path: "
                     + dimensions[0] + 'x' + dimensions[1]
                     + ", fullscreen=" + fullscreen
                     + ", sound=" + sound);
             return true;
-        } catch (InvocationTargetException e) {
-            final Throwable cause = e.getCause() != null ? e.getCause() : e;
-            LOGGER.warn("[SSOptimizer] Direct launcher auto-start failed", cause);
-            return false;
-        } catch (ReflectiveOperationException e) {
-            LOGGER.warn("[SSOptimizer] Could not resolve launcher direct-start method", e);
+        } catch (final RuntimeException e) {
+            LOGGER.error("[SSOptimizer] Direct launcher auto-start failed, falling back to the original launcher", e);
             return false;
         }
     }

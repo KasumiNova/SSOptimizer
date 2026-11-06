@@ -1,8 +1,8 @@
 package github.kasuminova.ssoptimizer.common.render.engine;
 
 import com.fs.graphics.Sprite;
+import com.fs.graphics.util.RenderStateUtils;
 import com.fs.starfarer.loading.specs.EngineSlot;
-import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineOwnerAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineStateAccessor;
@@ -14,12 +14,10 @@ import java.awt.*;
 import java.util.List;
 
 public final class EngineRenderHelper {
-    private static final String                   RENDER_STATE_UTILS_CLASS = GameClassNames.RENDER_STATE_UTILS.replace('/', '.');
-    private static final java.lang.reflect.Method BLEND_COLORS_METHOD      = resolveBlendColorsMethod();
-    private static final float                    DEG_TO_RAD               = 0.017453292519943295769f;
-    private static final float                    TEX_PAD                  = 0.01f;
-    private static final float                    TEX_MIN                  = 0.01f;
-    private static final float                    TEX_MAX                  = 0.99f;
+    private static final float DEG_TO_RAD = 0.017453292519943295769f;
+    private static final float TEX_PAD    = 0.01f;
+    private static final float TEX_MIN    = 0.01f;
+    private static final float TEX_MAX    = 0.99f;
 
     private EngineRenderHelper() {
     }
@@ -312,29 +310,10 @@ public final class EngineRenderHelper {
         if (!engine.ssoptimizer$getColorShifter().isShifted()) {
             return baseColor;
         }
-        try {
-            return (Color) BLEND_COLORS_METHOD.invoke(null,
-                    baseColor,
-                    engine.ssoptimizer$getColorShifter().getCurrForBase(baseColor),
-                    engine.ssoptimizer$getColorShiftFraction());
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to invoke render-state color blend helper", e);
-        }
-    }
-
-    private static java.lang.reflect.Method resolveBlendColorsMethod() {
-        try {
-            final Class<?> helperClass = Class.forName(RENDER_STATE_UTILS_CLASS, false, EngineRenderHelper.class.getClassLoader());
-            final java.lang.reflect.Method method = helperClass.getDeclaredMethod(
-                    "blendColors",
-                    Color.class,
-                    Color.class,
-                    float.class);
-            method.setAccessible(true);
-            return method;
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to resolve render-state color blend helper", e);
-        }
+        return RenderStateUtils.blendColors(
+                baseColor,
+                engine.ssoptimizer$getColorShifter().getCurrForBase(baseColor),
+                engine.ssoptimizer$getColorShiftFraction());
     }
 
     private static boolean isPrimaryGlowType(Object glowType) {

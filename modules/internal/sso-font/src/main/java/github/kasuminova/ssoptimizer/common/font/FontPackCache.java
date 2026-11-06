@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.font;
 
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
+import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -20,10 +21,13 @@ public final class FontPackCache {
     public static final String DISABLE_PROPERTY   = "ssoptimizer.disable.fontcache";
     public static final String DIRECTORY_PROPERTY = "ssoptimizer.fontcache.dir";
 
-    private static final String              MAGIC          = "SSOFONT";
-    private static final int                 VERSION        = 9;
-    private static final String              FILE_EXTENSION = ".ssofont.zst";
-    private static final Map<String, Object> LOCKS          = new ConcurrentHashMap<>();
+    private static final String              MAGIC               = "SSOFONT";
+    private static final int                 VERSION             = 9;
+    private static final String              FILE_EXTENSION      = ".ssofont.zst";
+    private static final long                WARN_INTERVAL_NANOS = 60_000_000_000L;
+    private static final Logger              LOGGER              = Logger.getLogger(FontPackCache.class);
+    private static final Map<String, Object> LOCKS               = new ConcurrentHashMap<>();
+    private static final Map<String, Long>   LAST_WARNINGS       = new ConcurrentHashMap<>();
 
     private FontPackCache() {
     }
@@ -83,7 +87,9 @@ public final class FontPackCache {
                 final byte[] compressed = Files.readAllBytes(cacheFile);
                 return decode(cacheKey, spec, compressed);
             } catch (IOException | RuntimeException e) {
-                deleteQuietly(cacheFile);
+                warnThrottled("load", cacheFile.toString(),
+                        "字体缓存读取或校验失败，将删除缓存并重新生成", e);
+                delete(cacheFile);
                 return null;
             }
         }
@@ -110,7 +116,9 @@ public final class FontPackCache {
                         StandardOpenOption.TRUNCATE_EXISTING,
                         StandardOpenOption.WRITE);
             } catch (IOException | RuntimeException e) {
-                deleteQuietly(cacheFile);
+                warnThrottled("store", cacheFile.toString(),
+                        "字体缓存写入失败，将清理不完整文件", e);
+                delete(cacheFile);
                 throw e;
             }
         }
@@ -133,7 +141,9 @@ public final class FontPackCache {
     private static Path resolveOriginalFontPath(final String sourceFontPath) {
         try {
             return OriginalGameFontOverrides.resolveOriginalFontFile(sourceFontPath);
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            warnThrottled("resolve-source", String.valueOf(sourceFontPath),
+                    "原字体路径解析失败，缓存指纹按缺失处理", e);
             return null;
         }
     }
@@ -142,15 +152,18 @@ public final class FontPackCache {
         if (path == null) {
             return "missing";
         }
+        final String normalizedPath = path.toAbsolutePath().normalize().toString();
         try {
             if (!Files.isRegularFile(path)) {
-                return "missing@" + path.toAbsolutePath().normalize();
+                return "missing@" + normalizedPath;
             }
-            return path.toAbsolutePath().normalize()
+            return normalizedPath
                     + "|" + Files.size(path)
                     + "|" + Files.getLastModifiedTime(path).toMillis();
-        } catch (IOException ignored) {
-            return "unknown@" + path.toAbsolutePath().normalize();
+        } catch (IOException e) {
+            warnThrottled("fingerprint", normalizedPath,
+                    "字体文件指纹读取失败，缓存键使用 unknown 标记", e);
+            return "unknown@" + normalizedPath;
         }
     }
 
@@ -307,10 +320,32 @@ public final class FontPackCache {
         return List.copyOf(values);
     }
 
-    private static void deleteQuietly(final Path path) {
+    private static void delete(final Path path) {
         try {
             Files.deleteIfExists(path);
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            warnThrottled("delete", path.toString(),
+                    "字体缓存删除失败，后续可能反复重建", e);
         }
+    }
+
+    private static void warnThrottled(final String operation,
+                                      final String location,
+                                      final String message,
+                                      final Throwable failure) {
+        final String key = operation + '|' + location;
+        final long now = System.nanoTime();
+        final Long previous = LAST_WARNINGS.get(key);
+        if (previous != null && now - previous < WARN_INTERVAL_NANOS) {
+            return;
+        }
+        if (previous == null) {
+            if (LAST_WARNINGS.putIfAbsent(key, now) != null) {
+                return;
+            }
+        } else if (!LAST_WARNINGS.replace(key, previous, now)) {
+            return;
+        }
+        LOGGER.warn("[SSOptimizer] " + message + ": path=" + location + ", reason=" + failure, failure);
     }
 }

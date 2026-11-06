@@ -1,5 +1,7 @@
 package github.kasuminova.ssoptimizer.mixin.automation;
 
+import com.fs.starfarer.title.MissionWidget;
+import com.fs.starfarer.title.TitleScreenState;
 import github.kasuminova.ssoptimizer.common.automation.AutomationMissionLauncher;
 import github.kasuminova.ssoptimizer.common.automation.SaveLoadCycleDriver;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
@@ -16,14 +18,16 @@ public abstract class TitleScreenAutomationMixin {
     @Shadow
     private Map session;
 
+    @Shadow
+    private MissionWidget missionWidget;
+
     @Inject(method = "advance", at = @At("RETURN"))
     private void ssoptimizer$launchAutomationMission(final CallbackInfo ci) {
-        // 读档场景与 mission 场景互斥，避免将读档 scenario 名误作 mission id。
         if (SaveLoadCycleDriver.SCENARIO.equals(
                 System.getProperty(github.kasuminova.ssoptimizer.common.automation.AutomationConfig.SCENARIO_PROPERTY, ""))) {
             SaveLoadCycleDriver.tryAdvance(this.session);
             return;
         }
-        AutomationMissionLauncher.tryLaunchFromTitleScreen(this);
+        AutomationMissionLauncher.tryLaunchFromTitleScreen((TitleScreenState) (Object) this, this.missionWidget);
     }
 }

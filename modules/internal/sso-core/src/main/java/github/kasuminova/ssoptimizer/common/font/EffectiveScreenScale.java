@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.common.font;
 
 import com.fs.starfarer.api.Global;
+import org.apache.log4j.Logger;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -10,9 +11,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
-/** 解析生成高分辨率字体图集时使用的有效屏幕缩放值。 */
+/** 解析字体图集与输入法定位使用的有效屏幕缩放值。 */
 public final class EffectiveScreenScale {
     public static final  String OVERRIDE_PROPERTY         = "ssoptimizer.font.screenscale.override";
     static final         String JAVA2D_UI_SCALE_PROPERTY  = "sun.java2d.uiScale";
@@ -22,7 +25,10 @@ public final class EffectiveScreenScale {
     static final         String GAME_PREFS_SCREEN_SCALE   = "screenScale";
     private static final Object CONFIGURED_OVERRIDE_LOCK  = new Object();
     private static final Object CURRENT_SCALE_LOCK        = new Object();
-    private static final long   CURRENT_SCALE_CACHE_NANOS = 1_000_000_000L;
+    private static final long   CURRENT_SCALE_CACHE_NANOS        = 1_000_000_000L;
+    private static final long   WARN_INTERVAL_NANOS              = 60_000_000_000L;
+    private static final Logger LOGGER                           = Logger.getLogger(EffectiveScreenScale.class);
+    private static final ConcurrentHashMap<String, Long> LAST_WARNINGS = new ConcurrentHashMap<>();
 
     private static volatile Path  cachedSettingsFilePath;
     private static volatile long  cachedSettingsFileLastModifiedMillis = Long.MIN_VALUE;
@@ -81,7 +87,9 @@ public final class EffectiveScreenScale {
                 return Float.parseFloat(normalized.substring(0, normalized.length() - 1).trim());
             }
             return Float.parseFloat(normalized);
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException e) {
+            warnThrottled("parse:" + normalized,
+                    "屏幕缩放配置无法解析，按未配置处理: value=" + rawValue, e);
             return 0.0f;
         }
     }
@@ -154,7 +162,9 @@ public final class EffectiveScreenScale {
                 }
                 return 0.0f;
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            warnThrottled("settings-read:" + settingsFile,
+                    "屏幕缩放配置读取失败，按未配置处理: path=" + settingsFile, e);
             return 0.0f;
         }
 
@@ -167,7 +177,8 @@ public final class EffectiveScreenScale {
                 return 1.0f;
             }
             return normalize(Global.getSettings().getScreenScaleMult());
-        } catch (Throwable ignored) {
+        } catch (RuntimeException | LinkageError e) {
+            warnThrottled("game-scale", "游戏屏幕缩放读取失败，使用 1.0", e);
             return 1.0f;
         }
     }
@@ -197,7 +208,8 @@ public final class EffectiveScreenScale {
             final Preferences gamePrefs = root.node(GAME_PREFS_NODE);
             final String raw = gamePrefs.get(GAME_PREFS_SCREEN_SCALE, null);
             return parseScale(raw);
-        } catch (Throwable ignored) {
+        } catch (BackingStoreException | RuntimeException e) {
+            warnThrottled("game-preferences", "游戏偏好中的屏幕缩放读取失败，按未配置处理", e);
             return 0.0f;
         }
     }
@@ -251,7 +263,8 @@ public final class EffectiveScreenScale {
     private static boolean hasGameSettings() {
         try {
             return Global.getSettings() != null;
-        } catch (Throwable ignored) {
+        } catch (RuntimeException | LinkageError e) {
+            warnThrottled("game-settings", "游戏设置可用性检查失败，按尚未初始化处理", e);
             return false;
         }
     }
@@ -283,7 +296,9 @@ public final class EffectiveScreenScale {
     private static long lastModifiedMillis(final Path settingsFile) {
         try {
             return Files.getLastModifiedTime(settingsFile).toMillis();
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            warnThrottled("settings-timestamp:" + settingsFile,
+                    "屏幕缩放配置时间戳读取失败，将直接读取配置: path=" + settingsFile, e);
             return -1L;
         }
     }
@@ -304,7 +319,10 @@ public final class EffectiveScreenScale {
                 maxScale = Math.max(maxScale, transformScale(configuration.getDefaultTransform()));
             }
             return normalize(maxScale);
-        } catch (Throwable ignored) {
+        } catch (HeadlessException expected) {
+            return 1.0f;
+        } catch (RuntimeException | AWTError | LinkageError e) {
+            warnThrottled("desktop-scale", "桌面屏幕缩放探测失败，使用 1.0", e);
             return 1.0f;
         }
     }
@@ -321,5 +339,23 @@ public final class EffectiveScreenScale {
             return 1.0f;
         }
         return (float) scale;
+    }
+
+    private static void warnThrottled(final String key,
+                                      final String message,
+                                      final Throwable failure) {
+        final long now = System.nanoTime();
+        final Long previous = LAST_WARNINGS.get(key);
+        if (previous != null && now - previous < WARN_INTERVAL_NANOS) {
+            return;
+        }
+        if (previous == null) {
+            if (LAST_WARNINGS.putIfAbsent(key, now) != null) {
+                return;
+            }
+        } else if (!LAST_WARNINGS.replace(key, previous, now)) {
+            return;
+        }
+        LOGGER.warn("[SSOptimizer] " + message + ", reason=" + failure, failure);
     }
 }
