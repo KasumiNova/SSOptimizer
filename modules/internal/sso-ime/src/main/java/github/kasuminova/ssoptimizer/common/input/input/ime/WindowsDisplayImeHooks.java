@@ -17,8 +17,8 @@ public final class WindowsDisplayImeHooks {
     }
 
     public static void afterCreateKeyboard(final Object windowsDisplay) {
-        final ImeService service = ImeService.getInstance();
-        final ImeBackend backend = service.backend();
+        final ImeCoordinator coordinator = ImeCoordinator.getInstance();
+        final ImeBackend backend = coordinator.backend();
         if (!(backend instanceof WindowsImmImeBackend windowsBackend)) {
             return;
         }
@@ -29,33 +29,29 @@ public final class WindowsDisplayImeHooks {
                 return;
             }
             windowsBackend.attach(0L, hwnd);
-            final ImeCaretRect rect = service.computeCurrentCaretRect();
+            final ImeCaretRect rect = coordinator.computeCurrentCaretRect();
             if (rect != null) {
                 windowsBackend.updateSpot(rect);
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to attach Windows IME after keyboard creation: " + t.getMessage());
         }
     }
 
     public static void beforeDestroyKeyboard(final Object windowsDisplay) {
-        final ImeBackend backend = ImeService.getInstance().backend();
-        if (backend == null) {
-            return;
-        }
-
+        final ImeBackend backend = ImeCoordinator.getInstance().backend();
         try {
             backend.detach();
-        } catch (Throwable t) {
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to detach Windows IME before keyboard destroy: " + t.getMessage());
         }
     }
 
     public static void onUpdate() {
         try {
-            final ImeService service = ImeService.getInstance();
-            service.pollAndApplyCommittedText();
-        } catch (Throwable t) {
+            final ImeCoordinator coordinator = ImeCoordinator.getInstance();
+            coordinator.pollAndApplyCommittedText();
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to poll Windows IME committed text: " + t.getMessage());
         }
     }
@@ -63,18 +59,18 @@ public final class WindowsDisplayImeHooks {
     public static void onFocusChanged(final Object windowsDisplay,
                                       final boolean gotFocus) {
         try {
-            final ImeService service = ImeService.getInstance();
+            final ImeCoordinator coordinator = ImeCoordinator.getInstance();
             if (gotFocus) {
-                ensureAttached(service.backend(), service);
+                ensureAttached(coordinator.backend(), coordinator);
             }
-            service.onWindowFocusChanged(gotFocus);
-        } catch (Throwable t) {
+            coordinator.onWindowFocusChanged(gotFocus);
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to update Windows IME focus state: " + t.getMessage());
         }
     }
 
     public static void ensureAttached(final ImeBackend backend,
-                                      final ImeService service) {
+                                      final ImeCoordinator coordinator) {
         if (!(backend instanceof WindowsImmImeBackend windowsBackend) || !windowsBackend.isAvailable()) {
             return;
         }
@@ -94,11 +90,11 @@ public final class WindowsDisplayImeHooks {
             }
 
             windowsBackend.attach(0L, hwnd);
-            final ImeCaretRect rect = service != null ? service.computeCurrentCaretRect() : null;
+            final ImeCaretRect rect = coordinator != null ? coordinator.computeCurrentCaretRect() : null;
             if (rect != null) {
                 windowsBackend.updateSpot(rect);
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to resolve Windows IME window handle: " + t.getMessage());
         }
     }
@@ -124,7 +120,8 @@ public final class WindowsDisplayImeHooks {
                 if (hwnd instanceof Number number) {
                     return number.longValue();
                 }
-            } catch (IllegalAccessException ignored) {
+            } catch (IllegalAccessException e) {
+                LOGGER.debug("[SSOptimizer] Failed to read Windows display window handle.", e);
                 return 0L;
             }
         }
@@ -144,7 +141,8 @@ public final class WindowsDisplayImeHooks {
             final Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
             method.setAccessible(true);
             return method;
-        } catch (Throwable t) {
+        } catch (Exception | LinkageError t) {
+            LOGGER.debug("[SSOptimizer] Failed to resolve Windows IME method: " + className + "." + methodName, t);
             return null;
         }
     }
@@ -156,7 +154,8 @@ public final class WindowsDisplayImeHooks {
             final Field field = clazz.getDeclaredField(fieldName);
             field.setAccessible(true);
             return field;
-        } catch (Throwable t) {
+        } catch (Exception | LinkageError t) {
+            LOGGER.debug("[SSOptimizer] Failed to resolve Windows IME field: " + className + "." + fieldName, t);
             return null;
         }
     }
@@ -164,7 +163,8 @@ public final class WindowsDisplayImeHooks {
     private static Object invokeStatic(final Method method) {
         try {
             return method != null ? method.invoke(null) : null;
-        } catch (Throwable t) {
+        } catch (Exception t) {
+            LOGGER.debug("[SSOptimizer] Failed to invoke Windows display method.", t);
             return null;
         }
     }
@@ -173,7 +173,8 @@ public final class WindowsDisplayImeHooks {
                                  final Method method) {
         try {
             return target != null && method != null ? method.invoke(target) : null;
-        } catch (Throwable t) {
+        } catch (Exception t) {
+            LOGGER.debug("[SSOptimizer] Failed to invoke Windows display implementation method.", t);
             return null;
         }
     }

@@ -28,34 +28,28 @@ public final class LinuxDisplayImeHooks {
     }
 
     public static void afterCreateKeyboard(final Object linuxDisplay) {
-        final ImeService service = ImeService.getInstance();
-        final ImeBackend backend = service.backend();
-        if (backend == null) {
-            return;
-        }
+        final ImeCoordinator coordinator = ImeCoordinator.getInstance();
+        final ImeBackend backend = coordinator.backend();
 
         try {
             final long display = invokeStaticLong(LINUX_DISPLAY_GET_DISPLAY);
             final long window = invokeStaticLong(LINUX_DISPLAY_GET_WINDOW);
             backend.attach(display, window);
-            final ImeCaretRect rect = service.computeCurrentCaretRect();
+            final ImeCaretRect rect = coordinator.computeCurrentCaretRect();
             if (rect != null) {
                 backend.updateSpot(rect);
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to attach IME after keyboard creation: " + t.getMessage());
         }
     }
 
     public static void beforeDestroyKeyboard(final Object linuxDisplay) {
-        final ImeBackend backend = ImeService.getInstance().backend();
-        if (backend == null) {
-            return;
-        }
+        final ImeBackend backend = ImeCoordinator.getInstance().backend();
 
         try {
             backend.detach();
-        } catch (Throwable t) {
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to detach IME before keyboard destroy: " + t.getMessage());
         }
     }
@@ -63,8 +57,8 @@ public final class LinuxDisplayImeHooks {
     public static void onFocusChanged(final Object linuxDisplay,
                                       final boolean gotFocus) {
         try {
-            ImeService.getInstance().onWindowFocusChanged(gotFocus);
-        } catch (Throwable t) {
+            ImeCoordinator.getInstance().onWindowFocusChanged(gotFocus);
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to update IME focus state: " + t.getMessage());
         }
     }
@@ -76,12 +70,9 @@ public final class LinuxDisplayImeHooks {
             return;
         }
 
-        final ImeService service = ImeService.getInstance();
-        final ImeBackend backend = service.backend();
-        if (backend == null) {
-            return;
-        }
-        if (!service.shouldCaptureImeInput()) {
+        final ImeCoordinator coordinator = ImeCoordinator.getInstance();
+        final ImeBackend backend = coordinator.backend();
+        if (!coordinator.shouldCaptureImeInput()) {
             return;
         }
 
@@ -103,16 +94,16 @@ public final class LinuxDisplayImeHooks {
                 ImeDiagnostics.logPreeditState(eventType, backend.isComposing(), backend.currentPreeditText());
             }
 
-            final ImeCaretRect rect = service.computeCurrentCaretRect();
+            final ImeCaretRect rect = coordinator.computeCurrentCaretRect();
             if (rect != null) {
                 backend.updateSpot(rect);
             }
-            service.pollAndApplyCommittedText();
+            coordinator.pollAndApplyCommittedText();
             // 非键盘事件即使被 XIM 消费也必须交给 LWJGL 维护窗口状态。
             if (consumed && (eventType == KEY_PRESS || eventType == KEY_RELEASE)) {
                 clearEvent(linuxEvent);
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             LOGGER.debug("[SSOptimizer] Failed to process X11 IME event: " + t.getMessage());
         }
     }
@@ -122,11 +113,8 @@ public final class LinuxDisplayImeHooks {
         if (linuxEvent == null) {
             return;
         }
-        final ImeBackend backend = ImeService.getInstance().backend();
-        if (backend == null) {
-            return;
-        }
-        if (!ImeService.getInstance().shouldCaptureImeInput()) {
+        final ImeBackend backend = ImeCoordinator.getInstance().backend();
+        if (!ImeCoordinator.getInstance().shouldCaptureImeInput()) {
             return;
         }
         try {
@@ -140,7 +128,8 @@ public final class LinuxDisplayImeHooks {
             if (consumed) {
                 clearEvent(linuxEvent);
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
+            LOGGER.debug("[SSOptimizer] Failed to process raw X11 IME event.", t);
         }
     }
 
@@ -152,7 +141,8 @@ public final class LinuxDisplayImeHooks {
             final Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
             method.setAccessible(true);
             return method;
-        } catch (Throwable t) {
+        } catch (Exception | LinkageError t) {
+            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME method: " + className + "." + methodName, t);
             return null;
         }
     }
@@ -160,7 +150,8 @@ public final class LinuxDisplayImeHooks {
     private static Class<?> findClass(final String className) {
         try {
             return Class.forName(className);
-        } catch (Throwable t) {
+        } catch (Exception | LinkageError t) {
+            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME class: " + className, t);
             return null;
         }
     }
@@ -172,7 +163,8 @@ public final class LinuxDisplayImeHooks {
             final Constructor<?> constructor = clazz.getDeclaredConstructor(parameterTypes);
             constructor.setAccessible(true);
             return constructor;
-        } catch (Throwable t) {
+        } catch (Exception | LinkageError t) {
+            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME constructor: " + className, t);
             return null;
         }
     }
@@ -185,7 +177,8 @@ public final class LinuxDisplayImeHooks {
             final Field field = clazz.getDeclaredField(fieldName);
             field.setAccessible(true);
             return field.getInt(null);
-        } catch (Throwable t) {
+        } catch (Exception | LinkageError t) {
+            LOGGER.debug("[SSOptimizer] Failed to resolve LWJGL IME constant: " + className + "." + fieldName, t);
             return defaultValue;
         }
     }

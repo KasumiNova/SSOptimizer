@@ -12,17 +12,17 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ImeServiceTest {
+class ImeCoordinatorTest {
     @Test
     void selectsFocusedTextFieldAndComputesSpotFromPublicApi() {
         FakeTextField unfocused = new FakeTextField(false, 100f, 200f, 160f, 24f, "abc", 24f);
         FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
 
-        ImeService service = new ImeService(new NoopImeBackend(), () -> 1.0d, () -> 824);
-        service.register(unfocused);
-        service.register(focused);
+        ImeCoordinator coordinator = new ImeCoordinator(new NoopImeBackend(), () -> 1.0d, () -> 824);
+        coordinator.register(unfocused);
+        coordinator.register(focused);
 
-        ImeCaretRect rect = service.computeCurrentCaretRect();
+        ImeCaretRect rect = coordinator.computeCurrentCaretRect();
         assertNotNull(rect);
         assertEquals(336, rect.x());
         assertEquals(400, rect.y());
@@ -34,9 +34,9 @@ class ImeServiceTest {
         FakeTextField focused = new FakeTextField(true, 10f, 20f, 200f, 24f, "", 0f);
         FakeImeBackend backend = new FakeImeBackend(List.of("中", "文"));
 
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
-        service.register(focused);
-        service.pollAndApplyCommittedText();
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
+        coordinator.register(focused);
+        coordinator.pollAndApplyCommittedText();
 
         assertEquals("中文", focused.getText());
     }
@@ -46,11 +46,11 @@ class ImeServiceTest {
         FakeTextField focused = new FakeTextField(true, 10f, 20f, 200f, 24f, "", 0f);
         FakeImeBackend backend = new FakeImeBackend(List.of("中", "文"));
 
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
-        service.onFocusGained(focused);
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
+        coordinator.onFocusGained(focused);
         focused.setFocused(false);
 
-        service.pollAndApplyCommittedText();
+        coordinator.pollAndApplyCommittedText();
 
         assertEquals("中文", focused.getText());
     }
@@ -60,11 +60,11 @@ class ImeServiceTest {
         FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
         FakeImeBackend backend = new FakeImeBackend(List.of());
 
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
-        service.register(focused);
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
+        coordinator.register(focused);
 
         assertEquals(1, backend.focusInCount);
-        assertTrue(service.shouldCaptureImeInput());
+        assertTrue(coordinator.shouldCaptureImeInput());
         assertNotNull(backend.lastSpot);
         assertEquals(336, backend.lastSpot.x());
         assertEquals(400, backend.lastSpot.y());
@@ -76,9 +76,9 @@ class ImeServiceTest {
         FakeTextField focused = new FakeTextField(true, 10f, 20f, 200f, 24f, "abc", 0f);
         FakeImeBackend backend = new FakeImeBackend(List.of("\b", "中"));
 
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
-        service.register(focused);
-        service.pollAndApplyCommittedText();
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
+        coordinator.register(focused);
+        coordinator.pollAndApplyCommittedText();
 
         assertEquals("abc中", focused.getText());
     }
@@ -88,8 +88,8 @@ class ImeServiceTest {
         FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
         FakeImeBackend backend = new FakeImeBackend(List.of());
 
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
-        service.onFocusGained(focused);
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
+        coordinator.onFocusGained(focused);
 
         assertEquals(1, backend.focusInCount);
         assertNotNull(backend.lastSpot);
@@ -98,36 +98,36 @@ class ImeServiceTest {
         assertEquals(24, backend.lastSpot.height());
 
         focused.setFocused(false);
-        service.onFocusLost(focused);
+        coordinator.onFocusLost(focused);
         assertEquals(1, backend.focusOutCount);
     }
 
     @Test
     void windowFocusGainDoesNotActivateImeWithoutFocusedTextField() {
         FakeImeBackend backend = new FakeImeBackend(List.of());
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
 
-        service.onWindowFocusChanged(false);
-        service.onWindowFocusChanged(true);
+        coordinator.onWindowFocusChanged(false);
+        coordinator.onWindowFocusChanged(true);
 
         assertEquals(0, backend.focusInCount);
         assertEquals(1, backend.focusOutCount);
-        assertFalse(service.shouldCaptureImeInput());
+        assertFalse(coordinator.shouldCaptureImeInput());
     }
 
     @Test
     void windowFocusGainReactivatesImeOnlyWhenTextFieldRemainsFocused() {
         FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
         FakeImeBackend backend = new FakeImeBackend(List.of());
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
 
-        service.onFocusGained(focused);
-        service.onWindowFocusChanged(false);
-        service.onWindowFocusChanged(true);
+        coordinator.onFocusGained(focused);
+        coordinator.onWindowFocusChanged(false);
+        coordinator.onWindowFocusChanged(true);
 
         assertEquals(2, backend.focusInCount);
         assertEquals(1, backend.focusOutCount);
-        assertTrue(service.shouldCaptureImeInput());
+        assertTrue(coordinator.shouldCaptureImeInput());
         assertNotNull(backend.lastSpot);
     }
 
@@ -136,13 +136,13 @@ class ImeServiceTest {
         FakeTextField first = new FakeTextField(true, 100f, 200f, 160f, 24f, "a", 12f);
         FakeTextField second = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
         FakeImeBackend backend = new FakeImeBackend(List.of());
-        ImeService service = new ImeService(backend, () -> 1.0d, () -> 824);
+        ImeCoordinator coordinator = new ImeCoordinator(backend, () -> 1.0d, () -> 824);
 
-        service.onFocusGained(first);
-        service.register(second);
+        coordinator.onFocusGained(first);
+        coordinator.register(second);
         first.setFocused(false);
 
-        ImeCaretRect rect = service.computeCurrentCaretRect();
+        ImeCaretRect rect = coordinator.computeCurrentCaretRect();
 
         assertNotNull(rect);
         assertEquals(336, rect.x());
@@ -154,14 +154,14 @@ class ImeServiceTest {
     @Test
     void scalesCaretSpotByWindowScale() {
         FakeTextField focused = new FakeTextField(true, 300f, 400f, 220f, 24f, "中文", 36f);
-        ImeService service = new ImeService(new NoopImeBackend(), () -> 1.5d, () -> 824);
-        service.register(focused);
+        ImeCoordinator coordinator = new ImeCoordinator(new NoopImeBackend(), () -> 1.5d, () -> 824);
+        coordinator.register(focused);
 
-        ImeCaretRect rect = service.computeCurrentCaretRect();
+        ImeCaretRect rect = coordinator.computeCurrentCaretRect();
 
         assertNotNull(rect);
         assertEquals(504, rect.x());
-        assertEquals(824 - 636, rect.y());
+        assertEquals(188, rect.y());
         assertEquals(36, rect.height());
     }
 
@@ -171,20 +171,15 @@ class ImeServiceTest {
                 300f, 100f, 220f, 24f,
                 "中文", 36f,
                 312f, 108f, 180f, 18f);
-        ImeService service = new ImeService(new NoopImeBackend(), () -> 1.0d, () -> 900);
-        service.register(focused);
+        ImeCoordinator coordinator = new ImeCoordinator(new NoopImeBackend(), () -> 1.0d, () -> 900);
+        coordinator.register(focused);
 
-        ImeCaretRect rect = service.computeCurrentCaretRect();
+        ImeCaretRect rect = coordinator.computeCurrentCaretRect();
 
         assertNotNull(rect);
         assertEquals(348, rect.x());
         assertEquals(774, rect.y());
         assertEquals(18, rect.height());
-    }
-
-    @Test
-    void windowsBackendStubReportsUnavailable() {
-        assertFalse(new WindowsImmImeBackend().isAvailable());
     }
 
     private static final class FakeImeBackend implements ImeBackend {

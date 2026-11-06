@@ -8,19 +8,19 @@ public final class TextFieldImeHooks {
 
     public static void registerCreatedTextField(final TextFieldAPI textField) {
         if (textField != null) {
-            ImeService.getInstance().register(textField);
+            ImeCoordinator.getInstance().register(textField);
         }
     }
 
     public static void onTextFieldFocusGained(final TextFieldAPI textField) {
         if (textField != null) {
-            ImeService.getInstance().onFocusGained(textField);
+            ImeCoordinator.getInstance().onFocusGained(textField);
         }
     }
 
     public static void onTextFieldFocusLost(final TextFieldAPI textField) {
         if (textField != null) {
-            ImeService.getInstance().onFocusLost(textField);
+            ImeCoordinator.getInstance().onFocusLost(textField);
         }
     }
 }
