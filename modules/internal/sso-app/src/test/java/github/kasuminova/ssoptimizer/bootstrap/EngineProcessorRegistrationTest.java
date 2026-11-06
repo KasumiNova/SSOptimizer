@@ -21,14 +21,14 @@ class EngineProcessorRegistrationTest {
 
     @Test
     void disableSwitchSkipsSingleProcessor() {
-        String key = "ssoptimizer.disable.textureloader";
+        String key = "ssoptimizer.disable.launcherdirectstart";
         String original = System.getProperty(key);
         try {
             System.setProperty(key, "true");
 
             Map<String, AsmClassProcessor> processors = collectRegisteredProcessors();
 
-            assertFalse(processors.containsKey(GameClassNames.TEXTURE_LOADER));
+            assertFalse(processors.containsKey(GameClassNames.STARFARER_LAUNCHER));
         } finally {
             restoreProperty(key, original);
         }

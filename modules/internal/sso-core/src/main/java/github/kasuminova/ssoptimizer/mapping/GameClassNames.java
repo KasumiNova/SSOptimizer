@@ -73,6 +73,7 @@ public final class GameClassNames {
     public static final String TEXTURE_MANAGER                     = "com/fs/graphics/TextureManager";
     public static final String TEXTURE_MANAGER_DOTTED              = "com.fs.graphics.TextureManager";
     public static final String TEXTURE_LOADER                      = "com/fs/graphics/TextureLoader";
+    public static final String TEXTURE_LOADER_DOTTED               = "com.fs.graphics.TextureLoader";
     public static final String TEXTURE_OBJECT                      = "com/fs/graphics/TextureObject";
     public static final String TEXTURE_OBJECT_DOTTED               = "com.fs.graphics.TextureObject";
     public static final String SOUND                               = "sound/Sound";

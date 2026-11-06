@@ -21,7 +21,10 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
             ".ime.TooltipTextFieldFactoryMixin", "tooltiptextfieldime",
             ".ime.SettingsTextFieldFactoryMixin", "settingstextfieldime",
             ".ime.TextFieldImplementationMixin", "textfieldimplime",
-            ".render.OriginalFontResourceStreamMixin", "originalfontstream");
+            ".render.OriginalFontResourceStreamMixin", "originalfontstream",
+            ".loading.TextureLoaderMixin", "textureloader",
+            ".loading.TextureLoaderUploadMixin", "textureloader",
+            ".loading.TextureLoaderUploadDirectMixin", "textureloader");
 
     @Override
     public void onLoad(final String mixinPackage) {
@@ -53,6 +56,13 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
                 && (mixinClassName.endsWith(".render.SpriteMixin")
                 || mixinClassName.endsWith(".render.BitmapFontRendererMixin"))) {
             LOGGER.info("[SSOptimizer] 渲染线程分离模式已关闭，禁用依赖 bridge 的 Mixin: " + mixinClassName);
+            return false;
+        }
+        // 纹理上传的调用目标随渲染线程模式变化：开启时是 bridge 调用，关闭时是原始 LWJGL 调用。
+        if (mixinClassName.endsWith(".loading.TextureLoaderUploadMixin") && !RenderThreadMode.isEnabled()) {
+            return false;
+        }
+        if (mixinClassName.endsWith(".loading.TextureLoaderUploadDirectMixin") && RenderThreadMode.isEnabled()) {
             return false;
         }
         // glFinish 的调用目标随渲染线程模式变化：开启时是 bridge 调用，关闭时是原始 LWJGL 调用。

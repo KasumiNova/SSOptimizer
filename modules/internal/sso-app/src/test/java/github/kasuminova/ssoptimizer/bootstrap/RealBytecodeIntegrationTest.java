@@ -16,47 +16,6 @@ class RealBytecodeIntegrationTest {
     }
 
     @Test
-    void textureLoaderRewritesRealPixelConversionBytecode() {
-        var processor = new github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor();
-        byte[] original = loadClassBytes(github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.TARGET_CLASS);
-        assumeTrue(original != null, "TextureLoader not on classpath");
-
-        byte[] rewritten = assertDoesNotThrow(() -> processor.process(original),
-                "TextureLoader pixel processor should handle real TextureLoader bytecode");
-        assertNotNull(rewritten, "Processor should rewrite the BufferedImage pixel conversion method");
-
-        int helperCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.HELPER_OWNER,
-                "convert", "(Ljava/awt/image/BufferedImage;)Lgithub/kasuminova/ssoptimizer/common/loading/TexturePixelConversionResult;");
-        assertTrue(helperCalls > 0, "Rewritten TextureLoader should call TexturePixelConverter.convert");
-
-        int dimensionCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.DIMENSION_HELPER_OWNER,
-                "textureDimension", "(I)I");
-        assertTrue(dimensionCalls > 0, "Rewritten TextureLoader should call TextureDimensionSupport.textureDimension");
-
-        int uploadCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.UPLOAD_HELPER_OWNER,
-                "glTexImage2D", "(IIIIIIIILjava/nio/ByteBuffer;)V");
-        int subUploadCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.UPLOAD_HELPER_OWNER,
-                "glTexSubImage2D", "(IIIIIIIILjava/nio/ByteBuffer;)V");
-        assertTrue(uploadCalls > 0 || subUploadCalls > 0,
-                "Rewritten TextureLoader should route texture uploads through TextureUploadHelper");
-
-        int decodeCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.IMAGE_READ_HELPER_OWNER,
-                "decode", github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.IMAGE_READ_HELPER_DESC);
-        assertTrue(decodeCalls > 0, "Rewritten TextureLoader should call FastResourceImageDecoder.decode");
-
-        int lazyLoadCalls = countHelperCalls(rewritten,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_OWNER,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_METHOD,
-                github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor.LAZY_LOAD_HELPER_DESC);
-        assertTrue(lazyLoadCalls > 0, "Rewritten TextureLoader should call LazyTextureManager.loadTexture for path loads");
-    }
-
-    @Test
     void remappedTextureLoaderUsesSemanticallyCorrectImageDimensionSetters() {
         byte[] original = loadClassBytes("com/fs/graphics/TextureLoader");
         assumeTrue(original != null, "TextureLoader not on classpath");

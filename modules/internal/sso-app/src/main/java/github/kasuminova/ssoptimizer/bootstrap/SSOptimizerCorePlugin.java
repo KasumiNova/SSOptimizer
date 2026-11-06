@@ -17,7 +17,6 @@ import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcesso
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.CaseInsensitiveResourceFallbackProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.TextureLoaderPixelProcessor;
 import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
@@ -112,7 +111,6 @@ public final class SSOptimizerCorePlugin implements INanoCorePlugin {
 
     static void registerEngineProcessors(BiConsumer<String, AsmClassProcessor> registrator) {
         registerIf(registrator, "launcherdirectstart", GameClassNames.STARFARER_LAUNCHER, new LauncherDirectStartProcessor());
-        registerIf(registrator, "textureloader", GameClassNames.TEXTURE_LOADER, new TextureLoaderPixelProcessor());
         // LWJGL 由 RFB 系统类加载器加载，Launch 域 transformer 无法改写，必须经 SystemAsmBridge 注册。
         registerSystemIf("linuxdisplayime", GameClassNames.LINUX_DISPLAY, new LinuxDisplayImeProcessor());
         registerSystemIf("linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());

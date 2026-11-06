@@ -23,7 +23,7 @@
 | 属性 | 对应处理器 | 作用 |
 |---|---|---|
 | `ssoptimizer.disable.launcherdirectstart` | `LauncherDirectStartProcessor` | 跳过启动器直启注入（配套运行时属性见「启动器」节） |
-| `ssoptimizer.disable.textureloader` | `TextureLoaderPixelProcessor` | 跳过 TextureLoader 像素转换优化 |
+| `ssoptimizer.disable.textureloader` | `TextureLoaderMixin`、`TextureLoaderUploadMixin`、`TextureLoaderUploadDirectMixin` | 跳过 TextureLoader 像素转换、尺寸计算、路径加载、图片解码与纹理上传优化（Mixin 织入期门控，上传 Mixin 按渲染线程模式二选一） |
 | `ssoptimizer.disable.linuxdisplayime` | `LinuxDisplayImeProcessor` | 跳过 Linux 显示层 IME 注入 |
 | `ssoptimizer.disable.linuxkeyboardime` | `LinuxKeyboardImeProcessor` | 跳过 Linux 键盘 IME 注入 |
 | `ssoptimizer.disable.astdautomation` | `ASTDAutomationCombatPluginProcessor` | 跳过 ASTD 自动化战斗插件注入（配套属性见「自动化」节） |
