@@ -283,7 +283,12 @@ tasks.register<JavaExec>("jmh") {
     )
 }
 
+tasks.named<Sync>("copyJars") {
+    exclude("SSOptimizer-payload.jar")
+}
+
 tasks.register<Jar>("standalonePayload") {
+    destinationDirectory.set(layout.buildDirectory.dir("standalone"))
     archiveFileName.set("SSOptimizer-payload.jar")
     from(sourceSets.main.get().output)
     from({ configurations.runtimeClasspath.get().filter { it.extension == "jar" }.map { zipTree(it) } })
