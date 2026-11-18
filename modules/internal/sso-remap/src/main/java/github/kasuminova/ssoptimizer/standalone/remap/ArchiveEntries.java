@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.jar.Attributes;
+import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -19,9 +20,24 @@ final class ArchiveEntries {
     private ArchiveEntries() {
     }
 
+    static boolean isManifest(String name) {
+        return name.length() == JarFile.MANIFEST_NAME.length()
+                && name.chars().allMatch(c -> c < 128) && JarFile.MANIFEST_NAME.equalsIgnoreCase(name);
+    }
+
+    static ZipEntry manifestEntry(ZipFile zip) {
+        ZipEntry exact = zip.getEntry(JarFile.MANIFEST_NAME);
+        if (exact != null) return exact;
+        for (var entries = zip.entries(); entries.hasMoreElements();) {
+            ZipEntry entry = entries.nextElement();
+            if (isManifest(entry.getName())) return entry;
+        }
+        return null;
+    }
+
     static boolean isNamed(final Path path) throws IOException {
         try (ZipFile zip = new ZipFile(path.toFile())) {
-            final var entry = zip.getEntry("META-INF/MANIFEST.MF");
+            final var entry = manifestEntry(zip);
             if (entry == null) {
                 return false;
             }
@@ -36,7 +52,8 @@ final class ArchiveEntries {
         final Set<String> entries = new HashSet<>();
         final Set<String> classEntries = new HashSet<>();
         try (ZipFile zip = new ZipFile(path.toFile())) {
-            final var manifestEntry = zip.getEntry("META-INF/MANIFEST.MF");
+            boolean multi = multiRelease(zip);
+            final var manifestEntry = manifestEntry(zip);
             if (obfuscated && manifestEntry != null) {
                 try (var stream = zip.getInputStream(manifestEntry)) {
                     final Manifest manifest = new Manifest(stream);
@@ -59,6 +76,7 @@ final class ArchiveEntries {
                 if (entry.isDirectory() || !name.endsWith(".class")) {
                     continue;
                 }
+                if (!visible(name, multi) && !ModuleMetadata.isDescriptor(name)) continue;
                 final byte[] bytes;
                 try (var input = zip.getInputStream(entry)) {
                     bytes = input.readAllBytes();
@@ -97,6 +115,22 @@ final class ArchiveEntries {
             throw new IllegalArgumentException("Invalid multi-release version: " + entry);
         }
         return release;
+    }
+
+    static boolean multiRelease(ZipFile zip) throws IOException {
+        var entry = manifestEntry(zip);
+        if (entry == null) return false;
+        try (var in = zip.getInputStream(entry)) {
+            return Boolean.parseBoolean(new Manifest(in).getMainAttributes().getValue(Attributes.Name.MULTI_RELEASE));
+        }
+    }
+
+    static boolean visible(String entry, boolean multi) {
+        if (!entry.startsWith("META-INF/")) return true;
+        if (!multi || !entry.startsWith("META-INF/versions/")) return false;
+        int version = release(entry);
+        return version <= Runtime.version().feature() && entry.startsWith("META-INF/versions/" + version + "/")
+                && !className(entry).startsWith("META-INF/");
     }
 
     static String className(final String entry) {

@@ -1,6 +1,7 @@
 package ssoptimizer.standalone.mods;
 
 import java.io.IOException;
+import java.io.EOFException;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.nio.file.Files;
@@ -10,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.CRC32;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 final class ModJar {
@@ -82,10 +85,20 @@ final class ModJar {
             var iter = entries.filter(e -> !e.getName().startsWith("META-INF/") && e.getName().endsWith(".class")).iterator();
             while (iter.hasNext()) {
                 JarEntry entry = iter.next();
+                String location = jar.getName() + "!/" + entry.getRealName();
+                boolean required = entry.getName().equals(entrypoint);
                 try (var in = jar.getInputStream(entry)) {
-                    ClassModel model = ClassFile.of().parse(in.readAllBytes());
+                    byte[] bytes = in.readAllBytes();
+                    CRC32 crc = new CRC32();
+                    crc.update(bytes);
+                    if (entry.getSize() != bytes.length || entry.getCrc() != crc.getValue()) {
+                        throw new ZipException("条目内容与中央目录中的长度或 CRC 不符");
+                    }
+                    ClassModel model = ClassFile.of().parse(bytes);
+                    String actual = model.thisClass().asInternalName() + ".class";
+                    if (!actual.equals(entry.getName())) throw new IllegalArgumentException("条目内的类名为 " + actual);
                     String parent = model.superclass().map(c -> c.asInternalName()).orElse("");
-                    if (entry.getName().equals(entrypoint) && (isNanoForge(parent)
+                    if (required && (isNanoForge(parent)
                             || model.interfaces().stream().anyMatch(c -> isNanoForge(c.asInternalName())))) {
                         throw new IOException("游戏入口 " + entrypoint + " 的父类型需要 NanoForge");
                     }
@@ -93,8 +106,9 @@ final class ModJar {
                         LOG.log(System.Logger.Level.WARNING, "模组 {0} 的 {1}!/{2} 定义了加载器 {3} 的子类；请核对其加载的游戏脚本是否使用 named 归档",
                                 id, jar.getName(), entry.getName(), parent);
                     }
-                } catch (IllegalArgumentException e) {
-                    throw new IOException("无法解析模组类：" + jar.getName() + "!/" + entry.getName(), e);
+                } catch (IllegalArgumentException | ZipException | EOFException e) {
+                    LOG.log(System.Logger.Level.WARNING, "模组 {0} 的{1}条目无效，跳过该条目检查：{2}，原因：{3}",
+                            id, required ? "声明入口" : "普通类", location, e.getMessage());
                 }
             }
         }

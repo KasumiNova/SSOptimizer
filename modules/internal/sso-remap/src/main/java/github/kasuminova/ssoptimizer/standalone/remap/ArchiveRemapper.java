@@ -27,7 +27,7 @@ final class ArchiveRemapper {
     }
 
     static void remap(final Path mappingFile, final List<Source> sources, final List<Path> hierarchyPaths,
-                      final List<Path> namedPaths, final Path output, final String mappingDigest) throws IOException {
+                      final List<Path> namedPaths, final Path output, final String mappingDigest, ModClassFilter filter) throws IOException {
         final MappingProjection mapping = MappingProjection.read(mappingFile);
         final Map<String, Definition> definitions = new HashMap<>();
         final Map<Source, Set<String>> expected = new LinkedHashMap<>();
@@ -100,7 +100,7 @@ final class ArchiveRemapper {
                 .ignoreFieldDesc(false)
                 .renameInvalidLocals(true)
                 .rebuildSourceFilenames(true)
-                .removeFrames(true)
+                .removeFrames(false)
                 .fixPackageAccess(true)
                 .threads(Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors())))
                 .build();
@@ -150,8 +150,13 @@ final class ArchiveRemapper {
             final Map<String, byte[]> repaired = new TreeMap<>();
             for (var entry : transformed.get(source).entrySet()) {
                 try {
-                    repaired.put(entry.getKey(), BytecodeRepair.rewrite(entry.getValue(), hierarchy, ArchiveEntries.release(entry.getKey()), mapping));
+                    boolean mod = source.role().equals("mod");
+                    repaired.put(entry.getKey(), BytecodeRepair.rewrite(entry.getValue(), hierarchy, ArchiveEntries.release(entry.getKey()), mapping, mod));
                 } catch (RuntimeException error) {
+                    if (source.role().equals("mod")) {
+                        filter.transformedFailure(source.original(), entry.getKey(), error);
+                        continue;
+                    }
                     throw new PreparationException.Conflict("Bytecode repair failed for " + source.original() + "!" + entry.getKey()
                             + ": " + error.getMessage(), error);
                 }
@@ -160,12 +165,17 @@ final class ArchiveRemapper {
                 try {
                     repaired.put(descriptor.getKey(), ModuleMetadata.rewrite(descriptor.getValue(), originalEntries.get(source), mapping));
                 } catch (RuntimeException error) {
+                    if (source.role().equals("mod")) {
+                        filter.transformedFailure(source.original(), descriptor.getKey(), error);
+                        continue;
+                    }
                     throw new PreparationException.Conflict("Module metadata rewrite failed for " + source.original()
                             + "!" + descriptor.getKey() + ": " + error.getMessage(), error);
                 }
             }
             write(source, output.resolve(source.outputName()), repaired, mapping, mappingDigest);
         }
+        filter.checkTransformed();
     }
 
     private static void write(final Source source, final Path output, final Map<String, byte[]> classes,
@@ -173,7 +183,8 @@ final class ArchiveRemapper {
         final Set<String> written = new HashSet<>();
         try (ZipFile input = new ZipFile(source.snapshot().toFile());
              ZipOutputStream target = new ZipOutputStream(Files.newOutputStream(output))) {
-            final ZipEntry originalManifest = input.getEntry("META-INF/MANIFEST.MF");
+            boolean multi = ArchiveEntries.multiRelease(input);
+            final ZipEntry originalManifest = ArchiveEntries.manifestEntry(input);
             final Manifest manifest;
             if (originalManifest == null) {
                 manifest = new Manifest();
@@ -207,7 +218,7 @@ final class ArchiveRemapper {
             while (entries.hasMoreElements()) {
                 final ZipEntry entry = entries.nextElement();
                 String name = entry.getName();
-                if (name.endsWith(".class") || name.equals("META-INF/MANIFEST.MF")
+                if (name.endsWith(".class") && (ArchiveEntries.visible(name, multi) || ModuleMetadata.isDescriptor(name)) || ArchiveEntries.isManifest(name)
                         || ArchiveEntries.invalidSignature(name)) {
                     continue;
                 }

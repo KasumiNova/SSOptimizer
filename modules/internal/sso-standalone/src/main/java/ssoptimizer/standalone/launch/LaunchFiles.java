@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -61,13 +62,15 @@ public final class LaunchFiles {
         Path cache = instance.resolve("cache");
         PlatformFiles platform = PlatformFiles.inspect(game, home, cache);
         var inputs = new ArrayList<Path>();
+        var namedMods = new HashSet<Path>();
         var hierarchy = new ArrayList<>(libs);
         hierarchy.add(platform.lwjgl()); hierarchy.add(platform.lwjglUtil()); hierarchy.add(payload);
         for (var mod : mods) {
             if (mod.modId().equals("ssoptimizer")) continue;
-            if (mod.named()) hierarchy.add(mod.path()); else inputs.add(mod.path());
+            inputs.add(mod.path());
+            if (mod.named()) namedMods.add(mod.path());
         }
-        Map<Path,Path> outputs = ArchivePreparation.prepare(cache.resolve("named"), mapping, game.gameJars(), inputs, hierarchy);
+        Map<Path,Path> outputs = ArchivePreparation.prepare(cache.resolve("named"), mapping, game.gameJars(), inputs, hierarchy, namedMods);
         Properties plan = new Properties();
         plan.setProperty("payload", payload.toString());
         plan.setProperty("profile", game.profile());
@@ -86,7 +89,7 @@ public final class LaunchFiles {
             }
             plan.setProperty("mod.source." + preparedMods.size(), mod.path().toString());
             if (!mod.declaredPath().equals(mod.path())) plan.setProperty("mod.declared." + preparedMods.size(), mod.declaredPath().toString());
-            Path prepared = mod.named() ? mod.path() : output(outputs, mod.path());
+            Path prepared = output(outputs, mod.path());
             preparedMods.add(ssoptimizer.standalone.mods.ModArchiveLayout.prepare(cache, mod, prepared));
         }
         if (!plan.containsKey("payload.source")) throw new IOException("独立实例未启用 SSOptimizer，请在实例的模组配置中启用它。");

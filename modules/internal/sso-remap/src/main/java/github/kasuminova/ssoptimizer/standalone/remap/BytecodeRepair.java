@@ -36,6 +36,11 @@ final class BytecodeRepair {
 
     static byte[] rewrite(final byte[] original, final ClassHierarchy hierarchy, final int release,
                           final MappingProjection mapping) {
+        return rewrite(original, hierarchy, release, mapping, false);
+    }
+
+    static byte[] rewrite(final byte[] original, final ClassHierarchy hierarchy, final int release,
+                          final MappingProjection mapping, boolean preserveFrames) {
         final ClassNode node = new ClassNode();
         new ClassReader(original).accept(new ClassRemapper(node, new Remapper(Opcodes.ASM9) {
             @Override
@@ -47,7 +52,7 @@ final class BytecodeRepair {
             public String mapFieldName(final String owner, final String name, final String descriptor) {
                 return memberName(name, false);
             }
-        }), ClassReader.SKIP_FRAMES);
+        }), preserveFrames ? ClassReader.EXPAND_FRAMES : ClassReader.SKIP_FRAMES);
         if (mapping != null) {
             ClassNameCalls.rewrite(node, mapping);
         }
@@ -76,8 +81,8 @@ final class BytecodeRepair {
                 inner.innerName = inner.name.substring(slash + 1);
             }
         }
-        // 新建常量池会移除混淆器留下的不可达非法成员引用；帧仅使用完整层级重新生成。
-        final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES) {
+        // 模组可能引用未启用的可选依赖；调用点改名及字符串替换保持栈类型，沿用 TR 已映射的帧。
+        final ClassWriter writer = new ClassWriter(preserveFrames ? 0 : ClassWriter.COMPUTE_FRAMES) {
             @Override
             protected String getCommonSuperClass(final String left, final String right) {
                 return hierarchy.commonType(left, right, release);

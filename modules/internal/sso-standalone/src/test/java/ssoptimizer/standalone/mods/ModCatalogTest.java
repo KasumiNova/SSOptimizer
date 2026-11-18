@@ -126,6 +126,52 @@ class ModCatalogTest {
         assertThrows(IOException.class, this::scan);
     }
 
+    @Test void malformedOptionalClassDoesNotHideOtherEntriesOrRejectAnOrdinaryMod() throws IOException {
+        enabled("'game'");
+        Path m = mod("game", "game", "Game", "\"modPlugin\":\"g.Entry\",\"jars\":[\"mod.jar\"],");
+        var entries = new java.util.LinkedHashMap<String, byte[]>();
+        byte[] entry = klass("g.Entry", "java.lang.Object");
+        entries.put("g/Broken.class", java.util.Arrays.copyOf(entry, 12));
+        entries.put("g/Misplaced.class", klass("g.Other", "java.lang.Object"));
+        entries.put("g/Entry.class", entry);
+        Path path = jar(m.resolve("mod.jar"), "named", entries);
+        assertEquals(List.of(new ModCatalog.Archive("game", path, true)), scan());
+        entries.put("g/Entry.class", klass("g.Entry", "io.github.nanoforged.core.Base"));
+        jar(path, null, entries);
+        assertTrue(assertThrows(IOException.class, this::scan).getMessage().contains("NanoForge"));
+        entries.put("g/Entry.class", java.util.Arrays.copyOf(entry, 8));
+        jar(path, null, entries);
+        mod("game", "game", "Game", "\"modPlugin\":\"g.Entry\",\"jars\":[\"mod.jar\",\"provider.jar\"],");
+        Path provider = jar(m.resolve("provider.jar"), "named", Map.of("g/Entry.class", entry));
+        assertEquals(List.of(new ModCatalog.Archive("game", path, false),
+                new ModCatalog.Archive("game", provider, true)), scan());
+    }
+
+    @Test void classCrcFailureDoesNotRejectTheArchiveButTruncatedCentralDirectoryDoes() throws IOException {
+        enabled("'game'");
+        Path m = mod("game", "game", "Game", "\"jars\":[\"mod.jar\"],");
+        Path path = m.resolve("mod.jar");
+        byte[] bytes = klass("g.Optional", "java.lang.Object");
+        var crc = new java.util.zip.CRC32();
+        crc.update(bytes);
+        try (var out = new JarOutputStream(Files.newOutputStream(path))) {
+            JarEntry optional = new JarEntry("g/Optional.class");
+            optional.setMethod(JarEntry.STORED);
+            optional.setSize(bytes.length);
+            optional.setCrc(crc.getValue());
+            out.putNextEntry(optional);
+            out.write(bytes);
+        }
+        byte[] zip = Files.readAllBytes(path);
+        var header = java.nio.ByteBuffer.wrap(zip).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        int data = 30 + Short.toUnsignedInt(header.getShort(26)) + Short.toUnsignedInt(header.getShort(28));
+        zip[data] ^= 1;
+        Files.write(path, zip);
+        assertEquals(List.of(new ModCatalog.Archive("game", path, false)), scan());
+        Files.write(path, java.util.Arrays.copyOf(zip, data));
+        assertThrows(IOException.class, this::scan);
+    }
+
     @Test void rejectsExternalCoremodsButDoesNotActivateOrdinaryJarsOrDisabledMods() throws IOException {
         Path host = Files.createDirectory(mods.resolve("coremods"));
         jar(host.resolve("library.jar"), null, Map.of());
