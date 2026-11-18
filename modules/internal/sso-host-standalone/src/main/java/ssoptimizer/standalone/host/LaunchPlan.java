@@ -18,10 +18,12 @@ import java.util.zip.ZipFile;
 
 final class LaunchPlan {
     static final String PAYLOAD_PACKAGE = "github.kasuminova.ssoptimizer.";
+    static final String REFLECTION_PACKAGE = PAYLOAD_PACKAGE + "standalone.remap.reflect.";
     private static final List<String> SYSTEM = List.of("java.", "jdk.", "sun.", "javax.imageio.", "javax.sound.",
             "javax.swing.", "org.lwjgl.", "org.apache.log4j.", "org.apache.logging.", "org.slf4j.", "org.objectweb.asm.",
             "org.spongepowered.asm.", "net.minecraft.launchwrapper.", "com.gtnewhorizons.retrofuturabootstrap.",
-            "ssoptimizer.standalone.host.");
+            "ssoptimizer.standalone.host.", REFLECTION_PACKAGE);
+    final List<Path> game;
     final List<Path> archives;
     final List<Path> mods;
     final Set<String> enabled;
@@ -34,7 +36,7 @@ final class LaunchPlan {
 
     LaunchPlan(Properties p) throws IOException {
         var order = new LinkedHashSet<Path>();
-        List<Path> game = paths(p, "game");
+        game = paths(p, "game");
         if (game.isEmpty()) throw new IOException("启动清单缺少游戏归档");
         payload = path(p, "payload");
         List<Path> libraries = paths(p, "library");

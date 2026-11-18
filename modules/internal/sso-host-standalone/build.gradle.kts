@@ -9,6 +9,7 @@ repositories {
 }
 
 dependencies {
+    compileOnly(project(":modules:internal:sso-remap"))
     compileOnly("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12") { isTransitive = false }
     compileOnly("net.fabricmc:sponge-mixin:0.16.3+mixin.0.8.7") { isTransitive = false }
     compileOnly("io.github.llamalad7:mixinextras-common:0.5.0") { isTransitive = false }

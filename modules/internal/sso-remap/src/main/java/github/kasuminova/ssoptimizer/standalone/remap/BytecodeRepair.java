@@ -53,7 +53,11 @@ final class BytecodeRepair {
                 return memberName(name, false);
             }
         }), preserveFrames ? ClassReader.EXPAND_FRAMES : ClassReader.SKIP_FRAMES);
-        if (mapping != null) {
+        final int inputVersion = node.version & 0xffff;
+        if (mapping != null && preserveFrames) {
+            MemberNameComparisons.rewrite(node);
+            ReflectionLookups.rewrite(node);
+        } else if (mapping != null) {
             ClassNameCalls.rewrite(node, mapping);
         }
         final Set<String> fields = new HashSet<>();
@@ -81,8 +85,9 @@ final class BytecodeRepair {
                 inner.innerName = inner.name.substring(slash + 1);
             }
         }
-        // 模组可能引用未启用的可选依赖；调用点改名及字符串替换保持栈类型，沿用 TR 已映射的帧。
-        final ClassWriter writer = new ClassWriter(preserveFrames ? 0 : ClassWriter.COMPUTE_FRAMES) {
+        // 模组可能引用未启用的依赖；保留已映射的验证帧，只更新改写后的最大栈深。
+        final boolean keepFrames = preserveFrames && !(inputVersion <= Opcodes.V1_6 && (node.version & 0xffff) > inputVersion);
+        final ClassWriter writer = new ClassWriter(keepFrames ? ClassWriter.COMPUTE_MAXS : ClassWriter.COMPUTE_FRAMES) {
             @Override
             protected String getCommonSuperClass(final String left, final String right) {
                 return hierarchy.commonType(left, right, release);

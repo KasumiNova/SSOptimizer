@@ -30,7 +30,7 @@ import java.util.UUID;
 public final class ArchivePreparation {
     public static final String REMAP_ABI = "ssoptimizer-named-v1";
     private static final System.Logger LOG = System.getLogger(ArchivePreparation.class.getName());
-    private static final int FORMAT = 2;
+    private static final int FORMAT = 3;
     private static final String TOOL = "sso-remap-1;TinyRemapper-0.14.0;mapping-io-0.8.0;ASM-9.10.1";
 
     private ArchivePreparation() {

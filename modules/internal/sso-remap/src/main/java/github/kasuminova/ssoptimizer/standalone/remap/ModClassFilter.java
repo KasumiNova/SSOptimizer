@@ -163,7 +163,6 @@ final class ModClassFilter {
         Set<String> fields = new HashSet<>(), methods = new HashSet<>();
         for (var f : node.fields) checkMember(fields, f.name, f.desc, false, named);
         for (var m : node.methods) checkMember(methods, m.name, m.desc, true, named);
-        if (!named) ClassNameCalls.rewrite(node, mapping);
         // 重建方法体会访问跳转目标、常量引用和属性；只读取类头无法发现这些损坏。
         node.accept(new ClassWriter(0));
     }

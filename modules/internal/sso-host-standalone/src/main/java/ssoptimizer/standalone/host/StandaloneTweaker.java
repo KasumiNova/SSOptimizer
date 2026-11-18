@@ -2,6 +2,7 @@ package ssoptimizer.standalone.host;
 
 import com.gtnewhorizons.retrofuturabootstrap.RfbSystemClassLoader;
 import com.llamalad7.mixinextras.MixinExtrasBootstrap;
+import github.kasuminova.ssoptimizer.standalone.remap.reflect.ReflectionNames;
 import net.minecraft.launchwrapper.ITweaker;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
@@ -40,11 +41,14 @@ public final class StandaloneTweaker implements ITweaker {
             LaunchPlan plan = LaunchPlan.read();
             for (Path path : plan.archives) loader.addURL(path.toUri().toURL());
             loader.addClassLoaderExclusion("ssoptimizer.standalone.host.");
+            loader.addClassLoaderExclusion(LaunchPlan.REFLECTION_PACKAGE);
             loader.addClassLoaderExclusion("org.apache.log4j.");
             loader.addTransformerExclusion("org.spongepowered.");
             loader.addTransformerExclusion("com.llamalad7.mixinextras.");
             system.childDelegations.addAll(plan.childPackages);
             PreparedSources.install(plan, loader);
+            Path home = Path.of(System.getProperty("ssoptimizer.standalone.home"));
+            ReflectionNames.initialize(home.resolve("mappings/game-full.tiny.gz"), plan.game, loader);
             register(loader, ModCodeSourceTransformer.class.getName());
             register(loader, HYBRID);
             register(loader, GL);
