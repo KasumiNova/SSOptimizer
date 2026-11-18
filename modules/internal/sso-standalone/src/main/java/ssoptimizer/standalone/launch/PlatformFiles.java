@@ -23,8 +23,6 @@ record PlatformFiles(String id, Path gameNative, Path optimizerNative, Path lwjg
         else throw new IOException("不支持的操作系统：" + os);
         if (!arch.equals("amd64") && !arch.equals("x86_64")) throw new IOException("需要 x64 JVM，实际架构为 " + arch);
         Path nativeDir = game.core().resolve("native").resolve(platform);
-        for (String f : platform.equals("windows") ? List.of("lwjgl64.dll", "OpenAL64.dll", "jinput-raw_64.dll", "jinput-dx8_64.dll")
-                : List.of("liblwjgl64.so", "libopenal64.so", "libjinput-linux64.so")) GameInstall.required(nativeDir.resolve(f));
         Path sso = home.resolve("native").resolve(platform);
         for (String mod : List.of("render", "loading", "texcompress", "font", "ime")) {
             GameInstall.required(sso.resolve(System.mapLibraryName("ssoptimizer_" + mod)));
@@ -47,9 +45,6 @@ record PlatformFiles(String id, Path gameNative, Path optimizerNative, Path lwjg
 
     private static Path unseal(Path original, Path cache) throws IOException {
         String inputHash = GameInstall.digest(original);
-        if (!inputHash.equals("527d509f60132e5b2653c7fc0f8cf299d6f698f4a8013342bef47705dc57ed3f")) {
-            throw new IOException("LWJGL 与英文/常规汉化 RC8 原版不符：" + original + " (" + inputHash + ")");
-        }
         Path dir = cache.resolve("lwjgl-v1").resolve(inputHash);
         Path jar = dir.resolve("lwjgl.jar");
         Path hash = dir.resolve("output.sha256");
@@ -60,7 +55,8 @@ record PlatformFiles(String id, Path gameNative, Path optimizerNative, Path lwjg
         Path tmp = Files.createTempFile(dir, "lwjgl-", ".tmp");
         try (var input = new JarFile(original.toFile())) {
             Manifest manifest = input.getManifest();
-            if (manifest == null) return original;
+            if (manifest == null || !(Boolean.parseBoolean(manifest.getMainAttributes().getValue(Attributes.Name.SEALED))
+                    || manifest.getEntries().values().stream().anyMatch(a -> Boolean.parseBoolean(a.getValue(Attributes.Name.SEALED))))) return original;
             manifest.getMainAttributes().remove(Attributes.Name.SEALED);
             manifest.getEntries().values().forEach(a -> a.remove(Attributes.Name.SEALED));
             try (var out = new JarOutputStream(Files.newOutputStream(tmp), manifest)) {

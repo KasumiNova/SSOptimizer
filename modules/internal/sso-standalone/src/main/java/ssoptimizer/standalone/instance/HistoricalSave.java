@@ -49,7 +49,6 @@ public final class HistoricalSave {
             String gameRoot = registry.getProperty("@game");
             if (gameRoot == null) throw new IOException("实例缺少游戏来源：" + state);
             var game = ssoptimizer.standalone.launch.GameInstall.inspect(Path.of(gameRoot));
-            if (!game.profile().equals(confirmedSource)) throw new IOException("确认的存档来源与已校验游戏不同：" + confirmedSource + " / " + game.profile());
             SaveSymbols symbols = SaveSymbols.read(verifiedTiny);
             symbols.bindGame(game.gameJars());
             Path stage = Files.createTempDirectory(state, "import-");

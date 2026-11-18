@@ -68,17 +68,17 @@ public final class Main {
                     Path mapping = LaunchFiles.mapping(home);
                     var libs = game.libraries(home);
                     var platform = PlatformFiles.inspect(game, home, instance.resolve("cache"));
-                    System.out.printf("输入：%s%n游戏：%s%n核心：%s%nJava：%s (%s)%n运行平台：%s%n游戏 native：%s%nSSOptimizer native：%s%n实例：%s%n映射：%s%n游戏库：%d；引导库：%d%n",
+                    System.out.printf("默认资源配置：%s%n游戏：%s%n核心：%s%nJava：%s (%s)%n运行平台：%s%n游戏 native：%s%nSSOptimizer native：%s%n实例：%s%n映射：%s%n游戏库：%d；引导库：%d%n",
                             game.profile(), game.root(), game.core(), System.getProperty("java.home"), Runtime.version(), platform.id(),
                             platform.gameNative(), platform.optimizerNative(), instance, mapping, libs.size(), GameInstall.jars(home.resolve("lib")).size());
                 }
                 case "prepare" -> LaunchFiles.prepare(root, home, instance);
                 case "import-save" -> {
-                    if (!options.containsKey("--source") || !game.profile().equals(options.get("--confirm-source"))) throw new IOException("请用 --source 指定旧存档槽，并通过 --confirm-source " + game.profile() + " 确认其游戏来源。");
+                    if (!options.containsKey("--source") || !options.containsKey("--confirm-source")) throw new IOException("请用 --source 指定旧存档槽，并通过 --confirm-source " + game.profile() + " 等来源标识确认旧档的写入来源。");
                     Path source = Path.of(options.get("--source")).toRealPath();
                     Path mapping = LaunchFiles.mapping(home);
                     ssoptimizer.standalone.instance.InstanceLayout.prepare(game.root(), home, instance);
-                    Path imported = HistoricalSave.importSlot(source, instance, options.getOrDefault("--slot", source.getFileName().toString()), game.profile(), mapping);
+                    Path imported = HistoricalSave.importSlot(source, instance, options.getOrDefault("--slot", source.getFileName().toString()), options.get("--confirm-source"), mapping);
                     System.out.println("新存档：" + imported);
                 }
                 default -> throw new AssertionError(command);

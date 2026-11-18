@@ -48,7 +48,7 @@ final class GameProcess {
         var cp = new ArrayList<>(GameInstall.jars(home.resolve("lib")));
         cp.add(agent); cp.add(platform.lwjgl()); cp.add(platform.lwjglUtil());
         Path java = GameInstall.required(Path.of(System.getProperty("java.home"), "bin", platform.id().equals("windows") ? "java.exe" : "java"));
-        var args = new ArrayList<>(List.of(java.toString(), "-Xverify:all", "--enable-native-access=ALL-UNNAMED",
+        var args = new ArrayList<>(List.of(java.toString(), "--enable-native-access=ALL-UNNAMED",
                 "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8", "-Djava.system.class.loader=com.gtnewhorizons.retrofuturabootstrap.RfbSystemClassLoader",
                 "-Dlog4j2.configurationFile=classpath:standalone-log4j2.xml", "-Dmixin.env.compatLevel=JAVA_17",
                 "-Dssoptimizer.font.ttf.enable=" + !game.profile().equals("windows-zh-rc8")));

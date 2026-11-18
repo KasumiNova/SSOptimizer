@@ -89,13 +89,6 @@ public final class LaunchFiles {
         }
         if (!plan.containsKey("payload.source")) throw new IOException("独立实例未启用 SSOptimizer，请在实例的模组配置中启用它。");
         paths(plan, "mod", preparedMods);
-        var namedMods = mods.stream().filter(mod -> mod.named() && !mod.modId().equals("ssoptimizer")).map(ModCatalog.Archive::path).toList();
-        if (!namedMods.isEmpty()) {
-            var linkage = new ArrayList<Path>();
-            linkage.add(payload); linkage.addAll(preparedGame); linkage.addAll(libs); linkage.addAll(preparedMods);
-            linkage.add(platform.lwjgl()); linkage.add(platform.lwjglUtil()); linkage.addAll(GameInstall.jars(home.resolve("lib")));
-            github.kasuminova.ssoptimizer.standalone.remap.NamedCompatibility.verify(preparedGame, namedMods, linkage);
-        }
         Path dest = cache.resolve("launch.properties");
         Path tmp = Files.createTempFile(cache, "launch-", ".tmp");
         try {
