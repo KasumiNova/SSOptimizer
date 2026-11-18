@@ -1,9 +1,11 @@
 package github.kasuminova.ssoptimizer.common.font;
 
 import com.fs.graphics.font.BitmapFont;
+import com.fs.graphics.font.BitmapGlyph;
 import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import github.kasuminova.ssoptimizer.common.font.atlas.DynamicGlyphAtlas;
 import github.kasuminova.ssoptimizer.common.font.layout.GlyphProvider;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
 
 import java.util.Map;
@@ -25,18 +27,23 @@ public final class FontGlyphSources {
         if (!OriginalGameFontOverrides.isEnabled() || GlDispatch.isRenderThread()) {
             return new BitmapFontGlyphProvider(font);
         }
-        final String path = OriginalGameFontOverrides.normalize(font.getFontPath());
-        if (path.isEmpty()) {
-            return new BitmapFontGlyphProvider(font);
+        final GlyphProvider provider = providerFor(font);
+        if (provider instanceof TtfGlyphProvider ttf) {
+            if (RenderThreadMode.isEnabled()) ttf.startWarmup();
+            else sharedAtlas().beginDirectDraw();
         }
+        return provider;
+    }
 
-        final GlyphProvider cached = CACHE.get(path);
-        if (cached != null) {
-            return cached;
-        }
-        synchronized (CACHE) {
-            return CACHE.computeIfAbsent(path, key -> createProvider(font, key));
-        }
+    public static BitmapGlyph missingGlyphMetrics(final BitmapFont font, final int codePoint) {
+        if (!OriginalGameFontOverrides.isEnabled() || GlDispatch.isRenderThread()) return null;
+        return providerFor(font) instanceof TtfGlyphProvider ttf ? ttf.missingGlyphMetrics(codePoint) : null;
+    }
+
+    private static GlyphProvider providerFor(final BitmapFont font) {
+        final String path = OriginalGameFontOverrides.normalize(font.getFontPath());
+        if (path.isEmpty()) return new BitmapFontGlyphProvider(font);
+        return CACHE.computeIfAbsent(path, key -> createProvider(font, key));
     }
 
     private static GlyphProvider createProvider(final BitmapFont font, final String path) {
@@ -50,8 +57,7 @@ public final class FontGlyphSources {
         }
         try {
             final TtfGlyphProvider provider =
-                    new TtfGlyphProvider(font, spec, OriginalGameFontOverrides.currentFontDir(), sharedAtlas());
-            provider.startWarmup();
+                    new TtfGlyphProvider(font, spec, OriginalGameFontOverrides.currentFontDir(), FontGlyphSources::sharedAtlas);
             LOGGER.info("[SSOptimizer] TTF 动态图集字形源就绪: " + path + " fontFile=" + provider.fontFileName());
             return provider;
         } catch (RuntimeException e) {
@@ -68,7 +74,7 @@ public final class FontGlyphSources {
         synchronized (ATLAS_LOCK) {
             if (sharedAtlas == null) {
                 final DynamicGlyphAtlas created = new DynamicGlyphAtlas();
-                GlDispatch.registerContextRecreatedListener(created::onContextRecreated);
+                if (RenderThreadMode.isEnabled()) GlDispatch.registerContextRecreatedListener(created::onContextRecreated);
                 sharedAtlas = created;
             }
             return sharedAtlas;

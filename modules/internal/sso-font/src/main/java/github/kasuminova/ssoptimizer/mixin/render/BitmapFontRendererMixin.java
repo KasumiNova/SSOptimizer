@@ -3,6 +3,8 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import com.fs.graphics.font.BitmapFont;
 import github.kasuminova.ssoptimizer.common.font.FontGlyphSources;
 import github.kasuminova.ssoptimizer.common.font.emit.TextStreamEmitter;
+import github.kasuminova.ssoptimizer.common.font.emit.DirectTextEmitter;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.common.font.layout.GlyphProvider;
 import github.kasuminova.ssoptimizer.common.font.layout.TextLayoutEngine;
 import github.kasuminova.ssoptimizer.common.font.layout.TextPass;
@@ -61,11 +63,20 @@ public abstract class BitmapFontRendererMixin {
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, remap = false)
     private void ssoptimizer$renderWithLayoutEngine(final CallbackInfo ci) {
-        ci.cancel();
+        final boolean direct = !RenderThreadMode.isEnabled();
+        if (direct && !ssoptimizer$needsDynamicGlyphs()) {
+            return;
+        }
         if (renderText != null && font == null) {
+            ci.cancel();
             SSOPTIMIZER$LOGGER.info("trying to render non-null text with a null font");
             return;
         }
+        final GlyphProvider provider = FontGlyphSources.resolve(font);
+        if (direct && !provider.usesAtlasTexture()) {
+            return;
+        }
+        ci.cancel();
         updateCompactFontFlag();
 
         final TextRenderState state = TextRenderState.builder(renderText)
@@ -88,11 +99,12 @@ public abstract class BitmapFontRendererMixin {
                 .shear(shearMatrix != null ? shearMatrix.get(4) : 0f)
                 .visible(visible)
                 .build();
-        final GlyphProvider provider = FontGlyphSources.resolve(font);
         final List<TextPass> passes = TextLayoutEngine.layout(state, provider);
         // 图集上传必须先于文本发射提交，保证同帧采样前完成纹理更新。
         provider.flushPendingUploads();
-        if (provider.usesAtlasTexture()) {
+        if (direct) {
+            DirectTextEmitter.emit(passes, blendSrcFactor, blendDstFactor);
+        } else if (provider.usesAtlasTexture()) {
             TextStreamEmitter.emit(passes, blendSrcFactor, blendDstFactor);
         } else {
             TextStreamEmitter.emit(passes, font.getTexture(), blendSrcFactor, blendDstFactor);
@@ -104,6 +116,20 @@ public abstract class BitmapFontRendererMixin {
             }
             TextLayoutDiagnostics.recordV2Render(passes.size(), quadCount, requestedFontSize);
         }
+    }
+
+    private boolean ssoptimizer$needsDynamicGlyphs() {
+        if (font == null || renderText == null) {
+            return false;
+        }
+        for (int offset = 0; offset < renderText.length();) {
+            final int codePoint = renderText.codePointAt(offset);
+            offset += Character.charCount(codePoint);
+            if (font.getGlyph(codePoint) == null && FontGlyphSources.missingGlyphMetrics(font, codePoint) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int[] ssoptimizer$wordColorRgbs() {

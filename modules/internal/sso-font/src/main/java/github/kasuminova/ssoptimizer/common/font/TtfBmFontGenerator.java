@@ -28,6 +28,16 @@ final class TtfBmFontGenerator {
     static final String PRIMARY_ADVANCE_SAMPLE          = "HNM0UI";
     static final String FALLBACK_VISUAL_SAMPLE          = "汉界测港";
     private static final String VICTOR_PRIMARY_SAMPLE           = "ABMWQJ";
+    private static final List<Integer> UI_CHARSET = loadUiCharset();
+
+    private static List<Integer> loadUiCharset() {
+        try (InputStream in = TtfBmFontGenerator.class.getResourceAsStream("ui-charset.txt")) {
+            if (in == null) throw new IllegalStateException("缺少随模块分发的 ui-charset.txt");
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8).strip().codePoints().boxed().toList();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException("读取字体预生成字表失败", e);
+        }
+    }
     private static final int    MAX_RUNTIME_PAGE_DIMENSION      = 8192;
     private static final int    MIN_RUNTIME_PAGE_STEP           = 64;
     private static final int    MAX_RUNTIME_PAGE_STEP           = 512;
@@ -211,14 +221,6 @@ final class TtfBmFontGenerator {
                                 primaryAverageAdvance, victorManaged, antiAlias, fractionalMetrics)));
             }
         }
-        final Font dialogFont = calibrate(new Font(Font.DIALOG, Font.PLAIN, Math.round(requestedSize)), requestedSize,
-                source.lineHeight(), antiAlias, fractionalMetrics);
-        fallback.add(new LoadedFont(
-                "Dialog",
-                null,
-                harmonizeFallbackMetrics(dialogFont, source, primaryVisualHeight, primaryAverageHeight,
-                        primaryAverageAdvance, victorManaged, antiAlias, fractionalMetrics)));
-
         final List<LoadedFont> chain = new ArrayList<>(primary.size() + fallback.size());
         chain.addAll(primary);
         chain.addAll(fallback);
@@ -522,12 +524,18 @@ final class TtfBmFontGenerator {
 
     private static RasterizedGlyphs rasterizeGlyphs(final SourceBmFont source,
                                                     final FontChain fonts) {
-        final List<GlyphRaster> glyphs = new ArrayList<>(source.codePoints().size());
+        final Set<Integer> codePoints = new LinkedHashSet<>(source.codePoints());
+        codePoints.addAll(UI_CHARSET);
+        final List<GlyphRaster> glyphs = new ArrayList<>(codePoints.size());
+        int unsupported = 0;
         final LoadedFont placeholderMetadataFont = fonts.fonts().isEmpty() ? null : fonts.fonts().getFirst();
         final SourceGlyphMetric spaceMetric = source.glyphMetrics().get(SPACE_CODE_POINT);
         try (GlyphRasterizer rasterizer = createRasterizer()) {
-            for (int codePoint : source.codePoints()) {
-                final SourceGlyphMetric sourceMetric = source.glyphMetrics().get(codePoint);
+            for (int codePoint : codePoints) {
+                SourceGlyphMetric sourceMetric = source.glyphMetrics().get(codePoint);
+                if (sourceMetric != null && sourceMetric.isSpecialPlaceholder() && Character.isIdeographic(codePoint)) {
+                    sourceMetric = null;
+                }
                 final GlyphRaster preserved = preserveSourceSpecialGlyph(codePoint, sourceMetric, spaceMetric,
                         placeholderMetadataFont);
                 if (preserved != null) {
@@ -540,9 +548,16 @@ final class TtfBmFontGenerator {
                         rasterizer.rasterizeGlyph(rasterCodePoint, source.base(), fonts),
                         codePoint
                 );
+                if (rasterized == null) {
+                    unsupported++;
+                    continue;
+                }
                 glyphs.add(fonts.substituteLowercaseWithUppercase()
                         ? reconcileVictorGlyphToCell(rasterized, sourceMetric)
                         : reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric));
+            }
+            if (unsupported != 0) {
+                LOGGER.warn("[SSOptimizer] 字体链缺少 " + unsupported + " 个字符，未写入图集: " + fonts.sourceNames());
             }
             glyphs.sort(Comparator.comparingInt(GlyphRaster::sortHeight).reversed()
                                   .thenComparingInt(GlyphRaster::codePoint));
@@ -1195,15 +1210,6 @@ final class TtfBmFontGenerator {
             fonts = List.copyOf(fonts);
         }
 
-        LoadedFont selectFont(final int codePoint) {
-            for (LoadedFont loadedFont : fonts) {
-                if (loadedFont.font().canDisplay(codePoint)) {
-                    return loadedFont;
-                }
-            }
-            return fonts.getFirst();
-        }
-
         List<String> sourceNames() {
             return fonts.stream().map(LoadedFont::sourceName).toList();
         }
@@ -1343,7 +1349,7 @@ final class TtfBmFontGenerator {
     }
 
     private static final class NativeGlyphRasterizer implements GlyphRasterizer {
-        private final Map<String, Long> faceHandles = new LinkedHashMap<>();
+        private final Map<LoadedFont, Long> faceHandles = new LinkedHashMap<>();
 
         @Override
         public String backendName() {
@@ -1359,18 +1365,20 @@ final class TtfBmFontGenerator {
         public GlyphRaster rasterizeGlyph(final int codePoint,
                                           final int baseline,
                                           final FontChain chain) {
-            final LoadedFont loadedFont = chain.selectFont(codePoint);
-            if (loadedFont.sourcePath() == null) {
-                LOGGER.warn("[SSOptimizer] 字形无任何 TTF 源可显示，保留空字形: codePoint=" + codePoint);
-                return new GlyphRaster(codePoint, loadedFont.sourceName(), loadedFont.faceName(),
-                        null, 0, 0, 0, 0, 0);
+            for (final LoadedFont font : chain.fonts()) {
+                final long face = faceHandles.computeIfAbsent(font, candidate -> {
+                    final long handle = NativeFontRasterizer.createFace(candidate.sourcePath(),
+                            candidate.font().getSize2D(), chain.antiAlias());
+                    if (handle == 0L) throw new IllegalStateException("native createFace 失败: " + candidate.sourcePath());
+                    return handle;
+                });
+                if (NativeFontRasterizer.hasGlyph(face, codePoint)) return rasterize(face, codePoint, baseline, font);
             }
-            final long faceHandle = resolveFaceHandle(loadedFont, chain.antiAlias());
-            if (faceHandle == 0L) {
-                throw new IllegalStateException("[SSOptimizer] native createFace 失败，无法栅格化字体: "
-                        + loadedFont.sourcePath());
-            }
+            return null;
+        }
 
+        private GlyphRaster rasterize(final long faceHandle, final int codePoint, final int baseline,
+                                      final LoadedFont loadedFont) {
             final NativeGlyphBitmap bitmap = NativeFontRasterizer.rasterizeGlyph(faceHandle, codePoint, baseline);
             if (bitmap == null) {
                 LOGGER.warn("[SSOptimizer] 单字形 native 栅格化失败，保留空字形: codePoint=" + codePoint
@@ -1399,26 +1407,6 @@ final class TtfBmFontGenerator {
             faceHandles.clear();
         }
 
-        private long resolveFaceHandle(final LoadedFont loadedFont,
-                                       final boolean antiAlias) {
-            final Path sourcePath = loadedFont.sourcePath();
-            if (sourcePath == null || !Files.isRegularFile(sourcePath)) {
-                return 0L;
-            }
-
-            final String key = sourcePath.toAbsolutePath() + "#" + Float.floatToIntBits(loadedFont.font().getSize2D())
-                    + '#' + antiAlias + '#' + NativeFontRasterizer.describeSettings(antiAlias);
-            final Long cached = faceHandles.get(key);
-            if (cached != null) {
-                return cached;
-            }
-
-            final long handle = NativeFontRasterizer.createFace(sourcePath, loadedFont.font().getSize2D(), antiAlias);
-            if (handle != 0L) {
-                faceHandles.put(key, handle);
-            }
-            return handle;
-        }
     }
 
     private record GlyphRaster(int codePoint,

@@ -7,6 +7,7 @@ import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 public final class GlyphAtlasPage {
 
@@ -19,8 +20,14 @@ public final class GlyphAtlasPage {
     private int shelfHeight;
 
     private volatile int textureId;
+    private final BooleanSupplier directOwner;
 
     public GlyphAtlasPage(final int size) {
+        this(size, null);
+    }
+
+    GlyphAtlasPage(final int size, final BooleanSupplier directOwner) {
+        this.directOwner = directOwner;
         if (size <= 0) {
             throw new IllegalArgumentException("图集页尺寸必须为正: " + size);
         }
@@ -64,7 +71,7 @@ public final class GlyphAtlasPage {
 
     /** staging 使用 GL 行序，写入时必须垂直翻转以匹配 quad 的 UV 约定。 */
     public synchronized void writeBitmap(final int x, final int y, final NativeGlyphBitmap bitmap) {
-        if (GlDispatch.isMainRecordingThread()) {
+        if (canAllocate()) {
             ensureTexture();
         }
         final int w = bitmap.width();
@@ -81,8 +88,12 @@ public final class GlyphAtlasPage {
         dirtyRects.add(new int[]{x, y, w, h});
     }
 
+    boolean canAllocate() {
+        return directOwner == null ? GlDispatch.isMainRecordingThread() : directOwner.getAsBoolean();
+    }
+
     public synchronized void flushDirty() {
-        if (!GlDispatch.isMainRecordingThread() && !GlDispatch.isRenderThread()) {
+        if (!canAllocate() && (directOwner != null || !GlDispatch.isRenderThread())) {
             return;
         }
         ensureTexture();
@@ -104,8 +115,11 @@ public final class GlyphAtlasPage {
             bytes += (long) rect[2] * rect[3];
         }
         FontAtlasDiagnostics.recordUpload(bytes, rects.size());
-        // 命令体不得直接引用 org.lwjgl，避免 RenderThreadRedirector 将真实上传再次改写为录制调用。
-        GlDispatch.submit(() -> FontAtlasGl.uploadAlphaRects(texture, size, rects, payloads));
+        if (directOwner != null) {
+            FontAtlasGl.uploadAlphaRects(texture, size, rects, payloads);
+        } else {
+            GlDispatch.submit(() -> FontAtlasGl.uploadAlphaRects(texture, size, rects, payloads));
+        }
     }
 
     public synchronized void onContextRecreated() {
@@ -119,7 +133,12 @@ public final class GlyphAtlasPage {
         textureId = 0;
         dirtyRects.clear();
         if (texture != 0) {
-            GlDispatch.submit(() -> FontAtlasGl.deleteTexture(texture));
+            if (directOwner != null) {
+                if (!canAllocate()) throw new IllegalStateException("字体纹理释放时当前线程没有 GL 上下文");
+                FontAtlasGl.deleteTexture(texture);
+            } else {
+                GlDispatch.submit(() -> FontAtlasGl.deleteTexture(texture));
+            }
         }
     }
 
@@ -142,7 +161,8 @@ public final class GlyphAtlasPage {
         if (textureId != 0) {
             return;
         }
-        textureId = GlDispatch.allocate(this::createTexture);
+        if (directOwner != null && !canAllocate()) throw new IllegalStateException("字体纹理创建时当前线程没有 GL 上下文");
+        textureId = directOwner == null ? GlDispatch.allocate(this::createTexture) : createTexture();
         dirtyRects.clear();
         dirtyRects.add(new int[]{0, 0, size, size});
     }

@@ -82,6 +82,8 @@
     "modopt.lazylib.CombatCacheMixin",
     "modopt.sotf.DaydreamSynthesizerMixin",
     "render.BitmapFontRendererMixin",
+    "render.BitmapFontMetricsMixin",
+    "render.TextFieldGlyphCoverageMixin",
     "render.BaseTiledTerrainRenderMixin",
     "render.HyperspaceTerrainPluginMixin",
     "render.CampaignLocationMapCanvasMixin",

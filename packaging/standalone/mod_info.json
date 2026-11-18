@@ -3,7 +3,7 @@
   "name": "SSOptimizer",
   "author": "Hikari_Nova",
   "version": "${version}",
-  "description": "Starsector 渲染与性能优化",
+  "description": "Starsector 渲染与性能优化。中文后备字体使用小米 MiSans。",
   "gameVersion": "0.98a-RC8",
   "modPlugin": "github.kasuminova.ssoptimizer.SSOptimizerModPlugin",
   "jars": ["jars/payload.jar"]

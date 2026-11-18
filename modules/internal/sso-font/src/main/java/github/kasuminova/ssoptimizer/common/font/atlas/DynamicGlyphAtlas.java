@@ -1,6 +1,5 @@
 package github.kasuminova.ssoptimizer.common.font.atlas;
 
-import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import github.kasuminova.ssoptimizer.common.font.NativeGlyphBitmap;
 import org.apache.log4j.Logger;
 
@@ -26,6 +25,15 @@ public final class DynamicGlyphAtlas {
     private int totalPages;
     private volatile int textureGeneration;
     private final List<GlyphAtlasPage> recycledPages = new ArrayList<>();
+    private Thread directOwner;
+    private org.lwjgl.opengl.ContextCapabilities directContext;
+
+    public synchronized void beginDirectDraw() {
+        final var context = org.lwjgl.opengl.GLContext.getCapabilities();
+        if (directContext != null && directContext != context) onContextRecreated();
+        directContext = context;
+        directOwner = Thread.currentThread();
+    }
 
     public DynamicGlyphAtlas() {
         this(configuredPageSize(), configuredMaxPages());
@@ -52,8 +60,7 @@ public final class DynamicGlyphAtlas {
             final GlyphSlot hit = group.slots.get(codePoint);
             if (hit != null) {
                 FontAtlasDiagnostics.recordHit();
-                // 只有主录制线程可就地补建纹理，其他线程等待后续 flush，避免 allocate 切割正在录制的帧。
-                if (hit.textureId() == 0 && GlDispatch.isMainRecordingThread()) {
+                if (hit.textureId() == 0 && hit.page().canAllocate()) {
                     hit.page().ensureTexture();
                 }
                 return hit;
@@ -77,7 +84,7 @@ public final class DynamicGlyphAtlas {
         int[] cell = page == null ? null : page.allocateCell(bitmap.width(), bitmap.height());
         if (cell == null) {
             page = recycledPages.isEmpty()
-                    ? new GlyphAtlasPage(pageSize)
+                    ? new GlyphAtlasPage(pageSize, directContext == null ? null : () -> Thread.currentThread() == directOwner)
                     : recycledPages.remove(recycledPages.size() - 1);
             group.pages.add(page);
             totalPages++;

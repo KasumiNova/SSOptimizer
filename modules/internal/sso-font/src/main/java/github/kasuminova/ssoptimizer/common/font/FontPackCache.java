@@ -22,7 +22,7 @@ public final class FontPackCache {
     public static final String DIRECTORY_PROPERTY = "ssoptimizer.fontcache.dir";
 
     private static final String              MAGIC               = "SSOFONT";
-    private static final int                 VERSION             = 9;
+    private static final int                 VERSION             = 10;
     private static final String              FILE_EXTENSION      = ".ssofont.zst";
     private static final long                WARN_INTERVAL_NANOS = 60_000_000_000L;
     private static final Logger              LOGGER              = Logger.getLogger(FontPackCache.class);

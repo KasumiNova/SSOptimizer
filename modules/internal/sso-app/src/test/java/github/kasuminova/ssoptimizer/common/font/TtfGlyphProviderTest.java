@@ -258,9 +258,25 @@ class TtfGlyphProviderTest {
     }
 
     @Test
-    void missingGlyphReturnsNullForEngineFallback() {
-        final TtfGlyphProvider provider = provider(INSIGNIA_PATH, new FakeBackend());
-        assertNull(provider.glyph(500), "缺失字形返回 null，引擎回退 '?'");
+    void missingBitmapEntryRequiresCoverageFromAnActualFace() throws Exception {
+        final FakeBackend backend = new FakeBackend();
+        backend.missingOnPrimary.add(0x10FFFF);
+        final TtfGlyphProvider primaryOnly = provider(INSIGNIA_PATH, backend);
+        assertNull(primaryOnly.glyph(0x10FFFF));
+        assertNull(primaryOnly.strokedGlyph(0x10FFFF, 1f));
+
+        Files.createFile(fontDir.resolve("MiSans-Regular.ttf"));
+        backend.missingOnPrimary.add((int) '龘');
+        backend.forcedInk = new NativeGlyphBitmap(3, 2, new int[]{-1, 0, -1, -1, -1, -1}, 1, 3, 15);
+        final TtfGlyphProvider withCjk = provider(INSIGNIA_PATH, backend);
+        final BitmapGlyph measured = withCjk.missingGlyphMetrics('龘');
+        final GlyphMetrics fill = withCjk.glyph('龘');
+        final GlyphMetrics stroke = withCjk.strokedGlyph('龘', 1f);
+        assertEquals(15, measured.getXOffset() + measured.getXAdvance());
+        assertEquals(15f, fill.xAdvance() + fill.xOffset());
+        assertEquals(15f, stroke.xAdvance() + stroke.xOffset());
+        assertTrue(fill.texWidth() > 0 && stroke.texWidth() > 0);
+        assertEquals(backend.handleFor("MiSans-Regular.ttf"), backend.rasterizeFaces.getLast().longValue());
     }
 
     @Test

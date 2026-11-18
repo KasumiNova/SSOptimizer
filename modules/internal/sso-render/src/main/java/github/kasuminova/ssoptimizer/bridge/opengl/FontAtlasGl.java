@@ -3,19 +3,32 @@ package github.kasuminova.ssoptimizer.bridge.opengl;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-/**
- * 在渲染线程直接执行字形图集 GL 操作。
- * 本类必须留在 bridge 改写排除包内，避免真实 GL 调用被再次录制。
- * 所有方法仅限渲染线程调用；纹理绑定、UNPACK_ALIGNMENT 与 UNPACK_ROW_LENGTH 在返回前恢复。
- */
+/** 仅在持有 GL 上下文的线程调用。此包排除 GL 字节码改写。 */
 public final class FontAtlasGl {
 
     private FontAtlasGl() {
     }
 
+    private static int unbindUnpackBuffer() {
+        final var caps = org.lwjgl.opengl.GLContext.getCapabilities();
+        if (!caps.OpenGL21 && !caps.GL_ARB_pixel_buffer_object && !caps.GL_EXT_pixel_buffer_object) return 0;
+        final int buffer = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL21.GL_PIXEL_UNPACK_BUFFER_BINDING);
+        if (buffer != 0) bindUnpackBuffer(0);
+        return buffer;
+    }
+
+    private static void bindUnpackBuffer(final int buffer) {
+        if (org.lwjgl.opengl.GLContext.getCapabilities().OpenGL15) {
+            org.lwjgl.opengl.GL15.glBindBuffer(org.lwjgl.opengl.GL21.GL_PIXEL_UNPACK_BUFFER, buffer);
+        } else {
+            org.lwjgl.opengl.ARBBufferObject.glBindBufferARB(org.lwjgl.opengl.GL21.GL_PIXEL_UNPACK_BUFFER, buffer);
+        }
+    }
+
     public static int createAlphaTexture(final int size) {
         final int previousBinding = org.lwjgl.opengl.GL11.glGetInteger(
                 org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D);
+        final int unpackBuffer = unbindUnpackBuffer();
         try {
             final int id = org.lwjgl.opengl.GL11.glGenTextures();
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, id);
@@ -33,6 +46,7 @@ public final class FontAtlasGl {
                     (ByteBuffer) null);
             return id;
         } finally {
+            if (unpackBuffer != 0) bindUnpackBuffer(unpackBuffer);
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, previousBinding);
         }
     }
@@ -52,6 +66,9 @@ public final class FontAtlasGl {
                 org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT);
         final int previousRowLength = org.lwjgl.opengl.GL11.glGetInteger(
                 org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH);
+        final int previousSkipRows = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_ROWS);
+        final int previousSkipPixels = org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_PIXELS);
+        final int unpackBuffer = unbindUnpackBuffer();
         try {
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, textureId);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH, pageSize);
@@ -77,6 +94,9 @@ public final class FontAtlasGl {
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, previousBinding);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT, previousAlignment);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH, previousRowLength);
+            org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_ROWS, previousSkipRows);
+            org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_PIXELS, previousSkipPixels);
+            if (unpackBuffer != 0) bindUnpackBuffer(unpackBuffer);
         }
     }
 

@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public final class TtfGlyphProvider implements OutlineGlyphProvider {
     private static final Logger LOGGER = Logger.getLogger(TtfGlyphProvider.class);
@@ -29,12 +30,14 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     private final BitmapFontGlyphProvider                     metrics;
     private final OriginalGameFontOverrides.FontOverrideSpec  spec;
     private final List<Path>                                  fontFiles;
-    private final DynamicGlyphAtlas                           atlas;
+    private final Supplier<DynamicGlyphAtlas>                 atlas;
     private final TtfRasterBackend                            backend;
     private final boolean                                     victorFamily;
     private final String                                      faceKey;
 
     private final Map<Integer, long[]> faces = new HashMap<>();
+    private final Map<Integer, BitmapGlyph> missingMetrics = new HashMap<>();
+    private final java.util.concurrent.atomic.AtomicBoolean warmupStarted = new java.util.concurrent.atomic.AtomicBoolean();
 
     private final float[] calibrationFactors;
 
@@ -58,6 +61,16 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
                      final Path fontDir,
                      final DynamicGlyphAtlas atlas,
                      final TtfRasterBackend backend) {
+        this(baseFont, spec, fontDir, () -> atlas, backend);
+    }
+
+    TtfGlyphProvider(final BitmapFont baseFont, final OriginalGameFontOverrides.FontOverrideSpec spec,
+                     final Path fontDir, final Supplier<DynamicGlyphAtlas> atlas) {
+        this(baseFont, spec, fontDir, atlas, new NativeTtfRasterBackend());
+    }
+
+    private TtfGlyphProvider(final BitmapFont baseFont, final OriginalGameFontOverrides.FontOverrideSpec spec,
+                             final Path fontDir, final Supplier<DynamicGlyphAtlas> atlas, final TtfRasterBackend backend) {
         this.baseFont = baseFont;
         this.metrics = new BitmapFontGlyphProvider(baseFont);
         this.spec = spec;
@@ -89,7 +102,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
 
     @Override
     public GlyphMetrics glyph(final int codePoint) {
-        final GlyphMetrics base = metrics.glyph(codePoint);
+        final GlyphMetrics base = baseMetrics(codePoint);
         if (base == null) {
             return null;
         }
@@ -112,7 +125,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
 
     @Override
     public GlyphMetrics strokedGlyph(final int codePoint, final float strokeWidthLogicalPx) {
-        final GlyphMetrics base = metrics.glyph(codePoint);
+        final GlyphMetrics base = baseMetrics(codePoint);
         if (base == null || (base.width() <= 1 && base.height() <= 1)) {
             return null;
         }
@@ -123,6 +136,41 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
                 ? TtfBmFontGenerator.substituteVictorLowercaseCodePoint(codePoint)
                 : codePoint;
         return cachedSlotMetrics(rasterCodePoint, base, strokeBucketMillis);
+    }
+
+    private GlyphMetrics baseMetrics(final int codePoint) {
+        final GlyphMetrics existing = metrics.glyph(codePoint);
+        if (existing != null && !(Character.isIdeographic(codePoint)
+                && TtfBmFontGenerator.shouldPreserveSourceSpecialGlyph((int) existing.width(), (int) existing.height()))) return existing;
+        final BitmapGlyph glyph = missingGlyphMetrics(codePoint);
+        return glyph == null ? null : new GlyphMetrics(glyph.getXOffset(), glyph.getXAdvance(), glyph.getBearingY(),
+                glyph.getWidth(), glyph.getHeight(), 0, 0, 0, 0, 0);
+    }
+
+    BitmapGlyph missingGlyphMetrics(final int codePoint) {
+        if (!Character.isValidCodePoint(codePoint) || Character.isISOControl(codePoint)
+                || (codePoint >= Character.MIN_SURROGATE && codePoint <= Character.MAX_SURROGATE)) return null;
+        synchronized (faces) {
+            if (missingMetrics.containsKey(codePoint)) return missingMetrics.get(codePoint);
+            final int cp = victorFamily ? TtfBmFontGenerator.substituteVictorLowercaseCodePoint(codePoint) : codePoint;
+            final long face = faceForGlyphLocked(faceChainForBucketLocked(1000), 1000, cp);
+            BitmapGlyph glyph = null;
+            if (face != 0L) {
+                final NativeGlyphBitmap ink = backend.rasterize(face, cp, baseFont.getBase(), 0f);
+                if (ink != null) {
+                    glyph = new BitmapGlyph();
+                    glyph.setGlyphId(codePoint);
+                    glyph.setXOffset(ink.xOffset());
+                    glyph.setXAdvance(TtfBmFontGenerator.encodedXAdvanceForRuntimeLayout(ink.xAdvance(), ink.xOffset()));
+                    glyph.setBearingY(ink.yOffset());
+                    glyph.setWidth(ink.width());
+                    glyph.setHeight(ink.height());
+                }
+            }
+            if (missingMetrics.size() >= SLOT_CACHE_MAX) missingMetrics.clear();
+            missingMetrics.put(codePoint, glyph);
+            return glyph;
+        }
     }
 
     @Override
@@ -148,7 +196,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
 
     @Override
     public void flushPendingUploads() {
-        atlas.flushDirty();
+        atlas.get().flushDirty();
     }
 
     @Override
@@ -182,6 +230,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     }
 
     public void startWarmup() {
+        if (warmupStarted.get() || !warmupStarted.compareAndSet(false, true)) return;
         Thread.ofVirtual()
               .name("SSOptimizer-FontWarmup-" + faceKey.substring(faceKey.lastIndexOf('/') + 1))
               .start(this::warmupCommonGlyphs);
@@ -279,7 +328,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
                 continue;
             }
             final NativeGlyphBitmap composed = composeToFontBox(bitmap, base, 0, bucketMillis / 1000.0f);
-            final GlyphSlot slot = atlas.request(faceKey, bucketMillis, 0, rasterCodePoints[i], baseline,
+            final GlyphSlot slot = atlas.get().request(faceKey, bucketMillis, 0, rasterCodePoints[i], baseline,
                     (cp, bl, stroke) -> composed);
             if (slot != null) {
                 stored++;
@@ -291,7 +340,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     private GlyphMetrics cachedSlotMetrics(final int rasterCodePoint,
                                            final GlyphMetrics base,
                                            final int strokeBucketMillis) {
-        final int generation = atlas.textureGeneration();
+        final int generation = atlas.get().textureGeneration();
         if (generation != slotCacheGeneration) {
             slotCache.clear();
             slotCacheGeneration = generation;
@@ -323,7 +372,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
         final float bucketScale = currentBucketScale();
         synchronized (faces) {
             final long[] chain = faceChainForBucketLocked(currentBucketMillis);
-            return atlas.request(faceKey, currentBucketMillis, strokeBucketMillis, rasterCodePoint, baseline,
+            return atlas.get().request(faceKey, currentBucketMillis, strokeBucketMillis, rasterCodePoint, baseline,
                     (cp, bl, stroke) -> {
                         final long face = faceForGlyphLocked(chain, currentBucketMillis, cp);
                         if (face == 0L) {

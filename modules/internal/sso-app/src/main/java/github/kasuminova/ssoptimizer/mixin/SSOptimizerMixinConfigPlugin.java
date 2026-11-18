@@ -62,10 +62,8 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
                 + ShipEngineRenderToggle.ENABLE_PROPERTY + "=false");
             return false;
         }
-        // 渲染线程模式关闭时 bridge 不会安装，因此必须禁用依赖顶点流或纹理上传通道的 Mixin。
         if (!RenderThreadMode.isEnabled()
-                && (mixinClassName.endsWith(".render.SpriteMixin")
-                || mixinClassName.endsWith(".render.BitmapFontRendererMixin"))) {
+                && mixinClassName.endsWith(".render.SpriteMixin")) {
             LOGGER.info("[SSOptimizer] 渲染线程分离模式已关闭，禁用依赖 bridge 的 Mixin: " + mixinClassName);
             return false;
         }

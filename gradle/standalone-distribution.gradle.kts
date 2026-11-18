@@ -93,7 +93,7 @@ val stageTasks = listOf("linux", "windows").associateWith { platform ->
         from(payload) { rename { "payload.jar" } }; from(agent) { rename { "agent.jar" } }
         from(listOf(host, remap)) { into("lib") }; from(mapOut) { into("mappings") }
         from(lockFile); from(sources.resolve("mod_info.json")) { into("mod"); expand("version" to versionId) }
-        from(rootProject.file("game-fonts/ttf")) { into("mod/fonts"); include("*.ttf") }
+        from(rootProject.file("game-fonts/ttf")) { into("mod/fonts"); include("*.ttf", "MiSans-LICENSE.txt") }
         if (windows) { dependsOn(prepareJdk); from(jdkOut) { into("runtime") } }
         else { from(sources.resolve("launch.sh")) { filePermissions { unix("rwxr-xr-x") } } }
         for ((domain, config) in locked) from(config) { into(domain) }

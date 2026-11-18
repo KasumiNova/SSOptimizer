@@ -138,8 +138,10 @@ public final class TextLayoutEngine {
             int prev = -1;
             int currentColor = baseColor;
 
-            for (int i = 0; i < text.length(); i++) {
-                final char c = text.charAt(i);
+            for (int next = 0; next < text.length(); ) {
+                final int i = next;
+                final int c = text.codePointAt(i);
+                next += Character.charCount(c);
                 if (c == '\n') {
                     // 原版怪癖：空行（penX==0）且前驱也是 '\n' 时，18/15 号字固定回退 10px
                     if (penX == 0f && s.fontSize() == 18f && prev == 10) {
@@ -150,7 +152,7 @@ public final class TextLayoutEngine {
                         lineY -= scale * g.lineHeight();
                     }
                     penX = 0f;
-                    if (coloring && isSelectionEnd(s, i)) {
+                    if (coloring && isSelectionEnd(s, next - 1)) {
                         currentColor = textColor;
                     }
                     prev = 10;
@@ -162,7 +164,7 @@ public final class TextLayoutEngine {
                     gm = g.glyph(FALLBACK_GLYPH);
                     if (gm == null) {
                         // 原版行为：连 '?' 都没有时跳过该字符，不推进 penX、不更新前驱
-                        if (coloring && isSelectionEnd(s, i)) {
+                        if (coloring && isSelectionEnd(s, next - 1)) {
                             currentColor = textColor;
                         }
                         continue;
@@ -188,7 +190,7 @@ public final class TextLayoutEngine {
 
                 penX += scale * gm.xAdvance();
                 prev = c;
-                if (coloring && isSelectionEnd(s, i)) {
+                if (coloring && isSelectionEnd(s, next - 1)) {
                     currentColor = textColor;
                 }
             }
