@@ -156,6 +156,20 @@ function Delete-Version([string]$root, $info) {
     foreach ($d in @($dirs.Keys | Sort-Object Length -Descending)) { Remove-Empty $d }
     [IO.File]::Delete((Join-Path $root 'release.manifest')); [IO.File]::Delete((Join-Path $root 'release.sig')); Remove-Empty $root
 }
+function Assert-JdkLaunch([string]$dir) {
+    $java = Join-Path $dir 'runtime/bin/java.exe'
+    try {
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = $java; $start.Arguments = '--version'; $start.UseShellExecute = $false
+        $process = [Diagnostics.Process]::Start($start)
+        try {
+            if (!$process.WaitForExit(30000)) { $process.Kill(); $process.WaitForExit(); throw 'java.exe 在 30 秒内未返回' }
+            if ($process.ExitCode -ne 0) { throw "java.exe 退出码：$($process.ExitCode)" }
+        } finally { $process.Dispose() }
+    } catch {
+        throw "固定 JDK 在此路径启动失败：$java。请将游戏安装到当前用户可写的较短路径（例如 D:\Games\Starsector），再双击 Install.cmd。原有实例与当前版本保留。原因：$_"
+    }
+}
 function Install-Version([string]$source, [string]$root, [bool]$fresh) {
     $info = Verify-Version $source
     if ($fresh -and (File-Hash $PSCommandPath) -cne $info.Files['tools/Manage.ps1']) { throw '初次安装入口与已签名清单不符。' }
@@ -164,10 +178,17 @@ function Install-Version([string]$source, [string]$root, [bool]$fresh) {
     if ([IO.Directory]::Exists($dest)) {
         $old = Verify-Version $dest $info.Id
         if ([Convert]::ToBase64String($old.Manifest) -cne [Convert]::ToBase64String($info.Manifest)) { throw "版本号 $($info.Id) 已由不同的签名内容使用。" }
+        Assert-JdkLaunch $dest
     } else {
         $stage = Join-Path $versions ('.install-' + [Guid]::NewGuid().ToString('N')); Ensure-Dir $stage
-        try { Copy-Version $source $stage $info; [IO.Directory]::Move($stage, $dest) }
-        catch { Write-Warning "新版本未启用，保留中断目录用于排查：$stage"; throw }
+        try { Copy-Version $source $stage $info }
+        catch { Write-Warning "新版本未启用，保留未完成的复制目录：$stage"; throw }
+        try { Assert-JdkLaunch $stage } catch {
+            $checked = Verify-Version $stage $info.Id; Delete-Version $stage $checked
+            if ($fresh) { Remove-Empty $versions; Remove-Empty $root }
+            throw
+        }
+        [IO.Directory]::Move($stage, $dest)
     }
     if ($fresh) { Write-Receipt $root $info 'owner' }
     $owner = Check-Owner $root
