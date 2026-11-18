@@ -92,7 +92,9 @@ final class JvmSettings {
                 """);
         properties.forEach((k,v) -> text.append("-D").append(k).append('=').append(v).append('\n'));
         text.append("\n# 分隔线之后每行一个传给游戏的参数；启动命令 -- 后的参数会追加到这些参数之后。\n--\n");
-        create(file, text.toString());
+        String content = text.toString();
+        if (java.io.File.separatorChar == '\\') content = "\ufeff" + content.replace("\n", "\r\n");
+        create(file, content);
         return file;
     }
 
