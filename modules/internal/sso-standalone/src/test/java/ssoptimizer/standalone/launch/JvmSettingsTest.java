@@ -1,0 +1,64 @@
+package ssoptimizer.standalone.launch;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class JvmSettingsTest {
+    @TempDir Path temp;
+
+    @Test void legacyValuesBecomeEditableArgumentsWithoutOverwritingEitherFile() throws Exception {
+        GameInstall game = game();
+        Path instance = Files.createDirectory(temp.resolve("实例 一"));
+        Path old = instance.resolve("jvm.properties");
+        String legacy = "heap.minMiB=768\nheap.maxMiB=9000\nstack.KiB=1024\nssoptimizer.econ.advance.parallel=false\nssoptimizer.custom=中文 值\n";
+        Files.writeString(old, legacy);
+        var migrated = JvmSettings.read(game, instance);
+        assertTrue(migrated.vm().containsAll(List.of("-Xms768m", "-Xmx9000m", "-Xss1024k", "-Dssoptimizer.custom=中文 值", "-Dssoptimizer.econ.advance.parallel=false")));
+        assertFalse(migrated.vm().contains("-Dssoptimizer.econ.advance.parallel=true"));
+        assertEquals(legacy, Files.readString(old));
+        Path file = instance.resolve("jvm.args");
+        Files.writeString(file, "\ufeff # 测试\r\n-Xms700m\r\n-Dastd.gd.debug=false\r\n-Dfoo=含 空格\r\n--\r\n-skip\r\nship name\r\n", StandardCharsets.UTF_8);
+        var custom = JvmSettings.read(game, instance);
+        assertEquals(List.of("-Xms700m", "-Dastd.gd.debug=false", "-Dfoo=含 空格"), custom.vm());
+        assertEquals(List.of("-skip", "ship name"), custom.game());
+    }
+
+    @Test void directiveTokenFollowsGameLayoutAndPreservesCustomFallback() throws Exception {
+        GameInstall game = game();
+        Path instance = Files.createDirectory(temp.resolve("实例"));
+        Path fallback = instance.resolve("compiler-directives.json");
+        var first = JvmSettings.read(game, instance);
+        assertTrue(first.vm().contains("-XX:CompilerDirectivesFile=" + fallback));
+        Files.writeString(fallback, "我的指令");
+        Path atRoot = Files.writeString(game.root().resolve("compiler_directives.txt"), "root");
+        assertTrue(JvmSettings.read(game, instance).vm().contains("-XX:CompilerDirectivesFile=" + atRoot));
+        Path atCore = Files.writeString(game.core().resolve("compiler_directives.txt"), "core");
+        assertTrue(JvmSettings.read(game, instance).vm().contains("-XX:CompilerDirectivesFile=" + atCore));
+        assertEquals("我的指令", Files.readString(fallback));
+    }
+
+    @Test void invalidHostOverrideReportsTheLineButConfigStillOpensForRepair() throws Exception {
+        GameInstall game = game();
+        Path instance = Files.createDirectory(temp.resolve("实例"));
+        Path file = JvmSettings.configure(game, instance);
+        for (String invalid : List.of("-javaagent:other.jar", "-Dssoptimizer.standalone.plan=other", "-cp", "@other.txt", "-Dcom.fs.starfarer.settings.paths.saves=other")) {
+            String text = "# 保留\n" + invalid + "\n";
+            Files.writeString(file, text);
+            assertEquals(file, JvmSettings.configure(game, instance));
+            assertEquals(text, Files.readString(file));
+            assertTrue(assertThrows(java.io.IOException.class, () -> JvmSettings.read(game, instance)).getMessage().contains(":2"));
+        }
+    }
+
+    private GameInstall game() throws java.io.IOException {
+        Path root = Files.createDirectory(temp.resolve("game"));
+        return new GameInstall(root, Files.createDirectory(root.resolve("starsector-core")), "windows-en-rc8", List.of());
+    }
+}
