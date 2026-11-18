@@ -54,8 +54,9 @@ final class TtfBmFontGenerator {
     static GeneratedFontPack generate(final OriginalGameFontOverrides.FontOverrideSpec spec,
                                       final Path fontDir) throws IOException, FontFormatException {
         return loadOrGenerateCached(spec, spec.originalFontPath(), fontDir, 1.0f, () -> {
+            final FontLayoutTable table = FontLayoutTable.forPath(spec.originalFontPath());
             final SourceBmFont source = withDonatedCharset(SourceBmFont
-                    .parse(OriginalGameFontOverrides.resolveOriginalFontFile(spec.originalFontPath())), spec);
+                    .parse(OriginalGameFontOverrides.resolveOriginalFontFile(spec.originalFontPath())), spec).withLayout(table);
             final FontChain fonts = loadFontChain(spec, fontDir, source);
             final RasterizedGlyphs rasterized = rasterizeGlyphs(source, fonts);
             final FittedAtlas fitted = fitSinglePageAtlas(spec, spec.originalFontPath(), source, rasterized);
@@ -104,7 +105,7 @@ final class TtfBmFontGenerator {
                 + " donated code points from " + donorPaths);
         return new SourceBmFont(source.infoSize(), source.antiAlias(), source.lineHeight(), source.base(),
                 source.scaleWidth(), source.scaleHeight(),
-                List.copyOf(codePoints), Map.copyOf(metrics));
+                List.copyOf(codePoints), Map.copyOf(metrics), source.kerning(), null);
     }
 
     static boolean isDonatableCodePoint(final int codePoint) {
@@ -536,6 +537,12 @@ final class TtfBmFontGenerator {
                 if (sourceMetric != null && sourceMetric.isSpecialPlaceholder() && Character.isIdeographic(codePoint)) {
                     sourceMetric = null;
                 }
+                final var reference = source.table() == null ? null : source.table().cells().get(codePoint);
+                if (reference != null && shouldTreatAsSpaceGlyph(codePoint)) {
+                    glyphs.add(new GlyphRaster(codePoint, "", "", null, reference.width(), reference.height(),
+                            reference.left(), reference.top(), reference.penAdvance()));
+                    continue;
+                }
                 final GlyphRaster preserved = preserveSourceSpecialGlyph(codePoint, sourceMetric, spaceMetric,
                         placeholderMetadataFont);
                 if (preserved != null) {
@@ -550,6 +557,12 @@ final class TtfBmFontGenerator {
                 );
                 if (rasterized == null) {
                     unsupported++;
+                    continue;
+                }
+                if (reference != null && sourceMetric != null) {
+                    final var image = FontLayoutTable.fitInk(rasterized.image(), reference.width(), reference.height());
+                    glyphs.add(new GlyphRaster(codePoint, rasterized.sourceName(), rasterized.faceName(), image,
+                            reference.width(), reference.height(), reference.left(), reference.top(), reference.penAdvance()));
                     continue;
                 }
                 glyphs.add(fonts.substituteLowercaseWithUppercase()
@@ -1104,6 +1117,17 @@ final class TtfBmFontGenerator {
                .append(" chnl=15\n");
         }
 
+        if (!source.kerning().isEmpty()) {
+            final var emitted = new HashSet<Integer>();
+            for (var placement : allGlyphs) emitted.add(placement.glyph().codePoint());
+            final var pairs = source.kerning().stream().filter(k -> emitted.contains(k.first()) && emitted.contains(k.second())).toList();
+            fnt.append("kernings count=").append(pairs.size()).append('\n');
+            for (var pair : pairs) {
+                fnt.append("kerning first=").append(pair.first()).append(" second=").append(pair.second())
+                        .append(" amount=").append(pair.amount()).append('\n');
+            }
+        }
+
         resources.put(spec.normalizedOriginalFontPath(),
                 fnt.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         LOGGER.info("[SSOptimizer] Generated TTF-backed BMFont override for " + spec.originalFontPath()
@@ -1246,7 +1270,30 @@ final class TtfBmFontGenerator {
                                 int scaleWidth,
                                 int scaleHeight,
                                 List<Integer> codePoints,
-                                Map<Integer, SourceGlyphMetric> glyphMetrics) {
+                                Map<Integer, SourceGlyphMetric> glyphMetrics,
+                                List<FontLayoutTable.Kerning> kerning, FontLayoutTable table) {
+        SourceBmFont withLayout(final FontLayoutTable reference) {
+            if (reference == null) return this;
+            final var merged = new HashMap<Integer, SourceGlyphMetric>();
+            final double scale = Math.abs((double) reference.size() / infoSize);
+            glyphMetrics.forEach((cp, m) -> {
+                if (!reference.cells().containsKey(cp)) {
+                    final var scaled = scaleDonorMetric(m, scale);
+                    merged.put(cp, new SourceGlyphMetric(scaled.width(), scaled.height(), scaled.xOffset(),
+                            reference.baseline() + (int) Math.round((m.yOffset() - base) * scale), scaled.xAdvance()));
+                }
+            });
+            reference.cells().forEach((cp, c) -> merged.put(cp,
+                    new SourceGlyphMetric(c.width(), c.height(), c.left(), c.top(), c.penAdvance())));
+            final var pairs = new ArrayList<>(reference.kerning());
+            for (var k : kerning) {
+                if (!reference.cells().containsKey(k.first()) || !reference.cells().containsKey(k.second()))
+                    pairs.add(new FontLayoutTable.Kerning(k.first(), k.second(), (int) Math.round(k.amount() * scale)));
+            }
+            return new SourceBmFont(reference.size(), reference.antiAlias(), reference.lineHeight(), reference.baseline(),
+                    scaleWidth, scaleHeight, codePoints, merged, pairs, reference);
+        }
+
         private static SourceBmFont parse(final Path path) throws IOException {
             int infoSize = 16;
             boolean antiAlias = true;
@@ -1256,6 +1303,7 @@ final class TtfBmFontGenerator {
             int scaleHeight = 256;
             final List<Integer> codePoints = new ArrayList<>();
             final Map<Integer, SourceGlyphMetric> glyphMetrics = new LinkedHashMap<>();
+            final List<FontLayoutTable.Kerning> kerning = new ArrayList<>();
 
             for (String rawLine : Files.readAllLines(path, StandardCharsets.ISO_8859_1)) {
                 final String line = rawLine.trim();
@@ -1268,6 +1316,9 @@ final class TtfBmFontGenerator {
                     base = parseIntProperty(line, "base", base);
                     scaleWidth = parseIntProperty(line, "scaleW", scaleWidth);
                     scaleHeight = parseIntProperty(line, "scaleH", scaleHeight);
+                } else if (line.startsWith("kerning ")) {
+                    kerning.add(new FontLayoutTable.Kerning(parseIntProperty(line, "first", 0),
+                            parseIntProperty(line, "second", 0), parseIntProperty(line, "amount", 0)));
                 } else if (line.startsWith("char ")) {
                     final int codePoint = parseIntProperty(line, "id", 0);
                     final int xOffset = parseIntProperty(line, "xoffset", 0);
@@ -1285,7 +1336,7 @@ final class TtfBmFontGenerator {
                 throw new IOException("No glyphs found in BMFont file: " + path);
             }
             return new SourceBmFont(infoSize, antiAlias, lineHeight, base, scaleWidth, scaleHeight,
-                    List.copyOf(codePoints), Map.copyOf(glyphMetrics));
+                    List.copyOf(codePoints), Map.copyOf(glyphMetrics), List.copyOf(kerning), null);
         }
 
         private static int parseIntProperty(final String line,

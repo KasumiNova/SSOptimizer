@@ -280,6 +280,28 @@ class TtfGlyphProviderTest {
     }
 
     @Test
+    void unbakedReferenceCellsKeepThinInkAndSeparateVictorCaseAdvances() {
+        final String path = "graphics/fonts/victor14.fnt";
+        final FontLayoutTable table = FontLayoutTable.forPath(path);
+        final BitmapFont font = new BitmapFont(path);
+        font.setNominalFontSize(Math.abs(table.size()));
+        font.setBase(table.baseline());
+        font.setLineHeight(table.lineHeight());
+        final FakeBackend backend = new FakeBackend();
+        final TtfGlyphProvider ttf = new TtfGlyphProvider(font, OriginalGameFontOverrides.specForPath(path),
+                fontDir, new DynamicGlyphAtlas(64, 16), backend);
+        for (final char cp : "一hHh".toCharArray()) {
+            assertNull(font.getGlyph(cp));
+            final var expected = table.cells().get((int) cp);
+            final var actual = ttf.glyph(cp);
+            assertEquals(expected.left(), actual.xOffset());
+            assertEquals(expected.encodedAdvance(), actual.xAdvance());
+            assertEquals(expected.width(), actual.width());
+            assertEquals(expected.height(), actual.height());
+        }
+    }
+
+    @Test
     void glyphFallsBackToFallbackFaceWhenPrimaryLacksGlyph() throws Exception {
         Files.createFile(fontDir.resolve("MiSans-Regular.ttf"));
         final FakeBackend backend = new FakeBackend();
@@ -453,10 +475,11 @@ class TtfGlyphProviderTest {
         assertEquals(30f, backend.lastPixelSize, 1e-6f, "bucket 2.0 → pixelSize 30（探针无样本时因子 1.0）");
     }
 
-    private static BitmapFont fixtureWithPrimarySample(final String path, final int sampleAdvance) {
+    private static BitmapFont fixtureWithPrimarySample(final String path, final int penAdvance) {
         final BitmapFont font = fixtureFont(path);
         for (final int cp : TtfBmFontGenerator.PRIMARY_ADVANCE_SAMPLE.codePoints().toArray()) {
-            font.addGlyph(glyph(cp, 10, 12, 1, 11, sampleAdvance));
+            final int left = 1;
+            font.addGlyph(glyph(cp, 10, 12, left, 11, penAdvance - left));
         }
         return font;
     }
