@@ -23,6 +23,7 @@
 
 ## 模块结构与开关
 
+- `modopt.dcr.DcrBatchCompatibility`：解析 `onGameLoad` 的保存调用，区分逐条保存与 DCR 自带的整批保存。
 - `modopt.dcr.DcrBatchSaveWindow`：批量保存窗口，只持有线程与剩余次数。
 - `modopt.dcr.DcrCompressionHelper`：压缩内核。
 - `mixin.modopt.dcr.DcrOnGameLoadBatchMixin`、`DcrSerializationManagerBatchMixin`：L1。
@@ -30,6 +31,8 @@
 - 三个 Mixin 均注册在 `mixins.ssoptimizer.json`。`-Dssoptimizer.disable.dcr=true` 由 `SSOptimizerMixinConfigPlugin` 在织入期跳过 L1 的两个 Mixin，不影响 L2。
 
 DCR 的类不在编译类路径上，Mixin 以字符串目标指定，`@Redirect` 的参数与返回类型只使用 JDK 与 XStream 类型。
+
+织入前必须通过 Mixin 字节码读取接口检查 `onGameLoad(Z)V`，禁止为检查版本而加载目标类。逐条调用 `saveCombatResult(CombatResult)` 的实现启用两个批量窗口 Mixin；已经调用 `saveCombatResults(List)` 的实现成对跳过这两个 Mixin，继续使用 DCR 自带的批量保存。判定结果写入启动日志；未安装 DCR 时成对跳过批量保存 Mixin。主游戏 DCR 5.4.5 属于后一种实现。未知调用结构必须记录错误并终止适配，禁止把未匹配注入点当作成功。
 
 ## L1：消除 O(N²) 批量重写
 
@@ -39,7 +42,7 @@ DCR 的类不在编译类路径上，Mixin 以字符串目标指定，`@Redirect
 
 1. 保存入口的 `getAllSavedCombatResults()`：登记一次保存并判定是否跳过。计数放在入口，保存内部后续步骤抛出异常也不会漏计。
 2. `XStream.toXML`：被判定跳过时返回 `null`，不序列化。
-3. `saveValue`：序列化结果为 `null` 时不落盘。
+3. `saveValue`：序列化结果为 `null` 时不写入存档。
 
 窗口内除最后一次外的保存只追加并排序列表，最后一次沿用原方法的完整路径，包括异常捕获与错误提示。全部保存都未抛出异常时，`_resultCache` 与存档内容和逐条保存的最终结果一致。磁盘格式不变，卸载 SSOptimizer 无副作用。
 
@@ -47,7 +50,7 @@ DCR 的类不在编译类路径上，Mixin 以字符串目标指定，`@Redirect
 
 ## L2：压缩层 Deflater(9) 改为 Zstd
 
-DCR 的 `util/Base64` 是非标准自定义编码，因此替换点下沉到 `CompressionUtil.compress(String):byte[]` 与 `decompress(byte[]):String`，只处理 `byte[]`，不触碰外层编码。
+DCR 的 `util/Base64` 是非标准自定义编码，因此直接替换 `CompressionUtil.compress(String):byte[]` 与 `decompress(byte[]):String`，只处理 `byte[]`，不触碰外层编码。
 
 - 写：Zstd 压缩，帧自带魔数 `28 B5 2F FD`。
 - 读：先检查前 4 字节是否为 zstd 魔数，是则 Zstd 解压，否则按旧 Deflate 流解压。
@@ -55,7 +58,7 @@ DCR 的 `util/Base64` 是非标准自定义编码，因此替换点下沉到 `Co
 
 `DcrCompressionUtilMixin` 以 `@Overwrite` 整体替换这两个方法并委派 `DcrCompressionHelper`。
 
-权衡：压缩串随存档落盘，卸载 SSOptimizer 后 DCR 原生 `Inflater` 无法解 Zstd 串，会判定数据损坏并清空战报历史，存档本体不受影响。README 已注明。
+压缩后的战报保存在游戏存档中。卸载 SSOptimizer 后，DCR 原生 `Inflater` 会把 Zstd 数据判为损坏并清空战报历史，存档本体不受影响。README 已注明。
 
 ## L3：消除每场战后的全史重序列化
 
@@ -65,11 +68,11 @@ DCR 的 `util/Base64` 是非标准自定义编码，因此替换点下沉到 `Co
 
 - 批量窗口中最后一次保存失败时，存档不会保留逐条保存留下的中间快照；原方法照常记录错误并返回。
 - `onGameLoad` 异常逃逸时窗口不会被 `RETURN` 注入点关闭，但读档已经失败，窗口也不会被复用，再次开窗时 `begin` 会重置状态。
-- DCR 版本变化后，调用点形状可能改变。`DcrBatchMixinAnchorTest` 读取随仓库提供的真实 DCR 字节码，校验 `onGameLoad` 内 `List.iterator` 以及 `saveCombatResult` 内 `getAllSavedCombatResults`、`toXML`、`saveValue` 调用点各恰有一个。Mixin 的 `expect = 1` 在织入期提供第二层保护。
+- 强制将逐条保存的 Mixin 应用于整批保存版本，会因 `List.iterator` 注入点缺失而加载失败。LaunchClassLoader 将变换异常包装为 `ClassNotFoundException` 后，子 URLClassLoader 可能自行定义插件主类，而内部类仍由 Launch 定义，随后抛出 `IllegalAccessError`。必须在织入前识别实际保存方式。
 
 ## 验证
 
-- `DcrBatchMixinAnchorTest`：锚点唯一性。
+- `DcrBatchCompatibilityTest`：旧版逐条保存、新版整批保存及歧义调用结构的识别。
 - `DcrBatchSaveWindowTest`：窗口的跳过、关闭与线程归属逻辑。
 - `DcrCompressionHelperTest`：Zstd 往返、旧 Deflate 读取与损坏数据处理。
 - 游戏烟测：渲染线程开启与关闭两种模式下启动均通过，日志无 Mixin 织入错误。

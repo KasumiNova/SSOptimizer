@@ -2,11 +2,14 @@ package github.kasuminova.ssoptimizer.mixin;
 
 import github.kasuminova.ssoptimizer.common.render.ShipEngineRenderToggle;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
+import github.kasuminova.ssoptimizer.modopt.dcr.DcrBatchCompatibility;
 import org.apache.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
+import org.spongepowered.asm.service.MixinService;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +31,8 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
             ".modopt.dcr.DcrOnGameLoadBatchMixin", "dcr",
             ".modopt.dcr.DcrSerializationManagerBatchMixin", "dcr");
 
+    private Boolean dcrNeedsBatchWindow;
+
     @Override
     public void onLoad(final String mixinPackage) {
     }
@@ -47,6 +52,10 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
                         + "=true: " + mixinClassName);
                 return false;
             }
+        }
+        if (mixinClassName.endsWith(".modopt.dcr.DcrOnGameLoadBatchMixin")
+                || mixinClassName.endsWith(".modopt.dcr.DcrSerializationManagerBatchMixin")) {
+            return needsDcrBatchWindow();
         }
         if (mixinClassName.endsWith(".render.EngineRenderMixin") && !ShipEngineRenderToggle.isEnabled()) {
             LOGGER.info("[SSOptimizer] Ship engine render optimization mixin disabled via -D"
@@ -82,6 +91,27 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
             return false;
         }
         return true;
+    }
+
+    private boolean needsDcrBatchWindow() {
+        if (dcrNeedsBatchWindow == null) {
+            try {
+                final ClassNode plugin = MixinService.getService().getBytecodeProvider().getClassNode(
+                        "data.scripts.combatanalytics.DetailedCombatResultsModPlugin", false);
+                dcrNeedsBatchWindow = DcrBatchCompatibility.needsBatchWindow(plugin);
+            } catch (ClassNotFoundException e) {
+                LOGGER.info("[SSOptimizer] 未找到 DCR 插件类，跳过批量保存 Mixin");
+                dcrNeedsBatchWindow = false;
+                return false;
+            } catch (IOException | IllegalStateException e) {
+                LOGGER.error("[SSOptimizer] 无法识别 DCR 读档保存实现", e);
+                throw new IllegalStateException("无法识别 DCR 读档保存实现", e);
+            }
+            LOGGER.info(dcrNeedsBatchWindow
+                    ? "[SSOptimizer] DCR 使用逐条保存，启用批量保存窗口"
+                    : "[SSOptimizer] DCR 已使用 saveCombatResults 批量保存，跳过旧版批量保存 Mixin");
+        }
+        return dcrNeedsBatchWindow;
     }
 
     @Override
