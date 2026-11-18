@@ -16,11 +16,29 @@ final class SaveSymbols {
     private final Map<String, String> originals = new HashMap<>();
     private final Map<Member, String> methods = new HashMap<>();
     private final Map<Member, String> fields = new HashMap<>();
+    private final Map<Member, String> originalFields = new HashMap<>();
     private final java.util.Set<String> changedNames = new java.util.HashSet<>();
     private SaveFields layout = new SaveFields();
 
     SaveFields layout() { return layout; }
-    void bindGame(java.util.List<Path> gameJars) throws IOException { layout = SaveFields.read(gameJars); }
+    void bindGame(java.util.List<Path> gameJars) throws IOException { layout = SaveFields.read(gameJars, this); }
+
+    int installedNamespace(String owner) {
+        if (classes.containsKey(owner) && !originals.containsKey(owner)) return -1;
+        if (originals.containsKey(owner) && !classes.containsKey(owner)) return 1;
+        return 0;
+    }
+
+    String sourceDescriptor(String descriptor) {
+        int l = descriptor.indexOf('L');
+        if (l < 0 || !descriptor.endsWith(";")) return descriptor;
+        String type = descriptor.substring(l + 1, descriptor.length() - 1);
+        return descriptor.substring(0, l + 1) + originals.getOrDefault(type, type) + ';';
+    }
+
+    String sourceField(String owner, String name, String sourceDescriptor) {
+        return originalFields.getOrDefault(new Member(owner, name, sourceDescriptor), name);
+    }
     boolean changedField(String name) { return changedNames.contains(name); }
 
     String field(String owner, String name, String descriptor) { return fields.getOrDefault(new Member(owner, name, descriptor), name); }
@@ -47,7 +65,12 @@ final class SaveSymbols {
                     } else if (cols.length == 5 && owner != null && (cols[1].equals("m") || cols[1].equals("f"))) {
                         String target = cols[4].isEmpty() ? cols[3] : cols[4];
                         var members = cols[1].equals("m") ? result.methods : result.fields;
-                        if (members == result.fields && !target.equals(cols[3])) result.changedNames.add(encodeNode(target));
+                        if (members == result.fields) {
+                            if (!target.equals(cols[3])) result.changedNames.add(encodeNode(target));
+                            if (result.originalFields.putIfAbsent(new Member(owner, target, cols[2]), cols[3]) != null) {
+                                throw new IOException("字段反向映射存在歧义：" + line);
+                            }
+                        }
                         if (members.putIfAbsent(new Member(owner, cols[3], cols[2]), target) != null) {
                             throw new IOException("成员映射冲突：" + line);
                         }

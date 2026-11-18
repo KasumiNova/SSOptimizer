@@ -27,8 +27,9 @@ final class SaveFields {
     private final Map<String, String> aliases = new HashMap<>();
     private final Map<String, Map<String, String>> fieldAliases = new HashMap<>();
 
-    static SaveFields read(List<Path> jars) throws IOException {
+    static SaveFields read(List<Path> jars, SaveSymbols symbols) throws IOException {
         SaveFields result = new SaveFields();
+        boolean named = false, obfuscated = false;
         for (Path path : jars) {
             try (JarFile jar = new JarFile(path.toFile())) {
                 for (var it = jar.entries(); it.hasMoreElements();) {
@@ -37,6 +38,10 @@ final class SaveFields {
                     try (var in = jar.getInputStream(entry)) {
                         var model = ClassFile.of().parse(in.readAllBytes());
                         String name = model.thisClass().asInternalName();
+                        int namespace = symbols.installedNamespace(name);
+                        named |= namespace > 0;
+                        obfuscated |= namespace < 0;
+                        if (named && obfuscated) throw sourceRequired("类归档混合使用 obf 和 named 声明");
                         if (result.types.containsKey(name)) continue;
                         Map<String, List<String>> fields = new HashMap<>();
                         for (var f : model.fields()) {
@@ -50,6 +55,48 @@ final class SaveFields {
             } catch (IllegalArgumentException e) { throw new IOException("无法解析 RC8 的存档类定义：" + path, e); }
         }
         if (!result.types.containsKey(FACTORY) || !result.aliases.containsKey("CampaignEngine")) throw new IOException("RC8 游戏归档缺少战役存档工厂或其类型别名");
+        return named ? result.sourceLayout(symbols) : result;
+    }
+
+    private static IOException sourceRequired(String reason) {
+        return new IOException(reason + "。请用写入旧档时的原版 RC8 安装作为 --game，指定新的临时 --instance 执行 import-save；"
+                + "成功后将转换好的整个槽目录复制到 named 实例的 saves 下，选择未被占用的槽名。");
+    }
+
+    private SaveFields sourceLayout(SaveSymbols symbols) throws IOException {
+        SaveFields result = new SaveFields();
+        for (var type : types.entrySet()) {
+            Shape installed = type.getValue();
+            String owner = symbols.original(type.getKey());
+            var restored = new HashMap<String, List<String>>();
+            for (var member : installed.fields.entrySet()) {
+                for (String descriptor : member.getValue()) {
+                    String originalType = symbols.sourceDescriptor(descriptor);
+                    String originalName = symbols.sourceField(owner, member.getKey(), originalType);
+                    var descriptors = restored.computeIfAbsent(originalName, unused -> new ArrayList<>());
+                    if (descriptors.contains(originalType)) throw sourceRequired("无法唯一还原字段 " + owner + '/' + originalName);
+                    descriptors.add(originalType);
+                }
+            }
+            result.types.put(owner, new Shape(installed.parent == null ? null : symbols.original(installed.parent), restored));
+        }
+        aliases.forEach((alias, target) -> result.aliases.put(alias, target.startsWith("[")
+                ? symbols.sourceDescriptor(target) : symbols.original(target)));
+        for (var row : fieldAliases.entrySet()) {
+            String owner = symbols.original(row.getKey());
+            for (var alias : row.getValue().entrySet()) {
+                String name = alias.getValue();
+                String recovered = null;
+                for (String cls = row.getKey(); cls != null && types.containsKey(cls); cls = types.get(cls).parent) {
+                    var descriptors = types.get(cls).fields.get(name);
+                    if (descriptors == null) continue;
+                    if (descriptors.size() != 1) throw sourceRequired("无法唯一还原别名 " + row.getKey() + '/' + alias.getKey());
+                    recovered = symbols.sourceField(symbols.original(cls), name, symbols.sourceDescriptor(descriptors.getFirst()));
+                    break;
+                }
+                result.fieldAlias(owner, alias.getKey(), recovered == null ? name : recovered);
+            }
+        }
         return result;
     }
 
