@@ -84,33 +84,57 @@ function Verify-Version([string]$root, [string]$id = '') {
     if ($seen.Count -ne $info.Files.Count) { throw "版本文件不完整：$root" }
     return $info
 }
-function Check-Game([string]$root) {
+function Assert-GameLayout([string]$root) {
     $core = Join-Path $root 'starsector-core'
-    $names = @('starfarer_obf.jar','starfarer.api.jar','fs.common_obf.jar','fs.sound_obf.jar')
-    $english = '5dd222b9e266d2ac2d63b3dad4983eb05caaf5a247d7dfb82aaeba47ea774cc8 a7ba18f3476ffe704729bd0a7a47443f035fea98a32ac2930eae8b391d013c2a 5a26d047baefc6dcd763121a17d170e3b864bfb19a83d11f645ba8be49f1641b d70e2760c9785770818607edd7be502ac75f7b87f8af5770c178a8d723c96dab'
-    $chinese = '2e207732388bfb8290406362647c3578e00a4fdb6c1a4b9ef04a68001f69ed82 769c8e9478df6303f3be1fb2514049e3d40453bc5478f4e0271da7c836e3ee2e b04b6f0203241f70e513fcd25b97b905e073eaa8acf8d2eacc83efe5966d6d13 81df15baebf134eb3a9feca017223fa3e4a310704c7ab180f5aa1bbd4cc409fc'
-    $hashes = @(foreach ($name in $names) {
-        $p = Join-Path $core $name
-        if (![IO.File]::Exists($p)) { throw "缺少 $p。请先安装已购买的 Starsector 0.98a-RC8，再选择包含 starsector-core 的游戏根目录：https://fractalsoftworks.com/preorder/" }
-        File-Hash $p
-    })
-    if ($hashes[0] -eq '8d4de3c9430b6a183dac0df83b229ced26f0a6c19e015ee5070ee76ee04f3fc5') { throw '已识别 FOSSIC 启动优化测试版。请改用 RC8 常规汉化（黑体、综艺体或宋体）。' }
-    if (($hashes -join ' ') -eq $english) { return 'windows-en-rc8' }
-    if (($hashes -join ' ') -eq $chinese) { return 'windows-zh-rc8' }
-    throw "未知或混装的 RC8 游戏。请使用 Windows 英文版或常规汉化。`n$([string]::Join("`n", @(for ($i=0; $i -lt 4; $i++) { "$($names[$i]) $($hashes[$i])" })))"
+    foreach ($name in @('starfarer_obf.jar','starfarer.api.jar','fs.common_obf.jar','fs.sound_obf.jar','data/config/settings.json')) {
+        $path = Join-Path $core $name
+        if (![IO.File]::Exists($path)) { throw "缺少 $path。请选择包含 starsector-core 的已有游戏根目录。游戏安装指引：https://fractalsoftworks.com/preorder/" }
+    }
 }
-function Get-Current([string]$root) {
-    $p = Join-Path $root 'current'; Assert-Plain $p
+function Get-IdFile([string]$p) {
+    Assert-Plain $p
     $id = [IO.File]::ReadAllText($p, $utf8).TrimEnd("`r", "`n"); Assert-Id $id; return $id
 }
-function Set-Current([string]$root, [string]$id) {
+function Set-IdFile([string]$p, [string]$id) {
     Assert-Id $id
-    $p = Join-Path $root 'current'; $tmp = Join-Path $root ('.current-' + [Guid]::NewGuid().ToString('N'))
+    $tmp = Join-Path ([IO.Path]::GetDirectoryName($p)) ('.current-' + [Guid]::NewGuid().ToString('N'))
     try {
         [IO.File]::WriteAllText($tmp, "$id`n", $utf8)
-        if ([IO.File]::Exists($p)) { $null = Get-Current $root; [IO.File]::Replace($tmp, $p, [System.Management.Automation.Language.NullString]::Value) }
+        if ([IO.File]::Exists($p)) { $null = Get-IdFile $p; [IO.File]::Replace($tmp, $p, [System.Management.Automation.Language.NullString]::Value) }
         else { [IO.File]::Move($tmp, $p) }
     } finally { if ([IO.File]::Exists($tmp)) { [IO.File]::Delete($tmp) } }
+}
+function Get-Current([string]$root) { return Get-IdFile (Join-Path $root 'current') }
+function Set-Current([string]$root, [string]$id) { Set-IdFile (Join-Path $root 'current') $id }
+function Get-InstalledManifest([string]$root, [string]$id) {
+    Assert-Id $id; $info = Read-Manifest (Join-Path (Join-Path $root 'versions') $id)
+    if ($info.Id -cne $id) { throw "入口所属的版本目录与清单不符：$id" }; return $info
+}
+function Sync-Tools([string]$root, $active, $next) {
+    $receipt = Join-Path $root 'bootstrap'; $pending = Join-Path $receipt 'pending-version'
+    $dir = Join-Path (Join-Path (Join-Path $root 'versions') $next.Id) 'tools'; Assert-Chain $dir
+    foreach ($name in $toolNames) {
+        $target = Join-Path $root $name
+        if ([IO.File]::Exists($target)) {
+            $actual = File-Hash $target
+            if ($actual -cne $active.Files["tools/$name"] -and $actual -cne $next.Files["tools/$name"]) { throw "自有入口已被修改，请先备份并移出：$target" }
+        } elseif (Test-Path -LiteralPath $target) { throw "入口路径已被占用：$target" }
+        if ((File-Hash (Join-Path $dir $name)) -cne $next.Files["tools/$name"]) { throw "新入口摘要不符：$dir/$name" }
+    }
+    Set-IdFile $pending $next.Id
+    foreach ($name in $toolNames) {
+        $target = Join-Path $root $name
+        if ([IO.File]::Exists($target) -and (File-Hash $target) -ceq $next.Files["tools/$name"]) { continue }
+        $tmp = Join-Path $root ('.tool-' + [Guid]::NewGuid().ToString('N'))
+        try {
+            [IO.File]::Copy((Join-Path $dir $name), $tmp, $false)
+            if ((File-Hash $tmp) -cne $next.Files["tools/$name"]) { throw "复制过程中入口已改变：$name" }
+            if ([IO.File]::Exists($target)) { [IO.File]::Replace($tmp, $target, [System.Management.Automation.Language.NullString]::Value) }
+            else { [IO.File]::Move($tmp, $target) }
+        } finally { if ([IO.File]::Exists($tmp)) { [IO.File]::Delete($tmp) } }
+    }
+    Set-IdFile (Join-Path $receipt 'entry-version') $next.Id
+    [IO.File]::Delete($pending)
 }
 function Write-Receipt([string]$root, $info, [string]$prefix) {
     [IO.File]::WriteAllBytes((Join-Path $root "$prefix.manifest"), $info.Manifest)
@@ -124,6 +148,11 @@ function Check-Owner([string]$root) {
         return $null
     }
     $active = Read-Manifest $receipt
+    $pointer = Join-Path $receipt 'entry-version'; $pending = Join-Path $receipt 'pending-version'
+    if ([IO.File]::Exists($pointer)) { $active = Get-InstalledManifest $root (Get-IdFile $pointer) }
+    if ([IO.File]::Exists($pending)) {
+        $next = Get-InstalledManifest $root (Get-IdFile $pending); Sync-Tools $root $active $next; $active = $next
+    }
     foreach ($name in $toolNames) {
         $p = Join-Path $root $name
         if ([IO.File]::Exists($p) -and (File-Hash $p) -cne $active.Files["tools/$name"]) { throw "入口与已安装管理器的签名不符：$p" }
@@ -197,13 +226,7 @@ function Install-Version([string]$source, [string]$root, [bool]$fresh) {
         Ensure-Dir $stageReceipt; Write-Receipt $stageReceipt $info 'release'; [IO.Directory]::Move($stageReceipt, $receipt)
         $owner = $info
     }
-    foreach ($name in $toolNames) {
-        $target = Join-Path $root $name
-        if (![IO.File]::Exists($target)) {
-            if ($owner.Files["tools/$name"] -cne $info.Files["tools/$name"]) { throw "恢复入口需要首先重新安装初始版本 $($owner.Id)。" }
-            [IO.File]::Copy((Join-Path $dest "tools/$name"), $target, $false)
-        }
-    }
+    Sync-Tools $root $owner $info
     Ensure-Dir (Join-Path $root 'instance'); Set-Current $root $info.Id
     Write-Host "已启用 $($info.Id)"
 }
@@ -231,7 +254,7 @@ function Remove-Install([string]$root) {
     foreach ($dir in $verified.Keys) { Delete-Version $dir $verified[$dir] }
     Remove-Empty $versions; [IO.File]::Delete((Join-Path $root 'current'))
     foreach ($name in $toolNames) { [IO.File]::Delete((Join-Path $root $name)) }
-    $receipt = Join-Path $root 'bootstrap'; [IO.File]::Delete((Join-Path $receipt 'release.manifest')); [IO.File]::Delete((Join-Path $receipt 'release.sig')); Remove-Empty $receipt
+    $receipt = Join-Path $root 'bootstrap'; [IO.File]::Delete((Join-Path $receipt 'entry-version')); [IO.File]::Delete((Join-Path $receipt 'release.manifest')); [IO.File]::Delete((Join-Path $receipt 'release.sig')); Remove-Empty $receipt
     Write-Host "已卸载程序，保留实例数据和初次安装的签名凭据：$root"
 }
 function Desktop-Link([string]$root, [string]$suffix, [bool]$remove) {
@@ -260,7 +283,7 @@ function Desktop-Link([string]$root, [string]$suffix, [bool]$remove) {
 $mutex = $null; $locked = $false; $lease = $null; $code = 0; $choiceForImport = $Action -eq 'Menu'
 try {
     if ($Action -eq 'Install') {
-        if (!$Game) { $Game = Pick-Folder '选择已安装的 Windows Starsector 0.98a-RC8 根目录' }
+        if (!$Game) { $Game = Pick-Folder '选择已安装的 Windows Starsector 游戏根目录' }
         if (!$Bundle) { $Bundle = Split-Path -Parent (Split-Path -Parent $PSScriptRoot) }
     } elseif (!$Game) { $Game = Split-Path -Parent $PSScriptRoot }
     $Game = [IO.Path]::GetFullPath($Game); $root = Join-Path $Game 'ssoptimizer-standalone'; Assert-Chain $Game
@@ -270,12 +293,15 @@ try {
         if (!$actions.ContainsKey($choice)) { throw '已取消。' }; $Action = $actions[$choice]
         if ($Action -eq 'Uninstall' -and (Read-Host '输入 UNINSTALL 确认') -cne 'UNINSTALL') { throw '已取消。' }
     }
-    if ($Action -in @('Install','Update','Launch','Doctor','Prepare','Import-Save')) { $gameProfile = Check-Game $Game }
+    if ($Action -in @('Install','Update','Launch','Doctor','Prepare','Import-Save')) { Assert-GameLayout $Game }
     if ($Action -eq 'Import-Save') {
         Write-Host '导入会复制到实例的新槽并转换副本。原存档保留；请确认旧档写入时使用的游戏版本。'
         if (!$Source) { $Source = Pick-Folder '选择包含 descriptor.xml 的原版或 Miko RC8 存档槽目录' }
-        if (!$ConfirmSource) { $ConfirmSource = Read-Host "四个核心文件的指纹已匹配 $gameProfile。若旧档确实来自此发行版，请输入 $gameProfile 确认" }
-        if ($ConfirmSource -cne $gameProfile) { throw "存档来源与已校验的游戏指纹不符：$ConfirmSource / $gameProfile" }
+        if (!$ConfirmSource) {
+            $suggested = if ([IO.File]::Exists((Join-Path $Game 'starsector-core/localization_version.json'))) { 'windows-zh-rc8' } else { 'windows-en-rc8' }
+            $ConfirmSource = Read-Host "请选择旧档写入时的来源：windows-en-rc8 或 windows-zh-rc8。按当前安装语言建议 $suggested，回车采用建议值"
+            if (!$ConfirmSource) { $ConfirmSource = $suggested }
+        }
         if ($choiceForImport -and !$Slot) { $Slot = Read-Host '新槽名称（留空使用原槽名）' }
     }
     if ($Action -eq 'Update' -and !$Bundle) { $Bundle = Pick-Folder '选择新发行包解压目录（含 Install.cmd）' }
@@ -289,7 +315,6 @@ try {
     if ($Action -in @('Install','Update')) {
         $source = Join-Path ([IO.Path]::GetFullPath($Bundle)) 'version'
         if ($exists) {
-            if ($Action -eq 'Install' -and [IO.File]::Exists((Join-Path $root 'Manage.ps1'))) { throw "更新请双击已安装的 $root\Manage.cmd，再选择新包目录。" }
             Install-Version $source $root $false
         } else {
             $temp = Join-Path $Game ('.ssoptimizer-install-' + [Guid]::NewGuid().ToString('N')); Ensure-Dir $temp
