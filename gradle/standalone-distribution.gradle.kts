@@ -145,7 +145,9 @@ val signRelease = tasks.register("signStandaloneWindows") {
 tasks.register<Zip>("packageStandaloneWindows") {
     group = "distribution"; description = "构建含签名清单和完整 Java 25 的 Windows x64 安装包"
     dependsOn(signRelease); archiveFileName.set("SSOptimizer-Standalone-$versionId-windows-x64.zip")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions")); isReproducibleFileOrder = true; isPreserveFileTimestamps = false
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = true
     from(base.map { it.dir("windows/version") }) { into("version") }
     from(metadata) { include("Install.cmd", "version/release.manifest", "version/release.sig", "version/tools/Launch.cmd", "version/tools/Manage.cmd", "version/tools/Manage.ps1") }
     duplicatesStrategy = DuplicatesStrategy.FAIL
