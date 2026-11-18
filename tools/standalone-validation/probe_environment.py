@@ -7,7 +7,6 @@ import tempfile
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import patch
 
 
 def location(name, default):
@@ -42,19 +41,26 @@ def private_display(out):
         subprocess.run(['xauth', '-f', auth.name], input=f'add {display} . {secrets.token_hex(16)}\n'.encode(), check=True)
         server = subprocess.Popen([XVFB, display, '-auth', auth.name, '-screen', '0', '1600x900x24',
                                    '-nolisten', 'tcp', '+extension', 'GLX'], stdout=log, stderr=log)
+        env = {'DISPLAY': display, 'XAUTHORITY': auth.name, 'LIBGL_ALWAYS_SOFTWARE': '1', 'ALSOFT_DRIVERS': 'null'}
+        previous = {key: os.environ.get(key) for key in env}
         try:
-            with patch.dict(os.environ, DISPLAY=display, XAUTHORITY=auth.name, LIBGL_ALWAYS_SOFTWARE='1', ALSOFT_DRIVERS='null'):
-                for _ in range(100):
-                    if server.poll() is not None:
-                        raise SystemExit(f'Xvfb 启动失败，见 {out}/xvfb.log')
-                    if subprocess.run(['xset', 'q'], capture_output=True).returncode == 0:
-                        (out / 'display.txt').write_text(display + '\n')
-                        print(f'私有显示 {display}；XAUTHORITY={auth.name}', flush=True)
-                        yield display
-                        return
-                    time.sleep(.1)
-                raise SystemExit('Xvfb 未在 10 秒内就绪')
+            os.environ.update(env)
+            for _ in range(100):
+                if server.poll() is not None:
+                    raise SystemExit(f'Xvfb 启动失败，见 {out}/xvfb.log')
+                if subprocess.run(['xset', 'q'], capture_output=True).returncode == 0:
+                    (out / 'display.txt').write_text(display + '\n')
+                    print(f'私有显示 {display}；XAUTHORITY={auth.name}', flush=True)
+                    yield display
+                    return
+                time.sleep(.1)
+            raise SystemExit('Xvfb 未在 10 秒内就绪')
         finally:
             if server.poll() is None:
                 server.terminate()
             server.wait()
+            for key, value in previous.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value

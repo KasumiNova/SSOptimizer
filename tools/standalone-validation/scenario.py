@@ -13,7 +13,7 @@ from pathlib import Path
 
 from PIL import Image
 from probe_environment import CONFIG_HELP, JDK25, ROOT, private_display
-from rc8 import HASHES, box, verify
+from rc8 import HASHES, box, digest, verify
 
 
 def cmd(*args, capture=False):
@@ -70,6 +70,9 @@ def run(a, game, release, inst, evidence):
     start = box(inst, game / 'starsector-core', direct=True,
                 extra_env={'JAVA_TOOL_OPTIONS': shlex.join(opts), 'JAVA_HOME': str(JDK25)})
     start += [release / 'launch.sh', 'launch', '--game', game, '--instance', inst]
+    (evidence / 'input.json').write_text(json.dumps({'action': a.action, 'language': a.language,
+        'game': str(game), 'instance': str(inst), 'release': str(release), 'jdk': str(JDK25), 'display': display,
+        'payloadSha256': digest(release / 'payload.jar'), 'jvmOptions': opts}, ensure_ascii=False, indent=2) + '\n')
     limit = time.monotonic() + a.timeout
     window = None
     submitted = False
@@ -133,8 +136,15 @@ def run(a, game, release, inst, evidence):
                     proc.wait()
     if a.action == 'battle':
         data = json.loads((evidence / 'bench-summary.json').read_text())
-        if data['mission'] != 'afistfulofcredits' or data['frames'] <= 0 or not any((evidence / 'frames').glob('*.png')):
-            raise SystemExit('缺少战斗帧或截图')
+        visible = False
+        for screenshot in (evidence / 'frames').glob('*.png'):
+            with Image.open(screenshot) as image:
+                if image.size != (1280, 720):
+                    raise SystemExit(f'战斗截图分辨率不符：{screenshot}')
+                lo, hi = image.convert('L').getextrema()
+                visible |= hi > lo
+        if data['mission'] != 'afistfulofcredits' or data['frames'] <= 0 or not visible:
+            raise SystemExit('缺少真实战斗帧或非单色截图')
     elif a.action in ('load', 'resave'):
         data = json.loads((evidence / 'saveload-telemetry.json').read_text())
         if a.action == 'resave' and data['saveMs'] < 0:

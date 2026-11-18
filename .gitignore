@@ -17,3 +17,4 @@ bin/
 modules/internal/sso-app/ssoptimizer-texture-composition.tsv
 *.code-workspace
 .references
+__pycache__/
