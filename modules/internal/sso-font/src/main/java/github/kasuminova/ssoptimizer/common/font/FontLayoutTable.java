@@ -25,23 +25,6 @@ record FontLayoutTable(int size, boolean antiAlias, int lineHeight, int baseline
         return TABLES.computeIfAbsent(fontPath, FontLayoutTable::load).orElse(null);
     }
 
-    static java.awt.image.BufferedImage fitInk(java.awt.image.BufferedImage ink, int width, int height) {
-        if (ink == null || width <= 0 || height <= 0) return null;
-        if (ink.getWidth() == width && ink.getHeight() == height) return ink;
-        final double scale = Math.min((double) width / ink.getWidth(), (double) height / ink.getHeight());
-        final int w = Math.max(1, (int) Math.round(ink.getWidth() * scale));
-        final int h = Math.max(1, (int) Math.round(ink.getHeight() * scale));
-        final var result = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-        final var g = result.createGraphics();
-        try {
-            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g.drawImage(ink, (width - w) / 2, (height - h) / 2, w, h, null);
-        } finally {
-            g.dispose();
-        }
-        return result;
-    }
-
     private static Optional<FontLayoutTable> load(String fontPath) {
         if (!fontPath.startsWith("graphics/fonts/") || !fontPath.endsWith(".fnt")) return Optional.empty();
         String name = fontPath.substring("graphics/fonts/".length());

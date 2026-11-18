@@ -294,10 +294,9 @@ class TtfGlyphProviderTest {
             assertNull(font.getGlyph(cp));
             final var expected = table.cells().get((int) cp);
             final var actual = ttf.glyph(cp);
-            assertEquals(expected.left(), actual.xOffset());
-            assertEquals(expected.encodedAdvance(), actual.xAdvance());
-            assertEquals(expected.width(), actual.width());
-            assertEquals(expected.height(), actual.height());
+            assertEquals(expected.penAdvance(), actual.xOffset() + actual.xAdvance());
+            assertTrue(actual.width() >= Math.max(4, expected.width()));
+            assertTrue(actual.height() >= Math.max(4, expected.height()));
         }
     }
 

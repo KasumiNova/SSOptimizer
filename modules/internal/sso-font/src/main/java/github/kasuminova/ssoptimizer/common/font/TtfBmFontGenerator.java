@@ -559,15 +559,13 @@ final class TtfBmFontGenerator {
                     unsupported++;
                     continue;
                 }
-                if (reference != null && sourceMetric != null) {
-                    final var image = FontLayoutTable.fitInk(rasterized.image(), reference.width(), reference.height());
-                    glyphs.add(new GlyphRaster(codePoint, rasterized.sourceName(), rasterized.faceName(), image,
-                            reference.width(), reference.height(), reference.left(), reference.top(), reference.penAdvance()));
-                    continue;
-                }
-                glyphs.add(fonts.substituteLowercaseWithUppercase()
+                final var positioned = fonts.substituteLowercaseWithUppercase()
                         ? reconcileVictorGlyphToCell(rasterized, sourceMetric)
-                        : reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric));
+                        : reconcileRasterizedGlyphToSourceMetrics(rasterized, sourceMetric);
+                // 校正表规定下一个笔位，超出该笔位的墨迹保留在当前字形的纹理中。
+                glyphs.add(reference == null || sourceMetric == null ? positioned : new GlyphRaster(codePoint,
+                        positioned.sourceName(), positioned.faceName(), positioned.image(), positioned.width(),
+                        positioned.height(), positioned.xOffset(), positioned.yOffset(), reference.penAdvance()));
             }
             if (unsupported != 0) {
                 LOGGER.warn("[SSOptimizer] 字体链缺少 " + unsupported + " 个字符，未写入图集: " + fonts.sourceNames());

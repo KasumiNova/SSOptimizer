@@ -335,7 +335,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
             if (base == null || base.width() == 0 || base.height() == 0) {
                 continue;
             }
-            final NativeGlyphBitmap composed = composeGlyph(batch.get(i), bitmap, base, 0, bucketMillis / 1000.0f);
+            final NativeGlyphBitmap composed = composeToFontBox(bitmap, base, 0, bucketMillis / 1000.0f);
             final GlyphSlot slot = atlas.get().request(faceKey, bucketMillis, 0, batch.get(i), baseline,
                     (cp, bl, stroke) -> composed);
             if (slot != null) {
@@ -388,7 +388,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
                             return null;
                         }
                         final NativeGlyphBitmap bitmap = backend.rasterize(face, rasterCp, bl, stroke);
-                        return bitmap == null ? null : composeGlyph(cp, bitmap, base, strokeBucketMillis, bucketScale);
+                        return bitmap == null ? null : composeToFontBox(bitmap, base, strokeBucketMillis, bucketScale);
                     });
         }
     }
@@ -502,7 +502,12 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
             if (gm == null || gm.xAdvance() <= 0f) {
                 continue;
             }
-            sum += gm.xOffset() + gm.xAdvance();
+            // 旧图集以墨迹右缘扩展校准样本，排版仍必须单独使用修正表笔位。
+            if (layoutTable != null && layoutTable.cells().containsKey(cp)) {
+                sum += victorFamily ? gm.xAdvance() : Math.max(gm.xAdvance(), gm.width());
+            } else {
+                sum += gm.xOffset() + gm.xAdvance();
+            }
             count++;
         }
         return count == 0 ? 0f : sum / count;
@@ -537,24 +542,6 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
 
     private int baselineForBucket(final int bucketMillis) {
         return Math.round(baseFont.getBase() * (bucketMillis / 1000.0f));
-    }
-
-    private NativeGlyphBitmap composeGlyph(int cp, NativeGlyphBitmap ink, GlyphMetrics base, int stroke, float scale) {
-        final var cell = layoutTable == null ? null : layoutTable.cells().get(cp);
-        if (cell == null || TtfBmFontGenerator.shouldPreserveSourceSpecialGlyph(cell.width(), cell.height()) || !ink.hasImage())
-            return composeToFontBox(ink, base, stroke, scale);
-        final int border = Math.round(stroke / 1000f);
-        final int width = Math.max(1, Math.round(cell.width() * scale) + 2 * border);
-        final int height = Math.max(1, Math.round(cell.height() * scale) + 2 * border);
-        final int left = Math.round(cell.left() * scale) - border;
-        final int top = Math.round(cell.top() * scale) - border;
-        final int[] pixels = ink.argbPixels();
-        if (ink.width() == width && ink.height() == height)
-            return new NativeGlyphBitmap(width, height, pixels, left, top, ink.xAdvance());
-        final var image = new java.awt.image.BufferedImage(ink.width(), ink.height(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
-        image.setRGB(0, 0, ink.width(), ink.height(), pixels, 0, ink.width());
-        final var fitted = FontLayoutTable.fitInk(image, width, height);
-        return new NativeGlyphBitmap(width, height, fitted.getRGB(0, 0, width, height, null, 0, width), left, top, ink.xAdvance());
     }
 
     /** 画布必须取缩放 fnt 盒与实际墨迹的并集，避免 FreeType hinting 产生的盒外像素被裁剪。 */
