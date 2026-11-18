@@ -79,6 +79,7 @@
     "modopt.dcr.DcrOnGameLoadBatchMixin",
     "modopt.dcr.DcrSerializationManagerBatchMixin",
     "modopt.boxutil.StaticTrailMemoryPoolMixin",
+    "modopt.lazylib.CombatCacheMixin",
     "modopt.sotf.DaydreamSynthesizerMixin",
     "render.BitmapFontRendererMixin",
     "render.BaseTiledTerrainRenderMixin",
