@@ -150,6 +150,74 @@ class ModCatalogTest {
         assertThrows(IOException.class, this::scan);
     }
 
+    @Test void resolvesEachJarComponentAndKeepsItsDeclaredAlias() throws IOException {
+        Path dir = mod("game", "case", "Case", "\"jars\":[\"libs/../libs/inner/frontier.jar\"],");
+        Path jars = Files.createDirectories(dir.resolve("Libs/Inner"));
+        Path physical = jar(jars.resolve("Frontier.jar"), null, Map.of());
+        enabled("'case'");
+        var selected = scan().getFirst();
+        assertTrue(Files.isSameFile(physical, selected.path()));
+        assertEquals(dir.resolve("libs/inner/frontier.jar"), selected.declaredPath());
+    }
+
+    @Test @org.junit.jupiter.api.condition.DisabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
+    void parentAfterSymlinkCannotSelectAnotherArchiveInsideTheSameMod() throws IOException {
+        Path dir = mod("game", "case", "Case", "\"jars\":[\"link/../X.jar\"],");
+        Path child = Files.createDirectories(dir.resolve("libs/sub"));
+        Files.createSymbolicLink(dir.resolve("link"), child);
+        Path actual = jar(dir.resolve("libs/X.jar"), null, Map.of());
+        Path normalized = jar(dir.resolve("X.jar"), null, Map.of());
+        enabled("'case'");
+        String message = assertThrows(IOException.class, this::scan).getMessage();
+        assertTrue(message.contains(actual.toString()) && message.contains(normalized.toString()), message);
+        mod("game", "case", "Case", "\"jars\":[\"libs/../libs/X.jar\"],");
+        assertEquals(actual, scan().getFirst().path());
+    }
+
+    @Test void missingFileKeyDistinguishesCopiesFromHardLinksInTheSameSizeBucket() throws IOException {
+        Path a = Files.write(root.resolve("one.jar"), new byte[]{1});
+        Path copy = Files.copy(a, root.resolve("copy.jar"));
+        Path link = Files.createLink(root.resolve("two.jar"), a);
+        var original = new ModCatalog.Archive("one", a, false);
+        var distinct = new ModCatalog.Archive("copy", copy, false);
+        var duplicate = new ModCatalog.Archive("two", link, false);
+        for (int mode = 0; mode < 3; mode++) {
+            var index = new ModCatalog.ArchiveIdentities();
+            index.add(original, mode == 1 ? "one" : null, Files.size(a));
+            index.add(distinct, null, Files.size(copy));
+            Object linkKey = mode == 2 ? "one" : null;
+            assertThrows(IOException.class, () -> index.add(duplicate, linkKey, Files.size(link)));
+        }
+    }
+
+    @Test void exactComponentWinsButFoldedFileAndDirectoryCollisionsFail() throws IOException {
+        Path dir = mod("game", "case", "Case", "\"jars\":[\"Libs/Frontier.jar\"],");
+        Path jars = Files.createDirectory(dir.resolve("Libs"));
+        org.junit.jupiter.api.Assumptions.assumeFalse(Files.exists(dir.resolve("LIBS")));
+        Files.createDirectory(dir.resolve("LIBS"));
+        Path exact = jar(jars.resolve("Frontier.jar"), null, Map.of());
+        jar(jars.resolve("FRONTIER.jar"), null, Map.of());
+        enabled("'case'");
+        assertEquals(exact, scan().getFirst().path());
+        mod("game", "case", "Case", "\"jars\":[\"Libs/frontier.jar\"],");
+        String file = assertThrows(IOException.class, this::scan).getMessage();
+        assertTrue(file.contains("Frontier.jar") && file.contains("FRONTIER.jar"), file);
+        mod("game", "case", "Case", "\"jars\":[\"libs/Frontier.jar\"],");
+        String parent = assertThrows(IOException.class, this::scan).getMessage();
+        assertTrue(parent.contains("LIBS") && parent.contains("Libs"), parent);
+    }
+
+    @Test @org.junit.jupiter.api.condition.DisabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
+    void foldedSymlinkCannotEscapeMod() throws IOException {
+        Path dir = mod("game", "case", "Case", "\"jars\":[\"linked/payload.jar\"],");
+        Files.createSymbolicLink(dir.resolve("Linked"), root);
+        enabled("'case'");
+        assertThrows(IOException.class, this::scan);
+        mod("game", "case", "Case", "\"jars\":[\"alias.jar\"],");
+        Files.createSymbolicLink(dir.resolve("Alias.jar"), payload);
+        assertThrows(IOException.class, this::scan);
+    }
+
     @Test void selectsPrivateCoreByOrdinalFileNameAndKeysCacheByAllMountedOrPrivateBytes() throws IOException {
         Path cache = Files.createDirectory(root.resolve("cache"));
         Path jars = Files.createDirectories(mods.resolve("AI Tweaks/jars"));

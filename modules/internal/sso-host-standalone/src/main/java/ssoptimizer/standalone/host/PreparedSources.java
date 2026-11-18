@@ -45,11 +45,7 @@ public final class PreparedSources {
             URL root = location;
             if ("jar".equals(root.getProtocol())) root = ((JarURLConnection) root.openConnection()).getJarFileURL();
             if (!"file".equals(root.getProtocol())) return location;
-            Path path = Path.of(root.toURI()).toAbsolutePath().normalize();
-            Path named = active.plan.prepared.get(path);
-            if (named == null && java.nio.file.Files.isRegularFile(path)) {
-                named = active.plan.prepared.get(path.toRealPath());
-            }
+            Path named = active.plan.namedSource(Path.of(root.toURI()));
             return named == null ? root : named.toUri().toURL();
         } catch (IOException | URISyntaxException ex) {
             throw new IllegalStateException("无法解析模组 CodeSource: " + location, ex);
@@ -61,8 +57,8 @@ public final class PreparedSources {
         try {
             var resolved = new ArrayList<Path>();
             for (String jar : jarFiles) {
-                Path source = Path.of(jar).toRealPath();
-                Path named = sources.plan.prepared.get(source);
+                Path source = Path.of(jar);
+                Path named = sources.plan.namedSource(source);
                 if (named == null) throw new IllegalStateException("模组不在已准备的清单中，请重新启动: " + source);
                 resolved.add(named);
             }

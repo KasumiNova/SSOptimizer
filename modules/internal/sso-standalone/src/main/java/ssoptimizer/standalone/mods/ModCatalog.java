@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,13 +25,15 @@ import static ssoptimizer.standalone.mods.GameJson.id;
 import static ssoptimizer.standalone.mods.GameJson.string;
 
 public final class ModCatalog {
-    public record Archive(String modId, Path path, boolean named) {}
+    public record Archive(String modId, Path path, boolean named, Path declaredPath) {
+        public Archive(String modId, Path path, boolean named) { this(modId, path, named, path); }
+    }
 
     private record Mod(String id, String name, String sortKey, Path dir, JsonObject info) {}
 
     private ModCatalog() {}
 
-    /** 路径保留游戏声明的绝对位置。ssoptimizer 的记录已经与 payload 校验，必须映射到同一挂载。 */
+    /** path 用于读取归档；declaredPath 保留游戏声明的拼写。ssoptimizer 归档与 payload 共用一次挂载。 */
     public static List<Archive> scan(Path modsDir, Path payload) throws IOException {
         Path root = modsDir.toAbsolutePath().normalize();
         List<Path> coremods = externalCoremods(root);
@@ -60,7 +64,7 @@ public final class ModCatalog {
         var mods = new ArrayList<>(selected.values());
         mods.sort(Comparator.comparing(Mod::sortKey).thenComparing(Mod::name));
         var archives = new ArrayList<Archive>();
-        var seen = new HashMap<Object, Archive>();
+        var seen = new ArchiveIdentities();
         for (Mod mod : mods.reversed()) {
             String where = mod.dir.resolve("mod_info.json") + " [" + mod.id + "]";
             checkRequirements(mod.info, enabled, where);
@@ -71,20 +75,27 @@ public final class ModCatalog {
                     ? ModJar.namespace(string(mod.info.get("ssoptimizerNamespace"), where + ": ssoptimizerNamespace"), where) : null;
             String plugin = mod.info.has("modPlugin") ? string(mod.info.get("modPlugin"), where + ": modPlugin") : null;
             for (JsonElement item : jars) {
-                Path path = jarPath(mod.dir, string(item, where + ": jars"));
+                Path raw = declaredPath(mod.dir, string(item, where + ": jars"));
+                Path declared = raw.normalize();
+                Path path = jarPath(mod.dir, declared);
+                if (!raw.equals(declared) && Files.exists(raw) && !Files.isSameFile(raw, path)) {
+                    throw new IOException("模组 jar 声明路径与规范化路径指向不同文件：" + raw + " -> " + raw.toRealPath()
+                            + "，规范化后：" + path.toRealPath());
+                }
+                if (!path.equals(declared)) System.getLogger(ModCatalog.class.getName()).log(System.Logger.Level.WARNING,
+                        "模组 {0} 的 jar 路径大小写不匹配：声明 {1}，实际 {2}", mod.id, declared, path);
                 ModArchiveLayout.checkDeclared(mod.id, path);
-                boolean samePayload = Files.isSameFile(path, payload) || Files.size(path) == Files.size(payload)
-                        && Files.mismatch(path, payload) == -1;
-                if (own != samePayload) throw new IOException(where + " 的 jar 与发布 payload 冲突：" + path + "、" + payload);
-                if (!samePayload && !path.toRealPath().startsWith(mod.dir.toRealPath())) {
+                boolean payloadFile = Files.isSameFile(path, payload);
+                if (!(own && payloadFile) && !path.toRealPath().startsWith(mod.dir.toRealPath())) {
                     throw new IOException(where + " 的 jar 指向模组目录之外：" + path);
                 }
+                boolean samePayload = payloadFile || Files.size(path) == Files.size(payload)
+                        && Files.mismatch(path, payload) == -1;
+                if (own != samePayload) throw new IOException(where + " 的 jar 与发布 payload 冲突：" + path + "、" + payload);
                 boolean named = ModJar.inspect(path, mod.id, source, own, plugin);
-                Archive archive = new Archive(mod.id, path, named);
+                Archive archive = new Archive(mod.id, path, named, declared);
                 var attrs = Files.readAttributes(path, BasicFileAttributes.class);
-                Object key = attrs.fileKey() != null ? attrs.fileKey() : path.toRealPath();
-                Archive previous = seen.putIfAbsent(key, archive);
-                if (previous != null) throw new IOException("重复声明同一归档：" + previous + "、" + archive);
+                seen.add(archive, attrs.fileKey(), attrs.size());
                 archives.add(archive);
             }
         }
@@ -112,18 +123,65 @@ public final class ModCatalog {
         return id(GameJson.read(file).get("id"), file + ": id");
     }
 
-    private static Path jarPath(Path dir, String jar) throws IOException {
+    private static Path declaredPath(Path dir, String jar) throws IOException {
         try {
             Path entry = Path.of(jar);
             Path path = dir.resolve(entry).normalize();
             if (entry.isAbsolute() || jar.matches("^[a-zA-Z]:.*") || jar.startsWith("\\") || !path.startsWith(dir)) {
                 throw new IOException(dir + " 引用了模组目录外的路径：" + jar);
             }
-            if (!Files.isRegularFile(path)) throw new IOException("模组声明的 jar 缺失或不是文件：" + path);
-            return path;
+            Path raw = dir.resolve(entry);
+            if (!raw.equals(path) && Files.exists(raw) && !raw.toRealPath().startsWith(dir.toRealPath())) {
+                throw new IOException(dir + " 的 jar 路径经符号链接指向模组目录外：" + jar);
+            }
+            return raw;
         } catch (InvalidPathException e) {
             throw new IOException(dir + " 的 jar 路径无效：" + jar, e);
         }
+    }
+
+    static final class ArchiveIdentities {
+        private final Map<Object, Archive> keyed = new HashMap<>();
+        private final Map<Long, List<Archive>> allBySize = new HashMap<>();
+        private final Map<Long, List<Archive>> unkeyedBySize = new HashMap<>();
+
+        void add(Archive archive, Object key, long size) throws IOException {
+            Archive previous = key == null ? null : keyed.get(key);
+            if (previous == null) {
+                var candidates = key == null ? allBySize : unkeyedBySize;
+                for (Archive candidate : candidates.getOrDefault(size, List.of())) {
+                    if (Files.isSameFile(archive.path(), candidate.path())) { previous = candidate; break; }
+                }
+            }
+            if (previous != null) throw new IOException("重复声明同一归档：" + previous + "、" + archive);
+            allBySize.computeIfAbsent(size, ignored -> new ArrayList<>()).add(archive);
+            if (key == null) unkeyedBySize.computeIfAbsent(size, ignored -> new ArrayList<>()).add(archive);
+            else keyed.put(key, archive);
+        }
+    }
+
+    private static Path jarPath(Path mod, Path declared) throws IOException {
+        Path base = mod.toRealPath();
+        Path current = mod;
+        for (Path component : mod.relativize(declared)) {
+            if (!current.toRealPath().startsWith(base)) throw new IOException("jar 父目录指向模组外：" + current);
+            String name = component.toString();
+            Path exact = current.resolve(name);
+            if (Files.exists(exact, LinkOption.NOFOLLOW_LINKS)) {
+                current = exact;
+                continue;
+            }
+            String folded = name.toLowerCase(Locale.ROOT);
+            try (var entries = Files.list(current)) {
+                var matches = entries.filter(p -> p.getFileName().toString().toLowerCase(Locale.ROOT).equals(folded))
+                        .sorted().toList();
+                if (matches.isEmpty()) throw new IOException("模组声明的 jar 缺失：" + declared + "，在 " + current + " 中找不到 " + name);
+                if (matches.size() > 1) throw new IOException("模组 jar 路径大小写不明确：" + declared + "，候选：" + matches);
+                current = matches.getFirst();
+            }
+        }
+        if (!Files.isRegularFile(current)) throw new IOException("模组声明的 jar 不是普通文件：" + current);
+        return current;
     }
 
     private static void checkRequirements(JsonObject info, Set<String> enabled, String where) throws IOException {

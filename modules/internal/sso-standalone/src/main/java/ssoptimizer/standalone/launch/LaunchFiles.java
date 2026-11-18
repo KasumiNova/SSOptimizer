@@ -81,9 +81,11 @@ public final class LaunchFiles {
         for (var mod : mods) {
             if (mod.modId().equals("ssoptimizer")) {
                 if (plan.putIfAbsent("payload.source", mod.path().toString()) != null) throw new IOException("SSOptimizer 实例内有多个负载：" + mod.path());
+                if (!mod.declaredPath().equals(mod.path())) plan.setProperty("payload.declared", mod.declaredPath().toString());
                 continue;
             }
             plan.setProperty("mod.source." + preparedMods.size(), mod.path().toString());
+            if (!mod.declaredPath().equals(mod.path())) plan.setProperty("mod.declared." + preparedMods.size(), mod.declaredPath().toString());
             Path prepared = mod.named() ? mod.path() : output(outputs, mod.path());
             preparedMods.add(ssoptimizer.standalone.mods.ModArchiveLayout.prepare(cache, mod, prepared));
         }

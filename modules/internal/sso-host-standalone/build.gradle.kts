@@ -15,7 +15,12 @@ dependencies {
     compileOnly("org.ow2.asm:asm-tree:9.10.1")
     compileOnly("org.apache.logging.log4j:log4j-api:2.25.2")
     compileOnly("org.json:json:20240303")
+    testImplementation(platform("org.junit:junit-bom:5.13.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+tasks.test { useJUnitPlatform() }
 
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(25)

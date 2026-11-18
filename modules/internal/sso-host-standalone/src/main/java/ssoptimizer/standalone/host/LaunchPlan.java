@@ -27,11 +27,12 @@ final class LaunchPlan {
     final Set<String> enabled;
     final Path payload;
     final boolean hasGameModPayload;
-    final Map<Path, Path> prepared;
+    private final Map<Path, Path> prepared;
+    private final Map<Path, Path> declaredSources;
     final Map<String, Path> owners;
     final Set<String> childPackages;
 
-    private LaunchPlan(Properties p) throws IOException {
+    LaunchPlan(Properties p) throws IOException {
         var order = new LinkedHashSet<Path>();
         List<Path> game = paths(p, "game");
         if (game.isEmpty()) throw new IOException("启动清单缺少游戏归档");
@@ -46,17 +47,23 @@ final class LaunchPlan {
         }
         enabled = Set.copyOf(selected);
         var replacements = new HashMap<Path, Path>();
+        var aliases = new HashMap<Path, Path>();
         replacements.put(payload, payload);
         hasGameModPayload = p.containsKey("payload.source");
-        if (hasGameModPayload) replacements.put(path(p, "payload.source"), payload);
+        if (hasGameModPayload) {
+            replacements.put(path(p, "payload.source"), payload);
+            declared(p, "payload.declared", "payload.source", aliases);
+        }
         for (int i = 0; i < mods.size(); i++) {
             Path source = path(p, "mod.source." + i);
             Path named = mods.get(i);
             if (replacements.putIfAbsent(source, named) != null) throw new IOException("重复模组来源: " + source);
             Path previous = replacements.putIfAbsent(named, named);
             if (previous != null && !previous.equals(named)) throw new IOException("模组来源冲突: " + named);
+            declared(p, "mod.declared." + i, "mod.source." + i, aliases);
         }
         prepared = Map.copyOf(replacements);
+        declaredSources = Map.copyOf(aliases);
         order.add(payload);
         order.addAll(game);
         order.addAll(libraries);
@@ -90,6 +97,26 @@ final class LaunchPlan {
     }
 
     private static boolean isSystem(String name) { return SYSTEM.stream().anyMatch(name::startsWith); }
+
+    private static void declared(Properties p, String key, String sourceKey, Map<Path, Path> aliases) throws IOException {
+        String value = p.getProperty(key);
+        if (value == null) return;
+        Path alias = Path.of(value);
+        if (!alias.isAbsolute() || !alias.normalize().equals(alias)
+                || !value.toLowerCase(java.util.Locale.ROOT).equals(p.getProperty(sourceKey).toLowerCase(java.util.Locale.ROOT))) {
+            throw new IOException("无效的模组声明路径：" + key + "=" + value);
+        }
+        if (aliases.putIfAbsent(alias, Path.of(p.getProperty(sourceKey))) != null) throw new IOException("重复的模组声明路径：" + alias);
+    }
+
+    Path namedSource(Path source) throws IOException {
+        Path absolute = source.toAbsolutePath();
+        if (Files.notExists(absolute, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            absolute = declaredSources.get(absolute.normalize());
+            if (absolute == null) return null;
+        }
+        return prepared.get(absolute.toRealPath());
+    }
 
     static LaunchPlan read() throws IOException {
         String value = System.getProperty("ssoptimizer.standalone.plan");
