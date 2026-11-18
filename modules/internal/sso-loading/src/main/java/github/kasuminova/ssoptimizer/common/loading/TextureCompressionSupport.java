@@ -85,12 +85,13 @@ public final class TextureCompressionSupport {
     }
 
     public static Format preferredFormat() {
+        if (!isEnabled()) return Format.NONE;
         final ProbeResult probe = probeOnce();
-        return decideFormat(isEnabled(), System.getProperty(FORMAT_PROPERTY), probe.bptc(), probe.s3tc());
+        return decideFormat(true, System.getProperty(FORMAT_PROPERTY), probe.bptc(), probe.s3tc());
     }
 
     static boolean isEnabled() {
-        return !"false".equalsIgnoreCase(System.getProperty(ENABLE_PROPERTY, "true"));
+        return Boolean.getBoolean(ENABLE_PROPERTY);
     }
 
     static boolean isBc1ForOpaqueEnabled() {

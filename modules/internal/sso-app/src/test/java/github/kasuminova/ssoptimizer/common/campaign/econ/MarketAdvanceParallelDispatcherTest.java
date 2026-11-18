@@ -17,12 +17,6 @@ class MarketAdvanceParallelDispatcherTest {
     private static final float DT = 0.1F;
 
     @Test
-    void executorIsNullWhenParallelDisabledByDefault() {
-        assertNull(MarketAdvanceParallelDispatcher.executor(),
-                "econ.advance.parallel 默认关闭时执行器必须为 null");
-    }
-
-    @Test
     void disabledParallelIsFrameByFrameIdenticalToWave6Throttle() {
         for (final boolean playerOwned : new boolean[]{false, true}) {
             final RecordingBridge viaDispatcher = new RecordingBridge("m");

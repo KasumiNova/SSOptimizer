@@ -13,7 +13,7 @@ public final class MarketAdvanceParallelDispatcher {
     public static final String ENABLED_PROPERTY = "ssoptimizer.econ.advance.parallel";
 
     private static final boolean ENABLED = Boolean.parseBoolean(
-            System.getProperty(ENABLED_PROPERTY, "false"));
+            System.getProperty(ENABLED_PROPERTY, "true"));
     private static final FrameParallelExecutor EXECUTOR = ENABLED ? SharedFrameWorkers.get() : null;
 
     private MarketAdvanceParallelDispatcher() {
@@ -39,7 +39,6 @@ public final class MarketAdvanceParallelDispatcher {
             return;
         }
         if (playerOwned) {
-            // 玩家市场存在跨市场共享写，必须保持主线程内联与循环顺序。
             bridge.ssoptimizer$advanceNow((float) dt);
             return;
         }
@@ -53,7 +52,4 @@ public final class MarketAdvanceParallelDispatcher {
         }
     }
 
-    static FrameParallelExecutor executor() {
-        return EXECUTOR;
-    }
 }

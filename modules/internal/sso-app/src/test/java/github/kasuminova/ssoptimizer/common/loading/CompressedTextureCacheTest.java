@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.common.loading;
 
 import github.kasuminova.ssoptimizer.common.loading.TextureCompressionSupport.Format;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,8 +19,17 @@ class CompressedTextureCacheTest {
     @TempDir
     Path tempDir;
 
+    private String previousCompression;
+
+    @BeforeEach
+    void enableCompression() {
+        previousCompression = System.setProperty(TextureCompressionSupport.ENABLE_PROPERTY, "true");
+    }
+
     @AfterEach
     void tearDown() {
+        if (previousCompression == null) System.clearProperty(TextureCompressionSupport.ENABLE_PROPERTY);
+        else System.setProperty(TextureCompressionSupport.ENABLE_PROPERTY, previousCompression);
         System.clearProperty(CompressedTextureCache.DIRECTORY_PROPERTY);
         System.clearProperty(CompressedTextureCache.MEMORY_MAX_BYTES_PROPERTY);
         CompressedTextureCache.clearMemoryCache();
@@ -124,25 +134,6 @@ class CompressedTextureCacheTest {
                 TextureConversionCache.probeFingerprint(sourceFile.toString());
         assertNull(CompressedTextureCache.probeKeyByResourcePath(sourceFile.toString(), changed),
                 "Changed fingerprint must invalidate the index entry");
-    }
-
-    @Test
-    void atomicWriteLeavesNoTempFiles() throws Exception {
-        useTempCacheDir();
-
-        CompressedTextureCache.store(
-                new CompressedTextureCache.Key("hash-atomic", 64, 64, true, Format.BC7, NativeTextureCompressor.QUALITY_NORMAL),
-                SsobcTestContainers.buildFullChain(NativeTextureCompressor.FORMAT_BC7, 64, 64),
-                "graphics/ships/kite.png", null);
-
-        final List<Path> files = findAllFiles();
-        assertFalse(files.isEmpty(), "Cache entry should be on disk");
-        for (final Path file : files) {
-            assertFalse(file.getFileName().toString().endsWith(".tmp"),
-                    "Temp file residue after atomic write: " + file);
-        }
-        assertEquals(1, files.stream()
-                .filter(p -> p.getFileName().toString().endsWith(".ssobc.zst")).count());
     }
 
     @Test

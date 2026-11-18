@@ -69,8 +69,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
             ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
 
     private SpriteBatchImpl() {
-        String rawEnable = System.getProperty(ENABLE_PROPERTY, "true");
-        boolean enable = !"false".equalsIgnoreCase(rawEnable.trim());
+        boolean enable = Boolean.getBoolean(ENABLE_PROPERTY);
         if (enable && RenderThreadMode.isEnabled()) {
             LOGGER.info("[SSOptimizer] 渲染线程分离模式：SpriteBatch 收集禁用"
                     + "（Java 回退 flush 实测负优化，immediate 路径已优化）");
