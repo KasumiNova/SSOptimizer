@@ -7,13 +7,13 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public record GameInstall(Path root, Path core, String profile, List<Path> gameJars) {
     private static final List<String> GAME = List.of("starfarer_obf.jar", "starfarer.api.jar", "fs.common_obf.jar", "fs.sound_obf.jar");
-    static final String UPSTREAM_XSTREAM = "f56586f3de59ae2a49430acbc9f27942b8c5cebec9245c869fae7136733333ec";
     private static final List<String> LIBRARIES = List.of("janino.jar", "commons-compiler.jar", "commons-compiler-jdk.jar",
             "jogg-0.0.7.jar", "jorbis-0.0.15.jar", "json.jar", "jinput.jar", "txw2-3.0.2.jar", "jaxb-api-2.4.0-b180830.0359.jar", "webp-imageio-0.1.6.jar");
 
@@ -33,17 +33,93 @@ public record GameInstall(Path root, Path core, String profile, List<Path> gameJ
     List<Path> libraries(Path home) throws IOException {
         var result = new java.util.ArrayList<Path>();
         for (String name : LIBRARIES) result.add(required(core.resolve(name)));
-        List<Path> replacements = jars(home.resolve("game-lib"));
-        long verified = 0;
-        for (Path path : replacements) {
-            if (path.getFileName().toString().toLowerCase(Locale.ROOT).contains("xstream")) {
-                if (!UPSTREAM_XSTREAM.equals(digest(path))) throw new IOException("XStream 与已验证的上游 1.4.21 不一致：" + path);
-                verified++;
+        result.add(serializer(System.getenv("SSO_XSTREAM")));
+        result.addAll(jars(home.resolve("game-lib")));
+        return List.copyOf(result);
+    }
+
+    private static final String MIKO = "xstream-1.4.21_miko.jar", UPSTREAM = "xstream-1.4.21.jar", STOCK = "xstream-1.4.10.jar";
+    private static final Pattern CLASSPATH = Pattern.compile("(?:^|\\s)(?:-cp|-classpath|--class-path)(?:\\s+|=)(?:\"([^\"]+)\"|'([^']+)'|([^\\s\"']+))");
+
+    Path serializer(String override) throws IOException {
+        Path miko = core.resolve(MIKO), upstream = core.resolve(UPSTREAM), stock = core.resolve(STOCK);
+        Path bundle = root.resolve("mikohime").resolve(MIKO);
+        Path simple = root.resolve("Miko_Simple.txt");
+        boolean installed = Files.isRegularFile(simple) || Files.isRegularFile(root.resolve("Miko_Rouge.bat"));
+        var candidates = new java.util.ArrayList<>(List.of(miko, upstream, stock));
+        if (installed) candidates.add(bundle);
+        if (override != null && !override.isBlank()) {
+            Path pick = switch (override) {
+                case "core-miko" -> miko;
+                case "miko" -> {
+                    if (!installed) throw new IOException("SSO_XSTREAM=miko 需要安装目录中的 Miko_Simple.txt 或 Miko_Rouge.bat");
+                    yield bundle;
+                }
+                case "upstream" -> upstream;
+                case "stock" -> stock;
+                default -> throw new IOException("SSO_XSTREAM 应为 core-miko、miko、upstream 或 stock：" + override);
+            };
+            return selected(pick, "SSO_XSTREAM=" + override);
+        }
+        for (String name : List.of("launch_nanoforge_ss.sh", "Miko_Simple.txt", "starsector.sh", "vmparams")) {
+            Path script = root.resolve(name);
+            Path declared = declaredSerializer(script, candidates);
+            if (declared != null) {
+                if (name.equals("vmparams") && declared.equals(stock) && Files.isRegularFile(miko)) {
+                    return selected(miko, "核心目录已部署 Miko；vmparams 仍声明原版。可用 SSO_XSTREAM=stock 选择原版");
+                }
+                return selected(declared, script + " 的 classpath");
+            }
+            if (name.equals("Miko_Simple.txt") && installed && Files.isRegularFile(bundle)) {
+                return selected(bundle, "Mikohime 安装标志与 mikohime 目录");
             }
         }
-        if (verified != 1) throw new IOException("game-lib 必须仅包含一个上游 XStream 1.4.21；当前为 " + verified);
-        result.addAll(replacements);
-        return List.copyOf(result);
+        for (Path pick : List.of(miko, upstream, stock)) {
+            if (Files.isRegularFile(pick)) return selected(pick, "核心目录中的已安装版本");
+        }
+        throw new IOException("安装内缺少 XStream：" + candidates);
+    }
+
+    private Path declaredSerializer(Path script, List<Path> candidates) throws IOException {
+        if (!Files.isRegularFile(script)) return null;
+        Path file = confined(script);
+        try (var in = Files.newInputStream(file)) {
+            int limit = 256 * 1024;
+            byte[] bytes = in.readNBytes(limit + 1);
+            if (bytes.length > limit) throw new IOException("启动配置超过 256 KiB：" + file + "；请设置 SSO_XSTREAM");
+            String text = new String(bytes, java.nio.charset.StandardCharsets.UTF_8).replace("\\\r\n", " ").replace("\\\n", " ");
+            var picks = new LinkedHashSet<Path>();
+            for (String line : text.lines().toList()) {
+                String command = line.stripLeading();
+                if (command.startsWith("#") || command.startsWith("echo ") || command.startsWith("printf ")) continue;
+                int comment = command.indexOf(" #");
+                var matches = CLASSPATH.matcher(comment < 0 ? command : command.substring(0, comment));
+                while (matches.find()) {
+                    String cp = matches.group(1) != null ? matches.group(1) : matches.group(2) != null ? matches.group(2) : matches.group(3);
+                    for (String part : cp.split(cp.contains(";") ? ";" : ":")) {
+                        String path = part.replace('\\', '/').replace("//", "/");
+                        for (Path candidate : candidates) {
+                            String relative = core.relativize(candidate).toString().replace('\\', '/');
+                            if (path.equals(relative) || path.equals("./" + relative) || path.equals(candidate.toString().replace('\\', '/'))) picks.add(candidate);
+                        }
+                    }
+                }
+            }
+            if (picks.size() > 1) throw new IOException(file + " 声明了多个 XStream：" + picks + "；请设置 SSO_XSTREAM");
+            return picks.isEmpty() ? null : picks.getFirst();
+        }
+    }
+
+    private Path selected(Path jar, String reason) throws IOException {
+        Path path = confined(required(jar));
+        System.getLogger(GameInstall.class.getName()).log(System.Logger.Level.INFO, "使用 XStream：{0}，选择依据：{1}", path, reason);
+        return path;
+    }
+
+    private Path confined(Path path) throws IOException {
+        Path real = path.toRealPath();
+        if (!real.startsWith(root.toRealPath())) throw new IOException("安装文件位于游戏目录外：" + path + " -> " + real);
+        return real;
     }
 
     static List<Path> jars(Path dir) throws IOException {

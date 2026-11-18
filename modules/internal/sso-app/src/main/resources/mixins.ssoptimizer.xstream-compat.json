@@ -2,17 +2,9 @@
   "required": true,
   "minVersion": "0.8.7",
   "package": "github.kasuminova.ssoptimizer.mixin.compat.xstream",
-  "plugin": "github.kasuminova.ssoptimizer.mixin.compat.xstream.XStreamCompatibilityConfigPlugin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "LambdaTypesMixin",
-    "SaveAliasesMixin",
-    "SaveSecurityAccessor",
-    "SavePermissionBaselineMixin",
-    "CampaignSavePermissionsMixin",
-    "SaveUnmarshallingMixin",
-    "SaveAttributeTypesMixin",
-    "SaveMarshallingMixin"
+    "LambdaTypesMixin"
   ],
   "injectors": {
     "defaultRequire": 1

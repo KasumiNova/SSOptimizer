@@ -1,6 +1,3 @@
-import java.security.MessageDigest
-import java.util.HexFormat
-
 plugins {
     id("ssoptimizer-module")
 }
@@ -10,45 +7,13 @@ dependencies {
     implementation("it.unimi.dsi:fastutil:8.5.18")
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("com.github.luben:zstd-jni:1.5.7-3")
+    testImplementation(platform("org.junit:junit-bom:5.13.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-val xstreamCompatibilityTestSourceSet = sourceSets.create("xstreamCompatibilityTest") {
-    java.srcDir("src/xstreamCompatibilityTest/java")
-    compileClasspath += sourceSets.main.get().output
-    runtimeClasspath += sourceSets.main.get().output
-}
-
-dependencies {
-    "xstreamCompatibilityTestImplementation"(platform("org.junit:junit-bom:5.13.0"))
-    "xstreamCompatibilityTestImplementation"("org.junit.jupiter:junit-jupiter")
-    "xstreamCompatibilityTestImplementation"("com.thoughtworks.xstream:xstream:1.4.21")
-    "xstreamCompatibilityTestImplementation"(project(":modules:api:sso-api"))
-    "xstreamCompatibilityTestImplementation"("org.ow2.asm:asm:9.8")
-    "xstreamCompatibilityTestRuntimeOnly"("org.junit.platform:junit-platform-launcher:1.13.0")
-    "xstreamCompatibilityTestRuntimeOnly"("log4j:log4j:1.2.17")
-}
-
-tasks.register<Test>("xstreamCompatibilityTest") {
-    group = "verification"
-    description = "Verify save type rules and Java 25 lambda classification against upstream XStream"
-    testClassesDirs = xstreamCompatibilityTestSourceSet.output.classesDirs
-    classpath = xstreamCompatibilityTestSourceSet.runtimeClasspath
+tasks.test {
     useJUnitPlatform()
-    jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED")
-    doFirst {
-        val upstream = configurations.named("xstreamCompatibilityTestRuntimeClasspath").get()
-            .resolvedConfiguration.resolvedArtifacts.single {
-                it.moduleVersion.id.group == "com.thoughtworks.xstream" && it.name == "xstream"
-            }.file
-        val digest = MessageDigest.getInstance("SHA-256").digest(upstream.readBytes())
-        logger.lifecycle("XStream compatibility runtime: ${upstream.absolutePath}, SHA-256=${HexFormat.of().formatHex(digest)}")
-    }
-}
-
-tasks.named("check") {
-    dependsOn("xstreamCompatibilityTest")
 }
 
 val saveBenchSourceSet = sourceSets.create("saveBench") {

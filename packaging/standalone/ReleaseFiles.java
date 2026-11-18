@@ -145,8 +145,9 @@ class ReleaseFiles {
                 for (var e : jar.versionedStream().filter(en -> en.getName().endsWith(".class")).toList()) {
                     String name = e.getName();
                     if (name.startsWith("com/fs/") || name.startsWith("org/lwjgl/") || name.startsWith("io/github/nanoforged/")) throw new IOException("发行包含游戏或 NanoForge 类：" + path + ":" + name);
-                    if (name.startsWith("org/objectweb/asm/") || name.startsWith("org/apache/log4j/") || name.startsWith("org/apache/logging/log4j/") || name.startsWith("org/slf4j/") || name.startsWith("org/xmlpull/") || name.startsWith("com/thoughtworks/xstream/")) {
-                        boolean gameClass = name.startsWith("org/xmlpull/") || name.startsWith("com/thoughtworks/xstream/");
+                    if (name.startsWith("com/thoughtworks/xstream/")) throw new IOException("XStream 必须来自游戏安装：" + path + ":" + name);
+                    if (name.startsWith("org/objectweb/asm/") || name.startsWith("org/apache/log4j/") || name.startsWith("org/apache/logging/log4j/") || name.startsWith("org/slf4j/") || name.startsWith("org/xmlpull/")) {
+                        boolean gameClass = name.startsWith("org/xmlpull/");
                         String expected = gameClass ? "game-lib" : "lib";
                         if (!path.getParent().equals(home.resolve(expected))) throw new IOException("类所在加载域错误：" + path + ":" + name + "，应在 " + expected);
                         Path other = owners.putIfAbsent(name, path);

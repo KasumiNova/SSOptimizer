@@ -45,6 +45,24 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(final String targetClassName,
                                     final String mixinClassName) {
+        if (mixinClassName.endsWith(".save.XStreamFieldAliasingMapperMixin")) {
+            return hasXStreamMembers(mixinClassName, targetClassName, node -> {
+                String store = "Lcom/thoughtworks/xstream/core/util/MemberStore;";
+                return node.fields.stream().anyMatch(f -> f.name.equals("fieldToAliasMap") && f.desc.equals(store))
+                        && node.fields.stream().anyMatch(f -> f.name.equals("aliasToFieldMap") && f.desc.equals(store))
+                        && hasMethod(node, "getMember", "(Ljava/lang/Class;Ljava/lang/String;" + store + ")Ljava/lang/String;");
+            });
+        }
+        if (mixinClassName.endsWith(".save.XStreamMemberStoreMixin")) {
+            return hasXStreamMembers(mixinClassName, targetClassName, node -> node.fields.stream()
+                    .anyMatch(f -> f.name.equals("types") && f.desc.equals("Ljava/util/Map;"))
+                    && hasMethod(node, "get", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Object;")
+                    && hasMethod(node, "put", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/Object;"));
+        }
+        if (mixinClassName.endsWith(".save.XStreamReflectionConverterMixin")) {
+            return hasXStreamMembers(mixinClassName, "com.thoughtworks.xstream.core.util.MemberDictionary",
+                    node -> hasMethod(node, "<init>", "()V") && hasMethod(node, "add", "(Ljava/lang/Class;Ljava/lang/String;)Z"));
+        }
         for (final java.util.Map.Entry<String, String> entry : DISABLE_KEYS.entrySet()) {
             if (mixinClassName.endsWith(entry.getKey())
                     && Boolean.getBoolean("ssoptimizer.disable." + entry.getValue())) {
@@ -67,21 +85,18 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
             LOGGER.info("[SSOptimizer] 渲染线程分离模式已关闭，禁用依赖 bridge 的 Mixin: " + mixinClassName);
             return false;
         }
-        // 纹理上传的调用目标随渲染线程模式变化：开启时是 bridge 调用，关闭时是原始 LWJGL 调用。
         if (mixinClassName.endsWith(".loading.TextureLoaderUploadMixin") && !RenderThreadMode.isEnabled()) {
             return false;
         }
         if (mixinClassName.endsWith(".loading.TextureLoaderUploadDirectMixin") && RenderThreadMode.isEnabled()) {
             return false;
         }
-        // glFinish 的调用目标随渲染线程模式变化：开启时是 bridge 调用，关闭时是原始 LWJGL 调用。
         if (mixinClassName.endsWith(".render.CombatStateTraversalMixin") && !RenderThreadMode.isEnabled()) {
             return false;
         }
         if (mixinClassName.endsWith(".render.CombatStateTraversalDirectMixin") && RenderThreadMode.isEnabled()) {
             return false;
         }
-        // 该属性阻止 AI Mixin 织入；运行期软开关则保留织入并串行执行。
         if (mixinClassName.contains(".mixin.ai.")
                 && Boolean.getBoolean(AI_PARALLEL_DISABLE_PROPERTY)) {
             LOGGER.info("[SSOptimizer] Parallel AI mixin disabled via -D" + AI_PARALLEL_DISABLE_PROPERTY
@@ -89,6 +104,23 @@ public final class SSOptimizerMixinConfigPlugin implements IMixinConfigPlugin {
             return false;
         }
         return true;
+    }
+
+    private static boolean hasMethod(ClassNode node, String name, String descriptor) {
+        return node.methods.stream().anyMatch(m -> m.name.equals(name) && m.desc.equals(descriptor));
+    }
+
+    private static boolean hasXStreamMembers(String mixin, String type, java.util.function.Predicate<ClassNode> test) {
+        try {
+            if (test.test(MixinService.getService().getBytecodeProvider().getClassNode(type, false))) return true;
+            LOGGER.info("[SSOptimizer] 当前 XStream 的成员签名与 " + mixin + " 不匹配，使用原库实现：" + type);
+            return false;
+        } catch (ClassNotFoundException ex) {
+            LOGGER.info("[SSOptimizer] 当前 XStream 缺少 " + type + "，跳过 " + mixin);
+            return false;
+        } catch (IOException ex) {
+            throw new IllegalStateException("读取 XStream 类结构失败：" + type, ex);
+        }
     }
 
     private boolean needsDcrBatchWindow() {
