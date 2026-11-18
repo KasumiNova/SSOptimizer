@@ -4,8 +4,18 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <exception>
+#include <filesystem>
+#include <limits>
+#include <memory>
+#include <string>
 #include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include <jni.h>
 
@@ -33,6 +43,18 @@ struct NativeFaceHandle {
     bool       forceAutoHint = false;
     bool       embeddedBitmaps = false;
     int        hintMode  = 0;
+#ifdef _WIN32
+    const FT_Byte* mappedFont = nullptr;
+#endif
+
+    ~NativeFaceHandle() {
+        if (stroker) FT_Stroker_Done(stroker);
+        if (face) FT_Done_Face(face);
+        if (library) FT_Done_FreeType(library);
+#ifdef _WIN32
+        if (mappedFont) UnmapViewOfFile(mappedFont);
+#endif
+    }
 };
 
 int rounded26_6(const FT_Pos value) {
@@ -82,65 +104,90 @@ FT_Render_Mode freetypeRenderMode(const int hintMode,
     return FT_RENDER_MODE_NORMAL;
 }
 
-bool initFace(const char* fontPath,
+std::filesystem::path fontFilePath(JNIEnv* env, jstring value) {
+    const jsize length = env->GetStringLength(value);
+#ifdef _WIN32
+    std::wstring path(length, L'\0');
+#else
+    std::u16string path(length, u'\0');
+#endif
+    const jchar* chars = env->GetStringChars(value, nullptr);
+    if (!chars) return {};
+    std::copy_n(chars, length, path.begin());
+    env->ReleaseStringChars(value, chars);
+    if (path.find('\0') != path.npos) return {};
+#ifdef _WIN32
+    // Java 提供规范化绝对路径；长路径需要保留驱动器或 UNC 共享根。
+    if (path.size() >= MAX_PATH && !path.starts_with(L"\\\\?\\") && !path.starts_with(L"\\\\.\\")) {
+        if (path.starts_with(L"\\\\")) path.replace(0, 2, L"\\\\?\\UNC\\");
+        else path.insert(0, L"\\\\?\\");
+    }
+#endif
+    return std::filesystem::path(std::move(path));
+}
+
+bool fontFailure(const std::filesystem::path& path, const char* operation, long long code) {
+    const auto utf8 = path.u8string();
+    std::fprintf(stderr, "[SSOptimizer] font: %s failed (code=%lld), path=%s\n",
+                 operation, code, reinterpret_cast<const char*>(utf8.c_str()));
+    return false;
+}
+
+bool openFace(const std::filesystem::path& path, NativeFaceHandle& out) {
+#ifdef _WIN32
+    HANDLE raw = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr,
+                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (raw == INVALID_HANDLE_VALUE) return fontFailure(path, "CreateFileW", GetLastError());
+    using Handle = std::unique_ptr<void, decltype(&CloseHandle)>;
+    Handle file(raw, CloseHandle);
+    LARGE_INTEGER size;
+    if (!GetFileSizeEx(file.get(), &size)) return fontFailure(path, "GetFileSizeEx", GetLastError());
+    if (size.QuadPart <= 0 || size.QuadPart > std::numeric_limits<FT_Long>::max()) {
+        return fontFailure(path, "FreeType file size in bytes", size.QuadPart);
+    }
+    Handle mapping(CreateFileMappingW(file.get(), nullptr, PAGE_READONLY, 0, 0, nullptr), CloseHandle);
+    if (!mapping) return fontFailure(path, "CreateFileMappingW", GetLastError());
+    out.mappedFont = static_cast<const FT_Byte*>(MapViewOfFile(mapping.get(), FILE_MAP_READ, 0, 0, 0));
+    if (!out.mappedFont) return fontFailure(path, "MapViewOfFile", GetLastError());
+    const FT_Error status = FT_New_Memory_Face(out.library, out.mappedFont,
+                                               static_cast<FT_Long>(size.QuadPart), 0, &out.face);
+    return status == 0 || fontFailure(path, "FT_New_Memory_Face", status);
+#else
+    const FT_Error status = FT_New_Face(out.library, path.c_str(), 0, &out.face);
+    return status == 0 || fontFailure(path, "FT_New_Face", status);
+#endif
+}
+
+bool initFace(const std::filesystem::path& fontPath,
               const float pixelSize,
               const int hintMode,
               const bool forceAutoHint,
               const bool antiAlias,
               const bool embeddedBitmaps,
               NativeFaceHandle& out) {
-    if (fontPath == nullptr || *fontPath == '\0' || !std::isfinite(pixelSize) || pixelSize <= 0.0f) {
-        return false;
+    if (fontPath.empty() || !std::isfinite(pixelSize) || pixelSize <= 0.0f) {
+        return fontFailure(fontPath, "invalid font path or pixel size", FT_Err_Invalid_Argument);
     }
-
-    if (FT_Init_FreeType(&out.library) != 0) {
-        return false;
-    }
-    if (FT_New_Face(out.library, fontPath, 0, &out.face) != 0) {
-        FT_Done_FreeType(out.library);
-        out.library = nullptr;
-        return false;
-    }
+    FT_Error status = FT_Init_FreeType(&out.library);
+    if (status != 0) return fontFailure(fontPath, "FT_Init_FreeType", status);
+    if (!openFace(fontPath, out)) return false;
 
     FT_Select_Charmap(out.face, FT_ENCODING_UNICODE);
     const FT_F26Dot6 charHeight = static_cast<FT_F26Dot6>(std::lround(pixelSize * 64.0f));
-    if (FT_Set_Char_Size(out.face, 0, std::max<FT_F26Dot6>(64, charHeight), 72, 72) != 0) {
-        FT_Done_Face(out.face);
-        FT_Done_FreeType(out.library);
-        out.face = nullptr;
-        out.library = nullptr;
-        return false;
-    }
+    status = FT_Set_Char_Size(out.face, 0, std::max<FT_F26Dot6>(64, charHeight), 72, 72);
+    if (status != 0) return fontFailure(fontPath, "FT_Set_Char_Size", status);
 
     out.antiAlias = antiAlias;
     out.forceAutoHint = forceAutoHint;
     out.embeddedBitmaps = embeddedBitmaps;
     out.hintMode = hintMode;
 
-    // 描边器创建失败不视为致命：描边剪影路径会在 stroker 为空时退化为纯填充
-    if (FT_Stroker_New(out.library, &out.stroker) != 0) {
+    status = FT_Stroker_New(out.library, &out.stroker);
+    if (status != 0) {
+        fontFailure(fontPath, "FT_Stroker_New", status);
         out.stroker = nullptr;
     }
     return true;
-}
-
-void destroyFaceHandle(NativeFaceHandle* handle) {
-    if (handle == nullptr) {
-        return;
-    }
-    if (handle->stroker != nullptr) {
-        FT_Stroker_Done(handle->stroker);
-        handle->stroker = nullptr;
-    }
-    if (handle->face != nullptr) {
-        FT_Done_Face(handle->face);
-        handle->face = nullptr;
-    }
-    if (handle->library != nullptr) {
-        FT_Done_FreeType(handle->library);
-        handle->library = nullptr;
-    }
-    delete handle;
 }
 
 jobject createGlyphBitmap(JNIEnv* env,
@@ -438,28 +485,17 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeCreate
         return 0L;
     }
 
-    const char* pathChars = env->GetStringUTFChars(fontPath, nullptr);
-    if (pathChars == nullptr) {
+    try {
+        const auto path = fontFilePath(env, fontPath);
+        if (env->ExceptionCheck()) return 0L;
+        auto handle = std::make_unique<NativeFaceHandle>();
+        if (!initFace(path, pixelSize, hintMode, forceAutoHint == JNI_TRUE, antiAlias == JNI_TRUE,
+                      embeddedBitmaps == JNI_TRUE, *handle)) return 0L;
+        return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(handle.release()));
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "[SSOptimizer] font: createFace failed: %s\n", error.what());
         return 0L;
     }
-
-    auto* handle = new NativeFaceHandle();
-    const bool initialized = initFace(
-            pathChars,
-            pixelSize,
-            static_cast<int>(hintMode),
-            forceAutoHint == JNI_TRUE,
-            antiAlias == JNI_TRUE,
-            embeddedBitmaps == JNI_TRUE,
-            *handle
-    );
-    env->ReleaseStringUTFChars(fontPath, pathChars);
-
-    if (!initialized) {
-        destroyFaceHandle(handle);
-        return 0L;
-    }
-    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(handle));
 #else
     (void) env;
     (void) fontPath;
@@ -604,7 +640,7 @@ Java_github_kasuminova_ssoptimizer_common_font_NativeFontRasterizer_nativeDestro
     (void) clazz;
 #if SSOPTIMIZER_NATIVE_FREETYPE_AVAILABLE
     auto* handle = reinterpret_cast<NativeFaceHandle*>(static_cast<std::uintptr_t>(faceHandle));
-    destroyFaceHandle(handle);
+    delete handle;
 #else
     (void) faceHandle;
 #endif
