@@ -24,8 +24,6 @@ tasks.withType<JavaCompile>().configureEach {
 apply<SdgGameDepsPlugin>()
 
 dependencies {
-    compileOnly("io.github.nanoforged:NanoForge:0.1.0-SNAPSHOT") { isTransitive = false }
-    compileOnly("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12") { isTransitive = false }
     compileOnly("org.ow2.asm:asm:9.8")
     compileOnly("org.ow2.asm:asm-commons:9.8")
     compileOnly("org.ow2.asm:asm-tree:9.8")

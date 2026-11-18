@@ -283,6 +283,20 @@ tasks.register<JavaExec>("jmh") {
     )
 }
 
+tasks.register<Jar>("standalonePayload") {
+    archiveFileName.set("SSOptimizer-payload.jar")
+    from(sourceSets.main.get().output)
+    from({ configurations.runtimeClasspath.get().filter { it.extension == "jar" }.map { zipTree(it) } })
+    dependsOn(configurations.runtimeClasspath)
+    exclude("github/kasuminova/ssoptimizer/bootstrap/SSOptimizerCorePlugin*.class",
+        "coremod.toml", "nanoforge.mod.toml", "module-info.class", "META-INF/versions/**",
+        "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/MANIFEST.MF")
+    manifest.attributes("SSOptimizer-Namespace" to "named")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+
 tasks.named<Jar>("jar") {
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set("")

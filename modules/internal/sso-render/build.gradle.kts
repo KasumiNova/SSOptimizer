@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":modules:internal:sso-core"))
+    compileOnly("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12") { isTransitive = false }
     implementation("it.unimi.dsi:fastutil:8.5.18")
     implementation("org.jctools:jctools-core:4.0.5")
 

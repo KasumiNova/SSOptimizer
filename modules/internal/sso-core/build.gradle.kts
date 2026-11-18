@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     api(project(":modules:api:sso-api"))
+    compileOnly("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12") { isTransitive = false }
     implementation("tools.profiler:async-profiler:4.5")
     implementation("org.jctools:jctools-core:4.0.5")
 }
