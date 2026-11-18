@@ -122,7 +122,10 @@ final class SaveXml {
                 } else if (event == XMLStreamConstants.COMMENT) {
                     w.write("<!--"); w.write(r.getText()); w.write("-->");
                 } else if (event == XMLStreamConstants.PROCESSING_INSTRUCTION) {
-                    w.write("<?"); w.write(r.getPITarget()); w.write(' '); w.write(r.getPIData()); w.write("?>");
+                    w.write("<?"); w.write(r.getPITarget());
+                    String data = r.getPIData();
+                    if (data != null && !data.isEmpty()) { w.write(' '); w.write(data); }
+                    w.write("?>");
                 } else if (event == XMLStreamConstants.DTD || event == XMLStreamConstants.ENTITY_REFERENCE) {
                     throw new IOException("存档禁止 DTD 和实体声明");
                 }
