@@ -40,9 +40,9 @@ final class GameProcess {
     private static int launch(GameInstall game, Path home, Path instance, List<String> gameArguments, GameProcessLog log) throws Exception {
         Path agent = GameInstall.required(home.resolve("agent.jar"));
         PlatformFiles platform;
-        List<String> settings;
+        JvmSettings.Options settings;
         try (var lock = LaunchFiles.lock(instance)) {
-            settings = JvmSettings.read(instance);
+            settings = JvmSettings.read(game, instance);
             platform = PlatformFiles.inspect(game, home, instance.resolve("cache"));
         }
         var cp = new ArrayList<>(GameInstall.jars(home.resolve("lib")));
@@ -50,18 +50,19 @@ final class GameProcess {
         Path java = GameInstall.required(Path.of(System.getProperty("java.home"), "bin", platform.id().equals("windows") ? "java.exe" : "java"));
         var args = new ArrayList<>(List.of(java.toString(), "--enable-native-access=ALL-UNNAMED",
                 "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8", "-Djava.system.class.loader=com.gtnewhorizons.retrofuturabootstrap.RfbSystemClassLoader",
-                "-Dlog4j2.configurationFile=classpath:standalone-log4j2.xml", "-Dmixin.env.compatLevel=JAVA_17",
-                "-Dssoptimizer.font.ttf.enable=" + !game.profile().equals("windows-zh-rc8")));
+                "-Dlog4j2.configurationFile=classpath:standalone-log4j2.xml", "-Dmixin.env.compatLevel=JAVA_17"));
         for (String pkg : List.of("java.base/java.lang", "java.base/java.lang.invoke", "java.base/java.lang.reflect", "java.base/java.lang.ref", "java.base/java.io",
                 "java.base/java.nio", "java.base/java.text", "java.base/java.util", "java.base/java.util.concurrent",
                 "java.base/java.util.concurrent.atomic", "java.base/java.util.concurrent.locks", "java.base/sun.nio.ch", "java.base/jdk.internal.ref",
                 "java.desktop/java.awt", "java.desktop/java.awt.font")) args.add("--add-opens=" + pkg + "=ALL-UNNAMED");
         for (String pkg : List.of("java.base/jdk.internal.misc", "java.base/jdk.internal.ref", "java.base/sun.nio.ch")) args.add("--add-exports=" + pkg + "=ALL-UNNAMED");
-        args.addAll(settings);
+        args.addAll(settings.vm());
         for (String key : System.getProperties().stringPropertyNames().stream().sorted().toList()) {
             if (JvmSettings.gameOption(key)) args.add("-D" + key + "=" + System.getProperty(key));
         }
-        if (args.contains("-Dssoptimizer.debug.enabled=true")) args.add("-Djdk.attach.allowAttachSelf=true");
+        String debug = args.stream().filter(arg -> arg.equals("-Dssoptimizer.debug.enabled") || arg.startsWith("-Dssoptimizer.debug.enabled="))
+                .reduce((previous, last) -> last).orElse("");
+        if (debug.equalsIgnoreCase("-Dssoptimizer.debug.enabled=true")) args.add("-Djdk.attach.allowAttachSelf=true");
         for (String name : List.of("saves", "screenshots", "mods", "logs")) args.add("-Dcom.fs.starfarer.settings.paths." + name + "=" + instance.resolve(name));
         args.addAll(platform.arguments());
         args.add("-XX:ErrorFile=" + instance.resolve("logs").toString().replace("%", "%%") + File.separator + "hs_err_pid%p.log");
@@ -75,10 +76,12 @@ final class GameProcess {
         int cpIndex = args.size();
         args.addAll(List.of("-cp", classpath, "com.gtnewhorizons.retrofuturabootstrap.Main", "--gameDir", instance.toString(),
                 "--tweakClass", "ssoptimizer.standalone.host.StandaloneTweaker", "--"));
+        args.addAll(settings.game());
         args.addAll(gameArguments);
         ProcessBuilder builder = new ProcessBuilder(args).directory(game.core().toFile());
         boolean windows = platform.id().equals("windows");
         var env = builder.environment();
+        if (platform.id().equals("linux")) env.putIfAbsent("mesa_glthread", "false");
         if (windows && windowsCommandLength(args) > 32767) {
             args.subList(cpIndex, cpIndex + 2).clear();
             if (classpath.length() >= 32767 || windowsCommandLength(args) > 32767) {

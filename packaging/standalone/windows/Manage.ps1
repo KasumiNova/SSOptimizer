@@ -1,7 +1,7 @@
 #requires -Version 5.1
 [CmdletBinding()]
 param(
-    [ValidateSet('Install','Update','Select','Launch','Doctor','Prepare','Import-Save','Uninstall','Menu')][string]$Action = 'Menu',
+    [ValidateSet('Install','Update','Select','Launch','Doctor','Prepare','Import-Save','EditConfig','Uninstall','Menu')][string]$Action = 'Menu',
     [string]$Game, [string]$Bundle, [string]$Version, [string[]]$GameArgs = @(), [switch]$NoShortcut,
     [string]$Source, [string]$ConfirmSource, [string]$Slot
 )
@@ -288,8 +288,9 @@ try {
     } elseif (!$Game) { $Game = Split-Path -Parent $PSScriptRoot }
     $Game = [IO.Path]::GetFullPath($Game); $root = Join-Path $Game 'ssoptimizer-standalone'; Assert-Chain $Game
     if ($Action -eq 'Menu') {
-        Write-Host '1 启动   2 安装更新   3 切换或回滚版本   4 诊断   5 准备缓存   6 卸载（保留实例）   7 导入旧存档副本'
-        $choice = Read-Host '请选择'; $actions = @{'1'='Launch';'2'='Update';'3'='Select';'4'='Doctor';'5'='Prepare';'6'='Uninstall';'7'='Import-Save'}
+        Write-Host '1 启动   2 安装更新   3 切换或回滚版本   4 诊断   5 准备缓存'
+        Write-Host '6 卸载（保留实例）   7 导入旧存档副本   8 编辑启动参数'
+        $choice = Read-Host '请选择'; $actions = @{'1'='Launch';'2'='Update';'3'='Select';'4'='Doctor';'5'='Prepare';'6'='Uninstall';'7'='Import-Save';'8'='EditConfig'}
         if (!$actions.ContainsKey($choice)) { throw '已取消。' }; $Action = $actions[$choice]
         if ($Action -eq 'Uninstall' -and (Read-Host '输入 UNINSTALL 确认') -cne 'UNINSTALL') { throw '已取消。' }
     }
@@ -322,7 +323,7 @@ try {
             catch { Write-Warning "首次安装未完成，原游戏未改动；暂存目录：$temp"; throw }
         }
         try { Desktop-Link $root $tag $false } catch { Write-Warning "桌面快捷方式创建失败：$_" }
-        Write-Host "启动：$root\Launch.cmd；更新与版本选择：$root\Manage.cmd"
+        Write-Host "启动：$root\Launch.cmd；更新、版本选择和编辑启动参数：$root\Manage.cmd"
     } elseif ($Action -eq 'Select') { Select-Version $root $Version }
     elseif ($Action -eq 'Uninstall') {
         Remove-Install $root; try { Desktop-Link $root $tag $true } catch { Write-Warning "桌面快捷方式保留：$_" }
@@ -331,7 +332,8 @@ try {
         $instance = Join-Path $root 'instance'; Assert-Chain $instance
         $lease = [IO.File]::Open((Join-Path $dir 'release.sig'), 'Open', 'Read', 'Read')
         $mutex.ReleaseMutex(); $locked = $false
-        $cliArgs = @('-cp',"$dir\agent.jar;$dir\lib\*",'ssoptimizer.standalone.launch.Main',$Action.ToLowerInvariant(),'--game',$Game,'--home',$dir,'--instance',$instance)
+        $verb = if ($Action -eq 'EditConfig') { 'config' } else { $Action.ToLowerInvariant() }
+        $cliArgs = @('-cp',"$dir\agent.jar;$dir\lib\*",'ssoptimizer.standalone.launch.Main',$verb,'--game',$Game,'--home',$dir,'--instance',$instance)
         if ($Action -eq 'Import-Save') {
             $cliArgs += @('--source', [IO.Path]::GetFullPath($Source), '--confirm-source', $ConfirmSource)
             if ($Slot) { $cliArgs += @('--slot', $Slot) }
@@ -340,6 +342,15 @@ try {
         $java = Join-Path $dir 'runtime/bin/java.exe'
         Push-Location -LiteralPath $root
         try { & $java @cliArgs; $code = $LASTEXITCODE } finally { Pop-Location }
+        if ($Action -eq 'EditConfig' -and $code -eq 0) {
+            $config = Join-Path $instance 'jvm.args'; Assert-Chain $config
+            $lease.Dispose(); $lease = $null
+            Write-Host "启动参数文件：$config"
+            Write-Host '每行填写一个 JVM 参数，例如 -Xmx6g；游戏和 SSOptimizer 选项使用 -D名称=值。# 开头为注释。以 UTF-8 保存，下次启动游戏时生效。'
+            $editor = Join-Path $env:SystemRoot 'System32/notepad.exe'
+            if ([IO.File]::Exists($editor)) { & $editor $config }
+            else { & (Join-Path $env:SystemRoot 'explorer.exe') $instance }
+        }
     }
 } catch { [Console]::Error.WriteLine("SSOptimizer：$_"); $code = 1 }
 finally { if ($lease) { $lease.Dispose() }; if ($locked) { $mutex.ReleaseMutex() }; if ($mutex) { $mutex.Dispose() } }

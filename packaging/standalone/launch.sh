@@ -5,8 +5,8 @@ verb=launch
 game=${SSOPTIMIZER_GAME_DIR:-}
 instance=${SSOPTIMIZER_INSTANCE:-}
 import_args=()
-usage() { printf '%s\n' '用法：launch.sh [launch|doctor|prepare] --game <RC8目录> [--instance <实例目录>] [-- 游戏参数...]' '导入：launch.sh import-save --game <RC8目录> [--instance <实例目录>] --source <原存档槽目录> --confirm-source <windows-en-rc8|windows-zh-rc8> [--slot <新槽名>]'; }
-case ${1:-} in launch|doctor|prepare|import-save) verb=$1; shift ;; esac
+usage() { printf '%s\n' '用法：launch.sh [launch|doctor|prepare|config] --game <RC8目录> [--instance <实例目录>] [-- 游戏参数...]' '导入：launch.sh import-save --game <RC8目录> [--instance <实例目录>] --source <原存档槽目录> --confirm-source <windows-en-rc8|windows-zh-rc8> [--slot <新槽名>]'; }
+case ${1:-} in launch|doctor|prepare|config|import-save) verb=$1; shift ;; esac
 while (($#)); do
     case $1 in
         --game|--instance) (($# >= 2)) && [[ -n $2 ]] || { usage >&2; exit 2; }; if [[ $1 == --game ]]; then game=$2; else instance=$2; fi; shift 2 ;;

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 public final class Main {
-    private static final String USAGE = "用法：launch|prepare|doctor|import-save --game <已有游戏目录> --home <独立版本目录> --instance <实例目录> [-- <游戏参数>]\n导入原版存档：import-save ... --source <存档槽目录> --confirm-source <windows-en-rc8|windows-zh-rc8> [--slot <新槽名>]";
+    private static final String USAGE = "用法：launch|prepare|doctor|config|import-save --game <已有游戏目录> --home <独立版本目录> --instance <实例目录> [-- <游戏参数>]\n导入原版存档：import-save ... --source <存档槽目录> --confirm-source <windows-en-rc8|windows-zh-rc8> [--slot <新槽名>]";
     private Main() {}
 
     public static void main(String[] args) {
@@ -28,7 +28,7 @@ public final class Main {
         }
         if (Runtime.version().feature() != 25) throw new IOException("需要 Java 25 x64，当前为 " + Runtime.version());
         String command = argv[0];
-        if (!Set.of("doctor", "prepare", "launch", "import-save").contains(command)) throw new IllegalArgumentException(USAGE);
+        if (!Set.of("doctor", "prepare", "launch", "config", "import-save").contains(command)) throw new IllegalArgumentException(USAGE);
         var options = new HashMap<String,String>();
         var tail = new ArrayList<String>();
         for (int i = 1; i < argv.length; i++) {
@@ -49,6 +49,12 @@ public final class Main {
         Path home = Path.of(options.get("--home")).toRealPath();
         GameInstall game = GameInstall.inspect(root);
         Path instance = InstancePaths.validate(game, home, Path.of(options.get("--instance")));
+        if (command.equals("config")) {
+            try (var lock = LaunchFiles.lock(instance)) {
+                System.out.println("游戏 JVM 参数（UTF-8）：" + JvmSettings.configure(game, instance));
+            }
+            return 0;
+        }
         GameInstall.required(home.resolve("agent.jar"));
         GameInstall.required(home.resolve("payload.jar"));
         ReleaseLibraries.verify(home);

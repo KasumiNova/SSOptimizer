@@ -18,7 +18,7 @@ final class InstancePaths {
         for (Path base : List.of(game.root(), game.core())) for (String key : List.of("mods", "saves", "data", "native", "jre", "screenshots", "logs")) {
             if (root.startsWith(physical(base.resolve(key)))) throw new IOException("禁止将实例指向原游戏数据：" + root);
         }
-        for (String name : List.of("cache", "cache/lwjgl-v1", "cache/named", "logs", "mods", "saves", "screenshots", "session.lock", "jvm.properties", ".standalone-layout")) {
+        for (String name : List.of("cache", "cache/lwjgl-v1", "cache/named", "logs", "mods", "saves", "screenshots", "session.lock", "jvm.properties", "jvm.args", "compiler-directives.json", ".standalone-layout")) {
             confined(root, root.resolve(name));
         }
         return root;
