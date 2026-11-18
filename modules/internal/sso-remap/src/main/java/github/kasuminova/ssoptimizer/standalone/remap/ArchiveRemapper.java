@@ -27,7 +27,7 @@ final class ArchiveRemapper {
     }
 
     static void remap(final Path mappingFile, final List<Source> sources, final List<Path> hierarchyPaths,
-                      final Path output, final String mappingDigest) throws IOException {
+                      final List<Path> namedPaths, final Path output, final String mappingDigest) throws IOException {
         final MappingProjection mapping = MappingProjection.read(mappingFile);
         final Map<String, Definition> definitions = new HashMap<>();
         final Map<Source, Set<String>> expected = new LinkedHashMap<>();
@@ -36,7 +36,7 @@ final class ArchiveRemapper {
         final Map<Source, Path> classInputs = new LinkedHashMap<>();
         for (Source source : sources) {
             final Map<String, byte[]> modules = new TreeMap<>();
-            final Set<String> original = ArchiveEntries.validate(source.snapshot(), mapping, true, (entry, bytes) -> {
+            final Set<String> original = ArchiveEntries.validate(source.snapshot(), true, (entry, bytes) -> {
                 if (ModuleMetadata.isDescriptor(entry)) {
                     modules.put(entry, bytes);
                     return;
@@ -76,8 +76,18 @@ final class ArchiveRemapper {
             classInputs.put(source, classes);
         }
         final ClassHierarchy hierarchy = new ClassHierarchy();
-        for (Path path : hierarchyPaths) {
-            ArchiveEntries.validate(path, mapping, false,
+        final Set<String> namedClasses = new HashSet<>();
+        for (Path path : namedPaths) {
+            ArchiveEntries.validate(path, false, (entry, bytes) -> {
+                if (!ModuleMetadata.isDescriptor(entry)) {
+                    namedClasses.add(entry);
+                }
+            });
+        }
+        final List<Path> outputHierarchyPaths = new ArrayList<>(namedPaths);
+        outputHierarchyPaths.addAll(hierarchyPaths);
+        for (Path path : outputHierarchyPaths) {
+            ArchiveEntries.validate(path, false,
                     (entry, bytes) -> {
                         if (!ModuleMetadata.isDescriptor(entry)) {
                             hierarchy.add(bytes, ArchiveEntries.release(entry), path + "!" + entry);
@@ -96,7 +106,12 @@ final class ArchiveRemapper {
                 .build();
         final Map<Source, Map<String, byte[]>> transformed = new LinkedHashMap<>();
         try {
-            remapper.readClassPath(hierarchyPaths.toArray(Path[]::new));
+            final List<Path> analysisPaths = new ArrayList<>();
+            if (!namedPaths.isEmpty()) {
+                analysisPaths.add(NamedHierarchy.project(mapping, namedPaths, hierarchyPaths, output.getParent().resolve("named-hierarchy.jar")));
+            }
+            analysisPaths.addAll(outputHierarchyPaths);
+            remapper.readClassPath(analysisPaths.toArray(Path[]::new));
             final Map<Source, InputTag> tags = new LinkedHashMap<>();
             for (Source source : sources) {
                 final InputTag tag = remapper.createInputTag();
@@ -107,6 +122,9 @@ final class ArchiveRemapper {
                 final Map<String, byte[]> classes = new TreeMap<>();
                 remapper.apply((name, bytes) -> {
                     final String entry = (name.startsWith("/META-INF/versions/") ? name.substring(1) : name) + ".class";
+                    if (namedClasses.contains(entry)) {
+                        throw new IllegalArgumentException("Transformed class conflicts with a named input: " + source.original() + "!" + entry);
+                    }
                     if (classes.putIfAbsent(entry, bytes) != null) {
                         throw new IllegalArgumentException("Duplicate transformed class: " + entry + " from " + source.original());
                     }

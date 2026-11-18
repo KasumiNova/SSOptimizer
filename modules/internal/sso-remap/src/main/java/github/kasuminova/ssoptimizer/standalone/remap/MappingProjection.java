@@ -120,6 +120,10 @@ final class MappingProjection {
         return TinyUtils.createMappingProvider(tree, "obf", "named");
     }
 
+    IMappingProvider reverseProvider() {
+        return TinyUtils.createMappingProvider(tree, "named", "obf");
+    }
+
     String mapClass(final String name) {
         return classes.getOrDefault(name, name);
     }

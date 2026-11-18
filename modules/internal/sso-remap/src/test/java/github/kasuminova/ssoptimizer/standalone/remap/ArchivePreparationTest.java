@@ -65,16 +65,71 @@ class ArchivePreparationTest {
         assertNotEquals(Digests.file(first), Digests.file(changed));
     }
 
+
     @Test
-    void namedInputsAndMixedNamespacesAreRejected() throws Exception {
+    void namedMetadataKeepsOriginalArchivesAndInputOrderAcrossColdAndHotPreparation() throws Exception {
+        final Path mapping = mapping("tiny\t2\t0\tobf\tnamed\nc\ta/A\tnamed/Base\n\tm\t()I\ta\tvalue\nc\ta/B\tnamed/Sub\n");
+        final ClassNode baseNode = node(type("named/Base", "java/lang/Object", true, 7));
+        baseNode.methods.getFirst().name = "value";
+        final ClassWriter writer = new ClassWriter(0);
+        baseNode.accept(writer);
+        final Path named = jar("named.jar", Map.of("META-INF/MANIFEST.MF", namedManifest(), "named/Base.class", writer.toByteArray()));
+        final byte[] original = Files.readAllBytes(named);
+        final Path child = jar("child.jar", Map.of("a/B.class", type("a/B", "a/A", true, 8)));
+        final Path mod = jar("mod.jar", Map.of("mod/Caller.class", caller()));
+        final Map<Path, Path> first = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(named, child), List.of(mod), List.of());
+        assertEquals(List.of(named, child, mod), List.copyOf(first.keySet()));
+        assertEquals(named, first.get(named));
+        assertArrayEquals(original, Files.readAllBytes(named));
+        final var mappedChild = node(entry(first.get(child), "named/Sub.class"));
+        assertEquals("named/Base", mappedChild.superName);
+        assertTrue(mappedChild.methods.stream().anyMatch(method -> method.name.equals("value")));
+        final var mappedMod = node(entry(first.get(mod), "mod/Caller.class"));
+        final var call = java.util.Arrays.stream(mappedMod.methods.getFirst().instructions.toArray())
+                .filter(instruction -> instruction instanceof MethodInsnNode).map(instruction -> (MethodInsnNode) instruction).findFirst().orElseThrow();
+        assertEquals("value", call.name);
+        assertEquals(first, ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(named, child), List.of(mod), List.of()));
+        final Map<Path, Path> allNamed = ArchivePreparation.prepare(temp.resolve("all-named"), mapping,
+                List.of(named, first.get(child)), List.of(first.get(mod)), List.of());
+        assertEquals(List.of(named, first.get(child), first.get(mod)), List.copyOf(allNamed.values()));
+        assertEquals(List.copyOf(allNamed.keySet()), List.copyOf(allNamed.values()));
+        final Map<Path, Path> namedCore = ArchivePreparation.prepare(temp.resolve("named-core"), mapping,
+                List.of(named, first.get(child)), List.of(mod), List.of());
+        assertEquals(named, namedCore.get(named));
+        assertEquals(first.get(child), namedCore.get(first.get(child)));
+        final var namedCoreMod = node(entry(namedCore.get(mod), "mod/Caller.class"));
+        final var namedCoreCall = java.util.Arrays.stream(namedCoreMod.methods.getFirst().instructions.toArray())
+                .filter(instruction -> instruction instanceof MethodInsnNode).map(instruction -> (MethodInsnNode) instruction).findFirst().orElseThrow();
+        assertEquals("named/Sub", namedCoreCall.owner);
+        assertEquals("value", namedCoreCall.name);
+        jar("named.jar", Map.of("META-INF/MANIFEST.MF", namedManifest(), "named/Base.class", writer.toByteArray(), "changed.txt", new byte[]{1}));
+        final Map<Path, Path> changed = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(named, child), List.of(mod), List.of());
+        assertEquals(named, changed.get(named));
+        assertNotEquals(first.get(child), changed.get(child));
+    }
+
+    @Test
+    void explicitlyNamedClassReferencesParticipateInNormalConversion() throws Exception {
         final Path mapping = mapping("tiny\t2\t0\tobf\tnamed\nc\ta/A\tnamed/Base\n");
-        final Path input = jar("base.jar", Map.of("a/A.class", type("a/A", "java/lang/Object", false, 0)));
-        final Path named = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(input), List.of(), List.of()).get(input);
-        assertThrows(PreparationException.Input.class,
-                () -> ArchivePreparation.prepare(temp.resolve("second-cache"), mapping, List.of(named), List.of(), List.of()));
-        final Path mixed = jar("mixed.jar", Map.of("mod/Mixed.class", type("mod/Mixed", "named/Base", false, 0)));
-        assertThrows(PreparationException.Input.class,
-                () -> ArchivePreparation.prepare(temp.resolve("mixed-cache"), mapping, List.of(input), List.of(mixed), List.of()));
+        final Path game = jar("game.jar", Map.of("a/A.class", type("a/A", "java/lang/Object", false, 0)));
+        final Path mod = jar("mixed.jar", Map.of("mod/Mixed.class", type("mod/Mixed", "named/Base", false, 0)));
+        final var result = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(game), List.of(mod), List.of());
+        assertEquals("named/Base", node(entry(result.get(mod), "mod/Mixed.class")).superName);
+    }
+
+    @Test
+    void mappedClassCollisionsWithNamedInputsReportBothSources() throws Exception {
+        final Path mapping = mapping("tiny\t2\t0\tobf\tnamed\nc\ta/A\tnamed/Base\n");
+        final Path named = jar("named.jar", Map.of("META-INF/MANIFEST.MF", namedManifest(), "named/Base.class", type("named/Base", "java/lang/Object", false, 0)));
+        final Path obf = jar("obf.jar", Map.of("a/A.class", type("a/A", "java/lang/Object", false, 0)));
+        final var error = assertThrows(PreparationException.Conflict.class,
+                () -> ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(named, obf), List.of(), List.of()));
+        assertTrue(error.getMessage().contains(named.toString()));
+        assertTrue(error.getMessage().contains(obf.toString()));
+    }
+
+    private static byte[] namedManifest() {
+        return "Manifest-Version: 1.0\r\nSSOptimizer-Namespace: named\r\n\r\n".getBytes(StandardCharsets.UTF_8);
     }
 
     @Test

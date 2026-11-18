@@ -38,8 +38,8 @@ public final class ArchivePreparation {
 
     /**
      * 同时转换按加载顺序给出的游戏与 obf 模组；hierarchyJars 只提供继承解析且保持顺序。
-     * 返回规范化绝对输入路径到缓存 named 归档的不可变有序映射。
-     * 已 named 模组须由调用方分类并排除；已标记或包含明确 named 符号的输入会被拒绝。
+     * 返回规范化绝对输入路径到可挂载归档的不可变有序映射。
+     * Manifest 标记 SSOptimizer-Namespace=named 的输入保留原路径和字节，并为其余输入提供层级；其他输入生成 named 缓存副本。
      * 缓存键包含输入、映射、依赖的内容与顺序、工具字节和 JVM 版本；命中仍校验全部输出摘要。
      */
     public static synchronized Map<Path, Path> prepare(final Path cacheRoot, final Path mapping,
@@ -90,6 +90,10 @@ public final class ArchivePreparation {
         if (games.isEmpty()) {
             throw new PreparationException.Input("At least one game archive is required");
         }
+        if (inputs.stream().noneMatch(Input::requiresRemap)) {
+            verifyInputs(inputs);
+            return orderedResult(inputs, Map.of());
+        }
         final String key = key(inputs);
         final Path destination = root.resolve(key);
         if (Files.exists(destination, LinkOption.NOFOLLOW_LINKS)) {
@@ -123,6 +127,7 @@ public final class ArchivePreparation {
         final Path published = Files.createDirectory(work.resolve("named"));
         final List<ArchiveRemapper.Source> sources = new ArrayList<>();
         final List<Path> dependencySnapshots = new ArrayList<>();
+        final List<Path> namedSnapshots = new ArrayList<>();
         Path mappingSnapshot = null;
         for (int i = 0; i < inputs.size(); i++) {
             final Input input = inputs.get(i);
@@ -135,12 +140,28 @@ public final class ArchivePreparation {
             switch (input.role()) {
                 case "mapping" -> mappingSnapshot = snapshot;
                 case "hierarchy" -> dependencySnapshots.add(snapshot);
-                default -> sources.add(new ArchiveRemapper.Source(input.path(), snapshot, input.role(), input.digest(),
-                        String.format(java.util.Locale.ROOT, "%04d-%s.jar", sources.size(), input.role())));
+                default -> {
+                    if (input.named()) {
+                        namedSnapshots.add(snapshot);
+                    } else {
+                        sources.add(new ArchiveRemapper.Source(input.path(), snapshot, input.role(), input.digest(),
+                                String.format(java.util.Locale.ROOT, "%04d-%s.jar", sources.size(), input.role())));
+                    }
+                }
             }
         }
         LOG.log(System.Logger.Level.INFO, "Preparing " + sources.size() + " archives in " + work);
-        ArchiveRemapper.remap(mappingSnapshot, sources, dependencySnapshots, published, inputs.getFirst().keyDigest());
+        try {
+            ArchiveRemapper.remap(mappingSnapshot, sources, dependencySnapshots, namedSnapshots, published, inputs.getFirst().keyDigest());
+        } catch (IOException error) {
+            final String message = "Cannot prepare source archives "
+                    + inputs.stream().filter(input -> !input.role().equals("mapping")).map(Input::path).toList()
+                    + ": " + error.getMessage();
+            if (error instanceof PreparationException.Conflict) {
+                throw new PreparationException.Conflict(message, error);
+            }
+            throw new PreparationException.Input(message, error);
+        }
         writeCache(published, key, sources);
         readCache(published, key, inputs);
         verifyInputs(inputs);
@@ -184,7 +205,13 @@ public final class ArchivePreparation {
             throw new PreparationException.Input("Duplicate input across preparation roles: " + normalized);
         }
         final String digest = Digests.file(normalized);
-        inputs.add(new Input(normalized, role, digest, role.equals("mapping") ? MappingProjection.digest(normalized) : digest));
+        final boolean named;
+        try {
+            named = (role.equals("game") || role.equals("mod")) && ArchiveEntries.isNamed(normalized);
+        } catch (IOException error) {
+            throw new PreparationException.Input("Cannot read archive " + normalized + ": " + error.getMessage(), error);
+        }
+        inputs.add(new Input(normalized, role, digest, role.equals("mapping") ? MappingProjection.digest(normalized) : digest, named));
     }
 
     private static String key(final List<Input> inputs) throws IOException {
@@ -222,6 +249,7 @@ public final class ArchivePreparation {
         }
         for (Input input : inputs) {
             Digests.text(hash, input.role());
+            Digests.text(hash, input.named() ? "named" : "source");
             Digests.text(hash, input.path().toString());
             Digests.text(hash, input.keyDigest());
         }
@@ -261,7 +289,7 @@ public final class ArchivePreparation {
         if (Files.isSymbolicLink(directory) || !Files.isDirectory(directory)) {
             throw new IOException("Invalid cache directory: " + directory);
         }
-        final List<Input> expected = inputs.stream().filter(input -> input.role().equals("game") || input.role().equals("mod")).toList();
+        final List<Input> expected = inputs.stream().filter(Input::requiresRemap).toList();
         final Map<Path, Path> result = new LinkedHashMap<>();
         try (var stream = new DataInputStream(new BufferedInputStream(Files.newInputStream(directory.resolve("complete.bin"))))) {
             if (stream.readInt() != FORMAT || !stream.readUTF().equals(key) || stream.readInt() != expected.size()) {
@@ -285,9 +313,22 @@ public final class ArchivePreparation {
                 throw new IOException("Trailing cache manifest data: " + directory);
             }
         }
+        return orderedResult(inputs, result);
+    }
+
+    private static Map<Path, Path> orderedResult(final List<Input> inputs, final Map<Path, Path> remapped) {
+        final Map<Path, Path> result = new LinkedHashMap<>();
+        for (Input input : inputs) {
+            if (input.role().equals("game") || input.role().equals("mod")) {
+                result.put(input.path(), input.named() ? input.path() : remapped.get(input.path()));
+            }
+        }
         return Collections.unmodifiableMap(result);
     }
 
-    private record Input(Path path, String role, String digest, String keyDigest) {
+    private record Input(Path path, String role, String digest, String keyDigest, boolean named) {
+        boolean requiresRemap() {
+            return !named && (role.equals("game") || role.equals("mod"));
+        }
     }
 }

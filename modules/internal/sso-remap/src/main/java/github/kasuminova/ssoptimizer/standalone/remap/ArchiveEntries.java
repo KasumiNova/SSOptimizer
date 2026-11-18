@@ -1,10 +1,6 @@
 package github.kasuminova.ssoptimizer.standalone.remap;
 
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.ClassRemapper;
-import org.objectweb.asm.commons.Remapper;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -23,7 +19,19 @@ final class ArchiveEntries {
     private ArchiveEntries() {
     }
 
-    static Set<String> validate(final Path path, final MappingProjection mapping, final boolean obfuscated,
+    static boolean isNamed(final Path path) throws IOException {
+        try (ZipFile zip = new ZipFile(path.toFile())) {
+            final var entry = zip.getEntry("META-INF/MANIFEST.MF");
+            if (entry == null) {
+                return false;
+            }
+            try (var stream = zip.getInputStream(entry)) {
+                return "named".equals(new Manifest(stream).getMainAttributes().getValue(NAMESPACE));
+            }
+        }
+    }
+
+    static Set<String> validate(final Path path, final boolean obfuscated,
                                 final java.util.function.BiConsumer<String, byte[]> classes) throws IOException {
         final Set<String> entries = new HashSet<>();
         final Set<String> classEntries = new HashSet<>();
@@ -58,17 +66,6 @@ final class ArchiveEntries {
                 final ClassReader reader = new ClassReader(bytes);
                 if (!className(name).equals(reader.getClassName())) {
                     throw new PreparationException.Input("Class entry/name mismatch in " + path + ": " + name + " contains " + reader.getClassName());
-                }
-                if (obfuscated) {
-                    reader.accept(new ClassRemapper(new org.objectweb.asm.tree.ClassNode(), new Remapper(Opcodes.ASM9) {
-                        @Override
-                        public String map(final String type) {
-                            if (mapping.isNamedOnly(type)) {
-                                throw new IllegalArgumentException("Named symbol " + type + " in obfuscated input " + path + "!" + name);
-                            }
-                            return type;
-                        }
-                    }), ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
                 }
                 classEntries.add(name);
                 classes.accept(name, bytes);
