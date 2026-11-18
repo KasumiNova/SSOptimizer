@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.common.save;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.ConversionException;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
+import com.thoughtworks.xstream.mapper.DynamicProxyMapper;
 import com.thoughtworks.xstream.security.ExplicitTypePermission;
 import com.thoughtworks.xstream.security.ForbiddenClassException;
 import com.thoughtworks.xstream.security.NoPermission;
@@ -88,7 +89,7 @@ class SaveTypePermissionTest {
     @Test
     void dangerousRuntimeTypesStayForbiddenEvenWhenRegistered() {
         final List<Class<?>> types = List.of(Class.class, ClassLoader.class, Loader.class, Thread.class,
-                Runtime.class, ProcessBuilder.class, Proxy.class, SerializedLambda.class);
+                Runtime.class, ProcessBuilder.class, Proxy.class, DynamicProxyMapper.DynamicProxy.class, SerializedLambda.class);
         final SaveTypePermission permission = new SaveTypePermission(types, List.of(), new RegisteredLambdas());
         for (Class<?> type : types) {
             assertFalse(permission.allows(type), type.getName());

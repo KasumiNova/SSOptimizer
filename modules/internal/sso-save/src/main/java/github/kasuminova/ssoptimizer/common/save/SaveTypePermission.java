@@ -1,6 +1,7 @@
 package github.kasuminova.ssoptimizer.common.save;
 
 import com.thoughtworks.xstream.converters.ConversionException;
+import com.thoughtworks.xstream.mapper.DynamicProxyMapper;
 import com.thoughtworks.xstream.mapper.Mapper;
 import com.thoughtworks.xstream.security.TypePermission;
 
@@ -10,10 +11,12 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.DayOfWeek;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +44,7 @@ public final class SaveTypePermission implements TypePermission {
             Collection.class, List.class, Set.class, SortedSet.class, Map.class, SortedMap.class,
             ArrayList.class, LinkedList.class, HashMap.class, LinkedHashMap.class, TreeMap.class,
             HashSet.class, LinkedHashSet.class, TreeSet.class, Hashtable.class, Vector.class,
+            EnumSet.class, EnumSet.noneOf(DayOfWeek.class).getClass(),
             Map.Entry.class, AbstractMap.SimpleEntry.class, AbstractMap.SimpleImmutableEntry.class,
             Mapper.Null.class);
 
@@ -87,7 +91,7 @@ public final class SaveTypePermission implements TypePermission {
         if (module != null && (module.startsWith("java.") || module.startsWith("jdk."))) {
             return false;
         }
-        return registered.contains(type);
+        return registered.contains(type) || Rc8CampaignTypes.allows(type);
     }
 
     public void requireAllowed(final Class<?> type) {
@@ -98,7 +102,8 @@ public final class SaveTypePermission implements TypePermission {
         error.add("rejected-type", type.getName());
         error.add("type-loader", String.valueOf(type.getClassLoader()));
         final var source = type.getProtectionDomain().getCodeSource();
-        error.add("type-source", source == null ? "JDK or unavailable code source" : source.getLocation().toExternalForm());
+        error.add("type-source", source == null || source.getLocation() == null
+                ? "JDK or unavailable code source" : source.getLocation().toExternalForm());
         throw error;
     }
 
@@ -114,7 +119,8 @@ public final class SaveTypePermission implements TypePermission {
     }
 
     private static boolean isForbidden(final Class<?> type) {
-        return type == Class.class || type == SerializedLambda.class || LambdaTypes.isLambda(type)
+        return type == Class.class || type == DynamicProxyMapper.DynamicProxy.class
+                || type == SerializedLambda.class || LambdaTypes.isLambda(type)
                 || ClassLoader.class.isAssignableFrom(type) || Thread.class.isAssignableFrom(type)
                 || ThreadGroup.class.isAssignableFrom(type) || Process.class.isAssignableFrom(type)
                 || type == Runtime.class || type == ProcessBuilder.class

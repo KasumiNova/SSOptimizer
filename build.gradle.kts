@@ -9,6 +9,8 @@ plugins {
 group = "github.kasuminova.ssoptimizer"
 version = "0.1.10-SNAPSHOT"
 
+apply(from = "gradle/standalone-distribution.gradle.kts")
+
 val modId = "ssoptimizer"
 val modReleaseVersion = project.version.toString()
 

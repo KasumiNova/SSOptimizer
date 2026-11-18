@@ -1,0 +1,119 @@
+package ssoptimizer.standalone.launch;
+
+import github.kasuminova.ssoptimizer.standalone.remap.ArchivePreparation;
+import ssoptimizer.standalone.instance.InstanceLayout;
+import ssoptimizer.standalone.mods.ModCatalog;
+
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.zip.GZIPInputStream;
+
+public final class LaunchFiles {
+    private static final String MAPPING = "76a5a926934f32fb2a4e75f4fdd61c7879f6f3a9e045dc926cd2873aa821d4b9";
+
+    private LaunchFiles() {}
+
+    static Path mapping(Path home) throws IOException {
+        Path file = GameInstall.required(home.resolve("mappings/game-full.tiny.gz"));
+        try (var in = new GZIPInputStream(Files.newInputStream(file))) {
+            if (!MAPPING.equals(GameInstall.digest(in))) throw new IOException("发行映射与已验证的 RC8 named ABI 不一致：" + file);
+        }
+        return file;
+    }
+
+    public static Path validate(Path game, Path home, Path instance) throws IOException {
+        return InstancePaths.validate(GameInstall.inspect(game.toRealPath()), home.toRealPath(), instance);
+    }
+
+    public static AutoCloseable lock(Path instance) throws IOException {
+        Files.createDirectories(instance);
+        Path path = instance.resolve("session.lock");
+        FileChannel channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, java.nio.file.LinkOption.NOFOLLOW_LINKS);
+        try {
+            FileLock lock = channel.tryLock();
+            if (lock == null) throw new IOException("实例已在使用，请退出该实例的游戏后重试：" + path);
+            return channel;
+        } catch (Throwable failure) {
+            try { channel.close(); } catch (IOException e) { failure.addSuppressed(e); }
+            throw failure;
+        }
+    }
+
+    public static Path prepare(Path gamePath, Path home, Path instance) throws Exception {
+        GameInstall game = GameInstall.inspect(gamePath);
+        Path payload = GameInstall.required(home.resolve("payload.jar"));
+        Path mapping = mapping(home);
+        InstanceLayout.prepare(game.root(), home, instance);
+        Path modsDir = instance.resolve("mods");
+        List<String> enabled = ModCatalog.enabledIds(modsDir);
+        List<ModCatalog.Archive> mods = ModCatalog.scan(modsDir, payload);
+        List<Path> libs = game.libraries(home);
+        Path cache = instance.resolve("cache");
+        PlatformFiles platform = PlatformFiles.inspect(game, home, cache);
+        var inputs = new ArrayList<Path>();
+        var hierarchy = new ArrayList<>(libs);
+        hierarchy.add(platform.lwjgl()); hierarchy.add(platform.lwjglUtil()); hierarchy.add(payload);
+        for (var mod : mods) {
+            if (mod.modId().equals("ssoptimizer")) continue;
+            if (mod.named()) hierarchy.add(mod.path()); else inputs.add(mod.path());
+        }
+        Map<Path,Path> outputs = ArchivePreparation.prepare(cache.resolve("named"), mapping, game.gameJars(), inputs, hierarchy);
+        Properties plan = new Properties();
+        plan.setProperty("payload", payload.toString());
+        plan.setProperty("profile", game.profile());
+        if (!ModCatalog.enabledIds(modsDir).equals(enabled)) throw new IOException("准备期间模组启用列表发生变化，请重新启动。");
+        plan.setProperty("enabled.count", Integer.toString(enabled.size()));
+        for (int i = 0; i < enabled.size(); i++) plan.setProperty("enabled." + i, enabled.get(i));
+        List<Path> preparedGame = new ArrayList<>();
+        for (Path path : game.gameJars()) preparedGame.add(output(outputs, path));
+        paths(plan, "game", preparedGame); paths(plan, "library", libs);
+        var preparedMods = new ArrayList<Path>();
+        for (var mod : mods) {
+            if (mod.modId().equals("ssoptimizer")) {
+                if (plan.putIfAbsent("payload.source", mod.path().toString()) != null) throw new IOException("SSOptimizer 实例内有多个负载：" + mod.path());
+                continue;
+            }
+            plan.setProperty("mod.source." + preparedMods.size(), mod.path().toString());
+            Path prepared = mod.named() ? mod.path() : output(outputs, mod.path());
+            preparedMods.add(ssoptimizer.standalone.mods.ModArchiveLayout.prepare(cache, mod, prepared));
+        }
+        if (!plan.containsKey("payload.source")) throw new IOException("独立实例未启用 SSOptimizer，请在实例的模组配置中启用它。");
+        paths(plan, "mod", preparedMods);
+        var namedMods = mods.stream().filter(mod -> mod.named() && !mod.modId().equals("ssoptimizer")).map(ModCatalog.Archive::path).toList();
+        if (!namedMods.isEmpty()) {
+            var linkage = new ArrayList<Path>();
+            linkage.add(payload); linkage.addAll(preparedGame); linkage.addAll(libs); linkage.addAll(preparedMods);
+            linkage.add(platform.lwjgl()); linkage.add(platform.lwjglUtil()); linkage.addAll(GameInstall.jars(home.resolve("lib")));
+            github.kasuminova.ssoptimizer.standalone.remap.NamedCompatibility.verify(preparedGame, namedMods, linkage);
+        }
+        Path dest = cache.resolve("launch.properties");
+        Path tmp = Files.createTempFile(cache, "launch-", ".tmp");
+        try {
+            try (var out = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) { plan.store(out, null); }
+            Files.move(tmp, dest, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } finally { Files.deleteIfExists(tmp); }
+        System.out.printf("[Standalone] %s；游戏归档 %d，模组归档 %d。启动清单：%s%n", game.profile(), preparedGame.size(), preparedMods.size(), dest);
+        return dest;
+    }
+
+    private static Path output(Map<Path,Path> outputs, Path path) throws IOException {
+        Path result = outputs.get(path.toAbsolutePath().normalize());
+        if (result == null) throw new IOException("预处理结果缺少归档：" + path);
+        return GameInstall.required(result);
+    }
+
+    private static void paths(Properties p, String key, List<Path> paths) {
+        p.setProperty(key + ".count", Integer.toString(paths.size()));
+        for (int i = 0; i < paths.size(); i++) p.setProperty(key + "." + i, paths.get(i).toString());
+    }
+}

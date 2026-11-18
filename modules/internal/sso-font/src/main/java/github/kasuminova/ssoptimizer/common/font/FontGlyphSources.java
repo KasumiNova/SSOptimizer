@@ -22,7 +22,7 @@ public final class FontGlyphSources {
 
     public static GlyphProvider resolve(final BitmapFont font) {
         // 渲染线程持图集锁等待自身 drain 会自死锁，主线程也可能与渲染线程形成锁序倒置，因此渲染线程只使用无锁位图源。
-        if (GlDispatch.isRenderThread()) {
+        if (!OriginalGameFontOverrides.isEnabled() || GlDispatch.isRenderThread()) {
             return new BitmapFontGlyphProvider(font);
         }
         final String path = OriginalGameFontOverrides.normalize(font.getFontPath());

@@ -71,6 +71,9 @@ public final class ArchivePreparation {
 
     private static Map<Path, Path> locked(final Path root, final Path mapping, final List<Path> games,
                                           final List<Path> mods, final List<Path> hierarchy) throws IOException {
+        try (var paths = Files.newDirectoryStream(root, ".prepare-*")) {
+            for (Path previous : paths) cleanWork(root, previous);
+        }
         final List<Input> inputs = new ArrayList<>();
         final Set<Path> unique = new HashSet<>();
         final Set<Path> realPaths = new HashSet<>();
@@ -106,6 +109,16 @@ public final class ArchivePreparation {
             }
         }
         final Path work = Files.createTempDirectory(root, ".prepare-");
+        Files.writeString(work.resolve(".ssoptimizer-work"), "sso-remap/1", StandardOpenOption.CREATE_NEW);
+        try {
+            return publish(root, key, destination, work, inputs);
+        } finally {
+            cleanWork(root, work);
+        }
+    }
+
+    private static Map<Path, Path> publish(final Path root, final String key, final Path destination,
+                                           final Path work, final List<Input> inputs) throws IOException {
         final Path snapshots = Files.createDirectory(work.resolve("inputs"));
         final Path published = Files.createDirectory(work.resolve("named"));
         final List<ArchiveRemapper.Source> sources = new ArrayList<>();
@@ -140,23 +153,25 @@ public final class ArchivePreparation {
             throw new PreparationException.Cache("Cache filesystem must support atomic directory publication: " + root, error);
         }
         LOG.log(System.Logger.Level.INFO, "Published named cache " + destination);
+        return readCache(destination, key, inputs);
+    }
+
+    private static void cleanWork(final Path root, final Path work) {
         try {
-            if (!work.toAbsolutePath().normalize().getParent().equals(root)
-                    || !work.getFileName().toString().startsWith(".prepare-")) {
-                throw new IOException("Unsafe temporary directory cleanup target: " + work);
-            }
+            if (!work.getParent().equals(root) || !work.getFileName().toString().startsWith(".prepare-")
+                    || !Files.isDirectory(work, LinkOption.NOFOLLOW_LINKS)) return;
+            Path marker = work.resolve(".ssoptimizer-work");
+            if (!Files.isRegularFile(marker, LinkOption.NOFOLLOW_LINKS) || Files.size(marker) != 11
+                    || !Files.readString(marker).equals("sso-remap/1")) return;
             try (var files = Files.walk(work)) {
                 for (Path file : files.sorted(java.util.Comparator.reverseOrder()).toList()) {
-                    if (!file.toAbsolutePath().normalize().startsWith(work)) {
-                        throw new IOException("Temporary cleanup path escaped its directory: " + file);
-                    }
+                    if (!file.normalize().startsWith(work)) throw new IOException("Invalid temporary path: " + file);
                     Files.delete(file);
                 }
             }
         } catch (IOException error) {
-            LOG.log(System.Logger.Level.WARNING, "Named cache is valid, but temporary files remain in " + work, error);
+            LOG.log(System.Logger.Level.WARNING, "Temporary files remain in " + work, error);
         }
-        return readCache(destination, key, inputs);
     }
 
     private static void add(final List<Input> inputs, final Set<Path> unique, final Set<Path> realPaths,

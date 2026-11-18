@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Appenders>
+    <Console name="console" target="SYSTEM_OUT"><PatternLayout pattern="%d{HH:mm:ss} %-5level [%t] %c{1}: %msg%n"/></Console>
+    <RollingFile name="game" fileName="${sys:com.fs.starfarer.settings.paths.logs}/starsector.log" filePattern="${sys:com.fs.starfarer.settings.paths.logs}/starsector-%i.log.gz">
+      <PatternLayout pattern="%d %-5level [%t] %c: %msg%n"/>
+      <Policies><OnStartupTriggeringPolicy/><SizeBasedTriggeringPolicy size="32 MB"/></Policies>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers><Root level="info"><AppenderRef ref="console"/><AppenderRef ref="game"/></Root></Loggers>
+</Configuration>
