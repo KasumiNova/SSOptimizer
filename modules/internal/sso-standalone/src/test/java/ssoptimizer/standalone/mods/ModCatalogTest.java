@@ -17,7 +17,10 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -241,32 +244,183 @@ class ModCatalogTest {
         assertThrows(IOException.class, this::scan);
     }
 
-    @Test void selectsPrivateCoreByOrdinalFileNameAndKeysCacheByAllMountedOrPrivateBytes() throws IOException {
+    @Test void preservesRelativePrivateArchivesWithoutAddingThemToTheDeclaredClasspath() throws Exception {
+        Path cache = Files.createDirectory(root.resolve("cache with spaces"));
+        Path mod = mod("Mod With Spaces", "generic", "Generic", "\"jars\":[\"jars/entry archive.jar\",\"jars/other.jar\"],");
+        Path jars = Files.createDirectories(mod.resolve("jars"));
+        Path entry = jar(jars.resolve("entry archive.jar"), null, Map.of());
+        Path other = jar(jars.resolve("other.jar"), null, Map.of());
+        Path companion = jar(jars.resolve("private archive.jar"), null, Map.of("private.txt", new byte[]{1}));
+        Files.writeString(jars.resolve("local settings.json"), "player data");
+        Path nested = Files.createDirectories(jars.resolve("sub dir"));
+        Path helper = jar(nested.resolve("manifest helper.jar"), null, Map.of("manifest.txt", new byte[]{2}));
+        var manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, "sub%20dir/manifest%20helper.jar");
+        Path prepared = root.resolve("prepared.jar");
+        try (var out = new JarOutputStream(Files.newOutputStream(prepared), manifest)) {
+            out.putNextEntry(new JarEntry("entry.txt"));
+            out.write(3);
+        }
+        Path preparedOther = jar(root.resolve("prepared-other.jar"), "named", Map.of("other.txt", new byte[]{4}));
+        enabled("'generic'");
+        var archives = scan();
+        var inputs = Map.of(archives.get(0), prepared, archives.get(1), preparedOther);
+        Map<Path, Path> layout = ModArchiveLayout.prepare(cache, inputs);
+        Path mounted = layout.get(entry);
+
+        assertEquals(java.util.Set.of(entry, other), layout.keySet());
+        assertEquals(entry.getFileName(), mounted.getFileName());
+        assertEquals(mounted.getParent(), layout.get(other).getParent());
+        assertEquals(-1L, Files.mismatch(preparedOther, layout.get(other)));
+        assertEquals(-1L, Files.mismatch(companion, mounted.resolveSibling(companion.getFileName())));
+        assertEquals(-1L, Files.mismatch(helper, mounted.getParent().resolve(jars.relativize(helper))));
+        assertFalse(Files.exists(mounted.resolveSibling("local settings.json")));
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{mounted.toUri().toURL()}, null)) {
+            assertNotNull(loader.getResource("manifest.txt"));
+            assertNull(loader.getResource("private.txt"));
+        }
+        assertEquals(layout, ModArchiveLayout.prepare(cache, inputs));
+        jar(companion, null, Map.of("private.txt", new byte[]{9}));
+        Path updated = ModArchiveLayout.prepare(cache, inputs).get(entry);
+        assertNotEquals(mounted, updated);
+        Files.write(updated.resolveSibling(companion.getFileName()), new byte[]{99});
+        assertThrows(IOException.class, () -> ModArchiveLayout.prepare(cache, inputs));
+    }
+
+    @Test void preservesDirectoryClassesAndResourcesThroughRecursiveManifests() throws Exception {
+        Path cache = Files.createDirectory(root.resolve("directory cache"));
+        Path mod = mod("layout", "layout", "Layout", "\"jars\":[\"entry.jar\"],");
+        Path entry = jar(mod.resolve("entry.jar"), null, Map.of());
+        Path libraries = Files.createDirectory(mod.resolve("libraries"));
+        Path classes = Files.createDirectories(libraries.resolve("compiled classes/example"));
+        Files.write(classes.resolve("DirectoryType.class"), klass("example.DirectoryType", "java.lang.Object"));
+        Files.writeString(classes.resolve("message.txt"), "directory resource");
+        Files.createDirectory(classes.resolve("empty"));
+        Files.writeString(mod.resolve("player-settings.json"), "local settings");
+        manifestJar(libraries.resolve("helper.jar"), "compiled%20classes/", Map.of());
+        jar(libraries.resolve("private-helper.jar"), null, Map.of("private-helper.txt", new byte[]{1}));
+        manifestJar(mod.resolve("private.jar"), "libraries/helper.jar libraries/private-helper.jar",
+                Map.of("private.txt", new byte[]{2}));
+        Path prepared = manifestJar(root.resolve("prepared-entry.jar"), "./ libraries/helper.jar", Map.of());
+        enabled("'layout'");
+        var inputs = Map.of(scan().getFirst(), prepared);
+        Path layout = ModArchiveLayout.prepare(cache, inputs).get(entry);
+
+        assertFalse(Files.exists(layout.resolveSibling("player-settings.json")));
+        assertTrue(Files.isDirectory(layout.getParent().resolve("libraries/compiled classes/example/empty")));
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{layout.toUri().toURL()}, null)) {
+            assertEquals(loader, loader.loadClass("example.DirectoryType").getClassLoader());
+            assertNotNull(loader.getResource("example/message.txt"));
+            assertNull(loader.getResource("private.txt"));
+            assertNull(loader.getResource("private-helper.txt"));
+        }
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{layout.resolveSibling("private.jar").toUri().toURL()}, null)) {
+            assertEquals(loader, loader.loadClass("example.DirectoryType").getClassLoader());
+            assertNotNull(loader.getResource("example/message.txt"));
+            assertNotNull(loader.getResource("private-helper.txt"));
+        }
+        Files.writeString(classes.resolve("message.txt"), "updated resource");
+        assertNotEquals(layout, ModArchiveLayout.prepare(cache, inputs).get(entry));
+    }
+
+    @Test void rootDirectoryClassPathResolvesLiveResourcesWithoutCopyingThem() throws Exception {
+        Path cache = Files.createDirectory(root.resolve("root cache"));
+        Path mod = mod("root with spaces", "layout", "Layout", "\"jars\":[\"entry.jar\"],");
+        Path entry = jar(mod.resolve("entry.jar"), null, Map.of());
+        Files.writeString(mod.resolve("resource.properties"), "figure=icon.png");
+        Files.write(mod.resolve("icon.png"), new byte[]{1, 2});
+        enabled("'layout'");
+        var archive = scan().getFirst();
+        for (String token : List.of("./", ".")) {
+            Path prepared = manifestJar(root.resolve("prepared-root.jar"), token, Map.of());
+            var inputs = Map.of(archive, prepared);
+            Path layout = ModArchiveLayout.prepare(cache, inputs).get(entry);
+            assertFalse(Files.exists(layout.resolveSibling("resource.properties")));
+            assertEquals(layout, ModArchiveLayout.prepare(cache, inputs).get(entry));
+            try (var loader = new java.net.URLClassLoader(new java.net.URL[]{layout.toUri().toURL()}, null)) {
+                assertEquals(mod.resolve("resource.properties"), Path.of(loader.getResource("resource.properties").toURI()));
+                assertEquals(mod.resolve("icon.png"), Path.of(loader.getResource("icon.png").toURI()));
+            }
+        }
+    }
+
+    @Test void signedPrivateJarRetainsItsSignatureAndRootDirectoryResources() throws Exception {
+        Path cache = Files.createDirectory(root.resolve("signed cache"));
+        Path mod = mod("signed mod", "layout", "Layout", "\"jars\":[\"entry.jar\"],");
+        Path entry = jar(mod.resolve("entry.jar"), null, Map.of());
+        Path companion = manifestJar(mod.resolve("signed companion.jar"), "./", Map.of(
+                "example/PrivateClass.class", klass("example.PrivateClass", "java.lang.Object")));
+        Files.writeString(mod.resolve("signed-resource.properties"), "live=true");
+        Path keystore = root.resolve("fixture.p12");
+        runJdkTool("keytool", "-genkeypair", "-alias", "fixture", "-keyalg", "RSA", "-dname", "CN=Fixture",
+                "-keystore", keystore.toString(), "-storepass", "changeit");
+        runJdkTool("jarsigner", "-keystore", keystore.toString(), "-storepass", "changeit", companion.toString(), "fixture");
+        enabled("'layout'");
+        Path layout = ModArchiveLayout.prepare(cache, Map.of(scan().getFirst(), entry)).get(entry);
+        Path cachedCompanion = layout.resolveSibling(companion.getFileName());
+        assertEquals(-1L, Files.mismatch(companion, cachedCompanion));
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{cachedCompanion.toUri().toURL()}, null)) {
+            assertNotNull(loader.loadClass("example.PrivateClass").getSigners());
+            assertEquals("live=true", Files.readString(Path.of(loader.getResource("signed-resource.properties").toURI())));
+        }
+    }
+
+    private static void runJdkTool(String name, String... arguments) throws Exception {
+        var command = new java.util.ArrayList<String>();
+        command.add(Path.of(System.getProperty("java.home"), "bin", name).toString());
+        command.addAll(List.of(arguments));
+        Process tool = new ProcessBuilder(command).redirectErrorStream(true).start();
+        String output = new String(tool.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        assertEquals(0, tool.waitFor(), output);
+    }
+
+    @Test void nestedSelfDirectoryRetainsResourcesAndUnexpectedCacheDirectoriesFailValidation() throws Exception {
         Path cache = Files.createDirectory(root.resolve("cache"));
-        Path jars = Files.createDirectories(mods.resolve("AI Tweaks/jars"));
-        Path launcher = jars.resolve("aitweaks-launcher.jar");
-        Path named = jar(root.resolve("0016-mod.jar"), "named", Map.of(
-                "com/genir/aitweaks/launcher/loading/CoreLoaderManager$BootstrapLoader.class", new byte[]{1}));
-        Files.copy(named, launcher);
-        var owner = new ModCatalog.Archive("aitweaks", launcher, false);
-        String type = "com/genir/aitweaks/core/Plugin.class";
-        jar(jars.resolve("aitweaks-core.jar"), null, Map.of(type, new byte[]{1}));
-        jar(jars.resolve("aitweaks-core-dev-B.jar"), null, Map.of(type, new byte[]{2}));
-        Path latest = jar(jars.resolve("aitweaks-core-dev-a.jar"), null, Map.of(type, new byte[]{3}));
-        Path asm = jar(jars.resolve("asm-9.1.jar"), null, Map.of("org/objectweb/asm/ClassReader.class", new byte[]{1}));
-        Path layout = ModArchiveLayout.prepare(cache, owner, named);
-        assertEquals("aitweaks-launcher.jar", layout.getFileName().toString());
-        assertEquals(-1L, Files.mismatch(named, layout));
-        assertEquals(-1L, Files.mismatch(latest, layout.resolveSibling("aitweaks-core.jar")));
-        assertEquals(layout, ModArchiveLayout.prepare(cache, owner, named));
-        jar(asm, null, Map.of("org/objectweb/asm/ClassReader.class", new byte[]{2}));
-        Path updated = ModArchiveLayout.prepare(cache, owner, named);
-        assertNotEquals(layout, updated);
-        jar(latest, null, Map.of(type, new byte[]{4}));
-        Path newer = ModArchiveLayout.prepare(cache, owner, named);
-        assertNotEquals(updated, newer);
-        Files.write(newer.resolveSibling("aitweaks-core.jar"), new byte[]{99});
-        assertThrows(IOException.class, () -> ModArchiveLayout.prepare(cache, owner, named));
+        Path mod = mod("layout", "layout", "Layout", "\"jars\":[\"jars/entry.jar\"],");
+        Path jars = Files.createDirectory(mod.resolve("jars"));
+        Path entry = jar(jars.resolve("entry.jar"), null, Map.of());
+        Files.writeString(jars.resolve("marker.properties"), "inside=true");
+        Files.writeString(mod.resolve("settings.properties"), "outside=true");
+        Path prepared = manifestJar(root.resolve("prepared.jar"), "./", Map.of());
+        enabled("'layout'");
+        var inputs = Map.of(scan().getFirst(), prepared);
+        Path layout = ModArchiveLayout.prepare(cache, inputs).get(entry);
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{layout.toUri().toURL()}, null)) {
+            assertEquals(layout.resolveSibling("marker.properties"), Path.of(loader.getResource("marker.properties").toURI()));
+            assertNull(loader.getResource("settings.properties"));
+        }
+        Files.createDirectory(layout.resolveSibling("injected-empty-directory"));
+        assertThrows(IOException.class, () -> ModArchiveLayout.prepare(cache, inputs));
+    }
+
+    @Test @org.junit.jupiter.api.condition.DisabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
+    void directoryManifestLinksIncludeOnlyFilesInsideTheMod() throws Exception {
+        Path cache = Files.createDirectory(root.resolve("cache"));
+        Path mod = mod("layout", "layout", "Layout", "\"jars\":[\"entry.jar\"],");
+        Path entry = jar(mod.resolve("entry.jar"), null, Map.of());
+        Path classes = Files.createDirectory(mod.resolve("classes"));
+        Path internal = Files.writeString(mod.resolve("internal.txt"), "inside");
+        Path external = Files.writeString(root.resolve("external.txt"), "outside");
+        Files.createSymbolicLink(classes.resolve("alias.txt"), internal);
+        Files.createSymbolicLink(classes.resolve("external.txt"), external);
+        Files.createSymbolicLink(classes.resolve("root-alias"), mod);
+        Files.createSymbolicLink(classes.resolve("loop"), classes);
+        Path prepared = manifestJar(root.resolve("prepared-entry.jar"), "classes/", Map.of());
+        enabled("'layout'");
+        Path layout = ModArchiveLayout.prepare(cache, Map.of(scan().getFirst(), prepared)).get(entry);
+        Path copied = layout.getParent().resolve("classes");
+        assertEquals("inside", Files.readString(copied.resolve("alias.txt")));
+        assertFalse(Files.exists(copied.resolve("external.txt")));
+        assertFalse(Files.exists(copied.resolve("root-alias")));
+        assertFalse(Files.exists(copied.resolve("loop")));
+    }
+
+    private static Path manifestJar(Path path, String classPath, Map<String, byte[]> entries) throws IOException {
+        var manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath);
+        return writeJar(path, manifest, entries);
     }
 
     private List<ModCatalog.Archive> scan() throws IOException {
@@ -291,7 +445,11 @@ class ModCatalogTest {
         Manifest mf = new Manifest();
         mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         if (namespace != null) mf.getMainAttributes().putValue("SSOptimizer-Namespace", namespace);
-        try (var out = new JarOutputStream(Files.newOutputStream(path), mf)) {
+        return writeJar(path, mf, entries);
+    }
+
+    private static Path writeJar(Path path, Manifest manifest, Map<String, byte[]> entries) throws IOException {
+        try (var out = new JarOutputStream(Files.newOutputStream(path), manifest)) {
             for (var item : entries.entrySet()) {
                 out.putNextEntry(new JarEntry(item.getKey()));
                 out.write(item.getValue());

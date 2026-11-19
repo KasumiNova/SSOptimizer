@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -14,9 +15,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class DeclaredSourceTest {
     @TempDir Path root;
 
-    @Test void resolvesOnlyTheRecordedSpellingsAndChecksThatThePhysicalJarStillExists() throws IOException {
+    @Test void resolvesOnlyTheRecordedSpellingsAndChecksThatThePhysicalJarStillExists() throws Exception {
         var p = new Properties();
-        Path source = jar("Frontier.jar"), alias = root.resolve("frontier.jar"), named = jar("named.jar");
+        Path source = jar("Frontier Archive.jar"), alias = root.resolve("frontier archive.jar"), named = jar("Named Archive.jar");
         p.setProperty("game.count", "1");
         p.setProperty("game.0", jar("game.jar").toString());
         p.setProperty("mod.count", "1");
@@ -29,6 +30,11 @@ class DeclaredSourceTest {
         assertEquals(named.toRealPath(), plan.namedSource(source));
         assertEquals(named.toRealPath(), plan.namedSource(alias));
         assertNull(plan.namedSource(root.resolve("unregistered.jar")));
+        assertEquals(named.toRealPath(), Path.of(plan.namedLocation(source.toUri().toURL()).toURI()));
+        assertEquals(named.toRealPath(), Path.of(plan.namedLocation(named.toUri().toURL()).toURI()));
+        Path unregistered = jar("private archive.jar");
+        var privateLocation = URI.create("jar:" + unregistered.toUri() + "!/").toURL();
+        assertSame(privateLocation, plan.namedLocation(privateLocation));
         p.setProperty("mod.declared.0", root.resolve("different.jar").toString());
         assertThrows(IOException.class, () -> new LaunchPlan(p));
         Files.delete(source);

@@ -25,8 +25,8 @@ import static ssoptimizer.standalone.mods.GameJson.id;
 import static ssoptimizer.standalone.mods.GameJson.string;
 
 public final class ModCatalog {
-    public record Archive(String modId, Path path, boolean named, Path declaredPath) {
-        public Archive(String modId, Path path, boolean named) { this(modId, path, named, path); }
+    public record Archive(String modId, Path path, boolean named, Path declaredPath, Path modRoot) {
+        Archive(String modId, Path path, boolean named) { this(modId, path, named, path, path.getParent()); }
     }
 
     private record Mod(String id, String name, String sortKey, Path dir, JsonObject info) {}
@@ -91,7 +91,6 @@ public final class ModCatalog {
                 }
                 if (!path.equals(declared)) System.getLogger(ModCatalog.class.getName()).log(System.Logger.Level.WARNING,
                         "模组 {0} 的 jar 路径大小写不匹配：声明 {1}，实际 {2}", mod.id, declared, path);
-                ModArchiveLayout.checkDeclared(mod.id, path);
                 boolean payloadFile = Files.isSameFile(path, payload);
                 if (!(own && payloadFile) && !path.toRealPath().startsWith(mod.dir.toRealPath())) {
                     throw new IOException(where + " 的 jar 指向模组目录之外：" + path);
@@ -100,7 +99,7 @@ public final class ModCatalog {
                         && Files.mismatch(path, payload) == -1;
                 if (own != samePayload) throw new IOException(where + " 的 jar 与发布 payload 冲突：" + path + "、" + payload);
                 boolean named = ModJar.inspect(path, mod.id, source, own, plugin);
-                Archive archive = new Archive(mod.id, path, named, declared);
+                Archive archive = new Archive(mod.id, path, named, declared, mod.dir);
                 var attrs = Files.readAttributes(path, BasicFileAttributes.class);
                 seen.add(archive, attrs.fileKey(), attrs.size());
                 archives.add(archive);

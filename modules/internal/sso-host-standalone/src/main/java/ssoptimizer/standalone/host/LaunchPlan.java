@@ -2,6 +2,9 @@ package ssoptimizer.standalone.host;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.net.JarURLConnection;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -122,6 +125,15 @@ final class LaunchPlan {
             if (absolute == null) return null;
         }
         return prepared.get(absolute.toRealPath());
+    }
+
+    URL namedLocation(URL location) throws IOException, URISyntaxException {
+        if (location == null) return null;
+        URL root = "jar".equals(location.getProtocol())
+                ? ((JarURLConnection) location.openConnection()).getJarFileURL() : location;
+        if (!"file".equals(root.getProtocol())) return location;
+        Path named = namedSource(Path.of(root.toURI()));
+        return named == null ? location : named.toUri().toURL();
     }
 
     static LaunchPlan read() throws IOException {

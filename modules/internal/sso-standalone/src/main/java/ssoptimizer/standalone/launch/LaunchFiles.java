@@ -128,6 +128,13 @@ public final class LaunchFiles {
         List<Path> preparedGame = new ArrayList<>();
         for (Path path : game.gameJars()) preparedGame.add(output(outputs, path));
         paths(plan, "game", preparedGame); paths(plan, "library", libs);
+        var declared = new java.util.LinkedHashMap<ModCatalog.Archive, Path>();
+        for (var mod : mods) {
+            if (!mod.modId().equals(ModCatalog.OPTIMIZER_ID)) {
+                declared.put(mod, output(outputs, mod.path()));
+            }
+        }
+        Map<Path, Path> layouts = ssoptimizer.standalone.mods.ModArchiveLayout.prepare(cache, declared);
         var preparedMods = new ArrayList<Path>();
         for (var mod : mods) {
             if (mod.modId().equals(ModCatalog.OPTIMIZER_ID)) {
@@ -138,8 +145,7 @@ public final class LaunchFiles {
             }
             plan.setProperty("mod.source." + preparedMods.size(), mod.path().toString());
             if (!mod.declaredPath().equals(mod.path())) plan.setProperty("mod.declared." + preparedMods.size(), mod.declaredPath().toString());
-            Path prepared = output(outputs, mod.path());
-            preparedMods.add(ssoptimizer.standalone.mods.ModArchiveLayout.prepare(cache, mod, prepared));
+            preparedMods.add(layouts.get(mod.path()));
         }
         paths(plan, "mod", preparedMods);
         return plan;

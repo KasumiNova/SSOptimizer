@@ -4,7 +4,6 @@ import net.minecraft.launchwrapper.LaunchClassLoader;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -42,13 +41,8 @@ public final class PreparedSources {
     }
 
     public static URL namedJar(URL location) {
-        if (location == null) return null;
         try {
-            URL root = location;
-            if ("jar".equals(root.getProtocol())) root = ((JarURLConnection) root.openConnection()).getJarFileURL();
-            if (!"file".equals(root.getProtocol())) return location;
-            Path named = active.plan.namedSource(Path.of(root.toURI()));
-            return named == null ? root : named.toUri().toURL();
+            return active.plan.namedLocation(location);
         } catch (IOException | URISyntaxException ex) {
             throw new IllegalStateException("无法解析模组 CodeSource: " + location, ex);
         }
