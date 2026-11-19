@@ -14,6 +14,11 @@ final class ModSelectionNotice {
     private ModSelectionNotice() { }
 
     static void exit(int status, String message, Throwable cause) {
+        show(status, message, cause);
+        System.exit(status);
+    }
+
+    static void show(int status, String message, Throwable cause) {
         System.err.println("[SSOptimizer Standalone] " + message);
         var log = LogManager.getLogger(ModSelectionNotice.class);
         if (status == 75) log.info(message); else log.error(message, cause);
@@ -37,6 +42,5 @@ final class ModSelectionNotice {
                 catch (InterruptedException e) { Thread.currentThread().interrupt(); log.warn("模组切换提示被中断", e); }
             }
         }
-        System.exit(status);
     }
 }

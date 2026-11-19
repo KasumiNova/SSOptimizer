@@ -3,6 +3,6 @@
   "minVersion": "0.8.7",
   "package": "ssoptimizer.standalone.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": ["ModSpecMixin", "LauncherSelectionMixin", "ScriptStoreMixin"],
+  "mixins": ["ModSpecMixin", "LauncherSelectionMixin", "GlLauncherSelectionMixin", "ScriptStoreMixin", "XStreamLambdaMixin"],
   "injectors": {"defaultRequire": 1}
 }

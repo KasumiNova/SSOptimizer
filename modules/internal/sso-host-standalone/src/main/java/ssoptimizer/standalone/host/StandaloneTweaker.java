@@ -26,6 +26,7 @@ public final class StandaloneTweaker implements ITweaker {
     private static final String HYBRID = LaunchPlan.PAYLOAD_PACKAGE + "bootstrap.HybridWeaverTransformer";
     private static final String GL = LaunchPlan.PAYLOAD_PACKAGE + "bootstrap.RenderThreadRedirectTransformer";
     private static final String PROXY = "org.spongepowered.asm.mixin.transformer.Proxy";
+    private boolean optimizerEnabled;
     private List<String> arguments = List.of();
 
     @Override public void acceptOptions(List<String> args, File gameDir, File assetsDir, String profile) {
@@ -37,8 +38,9 @@ public final class StandaloneTweaker implements ITweaker {
             throw new IllegalStateException("Standalone requires the RFB system class loader and its Launch child");
         }
         try {
-            SystemTransforms.checkInstalled();
             LaunchPlan plan = LaunchPlan.read();
+            optimizerEnabled = plan.payload != null;
+            if (optimizerEnabled) SystemTransforms.checkInstalled();
             for (Path path : plan.archives) loader.addURL(path.toUri().toURL());
             loader.addClassLoaderExclusion("ssoptimizer.standalone.host.");
             loader.addClassLoaderExclusion(LaunchPlan.REFLECTION_PACKAGE);
@@ -50,17 +52,20 @@ public final class StandaloneTweaker implements ITweaker {
             Path home = Path.of(System.getProperty("ssoptimizer.standalone.home"));
             ReflectionNames.initialize(home.resolve("mappings/game-full.tiny.gz"), plan.game, loader);
             register(loader, ModCodeSourceTransformer.class.getName());
-            register(loader, HYBRID);
-            register(loader, GL);
+            if (optimizerEnabled) {
+                register(loader, HYBRID);
+                register(loader, GL);
+            }
             MixinBootstrap.init();
             if (!"LaunchWrapper".equals(MixinService.getService().getName())) {
                 throw new IllegalStateException("Unexpected Mixin service: " + MixinService.getService().getName());
             }
             MixinExtrasBootstrap.init();
             Mixins.addConfiguration("mixins.ssoptimizer.standalone.json");
-            Mixins.addConfiguration("mixins.ssoptimizer.xstream-compat.json");
-            Mixins.addConfiguration("mixins.ssoptimizer.json");
-            startPayload(loader);
+            if (optimizerEnabled) {
+                Mixins.addConfiguration("mixins.ssoptimizer.json");
+                startPayload(loader);
+            }
             LogManager.getLogger(StandaloneTweaker.class).info("Standalone mounted {} archives, {} mod jars, payload={}",
                     plan.archives.size(), plan.mods.size(), plan.payload);
         } catch (IOException e) {
@@ -93,8 +98,8 @@ public final class StandaloneTweaker implements ITweaker {
     @Override public String getLaunchTarget() {
         List<String> order = Launch.classLoader.getTransformers().stream().map(t -> t.getClass().getName()).toList();
         int hybrid = order.indexOf(HYBRID), gl = order.indexOf(GL);
-        if (hybrid < 0 || gl <= hybrid || order.lastIndexOf(PROXY) <= gl
-                || MixinEnvironment.getCurrentEnvironment().getPhase() != MixinEnvironment.Phase.DEFAULT) {
+        if ((optimizerEnabled && (hybrid < 0 || gl <= hybrid || order.lastIndexOf(PROXY) <= gl))
+                || order.lastIndexOf(PROXY) < 0 || MixinEnvironment.getCurrentEnvironment().getPhase() != MixinEnvironment.Phase.DEFAULT) {
             throw new IllegalStateException("Standalone transformer/phase mismatch: " + order + ", phase="
                     + MixinEnvironment.getCurrentEnvironment().getPhase());
         }

@@ -51,18 +51,16 @@ public final class LaunchFiles {
         }
     }
 
-    public static Path prepare(Path gamePath, Path home, Path instance) throws Exception {
+    public static Path prepareForLaunch(Path gamePath, Path home, Path instance) throws Exception {
         DataLocation location = DataLocation.configured();
-        return prepare(GameInstall.inspect(gamePath, location), home, instance, location);
-    }
-
-    public static void checkModSelectionForLaunch(Path gamePath) throws IOException {
-        if (DataLocation.configured() != DataLocation.GAME) return;
-        Path selection = GameInstall.required(gamePath.resolve("mods/enabled_mods.json"));
-        if (Files.isWritable(selection)) throw new IOException("SSO_USE_GAME_DATA=1 需要以只读方式挂载模组清单：" + selection);
+        return prepare(GameInstall.inspect(gamePath, location), home, instance, location, true);
     }
 
     static Path prepare(GameInstall game, Path home, Path instance, DataLocation location) throws Exception {
+        return prepare(game, home, instance, location, false);
+    }
+
+    private static Path prepare(GameInstall game, Path home, Path instance, DataLocation location, boolean allowManager) throws Exception {
         Path payload = GameInstall.required(home.resolve("payload.jar"));
         Path mapping = mapping(home);
         Path dataRoot = location.root(game, instance);
@@ -70,39 +68,71 @@ public final class LaunchFiles {
         if (location == DataLocation.INSTANCE) {
             InstanceLayout.prepare(game.root(), home, instance);
         } else {
-            GameInstall.required(modsDir.resolve("enabled_mods.json"));
-            for (String name : List.of("saves", "screenshots", "logs")) Files.createDirectories(dataRoot.resolve(name));
+            for (String name : List.of("mods", "saves", "screenshots", "logs")) Files.createDirectories(dataRoot.resolve(name));
         }
-        List<String> enabled = ModCatalog.enabledIds(modsDir);
-        if (!enabled.contains("ssoptimizer")) throw new IOException("模组清单必须启用 ssoptimizer：" + modsDir.resolve("enabled_mods.json"));
-        List<ModCatalog.Archive> mods = ModCatalog.scan(modsDir, payload);
         List<Path> libs = game.libraries(home);
         Path cache = instance.resolve("cache");
         PlatformFiles platform = PlatformFiles.inspect(game, home, cache);
+        var hierarchy = new ArrayList<>(libs);
+        hierarchy.add(platform.lwjgl());
+        hierarchy.add(platform.lwjglUtil());
+        List<String> enabled = null;
+        Properties plan;
+        try {
+            enabled = ModCatalog.enabledIds(modsDir);
+            List<ModCatalog.Archive> mods = ModCatalog.scan(modsDir, payload, enabled);
+            plan = buildPlan(game, payload, mapping, libs, cache, hierarchy, enabled, mods);
+            if (!ModCatalog.enabledIds(modsDir).equals(enabled)) throw new IOException("准备期间模组启用列表发生变化。请确认当前选择。");
+        } catch (IOException failed) {
+            if (!allowManager) throw failed;
+            System.getLogger(LaunchFiles.class.getName()).log(System.Logger.Level.ERROR, "无法准备所选模组，仅打开游戏启动器", failed);
+            try {
+                plan = buildPlan(game, payload, mapping, libs, cache, hierarchy, enabled, List.of());
+            } catch (IOException managerFailure) {
+                managerFailure.addSuppressed(failed);
+                throw managerFailure;
+            }
+            plan.setProperty("selection.problem", failed.toString());
+        }
+        Path dest = cache.resolve("launch.properties");
+        Path tmp = Files.createTempFile(cache, "launch-", ".tmp");
+        try {
+            try (var out = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) { plan.store(out, null); }
+            Files.move(tmp, dest, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } finally { Files.deleteIfExists(tmp); }
+        System.out.printf("[Standalone] %s；游戏归档 %s，模组归档 %s。启动清单：%s%n",
+                game.profile(), plan.getProperty("game.count"), plan.getProperty("mod.count"), dest);
+        return dest;
+    }
+
+    private static Properties buildPlan(GameInstall game, Path payload, Path mapping, List<Path> libs, Path cache,
+                                        List<Path> baseHierarchy, List<String> enabled, List<ModCatalog.Archive> mods) throws IOException {
         var inputs = new ArrayList<Path>();
         var namedMods = new HashSet<Path>();
-        var hierarchy = new ArrayList<>(libs);
-        hierarchy.add(platform.lwjgl()); hierarchy.add(platform.lwjglUtil()); hierarchy.add(payload);
+        var hierarchy = new ArrayList<>(baseHierarchy);
         for (var mod : mods) {
-            if (mod.modId().equals("ssoptimizer")) continue;
+            if (mod.modId().equals(ModCatalog.OPTIMIZER_ID)) {
+                hierarchy.add(payload);
+                continue;
+            }
             inputs.add(mod.path());
             if (mod.named()) namedMods.add(mod.path());
         }
         Map<Path,Path> outputs = ArchivePreparation.prepare(cache.resolve("named"), mapping, game.gameJars(), inputs, hierarchy, namedMods);
         Properties plan = new Properties();
-        plan.setProperty("payload", payload.toString());
         plan.setProperty("profile", game.profile());
-        if (location == DataLocation.GAME) plan.setProperty("selection.fixed", "true");
-        if (!ModCatalog.enabledIds(modsDir).equals(enabled)) throw new IOException("准备期间模组启用列表发生变化，请重新启动。");
-        plan.setProperty("enabled.count", Integer.toString(enabled.size()));
-        for (int i = 0; i < enabled.size(); i++) plan.setProperty("enabled." + i, enabled.get(i));
+        if (enabled != null) {
+            plan.setProperty("enabled.count", Integer.toString(enabled.size()));
+            for (int i = 0; i < enabled.size(); i++) plan.setProperty("enabled." + i, enabled.get(i));
+        }
         List<Path> preparedGame = new ArrayList<>();
         for (Path path : game.gameJars()) preparedGame.add(output(outputs, path));
         paths(plan, "game", preparedGame); paths(plan, "library", libs);
         var preparedMods = new ArrayList<Path>();
         for (var mod : mods) {
-            if (mod.modId().equals("ssoptimizer")) {
-                if (plan.putIfAbsent("payload.source", mod.path().toString()) != null) throw new IOException("SSOptimizer 模组内有多个负载：" + mod.path());
+            if (mod.modId().equals(ModCatalog.OPTIMIZER_ID)) {
+                plan.setProperty("payload", payload.toString());
+                plan.setProperty("payload.source", mod.path().toString());
                 if (!mod.declaredPath().equals(mod.path())) plan.setProperty("payload.declared", mod.declaredPath().toString());
                 continue;
             }
@@ -111,16 +141,8 @@ public final class LaunchFiles {
             Path prepared = output(outputs, mod.path());
             preparedMods.add(ssoptimizer.standalone.mods.ModArchiveLayout.prepare(cache, mod, prepared));
         }
-        if (!plan.containsKey("payload.source")) throw new IOException("模组目录缺少已启用的 SSOptimizer 负载：" + modsDir);
         paths(plan, "mod", preparedMods);
-        Path dest = cache.resolve("launch.properties");
-        Path tmp = Files.createTempFile(cache, "launch-", ".tmp");
-        try {
-            try (var out = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) { plan.store(out, null); }
-            Files.move(tmp, dest, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        } finally { Files.deleteIfExists(tmp); }
-        System.out.printf("[Standalone] %s；游戏归档 %d，模组归档 %d。启动清单：%s%n", game.profile(), preparedGame.size(), preparedMods.size(), dest);
-        return dest;
+        return plan;
     }
 
     private static Path output(Map<Path,Path> outputs, Path path) throws IOException {

@@ -12,8 +12,7 @@ public final class PrepareAgent {
         Path instance = LaunchFiles.validate(game, home, Path.of(System.getProperty("ssoptimizer.standalone.instance")));
         var session = LaunchFiles.lock(instance);
         try {
-            LaunchFiles.checkModSelectionForLaunch(game);
-            Path plan = LaunchFiles.prepare(game, home, instance);
+            Path plan = LaunchFiles.prepareForLaunch(game, home, instance);
             System.setProperty("ssoptimizer.standalone.plan", plan.toString());
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try { session.close(); }

@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 final class GameProcess {
+    record Result(int code, boolean restartRequested) {}
+
     private GameProcess() {}
 
     static FileChannel guard(Path instance) throws IOException {
@@ -30,14 +32,24 @@ final class GameProcess {
         }
     }
 
-    static int launch(GameInstall game, Path home, Path instance, Path dataRoot, List<String> gameArguments) throws Exception {
+    static Result launch(GameInstall game, Path home, Path instance, Path dataRoot, List<String> gameArguments) throws Exception {
         try (var log = GameProcessLog.open(dataRoot)) {
-            try { return launch(game, home, instance, dataRoot, gameArguments, log); }
-            catch (Exception failure) { log.failure(failure); throw failure; }
+            Path request = Files.createTempFile(instance, "mod-restart-", ".json");
+            try {
+                int code = launch(game, home, instance, dataRoot, gameArguments, log, request);
+                if (code != 75 || Files.size(request) == 0) return new Result(code, false);
+                Path selection = dataRoot.resolve("mods/enabled_mods.json");
+                if (!Files.isRegularFile(selection) || Files.mismatch(request, selection) != -1) {
+                    throw new IOException("模组启用清单在重启前再次发生变化，请重新打开启动器：" + selection);
+                }
+                return new Result(code, true);
+            } catch (Exception failure) { log.failure(failure); throw failure; }
+            finally { Files.deleteIfExists(request); }
         }
     }
 
-    private static int launch(GameInstall game, Path home, Path instance, Path dataRoot, List<String> gameArguments, GameProcessLog log) throws Exception {
+    private static int launch(GameInstall game, Path home, Path instance, Path dataRoot, List<String> gameArguments,
+                              GameProcessLog log, Path request) throws Exception {
         Path agent = GameInstall.required(home.resolve("agent.jar"));
         PlatformFiles platform;
         JvmSettings.Options settings;
@@ -56,6 +68,10 @@ final class GameProcess {
                 "java.base/java.util.concurrent.atomic", "java.base/java.util.concurrent.locks", "java.base/sun.nio.ch", "java.base/jdk.internal.ref",
                 "java.desktop/java.awt", "java.desktop/java.awt.font")) args.add("--add-opens=" + pkg + "=ALL-UNNAMED");
         for (String pkg : List.of("java.base/jdk.internal.misc", "java.base/jdk.internal.ref", "java.base/sun.nio.ch")) args.add("--add-exports=" + pkg + "=ALL-UNNAMED");
+        Path bundledFonts = home.resolve("mod/fonts");
+        if (dataRoot.equals(game.root()) && Files.notExists(dataRoot.resolve("mods/ssoptimizer/fonts")) && Files.isDirectory(bundledFonts)) {
+            args.add("-Dssoptimizer.font.ttf.dir=" + bundledFonts);
+        }
         args.addAll(settings.vm());
         for (String key : System.getProperties().stringPropertyNames().stream().sorted().toList()) {
             if (JvmSettings.gameOption(key)) args.add("-D" + key + "=" + System.getProperty(key));
@@ -68,7 +84,8 @@ final class GameProcess {
         args.add("-XX:ErrorFile=" + dataRoot.resolve("logs").toString().replace("%", "%%") + File.separator + "hs_err_pid%p.log");
         args.add("-XX:-CreateCoredumpOnCrash");
         args.addAll(List.of("-Dssoptimizer.standalone.game=" + game.root(), "-Dssoptimizer.standalone.home=" + home,
-                "-Dssoptimizer.standalone.instance=" + instance, "-javaagent:" + agent));
+                "-Dssoptimizer.standalone.instance=" + instance, "-Dssoptimizer.standalone.restart=" + request,
+                "-javaagent:" + agent));
         for (Path path : cp) {
             if (path.toString().indexOf(File.pathSeparatorChar) >= 0) throw new IOException("引导类路径不能含路径分隔符 " + File.pathSeparator + "：" + path);
         }

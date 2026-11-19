@@ -33,23 +33,30 @@ public final class ModCatalog {
 
     private ModCatalog() {}
 
-    /** path 用于读取归档；declaredPath 保留游戏声明的拼写。ssoptimizer 归档与 payload 共用一次挂载。 */
-    public static List<Archive> scan(Path modsDir, Path payload) throws IOException {
+    public static final String OPTIMIZER_ID = "ssoptimizer";
+    private static final System.Logger LOG = System.getLogger(ModCatalog.class.getName());
+
+    /** 只收集启用的游戏模组；declaredPath 保留游戏声明的拼写。 */
+    public static List<Archive> scan(Path modsDir, Path payload, List<String> enabledIds) throws IOException {
         Path root = modsDir.toAbsolutePath().normalize();
-        List<Path> coremods = externalCoremods(root);
-        if (!coremods.isEmpty()) throw new IOException("实例含有 NanoForge 外置 coremod：" + coremods + "，请移出独立实例或改用 NanoForge 启动");
-        Set<String> enabled = new LinkedHashSet<>(enabledIds(root));
+        Set<String> enabled = new LinkedHashSet<>(enabledIds);
         if (enabled.isEmpty()) return List.of();
         Map<String, Mod> selected = new LinkedHashMap<>();
         try (var entries = Files.list(root)) {
             for (Path dir : entries.filter(Files::isDirectory).toList()) {
                 Path file = dir.resolve("mod_info.json");
                 if (Files.notExists(file)) continue;
-                JsonObject info = GameJson.read(file);
-                String id = id(info.get("id"), file + ": id");
+                JsonObject info;
+                String id;
+                try {
+                    info = GameJson.read(file);
+                    id = id(info.get("id"), file + ": id");
+                } catch (IOException invalid) {
+                    LOG.log(System.Logger.Level.WARNING, "无法识别模组元数据：" + file, invalid);
+                    continue;
+                }
                 if (!enabled.contains(id)) continue;
                 String name = string(info.get("name"), file + ": name");
-                string(info.get("description"), file + ": description");
                 String sort = info.has("sortString") ? string(info.get("sortString"), file + ": sortString") : "";
                 Mod mod = new Mod(id, name, sort.isEmpty() ? name : sort, dir, info);
                 Mod other = selected.putIfAbsent(id, mod);
@@ -67,8 +74,8 @@ public final class ModCatalog {
         var seen = new ArchiveIdentities();
         for (Mod mod : mods.reversed()) {
             String where = mod.dir.resolve("mod_info.json") + " [" + mod.id + "]";
-            checkRequirements(mod.info, enabled, where);
-            boolean own = mod.id.equals("ssoptimizer");
+            checkNanoForgeRequirement(mod.info, where);
+            boolean own = mod.id.equals(OPTIMIZER_ID);
             JsonArray jars = mod.info.has("jars") ? array(mod.info.get("jars"), where + ": jars") : new JsonArray();
             if (own && jars.size() != 1) throw new IOException(where + " 必须声明一份 SSOptimizer payload");
             String source = mod.info.has("ssoptimizerNamespace")
@@ -100,10 +107,6 @@ public final class ModCatalog {
             }
         }
         return List.copyOf(archives);
-    }
-
-    public static List<Path> externalCoremods(Path modsDir) throws IOException {
-        return ModJar.externalCoremods(modsDir.toAbsolutePath().normalize().resolve("coremods"));
     }
 
     public static List<String> enabledIds(Path modsDir) throws IOException {
@@ -184,37 +187,23 @@ public final class ModCatalog {
         return current;
     }
 
-    private static void checkRequirements(JsonObject info, Set<String> enabled, String where) throws IOException {
-        for (String key : List.of("classLoader", "customClassLoader", "customLoader")) {
-            JsonElement value = info.get(key);
-            if (value == null || value.isJsonNull()) continue;
-            if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isBoolean() && !value.getAsBoolean()) continue;
-            throw new IOException(where + " 声明了不支持的自建加载器：" + key + "=" + value);
-        }
-        if (info.has("dependencies")) {
-            for (JsonElement value : array(info.get("dependencies"), where + ": dependencies")) {
-                if (!value.isJsonObject()) throw new IOException(where + ": dependencies 元素必须为含 id 的对象");
-                JsonObject dep = value.getAsJsonObject();
-                String id = id(dep.get("id"), where + ": dependencies.id");
-                boolean optional = dep.has("optional") && flag(dep, "optional", where);
-                boolean required = dep.has("required") ? flag(dep, "required", where) : !optional;
-                if (dep.has("optional") && optional == required) throw new IOException(where + " 的依赖标记冲突：" + id);
-                if (!required) continue;
-                if (id.equalsIgnoreCase("nanoforge")) throw new IOException(where + " 硬依赖 NanoForge，请改用 NanoForge 启动");
-                if (!enabled.contains(id)) throw new IOException(where + " 的必需依赖未启用：" + id);
-            }
-        }
-        if (info.has("conflicts")) {
-            for (JsonElement value : array(info.get("conflicts"), where + ": conflicts")) {
-                String id = id(value.isJsonObject() ? value.getAsJsonObject().get("id") : value, where + ": conflicts");
-                if (enabled.contains(id)) throw new IOException(where + " 与已启用模组冲突：" + id);
+    private static void checkNanoForgeRequirement(JsonObject info, String where) throws IOException {
+        if (!(info.get("dependencies") instanceof JsonArray dependencies)) return;
+        for (JsonElement value : dependencies) {
+            if (!(value instanceof JsonObject dependency) || !text(dependency.get("id")).equalsIgnoreCase("nanoforge")) continue;
+            JsonElement required = dependency.get("required");
+            if (required == null ? !booleanValue(dependency.get("optional"), false) : booleanValue(required, true)) {
+                throw new IOException(where + " 硬依赖 NanoForge，请使用 NanoForge 启动或在模组管理器中取消勾选");
             }
         }
     }
 
-    private static boolean flag(JsonObject object, String key, String where) throws IOException {
-        JsonElement value = object.get(key);
-        if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isBoolean()) return value.getAsBoolean();
-        throw new IOException(where + ": dependencies." + key + " 必须是布尔值");
+    private static String text(JsonElement element) {
+        return element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString() ? element.getAsString() : "";
+    }
+
+    private static boolean booleanValue(JsonElement element, boolean defaultValue) {
+        return element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isBoolean()
+                ? element.getAsBoolean() : defaultValue;
     }
 }

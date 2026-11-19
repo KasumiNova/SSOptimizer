@@ -32,7 +32,7 @@ public final class PreparedSources {
 
     public static Set<String> enabledIds() { return active.plan.enabled; }
 
-    public static boolean fixedSelection() { return active.plan.fixedSelection; }
+    public static String selectionProblem() { return active.plan.selectionProblem; }
 
     static boolean isModClass(String name) {
         PreparedSources sources = active;
@@ -66,7 +66,7 @@ public final class PreparedSources {
             }
             List<Path> selected = resolved.stream().filter(path -> !path.equals(sources.plan.payload)).toList();
             int payloadEntries = resolved.size() - selected.size();
-            if (payloadEntries > 1 || (sources.plan.hasGameModPayload && payloadEntries != 1)) {
+            if (payloadEntries != (sources.plan.payload == null ? 0 : 1)) {
                 throw new IllegalStateException("SSOptimizer 游戏模组的启用状态已变更，请重新启动: " + resolved);
             }
             if (!selected.equals(sources.plan.mods)) throw new IllegalStateException(

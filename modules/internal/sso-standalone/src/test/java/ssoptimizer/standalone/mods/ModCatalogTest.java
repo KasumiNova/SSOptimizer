@@ -98,19 +98,11 @@ class ModCatalogTest {
         assertThrows(IOException.class, this::scan);
     }
 
-    @Test void checksOnlyRequiredDependenciesAndActiveConflicts() throws IOException {
+    @Test void distinguishesRequiredAndOptionalNanoForgeDependencies() throws IOException {
         enabled("'game'");
-        mod("game", "game", "Game", "\"dependencies\":[{\"id\":\"NanoForge\",\"optional\":true},{\"id\":\"other\",\"required\":false}],"
-                + "\"optionalDependencies\":[{\"id\":\"nanoforge\"}],\"conflicts\":[\"absent\"],");
-        assertTrue(scan().isEmpty());
-        for (String metadata : List.of("\"dependencies\":[{\"id\":\"nanoforge\"}],", "\"dependencies\":[{\"id\":\"absent\"}],",
-                "\"dependencies\":[{\"id\":\"none\",\"optional\":true,\"required\":true}],", "\"customClassLoader\":\"example.Loader\",")) {
-            mod("game", "game", "Game", metadata);
-            assertThrows(IOException.class, this::scan, metadata);
-        }
-        mod("mod2", "second", "Second", "");
-        enabled("'game','second'");
-        mod("game", "game", "Game", "\"conflicts\":[{\"id\":\"second\"}],");
+        mod("game", "game", "Game", "\"dependencies\":[{\"id\":\"NanoForge\",\"optional\":true},{\"id\":\"nanoforge\",\"required\":false}],");
+        scan();
+        mod("game", "game", "Game", "\"dependencies\":[{\"id\":\"nanoforge\"}],");
         assertThrows(IOException.class, this::scan);
     }
 
@@ -170,21 +162,6 @@ class ModCatalogTest {
         assertEquals(List.of(new ModCatalog.Archive("game", path, false)), scan());
         Files.write(path, java.util.Arrays.copyOf(zip, data));
         assertThrows(IOException.class, this::scan);
-    }
-
-    @Test void rejectsExternalCoremodsButDoesNotActivateOrdinaryJarsOrDisabledMods() throws IOException {
-        Path host = Files.createDirectory(mods.resolve("coremods"));
-        jar(host.resolve("library.jar"), null, Map.of());
-        Path off = mod("off", "off", "Off", "\"jars\":[\"plugin.jar\"],");
-        var descriptor = Map.of("coremod.toml", new byte[0]);
-        jar(off.resolve("plugin.jar"), null, descriptor);
-        assertTrue(scan().isEmpty());
-        enabled("'off'");
-        assertThrows(IOException.class, this::scan);
-        enabled("");
-        Path external = jar(host.resolve("external.jar"), null, descriptor);
-        assertEquals(List.of(external), ModCatalog.externalCoremods(mods));
-        assertTrue(assertThrows(IOException.class, this::scan).getMessage().contains(external.toString()));
     }
 
     @Test void rejectsRepeatedArchiveAndPathsOutsideModRoot() throws IOException {
@@ -292,7 +269,9 @@ class ModCatalogTest {
         assertThrows(IOException.class, () -> ModArchiveLayout.prepare(cache, owner, named));
     }
 
-    private List<ModCatalog.Archive> scan() throws IOException { return ModCatalog.scan(mods, payload); }
+    private List<ModCatalog.Archive> scan() throws IOException {
+        return ModCatalog.scan(mods, payload, ModCatalog.enabledIds(mods));
+    }
 
     private void enabled(String elements) throws IOException {
         Files.writeString(mods.resolve("enabled_mods.json"), "{\"enabledMods\":[" + elements + "]}");

@@ -19,7 +19,6 @@ class DeclaredSourceTest {
         Path source = jar("Frontier.jar"), alias = root.resolve("frontier.jar"), named = jar("named.jar");
         p.setProperty("game.count", "1");
         p.setProperty("game.0", jar("game.jar").toString());
-        p.setProperty("payload", jar("payload.jar").toString());
         p.setProperty("mod.count", "1");
         p.setProperty("enabled.count", "0");
         p.setProperty("library.count", "0");
@@ -43,7 +42,6 @@ class DeclaredSourceTest {
         var p = new Properties();
         p.setProperty("game.count", "1");
         p.setProperty("game.0", jar("game.jar").toString());
-        p.setProperty("payload", jar("payload.jar").toString());
         p.setProperty("enabled.count", "0");
         p.setProperty("library.count", "0");
         p.setProperty("mod.count", "2");

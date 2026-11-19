@@ -65,13 +65,11 @@ public final class Main {
         ReleaseLibraries.verify(home);
         if (command.equals("launch")) {
             try (var guard = GameProcess.guard(instance)) {
-                int code = GameProcess.launch(game, home, instance, dataRoot, tail);
-                if (code != 75) return code;
-                if (location == DataLocation.GAME) throw new IOException("主目录模式的模组清单由安装入口提供。请通过该入口更新清单后重新启动。");
-                System.out.println("[Standalone] 模组选择已保存，正在按新列表重新准备游戏。");
-                code = GameProcess.launch(game, home, instance, dataRoot, tail);
-                if (code == 75) throw new IOException("模组选择再次变更。请确认实例的模组配置后重新启动。");
-                return code;
+                while (true) {
+                    var result = GameProcess.launch(game, home, instance, dataRoot, tail);
+                    if (!result.restartRequested()) return result.code();
+                    System.out.println("[Standalone] 模组选择已保存，正在按新列表重新准备游戏。");
+                }
             }
         }
         try (var lock = LaunchFiles.lock(instance)) {

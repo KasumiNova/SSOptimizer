@@ -27,9 +27,8 @@ final class LaunchPlan {
     final List<Path> archives;
     final List<Path> mods;
     final Set<String> enabled;
-    final boolean fixedSelection;
+    final String selectionProblem;
     final Path payload;
-    final boolean hasGameModPayload;
     private final Map<Path, Path> prepared;
     private final Map<Path, Path> declaredSources;
     final Map<String, Path> owners;
@@ -39,24 +38,28 @@ final class LaunchPlan {
         var order = new LinkedHashSet<Path>();
         game = paths(p, "game");
         if (game.isEmpty()) throw new IOException("启动清单缺少游戏归档");
-        payload = path(p, "payload");
         List<Path> libraries = paths(p, "library");
         mods = paths(p, "mod");
-        var selected = new LinkedHashSet<String>();
-        int enabledCount = count(p, "enabled");
-        for (int i = 0; i < enabledCount; i++) {
-            String id = p.getProperty("enabled." + i);
-            if (id == null || id.isBlank() || !selected.add(id)) throw new IOException("无效或重复的模组 ID: " + id);
+        selectionProblem = p.getProperty("selection.problem");
+        if (p.containsKey("enabled.count") || selectionProblem == null) {
+            var selected = new LinkedHashSet<String>();
+            int enabledCount = count(p, "enabled");
+            for (int i = 0; i < enabledCount; i++) {
+                String id = p.getProperty("enabled." + i);
+                if (id == null || id.isBlank() || !selected.add(id)) throw new IOException("无效或重复的模组 ID: " + id);
+            }
+            enabled = Set.copyOf(selected);
+        } else {
+            enabled = null;
         }
-        enabled = Set.copyOf(selected);
-        fixedSelection = Boolean.parseBoolean(p.getProperty("selection.fixed"));
         var replacements = new HashMap<Path, Path>();
         var aliases = new HashMap<Path, Path>();
-        replacements.put(payload, payload);
-        hasGameModPayload = p.containsKey("payload.source");
-        if (hasGameModPayload) {
+        payload = p.containsKey("payload") ? path(p, "payload") : null;
+        if (payload != null) {
+            replacements.put(payload, payload);
             replacements.put(path(p, "payload.source"), payload);
             declared(p, "payload.declared", "payload.source", aliases);
+            order.add(payload);
         }
         for (int i = 0; i < mods.size(); i++) {
             Path source = path(p, "mod.source." + i);
@@ -68,11 +71,10 @@ final class LaunchPlan {
         }
         prepared = Map.copyOf(replacements);
         declaredSources = Map.copyOf(aliases);
-        order.add(payload);
         order.addAll(game);
         order.addAll(libraries);
         order.addAll(mods);
-        if (order.size() != 1 + game.size() + libraries.size() + mods.size()) {
+        if (order.size() != (payload == null ? 0 : 1) + game.size() + libraries.size() + mods.size()) {
             throw new IOException("同一归档被重复分配给 Launch 域");
         }
         archives = List.copyOf(order);
