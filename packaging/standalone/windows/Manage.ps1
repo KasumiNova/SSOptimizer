@@ -140,19 +140,28 @@ function Write-Receipt([string]$root, $info, [string]$prefix) {
     [IO.File]::WriteAllBytes((Join-Path $root "$prefix.manifest"), $info.Manifest)
     [IO.File]::WriteAllBytes((Join-Path $root "$prefix.sig"), $info.Signature)
 }
-function Check-Owner([string]$root) {
-    $null = Read-Manifest $root 'owner'
+function Check-Owner([string]$root, [switch]$ForRemoval) {
+    $owner = Read-Manifest $root 'owner'
     $receipt = Join-Path $root 'bootstrap'
     if (![IO.Directory]::Exists($receipt)) {
         foreach ($name in ($toolNames + @('current'))) { if (Test-Path -LiteralPath (Join-Path $root $name)) { throw "入口缺少所属的签名清单：$root" } }
         return $null
     }
-    $active = Read-Manifest $receipt
+    Assert-Chain $receipt
     $pointer = Join-Path $receipt 'entry-version'; $pending = Join-Path $receipt 'pending-version'
-    if ([IO.File]::Exists($pointer)) { $active = Get-InstalledManifest $root (Get-IdFile $pointer) }
-    if ([IO.File]::Exists($pending)) {
-        $next = Get-InstalledManifest $root (Get-IdFile $pending); Sync-Tools $root $active $next; $active = $next
+    $manifest = Join-Path $receipt 'release.manifest'; $signature = Join-Path $receipt 'release.sig'
+    $active = $owner
+    if ((Test-Path -LiteralPath $manifest) -or (Test-Path -LiteralPath $signature)) { $active = Read-Manifest $receipt }
+    elseif (!(Test-Path -LiteralPath $pointer) -and !(Test-Path -LiteralPath $pending)) {
+        foreach ($name in ($toolNames + @('current'))) { if (Test-Path -LiteralPath (Join-Path $root $name)) { throw "入口缺少所属的签名清单：$root" } }
     }
+    if (Test-Path -LiteralPath $pointer) { $active = Get-InstalledManifest $root (Get-IdFile $pointer) }
+    if (Test-Path -LiteralPath $pending) {
+        $next = Get-InstalledManifest $root (Get-IdFile $pending)
+        if ($ForRemoval) { return @($active, $next) }
+        Sync-Tools $root $active $next; $active = $next
+    }
+    if ($ForRemoval) { return $active }
     foreach ($name in $toolNames) {
         $p = Join-Path $root $name
         if ([IO.File]::Exists($p) -and (File-Hash $p) -cne $active.Files["tools/$name"]) { throw "入口与已安装管理器的签名不符：$p" }
@@ -239,23 +248,43 @@ function Select-Version([string]$root, [string]$id) {
     Assert-Id $id; $null = Verify-Version (Join-Path $versions $id) $id; Set-Current $root $id; Write-Host "已切换到 $id；实例数据保留。"
 }
 function Remove-Install([string]$root) {
-    $owner = Check-Owner $root; $versions = Join-Path $root 'versions'; Assert-Chain $versions
+    $entries = @(Check-Owner $root -ForRemoval)
+    $versions = Join-Path $root 'versions'
     $verified = @{}
-    foreach ($dir in [IO.Directory]::EnumerateDirectories($versions)) {
-        $id = [IO.Path]::GetFileName($dir)
-        if ($id.StartsWith('.')) { Write-Warning "保留未完成安装目录：$dir"; continue }
-        Assert-Id $id; $verified[$dir] = Verify-Version $dir $id
-        $exclusive = [IO.File]::Open((Join-Path $dir 'release.sig'), 'Open', 'Read', 'None'); $exclusive.Dispose()
-        foreach ($file in $verified[$dir].Files.Keys) {
-            $exclusive = [IO.File]::Open((Join-Path $dir $file), 'Open', 'Read', 'None'); $exclusive.Dispose()
+    if ([IO.Directory]::Exists($versions)) {
+        Assert-Chain $versions
+        foreach ($dir in [IO.Directory]::EnumerateDirectories($versions)) {
+            $id = [IO.Path]::GetFileName($dir)
+            try { Assert-Id $id; $info = Get-InstalledManifest $root $id }
+            catch { Write-Warning "保留未确认归属的目录：$dir。$_"; continue }
+            $exclusive = [IO.File]::Open((Join-Path $dir 'release.sig'), 'Open', 'Read', 'None'); $exclusive.Dispose()
+            try { $null = Verify-Version $dir $id }
+            catch { Write-Warning "保留含额外或已修改文件的版本：$dir。$_"; continue }
+            $verified[$dir] = $info
+            foreach ($file in $info.Files.Keys) {
+                $exclusive = [IO.File]::Open((Join-Path $dir $file), 'Open', 'Read', 'None'); $exclusive.Dispose()
+            }
         }
     }
     if ([IO.File]::Exists((Join-Path $root 'current'))) { $null = Get-Current $root }
     foreach ($dir in $verified.Keys) { Delete-Version $dir $verified[$dir] }
-    Remove-Empty $versions; [IO.File]::Delete((Join-Path $root 'current'))
-    foreach ($name in $toolNames) { [IO.File]::Delete((Join-Path $root $name)) }
-    $receipt = Join-Path $root 'bootstrap'; [IO.File]::Delete((Join-Path $receipt 'entry-version')); [IO.File]::Delete((Join-Path $receipt 'release.manifest')); [IO.File]::Delete((Join-Path $receipt 'release.sig')); Remove-Empty $receipt
-    Write-Host "已卸载程序，保留实例数据和初次安装的签名凭据：$root"
+    if ([IO.Directory]::Exists($versions)) { Remove-Empty $versions }
+    [IO.File]::Delete((Join-Path $root 'current'))
+    foreach ($name in $toolNames) {
+        $path = Join-Path $root $name
+        if (!(Test-Path -LiteralPath $path)) { continue }
+        if ([IO.File]::Exists($path) -and (([IO.File]::GetAttributes($path) -band [IO.FileAttributes]::ReparsePoint) -eq 0)) {
+            $digest = File-Hash $path
+            if ($entries | Where-Object { $_.Files["tools/$name"] -ceq $digest }) { [IO.File]::Delete($path); continue }
+        }
+        Write-Warning "保留未确认归属的入口：$path"
+    }
+    $receipt = Join-Path $root 'bootstrap'
+    if ([IO.Directory]::Exists($receipt)) {
+        [IO.File]::Delete((Join-Path $receipt 'entry-version'))
+        [IO.File]::Delete((Join-Path $receipt 'pending-version'))
+    }
+    Write-Host "卸载结束。实例数据、签名凭据及上方列出的文件均已保留：$root"
 }
 function Desktop-Link([string]$root, [string]$suffix, [bool]$remove) {
     if ($NoShortcut) { return }
@@ -278,6 +307,21 @@ function Desktop-Link([string]$root, [string]$suffix, [bool]$remove) {
         $digest = $utf8.GetBytes((File-Hash $path)); $out = [IO.File]::Open($receipt, 'CreateNew', 'Write', 'None')
         try { $out.Write($digest, 0, $digest.Length) } finally { $out.Dispose() }
     }
+}
+
+function Invoke-Java([string]$java, [string[]]$arguments, [string]$directory) {
+    $quoted = foreach ($argument in $arguments) {
+        $escaped = $argument -creplace '(\\*)"', '$1$1\"' -creplace '(\\+)\z', '$1$1'
+        '"' + $escaped + '"'
+    }
+    $start = New-Object Diagnostics.ProcessStartInfo
+    $start.FileName = $java
+    $start.Arguments = $quoted -join ' '
+    $start.WorkingDirectory = $directory
+    $start.UseShellExecute = $false
+    $process = [Diagnostics.Process]::Start($start)
+    try { $process.WaitForExit(); return $process.ExitCode }
+    finally { $process.Dispose() }
 }
 
 $mutex = $null; $locked = $false; $lease = $null; $code = 0; $choiceForImport = $Action -eq 'Menu'
@@ -312,7 +356,8 @@ try {
     try { $locked = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $locked = $true; Write-Warning '前次管理进程已退出，重新校验版本。' }
     if (!$locked) { throw '其他安装、启动校验或版本管理操作正在执行，请稍后重试。' }
     $exists = [IO.Directory]::Exists($root)
-    if ($exists) { $null = Check-Owner $root } elseif ($Action -ne 'Install') { throw "未找到安装：$root" }
+    if ($exists -and $Action -ne 'Uninstall') { $null = Check-Owner $root }
+    elseif (!$exists -and $Action -ne 'Install') { throw "未找到安装：$root" }
     if ($Action -in @('Install','Update')) {
         $source = Join-Path ([IO.Path]::GetFullPath($Bundle)) 'version'
         if ($exists) {
@@ -340,8 +385,7 @@ try {
         }
         if ($GameArgs.Count) { $cliArgs += '--'; $cliArgs += $GameArgs }
         $java = Join-Path $dir 'runtime/bin/java.exe'
-        Push-Location -LiteralPath $root
-        try { & $java @cliArgs; $code = $LASTEXITCODE } finally { Pop-Location }
+        $code = Invoke-Java $java $cliArgs $root
         if ($Action -eq 'EditConfig' -and $code -eq 0) {
             $config = Join-Path $instance 'jvm.args'; Assert-Chain $config
             $lease.Dispose(); $lease = $null

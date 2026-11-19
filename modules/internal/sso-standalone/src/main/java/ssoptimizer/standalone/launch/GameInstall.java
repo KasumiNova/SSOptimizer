@@ -70,12 +70,7 @@ public record GameInstall(Path root, Path core, String profile, List<Path> gameJ
         for (String name : List.of("launch_nanoforge_ss.sh", "Miko_Simple.txt", "starsector.sh", "vmparams")) {
             Path script = root.resolve(name);
             Path declared = declaredSerializer(script, candidates);
-            if (declared != null) {
-                if (name.equals("vmparams") && declared.equals(stock) && Files.isRegularFile(miko)) {
-                    return selected(miko, "核心目录已部署 Miko；vmparams 仍声明原版。可用 SSO_XSTREAM=stock 选择原版");
-                }
-                return selected(declared, script + " 的 classpath");
-            }
+            if (declared != null) return selected(declared, script + " 的 classpath");
             if (name.equals("Miko_Simple.txt") && installed && Files.isRegularFile(bundle)) {
                 return selected(bundle, "Mikohime 安装标志与 mikohime 目录");
             }

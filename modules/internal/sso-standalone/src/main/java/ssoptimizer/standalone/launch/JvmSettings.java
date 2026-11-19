@@ -38,8 +38,8 @@ final class JvmSettings {
         if (Files.exists(old)) {
             try (var reader = Files.newBufferedReader(old, StandardCharsets.UTF_8)) { legacy.load(reader); }
         }
-        int min = number(legacy, "heap.minMiB", 512, 128, 1048576), max = number(legacy, "heap.maxMiB", 6144, 512, 1048576);
-        int stack = number(legacy, "stack.KiB", 4096, 512, 65536);
+        int min = number(legacy, "heap.minMiB", 512), max = number(legacy, "heap.maxMiB", 6144);
+        int stack = number(legacy, "stack.KiB", 4096);
         if (min > max) throw new IOException(old + "：heap.minMiB 大于 heap.maxMiB");
         Map<String,String> properties = new LinkedHashMap<>();
         properties.put("ssoptimizer.font.ttf.enable", "true");
@@ -50,12 +50,11 @@ final class JvmSettings {
         properties.put("ssoptimizer.debug.buffermap", "false");
         properties.put("ssoptimizer.econ.advance.parallel", "true");
         properties.put("ssoptimizer.atlas.shipweapon", "true");
-        properties.put("astd.gd.debug", "true");
         for (String key : legacy.stringPropertyNames().stream().sorted().toList()) {
             if (List.of("heap.minMiB", "heap.maxMiB", "stack.KiB").contains(key)) continue;
             String value = legacy.getProperty(key);
-            if (!gameOption(key) || key.indexOf('=') >= 0 || (key + value).chars().anyMatch(c -> c == '\n' || c == '\r' || c == 0)) {
-                throw new IOException(old + "：该旧设置无法表示为单行游戏参数：" + key);
+            if (key.indexOf('=') >= 0 || (key + value).chars().anyMatch(c -> c == '\n' || c == '\r' || c == 0) || !vmOption("-D" + key + "=" + value)) {
+                throw new IOException(old + "：无效或由宿主管理的 JVM 属性：" + key);
             }
             properties.put(key, value);
         }
@@ -88,7 +87,6 @@ final class JvmSettings {
                 # SSOptimizer：font.ttf.enable 启用 TrueType 字体和缺失汉字回退；renderthread.enable 启用渲染线程分离。
                 # texcompress.enable 建议保持 false，以保留原始纹理；atlas.shipweapon 控制舰船和武器图集。
                 # econ.advance.parallel 开启市场经济并行推进。遇到模组经济脚本不兼容时可改为 false。
-                # astd.gd.debug 是 Asteria Directorate 模组的无人机调试开关；未启用该模组时没有作用。
                 """);
         properties.forEach((k,v) -> text.append("-D").append(k).append('=').append(v).append('\n'));
         text.append("\n# 分隔线之后每行一个传给游戏的参数；启动命令 -- 后的参数会追加到这些参数之后。\n--\n");
@@ -154,8 +152,7 @@ final class JvmSettings {
             return !key.startsWith("ssoptimizer.standalone.") && !key.startsWith("ssoptimizer.native.path")
                     && !key.startsWith("com.fs.starfarer.settings.paths.") && !key.startsWith("org.lwjgl.librarypath")
                     && !key.equals("com.fs.starfarer.settings.linux") && !key.equals("net.java.games.input.librarypath")
-                    && !List.of("java.system.class.loader", "java.class.path", "java.library.path", "file.encoding", "stdout.encoding", "stderr.encoding",
-                    "log4j2.configurationFile", "mixin.env.compatLevel", "jdk.attach.allowAttachSelf").contains(key);
+                    && !List.of("java.system.class.loader", "java.class.path", "java.library.path", "mixin.env.compatLevel").contains(key);
         }
         if (!arg.startsWith("-") || arg.equals("-") || arg.equals("--")) return false;
         if (arg.startsWith("-agentlib:jdwp=")) return true;
@@ -171,13 +168,13 @@ final class JvmSettings {
                 && !arg.startsWith("-agentlib:") && !arg.startsWith("-agentpath:") && !arg.startsWith("-XX:Flags=") && !arg.startsWith("-XX:VMOptionsFile=");
     }
 
-    private static int number(Properties p, String key, int def, int low, int high) throws IOException {
+    private static int number(Properties p, String key, int def) throws IOException {
         String raw = p.getProperty(key);
         if (raw == null) return def;
         int n;
         try { n = Integer.parseInt(raw.strip()); }
         catch (NumberFormatException e) { throw new IOException(key + " 需要整数：" + raw, e); }
-        if (n < low || n > high) throw new IOException(key + " 超出范围 [" + low + ", " + high + "]：" + n);
+        if (n <= 0) throw new IOException(key + " 需要正整数：" + n);
         return n;
     }
 }

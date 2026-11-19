@@ -18,13 +18,13 @@ class SerializerSelectionTest {
         return new GameInstall(root, Files.createDirectory(root.resolve("starsector-core")), "test", List.of());
     }
 
-    @Test void recognizesLiteralClasspathAndDistinguishesTransplantedWindowsDefaults() throws IOException {
+    @Test void honorsLiteralClasspathWhenSeveralSerializersAreInstalled() throws IOException {
         var game = game();
         Path stock = Files.createFile(game.core().resolve("xstream-1.4.10.jar"));
         Files.writeString(game.root().resolve("vmparams"), "java.exe -classpath game.jar;xstream-1.4.10.jar Main");
         assertEquals(stock.toRealPath(), game.serializer(null));
-        Path miko = Files.createFile(game.core().resolve("xstream-1.4.21_miko.jar"));
-        assertEquals(miko.toRealPath(), game.serializer(null));
+        Files.createFile(game.core().resolve("xstream-1.4.21_miko.jar"));
+        assertEquals(stock.toRealPath(), game.serializer(null));
         assertEquals(stock.toRealPath(), game.serializer("stock"));
         Files.writeString(game.root().resolve("starsector.sh"), "java -cp xstream-1.4.10.jar Main");
         assertEquals(stock.toRealPath(), game.serializer(null));

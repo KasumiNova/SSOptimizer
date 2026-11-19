@@ -21,8 +21,9 @@ final class InstancePaths {
         for (String name : List.of("cache", "cache/lwjgl-v1", "cache/named", "session.lock", "jvm.properties", "jvm.args", "compiler-directives.json", ".standalone-layout")) {
             confined(root, root.resolve(name));
         }
-        Path dataRoot = location.root(game, root);
-        for (String name : List.of("logs", "mods", "saves", "screenshots")) confined(dataRoot, dataRoot.resolve(name));
+        if (location == DataLocation.INSTANCE) {
+            for (String name : List.of("logs", "mods", "saves", "screenshots")) confined(root, root.resolve(name));
+        }
         return root;
     }
 

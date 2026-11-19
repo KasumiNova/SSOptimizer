@@ -17,10 +17,10 @@ class JvmSettingsTest {
         GameInstall game = game();
         Path instance = Files.createDirectory(temp.resolve("实例 一"));
         Path old = instance.resolve("jvm.properties");
-        String legacy = "heap.minMiB=768\nheap.maxMiB=9000\nstack.KiB=1024\nssoptimizer.econ.advance.parallel=false\nssoptimizer.custom=中文 值\n";
+        String legacy = "heap.minMiB=96\nheap.maxMiB=9000\nstack.KiB=384\nssoptimizer.econ.advance.parallel=false\nmod.custom=中文 值\n";
         Files.writeString(old, legacy);
         var migrated = JvmSettings.read(game, instance);
-        assertTrue(migrated.vm().containsAll(List.of("-Xms768m", "-Xmx9000m", "-Xss1024k", "-Dssoptimizer.custom=中文 值", "-Dssoptimizer.econ.advance.parallel=false")));
+        assertTrue(migrated.vm().containsAll(List.of("-Xms96m", "-Xmx9000m", "-Xss384k", "-Dmod.custom=中文 值", "-Dssoptimizer.econ.advance.parallel=false")));
         assertFalse(migrated.vm().contains("-Dssoptimizer.econ.advance.parallel=true"));
         assertEquals(legacy, Files.readString(old));
         Path file = instance.resolve("jvm.args");
