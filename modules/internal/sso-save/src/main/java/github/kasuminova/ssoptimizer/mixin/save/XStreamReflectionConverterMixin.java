@@ -10,6 +10,7 @@ import com.thoughtworks.xstream.converters.reflection.PureJavaReflectionProvider
 import com.thoughtworks.xstream.converters.reflection.ReflectionProvider;
 import com.thoughtworks.xstream.core.ReferencingMarshallingContext;
 import com.thoughtworks.xstream.core.util.ArrayIterator;
+import com.thoughtworks.xstream.core.util.Fields;
 import com.thoughtworks.xstream.core.util.HierarchicalStreams;
 import com.thoughtworks.xstream.core.util.MemberDictionary;
 import com.thoughtworks.xstream.core.util.Primitives;
@@ -18,7 +19,6 @@ import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import com.thoughtworks.xstream.mapper.CannotResolveClassException;
 import com.thoughtworks.xstream.mapper.Mapper;
-import github.kasuminova.ssoptimizer.common.save.XStreamFieldAccessHelper;
 import github.kasuminova.ssoptimizer.common.save.XStreamImplicitState;
 import github.kasuminova.ssoptimizer.common.save.XStreamMarshalPlan;
 import github.kasuminova.ssoptimizer.common.save.XStreamUnmarshalPlan;
@@ -321,7 +321,7 @@ public abstract class XStreamReflectionConverterMixin {
 
         Set<String> writtenAttributes = plan.dupAttrFieldNames != null ? new HashSet<>() : null;
         for (final XStreamMarshalPlan.AttrEntry entry : plan.attrEntries) {
-            final Object value = XStreamFieldAccessHelper.read(entry.field, source);
+            final Object value = Fields.read(entry.field, source);
             if (value != null) {
                 if (writtenAttributes != null && writtenAttributes.contains(entry.fieldName)) {
                     final ConversionException exception = new ConversionException(
@@ -341,7 +341,7 @@ public abstract class XStreamReflectionConverterMixin {
         }
 
         for (final XStreamMarshalPlan.ElemEntry entry : plan.elemEntries) {
-            final Object value = XStreamFieldAccessHelper.read(entry.field, source);
+            final Object value = Fields.read(entry.field, source);
             if (value == null) {
                 continue;
             }

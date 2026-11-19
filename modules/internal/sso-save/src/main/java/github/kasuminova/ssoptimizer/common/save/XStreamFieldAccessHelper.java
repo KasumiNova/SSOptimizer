@@ -21,34 +21,25 @@ public final class XStreamFieldAccessHelper {
     private XStreamFieldAccessHelper() {
     }
 
+    public static boolean supports(final Field field) {
+        return FAST_ACCESS_ENABLED && !field.getDeclaringClass().getModule().isNamed();
+    }
+
     public static Object read(final Field field, final Object target) {
         final FieldAccessor accessor = accessorFor(field);
         try {
             return accessor.read(target);
         } catch (final WrongMethodTypeException | ClassCastException e) {
             throw fail("读取", "Cannot read field", field, e);
-        } catch (final RuntimeException e) {
-            throw e;
-        } catch (final Error e) {
-            throw e;
         }
     }
 
     public static void write(final Field field, final Object target, final Object value) {
-        if (Modifier.isFinal(field.getModifiers())) {
-            throw fail("写入", "Cannot write final field without reflection", field,
-                    new IllegalAccessException("VarHandle 不支持写入 final 字段"));
-        }
-
         final FieldAccessor accessor = accessorFor(field);
         try {
             accessor.write(target, value);
         } catch (final WrongMethodTypeException | ClassCastException e) {
             throw fail("写入", "Cannot write field", field, e);
-        } catch (final RuntimeException e) {
-            throw e;
-        } catch (final Error e) {
-            throw e;
         }
     }
 
@@ -64,11 +55,6 @@ public final class XStreamFieldAccessHelper {
     }
 
     private static FieldAccessor createAccessor(final Field field) {
-        if (!FAST_ACCESS_ENABLED) {
-            throw fail("初始化", "Fast field access is disabled", field,
-                    new IllegalStateException("XStream 字段句柄访问已被禁用"));
-        }
-
         try {
             final MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(
                     field.getDeclaringClass(),
@@ -81,7 +67,7 @@ public final class XStreamFieldAccessHelper {
         }
     }
 
-    static FieldAccessor createAccessor(final VarHandle handle, final boolean staticField) {
+    private static FieldAccessor createAccessor(final VarHandle handle, final boolean staticField) {
         return staticField
                 ? new StaticVarHandleFieldAccessor(handle)
                 : new InstanceVarHandleFieldAccessor(handle);
@@ -105,7 +91,7 @@ public final class XStreamFieldAccessHelper {
         return exception;
     }
 
-    interface FieldAccessor {
+    private interface FieldAccessor {
         Object read(Object target);
 
         void write(Object target, Object value);
