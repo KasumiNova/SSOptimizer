@@ -4,6 +4,7 @@ import com.fs.graphics.font.BitmapFont;
 import com.fs.graphics.font.BitmapGlyph;
 import github.kasuminova.ssoptimizer.common.font.atlas.DynamicGlyphAtlas;
 import github.kasuminova.ssoptimizer.common.font.atlas.GlyphSlot;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import github.kasuminova.ssoptimizer.common.render.engine.TextScaleBuckets;
 import github.kasuminova.ssoptimizer.common.font.layout.GlyphMetrics;
 import github.kasuminova.ssoptimizer.common.font.layout.GlyphProvider;
@@ -49,6 +50,7 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     private final Map<Long, GlyphMetrics> slotCache = new HashMap<>();
     private int slotCacheGeneration = -1;
     private static final int SLOT_CACHE_MAX = 4096;
+    private FloatingView floatingView;
 
     public TtfGlyphProvider(final BitmapFont baseFont,
                             final OriginalGameFontOverrides.FontOverrideSpec spec,
@@ -110,6 +112,11 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
         if (base == null) {
             return null;
         }
+        final GlyphMetrics blank = blankGlyph(codePoint, base);
+        return blank != null ? blank : cachedSlotMetrics(codePoint, base, 0);
+    }
+
+    private GlyphMetrics blankGlyph(final int codePoint, final GlyphMetrics base) {
         if (TtfBmFontGenerator.shouldTreatAsSpaceGlyph(codePoint)) {
             if (layoutTable != null && layoutTable.cells().containsKey(codePoint))
                 return new GlyphMetrics(base.xOffset(), base.xAdvance(), 0, 0, 0, 0, 0, 0, 0, 0);
@@ -117,13 +124,12 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
             final float advance = space != null ? space.xAdvance() : base.xAdvance();
             return new GlyphMetrics(0, advance, 0, 0, 0, 0f, 0f, 0f, 0f, 0);
         }
-        // 原版占位字形只保留步进，不生成图集槽位或可见 quad。
         if (base.width() <= 1 && base.height() <= 1) {
             return new GlyphMetrics(base.xOffset(), base.xAdvance(), base.bearingY(),
                     0, 0, 0f, 0f, 0f, 0f, 0);
         }
 
-        return cachedSlotMetrics(codePoint, base, 0);
+        return null;
     }
 
     @Override
@@ -200,6 +206,105 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     public GlyphProvider forScale(final float scale) {
         currentBucketMillis = TextScaleBuckets.bucketScaleMillis(scale * EffectiveScreenScale.current());
         return this;
+    }
+
+    public GlyphProvider floatingTextGlyphs() {
+        if (floatingView == null) floatingView = new FloatingView();
+        return floatingView;
+    }
+
+    public static void finishFloatingDraw(GlyphProvider provider) {
+        if (provider instanceof TtfGlyphProvider.FloatingView view) view.finishDraw();
+    }
+
+    NativeGlyphBitmap floatingBitmap(int cp, int bucket, float logicalStroke, GlyphMetrics base) {
+        final float scale = bucket / 1000f;
+        final float stroke = TextScaleBuckets.quantizeStrokeDevicePx(logicalStroke, scale);
+        final int rasterCp = victorFamily ? TtfBmFontGenerator.substituteVictorLowercaseCodePoint(cp) : cp;
+        synchronized (faces) {
+            long face = faceForGlyphLocked(faceChainForBucketLocked(bucket), bucket, rasterCp);
+            if (face == 0) return null;
+            NativeGlyphBitmap ink = backend.rasterize(face, rasterCp, baselineForBucket(bucket), stroke);
+            return ink == null ? null : composeToFontBox(ink, base, Math.round(stroke * 1000f), scale);
+        }
+    }
+
+    private final class FloatingView implements OutlineGlyphProvider {
+        private final FloatingGlyphAtlas cache = FloatingGlyphAtlas.shared();
+        private int bucket = 1000;
+        private int warmEpoch = -1;
+        private final Map<Long, Runnable> held = new HashMap<>();
+
+        private void prewarm() {
+            for (int cp : "0123456789+-.%".codePoints().toArray()) {
+                GlyphMetrics base = metrics.glyph(cp);
+                if (base != null && base.width() > 1 && base.height() > 1) {
+                    cache.prewarm(new FloatingGlyphAtlas.Shape(TtfGlyphProvider.this, cp, 0f), 1000, base);
+                    cache.prewarm(new FloatingGlyphAtlas.Shape(TtfGlyphProvider.this, cp, 1f), 1000, base);
+                }
+            }
+        }
+
+        @Override public GlyphProvider forScale(float scale) {
+            bucket = TextScaleBuckets.bucketScaleMillis(scale * EffectiveScreenScale.current());
+            int epoch = cache.epoch();
+            if (warmEpoch != epoch) { warmEpoch = epoch; prewarm(); }
+            return this;
+        }
+
+        @Override public GlyphMetrics glyph(int cp) { return resolve(cp, 0f); }
+        @Override public GlyphMetrics strokedGlyph(int cp, float stroke) { return resolve(cp, stroke); }
+        @Override public Integer kerning(int prev, int cp) { return metrics.kerning(prev, cp); }
+        @Override public int nominalFontSize() { return metrics.nominalFontSize(); }
+        @Override public int lineHeight() { return metrics.lineHeight(); }
+        @Override public boolean synthesizesOutline() { return true; }
+        @Override public boolean usesAtlasTexture() { return true; }
+        @Override public float currentBucketScale() { return bucket / 1000f; }
+
+        private GlyphMetrics resolve(int cp, float logicalStroke) {
+            GlyphMetrics base = baseMetrics(cp);
+            if (base == null) return null;
+            GlyphMetrics blank = blankGlyph(cp, base);
+            if (blank != null) return logicalStroke == 0f ? blank : null;
+            var shape = new FloatingGlyphAtlas.Shape(TtfGlyphProvider.this, cp, logicalStroke);
+            var choice = cache.lookup(shape, bucket, base);
+            if (choice.glyph() != null) return choice.glyph();
+            if (!choice.original() && logicalStroke == 0f && base.texWidth() > 0f && base.texHeight() > 0f && baseFont.getTexture() != null) {
+                int texture = baseFont.getTexture().getTextureId();
+                if (texture > 0) return FloatingGlyphAtlas.geometry(base, 0, base.texX(), base.texY(), base.texWidth(), base.texHeight(), texture);
+            }
+            int sourceBucket = choice.original() ? bucket : Math.clamp(1000, bucket - bucket / 4, bucket + bucket / 4);
+            sourceBucket = TextScaleBuckets.bucketScaleMillis(sourceBucket / 1000f);
+            final int selected = sourceBucket;
+            int stroke = Math.round(TextScaleBuckets.quantizeStrokeDevicePx(logicalStroke, selected / 1000f) * 1000f);
+            long holdKey = ((long) selected << 32) | (stroke & 0xffffffffL);
+            held.computeIfAbsent(holdKey, key -> atlas.get().retainForDraw(faceKey, selected, stroke));
+            GlyphMetrics glyph = cachedSlotMetrics(cp, base, stroke, selected);
+            if (glyph != null) return FloatingGlyphAtlas.geometry(base, logicalStroke, glyph.texX(), glyph.texY(),
+                    glyph.texWidth(), glyph.texHeight(), glyph.textureId());
+            if (logicalStroke == 0f && base.texWidth() > 0f && base.texHeight() > 0f && baseFont.getTexture() != null) {
+                int texture = baseFont.getTexture().getTextureId();
+                if (texture > 0) return FloatingGlyphAtlas.geometry(base, logicalStroke,
+                        base.texX(), base.texY(), base.texWidth(), base.texHeight(), texture);
+            }
+            return null;
+        }
+
+        @Override public void flushPendingUploads() {
+            if (!held.isEmpty()) atlas.get().flushDirty();
+        }
+
+        private void finishDraw() {
+            if (!held.isEmpty()) {
+                try {
+                    // 其他生产者可淘汰共享页，必须先把主线程尚未提交的顶点写入队列。
+                    GlDispatch.flushRecordedVertices();
+                } finally {
+                    held.values().forEach(Runnable::run);
+                    held.clear();
+                }
+            }
+        }
     }
 
     @Override
@@ -348,22 +453,26 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
     private GlyphMetrics cachedSlotMetrics(final int rasterCodePoint,
                                            final GlyphMetrics base,
                                            final int strokeBucketMillis) {
+        return cachedSlotMetrics(rasterCodePoint, base, strokeBucketMillis, currentBucketMillis);
+    }
+
+    private GlyphMetrics cachedSlotMetrics(int rasterCodePoint, GlyphMetrics base, int strokeBucketMillis, int bucket) {
         final int generation = atlas.get().textureGeneration();
         if (generation != slotCacheGeneration) {
             slotCache.clear();
             slotCacheGeneration = generation;
         }
-        final long key = ((long) currentBucketMillis << 41)
+        final long key = ((long) bucket << 41)
                 | ((long) strokeBucketMillis << 21) | rasterCodePoint;
         final GlyphMetrics cached = slotCache.get(key);
         if (cached != null) {
             return cached;
         }
-        final GlyphSlot slot = requestSlot(rasterCodePoint, base, strokeBucketMillis);
+        final GlyphSlot slot = requestSlot(rasterCodePoint, base, strokeBucketMillis, bucket);
         if (slot == null) {
             return null;
         }
-        final GlyphMetrics result = slotMetrics(base, slot, currentBucketScale());
+        final GlyphMetrics result = slotMetrics(base, slot, bucket / 1000f);
         if (result.textureId() != 0) {
             if (slotCache.size() >= SLOT_CACHE_MAX) {
                 slotCache.clear();
@@ -375,15 +484,15 @@ public final class TtfGlyphProvider implements OutlineGlyphProvider {
 
     private GlyphSlot requestSlot(final int rasterCodePoint,
                                   final GlyphMetrics base,
-                                  final int strokeBucketMillis) {
-        final int baseline = baselineForBucket(currentBucketMillis);
-        final float bucketScale = currentBucketScale();
+                                   final int strokeBucketMillis, final int bucket) {
+        final int baseline = baselineForBucket(bucket);
+        final float bucketScale = bucket / 1000f;
         synchronized (faces) {
-            final long[] chain = faceChainForBucketLocked(currentBucketMillis);
-            return atlas.get().request(faceKey, currentBucketMillis, strokeBucketMillis, rasterCodePoint, baseline,
+            final long[] chain = faceChainForBucketLocked(bucket);
+            return atlas.get().request(faceKey, bucket, strokeBucketMillis, rasterCodePoint, baseline,
                     (cp, bl, stroke) -> {
                         final int rasterCp = victorFamily ? TtfBmFontGenerator.substituteVictorLowercaseCodePoint(cp) : cp;
-                         final long face = faceForGlyphLocked(chain, currentBucketMillis, rasterCp);
+                        final long face = faceForGlyphLocked(chain, bucket, rasterCp);
                         if (face == 0L) {
                             return null;
                         }

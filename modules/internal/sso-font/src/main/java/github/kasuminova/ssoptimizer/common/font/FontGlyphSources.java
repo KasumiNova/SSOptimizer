@@ -23,14 +23,22 @@ public final class FontGlyphSources {
     }
 
     public static GlyphProvider resolve(final BitmapFont font) {
-        // 渲染线程持图集锁等待自身 drain 会自死锁，主线程也可能与渲染线程形成锁序倒置，因此渲染线程只使用无锁位图源。
+        return resolve(font, false);
+    }
+
+    public static GlyphProvider resolve(final BitmapFont font, final boolean floatingText) {
+        // 渲染线程不能在自己的队列上等待纹理分配。
         if (!OriginalGameFontOverrides.isEnabled() || GlDispatch.isRenderThread()) {
             return new BitmapFontGlyphProvider(font);
         }
         final GlyphProvider provider = providerFor(font);
         if (provider instanceof TtfGlyphProvider ttf) {
-            if (RenderThreadMode.isEnabled()) ttf.startWarmup();
-            else sharedAtlas().beginDirectDraw();
+            if (RenderThreadMode.isEnabled()) {
+                ttf.startWarmup();
+                if (floatingText && GlDispatch.isMainRecordingThread()) return ttf.floatingTextGlyphs();
+            } else {
+                sharedAtlas().beginDirectDraw();
+            }
         }
         return provider;
     }

@@ -17,6 +17,11 @@ public final class GlDispatch {
         BridgeSupport.queue().submit(command);
     }
 
+    /** 归还当前绘制引用的资源前，将已录制顶点加入渲染队列。 */
+    public static void flushRecordedVertices() {
+        BridgeSupport.flushVertexStream();
+    }
+
     /** 非渲染线程调用会先提交当前录制帧并阻塞等待结果，渲染线程调用则直接执行。 */
     public static <T> T allocate(final Callable<T> resourceTask) {
         return BridgeSupport.blockingGetResource(resourceTask);

@@ -60,6 +60,33 @@ public final class FontAtlasGl {
             throw new IllegalStateException("[SSOptimizer] 图集上传 rects/payloads 不等长: "
                     + rects.size() + "/" + payloads.size());
         }
+        withUnpackState(textureId, pageSize, () -> {
+            for (int i = 0; i < rects.size(); i++) {
+                final int[] rect = rects.get(i);
+                uploadRect(pageSize, rect[0], rect[1], rect[2], rect[3], payloads.get(i));
+            }
+        });
+    }
+
+    public static void uploadAlphaRect(final int textureId, final int pageSize, final int x, final int y,
+                                       final int width, final int height, final ByteBuffer packed) {
+        if (!packed.isDirect() || (long) width * height != packed.remaining()) {
+            throw new IllegalArgumentException("字形上传需要与矩形尺寸一致的直接缓冲区");
+        }
+        withUnpackState(textureId, 0, () -> uploadRect(pageSize, x, y, width, height, packed));
+    }
+
+    private static void uploadRect(final int pageSize, final int x, final int y, final int width,
+                                   final int height, final ByteBuffer payload) {
+        if (x < 0 || y < 0 || width <= 0 || height <= 0 || width > pageSize - x || height > pageSize - y) {
+            throw new IllegalStateException("图集脏矩形越界: rect=" + x + "," + y + "," + width + "," + height
+                    + " pageSize=" + pageSize);
+        }
+        org.lwjgl.opengl.GL11.glTexSubImage2D(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 0, x, y, width, height,
+                org.lwjgl.opengl.GL11.GL_ALPHA, org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE, payload);
+    }
+
+    private static void withUnpackState(final int textureId, final int rowLength, final Runnable upload) {
         final int previousBinding = org.lwjgl.opengl.GL11.glGetInteger(
                 org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D);
         final int previousAlignment = org.lwjgl.opengl.GL11.glGetInteger(
@@ -71,25 +98,11 @@ public final class FontAtlasGl {
         final int unpackBuffer = unbindUnpackBuffer();
         try {
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, textureId);
-            org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH, pageSize);
+            org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH, rowLength);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_ROWS, 0);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_PIXELS, 0);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT, 1);
-            for (int i = 0; i < rects.size(); i++) {
-                final int[] rect = rects.get(i);
-                if (rect[0] < 0 || rect[1] < 0 || rect[2] <= 0 || rect[3] <= 0
-                        || rect[0] + rect[2] > pageSize || rect[1] + rect[3] > pageSize) {
-                    throw new IllegalStateException("[SSOptimizer] 图集脏矩形越界: rect="
-                            + rect[0] + "," + rect[1] + " " + rect[2] + "x" + rect[3]
-                            + " pageSize=" + pageSize);
-                }
-                org.lwjgl.opengl.GL11.glTexSubImage2D(
-                        org.lwjgl.opengl.GL11.GL_TEXTURE_2D, 0,
-                        rect[0], rect[1], rect[2], rect[3],
-                        org.lwjgl.opengl.GL11.GL_ALPHA,
-                        org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE,
-                        payloads.get(i));
-            }
+            upload.run();
         } finally {
             org.lwjgl.opengl.GL11.glBindTexture(org.lwjgl.opengl.GL11.GL_TEXTURE_2D, previousBinding);
             org.lwjgl.opengl.GL11.glPixelStorei(org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT, previousAlignment);

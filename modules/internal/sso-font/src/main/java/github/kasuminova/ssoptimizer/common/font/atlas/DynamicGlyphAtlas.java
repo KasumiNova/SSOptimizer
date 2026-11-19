@@ -22,6 +22,7 @@ public final class DynamicGlyphAtlas {
     private final int pageSize;
     private final int maxPages;
     private final Map<GroupKey, Group> groups = new LinkedHashMap<>(16, 0.75f, true);
+    private final Map<GroupKey, Integer> retained = new HashMap<>();
     private int totalPages;
     private volatile int textureGeneration;
     private final List<GlyphAtlasPage> recycledPages = new ArrayList<>();
@@ -118,6 +119,17 @@ public final class DynamicGlyphAtlas {
         }
     }
 
+    public synchronized Runnable retainForDraw(String face, int bucket, int stroke) {
+        GroupKey key = new GroupKey(face, bucket, stroke);
+        retained.merge(key, 1, Integer::sum);
+        return () -> releaseAfterDraw(key);
+    }
+
+    private synchronized void releaseAfterDraw(GroupKey key) {
+        retained.compute(key, (k, count) -> count == 1 ? null : count - 1);
+        if (totalPages > maxPages) evictLeastRecentlyUsedGroups(null);
+    }
+
     public synchronized void onContextRecreated() {
         for (final Group group : groups.values()) {
             for (final GlyphAtlasPage page : group.pages) {
@@ -163,7 +175,7 @@ public final class DynamicGlyphAtlas {
         final Iterator<Map.Entry<GroupKey, Group>> iterator = groups.entrySet().iterator();
         while (totalPages > maxPages && iterator.hasNext()) {
             final Map.Entry<GroupKey, Group> eldest = iterator.next();
-            if (eldest.getKey().equals(activeGroup)) {
+            if (eldest.getKey().equals(activeGroup) || retained.containsKey(eldest.getKey())) {
                 continue;
             }
             for (final GlyphAtlasPage page : eldest.getValue().pages) {

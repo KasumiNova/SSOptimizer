@@ -7,12 +7,14 @@ import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 public final class GlyphAtlasPage {
 
     private final int        size;
-    private final ByteBuffer staging;
+    private ByteBuffer staging;
+    private AtomicInteger queuedReaders = new AtomicInteger();
     private final List<int[]> dirtyRects = new ArrayList<>();
 
     private int shelfY;
@@ -101,7 +103,6 @@ public final class GlyphAtlasPage {
             return;
         }
 
-        // 已写入的 cell 在整组淘汰前不可重写，上传命令可安全持有 staging 的定位视图。
         final int texture = textureId;
         final List<int[]> rects = new ArrayList<>(dirtyRects);
         dirtyRects.clear();
@@ -118,7 +119,17 @@ public final class GlyphAtlasPage {
         if (directOwner != null) {
             FontAtlasGl.uploadAlphaRects(texture, size, rects, payloads);
         } else {
-            GlDispatch.submit(() -> FontAtlasGl.uploadAlphaRects(texture, size, rects, payloads));
+            final AtomicInteger readers = queuedReaders;
+            readers.incrementAndGet();
+            try {
+                GlDispatch.submit(() -> {
+                    try { FontAtlasGl.uploadAlphaRects(texture, size, rects, payloads); }
+                    finally { readers.decrementAndGet(); }
+                });
+            } catch (RuntimeException ex) {
+                readers.decrementAndGet();
+                throw ex;
+            }
         }
     }
 
@@ -148,6 +159,11 @@ public final class GlyphAtlasPage {
         shelfX = 0;
         shelfHeight = 0;
         dirtyRects.clear();
+        if (queuedReaders.get() != 0) {
+            staging = ByteBuffer.allocateDirect(size * size);
+            queuedReaders = new AtomicInteger();
+            return;
+        }
         final ByteBuffer view = staging.duplicate();
         view.clear();
         final byte[] zeros = new byte[8192];
