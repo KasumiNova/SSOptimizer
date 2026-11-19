@@ -26,7 +26,7 @@ public class GL20Gen {
     }
 
     public static int glCreateProgram() {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glCreateProgram());
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.created(org.lwjgl.opengl.GL20.glCreateProgram()));
     }
 
     public static int glCreateShader(int p0) {
@@ -34,7 +34,7 @@ public class GL20Gen {
     }
 
     public static void glDeleteProgram(int p0) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDeleteProgram(p0));
+        UniformLookup.delete(p0, () -> org.lwjgl.opengl.GL20.glDeleteProgram(p0));
     }
 
     public static void glDeleteShader(int p0) {
@@ -170,11 +170,11 @@ public class GL20Gen {
     }
 
     public static int glGetUniformLocation(int p0, java.lang.CharSequence p1) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetUniformLocation(p0, p1));
+        return UniformLookup.core(p0, p1);
     }
 
     public static int glGetUniformLocation(int p0, java.nio.ByteBuffer p1) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.GL20.glGetUniformLocation(p0, p1));
+        return UniformLookup.core(p0, p1);
     }
 
     public static void glGetVertexAttrib(int p0, int p1, java.nio.DoubleBuffer p2) {
@@ -206,7 +206,7 @@ public class GL20Gen {
     }
 
     public static void glLinkProgram(int p0) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glLinkProgram(p0));
+        UniformLookup.link(p0, () -> org.lwjgl.opengl.GL20.glLinkProgram(p0), false);
     }
 
     public static void glShaderSource(int p0, java.lang.CharSequence p1) {

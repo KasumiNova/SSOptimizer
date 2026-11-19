@@ -14,7 +14,7 @@ public final class ARBShaderObjects {
     }
 
     public static int glCreateProgramObjectARB() {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBShaderObjects.glCreateProgramObjectARB());
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.created(org.lwjgl.opengl.ARBShaderObjects.glCreateProgramObjectARB()));
     }
 
     public static int glCreateShaderObjectARB(int p0) {
@@ -22,7 +22,7 @@ public final class ARBShaderObjects {
     }
 
     public static void glDeleteObjectARB(int p0) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBShaderObjects.glDeleteObjectARB(p0));
+        UniformLookup.delete(p0, () -> org.lwjgl.opengl.ARBShaderObjects.glDeleteObjectARB(p0));
     }
 
     public static void glDetachObjectARB(int p0, int p1) {
@@ -98,15 +98,15 @@ public final class ARBShaderObjects {
     }
 
     public static int glGetUniformLocationARB(int p0, java.lang.CharSequence p1) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.ARBShaderObjects.glGetUniformLocationARB(p0, p1));
+        return UniformLookup.arb(p0, p1);
     }
 
     public static int glGetUniformLocationARB(int p0, java.nio.ByteBuffer p1) {
-        return BridgeSupport.blockingGet(() -> org.lwjgl.opengl.ARBShaderObjects.glGetUniformLocationARB(p0, p1));
+        return UniformLookup.arb(p0, p1);
     }
 
     public static void glLinkProgramARB(int p0) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.ARBShaderObjects.glLinkProgramARB(p0));
+        UniformLookup.link(p0, () -> org.lwjgl.opengl.ARBShaderObjects.glLinkProgramARB(p0), true);
     }
 
     public static void glShaderSourceARB(int p0, java.lang.CharSequence p1) {

@@ -187,8 +187,7 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实调用失败
      */
     public static void setDisplayMode(DisplayMode mode) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setDisplayMode(mode));
-        // 上下文重建后，录制状态、VBO id stash 与 capabilities 缓存一并失效
+        changeWindow(() -> org.lwjgl.opengl.Display.setDisplayMode(mode));
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
@@ -199,8 +198,7 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实调用失败
      */
     public static void setFullscreen(boolean fullscreen) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setFullscreen(fullscreen));
-        // 上下文重建后，录制状态、VBO id stash 与 capabilities 缓存一并失效
+        changeWindow(() -> org.lwjgl.opengl.Display.setFullscreen(fullscreen));
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
@@ -226,12 +224,18 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实调用失败
      */
     public static void makeCurrent() throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(org.lwjgl.opengl.Display::makeCurrent);
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            clearIfDisplayNotCurrent();
+            org.lwjgl.opengl.Display.makeCurrent();
+        });
     }
 
     /** 阻塞通道：销毁窗口/上下文必须在渲染线程完成后再返回调用方（关停顺序保证）。 */
     public static void destroy() {
-        BridgeSupport.blockingWait(org.lwjgl.opengl.Display::destroy);
+        BridgeSupport.blockingWait(() -> {
+            UniformLookup.clear();
+            org.lwjgl.opengl.Display.destroy();
+        });
     }
 
     /**
@@ -326,8 +330,7 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实调用失败
      */
     public static void setDisplayModeAndFullscreen(DisplayMode mode) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setDisplayModeAndFullscreen(mode));
-        // 显示模式切换重建 GL 上下文：录制侧状态簿记与 VBO id stash 全部复位
+        changeWindow(() -> org.lwjgl.opengl.Display.setDisplayModeAndFullscreen(mode));
         BridgeSupport.onContextRecreated();
         GLContext.invalidateCapabilities();
     }
@@ -362,7 +365,10 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实调用失败
      */
     public static void releaseContext() throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(org.lwjgl.opengl.Display::releaseContext);
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            UniformLookup.clear();
+            org.lwjgl.opengl.Display.releaseContext();
+        });
     }
 
     /**
@@ -380,7 +386,33 @@ public final class Display {
      * @throws LWJGLException 渲染线程上的真实调用失败
      */
     public static void setParent(java.awt.Canvas parent) throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.Display.setParent(parent));
+        changeWindow(() -> org.lwjgl.opengl.Display.setParent(parent));
+    }
+
+    private static void clearIfDisplayNotCurrent() {
+        try {
+            if (org.lwjgl.opengl.Display.isCreated() && org.lwjgl.opengl.Display.isCurrent()) {
+                return;
+            }
+        } catch (LWJGLException | RuntimeException failure) {
+            org.apache.log4j.Logger.getLogger(Display.class).warn("[SSOptimizer] 查询当前 Display 上下文失败，清除 uniform 位置缓存", failure);
+        }
+        UniformLookup.clear();
+    }
+
+    private static void changeWindow(BridgeSupport.ThrowingTask change) throws LWJGLException {
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            if (org.lwjgl.opengl.Display.isCreated()) {
+                clearIfDisplayNotCurrent();
+            }
+            try {
+                change.run();
+            } catch (LWJGLException | RuntimeException | Error failure) {
+                // LWJGL 复用原上下文创建窗口，失败时可能已经销毁 drawable。
+                UniformLookup.clear();
+                throw failure;
+            }
+        });
     }
 
     /** 直通：窗口标题读 LWJGL 缓存字段，无 GL/X11 依赖。 */

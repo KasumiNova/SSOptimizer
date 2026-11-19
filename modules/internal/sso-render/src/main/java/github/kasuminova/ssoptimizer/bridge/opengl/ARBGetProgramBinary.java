@@ -10,7 +10,7 @@ public final class ARBGetProgramBinary {
     }
 
     public static void glProgramBinary(int p0, int p1, java.nio.ByteBuffer p2) {
-        BridgeSupport.enqueueSnapshot(p2, snapshot -> org.lwjgl.opengl.ARBGetProgramBinary.glProgramBinary(p0, p1, snapshot));
+        UniformLookup.binary(p0, p2, snapshot -> org.lwjgl.opengl.ARBGetProgramBinary.glProgramBinary(p0, p1, snapshot));
     }
 
     public static void glProgramParameteri(int p0, int p1, int p2) {

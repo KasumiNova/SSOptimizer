@@ -41,12 +41,18 @@ public final class GLContext {
     }
 
     public static void useContext(Object context) throws org.lwjgl.LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.GLContext.useContext(context));
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            UniformLookup.clear();
+            org.lwjgl.opengl.GLContext.useContext(context);
+        });
     }
 
     public static void useContext(Object context, boolean isSurfaceless)
             throws org.lwjgl.LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(() -> org.lwjgl.opengl.GLContext.useContext(context, isSurfaceless));
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            UniformLookup.clear();
+            org.lwjgl.opengl.GLContext.useContext(context, isSurfaceless);
+        });
     }
 
     public static void loadOpenGLLibrary() throws org.lwjgl.LWJGLException {
@@ -54,6 +60,9 @@ public final class GLContext {
     }
 
     public static void unloadOpenGLLibrary() {
-        BridgeSupport.blockingWait(org.lwjgl.opengl.GLContext::unloadOpenGLLibrary);
+        BridgeSupport.blockingWait(() -> {
+            UniformLookup.clear();
+            org.lwjgl.opengl.GLContext.unloadOpenGLLibrary();
+        });
     }
 }

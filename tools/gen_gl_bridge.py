@@ -4,17 +4,9 @@
 用法：python3 tools/gen_gl_bridge.py [lwjgl.jar 路径]
 默认 jar：/mnt/store/Games/Starsector098-linux/lwjgl.jar
 
-机制：javap 解析游戏 lwjgl.jar 的 org/lwjgl/opengl 包全部类，按
-docs/design/gl-bridge-full-mirror.md 的分类规则为每个 GL 调用类生成 bridge
-镜像源码，落盘到 modules/internal/sso-render/.../bridge/opengl/：
-
-- 已有手写 bridge 的类（HANDWRITTEN）：生成基类 <Name>Gen.java，手写类
-  extends 之。invokestatic 的方法解析先命中手写类自身声明，Gen 只兜底；
-- 其余类：直接生成 final 入口类 <Name>.java。
-
-生成物幂等覆写；目录中带生成标记但本次未再生成的文件会被删除（防 jar 换版残留）。
-生成代码只经 BridgeSupport 的四条通道（enqueue/enqueueSnapshot/blockingWait/
-blockingGet 及资源变体），命令体一律全限定名直调真实 GL，不 import。
+使用 javap 读取 lwjgl.jar 中 OpenGL 类的签名，生成 bridge/opengl 下的镜像源码。
+手写类继承生成的 <Name>Gen.java，并可声明同签名的静态方法。其余类生成 final 入口。
+重新生成时删除当前 jar 已不包含的生成文件。
 """
 
 import re
@@ -72,6 +64,22 @@ CALLBACK_TYPES = {
 SCALAR_TYPES = {'int', 'long', 'float', 'double', 'boolean', 'byte', 'short', 'char'}
 STRING_TYPES = {'java.lang.CharSequence', 'java.lang.String'}
 GLSYNC_TYPE = 'org.lwjgl.opengl.GLSync'
+
+PROGRAM_OPERATIONS = {
+    ('GL20', 'glCreateProgram'): 'program_create',
+    ('ARBShaderObjects', 'glCreateProgramObjectARB'): 'program_create',
+    ('GL41', 'glCreateShaderProgram'): 'program_create_linked',
+    ('ARBSeparateShaderObjects', 'glCreateShaderProgram'): 'program_create_linked',
+    ('EXTSeparateShaderObjects', 'glCreateShaderProgramEXT'): 'program_create_linked',
+    ('GL20', 'glGetUniformLocation'): 'uniform_location',
+    ('ARBShaderObjects', 'glGetUniformLocationARB'): 'uniform_location',
+    ('GL20', 'glLinkProgram'): 'program_link',
+    ('ARBShaderObjects', 'glLinkProgramARB'): 'program_link',
+    ('GL20', 'glDeleteProgram'): 'program_delete',
+    ('ARBShaderObjects', 'glDeleteObjectARB'): 'program_delete',
+    ('GL41', 'glProgramBinary'): 'program_binary',
+    ('ARBGetProgramBinary', 'glProgramBinary'): 'program_binary',
+}
 
 CLASS_HEADER_RE = re.compile(
     r'^(?:public\s+)?(?:final\s+|abstract\s+)?(?:class|interface)\s+'
@@ -150,13 +158,10 @@ def merged_methods(info, infos):
     return list(merged.values()), chain
 
 
-def classify(method):
-    """按设计文档分类规则判定通道类别，返回 (类别, 备注)。类别：
-    command / command_bind_buffer / command_delete_buffer / snapshot_delete_buffer /
-    command_string / command_string_array / command_callback / get_fill /
-    gen_resource / snapshot / passthrough / resource_get / value_get /
-    skip_glsync / downgrade_longbuffer
-    """
+def classify(owner, method):
+    category = PROGRAM_OPERATIONS.get((owner, method.name))
+    if category is not None:
+        return category, None
     types = list(method.params)
     if GLSYNC_TYPE in types or method.ret == GLSYNC_TYPE:
         return 'skip_glsync', '签名含 GLSync（对象身份类型，需手写）'
@@ -207,7 +212,25 @@ def render_method(owner, method, category):
     real = f'org.lwjgl.opengl.{owner}.{method.name}'
     sig = f'public static {method.ret} {method.name}({params_decl})'
     lines = []
-    if category == 'command_bind_buffer':
+    if category in ('program_create', 'program_create_linked'):
+        register = 'created' if category == 'program_create' else 'createdLinked'
+        lines.append(f'    {sig} {{')
+        lines.append(f'        return BridgeSupport.blockingGetResource(() -> UniformLookup.{register}({real}({args})));')
+    elif category == 'uniform_location':
+        lookup = 'arb' if owner == 'ARBShaderObjects' else 'core'
+        lines.append(f'    {sig} {{')
+        lines.append(f'        return UniformLookup.{lookup}({args});')
+    elif category == 'program_link':
+        arb = 'true' if owner == 'ARBShaderObjects' else 'false'
+        lines.append(f'    {sig} {{')
+        lines.append(f'        UniformLookup.link(p0, () -> {real}(p0), {arb});')
+    elif category == 'program_delete':
+        lines.append(f'    {sig} {{')
+        lines.append(f'        UniformLookup.delete(p0, () -> {real}(p0));')
+    elif category == 'program_binary':
+        lines.append(f'    {sig} {{')
+        lines.append(f'        UniformLookup.binary(p0, p2, snapshot -> {real}(p0, p1, snapshot));')
+    elif category == 'command_bind_buffer':
         const = ('org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER' if method.name == 'glBindBuffer'
                  else 'org.lwjgl.opengl.ARBVertexBufferObject.GL_ARRAY_BUFFER_ARB')
         lines.append(f'    {sig} {{')
@@ -365,7 +388,7 @@ def main():
         methods, chain = merged_methods(info, infos)
         kept = []
         for method in methods:
-            category, note = classify(method)
+            category, note = classify(name, method)
             signature = (f'{method.name}({", ".join(method.params)})'
                          f' -> {method.ret}')
             if category == 'skip_glsync':

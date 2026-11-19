@@ -42,10 +42,6 @@ public final class GL20 extends GL20Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glAttachShader(program, shader));
     }
 
-    public static void glLinkProgram(int program) {
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glLinkProgram(program));
-    }
-
     public static void glValidateProgram(int program) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glValidateProgram(program));
     }
@@ -76,11 +72,6 @@ public final class GL20 extends GL20Gen {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glUniform4f(location, v0, v1, v2, v3));
     }
 
-    public static int glGetUniformLocation(int program, CharSequence name) {
-        String snapshot = name.toString();
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetUniformLocation(program, snapshot));
-    }
-
     public static int glGetShaderi(int shader, int pname) {
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL20.glGetShaderi(shader, pname));
     }
@@ -102,16 +93,15 @@ public final class GL20 extends GL20Gen {
     }
 
     public static int glCreateProgram() {
-        final int program = BridgeSupport.blockingGetResource(org.lwjgl.opengl.GL20::glCreateProgram);
+        final int program = GL20Gen.glCreateProgram();
         BridgeSupport.simulatedState().onCreateProgram(program);
         return program;
     }
 
     public static void glDeleteProgram(int program) {
         BridgeSupport.simulatedState().onDeleteProgram(program);
-        BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDeleteProgram(program));
+        GL20Gen.glDeleteProgram(program);
     }
-
 
     public static void glDetachShader(int program, int shader) {
         BridgeSupport.enqueue(() -> org.lwjgl.opengl.GL20.glDetachShader(program, shader));

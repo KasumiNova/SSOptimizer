@@ -18,23 +18,23 @@ public class GL41Gen {
     }
 
     public static int glCreateShaderProgram(int p0, java.lang.CharSequence p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, java.lang.CharSequence[] p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, java.nio.ByteBuffer p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, java.nio.ByteBuffer[] p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, int p1, java.nio.ByteBuffer p2) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1, p2));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.GL41.glCreateShaderProgram(p0, p1, p2)));
     }
 
     public static void glDeleteProgramPipelines(int p0) {
@@ -114,7 +114,7 @@ public class GL41Gen {
     }
 
     public static void glProgramBinary(int p0, int p1, java.nio.ByteBuffer p2) {
-        BridgeSupport.enqueueSnapshot(p2, snapshot -> org.lwjgl.opengl.GL41.glProgramBinary(p0, p1, snapshot));
+        UniformLookup.binary(p0, p2, snapshot -> org.lwjgl.opengl.GL41.glProgramBinary(p0, p1, snapshot));
     }
 
     public static void glProgramParameteri(int p0, int p1, int p2) {

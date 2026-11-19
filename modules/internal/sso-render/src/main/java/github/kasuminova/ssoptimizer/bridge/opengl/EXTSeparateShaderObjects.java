@@ -10,11 +10,11 @@ public final class EXTSeparateShaderObjects {
     }
 
     public static int glCreateShaderProgramEXT(int p0, java.lang.CharSequence p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.EXTSeparateShaderObjects.glCreateShaderProgramEXT(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.EXTSeparateShaderObjects.glCreateShaderProgramEXT(p0, p1)));
     }
 
     public static int glCreateShaderProgramEXT(int p0, java.nio.ByteBuffer p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.EXTSeparateShaderObjects.glCreateShaderProgramEXT(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.EXTSeparateShaderObjects.glCreateShaderProgramEXT(p0, p1)));
     }
 
     public static void glUseShaderProgramEXT(int p0, int p1) {

@@ -109,6 +109,9 @@ final class BridgeSupport {
     }
 
     static void install(RenderQueue renderQueue) {
+        if (queue != renderQueue) {
+            UniformLookup.clear();
+        }
         queue = renderQueue;
         if (renderQueue instanceof RenderQueueImpl) {
             ((RenderQueueImpl) renderQueue).setFrameFailureHook(
@@ -138,7 +141,7 @@ final class BridgeSupport {
         }
         arrayBufferBindingProbe =
                 () -> org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER_BINDING);
-        resetDisplayListContext();
+        resetMainGlContext();
         frameSubmitSeq = 0;
         stateSnapshotSource = GlStateSnapshot::capture;
         syncOps = RealSyncOpsImpl.INSTANCE;
@@ -517,14 +520,15 @@ final class BridgeSupport {
         return mainGlContextToken;
     }
 
-    private static void resetDisplayListContext() {
+    private static void resetMainGlContext() {
+        UniformLookup.clear();
         displayListCompileDepth = 0;
         mainGlContextToken = new Object();
     }
 
     /** 真实主上下文创建成功后调用；窗口显示模式通知不调用此方法。 */
     static void onRenderThreadGlContextReady() {
-        resetDisplayListContext();
+        resetMainGlContext();
         if (!NativeRuntime.ensureQueueGlReady()) {
             LOGGER.warn("[SSOptimizer] 渲染线程 glad 未就绪，sync ops 保持 LWJGL 路径");
             return;

@@ -14,23 +14,23 @@ public final class ARBSeparateShaderObjects {
     }
 
     public static int glCreateShaderProgram(int p0, java.lang.CharSequence p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, java.lang.CharSequence[] p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, java.nio.ByteBuffer p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, java.nio.ByteBuffer[] p1) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1)));
     }
 
     public static int glCreateShaderProgram(int p0, int p1, java.nio.ByteBuffer p2) {
-        return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1, p2));
+        return BridgeSupport.blockingGetResource(() -> UniformLookup.createdLinked(org.lwjgl.opengl.ARBSeparateShaderObjects.glCreateShaderProgram(p0, p1, p2)));
     }
 
     public static void glDeleteProgramPipelines(int p0) {
