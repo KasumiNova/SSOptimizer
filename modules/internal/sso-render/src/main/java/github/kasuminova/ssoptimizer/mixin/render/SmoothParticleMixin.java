@@ -50,9 +50,8 @@ public abstract class SmoothParticleMixin {
         if (base.getBrightnessOverride() == 0.0f || base.getBrightnessMult() == 0.0f) {
             return;
         }
-        Color adjustedColor = ParticleBatchHelper.adjustBrightness(ssoptimizer$color, base.getBrightness());
         ParticleBatchHelper.addSmoothParticle(
-                adjustedColor.getRed(), adjustedColor.getGreen(), adjustedColor.getBlue(), adjustedColor.getAlpha(),
+                ParticleBatchHelper.brightnessRgba(ssoptimizer$color, base.getBrightness()),
                 base.getX(), base.getY(), ssoptimizer$offsetX, ssoptimizer$offsetY, ssoptimizer$size);
     }
 

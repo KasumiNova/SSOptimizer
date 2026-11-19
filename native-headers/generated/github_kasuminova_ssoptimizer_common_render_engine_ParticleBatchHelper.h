@@ -9,8 +9,6 @@ extern "C" {
 #endif
 #undef github_kasuminova_ssoptimizer_common_render_engine_ParticleBatchHelper_MAX_PARTICLES
 #define github_kasuminova_ssoptimizer_common_render_engine_ParticleBatchHelper_MAX_PARTICLES 16384L
-#undef github_kasuminova_ssoptimizer_common_render_engine_ParticleBatchHelper_MAX_VERTICES
-#define github_kasuminova_ssoptimizer_common_render_engine_ParticleBatchHelper_MAX_VERTICES 65536L
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_engine_ParticleBatchHelper
  * Method:    nativeRenderImmediateQuads

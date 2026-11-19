@@ -1,12 +1,13 @@
 package github.kasuminova.ssoptimizer.common.render.shield;
 
 import com.fs.graphics.TextureObject;
-import com.fs.graphics.util.RenderStateUtils;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
+import github.kasuminova.ssoptimizer.common.render.EffectVertices;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
+import java.awt.Color;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -17,18 +18,7 @@ public final class ShieldRenderHelper {
 
     private static final Logger LOGGER = Logger.getLogger(ShieldRenderHelper.class.getName());
 
-    private static final boolean ENABLED = resolveEnabled();
-
-    // 分离模式下 GL_LIST_INDEX 查询会阻塞并 drain 全管线，因此必须禁用此路径。
-    private static boolean resolveEnabled() {
-        boolean enabled = Boolean.parseBoolean(System.getProperty(ENABLE_PROPERTY, "true"));
-        if (enabled && RenderThreadMode.isEnabled()) {
-            LOGGER.info("[SSOptimizer] 渲染线程分离模式：禁用护盾优化渲染"
-                    + "（GL_LIST_INDEX 守卫在分离模式下为全管线 drain）");
-            return false;
-        }
-        return enabled;
-    }
+    private static final boolean ENABLED = Boolean.parseBoolean(System.getProperty(ENABLE_PROPERTY, "true"));
 
     private static final int GL_TEXTURE_2D           = 3553;
     private static final int GL_BLEND                = 3042;
@@ -91,7 +81,7 @@ public final class ShieldRenderHelper {
             return;
         }
 
-        if (ENABLED && GL11.glGetInteger(GL11.GL_LIST_INDEX) == 0) {
+        if (ENABLED && !RenderThreadMode.isEnabled() && GL11.glGetInteger(GL11.GL_LIST_INDEX) == 0) {
             renderBatched(p, arcDeg);
         } else {
             renderImmediate(p, arcDeg);
@@ -214,31 +204,8 @@ public final class ShieldRenderHelper {
         GL11.glTranslatef(p.offsetX, p.offsetY, 0.0F);
         GL11.glRotatef(startDeg, 0.0F, 0.0F, 1.0F);
 
-        for (int pass = 0; pass < 2; pass++) {
-            float phase = pass == 1 ? -p.innerAngle : p.innerAngle;
-            phase -= (float) Math.toRadians(arcDeg / 2.0F);
-            GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-            RenderStateUtils.setGlColor(p.innerColor, 0);
-            GL11.glTexCoord2f(0.5F, 0.5F);
-            GL11.glVertex2f(0.0F, 0.0F);
-            float segments = p.segmentCount - 1;
-            float delta = (float) Math.toRadians(arcDeg) / segments;
-            float fanRadius = p.radius * 1.07F;
-
-            for (int k = 0; k < p.segmentCount; k++) {
-                int alpha = ShieldArcGeometry.fanVertexAlpha(k, p.segmentCount, arcDeg,
-                        damageMult, p.segmentAlpha[k], p.segmentAlphaMax, p.innerColor.getAlpha());
-                RenderStateUtils.setGlColor(p.innerColor, alpha);
-
-                float angle = k * delta;
-                GL11.glTexCoord2f(
-                        0.5F + (float) Math.cos(angle + phase) / 2.0F,
-                        0.5F + (float) Math.sin(angle + phase) / 2.0F);
-                GL11.glVertex2f(fanRadius * (float) Math.cos(angle), fanRadius * (float) Math.sin(angle));
-            }
-
-            GL11.glEnd();
-        }
+        var fan = new Fan(arcDeg, p.radius, p.innerAngle, damageMult, p.segmentAlphaMax, p.innerColor);
+        emit(p, fan.color(), fan::emit);
 
         GL11.glPopMatrix();
         renderBandImmediate(p, arcDeg, damageMult, startDeg);
@@ -256,8 +223,6 @@ public final class ShieldRenderHelper {
         bandWidth = bandWidth + bandWidth * p.effectStrength * p.effectSizeMult * p.effectBrightness;
 
         float bandArcRad = ShieldArcGeometry.bandArcRadians(startDeg, arcDeg);
-        float segments = p.segmentCount - 1;
-        float delta = bandArcRad / segments;
 
         GL11.glPushMatrix();
         GL11.glTranslatef(p.offsetX, p.offsetY, 0.0F);
@@ -271,24 +236,79 @@ public final class ShieldRenderHelper {
             GL11.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
 
-        GL11.glBegin(GL11.GL_QUAD_STRIP);
-        for (int k = 0; k < p.segmentCount; k++) {
-            float scaleEff = p.textureScale + p.textureScale * p.effectStrength * p.effectRadiusMult * p.effectBrightness;
-            float noise = scaleEff * (float) Math.sin(p.ringAngle * 10.0F + k * delta * 10.0F);
-            float rOut = p.radius + noise;
-            int alpha = ShieldArcGeometry.bandAlpha(k, p.segmentCount, bandArcRad,
-                    damageMult, p.segmentAlpha[k], p.segmentAlphaMax);
-            RenderStateUtils.setGlColor(p.ringColor, alpha);
-            float angle = delta * k;
-            float c = (float) Math.cos(angle);
-            float s = (float) Math.sin(angle);
-            GL11.glTexCoord2f(0.0F, 0.0F);
-            GL11.glVertex2f(c * rOut, s * rOut);
-            GL11.glTexCoord2f(0.0F, 1.0F);
-            GL11.glVertex2f(c * (rOut - bandWidth), s * (rOut - bandWidth));
-        }
-        GL11.glEnd();
+        float scale = p.textureScale + p.textureScale * p.effectStrength * p.effectRadiusMult * p.effectBrightness;
+        var band = new Band(bandArcRad, p.radius, bandWidth, scale, p.ringAngle, damageMult,
+                p.segmentAlphaMax, p.ringColor);
+        emit(p, band.color(), band::emit);
         GL11.glPopMatrix();
+    }
+
+    @FunctionalInterface
+    private interface Segments {
+        void emit(EffectVertices out, float[] alpha, int count);
+    }
+
+    private static void emit(Params p, Color color, Segments geometry) {
+        int count = p.segmentCount;
+        if (ENABLED && count > 0 && GlDispatch.canSubmitOwnedDraw() && color != null && color.getClass() == Color.class) {
+            float[] alpha = new float[count];
+            System.arraycopy(p.segmentAlpha, 0, alpha, 0, count);
+            EffectVertices.submit(out -> geometry.emit(out, alpha, count));
+        } else {
+            geometry.emit(EffectVertices.RECORDED, p.segmentAlpha, count);
+        }
+    }
+
+    record Fan(float arc, float radius, float angle, float damage, float alphaMax, Color color) {
+        void emit(EffectVertices out, float[] alpha, int count) {
+            float delta = (float) Math.toRadians(arc) / (count - 1);
+            float r = radius * 1.07F;
+            for (int pass = 0; pass < 2; pass++) {
+                float phase = (pass == 0 ? angle : -angle) - (float) Math.toRadians(arc / 2.0F);
+                out.begin(GL11.GL_TRIANGLE_FAN);
+                try {
+                    setColor(out, color, 0);
+                    out.uv(0.5F, 0.5F);
+                    out.vertex(0.0F, 0.0F);
+                    for (int k = 0; k < count; k++) {
+                        setColor(out, color, ShieldArcGeometry.fanVertexAlpha(k, count, arc,
+                                damage, alpha[k], alphaMax, color.getAlpha()));
+                        float a = k * delta;
+                        out.uv(0.5F + (float) Math.cos(a + phase) / 2.0F,
+                                0.5F + (float) Math.sin(a + phase) / 2.0F);
+                        out.vertex(r * (float) Math.cos(a), r * (float) Math.sin(a));
+                    }
+                } finally {
+                    out.end();
+                }
+            }
+        }
+    }
+
+    record Band(float arc, float radius, float width, float scale, float angle,
+                float damage, float alphaMax, Color color) {
+        void emit(EffectVertices out, float[] alpha, int count) {
+            float delta = arc / (count - 1);
+            out.begin(GL11.GL_QUAD_STRIP);
+            try {
+                for (int k = 0; k < count; k++) {
+                    float r = radius + scale * (float) Math.sin(angle * 10.0F + k * delta * 10.0F);
+                    setColor(out, color, ShieldArcGeometry.bandAlpha(k, count, arc, damage, alpha[k], alphaMax));
+                    float c = (float) Math.cos(delta * k);
+                    float s = (float) Math.sin(delta * k);
+                    out.uv(0.0F, 0.0F);
+                    out.vertex(c * r, s * r);
+                    out.uv(0.0F, 1.0F);
+                    out.vertex(c * (r - width), s * (r - width));
+                }
+            } finally {
+                out.end();
+            }
+        }
+    }
+
+    private static void setColor(EffectVertices out, Color color, int alpha) {
+        out.color((byte) color.getRed(), (byte) color.getGreen(), (byte) color.getBlue(), (byte) alpha);
     }
 
     private static void ensureCapacity(final int segmentCount) {

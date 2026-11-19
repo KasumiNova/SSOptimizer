@@ -1,43 +1,39 @@
 package github.kasuminova.ssoptimizer.common.render.engine;
 
-import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
-import github.kasuminova.ssoptimizer.bridge.opengl.NativeRenderCommandBase;
+import github.kasuminova.ssoptimizer.bridge.opengl.EngineNativeExecutor;
+import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.CollectedBatch;
+import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.FrameInput;
+import github.kasuminova.ssoptimizer.common.render.engine.EngineInstanceCollector.SlotInput;
+import github.kasuminova.ssoptimizer.common.render.queue.NativeRenderCommand;
 
-import java.nio.ByteBuffer;
+import java.util.List;
 
-/** 主线程编码、渲染线程执行；display list 编译窗口内不得入队。 */
-public final class EngineNativeRenderCommand extends NativeRenderCommandBase {
-    private final int commandCount;
-    private final int vertexBytes;
-    private final int indexBytes;
+final class EngineNativeRenderCommand implements NativeRenderCommand {
+    private final FrameInput frame;
+    private final List<SlotInput> slots;
 
-    public EngineNativeRenderCommand(final ByteBuffer encoded,
-                                     final int commandCount,
-                                     final int vertexBytes,
-                                     final int indexBytes) {
-        super(encoded);
-        this.commandCount = commandCount;
-        this.vertexBytes = vertexBytes;
-        this.indexBytes = indexBytes;
+    /** 调用方移交独占的喷口列表，入队后禁止修改。 */
+    EngineNativeRenderCommand(FrameInput frame, List<SlotInput> slots) {
+        this.frame = frame;
+        this.slots = slots;
+    }
+
+    boolean hasSlots() {
+        return !slots.isEmpty();
+    }
+
+    CollectedBatch collect() {
+        CollectedBatch batch = new CollectedBatch();
+        EngineInstanceCollector.collect(frame, slots, batch);
+        return batch;
     }
 
     @Override
-    protected void executeNative(final ByteBuffer encoded) {
-        EngineNativeExecutor.INSTANCE.execute(encoded, commandCount, vertexBytes, indexBytes);
-    }
-
-    final ByteBuffer encodedBufferForTest() {
-        return encodedBuffer();
-    }
-
-    public static EngineNativeRenderCommand of(final EngineInstanceCollector.CollectedBatch batch) {
-        final int requiredBytes = EngineInstanceCollector.flattenedBytes(batch);
-        // C++ 结构体布局要求使用 nativeOrder。
-        final ByteBuffer encoded = GlDispatch.snapshotPool().borrow(requiredBytes)
-                .order(java.nio.ByteOrder.nativeOrder());
-        final int commandCount = EngineInstanceCollector.flatten(batch, encoded);
-        return new EngineNativeRenderCommand(encoded, commandCount,
-                EngineInstanceCollector.expandedVertexBytes(batch),
-                EngineInstanceCollector.expandedIndexBytes(batch));
+    public void execute() {
+        CollectedBatch batch = collect();
+        EngineBatchImpl.getInstance().logBatchStats(GlCapability.Mode.VBO_BATCH, batch);
+        if (!batch.isEmpty()) {
+            EngineNativeExecutor.INSTANCE.execute(batch);
+        }
     }
 }

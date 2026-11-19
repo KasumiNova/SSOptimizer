@@ -91,8 +91,8 @@ final class BridgeSupport {
         }
         return events;
     }
-    /** 由命令执行体在渲染线程维护，确保跨帧编译窗口的深度与命令流位置一致。 */
     private static volatile int displayListCompileDepth;
+    private static volatile Object mainGlContextToken = new Object();
 
     private static volatile RenderQueue queue;
 
@@ -138,7 +138,7 @@ final class BridgeSupport {
         }
         arrayBufferBindingProbe =
                 () -> org.lwjgl.opengl.GL11.glGetInteger(org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER_BINDING);
-        displayListCompileDepth = 0;
+        resetDisplayListContext();
         frameSubmitSeq = 0;
         stateSnapshotSource = GlStateSnapshot::capture;
         syncOps = RealSyncOpsImpl.INSTANCE;
@@ -185,9 +185,12 @@ final class BridgeSupport {
         }
     }
 
-    /** 非流式命令前先落帧当前线程顶点流；aux 原生线程直接执行命令。 */
     static void enqueue(GlCommand command) {
-        RecordingContext ctx = recordingContext();
+        enqueue(recordingContext(), command);
+    }
+
+    /** 命令须排在当前顶点流之后；aux 线程在自己的共享上下文执行。 */
+    static void enqueue(RecordingContext ctx, GlCommand command) {
         flushVertexStream(ctx);
         if (ctx.auxNative) {
             command.execute();
@@ -510,8 +513,18 @@ final class BridgeSupport {
         syncOps = ops;
     }
 
-    /** 上下文就绪后启用 native sync；缺少 glad 或函数指针时保留 LWJGL 实现并记录日志。 */
+    static Object mainGlContextToken() {
+        return mainGlContextToken;
+    }
+
+    private static void resetDisplayListContext() {
+        displayListCompileDepth = 0;
+        mainGlContextToken = new Object();
+    }
+
+    /** 真实主上下文创建成功后调用；窗口显示模式通知不调用此方法。 */
     static void onRenderThreadGlContextReady() {
+        resetDisplayListContext();
         if (!NativeRuntime.ensureQueueGlReady()) {
             LOGGER.warn("[SSOptimizer] 渲染线程 glad 未就绪，sync ops 保持 LWJGL 路径");
             return;
@@ -655,10 +668,8 @@ final class BridgeSupport {
 
     static void onDisplayListCompileEnd() {
         if (displayListCompileDepth <= 0) {
-            // 深度为负会让后续批次一直处于编译窗口，异常序列必须记录 WARN
             if (displayListCompileDepth < 0) {
-                LOGGER.warn("[SSOptimizer] display list 编译深度异常为负（" + displayListCompileDepth
-                        + "），复位为 0——命令流中 glEndList 多于 glNewList，GL 序列疑似非法");
+                LOGGER.warn("[SSOptimizer] 显示列表编译深度为负（" + displayListCompileDepth + "），已重置为 0");
             }
             displayListCompileDepth = 0;
             return;

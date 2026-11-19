@@ -4,7 +4,6 @@ import com.fs.starfarer.campaign.fleet.ContrailEngineV2;
 import github.kasuminova.ssoptimizer.common.render.campaign.CampaignContrailAdvanceHelper;
 import github.kasuminova.ssoptimizer.common.render.campaign.CampaignContrailBatchHelper;
 import github.kasuminova.ssoptimizer.common.render.campaign.CampaignContrailPointCap;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -22,8 +21,6 @@ public abstract class ContrailEngineV2Mixin {
 
     @Overwrite(remap = false)
     public void render(float alphaMult) {
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
         CampaignContrailBatchHelper.renderContrails(contrails, alphaMult);
     }
 

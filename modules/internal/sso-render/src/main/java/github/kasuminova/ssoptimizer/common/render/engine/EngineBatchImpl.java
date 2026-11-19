@@ -88,7 +88,7 @@ public final class EngineBatchImpl implements EngineBatch {
     private int nativeIndexWriteOffset;
 
     private boolean buildingListLogged;
-    private int  displayListFallbacks;
+    private volatile int displayListFallbacks;
     private int  framesSinceStatsLog;
     private boolean firstBatchLogged;
 
@@ -135,7 +135,7 @@ public final class EngineBatchImpl implements EngineBatch {
             return;
         }
         if (RenderThreadMode.isEnabled()) {
-            if (queueNativeEnabled && NativeRuntime.isQueueGlReady()) {
+            if (queueNativeEnabled && GlDispatch.canSubmitOwnedDraw() && NativeRuntime.isQueueGlReady()) {
                 renderQueuedNative((EngineBridge) engineObject, alphaScale);
             } else {
                 EngineRenderHelper.renderEngines(engineObject, alphaScale);
@@ -152,7 +152,7 @@ public final class EngineBatchImpl implements EngineBatch {
         }
 
         EngineBridge engine = (EngineBridge) engineObject;
-        CollectedBatch batch = gather(engine, alphaScale);
+        CollectedBatch batch = captureInputs(engine, alphaScale).collect();
 
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
@@ -167,21 +167,21 @@ public final class EngineBatchImpl implements EngineBatch {
     }
 
     private void renderQueuedNative(EngineBridge engine, float alphaScale) {
-        CollectedBatch batch = gather(engine, alphaScale);
-
+        EngineNativeRenderCommand command = captureInputs(engine, alphaScale);
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(770, 1);
-
-        logBatchStats(GlCapability.Mode.VBO_BATCH, batch);
-
-        if (batch.isEmpty()) {
-            return;
+        if (command.hasSlots()) {
+            GlDispatch.submit(command);
         }
-        GlDispatch.submit(EngineNativeRenderCommand.of(batch));
     }
 
-    private void logBatchStats(GlCapability.Mode mode, CollectedBatch batch) {
+    void logBatchStats(GlCapability.Mode mode, CollectedBatch batch) {
+        boolean first = !firstBatchLogged && !batch.isEmpty();
+        boolean periodic = statsEnabled && ++framesSinceStatsLog >= 300;
+        if (!first && !periodic) {
+            return;
+        }
         int stripCount = 0;
         for (StripGroup group : batch.strips) {
             stripCount += group.instances().size();
@@ -195,7 +195,7 @@ public final class EngineBatchImpl implements EngineBatch {
             glowCount += group.instances().size();
         }
 
-        if (!firstBatchLogged && !batch.isEmpty()) {
+        if (first) {
             firstBatchLogged = true;
             String sample = "无条带样本";
             if (!batch.strips.isEmpty() && !batch.strips.get(0).instances().isEmpty()) {
@@ -209,7 +209,7 @@ public final class EngineBatchImpl implements EngineBatch {
                     mode, stripCount, coreCount, glowCount, sample));
         }
 
-        if (statsEnabled && ++framesSinceStatsLog >= 300) {
+        if (periodic) {
             framesSinceStatsLog = 0;
             LOGGER.info(String.format(
                     "[SSOptimizer] 引擎合批统计：mode=%s strips=%d cores=%d glows=%d displayList回退=%d",
@@ -217,7 +217,7 @@ public final class EngineBatchImpl implements EngineBatch {
         }
     }
 
-    private CollectedBatch gather(EngineBridge engine, float alphaScale) {
+    private EngineNativeRenderCommand captureInputs(EngineBridge engine, float alphaScale) {
         EngineOwnerAccessor owner = (EngineOwnerAccessor) engine.ssoptimizer$getOwner();
         List<EngineSlot> engineSlots = owner.ssoptimizer$getEngineLocations();
         boolean fighter = owner.ssoptimizer$isFighter();
@@ -312,14 +312,16 @@ public final class EngineBatchImpl implements EngineBatch {
                     slotAccessor.ssoptimizer$computeMidArcAngle(facing),
                     slotAccessor.ssoptimizer$getMaxSpread(),
                     slotAccessor.ssoptimizer$getLength(), slotAccessor.ssoptimizer$getWidth(),
-                    color, glowColor,
+                    snapshotColor(color), glowColor == null ? null : snapshotColor(glowColor),
                     slotAccessor.ssoptimizer$getGlowSizeMult(),
                     slotAccessor.ssoptimizer$getGlowType() == EngineGlowType.PRIMARY));
         }
+        return new EngineNativeRenderCommand(frame, slots);
+    }
 
-        CollectedBatch batch = new CollectedBatch();
-        EngineInstanceCollector.collect(frame, slots, batch);
-        return batch;
+    private static Color snapshotColor(Color color) {
+        return color.getClass() == Color.class ? color
+                : new Color(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha());
     }
 
     private void flushVboBatch(CollectedBatch batch) {

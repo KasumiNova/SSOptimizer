@@ -7,8 +7,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#undef github_kasuminova_ssoptimizer_common_render_engine_SpriteRenderHelper_DEG_TO_RAD
-#define github_kasuminova_ssoptimizer_common_render_engine_SpriteRenderHelper_DEG_TO_RAD 0.017453292f
 /*
  * Class:     github_kasuminova_ssoptimizer_common_render_engine_SpriteRenderHelper
  * Method:    nativeRenderSprite

@@ -1,20 +1,51 @@
 package github.kasuminova.ssoptimizer.bridge.opengl;
 
+import com.fs.graphics.util.GLListManager;
 import github.kasuminova.ssoptimizer.common.render.queue.BufferSnapshotPool;
+import github.kasuminova.ssoptimizer.common.render.queue.DiscardableGlCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.GlCommand;
+import github.kasuminova.ssoptimizer.common.render.queue.ProbeSiteCommand;
 import github.kasuminova.ssoptimizer.common.render.queue.RenderQueue;
+import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
+import org.apache.log4j.Logger;
 
 import java.util.concurrent.Callable;
 
 public final class GlDispatch {
+    private static final Logger LOGGER = Logger.getLogger(GlDispatch.class);
+    private static final boolean RENDER_THREAD_ENABLED = RenderThreadMode.isEnabled();
 
     private GlDispatch() {
     }
 
-    /** 可从任意生产者线程调用；命令不得引用录制后仍可变的数据。 */
+    /** 接管命令参数快照；提交失败时立即归还。可在任意生产者线程调用。 */
     public static void submit(final GlCommand command) {
-        BridgeSupport.flushVertexStream();
-        BridgeSupport.queue().submit(command);
+        try {
+            BridgeSupport.flushVertexStream();
+            BridgeSupport.queue().submit(command);
+        } catch (RuntimeException | Error failure) {
+            if (ProbeSiteCommand.unwrap(command) instanceof DiscardableGlCommand owned) {
+                try {
+                    owned.discard();
+                } catch (RuntimeException | Error discardFailure) {
+                    if (discardFailure != failure) {
+                        failure.addSuppressed(discardFailure);
+                    }
+                    LOGGER.error("[SSOptimizer] 归还未提交的 GL 命令资源失败", discardFailure);
+                }
+            }
+            throw failure;
+        }
+    }
+
+    /** 专用绘制命令只能在主线程普通录制段提交。 */
+    public static boolean canSubmitOwnedDraw() {
+        if (!RENDER_THREAD_ENABLED || BridgeSupport.installedQueue() == null || !BridgeSupport.isMainRecordingThread()) {
+            return false;
+        }
+        final RecordingContext context = BridgeSupport.recordingContext();
+        return !context.auxNative && !context.isRecordingDisplayList() && !context.vertexStream.hasOpenSegment()
+                && !GLListManager.buildingList;
     }
 
     /** 归还当前绘制引用的资源前，将已录制顶点加入渲染队列。 */

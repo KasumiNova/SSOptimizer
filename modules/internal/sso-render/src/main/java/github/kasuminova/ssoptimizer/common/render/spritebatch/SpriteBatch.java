@@ -1,9 +1,13 @@
 package github.kasuminova.ssoptimizer.common.render.spritebatch;
 
+import github.kasuminova.ssoptimizer.bridge.opengl.SpriteDraw;
+
 public interface SpriteBatch {
     static SpriteBatch getInstance() {
         return SpriteBatchImpl.getInstance();
     }
+
+    boolean submitIfActive(SpriteDraw draw);
 
     boolean submitIfActive(int textureId,
                            float posX, float posY, float width, float height,

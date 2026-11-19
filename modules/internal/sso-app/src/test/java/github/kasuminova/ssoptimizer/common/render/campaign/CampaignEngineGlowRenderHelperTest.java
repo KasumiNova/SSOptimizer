@@ -1,7 +1,6 @@
 package github.kasuminova.ssoptimizer.common.render.campaign;
 
 import com.fs.graphics.Sprite;
-import com.fs.starfarer.api.combat.ViewportAPI;
 import com.fs.starfarer.prototype.Utils;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineGlowSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.SpriteUvAccessor;
@@ -16,6 +15,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CampaignEngineGlowRenderHelperTest {
+    private final List<RecordedVertex> actual = new ArrayList<>();
 
     @Test
     void computeScalesMatchesVanillaFormula() {
@@ -44,8 +44,8 @@ class CampaignEngineGlowRenderHelperTest {
 
         encodeOptimized(List.of(slot), color, 1.0f, 1.0f, 3.0f, 1.0f, 2.0f);
 
-        assertEquals(8, CampaignEngineGlowRenderHelper.getNumVertices());
-        List<CampaignEngineGlowRenderHelper.EncodedVertex> vs = vertices(8);
+        assertEquals(8, actual.size());
+        List<RecordedVertex> vs = actual;
 
         assertVertex(vs.get(0), 53.0f, 21.0f, 1.0f, 1.0f, 0);
         assertVertex(vs.get(1), 53.0f, 19.0f, 1.0f, 0.0f, 0);
@@ -55,7 +55,7 @@ class CampaignEngineGlowRenderHelperTest {
         assertVertex(vs.get(5), 50.0f, 22.0f, 0.0f, 1.0f, 255);
         assertVertex(vs.get(6), -10.0f, 21.0f, 1.0f, 1.0f, 0);
         assertVertex(vs.get(7), -10.0f, 19.0f, 1.0f, 0.0f, 0);
-        for (final CampaignEngineGlowRenderHelper.EncodedVertex v : vs) {
+        for (final RecordedVertex v : vs) {
             assertEquals(100, v.r());
             assertEquals(150, v.g());
             assertEquals(200, v.b());
@@ -68,10 +68,10 @@ class CampaignEngineGlowRenderHelperTest {
         Color color = new Color(255, 255, 255, 255);
 
         encodeOptimized(List.of(slot), color, 1.0f, 0.0f, 1.0f, 2.0f, 1.0f);
-        assertEquals(-2.0f, CampaignEngineGlowRenderHelper.vertexAt(2).y(), 0.0f);
+        assertEquals(-2.0f, actual.get(2).y(), 0.0f);
 
         encodeOptimized(List.of(slot), color, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f);
-        assertEquals(-4.0f, CampaignEngineGlowRenderHelper.vertexAt(2).y(), 0.0f);
+        assertEquals(-4.0f, actual.get(2).y(), 0.0f);
     }
 
     @Test
@@ -115,12 +115,11 @@ class CampaignEngineGlowRenderHelperTest {
                         widthMultCurr, heightMultCurr);
 
                 String prefix = "trial " + trial + " frame " + frame + " ";
-                assertEquals(expected.size(), CampaignEngineGlowRenderHelper.getNumVertices(),
+                assertEquals(expected.size(), actual.size(),
                         prefix + "顶点数");
                 for (int i = 0; i < expected.size(); i++) {
                     RecordedVertex e = expected.get(i);
-                    CampaignEngineGlowRenderHelper.EncodedVertex a =
-                            CampaignEngineGlowRenderHelper.vertexAt(i);
+                    RecordedVertex a = actual.get(i);
                     assertEquals(Float.floatToRawIntBits(e.x), Float.floatToRawIntBits(a.x()), prefix + "v" + i + " x");
                     assertEquals(Float.floatToRawIntBits(e.y), Float.floatToRawIntBits(a.y()), prefix + "v" + i + " y");
                     assertEquals(Float.floatToRawIntBits(e.u), Float.floatToRawIntBits(a.u()), prefix + "v" + i + " u");
@@ -144,15 +143,13 @@ class CampaignEngineGlowRenderHelperTest {
         Color color = new Color(100, 150, 200, 255);
 
         encodeOptimized(slots, cache, color, 1.0f, 1.0f, 3.0f, 1.0f, 2.0f);
-        List<CampaignEngineGlowRenderHelper.EncodedVertex> firstPass = vertices(
-                CampaignEngineGlowRenderHelper.getNumVertices());
+        List<RecordedVertex> firstPass = List.copyOf(actual);
 
         encodeOptimized(slots, cache, color, 1.0f, 1.0f, 3.0f, 1.0f, 2.0f);
-        assertEquals(firstPass.size(), CampaignEngineGlowRenderHelper.getNumVertices());
+        assertEquals(firstPass.size(), actual.size());
         for (int i = 0; i < firstPass.size(); i++) {
-            CampaignEngineGlowRenderHelper.EncodedVertex e = firstPass.get(i);
-            CampaignEngineGlowRenderHelper.EncodedVertex a =
-                    CampaignEngineGlowRenderHelper.vertexAt(i);
+            RecordedVertex e = firstPass.get(i);
+            RecordedVertex a = actual.get(i);
             assertEquals(Float.floatToRawIntBits(e.x()), Float.floatToRawIntBits(a.x()), "v" + i + " x");
             assertEquals(Float.floatToRawIntBits(e.y()), Float.floatToRawIntBits(a.y()), "v" + i + " y");
             assertEquals(e.r(), a.r(), "v" + i + " r");
@@ -175,11 +172,10 @@ class CampaignEngineGlowRenderHelperTest {
         referenceEncode(slots, colorB, alphaMult, 1.0f, 3.0f, 1.0f, 2.0f, expected);
 
         encodeOptimized(slots, cache, colorB, alphaMult, 1.0f, 3.0f, 1.0f, 2.0f);
-        assertEquals(expected.size(), CampaignEngineGlowRenderHelper.getNumVertices());
+        assertEquals(expected.size(), actual.size());
         for (int i = 0; i < expected.size(); i++) {
             RecordedVertex e = expected.get(i);
-            CampaignEngineGlowRenderHelper.EncodedVertex a =
-                    CampaignEngineGlowRenderHelper.vertexAt(i);
+            RecordedVertex a = actual.get(i);
             assertEquals(Float.floatToRawIntBits(e.x), Float.floatToRawIntBits(a.x()), "v" + i + " x");
             assertEquals(Float.floatToRawIntBits(e.y), Float.floatToRawIntBits(a.y()), "v" + i + " y");
             assertEquals(e.r, a.r(), "v" + i + " r");
@@ -204,12 +200,11 @@ class CampaignEngineGlowRenderHelperTest {
             referenceEncode(slots, color, 1.0f, brightness, 3.0f, 1.6f, 2.0f, expected);
             encodeOptimized(slots, cache, color, 1.0f, brightness, 3.0f, 1.6f, 2.0f);
 
-            assertEquals(expected.size(), CampaignEngineGlowRenderHelper.getNumVertices(),
+            assertEquals(expected.size(), actual.size(),
                     "frame " + frame + " 顶点数");
             for (int i = 0; i < expected.size(); i++) {
                 RecordedVertex e = expected.get(i);
-                CampaignEngineGlowRenderHelper.EncodedVertex a =
-                        CampaignEngineGlowRenderHelper.vertexAt(i);
+                RecordedVertex a = actual.get(i);
                 assertEquals(Float.floatToRawIntBits(e.x), Float.floatToRawIntBits(a.x()),
                         "frame " + frame + " v" + i + " x");
                 assertEquals(Float.floatToRawIntBits(e.y), Float.floatToRawIntBits(a.y()),
@@ -221,39 +216,7 @@ class CampaignEngineGlowRenderHelperTest {
     @Test
     void emptySlotsEncodeNothing() {
         encodeOptimized(List.of(), new Color(1, 2, 3, 255), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-        assertEquals(0, CampaignEngineGlowRenderHelper.getNumVertices());
-    }
-
-    @Test
-    void hitGlowBatchKeepsColorHoistAndPerSlotSetSize() {
-        List<FakeSlot> slots = List.of(
-                new FakeSlot(180.0f, 10.0f, 6.0f, 4.0f, new Vector2f(1.0f, 2.0f)),
-                new FakeSlot(180.0f, 8.0f, 3.5f, 2.0f, new Vector2f(-3.0f, 4.0f)));
-        TrackingSprite hitGlow = new TrackingSprite(0.0f, 0.0f, 1.0f, 1.0f);
-        Color glowColor = new Color(10, 20, 30, 200);
-        float sizeScale = 1.25f;
-        float glowSizeMult = 0.8f;
-
-        byte r = (byte) glowColor.getRed();
-        byte g = (byte) glowColor.getGreen();
-        byte b = (byte) glowColor.getBlue();
-        byte a = (byte) (int) (glowColor.getAlpha() * 1.0f);
-        CampaignEngineGlowRenderHelper.encodeHitGlowQuads(
-                hitGlow, slots, sizeScale, glowSizeMult, true, r, g, b, a);
-
-        assertEquals(0, hitGlow.renderAtCenterCalls, "合批路径不再逐槽 renderAtCenter");
-        assertEquals(slots.size(), hitGlow.sizes.size());
-        for (int i = 0; i < slots.size(); i++) {
-            float expectedSize = slots.get(i).glowSize * sizeScale * glowSizeMult;
-            assertEquals(Float.floatToRawIntBits(expectedSize),
-                    Float.floatToRawIntBits(hitGlow.sizes.get(i)), "slot " + i + " size");
-        }
-
-        TrackingSprite untouched = new TrackingSprite(0.0f, 0.0f, 1.0f, 1.0f);
-        CampaignEngineGlowRenderHelper.renderHitGlowSprites(
-                untouched, List.of(), glowColor, sizeScale, glowSizeMult, 1.0f);
-        assertEquals(0, untouched.setColorCalls);
-        assertTrue(untouched.sizes.isEmpty());
+        assertEquals(0, actual.size());
     }
 
     @Test
@@ -270,7 +233,7 @@ class CampaignEngineGlowRenderHelperTest {
             float texY = atlas ? random.nextFloat() * 0.9f : 0.0f;
             float texWidth = atlas ? 0.01f + random.nextFloat() * 0.09f : 1.0f;
             float texHeight = atlas ? 0.01f + random.nextFloat() * 0.09f : 1.0f;
-            TrackingSprite hitGlow = new TrackingSprite(texX, texY, texWidth, texHeight);
+            TestSprite hitGlow = new TestSprite(texX, texY, texWidth, texHeight);
             Color glowColor = new Color(random.nextInt(256), random.nextInt(256),
                     random.nextInt(256), random.nextInt(256));
             float sizeScale = 0.5f + random.nextFloat();
@@ -281,20 +244,20 @@ class CampaignEngineGlowRenderHelperTest {
             byte g = (byte) glowColor.getGreen();
             byte b = (byte) glowColor.getBlue();
             byte a = (byte) (int) (glowColor.getAlpha() * alphaMult);
+            actual.clear();
             CampaignEngineGlowRenderHelper.encodeHitGlowQuads(
-                    hitGlow, slots, sizeScale, glowSizeMult, true, r, g, b, a);
+                    hitGlow, slots, sizeScale, glowSizeMult, true, r, g, b, a, this::sample);
 
             List<RecordedVertex> expected = new ArrayList<>();
             referenceHitGlow(slots, sizeScale, glowSizeMult, alphaMult,
                     texX, texY, texWidth, texHeight, glowColor, expected);
 
             String prefix = "trial " + trial + " ";
-            assertEquals(expected.size(), CampaignEngineGlowRenderHelper.getNumVertices(),
+            assertEquals(expected.size(), actual.size(),
                     prefix + "顶点数");
             for (int i = 0; i < expected.size(); i++) {
                 RecordedVertex e = expected.get(i);
-                CampaignEngineGlowRenderHelper.EncodedVertex v =
-                        CampaignEngineGlowRenderHelper.vertexAt(i);
+                RecordedVertex v = actual.get(i);
                 assertEquals(Float.floatToRawIntBits(e.x), Float.floatToRawIntBits(v.x()), prefix + "v" + i + " x");
                 assertEquals(Float.floatToRawIntBits(e.y), Float.floatToRawIntBits(v.y()), prefix + "v" + i + " y");
                 assertEquals(Float.floatToRawIntBits(e.u), Float.floatToRawIntBits(v.u()), prefix + "v" + i + " u");
@@ -308,62 +271,28 @@ class CampaignEngineGlowRenderHelperTest {
     }
 
     @Test
-    void hitGlowWithoutTextureKeepsSetSizeButEncodesNothing() {
-        List<FakeSlot> slots = List.of(
-                new FakeSlot(180.0f, 10.0f, 6.0f, 4.0f, new Vector2f(1.0f, 2.0f)),
-                new FakeSlot(180.0f, 8.0f, 3.5f, 2.0f, new Vector2f(-3.0f, 4.0f)));
-        TrackingSprite hitGlow = new TrackingSprite(0.0f, 0.0f, 1.0f, 1.0f);
-        Color glowColor = new Color(10, 20, 30, 200);
-
-        CampaignEngineGlowRenderHelper.renderHitGlowSprites(
-                hitGlow, slots, glowColor, 1.25f, 0.8f, 1.0f);
-
-        assertEquals(1, hitGlow.setColorCalls);
-        assertSame(glowColor, hitGlow.lastColor, "颜色合并为循环外一次 setColor");
-        assertEquals(slots.size(), hitGlow.sizes.size(), "setSize 状态写回保留");
-        assertEquals(0, CampaignEngineGlowRenderHelper.getNumVertices(), "不编码不绘制");
-    }
-
-    @Test
-    void hitGlowRendersForFleetInsideLodMargin() {
-        RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
-        Vector2f location = new Vector2f(500f, 500f);
-
-        assertFalse(CampaignEngineGlowRenderHelper.shouldSkipHitGlow(true, location, viewport));
-        assertEquals(1, viewport.nearChecks);
-        assertSame(location, viewport.lastLocation);
-        assertEquals(CampaignEngineGlowRenderHelper.HIT_GLOW_LOD_MARGIN, viewport.lastMargin);
-    }
-
-    @Test
-    void hitGlowSkippedForFleetFarBeyondLodMargin() {
-        RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
-        assertTrue(CampaignEngineGlowRenderHelper.shouldSkipHitGlow(
-                true, new Vector2f(100000f, 100000f), viewport));
-    }
-
-    @Test
-    void hitGlowRendersJustInsideLodMarginBoundary() {
-        RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
-        float margin = CampaignEngineGlowRenderHelper.HIT_GLOW_LOD_MARGIN;
-        assertFalse(CampaignEngineGlowRenderHelper.shouldSkipHitGlow(
-                true, new Vector2f(1000f + margin - 1f, 500f), viewport));
-    }
-
-    @Test
-    void hitGlowSkippedJustBeyondLodMarginBoundary() {
-        RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
-        float margin = CampaignEngineGlowRenderHelper.HIT_GLOW_LOD_MARGIN;
-        assertTrue(CampaignEngineGlowRenderHelper.shouldSkipHitGlow(
-                true, new Vector2f(1000f + margin + 1f, 500f), viewport));
-    }
-
-    @Test
-    void hitGlowLodNotAppliedForFleetOutsideCurrentLocation() {
-        RectViewport viewport = new RectViewport(0f, 0f, 1000f, 1000f);
-        assertFalse(CampaignEngineGlowRenderHelper.shouldSkipHitGlow(
-                false, new Vector2f(100000f, 100000f), viewport));
-        assertEquals(0, viewport.nearChecks);
+    void queuedChunksKeepSlotSnapshotsWhenSubsequentFramesReplaceCacheEntries() {
+        var slots = new ArrayList<FakeSlot>();
+        var random = new Random(40071);
+        for (int i = 0; i < 2301; i++) slots.add(randomSlot(random));
+        var meshes = new ArrayList<CampaignArrayMesh>();
+        var cache = new CampaignEngineGlowRenderHelper.GlowGeometryCache(slots.size());
+        CampaignEngineGlowRenderHelper.encodeSlots(slots, cache, 2f, 1f, 0.5f, 1f,
+                (byte) 1, (byte) 2, (byte) 3, (byte) 0, (byte) 96, meshes::add);
+        var sprite = new TestSprite(0.25f, 0.125f, 0.5f, 0.75f);
+        CampaignEngineGlowRenderHelper.encodeHitGlowQuads(sprite, slots, 1.5f, 1f, true,
+                (byte) 1, (byte) 2, (byte) 3, (byte) 96, meshes::add);
+        var expected = new ArrayList<RecordedVertex>();
+        Color color = new Color(1, 2, 3, 96);
+        referenceEncode(slots, color, 1, 0.5f, 1, 2, 1, expected);
+        referenceHitGlow(slots, 1.5f, 1f, 1f, 0.25f, 0.125f, 0.5f, 0.75f, color, expected);
+        for (var slot : slots) slot.offset.set(2000, 3000);
+        var nextFrame = new ArrayList<CampaignArrayMesh>();
+        CampaignEngineGlowRenderHelper.encodeSlots(slots, cache, 2f, 1f, 0.75f, 1f,
+                (byte) 99, (byte) 2, (byte) 3, (byte) 0, (byte) 96, nextFrame::add);
+        assertEquals(List.of(8192, 8192, 2024, 8192, 1012), meshes.stream().map(CampaignArrayMesh::vertexCount).toList());
+        meshes.forEach(this::sample);
+        assertEquals(expected, actual);
     }
 
     private static void referenceEncode(final List<FakeSlot> slots,
@@ -477,40 +406,17 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    private static final class TrackingSprite extends Sprite implements SpriteUvAccessor {
+    private static final class TestSprite extends Sprite implements SpriteUvAccessor {
         private final float texX;
         private final float texY;
         private final float texWidth;
         private final float texHeight;
-        private int         setColorCalls;
-        private Color       lastColor;
-        private int         renderAtCenterCalls;
-        private final List<Float> sizes = new ArrayList<>();
-
-        private TrackingSprite(final float texX, final float texY,
+        private TestSprite(final float texX, final float texY,
                                final float texWidth, final float texHeight) {
             this.texX = texX;
             this.texY = texY;
             this.texWidth = texWidth;
             this.texHeight = texHeight;
-        }
-
-        @Override
-        public void setColor(final Color color) {
-            setColorCalls++;
-            lastColor = color;
-        }
-
-        @Override
-        public void setSize(final float width, final float height) {
-            assertEquals(Float.floatToRawIntBits(width), Float.floatToRawIntBits(height),
-                    "hitGlow 尺寸恒为正方形");
-            sizes.add(width);
-        }
-
-        @Override
-        public void renderAtCenter(final float x, final float y) {
-            renderAtCenterCalls++;
         }
 
         @Override
@@ -534,158 +440,7 @@ class CampaignEngineGlowRenderHelperTest {
         }
     }
 
-    private static final class RectViewport implements ViewportAPI {
-        private final float llx;
-        private final float lly;
-        private final float width;
-        private final float height;
-        private       int   nearChecks;
-        private       Vector2f lastLocation;
-        private       float    lastMargin;
-
-        private RectViewport(final float llx, final float lly, final float width, final float height) {
-            this.llx = llx;
-            this.lly = lly;
-            this.width = width;
-            this.height = height;
-        }
-
-        @Override
-        public boolean isNearViewport(final Vector2f loc, final float margin) {
-            nearChecks++;
-            lastLocation = loc;
-            lastMargin = margin;
-            return loc.x >= llx - margin && loc.x <= llx + width + margin
-                    && loc.y >= lly - margin && loc.y <= lly + height + margin;
-        }
-
-        @Override
-        public Vector2f getCenter() {
-            return new Vector2f(llx + width / 2f, lly + height / 2f);
-        }
-
-        @Override
-        public float getLLX() {
-            return llx;
-        }
-
-        @Override
-        public float getLLY() {
-            return lly;
-        }
-
-        @Override
-        public float getVisibleWidth() {
-            return width;
-        }
-
-        @Override
-        public float getVisibleHeight() {
-            return height;
-        }
-
-        @Override
-        public float getWorldXtoScreenX() {
-            return 1f;
-        }
-
-        @Override
-        public float getWorldYtoScreenY() {
-            return 1f;
-        }
-
-        @Override
-        public float getViewMult() {
-            return 1f;
-        }
-
-        @Override
-        public float getAlphaMult() {
-            return 1f;
-        }
-
-        @Override
-        public float convertScreenXToWorldX(final float x) {
-            return x;
-        }
-
-        @Override
-        public float convertScreenYToWorldY(final float y) {
-            return y;
-        }
-
-        @Override
-        public float convertWorldXtoScreenX(final float x) {
-            return x;
-        }
-
-        @Override
-        public float convertWorldYtoScreenY(final float y) {
-            return y;
-        }
-
-        @Override
-        public float convertWorldWidthToScreenWidth(final float w) {
-            return w;
-        }
-
-        @Override
-        public float convertWorldHeightToScreenHeight(final float h) {
-            return h;
-        }
-
-        @Override
-        public float convertScreenWidthToWorldWidth(final float w) {
-            return w;
-        }
-
-        @Override
-        public float convertScreenHeightToWorldHeight(final float h) {
-            return h;
-        }
-
-        @Override
-        public void set(final float llx, final float lly, final float width, final float height) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setViewMult(final float viewMult) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isExternalControl() {
-            return false;
-        }
-
-        @Override
-        public void setExternalControl(final boolean externalControl) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setCenter(final Vector2f center) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setAlphaMult(final float alphaMult) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isEverythingNearViewport() {
-            return false;
-        }
-
-        @Override
-        public void setEverythingNearViewport(final boolean everythingNearViewport) {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    private static void encodeOptimized(final List<FakeSlot> slots,
+    private void encodeOptimized(final List<FakeSlot> slots,
                                         final Color color,
                                         final float alphaMult,
                                         final float fullBrightness,
@@ -697,7 +452,7 @@ class CampaignEngineGlowRenderHelperTest {
                 color, alphaMult, fullBrightness, lengthScale, widthMultCurr, heightMultCurr);
     }
 
-    private static void encodeOptimized(final List<FakeSlot> slots,
+    private void encodeOptimized(final List<FakeSlot> slots,
                                         final CampaignEngineGlowRenderHelper.GlowGeometryCache cache,
                                         final Color color,
                                         final float alphaMult,
@@ -705,21 +460,19 @@ class CampaignEngineGlowRenderHelperTest {
                                         final float lengthScale,
                                         final float widthMultCurr,
                                         final float heightMultCurr) {
+        actual.clear();
         CampaignEngineGlowRenderHelper.encodeSlots(
                 slots, cache, widthMultCurr, heightMultCurr, fullBrightness, lengthScale,
                 (byte) color.getRed(), (byte) color.getGreen(), (byte) color.getBlue(),
-                (byte) (color.getAlpha() * 0.0f), (byte) (color.getAlpha() * alphaMult));
+                (byte) (color.getAlpha() * 0.0f), (byte) (color.getAlpha() * alphaMult), this::sample);
     }
 
-    private static List<CampaignEngineGlowRenderHelper.EncodedVertex> vertices(final int count) {
-        List<CampaignEngineGlowRenderHelper.EncodedVertex> out = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            out.add(CampaignEngineGlowRenderHelper.vertexAt(i));
-        }
-        return out;
+    private void sample(CampaignArrayMesh mesh) {
+        mesh.expand((x, y, u, v, rgba) -> actual.add(new RecordedVertex(x, y, u, v,
+                rgba >>> 24, rgba >>> 16 & 255, rgba >>> 8 & 255, rgba & 255)));
     }
 
-    private static void assertVertex(final CampaignEngineGlowRenderHelper.EncodedVertex v,
+    private static void assertVertex(final RecordedVertex v,
                                      final float x, final float y,
                                      final float u, final float texV, final int a) {
         assertEquals(x, v.x(), 1e-4f, "x");

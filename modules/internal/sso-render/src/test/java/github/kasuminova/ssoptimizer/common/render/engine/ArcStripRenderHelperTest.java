@@ -1,6 +1,9 @@
 package github.kasuminova.ssoptimizer.common.render.engine;
 
 import com.fs.starfarer.prototype.Utils;
+import github.kasuminova.ssoptimizer.common.render.EffectMeshSamples;
+import org.lwjgl.opengl.GL11;
+import java.awt.Color;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -74,12 +77,25 @@ class ArcStripRenderHelperTest {
     }
 
     @Test
-    void intIndexEqualsFloatLoopCounter() {
-        float counter = 0.0F;
-        for (int i = 0; i <= 1_000_000; i++) {
-            assertEquals(Float.floatToRawIntBits((float) i), Float.floatToRawIntBits(counter),
-                    "float 循环计数器在第 " + i + " 次迭代与 int 索引分歧");
-            counter += 1.0F;
+    void dashedArcChangesColorAtSharedEndpoints() {
+        var out = new EffectMeshSamples();
+        Color solid = new Color(255, 0, 0, 160), dash = new Color(0, 0, 255, 80);
+        new ArcStripRenderHelper.Arc(GL11.GL_LINES, 4, 0.25f, 9, 2,
+                solid, dash, 2, 64, 192, 1f).emit(out);
+        var points = out.primitives.getFirst().vertices();
+        int[] index = {0, 0, 0, 1, 1, 2, 2, 3, 3, 4};
+        boolean[] blue = {true, true, false, false, false, false, true, true, true, true};
+        assertEquals(index.length, points.size());
+        for (int i = 0; i < points.size(); i++) {
+            var vertex = points.get(i);
+            int k = index[i];
+            assertEquals((float) Math.cos(0.25f * k) * 8f, vertex.x());
+            assertEquals((float) Math.sin(0.25f * k) * 8f, vertex.y());
+            int alpha = 64 + 64 * Math.abs(k - 2);
+            int expected = blue[i] ? 0x0000ff00 : 0xff000000;
+            expected |= (int) ((blue[i] ? dash : solid).getAlpha() * (alpha / 255f));
+            assertEquals(expected, vertex.rgba());
+            assertTrue(Float.isNaN(vertex.u()));
         }
     }
 

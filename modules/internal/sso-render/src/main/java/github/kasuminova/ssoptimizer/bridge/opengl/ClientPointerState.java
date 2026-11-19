@@ -64,6 +64,13 @@ final class ClientPointerState {
         interleaved = null;
     }
 
+    PointerSnapshot retainNormal() {
+        if (normal != null) {
+            normal.retain();
+        }
+        return normal;
+    }
+
     void setNormal(PointerSnapshot snapshot) {
         releaseHeld(normal);
         releaseHeld(interleaved);

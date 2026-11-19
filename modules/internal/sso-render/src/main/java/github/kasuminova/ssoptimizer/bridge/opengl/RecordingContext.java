@@ -19,6 +19,19 @@ final class RecordingContext {
     long auxResyncSeq = -1;
     RenderFrame dedupFrame;
     boolean vertexStreamStartsOpen;
+    Object displayListContextToken;
     /** 置位后当前线程的 bridge GL 调用直接原生执行，不再进入渲染队列。 */
     boolean auxNative;
+
+    boolean isRecordingDisplayList() {
+        Object token = displayListContextToken;
+        if (token == null) {
+            return false;
+        }
+        if (token == BridgeSupport.mainGlContextToken()) {
+            return true;
+        }
+        displayListContextToken = null;
+        return false;
+    }
 }

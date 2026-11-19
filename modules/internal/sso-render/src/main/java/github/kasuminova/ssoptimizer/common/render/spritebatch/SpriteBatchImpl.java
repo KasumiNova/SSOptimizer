@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.common.render.spritebatch;
 
 import com.fs.graphics.util.GLListManager;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
+import github.kasuminova.ssoptimizer.bridge.opengl.SpriteDraw;
 import github.kasuminova.ssoptimizer.common.render.engine.DynamicVbo;
 import github.kasuminova.ssoptimizer.common.render.runtime.NativeRuntime;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
@@ -20,6 +22,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
 
     public static final String ENABLE_PROPERTY = "ssoptimizer.render.spritebatch.enable";
 
+    private static final boolean SPLIT_RENDERING = RenderThreadMode.isEnabled();
     private static final SpriteBatchImpl INSTANCE = new SpriteBatchImpl();
 
     private static final int VERTEX_SCRATCH_BYTES = SpriteQuadPacker.MAX_QUADS_PER_DRAW * 4
@@ -28,7 +31,8 @@ public final class SpriteBatchImpl implements SpriteBatch {
     private static final int VERTEX_VBO_CAPACITY  = 1024 * 1024;
     private static final int INDEX_VBO_CAPACITY   = 256 * 1024;
 
-    private final boolean enabled;
+    private final boolean enabled = Boolean.getBoolean(ENABLE_PROPERTY);
+    private long scopeSequence;
 
     private DynamicVbo vertexVbo;
     private DynamicVbo indexVbo;
@@ -48,7 +52,6 @@ public final class SpriteBatchImpl implements SpriteBatch {
     private int  currentBlendSrc;
     private int  currentBlendDest;
     private int  currentBlendEquation;
-    // stencil 的读写与其他绘制交错，延迟提交无法保证顺序，必须透传。
     private boolean currentExtendedState;
     private int     currentAlphaFunc;
     private float   currentAlphaRef;
@@ -69,17 +72,19 @@ public final class SpriteBatchImpl implements SpriteBatch {
             ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder()).asIntBuffer();
 
     private SpriteBatchImpl() {
-        boolean enable = Boolean.getBoolean(ENABLE_PROPERTY);
-        if (enable && RenderThreadMode.isEnabled()) {
-            LOGGER.info("[SSOptimizer] 渲染线程分离模式：SpriteBatch 收集禁用"
-                    + "（Java 回退 flush 实测负优化，immediate 路径已优化）");
-            enable = false;
-        }
-        this.enabled = enable;
     }
 
     public static SpriteBatchImpl getInstance() {
         return INSTANCE;
+    }
+
+    @Override
+    public boolean submitIfActive(SpriteDraw draw) {
+        if (!enabled || !SpriteBatchStats.isInCombatScope() || !GlDispatch.canSubmitOwnedDraw()) {
+            return false;
+        }
+        draw.submitScoped(scopeSequence);
+        return true;
     }
 
     @Override
@@ -90,7 +95,7 @@ public final class SpriteBatchImpl implements SpriteBatch {
                                   int blendSrc, int blendDest,
                                   float texX, float texY, float texWidth, float texHeight,
                                   boolean texClamp) {
-        if (!enabled) {
+        if (!enabled || SPLIT_RENDERING) {
             return false;
         }
         if (!SpriteBatchStats.isInCombatScope() || texClamp || GLListManager.buildingList) {
@@ -215,6 +220,12 @@ public final class SpriteBatchImpl implements SpriteBatch {
     public void flushPending() {
         if (SpriteBatchStats.isEnabled()) {
             SpriteBatchStats.onFlushBarrier();
+        }
+        if (SPLIT_RENDERING) {
+            if (enabled && GlDispatch.isMainRecordingThread()) {
+                scopeSequence++;
+            }
+            return;
         }
         doFlush();
     }

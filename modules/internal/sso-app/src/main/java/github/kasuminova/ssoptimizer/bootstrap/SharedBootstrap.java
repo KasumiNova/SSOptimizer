@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.api.AsmClassProcessor;
 import github.kasuminova.ssoptimizer.api.automation.FrameCaptureHook;
+import github.kasuminova.ssoptimizer.api.font.FontDraw;
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
 import github.kasuminova.ssoptimizer.api.loading.WeaponAtlasLookup;
 import github.kasuminova.ssoptimizer.api.render.RenderFramePump;
@@ -15,6 +16,7 @@ import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcesso
 import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
+import github.kasuminova.ssoptimizer.bridge.opengl.FontDrawImpl;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
 import github.kasuminova.ssoptimizer.bridge.opengl.RenderThreadDispatch;
 import github.kasuminova.ssoptimizer.common.bench.DebugFrameCapture;
@@ -61,6 +63,7 @@ public final class SharedBootstrap {
             return r == null ? null : new WeaponAtlasLookup.Region(r.textureId(), r.atlasSize(), r.x(), r.y());
         });
         ServiceRegistry.register(FrameCaptureHook.class, DebugFrameCapture::onDisplayUpdate);
+        ServiceRegistry.register(FontDraw.class, new FontDrawImpl());
         ServiceRegistry.register(FontResourceOverride.class, new FontResourceOverride() {
             @Override
             public String normalize(final String resourcePath) {

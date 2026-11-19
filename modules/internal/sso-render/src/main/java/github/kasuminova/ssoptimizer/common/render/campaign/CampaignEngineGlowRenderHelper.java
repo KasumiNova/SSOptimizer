@@ -7,36 +7,29 @@ import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.combat.ViewportAPI;
 import com.fs.starfarer.campaign.fleet.CampaignFleetMemberView;
 import com.fs.starfarer.prototype.Utils;
+import github.kasuminova.ssoptimizer.bridge.opengl.CampaignArrayDraw;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import github.kasuminova.ssoptimizer.mixin.accessor.EngineGlowSlotAccessor;
 import github.kasuminova.ssoptimizer.mixin.accessor.SpriteUvAccessor;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.awt.Color;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.util.List;
+import java.util.function.Consumer;
 
 public final class CampaignEngineGlowRenderHelper {
     public static final float HIT_GLOW_LOD_MARGIN =
             Float.parseFloat(System.getProperty("ssoptimizer.render.engineglow.lod.margin", "3000"));
-
     private static final int MAX_VERTICES = 8192;
     private static final float HEAD_BACKOFF = 3.0f;
+    private static final ThreadLocal<CampaignMeshBuffers> DIRECT = ThreadLocal.withInitial(CampaignMeshBuffers::new);
 
-    private static ByteBuffer  colorBuf;
-    private static FloatBuffer vertexBuf;
-    private static FloatBuffer texCoordBuf;
-    private static int         numVertices;
+    private CampaignEngineGlowRenderHelper() {}
 
-    private CampaignEngineGlowRenderHelper() {
-    }
+    public record GlowScales(float sizeScale, float lengthScale) {}
 
-    public record GlowScales(float sizeScale, float lengthScale) {
-    }
-
-    public static GlowScales computeScales(final float fullBrightness, final float accelBrightness) {
+    public static GlowScales computeScales(float fullBrightness, float accelBrightness) {
         float sizeScale = 1.0f + 0.75f * (1.0f - accelBrightness);
         float lengthScale = 1.0f + (accelBrightness - 0.75f);
         sizeScale *= 0.5f + 0.5f * fullBrightness;
@@ -44,227 +37,123 @@ public final class CampaignEngineGlowRenderHelper {
         return new GlowScales(sizeScale, lengthScale);
     }
 
-    public static boolean shouldSkipHitGlow(final boolean fleetInCurrentLocation,
-                                            final Vector2f fleetLocation,
-                                            final ViewportAPI viewport) {
-        if (!fleetInCurrentLocation) {
-            return false;
-        }
-        return !viewport.isNearViewport(fleetLocation, HIT_GLOW_LOD_MARGIN);
+    public static boolean shouldSkipHitGlow(boolean fleetInCurrentLocation, Vector2f fleetLocation, ViewportAPI viewport) {
+        return fleetInCurrentLocation && !viewport.isNearViewport(fleetLocation, HIT_GLOW_LOD_MARGIN);
     }
 
-    public static void render(final CampaignFleetMemberView view,
-                              final List<?> slots,
-                              final TextureObject glowTexture,
-                              final Sprite hitGlow,
-                              final Fader accelFader,
-                              final Fader fullFader,
-                              final float facing,
-                              final float alphaMult,
-                              final CampaignFleetAPI fleet,
-                              final ViewportAPI viewport,
-                              final GlowGeometryCache geometryCache) {
-        final float fullBrightness = fullFader.getBrightness();
-        final GlowScales scales = computeScales(fullBrightness, accelFader.getBrightness());
+    public static void render(CampaignFleetMemberView view, List<?> slots, TextureObject glowTexture, Sprite hitGlow,
+                              Fader accelFader, Fader fullFader, float facing, float alphaMult, CampaignFleetAPI fleet,
+                              ViewportAPI viewport, GlowGeometryCache geometryCache) {
+        float fullBrightness = fullFader.getBrightness();
+        GlowScales scales = computeScales(fullBrightness, accelFader.getBrightness());
         hitGlow.setAlphaMult(alphaMult);
-
         GL11.glPushMatrix();
-        GL11.glRotatef(facing, 0.0f, 0.0f, 1.0f);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
-        glowTexture.bind();
-
-        renderGlowQuads(slots,
-                view.getEngineColor().getCurr(),
-                view.getEngineWidthMult().getCurr(),
-                view.getEngineHeightMult().getCurr(),
-                fullBrightness, scales.lengthScale(), alphaMult,
-                geometryCache);
-
-        final boolean skipHitGlow = fleet == null || viewport == null
-                ? false
-                : shouldSkipHitGlow(fleet.isInCurrentLocation(), fleet.getLocation(), viewport);
-        if (!skipHitGlow) {
-            renderHitGlowSprites(hitGlow, slots,
-                    view.getEngineGlowColor().getCurr(),
-                    scales.sizeScale(),
-                    view.getEngineGlowSizeMult().getCurr(),
-                    alphaMult);
+        try {
+            GL11.glRotatef(facing, 0.0f, 0.0f, 1.0f);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
+            glowTexture.bind();
+            renderGlowQuads(slots, view.getEngineColor().getCurr(), view.getEngineWidthMult().getCurr(),
+                    view.getEngineHeightMult().getCurr(), fullBrightness, scales.lengthScale(), alphaMult, geometryCache);
+            if (fleet == null || viewport == null || !shouldSkipHitGlow(fleet.isInCurrentLocation(), fleet.getLocation(), viewport)) {
+                renderHitGlowSprites(hitGlow, slots, view.getEngineGlowColor().getCurr(), scales.sizeScale(),
+                        view.getEngineGlowSizeMult().getCurr(), alphaMult);
+            }
+        } finally {
+            GL11.glPopMatrix();
         }
-
-        GL11.glPopMatrix();
     }
 
-    private static void renderGlowQuads(final List<?> slots,
-                                        final Color color,
-                                        final float engineWidthMult,
-                                        final float engineHeightMult,
-                                        final float fullBrightness,
-                                        final float lengthScale,
-                                        final float alphaMult,
-                                        final GlowGeometryCache geometryCache) {
-        if (slots.isEmpty()) {
-            return;
-        }
+    private static void enableArrays() {
+        GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
+        GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
+        GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
+    }
 
+    private static void draw(CampaignArrayMesh mesh) {
+        if (GlDispatch.canSubmitOwnedDraw()) CampaignArrayDraw.submit(mesh);
+        else DIRECT.get().drawRecorded(mesh);
+    }
+
+    private static void renderGlowQuads(List<?> slots, Color color, float widthMult, float heightMult,
+                                        float fullBrightness, float lengthScale, float alphaMult, GlowGeometryCache cache) {
+        if (slots.isEmpty()) return;
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
         try {
-            GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
-            GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
-            GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
-
-            final byte r = (byte) color.getRed();
-            final byte g = (byte) color.getGreen();
-            final byte b = (byte) color.getBlue();
-            final byte alphaZero = (byte) (color.getAlpha() * 0.0f);
-            final byte alphaFull = (byte) (color.getAlpha() * alphaMult);
-
-            encodeSlots(slots, geometryCache, engineWidthMult, engineHeightMult, fullBrightness,
-                    lengthScale, r, g, b, alphaZero, alphaFull);
-            flushBatch();
-
-            GL11.glColor4ub(r, g, b, alphaZero);
+            enableArrays();
+            byte r = (byte) color.getRed(), g = (byte) color.getGreen(), b = (byte) color.getBlue();
+            byte zero = (byte) (color.getAlpha() * 0.0f), full = (byte) (color.getAlpha() * alphaMult);
+            encodeSlots(slots, cache, widthMult, heightMult, fullBrightness, lengthScale, r, g, b, zero, full,
+                    CampaignEngineGlowRenderHelper::draw);
+            GL11.glColor4ub(r, g, b, zero);
         } finally {
             GL11.glPopClientAttrib();
         }
     }
 
-    static void encodeSlots(final List<?> slots,
-                            final GlowGeometryCache geometryCache,
-                            final float engineWidthMult,
-                            final float engineHeightMult,
-                            final float fullBrightness,
-                            final float lengthScale,
-                            final byte r, final byte g, final byte b,
-                            final byte alphaZero, final byte alphaFull) {
-        beginBatch();
-        float widthMult = engineWidthMult;
-        if (widthMult > 1.0f) {
-            widthMult = 1.0f + (widthMult - 1.0f) * fullBrightness;
+    static void encodeSlots(List<?> slots, GlowGeometryCache cache, float widthMult, float heightMult,
+                            float fullBrightness, float lengthScale, byte r, byte g, byte b,
+                            byte alphaZero, byte alphaFull, Consumer<CampaignArrayMesh> output) {
+        if (slots.isEmpty()) return;
+        if (widthMult > 1.0f) widthMult = 1.0f + (widthMult - 1.0f) * fullBrightness;
+        int rgb = (r & 255) << 24 | (g & 255) << 16 | (b & 255) << 8;
+        int zero = rgb | alphaZero & 255, full = rgb | alphaFull & 255;
+        int chunk = MAX_VERTICES / 8, index = 0, count = 0;
+        GlowSlot[] group = new GlowSlot[Math.min(chunk, slots.size())];
+        for (Object slot : slots) {
+            if (count == group.length) {
+                output.accept(new GlowQuads(group, count, zero, full));
+                group = new GlowSlot[Math.min(chunk, slots.size() - index)];
+                count = 0;
+            }
+            group[count++] = cache.capture(index++, (EngineGlowSlotAccessor) slot,
+                    widthMult, lengthScale, heightMult, fullBrightness);
         }
-        int slotIndex = 0;
-        for (final Object slot : slots) {
-            encodeSlot((EngineGlowSlotAccessor) slot, slotIndex, geometryCache,
-                    widthMult, lengthScale, engineHeightMult, fullBrightness,
-                    r, g, b, alphaZero, alphaFull);
-            slotIndex++;
+        output.accept(new GlowQuads(group, count, zero, full));
+    }
+
+    private record GlowSlot(float x, float y, float dirX, float dirY, float halfWidth, float length) {
+        void expand(CampaignArrayMesh.Vertex out, int zero, int full) {
+            float tailX = dirX * length + x, tailY = dirY * length + y;
+            float headX = dirX * -HEAD_BACKOFF + x, headY = dirY * -HEAD_BACKOFF + y;
+            float halfHead = halfWidth / 2.0f;
+            out.put(headX, headY + halfHead, 1, 1, zero);
+            out.put(headX, headY - halfHead, 1, 0, zero);
+            out.put(x, y - halfWidth, 0, 0, full);
+            out.put(x, y + halfWidth, 0, 1, full);
+            out.put(x, y - halfWidth, 0, 0, full);
+            out.put(x, y + halfWidth, 0, 1, full);
+            out.put(tailX, tailY + halfHead, 1, 1, zero);
+            out.put(tailX, tailY - halfHead, 1, 0, zero);
         }
     }
 
-    static void encodeSlot(final EngineGlowSlotAccessor slot,
-                           final int slotIndex,
-                           final GlowGeometryCache cache,
-                           final float widthMult,
-                           final float lengthScale,
-                           final float engineHeightMult,
-                           final float fullBrightness,
-                           final byte r, final byte g, final byte b,
-                           final byte alphaZero, final byte alphaFull) {
-        if (numVertices + 8 > MAX_VERTICES) {
-            flushBatch();
+    private record GlowQuads(GlowSlot[] slots, int count, int zero, int full) implements CampaignArrayMesh {
+        public int mode() { return GL11.GL_QUADS; }
+        public int vertexCount() { return count * 8; }
+        public void expand(Vertex out) {
+            for (int i = 0; i < count; i++) slots[i].expand(out, zero, full);
         }
-
-        final int keyWidthMult = Float.floatToRawIntBits(widthMult);
-        final int keyLengthScale = Float.floatToRawIntBits(lengthScale);
-        final int keyHeightMult = Float.floatToRawIntBits(engineHeightMult);
-        final int keyFullBrightness = Float.floatToRawIntBits(fullBrightness);
-        if (cache.isHit(slotIndex, keyWidthMult, keyLengthScale, keyHeightMult, keyFullBrightness)) {
-            emitCachedSlot(cache, slotIndex, r, g, b, alphaZero, alphaFull);
-            return;
-        }
-
-        final float dirX;
-        final float dirY;
-        if (cache.hasDirection(slotIndex)) {
-            dirX = cache.directionX(slotIndex);
-            dirY = cache.directionY(slotIndex);
-        } else {
-            final float radians = (slot.ssoptimizer$getAngle() - 90.0f) * Utils.degreesToRadians;
-            final float cos = (float) Math.cos(radians);
-            final float sin = (float) Math.sin(radians);
-            dirX = 0.0f * cos - 1.0f * sin;
-            dirY = 0.0f * sin + 1.0f * cos;
-            cache.storeDirection(slotIndex, dirX, dirY);
-        }
-
-        final float halfWidth = slot.ssoptimizer$getWidth() / 2.0f * widthMult;
-        final float len = slot.ssoptimizer$getBaseLength() * lengthScale * engineHeightMult;
-        final Vector2f offset = slot.ssoptimizer$getOffset();
-        final float offX = offset.x;
-        final float offY = offset.y;
-        final float tailX = dirX * len + offX;
-        final float tailY = dirY * len + offY;
-        final float headX = dirX * -HEAD_BACKOFF + offX;
-        final float headY = dirY * -HEAD_BACKOFF + offY;
-        final float halfHead = halfWidth / 2.0f;
-
-        cache.storeGeometry(slotIndex,
-                keyWidthMult, keyLengthScale, keyHeightMult, keyFullBrightness,
-                headX, headY + halfHead,
-                headX, headY - halfHead,
-                offX, offY - halfWidth,
-                offX, offY + halfWidth,
-                offX, offY - halfWidth,
-                offX, offY + halfWidth,
-                tailX, tailY + halfHead,
-                tailX, tailY - halfHead);
-        emitCachedSlot(cache, slotIndex, r, g, b, alphaZero, alphaFull);
     }
 
-    private static void emitCachedSlot(final GlowGeometryCache cache, final int slotIndex,
-                                       final byte r, final byte g, final byte b,
-                                       final byte alphaZero, final byte alphaFull) {
-        putVertex(cache.geometryAt(slotIndex, 0), cache.geometryAt(slotIndex, 1),
-                1.0f, 1.0f, r, g, b, alphaZero);
-        putVertex(cache.geometryAt(slotIndex, 2), cache.geometryAt(slotIndex, 3),
-                1.0f, 0.0f, r, g, b, alphaZero);
-        putVertex(cache.geometryAt(slotIndex, 4), cache.geometryAt(slotIndex, 5),
-                0.0f, 0.0f, r, g, b, alphaFull);
-        putVertex(cache.geometryAt(slotIndex, 6), cache.geometryAt(slotIndex, 7),
-                0.0f, 1.0f, r, g, b, alphaFull);
-        putVertex(cache.geometryAt(slotIndex, 8), cache.geometryAt(slotIndex, 9),
-                0.0f, 0.0f, r, g, b, alphaFull);
-        putVertex(cache.geometryAt(slotIndex, 10), cache.geometryAt(slotIndex, 11),
-                0.0f, 1.0f, r, g, b, alphaFull);
-        putVertex(cache.geometryAt(slotIndex, 12), cache.geometryAt(slotIndex, 13),
-                1.0f, 1.0f, r, g, b, alphaZero);
-        putVertex(cache.geometryAt(slotIndex, 14), cache.geometryAt(slotIndex, 15),
-                1.0f, 0.0f, r, g, b, alphaZero);
-    }
-
-    static void renderHitGlowSprites(final Sprite hitGlow,
-                                     final List<?> slots,
-                                     final Color glowColor,
-                                     final float sizeScale,
-                                     final float glowSizeMult,
-                                     final float alphaMult) {
-        if (slots.isEmpty()) {
-            return;
-        }
-        hitGlow.setColor(glowColor);
-
-        final byte r = (byte) glowColor.getRed();
-        final byte g = (byte) glowColor.getGreen();
-        final byte b = (byte) glowColor.getBlue();
-        final byte a = (byte) (int) (glowColor.getAlpha() * alphaMult);
-        final TextureObject texture = hitGlow.getTexture();
+    static void renderHitGlowSprites(Sprite hitGlow, List<?> slots, Color color, float sizeScale,
+                                     float glowSizeMult, float alphaMult) {
+        if (slots.isEmpty()) return;
+        hitGlow.setColor(color);
+        byte r = (byte) color.getRed(), g = (byte) color.getGreen(), b = (byte) color.getBlue();
+        byte a = (byte) (int) (color.getAlpha() * alphaMult);
+        TextureObject texture = hitGlow.getTexture();
         if (texture == null) {
-            encodeHitGlowQuads(hitGlow, slots, sizeScale, glowSizeMult, false, r, g, b, a);
+            encodeHitGlowQuads(hitGlow, slots, sizeScale, glowSizeMult, false, r, g, b, a, CampaignEngineGlowRenderHelper::draw);
             return;
         }
-
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
         try {
-            GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
-            GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
-            GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
-
+            enableArrays();
             texture.bind();
             GL11.glBlendFunc(hitGlow.getBlendSrc(), hitGlow.getBlendDest());
-            encodeHitGlowQuads(hitGlow, slots, sizeScale, glowSizeMult, true, r, g, b, a);
-            flushBatch();
-
+            encodeHitGlowQuads(hitGlow, slots, sizeScale, glowSizeMult, true, r, g, b, a, CampaignEngineGlowRenderHelper::draw);
             GL11.glColor4ub(r, g, b, a);
         } finally {
             GL11.glPopClientAttrib();
@@ -272,205 +161,90 @@ public final class CampaignEngineGlowRenderHelper {
         GL11.glDisable(GL11.GL_BLEND);
     }
 
-    static void encodeHitGlowQuads(final Sprite hitGlow,
-                                   final List<?> slots,
-                                   final float sizeScale,
-                                   final float glowSizeMult,
-                                   final boolean hasTexture,
-                                   final byte r, final byte g, final byte b, final byte a) {
-        beginBatch();
-        final SpriteUvAccessor uv = (SpriteUvAccessor) hitGlow;
-        final float u0 = uv.ssoptimizer$getTexX();
-        final float v0 = uv.ssoptimizer$getTexY();
-        final float u1 = u0 + uv.ssoptimizer$getTexWidth();
-        final float v1 = v0 + uv.ssoptimizer$getTexHeight();
-        final int offsetX = hitGlow.getOffsetX();
-        final int offsetY = hitGlow.getOffsetY();
-        for (final Object o : slots) {
-            final EngineGlowSlotAccessor slot = (EngineGlowSlotAccessor) o;
-            final float size = slot.ssoptimizer$getGlowSize() * sizeScale * glowSizeMult;
+    static void encodeHitGlowQuads(Sprite hitGlow, List<?> slots, float sizeScale, float glowSizeMult,
+                                   boolean hasTexture, byte r, byte g, byte b, byte a, Consumer<CampaignArrayMesh> output) {
+        SpriteUvAccessor uv = (SpriteUvAccessor) hitGlow;
+        float u0 = uv.ssoptimizer$getTexX(), v0 = uv.ssoptimizer$getTexY();
+        float u1 = u0 + uv.ssoptimizer$getTexWidth(), v1 = v0 + uv.ssoptimizer$getTexHeight();
+        int offsetX = hitGlow.getOffsetX(), offsetY = hitGlow.getOffsetY();
+        int chunk = MAX_VERTICES / 4, index = 0, used = 0;
+        int rgba = (r & 255) << 24 | (g & 255) << 16 | (b & 255) << 8 | a & 255;
+        float[] points = hasTexture ? new float[Math.min(chunk, slots.size()) * 3] : null;
+        for (Object o : slots) {
+            EngineGlowSlotAccessor slot = (EngineGlowSlotAccessor) o;
+            float size = slot.ssoptimizer$getGlowSize() * sizeScale * glowSizeMult;
             hitGlow.setSize(size, size);
-            if (!hasTexture) {
-                continue;
+            if (!hasTexture) continue;
+            if (used == points.length) {
+                output.accept(new HitQuads(points, used, offsetX, offsetY, u0, v0, u1, v1, rgba));
+                points = new float[Math.min(chunk, slots.size() - index) * 3];
+                used = 0;
             }
-            if (numVertices + 4 > MAX_VERTICES) {
-                flushBatch();
+            Vector2f offset = slot.ssoptimizer$getOffset();
+            points[used++] = offset.x;
+            points[used++] = offset.y;
+            points[used++] = size;
+            index++;
+        }
+        if (used > 0) output.accept(new HitQuads(points, used, offsetX, offsetY, u0, v0, u1, v1, rgba));
+    }
+
+    private record HitQuads(float[] points, int used, int offsetX, int offsetY,
+                            float u0, float v0, float u1, float v1, int rgba) implements CampaignArrayMesh {
+        public int mode() { return GL11.GL_QUADS; }
+        public int vertexCount() { return used / 3 * 4; }
+        public void expand(Vertex out) {
+            for (int i = 0; i < used; i += 3) {
+                float size = points[i + 2];
+                float x = points[i] - size / 2.0f + offsetX;
+                float y = points[i + 1] - size / 2.0f + offsetY;
+                out.put(x, y, u0, v0, rgba);
+                out.put(x, y + size, u0, v1, rgba);
+                out.put(x + size, y + size, u1, v1, rgba);
+                out.put(x + size, y, u1, v0, rgba);
             }
-            final Vector2f offset = slot.ssoptimizer$getOffset();
-            final float quadX = offset.x - size / 2.0f + offsetX;
-            final float quadY = offset.y - size / 2.0f + offsetY;
-            putVertex(quadX, quadY, u0, v0, r, g, b, a);
-            putVertex(quadX, quadY + size, u0, v1, r, g, b, a);
-            putVertex(quadX + size, quadY + size, u1, v1, r, g, b, a);
-            putVertex(quadX + size, quadY, u1, v0, r, g, b, a);
         }
-    }
-
-    private static void beginBatch() {
-        ensureBuffers();
-        colorBuf.clear();
-        vertexBuf.clear();
-        texCoordBuf.clear();
-        numVertices = 0;
-    }
-
-    private static void ensureBuffers() {
-        if (colorBuf != null) {
-            return;
-        }
-
-        colorBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 4)
-                             .order(ByteOrder.nativeOrder());
-        vertexBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 2 * 4)
-                              .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        texCoordBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 2 * 4)
-                                .order(ByteOrder.nativeOrder()).asFloatBuffer();
-    }
-
-    private static void putVertex(final float x, final float y,
-                                  final float u, final float v,
-                                  final byte r, final byte g, final byte b, final byte a) {
-        colorBuf.put(r).put(g).put(b).put(a);
-        texCoordBuf.put(u).put(v);
-        vertexBuf.put(x).put(y);
-        numVertices++;
-    }
-
-    private static void flushBatch() {
-        if (numVertices == 0) {
-            return;
-        }
-
-        colorBuf.flip();
-        vertexBuf.flip();
-        texCoordBuf.flip();
-
-        GL11.glColorPointer(4, true, 0, colorBuf);
-        GL11.glVertexPointer(2, 0, vertexBuf);
-        GL11.glTexCoordPointer(2, 0, texCoordBuf);
-
-        GL11.glDrawArrays(GL11.GL_QUADS, 0, numVertices);
-
-        colorBuf.clear();
-        vertexBuf.clear();
-        texCoordBuf.clear();
-        numVertices = 0;
-    }
-
-    static int getNumVertices() {
-        return numVertices;
-    }
-
-    static EncodedVertex vertexAt(final int index) {
-        if (index < 0 || index >= numVertices) {
-            throw new IndexOutOfBoundsException(
-                    "vertex index " + index + " out of [0, " + numVertices + ")");
-        }
-        final int colorIndex = index * 4;
-        final int coordIndex = index * 2;
-        return new EncodedVertex(
-                vertexBuf.get(coordIndex),
-                vertexBuf.get(coordIndex + 1),
-                texCoordBuf.get(coordIndex),
-                texCoordBuf.get(coordIndex + 1),
-                colorBuf.get(colorIndex) & 0xFF,
-                colorBuf.get(colorIndex + 1) & 0xFF,
-                colorBuf.get(colorIndex + 2) & 0xFF,
-                colorBuf.get(colorIndex + 3) & 0xFF);
-    }
-
-    record EncodedVertex(float x, float y, float u, float v, int r, int g, int b, int a) {
     }
 
     public static final class GlowGeometryCache {
-        private static final int KEY_INTS_PER_SLOT = 4;
-        private static final int COORDS_PER_SLOT = 16;
-
-        private final int slotCount;
         private final int[] keys;
-        private final float[] coords;
-        private final float[] directions;
-        private final boolean[] geometryValid;
-        private final boolean[] directionValid;
+        private final GlowSlot[] slots;
 
-        public GlowGeometryCache(final int slotCount) {
-            this.slotCount = slotCount;
-            this.keys = new int[slotCount * KEY_INTS_PER_SLOT];
-            this.coords = new float[slotCount * COORDS_PER_SLOT];
-            this.directions = new float[slotCount * 2];
-            this.geometryValid = new boolean[slotCount];
-            this.directionValid = new boolean[slotCount];
+        public GlowGeometryCache(int slotCount) {
+            keys = new int[slotCount * 4];
+            slots = new GlowSlot[slotCount];
         }
 
-        public int slotCount() {
-            return slotCount;
-        }
+        public int slotCount() { return slots.length; }
 
-        boolean hasDirection(final int slotIndex) {
-            return directionValid[slotIndex];
-        }
-
-        float directionX(final int slotIndex) {
-            return directions[slotIndex * 2];
-        }
-
-        float directionY(final int slotIndex) {
-            return directions[slotIndex * 2 + 1];
-        }
-
-        void storeDirection(final int slotIndex, final float dirX, final float dirY) {
-            directions[slotIndex * 2] = dirX;
-            directions[slotIndex * 2 + 1] = dirY;
-            directionValid[slotIndex] = true;
-        }
-
-        boolean isHit(final int slotIndex,
-                      final int widthMultBits, final int lengthScaleBits,
-                      final int heightMultBits, final int fullBrightnessBits) {
-            if (!geometryValid[slotIndex]) {
-                return false;
+        private GlowSlot capture(int index, EngineGlowSlotAccessor slot, float widthMult,
+                                 float lengthScale, float heightMult, float fullBrightness) {
+            int width = Float.floatToRawIntBits(widthMult), length = Float.floatToRawIntBits(lengthScale);
+            int height = Float.floatToRawIntBits(heightMult), brightness = Float.floatToRawIntBits(fullBrightness);
+            int base = index * 4;
+            GlowSlot cached = slots[index];
+            if (cached != null && keys[base] == width && keys[base + 1] == length
+                    && keys[base + 2] == height && keys[base + 3] == brightness) return cached;
+            float dirX, dirY;
+            if (cached == null) {
+                float radians = (slot.ssoptimizer$getAngle() - 90.0f) * Utils.degreesToRadians;
+                float cos = (float) Math.cos(radians), sin = (float) Math.sin(radians);
+                dirX = 0.0f * cos - 1.0f * sin;
+                dirY = 0.0f * sin + 1.0f * cos;
+            } else {
+                dirX = cached.dirX();
+                dirY = cached.dirY();
             }
-            final int base = slotIndex * KEY_INTS_PER_SLOT;
-            return keys[base] == widthMultBits
-                    && keys[base + 1] == lengthScaleBits
-                    && keys[base + 2] == heightMultBits
-                    && keys[base + 3] == fullBrightnessBits;
-        }
-
-        void storeGeometry(final int slotIndex,
-                           final int widthMultBits, final int lengthScaleBits,
-                           final int heightMultBits, final int fullBrightnessBits,
-                           final float x0, final float y0, final float x1, final float y1,
-                           final float x2, final float y2, final float x3, final float y3,
-                           final float x4, final float y4, final float x5, final float y5,
-                           final float x6, final float y6, final float x7, final float y7) {
-            final int keyBase = slotIndex * KEY_INTS_PER_SLOT;
-            keys[keyBase] = widthMultBits;
-            keys[keyBase + 1] = lengthScaleBits;
-            keys[keyBase + 2] = heightMultBits;
-            keys[keyBase + 3] = fullBrightnessBits;
-            final int coordBase = slotIndex * COORDS_PER_SLOT;
-            coords[coordBase] = x0;
-            coords[coordBase + 1] = y0;
-            coords[coordBase + 2] = x1;
-            coords[coordBase + 3] = y1;
-            coords[coordBase + 4] = x2;
-            coords[coordBase + 5] = y2;
-            coords[coordBase + 6] = x3;
-            coords[coordBase + 7] = y3;
-            coords[coordBase + 8] = x4;
-            coords[coordBase + 9] = y4;
-            coords[coordBase + 10] = x5;
-            coords[coordBase + 11] = y5;
-            coords[coordBase + 12] = x6;
-            coords[coordBase + 13] = y6;
-            coords[coordBase + 14] = x7;
-            coords[coordBase + 15] = y7;
-            geometryValid[slotIndex] = true;
-        }
-
-        float geometryAt(final int slotIndex, final int i) {
-            return coords[slotIndex * COORDS_PER_SLOT + i];
+            float halfWidth = slot.ssoptimizer$getWidth() / 2.0f * widthMult;
+            float len = slot.ssoptimizer$getBaseLength() * lengthScale * heightMult;
+            Vector2f offset = slot.ssoptimizer$getOffset();
+            GlowSlot result = new GlowSlot(offset.x, offset.y, dirX, dirY, halfWidth, len);
+            keys[base] = width;
+            keys[base + 1] = length;
+            keys[base + 2] = height;
+            keys[base + 3] = brightness;
+            slots[index] = result;
+            return result;
         }
     }
 }

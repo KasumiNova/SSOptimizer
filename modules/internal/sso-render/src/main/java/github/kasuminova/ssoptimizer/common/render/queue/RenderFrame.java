@@ -77,13 +77,6 @@ public final class RenderFrame {
         completion.complete(null);
     }
 
-    /** 失败帧必须释放登记的 fence，避免悬挂续跑任务永久自旋。 */
-    void signalAllFences() {
-        for (FrameFence fence : fences) {
-            fence.signal();
-        }
-    }
-
     void completeExceptionally(Throwable failure) {
         completion.completeExceptionally(failure);
     }

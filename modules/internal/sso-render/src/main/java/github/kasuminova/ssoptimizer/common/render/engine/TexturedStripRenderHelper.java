@@ -1,10 +1,11 @@
 package github.kasuminova.ssoptimizer.common.render.engine;
 
-import github.kasuminova.ssoptimizer.common.render.warroom.StripBatchRenderer;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
+import github.kasuminova.ssoptimizer.common.render.EffectVertices;
 import github.kasuminova.ssoptimizer.common.render.warroom.WarroomTaskLineBatch;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
+import java.awt.Color;
 
 public final class TexturedStripRenderHelper {
     private TexturedStripRenderHelper() {
@@ -37,21 +38,24 @@ public final class TexturedStripRenderHelper {
         int blue = color.getBlue();
         int alpha = color.getAlpha();
 
-        if (SpriteRenderHelper.isNativeLoaded()) {
+        if (GlDispatch.canSubmitOwnedDraw()) {
+            EffectVertices.submit(out -> emit(out, startX, startY, endX, endY, startWidth, endWidth,
+                    red, green, blue, alpha, startEdgeAlphaScale, centerAlphaScale, endEdgeAlphaScale));
+        } else if (SpriteRenderHelper.isNativeLoaded()) {
             nativeRenderTexturedStrip(startX, startY, endX, endY,
                     startWidth, endWidth,
                     red, green, blue, alpha,
                     startEdgeAlphaScale, centerAlphaScale, endEdgeAlphaScale,
                     additive);
         } else {
-            fallbackRenderTexturedStrip(startX, startY, endX, endY,
+            emit(EffectVertices.RECORDED, startX, startY, endX, endY,
                     startWidth, endWidth,
                     red, green, blue, alpha,
                     startEdgeAlphaScale, centerAlphaScale, endEdgeAlphaScale);
         }
     }
 
-    private static void fallbackRenderTexturedStrip(
+    static void emit(EffectVertices out,
             float startX, float startY,
             float endX, float endY,
             float startWidth, float endWidth,
@@ -74,31 +78,34 @@ public final class TexturedStripRenderHelper {
         float centerX = (startX + endX) * 0.5f;
         float centerY = (startY + endY) * 0.5f;
 
-        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-        setColor(red, green, blue, scaleAlpha(alpha, centerAlphaScale));
-        GL11.glTexCoord2f(0.5f, 0.5f);
-        GL11.glVertex2f(centerX, centerY);
+        out.begin(GL11.GL_TRIANGLE_FAN);
+        try {
+            setColor(out, red, green, blue, scaleAlpha(alpha, centerAlphaScale));
+            out.uv(0.5f, 0.5f);
+            out.vertex(centerX, centerY);
 
-        setColor(red, green, blue, scaleAlpha(alpha, startEdgeAlphaScale));
-        GL11.glTexCoord2f(0.0f, 0.0f);
-        GL11.glVertex2f(startX - startOffsetX, startY - startOffsetY);
-        GL11.glTexCoord2f(0.0f, 1.0f);
-        GL11.glVertex2f(startX + startOffsetX, startY + startOffsetY);
+            setColor(out, red, green, blue, scaleAlpha(alpha, startEdgeAlphaScale));
+            out.uv(0.0f, 0.0f);
+            out.vertex(startX - startOffsetX, startY - startOffsetY);
+            out.uv(0.0f, 1.0f);
+            out.vertex(startX + startOffsetX, startY + startOffsetY);
 
-        setColor(red, green, blue, scaleAlpha(alpha, endEdgeAlphaScale));
-        GL11.glTexCoord2f(1.0f, 1.0f);
-        GL11.glVertex2f(endX + endOffsetX, endY + endOffsetY);
-        GL11.glTexCoord2f(1.0f, 0.0f);
-        GL11.glVertex2f(endX - endOffsetX, endY - endOffsetY);
+            setColor(out, red, green, blue, scaleAlpha(alpha, endEdgeAlphaScale));
+            out.uv(1.0f, 1.0f);
+            out.vertex(endX + endOffsetX, endY + endOffsetY);
+            out.uv(1.0f, 0.0f);
+            out.vertex(endX - endOffsetX, endY - endOffsetY);
 
-        setColor(red, green, blue, scaleAlpha(alpha, startEdgeAlphaScale));
-        GL11.glTexCoord2f(0.0f, 0.0f);
-        GL11.glVertex2f(startX - startOffsetX, startY - startOffsetY);
-        GL11.glEnd();
+            setColor(out, red, green, blue, scaleAlpha(alpha, startEdgeAlphaScale));
+            out.uv(0.0f, 0.0f);
+            out.vertex(startX - startOffsetX, startY - startOffsetY);
+        } finally {
+            out.end();
+        }
     }
 
-    private static void setColor(int red, int green, int blue, int alpha) {
-        GL11.glColor4ub((byte) red, (byte) green, (byte) blue, (byte) alpha);
+    private static void setColor(EffectVertices out, int red, int green, int blue, int alpha) {
+        out.color((byte) red, (byte) green, (byte) blue, (byte) alpha);
     }
 
     private static int scaleAlpha(int baseAlpha, float scale) {
@@ -147,14 +154,24 @@ public final class TexturedStripRenderHelper {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, additive ? GL11.GL_ONE : GL11.GL_ONE_MINUS_SRC_ALPHA);
 
-        if (SpriteRenderHelper.isNativeLoaded()) {
+        if (GlDispatch.canSubmitOwnedDraw()) {
+            float[] input = new float[Math.multiplyExact(stripCount, 9)];
+            int[] rgba = new int[stripCount];
+            System.arraycopy(geometry, 0, input, 0, input.length);
+            System.arraycopy(colors, 0, rgba, 0, stripCount);
+            EffectVertices.submit(out -> emitBatch(out, input, rgba, stripCount));
+        } else if (SpriteRenderHelper.isNativeLoaded()) {
             nativeRenderTexturedStripBatch(geometry, colors, stripCount);
-            return;
+        } else {
+            emitBatch(EffectVertices.RECORDED, geometry, colors, stripCount);
         }
+    }
+
+    static void emitBatch(EffectVertices out, float[] geometry, int[] colors, int stripCount) {
         for (int strip = 0; strip < stripCount; strip++) {
             int base = strip * 9;
             int rgba = colors[strip];
-            fallbackRenderTexturedStrip(
+            emit(out,
                     geometry[base], geometry[base + 1],
                     geometry[base + 2], geometry[base + 3],
                     geometry[base + 4], geometry[base + 5],

@@ -2,6 +2,8 @@ package github.kasuminova.ssoptimizer.common.render.campaign;
 
 import com.fs.starfarer.campaign.fleet.ContrailEngineV2;
 import com.fs.starfarer.loading.specs.EngineSlot;
+import github.kasuminova.ssoptimizer.bridge.opengl.CampaignArrayDraw;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
 
@@ -21,41 +23,26 @@ public final class CampaignContrailBatchHelper {
     private static final int   GL_ONE_MINUS_SRC_ALPHA = 771;
     private static final float FULL_BRIGHTNESS_LENGTH = 50.0f;
 
-    private static ByteBuffer  colorBuf;
-    private static FloatBuffer vertexBuf;
-    private static FloatBuffer texCoordBuf;
-    private static int         numVertices;
-
-    private static boolean hasFlushedStrip;
-    private static byte finalR;
-    private static byte finalG;
-    private static byte finalB;
-    private static byte finalA;
-    private static float lastU;
-    private static float lastX;
-    private static float lastY;
-    private static byte  lastR;
-    private static byte  lastG;
-    private static byte  lastB;
-    private static byte  lastA;
+    private static final ThreadLocal<DirectPairs> DIRECT = ThreadLocal.withInitial(DirectPairs::new);
 
     private CampaignContrailBatchHelper() {
     }
 
     public static void renderContrails(Map<Object, ContrailEngineV2.Contrail> contrails, float alphaMult) {
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
         if (contrails.isEmpty()) {
             return;
         }
 
-        try {
-            renderAllContrails(contrails, alphaMult);
-        } catch (Throwable e) {
-            throw new IllegalStateException("Failed to render ContrailEngineV2 contrails", e);
+        Pairs output;
+        if (GlDispatch.canSubmitOwnedDraw()) {
+            output = new QueuedPairs();
+        } else {
+            DirectPairs direct = DIRECT.get();
+            direct.beginStrip();
+            output = direct;
         }
-    }
-
-    private static void renderAllContrails(Map<Object, ContrailEngineV2.Contrail> contrails, float alphaMult) {
-        beginStrip();
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
         try {
             GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
@@ -68,7 +55,7 @@ public final class CampaignContrailBatchHelper {
             for (ContrailEngineV2.Contrail contrail : contrails.values()) {
                 EngineSlot.BlendMode blend = contrail.blendMode;
                 if (activeBlend != blend) {
-                    flushStrip();
+                    output.flush();
                     applyBlendMode(blend);
                     activeBlend = blend;
                 }
@@ -78,7 +65,7 @@ public final class CampaignContrailBatchHelper {
                         contrail.tex.bind();
                         textureBound = true;
                     }
-                    fadeSource = encodeContrail(contrail, alphaMult, fadeSource);
+                    fadeSource = encodeContrail(contrail, alphaMult, fadeSource, output);
                 } else {
                     for (ContrailEngineV2.ContrailPoint point : contrail.points) {
                         point.maxBrightness = 0.0f;
@@ -86,8 +73,8 @@ public final class CampaignContrailBatchHelper {
                 }
             }
 
-            flushStrip();
-            restoreCurrentColor();
+            output.flush();
+            output.restoreCurrentColor();
         } finally {
             GL11.glPopClientAttrib();
         }
@@ -96,13 +83,18 @@ public final class CampaignContrailBatchHelper {
     static ContrailEngineV2.ContrailPoint encodeContrail(ContrailEngineV2.Contrail contrail,
                                                          float alphaMult,
                                                          ContrailEngineV2.ContrailPoint fadeSource) {
+        return encodeContrail(contrail, alphaMult, fadeSource, DIRECT.get());
+    }
+
+    private static ContrailEngineV2.ContrailPoint encodeContrail(ContrailEngineV2.Contrail contrail,
+            float alphaMult, ContrailEngineV2.ContrailPoint fadeSource, Pairs output) {
         Color color = contrail.color;
         int red = color.getRed();
         int green = color.getGreen();
         int blue = color.getBlue();
         int baseAlpha = color.getAlpha();
 
-        emitJoinConnector();
+        output.join();
 
         List<ContrailEngineV2.ContrailPoint> points = contrail.points;
         int size = points.size();
@@ -120,14 +112,8 @@ public final class CampaignContrailBatchHelper {
                 point.lastProximityMult = mult;
 
                 float halfWidth = point.width / 2.0f;
-                addPair(
-                        red, green, blue, 0,
-                        point.texCoord,
-                        point.point.x - point.perp.x * halfWidth,
-                        point.point.y - point.perp.y * halfWidth,
-                        point.point.x + point.perp.x * halfWidth,
-                        point.point.y + point.perp.y * halfWidth
-                );
+                output.pair(red, green, blue, 0, point.texCoord, point.point.x, point.point.y,
+                        point.perp.x, point.perp.y, halfWidth);
                 prev = point;
                 continue;
             }
@@ -244,14 +230,8 @@ public final class CampaignContrailBatchHelper {
             int alpha = (int) (baseAlpha * point.maxBrightness * brightness);
             float halfWidth = point.width / 2.0f;
 
-            addPair(
-                    red, green, blue, alpha,
-                    point.texCoord,
-                    point.point.x - point.perp.x * halfWidth,
-                    point.point.y - point.perp.y * halfWidth,
-                    point.point.x + point.perp.x * halfWidth,
-                    point.point.y + point.perp.y * halfWidth
-            );
+            output.pair(red, green, blue, alpha, point.texCoord, point.point.x, point.point.y,
+                    point.perp.x, point.perp.y, halfWidth);
             prev = point;
         }
 
@@ -259,14 +239,8 @@ public final class CampaignContrailBatchHelper {
         Vector2f lastPoint = contrail.lastPoint;
         if (lastPoint != null) {
             float quarterWidth = last.width / 4.0f;
-            addPair(
-                    red, green, blue, 0,
-                    last.texCoord,
-                    lastPoint.x - last.perp.x * quarterWidth,
-                    lastPoint.y - last.perp.y * quarterWidth,
-                    lastPoint.x + last.perp.x * quarterWidth,
-                    lastPoint.y + last.perp.y * quarterWidth
-            );
+            output.pair(red, green, blue, 0, last.texCoord, lastPoint.x, lastPoint.y,
+                    last.perp.x, last.perp.y, quarterWidth);
         }
         return fadeSource;
     }
@@ -316,115 +290,6 @@ public final class CampaignContrailBatchHelper {
         return false;
     }
 
-    static void beginStrip() {
-        ensureBuffers();
-        colorBuf.clear();
-        vertexBuf.clear();
-        texCoordBuf.clear();
-        numVertices = 0;
-        hasFlushedStrip = false;
-    }
-
-    private static void ensureBuffers() {
-        if (colorBuf != null) {
-            return;
-        }
-
-        colorBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 4)
-                             .order(ByteOrder.nativeOrder());
-        vertexBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 2 * 4)
-                              .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        texCoordBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 2 * 4)
-                                .order(ByteOrder.nativeOrder()).asFloatBuffer();
-    }
-
-    private static void emitJoinConnector() {
-        if (numVertices == 0) {
-            return;
-        }
-        if (numVertices + 2 > MAX_VERTICES) {
-            flushStrip();
-            return;
-        }
-        putVertex(lastU, lastX, lastY, lastR, lastG, lastB, lastA);
-        putVertex(lastU, lastX, lastY, lastR, lastG, lastB, lastA);
-    }
-
-    private static void putVertex(float u, float x, float y, byte r, byte g, byte b, byte a) {
-        colorBuf.put(r).put(g).put(b).put(a);
-        texCoordBuf.put(u).put(V_MAX);
-        vertexBuf.put(x).put(y);
-        numVertices++;
-    }
-
-    private static void addPair(int r, int g, int b, int a,
-                                float u,
-                                float leftX, float leftY,
-                                float rightX, float rightY) {
-        if (numVertices + 2 > MAX_VERTICES) {
-            flushStrip();
-        }
-
-        byte rb = (byte) r;
-        byte gb = (byte) g;
-        byte bb = (byte) b;
-        byte ab = (byte) a;
-
-        colorBuf.put(rb).put(gb).put(bb).put(ab);
-        colorBuf.put(rb).put(gb).put(bb).put(ab);
-
-        texCoordBuf.put(u).put(V_MIN);
-        texCoordBuf.put(u).put(V_MAX);
-
-        vertexBuf.put(leftX).put(leftY);
-        vertexBuf.put(rightX).put(rightY);
-
-        numVertices += 2;
-
-        lastU = u;
-        lastX = rightX;
-        lastY = rightY;
-        lastR = rb;
-        lastG = gb;
-        lastB = bb;
-        lastA = ab;
-    }
-
-    private static void flushStrip() {
-        if (numVertices == 0) {
-            return;
-        }
-
-        colorBuf.flip();
-        vertexBuf.flip();
-        texCoordBuf.flip();
-
-        int finalColorIndex = (numVertices - 1) * 4;
-        finalR = colorBuf.get(finalColorIndex);
-        finalG = colorBuf.get(finalColorIndex + 1);
-        finalB = colorBuf.get(finalColorIndex + 2);
-        finalA = colorBuf.get(finalColorIndex + 3);
-        hasFlushedStrip = true;
-
-        GL11.glColorPointer(4, true, 0, colorBuf);
-        GL11.glVertexPointer(2, 0, vertexBuf);
-        GL11.glTexCoordPointer(2, 0, texCoordBuf);
-
-        GL11.glDrawArrays(GL11.GL_QUAD_STRIP, 0, numVertices);
-
-        colorBuf.clear();
-        vertexBuf.clear();
-        texCoordBuf.clear();
-        numVertices = 0;
-    }
-
-    private static void restoreCurrentColor() {
-        if (!hasFlushedStrip) {
-            return;
-        }
-        GL11.glColor4ub(finalR, finalG, finalB, finalA);
-    }
-
     private static void applyBlendMode(EngineSlot.BlendMode blendMode) {
         if (blendMode == EngineSlot.BlendMode.GLOW) {
             GL11.glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -433,26 +298,210 @@ public final class CampaignContrailBatchHelper {
         }
     }
 
-    static int getNumVertices() {
-        return numVertices;
+    static void beginStrip() { DIRECT.get().beginStrip(); }
+    static int getNumVertices() { return DIRECT.get().numVertices; }
+    static EncodedVertex vertexAt(int index) { return DIRECT.get().vertexAt(index); }
+
+    private interface Pairs {
+        void pair(int r, int g, int b, int a, float u, float x, float y, float nx, float ny, float halfWidth);
+        void join();
+        void flush();
+        void restoreCurrentColor();
     }
 
-    static EncodedVertex vertexAt(int index) {
-        if (index < 0 || index >= numVertices) {
-            throw new IndexOutOfBoundsException(
-                    "vertex index " + index + " out of [0, " + numVertices + ")");
+    private static final class QueuedPairs implements Pairs {
+        private CampaignTrailPairs pending;
+        private boolean hasColor;
+        private int lastColor;
+
+        public void pair(int r, int g, int b, int a, float u, float x, float y, float nx, float ny, float halfWidth) {
+            if (pending != null && pending.size() == MAX_VERTICES / 2) flush();
+            if (pending == null) pending = new CampaignTrailPairs();
+            lastColor = r << 24 | g << 16 | b << 8 | a & 255;
+            hasColor = true;
+            pending.add(x, y, nx, ny, halfWidth, u, lastColor);
         }
-        int colorIndex = index * 4;
-        int coordIndex = index * 2;
-        return new EncodedVertex(
-                vertexBuf.get(coordIndex),
-                vertexBuf.get(coordIndex + 1),
-                texCoordBuf.get(coordIndex),
-                texCoordBuf.get(coordIndex + 1),
-                colorBuf.get(colorIndex) & 0xFF,
-                colorBuf.get(colorIndex + 1) & 0xFF,
-                colorBuf.get(colorIndex + 2) & 0xFF,
-                colorBuf.get(colorIndex + 3) & 0xFF);
+
+        public void join() {
+            if (pending == null) return;
+            if (pending.size() == MAX_VERTICES / 2) flush();
+            else pending.join();
+        }
+
+        public void flush() {
+            if (pending == null) return;
+            CampaignTrailPairs batch = pending;
+            pending = null;
+            if (GlDispatch.canSubmitOwnedDraw()) {
+                CampaignArrayDraw.submit(batch);
+            } else {
+                // 纹理绑定或颜色回调可能在收集期间改变 display list 状态。
+                DirectPairs direct = DIRECT.get();
+                direct.beginStrip();
+                batch.expand(direct::appendVertex);
+                direct.flush();
+            }
+        }
+
+        public void restoreCurrentColor() {
+            if (hasColor) GL11.glColor4ub((byte) (lastColor >>> 24), (byte) (lastColor >>> 16),
+                    (byte) (lastColor >>> 8), (byte) lastColor);
+        }
+    }
+
+    private static final class DirectPairs implements Pairs {
+        private ByteBuffer  colorBuf;
+        private FloatBuffer vertexBuf;
+        private FloatBuffer texCoordBuf;
+        private int         numVertices;
+
+        private boolean hasFlushedStrip;
+        private byte finalR;
+        private byte finalG;
+        private byte finalB;
+        private byte finalA;
+        private float lastU;
+        private float lastX;
+        private float lastY;
+        private byte  lastR;
+        private byte  lastG;
+        private byte  lastB;
+        private byte  lastA;
+
+        void beginStrip() {
+            ensureBuffers();
+            colorBuf.clear();
+            vertexBuf.clear();
+            texCoordBuf.clear();
+            numVertices = 0;
+            hasFlushedStrip = false;
+        }
+
+        private void ensureBuffers() {
+            if (colorBuf != null) {
+                return;
+            }
+
+            colorBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 4)
+                                 .order(ByteOrder.nativeOrder());
+            vertexBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 2 * 4)
+                                  .order(ByteOrder.nativeOrder()).asFloatBuffer();
+            texCoordBuf = ByteBuffer.allocateDirect(MAX_VERTICES * 2 * 4)
+                                    .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        }
+
+        public void join() {
+            if (numVertices == 0) {
+                return;
+            }
+            if (numVertices + 2 > MAX_VERTICES) {
+                flush();
+                return;
+            }
+            putVertex(lastU, lastX, lastY, lastR, lastG, lastB, lastA);
+            putVertex(lastU, lastX, lastY, lastR, lastG, lastB, lastA);
+        }
+
+        private void appendVertex(float x, float y, float u, float v, int rgba) {
+            colorBuf.put((byte) (rgba >>> 24)).put((byte) (rgba >>> 16)).put((byte) (rgba >>> 8)).put((byte) rgba);
+            texCoordBuf.put(u).put(v);
+            vertexBuf.put(x).put(y);
+            numVertices++;
+        }
+
+        private void putVertex(float u, float x, float y, byte r, byte g, byte b, byte a) {
+            colorBuf.put(r).put(g).put(b).put(a);
+            texCoordBuf.put(u).put(V_MAX);
+            vertexBuf.put(x).put(y);
+            numVertices++;
+        }
+
+        public void pair(int r, int g, int b, int a, float u, float x, float y,
+                         float nx, float ny, float halfWidth) {
+            float leftX = x - nx * halfWidth, leftY = y - ny * halfWidth;
+            float rightX = x + nx * halfWidth, rightY = y + ny * halfWidth;
+            if (numVertices + 2 > MAX_VERTICES) {
+                flush();
+            }
+
+            byte rb = (byte) r;
+            byte gb = (byte) g;
+            byte bb = (byte) b;
+            byte ab = (byte) a;
+
+            colorBuf.put(rb).put(gb).put(bb).put(ab);
+            colorBuf.put(rb).put(gb).put(bb).put(ab);
+
+            texCoordBuf.put(u).put(V_MIN);
+            texCoordBuf.put(u).put(V_MAX);
+
+            vertexBuf.put(leftX).put(leftY);
+            vertexBuf.put(rightX).put(rightY);
+
+            numVertices += 2;
+
+            lastU = u;
+            lastX = rightX;
+            lastY = rightY;
+            lastR = rb;
+            lastG = gb;
+            lastB = bb;
+            lastA = ab;
+        }
+
+        public void flush() {
+            if (numVertices == 0) {
+                return;
+            }
+
+            colorBuf.flip();
+            vertexBuf.flip();
+            texCoordBuf.flip();
+
+            int finalColorIndex = (numVertices - 1) * 4;
+            finalR = colorBuf.get(finalColorIndex);
+            finalG = colorBuf.get(finalColorIndex + 1);
+            finalB = colorBuf.get(finalColorIndex + 2);
+            finalA = colorBuf.get(finalColorIndex + 3);
+            hasFlushedStrip = true;
+
+            GL11.glColorPointer(4, true, 0, colorBuf);
+            GL11.glVertexPointer(2, 0, vertexBuf);
+            GL11.glTexCoordPointer(2, 0, texCoordBuf);
+
+            GL11.glDrawArrays(GL11.GL_QUAD_STRIP, 0, numVertices);
+
+            colorBuf.clear();
+            vertexBuf.clear();
+            texCoordBuf.clear();
+            numVertices = 0;
+        }
+
+        public void restoreCurrentColor() {
+            if (!hasFlushedStrip) {
+                return;
+            }
+            GL11.glColor4ub(finalR, finalG, finalB, finalA);
+        }
+
+        EncodedVertex vertexAt(int index) {
+            if (index < 0 || index >= numVertices) {
+                throw new IndexOutOfBoundsException(
+                        "vertex index " + index + " out of [0, " + numVertices + ")");
+            }
+            int colorIndex = index * 4;
+            int coordIndex = index * 2;
+            return new EncodedVertex(
+                    vertexBuf.get(coordIndex),
+                    vertexBuf.get(coordIndex + 1),
+                    texCoordBuf.get(coordIndex),
+                    texCoordBuf.get(coordIndex + 1),
+                    colorBuf.get(colorIndex) & 0xFF,
+                    colorBuf.get(colorIndex + 1) & 0xFF,
+                    colorBuf.get(colorIndex + 2) & 0xFF,
+                    colorBuf.get(colorIndex + 3) & 0xFF);
+        }
+
     }
 
     record EncodedVertex(float x, float y, float u, float v, int r, int g, int b, int a) {

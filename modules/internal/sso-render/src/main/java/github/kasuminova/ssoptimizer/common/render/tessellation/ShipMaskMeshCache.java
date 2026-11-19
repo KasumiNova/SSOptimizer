@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.common.render.tessellation;
 
 import com.fs.starfarer.combat.Bounds;
+import github.kasuminova.ssoptimizer.bridge.opengl.GlDispatch;
+import github.kasuminova.ssoptimizer.bridge.opengl.ShipMaskDraw;
 import github.kasuminova.ssoptimizer.common.render.spritebatch.SpriteBatch;
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL11;
@@ -12,14 +14,13 @@ import java.util.List;
 import java.util.WeakHashMap;
 
 public final class ShipMaskMeshCache {
-
     private static final ShipMaskMeshCache INSTANCE = new ShipMaskMeshCache(new EarClippingTriangulator());
     private static final Logger LOGGER = Logger.getLogger(ShipMaskMeshCache.class);
     private static final long WARN_INTERVAL_NS = 10_000_000_000L;
+    private static final GluMaskCallback GLU_CALLBACK = new GluMaskCallback();
 
     private final Triangulator triangulator;
     private final WeakHashMap<Bounds, CachedMesh> cache = new WeakHashMap<>();
-    private final WeakHashMap<Bounds, Long> warnTimestamps = new WeakHashMap<>();
 
     public ShipMaskMeshCache(Triangulator triangulator) {
         this.triangulator = triangulator;
@@ -27,46 +28,56 @@ public final class ShipMaskMeshCache {
 
     public static void render(Bounds bounds, float r, float g, float b) {
         SpriteBatch.getInstance().flushPending();
-        INSTANCE.renderInternal(bounds, r, g, b);
-    }
-
-    private void renderInternal(Bounds bounds, float r, float g, float b) {
-        List<Bounds.BoundsSegment> segments = bounds.origSegments;
-        float[] xy = extractVertices(segments);
-        float[] triangles = getOrTriangulate(bounds, segments, xy);
+        CachedMesh mesh = INSTANCE.capture(bounds);
+        if (!GlDispatch.canSubmitOwnedDraw()) {
+            draw(mesh, r, g, b, null);
+            return;
+        }
+        float[] triangles = mesh.triangles;
         if (triangles == null) {
-            warnThrottled(bounds, segments.size());
-            renderWithGlu(xy, r, g, b);
-            return;
+            ShipMaskDraw.submit(target -> draw(mesh, r, g, b, target));
+        } else if (triangles.length != 0) {
+            ShipMaskDraw.submitTriangles(triangles, r, g, b);
         }
-        if (triangles.length == 0) {
-            return;
-        }
-        GL11.glColor3f(r, g, b);
-        GL11.glBegin(GL11.GL_TRIANGLES);
-        for (int i = 0; i < triangles.length; i += 2) {
-            GL11.glVertex2f(triangles[i], triangles[i + 1]);
-        }
-        GL11.glEnd();
     }
 
-    float[] getOrTriangulate(Bounds bounds, List<Bounds.BoundsSegment> segments, float[] xy) {
+    CachedMesh capture(Bounds bounds) {
+        List<Bounds.BoundsSegment> segments = bounds.origSegments;
         long fingerprint = computeFingerprint(segments);
         synchronized (cache) {
-            CachedMesh cached = cache.get(bounds);
-            if (cached != null && cached.fingerprint == fingerprint) {
-                return cached.triangles;
+            CachedMesh mesh = cache.get(bounds);
+            if (mesh == null || mesh.fingerprint != fingerprint) {
+                WarningWindow warnings = mesh == null ? new WarningWindow() : mesh.warnings;
+                mesh = new CachedMesh(fingerprint, extractVertices(segments), warnings, triangulator);
+                cache.put(bounds, mesh);
             }
+            return mesh;
         }
-
-        float[] triangles = triangulator.triangulate(xy, xy.length >>> 1);
-        synchronized (cache) {
-            cache.put(bounds, new CachedMesh(fingerprint, triangles));
-        }
-        return triangles;
     }
 
-    static float[] extractVertices(List<Bounds.BoundsSegment> segments) {
+    private static void draw(CachedMesh mesh, float r, float g, float b, ShipMaskDraw target) {
+        float[] triangles = mesh.resolve();
+        if (triangles == null) {
+            mesh.warnings.warn((mesh.contour.length >>> 1) - 1);
+            renderWithGlu(mesh.contour, r, g, b, target == null ? GLU_CALLBACK : target);
+        } else if (triangles.length != 0) {
+            if (target != null) {
+                target.triangles(triangles, r, g, b);
+            } else {
+                GL11.glColor3f(r, g, b);
+                GL11.glBegin(GL11.GL_TRIANGLES);
+                try {
+                    for (int i = 0; i < triangles.length; i += 2) {
+                        GL11.glVertex2f(triangles[i], triangles[i + 1]);
+                    }
+                } finally {
+                    GL11.glEnd();
+                }
+            }
+        }
+    }
+
+    private static float[] extractVertices(List<Bounds.BoundsSegment> segments) {
         if (segments.isEmpty()) {
             return new float[0];
         }
@@ -93,55 +104,38 @@ public final class ShipMaskMeshCache {
         return hash;
     }
 
-    private void warnThrottled(Bounds bounds, int segmentCount) {
-        long now = System.nanoTime();
-        synchronized (warnTimestamps) {
-            Long last = warnTimestamps.get(bounds);
-            if (last != null && now - last < WARN_INTERVAL_NS) {
-                return;
-            }
-            warnTimestamps.put(bounds, now);
-        }
-        LOGGER.warn(String.format(
-                "SSOptimizer: 船体蒙版耳切三角化失败（段数 %d），降级 GLU 剖分路径；同一船体 %d 秒内不重复告警",
-                segmentCount, WARN_INTERVAL_NS / 1_000_000_000L));
-    }
-
     public static void renderWithGlu(Bounds bounds, float r, float g, float b) {
-        renderWithGlu(extractVertices(bounds.origSegments), r, g, b);
-    }
-
-    private static void renderWithGlu(float[] xy, float r, float g, float b) {
+        float[] xy = extractVertices(bounds.origSegments);
         if (xy.length == 0) {
             return;
         }
+        if (GlDispatch.canSubmitOwnedDraw()) {
+            SpriteBatch.getInstance().flushPending();
+            ShipMaskDraw.submit(target -> renderWithGlu(xy, r, g, b, target));
+        } else {
+            renderWithGlu(xy, r, g, b, GLU_CALLBACK);
+        }
+    }
+
+    private static void renderWithGlu(float[] xy, float r, float g, float b, GLUtessellatorCallbackAdapter callback) {
         GLUtessellatorImpl tess = (GLUtessellatorImpl) GLU.gluNewTess();
-        GluMaskCallback callback = new GluMaskCallback();
-        tess.gluTessCallback(GLU.GLU_TESS_VERTEX, callback);
-        tess.gluTessCallback(GLU.GLU_TESS_BEGIN, callback);
-        tess.gluTessCallback(GLU.GLU_TESS_END, callback);
-        tess.gluTessCallback(GLU.GLU_TESS_COMBINE, callback);
-        tess.gluTessProperty(GLU.GLU_TESS_WINDING_RULE, GLU.GLU_TESS_WINDING_ODD);
-        tess.gluTessBeginPolygon(null);
-        tess.gluTessBeginContour();
-
-        int vertexCount = xy.length >>> 1;
-        double[][] data = new double[vertexCount][6];
-        for (int i = 0; i < vertexCount; i++) {
-            data[i][0] = xy[i * 2];
-            data[i][1] = xy[i * 2 + 1];
-            data[i][2] = 0.0;
-            data[i][3] = r;
-            data[i][4] = g;
-            data[i][5] = b;
+        try {
+            tess.gluTessCallback(GLU.GLU_TESS_VERTEX, callback);
+            tess.gluTessCallback(GLU.GLU_TESS_BEGIN, callback);
+            tess.gluTessCallback(GLU.GLU_TESS_END, callback);
+            tess.gluTessCallback(GLU.GLU_TESS_COMBINE, GLU_CALLBACK);
+            tess.gluTessProperty(GLU.GLU_TESS_WINDING_RULE, GLU.GLU_TESS_WINDING_ODD);
+            tess.gluTessBeginPolygon(null);
+            tess.gluTessBeginContour();
+            for (int i = 0; i < xy.length; i += 2) {
+                double[] data = {xy[i], xy[i + 1], 0.0, r, g, b};
+                tess.gluTessVertex(data, 0, data);
+            }
+            tess.gluTessEndContour();
+            tess.gluTessEndPolygon();
+        } finally {
+            tess.gluDeleteTess();
         }
-        for (int i = 0; i < vertexCount; i++) {
-            tess.gluTessVertex(data[i], 0, data[i]);
-        }
-
-        tess.gluTessEndContour();
-        tess.gluTessEndPolygon();
-        tess.gluDeleteTess();
     }
 
     private static final class GluMaskCallback extends GLUtessellatorCallbackAdapter {
@@ -170,13 +164,39 @@ public final class ShipMaskMeshCache {
         }
     }
 
-    private static final class CachedMesh {
-        final long fingerprint;
-        final float[] triangles;
+    static final class CachedMesh {
+        private final long fingerprint;
+        private final float[] contour;
+        private final WarningWindow warnings;
+        private final Triangulator triangulator;
+        private volatile float[] triangles;
+        private boolean resolved;
 
-        CachedMesh(long fingerprint, float[] triangles) {
+        private CachedMesh(long fingerprint, float[] contour, WarningWindow warnings, Triangulator triangulator) {
             this.fingerprint = fingerprint;
-            this.triangles = triangles;
+            this.contour = contour;
+            this.warnings = warnings;
+            this.triangulator = triangulator;
+        }
+
+        synchronized float[] resolve() {
+            if (!resolved) {
+                triangles = triangulator.triangulate(contour, contour.length >>> 1);
+                resolved = true;
+            }
+            return triangles;
+        }
+    }
+
+    private static final class WarningWindow {
+        private long lastWarn = Long.MIN_VALUE;
+
+        synchronized void warn(int segmentCount) {
+            long now = System.nanoTime();
+            if (lastWarn == Long.MIN_VALUE || now - lastWarn >= WARN_INTERVAL_NS) {
+                lastWarn = now;
+                LOGGER.warn("SSOptimizer: 船体蒙版耳切三角化失败，使用 GLU 剖分；轮廓段数 " + segmentCount);
+            }
         }
     }
 }

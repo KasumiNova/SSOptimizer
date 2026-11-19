@@ -3,25 +3,26 @@ package github.kasuminova.ssoptimizer.mixin.render;
 import github.kasuminova.ssoptimizer.common.render.engine.ContrailAdvanceHelper;
 import github.kasuminova.ssoptimizer.common.render.engine.ContrailBatchHelper;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Map;
 
 @Mixin(targets = GameClassNames.CONTRAIL_ENGINE_DOTTED)
 public abstract class ContrailEngineMixin {
 
-    @SuppressWarnings("rawtypes")
     @Shadow(remap = false, aliases = "groups")
-    private Map ssoptimizer$groups;
+    private Map<?, ?> ssoptimizer$groups;
 
-    @Overwrite(remap = false)
-    public void render(float alphaScale) {
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        ContrailBatchHelper.renderContrails(ssoptimizer$groups, alphaScale);
+    @Inject(method = "render(F)V", at = @At("HEAD"), cancellable = true, remap = false)
+    private void ssoptimizer$renderContrails(float alphaScale, CallbackInfo ci) {
+        if (ContrailBatchHelper.renderContrails(ssoptimizer$groups, alphaScale)) {
+            ci.cancel();
+        }
     }
 
     @Overwrite(remap = false)

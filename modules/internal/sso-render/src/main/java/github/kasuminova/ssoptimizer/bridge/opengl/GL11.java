@@ -951,19 +951,32 @@ public final class GL11 extends GL11Gen {
         return BridgeSupport.blockingGetResource(() -> org.lwjgl.opengl.GL11.glGenLists(range));
     }
 
-    /** 编译窗口内必须逐指令回放客户端数组，避免 display list 捕获复用缓冲中的陈旧数据。 */
+    /** 显示列表编译期间逐指令回放，防止列表引用复用的客户端数组。 */
     public static void glNewList(int list, int mode) {
-        BridgeSupport.enqueue(() -> {
-            BridgeSupport.onDisplayListCompileStart();
+        RecordingContext context = BridgeSupport.recordingContext();
+        if (context.auxNative) {
+            BridgeSupport.enqueue(context, () -> org.lwjgl.opengl.GL11.glNewList(list, mode));
+            return;
+        }
+        Object contextToken = BridgeSupport.mainGlContextToken();
+        BridgeSupport.enqueue(context, () -> {
             org.lwjgl.opengl.GL11.glNewList(list, mode);
+            BridgeSupport.onDisplayListCompileStart();
         });
+        context.displayListContextToken = contextToken;
     }
 
     public static void glEndList() {
-        BridgeSupport.enqueue(() -> {
+        RecordingContext context = BridgeSupport.recordingContext();
+        if (context.auxNative) {
+            BridgeSupport.enqueue(context, org.lwjgl.opengl.GL11::glEndList);
+            return;
+        }
+        BridgeSupport.enqueue(context, () -> {
             org.lwjgl.opengl.GL11.glEndList();
             BridgeSupport.onDisplayListCompileEnd();
         });
+        context.displayListContextToken = null;
     }
 
     public static void glCallList(int list) {

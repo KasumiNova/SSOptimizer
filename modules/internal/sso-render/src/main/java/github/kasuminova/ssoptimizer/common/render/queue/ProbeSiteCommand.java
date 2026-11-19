@@ -14,6 +14,13 @@ public final class ProbeSiteCommand implements GlCommand {
         delegate.execute();
     }
 
+    public static GlCommand unwrap(GlCommand command) {
+        while (command instanceof ProbeSiteCommand probe) {
+            command = probe.delegate;
+        }
+        return command;
+    }
+
     public GlCommand delegate() {
         return delegate;
     }

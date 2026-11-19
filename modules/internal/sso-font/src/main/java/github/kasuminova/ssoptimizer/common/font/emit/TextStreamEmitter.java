@@ -1,6 +1,8 @@
 package github.kasuminova.ssoptimizer.common.font.emit;
 
 import com.fs.graphics.TextureObject;
+import github.kasuminova.ssoptimizer.api.font.FontDraw;
+import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
 import github.kasuminova.ssoptimizer.common.font.layout.GlyphQuad;
 import github.kasuminova.ssoptimizer.common.font.layout.TextPass;
@@ -33,57 +35,29 @@ public final class TextStreamEmitter {
             final List<TextPass> passes,
             final int blendSrc,
             final int blendDst) {
-        GL11.streamEnable(GL_TEXTURE_2D);
-        GL11.streamEnable(GL_BLEND);
-        GL11.streamBlendFunc(blendSrc, blendDst);
-
-        int currentColor = 0;
-        boolean hasColor = false;
-        for (final TextPass pass : passes) {
-            final List<GlyphQuad> quads = pass.quads();
-            if (quads.isEmpty()) {
-                continue;
-            }
-            int currentTexture = -1;
-            boolean segmentOpen = false;
-            for (final GlyphQuad q : quads) {
-                if (!segmentOpen || q.textureId() != currentTexture) {
-                    if (segmentOpen) {
-                        GL11.glEnd();
-                    }
-                    // streamBindTexture 编码为段间指令（begin/end 段内绑定非法）
-                    GL11.streamBindTexture(q.textureId());
-                    GL11.glBegin(GL_QUADS);
-                    currentTexture = q.textureId();
-                    segmentOpen = true;
-                }
-                if (!hasColor || q.color() != currentColor) {
-                    final int c = q.color();
-                    GL11.glColor4ub((byte) (c >>> 16), (byte) (c >>> 8), (byte) c, (byte) (c >>> 24));
-                    currentColor = c;
-                    hasColor = true;
-                }
-                GL11.glTexCoord2f(q.u1(), q.v1());
-                GL11.glVertex2f(q.x1(), q.y1());
-                GL11.glTexCoord2f(q.u2(), q.v2());
-                GL11.glVertex2f(q.x2(), q.y2());
-                GL11.glTexCoord2f(q.u3(), q.v3());
-                GL11.glVertex2f(q.x3(), q.y3());
-                GL11.glTexCoord2f(q.u4(), q.v4());
-                GL11.glVertex2f(q.x4(), q.y4());
-            }
-            if (segmentOpen) {
-                GL11.glEnd();
-            }
+        if (!trySubmit(passes, true, blendSrc, blendDst)) {
+            GL11.streamEnable(GL_TEXTURE_2D);
+            record(passes, true, blendSrc, blendDst);
         }
-
-        GL11.streamDisable(GL_BLEND);
     }
 
     public static void emitPasses(
             final List<TextPass> passes,
             final int blendSrc,
             final int blendDst) {
+        if (!trySubmit(passes, false, blendSrc, blendDst)) {
+            record(passes, false, blendSrc, blendDst);
+        }
+    }
+
+    private static boolean trySubmit(final List<TextPass> passes, final boolean atlas,
+                                     final int blendSrc, final int blendDst) {
+        final FontDraw draw = ServiceRegistry.getOrNull(FontDraw.class);
+        return draw != null && draw.trySubmit(passes, TextPass::quads, atlas, blendSrc, blendDst);
+    }
+
+    private static void record(final List<TextPass> passes, final boolean atlas,
+                               final int blendSrc, final int blendDst) {
         GL11.streamEnable(GL_BLEND);
         GL11.streamBlendFunc(blendSrc, blendDst);
 
@@ -94,8 +68,18 @@ public final class TextStreamEmitter {
             if (quads.isEmpty()) {
                 continue;
             }
+            int texture = quads.getFirst().textureId();
+            if (atlas) {
+                GL11.streamBindTexture(texture);
+            }
             GL11.glBegin(GL_QUADS);
             for (final GlyphQuad q : quads) {
+                if (atlas && texture != q.textureId()) {
+                    GL11.glEnd();
+                    texture = q.textureId();
+                    GL11.streamBindTexture(texture);
+                    GL11.glBegin(GL_QUADS);
+                }
                 if (!hasColor || q.color() != currentColor) {
                     final int c = q.color();
                     GL11.glColor4ub((byte) (c >>> 16), (byte) (c >>> 8), (byte) c, (byte) (c >>> 24));

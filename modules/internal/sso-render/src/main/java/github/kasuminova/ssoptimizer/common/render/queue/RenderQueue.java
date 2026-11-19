@@ -7,7 +7,7 @@ public interface RenderQueue {
     /** 仅限主录制线程；其他生产者必须调用 submit。 */
     RenderFrame currentFrame();
 
-    /** 线程安全；跨线程命令顺序须由 FrameFence 协调。 */
+    /** 线程安全。正常返回后由队列持有命令；抛出异常时仍由调用方持有。跨线程顺序由 FrameFence 协调。 */
     void submit(GlCommand command);
 
     void swapFrames();

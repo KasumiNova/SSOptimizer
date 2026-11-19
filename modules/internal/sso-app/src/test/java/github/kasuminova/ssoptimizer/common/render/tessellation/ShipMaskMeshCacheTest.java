@@ -35,9 +35,10 @@ class ShipMaskMeshCacheTest {
         ShipMaskMeshCache cache = new ShipMaskMeshCache(counting);
         Bounds bounds = rectBounds();
 
-        float[] xy = ShipMaskMeshCache.extractVertices(bounds.origSegments);
-        float[] first = cache.getOrTriangulate(bounds, bounds.origSegments, xy);
-        float[] second = cache.getOrTriangulate(bounds, bounds.origSegments, xy);
+        ShipMaskMeshCache.CachedMesh mesh = cache.capture(bounds);
+        float[] first = mesh.resolve();
+        assertSame(mesh, cache.capture(bounds));
+        float[] second = cache.capture(bounds).resolve();
 
         assertEquals(1, counting.calls, "缓存命中不应重复三角化");
         assertSame(first, second, "缓存命中应返回同一数组实例");
@@ -51,13 +52,12 @@ class ShipMaskMeshCacheTest {
         ShipMaskMeshCache cache = new ShipMaskMeshCache(counting);
         Bounds bounds = rectBounds();
 
-        float[] first = cache.getOrTriangulate(bounds, bounds.origSegments,
-                ShipMaskMeshCache.extractVertices(bounds.origSegments));
-        assertEquals(1, counting.calls);
-
+        ShipMaskMeshCache.CachedMesh firstPending = cache.capture(bounds);
         bounds.origSegments.get(0).set(0, 0, 60, 0);
-        float[] second = cache.getOrTriangulate(bounds, bounds.origSegments,
-                ShipMaskMeshCache.extractVertices(bounds.origSegments));
+        ShipMaskMeshCache.CachedMesh secondPending = cache.capture(bounds);
+        float[] second = secondPending.resolve();
+        float[] first = firstPending.resolve();
+        assertSame(secondPending, cache.capture(bounds));
 
         assertEquals(2, counting.calls, "原地改坐标后指纹失配应重新三角化");
         assertNotNull(second);
@@ -72,15 +72,14 @@ class ShipMaskMeshCacheTest {
         Bounds a = rectBounds();
         Bounds b = rectBounds();
 
-        float[] meshA = cache.getOrTriangulate(a, a.origSegments, ShipMaskMeshCache.extractVertices(a.origSegments));
-        float[] meshB = cache.getOrTriangulate(b, b.origSegments, ShipMaskMeshCache.extractVertices(b.origSegments));
+        cache.capture(a).resolve();
+        float[] meshB = cache.capture(b).resolve();
         assertEquals(2, counting.calls, "不同 Bounds 实例必须各自三角化");
 
         a.origSegments.get(0).set(0, 0, 60, 0);
-        cache.getOrTriangulate(a, a.origSegments, ShipMaskMeshCache.extractVertices(a.origSegments));
+        cache.capture(a).resolve();
         assertEquals(3, counting.calls);
-        float[] meshBAgain = cache.getOrTriangulate(b, b.origSegments,
-                ShipMaskMeshCache.extractVertices(b.origSegments));
+        float[] meshBAgain = cache.capture(b).resolve();
         assertEquals(3, counting.calls, "b 的缓存不应受 a 的原地修改影响");
         assertSame(meshB, meshBAgain);
     }
