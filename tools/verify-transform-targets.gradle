@@ -1,10 +1,8 @@
-// ./gradlew --offline -I tools/verify-transform-targets.gradle verifyTransformTargets
 gradle.projectsEvaluated {
     def root = gradle.rootProject
-    def app = root.findProject(":modules:internal:sso-app")
-    if (app == null) return
+    def app = root.project(":modules:internal:sso-app")
     def modules = root.subprojects.findAll { it.plugins.hasPlugin("java") && it.path.startsWith(":modules:") }
-    app.tasks.register("verifyTransformTargets", JavaExec) {
+    def verify = app.tasks.register("verifyTransformTargets", JavaExec) {
         group = "verification"
         dependsOn modules.collect { it.tasks.named("classes") }
         javaLauncher = app.javaToolchains.launcherFor(app.java.toolchain)
@@ -22,4 +20,8 @@ gradle.projectsEvaluated {
             args modules.collectMany { it.sourceSets.main.output.files }.findAll { it.isDirectory() }.collect { it.absolutePath }
         }
     }
+    ["jar", "standalonePayload", "modProduction", "check"].each { name ->
+        app.tasks.named(name) { dependsOn(verify) }
+    }
+    root.tasks.named("check") { dependsOn(verify) }
 }
