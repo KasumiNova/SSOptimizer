@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.asm.render;
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
@@ -13,6 +14,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URLClassLoader;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -23,10 +26,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** 为 Launch 域中继承 JDK 类加载器的开放类集合改写标准 defineClass 调用。Mixin 无法预先枚举这些类。 */
+/** 为 Launch 域中继承 JDK 类加载器的开放类集合改写标准类查找和定义调用。Mixin 无法预先枚举这些类。 */
 public final class ClassDefinitionRedirector {
     private static final Logger LOGGER = Logger.getLogger(ClassDefinitionRedirector.class);
     private static final byte[] DEFINE_CLASS = "defineClass".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] FIND_CLASS = "findClass".getBytes(StandardCharsets.US_ASCII);
+    private static final String URL_LOADER = "java/net/URLClassLoader";
+    private static final String FIND_CLASS_DESC = "(Ljava/lang/String;)Ljava/lang/Class;";
     private static final String LOADER = "java/lang/ClassLoader";
     private static final String SECURE_LOADER = "java/security/SecureClassLoader";
     private static final String BYTE_ARRAY_DEFINITION = "([BII)Ljava/lang/Class;";
@@ -47,7 +53,7 @@ public final class ClassDefinitionRedirector {
     private ClassDefinitionRedirector() { }
 
     public static byte[] rewrite(final byte[] bytes, final ClassLoader launchLoader) throws IOException {
-        if (!referencesDefineClass(bytes)) return bytes;
+        if (!references(bytes, DEFINE_CLASS) && !references(bytes, FIND_CLASS)) return bytes;
         final ClassReader reader = new ClassReader(bytes);
         final Set<String> ancestors = loaderAncestors(reader.getSuperName(), launchLoader);
         if (!ancestors.contains(LOADER)) return bytes;
@@ -61,12 +67,12 @@ public final class ClassDefinitionRedirector {
         for (var method : node.methods) {
             for (var instruction : method.instructions.toArray()) {
                 if (!(instruction instanceof MethodInsnNode call) || !isDefinition(call, ancestors)) continue;
-                final Invocation invocation = new Invocation(call.getOpcode(), call.owner, call.desc);
+                final Invocation invocation = new Invocation(call.getOpcode(), call.owner, call.name, call.desc);
                 final Method helper = helpers.computeIfAbsent(invocation, ignored -> {
                     int suffix = helpers.size();
                     String name;
                     do {
-                        name = "ssoptimizer$defineClass$" + suffix++;
+                        name = "ssoptimizer$" + call.name + "$" + suffix++;
                     } while (!names.add(name));
                     final var args = new ArrayList<Type>();
                     // 跨包调用 protected 方法时，JVM 要求接收者属于发起调用的子类。
@@ -86,9 +92,9 @@ public final class ClassDefinitionRedirector {
         return writer.toByteArray();
     }
 
-    private static boolean referencesDefineClass(final byte[] bytes) {
-        for (int from = 0; from <= bytes.length - DEFINE_CLASS.length; from++) {
-            if (Arrays.equals(bytes, from, from + DEFINE_CLASS.length, DEFINE_CLASS, 0, DEFINE_CLASS.length)) return true;
+    private static boolean references(final byte[] bytes, final byte[] target) {
+        for (int from = 0; from <= bytes.length - target.length; from++) {
+            if (Arrays.equals(bytes, from, from + target.length, target, 0, target.length)) return true;
         }
         return false;
     }
@@ -107,10 +113,14 @@ public final class ClassDefinitionRedirector {
     }
 
     private static boolean isDefinition(final MethodInsnNode call, final Set<String> ancestors) {
-        if (!"defineClass".equals(call.name) || !ancestors.contains(call.owner)
+        if (!ancestors.contains(call.owner)
                 || (call.getOpcode() != Opcodes.INVOKEVIRTUAL && call.getOpcode() != Opcodes.INVOKESPECIAL)) {
             return false;
         }
+        if ("findClass".equals(call.name)) {
+            return ancestors.contains(URL_LOADER) && FIND_CLASS_DESC.equals(call.desc);
+        }
+        if (!"defineClass".equals(call.name)) return false;
         return switch (call.desc) {
             case BYTE_ARRAY_DEFINITION, NAMED_DEFINITION, PROTECTED_DEFINITION, BUFFER_DEFINITION -> true;
             case SOURCE_DEFINITION, SOURCE_BUFFER_DEFINITION -> ancestors.contains(SECURE_LOADER) && !call.owner.equals(LOADER);
@@ -123,6 +133,11 @@ public final class ClassDefinitionRedirector {
         final GeneratorAdapter mv = new GeneratorAdapter(access, helper,
                 writer.visitMethod(access, helper.getName(), helper.getDescriptor(), null, null));
         mv.visitCode();
+        if ("findClass".equals(call.name)) {
+            appendFindClass(mv, call);
+            mv.endMethod();
+            return;
+        }
         final boolean named = !call.descriptor.equals(BYTE_ARRAY_DEFINITION);
         final int data = named ? 2 : 1;
         final boolean buffer = call.descriptor.equals(BUFFER_DEFINITION) || call.descriptor.equals(SOURCE_BUFFER_DEFINITION);
@@ -159,6 +174,28 @@ public final class ClassDefinitionRedirector {
         mv.endMethod();
     }
 
+    private static void appendFindClass(final GeneratorAdapter mv, final Invocation call) {
+        final Type lookup = Type.getType(MethodHandles.Lookup.class);
+        final Type result = Type.getType(Class.class);
+        mv.loadArg(0);
+        mv.loadArg(1);
+        mv.invokeStatic(Type.getType(MethodHandles.class), new Method("lookup", lookup, new Type[0]));
+        mv.invokeStatic(Type.getType(UrlClassDefinition.class), new Method("findClass", result,
+                new Type[]{Type.getType(URLClassLoader.class), STRING, lookup}));
+        mv.dup();
+        final Label original = mv.newLabel();
+        mv.ifNull(original);
+        mv.returnValue();
+        mv.mark(original);
+        mv.visitFrame(Opcodes.F_NEW, 2, new Object[]{mv.getArgumentTypes()[0].getInternalName(), STRING.getInternalName()},
+                1, new Object[]{"java/lang/Class"});
+        mv.pop();
+        mv.loadArg(0);
+        mv.loadArg(1);
+        mv.visitMethodInsn(call.opcode, call.owner, call.name, call.descriptor, false);
+        mv.returnValue();
+    }
+
     public static ByteSlice redirectSlice(final ClassLoader loader, final String name, final byte[] bytes,
                                           final int offset, final int length) {
         if (loader != null && bytes != null && offset >= 0 && length >= 0 && offset <= bytes.length - length) {
@@ -178,7 +215,7 @@ public final class ClassDefinitionRedirector {
         return rewritten == input ? bytes : ByteBuffer.wrap(rewritten);
     }
 
-    private static byte[] redirect(final ClassLoader loader, final String name, final byte[] bytes) {
+    static byte[] redirect(final ClassLoader loader, final String name, final byte[] bytes) {
         if (RESOLVING_BRIDGES.get() != null) return bytes;
         RESOLVING_BRIDGES.set(Boolean.TRUE);
         try {
@@ -213,5 +250,5 @@ public final class ClassDefinitionRedirector {
 
     public record ByteSlice(byte[] bytes, int offset, int length) { }
 
-    private record Invocation(int opcode, String owner, String descriptor) { }
+    private record Invocation(int opcode, String owner, String name, String descriptor) { }
 }
