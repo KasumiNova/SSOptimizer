@@ -2,6 +2,8 @@ package github.kasuminova.ssoptimizer.asm.render;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -10,28 +12,34 @@ import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.commons.SerialVersionUIDAdder;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URLClassLoader;
 import java.lang.reflect.Modifier;
+import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** 为 Launch 域中继承 JDK 类加载器的开放类集合改写标准类查找和定义调用。Mixin 无法预先枚举这些类。 */
 public final class ClassDefinitionRedirector {
     private static final Logger LOGGER = Logger.getLogger(ClassDefinitionRedirector.class);
     private static final byte[] DEFINE_CLASS = "defineClass".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] FIND_CLASS = "findClass".getBytes(StandardCharsets.US_ASCII);
+    private static final String SERIALIZABLE = "java/io/Serializable";
     private static final String URL_LOADER = "java/net/URLClassLoader";
+    private static final String FIND_RESOURCE_DESC = "(Ljava/lang/String;)Ljava/net/URL;";
     private static final String FIND_CLASS_DESC = "(Ljava/lang/String;)Ljava/lang/Class;";
     private static final String LOADER = "java/lang/ClassLoader";
     private static final String SECURE_LOADER = "java/security/SecureClassLoader";
@@ -48,18 +56,32 @@ public final class ClassDefinitionRedirector {
     private static final Type BYTE_BUFFER = Type.getType(ByteBuffer.class);
     private static final Type BYTE_ARRAY = Type.getType(byte[].class);
     private static final Type STRING = Type.getType(String.class);
+    private static final Map<ClassLoader, Set<String>> GENERATED_LOOKUPS = new WeakHashMap<>();
+    private static final Map<ClassLoader, Map<String, ClassHeader>> HEADERS = new WeakHashMap<>();
     private static final ThreadLocal<Boolean> RESOLVING_BRIDGES = new ThreadLocal<>();
 
     private ClassDefinitionRedirector() { }
 
     public static byte[] rewrite(final byte[] bytes, final ClassLoader launchLoader) throws IOException {
-        if (!references(bytes, DEFINE_CLASS) && !references(bytes, FIND_CLASS)) return bytes;
         final ClassReader reader = new ClassReader(bytes);
-        final Set<String> ancestors = loaderAncestors(reader.getSuperName(), launchLoader);
+        final Hierarchy hierarchy = loaderAncestors(reader.getSuperName(), launchLoader);
+        final Set<String> ancestors = hierarchy.names();
         if (!ancestors.contains(LOADER)) return bytes;
+
+        final boolean mayInheritLookup = ancestors.contains(URL_LOADER) && !hierarchy.customLookup();
+        final boolean explicitDefinitions = references(bytes, DEFINE_CLASS) || references(bytes, FIND_CLASS);
+        if (!mayInheritLookup && !explicitDefinitions) return bytes;
 
         final ClassNode node = new ClassNode(Opcodes.ASM9);
         reader.accept(node, 0);
+        final boolean serializable = mayInheritLookup && isSerializable(node.superName, node.interfaces, launchLoader);
+        final boolean hasUidField = node.fields.stream().anyMatch(field -> field.name.equals("serialVersionUID"));
+        final boolean injectLookup = mayInheritLookup && node.methods.stream()
+                .noneMatch(method -> isUrlLookup(method.name, method.desc))
+                && (!serializable || !hasUidField || node.fields.stream().anyMatch(field ->
+                        field.name.equals("serialVersionUID") && field.desc.equals("J")
+                                && (field.access & (Opcodes.ACC_STATIC | Opcodes.ACC_FINAL))
+                                == (Opcodes.ACC_STATIC | Opcodes.ACC_FINAL)));
         ancestors.add(node.name);
         final Set<String> names = new HashSet<>();
         node.methods.forEach(method -> names.add(method.name));
@@ -67,6 +89,7 @@ public final class ClassDefinitionRedirector {
         for (var method : node.methods) {
             for (var instruction : method.instructions.toArray()) {
                 if (!(instruction instanceof MethodInsnNode call) || !isDefinition(call, ancestors)) continue;
+                if (injectLookup && call.getOpcode() == Opcodes.INVOKEVIRTUAL && call.name.equals("findClass")) continue;
                 final Invocation invocation = new Invocation(call.getOpcode(), call.owner, call.name, call.desc);
                 final Method helper = helpers.computeIfAbsent(invocation, ignored -> {
                     int suffix = helpers.size();
@@ -84,12 +107,38 @@ public final class ClassDefinitionRedirector {
                         helper.getName(), helper.getDescriptor(), false));
             }
         }
-        if (helpers.isEmpty()) return bytes;
+        if (!injectLookup && helpers.isEmpty()) return bytes;
 
         final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
         node.accept(writer);
         helpers.forEach((invocation, helper) -> appendHelper(writer, invocation, helper));
-        return writer.toByteArray();
+        if (injectLookup) {
+            if (serializable && !hasUidField) {
+                final var uid = new SerialVersionUIDAdder(Opcodes.ASM9, null) {
+                    @Override
+                    protected void addSVUID(final long value) {
+                        writer.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
+                                "serialVersionUID", "J", null, value).visitEnd();
+                    }
+                };
+                reader.accept(uid, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            }
+            appendLookupOverride(writer, node.name, node.superName);
+        }
+        final byte[] rewritten = writer.toByteArray();
+        if (injectLookup) {
+            synchronized (GENERATED_LOOKUPS) {
+                GENERATED_LOOKUPS.computeIfAbsent(launchLoader, ignored -> new HashSet<>()).add(node.name.replace('/', '.'));
+            }
+        }
+        return rewritten;
+    }
+
+    static boolean generatedLookup(final Class<?> owner) {
+        synchronized (GENERATED_LOOKUPS) {
+            final Set<String> names = GENERATED_LOOKUPS.get(owner.getClassLoader());
+            return names != null && names.contains(owner.getName());
+        }
     }
 
     private static boolean references(final byte[] bytes, final byte[] target) {
@@ -99,17 +148,69 @@ public final class ClassDefinitionRedirector {
         return false;
     }
 
-    private static Set<String> loaderAncestors(String type, final ClassLoader launchLoader) throws IOException {
+    private static Hierarchy loaderAncestors(String type, final ClassLoader launchLoader) throws IOException {
         final Set<String> ancestors = new HashSet<>();
+        boolean customLookup = false;
         while (type != null && !"java/lang/Object".equals(type) && ancestors.add(type)) {
             if (type.equals(LOADER)) break;
-            // 通过类资源读取继承关系；触发类定义会重入 Launch transformer。
-            try (var in = launchLoader.getResourceAsStream(type + ".class")) {
-                if (in == null) break;
-                type = new ClassReader(in).getSuperName();
+            if (type.equals(URL_LOADER)) {
+                ancestors.add(SECURE_LOADER);
+                ancestors.add(LOADER);
+                break;
             }
+            final ClassHeader header = readHeader(type, launchLoader);
+            if (header == null) break;
+            customLookup |= header.customLookup();
+            type = header.superName();
         }
-        return ancestors;
+        return new Hierarchy(ancestors, customLookup);
+    }
+
+    private static ClassHeader readHeader(final String type, final ClassLoader launchLoader) throws IOException {
+        final Map<String, ClassHeader> headers;
+        synchronized (HEADERS) {
+            headers = HEADERS.computeIfAbsent(launchLoader, ignored -> new ConcurrentHashMap<>());
+        }
+        final ClassHeader cached = headers.get(type);
+        if (cached != null) return cached;
+        // 读取资源中的继承关系，避免在 Launch transformer 内触发类定义。
+        try (var in = launchLoader.getResourceAsStream(type + ".class")) {
+            if (in == null) return null;
+            final ClassReader parent = new ClassReader(in);
+            final boolean[] customLookup = {false};
+            parent.accept(new ClassVisitor(Opcodes.ASM9) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+                    if (isUrlLookup(name, desc)) customLookup[0] = true;
+                    return null;
+                }
+            }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            final ClassHeader header = new ClassHeader(parent.getSuperName(), parent.getInterfaces(), customLookup[0]);
+            headers.putIfAbsent(type, header);
+            return header;
+        }
+    }
+
+    private static boolean isSerializable(final String superName, final List<String> interfaces,
+                                          final ClassLoader launchLoader) throws IOException {
+        final var pending = new ArrayList<>(interfaces);
+        if (superName != null) pending.add(superName);
+        final Set<String> seen = new HashSet<>();
+        for (int i = 0; i < pending.size(); i++) {
+            final String type = pending.get(i);
+            if (type.equals(SERIALIZABLE)) return true;
+            if (type.equals(URL_LOADER) || type.equals("java/lang/Object") || !seen.add(type)) continue;
+            final ClassHeader header = readHeader(type, launchLoader);
+            if (header == null) return true;
+            if (header.superName() != null) pending.add(header.superName());
+            pending.addAll(Arrays.asList(header.interfaces()));
+        }
+        return false;
+    }
+
+    private static boolean isUrlLookup(final String name, final String descriptor) {
+        return name.equals("findClass") && descriptor.equals(FIND_CLASS_DESC)
+                || name.equals("findResource") && descriptor.equals(FIND_RESOURCE_DESC);
     }
 
     private static boolean isDefinition(final MethodInsnNode call, final Set<String> ancestors) {
@@ -174,26 +275,51 @@ public final class ClassDefinitionRedirector {
         mv.endMethod();
     }
 
+    private static void appendLookupOverride(final ClassWriter writer, final String owner, final String superName) {
+        final int access = Opcodes.ACC_PROTECTED | Opcodes.ACC_SYNTHETIC;
+        final Method method = new Method("findClass", FIND_CLASS_DESC);
+        final var visitor = writer.visitMethod(access, method.getName(), method.getDescriptor(), null,
+                new String[]{"java/lang/ClassNotFoundException"});
+        final GeneratorAdapter mv = new GeneratorAdapter(access, method, visitor);
+        mv.visitCode();
+        appendFindClass(mv, new Invocation(Opcodes.INVOKESPECIAL, superName, method.getName(), method.getDescriptor()), owner);
+        mv.endMethod();
+    }
+
     private static void appendFindClass(final GeneratorAdapter mv, final Invocation call) {
+        appendFindClass(mv, call, null);
+    }
+
+    private static void appendFindClass(final GeneratorAdapter mv, final Invocation call, final String instanceOwner) {
         final Type lookup = Type.getType(MethodHandles.Lookup.class);
         final Type result = Type.getType(Class.class);
-        mv.loadArg(0);
-        mv.loadArg(1);
+        loadLookupArguments(mv, instanceOwner);
         mv.invokeStatic(Type.getType(MethodHandles.class), new Method("lookup", lookup, new Type[0]));
+        mv.push(instanceOwner != null);
         mv.invokeStatic(Type.getType(UrlClassDefinition.class), new Method("findClass", result,
-                new Type[]{Type.getType(URLClassLoader.class), STRING, lookup}));
+                new Type[]{Type.getType(URLClassLoader.class), STRING, lookup, Type.BOOLEAN_TYPE}));
         mv.dup();
         final Label original = mv.newLabel();
         mv.ifNull(original);
         mv.returnValue();
         mv.mark(original);
-        mv.visitFrame(Opcodes.F_NEW, 2, new Object[]{mv.getArgumentTypes()[0].getInternalName(), STRING.getInternalName()},
+        final String receiver = instanceOwner == null ? mv.getArgumentTypes()[0].getInternalName() : instanceOwner;
+        mv.visitFrame(Opcodes.F_NEW, 2, new Object[]{receiver, STRING.getInternalName()},
                 1, new Object[]{"java/lang/Class"});
         mv.pop();
-        mv.loadArg(0);
-        mv.loadArg(1);
+        loadLookupArguments(mv, instanceOwner);
         mv.visitMethodInsn(call.opcode, call.owner, call.name, call.descriptor, false);
         mv.returnValue();
+    }
+
+    private static void loadLookupArguments(final GeneratorAdapter mv, final String instanceOwner) {
+        if (instanceOwner == null) {
+            mv.loadArg(0);
+            mv.loadArg(1);
+        } else {
+            mv.loadThis();
+            mv.loadArg(0);
+        }
     }
 
     public static ByteSlice redirectSlice(final ClassLoader loader, final String name, final byte[] bytes,
@@ -249,6 +375,10 @@ public final class ClassDefinitionRedirector {
     }
 
     public record ByteSlice(byte[] bytes, int offset, int length) { }
+
+    private record Hierarchy(Set<String> names, boolean customLookup) { }
+
+    private record ClassHeader(String superName, String[] interfaces, boolean customLookup) { }
 
     private record Invocation(int opcode, String owner, String name, String descriptor) { }
 }

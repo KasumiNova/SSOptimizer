@@ -10,6 +10,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
+import java.io.ObjectStreamClass;
+import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.URL;
@@ -60,6 +62,69 @@ class UrlClassDefinitionTest {
         }
     }
 
+    @Test
+    void parentFirstLoaderWithoutLookupCallsRedirectsAfterParentMiss() throws Throwable {
+        final URL archive = classArchive();
+        final var types = new ByteDefinition(getClass().getClassLoader());
+        try (var loader = types.create(DefaultLoader.class, archive, getClass().getClassLoader())) {
+            assertSame(String.class, loader.loadClass("java.lang.String"));
+            final Class<?> definition = loader.loadClass(PAYLOAD.replace('/', '.'));
+            assertSame(loader, definition.getClassLoader());
+            assertEquals(BRIDGE_SYNC, readOpenGlType(definition).getName());
+        }
+    }
+
+    @Test
+    void parentHitKeepsTheClassDefinedByParent() throws Throwable {
+        final URL archive = classArchive();
+        final var types = new ByteDefinition(getClass().getClassLoader());
+        final String name = PAYLOAD.replace('/', '.');
+        try (var parent = new URLClassLoader(new URL[]{archive}, getClass().getClassLoader());
+             var loader = types.create(DefaultLoader.class, archive, parent)) {
+            assertSame(parent.loadClass(name), loader.loadClass(name));
+            assertEquals(LWJGL_SYNC, readOpenGlType(loader.loadClass(name)).getName());
+        }
+    }
+
+    @Test
+    void indirectDefaultLookupAndCustomSuperLookupRetainTheirDispatch() throws Throwable {
+        final URL archive = classArchive();
+        final var types = new ByteDefinition(getClass().getClassLoader());
+        types.transform(DefaultLoader.class);
+        final String name = PAYLOAD.replace('/', '.');
+        try (var implicit = types.create(InheritedLoader.class, archive, getClass().getClassLoader());
+             var custom = types.create(CustomLoader.class, archive, getClass().getClassLoader())) {
+            assertEquals(BRIDGE_SYNC, readOpenGlType(implicit.loadClass(name)).getName());
+            assertSame(Integer.class, custom.loadClass("fixture.Marker"));
+            assertEquals(LWJGL_SYNC, readOpenGlType(custom.loadClass(name)).getName());
+        }
+    }
+
+    @Test
+    void unrelatedLoadersWithoutLookupCallsDoNotNeedABridge() throws Throwable {
+        final URL archive = classArchive();
+        final var types = new ByteDefinition(getClass().getClassLoader());
+        final URL lwjgl = org.lwjgl.opengl.GLSync.class.getProtectionDomain().getCodeSource().getLocation();
+        try (var parent = new URLClassLoader(new URL[]{lwjgl}, null);
+             var loader = types.create(DefaultLoader.class, archive, parent)) {
+            assertSame(parent.loadClass(LWJGL_SYNC), readOpenGlType(loader.loadClass(PAYLOAD.replace('/', '.'))));
+        }
+    }
+
+    @Test
+    void serializableLoadersKeepTheirDefaultAndExplicitSerialVersions() throws Throwable {
+        final URL archive = classArchive();
+        final var types = new ByteDefinition(getClass().getClassLoader());
+        types.transform(DefaultLoader.class);
+        for (final Class<?> loaderType : new Class<?>[]{SerializableLoader.class, ExplicitSerialLoader.class}) {
+            try (var loader = types.create(loaderType, archive, getClass().getClassLoader())) {
+                assertEquals(ObjectStreamClass.lookup(loaderType).getSerialVersionUID(),
+                        ObjectStreamClass.lookup(loader.getClass()).getSerialVersionUID());
+                assertEquals(BRIDGE_SYNC, readOpenGlType(loader.loadClass(PAYLOAD.replace('/', '.'))).getName());
+            }
+        }
+    }
+
     private URL classArchive() throws Exception {
         final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, PAYLOAD, null, "java/lang/Object",
@@ -96,9 +161,10 @@ class UrlClassDefinitionTest {
             original = input.readAllBytes();
         }
         final byte[] input = overridden ? addFindClassOverride(original) : original;
-        final byte[] redirected = ClassDefinitionRedirector.rewrite(input, testLoader);
+        final var definitions = new ByteDefinition(testLoader);
+        final byte[] redirected = ClassDefinitionRedirector.rewrite(input, definitions);
         assertNotSame(input, redirected);
-        final Class<?> transformed = new ByteDefinition(testLoader).load(redirected);
+        final Class<?> transformed = definitions.load(redirected);
         final var create = MethodHandles.publicLookup().findConstructor(transformed,
                 MethodType.methodType(void.class, URL[].class, ClassLoader.class));
         return (URLClassLoader) create.invoke(new URL[]{archive}, parent);
@@ -146,9 +212,60 @@ class UrlClassDefinitionTest {
         }
     }
 
+    public static class DefaultLoader extends URLClassLoader {
+        public DefaultLoader(final URL[] urls, final ClassLoader parent) {
+            super(urls, parent);
+        }
+    }
+
+    public static final class InheritedLoader extends DefaultLoader {
+        public InheritedLoader(final URL[] urls, final ClassLoader parent) {
+            super(urls, parent);
+        }
+    }
+
+    public static final class SerializableLoader extends DefaultLoader implements Serializable {
+        public SerializableLoader(final URL[] urls, final ClassLoader parent) {
+            super(urls, parent);
+        }
+    }
+
+    public static final class ExplicitSerialLoader extends URLClassLoader implements Serializable {
+        private static final long serialVersionUID = 42L;
+
+        public ExplicitSerialLoader(final URL[] urls, final ClassLoader parent) {
+            super(urls, parent);
+        }
+    }
+
+    public static final class CustomLoader extends DefaultLoader {
+        public CustomLoader(final URL[] urls, final ClassLoader parent) {
+            super(urls, parent);
+        }
+
+        @Override
+        protected Class<?> findClass(final String name) throws ClassNotFoundException {
+            if (name.equals("fixture.Marker")) return Integer.class;
+            return super.findClass(name);
+        }
+    }
+
     private static final class ByteDefinition extends ClassLoader {
         private ByteDefinition(final ClassLoader parent) {
             super(parent);
+        }
+
+        private Class<?> transform(final Class<?> fixture) throws Exception {
+            final String name = Type.getInternalName(fixture);
+            try (var input = getResourceAsStream(name + ".class")) {
+                return load(ClassDefinitionRedirector.rewrite(input.readAllBytes(), this));
+            }
+        }
+
+        private URLClassLoader create(final Class<?> fixture, final URL archive, final ClassLoader parent) throws Throwable {
+            final var constructor = MethodHandles.publicLookup().findConstructor(transform(fixture),
+                    MethodType.methodType(void.class, URL[].class, ClassLoader.class));
+            return (URLClassLoader) constructor.invoke(new URL[]{archive}, parent);
         }
 
         private Class<?> load(final byte[] bytes) {

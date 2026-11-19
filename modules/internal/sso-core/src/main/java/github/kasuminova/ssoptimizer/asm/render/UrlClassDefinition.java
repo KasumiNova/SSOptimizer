@@ -22,22 +22,28 @@ public final class UrlClassDefinition {
             String.class, Manifest.class, URL.class);
     private static final MethodType DEFINE_UNSEALED_PACKAGE = MethodType.methodType(Package.class,
             String.class, String.class, String.class, String.class, String.class, String.class, String.class, URL.class);
-    private static final ClassValue<Boolean> DEFAULT_LOOKUP = new ClassValue<>() {
+    private static final ClassValue<LookupPolicy> LOOKUP_POLICY = new ClassValue<>() {
         @Override
-        protected Boolean computeValue(final Class<?> receiver) {
+        protected LookupPolicy computeValue(final Class<?> receiver) {
+            Class<?> nearestGenerated = null;
             try {
                 for (Class<?> type = receiver; type != URLClassLoader.class; type = type.getSuperclass()) {
                     for (var method : type.getDeclaredMethods()) {
                         if ((method.getName().equals("findClass") || method.getName().equals("findResource"))
                                 && method.getParameterCount() == 1 && method.getParameterTypes()[0] == String.class) {
-                            return false;
+                            if (method.getName().equals("findClass") && method.isSynthetic()
+                                    && ClassDefinitionRedirector.generatedLookup(type)) {
+                                if (nearestGenerated == null) nearestGenerated = type;
+                            } else {
+                                return new LookupPolicy(false, null);
+                            }
                         }
                     }
                 }
-                return true;
+                return new LookupPolicy(true, nearestGenerated);
             } catch (LinkageError | SecurityException failure) {
                 LOGGER.debug("无法验证 URL 类加载器的查找方法", failure);
-                return false;
+                return new LookupPolicy(false, null);
             }
         }
     };
@@ -46,13 +52,15 @@ public final class UrlClassDefinition {
 
     /** 返回 null 时，由生成的调用点执行原 findClass。 */
     public static Class<?> findClass(final URLClassLoader loader, final String name,
-                                     final MethodHandles.Lookup caller) throws Throwable {
-        if (loader == null || name == null || !DEFAULT_LOOKUP.get(loader.getClass())) return null;
+                                     final MethodHandles.Lookup caller, final boolean inherited) throws Throwable {
+        if (loader == null || name == null) return null;
+        final Class<?> owner = caller.lookupClass();
+        final LookupPolicy policy = LOOKUP_POLICY.get(loader.getClass());
+        if (!policy.standard() || inherited && policy.nearestGenerated() != owner) return null;
         final JarClass candidate = readClass(loader, name);
         if (candidate == null) return null;
         final byte[] bytes = ClassDefinitionRedirector.redirect(loader, name, candidate.bytes());
         if (bytes == candidate.bytes()) return null;
-        final Class<?> owner = caller.lookupClass();
         final MethodHandle defineClass = caller.findVirtual(owner, "defineClass", DEFINE_CLASS);
         ensurePackage(loader, name, candidate, caller, owner);
         return (Class<?>) defineClass.invoke(loader, name, bytes, 0, bytes.length,
@@ -121,6 +129,8 @@ public final class UrlClassDefinition {
         final String sealed = perPackage == null ? manifest.getMainAttributes().getValue(Attributes.Name.SEALED) : perPackage;
         return "true".equalsIgnoreCase(sealed);
     }
+
+    private record LookupPolicy(boolean standard, Class<?> nearestGenerated) { }
 
     private record JarClass(URL location, Manifest manifest, byte[] bytes) { }
 }
