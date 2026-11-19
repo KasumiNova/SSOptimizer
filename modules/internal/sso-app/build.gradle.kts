@@ -98,7 +98,6 @@ dependencies {
     implementation(project(":modules:internal:sso-ai"))
     implementation(project(":modules:internal:sso-ime"))
     implementation(project(":modules:internal:sso-save"))
-    implementation(project(":modules:internal:sso-modopt"))
     implementation(project(":modules:internal:sso-automation"))
     implementation(project(":modules:internal:sso-debug"))
     implementation(project(":modules:internal:sso-loading"))

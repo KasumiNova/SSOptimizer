@@ -498,9 +498,7 @@ final class BridgeSupport {
         ctx.auxResyncSeq = frameSubmitSeq;
         if (!auxResyncLogged) {
             auxResyncLogged = true;
-            LOGGER.info("[SSOptimizer] 检测到 aux 生产者线程 GL 提交（BoxUtil 后台线程等），"
-                    + "主线程 getter 状态仿真进入屏障再同步模式：aux 活跃期每帧至多一次状态回读，"
-                    + "纯主线程流程不受影响");
+            LOGGER.info("[SSOptimizer] 检测到其他线程提交 GL 命令，主线程每帧最多重新读取一次 GL 状态");
         }
     }
 

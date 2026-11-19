@@ -34,7 +34,8 @@ public final class LoadingNoiseLog4j2Filter extends AbstractFilter {
         }
         final org.apache.logging.log4j.message.Message message = event.getMessage();
         final String rendered = message == null ? null : message.getFormattedMessage();
-        if (aggregator.decideSuppress(rendered)) {
+        if (VanillaLogNoiseConfigurator.isEngineLoadingLogger(event.getLoggerName())
+                && aggregator.decideSuppress(rendered)) {
             return Result.DENY;
         }
         aggregator.flush();

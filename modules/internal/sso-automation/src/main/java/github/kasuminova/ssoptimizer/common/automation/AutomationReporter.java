@@ -14,8 +14,6 @@ public final class AutomationReporter {
             return;
         }
         LOGGER.info("[SSO-Automation] enabled scenario=" + config.scenario()
-                + " outputDir=" + config.outputDir().toAbsolutePath()
-                + " telemetry=" + config.astdTelemetryPath().toAbsolutePath()
-                + " requireScreenshotFile=" + config.requireScreenshotFile());
+                + " outputDir=" + config.outputDir().toAbsolutePath());
     }
 }

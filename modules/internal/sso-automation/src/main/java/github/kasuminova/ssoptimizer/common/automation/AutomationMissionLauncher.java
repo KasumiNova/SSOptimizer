@@ -18,7 +18,7 @@ public final class AutomationMissionLauncher {
     public static void tryLaunchFromTitleScreen(final TitleScreenState titleScreenState,
                                                 final MissionWidget missionWidget) {
         final AutomationConfig config = AutomationConfig.fromSystemProperties();
-        if (!config.enabled() || launched || failed || titleScreenState == null || missionWidget == null) {
+        if (!config.enabled() || config.scenario().isBlank() || launched || failed || titleScreenState == null || missionWidget == null) {
             return;
         }
 

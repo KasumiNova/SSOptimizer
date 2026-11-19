@@ -8,14 +8,10 @@ import github.kasuminova.ssoptimizer.api.loading.WeaponAtlasLookup;
 import github.kasuminova.ssoptimizer.api.render.RenderFramePump;
 import github.kasuminova.ssoptimizer.api.render.SaveOverlayFrames;
 import github.kasuminova.ssoptimizer.api.save.SavePhaseTelemetry;
-import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
 import github.kasuminova.ssoptimizer.asm.combat.CollisionImpulseClampProcessor;
 import github.kasuminova.ssoptimizer.asm.combat.ShipDamageStageTwoProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.AITweaksBootstrapLoaderProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.AITweaksCoreLoaderProcessor;
-import github.kasuminova.ssoptimizer.asm.loading.ShipMasteryReflectionLoaderProcessor;
 import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
 import github.kasuminova.ssoptimizer.bridge.opengl.FontDrawImpl;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
@@ -111,10 +107,6 @@ public final class SharedBootstrap {
         registerSystemIf(systemTransforms, "linuxkeyboardime", GameClassNames.LINUX_KEYBOARD, new LinuxKeyboardImeProcessor());
         registerSystemIf(systemTransforms, "linuxeventime", LinuxEventImeProcessor.TARGET_CLASS, new LinuxEventImeProcessor());
         registerSystemIf(systemTransforms, "windowsdisplayime", "org/lwjgl/opengl/WindowsDisplay", new WindowsDisplayImeProcessor());
-        registerIf(registrator, "astdautomation", ASTDAutomationCombatPluginProcessor.TARGET_CLASS, new ASTDAutomationCombatPluginProcessor());
-        registerIf(registrator, "aitweaksbootstraploader", AITweaksBootstrapLoaderProcessor.TARGET_CLASS, new AITweaksBootstrapLoaderProcessor());
-        registerIf(registrator, "aitweakscoreloader", AITweaksCoreLoaderProcessor.TARGET_CLASS, new AITweaksCoreLoaderProcessor());
-        registerIf(registrator, "shipmasteryreflectionloader", ShipMasteryReflectionLoaderProcessor.TARGET_CLASS, new ShipMasteryReflectionLoaderProcessor());
         registerIf(registrator, "shipdamagestagetwo", GameClassNames.SHIP, new ShipDamageStageTwoProcessor());
         registerIf(registrator, "collisionimpulseclamp", GameClassNames.COLLISION_HANDLER_IMPL, new CollisionImpulseClampProcessor());
     }

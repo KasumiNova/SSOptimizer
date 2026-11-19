@@ -1,13 +1,13 @@
 package github.kasuminova.ssoptimizer.bootstrap;
 
+import github.kasuminova.ssoptimizer.asm.render.ClassDefinitionRedirector;
 import github.kasuminova.ssoptimizer.asm.render.RenderThreadRedirector;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.apache.log4j.Logger;
 
 /**
- * 开放类集合中的任意 GL owner 引用都需要改写，Mixin 的逐目标注入模型不适用。
- * 与 HybridWeaverTransformer 的改写目标互不重叠，声明顺序不构成依赖；按 RFB 契约返回类字节。
+ * Launch 域中的 OpenGL 调用和 JDK 类定义调用需要按字节码指令改写，Mixin 无法逐类声明开放的调用方集合。
  */
 public final class RenderThreadRedirectTransformer implements IClassTransformer {
     private static final Logger LOGGER = Logger.getLogger(RenderThreadRedirectTransformer.class);
@@ -37,7 +37,8 @@ public final class RenderThreadRedirectTransformer implements IClassTransformer 
         }
         IN_FLIGHT.set(Boolean.TRUE);
         try {
-            return RenderThreadRedirector.redirect(className, basicClass);
+            final byte[] redirected = RenderThreadRedirector.redirect(className, basicClass);
+            return ClassDefinitionRedirector.rewrite(redirected, getClass().getClassLoader());
         } catch (Throwable t) {
             LOGGER.error("[SSOptimizer] GL 重定向改写失败（该类保持原字节）: " + className, t);
             return basicClass;

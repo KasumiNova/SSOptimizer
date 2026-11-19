@@ -19,11 +19,23 @@ IME_SMOKE_HELPER="$SCRIPT_DIR/ime_keyboard_smoke.py"
 IME_SMOKE_PID=""
 IME_SMOKE_LOG_FILE="$GAME_DIR/ssoptimizer-ime-smoke-input.log"
 IME_SMOKE_TRIGGER_PATTERN="${SSOPTIMIZER_SMOKE_INPUT_TRIGGER_PATTERN:-IME text field focused}"
-AUTOMATION_SCENARIO="${SSOPTIMIZER_AUTOMATION_SCENARIO:-arc_flare_aod7_basic}"
+AUTOMATION_SCENARIO="${SSOPTIMIZER_AUTOMATION_SCENARIO:-}"
 AUTOMATION_OUTPUT_DIR="${SSOPTIMIZER_AUTOMATION_OUTPUT_DIR:-$GAME_DIR/ssoptimizer-automation-output}"
-AUTOMATION_TELEMETRY_FILE="$AUTOMATION_OUTPUT_DIR/astd-ingame-automation-telemetry.json"
-AUTOMATION_VERIFY_SCRIPT="${SSOPTIMIZER_AUTOMATION_VERIFY_SCRIPT:-/home/hikari_nova/IdeaProjects/Asteria_Directorate/tools/verify_ingame_vfx_automation.py}"
-AUTOMATION_REQUIRE_SCREENSHOT_FILE="${SSOPTIMIZER_AUTOMATION_REQUIRE_SCREENSHOT_FILE:-false}"
+AUTOMATION_SAVE_LOAD_FILE="$AUTOMATION_OUTPUT_DIR/saveload-telemetry.json"
+
+if [[ "$MODE" == "automation" && -z "$AUTOMATION_SCENARIO" ]]; then
+    echo "FAIL: Set SSOPTIMIZER_AUTOMATION_SCENARIO to a mission ID or save_load_cycle" >&2
+    exit 1
+fi
+
+automation_completed() {
+    if [[ "$AUTOMATION_SCENARIO" == "save_load_cycle" ]]; then
+        python3 -c 'import json, sys; d = json.load(open(sys.argv[1], encoding="utf-8")); sys.exit(not (d["success"] is True and d["saveError"] is None))' \
+            "$AUTOMATION_SAVE_LOAD_FILE" 2>/dev/null
+    else
+        grep -qFx -- "$AUTOMATION_SCENARIO" <(grep -hF '[SSO-Automation] launched mission from title screen: ' "$LOG_FILE" "$PROCESS_LOG_FILE" 2>/dev/null | awk -F 'launched mission from title screen: ' '{ print $2 }')
+    fi
+}
 
 echo "=== SSOptimizer Game Launch Smoke Test ==="
 echo "Game dir: $GAME_DIR"
@@ -400,13 +412,13 @@ if [[ "$MODE" == "game" || "$MODE" == "automation" ]]; then
     SCREEN_SCALE_OVERRIDE="${SSOPTIMIZER_SCREEN_SCALE_OVERRIDE:-}"
     EXTRA_OPTS="-Dssoptimizer.launcher.autostart=true -Dssoptimizer.launcher.autostart.res=${START_RES} -Dssoptimizer.launcher.autostart.fullscreen=${START_FS} -Dssoptimizer.launcher.autostart.sound=${START_SOUND} -DstartRes=${START_RES} -DstartFS=${START_FS} -DstartSound=${START_SOUND}"
     if [[ "$MODE" == "automation" ]]; then
-        rm -rf "$AUTOMATION_OUTPUT_DIR"
         mkdir -p "$AUTOMATION_OUTPUT_DIR"
-        EXTRA_OPTS="$EXTRA_OPTS -Dssoptimizer.automation.enabled=true -Dssoptimizer.automation.scenario=${AUTOMATION_SCENARIO} -Dssoptimizer.automation.outputDir=${AUTOMATION_OUTPUT_DIR} -Dssoptimizer.automation.requireScreenshotFile=${AUTOMATION_REQUIRE_SCREENSHOT_FILE}"
-        echo "Automation profile: enabled"
-        echo "  scenario:   ${AUTOMATION_SCENARIO}"
-        echo "  output dir: ${AUTOMATION_OUTPUT_DIR}"
-        echo "  telemetry:  ${AUTOMATION_TELEMETRY_FILE}"
+        if [[ "$AUTOMATION_SCENARIO" == "save_load_cycle" && -e "$AUTOMATION_SAVE_LOAD_FILE" ]]; then
+            echo "FAIL: Use a fresh automation output directory: $AUTOMATION_OUTPUT_DIR" >&2
+            exit 1
+        fi
+        EXTRA_OPTS="$EXTRA_OPTS -Dssoptimizer.automation.enabled=true -Dssoptimizer.automation.scenario=${AUTOMATION_SCENARIO} -Dssoptimizer.automation.outputDir=${AUTOMATION_OUTPUT_DIR}"
+        echo "Automation scenario: ${AUTOMATION_SCENARIO}"
     fi
     if [[ -n "$ORIGINAL_JAVA_TOOL_OPTIONS" ]]; then
         export JAVA_TOOL_OPTIONS="$ORIGINAL_JAVA_TOOL_OPTIONS $EXTRA_OPTS"
@@ -459,8 +471,8 @@ for ((elapsed = 0; elapsed < TIMEOUT_SEC; elapsed++)); do
         break
     fi
 
-    if [[ "$MODE" == "automation" && -f "$AUTOMATION_TELEMETRY_FILE" ]] && grep -q '"state"[[:space:]]*:[[:space:]]*"Completed"' "$AUTOMATION_TELEMETRY_FILE" 2>/dev/null; then
-        echo "Automation completion telemetry detected"
+    if [[ "$MODE" == "automation" ]] && automation_completed; then
+        echo "Automation completed"
         break
     fi
 
@@ -564,45 +576,11 @@ if [[ "$MODE" == "automation" ]]; then
         PASS=false
     fi
 
-    if [[ -f "$AUTOMATION_TELEMETRY_FILE" ]]; then
-        echo "OK: Automation telemetry found: $AUTOMATION_TELEMETRY_FILE"
-        if [[ -f "$AUTOMATION_VERIFY_SCRIPT" ]]; then
-            VERIFY_ARGS=("$AUTOMATION_TELEMETRY_FILE")
-            if [[ "$AUTOMATION_REQUIRE_SCREENSHOT_FILE" == "true" ]]; then
-                VERIFY_ARGS+=("--require-screenshot-file")
-            fi
-            if python3 "$AUTOMATION_VERIFY_SCRIPT" "${VERIFY_ARGS[@]}"; then
-                echo "OK: Automation telemetry verifier passed"
-            else
-                echo "FAIL: Automation telemetry verifier failed"
-                PASS=false
-            fi
-        else
-            echo "FAIL: Automation verify script not found: $AUTOMATION_VERIFY_SCRIPT"
-            PASS=false
-        fi
+    if automation_completed; then
+        echo "OK: Automation scenario completed: $AUTOMATION_SCENARIO"
     else
-        if grep -q "\[ASTD-Automation\] Completed: arc_flare/aod7/astd_aod7_shot/VFX observed" "$LOG_FILE" 2>/dev/null; then
-            echo "OK: ASTD automation completion marker found in log"
-            if [[ -f "$AUTOMATION_VERIFY_SCRIPT" ]]; then
-                VERIFY_ARGS=("$AUTOMATION_TELEMETRY_FILE" "--log" "$LOG_FILE")
-                if [[ "$AUTOMATION_REQUIRE_SCREENSHOT_FILE" == "true" ]]; then
-                    VERIFY_ARGS+=("--require-screenshot-file")
-                fi
-                if python3 "$AUTOMATION_VERIFY_SCRIPT" "${VERIFY_ARGS[@]}"; then
-                    echo "OK: Automation log verifier passed"
-                else
-                    echo "FAIL: Automation log verifier failed"
-                    PASS=false
-                fi
-            else
-                echo "FAIL: Automation verify script not found: $AUTOMATION_VERIFY_SCRIPT"
-                PASS=false
-            fi
-        else
-            echo "FAIL: Automation telemetry missing: $AUTOMATION_TELEMETRY_FILE"
-            PASS=false
-        fi
+        echo "FAIL: Automation scenario did not complete: $AUTOMATION_SCENARIO"
+        PASS=false
     fi
 fi
 

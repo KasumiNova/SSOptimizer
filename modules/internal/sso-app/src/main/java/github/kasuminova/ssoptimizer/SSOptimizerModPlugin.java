@@ -5,7 +5,6 @@ import github.kasuminova.ssoptimizer.common.automation.AutomationReporter;
 import github.kasuminova.ssoptimizer.common.loading.ImageIoConfigurator;
 import github.kasuminova.ssoptimizer.common.loading.LazyTextureManager;
 import github.kasuminova.ssoptimizer.common.loading.TextureConversionCache;
-import github.kasuminova.ssoptimizer.common.logging.LogNoiseFilterConfigurator;
 import org.apache.log4j.Logger;
 
 public class SSOptimizerModPlugin extends BaseModPlugin {
@@ -14,7 +13,6 @@ public class SSOptimizerModPlugin extends BaseModPlugin {
     @Override
     public void onApplicationLoad() throws Exception {
         ImageIoConfigurator.configure();
-        LogNoiseFilterConfigurator.configure();
         TextureConversionCache.warmupMemoryCache();
         LazyTextureManager.installCompositionReportHookIfConfigured();
         AutomationReporter.logProfileIfEnabled();

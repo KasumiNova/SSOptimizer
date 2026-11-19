@@ -39,6 +39,12 @@ public final class VanillaLogNoiseConfigurator {
             "com.fs.starfarer.api.impl.codex.CodexTextEntryLoader",
     };
 
+    private static final java.util.Set<String> NOISE_LOGGERS = java.util.Set.of(NOISE_LOGGER_NAMES);
+
+    static boolean isEngineLoadingLogger(final String name) {
+        return name != null && NOISE_LOGGERS.contains(name);
+    }
+
     private VanillaLogNoiseConfigurator() {
     }
 

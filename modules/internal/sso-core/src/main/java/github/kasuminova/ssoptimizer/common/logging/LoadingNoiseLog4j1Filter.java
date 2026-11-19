@@ -29,7 +29,8 @@ public final class LoadingNoiseLog4j1Filter extends Filter {
             aggregator.flush();
             return NEUTRAL;
         }
-        if (aggregator.decideSuppress(event.getRenderedMessage())) {
+        if (VanillaLogNoiseConfigurator.isEngineLoadingLogger(event.getLoggerName())
+                && aggregator.decideSuppress(event.getRenderedMessage())) {
             return DENY;
         }
         aggregator.flush();

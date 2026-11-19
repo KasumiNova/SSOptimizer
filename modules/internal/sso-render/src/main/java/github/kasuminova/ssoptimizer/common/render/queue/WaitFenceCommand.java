@@ -30,8 +30,7 @@ public final class WaitFenceCommand implements GlCommand {
             return;
         }
         if (suspendWarned.compareAndSet(false, true)) {
-            LOGGER.warn("[SSOptimizer] frame fence 尚未 signal，本帧余下命令将悬挂续跑"
-                    + "（BoxUtil 类跨线程 fence 产消滞后的恢复路径；稳态不应出现本日志）");
+            LOGGER.warn("[SSOptimizer] 渲染 fence 尚未完成，剩余帧命令将在 fence 完成后继续执行");
         }
         throw SuspendFrameException.INSTANCE;
     }
