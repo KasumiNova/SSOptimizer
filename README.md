@@ -22,20 +22,20 @@ Starsector 游戏性能优化模组。以 NanoForge coremod 形式装配（ASM /
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-windows.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
-3. TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
+3. 模组本体和 Windows 原生库位于 `mods/ssoptimizer/`，TTF 字体位于 `mods/ssoptimizer/fonts/`
 4. coremod 入口 jar 会被解压到 `mods/coremods/SSOptimizer.jar`，由 NanoForge 在启动时自动发现装配
-5. 安装包会同时写入 `starsector-core/log4j.properties`，用于恢复默认文件日志输出
-6. 需要已安装 NanoForge 加载器，通过 NanoForge 提供的启动入口启动游戏
+5. 需要已安装 NanoForge 加载器，通过 NanoForge 提供的启动入口启动游戏
 
 ### Linux
 
 1. 下载最新 [Release](https://github.com/KasumiNova/SSOptimizer/releases)
 2. 下载并解压 `SSOptimizer-<version>-linux.zip` 到游戏根目录；解压后应得到 `mods/ssoptimizer/`
-3. TTF 字体文件会放在 `mods/ssoptimizer/fonts/`；模组本体位于 `mods/ssoptimizer/`，并包含 Linux/Windows 双端原生库
+3. 模组本体和 Linux 原生库位于 `mods/ssoptimizer/`，TTF 字体位于 `mods/ssoptimizer/fonts/`
 4. coremod 入口 jar 会被解压到 `mods/coremods/SSOptimizer.jar`，由 NanoForge 在启动时自动发现装配
-5. 安装包会同时写入游戏根目录 `log4j.properties`，用于恢复默认文件日志输出
-6. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
-7. 通过 NanoForge 启动脚本 `launch_nanoforge_ss.sh` 启动游戏
+5. 确保系统已安装输入法框架（如 fcitx5 + XIM）以使用中文输入功能
+6. 通过 NanoForge 启动脚本 `launch_nanoforge_ss.sh` 启动游戏
+
+覆盖安装保留玩家的模组启用列表和游戏原有的 `log4j.properties`。如需启用 SSOptimizer，请在启动器中自行选择。
 
 ## 配置
 
@@ -117,8 +117,8 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
   -Pstarsector.platform=windows \
   -Pssoptimizer.native.windows.triplet=x64-mingw-static
 
-# 部署到游戏目录（开发用）
-./gradlew deployMod
+# 部署到独立的开发用游戏副本
+./gradlew deployMod -Pstarsector.gameDir=/path/to/Starsector-dev
 
 # 烟测：启动器模式（默认使用游戏根目录的 launch_nanoforge_ss.sh，
 # 可用 SSOPTIMIZER_SMOKE_LAUNCH_SCRIPT 环境变量覆盖启动脚本名）
@@ -127,6 +127,8 @@ gradlew.bat test -Pstarsector.gameDir=C:/Data/Games/Starsector098
 # 烟测：游戏模式
 ./tools/smoke_test_game_launch.sh <gameDir> <timeoutSec> game
 ```
+
+开发部署会替换 SSOptimizer 提供的同名文件，保留缓存及其他未随模组提供的文件，同时保留游戏原有的模组启用列表及日志配置。
 
 ### 项目结构
 

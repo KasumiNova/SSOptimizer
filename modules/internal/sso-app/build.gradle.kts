@@ -52,17 +52,39 @@ starsector {
         .orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR"))
         .filter { it.isNotBlank() }
         .map { file(it) }))
-    manageEnabledMods.set(true)
-    // 部署必须保留 cache，避免字体与纹理缓存被清空。
-    deployPreserve.set(listOf("cache"))
+    manageEnabledMods.set(false)
     providers.gradleProperty("sourcesector.namedRepo").orNull?.let { sourceRepo.set(file(it)) }
+}
+
+val modDeployDirectory = starsector.gameDir.zip(starsector.deployDirName) { gameDir, modDirName ->
+    if (!gameDir.asFile.isDirectory) {
+        throw GradleException("starsector.gameDir 不存在：${gameDir.asFile}")
+    }
+    gameDir.dir("mods/$modDirName")
+}.orElse(providers.provider { throw GradleException("未设置 starsector.gameDir 或 SSOPTIMIZER_GAME_DIR。") })
+
+val copyModDeployment = tasks.register<Copy>("copyModDeployment") {
+    dependsOn("modProduction")
+    from(layout.buildDirectory.dir("mod_production"))
+    into(modDeployDirectory)
+    doNotTrackState("The deployed mod directory also contains player-owned files")
+}
+
+// SDG 先清理部署目录，再执行 Sync；保留任务入口和 NanoForge 的 coremod 复制任务。
+tasks.named("cleanDeploy") {
+    enabled = false
+}
+
+tasks.named("deployMod") {
+    enabled = false
+    dependsOn(copyModDeployment)
+    description = "Copy mod files without removing files from the game installation"
 }
 
 nanoforge {
     coremod.set(true)
     pluginClass.set("github.kasuminova.ssoptimizer.bootstrap.SSOptimizerCorePlugin")
     authors.set(listOf("kasuminova"))
-    // 两个 transformer 的改写目标互不重叠，声明顺序不构成依赖。
     asmTransformers.set(listOf(
         "github.kasuminova.ssoptimizer.bootstrap.HybridWeaverTransformer",
         "github.kasuminova.ssoptimizer.bootstrap.RenderThreadRedirectTransformer"
@@ -141,12 +163,9 @@ tasks.test {
     exclude("**/*IT.class")
     dependsOn(tasks.named("jar"))
     dependsOn("modProduction")
-    dependsOn(":stageWindowsOverlay")
     systemProperty("project.rootDir", rootProject.rootDir.absolutePath)
     doFirst {
         systemProperty("ssoptimizer.coremod.jar", tasks.named<Jar>("jar").get().archiveFile.get().asFile.absolutePath)
-        systemProperty("ssoptimizer.windowsOverlay.dir",
-            rootProject.layout.buildDirectory.dir("user-package/windows-overlay").get().asFile.absolutePath)
     }
     // JDK 25 的 XStream 集成测试需要与游戏运行时相同的模块开放。
     jvmArgs(

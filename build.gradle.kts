@@ -21,6 +21,7 @@ fun hostPlatformId(): String {
 
 val configuredGameDirProvider = providers.gradleProperty("starsector.gameDir")
     .orElse(providers.environmentVariable("SSOPTIMIZER_GAME_DIR"))
+    .filter { it.isNotBlank() }
 val requestedNativeTarget = providers.gradleProperty("ssoptimizer.native.target").orNull?.lowercase()
 val requestedBuildPlatform = providers.gradleProperty("starsector.platform").orNull?.lowercase()
 val targetPlatformProvider = providers.provider {
@@ -84,7 +85,7 @@ tasks.register("devCycle") {
     description = "Daily development cycle: quality gates + build"
     dependsOn("qualityGateLocal", ":modules:internal:sso-app:classes")
     doLast {
-        println("✓ Dev cycle complete — ready to run")
+        println("✓ Dev cycle complete")
     }
 }
 
@@ -120,7 +121,6 @@ val nativeLinuxRuntimeSharedLibs: List<File> by lazy {
     }.distinct()
 }
 val packagedFontTtfDir = rootProject.file("game-fonts/ttf")
-val log4jConfigFile = rootProject.file("log4j.properties")
 val userModStageDir = layout.buildDirectory.dir("user-package/$modId")
 
 tasks.register<Sync>("stageUserMod") {
@@ -192,7 +192,6 @@ tasks.register<Sync>("stageLinuxOverlay") {
     from(appJarFile) {
         into("mods/coremods")
     }
-    from(log4jConfigFile)
 
     into(linuxOverlayStageDir)
 
@@ -212,9 +211,6 @@ tasks.register<Sync>("stageWindowsOverlay") {
     }
     from(appJarFile) {
         into("mods/coremods")
-    }
-    from(log4jConfigFile) {
-        into("starsector-core")
     }
 
     into(windowsOverlayStageDir)
@@ -348,9 +344,6 @@ tasks.register<Copy>("installNativeRuntime") {
 
     into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
 
-    // SDG deployMod 的 Sync 会清空 native/，本任务必须随后执行。
-    mustRunAfter(":modules:internal:sso-app:deployMod")
-
     doFirst {
         check(configuredGameDirProvider.isPresent) {
             "Missing Starsector directory. Pass -Pstarsector.gameDir=/path/to/Starsector or set SSOPTIMIZER_GAME_DIR."
@@ -377,9 +370,6 @@ tasks.register<Copy>("installFontResources") {
 
     into(configuredGameDirProvider.map { file(it).resolve("mods/$modId") })
 
-    // SDG deployMod 的 Sync 会清空 fonts/，本任务必须随后执行。
-    mustRunAfter(":modules:internal:sso-app:deployMod")
-
     doFirst {
         check(configuredGameDirProvider.isPresent) {
             "Missing Starsector directory. Pass -Pstarsector.gameDir=/path/to/Starsector or set SSOPTIMIZER_GAME_DIR."
@@ -396,7 +386,7 @@ tasks.register<Copy>("installFontResources") {
 
 tasks.register("deployMod") {
     group = "dev workflow"
-    description = "Deploy mod metadata/jars (SDG :modules:internal:sso-app:deployMod) plus native runtime and font resources"
+    description = "Copy mod metadata, jars, native libraries and fonts into the game installation"
     dependsOn(":modules:internal:sso-app:deployMod", "installNativeRuntime", "installFontResources")
 }
 
