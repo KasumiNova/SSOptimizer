@@ -32,8 +32,8 @@ public final class HistoricalSave {
 
     public static Path importSlot(Path sourceSlot, Path instance, String targetSlot, String confirmedSource,
                                   Path verifiedTiny) throws IOException {
-        if (!"windows-en-rc8".equals(confirmedSource) && !"windows-zh-rc8".equals(confirmedSource)) {
-            throw new IOException("请明确确认原版或 Miko 战役的受支持 RC8 写入来源：" + confirmedSource);
+        if (!"rc8".equals(confirmedSource) && !"windows-en-rc8".equals(confirmedSource) && !"windows-zh-rc8".equals(confirmedSource)) {
+            throw new IOException("请确认旧存档由 Starsector 0.98a-RC8 写入：" + confirmedSource);
         }
         checkSlot(targetSlot);
         Path source = sourceSlot.toRealPath(), root = instance.toRealPath();

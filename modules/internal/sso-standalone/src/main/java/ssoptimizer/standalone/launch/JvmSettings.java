@@ -14,9 +14,10 @@ import java.util.Properties;
 final class JvmSettings {
     private static final String DIRECTIVES = "${compilerDirectives}";
     private static final String DIRECTIVE_OPTION = "-XX:CompilerDirectivesFile=";
+    private static final String OLD_DEFAULT_DIRECTIVES_SHA256 = "a3a222125159094372acd3f5324e633f8573b09293ce14f805badb8e749695a7";
     private static final String DEFAULT_DIRECTIVES = """
             [
-              { "match": ["com/fs/starfarer/combat/*.*", "org/dark/shaders/*.*"], "c1": {"Exclude": false}, "c2": {"Exclude": true} },
+              { "match": ["com/fs/starfarer/combat/*.*"], "c1": {"Exclude": false}, "c2": {"Exclude": true} },
               { "match": ["com/fs/graphics/*.*", "com/fs/state/*.*", "com/fs/util/*.*"], "c1": {"Exclude": true}, "c2": {"Exclude": false, "Vectorize": true} }
             ]
             """;
@@ -92,7 +93,7 @@ final class JvmSettings {
         text.append("\n# 分隔线之后每行一个传给游戏的参数；启动命令 -- 后的参数会追加到这些参数之后。\n--\n");
         String content = text.toString();
         if (java.io.File.separatorChar == '\\') content = "\ufeff" + content.replace("\n", "\r\n");
-        create(file, content);
+        write(file, content, false);
         return file;
     }
 
@@ -126,22 +127,27 @@ final class JvmSettings {
         }
         Path fallback = instance.resolve("compiler-directives.json");
         InstancePaths.confined(instance, fallback);
-        if (Files.notExists(fallback)) create(fallback, DEFAULT_DIRECTIVES);
-        if (!Files.isRegularFile(fallback)) throw new IOException("编译指令不是普通文件：" + fallback);
+        if (Files.notExists(fallback)) {
+            write(fallback, DEFAULT_DIRECTIVES, false);
+        } else if (!Files.isRegularFile(fallback)) {
+            throw new IOException("编译指令不是普通文件：" + fallback);
+        } else if (OLD_DEFAULT_DIRECTIVES_SHA256.equals(GameInstall.digest(fallback))) {
+            write(fallback, DEFAULT_DIRECTIVES, true);
+        }
         return fallback;
     }
 
-    private static void create(Path file, String text) throws IOException {
+    private static void write(Path file, String text, boolean replace) throws IOException {
         Path tmp = Files.createTempFile(file.getParent(), "jvm-", ".tmp");
         try {
             Files.writeString(tmp, text, StandardCharsets.UTF_8);
-            Files.move(tmp, file, StandardCopyOption.ATOMIC_MOVE);
+            if (replace) Files.move(tmp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            else Files.move(tmp, file, StandardCopyOption.ATOMIC_MOVE);
         } finally { Files.deleteIfExists(tmp); }
     }
 
     static boolean gameOption(String name) {
-        return name.startsWith("ssoptimizer.") && !name.startsWith("ssoptimizer.standalone.") && !name.startsWith("ssoptimizer.native.path")
-                || name.equals("astd.gd.debug");
+        return name.startsWith("ssoptimizer.") && !name.startsWith("ssoptimizer.standalone.") && !name.startsWith("ssoptimizer.native.path");
     }
 
     private static boolean vmOption(String arg) {

@@ -4,6 +4,7 @@ import com.fs.starfarer.api.combat.AutofireAIPlugin;
 import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.combat.WeaponGroupAPI;
 import com.fs.starfarer.combat.CombatEngine;
+import com.fs.starfarer.combat.ai.PointDefenseAutofireAI;
 import com.fs.starfarer.combat.entities.Ship;
 import com.fs.starfarer.combat.systems.Weapon;
 import com.fs.starfarer.combat.systems.WeaponGroup;
@@ -13,12 +14,10 @@ import org.lwjgl.util.vector.Vector2f;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 并行收集白名单自动开火插件的决策，由主线程在 {@code advanceAuto} 中应用。
- * 仅当组内全部插件均受支持时才接管，同舰插件在同一工作线程串行执行。
+ * 并行收集原版点防御自动开火决策，同舰插件在同一工作线程串行执行。
  */
 public final class AutofireBatchRunner {
     public static final String ENABLED_PROPERTY = "ssoptimizer.autofire.batch";
@@ -27,12 +26,6 @@ public final class AutofireBatchRunner {
 
     private static final boolean ENABLED = Boolean.parseBoolean(
             System.getProperty(ENABLED_PROPERTY, "true"));
-
-    /** 使用精确类名匹配，避免引用可能不存在的模组类。 */
-    private static final Set<String> PLUGIN_WHITELIST = Set.of(
-            "com.fs.starfarer.combat.ai.PointDefenseAutofireAI",
-            "com.genir.aitweaks.core.shipai.autofire.AutofireAI",
-            "com.genir.aitweaks.core.shipai.autofire.RecklessAutofireAI");
 
     /** 工作线程在收集阶段写入，主线程在实体推进阶段读取。 */
     private static final Map<Weapon, Decision> DECISIONS = new ConcurrentHashMap<>();
@@ -76,7 +69,7 @@ public final class AutofireBatchRunner {
                     continue;
                 }
                 List<AutofireAIPlugin> plugins = group.getAIPlugins();
-                if (plugins.isEmpty() || !allPluginsWhitelisted(plugins)) {
+                if (plugins.isEmpty() || !allPluginsAreVanillaPointDefense(plugins)) {
                     continue;
                 }
                 for (AutofireAIPlugin plugin : plugins) {
@@ -95,17 +88,13 @@ public final class AutofireBatchRunner {
         return DECISIONS.get(weapon);
     }
 
-    static boolean allPluginsWhitelisted(final List<AutofireAIPlugin> plugins) {
+    private static boolean allPluginsAreVanillaPointDefense(final List<AutofireAIPlugin> plugins) {
         for (AutofireAIPlugin plugin : plugins) {
-            if (!isPluginClassWhitelisted(plugin.getClass().getName())) {
+            if (plugin.getClass() != PointDefenseAutofireAI.class) {
                 return false;
             }
         }
         return true;
-    }
-
-    static boolean isPluginClassWhitelisted(final String className) {
-        return PLUGIN_WHITELIST.contains(className);
     }
 
     private static void collect(final AutofireAIPlugin plugin, final float amount) {

@@ -341,11 +341,10 @@ try {
     if ($Action -in @('Install','Update','Launch','Doctor','Prepare','Import-Save')) { Assert-GameLayout $Game }
     if ($Action -eq 'Import-Save') {
         Write-Host '导入会复制到实例的新槽并转换副本。原存档保留；请确认旧档写入时使用的游戏版本。'
-        if (!$Source) { $Source = Pick-Folder '选择包含 descriptor.xml 的原版或 Miko RC8 存档槽目录' }
+        if (!$Source) { $Source = Pick-Folder '选择包含 descriptor.xml 的 Starsector 0.98a-RC8 存档槽目录' }
         if (!$ConfirmSource) {
-            $suggested = if ([IO.File]::Exists((Join-Path $Game 'starsector-core/localization_version.json'))) { 'windows-zh-rc8' } else { 'windows-en-rc8' }
-            $ConfirmSource = Read-Host "请选择旧档写入时的来源：windows-en-rc8 或 windows-zh-rc8。按当前安装语言建议 $suggested，回车采用建议值"
-            if (!$ConfirmSource) { $ConfirmSource = $suggested }
+            $ConfirmSource = Read-Host '请确认旧档由 Starsector 0.98a-RC8 写入（回车使用 rc8）'
+            if (!$ConfirmSource) { $ConfirmSource = 'rc8' }
         }
         if ($choiceForImport -and !$Slot) { $Slot = Read-Host '新槽名称（留空使用原槽名）' }
     }
