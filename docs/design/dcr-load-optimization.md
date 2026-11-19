@@ -1,8 +1,10 @@
-# DetailedCombatResults 读档热点优化设计
+# DetailedCombatResults 读档优化历史
 
-## 目标
+> **升级或卸载前，请备份含战报的完整存档槽。** 旧版 SSOptimizer 曾以 Zstd 写入 DetailedCombatResults（DCR）战报。当前版本不再替换 DCR 的压缩实现，也不会自动转换已有战报。未使用旧补丁的 DCR 无法读取这部分数据，可能在读档时判为损坏并清空战报历史。需要保留战报时，请先在仍能读取这些数据的旧环境中核验备份，再用另一份副本尝试升级。离线恢复工具只转换手动提取的单个字段，输出保存到新文件。操作步骤见[旧版压缩字段恢复指南](../history/compressed-field-recovery.md)。
 
-消除第三方模组 DetailedCombatResults（DCR，id `DetailedCombatResults`，v5.4.2）读档时 `onGameLoad` 的性能热点。优化全部经 Mixin 实施，不修改 DCR 的任何文件，实现位于 `:modules:internal:sso-modopt`。
+## 历史目标
+
+旧实现通过 Mixin 优化 DetailedCombatResults 5.4.2 的 `onGameLoad`。以下内容记录当时的性能测量与实现。
 
 ## 根因
 
@@ -21,14 +23,14 @@
 
 同一 `saveCombatResult` 也在每场战斗后调用一次，每战重序列化全史，属 L3，本轮不做。
 
-## 模块结构与开关
+## 旧版实现与开关
 
 - `modopt.dcr.DcrBatchCompatibility`：解析 `onGameLoad` 的保存调用，区分逐条保存与 DCR 自带的整批保存。
 - `modopt.dcr.DcrBatchSaveWindow`：批量保存窗口，只持有线程与剩余次数。
 - `modopt.dcr.DcrCompressionHelper`：压缩内核。
 - `mixin.modopt.dcr.DcrOnGameLoadBatchMixin`、`DcrSerializationManagerBatchMixin`：L1。
 - `mixin.modopt.dcr.DcrCompressionUtilMixin`：L2。
-- 三个 Mixin 均注册在 `mixins.ssoptimizer.json`。`-Dssoptimizer.disable.dcr=true` 由 `SSOptimizerMixinConfigPlugin` 在织入期跳过 L1 的两个 Mixin，不影响 L2。
+- 旧版注册了三个 Mixin。当时的 `-Dssoptimizer.disable.dcr=true` 只禁用两个批量写入 Mixin，压缩替换仍生效；当前版本忽略此属性。
 
 DCR 的类不在编译类路径上，Mixin 以字符串目标指定，`@Redirect` 的参数与返回类型只使用 JDK 与 XStream 类型。
 
@@ -58,7 +60,7 @@ DCR 的 `util/Base64` 是非标准自定义编码，因此直接替换 `Compress
 
 `DcrCompressionUtilMixin` 以 `@Overwrite` 整体替换这两个方法并委派 `DcrCompressionHelper`。
 
-压缩后的战报保存在游戏存档中。卸载 SSOptimizer 后，DCR 原生 `Inflater` 会把 Zstd 数据判为损坏并清空战报历史，存档本体不受影响。README 已注明。
+切换到不含旧补丁的版本时，Zstd 战报的风险和备份要求见本文开头。
 
 ## L3：消除每场战后的全史重序列化
 

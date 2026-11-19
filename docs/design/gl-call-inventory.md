@@ -1,4 +1,6 @@
-# GL 调用盘点：bridge 覆盖面决策
+# GL 调用盘点：早期 bridge 设计记录
+
+> GraphicsLib 和 BoxUtil 是调用覆盖面的外部回归样本。运行时按 GL 调用及其上下文处理，禁止按模组白名单选择处理方式。
 
 前置文档：`render-logic-separation-entrypoints.md`（首轮切入点方案）。
 本文档汇总游戏本体（named 反编译源码，调查副本 /tmp/ss_deob）、SSOptimizer 自身、
@@ -36,7 +38,7 @@
 |---|---|---|
 | GL11 | 常规固定管线 | 覆盖 |
 | GL13 glActiveTexture | ×17 | **必须覆盖**（多纹理单元是 shader 前置） |
-| GL20 shader 全族 | glUseProgram/glUniform*/glGetUniformLocation/编译链接回读 | **可推迟到二期**（初版白名单阶段可声明不兼容或直通串行化） |
+| GL20 shader 全族 | glUseProgram/glUniform*/glGetUniformLocation/编译链接回读 | 早期方案列为延后实现项 |
 | FBO 三路径 | GL30/ARB/EXT 运行时选择 | **必须覆盖**三条路径 |
 
 主渲染链路零 getter 回读——好消息，瓶颈只在编译期回读（见 getter 清单）。

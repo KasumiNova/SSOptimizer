@@ -58,15 +58,9 @@ SSOptimizer 的可选开关均为 JVM 系统属性，在 NanoForge 启动脚本�
 - **原版未安装 SSOptimizer 的 Starsector 无法读取带 `SSOZ1:` 前缀的新地形 tile 存档内容**；也就是说，用 SSOptimizer 保存后的新存档，不能保证再回到原版直接读取。
 - 如果你需要保持对原版读取的写出兼容性，可在 JVM 参数中添加：`-Dssoptimizer.disable.save.terrain.zstd=true`，强制退回旧版 Deflater 写入格式。
 
-### 外部模组优化：DetailedCombatResults（DCR）
+### 旧版战报数据
 
-第三方模组优化位于 `:modules:internal:sso-modopt` 模块，DCR 的读档历史合并与压缩内核均由 Mixin 实现：
-
-- **读档历史合并**：DCR 在裁剪战报后会清空并逐条重写整份历史，产生 O(N²) 的重序列化与压缩。SSOptimizer 将多次历史更新合并为一次落盘，不改变存档格式，卸载 SSOptimizer 后 DCR 仍可正常读档。
-- **Zstd 压缩**：将 DCR 的 `Deflater` 级别 9 压缩替换为 Zstd，读取时自动识别 Zstd 与旧 Deflate 两种格式。旧存档读出后，下一次保存会迁移为 Zstd。
-  - **兼容性影响**：DCR 战报压缩串会随存档落盘。迁移为 Zstd 后，无 SSOptimizer 环境中的 DCR 原生 `Inflater` 无法读取这些战报，会判定数据损坏并清空历史战报记录，但不影响存档本体。
-  - 当前没有通过 JVM 属性单独关闭 Zstd 写出的开关；需要保留无 SSOptimizer 环境兼容性时，应先备份存档。
-- `-Dssoptimizer.disable.dcr=true` 仅在织入期跳过读档历史合并的两个 Mixin，不会禁用压缩替换 Mixin。
+旧版 SSOptimizer 曾将 DetailedCombatResults 的部分历史战报写成 Zstd。该模组自身使用 zlib，读取旧版 SSO 写出的记录时可能清空历史战报。使用过该功能的玩家应在升级前备份存档与战报。单个历史字段的恢复方法见[压缩字段恢复指南](docs/history/compressed-field-recovery.md)。
 
 ## 从源码构建
 
@@ -147,7 +141,6 @@ SSOptimizer/
 │       ├── sso-font/       字体渲染与动态图集（native-font：FreeType 栅格化）
 │       ├── sso-ime/        Linux XIM 与 Windows IMM32 输入法（native-ime：原生桥接）
 │       ├── sso-save/       存档读写优化与 saveBench 离线基准
-│       ├── sso-modopt/     DetailedCombatResults 等第三方模组专项优化
 │       ├── sso-automation/ 自动化、基准与启动器辅助
 │       └── sso-debug/      默认关闭的 localhost HTTP RPC、动态脚本与热重载调试能力
 ├── native-headers/         各 Java 模块 compileJava 生成的共享 JNI 头目录

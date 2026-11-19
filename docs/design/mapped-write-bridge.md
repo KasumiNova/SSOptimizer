@@ -1,5 +1,7 @@
 # 持久映射有序写入桥（mapped-write-bridge）
 
+> 旧版曾通过专用 Mixin 将 BoxUtil 的尾迹缓冲接入写入桥。当前版本已移除该注入；BoxUtil 仅用于外部回归验证。调用方需要主动提交写入，写入桥才会接收数据。
+
 ## 背景与目标
 
 SSO RT 管线化下，渲染线程执行第 N 帧绘制命令时，模组逻辑线程可能已在推进第
@@ -20,7 +22,7 @@ bridge 录制层无法感知，与在飞绘制并发读到写了一半的数据�
 核心思路：**逻辑线程不再直写映射内存**，改写向等容 CPU scratch；真正的落笔
 封装为命令排入渲染流，由渲染线程在确认 GPU 读完上一帧后执行。
 
-### 写入路径（逻辑线程）
+### 历史调用示例：BoxUtil 尾迹缓冲
 
 1. Mixin（`sso-modopt` 的 `StaticTrailMemoryPoolMixin`）把两处
    `getMappingBuffer().asIntBuffer()` 重定向到等容 CPU scratch（按映射

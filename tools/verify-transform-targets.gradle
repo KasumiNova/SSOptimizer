@@ -1,0 +1,25 @@
+// ./gradlew --offline -I tools/verify-transform-targets.gradle verifyTransformTargets
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def app = root.findProject(":modules:internal:sso-app")
+    if (app == null) return
+    def modules = root.subprojects.findAll { it.plugins.hasPlugin("java") && it.path.startsWith(":modules:") }
+    app.tasks.register("verifyTransformTargets", JavaExec) {
+        group = "verification"
+        dependsOn modules.collect { it.tasks.named("classes") }
+        javaLauncher = app.javaToolchains.launcherFor(app.java.toolchain)
+        classpath = app.configurations.testRuntimeClasspath
+        mainClass = root.file("tools/TransformTargets.java").absolutePath
+        doFirst {
+            def deps = app.configurations.testRuntimeClasspath.resolvedConfiguration.resolvedArtifacts
+            def standard = deps.findAll { a ->
+                def id = a.moduleVersion.id
+                id.group in ["starsector.named", "starsector.game"] ||
+                    (id.group == "com.thoughtworks.xstream" && id.name == "xstream")
+            }.collect { it.file }
+            args standard.collect { it.absolutePath }
+            args "--project"
+            args modules.collectMany { it.sourceSets.main.output.files }.findAll { it.isDirectory() }.collect { it.absolutePath }
+        }
+    }
+}

@@ -26,7 +26,6 @@
 | `ssoptimizer.disable.textureloader` | `TextureLoaderMixin`、`TextureLoaderUploadMixin`、`TextureLoaderUploadDirectMixin` | 跳过 TextureLoader 像素转换、尺寸计算、路径加载、图片解码与纹理上传优化（Mixin 织入期门控，上传 Mixin 按渲染线程模式二选一） |
 | `ssoptimizer.disable.linuxdisplayime` | `LinuxDisplayImeProcessor` | 跳过 Linux 显示层 IME 注入 |
 | `ssoptimizer.disable.linuxkeyboardime` | `LinuxKeyboardImeProcessor` | 跳过 Linux 键盘 IME 注入 |
-| `ssoptimizer.disable.astdautomation` | `ASTDAutomationCombatPluginProcessor` | 跳过 ASTD 自动化战斗插件注入（配套属性见「自动化」节） |
 | `ssoptimizer.disable.windowsdisplayime` | `WindowsDisplayImeProcessor` | 跳过 Windows 显示层 IME 注入 |
 | `ssoptimizer.disable.tooltiptextfieldime` | `TooltipTextFieldFactoryMixin` | 跳过提示框文本域 IME 注入（Mixin 织入期门控，`SSOptimizerMixinConfigPlugin`） |
 | `ssoptimizer.disable.settingstextfieldime` | `SettingsTextFieldFactoryMixin` | 跳过设置页文本域 IME 注入（Mixin 织入期门控） |
@@ -35,12 +34,6 @@
 | `ssoptimizer.disable.caseinsensitiveresource` | `ResourceLoaderOpenStreamFallbackMixin` | 跳过大小写不敏感资源回退（Mixin 织入期门控） |
 
 > 注：批次 1 已把 Sprite/BitmapFontRenderer/TexturedStrip/ContrailEngine/CollisionGridQuery/粒子三件套/TextureObject/LoadingUtils/LinuxEvent 的处理器迁移为 Mixin（`mixins.ssoptimizer.json` 对应条目），相关 `ssoptimizer.disable.*` 开关随 ASM 注册一并移除，不再可配置。
-
-## DCR（DetailedCombatResults）优化
-
-| 属性 | 默认值 | 作用 | 读取位置 |
-|---|---|---|---|
-| `ssoptimizer.disable.dcr` | `false` | 为 true 时跳过 DCR 读档批量保存的两个 Mixin（织入期门控，不影响压缩替换 Mixin） | `mixin/SSOptimizerMixinConfigPlugin.java` |
 
 ## 字体
 
@@ -226,10 +219,15 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.logging.lunalib.level` | `"WARN"` | LunaLib 日志阈值（默认压制 INFO/DEBUG 噪音，设 `DEBUG` 恢复完整日志） | `common/logging/LogNoiseFilterConfigurator.java:51` |
 | `ssoptimizer.logging.vanilla.level` | `"WARN"` | 原版启动/加载期 INFO 噪音日志阈值（默认对 17 个高频原版 logger 保持 INFO 可见并装配消息级聚合过滤器：逐条压制「Loading …/Class … already loaded/Cleaned buffer …」等刷屏行，加载期结束后 flush 成「Loaded N <分类>」汇总行，WARN/ERROR、not-found 诊断与 SSOptimizer 自身日志不受影响；设 `INFO`/`DEBUG` 恢复完整原版加载日志） | `common/logging/VanillaLogNoiseConfigurator.java:66` |
 
 ## 已移除属性
+
+| 属性 | 曾用语义 |
+|---|---|
+| `ssoptimizer.disable.astdautomation` | 禁用旧版针对 Asteria Directorate 的战斗遥测注入 |
+| `ssoptimizer.disable.dcr` | 仅禁用旧版 DCR 的批量写入 Mixin，压缩替换仍生效。含旧版 Zstd 战报的存档见[兼容警告](dcr-load-optimization.md) |
+| `ssoptimizer.logging.lunalib.level` | 指定旧版 LunaLib 专用日志阈值 |
 
 以下属性随 **javaagent 运行时 remap 通道** 一并删除（coremod 化后相关类 `RuntimeRemapContext`、`RemappedClasspathInstaller` 已删除，当前代码无任何残留，传入会被忽略）：
 

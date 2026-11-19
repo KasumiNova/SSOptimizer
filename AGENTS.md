@@ -15,7 +15,7 @@
 - 功能模块：`:modules:internal:sso-render`（渲染线程）、`:modules:internal:sso-ai`（异步 AI）、
   `:modules:internal:sso-loading`（加载优化）、`:modules:internal:sso-font`（字体渲染）、
   `:modules:internal:sso-ime`（输入法）、`:modules:internal:sso-save`（存档读写）、
-  `:modules:internal:sso-modopt`（第三方模组优化）、`:modules:internal:sso-automation`（自动化/基准）、
+  `:modules:internal:sso-automation`（自动化与基准测试）、
   `:modules:internal:sso-debug`（调试服务：localhost HTTP RPC、动态脚本编译执行、热重载，
   默认关闭，`-Dssoptimizer.debug.enabled=true` 启用；设计见 docs/design/debug-capability-design.md）。
 - 含 C++ 支持的模块下设 `<域>/native/` 子模块（native-render/native-loading/
@@ -58,15 +58,8 @@
 1. **禁止以 javaagent（`java.lang.instrument` / `-javaagent:`）作为类变换通道**，
    包括注册 Instrumentation transformer、以及任何形式的「全类加载器兜底改写」。
    一切改写必须走 NanoForge 的 RFB/LaunchWrapper transformer 链 + Mixin。
-2. 模组自建类加载器（如 aitweaks 的 Kotlin 引导 loader、shipmastery 的
-   ReflectionEnabledClassLoader）漏 transform 的问题，**用针对性适配解决**：
-   对该模组的 loader 类写专用 ASM processor（参照
-   `asm/loading/AITweaksCoreLoaderProcessor` 模式），把其 defineClass 挂进
-   Launch transformer 链；不得用 agent 做通用兜底。
-3. 设计动机：agent 通道会让 System 域类（如 system classpath 上的 lwjgl）被改写出
-   对 Launch 域 bridge 类的引用，定义方加载器不可见即运行期 NoClassDefFoundError；
-   且「全覆盖兜底」与 NanoForge 的显式域模型冲突。针对性适配的改写范围显式可控、
-   失败在启动期可见。
+2. 所有模组必须遵循同一套加载、重映射、渲染与部署规则。禁止按第三方模组的 ID、版本、包名、私有类或方法、文件名、目录布局或字节码指纹选择行为。禁止修改第三方模组的配置、日志阈值或存储格式。实际模组可用作外部回归样本。
+3. 自建加载器的处理必须依据 JDK 类加载接口和定义域。保留原加载器、保护域与资源路径；只有定义域可访问所需依赖时才可改写。`Class.getName()` 及其方法引用必须保留 JVM 语义。兼容旧游戏符号时必须依据映射表和调用语义，禁止全局伪造类名。
 4. **调试会话例外**：sso-debug 的 L2 hotswap（`HotswapSupport`）允许使用
    `Instrumentation.redefineClasses`，边界：
    - 仅限 sso-debug 模块、仅 `-Dssoptimizer.debug.enabled=true` 调试会话可触达；
