@@ -25,6 +25,10 @@ public final class ModSelection {
         Set<String> prepared = PreparedSources.enabledIds();
         if (prepared.equals(ids)) return;
         Path file = Path.of(System.getProperty("com.fs.starfarer.settings.paths.mods"), "enabled_mods.json").toAbsolutePath();
+        if (PreparedSources.fixedSelection()) {
+            ModSelectionNotice.exit(78, "主目录模式使用安装入口提供的只读模组清单。请退出游戏，通过安装入口更新启用的模组后重新启动。\n" + file, null);
+            return;
+        }
         try {
             JSONArray entries = new JSONObject(Files.readString(file, StandardCharsets.UTF_8)).getJSONArray("enabledMods");
             var saved = new LinkedHashSet<String>();

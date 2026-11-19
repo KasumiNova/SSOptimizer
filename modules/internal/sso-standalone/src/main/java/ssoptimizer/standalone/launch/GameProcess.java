@@ -30,14 +30,14 @@ final class GameProcess {
         }
     }
 
-    static int launch(GameInstall game, Path home, Path instance, List<String> gameArguments) throws Exception {
-        try (var log = GameProcessLog.open(instance)) {
-            try { return launch(game, home, instance, gameArguments, log); }
+    static int launch(GameInstall game, Path home, Path instance, Path dataRoot, List<String> gameArguments) throws Exception {
+        try (var log = GameProcessLog.open(dataRoot)) {
+            try { return launch(game, home, instance, dataRoot, gameArguments, log); }
             catch (Exception failure) { log.failure(failure); throw failure; }
         }
     }
 
-    private static int launch(GameInstall game, Path home, Path instance, List<String> gameArguments, GameProcessLog log) throws Exception {
+    private static int launch(GameInstall game, Path home, Path instance, Path dataRoot, List<String> gameArguments, GameProcessLog log) throws Exception {
         Path agent = GameInstall.required(home.resolve("agent.jar"));
         PlatformFiles platform;
         JvmSettings.Options settings;
@@ -63,9 +63,9 @@ final class GameProcess {
         String debug = args.stream().filter(arg -> arg.equals("-Dssoptimizer.debug.enabled") || arg.startsWith("-Dssoptimizer.debug.enabled="))
                 .reduce((previous, last) -> last).orElse("");
         if (debug.equalsIgnoreCase("-Dssoptimizer.debug.enabled=true")) args.add("-Djdk.attach.allowAttachSelf=true");
-        for (String name : List.of("saves", "screenshots", "mods", "logs")) args.add("-Dcom.fs.starfarer.settings.paths." + name + "=" + instance.resolve(name));
+        for (String name : List.of("saves", "screenshots", "mods", "logs")) args.add("-Dcom.fs.starfarer.settings.paths." + name + "=" + dataRoot.resolve(name));
         args.addAll(platform.arguments());
-        args.add("-XX:ErrorFile=" + instance.resolve("logs").toString().replace("%", "%%") + File.separator + "hs_err_pid%p.log");
+        args.add("-XX:ErrorFile=" + dataRoot.resolve("logs").toString().replace("%", "%%") + File.separator + "hs_err_pid%p.log");
         args.add("-XX:-CreateCoredumpOnCrash");
         args.addAll(List.of("-Dssoptimizer.standalone.game=" + game.root(), "-Dssoptimizer.standalone.home=" + home,
                 "-Dssoptimizer.standalone.instance=" + instance, "-javaagent:" + agent));
@@ -74,7 +74,7 @@ final class GameProcess {
         }
         String classpath = cp.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
         int cpIndex = args.size();
-        args.addAll(List.of("-cp", classpath, "com.gtnewhorizons.retrofuturabootstrap.Main", "--gameDir", instance.toString(),
+        args.addAll(List.of("-cp", classpath, "com.gtnewhorizons.retrofuturabootstrap.Main", "--gameDir", dataRoot.toString(),
                 "--tweakClass", "ssoptimizer.standalone.host.StandaloneTweaker", "--"));
         args.addAll(settings.game());
         args.addAll(gameArguments);

@@ -18,6 +18,10 @@ public record GameInstall(Path root, Path core, String profile, List<Path> gameJ
             "jogg-0.0.7.jar", "jorbis-0.0.15.jar", "json.jar", "jinput.jar", "txw2-3.0.2.jar", "jaxb-api-2.4.0-b180830.0359.jar", "webp-imageio-0.1.6.jar");
 
     public static GameInstall inspect(Path gameRoot) throws IOException {
+        return inspect(gameRoot, DataLocation.configured());
+    }
+
+    static GameInstall inspect(Path gameRoot, DataLocation location) throws IOException {
         Path root = gameRoot.toAbsolutePath().normalize();
         if (root.getFileName() != null && root.getFileName().toString().equalsIgnoreCase("starsector-core")
                 && Files.isRegularFile(root.resolve("data/config/settings.json"))) root = root.getParent();
@@ -26,7 +30,9 @@ public record GameInstall(Path root, Path core, String profile, List<Path> gameJ
             throw new IOException("未找到 RC8 游戏资源：" + core + "。请先安装 0.98a-RC8 英文或常规汉化版：https://api.fossic.org/games");
         }
         List<Path> game = GAME.stream().map(core::resolve).toList();
-        String profile = Files.isRegularFile(core.resolve("localization_version.json")) ? "windows-zh-rc8" : "windows-en-rc8";
+        boolean localized = Files.isRegularFile(core.resolve("localization_version.json"))
+                || location == DataLocation.GAME && digest(game.getFirst()).equals("2e207732388bfb8290406362647c3578e00a4fdb6c1a4b9ef04a68001f69ed82");
+        String profile = localized ? "windows-zh-rc8" : "windows-en-rc8";
         return new GameInstall(root, core, profile, game);
     }
 

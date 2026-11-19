@@ -33,7 +33,8 @@ public final class LaunchFiles {
     }
 
     public static Path validate(Path game, Path home, Path instance) throws IOException {
-        return InstancePaths.validate(GameInstall.inspect(game.toRealPath()), home.toRealPath(), instance);
+        DataLocation location = DataLocation.configured();
+        return InstancePaths.validate(GameInstall.inspect(game.toRealPath(), location), home.toRealPath(), instance, location);
     }
 
     public static AutoCloseable lock(Path instance) throws IOException {
@@ -51,12 +52,29 @@ public final class LaunchFiles {
     }
 
     public static Path prepare(Path gamePath, Path home, Path instance) throws Exception {
-        GameInstall game = GameInstall.inspect(gamePath);
+        DataLocation location = DataLocation.configured();
+        return prepare(GameInstall.inspect(gamePath, location), home, instance, location);
+    }
+
+    public static void checkModSelectionForLaunch(Path gamePath) throws IOException {
+        if (DataLocation.configured() != DataLocation.GAME) return;
+        Path selection = GameInstall.required(gamePath.resolve("mods/enabled_mods.json"));
+        if (Files.isWritable(selection)) throw new IOException("SSO_USE_GAME_DATA=1 需要以只读方式挂载模组清单：" + selection);
+    }
+
+    static Path prepare(GameInstall game, Path home, Path instance, DataLocation location) throws Exception {
         Path payload = GameInstall.required(home.resolve("payload.jar"));
         Path mapping = mapping(home);
-        InstanceLayout.prepare(game.root(), home, instance);
-        Path modsDir = instance.resolve("mods");
+        Path dataRoot = location.root(game, instance);
+        Path modsDir = dataRoot.resolve("mods");
+        if (location == DataLocation.INSTANCE) {
+            InstanceLayout.prepare(game.root(), home, instance);
+        } else {
+            GameInstall.required(modsDir.resolve("enabled_mods.json"));
+            for (String name : List.of("saves", "screenshots", "logs")) Files.createDirectories(dataRoot.resolve(name));
+        }
         List<String> enabled = ModCatalog.enabledIds(modsDir);
+        if (!enabled.contains("ssoptimizer")) throw new IOException("模组清单必须启用 ssoptimizer：" + modsDir.resolve("enabled_mods.json"));
         List<ModCatalog.Archive> mods = ModCatalog.scan(modsDir, payload);
         List<Path> libs = game.libraries(home);
         Path cache = instance.resolve("cache");
@@ -74,6 +92,7 @@ public final class LaunchFiles {
         Properties plan = new Properties();
         plan.setProperty("payload", payload.toString());
         plan.setProperty("profile", game.profile());
+        if (location == DataLocation.GAME) plan.setProperty("selection.fixed", "true");
         if (!ModCatalog.enabledIds(modsDir).equals(enabled)) throw new IOException("准备期间模组启用列表发生变化，请重新启动。");
         plan.setProperty("enabled.count", Integer.toString(enabled.size()));
         for (int i = 0; i < enabled.size(); i++) plan.setProperty("enabled." + i, enabled.get(i));
@@ -83,7 +102,7 @@ public final class LaunchFiles {
         var preparedMods = new ArrayList<Path>();
         for (var mod : mods) {
             if (mod.modId().equals("ssoptimizer")) {
-                if (plan.putIfAbsent("payload.source", mod.path().toString()) != null) throw new IOException("SSOptimizer 实例内有多个负载：" + mod.path());
+                if (plan.putIfAbsent("payload.source", mod.path().toString()) != null) throw new IOException("SSOptimizer 模组内有多个负载：" + mod.path());
                 if (!mod.declaredPath().equals(mod.path())) plan.setProperty("payload.declared", mod.declaredPath().toString());
                 continue;
             }
@@ -92,7 +111,7 @@ public final class LaunchFiles {
             Path prepared = output(outputs, mod.path());
             preparedMods.add(ssoptimizer.standalone.mods.ModArchiveLayout.prepare(cache, mod, prepared));
         }
-        if (!plan.containsKey("payload.source")) throw new IOException("独立实例未启用 SSOptimizer，请在实例的模组配置中启用它。");
+        if (!plan.containsKey("payload.source")) throw new IOException("模组目录缺少已启用的 SSOptimizer 负载：" + modsDir);
         paths(plan, "mod", preparedMods);
         Path dest = cache.resolve("launch.properties");
         Path tmp = Files.createTempFile(cache, "launch-", ".tmp");

@@ -32,6 +32,8 @@ public final class PreparedSources {
 
     public static Set<String> enabledIds() { return active.plan.enabled; }
 
+    public static boolean fixedSelection() { return active.plan.fixedSelection; }
+
     static boolean isModClass(String name) {
         PreparedSources sources = active;
         if (sources == null || name == null) return false;

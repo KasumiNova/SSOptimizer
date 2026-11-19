@@ -27,6 +27,7 @@ final class LaunchPlan {
     final List<Path> archives;
     final List<Path> mods;
     final Set<String> enabled;
+    final boolean fixedSelection;
     final Path payload;
     final boolean hasGameModPayload;
     private final Map<Path, Path> prepared;
@@ -48,6 +49,7 @@ final class LaunchPlan {
             if (id == null || id.isBlank() || !selected.add(id)) throw new IOException("无效或重复的模组 ID: " + id);
         }
         enabled = Set.copyOf(selected);
+        fixedSelection = Boolean.parseBoolean(p.getProperty("selection.fixed"));
         var replacements = new HashMap<Path, Path>();
         var aliases = new HashMap<Path, Path>();
         replacements.put(payload, payload);

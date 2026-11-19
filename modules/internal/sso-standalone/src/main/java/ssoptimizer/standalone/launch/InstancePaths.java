@@ -9,7 +9,7 @@ import java.util.List;
 final class InstancePaths {
     private InstancePaths() {}
 
-    static Path validate(GameInstall game, Path home, Path requested) throws IOException {
+    static Path validate(GameInstall game, Path home, Path requested, DataLocation location) throws IOException {
         Path root = physical(requested.toAbsolutePath().normalize());
         if (game.root().startsWith(root) || home.startsWith(root) || root.startsWith(home)
                 || !game.root().equals(game.core()) && root.startsWith(game.core())) {
@@ -18,15 +18,17 @@ final class InstancePaths {
         for (Path base : List.of(game.root(), game.core())) for (String key : List.of("mods", "saves", "data", "native", "jre", "screenshots", "logs")) {
             if (root.startsWith(physical(base.resolve(key)))) throw new IOException("禁止将实例指向原游戏数据：" + root);
         }
-        for (String name : List.of("cache", "cache/lwjgl-v1", "cache/named", "logs", "mods", "saves", "screenshots", "session.lock", "jvm.properties", "jvm.args", "compiler-directives.json", ".standalone-layout")) {
+        for (String name : List.of("cache", "cache/lwjgl-v1", "cache/named", "session.lock", "jvm.properties", "jvm.args", "compiler-directives.json", ".standalone-layout")) {
             confined(root, root.resolve(name));
         }
+        Path dataRoot = location.root(game, root);
+        for (String name : List.of("logs", "mods", "saves", "screenshots")) confined(dataRoot, dataRoot.resolve(name));
         return root;
     }
 
     static void confined(Path root, Path path) throws IOException {
         if (!path.startsWith(root) || !physical(path).equals(path) || Files.isSymbolicLink(path)) {
-            throw new IOException("实例的内部路径重定向到其他位置：" + path + " (" + root + ")");
+            throw new IOException("内部路径重定向到其他位置：" + path + " (" + root + ")");
         }
     }
 
