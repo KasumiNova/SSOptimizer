@@ -14,6 +14,11 @@ import java.nio.ByteBuffer;
  * 保留在调用线程执行。
  */
 public final class Display {
+    private static Object presentationContext;
+    private static long normalPresentationSequence;
+    private static boolean overlayPending;
+    private static boolean overlayPresented;
+
     private Display() {
     }
 
@@ -68,31 +73,50 @@ public final class Display {
     }
 
     public static void update() {
-        RenderQueue q = BridgeSupport.queue();
-        // update 直交通道必须先落帧，避免挂起顶点流在 swapBuffers 后执行
-        BridgeSupport.flushVertexStream();
-        q.submit(() -> {
-            BridgeSupport.refillBufferIdStashIfLow();
-            fireFrameCaptureHook();
-            org.lwjgl.opengl.Display.update();
-        });
-        BridgeSupport.swapFramesAndSync();
+        update(true);
     }
 
-    /**
-     * 事件泵随 update 在渲染线程执行，X11 访问保持单线程化。
-     *
-     * @param processMessages 是否在交换缓冲前泵送窗口事件
-     */
     public static void update(boolean processMessages) {
         RenderQueue q = BridgeSupport.queue();
         BridgeSupport.flushVertexStream();
         q.submit(() -> {
             BridgeSupport.refillBufferIdStashIfLow();
             fireFrameCaptureHook();
+            final boolean visible = org.lwjgl.opengl.Display.isVisible();
             org.lwjgl.opengl.Display.update(processMessages);
+            onPresentation(visible);
         });
         BridgeSupport.swapFramesAndSync();
+    }
+
+    static long markSaveOverlayFrame() {
+        resetPresentationIfContextChanged();
+        overlayPending = true;
+        return overlayPresented ? 0 : normalPresentationSequence;
+    }
+
+    private static void onPresentation(final boolean swapped) {
+        resetPresentationIfContextChanged();
+        if (swapped) {
+            overlayPresented = overlayPending;
+            if (!overlayPresented) {
+                normalPresentationSequence++;
+            }
+            overlayPending = false;
+        } else if (overlayPending) {
+            // 隐藏窗口仍可能因 dirty 标志交换缓冲，禁止将该前缓冲标记为普通帧。
+            overlayPresented = true;
+        }
+    }
+
+    private static void resetPresentationIfContextChanged() {
+        final Object token = BridgeSupport.mainGlContextToken();
+        if (presentationContext != token) {
+            presentationContext = token;
+            normalPresentationSequence = 0;
+            overlayPending = false;
+            overlayPresented = false;
+        }
     }
 
     /** 事件泵无 GL 依赖，保留在调用线程执行。 */
@@ -347,15 +371,11 @@ public final class Display {
                 () -> org.lwjgl.opengl.Display.setDisplayConfiguration(gamma, brightness, contrast));
     }
 
-    /**
-     * 阻塞通道：交换缓冲是帧尾 GL 语义调用，必须在持有上下文的渲染线程执行；
-     * drain-first 保证此前录制的全部命令先于交换执行（游戏主循环走
-     * {@link #update()}，本入口服务直接调 swapBuffers 的模组）。
-     *
-     * @throws LWJGLException 渲染线程上的真实调用失败
-     */
     public static void swapBuffers() throws LWJGLException {
-        BridgeSupport.blockingWaitLwjgl(org.lwjgl.opengl.Display::swapBuffers);
+        BridgeSupport.blockingWaitLwjgl(() -> {
+            org.lwjgl.opengl.Display.swapBuffers();
+            onPresentation(true);
+        });
     }
 
     /**

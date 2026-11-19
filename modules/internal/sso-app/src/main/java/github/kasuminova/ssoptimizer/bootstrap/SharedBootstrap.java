@@ -6,6 +6,7 @@ import github.kasuminova.ssoptimizer.api.font.FontDraw;
 import github.kasuminova.ssoptimizer.api.font.FontResourceOverride;
 import github.kasuminova.ssoptimizer.api.loading.WeaponAtlasLookup;
 import github.kasuminova.ssoptimizer.api.render.RenderFramePump;
+import github.kasuminova.ssoptimizer.api.render.SaveOverlayFrames;
 import github.kasuminova.ssoptimizer.api.save.SavePhaseTelemetry;
 import github.kasuminova.ssoptimizer.asm.automation.ASTDAutomationCombatPluginProcessor;
 import github.kasuminova.ssoptimizer.asm.combat.CollisionImpulseClampProcessor;
@@ -19,6 +20,7 @@ import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
 import github.kasuminova.ssoptimizer.bridge.opengl.FontDrawImpl;
 import github.kasuminova.ssoptimizer.bridge.opengl.GL11;
 import github.kasuminova.ssoptimizer.bridge.opengl.RenderThreadDispatch;
+import github.kasuminova.ssoptimizer.bridge.opengl.SaveOverlayFramesImpl;
 import github.kasuminova.ssoptimizer.common.bench.DebugFrameCapture;
 import github.kasuminova.ssoptimizer.common.debug.DebugServerBootstrap;
 import github.kasuminova.ssoptimizer.common.font.OriginalGameFontOverrides;
@@ -57,6 +59,7 @@ public final class SharedBootstrap {
 
     private static void registerModuleServices() {
         ServiceRegistry.register(RenderFramePump.class, RenderThreadDispatch::runBlocking);
+        ServiceRegistry.register(SaveOverlayFrames.class, new SaveOverlayFramesImpl());
         ServiceRegistry.register(SavePhaseTelemetry.class, UnmarshalPhaseTimer::lastUnmarshalMs);
         ServiceRegistry.register(WeaponAtlasLookup.class, path -> {
             final ShipWeaponAtlas.Region r = ShipWeaponAtlas.lookup(path);

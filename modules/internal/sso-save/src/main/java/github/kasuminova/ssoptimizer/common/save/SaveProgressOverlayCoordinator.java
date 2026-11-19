@@ -3,7 +3,7 @@ package github.kasuminova.ssoptimizer.common.save;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
 import com.fs.starfarer.campaign.save.CampaignSaveProgressDialog;
-import github.kasuminova.ssoptimizer.api.render.RenderFramePump;
+import github.kasuminova.ssoptimizer.api.render.SaveOverlayFrames;
 import github.kasuminova.ssoptimizer.bootstrap.ServiceRegistry;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import org.apache.log4j.Logger;
@@ -15,7 +15,7 @@ import org.lwjgl.opengl.GLContext;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** 后台线程仅发布进度，原版 UI 回调仅在持有 GL 上下文的线程重放。 */
+/** 后台线程发布进度，游戏线程在可绘制时重放弹窗。 */
 public final class SaveProgressOverlayCoordinator {
     private static final Logger LOGGER = Logger.getLogger(SaveProgressOverlayCoordinator.class);
 
@@ -206,6 +206,12 @@ public final class SaveProgressOverlayCoordinator {
             return;
         }
 
+        final SaveOverlayFrames frames = RenderThreadMode.isEnabled()
+                ? ServiceRegistry.require(SaveOverlayFrames.class) : null;
+        if (frames != null && !frames.isProducer()) {
+            return;
+        }
+
         final long sequence = UPDATE_SEQUENCE.get();
         if (sequence == lastRenderedSequence && !completed) {
             return;
@@ -222,20 +228,12 @@ public final class SaveProgressOverlayCoordinator {
             return;
         }
 
-        if (RenderThreadMode.isEnabled()) {
-            // RT 的 GL 上下文与 ThreadLocal 防重入守卫都必须位于渲染线程。
-            try {
-                ServiceRegistry.require(RenderFramePump.class)
-                        .runOnRenderThread(() -> replayFrame(currentDialog, snapshot, sequence, now));
-            } catch (final RuntimeException throwable) {
-                LOGGER.error("[SSOptimizer] 保存/读档进度渲染线程回放调度失败，已自动回退为无 UI 保底模式", throwable);
-                clearState();
+        if (frames == null) {
+            if (!hasCurrentOpenGlContext()) {
+                return;
             }
-            return;
-        }
-
-        if (!hasCurrentOpenGlContext()) {
-            return;
+        } else if (Global.getSettings().getBoolean("updateDisplayDuringSavingOrLoading")) {
+            frames.restoreBackground(currentDialog);
         }
         replayFrame(currentDialog, snapshot, sequence, now);
     }
@@ -259,7 +257,7 @@ public final class SaveProgressOverlayCoordinator {
                 clearState();
             }
         } catch (final RuntimeException throwable) {
-            LOGGER.error("[SSOptimizer] 保存/读档进度重放原版界面失败，已自动回退为无 UI 保底模式", throwable);
+            LOGGER.error("[SSOptimizer] 存读档进度界面绘制失败，停止重放当前弹窗", throwable);
             clearState();
         } finally {
             REPLAY_GUARD.set(false);
