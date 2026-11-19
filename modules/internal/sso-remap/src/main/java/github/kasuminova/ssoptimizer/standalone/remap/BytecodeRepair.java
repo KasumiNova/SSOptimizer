@@ -55,6 +55,7 @@ final class BytecodeRepair {
         }), preserveFrames ? ClassReader.EXPAND_FRAMES : ClassReader.SKIP_FRAMES);
         final int inputVersion = node.version & 0xffff;
         if (mapping != null && preserveFrames) {
+            ClassNameLiterals.rewrite(node, mapping);
             MemberNameComparisons.rewrite(node);
             ReflectionLookups.rewrite(node);
         } else if (mapping != null) {

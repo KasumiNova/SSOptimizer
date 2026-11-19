@@ -26,10 +26,13 @@ public final class ReflectionNames {
         return index == null || name == null ? name : index.className(name);
     }
 
-    /** 假定混淆名的模组取类名时返回混淆名；索引未就绪时返回当前名称。 */
-    public static String legacyName(Class<?> type) {
+    public static boolean classNameMatches(boolean originalResult, Class<?> type, String expected) {
+        if (originalResult) return true;
         var index = active;
-        return index == null ? type.getName() : index.legacyName(type);
+        if (index == null || type == null) return false;
+        Class<?> element = type;
+        while (element.isArray()) element = element.getComponentType();
+        return index.owns(element) && type.getName().equals(index.className(expected));
     }
 
     public static boolean isGameClass(Class<?> type) {
