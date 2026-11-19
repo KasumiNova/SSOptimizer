@@ -18,6 +18,7 @@ final class ReflectionLookups {
     private static final String C = "Ljava/lang/Class;", S = "Ljava/lang/String;", T = "Ljava/lang/invoke/MethodType;";
     private static final String H = "Ljava/lang/invoke/MethodHandle;", V = "Ljava/lang/invoke/VarHandle;";
     private static final String LAMBDA_METAFACTORY = "java/lang/invoke/LambdaMetafactory";
+    private static final String AI_TWEAKS_LOADING = "com/genir/aitweaks/launcher/loading/";
     private static final int LAMBDA_IMPL = 1, LAMBDA_FLAGS = 3, LAMBDA_SERIALIZABLE = 1;
 
     private enum Name {
@@ -67,11 +68,24 @@ final class ReflectionLookups {
                 method.maxLocals = Math.max(method.maxLocals, scratch + used);
             }
             method.maxStack += extraStack;
-            legacyNames(method);
+            if (!readsNamedBytecode(node.name, method)) legacyNames(method);
         }
     }
 
-    /** 假定混淆名的模组依赖 Class.getName()：改取混淆名，比较、集合键与开关分支随之一致。 */
+    // AITweaks 使用 JVM 类名读取 named 归档、构造描述符和生成其私有核心的重写表。
+    private static boolean readsNamedBytecode(String owner, MethodNode method) {
+        if ((AI_TWEAKS_LOADING + "Symbols").equals(owner)) {
+            return switch (method.name) {
+                case "getClassPath" -> method.desc.equals("(" + C + ")" + S);
+                case "getMethodsInOrder" -> method.desc.equals("(" + C + ")Ljava/util/List;");
+                default -> false;
+            };
+        }
+        return (AI_TWEAKS_LOADING + "CoreLoader").equals(owner)
+                && method.name.startsWith("obfuscator_delegate$lambda$")
+                && method.desc.equals("()L" + AI_TWEAKS_LOADING + "Transformer;");
+    }
+
     private static void legacyNames(MethodNode method) {
         for (var insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
             if (!(insn instanceof MethodInsnNode call) || call.getOpcode() != INVOKEVIRTUAL

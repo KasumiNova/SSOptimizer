@@ -53,6 +53,42 @@ class ReflectionLookupsTest {
         assertArrayEquals(calls.toArray(), m.instructions.toArray());
     }
 
+    @Test void preservesNamesReadByNamedBytecodeConsumersAndTranslatesOtherReads() {
+        String base = "com/genir/aitweaks/launcher/loading/";
+        String classToString = "(Ljava/lang/Class;)Ljava/lang/String;";
+        var symbols = new ClassNode();
+        symbols.name = base + "Symbols";
+        var classPath = nameRead(symbols, "getClassPath", classToString);
+        var methodOrder = nameRead(symbols, "getMethodsInOrder", "(Ljava/lang/Class;)Ljava/util/List;");
+        var foreignUse = nameRead(symbols, "unrelated", classToString);
+        var loader = new ClassNode();
+        loader.name = base + "CoreLoader";
+        var transformer = nameRead(loader, "obfuscator_delegate$lambda$2", "()L" + base + "Transformer;");
+        var officer = new ClassNode();
+        officer.name = "mod/officer/Symbols";
+        var legacy = nameRead(officer, "getClassPath", classToString);
+
+        for (var node : List.of(symbols, loader, officer)) ReflectionLookups.rewrite(node);
+        for (var call : List.of(classPath, methodOrder, transformer)) {
+            assertEquals(INVOKEVIRTUAL, call.getOpcode());
+            assertEquals("java/lang/Class", call.owner);
+            assertEquals("getName", call.name);
+        }
+        for (var call : List.of(foreignUse, legacy)) {
+            assertEquals(INVOKESTATIC, call.getOpcode());
+            assertEquals("legacyName", call.name);
+            assertEquals(classToString, call.desc);
+        }
+    }
+
+    private static MethodInsnNode nameRead(ClassNode node, String methodName, String descriptor) {
+        var method = new MethodNode(0, methodName, descriptor, null, null);
+        node.methods.add(method);
+        var call = new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Class", "getName", "()Ljava/lang/String;", false);
+        method.instructions.add(call);
+        return call;
+    }
+
     private static void check(MethodInsnNode call, String helper) throws AnalyzerException {
         Type[] args = Type.getArgumentTypes(call.desc);
         var params = new ArrayList<Type>();
