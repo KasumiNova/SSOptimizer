@@ -97,6 +97,11 @@ class ReflectionNamesTest {
             assertTrue(ReflectionNames.comparison(null, null, null, true));
             assertFalse(ReflectionNames.matches("not a member", "b"));
             assertEquals("a", ReflectionNames.fieldName(foreign.loadClass("game.Base"), "a", int.class));
+            assertEquals("x.B", ReflectionNames.legacyName(base));
+            assertEquals("x.F", ReflectionNames.legacyName(Class.forName("game.Face", false, launch)));
+            assertEquals("[Lx.B;", ReflectionNames.legacyName(java.lang.reflect.Array.newInstance(base, 0).getClass()));
+            assertEquals("java.lang.String", ReflectionNames.legacyName(String.class));
+            assertThrows(NullPointerException.class, () -> ReflectionNames.legacyName(null));
             assertFalse(ReflectionIndex.read(tiny, List.of(game), wrongSource).owns(wrongSource.loadClass("game.Base")));
         }
     }

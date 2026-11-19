@@ -40,6 +40,8 @@ final class ReflectionIndex {
     private final Map<String, Shape> game = new HashMap<>();
     private final Set<String> mounted = new HashSet<>();
     private final Map<String, String> classes = new HashMap<>();
+    private final Map<String, String> legacy = new HashMap<>();
+    private final Set<String> ambiguous = new HashSet<>();
     private final Set<String> warnings = ConcurrentHashMap.newKeySet();
 
     private record Alias(String target, String desc) { }
@@ -141,7 +143,11 @@ final class ReflectionIndex {
             String name = dest == null ? original : dest.replace('/', '.');
             Shape gameType = index.game.get(name);
             if (gameType == null) continue;
-            if (!original.equals(name)) index.classes.put(original, name);
+            if (!original.equals(name)) {
+                index.classes.put(original, name);
+                var previous = index.legacy.putIfAbsent(name, original);
+                if (previous != null && !previous.equals(original)) index.ambiguous.add(name);
+            }
             for (var field : cls.getFields()) alias(gameType.fields, field, ns, false);
             for (var method : cls.getMethods()) alias(gameType.methods, method, ns, true);
         }
@@ -194,6 +200,22 @@ final class ReflectionIndex {
     }
 
     boolean owns(Class<?> type) { return type != null && type.getClassLoader() == loader && owned.get(type); }
+
+    /**
+     * 返回该类在混淆命名空间中的名称，供假定混淆名的模组比较使用。
+     *
+     * <p>仅对自身加载的游戏类生效；数组按描述符逐层还原元素名，未映射类与
+     * 多个混淆名折叠到同一目标名的情形返回当前名称。
+     */
+    String legacyName(Class<?> type) {
+        Class<?> element = type;
+        while (element.isArray()) element = element.getComponentType();
+        String name = type.getName();
+        if (!owns(element) || element.isPrimitive()) return name;
+        String retired = legacy.get(element.getName());
+        if (retired == null || ambiguous.contains(element.getName())) return name;
+        return type.isArray() ? name.substring(0, name.indexOf('L') + 1) + retired + ";" : retired;
+    }
 
     String className(String name) {
         if (name.startsWith("[")) {

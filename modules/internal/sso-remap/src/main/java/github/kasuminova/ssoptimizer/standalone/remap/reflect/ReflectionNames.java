@@ -26,6 +26,12 @@ public final class ReflectionNames {
         return index == null || name == null ? name : index.className(name);
     }
 
+    /** 假定混淆名的模组取类名时返回混淆名；索引未就绪时返回当前名称。 */
+    public static String legacyName(Class<?> type) {
+        var index = active;
+        return index == null ? type.getName() : index.legacyName(type);
+    }
+
     public static boolean isGameClass(Class<?> type) {
         var index = active;
         if (type == null || index == null) return false;
