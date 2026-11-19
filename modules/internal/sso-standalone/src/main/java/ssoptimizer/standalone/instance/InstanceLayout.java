@@ -1,6 +1,5 @@
 package ssoptimizer.standalone.instance;
 
-import com.google.gson.Gson;
 import ssoptimizer.standalone.mods.ModCatalog;
 
 import java.io.IOException;
@@ -8,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +15,8 @@ import java.util.Properties;
 import static ssoptimizer.standalone.instance.InstanceFiles.NO_LINK;
 
 public final class InstanceLayout {
+    private static final System.Logger LOG = System.getLogger(InstanceLayout.class.getName());
+
     private InstanceLayout() {}
 
     public static void prepare(Path gameRoot, Path home, Path instance) throws IOException {
@@ -32,21 +32,22 @@ public final class InstanceLayout {
         InstanceLock.with(root, state -> {
             Path mods = InstanceFiles.directory(root, "mods");
             for (String dir : List.of("saves", "logs", "screenshots")) InstanceFiles.directory(root, dir);
-            ModCopies.recover(state, mods, game);
+            ModCopies.recover(state, mods);
             Path registry = InstanceFiles.child(state, "installed.properties");
             Properties previous = ModCopies.read(registry);
-            if (previous.containsKey("@game") && !game.toString().equals(previous.getProperty("@game"))) {
-                throw new IOException("实例已绑定到另一游戏安装：" + previous.getProperty("@game"));
-            }
             Path source = game.resolve("mods");
             Map<String, Path> files = new LinkedHashMap<>();
+            boolean sourceHasOptimizer = false;
             if (Files.exists(source, NO_LINK)) {
                 try (var entries = Files.list(source)) {
                     for (Path entry : entries.sorted().toList()) {
                         String name = entry.getFileName().toString();
                         if (name.equalsIgnoreCase("coremods") || !Files.isDirectory(entry)
                                 || !Files.isRegularFile(entry.resolve("mod_info.json"))) continue;
-                        if (ModCatalog.modId(entry).equals("ssoptimizer")) continue;
+                        if (sourceOptimizer(entry)) {
+                            sourceHasOptimizer = true;
+                            continue;
+                        }
                         if (name.equalsIgnoreCase("ssoptimizer")) throw new IOException("普通模组占用官方模组目录：" + entry);
                         collect(entry.toRealPath(), root, name, files);
                     }
@@ -62,25 +63,26 @@ public final class InstanceLayout {
             if (bundled != null && Files.mismatch(bundled, payload) != -1) throw new IOException("模板与发行负载不同：" + bundled);
             Path enabled = InstanceFiles.child(mods, "enabled_mods.json");
             byte[] initialSelection = null;
-            if (!previous.containsKey("@game")) {
-                var excluded = ModCatalog.externalCoremods(source);
-                if (!excluded.isEmpty()) System.getLogger(InstanceLayout.class.getName()).log(System.Logger.Level.WARNING,
-                        "独立实例不会加载这些 NanoForge 插件及其汉化或补丁，需要时请使用 NanoForge：{0}", excluded);
-            }
-            if (Files.exists(enabled, NO_LINK)) {
-                if (!ModCatalog.enabledIds(mods).contains("ssoptimizer")) {
-                    throw new IOException("实例已禁用 ssoptimizer，请先在实例启用清单中明确启用：" + enabled);
+            if (!previous.containsKey("@game") && !Files.exists(enabled, NO_LINK)) {
+                Path sourceSelection = source.resolve("enabled_mods.json");
+                if (Files.exists(sourceSelection, NO_LINK)) {
+                    initialSelection = Files.readAllBytes(sourceSelection);
+                } else if (!sourceHasOptimizer) {
+                    initialSelection = "{\"enabledMods\":[\"ssoptimizer\"]}".getBytes(StandardCharsets.UTF_8);
                 }
-            } else {
-                if (previous.containsKey("@game")) throw new IOException("实例的启用清单丢失，请恢复：" + enabled);
-                List<String> ids = new ArrayList<>(ModCatalog.enabledIds(source));
-                if (!ids.contains("ssoptimizer")) ids.add("ssoptimizer");
-                String json = new Gson().toJson(Map.of("enabledMods", ids));
-                initialSelection = json.getBytes(StandardCharsets.UTF_8);
             }
             ModCopies.update(state, mods, game, files, previous, initialSelection);
             return null;
         });
+    }
+
+    private static boolean sourceOptimizer(Path entry) {
+        try {
+            return ModCatalog.modId(entry).equals("ssoptimizer");
+        } catch (IOException e) {
+            LOG.log(System.Logger.Level.WARNING, "源模组元数据无法解析：" + entry.resolve("mod_info.json"), e);
+            return false;
+        }
     }
 
     private static void collect(Path source, Path instance, String name, Map<String, Path> files) throws IOException {

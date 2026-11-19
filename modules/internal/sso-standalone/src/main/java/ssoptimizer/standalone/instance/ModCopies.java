@@ -5,8 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
 
 import static ssoptimizer.standalone.instance.InstanceFiles.NO_LINK;
@@ -14,6 +17,7 @@ import static ssoptimizer.standalone.instance.InstanceFiles.NO_LINK;
 final class ModCopies {
     private static final String ABSENT = "-";
     private static final String DIRECTORY = "directory";
+    private static final String LOCAL = "local";
 
     private ModCopies() {}
 
@@ -50,33 +54,48 @@ final class ModCopies {
     static void update(Path state, Path mods, Path game, Map<String, Path> source, Properties previous, byte[] initialSelection) throws IOException {
         Properties next = new Properties();
         next.setProperty("@game", game.toString());
+        boolean sourceChanged = previous.containsKey("@game") && !next.getProperty("@game").equals(previous.getProperty("@game"));
         Properties changes = new Properties();
-        var priorKeys = new TreeSet<>(previous.stringPropertyNames());
-        priorKeys.remove("@game");
-        var keys = new TreeSet<>(priorKeys);
-        keys.addAll(source.keySet());
+        var keys = new TreeSet<String>();
+        Set<String> retained = new HashSet<>();
+        for (String key : previous.stringPropertyNames()) if (!key.equals("@game")) keys.add(fileKey(key));
+        for (String key : source.keySet()) keys.add(fileKey(key));
         for (String key : keys) {
             Path target = modFile(mods, key);
-            String old = previous.getProperty(key, ABSENT);
-            String desired = source.containsKey(key) ? (key.endsWith("/") ? DIRECTORY : InstanceFiles.digest(source.get(key))) : ABSENT;
-            if (!desired.equals(ABSENT)) next.setProperty(key, desired);
-            boolean official = key.startsWith("ssoptimizer/");
-            if (old.equals(desired) && !official) continue;
+            if (underRetained(key, retained)) continue;
+            String old = recorded(previous, key);
+            boolean official = official(key);
+            if (LOCAL.equals(old) || sourceChanged && !official && !ABSENT.equals(old)) {
+                record(next, key, LOCAL);
+                retained.add(key);
+                continue;
+            }
+            Path input = source.get(key);
+            String desired = input != null ? InstanceFiles.digest(input) : source.containsKey(key + '/') ? DIRECTORY : ABSENT;
+            if (old.equals(desired) && !DIRECTORY.equals(old) && !official) {
+                record(next, key, desired);
+                continue;
+            }
             String installed = current(target);
-            String previousChild = priorKeys.ceiling(key);
-            boolean previouslyPopulated = previousChild != null && previousChild.startsWith(key);
-            switch (decide(old, installed, desired, previouslyPopulated)) {
-                case KEEP -> { }
-                case UPDATE -> changes.setProperty(key, installed);
+            switch (decide(old, installed, desired, official)) {
+                case KEEP -> record(next, key, desired);
+                case UPDATE -> {
+                    record(next, key, desired);
+                    changes.setProperty(key, installed);
+                }
+                case PRESERVE -> {
+                    record(next, key, LOCAL);
+                    retained.add(key);
+                }
                 case UNOWNED -> throw new IOException("实例目标已有非托管文件或目录：" + target);
-                case CONFLICT -> throw new IOException("实例文件已被修改，请先备份并解决版本冲突：" + target);
+                case CONFLICT -> throw new IOException("实例 SSOptimizer 发行文件与当前版本冲突：" + target);
             }
         }
-        if (changes.isEmpty() && next.equals(previous)) return;
+        if (changes.isEmpty() && next.equals(previous) && initialSelection == null) return;
         Path staged = Files.createTempDirectory(state, "stage-");
         try {
             for (String key : changes.stringPropertyNames()) {
-                if (!source.containsKey(key) || key.endsWith("/")) continue;
+                if (!source.containsKey(key)) continue;
                 Path copy = staged.resolve("files").resolve(key);
                 Files.createDirectories(copy.getParent());
                 InstanceFiles.copyOwned(source.get(key), copy);
@@ -89,25 +108,66 @@ final class ModCopies {
         } finally {
             if (Files.exists(staged, NO_LINK)) InstanceFiles.deletePrivateTree(staged);
         }
-        recover(state, mods, game);
+        recover(state, mods);
     }
 
-    enum Change { KEEP, UPDATE, UNOWNED, CONFLICT }
+    enum Change { KEEP, UPDATE, PRESERVE, UNOWNED, CONFLICT }
 
-    static Change decide(String previous, String installed, String desired, boolean previouslyPopulated) {
-        if (previous.equals(ABSENT) && !installed.equals(ABSENT)) {
-            return installed.equals(DIRECTORY) && desired.equals(DIRECTORY) && previouslyPopulated ? Change.KEEP : Change.UNOWNED;
+    static Change decide(String previous, String installed, String desired, boolean official) {
+        if (installed.equals(previous)) {
+            if (installed.equals(desired)) return Change.KEEP;
+            if (isTypeChange(installed, desired)) return official ? Change.CONFLICT : Change.PRESERVE;
+            return Change.UPDATE;
         }
+        if (!official) return Change.PRESERVE;
+        if (DIRECTORY.equals(installed) && DIRECTORY.equals(desired)) return Change.KEEP;
+        if (previous.equals(ABSENT)) return Change.UNOWNED;
         if (installed.equals(desired)) return Change.KEEP;
-        return installed.equals(previous) ? Change.UPDATE : Change.CONFLICT;
+        return Change.CONFLICT;
+    }
+
+    private static boolean isTypeChange(String installed, String desired) {
+        return !ABSENT.equals(installed) && !ABSENT.equals(desired) && DIRECTORY.equals(installed) != DIRECTORY.equals(desired);
+    }
+
+    private static String fileKey(String entry) {
+        return entry.endsWith("/") ? entry.substring(0, entry.length() - 1) : entry;
+    }
+
+    private static String recorded(Properties entries, String key) {
+        return entries.getProperty(key, entries.getProperty(key + '/', ABSENT));
+    }
+
+    private static void record(Properties entries, String key, String value) {
+        entries.remove(key);
+        entries.remove(key + '/');
+        if (!ABSENT.equals(value)) entries.setProperty(DIRECTORY.equals(value) ? key + '/' : key, value);
+    }
+
+    private static boolean underRetained(String key, Set<String> retained) {
+        for (int slash = key.indexOf('/'); slash >= 0; slash = key.indexOf('/', slash + 1)) {
+            if (retained.contains(key.substring(0, slash))) return true;
+        }
+        return false;
+    }
+
+    private static boolean official(String key) {
+        return switch (key) {
+            case "ssoptimizer", "ssoptimizer/mod_info.json", "ssoptimizer/jars", "ssoptimizer/jars/payload.jar" -> true;
+            default -> false;
+        };
     }
 
     private static Path modFile(Path mods, String key) throws IOException {
-        if (key.indexOf('/') < 1 || key.startsWith("coremods/")) throw new IOException("无效模组归属记录：" + key);
+        int slash = key.indexOf('/');
+        String root = slash < 0 ? key : key.substring(0, slash);
+        if (root.equalsIgnoreCase("coremods") || root.equalsIgnoreCase("enabled_mods.json") || root.equals("@game")) {
+            throw new IOException("无效模组归属记录：" + key);
+        }
         return InstanceFiles.child(mods, key);
     }
 
-    static void recover(Path state, Path mods, Path game) throws IOException {
+    static void recover(Path state, Path mods) throws IOException {
         Path pending = InstanceFiles.child(state, "pending");
         if (!Files.exists(pending, NO_LINK)) return;
         Path inventory = InstanceFiles.child(pending, "next.properties");
@@ -115,39 +175,61 @@ final class ModCopies {
         InstanceFiles.regular(inventory);
         InstanceFiles.regular(journal);
         Properties next = read(inventory);
-        if (!game.toString().equals(next.getProperty("@game"))) throw new IOException("实例更新日志的游戏来源不同：" + inventory);
+        if (!next.containsKey("@game")) throw new IOException("实例更新日志缺少游戏来源：" + inventory);
         Properties changes = read(journal);
-        var ordered = new java.util.ArrayList<>(changes.stringPropertyNames());
+        var ordered = new ArrayList<>(changes.stringPropertyNames());
         ordered.sort((a, b) -> {
-            boolean removeA = !next.containsKey(a), removeB = !next.containsKey(b);
+            boolean removeA = ABSENT.equals(recorded(next, fileKey(a))), removeB = ABSENT.equals(recorded(next, fileKey(b)));
             if (removeA != removeB) return removeA ? -1 : 1;
             return removeA ? b.compareTo(a) : a.compareTo(b);
         });
-        for (String key : ordered) {
+        var preserved = new HashSet<String>();
+        for (String entry : ordered) {
+            String key = fileKey(entry);
             Path target = modFile(mods, key);
-            String desired = next.getProperty(key, ABSENT);
+            String desired = recorded(next, key);
             String installed = current(target);
             if (installed.equals(desired)) continue;
-            if (!installed.equals(changes.getProperty(key))) throw new IOException("恢复更新时目标已被修改：" + target);
+            if (!installed.equals(changes.getProperty(entry)) || underRetained(key, preserved)
+                    || !Files.isDirectory(target.getParent(), NO_LINK)) {
+                if (official(key)) throw new IOException("恢复更新时 SSOptimizer 发行文件已被修改：" + target);
+                record(next, key, LOCAL);
+                preserved.add(key);
+                continue;
+            }
             if (desired.equals(ABSENT)) {
                 if (installed.equals(DIRECTORY)) {
-                    try (var entries = Files.list(target)) { if (entries.findAny().isPresent()) continue; }
+                    try (var entries = Files.list(target)) {
+                        if (entries.findAny().isPresent()) {
+                            if (!official(key)) record(next, key, LOCAL);
+                            continue;
+                        }
+                    }
                 }
                 Files.delete(target);
             } else if (desired.equals(DIRECTORY)) {
                 Files.createDirectory(target);
             } else {
                 Path copy = InstanceFiles.child(pending, "files/" + key);
+                InstanceFiles.regular(copy);
                 if (!InstanceFiles.digest(copy).equals(desired)) throw new IOException("待更新文件摘要不符：" + copy);
-                Files.createDirectories(target.getParent());
                 replace(copy, target);
             }
         }
         Path enabled = InstanceFiles.child(mods, "enabled_mods.json");
         Path selection = InstanceFiles.child(pending, "enabled.json");
-        if (Files.exists(selection, NO_LINK) && !Files.exists(enabled, NO_LINK)) writeNew(enabled, Files.readAllBytes(selection));
-        replace(inventory, InstanceFiles.child(state, "installed.properties"));
-        // 先移出恢复位置，删除中断后下次启动仍能读取完整归属清单。
+        if (Files.exists(selection, NO_LINK) && !Files.exists(enabled, NO_LINK)) {
+            InstanceFiles.regular(selection);
+            writeNew(enabled, Files.readAllBytes(selection));
+        }
+        Path registry = InstanceFiles.child(state, "installed.properties");
+        Path temp = Files.createTempFile(state, ".layout-", ".tmp");
+        try {
+            try (var out = Files.newOutputStream(temp)) { next.store(out, null); }
+            Files.move(temp, registry, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temp);
+        }
         Path done = state.resolve("done-" + java.util.UUID.randomUUID());
         Files.move(pending, done, StandardCopyOption.ATOMIC_MOVE);
         InstanceFiles.deletePrivateTree(done);

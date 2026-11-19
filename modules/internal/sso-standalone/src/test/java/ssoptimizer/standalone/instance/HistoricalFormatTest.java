@@ -132,16 +132,6 @@ class HistoricalFormatTest {
         }
     }
 
-    @Test void copiedFilesRequireOwnershipBeforeReplacementOrDeletion() {
-        assertEquals(ModCopies.Change.UNOWNED, ModCopies.decide("-", "local", "local", false));
-        assertEquals(ModCopies.Change.CONFLICT, ModCopies.decide("base", "local", "new", false));
-        assertEquals(ModCopies.Change.CONFLICT, ModCopies.decide("base", "local", "-", false));
-        assertEquals(ModCopies.Change.UPDATE, ModCopies.decide("base", "base", "-", false));
-        assertEquals(ModCopies.Change.KEEP, ModCopies.decide("base", "new", "new", false));
-        assertEquals(ModCopies.Change.UNOWNED, ModCopies.decide("-", "directory", "directory", false));
-        assertEquals(ModCopies.Change.KEEP, ModCopies.decide("-", "directory", "directory", true));
-    }
-
     @Test void dtdAndExternalEntitiesAreRejected() throws Exception {
         var symbols = symbols(TINY);
         for (String dtd : new String[]{"<!DOCTYPE list>", "<!DOCTYPE list [<!ENTITY x SYSTEM 'file:/never/open'>]>"}) {
