@@ -105,7 +105,7 @@ for (flavor in flavors) {
             group = "distribution"
             description = "准备 Standalone $platform 的独立版本目录"
             dependsOn(":modules:internal:sso-standalone:$agentTask", ":modules:internal:$symbols:jar")
-            if (obf) dependsOn(":verifyObfRelease") else dependsOn(prepareMapping, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-host-standalone:jar")
+            if (obf) dependsOn(":verifyObfLinks") else dependsOn(prepareMapping, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-host-standalone:jar")
             inputs.files(lockFile, helper); inputs.property("versionId", versionId); inputs.property("nativeTarget", target); inputs.property("gameAbi", abi)
             into(output); duplicatesStrategy = DuplicatesStrategy.FAIL
             from(payload) { rename { "payload.jar" } }; from(agent) { rename { "agent.jar" } }
@@ -150,7 +150,9 @@ for (flavor in flavors) {
     }
     val metadata = base.map { it.dir("windows/$flavor/signed").asFile }
     val signRelease = tasks.register("signStandaloneWindows$suffix") {
-        dependsOn(stageTasks.getValue("windows")); outputs.dir(metadata); outputs.upToDateWhen { false }
+        dependsOn(stageTasks.getValue("windows"))
+        if (obf) dependsOn(":verifyObfRelease")
+        outputs.dir(metadata); outputs.upToDateWhen { false }
         doLast {
             val key = signKey.orNull ?: throw GradleException("Windows 发布需要发行者 RSA PKCS#8 私钥：-Pstandalone.signingKey=<文件>")
             releaseTool("sign", base.get().dir("windows/$flavor/version").asFile.absolutePath, metadata.get().absolutePath, sources.resolve("windows").absolutePath, versionId, rootProject.file(key).absolutePath, flavor, rootProject.rootDir.absolutePath, symbolJar.get().name)
