@@ -13,7 +13,7 @@ final class FlavorHost {
     private FlavorHost() {}
 
     static void initialize(LaunchPlan plan, LaunchClassLoader loader) throws IOException {
-        NamedLoaderUrls.install(plan);
+        NamedLoaderUrls.install(plan, loader);
         var mods = new java.util.HashSet<java.net.URL>();
         for (Path path : plan.mods) mods.add(path.toUri().toURL());
         ArchiveClassPath.mount(loader, plan.archives, java.util.Set.of(), plan.origins, mods::contains, NamedLoaderUrls::rewrite);
