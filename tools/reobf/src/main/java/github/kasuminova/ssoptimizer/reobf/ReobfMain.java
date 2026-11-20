@@ -4,6 +4,7 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.Opcodes;
@@ -47,20 +48,29 @@ public final class ReobfMain {
                     throw new IOException("Class names changed during project JAR reobfuscation: input="
                             + difference(classes, remapped.keySet()) + ", output=" + difference(remapped.keySet(), classes));
                 }
+                int encodedSelectors = 0;
                 for (Map.Entry<String, byte[]> entry : remapped.entrySet()) {
-                    validate(entry.getValue(), mappings, original);
+                    var node = new ClassNode();
+                    new ClassReader(entry.getValue()).accept(node, 0);
+                    validate(node, mappings, original);
+                    int encoded = MixinSymbols.encodeSelectors(node, original);
+                    if (encoded > 0) {
+                        var writer = new ClassWriter(0);
+                        node.accept(writer);
+                        entry.setValue(writer.toByteArray());
+                        encodedSelectors += encoded;
+                    }
                 }
                 writeArchive(archive, output, remapped);
-                System.out.println("Reobfuscated " + classes.size() + " project classes: " + output);
+                System.out.println("Reobfuscated " + classes.size() + " project classes and encoded "
+                        + encodedSelectors + " structured Mixin selectors: " + output);
             }
         } finally {
             Files.deleteIfExists(input);
         }
     }
 
-    private static void validate(byte[] content, ReobfMappings mappings, GameClasses original) {
-        var node = new ClassNode();
-        new ClassReader(content).accept(node, 0);
+    private static void validate(ClassNode node, ReobfMappings mappings, GameClasses original) {
         MixinSymbols.validate(node, mappings, original);
         node.accept(new ClassRemapper(new ClassVisitor(Opcodes.ASM9) {}, new Remapper(Opcodes.ASM9) {
             @Override

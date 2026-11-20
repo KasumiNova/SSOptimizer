@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,9 +41,10 @@ final class GameClasses {
                     }
                     Map<Signature, Integer> fields = new HashMap<>();
                     for (FieldNode field : type.fields) fields.put(new Signature(ObfClasses.memberName(field.name, false), field.desc), field.access);
-                    Map<Signature, Integer> methods = new HashMap<>();
+                    Map<Signature, Integer> methods = new LinkedHashMap<>();
                     for (MethodNode method : type.methods) methods.put(new Signature(ObfClasses.memberName(method.name, true), method.desc), method.access);
-                    var definition = new Definition(type.access, type.superName, List.copyOf(type.interfaces), Map.copyOf(fields), Map.copyOf(methods));
+                    var definition = new Definition(type.access, type.superName, List.copyOf(type.interfaces), Map.copyOf(fields),
+                            java.util.Collections.unmodifiableMap(methods));
                     Definition previous = definitions.putIfAbsent(type.name, definition);
                     if (previous != null && !previous.equals(definition)) {
                         throw new IOException("Conflicting game class " + type.name + " in " + archive);
@@ -62,6 +64,13 @@ final class GameClasses {
         Definition type = classes.get(owner);
         return type != null && (method ? type.methods() : type.fields()).keySet().stream().anyMatch(signature ->
                 signature.name().equals(name) && (descriptor == null || signature.descriptor().equals(descriptor)));
+    }
+
+    List<String> methodDescriptors(String owner, String name) {
+        Definition type = classes.get(owner);
+        if (type == null) return List.of();
+        return type.methods().keySet().stream().filter(signature -> signature.name().equals(name))
+                .map(Signature::descriptor).toList();
     }
 
     boolean hasMember(String owner, String name, String descriptor, boolean method) {

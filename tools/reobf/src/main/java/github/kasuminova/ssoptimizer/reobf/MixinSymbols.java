@@ -1,5 +1,6 @@
 package github.kasuminova.ssoptimizer.reobf;
 
+import net.fabricmc.tinyremapper.extension.mixin.soft.data.MemberInfo;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -12,6 +13,7 @@ final class MixinSymbols {
     private static final String MIXIN = "Lorg/spongepowered/asm/mixin/Mixin;";
     private static final String SHADOW = "Lorg/spongepowered/asm/mixin/Shadow;";
     private static final String AT = "Lorg/spongepowered/asm/mixin/injection/At;";
+    private static final String DESC = "Lorg/spongepowered/asm/mixin/injection/Desc;";
 
     private MixinSymbols() {}
 
@@ -40,6 +42,143 @@ final class MixinSymbols {
             }
         }
         shadow.values.set(index, new ArrayList<>(aliases));
+    }
+
+    static int encodeSelectors(ClassNode mixin, GameClasses game) {
+        List<String> targets = targets(mixin);
+        if (targets.isEmpty()) return 0;
+        int changed = 0;
+        for (var method : mixin.methods) {
+            changed += encodeInjectors(method.visibleAnnotations, targets, game);
+            changed += encodeInjectors(method.invisibleAnnotations, targets, game);
+        }
+        return changed;
+    }
+
+    private static int encodeInjectors(List<AnnotationNode> annotations, List<String> targets, GameClasses game) {
+        if (annotations == null) return 0;
+        int changed = 0;
+        for (AnnotationNode annotation : annotations) {
+            if (!annotation.desc.startsWith("Lorg/spongepowered/asm/mixin/injection/")
+                    && !annotation.desc.startsWith("Lcom/llamalad7/mixinextras/")) continue;
+            if (value(annotation, "method") instanceof List<?> selectors) {
+                var legacy = new ArrayList<String>();
+                var structured = new ArrayList<AnnotationNode>();
+                for (Object raw : selectors) {
+                    String selector = (String) raw;
+                    MemberInfo member = restrictedSelector(selector);
+                    if (member == null) {
+                        legacy.add(selector);
+                    } else {
+                        encodeMethods(member, targets, game, structured);
+                        changed++;
+                    }
+                }
+                if (!structured.isEmpty()) {
+                    if (value(annotation, "target") instanceof List<?> existing) {
+                        for (Object target : existing) structured.add((AnnotationNode) target);
+                    }
+                    setValue(annotation, "method", legacy);
+                    setValue(annotation, "target", structured);
+                }
+            }
+            changed += encodePoints(annotation.values);
+        }
+        return changed;
+    }
+
+    private static void encodeMethods(MemberInfo member, List<String> targets, GameClasses game, List<AnnotationNode> result) {
+        if (!member.getDesc().isEmpty()) {
+            result.add(descriptor(member, member.getOwner(), member.getDesc()));
+            return;
+        }
+        List<String> owners = member.getOwner().isEmpty() ? targets : List.of(member.getOwner());
+        boolean any = "*".equals(member.getQuantifier());
+        int size = result.size();
+        for (String owner : owners) {
+            var descriptors = game.methodDescriptors(owner, member.getName());
+            if (descriptors.size() > 1 && !member.getQuantifier().isEmpty() && !any) {
+                throw new IllegalArgumentException("A restricted method selector with a match limit needs a descriptor: " + member);
+            }
+            for (String desc : descriptors) {
+                result.add(descriptor(member, owner, desc));
+                if (!any) break;
+            }
+        }
+        if (result.size() == size) {
+            throw new IllegalArgumentException("Cannot determine the descriptor of restricted method selector " + member + " on " + targets);
+        }
+    }
+
+    private static int encodePoints(Object value) {
+        if (value instanceof List<?> values) {
+            int changed = 0;
+            for (Object item : values) changed += encodePoints(item);
+            return changed;
+        }
+        if (!(value instanceof AnnotationNode annotation)) return 0;
+        if (!AT.equals(annotation.desc)) return encodePoints(annotation.values);
+        if (!(value(annotation, "target") instanceof String selector) || "NEW".equals(value(annotation, "value"))) return 0;
+        MemberInfo member = restrictedSelector(selector);
+        if (member == null) return 0;
+        if (!member.isFullyQualified()) {
+            throw new IllegalArgumentException("A restricted @At selector needs an owner, name and descriptor: " + selector);
+        }
+        setValue(annotation, "target", "");
+        setValue(annotation, "desc", descriptor(member, member.getOwner(), member.getDesc()));
+        return 1;
+    }
+
+    private static MemberInfo restrictedSelector(String selector) {
+        if (selector.contains("->")) return null;
+        MemberInfo member = MemberInfo.parse(selector);
+        if (member == null) return null;
+        String owner = member.getOwner();
+        String name = member.getName();
+        String desc = member.getDesc();
+        // Mixin 0.8.7 validates these components without Unicode word matching.
+        return !owner.isEmpty() && !owner.matches("[\\w\\p{Sc}/]+")
+                || !name.isEmpty() && !name.matches("<?[\\w\\p{Sc}]+>?")
+                || !desc.isEmpty() && !desc.matches("(\\([\\w\\p{Sc}\\[/;]*\\))?\\[*[\\w\\p{Sc}/;]+") ? member : null;
+    }
+
+    private static AnnotationNode descriptor(MemberInfo member, String owner, String desc) {
+        var annotation = new AnnotationNode(DESC);
+        annotation.visit("value", member.getName());
+        if (!owner.isEmpty()) annotation.visit("owner", Type.getObjectType(owner));
+        if (desc.startsWith("(")) {
+            annotation.visit("ret", Type.getReturnType(desc));
+            annotation.values.add("args");
+            annotation.values.add(List.of(Type.getArgumentTypes(desc)));
+        } else {
+            annotation.visit("ret", Type.getType(desc));
+        }
+        setBounds(annotation, member.getQuantifier());
+        return annotation;
+    }
+
+    private static void setBounds(AnnotationNode desc, String quantifier) {
+        if (quantifier.isEmpty()) return;
+        if ("*".equals(quantifier) || "+".equals(quantifier)) {
+            desc.visit("min", "+".equals(quantifier) ? 1 : 0);
+            desc.visit("max", Integer.MAX_VALUE);
+            return;
+        }
+        var bounds = quantifier.substring(1, quantifier.length() - 1).split(",", -1);
+        int min = bounds[0].isEmpty() ? 0 : Integer.parseInt(bounds[0]);
+        int max = bounds.length == 1 ? min : bounds[1].isEmpty() ? Integer.MAX_VALUE : Integer.parseInt(bounds[1]);
+        if (min < 0 || max < 1 || max < min) throw new IllegalArgumentException("Invalid selector quantifier: " + quantifier);
+        desc.visit("min", min);
+        desc.visit("max", max);
+    }
+
+    private static void setValue(AnnotationNode annotation, String key, Object value) {
+        int index = valueIndex(annotation, key);
+        if (index < 0) {
+            annotation.visit(key, value);
+        } else {
+            annotation.values.set(index, value);
+        }
     }
 
     static void validate(ClassNode mixin, ReobfMappings mappings, GameClasses original) {
