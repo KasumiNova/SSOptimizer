@@ -1,6 +1,6 @@
 # RC8 的 obf 正式包与 dev 开发包
 
-同一份 named 源码生成 `obf` 和 `dev` 两种构件。`obf` 供玩家正式使用，SSO 对游戏的所有引用在构建时写成净化后的 obf 名。玩家端的命名空间处理只做 JVM 格式净化，渲染、存档等 SSO 优化仍按用户配置运行。`dev` 供开发者调试，保留 `.20`（`18e67d2`）的 named 模组、named 游戏环境和现有调试流程。下文的 `resolveReleaseAbi`、`reobfRelease` 和 `verifyObfRelease` 为拟议任务。
+同一份 named 源码生成 `obf` 和 `dev` 两种构件。`obf` 供玩家正式使用，SSO 对游戏的所有引用在构建时写成净化后的 obf 名。玩家端的命名空间处理只做 JVM 格式净化，渲染、存档等 SSO 优化仍按用户配置运行。`dev` 供开发者调试，保留 `.20`（`18e67d2`）的 named 模组、named 游戏环境和现有调试流程。`resolveReleaseAbi` 校验构建输入，`reobfRelease` 生成 obf 归档，`verifyObfLinks` 对照原版检查最终归档的静态引用。
 
 ## JDK 25 实测
 
@@ -56,6 +56,8 @@ ASM 处理器直接使用字符串匹配和生成指令。建议把注册类、�
 
 ## 存档、打包与发布验收
 
+obf 保存地形数据时使用原版支持的 Deflate 编码，保留原版读取存档所需的字段与 XML 名称。dev 继续按 `.20` 的配置使用 `SSOZ1` 或 Deflate。已有 `.20` 战役须先在私有工作区转换到新的 obf 槽位。两个发行版的 Linux 入口分别使用各自实例中的 `saves`，即使通过 `SSO_USE_GAME_DATA=1` 使用同一游戏资源目录，也分别保存进度。
+
 | 实施顺序 | 通过条件 |
 | --- | --- |
 | 冻结目标 ABI，打通首次启动 | 每个声明支持的字节码版本通过上述类探针。用隔离实例在 JDK 25 默认校验及 `-Xverify:all` 下启动。覆盖含点的成员、关键词成员、跨归档调用、汉化调试表。禁止依赖 `-noverify`。 |
@@ -66,7 +68,7 @@ ASM 处理器直接使用字符串匹配和生成指令。建议把注册类、�
 
 ### GitHub 发布
 
-在本地运行 `./gradlew packageStandaloneWindowsObf -Pssoptimizer.native.target=windows -Pstandalone.version=<版本>`，并按构建流程提供本地 ABI 输入和发行签名私钥。GitHub 仓库变量 `SSOPTIMIZER_RELEASE_PUBLIC_KEY_DER_BASE64` 保存发行者 RSA 公钥的 X.509 DER Base64 编码，由发行维护者通过独立渠道核对后配置。
+本地使用 `./gradlew packageStandaloneWindows -Pssoptimizer.native.target=windows -Pstandalone.version=<版本> -Pstandalone.verifyGame=<RC8游戏目录>` 构建两个压缩包。构建机提供私有 ABI 输入、签名密钥和 Python 3。`verifyObfLinks` 先检查最终归档的字节码引用，`verifyObfRelease` 再用构建机的 JDK 25 和暂存包的 RFB、Mixin 验证实际织入。`packageReleaseZips` 仅选择 Windows obf 压缩包。GitHub 仓库变量 `SSOPTIMIZER_RELEASE_PUBLIC_KEY_DER_BASE64` 保存发行者 RSA 公钥的 X.509 DER Base64 编码，由发行维护者通过独立渠道核对后配置。
 
 为对应提交创建 `v<版本>` tag，用 `gh release create v<版本> --verify-tag --draft <obf ZIP>` 创建草稿并上传唯一附件。计算 ZIP 的 SHA-256，以 tag 为运行引用手动启动工作流。
 

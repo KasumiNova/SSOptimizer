@@ -120,7 +120,7 @@ val reobfRelease = tasks.register("reobfRelease") {
     dependsOn(jobs)
 }
 
-tasks.register<JavaExec>("verifyObfRelease") {
+tasks.register<JavaExec>("verifyObfLinks") {
     group = "verification"
     description = "校验最终 obf 归档对游戏类、字段、方法的静态引用"
     dependsOn(reobfRelease)
@@ -137,5 +137,27 @@ tasks.register<JavaExec>("verifyObfRelease") {
         for (path in dependencies) arguments.addAll(listOf("--classpath", path.absolutePath))
         for (path in products.get()) arguments.addAll(listOf("--input", path.absolutePath))
         args(arguments)
+    }
+}
+
+val hostIsWindows = System.getProperty("os.name").lowercase().contains("windows")
+val qaPlatform = providers.gradleProperty("ssoptimizer.native.target").orElse(providers.gradleProperty("starsector.platform"))
+    .orElse(if (hostIsWindows) "windows" else "linux").get().lowercase()
+val qaGame = providers.gradleProperty("standalone.verifyGame").orElse(providers.environmentVariable("SSOPTIMIZER_VERIFY_GAME"))
+val python = providers.gradleProperty("standalone.python").getOrElse(if (hostIsWindows) "python" else "python3")
+tasks.register<Exec>("verifyObfRelease") {
+    group = "verification"
+    description = "在两种渲染模式下用发行包的 RFB 和 Mixin 织入原版游戏类"
+    dependsOn("stageStandalone${qaPlatform.replaceFirstChar(Char::uppercase)}Obf")
+    val script = rootProject.file("tools/standalone-validation/verify_obf_mixins.py")
+    doFirst {
+        val installation = qaGame.orNull ?: throw GradleException("请以 -Pstandalone.verifyGame=<RC8 游戏安装> 指定实际织入校验输入")
+        val stage = layout.buildDirectory.dir("standalone/$qaPlatform/obf/version").get().asFile
+        val reports = layout.buildDirectory.dir("reports/obf-weave").get().asFile.toPath()
+        java.nio.file.Files.createDirectories(reports)
+        val report = java.nio.file.Files.createTempDirectory(reports, "$abi-")
+        logger.lifecycle("实际织入报告：$report")
+        commandLine(python, script.absolutePath, "--stage", stage.absolutePath, "--game", rootProject.file(installation).absolutePath,
+            "--java-home", System.getProperty("java.home"), "--out", report.toString())
     }
 }
