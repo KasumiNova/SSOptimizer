@@ -44,7 +44,11 @@ class SaveProgressOverlayCoordinatorTest {
     @Test
     void completeMarksSnapshotForFinalFrame() {
         SaveProgressOverlayCoordinator.beginStreamPhase(128L, 0.0f, 1.0f);
-        SaveProgressOverlayCoordinator.onBytesWritten(64L);
+        SaveProgressOverlayCoordinator.onBytesWritten(256L);
+        SaveProgressOverlayCoordinator.reportProgress("保存中...", 100.0f);
+        final var writing = SaveProgressOverlayCoordinator.snapshot();
+        assertFalse(writing.completed());
+        assertTrue(writing.progress() < 1.0f);
         SaveProgressOverlayCoordinator.complete();
 
         SaveProgressOverlayCoordinator.SaveProgressSnapshot snapshot = SaveProgressOverlayCoordinator.snapshot();

@@ -20,6 +20,14 @@ public abstract class CampaignGameManagerMixin {
         SaveProgressOverlayCoordinator.releaseStreamDialog();
     }
 
+    @Inject(method = "saveGame(Lcom/fs/starfarer/campaign/CampaignEngine$CampaignUI;JZ)Ljava/lang/String;",
+            at = @At(value = "INVOKE", target = "Lcom/fs/starfarer/campaign/save/CampaignGameManager;setLastSaveTime(J)V",
+                    shift = At.Shift.AFTER), remap = false)
+    private static void ssoptimizer$presentCompletedSave(final CallbackInfoReturnable<String> cir) {
+        SaveProgressOverlayCoordinator.complete();
+        SaveProgressOverlayCoordinator.maybePumpFrame();
+    }
+
     @Inject(method = GameMixinSignatures.CampaignGameManager.LOAD_GAME,
             at = @At("HEAD"), remap = false)
     private static void ssoptimizer$enterMemoryRefGuardWindow(final CallbackInfoReturnable<String> cir) {

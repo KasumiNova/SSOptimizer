@@ -271,11 +271,14 @@ public final class SaveProgressOverlayCoordinator {
         if (REPLAY_GUARD.get()) {
             return true;
         }
+        if (isStreamDialog(progressDialog)) {
+            return false;
+        }
         if (!RenderThreadMode.isEnabled()) {
             return hasCurrentOpenGlContext();
         }
         final SaveOverlayFrames frames = ServiceRegistry.require(SaveOverlayFrames.class);
-        if (!frames.isProducer() || isStreamDialog(progressDialog)) {
+        if (!frames.isProducer()) {
             return false;
         }
         // 文本重载会调用数值重载，只有后者绘制并按游戏设置交换缓冲。
@@ -351,6 +354,10 @@ public final class SaveProgressOverlayCoordinator {
         final float byteProgress = interpolateByteProgress();
         if (!Float.isNaN(byteProgress)) {
             progress = Float.isNaN(progress) ? byteProgress : Math.max(progress, byteProgress);
+        }
+        // 上次存档大小只是估算值，文件校验及替换成功后才能显示 100%。
+        if (totalBytes > 0L && !completed) {
+            progress = Math.min(progress, 0.99f);
         }
         return Float.isNaN(progress) ? 0.0f : clamp01(progress);
     }

@@ -36,9 +36,10 @@ public abstract class CampaignSaveProgressOutputStreamMixin {
         SaveProgressOverlayCoordinator.onBytesWritten(ssoptimizer$writtenBytes);
     }
 
-    @Inject(method = GameMixinSignatures.SaveProgressOutputStream.CLOSE,
-            at = @At("HEAD"), remap = false)
-    private void ssoptimizer$completeSaveProgress(final CallbackInfo callbackInfo) {
-        SaveProgressOverlayCoordinator.complete();
+    @Inject(method = "updateProgress(Z)V", at = @At(value = "INVOKE",
+            target = "Lcom/fs/starfarer/campaign/save/CampaignSaveProgressDialog;reportProgress(Ljava/lang/String;F)V",
+            shift = At.Shift.AFTER), remap = false)
+    private void ssoptimizer$pumpSaveProgress(final boolean force, final CallbackInfo callbackInfo) {
+        SaveProgressOverlayCoordinator.maybePumpFrame();
     }
 }
