@@ -53,6 +53,31 @@ class ObfClassesTest {
         assertSame(fixed, ObfClasses.normalize(fixed));
     }
 
+    @Test void acceptsOnlyUnambiguousOriginalFieldMetadata() {
+        String physical = ObfClasses.memberName(RAW, false);
+        byte[] valid = marker(physical, false, RAW);
+        assertSame(valid, ObfClasses.normalize(valid));
+        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker("legal", false, "legal")));
+        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(physical, false, "other.name")));
+        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(physical, true, RAW)));
+        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(physical, false, RAW, RAW)));
+        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(RAW, false, RAW)));
+    }
+
+    private static byte[] marker(String fieldName, boolean visible, String... rawNames) {
+        var writer = new ClassWriter(0);
+        writer.visit(V17, ACC_PUBLIC, OWNER, null, "java/lang/Object", null);
+        var field = writer.visitField(ACC_PUBLIC, fieldName, "I", null, null);
+        for (String raw : rawNames) {
+            var annotation = field.visitAnnotation(ObfClasses.ORIGINAL_FIELD, visible);
+            annotation.visit("value", raw);
+            annotation.visitEnd();
+        }
+        field.visitEnd();
+        writer.visitEnd();
+        return writer.toByteArray();
+    }
+
     private static byte[] caller(String target, boolean merged) {
         var writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         writer.visit(V17, ACC_PUBLIC, "sample/Caller", null, "java/lang/Object", null);

@@ -8,6 +8,7 @@ import org.objectweb.asm.tree.*;
 
 /** 为 JDK 25 准备原始类字节。所有转换仅依赖输入字节。 */
 public final class ObfClasses {
+    static final String ORIGINAL_FIELD = "Lgithub/kasuminova/ssoptimizer/standalone/obf/OriginalField;";
     private ObfClasses() {}
 
     /** 返回 JVM 可表达的字段或方法名。合法名原样返回，两个初始化方法名只在方法位置保留。 */
@@ -56,7 +57,7 @@ public final class ObfClasses {
             @Override public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
                 var field = super.visitField(access, name, descriptor, signature, value);
                 if (invalid(name, false)) {
-                    var marker = field.visitAnnotation("Lgithub/kasuminova/ssoptimizer/standalone/obf/OriginalField;", false);
+                    var marker = field.visitAnnotation(ORIGINAL_FIELD, false);
                     marker.visit("value", name);
                     marker.visitEnd();
                 }
@@ -65,7 +66,10 @@ public final class ObfClasses {
         }, 0);
         boolean changed = names.changed || staleConstants(reader);
         var fields = new HashSet<String>();
-        for (var field : node.fields) if (!fields.add(field.name + '\0' + field.desc)) throw new IllegalArgumentException("字段冲突 " + field.name + field.desc);
+        for (var field : node.fields) {
+            if (!fields.add(field.name + '\0' + field.desc)) throw new IllegalArgumentException("字段冲突 " + field.name + field.desc);
+            verifyOriginalField(node.name, field);
+        }
         var methods = new HashSet<String>();
         for (var method : node.methods) {
             if (!methods.add(method.name + '\0' + method.desc)) throw new IllegalArgumentException("方法冲突 " + method.name + method.desc);
@@ -86,6 +90,23 @@ public final class ObfClasses {
             ModClassStructure.check(result, node);
         }
         return result;
+    }
+
+    private static void verifyOriginalField(String owner, FieldNode field) {
+        if (field.visibleAnnotations != null && field.visibleAnnotations.stream().anyMatch(annotation -> ORIGINAL_FIELD.equals(annotation.desc))) {
+            throw new IllegalArgumentException("OriginalField 必须是不可见字段注解 " + owner + '.' + field.name);
+        }
+        if (field.invisibleAnnotations == null) return;
+        boolean seen = false;
+        for (var annotation : field.invisibleAnnotations) {
+            if (!ORIGINAL_FIELD.equals(annotation.desc)) continue;
+            var values = annotation.values;
+            if (seen || values == null || values.size() != 2 || !"value".equals(values.getFirst())
+                    || !(values.get(1) instanceof String raw) || !invalid(raw, false) || !field.name.equals(memberName(raw, false))) {
+                throw new IllegalArgumentException("OriginalField 与字段声明不符 " + owner + '.' + field.name);
+            }
+            seen = true;
+        }
     }
 
     private static boolean staleConstants(ClassReader reader) {
