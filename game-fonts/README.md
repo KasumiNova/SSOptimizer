@@ -1,4 +1,4 @@
-# game-fonts — 字体资源
+# 字体资源
 
 本目录存放 SSOptimizer 字体覆盖功能 (`original-match` 配置) 所需的字体文件。
 
@@ -18,7 +18,7 @@ game-fonts/
 │   ├── orbitron-medium.ttf   # Orbitron Medium — 游戏自带
 │   ├── orbitron-regular.ttf  # Orbitron Regular — 游戏自带
 │   ├── orbitron-semibold.ttf # Orbitron SemiBold — 游戏自带（bold 角色实际映射字重）
-│   ├── MiSans-Regular.ttf    # 小米 MiSans — 全系 CJK 回退字体 (SIL OFL 1.1)
+│   ├── MiSans-Regular.ttf    # 小米 MiSans，中文后备字体
 │   └── Oxanium-Medium.ttf    # Oxanium — 用于 victor 系列 (SIL OFL 1.1)
 └── fnt/          # BMFont 描述文件（已添加 CJK 字符表；仅测试 fixture，不再随分发部署）
     ├── insignia15LTaa.fnt
@@ -38,5 +38,5 @@ game-fonts/
 | 字体 | 许可证 |
 |------|--------|
 | lte50549.ttf, orbitron-*.ttf | Starsector 游戏自带 |
-| MiSans-Regular.ttf | SIL Open Font License 1.1 |
+| MiSans-Regular.ttf | [MiSans 字体知识产权许可协议](ttf/MiSans-LICENSE.txt)，在软件内注明使用，随软件嵌入未修改的字体 |
 | Oxanium-Medium.ttf | SIL Open Font License 1.1 |
