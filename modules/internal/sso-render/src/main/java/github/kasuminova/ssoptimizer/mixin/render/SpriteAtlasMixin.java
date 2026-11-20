@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -121,9 +122,10 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
         ssoptimizer$ensureAtlasRemapped("renderWithCorners");
     }
 
+    @Group(name = "atlasOrigin", min = 1)
     @Redirect(method = {"renderNoBlendOrRotate(FFZ)V", "renderAtCenterWithCornerColors(FF)V"},
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexCoord2f(FF)V"),
-            remap = false, require = 0)
+            remap = false, require = 0, expect = 0)
     private void ssoptimizer$texCoordWithAtlasOrigin(final float u, final float v) {
         if (this.ssoptimizer$ensureAtlasRemapped("texCoordOriginFixup")) {
             GL11.glTexCoord2f(u + this.texX, v + this.texY);
@@ -132,11 +134,11 @@ public abstract class SpriteAtlasMixin implements AtlasUvState {
         }
     }
 
-    // 分离模式的调用点由 ASM 重定向到 bridge GL11。
+    @Group(name = "atlasOrigin", min = 1)
     @Redirect(method = {"renderNoBlendOrRotate(FFZ)V", "renderAtCenterWithCornerColors(FF)V"},
             at = @At(value = "INVOKE",
                     target = "Lgithub/kasuminova/ssoptimizer/bridge/opengl/GL11;glTexCoord2f(FF)V"),
-            remap = false, require = 0)
+            remap = false, require = 0, expect = 0)
     private void ssoptimizer$texCoordWithAtlasOriginBridged(final float u, final float v) {
         ssoptimizer$texCoordWithAtlasOrigin(u, v);
     }

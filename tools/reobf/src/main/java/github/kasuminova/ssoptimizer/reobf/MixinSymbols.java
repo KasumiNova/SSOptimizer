@@ -12,6 +12,7 @@ import java.util.List;
 final class MixinSymbols {
     private static final String MIXIN = "Lorg/spongepowered/asm/mixin/Mixin;";
     private static final String SHADOW = "Lorg/spongepowered/asm/mixin/Shadow;";
+    private static final String OVERWRITE = "Lorg/spongepowered/asm/mixin/Overwrite;";
     private static final String AT = "Lorg/spongepowered/asm/mixin/injection/At;";
     private static final String DESC = "Lorg/spongepowered/asm/mixin/injection/Desc;";
 
@@ -193,6 +194,11 @@ final class MixinSymbols {
                         annotation(field.visibleAnnotations, field.invisibleAnnotations, SHADOW), original);
             }
             for (var method : mixin.methods) {
+                var overwrite = annotation(method.visibleAnnotations, method.invisibleAnnotations, OVERWRITE);
+                if (overwrite != null && !original.declares(target, method.name, method.desc, true)) {
+                    throw new IllegalArgumentException("Mixin " + mixin.name + " has no declared original @Overwrite target "
+                            + target + '.' + method.name + method.desc);
+                }
                 validateShadow(mixin.name, target, method.name, method.desc, true,
                         annotation(method.visibleAnnotations, method.invisibleAnnotations, SHADOW), original);
                 validateInjection(mixin.name, target, method.visibleAnnotations, original);

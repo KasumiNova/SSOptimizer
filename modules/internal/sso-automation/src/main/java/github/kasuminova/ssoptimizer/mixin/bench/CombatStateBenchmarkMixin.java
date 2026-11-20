@@ -4,6 +4,7 @@ import github.kasuminova.ssoptimizer.common.bench.BenchmarkDriver;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -26,13 +27,15 @@ public abstract class CombatStateBenchmarkMixin {
         }
     }
 
-    @Inject(method = "traverse", remap = false, require = 0,
+    @Group(name = "combatFrameEnd", min = 1)
+    @Inject(method = "traverse", remap = false, require = 0, expect = 0,
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/Display;update(Z)V"))
     private void ssoptimizer$onCombatFrameEnd(final CallbackInfoReturnable<String> cir) {
         BenchmarkDriver.onCombatFrameEnd();
     }
 
-    @Inject(method = "traverse", remap = false, require = 0,
+    @Group(name = "combatFrameEnd", min = 1)
+    @Inject(method = "traverse", remap = false, require = 0, expect = 0,
             at = @At(value = "INVOKE",
                     target = "Lgithub/kasuminova/ssoptimizer/bridge/opengl/Display;update(Z)V"))
     private void ssoptimizer$onCombatFrameEndBridged(final CallbackInfoReturnable<String> cir) {
