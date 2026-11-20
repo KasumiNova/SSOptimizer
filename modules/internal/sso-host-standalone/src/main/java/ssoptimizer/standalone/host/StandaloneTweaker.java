@@ -3,13 +3,10 @@ package ssoptimizer.standalone.host;
 import com.gtnewhorizons.retrofuturabootstrap.RfbSystemClassLoader;
 import com.llamalad7.mixinextras.MixinExtrasBootstrap;
 import net.minecraft.launchwrapper.ITweaker;
-import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 import org.apache.logging.log4j.LogManager;
 import org.spongepowered.asm.launch.MixinBootstrap;
-import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
-import org.spongepowered.asm.service.MixinService;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +20,6 @@ public final class StandaloneTweaker implements ITweaker {
     private static final String SHARED = LaunchPlan.PAYLOAD_PACKAGE + "bootstrap.SharedBootstrap";
     private static final String HYBRID = LaunchPlan.PAYLOAD_PACKAGE + "bootstrap.HybridWeaverTransformer";
     private static final String GL = LaunchPlan.PAYLOAD_PACKAGE + "bootstrap.RenderThreadRedirectTransformer";
-    private static final String PROXY = "org.spongepowered.asm.mixin.transformer.Proxy";
     private boolean optimizerEnabled;
     private List<String> arguments = List.of();
 
@@ -32,29 +28,25 @@ public final class StandaloneTweaker implements ITweaker {
     }
 
     @Override public void injectIntoClassLoader(LaunchClassLoader loader) {
-        if (!(ClassLoader.getSystemClassLoader() instanceof RfbSystemClassLoader system) || system.getChildLoader() != loader) {
-            throw new IllegalStateException("Standalone requires the RFB system class loader and its Launch child");
-        }
+        var system = (RfbSystemClassLoader) ClassLoader.getSystemClassLoader();
         try {
             LaunchPlan plan = LaunchPlan.read();
             optimizerEnabled = plan.payload != null;
-            if (optimizerEnabled) SystemTransforms.checkInstalled();
-            FlavorHost.mount(plan, loader);
             loader.addClassLoaderExclusion("ssoptimizer.standalone.host.");
             loader.addClassLoaderExclusion("org.apache.log4j.");
             loader.addTransformerExclusion("org.spongepowered.");
             loader.addTransformerExclusion("com.llamalad7.mixinextras.");
-            system.childDelegations.addAll(plan.childPackages);
+            system.childDelegations.add("com.fs.");
+            for (String plugin : plan.plugins) {
+                if (!LaunchPlan.isSystem(plugin)) system.childDelegations.add(plugin);
+            }
             PreparedSources.install(plan, loader);
             FlavorHost.initialize(plan, loader);
             if (optimizerEnabled) {
-                register(loader, HYBRID);
-                register(loader, GL);
+                loader.registerTransformer(HYBRID);
+                loader.registerTransformer(GL);
             }
             MixinBootstrap.init();
-            if (!"LaunchWrapper".equals(MixinService.getService().getName())) {
-                throw new IllegalStateException("Unexpected Mixin service: " + MixinService.getService().getName());
-            }
             MixinExtrasBootstrap.init();
             Mixins.addConfiguration("mixins.ssoptimizer.standalone.json");
             if (FlavorHost.NAMESPACE.equals("obf")) Mixins.addConfiguration("mixins.ssoptimizer.obf-save.json");
@@ -69,19 +61,9 @@ public final class StandaloneTweaker implements ITweaker {
         }
     }
 
-    static void register(LaunchClassLoader loader, String name) {
-        int index = loader.getTransformers().size();
-        loader.registerTransformer(name);
-        var transformers = loader.getTransformers();
-        if (transformers.size() != index + 1 || !transformers.get(index).getClass().getName().equals(name)) {
-            throw new IllegalStateException("LaunchWrapper did not register transformer " + name);
-        }
-    }
-
     private static void startPayload(LaunchClassLoader loader) {
         try {
             Class<?> entry = Class.forName(SHARED, false, loader);
-            if (entry.getClassLoader() != loader) throw new LinkageError("Payload class loaded outside Launch: " + entry);
             MethodHandles.publicLookup().findStatic(entry, "install", MethodType.methodType(void.class, BiConsumer.class))
                     .invokeExact((BiConsumer<String, UnaryOperator<byte[]>>) SystemTransforms::register);
         } catch (RuntimeException | Error e) {
@@ -92,14 +74,6 @@ public final class StandaloneTweaker implements ITweaker {
     }
 
     @Override public String getLaunchTarget() {
-        List<String> order = Launch.classLoader.getTransformers().stream().map(t -> t.getClass().getName()).toList();
-        int hybrid = order.indexOf(HYBRID), gl = order.indexOf(GL);
-        if ((optimizerEnabled && (hybrid < 0 || gl <= hybrid || order.lastIndexOf(PROXY) <= gl))
-                || order.lastIndexOf(PROXY) < 0 || MixinEnvironment.getCurrentEnvironment().getPhase() != MixinEnvironment.Phase.DEFAULT) {
-            throw new IllegalStateException("Standalone transformer/phase mismatch: " + order + ", phase="
-                    + MixinEnvironment.getCurrentEnvironment().getPhase());
-        }
-        LogManager.getLogger(StandaloneTweaker.class).info("Launching RC8, Mixin service=LaunchWrapper phase=DEFAULT, transformers={}", order);
         return "com.fs.starfarer.StarfarerLauncher";
     }
 

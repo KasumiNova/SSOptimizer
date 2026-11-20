@@ -3,10 +3,7 @@ package github.kasuminova.ssoptimizer.reobf;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.commons.ClassRemapper;
-import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -36,23 +33,18 @@ public final class ReobfMain {
     public static void main(String[] args) throws IOException {
         Options options = Options.parse(args);
         ReobfMappings mappings = ReobfMappings.read(options.mapping());
-        GameClasses original = GameClasses.read(options.game());
+        GameClasses original = new GameClasses(options.game());
         Path output = options.output().toAbsolutePath();
         Files.createDirectories(output.getParent());
         Path input = Files.createTempFile(output.getParent(), ".reobf-classes-", ".jar");
         try {
             try (ZipFile archive = new ZipFile(options.input().toFile())) {
-                Set<String> classes = copyProjectClasses(archive, input);
-                Map<String, byte[]> remapped = remap(input, options, mappings, original);
-                if (!classes.equals(remapped.keySet())) {
-                    throw new IOException("Class names changed during project JAR reobfuscation: input="
-                            + difference(classes, remapped.keySet()) + ", output=" + difference(remapped.keySet(), classes));
-                }
+                int inputClassCount = copyProjectClasses(archive, input);
+                Map<String, byte[]> remapped = remap(input, options, mappings);
                 int encodedSelectors = 0;
                 for (Map.Entry<String, byte[]> entry : remapped.entrySet()) {
                     var node = new ClassNode();
                     new ClassReader(entry.getValue()).accept(node, 0);
-                    validate(node, mappings, original);
                     int encoded = MixinSymbols.encodeSelectors(node, original);
                     if (encoded > 0) {
                         var writer = new ClassWriter(0);
@@ -62,7 +54,7 @@ public final class ReobfMain {
                     }
                 }
                 writeArchive(archive, output, remapped);
-                System.out.println("Reobfuscated " + classes.size() + " project classes and encoded "
+                System.out.println("Reobfuscated " + inputClassCount + " project classes and encoded "
                         + encodedSelectors + " structured Mixin selectors: " + output);
             }
         } finally {
@@ -70,23 +62,7 @@ public final class ReobfMain {
         }
     }
 
-    private static void validate(ClassNode node, ReobfMappings mappings, GameClasses original) {
-        MixinSymbols.validate(node, mappings, original);
-        node.accept(new ClassRemapper(new ClassVisitor(Opcodes.ASM9) {}, new Remapper(Opcodes.ASM9) {
-            @Override
-            public String map(String name) {
-                if (compileTimeConstants(name)) {
-                    throw new IllegalArgumentException(node.name + " references a compile-time symbol holder: " + name);
-                }
-                if (mappings.isNamedGameClass(name) && !original.contains(name) && !mappings.className(name).equals(name)) {
-                    throw new IllegalArgumentException(node.name + " references a named game class: " + name);
-                }
-                return name;
-            }
-        }));
-    }
-
-    private static Map<String, byte[]> remap(Path input, Options options, ReobfMappings mappings, GameClasses original) {
+    private static Map<String, byte[]> remap(Path input, Options options, ReobfMappings mappings) {
         var builder = TinyRemapper.newRemapper().withMappings(mappings.provider())
                 .ignoreConflicts(false)
                 .ignoreFieldDesc(false)
@@ -97,7 +73,7 @@ public final class ReobfMain {
                     public void visitEnd() {
                         super.visitEnd();
                         MixinSymbols.rewriteAliases(this, mappings);
-                        RuntimeStrings.rewrite(this, mappings, original);
+                        RuntimeStrings.rewrite(this, mappings);
                         accept(next);
                     }
                 })
@@ -121,7 +97,7 @@ public final class ReobfMain {
         }
     }
 
-    private static Set<String> copyProjectClasses(ZipFile source, Path input) throws IOException {
+    private static int copyProjectClasses(ZipFile source, Path input) throws IOException {
         var names = new LinkedHashSet<String>();
         try (var output = new ZipOutputStream(Files.newOutputStream(input))) {
             var entries = source.entries();
@@ -133,7 +109,7 @@ public final class ReobfMain {
             }
         }
         if (names.isEmpty()) throw new IOException("No project classes found in " + source.getName());
-        return names;
+        return names.size();
     }
 
     private static void writeArchive(ZipFile source, Path target, Map<String, byte[]> changed) throws IOException {
@@ -166,7 +142,9 @@ public final class ReobfMain {
                     String name = entry.getName();
                     if (name.equals(originalManifest.getName()) || signature(name) || removedClass(name)) continue;
                     if (!names.add(name)) throw new IOException("Duplicate JAR entry: " + name);
-                    writeEntry(source, output, entry, changed.get(name));
+                    byte[] bytes = changed.get(name);
+                    if (bytes == null && projectClass(name)) throw new IOException("Missing rewritten class: " + name);
+                    writeEntry(source, output, entry, bytes);
                 }
             }
             Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
@@ -234,12 +212,6 @@ public final class ReobfMain {
         String name = upper.substring("META-INF/".length());
         return name.indexOf('/') < 0 && (name.startsWith("SIG-") || name.endsWith(".SF") || name.endsWith(".RSA")
                 || name.endsWith(".DSA") || name.endsWith(".EC"));
-    }
-
-    private static Set<String> difference(Set<String> first, Set<String> second) {
-        var result = new LinkedHashSet<>(first);
-        result.removeAll(second);
-        return result;
     }
 
     private record Options(Path mapping, List<Path> named, List<Path> game, List<Path> classpath, Path input, Path output) {

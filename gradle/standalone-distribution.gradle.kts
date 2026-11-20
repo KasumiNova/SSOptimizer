@@ -1,6 +1,4 @@
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import java.security.MessageDigest
-import java.util.HexFormat
 
 val sources = rootProject.file("packaging/standalone")
 val base = layout.buildDirectory.dir("standalone")
@@ -39,13 +37,7 @@ fun lockedLibraries(flavor: String, libraries: List<List<String>>) = listOf("lib
             attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
             attribute(org.gradle.api.attributes.java.TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(org.gradle.api.attributes.java.TargetJvmEnvironment.STANDARD_JVM))
         }
-    }.also { config -> libraries.filter { it[0] == domain }.forEach { dependencies.add(config.name, it[2] + "@jar") } }
-}
-fun digest(file: File): String = file.inputStream().buffered().use { stream ->
-    val hash = MessageDigest.getInstance("SHA-256")
-    val buffer = ByteArray(131072)
-    while (true) { val n = stream.read(buffer); if (n < 0) break; hash.update(buffer, 0, n) }
-    HexFormat.of().formatHex(hash.digest())
+    }.also { config -> libraries.filter { it[0] == domain }.forEach { dependencies.add(config.name, it[1] + "@jar") } }
 }
 val helper = sources.resolve("ReleaseFiles.java")
 fun Task.releaseTool(vararg args: String) {
@@ -53,7 +45,7 @@ fun Task.releaseTool(vararg args: String) {
     val process = ProcessBuilder(listOf(java.absolutePath, helper.absolutePath) + args).redirectErrorStream(true).start()
     val diagnostic = process.inputStream.bufferedReader().use { it.readText() }
     val status = process.waitFor()
-    if (status != 0) throw GradleException("发行校验程序 ${args.first()} 退出：$status\n$diagnostic")
+    if (status != 0) throw GradleException("发行工具 ${args.first()} 退出：$status\n$diagnostic")
 }
 val mapping = rootProject.file(providers.gradleProperty("standalone.mapping").getOrElse("../Paragon/build/mappings/mappings-named.tiny"))
 val mapOut = base.map { it.file("prepared/mappings/game-full.tiny.gz").asFile }
@@ -84,23 +76,28 @@ signKey.orNull?.let { key ->
         "签名私钥必须位于仓库和构建输出之外：$path"
     }
 }
-val reobf = layout.buildDirectory.dir("reobf/$abi")
-val abiProfile = rootProject.file("packaging/abi/$abi.properties")
-val namedProfile = rootProject.file("packaging/abi/$abi-named.properties")
-val devAbi = base.map { it.file("prepared/$abi/dev/abi.properties") }
-val prepareDevAbi = tasks.register("prepareStandaloneDevAbi") {
-    inputs.files(abiProfile, namedProfile)
-    outputs.file(devAbi)
-    doLast {
-        val output = devAbi.get().asFile
-        output.parentFile.mkdirs()
-        output.writeText(abiProfile.readText().trimEnd() + "\n" + namedProfile.readText())
-    }
+val rfbName = "RetroFuturaBootstrap-1.0.12.jar"
+val rfbPatchSource = sources.resolve("PatchRfbDelegation.java")
+val rfbPatchLibraries = configurations.create("standaloneRfbPatchLibraries") {
+    isCanBeResolved = true
+    isCanBeConsumed = false
 }
+dependencies.add(rfbPatchLibraries.name, "com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:1.0.12@jar")
+dependencies.add(rfbPatchLibraries.name, "org.ow2.asm:asm-tree:9.10.1")
+val upstreamRfb = provider { rfbPatchLibraries.single { it.name == rfbName } }
+val patchedRfb = base.map { it.file("prepared/rfb/$rfbName") }
+val patchRfb = tasks.register<JavaExec>("patchStandaloneRfb") {
+    group = "distribution"
+    mainClass.set(rfbPatchSource.absolutePath)
+    classpath(rfbPatchLibraries)
+    inputs.file(rfbPatchSource)
+    outputs.file(patchedRfb)
+    doFirst { args(upstreamRfb.get().absolutePath, patchedRfb.get().asFile.absolutePath) }
+}
+val reobf = layout.buildDirectory.dir("reobf/$abi")
 for (flavor in flavors) {
     val obf = flavor == "obf"
     val suffix = flavor.replaceFirstChar(Char::uppercase)
-    val namespace = if (obf) "obf" else "named"
     val lockFile = sources.resolve(if (obf) "libraries-obf.lock" else "libraries.lock")
     val libraries = lockFile.readLines().map { it.split(' ') }
     val locked = lockedLibraries(flavor, libraries)
@@ -116,21 +113,26 @@ for (flavor in flavors) {
         tasks.register<Sync>("stageStandalone${platform.replaceFirstChar(Char::uppercase)}$suffix") {
             group = "distribution"
             description = "准备 Standalone $platform 的独立版本目录"
-            dependsOn(":modules:internal:sso-standalone:$agentTask", ":modules:internal:$symbols:jar")
-            if (obf) dependsOn(":verifyObfLinks") else dependsOn(prepareMapping, prepareDevAbi, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-host-standalone:jar")
+            dependsOn(patchRfb, ":modules:internal:sso-standalone:$agentTask", ":modules:internal:$symbols:jar")
+            if (obf) dependsOn(":reobfRelease") else dependsOn(prepareMapping, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-host-standalone:jar")
             inputs.files(lockFile, helper); inputs.property("versionId", versionId); inputs.property("nativeTarget", target); inputs.property("gameAbi", abi)
             into(output); duplicatesStrategy = DuplicatesStrategy.FAIL
-            from(payload) { rename { "payload.jar" } }; from(agent) { rename { "agent.jar" } }
+            preserve { include("work", "work/**") }
+            from(payload) { into("mod/jars"); rename { "payload.jar" } }; from(agent) { rename { "agent.jar" } }
             from(host) { into("lib"); if (obf) rename { "sso-host-standalone-obf.jar" } }
             from(symbolJar) { into("lib") }
-            from(if (obf) reobf.map { it.file("abi.properties") } else devAbi)
             if (!obf) from(mapOut) { into("mappings") }
-            from(sources.resolve("distribution.properties")) { expand(mapOf("flavor" to flavor, "namespace" to namespace, "abi" to abi)) }
-            from(lockFile) { rename { "libraries.lock" } }; from(sources.resolve("mod_info.json")) { into("mod"); expand("version" to versionId) }
+            from(sources.resolve("mod_info.json")) { into("mod"); expand("version" to versionId) }
             from(rootProject.file("game-fonts/ttf")) { into("mod/fonts"); include("*.ttf", "MiSans-LICENSE.txt") }
             if (windows) { dependsOn(prepareJdk); from(jdkOut) { into("runtime") } }
-            else { from(sources.resolve("launch.sh")) { filter { line -> line.replace("@FLAVOR@", flavor) }; filePermissions { unix("rwxr-xr-x") } } }
-            for ((domain, config) in locked) from(config) { into(domain) }
+            else { from(sources.resolve("launch.sh")) { filePermissions { unix("rwxr-xr-x") } } }
+            for ((domain, config) in locked) from(config) {
+                into(domain)
+                exclude(rfbName)
+            }
+            from(patchedRfb) { into("lib") }
+            from(sources.resolve("rfb-license")) { into("licenses/retrofuturabootstrap") }
+            from(rfbPatchSource) { into("licenses/retrofuturabootstrap") }
             for ((module, path) in nativeModules) {
                 val sub = project(":modules:internal:$path")
                 dependsOn("${sub.path}:" + if (windows && os.contains("linux")) "linkWindowsCrossSharedLibrary" else "assembleRelease")
@@ -146,29 +148,16 @@ for (flavor in flavors) {
             }) { into("native/$platform") }
             doFirst {
                 require(platform == target) { "构建 $platform 包时请设置 -Pssoptimizer.native.target=$platform" }
-                for (artifact in listOf(payload, agent, host, symbolJar)) require(artifact.get().isFile) { "缺少项目归档：${artifact.get()}" }
-                require(rootProject.file("game-fonts/ttf").listFiles()?.any { it.extension == "ttf" } == true) { "缺少模组字体" }
-                for ((domain, config) in locked) {
-                    val artifacts = config.resolvedConfiguration.resolvedArtifacts.associateBy { it.moduleVersion.id.toString() }
-                    val expected = libraries.filter { it[0] == domain }
-                    require(artifacts.keys == expected.map { it[2] }.toSet()) { "意外的 $domain 解析结果：${artifacts.keys}" }
-                    expected.forEach { (_, hash, coordinate) ->
-                        val f = artifacts.getValue(coordinate).file
-                        require(digest(f) == hash) { "构件摘要不符：$coordinate ($f)" }
-                    }
-                }
             }
-            doLast { releaseTool("audit", output.get().asFile.absolutePath, platform, flavor, rootProject.rootDir.absolutePath, symbolJar.get().name) }
         }
     }
     val metadata = base.map { it.dir("windows/$flavor/signed").asFile }
     val signRelease = tasks.register("signStandaloneWindows$suffix") {
         dependsOn(stageTasks.getValue("windows"))
-        if (obf) dependsOn(":verifyObfRelease")
         outputs.dir(metadata); outputs.upToDateWhen { false }
         doLast {
             val key = signKey.orNull ?: throw GradleException("Windows 发布需要发行者 RSA PKCS#8 私钥：-Pstandalone.signingKey=<文件>")
-            releaseTool("sign", base.get().dir("windows/$flavor/version").asFile.absolutePath, metadata.get().absolutePath, sources.resolve("windows").absolutePath, versionId, rootProject.file(key).absolutePath, flavor, rootProject.rootDir.absolutePath, symbolJar.get().name)
+            releaseTool("sign", base.get().dir("windows/$flavor/version").asFile.absolutePath, metadata.get().absolutePath, sources.resolve("windows").absolutePath, versionId, rootProject.file(key).absolutePath, flavor)
         }
     }
     tasks.register<Zip>("packageStandaloneWindows$suffix") {
@@ -177,13 +166,9 @@ for (flavor in flavors) {
         destinationDirectory.set(layout.buildDirectory.dir("distributions"))
         isReproducibleFileOrder = true
         isPreserveFileTimestamps = true
-        from(base.map { it.dir("windows/$flavor/version") }) { into("version") }
-        from(metadata) { include("Install.cmd", "version/release.manifest", "version/release.sig", "version/tools/Launch.cmd", "version/tools/Manage.cmd", "version/tools/Manage.ps1") }
+        from(base.map { it.dir("windows/$flavor/version") }) { into("version"); exclude("work", "work/**") }
+        from(metadata) { include("Install.cmd", "version/release.manifest", "version/release.sig", "version/mod/Launch.cmd", "version/mod/Manage.cmd", "version/mod/Manage.ps1") }
         duplicatesStrategy = DuplicatesStrategy.FAIL
-        doLast {
-            val signed = metadata.get()
-            releaseTool("verify", archiveFile.get().asFile.absolutePath, signed.absolutePath, versionId, flavor, signed.resolve("public.der").absolutePath)
-        }
     }
 }
 

@@ -10,8 +10,10 @@ import java.lang.invoke.MethodType;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
-import java.util.LinkedHashMap;
+import java.util.function.Predicate;
 
 final class FlavorHost {
     static final String NAMESPACE = "obf";
@@ -19,41 +21,32 @@ final class FlavorHost {
 
     private FlavorHost() {}
 
-    static void mount(LaunchPlan plan, LaunchClassLoader loader) throws IOException {
-        var views = new LinkedHashMap<Path, Path>();
-        for (int i = 0; i < plan.mods.size(); i++) views.put(plan.modSources.get(i), plan.mods.get(i));
-        for (Path path : plan.archives) {
-            int index = plan.mods.indexOf(path);
-            Path origin = index < 0 ? path : plan.modSources.get(index);
-            loader.addURL(index < 0 ? path.toUri().toURL() : ModArchiveView.open(origin, views));
-        }
-    }
-
     static void initialize(LaunchPlan plan, LaunchClassLoader loader) throws IOException {
         System.setProperty("ssoptimizer.disable.save.terrain.zstd", "true");
         loader.addClassLoaderExclusion(SYSTEM_PACKAGE);
-        if (plan.payload == null) return;
-        var gameNormalizer = ObfClasses.forGameJars(plan.gameSources);
-        BiFunction<URL, byte[], byte[]> normalizer = (location, bytes) -> {
-            if (!"file".equals(location.getProtocol())) return bytes;
+        var normalizer = ObfClasses.entriesFor(plan.game);
+        var modLocations = new ConcurrentHashMap<URL, Boolean>();
+        Predicate<URL> isMod = location -> "file".equals(location.getProtocol()) && modLocations.computeIfAbsent(location, url -> {
             try {
-                Path archive = Path.of(location.toURI()).toRealPath();
-                return plan.modRoots.stream().anyMatch(archive::startsWith) ? gameNormalizer.apply(bytes) : bytes;
+                Path archive = Path.of(url.toURI()).toRealPath();
+                return plan.modRoots.stream().anyMatch(archive::startsWith);
             } catch (IOException failure) {
-                throw new UncheckedIOException("无法定位自建加载器的归档：" + location, failure);
+                throw new UncheckedIOException("无法定位模组归档 " + url, failure);
             } catch (URISyntaxException failure) {
-                throw new IllegalArgumentException("无效的模组归档 URL：" + location, failure);
+                throw new IllegalArgumentException("无效的模组归档 URL " + url, failure);
             }
-        };
+        });
+        ArchiveClassPath.mount(loader, plan.archives, Set.copyOf(plan.game), java.util.Map.of(), isMod, normalizer::apply);
+        if (plan.payload == null) return;
+        BiFunction<String, byte[], byte[]> normalizeMod = normalizer::apply;
         try {
             Class<?> entry = Class.forName(LaunchPlan.PAYLOAD_PACKAGE + "bootstrap.SharedBootstrap", false, loader);
-            if (entry.getClassLoader() != loader) throw new LinkageError("SSOptimizer 负载未由 Launch 定义：" + entry);
-            MethodHandles.publicLookup().findStatic(entry, "installClassNormalizer", MethodType.methodType(void.class, BiFunction.class))
-                    .invokeExact(normalizer);
+            MethodHandles.publicLookup().findStatic(entry, "installClassNormalizer", MethodType.methodType(void.class, Predicate.class, BiFunction.class))
+                    .invokeExact(isMod, normalizeMod);
         } catch (RuntimeException | Error failure) {
             throw failure;
         } catch (Throwable failure) {
-            throw new IllegalStateException("无法安装模组私有类的净化器", failure);
+            throw new IllegalStateException("无法安装模组私有类修正器", failure);
         }
     }
 }

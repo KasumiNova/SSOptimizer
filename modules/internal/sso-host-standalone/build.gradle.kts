@@ -23,7 +23,6 @@ dependencies {
 sourceSets.main { java.srcDir("src/dev/java") }
 val obf by sourceSets.creating {
     java.srcDir("src/main/java")
-    java.exclude("**/ModCodeSourceTransformer.java")
     resources.srcDir("src/main/resources")
 }
 configurations[obf.compileOnlyConfigurationName].extendsFrom(configurations.compileOnly.get())

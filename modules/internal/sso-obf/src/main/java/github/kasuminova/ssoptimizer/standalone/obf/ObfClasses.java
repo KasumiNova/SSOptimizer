@@ -1,7 +1,6 @@
 package github.kasuminova.ssoptimizer.standalone.obf;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.*;
 import org.objectweb.asm.tree.*;
@@ -29,23 +28,36 @@ public final class ObfClasses {
 
     /** 规范化类内成员、对外成员引用和调试名。合法字节返回原引用，损坏输入抛出异常。 */
     public static byte[] normalize(byte[] input) {
-        return normalize(input, false, null, null);
+        return normalize(input, null, null);
     }
 
-    /** 为同一游戏定义域创建可并发调用的转换函数。按挂载顺序读取原始游戏归档，读取失败抛出 IOException。 */
+    /** 按需读取游戏声明，可在同一定义域内跨线程复用。 */
+    public static EntryNormalizer entriesFor(java.util.List<java.nio.file.Path> originalGameJars) {
+        var members = new GameMembers(originalGameJars);
+        return (name, bytes) -> {
+            try {
+                return normalize(bytes, name, members);
+            } catch (SecurityException | java.io.UncheckedIOException | IllegalArgumentException failure) {
+                throw failure;
+            } catch (RuntimeException malformed) {
+                throw new IllegalArgumentException("无法解析类 " + name, malformed);
+            }
+        };
+    }
+
+    @FunctionalInterface
+    public interface EntryNormalizer {
+        /** 按请求的 JVM 内部类名读取条目。无改动时返回输入，损坏时抛出格式异常。 */
+        byte[] apply(String internalName, byte[] bytes);
+    }
+
     public static java.util.function.UnaryOperator<byte[]> forGameJars(java.util.List<java.nio.file.Path> originalGameJars) throws java.io.IOException {
-        var members = new GameMembers();
-        for (var game : originalGameJars) members.index(game);
-        return bytes -> normalize(bytes, false, null, members);
+        var entries = entriesFor(originalGameJars);
+        return bytes -> entries.apply(null, bytes);
     }
 
-    static byte[] normalize(byte[] input, boolean checkStructure, String expected, GameMembers members) {
-        if (input.length < 10 || input[0] != (byte) 0xca || input[1] != (byte) 0xfe || input[2] != (byte) 0xba || input[3] != (byte) 0xbe) {
-            throw new IllegalArgumentException("类文件头无效");
-        }
+    static byte[] normalize(byte[] input, String expected, GameMembers members) {
         var reader = new ClassReader(input);
-        int version = reader.readUnsignedShort(6);
-        if (version < 45 || version > Runtime.version().feature() + 44) throw new IllegalArgumentException("不支持的类文件版本 " + version);
         if (expected != null && !expected.equals(reader.getClassName())) throw new IllegalArgumentException("类名与条目不匹配 " + reader.getClassName());
         var node = new ClassNode();
         if (members == null) {
@@ -65,14 +77,7 @@ public final class ObfClasses {
             }
         }, 0);
         boolean changed = names.changed || staleConstants(reader);
-        var fields = new HashSet<String>();
-        for (var field : node.fields) {
-            if (!fields.add(field.name + '\0' + field.desc)) throw new IllegalArgumentException("字段冲突 " + field.name + field.desc);
-            verifyOriginalField(node.name, field);
-        }
-        var methods = new HashSet<String>();
         for (var method : node.methods) {
-            if (!methods.add(method.name + '\0' + method.desc)) throw new IllegalArgumentException("方法冲突 " + method.name + method.desc);
             if (method.localVariables != null) for (var local : method.localVariables) {
                 if (invalid(local.name, false)) { local.name = "local" + local.index; changed = true; }
             }
@@ -81,32 +86,10 @@ public final class ObfClasses {
             }
             changed |= MemberArguments.rewrite(node.name, method, members);
         }
-        if (!changed && !checkStructure) return input;
+        if (!changed) return input;
         var writer = new ClassWriter(0);
         node.accept(writer);
-        byte[] result = changed ? writer.toByteArray() : input;
-        if (checkStructure) {
-            if ("module-info".equals(node.name) && node.module == null) throw new IllegalArgumentException("缺少 Module 属性");
-            ModClassStructure.check(result, node);
-        }
-        return result;
-    }
-
-    private static void verifyOriginalField(String owner, FieldNode field) {
-        if (field.visibleAnnotations != null && field.visibleAnnotations.stream().anyMatch(annotation -> ORIGINAL_FIELD.equals(annotation.desc))) {
-            throw new IllegalArgumentException("OriginalField 必须是不可见字段注解 " + owner + '.' + field.name);
-        }
-        if (field.invisibleAnnotations == null) return;
-        boolean seen = false;
-        for (var annotation : field.invisibleAnnotations) {
-            if (!ORIGINAL_FIELD.equals(annotation.desc)) continue;
-            var values = annotation.values;
-            if (seen || values == null || values.size() != 2 || !"value".equals(values.getFirst())
-                    || !(values.get(1) instanceof String raw) || !invalid(raw, false) || !field.name.equals(memberName(raw, false))) {
-                throw new IllegalArgumentException("OriginalField 与字段声明不符 " + owner + '.' + field.name);
-            }
-            seen = true;
-        }
+        return writer.toByteArray();
     }
 
     private static boolean staleConstants(ClassReader reader) {

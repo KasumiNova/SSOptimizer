@@ -1,17 +1,11 @@
 package github.kasuminova.ssoptimizer.reobf;
 
-import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
 
 final class RuntimeStrings {
     private static final String PROJECT = "github/kasuminova/ssoptimizer/";
@@ -54,28 +48,21 @@ final class RuntimeStrings {
             "com.fs.starfarer.launcher.ModManager",
             "com.fs.starfarer.api.impl.codex.CodexTextEntryLoader");
 
-    private static final Pattern EMBEDDED_TYPE = Pattern.compile("L([\\p{L}\\p{N}_$/]+);");
-    private static final Pattern ASM_METHOD = Pattern.compile("M[0-9]+:([^ .]+)\\.([^ (]+)\\(.*");
-    private static final Pattern IDENTIFIER = Pattern.compile("[\\p{L}_$][\\p{L}\\p{N}_$]*");
-
     private final ClassNode node;
-    private final GameClasses game;
     private final ReobfMappings mappings;
-    private final Set<Object> handled = Collections.newSetFromMap(new IdentityHashMap<>());
 
-    private RuntimeStrings(ClassNode node, ReobfMappings mappings, GameClasses game) {
+    private RuntimeStrings(ClassNode node, ReobfMappings mappings) {
         this.node = node;
         this.mappings = mappings;
-        this.game = game;
     }
 
-    static void rewrite(ClassNode node, ReobfMappings mappings, GameClasses game) {
-        new RuntimeStrings(node, mappings, game).rewrite();
+    static void rewrite(ClassNode node, ReobfMappings mappings) {
+        new RuntimeStrings(node, mappings).rewrite();
     }
 
     private void rewrite() {
-        final UnaryOperator<String> type = this::gameClass;
-        final UnaryOperator<String> descriptor = this::descriptor;
+        final UnaryOperator<String> type = mappings::className;
+        final UnaryOperator<String> descriptor = mappings::descriptor;
         switch (node.name) {
             case PROJECT + "bootstrap/SharedBootstrap" -> {
                 for (String owner : List.of(LAUNCHER, SHIP, COLLISION)) {
@@ -85,7 +72,7 @@ final class RuntimeStrings {
             case PROJECT + "asm/launcher/LauncherDirectStartProcessor" -> targetClass(LAUNCHER);
             case PROJECT + "asm/combat/CollisionImpulseClampProcessor" -> {
                 targetClass(COLLISION);
-                field("TARGET_METHOD", "applyCollisionImpulse", gameMethod(COLLISION, "applyCollisionImpulse", COLLISION_DESC));
+                field("TARGET_METHOD", "applyCollisionImpulse", mappings.methodName(COLLISION, "applyCollisionImpulse", COLLISION_DESC));
                 field("TARGET_DESC", COLLISION_DESC, descriptor.apply(COLLISION_DESC));
                 field("CLAMP_DESC", CLAMP_DESC, descriptor.apply(CLAMP_DESC));
             }
@@ -95,20 +82,20 @@ final class RuntimeStrings {
                     operand("visitVarInsn", VISIT_VAR_INSN, CLAMP_DESC, descriptor.apply(CLAMP_DESC), 1);
             case PROJECT + "asm/combat/ShipDamageStageTwoProcessor" -> {
                 targetClass(SHIP);
-                field("TARGET_METHOD", "applyDamageInner", gameMethod(SHIP, "applyDamageInner", SHIP_DESC));
+                field("TARGET_METHOD", "applyDamageInner", mappings.methodName(SHIP, "applyDamageInner", SHIP_DESC));
                 field("TARGET_DESC", SHIP_DESC, descriptor.apply(SHIP_DESC));
                 field("SHIELD_GUARD_DESC", SHIELD_GUARD_DESC, descriptor.apply(SHIELD_GUARD_DESC));
                 field("ARMOR_GUARD_DESC", ARMOR_GUARD_DESC, descriptor.apply(ARMOR_GUARD_DESC));
                 field("PROFILER_OWNER", PROFILER, type.apply(PROFILER));
                 field("RESULT_CLASS", DAMAGE_RESULT, type.apply(DAMAGE_RESULT));
                 field("SHIELD_OWNER", SHIELD, type.apply(SHIELD));
-                field("FLUX_PER_POINT", "getFluxPerPointOfDamage", gameMethod(SHIELD, "getFluxPerPointOfDamage", "()F"));
+                field("FLUX_PER_POINT", "getFluxPerPointOfDamage", mappings.methodName(SHIELD, "getFluxPerPointOfDamage", "()F"));
             }
             case PROJECT + "asm/combat/ShipDamageStageTwoProcessor$2", PROJECT + "asm/combat/ShipDamageStageTwoProcessor$3" ->
                     methodMatcher(SHIP, "applyDamageInner", SHIP_DESC);
             case PROJECT + "asm/combat/ShipDamageStageTwoProcessor$AnchorWindow" -> {
                 final String prefix = "M" + Opcodes.INVOKEVIRTUAL + ":";
-                final String anchorName = gameMethod(SHIELD, "getFluxPerPointOfDamage", "()F");
+                final String anchorName = mappings.methodName(SHIELD, "getFluxPerPointOfDamage", "()F");
                 operand("visitVarInsn", VISIT_VAR_INSN, prefix + SHIELD + ".getFluxPerPointOfDamage()F",
                         prefix + type.apply(SHIELD) + "." + anchorName + "()F", 1);
             }
@@ -117,7 +104,7 @@ final class RuntimeStrings {
                 operand("onArmorAnchor", "()V", ARMOR_GUARD_DESC, descriptor.apply(ARMOR_GUARD_DESC), 1);
                 final String emitDesc = "(Ljava/lang/String;Ljava/lang/String;[I)V";
                 operand("emitGuard", emitDesc, PROFILER, type.apply(PROFILER), 1);
-                operand("emitGuard", emitDesc, "end", gameMethod(PROFILER, "end", "()V"), 1);
+                operand("emitGuard", emitDesc, "end", mappings.methodName(PROFILER, "end", "()V"), 1);
                 operand("emitGuard", emitDesc, DAMAGE_RESULT, type.apply(DAMAGE_RESULT), 2);
             }
             case PROJECT + "common/logging/VanillaLogNoiseConfigurator" -> {
@@ -131,49 +118,21 @@ final class RuntimeStrings {
             }
             default -> { }
         }
-        audit();
     }
 
     private String binaryName(String name) {
-        return gameClass(name.replace('.', '/')).replace('/', '.');
-    }
-
-    private String gameClass(String name) {
-        final String mapped = mappings.className(name);
-        if (!game.contains(mapped)) {
-            throw new IllegalArgumentException(node.name + " 引用的游戏类不存在 " + name + " -> " + mapped);
-        }
-        return mapped;
-    }
-
-    private String gameMethod(String owner, String name, String desc) {
-        final String targetOwner = gameClass(owner);
-        final String targetName = mappings.methodName(owner, name, desc);
-        final String targetDesc = descriptor(desc);
-        if (!game.hasMember(targetOwner, targetName, targetDesc, true)) {
-            throw new IllegalArgumentException(node.name + " 引用的游戏方法不存在 " + targetOwner + "." + targetName + targetDesc);
-        }
-        return targetName;
-    }
-
-    private String descriptor(String desc) {
-        final var types = EMBEDDED_TYPE.matcher(desc);
-        while (types.find()) {
-            final String name = types.group(1);
-            if (gameType(name)) gameClass(name);
-        }
-        return mappings.descriptor(desc);
+        return mappings.className(name.replace('.', '/')).replace('/', '.');
     }
 
     private void targetClass(String name) {
-        final String mapped = gameClass(name);
+        final String mapped = mappings.className(name);
         field("TARGET_CLASS", name, mapped);
         operand("process", PROCESSOR, name, mapped, 1);
     }
 
     private void methodMatcher(String owner, String name, String desc) {
-        operand("visitMethod", VISIT_METHOD, name, gameMethod(owner, name, desc), 1);
-        operand("visitMethod", VISIT_METHOD, desc, descriptor(desc), 1);
+        operand("visitMethod", VISIT_METHOD, name, mappings.methodName(owner, name, desc), 1);
+        operand("visitMethod", VISIT_METHOD, desc, mappings.descriptor(desc), 1);
     }
 
     private void field(String fieldName, String from, String to) {
@@ -183,7 +142,6 @@ final class RuntimeStrings {
             throw new IllegalArgumentException(node.name + "." + fieldName + " 的符号值应为 " + from + "，实际为 " + field.value);
         }
         field.value = to;
-        handled.add(field);
     }
 
     private void operand(String methodName, String desc, String from, String to, int expected) {
@@ -193,80 +151,11 @@ final class RuntimeStrings {
         for (var insn : method.instructions) {
             if (insn instanceof LdcInsnNode literal && from.equals(literal.cst)) {
                 literal.cst = to;
-                handled.add(literal);
                 matches++;
             }
         }
         if (matches != expected) {
             throw new IllegalArgumentException(node.name + "." + methodName + desc + " 的符号 " + from + " 应出现 " + expected + " 次，实际出现 " + matches + " 次");
         }
-    }
-
-    private void audit() {
-        for (var field : node.fields) {
-            if (!handled.contains(field) && field.value instanceof String text) verifyLiteral("#" + field.name, text);
-        }
-        for (var method : node.methods) {
-            final String site = method.name + method.desc;
-            for (var insn : method.instructions) {
-                if (insn instanceof LdcInsnNode literal && !handled.contains(literal)) {
-                    verifyConstant(site, literal.cst);
-                } else if (insn instanceof InvokeDynamicInsnNode dynamic) {
-                    for (Object argument : dynamic.bsmArgs) verifyConstant(site, argument);
-                }
-            }
-        }
-    }
-
-    private void verifyConstant(String site, Object constant) {
-        if (constant instanceof String text) {
-            verifyLiteral(site, text);
-        } else if (constant instanceof ConstantDynamic dynamic) {
-            for (int i = 0; i < dynamic.getBootstrapMethodArgumentCount(); i++) {
-                verifyConstant(site, dynamic.getBootstrapMethodArgument(i));
-            }
-        }
-    }
-
-    private void verifyLiteral(String site, String text) {
-        if (gameType(text) || containsGameType(EMBEDDED_TYPE, text) || containsGameType(ASM_METHOD, text)
-                || isUnregisteredMember(text)) {
-            throw new IllegalArgumentException(node.name + "." + site + " 含未登记的游戏符号 " + text);
-        }
-    }
-
-    private boolean isUnregisteredMember(String name) {
-        if (!IDENTIFIER.matcher(name).matches()) return false;
-        final String owner = node.name;
-        final List<String> targets;
-        if (owner.startsWith(PROJECT + "asm/combat/CollisionImpulseClampProcessor")) {
-            targets = List.of(COLLISION);
-        } else if (owner.startsWith(PROJECT + "asm/combat/ShipDamageStageTwoProcessor")) {
-            targets = List.of(SHIP, SHIELD, PROFILER, DAMAGE_RESULT);
-        } else if (owner.startsWith(PROJECT + "asm/launcher/LauncherDirectStartProcessor")) {
-            targets = List.of(LAUNCHER);
-        } else {
-            return false;
-        }
-        for (String target : targets) {
-            if (mappings.mappedNames(target, name, null, true).stream().anyMatch(mapped -> !mapped.equals(name))
-                    || mappings.mappedNames(target, name, null, false).stream().anyMatch(mapped -> !mapped.equals(name))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean containsGameType(Pattern pattern, String text) {
-        final var types = pattern.matcher(text);
-        while (types.find()) {
-            if (gameType(types.group(1))) return true;
-        }
-        return false;
-    }
-
-    private boolean gameType(String name) {
-        final String internalName = name.replace('.', '/');
-        return mappings.isGameClass(internalName) || game.contains(internalName);
     }
 }

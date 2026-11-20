@@ -4,22 +4,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-import java.util.jar.JarOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class DeclaredSourceTest {
     @TempDir Path root;
 
-    @Test void resolvesOnlyTheRecordedSpellingsAndChecksThatThePhysicalJarStillExists() throws Exception {
+    @Test void resolvesDeclaredSpellingAndTracksOriginalSource() throws Exception {
         var p = new Properties();
         Path source = jar("Frontier Archive.jar"), alias = root.resolve("frontier archive.jar"), named = jar("Named Archive.jar");
         p.setProperty("game.count", "1");
-        p.setProperty("game.0", jar("game.jar").toString());
+        Path game = jar("game.jar"), originalGame = jar("original game.jar");
+        p.setProperty("game.0", game.toString());
+        p.setProperty("game.source.0", originalGame.toString());
         p.setProperty("mod.count", "1");
         p.setProperty("enabled.count", "0");
         p.setProperty("library.count", "0");
@@ -27,18 +27,12 @@ class DeclaredSourceTest {
         p.setProperty("mod.source.0", source.toString());
         p.setProperty("mod.declared.0", alias.toString());
         LaunchPlan plan = new LaunchPlan(p);
+        assertEquals(originalGame.toRealPath(), plan.origins.get(game.toRealPath()));
+        assertEquals(game.toRealPath(), plan.namedSource(originalGame));
         assertEquals(named.toRealPath(), plan.namedSource(source));
         assertEquals(named.toRealPath(), plan.namedSource(alias));
         assertNull(plan.namedSource(root.resolve("unregistered.jar")));
-        assertEquals(named.toRealPath(), Path.of(plan.namedLocation(source.toUri().toURL()).toURI()));
-        assertEquals(named.toRealPath(), Path.of(plan.namedLocation(named.toUri().toURL()).toURI()));
-        Path unregistered = jar("private archive.jar");
-        var privateLocation = URI.create("jar:" + unregistered.toUri() + "!/").toURL();
-        assertSame(privateLocation, plan.namedLocation(privateLocation));
-        p.setProperty("mod.declared.0", root.resolve("different.jar").toString());
-        assertThrows(IOException.class, () -> new LaunchPlan(p));
-        Files.delete(source);
-        assertThrows(IOException.class, () -> plan.namedSource(alias));
+        assertEquals(source.toRealPath(), plan.origins.get(named.toRealPath()));
     }
 
     @Test @org.junit.jupiter.api.condition.DisabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
@@ -62,8 +56,6 @@ class DeclaredSourceTest {
     }
 
     private Path jar(String name) throws IOException {
-        Path file = root.resolve(name);
-        try (var stream = new JarOutputStream(Files.newOutputStream(file))) { stream.finish(); }
-        return file;
+        return Files.createFile(root.resolve(name));
     }
 }

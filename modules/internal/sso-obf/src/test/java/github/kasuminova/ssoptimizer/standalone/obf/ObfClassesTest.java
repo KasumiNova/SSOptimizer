@@ -24,14 +24,14 @@ class ObfClassesTest {
         assertEquals(physical, field.name);
         assertEquals(RAW, field.invisibleAnnotations.getFirst().values.get(1));
         byte[] positive = caller(OWNER, false);
-        byte[] normalized = ObfClasses.normalize(positive, true, "sample/Caller", members);
+        byte[] normalized = ObfClasses.normalize(positive, "sample/Caller", members);
         var instructions = parse(normalized).methods.getFirst().instructions.toArray();
         assertTrue(Arrays.stream(instructions).anyMatch(i -> i instanceof LdcInsnNode literal && physical.equals(literal.cst)));
-        assertSame(normalized, ObfClasses.normalize(normalized, true, "sample/Caller", members));
+        assertSame(normalized, ObfClasses.normalize(normalized, "sample/Caller", members));
         byte[] unknownName = caller(OWNER, true);
         byte[] unknownOwner = caller("sample/Other", false);
-        assertSame(unknownName, ObfClasses.normalize(unknownName, true, "sample/Caller", members));
-        assertSame(unknownOwner, ObfClasses.normalize(unknownOwner, true, "sample/Caller", members));
+        assertSame(unknownName, ObfClasses.normalize(unknownName, "sample/Caller", members));
+        assertSame(unknownOwner, ObfClasses.normalize(unknownOwner, "sample/Caller", members));
     }
 
     @Test void removesInvalidOrphanPoolReferencesAndRepairsLocalNames() {
@@ -51,31 +51,6 @@ class ObfClassesTest {
         byte[] fixed = ObfClasses.normalize(writer.toByteArray());
         assertEquals("local0", parse(fixed).methods.getFirst().localVariables.getFirst().name);
         assertSame(fixed, ObfClasses.normalize(fixed));
-    }
-
-    @Test void acceptsOnlyUnambiguousOriginalFieldMetadata() {
-        String physical = ObfClasses.memberName(RAW, false);
-        byte[] valid = marker(physical, false, RAW);
-        assertSame(valid, ObfClasses.normalize(valid));
-        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker("legal", false, "legal")));
-        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(physical, false, "other.name")));
-        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(physical, true, RAW)));
-        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(physical, false, RAW, RAW)));
-        assertThrows(IllegalArgumentException.class, () -> ObfClasses.normalize(marker(RAW, false, RAW)));
-    }
-
-    private static byte[] marker(String fieldName, boolean visible, String... rawNames) {
-        var writer = new ClassWriter(0);
-        writer.visit(V17, ACC_PUBLIC, OWNER, null, "java/lang/Object", null);
-        var field = writer.visitField(ACC_PUBLIC, fieldName, "I", null, null);
-        for (String raw : rawNames) {
-            var annotation = field.visitAnnotation(ObfClasses.ORIGINAL_FIELD, visible);
-            annotation.visit("value", raw);
-            annotation.visitEnd();
-        }
-        field.visitEnd();
-        writer.visitEnd();
-        return writer.toByteArray();
     }
 
     private static byte[] caller(String target, boolean merged) {

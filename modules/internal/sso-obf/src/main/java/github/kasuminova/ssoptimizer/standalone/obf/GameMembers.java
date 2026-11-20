@@ -1,25 +1,44 @@
 package github.kasuminova.ssoptimizer.standalone.obf;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarFile;
 import org.objectweb.asm.*;
 
 final class GameMembers {
     private record Definition(String parent, List<String> interfaces, Set<String> members, Set<String> publicMembers) {}
-    private final Map<String,Definition> definitions = new HashMap<>();
+    private static final Definition ABSENT = new Definition(null, List.of(), Set.of(), Set.of());
+    private final Map<String, Definition> definitions = new ConcurrentHashMap<>();
+    private final List<Path> archives;
 
-    void index(Path archive) throws IOException {
-        try (var jar = new JarFile(archive.toFile(), false, JarFile.OPEN_READ, Runtime.version())) {
-            for (var entry : jar.versionedStream().filter(e -> !e.getName().startsWith("META-INF/") && e.getName().endsWith(".class")).toList()) {
-                try (var stream = jar.getInputStream(entry)) { index(new ClassReader(stream)); }
-            }
-        } catch (RuntimeException e) { throw new IOException("读取游戏声明失败 " + archive, e); }
-    }
+    GameMembers() { this(List.of()); }
+    GameMembers(List<Path> archives) { this.archives = List.copyOf(archives); }
 
     void index(ClassReader reader) {
-        if (definitions.containsKey(reader.getClassName())) return;
+        definitions.computeIfAbsent(reader.getClassName(), ignored -> declaration(reader));
+    }
+
+    private Definition lookup(String owner) {
+        for (var archive : archives) {
+            try (var jar = new JarFile(archive.toFile(), true, JarFile.OPEN_READ, Runtime.version())) {
+                var entry = jar.getJarEntry(owner + ".class");
+                if (entry == null) continue;
+                try (var input = jar.getInputStream(entry)) {
+                    var reader = new ClassReader(input.readAllBytes());
+                    if (!owner.equals(reader.getClassName())) throw new IOException("声明类名不符 " + reader.getClassName());
+                    return declaration(reader);
+                }
+            } catch (IOException | IllegalArgumentException | IndexOutOfBoundsException e) {
+                throw new UncheckedIOException(new IOException("读取游戏声明失败 " + archive + "!/" + owner + ".class", e));
+            }
+        }
+        return ABSENT;
+    }
+
+    private static Definition declaration(ClassReader reader) {
         Set<String> members = new HashSet<>(), publicMembers = new HashSet<>();
         reader.accept(new ClassVisitor(Opcodes.ASM9) {
             void add(String name, boolean method, int flags) {
@@ -37,7 +56,7 @@ final class GameMembers {
                 return null;
             }
         }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-        definitions.put(reader.getClassName(), new Definition(reader.getSuperName(), List.of(reader.getInterfaces()), Set.copyOf(members), Set.copyOf(publicMembers)));
+        return new Definition(reader.getSuperName(), List.of(reader.getInterfaces()), Set.copyOf(members), Set.copyOf(publicMembers));
     }
 
     boolean has(String owner, String raw, boolean method, boolean declared, boolean publicOnly) {
@@ -48,8 +67,7 @@ final class GameMembers {
         while (!pending.isEmpty()) {
             String current = pending.remove();
             if (!visited.add(current)) continue;
-            var definition = definitions.get(current);
-            if (definition == null) continue;
+            var definition = definitions.computeIfAbsent(current, this::lookup);
             if ((publicOnly ? definition.publicMembers : definition.members).contains(key)) return true;
             if (declared) continue;
             if (definition.parent != null) pending.add(definition.parent);

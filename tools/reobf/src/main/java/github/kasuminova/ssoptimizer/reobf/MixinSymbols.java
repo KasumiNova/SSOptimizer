@@ -5,6 +5,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -12,7 +13,6 @@ import java.util.List;
 final class MixinSymbols {
     private static final String MIXIN = "Lorg/spongepowered/asm/mixin/Mixin;";
     private static final String SHADOW = "Lorg/spongepowered/asm/mixin/Shadow;";
-    private static final String OVERWRITE = "Lorg/spongepowered/asm/mixin/Overwrite;";
     private static final String AT = "Lorg/spongepowered/asm/mixin/injection/At;";
     private static final String DESC = "Lorg/spongepowered/asm/mixin/injection/Desc;";
 
@@ -45,7 +45,7 @@ final class MixinSymbols {
         shadow.values.set(index, new ArrayList<>(aliases));
     }
 
-    static int encodeSelectors(ClassNode mixin, GameClasses game) {
+    static int encodeSelectors(ClassNode mixin, GameClasses game) throws IOException {
         List<String> targets = targets(mixin);
         if (targets.isEmpty()) return 0;
         int changed = 0;
@@ -56,7 +56,7 @@ final class MixinSymbols {
         return changed;
     }
 
-    private static int encodeInjectors(List<AnnotationNode> annotations, List<String> targets, GameClasses game) {
+    private static int encodeInjectors(List<AnnotationNode> annotations, List<String> targets, GameClasses game) throws IOException {
         if (annotations == null) return 0;
         int changed = 0;
         for (AnnotationNode annotation : annotations) {
@@ -88,7 +88,7 @@ final class MixinSymbols {
         return changed;
     }
 
-    private static void encodeMethods(MemberInfo member, List<String> targets, GameClasses game, List<AnnotationNode> result) {
+    private static void encodeMethods(MemberInfo member, List<String> targets, GameClasses game, List<AnnotationNode> result) throws IOException {
         if (!member.getDesc().isEmpty()) {
             result.add(descriptor(member, member.getOwner(), member.getDesc()));
             return;
@@ -180,108 +180,6 @@ final class MixinSymbols {
         } else {
             annotation.values.set(index, value);
         }
-    }
-
-    static void validate(ClassNode mixin, ReobfMappings mappings, GameClasses original) {
-        List<String> targets = targets(mixin);
-        for (String target : targets) {
-            if (!original.contains(target) && mappings.isGameClass(target)) {
-                throw new IllegalArgumentException("Mixin " + mixin.name + " targets a class absent from the original game: " + target);
-            }
-            if (!original.contains(target)) continue;
-            for (var field : mixin.fields) {
-                validateShadow(mixin.name, target, field.name, field.desc, false,
-                        annotation(field.visibleAnnotations, field.invisibleAnnotations, SHADOW), original);
-            }
-            for (var method : mixin.methods) {
-                var overwrite = annotation(method.visibleAnnotations, method.invisibleAnnotations, OVERWRITE);
-                if (overwrite != null && !original.declares(target, method.name, method.desc, true)) {
-                    throw new IllegalArgumentException("Mixin " + mixin.name + " has no declared original @Overwrite target "
-                            + target + '.' + method.name + method.desc);
-                }
-                validateShadow(mixin.name, target, method.name, method.desc, true,
-                        annotation(method.visibleAnnotations, method.invisibleAnnotations, SHADOW), original);
-                validateInjection(mixin.name, target, method.visibleAnnotations, original);
-                validateInjection(mixin.name, target, method.invisibleAnnotations, original);
-                validatePoints(mixin.name, method.visibleAnnotations, mappings, original);
-                validatePoints(mixin.name, method.invisibleAnnotations, mappings, original);
-            }
-        }
-    }
-
-    private static void validateShadow(String mixin, String target, String name, String desc, boolean method,
-                                       AnnotationNode shadow, GameClasses original) {
-        if (shadow == null) return;
-        var prefix = value(shadow, "prefix") instanceof String explicit ? explicit : "shadow$";
-        String targetName = name.startsWith(prefix) ? name.substring(prefix.length()) : name;
-        if (original.declares(target, targetName, desc, method)) return;
-        if (value(shadow, "aliases") instanceof List<?> aliases) {
-            for (Object alias : aliases) {
-                if (original.declares(target, (String) alias, desc, method)) return;
-            }
-        }
-        throw new IllegalArgumentException("Mixin " + mixin + " has no original @Shadow target " + target + '.' + name + ' ' + desc);
-    }
-
-    private static void validateInjection(String mixin, String target, List<AnnotationNode> annotations, GameClasses original) {
-        if (annotations == null) return;
-        for (AnnotationNode annotation : annotations) {
-            if (!(value(annotation, "method") instanceof List<?> selectors) || selectors.isEmpty()) continue;
-            if (!annotation.desc.startsWith("Lorg/spongepowered/asm/mixin/injection/")
-                    && !annotation.desc.startsWith("Lcom/llamalad7/mixinextras/")) continue;
-            boolean matched = selectors.stream().map(String.class::cast).anyMatch(selector -> matchesMethod(selector, target, original));
-            if (!matched) {
-                throw new IllegalArgumentException("Mixin " + mixin + " has no original injection method in " + target + ": " + selectors);
-            }
-        }
-    }
-
-    private static void validatePoints(String mixin, Object value, ReobfMappings mappings, GameClasses original) {
-        if (value instanceof List<?> values) {
-            values.forEach(item -> validatePoints(mixin, item, mappings, original));
-        } else if (value instanceof AnnotationNode annotation) {
-            if (AT.equals(annotation.desc)) {
-                validatePoint(mixin, annotation, mappings, original);
-            } else {
-                validatePoints(mixin, annotation.values, mappings, original);
-            }
-        }
-    }
-
-    private static void validatePoint(String mixin, AnnotationNode at, ReobfMappings mappings, GameClasses original) {
-        if (!(value(at, "target") instanceof String selector) || !selector.startsWith("L")) return;
-        int ownerEnd = selector.indexOf(';');
-        if (ownerEnd < 0 || selector.contains("->") || "NEW".equals(value(at, "value"))) return;
-        String owner = selector.substring(1, ownerEnd);
-        if (!mappings.isGameClass(owner) && !original.contains(owner)) return;
-        if (!original.contains(owner)) {
-            throw new IllegalArgumentException("Mixin " + mixin + " has no original @At owner: " + selector);
-        }
-        int memberStart = ownerEnd + 1;
-        int descriptor = selector.indexOf('(', memberStart);
-        boolean method = descriptor >= 0;
-        if (!method) descriptor = selector.indexOf(':', memberStart);
-        if (descriptor < 0) return;
-        String name = selector.substring(memberStart, descriptor).replaceFirst("(?:[+*]|\\{[^}]*})$", "");
-        String desc = selector.substring(method ? descriptor : descriptor + 1);
-        if (!name.isEmpty() && !original.hasMember(owner, name, desc, method)) {
-            throw new IllegalArgumentException("Mixin " + mixin + " has no original @At member: " + selector);
-        }
-    }
-
-    private static boolean matchesMethod(String selector, String target, GameClasses original) {
-        String text = selector.replaceAll("\\s", "");
-        if (text.startsWith("@") || text.endsWith("/") || text.contains("->")) return true;
-        int descriptor = text.indexOf('(');
-        String desc = descriptor >= 0 ? text.substring(descriptor) : null;
-        String name = descriptor >= 0 ? text.substring(0, descriptor) : text;
-        if (name.startsWith("L") && name.contains(";")) {
-            int separator = name.indexOf(';');
-            if (!target.equals(name.substring(1, separator))) return false;
-            name = name.substring(separator + 1);
-        }
-        name = name.replaceFirst("(?:[+*]|\\{[^}]*})$", "");
-        return name.isEmpty() || original.declares(target, name, desc, true);
     }
 
     private static List<String> targets(ClassNode node) {

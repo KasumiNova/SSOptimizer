@@ -19,7 +19,6 @@ final class GameProcessLog implements AutoCloseable {
 
     static GameProcessLog open(Path dataRoot) throws IOException {
         Path logs = dataRoot.resolve("logs");
-        if (DataLocation.configured() == DataLocation.INSTANCE) InstancePaths.confined(dataRoot, logs);
         Files.createDirectories(logs);
         Path path = Files.createTempFile(logs, "launcher-" + System.currentTimeMillis() + "-", ".log");
         System.out.println("[Standalone] 本次启动日志：" + path);

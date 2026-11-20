@@ -24,8 +24,8 @@ public abstract class LauncherSelectionMixin {
 
     @ModifyExpressionValue(method = "launchGame(ZZLjava/lang/String;Ljava/lang/String;)V",
             at = @At(value = "INVOKE", target = "Lcom/fs/starfarer/launcher/ModManager;getEnabledMods()Ljava/util/List;"))
-    private static List<?> ssoptimizer$verifyModSelection(List<?> selected) {
-        ModSelection.verify(selected);
+    private static List<?> ssoptimizer$restartIfChanged(List<?> selected) {
+        ModSelection.restartIfChanged(selected);
         return selected;
     }
 }

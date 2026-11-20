@@ -31,7 +31,6 @@ final class ReobfMappings {
 
     private final IMappingProvider provider;
     private final Map<String, String> classes;
-    private final Set<String> obfClasses;
     private final Map<Member, List<Variant>> members;
     private final Remapper descriptors = new Remapper(Opcodes.ASM9) {
         @Override
@@ -44,7 +43,6 @@ final class ReobfMappings {
     private ReobfMappings(IMappingProvider provider, Map<String, String> classes, Map<Member, List<Variant>> members) {
         this.provider = provider;
         this.classes = Map.copyOf(classes);
-        this.obfClasses = Set.copyOf(classes.values());
         this.members = Map.copyOf(members);
     }
 
@@ -115,14 +113,6 @@ final class ReobfMappings {
 
     String className(String internalName) {
         return classes.getOrDefault(internalName, internalName);
-    }
-
-    boolean isGameClass(String internalName) {
-        return classes.containsKey(internalName) || obfClasses.contains(internalName);
-    }
-
-    boolean isNamedGameClass(String internalName) {
-        return classes.containsKey(internalName);
     }
 
     String descriptor(String desc) {

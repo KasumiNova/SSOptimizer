@@ -16,16 +16,10 @@ import java.util.jar.Manifest;
 
 public final class SystemTransforms implements RfbPlugin {
     private static final Map<String, UnaryOperator<byte[]>> targets = new ConcurrentHashMap<>();
-    private static volatile boolean installed;
 
     @Override
     public RfbClassTransformer[] makeTransformers() {
-        installed = true;
         return new RfbClassTransformer[]{new SystemTransformer()};
-    }
-
-    static void checkInstalled() {
-        if (!installed) throw new IllegalStateException("RFB 未发现 SSOptimizer 系统插件，请检查系统 classpath");
     }
 
     static void register(String binaryName, UnaryOperator<byte[]> transform) {

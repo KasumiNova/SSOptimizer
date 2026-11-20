@@ -1,20 +1,13 @@
 package ssoptimizer.standalone.launch;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 
 record PlatformFiles(String id, Path gameNative, Path optimizerNative, Path lwjgl, Path lwjglUtil) {
-    static PlatformFiles inspect(GameInstall game, Path home, Path cache) throws IOException {
+    static PlatformFiles inspect(GameInstall game, Path home) throws IOException {
         String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
         String arch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
         String platform;
@@ -24,11 +17,9 @@ record PlatformFiles(String id, Path gameNative, Path optimizerNative, Path lwjg
         if (!arch.equals("amd64") && !arch.equals("x86_64")) throw new IOException("需要 x64 JVM，实际架构为 " + arch);
         Path nativeDir = game.core().resolve("native").resolve(platform);
         Path sso = home.resolve("native").resolve(platform);
-        for (String mod : List.of("render", "loading", "texcompress", "font", "ime")) {
-            GameInstall.required(sso.resolve(System.mapLibraryName("ssoptimizer_" + mod)));
-        }
-        return new PlatformFiles(platform, nativeDir, sso, unseal(game.core().resolve("lwjgl.jar"), cache),
-                GameInstall.required(game.core().resolve("lwjgl_util.jar")));
+        Path lwjgl = game.core().resolve("lwjgl.jar");
+        return new PlatformFiles(platform, nativeDir, sso, lwjgl,
+                game.core().resolve("lwjgl_util.jar"));
     }
 
     List<String> arguments() {
@@ -41,38 +32,5 @@ record PlatformFiles(String id, Path gameNative, Path optimizerNative, Path lwjg
             args.add("-Dssoptimizer.native.path." + module + "=" + optimizerNative.resolve(System.mapLibraryName("ssoptimizer_" + module)));
         }
         return args;
-    }
-
-    private static Path unseal(Path original, Path cache) throws IOException {
-        String inputHash = GameInstall.digest(original);
-        Path dir = cache.resolve("lwjgl-v1").resolve(inputHash);
-        Path jar = dir.resolve("lwjgl.jar");
-        Path hash = dir.resolve("output.sha256");
-        InstancePaths.confined(cache, jar);
-        InstancePaths.confined(cache, hash);
-        Files.createDirectories(dir);
-        if (Files.isRegularFile(jar) && Files.isRegularFile(hash) && GameInstall.digest(jar).equals(Files.readString(hash))) return jar;
-        Path tmp = Files.createTempFile(dir, "lwjgl-", ".tmp");
-        try (var input = new JarFile(original.toFile())) {
-            Manifest manifest = input.getManifest();
-            if (manifest == null || !(Boolean.parseBoolean(manifest.getMainAttributes().getValue(Attributes.Name.SEALED))
-                    || manifest.getEntries().values().stream().anyMatch(a -> Boolean.parseBoolean(a.getValue(Attributes.Name.SEALED))))) return original;
-            manifest.getMainAttributes().remove(Attributes.Name.SEALED);
-            manifest.getEntries().values().forEach(a -> a.remove(Attributes.Name.SEALED));
-            try (var out = new JarOutputStream(Files.newOutputStream(tmp), manifest)) {
-                var entries = input.entries();
-                while (entries.hasMoreElements()) {
-                    var entry = entries.nextElement();
-                    if (entry.isDirectory() || entry.getName().equalsIgnoreCase(JarFile.MANIFEST_NAME)) continue;
-                    if (entry.getName().matches("(?i)META-INF/[^/]+\\.(SF|RSA|DSA|EC)")) throw new IOException("不支持重新打包已签名的 LWJGL：" + original);
-                    var copy = new JarEntry(entry.getName()); copy.setTime(0); out.putNextEntry(copy);
-                    try (var in = input.getInputStream(entry)) { in.transferTo(out); }
-                    out.closeEntry();
-                }
-            }
-            Files.move(tmp, jar, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            Files.writeString(hash, GameInstall.digest(jar));
-            return jar;
-        } finally { Files.deleteIfExists(tmp); }
     }
 }

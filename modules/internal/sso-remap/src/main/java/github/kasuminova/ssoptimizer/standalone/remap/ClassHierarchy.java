@@ -22,11 +22,7 @@ final class ClassHierarchy {
         final Header header = new Header(reader.getClassName(), reader.getSuperName(), List.of(reader.getInterfaces()),
                 (reader.getAccess() & Opcodes.ACC_INTERFACE) != 0, origin);
         final var versions = headers.computeIfAbsent(header.name(), ignored -> new TreeMap<>());
-        final Header previous = versions.putIfAbsent(release, header);
-        if (previous != null && (!java.util.Objects.equals(previous.parent(), header.parent())
-                || !previous.interfaces().equals(header.interfaces()) || previous.isInterface() != header.isInterface())) {
-            throw new IllegalArgumentException("Conflicting hierarchy for " + header.name() + ": " + previous.origin() + " and " + origin);
-        }
+        versions.putIfAbsent(release, header);
     }
 
     String commonType(final String left, final String right, final int release) {

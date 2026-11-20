@@ -12,14 +12,13 @@ final class FlavorHost {
 
     private FlavorHost() {}
 
-    static void mount(LaunchPlan plan, LaunchClassLoader loader) throws IOException {
-        for (Path path : plan.archives) loader.addURL(path.toUri().toURL());
-        loader.addClassLoaderExclusion(SYSTEM_PACKAGE);
-    }
-
     static void initialize(LaunchPlan plan, LaunchClassLoader loader) throws IOException {
+        NamedLoaderUrls.install(plan);
+        var mods = new java.util.HashSet<java.net.URL>();
+        for (Path path : plan.mods) mods.add(path.toUri().toURL());
+        ArchiveClassPath.mount(loader, plan.archives, java.util.Set.of(), plan.origins, mods::contains, NamedLoaderUrls::rewrite);
+        loader.addClassLoaderExclusion(SYSTEM_PACKAGE);
         Path home = Path.of(System.getProperty("ssoptimizer.standalone.home"));
-        ReflectionNames.initialize(home.resolve("mappings/game-full.tiny.gz"), plan.game, loader);
-        StandaloneTweaker.register(loader, ModCodeSourceTransformer.class.getName());
+        ReflectionNames.initialize(home.resolve("mappings/game-full.tiny.gz"), plan.game, loader, plan.origins);
     }
 }

@@ -17,23 +17,14 @@ final class NamedHierarchy {
     private NamedHierarchy() {
     }
 
-    static Path project(final MappingProjection mapping, final List<Path> named, final List<Path> dependencies,
+    static byte[] header(byte[] bytes) {
+        var writer = new ClassWriter(0);
+        new ClassReader(bytes).accept(writer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return writer.toByteArray();
+    }
+
+    static Path project(final MappingProjection mapping, final Map<String,byte[]> headers, final List<Path> dependencies,
                         final Path output) throws IOException {
-        final Map<String, byte[]> headers = new TreeMap<>();
-        for (Path path : named) {
-            ArchiveEntries.validate(path, false, (entry, bytes) -> {
-                if (ModuleMetadata.isDescriptor(entry)) {
-                    return;
-                }
-                final ClassWriter writer = new ClassWriter(0);
-                new ClassReader(bytes).accept(writer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-                final byte[] header = writer.toByteArray();
-                final byte[] previous = headers.putIfAbsent(entry, header);
-                if (previous != null && !java.util.Arrays.equals(previous, header)) {
-                    throw new IllegalArgumentException("Conflicting named hierarchy declarations: " + path + "!" + entry);
-                }
-            });
-        }
         final Path input = output.resolveSibling("named-hierarchy-input.jar");
         write(input, headers);
         final TinyRemapper reverse = TinyRemapper.newRemapper().withMappings(mapping.reverseProvider())

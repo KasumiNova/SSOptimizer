@@ -11,7 +11,6 @@ version = "0.1.10-SNAPSHOT"
 
 apply(from = "gradle/standalone-distribution.gradle.kts")
 apply(from = "gradle/reobf.gradle.kts")
-apply(from = "tools/verify-transform-targets.gradle")
 
 val modId = "ssoptimizer"
 val modReleaseVersion = project.version.toString()

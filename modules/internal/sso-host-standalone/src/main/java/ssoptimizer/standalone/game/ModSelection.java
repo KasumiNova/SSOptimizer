@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,7 +29,7 @@ public final class ModSelection {
             if (Files.exists(file)) {
                 byte[] saved = Files.readAllBytes(file);
                 Set<String> ids = parse(saved);
-                if (!ids.equals(prepared)) requestRestart(prepared, ids, saved);
+                if (!ids.equals(prepared)) requestRestart(prepared, ids);
             }
             ModSelectionNotice.show(78, "当前模组组合无法启动游戏。请在模组管理器中调整选择。\n" + problem, null);
         } catch (IOException | JSONException e) {
@@ -39,23 +38,15 @@ public final class ModSelection {
         return false;
     }
 
-    public static void verify(List<?> selected) {
+    public static void restartIfChanged(List<?> selected) {
         var ids = new LinkedHashSet<String>();
         for (Object mod : selected) {
             String id = ((SelectedMod) mod).getId();
-            if (!ids.add(id)) throw new IllegalStateException("游戏返回重复启用的模组: " + id);
+            ids.add(id);
         }
         Set<String> prepared = PreparedSources.enabledIds();
         if (ids.equals(prepared)) return;
-        Path file = selectionFile();
-        try {
-            byte[] saved = Files.readAllBytes(file);
-            Set<String> savedIds = parse(saved);
-            if (!savedIds.equals(ids)) throw new IOException("已保存=" + savedIds + "，游戏选择=" + ids);
-            requestRestart(prepared, ids, saved);
-        } catch (IOException | JSONException e) {
-            ModSelectionNotice.exit(78, "模组选择未能保存或请求重启失败。请检查模组配置的写权限。\n" + file + "\n" + e, e);
-        }
+        requestRestart(prepared, ids);
     }
 
     private static Path selectionFile() {
@@ -67,15 +58,12 @@ public final class ModSelection {
         var ids = new LinkedHashSet<String>();
         for (int i = 0; i < entries.length(); i++) {
             String id = entries.getString(i);
-            if (!ids.add(id)) throw new IOException("重复 ID: " + id);
+            ids.add(id);
         }
         return ids;
     }
 
-    private static void requestRestart(Set<String> prepared, Set<String> ids, byte[] saved) throws IOException {
-        String request = System.getProperty("ssoptimizer.standalone.restart");
-        if (request == null) throw new IOException("缺少启动器的模组重启请求路径");
-        Files.write(Path.of(request), saved, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+    private static void requestRestart(Set<String> prepared, Set<String> ids) {
         var added = new LinkedHashSet<>(ids);
         var removed = new LinkedHashSet<String>();
         if (prepared != null) {

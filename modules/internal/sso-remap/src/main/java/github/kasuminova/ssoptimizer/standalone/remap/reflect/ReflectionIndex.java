@@ -23,7 +23,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Optional;
 import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -37,8 +37,12 @@ import java.util.zip.ZipFile;
 final class ReflectionIndex {
     private static final System.Logger LOG = System.getLogger(ReflectionNames.class.getName());
     private final ClassLoader loader;
-    private final Map<String, Shape> game = new HashMap<>();
-    private final Set<String> mounted = new HashSet<>();
+    private final List<Path> jars;
+    private final Map<Path, Path> origins;
+    private final Map<String, MappingTreeView.ClassMappingView> mappings = new HashMap<>();
+    private final Map<String, Optional<Path>> locations = new ConcurrentHashMap<>();
+    private final Map<String, Shape> game = new ConcurrentHashMap<>();
+    private final int namespace;
     private final Map<String, String> classes = new HashMap<>();
     private final Set<String> warnings = ConcurrentHashMap.newKeySet();
 
@@ -69,16 +73,13 @@ final class ReflectionIndex {
     }
 
     private static final class Shape {
-        final Path archive;
         final Names methods = new Names(), fields = new Names();
-        Shape(Path archive) { this.archive = archive; }
         Names names(boolean method) { return method ? methods : fields; }
     }
 
     private final ClassValue<Boolean> owned = new ClassValue<>() {
         @Override protected Boolean computeValue(Class<?> type) {
-            Shape shape = game.get(type.getName());
-            if (shape == null || type.getClassLoader() != loader) return false;
+            if (!mappings.containsKey(type.getName())) return false;
             var source = type.getProtectionDomain().getCodeSource();
             if (source == null || source.getLocation() == null) return false;
             try {
@@ -91,7 +92,9 @@ final class ReflectionIndex {
                             && !(entry.startsWith("META-INF/versions/") && entry.endsWith("/" + logical))) return false;
                     url = connection.getJarFileURL();
                 }
-                return url.getProtocol().equals("file") && shape.archive.equals(Path.of(url.toURI()).toRealPath());
+                if (!url.getProtocol().equals("file")) return false;
+                Path origin = Path.of(url.toURI()).toRealPath();
+                return location(type.getName()).map(origins::get).filter(origin::equals).isPresent();
             } catch (IOException | URISyntaxException | IllegalArgumentException ex) {
                 warn(type.getName(), "无法辨认定义来源：" + ex);
                 return false;
@@ -113,10 +116,15 @@ final class ReflectionIndex {
         for (Class<?> iface : type.getInterfaces()) collect(iface, out);
     }
 
-    private ReflectionIndex(ClassLoader loader) { this.loader = loader; }
+    private ReflectionIndex(ClassLoader loader, List<Path> jars, Map<Path,Path> origins, int namespace) throws IOException {
+        this.loader = loader;
+        this.jars = List.copyOf(jars);
+        this.origins = new HashMap<>();
+        for (Path jar : jars) this.origins.put(jar, origins.getOrDefault(jar, jar).toRealPath());
+        this.namespace = namespace;
+    }
 
-    static ReflectionIndex read(Path tiny, List<Path> jars, ClassLoader loader) throws IOException {
-        var index = new ReflectionIndex(loader);
+    static ReflectionIndex read(Path tiny, List<Path> jars, ClassLoader loader, Map<Path, Path> origins) throws IOException {
         var tree = new MemoryMappingTree();
         try (var raw = new BufferedInputStream(Files.newInputStream(tiny))) {
             raw.mark(2);
@@ -129,21 +137,13 @@ final class ReflectionIndex {
         if (!"obf".equals(tree.getSrcNamespace()) || !tree.getDstNamespaces().contains("named"))
             throw new IOException("反射名称需要 Tiny obf -> named 映射：" + tiny);
         int ns = tree.getNamespaceId("named");
-        Set<String> relevant = new HashSet<>();
-        for (var cls : tree.getClasses()) {
-            String dest = cls.getName(ns);
-            relevant.add((dest == null ? cls.getSrcName() : dest).replace('/', '.'));
-        }
-        for (Path jar : jars) index.scan(jar.toRealPath(), relevant);
+        var index = new ReflectionIndex(loader, jars, origins, ns);
         for (var cls : tree.getClasses()) {
             String original = cls.getSrcName().replace('/', '.');
             String dest = cls.getName(ns);
             String name = dest == null ? original : dest.replace('/', '.');
-            Shape gameType = index.game.get(name);
-            if (gameType == null) continue;
+            index.mappings.put(name, cls);
             if (!original.equals(name)) index.classes.put(original, name);
-            for (var field : cls.getFields()) alias(gameType.fields, field, ns, false);
-            for (var method : cls.getMethods()) alias(gameType.methods, method, ns, true);
         }
         return index;
     }
@@ -154,28 +154,39 @@ final class ReflectionIndex {
         if (!old.equals(fixed)) names.aliases.computeIfAbsent(old, k -> new ArrayList<>()).add(new Alias(fixed, m.getDesc(ns)));
     }
 
-    private void scan(Path archive, Set<String> relevant) throws IOException {
-        try (var jar = new JarFile(archive.toFile(), false, ZipFile.OPEN_READ, Runtime.version()); var entries = jar.versionedStream()) {
-            for (var iter = entries.iterator(); iter.hasNext();) {
-                var entry = iter.next();
-                String path = entry.getName();
-                if (!path.endsWith(".class") || path.startsWith("META-INF/") || path.equals("module-info.class")) continue;
-                String name = path.substring(0, path.length() - 6).replace('/', '.');
-                if (!mounted.add(name) || !relevant.contains(name)) continue;
-                var shape = new Shape(archive);
-                try (var in = jar.getInputStream(entry)) {
-                    declarations(in, name, shape);
-                } catch (RuntimeException | java.util.zip.ZipException | java.io.EOFException ex) {
-                    indexWarning(archive, path, ex);
-                    continue;
+    private Optional<Path> location(String name) {
+        return locations.computeIfAbsent(name, key -> {
+            String entry = key.replace('.', '/') + ".class";
+            for (Path path : jars) {
+                try (var jar = new JarFile(path.toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
+                    if (jar.getJarEntry(entry) != null) return Optional.of(path);
+                } catch (IOException ex) {
+                    throw new java.io.UncheckedIOException("无法读取游戏归档 " + path, ex);
                 }
-                game.put(name, shape);
             }
-        }
+            return Optional.empty();
+        });
     }
 
-    private static void indexWarning(Path archive, String entry, Exception ex) {
-        LOG.log(System.Logger.Level.WARNING, "跳过反射名称索引条目 " + archive + "!/" + entry + "：" + ex);
+    private Shape gameShape(String name) {
+        return game.computeIfAbsent(name, key -> {
+            var archive = location(key);
+            if (archive.isEmpty()) return UNKNOWN;
+            Path path = archive.get();
+            String entry = key.replace('.', '/') + ".class";
+            var shape = new Shape();
+            try (var jar = new JarFile(path.toFile(), false, ZipFile.OPEN_READ, Runtime.version());
+                 var in = jar.getInputStream(jar.getJarEntry(entry))) {
+                declarations(in, key, shape);
+            } catch (IOException | RuntimeException ex) {
+                warn(key, "无法读取游戏成员声明 " + path + "!/" + entry + "：" + ex);
+                return UNKNOWN;
+            }
+            var mapping = mappings.get(key);
+            for (var field : mapping.getFields()) alias(shape.fields, field, namespace, false);
+            for (var method : mapping.getMethods()) alias(shape.methods, method, namespace, true);
+            return shape;
+        });
     }
 
     private static void declarations(InputStream stream, String name, Shape shape) throws IOException {
@@ -210,8 +221,8 @@ final class ReflectionIndex {
     private String binaryName(String name) {
         String mapped = classes.get(name);
         if (mapped == null) return name;
-        if (mounted.contains(name)) { warn(name, "当前游戏还定义了同名类，保留原名"); return name; }
-        return mapped;
+        if (location(name).isPresent()) { warn(name, "当前游戏还定义了同名类，保留原名"); return name; }
+        return gameShape(mapped) == UNKNOWN ? name : mapped;
     }
 
     String member(Class<?> owner, String raw, boolean method, String desc, boolean partial) {
@@ -222,13 +233,13 @@ final class ReflectionIndex {
         if (raw == null || owner == null || owner.isPrimitive() || owner.isArray()) return raw;
         boolean own = owns(owner);
         if (scope == Scope.DECLARED && !own) return raw;
-        if (!own && (owner.getClassLoader() == null || mounted.contains(owner.getName()))) return raw;
+        if (!own && (owner.getClassLoader() == null || location(owner.getName()).isPresent())) return raw;
         var types = hierarchies.get(owner);
         var candidates = new LinkedHashSet<String>();
         boolean literal = false;
         for (var type : types) {
             if (!owns(type)) continue;
-            Names names = game.get(type.getName()).names(method);
+            Names names = gameShape(type.getName()).names(method);
             if (scope != Scope.DECLARED || type == owner)
                 literal |= names.declared(raw, desc, partial, type != owner, method && type.isInterface(), scope == Scope.PUBLIC);
             for (var alias : names.aliases.getOrDefault(raw, List.of())) {
@@ -257,7 +268,7 @@ final class ReflectionIndex {
     }
 
     private boolean overrides(Class<?> owner, Class<?> parent, Alias alias) {
-        Names base = game.get(parent.getName()).methods, child = game.get(owner.getName()).methods;
+        Names base = gameShape(parent.getName()).methods, child = gameShape(owner.getName()).methods;
         for (Decl inherited : base.declarations.getOrDefault(alias.target, List.of())) {
             if (!inherited.desc.equals(alias.desc) || (inherited.access & (Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL)) != 0) continue;
             if ((inherited.access & (Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED)) == 0 && !owner.getPackageName().equals(parent.getPackageName())) continue;
@@ -269,15 +280,15 @@ final class ReflectionIndex {
     }
 
     private boolean declared(List<Class<?>> types, Class<?> owner, boolean method, String name, String desc, boolean partial, boolean publicOnly) {
-        for (var type : types) if (owns(type) && game.get(type.getName()).names(method).declared(name, desc, partial, type != owner, method && type.isInterface(), publicOnly)) return true;
+        for (var type : types) if (owns(type) && gameShape(type.getName()).names(method).declared(name, desc, partial, type != owner, method && type.isInterface(), publicOnly)) return true;
         return false;
     }
 
-    private static final Shape UNKNOWN = new Shape(null);
+    private static final Shape UNKNOWN = new Shape();
     private final ClassValue<Shape> otherDeclarations = new ClassValue<>() {
         @Override protected Shape computeValue(Class<?> type) {
             String name = type.getName(), entry = name.replace('.', '/') + ".class";
-            Shape shape = new Shape(null);
+            Shape shape = new Shape();
             try {
                 if (type.getModule().isNamed()) {
                     try (InputStream in = type.getModule().getResourceAsStream(entry)) {

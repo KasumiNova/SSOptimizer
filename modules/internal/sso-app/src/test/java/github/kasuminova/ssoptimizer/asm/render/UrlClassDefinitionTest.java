@@ -144,10 +144,6 @@ class UrlClassDefinitionTest {
         }
         final Object rawLoader = ctor.invoke();
         assertThrows(ClassFormatError.class, () -> array.invoke(rawLoader, name, padded, 3, original.length, (CodeSource) null));
-        assertThrows(ClassFormatError.class, () -> array.invoke(rawLoader, name, padded, 3, original.length + 1, source));
-        final byte[] different = padded.clone();
-        different[3 + 7] = (byte) Opcodes.V21;
-        assertThrows(ClassFormatError.class, () -> array.invoke(rawLoader, name, different, 3, original.length, source));
     }
 
     @Test

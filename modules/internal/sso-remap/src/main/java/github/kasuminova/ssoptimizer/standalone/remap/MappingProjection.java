@@ -99,23 +99,6 @@ final class MappingProjection {
         return new MappingProjection(tree, classes, namedOnly);
     }
 
-    static String digest(final Path mapping) throws IOException {
-        try (var raw = new java.io.BufferedInputStream(java.nio.file.Files.newInputStream(mapping))) {
-            raw.mark(2);
-            final boolean compressed = raw.read() == 0x1f && raw.read() == 0x8b;
-            raw.reset();
-            try (var decoded = compressed ? new java.util.zip.GZIPInputStream(raw) : raw) {
-                final var digest = Digests.sha256();
-                final byte[] buffer = new byte[65536];
-                int count;
-                while ((count = decoded.read(buffer)) != -1) {
-                    digest.update(buffer, 0, count);
-                }
-                return java.util.HexFormat.of().formatHex(digest.digest());
-            }
-        }
-    }
-
     IMappingProvider provider() {
         return TinyUtils.createMappingProvider(tree, "obf", "named");
     }

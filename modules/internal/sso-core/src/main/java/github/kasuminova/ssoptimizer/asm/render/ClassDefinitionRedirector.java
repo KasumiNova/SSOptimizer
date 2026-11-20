@@ -22,6 +22,7 @@ import java.lang.reflect.Modifier;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -244,6 +245,8 @@ public final class ClassDefinitionRedirector {
         final int data = named ? 2 : 1;
         final boolean buffer = call.descriptor.equals(BUFFER_DEFINITION) || call.descriptor.equals(SOURCE_BUFFER_DEFINITION);
         final boolean sourced = call.descriptor.equals(SOURCE_DEFINITION) || call.descriptor.equals(SOURCE_BUFFER_DEFINITION);
+        final boolean protectedDomain = call.descriptor.equals(PROTECTED_DEFINITION) || call.descriptor.equals(BUFFER_DEFINITION);
+        final boolean hasSource = sourced || protectedDomain;
         final int domain = data + (buffer ? 1 : 3);
         mv.loadArg(0);
         if (named) mv.loadArg(1);
@@ -252,16 +255,16 @@ public final class ClassDefinitionRedirector {
         final int rewritten;
         final Type sourceType = Type.getType(CodeSource.class);
         if (buffer) {
-            if (sourced) mv.loadArg(domain);
-            final Type[] arguments = sourced ? new Type[]{CLASS_LOADER, STRING, BYTE_BUFFER, sourceType}
+            if (hasSource) loadDefinitionSource(mv, domain, protectedDomain);
+            final Type[] arguments = hasSource ? new Type[]{CLASS_LOADER, STRING, BYTE_BUFFER, sourceType}
                     : new Type[]{CLASS_LOADER, STRING, BYTE_BUFFER};
             mv.invokeStatic(OWNER, new Method("redirectBuffer", BYTE_BUFFER, arguments));
             rewritten = mv.newLocal(BYTE_BUFFER);
         } else {
             mv.loadArg(data + 1);
             mv.loadArg(data + 2);
-            if (sourced) mv.loadArg(domain);
-            final Type[] arguments = sourced ? new Type[]{CLASS_LOADER, STRING, BYTE_ARRAY, Type.INT_TYPE, Type.INT_TYPE, sourceType}
+            if (hasSource) loadDefinitionSource(mv, domain, protectedDomain);
+            final Type[] arguments = hasSource ? new Type[]{CLASS_LOADER, STRING, BYTE_ARRAY, Type.INT_TYPE, Type.INT_TYPE, sourceType}
                     : new Type[]{CLASS_LOADER, STRING, BYTE_ARRAY, Type.INT_TYPE, Type.INT_TYPE};
             mv.invokeStatic(OWNER, new Method("redirectSlice", BYTE_SLICE, arguments));
             rewritten = mv.newLocal(BYTE_SLICE);
@@ -281,6 +284,18 @@ public final class ClassDefinitionRedirector {
         mv.visitMethodInsn(call.opcode, call.owner, "defineClass", call.descriptor, false);
         mv.returnValue();
         mv.endMethod();
+    }
+
+    private static void loadDefinitionSource(final GeneratorAdapter mv, final int argument, final boolean protectedDomain) {
+        mv.loadArg(argument);
+        if (protectedDomain) {
+            mv.invokeStatic(OWNER, new Method("definitionSource", Type.getType(CodeSource.class),
+                    new Type[]{Type.getType(ProtectionDomain.class)}));
+        }
+    }
+
+    public static CodeSource definitionSource(final ProtectionDomain domain) {
+        return UrlClassDefinition.hasScopedNormalizer() && domain != null ? domain.getCodeSource() : null;
     }
 
     private static void appendLookupOverride(final ClassWriter writer, final String owner, final String superName) {
@@ -339,7 +354,8 @@ public final class ClassDefinitionRedirector {
                                           final int offset, final int length, final CodeSource source) {
         if (loader != null && bytes != null && offset >= 0 && length >= 0 && offset <= bytes.length - length) {
             final byte[] input = offset == 0 && length == bytes.length ? bytes : Arrays.copyOfRange(bytes, offset, offset + length);
-            final byte[] rewritten = redirect(loader, name, UrlClassDefinition.normalizeFromArchive(source, name, input));
+            final byte[] normalized = UrlClassDefinition.normalizeFromArchive(source, name, input);
+            final byte[] rewritten = UrlClassDefinition.redirectExplicit(source) ? redirect(loader, name, normalized) : normalized;
             if (rewritten != input) return new ByteSlice(rewritten, 0, rewritten.length);
         }
         return new ByteSlice(bytes, offset, length);
@@ -355,7 +371,8 @@ public final class ClassDefinitionRedirector {
         // JDK defineClass 会推进无可访问数组的非直接缓冲区；保留该调用及其位置变化。
         final byte[] input = new byte[bytes.remaining()];
         bytes.duplicate().get(input);
-        final byte[] rewritten = redirect(loader, name, UrlClassDefinition.normalizeFromArchive(source, name, input));
+        final byte[] normalized = UrlClassDefinition.normalizeFromArchive(source, name, input);
+        final byte[] rewritten = UrlClassDefinition.redirectExplicit(source) ? redirect(loader, name, normalized) : normalized;
         return rewritten == input ? bytes : ByteBuffer.wrap(rewritten);
     }
 

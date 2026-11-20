@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -57,12 +58,13 @@ class ReflectionNamesTest {
                     + "\tm\t(I)Lx/B;\tb\tkey\n\tm\t(J)V\tb\toverloaded\n\tm\t(I)Ljava/lang/Object;\tb\twide\n"
                     + "c\tx/S\tgame/Sub\nc\tx/Absent\tgame/Absent\nc\tx/Bad\tgame/Damaged\n").getBytes(StandardCharsets.UTF_8));
         }
-        URL archive = game.toUri().toURL();
+        Path origin = Files.copy(game, root.resolve("source.jar"));
+        URL archive = origin.toUri().toURL();
         try (var launch = new URLClassLoader(new URL[]{archive}, ClassLoader.getPlatformClassLoader());
              var foreign = new URLClassLoader(new URL[]{archive}, ClassLoader.getPlatformClassLoader());
              var mod = new URLClassLoader(new URL[]{external.toUri().toURL()}, launch);
              var wrongSource = new URLClassLoader(new URL[]{spoof.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
-            ReflectionNames.initialize(tiny, List.of(game), launch);
+            ReflectionNames.initialize(tiny, List.of(game), launch, Map.of(game, origin));
             Class<?> base = Class.forName("game.Base", false, launch), sub = Class.forName("game.Sub", false, launch);
             assertEquals("game.Base", ReflectionNames.className("x.B"));
             assertEquals("game.Base", ReflectionNames.className("game.Base"));
@@ -97,7 +99,7 @@ class ReflectionNamesTest {
             assertTrue(ReflectionNames.comparison(null, null, null, true));
             assertFalse(ReflectionNames.matches("not a member", "b"));
             assertEquals("a", ReflectionNames.fieldName(foreign.loadClass("game.Base"), "a", int.class));
-            assertFalse(ReflectionIndex.read(tiny, List.of(game), wrongSource).owns(wrongSource.loadClass("game.Base")));
+            assertFalse(ReflectionIndex.read(tiny, List.of(game), wrongSource, Map.of(game, origin)).owns(wrongSource.loadClass("game.Base")));
         }
     }
 

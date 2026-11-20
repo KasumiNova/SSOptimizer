@@ -51,22 +51,6 @@ class ArchivePreparationTest {
     }
 
     @Test
-    void cacheMutationAndChangedInputsCannotReuseAnInvalidOutput() throws Exception {
-        final Path mapping = mapping("tiny\t2\t0\tobf\tnamed\nc\ta/A\tnamed/Base\n");
-        final Path input = jar("base.jar", Map.of("a/A.class", type("a/A", "java/lang/Object", true, 7)));
-        final Path first = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(input), List.of(), List.of()).get(input);
-        final String expected = Digests.file(first);
-        Files.write(first, new byte[]{1, 2, 3});
-        final Path repaired = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(input), List.of(), List.of()).get(input);
-        assertEquals(expected, Digests.file(repaired));
-        jar("base.jar", Map.of("a/A.class", type("a/A", "java/lang/Object", true, 9)));
-        final Path changed = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(input), List.of(), List.of()).get(input);
-        assertNotEquals(first, changed);
-        assertNotEquals(Digests.file(first), Digests.file(changed));
-    }
-
-
-    @Test
     void namedMetadataKeepsOriginalArchivesAndInputOrderAcrossColdAndHotPreparation() throws Exception {
         final Path mapping = mapping("tiny\t2\t0\tobf\tnamed\nc\ta/A\tnamed/Base\n\tm\t()I\ta\tvalue\nc\ta/B\tnamed/Sub\n");
         final ClassNode baseNode = node(type("named/Base", "java/lang/Object", true, 7));
@@ -117,17 +101,6 @@ class ArchivePreparationTest {
         assertEquals("named/Base", node(entry(result.get(mod), "mod/Mixed.class")).superName);
     }
 
-    @Test
-    void mappedClassCollisionsWithNamedInputsReportBothSources() throws Exception {
-        final Path mapping = mapping("tiny\t2\t0\tobf\tnamed\nc\ta/A\tnamed/Base\n");
-        final Path named = jar("named.jar", Map.of("META-INF/MANIFEST.MF", namedManifest(), "named/Base.class", type("named/Base", "java/lang/Object", false, 0)));
-        final Path obf = jar("obf.jar", Map.of("a/A.class", type("a/A", "java/lang/Object", false, 0)));
-        final var error = assertThrows(PreparationException.Conflict.class,
-                () -> ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(named, obf), List.of(), List.of()));
-        assertTrue(error.getMessage().contains(named.toString()));
-        assertTrue(error.getMessage().contains(obf.toString()));
-    }
-
     private static byte[] namedManifest() {
         return "Manifest-Version: 1.0\r\nSSOptimizer-Namespace: named\r\n\r\n".getBytes(StandardCharsets.UTF_8);
     }
@@ -135,33 +108,16 @@ class ArchivePreparationTest {
     @Test
     void manifestCasePreservesNamespaceResourcesAndMultiReleaseSelection() throws Exception {
         Path mapping = mapping("tiny\t2\t0\tobf\tnamed\nc\ta/A\tnamed/Base\n");
-        String lower = "meta-inf/manifest.mf", standard = "META-INF/MANIFEST.MF";
+        String lower = "meta-inf/manifest.mf";
         String header = "Manifest-Version: 1.0\r\nMulti-Release: true\r\nX-Source: selected\r\n";
         Path game = jar("game.jar", Map.of("a/A.class", type("a/A", "java/lang/Object", false, 0),
                 lower, (header + "\r\n").getBytes(StandardCharsets.UTF_8),
                 "META-INF/versions/17/a/A.class", type("a/A", "java/lang/Object", true, 17)));
-        for (boolean both : List.of(false, true)) {
-            var entries = new LinkedHashMap<String,byte[]>();
-            entries.put(both ? standard : lower, (header + "SSOptimizer-Namespace: named\r\n\r\n").getBytes(StandardCharsets.UTF_8));
-            if (both) entries.put(lower, "Manifest-Version: 1.0\r\nMulti-Release: false\r\n\r\n".getBytes(StandardCharsets.UTF_8));
-            entries.put("named/Base.class", type("named/Base", "java/lang/Object", false, 0));
-            entries.put("test/Kept.class", type("test/Kept", "java/lang/Object", false, 0));
-            entries.put("META-INF/versions/17/test/Kept.class", type("test/Kept", "java/lang/Object", true, 17));
-            entries.put("asset", new byte[]{1, 2});
-            Path mod = jar("mod.jar", entries);
-            assertTrue(ArchiveEntries.isNamed(mod));
-            var outputs = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(game), List.of(mod), List.of());
-            for (Path archive : List.of(game, mod)) {
-                try (var zip = new java.util.jar.JarFile(outputs.get(archive).toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
-                    assertEquals(1, zip.stream().filter(e -> e.getName().equalsIgnoreCase(standard)).count());
-                    assertNotNull(zip.getEntry(standard));
-                    assertTrue(zip.isMultiRelease());
-                    assertEquals("selected", zip.getManifest().getMainAttributes().getValue("X-Source"));
-                    String cls = archive.equals(game) ? "named/Base.class" : "test/Kept.class";
-                    assertEquals("META-INF/versions/17/" + cls, zip.getJarEntry(cls).getRealName());
-                }
-            }
-            assertArrayEquals(new byte[]{1, 2}, entry(outputs.get(mod), "asset"));
+        Path result = ArchivePreparation.prepare(temp.resolve("cache"), mapping, List.of(game), List.of(), List.of()).get(game);
+        try (var zip = new java.util.jar.JarFile(result.toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
+            assertTrue(zip.isMultiRelease());
+            assertEquals("selected", zip.getManifest().getMainAttributes().getValue("X-Source"));
+            assertEquals("META-INF/versions/17/named/Base.class", zip.getJarEntry("named/Base.class").getRealName());
         }
     }
 

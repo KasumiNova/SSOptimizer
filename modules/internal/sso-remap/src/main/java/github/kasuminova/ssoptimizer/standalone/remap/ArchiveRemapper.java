@@ -26,73 +26,58 @@ final class ArchiveRemapper {
     private ArchiveRemapper() {
     }
 
-    static void remap(final Path mappingFile, final List<Source> sources, final List<Path> hierarchyPaths,
-                      final List<Path> namedPaths, final Path output, final String mappingDigest, ModClassFilter filter) throws IOException {
+    static void remap(Path mappingFile, List<Source> sources, List<Path> hierarchyPaths,
+                      List<Path> namedPaths, List<Path> order, Path output) throws IOException {
         final MappingProjection mapping = MappingProjection.read(mappingFile);
-        final Map<String, Definition> definitions = new HashMap<>();
-        final Map<Source, Set<String>> expected = new LinkedHashMap<>();
-        final Map<Source, Set<String>> originalEntries = new LinkedHashMap<>();
-        final Map<Source, Map<String, byte[]>> descriptors = new LinkedHashMap<>();
-        final Map<Source, Path> classInputs = new LinkedHashMap<>();
+        var byPath = new HashMap<Path, Source>();
         for (Source source : sources) {
-            final Map<String, byte[]> modules = new TreeMap<>();
-            final Set<String> original = ArchiveEntries.validate(source.snapshot(), true, (entry, bytes) -> {
-                if (ModuleMetadata.isDescriptor(entry)) {
-                    modules.put(entry, bytes);
-                    return;
-                }
-                final Definition next = new Definition(Digests.bytes(bytes), source.original() + "!" + entry);
-                final Definition previous = definitions.putIfAbsent(entry, next);
-                if (previous != null && !previous.hash().equals(next.hash())) {
-                    throw new IllegalArgumentException("Conflicting class definitions: " + previous.origin() + " and " + next.origin());
-                }
-            });
-            final Set<String> targets = new HashSet<>();
-            for (String entry : original) {
-                if (ModuleMetadata.isDescriptor(entry)) {
-                    continue;
-                }
-                if (!targets.add(ArchiveEntries.mappedClassEntry(entry, mapping))) {
-                    throw new PreparationException.Conflict("Mapped class entry collision in " + source.original() + ": " + entry);
-                }
-            }
-            expected.put(source, targets);
-            descriptors.put(source, modules);
-            originalEntries.put(source, original);
-            final Path classes = source.snapshot().resolveSibling(source.snapshot().getFileName() + "-classes.jar");
-            try (ZipFile input = new ZipFile(source.snapshot().toFile());
-                 ZipOutputStream filtered = new ZipOutputStream(Files.newOutputStream(classes, java.nio.file.StandardOpenOption.CREATE_NEW))) {
-                for (String entry : original.stream().sorted().toList()) {
-                    if (ModuleMetadata.isDescriptor(entry)) {
-                        continue;
-                    }
-                    filtered.putNextEntry(new ZipEntry(entry));
-                    try (var stream = input.getInputStream(input.getEntry(entry))) {
-                        stream.transferTo(filtered);
-                    }
-                    filtered.closeEntry();
-                }
-            }
-            classInputs.put(source, classes);
+            byPath.put(source.original(), source);
         }
-        final ClassHierarchy hierarchy = new ClassHierarchy();
-        final Set<String> namedClasses = new HashSet<>();
-        for (Path path : namedPaths) {
-            ArchiveEntries.validate(path, false, (entry, bytes) -> {
+        var hierarchy = new ClassHierarchy();
+        var owners = new HashMap<String, Path>();
+        for (Path path : hierarchyPaths) {
+            ArchiveEntries.readClasses(path, (entry, bytes) -> {
                 if (!ModuleMetadata.isDescriptor(entry)) {
-                    namedClasses.add(entry);
+                    owners.putIfAbsent(ArchiveEntries.className(entry), path);
+                    hierarchy.add(bytes, ArchiveEntries.release(entry), path.toString());
                 }
             });
         }
-        final List<Path> outputHierarchyPaths = new ArrayList<>(namedPaths);
-        outputHierarchyPaths.addAll(hierarchyPaths);
-        for (Path path : outputHierarchyPaths) {
-            ArchiveEntries.validate(path, false,
-                    (entry, bytes) -> {
-                        if (!ModuleMetadata.isDescriptor(entry)) {
-                            hierarchy.add(bytes, ArchiveEntries.release(entry), path + "!" + entry);
-                        }
-                    });
+        var namedHeaders = new TreeMap<String,byte[]>();
+        var descriptors = new HashMap<Source,Map<String,byte[]>>();
+        var originalEntries = new HashMap<Source,Set<String>>();
+        var classInputs = new LinkedHashMap<Source,Path>();
+        for (Path path : order) {
+            Source source = byPath.get(path);
+            if (source == null) {
+                ArchiveEntries.readClasses(path, (entry, bytes) -> {
+                    if (ModuleMetadata.isDescriptor(entry)) return;
+                    Path owner = owners.computeIfAbsent(ArchiveEntries.className(entry), ignored -> path);
+                    if (!owner.equals(path)) return;
+                    hierarchy.add(bytes, ArchiveEntries.release(entry), path.toString());
+                    namedHeaders.putIfAbsent(entry, NamedHierarchy.header(bytes));
+                });
+                continue;
+            }
+            var modules = new TreeMap<String,byte[]>();
+            Set<String> entries = new HashSet<>();
+            Path classes = output.getParent().resolve("classes-" + source.outputName());
+            try (var filtered = new ZipOutputStream(Files.newOutputStream(classes))) {
+                ArchiveEntries.readClasses(path, (entry, bytes) -> {
+                    if (ModuleMetadata.isDescriptor(entry)) {
+                        modules.put(entry, bytes);
+                        return;
+                    }
+                    String target = mapping.mapClass(ArchiveEntries.className(entry));
+                    if (!owners.computeIfAbsent(target, ignored -> path).equals(path) || !entries.add(entry)) return;
+                    filtered.putNextEntry(new ZipEntry(entry));
+                    filtered.write(bytes);
+                    filtered.closeEntry();
+                });
+            }
+            descriptors.put(source, modules);
+            originalEntries.put(source, entries);
+            classInputs.put(source, classes);
         }
         final TinyRemapper remapper = TinyRemapper.newRemapper()
                 .withMappings(mapping.provider())
@@ -108,9 +93,9 @@ final class ArchiveRemapper {
         try {
             final List<Path> analysisPaths = new ArrayList<>();
             if (!namedPaths.isEmpty()) {
-                analysisPaths.add(NamedHierarchy.project(mapping, namedPaths, hierarchyPaths, output.getParent().resolve("named-hierarchy.jar")));
+                analysisPaths.add(NamedHierarchy.project(mapping, namedHeaders, hierarchyPaths, output.getParent().resolve("named-hierarchy.jar")));
             }
-            analysisPaths.addAll(outputHierarchyPaths);
+            analysisPaths.addAll(hierarchyPaths);
             remapper.readClassPath(analysisPaths.toArray(Path[]::new));
             final Map<Source, InputTag> tags = new LinkedHashMap<>();
             for (Source source : sources) {
@@ -122,21 +107,8 @@ final class ArchiveRemapper {
                 final Map<String, byte[]> classes = new TreeMap<>();
                 remapper.apply((name, bytes) -> {
                     final String entry = (name.startsWith("/META-INF/versions/") ? name.substring(1) : name) + ".class";
-                    if (namedClasses.contains(entry)) {
-                        throw new IllegalArgumentException("Transformed class conflicts with a named input: " + source.original() + "!" + entry);
-                    }
-                    if (classes.putIfAbsent(entry, bytes) != null) {
-                        throw new IllegalArgumentException("Duplicate transformed class: " + entry + " from " + source.original());
-                    }
+                    classes.put(entry, bytes);
                 }, tags.get(source));
-                if (!classes.keySet().equals(expected.get(source))) {
-                    final Set<String> missing = new HashSet<>(expected.get(source));
-                    missing.removeAll(classes.keySet());
-                    final Set<String> unexpected = new HashSet<>(classes.keySet());
-                    unexpected.removeAll(expected.get(source));
-                    throw new PreparationException.Conflict("Remapped archive entry mismatch for " + source.original()
-                            + ": missing=" + missing + ", unexpected=" + unexpected);
-                }
                 transformed.put(source, classes);
                 classes.forEach((entry, bytes) -> hierarchy.add(bytes, ArchiveEntries.release(entry), source.original() + "!" + entry));
             }
@@ -150,13 +122,9 @@ final class ArchiveRemapper {
             final Map<String, byte[]> repaired = new TreeMap<>();
             for (var entry : transformed.get(source).entrySet()) {
                 try {
-                    boolean mod = source.role().equals("mod");
+                    boolean mod = source.mod();
                     repaired.put(entry.getKey(), BytecodeRepair.rewrite(entry.getValue(), hierarchy, ArchiveEntries.release(entry.getKey()), mapping, mod));
                 } catch (RuntimeException error) {
-                    if (source.role().equals("mod")) {
-                        filter.transformedFailure(source.original(), entry.getKey(), error);
-                        continue;
-                    }
                     throw new PreparationException.Conflict("Bytecode repair failed for " + source.original() + "!" + entry.getKey()
                             + ": " + error.getMessage(), error);
                 }
@@ -165,23 +133,18 @@ final class ArchiveRemapper {
                 try {
                     repaired.put(descriptor.getKey(), ModuleMetadata.rewrite(descriptor.getValue(), originalEntries.get(source), mapping));
                 } catch (RuntimeException error) {
-                    if (source.role().equals("mod")) {
-                        filter.transformedFailure(source.original(), descriptor.getKey(), error);
-                        continue;
-                    }
                     throw new PreparationException.Conflict("Module metadata rewrite failed for " + source.original()
                             + "!" + descriptor.getKey() + ": " + error.getMessage(), error);
                 }
             }
-            write(source, output.resolve(source.outputName()), repaired, mapping, mappingDigest);
+            write(source, output.resolve(source.outputName()), repaired, mapping);
         }
-        filter.checkTransformed();
     }
 
     private static void write(final Source source, final Path output, final Map<String, byte[]> classes,
-                              final MappingProjection mapping, final String mappingDigest) throws IOException {
+                              final MappingProjection mapping) throws IOException {
         final Set<String> written = new HashSet<>();
-        try (ZipFile input = new ZipFile(source.snapshot().toFile());
+        try (ZipFile input = new ZipFile(source.original().toFile());
              ZipOutputStream target = new ZipOutputStream(Files.newOutputStream(output))) {
             boolean multi = ArchiveEntries.multiRelease(input);
             final ZipEntry originalManifest = ArchiveEntries.manifestEntry(input);
@@ -205,9 +168,6 @@ final class ArchiveRemapper {
             }
             attributes.putValue(ArchiveEntries.NAMESPACE, "named");
             attributes.putValue("SSOptimizer-Remap-ABI", ArchivePreparation.REMAP_ABI);
-            attributes.putValue("SSOptimizer-Mapping-SHA256", mappingDigest);
-            attributes.putValue("SSOptimizer-Origin-SHA256", source.digest());
-            attributes.putValue("SSOptimizer-Origin-URI", source.original().toUri().toASCIIString());
             final ByteArrayOutputStream manifestBytes = new ByteArrayOutputStream();
             manifest.write(manifestBytes);
             put(target, written, "META-INF/MANIFEST.MF", manifestBytes.toByteArray(), source.original());
@@ -232,10 +192,6 @@ final class ArchiveRemapper {
                 }
                 put(target, written, name, bytes, source.original());
             }
-            final String metadata = "namespace=named\nabi=" + ArchivePreparation.REMAP_ABI
-                    + "\nmapping=" + mappingDigest + "\nsource.sha256=" + source.digest()
-                    + "\nsource.uri=" + source.original().toUri().toASCIIString() + "\nrole=" + source.role() + "\n";
-            put(target, written, ArchiveEntries.METADATA, metadata.getBytes(StandardCharsets.UTF_8), source.original());
         }
     }
 
@@ -286,9 +242,5 @@ final class ArchiveRemapper {
         stream.closeEntry();
     }
 
-    record Source(Path original, Path snapshot, String role, String digest, String outputName) {
-    }
-
-    private record Definition(String hash, String origin) {
-    }
+    record Source(Path original, boolean mod, String outputName) {}
 }

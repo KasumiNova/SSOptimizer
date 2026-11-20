@@ -7,6 +7,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /** 为已挂载的游戏类型翻译反射名称；实际查找和权限检查保留在原调用方。 */
@@ -15,10 +16,16 @@ public final class ReflectionNames {
 
     private ReflectionNames() { }
 
-    /** 在模组启动前读取 Tiny 与按实际加载顺序排列的游戏归档。读取失败时不发布索引。 */
-    public static synchronized void initialize(Path tiny, List<Path> namedGameJars, ClassLoader gameLoader) throws IOException {
+    /** 在模组启动前读取 Tiny 映射。游戏归档按传入的加载顺序查找类。 */
+    public static void initialize(Path tiny, List<Path> namedGameJars, ClassLoader gameLoader) throws IOException {
+        initialize(tiny, namedGameJars, gameLoader, Map.of());
+    }
+
+    /** 从 named 归档读取成员声明，按 origins 指定的原件识别游戏类的 CodeSource。 */
+    public static synchronized void initialize(Path tiny, List<Path> namedGameJars, ClassLoader gameLoader,
+                                               Map<Path, Path> origins) throws IOException {
         if (active != null) throw new IllegalStateException("游戏反射名称索引已初始化");
-        active = ReflectionIndex.read(tiny, namedGameJars, Objects.requireNonNull(gameLoader));
+        active = ReflectionIndex.read(tiny, namedGameJars, Objects.requireNonNull(gameLoader), origins);
     }
 
     public static String className(String name) {

@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public final class SharedBootstrap {
@@ -43,6 +44,11 @@ public final class SharedBootstrap {
 
     public static void installClassNormalizer(final BiFunction<URL, byte[], byte[]> normalizer) {
         UrlClassDefinition.installClassNormalizer(normalizer);
+    }
+
+    public static void installClassNormalizer(final Predicate<URL> allowedSource,
+                                              final BiFunction<String, byte[], byte[]> normalizer) {
+        UrlClassDefinition.installClassNormalizer(allowedSource, normalizer);
     }
 
     public static synchronized void install(final BiConsumer<String, UnaryOperator<byte[]>> systemTransforms) {

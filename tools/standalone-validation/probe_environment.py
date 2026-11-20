@@ -1,7 +1,6 @@
 """Linux 验收路径和私有 X11 显示。"""
 import os
 import secrets
-import shutil
 import subprocess
 import tempfile
 import time
@@ -13,15 +12,14 @@ def location(name, default):
     return Path(os.environ.get(name, default)).expanduser().resolve()
 
 
-ROOT = location('SSO_VALIDATION_ROOT', '/mnt/store/Games/ssoptimizer-standalone-validation-rc8')
-LINUX = location('SSO_VALIDATION_LINUX', ROOT / 'linux/starsector')
+LINUX = location('SSO_VALIDATION_LINUX', Path.cwd())
 JRE17 = location('SSO_VALIDATION_JRE17', LINUX / 'jre_linux')
 JDK25 = location('SSO_VALIDATION_JDK25', os.environ.get('JAVA_HOME', '/usr/lib/jvm/java-25-openjdk'))
-XVFB = location('SSO_VALIDATION_XVFB', shutil.which('Xvfb') or ROOT / 'linux/xvfb/usr/bin/Xvfb')
+XVFB = os.environ.get('SSO_VALIDATION_XVFB', 'Xvfb')
 PREFS = location('SSO_VALIDATION_PREFS', Path.home() / '.java/.userPrefs/com/fs/starfarer')
-CONFIG_HELP = ('环境变量：SSO_VALIDATION_ROOT 指定含发行输入的验收根，SSO_VALIDATION_JDK25 和 '
-               'SSO_VALIDATION_JRE17 指向对应的 Java 主目录，SSO_VALIDATION_LINUX 指向原版 Linux 启动脚本和 native 所在目录，'
-               'SSO_VALIDATION_XVFB 指向 Xvfb 可执行文件，SSO_VALIDATION_PREFS 指向仅供原版启动器检查的只读授权节点。')
+CONFIG_HELP = ('SSO_VALIDATION_JDK25 指定发行包用的 JDK，SSO_VALIDATION_LINUX 和 SSO_VALIDATION_JRE17 '
+               '指定原版基线的启动脚本目录和 Java 目录，SSO_VALIDATION_XVFB 指定 Xvfb，'
+               'SSO_VALIDATION_PREFS 指定只读授权目录。')
 
 
 def free_display():
