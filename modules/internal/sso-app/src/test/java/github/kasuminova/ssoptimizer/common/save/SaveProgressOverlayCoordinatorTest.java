@@ -1,7 +1,5 @@
 package github.kasuminova.ssoptimizer.common.save;
 
-import com.fs.starfarer.api.Global;
-import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +12,6 @@ class SaveProgressOverlayCoordinatorTest {
     void resetCoordinator() {
         System.clearProperty(SaveProgressOverlayCoordinator.DISABLE_SAVE_OVERLAY_PROPERTY);
         System.clearProperty(SaveProgressOverlayCoordinator.SAVE_OVERLAY_FPS_OVERRIDE_PROPERTY);
-        Global.setSettings(null);
         SaveProgressOverlayCoordinator.resetForTests();
     }
 
@@ -66,48 +63,6 @@ class SaveProgressOverlayCoordinatorTest {
         SaveProgressOverlayCoordinator.SaveProgressSnapshot snapshot = SaveProgressOverlayCoordinator.snapshot();
 
         assertFalse(snapshot.visible(), "disabled overlay property should suppress all published state");
-    }
-
-    @Test
-    void readsDisplayRefreshConfigFromSettingsApi() throws Exception {
-        Global.setSettings(new TestSettings(new JSONObject()
-                .put("vsync", false)
-                .put("fps", 144)
-                .put("refreshRateOverride", 0)));
-
-        final SaveProgressOverlayCoordinator.DisplayRefreshConfig config =
-                SaveProgressOverlayCoordinator.readDisplayRefreshConfig();
-
-        assertFalse(config.vsyncEnabled());
-        assertEquals(144, config.framesPerSecond());
-        assertEquals(0, config.refreshRateOverride());
-    }
-
-    @Test
-    void absentSettingsApiFallsBackToDefaultRenderConfig() {
-        Global.setSettings(null);
-
-        final SaveProgressOverlayCoordinator.DisplayRefreshConfig config =
-                SaveProgressOverlayCoordinator.readDisplayRefreshConfig();
-
-        assertFalse(config.vsyncEnabled());
-        assertEquals(0, config.framesPerSecond());
-        assertEquals(0, config.refreshRateOverride());
-    }
-
-    @Test
-    void readsRefreshOverrideFromSettingsApiJson() throws Exception {
-        Global.setSettings(new TestSettings(new JSONObject()
-                .put("vsync", true)
-                .put("fps", 160)
-                .put("refreshRateOverride", 75)));
-
-        final SaveProgressOverlayCoordinator.DisplayRefreshConfig config =
-                SaveProgressOverlayCoordinator.readDisplayRefreshConfig();
-
-        assertTrue(config.vsyncEnabled());
-        assertEquals(160, config.framesPerSecond());
-        assertEquals(75, config.refreshRateOverride());
     }
 
     @Test

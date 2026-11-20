@@ -17,10 +17,6 @@ public final class MarketAdvanceThrottleHelper {
     private MarketAdvanceThrottleHelper() {
     }
 
-    static int advanceInterval() {
-        return ADVANCE_INTERVAL;
-    }
-
     public static void advanceThrottled(final MarketAdvanceThrottleBridge bridge, final float amount) {
         advanceThrottled(bridge, amount, ADVANCE_INTERVAL);
     }

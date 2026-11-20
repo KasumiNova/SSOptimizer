@@ -49,7 +49,6 @@ final class JvmSettings {
         properties.put("ssoptimizer.render.spritebatch.enable", "false");
         properties.put("ssoptimizer.texcompress.enable", "false");
         properties.put("ssoptimizer.debug.buffermap", "false");
-        properties.put("ssoptimizer.econ.advance.parallel", "true");
         properties.put("ssoptimizer.atlas.shipweapon", "true");
         for (String key : legacy.stringPropertyNames().stream().sorted().toList()) {
             if (List.of("heap.minMiB", "heap.maxMiB", "stack.KiB").contains(key)) continue;
@@ -87,7 +86,6 @@ final class JvmSettings {
 
                 # SSOptimizer：font.ttf.enable 启用 TrueType 字体和缺失汉字回退；renderthread.enable 启用渲染线程分离。
                 # texcompress.enable 建议保持 false，以保留原始纹理；atlas.shipweapon 控制舰船和武器图集。
-                # econ.advance.parallel 开启市场经济并行推进。遇到模组经济脚本不兼容时可改为 false。
                 """);
         properties.forEach((k,v) -> text.append("-D").append(k).append('=').append(v).append('\n'));
         text.append("\n# 分隔线之后每行一个传给游戏的参数；启动命令 -- 后的参数会追加到这些参数之后。\n--\n");

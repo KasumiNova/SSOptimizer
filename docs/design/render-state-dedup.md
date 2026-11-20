@@ -32,10 +32,11 @@ GL 的旁路，结论如下：
   SpriteBatch / EngineBatch / SpriteRenderHelper / 字体 / TexturedStrip 的
   native 加速路径全部落 Java 回退，回退路径的 `org.lwjgl` 调用被重定向录制
   入队。**分离模式下不存在 native 直调旁路**。
-- **FBO 切换、Display 级操作**：`bindFramebuffer` 系列在 bridge 内录制
-  （录制侧跟踪 `framebufferBinding` + enqueue 命令）；`Display.update` 为
-  「Display.update 命令 + swap」；`Display` 其余直通方法（getWidth/
-  processMessages 等）只读 LWJGL 缓存字段，无 GL 状态副作用。
+- `bindFramebuffer` 系列在录制侧跟踪 `framebufferBinding`，并向渲染队列提交命令。
+- `Display.update` 在渲染线程按 LWJGL 的可见或脏窗口判定交换缓冲，再按参数处理消息。
+  独立调用 `Display.processMessages()` 时也必须等渲染线程处理完消息再返回。
+  RC8 的 `BaseGameState.traverse` 和 `CombatState.traverse` 在允许空闲且窗口失焦时每 50 毫秒调用一次消息泵，随后推进声音并跳过绘制。战役和战斗均要求已暂停，原版默认配置还会跳过无边框全屏的空闲分支。
+  Win32 的 `PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)` 只读取调用线程的消息队列。在逻辑线程调用时，渲染线程创建的窗口无法在此分支处理重新激活事件。
 - **GluSupport / Util / GLContext**：`enqueueSphereDraw` 整段入队；`Util` 走
   阻塞 getter 通道；`GLContext.getCapabilities` 首次阻塞取回后缓存。均无旁路。
 

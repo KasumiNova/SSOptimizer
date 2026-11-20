@@ -3,6 +3,7 @@ package github.kasuminova.ssoptimizer.mixin.save;
 import com.fs.starfarer.api.ModPlugin;
 import github.kasuminova.ssoptimizer.common.save.MemoryRefResolveGuard;
 import github.kasuminova.ssoptimizer.common.save.ModPluginLoadTimer;
+import github.kasuminova.ssoptimizer.common.save.SaveProgressOverlayCoordinator;
 import github.kasuminova.ssoptimizer.mapping.GameMixinSignatures;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -12,6 +13,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = GameMixinSignatures.CampaignGameManager.TARGET_CLASS)
 public abstract class CampaignGameManagerMixin {
+    @Inject(method = {GameMixinSignatures.CampaignGameManager.LOAD_GAME,
+            "saveGame(Lcom/fs/starfarer/campaign/CampaignEngine$CampaignUI;JZ)Ljava/lang/String;"},
+            at = @At("RETURN"), remap = false)
+    private static void ssoptimizer$releaseProgressDialog(final CallbackInfoReturnable<String> cir) {
+        SaveProgressOverlayCoordinator.releaseStreamDialog();
+    }
+
     @Inject(method = GameMixinSignatures.CampaignGameManager.LOAD_GAME,
             at = @At("HEAD"), remap = false)
     private static void ssoptimizer$enterMemoryRefGuardWindow(final CallbackInfoReturnable<String> cir) {

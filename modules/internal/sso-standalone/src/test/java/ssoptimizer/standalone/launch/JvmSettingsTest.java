@@ -17,11 +17,11 @@ class JvmSettingsTest {
         GameInstall game = game();
         Path instance = Files.createDirectory(temp.resolve("实例 一"));
         Path old = instance.resolve("jvm.properties");
-        String legacy = "heap.minMiB=96\nheap.maxMiB=9000\nstack.KiB=384\nssoptimizer.econ.advance.parallel=false\nmod.custom=中文 值\n";
+        String legacy = "heap.minMiB=96\nheap.maxMiB=9000\nstack.KiB=384\nssoptimizer.font.ttf.enable=false\nmod.custom=中文 值\n";
         Files.writeString(old, legacy);
         var migrated = JvmSettings.read(game, instance);
-        assertTrue(migrated.vm().containsAll(List.of("-Xms96m", "-Xmx9000m", "-Xss384k", "-Dmod.custom=中文 值", "-Dssoptimizer.econ.advance.parallel=false")));
-        assertFalse(migrated.vm().contains("-Dssoptimizer.econ.advance.parallel=true"));
+        assertTrue(migrated.vm().containsAll(List.of("-Xms96m", "-Xmx9000m", "-Xss384k", "-Dmod.custom=中文 值", "-Dssoptimizer.font.ttf.enable=false")));
+        assertFalse(migrated.vm().contains("-Dssoptimizer.font.ttf.enable=true"));
         Path file = instance.resolve("jvm.args");
         Files.writeString(file, "\ufeff # 测试\r\n-Xms700m\r\n-Dmod.debug=false\r\n-Dfoo=含 空格\r\n--\r\n-skip\r\nship name\r\n", StandardCharsets.UTF_8);
         var custom = JvmSettings.read(game, instance);

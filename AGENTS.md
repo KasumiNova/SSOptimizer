@@ -8,7 +8,7 @@
 - `:modules:internal:sso-core` — 共享基础设施：ASM/Mixin 装配（HybridWeaverTransformer）、
   日志、ServiceRegistry、NativeRuntime/NativeLibraryResolver、
   通用帧内并行执行器（common/concurrent/FrameParallelExecutor + 统一入口
-  SharedFrameWorkers 共享池，sso-ai 战斗 AI 与 sso-core 市场推进共用；
+  SharedFrameWorkers 共享池供 sso-ai 战斗 AI 使用，市场推进在战役线程按原顺序执行；
   IO 阻塞/一次性批任务走 VtWorkers 虚拟线程门面）、杂项引擎级优化。
 - `:modules:internal:sso-app` — 装配模块：coremod 入口（SSOptimizerCorePlugin）、
   跨域服务注册、shade 打包。

@@ -154,7 +154,7 @@
 
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
-| `ssoptimizer.workers.threads` | `max(cores-1, 1)` | 共享帧内工作池线程数（战斗 AI / 市场推进等帧内屏障任务共用，线程名 `SSOptimizer-Shared-Worker-N`）；非法值按默认处理并记 WARN | `common/concurrent/SharedFrameWorkers.java` |
+| `ssoptimizer.workers.threads` | `max(cores-1, 1)` | 战斗 AI 帧内工作线程数，线程名为 `SSOptimizer-Shared-Worker-N`。值无效时记录警告并使用默认值 | `common/concurrent/SharedFrameWorkers.java` |
 
 > Wave 3（B/C 类线程迁移）：后台 IO 阻塞与一次性批任务统一走 `common/concurrent/VtWorkers` 虚拟线程门面（ResourceIndex 快照/预读、声音预读、Spec DAG/Variant 解析、Janino 预热、图集解码、字体 CJK 预热、txw2 队列写线程）。原「固定池大小」属性的取舍见各条目：保护真实资源瓶颈的（`soundload.parallelism` / `loading.parallelism` / `scriptcompile.parallelism`）保留为 Semaphore 最大并发闸门，默认值与含义不变；仅约束平台线程数的（ResourceIndex 预读池）直接移除。有意不迁移：`TextureCompressionScheduler`（MIN_PRIORITY + 让步语义）、`RenderQueueImpl` 渲染线程（GL 上下文亲和）、全部 shutdown hook（关停阶段虚拟线程调度器已停用），均已在对应类 javadoc/注释标注。
 
@@ -176,7 +176,8 @@
 | 属性 | 默认值 | 作用 | 读取位置 |
 |---|---|---|---|
 | `ssoptimizer.econ.advance.interval` | `2` | 市场推进降频间隔：每 N 次经济推进以累计 dt 转发一次真实 `Market.advance`（1=逐帧转发即关闭；非法值按 1 处理并记 WARN 一次） | `common/campaign/econ/MarketAdvanceThrottleHelper.java` |
-| `ssoptimizer.econ.advance.parallel` | `false` | 市场级并行化：降频判定通过的 NPC 市场提交共享工作池（`SharedFrameWorkers`）并行推进，玩家市场留主线程内联（SharedData 月报 / marketShareData / 构建事件三处共享写均以 isPlayerOwned 为门），`Economy.advance` RETURN 处帧内屏障；失败任务屏障处主线程串行重跑降级。模组自定义条件/产业/子市场插件若写跨市场全局状态属风险敞口 | `common/campaign/econ/MarketAdvanceParallelDispatcher.java` |
+
+市场回调可写入舰队路线和战役脚本集合，所有市场必须在战役线程按原顺序推进。旧实例中的 `ssoptimizer.econ.advance.parallel` 不再生效。
 
 ## IME 输入法
 

@@ -64,7 +64,7 @@ public final class SaveProgressOverlayCoordinator {
             return;
         }
 
-        dialog = progressDialog != null ? progressDialog : dialog;
+        attachStreamDialog(progressDialog);
         active = true;
         completed = false;
         totalBytes = Math.max(1L, expectedBytes);
@@ -85,20 +85,24 @@ public final class SaveProgressOverlayCoordinator {
         beginStreamPhase(null, expectedBytes, phaseStart, phaseEnd);
     }
 
-    public static void attachSaveLabel(final CampaignSaveProgressDialog progressDialog,
-                                       final String label) {
+    public static void attachStreamDialog(final CampaignSaveProgressDialog progressDialog) {
         if (Boolean.getBoolean(DISABLE_SAVE_OVERLAY_PROPERTY)) {
             return;
         }
-
-        dialog = progressDialog != null ? progressDialog : dialog;
-        saveLabel = label;
-        autoSave = label != null && label.toLowerCase(Locale.ROOT).contains("auto");
-        UPDATE_SEQUENCE.incrementAndGet();
+        releaseStreamDialog();
+        dialog = progressDialog;
+        if (progressDialog != null) {
+            attachSaveLabel(progressDialog.getSaveLabel());
+        }
     }
 
-    public static void attachSaveLabel(final String label) {
-        attachSaveLabel(null, label);
+    static void attachSaveLabel(final String label) {
+        saveLabel = label;
+        autoSave = label != null && label.toLowerCase(Locale.ROOT).contains("auto");
+    }
+
+    private static boolean isStreamDialog(final CampaignSaveProgressDialog progressDialog) {
+        return dialog == progressDialog;
     }
 
     public static void onBytesWritten(final long bytesWritten) {
@@ -116,11 +120,10 @@ public final class SaveProgressOverlayCoordinator {
         if (Boolean.getBoolean(DISABLE_SAVE_OVERLAY_PROPERTY)) {
             return;
         }
-        if (REPLAY_GUARD.get()) {
+        if (!isStreamDialog(progressDialog) || REPLAY_GUARD.get()) {
             return;
         }
 
-        dialog = progressDialog != null ? progressDialog : dialog;
         active = true;
         completed = false;
         lastProgressCallUsedText = true;
@@ -141,11 +144,10 @@ public final class SaveProgressOverlayCoordinator {
         if (Boolean.getBoolean(DISABLE_SAVE_OVERLAY_PROPERTY)) {
             return;
         }
-        if (REPLAY_GUARD.get()) {
+        if (!isStreamDialog(progressDialog) || REPLAY_GUARD.get()) {
             return;
         }
 
-        dialog = progressDialog != null ? progressDialog : dialog;
         active = true;
         completed = false;
         lastProgressCallUsedText = false;
@@ -254,27 +256,33 @@ public final class SaveProgressOverlayCoordinator {
             lastRenderedSequence = sequence;
             lastRenderNanos = now;
             if (snapshot.completed()) {
-                clearState();
+                releaseStreamDialog();
             }
         } catch (final RuntimeException throwable) {
             LOGGER.error("[SSOptimizer] 存读档进度界面绘制失败，停止重放当前弹窗", throwable);
-            clearState();
+            releaseStreamDialog();
         } finally {
             REPLAY_GUARD.set(false);
             RENDER_GUARD.set(false);
         }
     }
 
-    public static boolean isReplayInProgress() {
-        return REPLAY_GUARD.get();
-    }
-
-    /** RT 下 bridge 的 GLContext 查询不能代表当前线程持有上下文。 */
-    public static boolean hasActiveOpenGlContext() {
-        if (RenderThreadMode.isEnabled()) {
+    public static boolean canDrawProgress(final CampaignSaveProgressDialog progressDialog, final boolean drawsWidgets) {
+        if (REPLAY_GUARD.get()) {
+            return true;
+        }
+        if (!RenderThreadMode.isEnabled()) {
+            return hasCurrentOpenGlContext();
+        }
+        final SaveOverlayFrames frames = ServiceRegistry.require(SaveOverlayFrames.class);
+        if (!frames.isProducer() || isStreamDialog(progressDialog)) {
             return false;
         }
-        return hasCurrentOpenGlContext();
+        // 文本重载会调用数值重载，只有后者绘制并按游戏设置交换缓冲。
+        if (drawsWidgets && Global.getSettings().getBoolean("updateDisplayDuringSavingOrLoading")) {
+            frames.restoreBackground(progressDialog);
+        }
+        return true;
     }
 
     static SaveProgressSnapshot snapshot() {
@@ -292,7 +300,7 @@ public final class SaveProgressOverlayCoordinator {
     }
 
     static void resetForTests() {
-        clearState();
+        releaseStreamDialog();
         resetRefreshRateCacheForTests();
     }
 
@@ -413,7 +421,7 @@ public final class SaveProgressOverlayCoordinator {
         lastPumpHintNanos = 0L;
     }
 
-    private static void clearState() {
+    public static void releaseStreamDialog() {
         active = false;
         completed = false;
         autoSave = false;
