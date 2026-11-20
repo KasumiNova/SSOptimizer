@@ -7,13 +7,17 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.JarURLConnection;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.security.CodeSigner;
 import java.security.CodeSource;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.jar.Attributes;
+import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 public final class UrlClassDefinition {
@@ -61,6 +65,30 @@ public final class UrlClassDefinition {
 
     public static boolean hasClassNormalizer() {
         return classNormalizer != null;
+    }
+
+    static byte[] normalizeFromArchive(final CodeSource source, final String name, final byte[] bytes) {
+        final BiFunction<URL, byte[], byte[]> normalizer = classNormalizer;
+        if (normalizer == null || source == null || name == null || name.isEmpty() || name.indexOf('/') >= 0
+                || source.getCodeSigners() != null || source.getCertificates() != null) return bytes;
+        final URL location = source.getLocation();
+        if (location == null || !location.getProtocol().equals("file")) return bytes;
+        final String authority = location.getAuthority();
+        if (authority != null && !authority.isEmpty()) return bytes;
+        final String entryName = name.replace('.', '/') + ".class";
+        try (var jar = new JarFile(Path.of(location.toURI()).toFile(), true, JarFile.OPEN_READ, Runtime.version())) {
+            final var entry = jar.getJarEntry(entryName);
+            if (entry == null || entry.isDirectory() || entry.getSize() != bytes.length) return bytes;
+            try (var in = jar.getInputStream(entry)) {
+                if (!Arrays.equals(bytes, in.readNBytes(bytes.length)) || in.read() != -1 || entry.getCodeSigners() != null) {
+                    return bytes;
+                }
+            }
+        } catch (IOException | URISyntaxException | IllegalArgumentException | SecurityException ex) {
+            LOGGER.debug("无法验证显式定义的归档来源 " + name, ex);
+            return bytes;
+        }
+        return Objects.requireNonNull(normalizer.apply(location, bytes));
     }
 
     /** 返回 null 时，由生成的调用点执行原 findClass。 */

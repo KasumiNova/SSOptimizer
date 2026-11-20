@@ -16,8 +16,12 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.CodeSource;
+import java.security.SecureClassLoader;
+import java.security.cert.Certificate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.jar.JarEntry;
@@ -113,6 +117,37 @@ class UrlClassDefinitionTest {
                 org.junit.jupiter.api.Assertions.assertArrayEquals(original, input.readAllBytes());
             }
         }
+        final Class<?> explicit = new ByteDefinition(parent).transform(ExplicitSourceLoader.class);
+        final var lookup = MethodHandles.publicLookup();
+        final var ctor = lookup.findConstructor(explicit, MethodType.methodType(void.class));
+        final var array = lookup.findVirtual(explicit, "fromArray", MethodType.methodType(Class.class,
+                String.class, byte[].class, int.class, int.class, CodeSource.class));
+        final var buffer = lookup.findVirtual(explicit, "fromBuffer", MethodType.methodType(Class.class,
+                String.class, ByteBuffer.class, CodeSource.class));
+        final var source = new CodeSource(archive, (Certificate[]) null);
+        final byte[] padded = new byte[original.length + 8];
+        System.arraycopy(original, 0, padded, 3, original.length);
+        final Object arrayLoader = ctor.invoke();
+        final Class<?> fromArray = (Class<?>) array.invoke(arrayLoader, name, padded, 3, original.length, source);
+        assertSame(arrayLoader, fromArray.getClassLoader());
+        assertSame(source, fromArray.getProtectionDomain().getCodeSource());
+        assertSame(int.class, fromArray.getDeclaredField("bad_field").getType());
+        for (var data : new ByteBuffer[]{ByteBuffer.wrap(padded), ByteBuffer.allocateDirect(padded.length).put(padded)}) {
+            data.position(3).limit(3 + original.length);
+            final Object bufferLoader = ctor.invoke();
+            final Class<?> fromBuffer = (Class<?>) buffer.invoke(bufferLoader, name, data, source);
+            assertSame(bufferLoader, fromBuffer.getClassLoader());
+            assertSame(source, fromBuffer.getProtectionDomain().getCodeSource());
+            assertSame(int.class, fromBuffer.getDeclaredField("bad_field").getType());
+            assertEquals(3, data.position());
+            assertEquals(3 + original.length, data.limit());
+        }
+        final Object rawLoader = ctor.invoke();
+        assertThrows(ClassFormatError.class, () -> array.invoke(rawLoader, name, padded, 3, original.length, (CodeSource) null));
+        assertThrows(ClassFormatError.class, () -> array.invoke(rawLoader, name, padded, 3, original.length + 1, source));
+        final byte[] different = padded.clone();
+        different[3 + 7] = (byte) Opcodes.V21;
+        assertThrows(ClassFormatError.class, () -> array.invoke(rawLoader, name, different, 3, original.length, source));
     }
 
     @Test
@@ -250,6 +285,16 @@ class UrlClassDefinitionTest {
             } catch (ClassNotFoundException failure) {
                 throw new AssertionError(failure);
             }
+        }
+    }
+
+    public static final class ExplicitSourceLoader extends SecureClassLoader {
+        public Class<?> fromArray(String name, byte[] bytes, int offset, int length, CodeSource source) {
+            return defineClass(name, bytes, offset, length, source);
+        }
+
+        public Class<?> fromBuffer(String name, ByteBuffer bytes, CodeSource source) {
+            return defineClass(name, bytes, source);
         }
     }
 

@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Modifier;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
+import java.security.CodeSource;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -242,19 +243,27 @@ public final class ClassDefinitionRedirector {
         final boolean named = !call.descriptor.equals(BYTE_ARRAY_DEFINITION);
         final int data = named ? 2 : 1;
         final boolean buffer = call.descriptor.equals(BUFFER_DEFINITION) || call.descriptor.equals(SOURCE_BUFFER_DEFINITION);
+        final boolean sourced = call.descriptor.equals(SOURCE_DEFINITION) || call.descriptor.equals(SOURCE_BUFFER_DEFINITION);
+        final int domain = data + (buffer ? 1 : 3);
         mv.loadArg(0);
         if (named) mv.loadArg(1);
         else mv.visitInsn(Opcodes.ACONST_NULL);
         mv.loadArg(data);
         final int rewritten;
+        final Type sourceType = Type.getType(CodeSource.class);
         if (buffer) {
-            mv.invokeStatic(OWNER, new Method("redirectBuffer", BYTE_BUFFER, new Type[]{CLASS_LOADER, STRING, BYTE_BUFFER}));
+            if (sourced) mv.loadArg(domain);
+            final Type[] arguments = sourced ? new Type[]{CLASS_LOADER, STRING, BYTE_BUFFER, sourceType}
+                    : new Type[]{CLASS_LOADER, STRING, BYTE_BUFFER};
+            mv.invokeStatic(OWNER, new Method("redirectBuffer", BYTE_BUFFER, arguments));
             rewritten = mv.newLocal(BYTE_BUFFER);
         } else {
             mv.loadArg(data + 1);
             mv.loadArg(data + 2);
-            mv.invokeStatic(OWNER, new Method("redirectSlice", BYTE_SLICE,
-                    new Type[]{CLASS_LOADER, STRING, BYTE_ARRAY, Type.INT_TYPE, Type.INT_TYPE}));
+            if (sourced) mv.loadArg(domain);
+            final Type[] arguments = sourced ? new Type[]{CLASS_LOADER, STRING, BYTE_ARRAY, Type.INT_TYPE, Type.INT_TYPE, sourceType}
+                    : new Type[]{CLASS_LOADER, STRING, BYTE_ARRAY, Type.INT_TYPE, Type.INT_TYPE};
+            mv.invokeStatic(OWNER, new Method("redirectSlice", BYTE_SLICE, arguments));
             rewritten = mv.newLocal(BYTE_SLICE);
         }
         mv.storeLocal(rewritten);
@@ -268,7 +277,6 @@ public final class ClassDefinitionRedirector {
             mv.loadLocal(rewritten);
             mv.invokeVirtual(BYTE_SLICE, new Method("length", Type.INT_TYPE, new Type[0]));
         }
-        final int domain = data + (buffer ? 1 : 3);
         if (domain < helper.getArgumentTypes().length) mv.loadArg(domain);
         mv.visitMethodInsn(call.opcode, call.owner, "defineClass", call.descriptor, false);
         mv.returnValue();
@@ -324,20 +332,30 @@ public final class ClassDefinitionRedirector {
 
     public static ByteSlice redirectSlice(final ClassLoader loader, final String name, final byte[] bytes,
                                           final int offset, final int length) {
+        return redirectSlice(loader, name, bytes, offset, length, null);
+    }
+
+    public static ByteSlice redirectSlice(final ClassLoader loader, final String name, final byte[] bytes,
+                                          final int offset, final int length, final CodeSource source) {
         if (loader != null && bytes != null && offset >= 0 && length >= 0 && offset <= bytes.length - length) {
             final byte[] input = offset == 0 && length == bytes.length ? bytes : Arrays.copyOfRange(bytes, offset, offset + length);
-            final byte[] rewritten = redirect(loader, name, input);
+            final byte[] rewritten = redirect(loader, name, UrlClassDefinition.normalizeFromArchive(source, name, input));
             if (rewritten != input) return new ByteSlice(rewritten, 0, rewritten.length);
         }
         return new ByteSlice(bytes, offset, length);
     }
 
     public static ByteBuffer redirectBuffer(final ClassLoader loader, final String name, final ByteBuffer bytes) {
+        return redirectBuffer(loader, name, bytes, null);
+    }
+
+    public static ByteBuffer redirectBuffer(final ClassLoader loader, final String name, final ByteBuffer bytes,
+                                            final CodeSource source) {
         if (loader == null || bytes == null || (!bytes.isDirect() && !bytes.hasArray())) return bytes;
         // JDK defineClass 会推进无可访问数组的非直接缓冲区；保留该调用及其位置变化。
         final byte[] input = new byte[bytes.remaining()];
         bytes.duplicate().get(input);
-        final byte[] rewritten = redirect(loader, name, input);
+        final byte[] rewritten = redirect(loader, name, UrlClassDefinition.normalizeFromArchive(source, name, input));
         return rewritten == input ? bytes : ByteBuffer.wrap(rewritten);
     }
 
