@@ -64,4 +64,17 @@ ASM 处理器直接使用字符串匹配和生成指令。建议把注册类、�
 | 真实流程回归 | Windows 英文、常规汉化与已声明支持的 Linux 安装分别验证首次准备、缓存命中、标题、新建生涯进度、市场推进、战斗、另存、重新启动、切换模组、窗口失焦恢复。隔离使用 105 模组回归样本。对比玩家设置、勾选列表、原始游戏 JAR 与旧档摘要。 |
 | 审计最终发布物并签名 | 分别审核、签名两个包，复核最终 ZIP 与各自的清单。对 `obf` 的公开发行入口递归检查 JAR、压缩资源和 class 常量，排除完整或局部映射、refmap、named 游戏和私有诊断。对 `dev` 校验包内映射与 named ABI 匹配。Windows 安装器按构件类型核验必需文件。在已有 RC8、无开发工作区、无旧缓存且断网的环境分别验收，`obf` 完成游戏启动，`dev` 仅用包内映射完成 named 准备并进入调试环境。[独立版打包](../../gradle/standalone-distribution.gradle.kts#L58) · [Windows 安装校验](../../packaging/standalone/windows/Manage.ps1#L62) · [普通模组打包](../../build.gradle.kts#L127) |
 
+### GitHub 发布
+
+在本地运行 `./gradlew packageStandaloneWindowsObf -Pssoptimizer.native.target=windows -Pstandalone.version=<版本>`，并按构建流程提供本地 ABI 输入和发行签名私钥。GitHub 仓库变量 `SSOPTIMIZER_RELEASE_PUBLIC_KEY_DER_BASE64` 保存发行者 RSA 公钥的 X.509 DER Base64 编码，由发行维护者通过独立渠道核对后配置。
+
+为对应提交创建 `v<版本>` tag，用 `gh release create v<版本> --verify-tag --draft <obf ZIP>` 创建草稿并上传唯一附件。计算 ZIP 的 SHA-256，以 tag 为运行引用手动启动工作流。
+
+```sh
+sha256sum "$obf_zip"
+gh workflow run release.yml --ref "$release_tag" -f sha256="$obf_sha256"
+```
+
+工作流校验草稿仅含与 tag 对应的 Windows x64 `obf` ZIP，再使用发行者公钥核验清单签名、逐项摘要和归档内容。工作流通过后会公开草稿。运行期间请保留该草稿及附件，重新打包时应替换草稿附件后重新触发校验。
+
 现有 `.20` 的签名清单包含映射，须停止将该包作为新授权范围内的公开下载。后续发行使用新的版本号、缓存目录和签名清单。已有安装与旧存档保留在原处，回退通过切换本地版本与对应存档副本完成。
