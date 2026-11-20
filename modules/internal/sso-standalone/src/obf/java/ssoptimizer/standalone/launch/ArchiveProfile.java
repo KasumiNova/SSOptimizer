@@ -5,7 +5,6 @@ import ssoptimizer.standalone.mods.ModCatalog;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,21 +17,11 @@ final class ArchiveProfile {
     private ArchiveProfile() {}
 
     static String verify(GameInstall game, Path home, String abi) throws IOException {
-        Path manifest = home.resolve("abi.properties");
-        var properties = Distribution.read(manifest);
-        if (!abi.equals(properties.getProperty("abi")) || !"1".equals(properties.getProperty("rules"))) {
-            throw new IOException("游戏 ABI 或净化规则版本不匹配：" + manifest);
-        }
-        List<String> hashes = new ArrayList<>();
-        for (Path jar : game.gameJars()) hashes.add(GameInstall.digest(GameInstall.required(jar)));
-        int count;
-        try { count = Integer.parseInt(properties.getProperty("inputs.count")); }
-        catch (NumberFormatException e) { throw new IOException("无效的核心归档组数量：" + manifest, e); }
-        String actual = String.join(" ", hashes);
-        for (int i = 0; i < count; i++) {
-            if (actual.equals(properties.getProperty("inputs." + i))) return "游戏字节码 ABI：" + abi + "，净化规则：1，输入组：" + i;
-        }
-        throw new IOException("安装的四个核心归档不匹配发行 ABI " + abi + "：" + game.gameJars() + "，SHA-256：" + actual + "。已有 named 安装请使用 dev 入口。");
+        GameAbi profile = GameAbi.read(home, abi);
+        List<String> hashes = profile.archiveHashes(game);
+        int group = profile.group("inputs", hashes);
+        if (group >= 0) return "游戏字节码 ABI：" + abi + "，净化规则：1，输入组：" + group;
+        throw new IOException("安装的四个核心归档不匹配发行 ABI " + abi + "：" + game.gameJars() + "，SHA-256：" + hashes + "。已有 named 安装请使用 dev 入口。");
     }
 
     static Map<Path, Path> prepare(Path home, Path cache, List<Path> game, List<Path> mods, List<Path> libraries, Set<Path> named) throws IOException {
