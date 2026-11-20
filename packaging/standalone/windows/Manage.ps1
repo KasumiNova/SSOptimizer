@@ -60,10 +60,9 @@ function Read-Manifest([string]$root, [string]$prefix = 'release') {
         if ($files.ContainsKey($name) -or $name -in @('release.sig','release.manifest')) { throw "重复清单路径：$name" }
         $files[$name] = $hash
     }
-    $required = @('agent.jar','payload.jar','libraries.lock','distribution.properties','runtime/bin/java.exe','mod/mod_info.json','tools/Manage.ps1','tools/Manage.cmd','tools/Launch.cmd')
+    $required = @('agent.jar','payload.jar','libraries.lock','distribution.properties','abi.properties','runtime/bin/java.exe','mod/mod_info.json','tools/Manage.ps1','tools/Manage.cmd','tools/Launch.cmd')
     if ($flavor -ceq 'dev') { $required += 'mappings/game-full.tiny.gz' }
     else {
-        $required += 'abi.properties'
         foreach ($name in $files.Keys) {
             if ($name -match '^(mappings/|lib/(sso-remap|tiny-remapper|mapping-io)-)') { throw "obf 清单含开发构件：$name" }
         }

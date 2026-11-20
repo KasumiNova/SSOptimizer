@@ -173,11 +173,13 @@ class ReleaseFiles {
         if (!flavor.equals(distribution.getProperty("flavor")) || !namespace.equals(distribution.getProperty("namespace")) || distribution.getProperty("abi", "").isBlank()) {
             throw new IOException("发行元数据与构件不符：" + home);
         }
+        String abi = distribution.getProperty("abi");
+        if (!abi.matches("[a-z0-9]+(?:-[a-z0-9]+)*")) throw new IOException("无效的发行 ABI：" + abi);
+        Path profiles = project.resolve("packaging/abi");
+        String expected = Files.readString(profiles.resolve(abi + ".properties"));
+        if (!obf) expected = expected.stripTrailing() + "\n" + Files.readString(profiles.resolve(abi + "-named.properties"));
+        if (!expected.equals(Files.readString(home.resolve("abi.properties")))) throw new IOException("发行 ABI 描述与构建输入不符：" + abi);
         if (obf) {
-            String abi = distribution.getProperty("abi");
-            if (!abi.matches("[a-z0-9]+(?:-[a-z0-9]+)*") || Files.mismatch(project.resolve("packaging/abi/" + abi + ".properties"), home.resolve("abi.properties")) != -1) {
-                throw new IOException("obf 发行 ABI 描述与构建输入不符：" + abi);
-            }
             auditObfTree(home, platform, project, symbolJar);
             if (!Files.isRegularFile(home.resolve("abi.properties")) || Files.exists(home.resolve("mappings"))) throw new IOException("obf 需要 ABI 描述并排除映射目录");
         } else {
@@ -225,8 +227,8 @@ class ReleaseFiles {
                     if (name.startsWith("com/thoughtworks/xstream/")) throw new IOException("XStream 必须来自游戏安装：" + path + ":" + name);
                     if (name.startsWith("org/objectweb/asm/") || name.startsWith("org/apache/log4j/") || name.startsWith("org/apache/logging/log4j/") || name.startsWith("org/slf4j/") || name.startsWith("org/xmlpull/")) {
                         boolean gameClass = name.startsWith("org/xmlpull/");
-                        String expected = gameClass ? "game-lib" : "lib";
-                        if (!path.getParent().equals(home.resolve(expected))) throw new IOException("类所在加载域错误：" + path + ":" + name + "，应在 " + expected);
+                        String expectedDomain = gameClass ? "game-lib" : "lib";
+                        if (!path.getParent().equals(home.resolve(expectedDomain))) throw new IOException("类所在加载域错误：" + path + ":" + name + "，应在 " + expectedDomain);
                         Path other = owners.putIfAbsent(name, path);
                         if (other != null) throw new IOException("重复类：" + name + "，" + path + " 和 " + other);
                     }

@@ -85,6 +85,18 @@ signKey.orNull?.let { key ->
     }
 }
 val reobf = layout.buildDirectory.dir("reobf/$abi")
+val abiProfile = rootProject.file("packaging/abi/$abi.properties")
+val namedProfile = rootProject.file("packaging/abi/$abi-named.properties")
+val devAbi = base.map { it.file("prepared/$abi/dev/abi.properties") }
+val prepareDevAbi = tasks.register("prepareStandaloneDevAbi") {
+    inputs.files(abiProfile, namedProfile)
+    outputs.file(devAbi)
+    doLast {
+        val output = devAbi.get().asFile
+        output.parentFile.mkdirs()
+        output.writeText(abiProfile.readText().trimEnd() + "\n" + namedProfile.readText())
+    }
+}
 for (flavor in flavors) {
     val obf = flavor == "obf"
     val suffix = flavor.replaceFirstChar(Char::uppercase)
@@ -105,13 +117,14 @@ for (flavor in flavors) {
             group = "distribution"
             description = "准备 Standalone $platform 的独立版本目录"
             dependsOn(":modules:internal:sso-standalone:$agentTask", ":modules:internal:$symbols:jar")
-            if (obf) dependsOn(":verifyObfLinks") else dependsOn(prepareMapping, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-host-standalone:jar")
+            if (obf) dependsOn(":verifyObfLinks") else dependsOn(prepareMapping, prepareDevAbi, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-host-standalone:jar")
             inputs.files(lockFile, helper); inputs.property("versionId", versionId); inputs.property("nativeTarget", target); inputs.property("gameAbi", abi)
             into(output); duplicatesStrategy = DuplicatesStrategy.FAIL
             from(payload) { rename { "payload.jar" } }; from(agent) { rename { "agent.jar" } }
             from(host) { into("lib"); if (obf) rename { "sso-host-standalone-obf.jar" } }
             from(symbolJar) { into("lib") }
-            if (obf) from(reobf.map { it.file("abi.properties") }) else from(mapOut) { into("mappings") }
+            from(if (obf) reobf.map { it.file("abi.properties") } else devAbi)
+            if (!obf) from(mapOut) { into("mappings") }
             from(sources.resolve("distribution.properties")) { expand(mapOf("flavor" to flavor, "namespace" to namespace, "abi" to abi)) }
             from(lockFile) { rename { "libraries.lock" } }; from(sources.resolve("mod_info.json")) { into("mod"); expand("version" to versionId) }
             from(rootProject.file("game-fonts/ttf")) { into("mod/fonts"); include("*.ttf", "MiSans-LICENSE.txt") }
