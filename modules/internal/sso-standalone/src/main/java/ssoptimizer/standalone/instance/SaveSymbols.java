@@ -19,6 +19,63 @@ final class SaveSymbols {
     private final Map<Member, String> originalFields = new HashMap<>();
     private final java.util.Set<String> changedNames = new java.util.HashSet<>();
     private SaveFields layout = new SaveFields();
+    private SaveFields destination;
+    private long namedSymbols;
+    private static final java.util.regex.Pattern DESCRIPTOR_CLASS = java.util.regex.Pattern.compile("L([^;]+);");
+
+    long namedSymbols() { return namedSymbols; }
+
+    boolean legacyNamed() { return destination != null; }
+
+    String outputField(String type, String owner, String raw, String descriptor, String xml, boolean aliased) throws IOException {
+        String mapped = field(owner, raw, descriptor);
+        if (destination != null) {
+            String output = encodeNode(destination.serializedField(classes.getOrDefault(type, type), mapped));
+            if (!aliased && !raw.equals(mapped) && !xml.equals(output)) namedSymbols++;
+            return output;
+        }
+        return aliased || mapped.equals(raw) ? xml : encodeNode(mapped);
+    }
+
+    interface TerrainCodec { String convert(String encoded) throws IOException; }
+    private TerrainCodec terrain;
+    String terrain(String value) throws IOException { return terrain.convert(value); }
+
+    SaveSymbols reverse(java.util.List<Path> writer, java.util.List<Path> target, TerrainCodec terrain) throws IOException {
+        var result = new SaveSymbols();
+        result.terrain = terrain;
+        result.classes.putAll(originals);
+        result.originals.putAll(classes);
+        result.destination = SaveFields.read(target, this);
+        for (var entry : fields.entrySet()) {
+            Member source = entry.getKey();
+            String name = legacyMember(entry.getValue(), false);
+            var key = new Member(classes.getOrDefault(source.owner, source.owner), name, mappedDescriptor(source.descriptor));
+            if (result.fields.putIfAbsent(key, source.name) != null) throw new IOException("旧字段反向映射存在歧义：" + key);
+            if (!name.equals(source.name)) result.changedNames.add(encodeNode(source.name));
+        }
+        for (var entry : methods.entrySet()) {
+            Member source = entry.getKey();
+            var key = new Member(classes.getOrDefault(source.owner, source.owner), legacyMember(entry.getValue(), true), mappedDescriptor(source.descriptor));
+            if (result.methods.putIfAbsent(key, source.name) != null) throw new IOException("旧方法反向映射存在歧义：" + key);
+        }
+        result.layout = SaveFields.read(writer, result);
+        return result;
+    }
+
+    private String mappedDescriptor(String text) {
+        return DESCRIPTOR_CLASS.matcher(text)
+                .replaceAll(m -> java.util.regex.Matcher.quoteReplacement("L" + classes.getOrDefault(m.group(1), m.group(1)) + ';'));
+    }
+
+    private static String legacyMember(String name, boolean method) {
+        if (method && (name.equals("<init>") || name.equals("<clinit>"))) return name;
+        if (!name.isEmpty() && name.chars().noneMatch(c -> ".;[/".indexOf(c) >= 0 || method && (c == '<' || c == '>'))) return name;
+        try {
+            return "$sso$" + java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(name.getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException e) { throw new AssertionError(e); }
+    }
 
     SaveFields layout() { return layout; }
     void bindGame(java.util.List<Path> gameJars) throws IOException { layout = SaveFields.read(gameJars, this); }
@@ -127,8 +184,13 @@ final class SaveSymbols {
         boolean dotted = name.indexOf('/') < 0;
         String internal = dotted ? name.replace('.', '/') : name;
         String mapped = classes.get(internal);
-        if (mapped == null || mapped.equals(internal)) return name;
+        if (mapped == null) {
+            if (legacyNamed() && originals.containsKey(internal)) throw new IOException("写档实例为 named，此类型属于 obf：" + name);
+            return name;
+        }
+        if (mapped.equals(internal)) return name;
         if (originals.containsKey(internal)) throw new IOException("源和目标命名空间存在歧义：" + name);
+        if (legacyNamed()) namedSymbols++;
         return dotted ? mapped.replace('/', '.') : mapped;
     }
 

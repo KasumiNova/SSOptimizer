@@ -50,6 +50,7 @@ final class SaveXml {
 
     static String convert(InputStream in, OutputStream out, SaveSymbols symbols, String file) throws IOException {
         ArrayDeque<Frame> stack = new ArrayDeque<>();
+        long before = symbols.namedSymbols();
         String root = null;
         XMLStreamReader r = null;
         try {
@@ -63,6 +64,12 @@ final class SaveXml {
                     if (!stack.isEmpty() && stack.peek().lambda) throw new IOException("SerializedLambda 在 capturedArgs 后包含字段：" + tag);
                     boolean plain = r.getNamespaceURI() == null;
                     Frame parent = stack.peek();
+                    if (symbols.legacyNamed() && plain && parent != null && "com/fs/starfarer/campaign/CampaignEngine".equals(parent.owner)
+                            && (tag.equals("ssoptimizer_-indexReady") || tag.equals("ssoptimizer_-fastPathLogged")) && r.getAttributeCount() == 0) {
+                        String value = scalar(r);
+                        if (!value.equals("true") && !value.equals("false")) throw new IOException("旧优化缓存布尔值无效：" + tag);
+                        continue;
+                    }
                     var layout = symbols.layout();
                     boolean item = parent == null || parent.container;
                     var field = plain && !item ? layout.field(parent.owner, tag, r.getAttributeValue(null, "defined-in"), symbols) : null;
@@ -105,6 +112,11 @@ final class SaveXml {
                         attribute(w, key, value);
                     }
                     w.write('>');
+                    if (symbols.legacyNamed() && field != null && field.terrain() && r.getAttributeValue(null, "ref") == null) {
+                        escape(w, symbols.terrain(scalar(r, 32 << 20)), false);
+                        end(w, mapped);
+                        continue;
+                    }
                     if (plain && classValue && r.getAttributeValue(null, "ref") == null) {
                         escape(w, symbols.type(scalar(r)), false);
                         end(w, mapped);
@@ -130,6 +142,8 @@ final class SaveXml {
                     throw new IOException("存档禁止 DTD 和实体声明");
                 }
             }
+            if (symbols.legacyNamed() && ("CampaignEngine".equals(root) || "com.fs.starfarer.campaign.CampaignEngine".equals(root))
+                    && symbols.namedSymbols() == before) throw new IOException("未找到与写档 ABI 匹配的 named 游戏字段或类型，无法识别此战役来源");
             r.close();
             w.flush();
             return root;
@@ -174,12 +188,16 @@ final class SaveXml {
     }
 
     private static String scalar(XMLStreamReader r) throws IOException, XMLStreamException {
+        return scalar(r, 65535);
+    }
+
+    private static String scalar(XMLStreamReader r, int limit) throws IOException, XMLStreamException {
         StringBuilder text = new StringBuilder();
         while (r.hasNext()) {
             int next = r.next();
             if (next == XMLStreamConstants.END_ELEMENT) return text.toString();
             if (next == XMLStreamConstants.COMMENT) continue;
-            if (!r.isCharacters() || r.getTextLength() > 65535 - text.length()) throw new IOException("类型元数据超长或含嵌套元素");
+            if (!r.isCharacters() || r.getTextLength() > limit - text.length()) throw new IOException("存档标量超长或含嵌套元素");
             text.append(r.getText());
         }
         throw new IOException("类型元数据被截断");

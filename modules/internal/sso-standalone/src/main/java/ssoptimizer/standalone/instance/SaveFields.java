@@ -22,19 +22,25 @@ final class SaveFields {
             "java/util/LinkedHashSet", "java/util/EnumSet", "java/util/EnumMap", "java/util/TreeSet", "java/util/TreeMap",
             "java/util/SortedSet", "java/util/SortedMap", "java/util/Vector", "java/util/LinkedList", "java/util/Hashtable");
     private record Shape(String parent, Map<String, List<String>> fields) {}
-    record Field(String xml, String type) {}
+    record Field(String xml, String type, String owner, String raw) {
+        boolean terrain() {
+            return owner.equals("com/fs/starfarer/api/impl/campaign/terrain/BaseTiledTerrain") && raw.equals("savedTiles")
+                    || owner.equals("com/fs/starfarer/api/impl/campaign/terrain/HyperspaceAutomaton") && (raw.equals("savedCells") || raw.equals("savedNext"));
+        }
+    }
     private final Map<String, Shape> types = new HashMap<>();
     private final Map<String, String> aliases = new HashMap<>();
     private final Map<String, Map<String, String>> fieldAliases = new HashMap<>();
+    private final Map<String, Map<String, String>> serializedAliases = new HashMap<>();
 
     static SaveFields read(List<Path> jars, SaveSymbols symbols) throws IOException {
         SaveFields result = new SaveFields();
         boolean named = false, obfuscated = false;
         for (Path path : jars) {
-            try (JarFile jar = new JarFile(path.toFile())) {
-                for (var it = jar.entries(); it.hasMoreElements();) {
-                    var entry = it.nextElement();
-                    if (!entry.getName().endsWith(".class") || !entry.getName().startsWith("com/fs/")) continue;
+            try (JarFile jar = new JarFile(path.toFile(), true, java.util.zip.ZipFile.OPEN_READ, Runtime.version())) {
+                for (var it = jar.versionedStream().iterator(); it.hasNext();) {
+                    var entry = it.next();
+                    if (!entry.getName().endsWith(".class") || entry.getName().startsWith("META-INF/") || entry.getName().equals("module-info.class")) continue;
                     try (var in = jar.getInputStream(entry)) {
                         var model = ClassFile.of().parse(in.readAllBytes());
                         String name = model.thisClass().asInternalName();
@@ -49,7 +55,7 @@ final class SaveFields {
                             fields.computeIfAbsent(f.fieldName().stringValue(), unused -> new ArrayList<>()).add(f.fieldType().stringValue());
                         }
                         result.types.put(name, new Shape(model.superclass().map(c -> c.asInternalName()).orElse(null), fields));
-                        if (name.equals(FACTORY)) result.readAliases(model);
+                        result.readAliases(model);
                     }
                 }
             } catch (IllegalArgumentException e) { throw new IOException("无法解析 RC8 的存档类定义：" + path, e); }
@@ -102,7 +108,11 @@ final class SaveFields {
 
     private void readAliases(ClassModel model) throws IOException {
         for (var method : model.methods()) {
-            if (!method.methodType().stringValue().equals("(Ljava/lang/String;)Lcom/thoughtworks/xstream/XStream;") || method.code().isEmpty()) continue;
+            boolean factory = model.thisClass().asInternalName().equals(FACTORY)
+                    && method.methodType().equalsString("(Ljava/lang/String;)Lcom/thoughtworks/xstream/XStream;");
+            boolean configure = method.methodName().equalsString("configureXStream")
+                    && method.methodType().equalsString("(Lcom/thoughtworks/xstream/XStream;)V");
+            if ((!factory && !configure) || method.code().isEmpty()) continue;
             Object a = null, b = null, c = null;
             for (var element : method.code().get()) {
                 if (!(element instanceof Instruction instruction)) continue;
@@ -123,8 +133,17 @@ final class SaveFields {
     }
 
     private void fieldAlias(String owner, String alias, String name) throws IOException {
-        String prior = fieldAliases.computeIfAbsent(owner, unused -> new HashMap<>()).putIfAbsent(alias, name);
-        if (prior != null && !prior.equals(name)) throw new IOException("RC8 字段别名冲突：" + owner + '/' + alias);
+        fieldAliases.computeIfAbsent(owner, unused -> new HashMap<>()).put(alias, name);
+        serializedAliases.computeIfAbsent(owner, unused -> new HashMap<>()).put(name, alias);
+    }
+
+    String serializedField(String owner, String name) throws IOException {
+        String alias = null;
+        for (String cls = owner; cls != null && types.containsKey(cls); cls = types.get(cls).parent) {
+            if (alias == null) alias = serializedAliases.getOrDefault(cls, Map.of()).get(name);
+            if (types.get(cls).fields.containsKey(name)) return alias == null ? name : alias;
+        }
+        throw new IOException("目标归档中缺少持久化字段：" + owner + '/' + name);
     }
 
     private static String descriptorType(String desc) {
@@ -165,8 +184,7 @@ final class SaveFields {
             if (candidates == null) continue;
             if (candidates.size() != 1) throw new IOException("同一存档字段有多个 JVM 描述符：" + cls + '/' + raw + " " + candidates);
             String descriptor = candidates.getFirst();
-            String named = symbols.field(cls, raw, descriptor);
-            return new Field(aliased || named.equals(raw) ? xml : SaveSymbols.encodeNode(named), descriptorType(descriptor));
+            return new Field(symbols.outputField(owner, cls, raw, descriptor, xml, aliased), descriptorType(descriptor), cls, raw);
         }
         return null;
     }
