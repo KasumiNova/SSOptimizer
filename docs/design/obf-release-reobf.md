@@ -1,6 +1,6 @@
-# RC8 发布版使用 obf、开发环境使用 named
+# RC8 的 obf 正式包与 dev 开发包
 
-建议保留 named 开发环境，在维护者工作区把 SSO 编译产物转换成针对具体 RC8 混淆 ABI 的发行产物。玩家使用自己安装的游戏和原版模组。Java 25 开启校验时可以加载名为 `class` 的类，也可以调用名为 `super` 的方法。RC8 另有含点号的成员名，直接使用会触发 `ClassFormatError`。发布版应保留合法的原版 obf 名，只对 JVM 拒绝的条目执行通用修复。本文以 `.20`（`18e67d2`）为基线，以下 Gradle 任务名均为拟议接口。
+同一份 named 源码生成 `obf` 和 `dev` 两种构件。`obf` 供玩家正式使用，SSO 对游戏的所有引用在构建时写成净化后的 obf 名。玩家端的命名空间处理只做 JVM 格式净化，渲染、存档等 SSO 优化仍按用户配置运行。`dev` 供开发者调试，保留 `.20`（`18e67d2`）的 named 模组、named 游戏环境和现有调试流程。下文的 `resolveReleaseAbi`、`reobfRelease` 和 `verifyObfRelease` 为拟议任务。
 
 ## JDK 25 实测
 
@@ -18,13 +18,14 @@
 - **调试表也会导致定义失败。** 汉化 API 中两个类的 `LocalVariableTable` 有 6 个空名称。只改成员并重建常量池后仍有 3 个失败。按槽位给这些空条目生成合法调试名，保留其类型、作用域和索引，3 个失败全部消失。英文与汉化启动器在单改成员时都已能通过入口检查。[调试条目与槽位](</mnt/store/Games/ssoptimizer-standalone-validation-rc8/evidence/obf-jdk25-20261120/zh-locals.log>)
 - **实验使用零映射修复。** ASM 9.10.1 保留类名，把非法成员改为 `$sso$` 加原名 UTF-8 字节的 SHA-256 十六进制，在声明、调用和字段引用上使用同一规则。探针从空的 `ClassWriter` 重建常量池，保留字节码版本和已有验证帧。规范化阶段只读取本地 class 文件。实验输出是私有、仅含 class 的诊断副本。产品实现还须保留资源、加载域与签名语义。[修复探针](</mnt/store/Games/ssoptimizer-standalone-validation-rc8/evidence/obf-jdk25-20261120/Normalize.java>) · [加载探针](</mnt/store/Games/ssoptimizer-standalone-validation-rc8/evidence/obf-jdk25-20261120/LinkScan.java>)
 
-## 构建端和玩家端的分工
+## 两种发布包
 
-| 环境 | 输入 | 输出或运行行为 |
-| --- | --- | --- |
-| 开发者 IDE、开发启动、日常测试 | 本地 named 游戏依赖与 SSO 源码 | 继续生成并运行 named 类，开发任务显式标记 named |
-| 维护者执行 `reobfRelease` | SSO 的 named 模块、对应开发 ABI、受授权的私有 Tiny、目标安装的四个 obf JAR | 为目标 ABI 生成已规范化的 obf payload、host 及需要发布的 coremod。映射与游戏仅作为输入 |
-| 玩家执行 `prepare` / `launch` | 本机原版 JAR、启用的原版模组、已签名的发行组件 | 在实例中生成或加载经过格式修复的 obf 类，使用 RFB/LaunchWrapper 与 Mixin 织入，再交给 Java 25 定义 |
+| 构件 | 游戏与模组 | 映射来源 | 使用方式 |
+| --- | --- | --- | --- |
+| `SSOptimizer-<版本>-obf-<平台>` | 游戏保持 obf。SSO 的 payload、host 和 coremod 使用目标 ABI 的 obf 游戏引用。传统 obf 模组按原版规则加载 | reobf 只在构建机读取私有 Tiny。玩家端只带通用净化器 | 正式发布与安装，运行时支持断网冷启动 |
+| `SSOptimizer-<版本>-dev-<平台>` | 沿用当前 named payload、host、Mixin 和 ASM，保留源码断点、IDE 运行及现有 named 模组准备流程 | 开发者从已获授权的本地工作区提供与开发 ABI 匹配的映射。开发安装步骤将它放到现有启动器要求的位置 | 供开发者单独安装调试。映射缺失或摘要不匹配时，`doctor` 报告预期版本和配置位置 |
+
+`stageObf` 与 `stageDev` 使用独立输入清单和输出目录。正式发布任务只接收 `obf` 产物，`dev` 可以单独打包交给开发者，两个 ZIP 都排除映射和游戏 JAR。版本清单同时记录发行类型、游戏命名空间和 ABI。启动器检查自身、host 与 payload 的清单，拒绝混装。两种安装使用独立的类缓存、启动清单、调试输出及存档实例，开发调试用存档副本。
 
 **`obf` 的精确含义**是所有合法游戏类名与成员名保留对应原版拼写，包括关键字。非法成员的确定性替代名构成发行 ABI 的一部分，构建机与玩家端必须使用同一版本规则。全量 Tiny、可查询的 named/obf 对照、Mixin refmap、开发 JAR、修复后的游戏 JAR、名称诊断报告均留在私有工作区或本机缓存。发行 class 仅包含指令、注解和选择器执行所需的最终目标。离线安装验收要移除开发目录、历史 named 缓存及映射下载途径。
 
@@ -38,7 +39,15 @@
 4. **ASM 比较字符串和资源单独处理。** `static final String` 会内联到调用方，修改常量定义类会遗漏注册点、匹配和发射的指令。构建端按语义登记游戏 `owner/name/descriptor`，将结果写回每个实际使用点。覆盖 RFB 注册、Mixin 配置和插件条件、按名称查找类或成员、服务资源和实际启用的访问规则。保留普通文本、第三方 API 和配置键。动态拼接的游戏目标须给出可验证的解析规则，禁止全局替换任意字符串。对依赖 named 开发 JAR 放宽可见性的调用，优先改用项目的 Mixin accessor 或 invoker，并在 obf 目标上验证调用的包、类加载器和访问权限。[SharedBootstrap](../../modules/internal/sso-app/src/main/java/github/kasuminova/ssoptimizer/bootstrap/SharedBootstrap.java#L103) · [GameMemberNames](../../modules/internal/sso-core/src/main/java/github/kasuminova/ssoptimizer/mapping/GameMemberNames.java#L3)
 5. `verifyObfRelease` 从已装配的 obf 产物逐项解析声明、引用、访问及变换目标。运行真实 Mixin prepare/apply，比较每个注入点的命中数和变换后字节码，并分别跑渲染线程开关两种配置。现有校验读取 named 依赖，只验证目标类存在和部分 ASM 注册。它适合保留在开发构建。[现有校验任务](../../tools/verify-transform-targets.gradle#L11) · [校验器](../../tools/TransformTargets.java#L61)
 
-### 玩家运行时
+### Mixin 的 refmap 与 ASM 的目标符号
+
+Mixin 的 refmap 可以替代**部分注解字符串**的预转换。项目锁定的 `0.16.3+mixin.0.8.7` 在 `MemberInfo.parse` 中通过选择器上下文解析引用，在 `MixinConfig.remapClassName` 中通过 reference mapper 解析字符串类目标。建议在私有构建目录生成针对 SSO 注入点的 refmap，将其作为构建输入，按 Mixin 类和映射上下文解析 `@Inject(method=...)`、`@At(target=...)` 等受支持的引用，将结果写入 obf 包的注解。随后移除配置中的 refmap 引用。refmap 的键和值本身构成局部 named/obf 对照，当前分发限制同样适用。dev 在 named 目标上直接使用源码选择器。
+
+对 `remap=false` 的现有注解，构建器必须逐项判定目标命名空间。需要转换的游戏选择器应纳入构建期生成规则，直接引用第三方库的选择器按原值校验。Mixin 的普通 JVM 类型引用、处理器参数和方法体指令仍走 reobf。`MixinTargetContext.findField` 按字段名和 aliases 查找，`findRemappedField` 使用环境的 `RemapperChain`。存档流的 shadow 别名须在构建期单独解析并验证。验收时用最终 obf 包在无 refmap 环境织入，同一份源码的 dev 包则在 named 环境命中相应注入点。[存档流 Mixin](../../modules/internal/sso-save/src/main/java/github/kasuminova/ssoptimizer/mixin/save/CampaignSaveProgressOutputStreamMixin.java#L14)
+
+ASM 处理器直接使用字符串匹配和生成指令。建议把注册类、匹配成员和要发射的成员集中声明为带 `owner/name/descriptor` 的构建输入，为 dev 和 obf 分别生成只有本命名空间值的操作数。碰撞处理器需要同时更新注册类、`TARGET_METHOD`、`TARGET_DESC` 和 `CLAMP_DESC`。其中 helper 属于 SSO，但它的描述符含游戏类型。验证时把处理器实际应用到两份对应游戏类，检查 `FSTORE 16` 唯一命中，注入的 `INVOKESTATIC` 能链接到各自构件中的 helper。[碰撞处理器](../../modules/internal/sso-core/src/main/java/github/kasuminova/ssoptimizer/asm/combat/CollisionImpulseClampProcessor.java#L18)
+
+### obf 玩家运行时
 
 - **准备归档。** `doctor` 识别游戏字节码 ABI、规范化规则版本和对应发行组件。只读打开原始文件。普通 obf 模组按原版顺序加载，合法名称保持原拼写。有显式 named 声明的模组在启动前报告需要作者提供 reobf 产物。无声明的传统模组沿用原版 obf 约定。来源冲突、缺少必需 ABI 时给出具体归档、类或成员。所有第三方模组遵循同一规则。
 - **修复必须早于消费。** 游戏类和模组字节码中的非法符号引用都要在 Mixin 读取目标和 JVM 定义类前完成处理。优先为原版游戏在实例缓存中准备 obf 视图，供 RFB、Mixin、Janino 以及类层级读取共用。对实际需要修复的模组按其定义域在受支持的加载路径修复。简单、合法的原版模组直接保留原件。保留加载顺序、`CodeSource`、包密封、签名验证、MR-JAR 选择和原加载器。签名条目须先按原 JAR 验证，遇到现有加载域无法安全交付所需变换时明确诊断。禁止剥去签名、拦截 JDK 所有类定义或给第三方模组加特判。保留系统域与游戏域的既有分工、`.19` 的通用自建加载器处理，以及 ASM/GL 先于行为 Mixin 的顺序。[StandaloneTweaker](../../modules/internal/sso-host-standalone/src/main/java/ssoptimizer/standalone/host/StandaloneTweaker.java#L36) · [UrlClassDefinition](../../modules/internal/sso-core/src/main/java/github/kasuminova/ssoptimizer/asm/render/UrlClassDefinition.java#L53)
