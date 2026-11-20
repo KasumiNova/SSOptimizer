@@ -145,7 +145,7 @@ for (flavor in flavors) {
                     }
                 }
             }
-            doLast { releaseTool("audit", output.get().asFile.absolutePath, platform, flavor) }
+            doLast { releaseTool("audit", output.get().asFile.absolutePath, platform, flavor, rootProject.rootDir.absolutePath, symbolJar.get().name) }
         }
     }
     val metadata = base.map { it.dir("windows/$flavor/signed").asFile }
@@ -153,7 +153,7 @@ for (flavor in flavors) {
         dependsOn(stageTasks.getValue("windows")); outputs.dir(metadata); outputs.upToDateWhen { false }
         doLast {
             val key = signKey.orNull ?: throw GradleException("Windows 发布需要发行者 RSA PKCS#8 私钥：-Pstandalone.signingKey=<文件>")
-            releaseTool("sign", base.get().dir("windows/$flavor/version").asFile.absolutePath, metadata.get().absolutePath, sources.resolve("windows").absolutePath, versionId, rootProject.file(key).absolutePath, flavor)
+            releaseTool("sign", base.get().dir("windows/$flavor/version").asFile.absolutePath, metadata.get().absolutePath, sources.resolve("windows").absolutePath, versionId, rootProject.file(key).absolutePath, flavor, rootProject.rootDir.absolutePath, symbolJar.get().name)
         }
     }
     tasks.register<Zip>("packageStandaloneWindows$suffix") {

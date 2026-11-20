@@ -21,8 +21,8 @@ class ReleaseFiles {
         switch (args[0]) {
             case "mapping" -> mapping(Path.of(args[1]), Path.of(args[2]));
             case "jdk" -> jdk(Path.of(args[1]), args[2], args[3], args[4], Path.of(args[5]), Boolean.parseBoolean(args[6]));
-            case "audit" -> audit(Path.of(args[1]), args[2], args[3]);
-            case "sign" -> sign(Path.of(args[1]), Path.of(args[2]), Path.of(args[3]), args[4], Path.of(args[5]), args[6]);
+            case "audit" -> audit(Path.of(args[1]), args[2], args[3], Path.of(args[4]), args[5]);
+            case "sign" -> sign(Path.of(args[1]), Path.of(args[2]), Path.of(args[3]), args[4], Path.of(args[5]), args[6], Path.of(args[7]), args[8]);
             case "verify" -> verify(Path.of(args[1]), Path.of(args[2]), args[3], args[4], Path.of(args[5]));
             default -> throw new IllegalArgumentException(args[0]);
         }
@@ -127,7 +127,45 @@ class ReleaseFiles {
         }
     }
 
-    private static void audit(Path home, String platform, String flavor) throws Exception {
+    private static void auditObfTree(Path home, String platform, Path project, String symbolJar) throws Exception {
+        boolean windows = platform.equals("windows");
+        var allowed = new HashSet<>(List.of("agent.jar", "payload.jar", "abi.properties", "distribution.properties", "libraries.lock", "mod/mod_info.json",
+                "lib/sso-host-standalone-obf.jar", "lib/" + symbolJar));
+        Path lock = project.resolve("packaging/standalone/libraries-obf.lock");
+        if (Files.mismatch(lock, home.resolve("libraries.lock")) != -1) throw new IOException("obf 依赖锁与构建输入不符");
+        for (String row : Files.readAllLines(lock)) {
+            String[] fields = row.split(" ");
+            String file = URI.create(fields[3]).getPath();
+            String relative = fields[0] + file.substring(file.lastIndexOf('/'));
+            if (!sha(home.resolve(relative)).equals(fields[1])) throw new IOException("锁定依赖摘要不符：" + relative);
+            allowed.add(relative);
+        }
+        for (String name : List.of("MiSans-LICENSE.txt", "MiSans-Regular.ttf", "Oxanium-Medium.ttf", "lte50549.ttf", "orbitron-black.ttf", "orbitron-bold.ttf",
+                "orbitron-light.ttf", "orbitron-medium.ttf", "orbitron-regular.ttf", "orbitron-semibold.ttf")) {
+            String relative = "mod/fonts/" + name;
+            if (Files.mismatch(project.resolve("game-fonts/ttf").resolve(name), home.resolve(relative)) != -1) throw new IOException("字体或许可内容不符：" + relative);
+            allowed.add(relative);
+        }
+        for (String module : List.of("font", "ime", "render", "loading", "texcompress")) {
+            allowed.add("native/" + platform + "/" + (windows ? "ssoptimizer_" + module + ".dll" : "libssoptimizer_" + module + ".so"));
+        }
+        if (windows) checkJdk(home.resolve("runtime")); else allowed.add("launch.sh");
+        var missing = new TreeSet<>(allowed);
+        try (var paths = Files.walk(home)) {
+            for (var path : paths.toList()) {
+                if (Files.isSymbolicLink(path)) throw new IOException("obf 目录包含符号链接：" + path);
+                if (Files.isDirectory(path)) continue;
+                String name = home.relativize(path).toString().replace(File.separatorChar, '/');
+                if (!Files.isRegularFile(path)) throw new IOException("obf 条目类型无效：" + name);
+                if (windows && name.startsWith("runtime/")) continue;
+                if (!missing.remove(name)) throw new IOException("obf 包含未声明文件：" + name);
+                if (name.endsWith(".properties") || name.endsWith(".json") || name.endsWith(".sh")) auditResource(name, Files.readAllBytes(path));
+            }
+        }
+        if (!missing.isEmpty()) throw new IOException("obf 缺少发行文件：" + missing);
+    }
+
+    private static void audit(Path home, String platform, String flavor, Path project, String symbolJar) throws Exception {
         boolean obf = flavor.equals("obf");
         String namespace = obf ? "obf" : "named";
         var distribution = new Properties();
@@ -136,6 +174,11 @@ class ReleaseFiles {
             throw new IOException("发行元数据与构件不符：" + home);
         }
         if (obf) {
+            String abi = distribution.getProperty("abi");
+            if (!abi.matches("[a-z0-9]+(?:-[a-z0-9]+)*") || Files.mismatch(project.resolve("packaging/abi/" + abi + ".properties"), home.resolve("abi.properties")) != -1) {
+                throw new IOException("obf 发行 ABI 描述与构建输入不符：" + abi);
+            }
+            auditObfTree(home, platform, project, symbolJar);
             if (!Files.isRegularFile(home.resolve("abi.properties")) || Files.exists(home.resolve("mappings"))) throw new IOException("obf 需要 ABI 描述并排除映射目录");
         } else {
             try (var in = new GZIPInputStream(Files.newInputStream(home.resolve("mappings/game-full.tiny.gz")))) {
@@ -246,7 +289,8 @@ class ReleaseFiles {
         }
     }
 
-    private static void sign(Path version, Path signed, Path templates, String id, Path keyFile, String flavor) throws Exception {
+    private static void sign(Path version, Path signed, Path templates, String id, Path keyFile, String flavor, Path project, String symbolJar) throws Exception {
+        audit(version, "windows", flavor, project, symbolJar);
         Path secret = keyFile.toRealPath();
         Files.createDirectories(signed);
         if (secret.startsWith(version.toRealPath()) || secret.startsWith(signed.toRealPath()) || secret.startsWith(templates.toRealPath())) {
