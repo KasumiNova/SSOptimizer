@@ -22,12 +22,12 @@
 
 | 构件 | 游戏与模组 | 映射来源 | 使用方式 |
 | --- | --- | --- | --- |
-| `SSOptimizer-<版本>-obf-<平台>` | 游戏保持 obf。SSO 的 payload、host 和 coremod 使用目标 ABI 的 obf 游戏引用。传统 obf 模组按原版规则加载 | reobf 只在构建机读取私有 Tiny。玩家端只带通用净化器 | 正式发布与安装，运行时支持断网冷启动 |
-| `SSOptimizer-<版本>-dev-<平台>` | 沿用当前 named payload、host、Mixin 和 ASM，保留源码断点、IDE 运行及现有 named 模组准备流程 | 开发者从已获授权的本地工作区提供与开发 ABI 匹配的映射。开发安装步骤将它放到现有启动器要求的位置 | 供开发者单独安装调试。映射缺失或摘要不匹配时，`doctor` 报告预期版本和配置位置 |
+| `SSOptimizer-Standalone-[VERSION]-windows-x64-obf.zip` | 游戏保持 obf。SSO 的 payload、host 和 coremod 使用目标 ABI 的 obf 游戏引用。传统 obf 模组按原版规则加载 | 构建机用私有 Tiny 完成 reobf。玩家端只带通用净化器 | 公开发布，支持断网冷启动 |
+| `SSOptimizer-Standalone-[VERSION]-windows-x64-dev.zip` | 沿用当前 named payload、host、Mixin 和 ASM，保留源码断点、IDE 运行及现有 named 模组准备流程 | 构建时将与 named ABI 匹配的完整映射写入 `version/mappings/game-full.tiny.gz`，并把文件摘要纳入该包的签名清单 | 本地开发和内部调试。开发者在已有 RC8 安装上解压安装后即可离线准备 named 环境，默认不公开发布 |
 
-`stageObf` 与 `stageDev` 使用独立输入清单和输出目录。正式发布任务只接收 `obf` 产物，`dev` 可以单独打包交给开发者，两个 ZIP 都排除映射和游戏 JAR。版本清单同时记录发行类型、游戏命名空间和 ABI。启动器检查自身、host 与 payload 的清单，拒绝混装。两种安装使用独立的类缓存、启动清单、调试输出及存档实例，开发调试用存档副本。
+Windows x64 打包任务用同一个实际版本号替换两个文件名中的 `[VERSION]`，一次生成两份 ZIP。`stageObf` 与 `stageDev` 使用独立的输入清单、暂存目录和签名清单。公开发布任务显式选取已通过 obf 审计的 ZIP，禁止按 `*.zip` 收集附件。两个包都从用户安装读取游戏 JAR。版本清单记录发行类型、游戏命名空间和 ABI，启动器据此校验 host 与 payload。两种安装分别使用自己的类缓存、启动清单、调试输出和存档实例。
 
-**`obf` 的精确含义**是所有合法游戏类名与成员名保留对应原版拼写，包括关键字。非法成员的确定性替代名构成发行 ABI 的一部分，构建机与玩家端必须使用同一版本规则。全量 Tiny、可查询的 named/obf 对照、Mixin refmap、开发 JAR、修复后的游戏 JAR、名称诊断报告均留在私有工作区或本机缓存。发行 class 仅包含指令、注解和选择器执行所需的最终目标。离线安装验收要移除开发目录、历史 named 缓存及映射下载途径。
+`obf` 包保留原版所有合法游戏符号，只净化 JVM 拒绝的条目。净化算法的版本属于发行 ABI，构建机与玩家端必须一致。公开包排除完整映射、局部对照表、Mixin refmap、开发 JAR、修复后的游戏 JAR 和名称诊断报告。发行 class 只包含执行指令和注入所需的最终目标。
 
 ### 工作区 reobf 工具链
 
@@ -62,6 +62,6 @@ ASM 处理器直接使用字符串匹配和生成指令。建议把注册类、�
 | 构建与实际织入 | `reobfRelease` 同时覆盖 payload 与独立 host 中的游戏引用。常规模组与 overlay 若要公开发布，也必须走 obf 构建并验证其宿主运行 obf。当前 named NanoForge 开发产物单独保留。用最终 JAR 核对两种渲染模式、可选组件、ASM 发射成员、脚本编译、动态查找及通用加载器行为。 |
 | 旧档与新档往返 | 对同一字节码 ABI 的原版 obf 存档，在独立槽验证加载、另存、冷启动读回，并验证原版能否读回目标兼容格式。对实际持久化的非法字段，在游戏存档序列化器按真实声明绑定原版 XML 名称和修复后的字段。覆盖别名、继承字段、类型属性、压缩战役和描述文件。旧 `.20` named 档只能在明确匹配的写档 ABI 下，使用私有工作区离线迁移或已授权的本地旧环境导出到新槽。现有 `import-save` 转换方向为 obf→named。禁止直接反转 XML 文本或覆盖原槽。未识别的槽保留原件并给出来源诊断。[HistoricalSave](../../modules/internal/sso-standalone/src/main/java/ssoptimizer/standalone/instance/HistoricalSave.java#L50) |
 | 真实流程回归 | Windows 英文、常规汉化与已声明支持的 Linux 安装分别验证首次准备、缓存命中、标题、新建生涯进度、市场推进、战斗、另存、重新启动、切换模组、窗口失焦恢复。隔离使用 105 模组回归样本。对比玩家设置、勾选列表、原始游戏 JAR 与旧档摘要。 |
-| 审计最终发布物并签名 | 从新的 staging 目录构建，审计独立版、普通模组、overlay 和 ZIP 全部发行入口。递归检查 JAR/压缩资源和 class 常量，按发布构件清单排除 Tiny/压缩 Tiny、反查表、refmap、named 游戏、私有诊断与构建工具。同步改 Windows 安装器的必需文件列表、依赖锁和 Linux 启动校验。签名前审核待发布目录，签名后复核最终 ZIP 与清单。在无网络、无映射、无旧实例的环境安装并完成游戏验收。[独立版打包](../../gradle/standalone-distribution.gradle.kts#L58) · [Windows 安装校验](../../packaging/standalone/windows/Manage.ps1#L62) · [普通模组打包](../../build.gradle.kts#L127) |
+| 审计最终发布物并签名 | 分别审核、签名两个包，复核最终 ZIP 与各自的清单。对 `obf` 的公开发行入口递归检查 JAR、压缩资源和 class 常量，排除完整或局部映射、refmap、named 游戏和私有诊断。对 `dev` 校验包内映射与 named ABI 匹配。Windows 安装器按构件类型核验必需文件。在已有 RC8、无开发工作区、无旧缓存且断网的环境分别验收，`obf` 完成游戏启动，`dev` 仅用包内映射完成 named 准备并进入调试环境。[独立版打包](../../gradle/standalone-distribution.gradle.kts#L58) · [Windows 安装校验](../../packaging/standalone/windows/Manage.ps1#L62) · [普通模组打包](../../build.gradle.kts#L127) |
 
 现有 `.20` 的签名清单包含映射，须停止将该包作为新授权范围内的公开下载。后续发行使用新的版本号、缓存目录和签名清单。已有安装与旧存档保留在原处，回退通过切换本地版本与对应存档副本完成。
