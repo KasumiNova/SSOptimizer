@@ -1,0 +1,100 @@
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.bundling.Jar
+import java.security.MessageDigest
+import java.util.HexFormat
+import java.util.Properties
+
+val abi = providers.gradleProperty("standalone.gameAbi").getOrElse("windows-rc8")
+require(abi.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*"))) { "无效的游戏 ABI：$abi" }
+val profile = rootProject.file("packaging/abi/$abi.properties")
+val mapping = rootProject.file(providers.gradleProperty("standalone.mapping").getOrElse("../Paragon/build/mappings/mappings-named.tiny"))
+val gameDir = rootProject.file(providers.gradleProperty("standalone.obfGameDir").getOrElse("../SourceSector/game-jars/windows"))
+val namedDir = rootProject.file(providers.gradleProperty("standalone.namedGameDir").getOrElse("../SourceSector/build/named-game-jars/windows"))
+val coreNames = listOf("starfarer_obf.jar", "starfarer.api.jar", "fs.common_obf.jar", "fs.sound_obf.jar")
+val game = coreNames.map(gameDir::resolve)
+val named = coreNames.map(namedDir::resolve)
+val output = layout.buildDirectory.dir("reobf/$abi")
+val resolveAbi = tasks.register("resolveReleaseAbi") {
+    group = "distribution"
+    inputs.files(profile, mapping, game, named)
+    val destination = output.map { it.file("abi.properties") }
+    outputs.file(destination)
+    doLast {
+        val declared = Properties().apply { profile.inputStream().use { load(it) } }
+        require(declared.getProperty("abi") == abi) { "ABI 标识与文件名不符：$profile" }
+        val hashes = game.joinToString(" ") { jar ->
+            val sha = MessageDigest.getInstance("SHA-256")
+            jar.inputStream().buffered().use { input ->
+                java.security.DigestInputStream(input, sha).transferTo(java.io.OutputStream.nullOutputStream())
+            }
+            HexFormat.of().formatHex(sha.digest())
+        }
+        require((0 until declared.getProperty("inputs.count").toInt()).any { hashes == declared.getProperty("inputs.$it") }) {
+            "构建用原版游戏归档与 $abi 不符：$hashes"
+        }
+        profile.copyTo(destination.get().asFile.apply { parentFile.mkdirs() }, overwrite = true)
+    }
+}
+val toolClasspath = configurations.create("releaseReobfTool") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+    }
+}
+dependencies.add(toolClasspath.name, project(":tools:reobf"))
+val app = project(":modules:internal:sso-app")
+val host = project(":modules:internal:sso-host-standalone")
+val jobs = listOf(Triple("Payload", app, "standalonePayload"), Triple("Host", host, "obfJar"), Triple("Coremod", app, "jar")).map { (kind, component, jarTask) ->
+    val input = provider { component.tasks.named<Jar>(jarTask).get().archiveFile.get().asFile }
+    val dest = output.map { it.file("${kind.lowercase()}.jar").asFile }
+    val libraries = provider {
+        val namedLibraries = namedDir.listFiles().orEmpty().filter { it.extension == "jar" && it.name !in coreNames }
+        val hostLibraries = configurations.getByName("standaloneObfSystemLibraries").files + configurations.getByName("standaloneObfGameLibraries").files
+        (namedLibraries + hostLibraries).distinct().sortedBy { it.name }
+    }
+    tasks.register<JavaExec>("reobf$kind") {
+        group = "distribution"
+        dependsOn("${component.path}:$jarTask", resolveAbi)
+        classpath(toolClasspath)
+        mainClass.set("github.kasuminova.ssoptimizer.reobf.ReobfMain")
+        maxHeapSize = "3g"
+        inputs.files(mapping, input, named, game, libraries)
+        outputs.file(dest)
+        doFirst {
+            val arguments = mutableListOf("--mapping", mapping.absolutePath, "--input", input.get().absolutePath, "--output", dest.get().absolutePath)
+            for (path in named) arguments.addAll(listOf("--named", path.absolutePath))
+            for (path in game) arguments.addAll(listOf("--game", path.absolutePath))
+            for (path in libraries.get()) arguments.addAll(listOf("--classpath", path.absolutePath))
+            args(arguments)
+        }
+    }
+}
+val reobfRelease = tasks.register("reobfRelease") {
+    group = "distribution"
+    description = "生成与原版游戏 ABI 匹配的 obf 归档"
+    dependsOn(jobs)
+}
+
+tasks.register<JavaExec>("verifyObfRelease") {
+    group = "verification"
+    description = "校验最终 obf 归档对游戏类、字段、方法的静态引用"
+    dependsOn(reobfRelease)
+    classpath(toolClasspath)
+    mainClass.set("github.kasuminova.ssoptimizer.reobf.VerifyObf")
+    maxHeapSize = "2g"
+    val products = output.map { dir -> listOf("payload.jar", "host.jar", "coremod.jar").map { dir.file(it).asFile } }
+    val dependencies = files(configurations.named("standaloneObfSystemLibraries"), configurations.named("standaloneObfGameLibraries"),
+        provider { namedDir.listFiles().orEmpty().filter { it.extension == "jar" && it.name !in coreNames }.sortedBy { it.name } })
+    inputs.files(game, products, dependencies)
+    doFirst {
+        val arguments = mutableListOf<String>()
+        for (path in game) arguments.addAll(listOf("--game", path.absolutePath))
+        for (path in dependencies) arguments.addAll(listOf("--classpath", path.absolutePath))
+        for (path in products.get()) arguments.addAll(listOf("--input", path.absolutePath))
+        args(arguments)
+    }
+}

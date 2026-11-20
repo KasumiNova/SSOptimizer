@@ -10,6 +10,7 @@ group = "github.kasuminova.ssoptimizer"
 version = "0.1.10-SNAPSHOT"
 
 apply(from = "gradle/standalone-distribution.gradle.kts")
+apply(from = "gradle/reobf.gradle.kts")
 apply(from = "tools/verify-transform-targets.gradle")
 
 val modId = "ssoptimizer"
@@ -248,7 +249,7 @@ tasks.register<Zip>("packageUserModZip") {
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set(modReleaseVersion)
     archiveClassifier.set("")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+    destinationDirectory.set(layout.buildDirectory.dir("dev-distributions"))
 
     from(installBundleStageDir)
 
@@ -271,7 +272,7 @@ tasks.register<Zip>("packageLinuxOverlayZip") {
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set(modReleaseVersion)
     archiveClassifier.set("linux")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+    destinationDirectory.set(layout.buildDirectory.dir("dev-distributions"))
 
     from(linuxOverlayStageDir)
 
@@ -294,7 +295,7 @@ tasks.register<Zip>("packageWindowsOverlayZip") {
     archiveBaseName.set("SSOptimizer")
     archiveVersion.set(modReleaseVersion)
     archiveClassifier.set("windows")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+    destinationDirectory.set(layout.buildDirectory.dir("dev-distributions"))
 
     from(windowsOverlayStageDir)
 
@@ -311,8 +312,8 @@ tasks.register<Zip>("packageWindowsOverlayZip") {
 
 tasks.register("packageReleaseZips") {
     group = "distribution"
-    description = "Build both Linux and Windows release zips"
-    dependsOn("packageLinuxOverlayZip", "packageWindowsOverlayZip")
+    description = "构建通过发行审计的 Windows x64 obf 压缩包"
+    dependsOn("packageStandaloneWindowsObf")
 }
 
 tasks.register("runClient") {

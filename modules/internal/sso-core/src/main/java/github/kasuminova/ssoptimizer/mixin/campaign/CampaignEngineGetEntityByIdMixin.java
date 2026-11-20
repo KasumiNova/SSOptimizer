@@ -27,10 +27,10 @@ public abstract class CampaignEngineGetEntityByIdMixin {
     private transient Map<String, SectorEntityToken> ssoptimizer$idToEntityCI;
 
     @Unique
-    private boolean ssoptimizer$indexReady;
+    private transient boolean ssoptimizer$indexReady;
 
     @Unique
-    private boolean ssoptimizer$fastPathLogged;
+    private transient boolean ssoptimizer$fastPathLogged;
 
     @Inject(method = GameMixinSignatures.CampaignEngine.GET_ENTITY_BY_ID,
             at = @At("HEAD"),

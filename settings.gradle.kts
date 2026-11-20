@@ -24,6 +24,8 @@ include(":modules:internal:sso-render")
 include(":modules:internal:sso-font")
 include(":modules:internal:sso-app")
 include(":modules:internal:sso-remap")
+include(":modules:internal:sso-obf")
+include(":tools:reobf")
 include(":modules:internal:sso-host-standalone")
 include(":modules:internal:sso-standalone")
 
