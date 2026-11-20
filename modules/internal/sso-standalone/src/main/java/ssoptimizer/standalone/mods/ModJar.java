@@ -20,7 +20,7 @@ final class ModJar {
 
     private ModJar() {}
 
-    static boolean inspect(Path path, String id, String source, boolean own, String plugin) throws IOException {
+    static boolean inspect(Path path, String id, String source, boolean own, String plugin, String target) throws IOException {
         try (JarFile jar = open(path)) {
             if (!own && jar.getJarEntry(PLUGIN) != null) throw new IOException("检测到第二份 SSOptimizer 游戏入口：" + path);
             var manifest = jar.getManifest();
@@ -33,9 +33,10 @@ final class ModJar {
                 source = fromJar;
             }
             if (own) {
-                if ("obf".equals(source)) throw new IOException(path + " 将已挂载的 named payload 声明为 obf");
-                return true;
+                if (source != null && !source.equals(target)) throw new IOException(path + " 的负载声明为 " + source + "，当前发行版需要 " + target);
+                return "named".equals(target);
             }
+            if ("obf".equals(target) && "named".equals(source)) throw new IOException("该模组声明为 named，请使用作者发布的 obf 版本");
             inspectClasses(jar, id, plugin);
             return "named".equals(source);
         } catch (IOException e) {
@@ -80,7 +81,7 @@ final class ModJar {
                         throw new IOException("游戏入口 " + entrypoint + " 的父类型需要 NanoForge，请使用 NanoForge 启动或取消勾选该模组");
                     }
                     if (LOADER_BASES.contains(parent)) {
-                        LOG.log(System.Logger.Level.WARNING, "模组 {0} 的 {1}!/{2} 定义了加载器 {3} 的子类；请核对其加载的游戏脚本是否使用 named 归档",
+                        LOG.log(System.Logger.Level.WARNING, "模组 {0} 的 {1}!/{2} 定义了加载器 {3} 的子类；请核对其加载的游戏脚本与游戏字节码命名空间",
                                 id, jar.getName(), entry.getName(), parent);
                     }
                 } catch (IllegalArgumentException | ZipException | EOFException e) {

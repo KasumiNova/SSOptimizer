@@ -21,14 +21,16 @@ import java.util.zip.ZipFile;
 
 final class LaunchPlan {
     static final String PAYLOAD_PACKAGE = "github.kasuminova.ssoptimizer.";
-    static final String REFLECTION_PACKAGE = PAYLOAD_PACKAGE + "standalone.remap.reflect.";
     private static final List<String> SYSTEM = List.of("java.", "jdk.", "sun.", "javax.imageio.", "javax.sound.",
             "javax.swing.", "org.lwjgl.", "org.apache.log4j.", "org.apache.logging.", "org.slf4j.", "org.objectweb.asm.",
             "org.spongepowered.asm.", "net.minecraft.launchwrapper.", "com.gtnewhorizons.retrofuturabootstrap.",
-            "ssoptimizer.standalone.host.", REFLECTION_PACKAGE);
+            "ssoptimizer.standalone.host.", FlavorHost.SYSTEM_PACKAGE);
     final List<Path> game;
+    final List<Path> gameSources;
     final List<Path> archives;
     final List<Path> mods;
+    final List<Path> modSources;
+    final Set<Path> modRoots;
     final Set<String> enabled;
     final String selectionProblem;
     final Path payload;
@@ -40,6 +42,11 @@ final class LaunchPlan {
     LaunchPlan(Properties p) throws IOException {
         var order = new LinkedHashSet<Path>();
         game = paths(p, "game");
+        var originals = new ArrayList<Path>();
+        if ("obf".equals(p.getProperty("namespace"))) {
+            for (int i = 0; i < game.size(); i++) originals.add(path(p, "game.source." + i));
+        }
+        gameSources = List.copyOf(originals);
         if (game.isEmpty()) throw new IOException("启动清单缺少游戏归档");
         List<Path> libraries = paths(p, "library");
         mods = paths(p, "mod");
@@ -64,14 +71,26 @@ final class LaunchPlan {
             declared(p, "payload.declared", "payload.source", aliases);
             order.add(payload);
         }
+        var sources = new ArrayList<Path>();
+        var roots = new HashSet<Path>();
         for (int i = 0; i < mods.size(); i++) {
             Path source = path(p, "mod.source." + i);
+            sources.add(source);
+            if ("obf".equals(p.getProperty("namespace"))) {
+                String value = p.getProperty("mod.root." + i);
+                if (value == null) throw new IOException("启动清单缺少模组目录：" + source);
+                Path root = Path.of(value).toRealPath();
+                if (!Files.isDirectory(root) || !source.startsWith(root)) throw new IOException("模组归档位于声明的目录外：" + source + "，目录：" + root);
+                roots.add(root);
+            }
             Path named = mods.get(i);
             if (replacements.putIfAbsent(source, named) != null) throw new IOException("重复模组来源: " + source);
             Path previous = replacements.putIfAbsent(named, named);
             if (previous != null && !previous.equals(named)) throw new IOException("模组来源冲突: " + named);
             declared(p, "mod.declared." + i, "mod.source." + i, aliases);
         }
+        modSources = List.copyOf(sources);
+        modRoots = Set.copyOf(roots);
         prepared = Map.copyOf(replacements);
         declaredSources = Map.copyOf(aliases);
         order.addAll(game);
@@ -141,6 +160,7 @@ final class LaunchPlan {
         if (value == null || value.isBlank()) throw new IOException("缺少 ssoptimizer.standalone.plan");
         var properties = new Properties();
         try (Reader reader = Files.newBufferedReader(Path.of(value), StandardCharsets.UTF_8)) { properties.load(reader); }
+        if (!FlavorHost.NAMESPACE.equals(properties.getProperty("namespace"))) throw new IOException("启动清单与宿主命名空间不一致：" + value);
         return new LaunchPlan(properties);
     }
 

@@ -2,7 +2,6 @@ package ssoptimizer.standalone.host;
 
 import com.gtnewhorizons.retrofuturabootstrap.RfbSystemClassLoader;
 import com.llamalad7.mixinextras.MixinExtrasBootstrap;
-import github.kasuminova.ssoptimizer.standalone.remap.reflect.ReflectionNames;
 import net.minecraft.launchwrapper.ITweaker;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
@@ -16,7 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
@@ -41,17 +39,14 @@ public final class StandaloneTweaker implements ITweaker {
             LaunchPlan plan = LaunchPlan.read();
             optimizerEnabled = plan.payload != null;
             if (optimizerEnabled) SystemTransforms.checkInstalled();
-            for (Path path : plan.archives) loader.addURL(path.toUri().toURL());
+            FlavorHost.mount(plan, loader);
             loader.addClassLoaderExclusion("ssoptimizer.standalone.host.");
-            loader.addClassLoaderExclusion(LaunchPlan.REFLECTION_PACKAGE);
             loader.addClassLoaderExclusion("org.apache.log4j.");
             loader.addTransformerExclusion("org.spongepowered.");
             loader.addTransformerExclusion("com.llamalad7.mixinextras.");
             system.childDelegations.addAll(plan.childPackages);
             PreparedSources.install(plan, loader);
-            Path home = Path.of(System.getProperty("ssoptimizer.standalone.home"));
-            ReflectionNames.initialize(home.resolve("mappings/game-full.tiny.gz"), plan.game, loader);
-            register(loader, ModCodeSourceTransformer.class.getName());
+            FlavorHost.initialize(plan, loader);
             if (optimizerEnabled) {
                 register(loader, HYBRID);
                 register(loader, GL);
@@ -62,6 +57,7 @@ public final class StandaloneTweaker implements ITweaker {
             }
             MixinExtrasBootstrap.init();
             Mixins.addConfiguration("mixins.ssoptimizer.standalone.json");
+            if (FlavorHost.NAMESPACE.equals("obf")) Mixins.addConfiguration("mixins.ssoptimizer.obf-save.json");
             if (optimizerEnabled) {
                 Mixins.addConfiguration("mixins.ssoptimizer.json");
                 startPayload(loader);
@@ -73,7 +69,7 @@ public final class StandaloneTweaker implements ITweaker {
         }
     }
 
-    private static void register(LaunchClassLoader loader, String name) {
+    static void register(LaunchClassLoader loader, String name) {
         int index = loader.getTransformers().size();
         loader.registerTransformer(name);
         var transformers = loader.getTransformers();

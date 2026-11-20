@@ -25,16 +25,25 @@ final class ReleaseLibraries {
                 expected.add(path);
             }
         }
-        boolean host = false, remap = false;
+        for (String file : List.of("agent.jar", "payload.jar")) {
+            try (var jar = new JarFile(home.resolve(file).toFile())) { verifyNamespace(jar); }
+        }
+        boolean host = false, tool = false;
         for (String domain : List.of("lib", "game-lib")) for (Path path : GameInstall.jars(home.resolve(domain))) {
             if (expected.contains(path)) continue;
             String name = path.getFileName().toString();
             if (domain.equals("lib")) try (var jar = new JarFile(path.toFile())) {
-                if (!host && name.startsWith("sso-host-standalone-") && jar.getEntry("META-INF/rfb-plugin/ssoptimizer-system.properties") != null) { host = true; continue; }
-                if (!remap && name.startsWith("sso-remap-") && jar.getEntry("github/kasuminova/ssoptimizer/standalone/remap/ArchivePreparation.class") != null) { remap = true; continue; }
+                if (!host && name.startsWith("sso-host-standalone-") && jar.getEntry("META-INF/rfb-plugin/ssoptimizer-system.properties") != null) { verifyNamespace(jar); host = true; continue; }
+                if (!tool && name.startsWith(ArchiveProfile.TOOL) && jar.getEntry(ArchiveProfile.TOOL_ENTRY) != null) { tool = true; continue; }
             }
             throw new IOException("版本目录含清单外的归档：" + path);
         }
-        if (!host || !remap) throw new IOException("版本目录缺少正确的 RFB 插件或映射工具：" + home.resolve("lib"));
+        if (!host || !tool) throw new IOException("版本目录缺少正确的 RFB 插件或 " + ArchiveProfile.FLAVOR + " 预处理工具：" + home.resolve("lib"));
+    }
+
+    private static void verifyNamespace(JarFile jar) throws IOException {
+        var manifest = jar.getManifest();
+        String namespace = manifest == null ? null : manifest.getMainAttributes().getValue("SSOptimizer-Namespace");
+        if (!ArchiveProfile.NAMESPACE.equals(namespace)) throw new IOException("发行归档命名空间不匹配：" + jar.getName() + "，声明=" + namespace + "，需要=" + ArchiveProfile.NAMESPACE);
     }
 }

@@ -78,9 +78,13 @@ final class JvmSettings {
                 # 优先使用游戏核心目录、游戏根目录中的 compiler_directives.txt；两处均缺失时使用实例的 compiler-directives.json。
                 -XX:CompilerDirectivesFile=${compilerDirectives}
                 -Djdk.xml.maxElementDepth=10000
-                # 以下两项按参考启动脚本关闭游戏 JVM 的字节码校验。仅使用可信模组；注释两行可恢复 JDK 默认值，也可用 -Xverify:all 开启全部校验。
+                """);
+        if (ArchiveProfile.FLAVOR.equals("dev")) text.append("""
+                # 开发实例沿用现有游戏参数。使用 -Xverify:all 可启用全部字节码校验。
                 -XX:-BytecodeVerificationLocal
                 -XX:-BytecodeVerificationRemote
+                """);
+        text.append("""
                 -Djava.util.Arrays.useLegacyMergeSort=true
                 --enable-preview
 

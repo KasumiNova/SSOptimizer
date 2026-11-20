@@ -1,6 +1,5 @@
 package ssoptimizer.standalone.launch;
 
-import ssoptimizer.standalone.instance.HistoricalSave;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,11 +50,16 @@ public final class Main {
         if (!Files.isDirectory(requested)) throw new IOException("找不到游戏目录：" + requested + "。请先安装 Starsector 0.98a-RC8 英文或常规汉化版：https://api.fossic.org/games");
         Path root = requested.toRealPath();
         Path home = Path.of(options.get("--home")).toRealPath();
+        Distribution release = Distribution.load(home);
+        if (command.equals("import-save") && ArchiveProfile.NAMESPACE.equals("obf")) {
+            throw new IOException("obf 正式版不支持 import-save 转入 named 实例，请在开发环境中迁移到新槽。");
+        }
         GameInstall game = GameInstall.inspect(root, location);
         Path instance = InstancePaths.validate(game, home, Path.of(options.get("--instance")), location);
         Path dataRoot = location.root(game, instance);
         if (command.equals("config")) {
             try (var lock = LaunchFiles.lock(instance)) {
+                release.bindInstance(instance);
                 System.out.println("游戏 JVM 参数（UTF-8）：" + JvmSettings.configure(game, instance));
             }
             return 0;
@@ -64,7 +68,9 @@ public final class Main {
         GameInstall.required(home.resolve("payload.jar"));
         ReleaseLibraries.verify(home);
         if (command.equals("launch")) {
+            ArchiveProfile.verify(game, home, release.abi());
             try (var guard = GameProcess.guard(instance)) {
+                try (var lock = LaunchFiles.lock(instance)) { release.bindInstance(instance); }
                 while (true) {
                     var result = GameProcess.launch(game, home, instance, dataRoot, tail);
                     if (!result.restartRequested()) return result.code();
@@ -75,21 +81,22 @@ public final class Main {
         try (var lock = LaunchFiles.lock(instance)) {
             switch (command) {
                 case "doctor" -> {
-                    System.out.println("游戏数据目录：" + dataRoot);
-                    Path mapping = LaunchFiles.mapping(home);
+                    System.out.println("游戏数据目录：" + dataRoot + "，存档目录：" + instance.resolve("saves"));
+                    String inputs = ArchiveProfile.verify(game, home, release.abi());
+                    release.bindInstance(instance);
                     var libs = game.libraries(home);
                     var platform = PlatformFiles.inspect(game, home, instance.resolve("cache"));
-                    System.out.printf("默认资源配置：%s%n游戏：%s%n核心：%s%nJava：%s (%s)%n运行平台：%s%n游戏 native：%s%nSSOptimizer native：%s%n实例：%s%n映射：%s%n游戏库：%d；引导库：%d%n",
+                    System.out.printf("默认资源配置：%s%n游戏：%s%n核心：%s%nJava：%s (%s)%n运行平台：%s%n游戏 native：%s%nSSOptimizer native：%s%n实例：%s%n%s%n游戏库：%d；引导库：%d%n",
                             game.profile(), game.root(), game.core(), System.getProperty("java.home"), Runtime.version(), platform.id(),
-                            platform.gameNative(), platform.optimizerNative(), instance, mapping, libs.size(), GameInstall.jars(home.resolve("lib")).size());
+                            platform.gameNative(), platform.optimizerNative(), instance, inputs, libs.size(), GameInstall.jars(home.resolve("lib")).size());
                 }
                 case "prepare" -> LaunchFiles.prepare(game, home, instance, location);
                 case "import-save" -> {
                     if (!options.containsKey("--source") || !options.containsKey("--confirm-source")) throw new IOException("请用 --source 指定旧存档槽，并通过 --confirm-source " + game.profile() + " 等来源标识确认旧档的写入来源。");
                     Path source = Path.of(options.get("--source")).toRealPath();
-                    Path mapping = LaunchFiles.mapping(home);
-                    ssoptimizer.standalone.instance.InstanceLayout.prepare(game.root(), home, instance);
-                    Path imported = HistoricalSave.importSlot(source, instance, options.getOrDefault("--slot", source.getFileName().toString()), options.get("--confirm-source"), mapping);
+                    ArchiveProfile.verify(game, home, release.abi());
+                    release.bindInstance(instance);
+                    Path imported = ArchiveProfile.importSave(game, home, instance, source, options.getOrDefault("--slot", source.getFileName().toString()), options.get("--confirm-source"));
                     System.out.println("新存档：" + imported);
                 }
                 default -> throw new AssertionError(command);

@@ -74,7 +74,7 @@ public final class PreparedSources {
             for (int i = 0; i < urls.length; i++) urls[i] = resolved.get(i).toUri().toURL();
             return sources.new ScriptParent(urls, parent);
         } catch (IOException e) {
-            throw new IllegalStateException("无法建立 named 模组脚本类路径: " + jarFiles, e);
+            throw new IllegalStateException("无法建立模组脚本类路径: " + jarFiles, e);
         }
     }
 

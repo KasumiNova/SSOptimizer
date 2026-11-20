@@ -79,7 +79,8 @@ final class GameProcess {
         String debug = args.stream().filter(arg -> arg.equals("-Dssoptimizer.debug.enabled") || arg.startsWith("-Dssoptimizer.debug.enabled="))
                 .reduce((previous, last) -> last).orElse("");
         if (debug.equalsIgnoreCase("-Dssoptimizer.debug.enabled=true")) args.add("-Djdk.attach.allowAttachSelf=true");
-        for (String name : List.of("saves", "screenshots", "mods", "logs")) args.add("-Dcom.fs.starfarer.settings.paths." + name + "=" + dataRoot.resolve(name));
+        args.add("-Dcom.fs.starfarer.settings.paths.saves=" + instance.resolve("saves"));
+        for (String name : List.of("screenshots", "mods", "logs")) args.add("-Dcom.fs.starfarer.settings.paths." + name + "=" + dataRoot.resolve(name));
         args.addAll(platform.arguments());
         args.add("-XX:ErrorFile=" + dataRoot.resolve("logs").toString().replace("%", "%%") + File.separator + "hs_err_pid%p.log");
         args.add("-XX:-CreateCoredumpOnCrash");

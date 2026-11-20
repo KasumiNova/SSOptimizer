@@ -38,6 +38,10 @@ public final class ModCatalog {
 
     /** 只收集启用的游戏模组；declaredPath 保留游戏声明的拼写。 */
     public static List<Archive> scan(Path modsDir, Path payload, List<String> enabledIds) throws IOException {
+        return scan(modsDir, payload, enabledIds, "named");
+    }
+
+    public static List<Archive> scan(Path modsDir, Path payload, List<String> enabledIds, String namespace) throws IOException {
         Path root = modsDir.toAbsolutePath().normalize();
         Set<String> enabled = new LinkedHashSet<>(enabledIds);
         if (enabled.isEmpty()) return List.of();
@@ -80,6 +84,7 @@ public final class ModCatalog {
             if (own && jars.size() != 1) throw new IOException(where + " 必须声明一份 SSOptimizer payload");
             String source = mod.info.has("ssoptimizerNamespace")
                     ? ModJar.namespace(string(mod.info.get("ssoptimizerNamespace"), where + ": ssoptimizerNamespace"), where) : null;
+            if ("obf".equals(namespace) && "named".equals(source)) throw new IOException(where + " 声明了 named 模组，请使用作者发布的 obf 版本。");
             String plugin = mod.info.has("modPlugin") ? string(mod.info.get("modPlugin"), where + ": modPlugin") : null;
             for (JsonElement item : jars) {
                 Path raw = declaredPath(mod.dir, string(item, where + ": jars"));
@@ -98,7 +103,7 @@ public final class ModCatalog {
                 boolean samePayload = payloadFile || Files.size(path) == Files.size(payload)
                         && Files.mismatch(path, payload) == -1;
                 if (own != samePayload) throw new IOException(where + " 的 jar 与发布 payload 冲突：" + path + "、" + payload);
-                boolean named = ModJar.inspect(path, mod.id, source, own, plugin);
+                boolean named = ModJar.inspect(path, mod.id, source, own, plugin, namespace);
                 Archive archive = new Archive(mod.id, path, named, declared, mod.dir);
                 var attrs = Files.readAttributes(path, BasicFileAttributes.class);
                 seen.add(archive, attrs.fileKey(), attrs.size());
