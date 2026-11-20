@@ -2,6 +2,7 @@ package github.kasuminova.ssoptimizer.bootstrap;
 
 import github.kasuminova.ssoptimizer.asm.render.ClassDefinitionRedirector;
 import github.kasuminova.ssoptimizer.asm.render.RenderThreadRedirector;
+import github.kasuminova.ssoptimizer.asm.render.UrlClassDefinition;
 import github.kasuminova.ssoptimizer.common.render.runtime.RenderThreadMode;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.apache.log4j.Logger;
@@ -22,10 +23,8 @@ public final class RenderThreadRedirectTransformer implements IClassTransformer 
         if (basicClass == null) {
             return null;
         }
-        // 此处不得调用 RenderThreadMode.isEnabled()，否则类加载重入会触发 ClassCircularityError。
-        if ("false".equalsIgnoreCase(System.getProperty(RenderThreadMode.ENABLE_PROPERTY, "true"))) {
-            return basicClass;
-        }
+        final boolean redirectGl = !"false".equalsIgnoreCase(System.getProperty(RenderThreadMode.ENABLE_PROPERTY, "true"));
+        if (!redirectGl && !UrlClassDefinition.hasClassNormalizer()) return basicClass;
 
         String className = transformedName != null ? transformedName : name;
         if (className == null) {

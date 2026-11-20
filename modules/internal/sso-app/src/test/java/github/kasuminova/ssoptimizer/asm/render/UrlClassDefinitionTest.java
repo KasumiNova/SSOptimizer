@@ -26,6 +26,7 @@ import java.util.jar.JarOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UrlClassDefinitionTest {
     private static final String PAYLOAD = "fixture/DrawPayload";
@@ -71,6 +72,46 @@ class UrlClassDefinitionTest {
             final Class<?> definition = loader.loadClass(PAYLOAD.replace('/', '.'));
             assertSame(loader, definition.getClassLoader());
             assertEquals(BRIDGE_SYNC, readOpenGlType(definition).getName());
+        }
+    }
+
+    @Test
+    void scopedNormalizerRepairsInvalidMembersInInheritedJarLookup() throws Throwable {
+        final String name = "fixture.Unnormalized";
+        final var writer = new ClassWriter(0);
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name.replace('.', '/'), null, "java/lang/Object", null);
+        writer.visitField(Opcodes.ACC_PUBLIC, "bad.field", "I", null, null).visitEnd();
+        writer.visitEnd();
+        final byte[] original = writer.toByteArray();
+        final Path file = directory.resolve("unnormalized.jar");
+        try (var jar = new JarOutputStream(Files.newOutputStream(file))) {
+            jar.putNextEntry(new JarEntry(name.replace('.', '/') + ".class"));
+            jar.write(original);
+        }
+        final URL archive = file.toUri().toURL();
+        UrlClassDefinition.installClassNormalizer((source, bytes) -> {
+            if (!archive.getPath().equals(source.getPath())) return bytes;
+            final var fixed = new ClassWriter(0);
+            new ClassReader(bytes).accept(new ClassVisitor(Opcodes.ASM9, fixed) {
+                @Override
+                public org.objectweb.asm.FieldVisitor visitField(int access, String fieldName, String descriptor,
+                                                                 String signature, Object value) {
+                    return super.visitField(access, fieldName.replace('.', '_'), descriptor, signature, value);
+                }
+            }, 0);
+            return fixed.toByteArray();
+        });
+        final ClassLoader parent = getClass().getClassLoader();
+        try (var direct = new URLClassLoader(new URL[]{archive}, parent);
+             var managed = new ByteDefinition(parent).create(DefaultLoader.class, archive, parent)) {
+            assertThrows(ClassFormatError.class, () -> direct.loadClass(name));
+            final Class<?> defined = managed.loadClass(name);
+            assertSame(managed, defined.getClassLoader());
+            assertEquals(archive, defined.getProtectionDomain().getCodeSource().getLocation());
+            assertSame(int.class, defined.getDeclaredField("bad_field").getType());
+            try (var input = managed.getResourceAsStream(name.replace('.', '/') + ".class")) {
+                org.junit.jupiter.api.Assertions.assertArrayEquals(original, input.readAllBytes());
+            }
         }
     }
 

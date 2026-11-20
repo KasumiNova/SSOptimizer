@@ -11,6 +11,7 @@ import github.kasuminova.ssoptimizer.api.save.SavePhaseTelemetry;
 import github.kasuminova.ssoptimizer.asm.combat.CollisionImpulseClampProcessor;
 import github.kasuminova.ssoptimizer.asm.combat.ShipDamageStageTwoProcessor;
 import github.kasuminova.ssoptimizer.asm.ime.*;
+import github.kasuminova.ssoptimizer.asm.render.UrlClassDefinition;
 import github.kasuminova.ssoptimizer.asm.launcher.LauncherDirectStartProcessor;
 import github.kasuminova.ssoptimizer.asm.util.ColorCtorSanitizeProcessor;
 import github.kasuminova.ssoptimizer.bridge.opengl.FontDrawImpl;
@@ -29,7 +30,9 @@ import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.apache.log4j.Logger;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
 public final class SharedBootstrap {
@@ -37,6 +40,10 @@ public final class SharedBootstrap {
     private static boolean installed;
 
     private SharedBootstrap() { }
+
+    public static void installClassNormalizer(final BiFunction<URL, byte[], byte[]> normalizer) {
+        UrlClassDefinition.installClassNormalizer(normalizer);
+    }
 
     public static synchronized void install(final BiConsumer<String, UnaryOperator<byte[]>> systemTransforms) {
         if (installed) {

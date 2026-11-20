@@ -11,6 +11,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSigner;
 import java.security.CodeSource;
+import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -48,7 +50,18 @@ public final class UrlClassDefinition {
         }
     };
 
+    private static volatile BiFunction<URL, byte[], byte[]> classNormalizer;
+
     private UrlClassDefinition() { }
+
+    public static synchronized void installClassNormalizer(final BiFunction<URL, byte[], byte[]> normalizer) {
+        if (classNormalizer != null) throw new IllegalStateException("类净化器已注册");
+        classNormalizer = Objects.requireNonNull(normalizer);
+    }
+
+    public static boolean hasClassNormalizer() {
+        return classNormalizer != null;
+    }
 
     /** 返回 null 时，由生成的调用点执行原 findClass。 */
     public static Class<?> findClass(final URLClassLoader loader, final String name,
@@ -59,7 +72,10 @@ public final class UrlClassDefinition {
         if (!policy.standard() || inherited && policy.nearestGenerated() != owner) return null;
         final JarClass candidate = readClass(loader, name);
         if (candidate == null) return null;
-        final byte[] bytes = ClassDefinitionRedirector.redirect(loader, name, candidate.bytes());
+        final BiFunction<URL, byte[], byte[]> normalizer = classNormalizer;
+        final byte[] normalized = normalizer == null ? candidate.bytes()
+                : Objects.requireNonNull(normalizer.apply(candidate.location(), candidate.bytes()));
+        final byte[] bytes = ClassDefinitionRedirector.redirect(loader, name, normalized);
         if (bytes == candidate.bytes()) return null;
         final MethodHandle defineClass = caller.findVirtual(owner, "defineClass", DEFINE_CLASS);
         ensurePackage(loader, name, candidate, caller, owner);
