@@ -214,10 +214,10 @@ final class MixinSymbols {
         if (shadow == null) return;
         var prefix = value(shadow, "prefix") instanceof String explicit ? explicit : "shadow$";
         String targetName = name.startsWith(prefix) ? name.substring(prefix.length()) : name;
-        if (original.hasMember(target, targetName, desc, method)) return;
+        if (original.declares(target, targetName, desc, method)) return;
         if (value(shadow, "aliases") instanceof List<?> aliases) {
             for (Object alias : aliases) {
-                if (original.hasMember(target, (String) alias, desc, method)) return;
+                if (original.declares(target, (String) alias, desc, method)) return;
             }
         }
         throw new IllegalArgumentException("Mixin " + mixin + " has no original @Shadow target " + target + '.' + name + ' ' + desc);

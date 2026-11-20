@@ -1,12 +1,15 @@
 package github.kasuminova.ssoptimizer.mixin.render;
 
 import com.fs.graphics.TextureObject;
+import com.fs.graphics.particle.BaseParticle;
+import com.fs.graphics.particle.SmokeParticle;
 import github.kasuminova.ssoptimizer.common.render.engine.ParticleBatchHelper;
 import github.kasuminova.ssoptimizer.mapping.GameClassNames;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.awt.Color;
 
@@ -33,20 +36,13 @@ public abstract class SmoothParticleMixin {
 
     @Overwrite(remap = false)
     public void preBatch() {
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
-        if (ssoptimizer$override != null) {
-            ssoptimizer$override.bind();
-        } else {
-            ssoptimizer$texture.bind();
-        }
+        ssoptimizer$configureBatch();
         ParticleBatchHelper.beginSmoothBatch();
     }
 
     @Overwrite(remap = false)
     public void render() {
-        com.fs.graphics.particle.BaseParticle base = (com.fs.graphics.particle.BaseParticle) (Object) this;
+        BaseParticle base = (BaseParticle) (Object) this;
         if (base.getBrightnessOverride() == 0.0f || base.getBrightnessMult() == 0.0f) {
             return;
         }
@@ -57,15 +53,18 @@ public abstract class SmoothParticleMixin {
 
     @Overwrite(remap = false)
     public void postBatch() {
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
-        if (ssoptimizer$override != null) {
-            ssoptimizer$override.bind();
-        } else {
-            ssoptimizer$texture.bind();
-        }
+        ssoptimizer$configureBatch();
         ParticleBatchHelper.flushSmoothBatch();
         GL11.glDisable(GL11.GL_TEXTURE_2D);
+    }
+
+    @Unique
+    private void ssoptimizer$configureBatch() {
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
+        int destinationBlend = (Object) this instanceof SmokeParticle ? GL11.GL_ONE_MINUS_SRC_ALPHA : GL11.GL_ONE;
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, destinationBlend);
+        TextureObject texture = ssoptimizer$override != null ? ssoptimizer$override : ssoptimizer$texture;
+        texture.bind();
     }
 }
