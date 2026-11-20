@@ -1,12 +1,17 @@
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
+import java.io.File
+import java.io.IOException
+import java.io.OutputStream
+import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.HexFormat
 import java.util.Properties
+import java.util.zip.GZIPInputStream
 
 val abi = providers.gradleProperty("standalone.gameAbi").getOrElse("windows-rc8")
 require(abi.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*"))) { "无效的游戏 ABI：$abi" }
 val profile = rootProject.file("packaging/abi/$abi.properties")
+val buildProfile = rootProject.file("tools/reobf/abi/$abi.properties")
 val mapping = rootProject.file(providers.gradleProperty("standalone.mapping").getOrElse("../Paragon/build/mappings/mappings-named.tiny"))
 val gameDir = rootProject.file(providers.gradleProperty("standalone.obfGameDir").getOrElse("../SourceSector/game-jars/windows"))
 val namedDir = rootProject.file(providers.gradleProperty("standalone.namedGameDir").getOrElse("../SourceSector/build/named-game-jars/windows"))
@@ -14,24 +19,60 @@ val coreNames = listOf("starfarer_obf.jar", "starfarer.api.jar", "fs.common_obf.
 val game = coreNames.map(gameDir::resolve)
 val named = coreNames.map(namedDir::resolve)
 val output = layout.buildDirectory.dir("reobf/$abi")
+
+fun sha256(file: File, decompressGzip: Boolean = false): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    try {
+        file.inputStream().buffered().use { stream ->
+            val gzip = if (decompressGzip) {
+                stream.mark(2)
+                val present = stream.read() == 0x1f && stream.read() == 0x8b
+                stream.reset()
+                present
+            } else {
+                false
+            }
+            DigestInputStream(if (gzip) GZIPInputStream(stream) else stream, digest).use { input ->
+                input.transferTo(OutputStream.nullOutputStream())
+            }
+        }
+    } catch (failure: IOException) {
+        throw GradleException("无法计算 SHA-256：$file", failure)
+    }
+    return HexFormat.of().formatHex(digest.digest())
+}
+
 val resolveAbi = tasks.register("resolveReleaseAbi") {
     group = "distribution"
-    inputs.files(profile, mapping, game, named)
+    inputs.file(profile).withPropertyName("releaseProfile")
+    inputs.file(buildProfile).withPropertyName("buildProfile")
+    inputs.file(mapping).withPropertyName("privateMapping")
+    inputs.files(game).withPropertyName("obfGameJars")
+    inputs.files(named).withPropertyName("namedGameJars")
     val destination = output.map { it.file("abi.properties") }
     outputs.file(destination)
     doLast {
         val declared = Properties().apply { profile.inputStream().use { load(it) } }
         require(declared.getProperty("abi") == abi) { "ABI 标识与文件名不符：$profile" }
-        val hashes = game.joinToString(" ") { jar ->
-            val sha = MessageDigest.getInstance("SHA-256")
-            jar.inputStream().buffered().use { input ->
-                java.security.DigestInputStream(input, sha).transferTo(java.io.OutputStream.nullOutputStream())
+        val accepted = (0 until declared.getProperty("inputs.count").toInt()).map { declared.getProperty("inputs.$it") }
+        val hashes = game.associateWith { sha256(it) }
+        if (hashes.values.joinToString(" ") !in accepted) {
+            val actual = hashes.entries.joinToString("\n") { (file, hash) -> "$file: $hash" }
+            throw GradleException("构建用原版游戏归档与 $abi 不符：\n$actual")
+        }
+
+        val locked = Properties().apply { buildProfile.inputStream().use { load(it) } }
+        fun verify(key: String, file: File, decompressGzip: Boolean = false) {
+            val expected = locked.getProperty(key)
+                ?: throw GradleException("构建 ABI 配置 $buildProfile 缺少 $key")
+            val actual = sha256(file, decompressGzip)
+            if (actual != expected) {
+                throw GradleException("构建用 $key 与 $abi 不符：$file\n预期 SHA-256：$expected\n实际 SHA-256：$actual")
             }
-            HexFormat.of().formatHex(sha.digest())
         }
-        require((0 until declared.getProperty("inputs.count").toInt()).any { hashes == declared.getProperty("inputs.$it") }) {
-            "构建用原版游戏归档与 $abi 不符：$hashes"
-        }
+        verify("mapping.sha256", mapping, decompressGzip = true)
+        named.forEach { verify("named.${it.name}", it) }
+
         profile.copyTo(destination.get().asFile.apply { parentFile.mkdirs() }, overwrite = true)
     }
 }
