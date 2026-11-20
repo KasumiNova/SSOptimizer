@@ -8,6 +8,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $utf8 = New-Object Text.UTF8Encoding($false, $true)
+$flavor = '@FLAVOR@'
 $toolNames = @('Launch.cmd', 'Manage.cmd', 'Manage.ps1')
 
 function Pick-Folder([string]$prompt) {
@@ -50,16 +51,24 @@ function Read-Manifest([string]$root, [string]$prefix = 'release') {
         if (!$rsa.VerifyData($bytes, $signature, [Security.Cryptography.HashAlgorithmName]::SHA256, [Security.Cryptography.RSASignaturePadding]::Pkcs1)) { throw "发行清单签名无效：$mf" }
     } finally { $rsa.Dispose() }
     $lines = $utf8.GetString($bytes).Split("`n")
-    if ($lines.Count -lt 4 -or $lines[0] -cne 'SSOptimizer-Windows-x64-v1' -or $lines[-1] -cne '') { throw "签名清单格式错误：$mf" }
+    if ($lines.Count -lt 5 -or $lines[0] -cne 'SSOptimizer-Windows-x64-v2' -or $lines[2] -cne $flavor -or $lines[-1] -cne '') { throw "签名清单格式错误：$mf" }
     Assert-Id $lines[1]
     $files = @{}
-    for ($i = 2; $i -lt $lines.Count - 1; $i++) {
+    for ($i = 3; $i -lt $lines.Count - 1; $i++) {
         if ($lines[$i] -cnotmatch '\A([0-9a-f]{64})  (.+)\z') { throw "清单第 $($i+1) 行格式错误" }
         $name = $Matches[2]; $hash = $Matches[1]; Assert-Relative $name
         if ($files.ContainsKey($name) -or $name -in @('release.sig','release.manifest')) { throw "重复清单路径：$name" }
         $files[$name] = $hash
     }
-    foreach ($name in @('agent.jar','payload.jar','runtime/bin/java.exe','mappings/game-full.tiny.gz','mod/mod_info.json','tools/Manage.ps1','tools/Manage.cmd','tools/Launch.cmd')) {
+    $required = @('agent.jar','payload.jar','libraries.lock','distribution.properties','runtime/bin/java.exe','mod/mod_info.json','tools/Manage.ps1','tools/Manage.cmd','tools/Launch.cmd')
+    if ($flavor -ceq 'dev') { $required += 'mappings/game-full.tiny.gz' }
+    else {
+        $required += 'abi.properties'
+        foreach ($name in $files.Keys) {
+            if ($name -match '^(mappings/|lib/(sso-remap|tiny-remapper|mapping-io)-)') { throw "obf 清单含开发构件：$name" }
+        }
+    }
+    foreach ($name in $required) {
         if (!$files.ContainsKey($name)) { throw "清单缺失：$name" }
     }
     return @{ Id = $lines[1]; Files = $files; Manifest = $bytes; Signature = $signature }
@@ -330,7 +339,7 @@ try {
         if (!$Game) { $Game = Pick-Folder '选择已安装的 Windows Starsector 游戏根目录' }
         if (!$Bundle) { $Bundle = Split-Path -Parent (Split-Path -Parent $PSScriptRoot) }
     } elseif (!$Game) { $Game = Split-Path -Parent $PSScriptRoot }
-    $Game = [IO.Path]::GetFullPath($Game); $root = Join-Path $Game 'ssoptimizer-standalone'; Assert-Chain $Game
+    $Game = [IO.Path]::GetFullPath($Game); $root = Join-Path $Game "ssoptimizer-standalone-$flavor"; Assert-Chain $Game
     if ($Action -eq 'Menu') {
         Write-Host '1 启动   2 安装更新   3 切换或回滚版本   4 诊断   5 准备缓存'
         Write-Host '6 卸载（保留实例）   7 导入旧存档副本   8 编辑启动参数'

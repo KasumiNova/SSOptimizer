@@ -15,20 +15,20 @@ val nativeModules = mapOf("font" to "sso-font:native-font", "ime" to "sso-ime:na
 if (target == "windows" && os.contains("linux")) {
     project(":modules:internal:sso-font:native-font").run {
         pluginManager.withPlugin("ssoptimizer-native-module") {
-            // MinGW 静态 FreeType 的 PNG 解码器引用 libpng 和 zlib。
             extensions.getByType<SsoNativeExtension>().libpng.set(true)
         }
     }
 }
 
-val lockFile = sources.resolve("libraries.lock")
-val libraries = lockFile.readLines().map { it.split(' ') }
+val flavors = listOf("obf", "dev")
+val abi = providers.gradleProperty("standalone.gameAbi").getOrElse("windows-rc8")
+require(abi.matches(Regex("[a-z0-9]+(?:-[a-z0-9]+)*"))) { "非法游戏 ABI：$abi" }
 repositories {
     maven { url = uri("https://maven.fabricmc.net/"); content { includeModule("net.fabricmc", "tiny-remapper") } }
     maven { url = uri("https://nexus.gtnewhorizons.com/repository/releases/"); content { includeGroup("com.gtnewhorizons.retrofuturabootstrap") } }
 }
-val locked = listOf("lib", "game-lib").associateWith { domain ->
-    configurations.create(if (domain == "lib") "standaloneSystemLibraries" else "standaloneGameLibraries") {
+fun lockedLibraries(flavor: String, libraries: List<List<String>>) = listOf("lib", "game-lib").associateWith { domain ->
+    configurations.create("standalone${flavor.replaceFirstChar(Char::uppercase)}" + if (domain == "lib") "SystemLibraries" else "GameLibraries") {
         isCanBeResolved = true
         isCanBeConsumed = false
         isTransitive = false
@@ -77,56 +77,6 @@ fun moduleArchive(path: String, task: String) = provider {
     val archive = project(":modules:internal:$path").tasks.getByName(task) as AbstractArchiveTask
     archive.archiveFile.get().asFile
 }
-val payload = moduleArchive("sso-app", "standalonePayload")
-val agent = moduleArchive("sso-standalone", "jar")
-val host = moduleArchive("sso-host-standalone", "jar")
-val remap = moduleArchive("sso-remap", "jar")
-val stageTasks = listOf("linux", "windows").associateWith { platform ->
-    val windows = platform == "windows"
-    val output = base.map { it.dir("$platform/version") }
-    tasks.register<Sync>(if (windows) "stageStandaloneWindows" else "stageStandaloneLinux") {
-        group = "distribution"
-        description = "准备 Standalone $platform 的独立版本目录"
-        dependsOn(prepareMapping, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-standalone:jar", ":modules:internal:sso-host-standalone:jar", ":modules:internal:sso-remap:jar")
-        inputs.files(lockFile, helper); inputs.property("versionId", versionId); inputs.property("nativeTarget", target)
-        into(output); duplicatesStrategy = DuplicatesStrategy.FAIL
-        from(payload) { rename { "payload.jar" } }; from(agent) { rename { "agent.jar" } }
-        from(listOf(host, remap)) { into("lib") }; from(mapOut) { into("mappings") }
-        from(lockFile); from(sources.resolve("mod_info.json")) { into("mod"); expand("version" to versionId) }
-        from(rootProject.file("game-fonts/ttf")) { into("mod/fonts"); include("*.ttf", "MiSans-LICENSE.txt") }
-        if (windows) { dependsOn(prepareJdk); from(jdkOut) { into("runtime") } }
-        else { from(sources.resolve("launch.sh")) { filePermissions { unix("rwxr-xr-x") } } }
-        for ((domain, config) in locked) from(config) { into(domain) }
-        for ((module, path) in nativeModules) {
-            val sub = project(":modules:internal:$path")
-            dependsOn("${sub.path}:" + if (windows && os.contains("linux")) "linkWindowsCrossSharedLibrary" else "assembleRelease")
-            val nativeFile = sub.layout.buildDirectory.file("lib/main/release/" + if (windows) "ssoptimizer_$module.dll" else "libssoptimizer_$module.so")
-            from(nativeFile) { into("native/$platform") }
-        }
-        from(provider {
-            nativeModules.values.flatMap { path ->
-                val ext = project(":modules:internal:$path").extensions.extraProperties
-                @Suppress("UNCHECKED_CAST")
-                (if (windows) ext["windowsRuntimeDlls"] as List<File> else (ext["linuxRuntimeSharedLibs"] as Provider<List<File>>).get())
-            }.distinct()
-        }) { into("native/$platform") }
-        doFirst {
-            require(platform == target) { "构建 $platform 包时请设置 -Pssoptimizer.native.target=$platform" }
-            for (artifact in listOf(payload, agent, host, remap)) require(artifact.get().isFile) { "缺少项目归档：${artifact.get()}" }
-            require(rootProject.file("game-fonts/ttf").listFiles()?.any { it.extension == "ttf" } == true) { "缺少模组字体" }
-            for ((domain, config) in locked) {
-                val artifacts = config.resolvedConfiguration.resolvedArtifacts.associateBy { it.moduleVersion.id.toString() }
-                val expected = libraries.filter { it[0] == domain }
-                require(artifacts.keys == expected.map { it[2] }.toSet()) { "意外的 $domain 解析结果：${artifacts.keys}" }
-                expected.forEach { (_, hash, coordinate) ->
-                    val f = artifacts.getValue(coordinate).file
-                    require(digest(f) == hash) { "构件摘要不符：$coordinate ($f)" }
-                }
-            }
-        }
-        doLast { releaseTool("audit", output.get().asFile.absolutePath, platform) }
-    }
-}
 val signKey = providers.gradleProperty("standalone.signingKey").orElse(providers.environmentVariable("SSOPTIMIZER_SIGNING_KEY"))
 signKey.orNull?.let { key ->
     val path = rootProject.file(key).canonicalFile.toPath()
@@ -134,21 +84,97 @@ signKey.orNull?.let { key ->
         "签名私钥必须位于仓库和构建输出之外：$path"
     }
 }
-val metadata = base.map { it.dir("windows/signed").asFile }
-val signRelease = tasks.register("signStandaloneWindows") {
-    dependsOn(stageTasks.getValue("windows")); outputs.upToDateWhen { false }
-    doLast {
-        val key = signKey.orNull ?: throw GradleException("Windows 发布需要发行者 RSA PKCS#8 私钥：-Pstandalone.signingKey=<文件>")
-        releaseTool("sign", base.get().dir("windows/version").asFile.absolutePath, metadata.get().absolutePath, sources.resolve("windows").absolutePath, versionId, rootProject.file(key).absolutePath)
+val reobf = layout.buildDirectory.dir("reobf/$abi")
+for (flavor in flavors) {
+    val obf = flavor == "obf"
+    val suffix = flavor.replaceFirstChar(Char::uppercase)
+    val namespace = if (obf) "obf" else "named"
+    val lockFile = sources.resolve(if (obf) "libraries-obf.lock" else "libraries.lock")
+    val libraries = lockFile.readLines().map { it.split(' ') }
+    val locked = lockedLibraries(flavor, libraries)
+    val payload = if (obf) reobf.map { it.file("payload.jar").asFile } else moduleArchive("sso-app", "standalonePayload")
+    val agentTask = if (obf) "obfJar" else "jar"
+    val agent = moduleArchive("sso-standalone", agentTask)
+    val host = if (obf) reobf.map { it.file("host.jar").asFile } else moduleArchive("sso-host-standalone", "jar")
+    val symbols = if (obf) "sso-obf" else "sso-remap"
+    val symbolJar = moduleArchive(symbols, "jar")
+    val stageTasks = listOf("linux", "windows").associateWith { platform ->
+        val windows = platform == "windows"
+        val output = base.map { it.dir("$platform/$flavor/version") }
+        tasks.register<Sync>("stageStandalone${platform.replaceFirstChar(Char::uppercase)}$suffix") {
+            group = "distribution"
+            description = "准备 Standalone $platform 的独立版本目录"
+            dependsOn(":modules:internal:sso-standalone:$agentTask", ":modules:internal:$symbols:jar")
+            if (obf) dependsOn(":verifyObfRelease") else dependsOn(prepareMapping, ":modules:internal:sso-app:standalonePayload", ":modules:internal:sso-host-standalone:jar")
+            inputs.files(lockFile, helper); inputs.property("versionId", versionId); inputs.property("nativeTarget", target); inputs.property("gameAbi", abi)
+            into(output); duplicatesStrategy = DuplicatesStrategy.FAIL
+            from(payload) { rename { "payload.jar" } }; from(agent) { rename { "agent.jar" } }
+            from(host) { into("lib"); if (obf) rename { "sso-host-standalone-obf.jar" } }
+            from(symbolJar) { into("lib") }
+            if (obf) from(reobf.map { it.file("abi.properties") }) else from(mapOut) { into("mappings") }
+            from(sources.resolve("distribution.properties")) { expand(mapOf("flavor" to flavor, "namespace" to namespace, "abi" to abi)) }
+            from(lockFile) { rename { "libraries.lock" } }; from(sources.resolve("mod_info.json")) { into("mod"); expand("version" to versionId) }
+            from(rootProject.file("game-fonts/ttf")) { into("mod/fonts"); include("*.ttf", "MiSans-LICENSE.txt") }
+            if (windows) { dependsOn(prepareJdk); from(jdkOut) { into("runtime") } }
+            else { from(sources.resolve("launch.sh")) { filter { line -> line.replace("@FLAVOR@", flavor) }; filePermissions { unix("rwxr-xr-x") } } }
+            for ((domain, config) in locked) from(config) { into(domain) }
+            for ((module, path) in nativeModules) {
+                val sub = project(":modules:internal:$path")
+                dependsOn("${sub.path}:" + if (windows && os.contains("linux")) "linkWindowsCrossSharedLibrary" else "assembleRelease")
+                val nativeFile = sub.layout.buildDirectory.file("lib/main/release/" + if (windows) "ssoptimizer_$module.dll" else "libssoptimizer_$module.so")
+                from(nativeFile) { into("native/$platform") }
+            }
+            from(provider {
+                nativeModules.values.flatMap { path ->
+                    val ext = project(":modules:internal:$path").extensions.extraProperties
+                    @Suppress("UNCHECKED_CAST")
+                    (if (windows) ext["windowsRuntimeDlls"] as List<File> else (ext["linuxRuntimeSharedLibs"] as Provider<List<File>>).get())
+                }.distinct()
+            }) { into("native/$platform") }
+            doFirst {
+                require(platform == target) { "构建 $platform 包时请设置 -Pssoptimizer.native.target=$platform" }
+                for (artifact in listOf(payload, agent, host, symbolJar)) require(artifact.get().isFile) { "缺少项目归档：${artifact.get()}" }
+                require(rootProject.file("game-fonts/ttf").listFiles()?.any { it.extension == "ttf" } == true) { "缺少模组字体" }
+                for ((domain, config) in locked) {
+                    val artifacts = config.resolvedConfiguration.resolvedArtifacts.associateBy { it.moduleVersion.id.toString() }
+                    val expected = libraries.filter { it[0] == domain }
+                    require(artifacts.keys == expected.map { it[2] }.toSet()) { "意外的 $domain 解析结果：${artifacts.keys}" }
+                    expected.forEach { (_, hash, coordinate) ->
+                        val f = artifacts.getValue(coordinate).file
+                        require(digest(f) == hash) { "构件摘要不符：$coordinate ($f)" }
+                    }
+                }
+            }
+            doLast { releaseTool("audit", output.get().asFile.absolutePath, platform, flavor) }
+        }
+    }
+    val metadata = base.map { it.dir("windows/$flavor/signed").asFile }
+    val signRelease = tasks.register("signStandaloneWindows$suffix") {
+        dependsOn(stageTasks.getValue("windows")); outputs.dir(metadata); outputs.upToDateWhen { false }
+        doLast {
+            val key = signKey.orNull ?: throw GradleException("Windows 发布需要发行者 RSA PKCS#8 私钥：-Pstandalone.signingKey=<文件>")
+            releaseTool("sign", base.get().dir("windows/$flavor/version").asFile.absolutePath, metadata.get().absolutePath, sources.resolve("windows").absolutePath, versionId, rootProject.file(key).absolutePath, flavor)
+        }
+    }
+    tasks.register<Zip>("packageStandaloneWindows$suffix") {
+        group = "distribution"; description = "构建含签名清单和完整 Java 25 的 Windows x64 安装包"
+        dependsOn(signRelease); archiveFileName.set("SSOptimizer-Standalone-$versionId-windows-x64-$flavor.zip")
+        destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+        isReproducibleFileOrder = true
+        isPreserveFileTimestamps = true
+        from(base.map { it.dir("windows/$flavor/version") }) { into("version") }
+        from(metadata) { include("Install.cmd", "version/release.manifest", "version/release.sig", "version/tools/Launch.cmd", "version/tools/Manage.cmd", "version/tools/Manage.ps1") }
+        duplicatesStrategy = DuplicatesStrategy.FAIL
+        doLast {
+            val signed = metadata.get()
+            releaseTool("verify", archiveFile.get().asFile.absolutePath, signed.absolutePath, versionId, flavor, signed.resolve("public.der").absolutePath)
+        }
     }
 }
-tasks.register<Zip>("packageStandaloneWindows") {
-    group = "distribution"; description = "构建含签名清单和完整 Java 25 的 Windows x64 安装包"
-    dependsOn(signRelease); archiveFileName.set("SSOptimizer-Standalone-$versionId-windows-x64.zip")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-    isReproducibleFileOrder = true
-    isPreserveFileTimestamps = true
-    from(base.map { it.dir("windows/version") }) { into("version") }
-    from(metadata) { include("Install.cmd", "version/release.manifest", "version/release.sig", "version/tools/Launch.cmd", "version/tools/Manage.cmd", "version/tools/Manage.ps1") }
-    duplicatesStrategy = DuplicatesStrategy.FAIL
+
+for (prefix in listOf("stageStandaloneWindows", "stageStandaloneLinux", "signStandaloneWindows", "packageStandaloneWindows")) {
+    tasks.register(prefix) {
+        group = "distribution"
+        dependsOn(flavors.map { prefix + it.replaceFirstChar(Char::uppercase) })
+    }
 }

@@ -18,7 +18,7 @@ while (($#)); do
 done
 [[ -d $game ]] || { printf '%s\n' '请选择已有的 RC8 游戏目录：https://fractalsoftworks.com/preorder/' >&2; exit 2; }
 game=$(realpath -- "$game")
-instance=$(realpath -m -- "${instance:-$game/ssoptimizer-standalone/instance}")
+instance=$(realpath -m -- "${instance:-$game/ssoptimizer-standalone-@FLAVOR@/instance}")
 if [[ -n ${JAVA_HOME:-} ]]; then java=$JAVA_HOME/bin/java; else java=$(command -v java) || { echo '需要本机 x64 JDK 25，请设置 JAVA_HOME。' >&2; exit 1; }; fi
 java=$(realpath -- "$java")
 [[ -x $java && -x ${java%/*}/javac ]] || { echo 'JAVA_HOME 必须指向完整 JDK 25。' >&2; exit 1; }

@@ -21,8 +21,9 @@ class ReleaseFiles {
         switch (args[0]) {
             case "mapping" -> mapping(Path.of(args[1]), Path.of(args[2]));
             case "jdk" -> jdk(Path.of(args[1]), args[2], args[3], args[4], Path.of(args[5]), Boolean.parseBoolean(args[6]));
-            case "audit" -> audit(Path.of(args[1]), args[2]);
-            case "sign" -> sign(Path.of(args[1]), Path.of(args[2]), Path.of(args[3]), args[4], Path.of(args[5]));
+            case "audit" -> audit(Path.of(args[1]), args[2], args[3]);
+            case "sign" -> sign(Path.of(args[1]), Path.of(args[2]), Path.of(args[3]), args[4], Path.of(args[5]), args[6]);
+            case "verify" -> verify(Path.of(args[1]), Path.of(args[2]), args[3], args[4], Path.of(args[5]));
             default -> throw new IllegalArgumentException(args[0]);
         }
     }
@@ -126,13 +127,46 @@ class ReleaseFiles {
         }
     }
 
-    private static void audit(Path home, String platform) throws Exception {
+    private static void audit(Path home, String platform, String flavor) throws Exception {
+        boolean obf = flavor.equals("obf");
+        String namespace = obf ? "obf" : "named";
+        var distribution = new Properties();
+        try (var in = Files.newBufferedReader(home.resolve("distribution.properties"))) { distribution.load(in); }
+        if (!flavor.equals(distribution.getProperty("flavor")) || !namespace.equals(distribution.getProperty("namespace")) || distribution.getProperty("abi", "").isBlank()) {
+            throw new IOException("发行元数据与构件不符：" + home);
+        }
+        if (obf) {
+            if (!Files.isRegularFile(home.resolve("abi.properties")) || Files.exists(home.resolve("mappings"))) throw new IOException("obf 需要 ABI 描述并排除映射目录");
+        } else {
+            try (var in = new GZIPInputStream(Files.newInputStream(home.resolve("mappings/game-full.tiny.gz")))) {
+                var hash = digest(); new DigestInputStream(in, hash).transferTo(OutputStream.nullOutputStream());
+                if (!MAPPING.equals(HEX.formatHex(hash.digest()))) throw new IOException("dev 映射 SHA-256 不符");
+            }
+        }
         var archives = new ArrayList<>(List.of(home.resolve("agent.jar"), home.resolve("payload.jar")));
         for (String dir : List.of("lib", "game-lib")) try (var jars = Files.list(home.resolve(dir))) { archives.addAll(jars.toList()); }
         var owners = new HashMap<String, Path>();
         for (var path : archives) {
+            String filename = path.getFileName().toString();
+            if (obf && (filename.startsWith("sso-remap-") || filename.startsWith("tiny-remapper-") || filename.startsWith("mapping-io-"))) throw new IOException("obf 含开发依赖：" + path);
             try (var jar = new JarFile(path.toFile(), true, ZipFile.OPEN_READ, Runtime.version())) {
+                if (filename.equals("payload.jar") || filename.equals("agent.jar") || filename.startsWith("sso-host-standalone-")) {
+                    if (jar.getManifest() == null || !namespace.equals(jar.getManifest().getMainAttributes().getValue("SSOptimizer-Namespace"))) {
+                        throw new IOException("发行 JAR 命名空间不符：" + path);
+                    }
+                }
+                if (obf) for (var entry : Collections.list(jar.entries())) {
+                    if (entry.isDirectory()) continue;
+                    try (var input = jar.getInputStream(entry)) { auditResource(entry.getName(), input.readAllBytes()); }
+                }
                 if (path.equals(home.resolve("agent.jar"))) {
+                    var lock = jar.getJarEntry("ssoptimizer/standalone/libraries.lock");
+                    if (lock == null) throw new IOException("启动器缺少依赖锁：" + path);
+                    try (var embedded = jar.getInputStream(lock)) {
+                        if (!Arrays.equals(embedded.readAllBytes(), Files.readAllBytes(home.resolve("libraries.lock")))) {
+                            throw new IOException("启动器与发行目录使用不同的依赖锁：" + path);
+                        }
+                    }
                     var attrs = jar.getManifest().getMainAttributes();
                     for (var attr : List.of("Premain-Class", "Main-Class")) {
                         String type = attrs.getValue(attr);
@@ -169,7 +203,50 @@ class ReleaseFiles {
         }
     }
 
-    private static void sign(Path version, Path signed, Path templates, String id, Path keyFile) throws Exception {
+    private static void auditResource(String name, byte[] data) throws IOException {
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.contains("refmap") && !lower.endsWith(".class") || lower.endsWith(".tiny") || lower.endsWith(".tiny.gz") || lower.endsWith(".tsrg") ||
+                lower.endsWith(".srg") || lower.endsWith(".mapping") || lower.startsWith("github/kasuminova/ssoptimizer/standalone/remap/") ||
+                lower.startsWith("net/fabricmc/tinyremapper/") || lower.startsWith("net/fabricmc/mappingio/")) throw new IOException("obf 包含开发资源：" + name);
+        if (data.length >= 2 && data[0] == 31 && data[1] == (byte)139) {
+            try (var in = new GZIPInputStream(new ByteArrayInputStream(data))) { auditResource(name + "!gzip", in.readAllBytes()); }
+        } else if (data.length >= 4 && data[0] == 'P' && data[1] == 'K' && data[2] == 3 && data[3] == 4) {
+            throw new IOException("obf 资源中含未声明的嵌套归档：" + name);
+        } else {
+            String text = new String(data, StandardCharsets.ISO_8859_1);
+            if (text.contains("tiny\t2\t0\t") || text.startsWith("v1\t") || lower.endsWith(".json") && text.contains("\"refmap\"")) {
+                throw new IOException("obf 资源含命名对照或 refmap 引用：" + name);
+            }
+        }
+    }
+
+    private static void verify(Path archive, Path signed, String id, String flavor, Path publicKey) throws Exception {
+        var key = KeyFactory.getInstance("RSA").generatePublic(new java.security.spec.X509EncodedKeySpec(Files.readAllBytes(publicKey)));
+        try (var zip = new ZipFile(archive.toFile())) {
+            var manifest = zip.getInputStream(zip.getEntry("version/release.manifest")).readAllBytes();
+            var signature = Signature.getInstance("SHA256withRSA"); signature.initVerify(key); signature.update(manifest);
+            if (!signature.verify(zip.getInputStream(zip.getEntry("version/release.sig")).readAllBytes())) throw new IOException("ZIP 清单签名无效：" + archive);
+            var lines = new String(manifest, StandardCharsets.UTF_8).lines().toList();
+            if (!lines.subList(0, 3).equals(List.of("SSOptimizer-Windows-x64-v2", id, flavor))) throw new IOException("ZIP 版本或类型不符：" + archive);
+            var expected = new HashMap<String, String>();
+            for (String line : lines.subList(3, lines.size())) {
+                if (!line.matches("[0-9a-f]{64}  .+") || expected.put("version/" + line.substring(66), line.substring(0, 64)) != null) throw new IOException("清单条目无效：" + line);
+            }
+            expected.put("Install.cmd", sha(signed.resolve("Install.cmd")));
+            var names = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+            for (var entry : Collections.list(zip.entries())) {
+                String name = entry.getName();
+                if (!names.add(name) || name.startsWith("/") || name.contains("\\") || Arrays.asList(name.split("/")).contains("..")) throw new IOException("ZIP 路径无效：" + name);
+                if (entry.isDirectory() || name.equals("version/release.manifest") || name.equals("version/release.sig")) continue;
+                var hash = digest();
+                try (var in = new DigestInputStream(zip.getInputStream(entry), hash)) { in.transferTo(OutputStream.nullOutputStream()); }
+                if (!HEX.formatHex(hash.digest()).equals(expected.remove(name))) throw new IOException("ZIP 条目摘要或路径不符：" + name);
+            }
+            if (!expected.isEmpty()) throw new IOException("ZIP 缺少条目：" + expected.keySet());
+        }
+    }
+
+    private static void sign(Path version, Path signed, Path templates, String id, Path keyFile, String flavor) throws Exception {
         Path secret = keyFile.toRealPath();
         Files.createDirectories(signed);
         if (secret.startsWith(version.toRealPath()) || secret.startsWith(signed.toRealPath()) || secret.startsWith(templates.toRealPath())) {
@@ -180,11 +257,13 @@ class ReleaseFiles {
         if (bytes.length > 0 && bytes[0] == '-') bytes = Base64.getMimeDecoder().decode(Files.readString(keyFile).replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", ""));
         var key = (RSAPrivateCrtKey) KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(bytes));
         if (key.getModulus().bitLength() < 3072) throw new GeneralSecurityException("发行私钥要求 RSA 3072 位或以上");
+        var publicKey = KeyFactory.getInstance("RSA").generatePublic(new java.security.spec.RSAPublicKeySpec(key.getModulus(), key.getPublicExponent()));
+        Files.write(signed.resolve("public.der"), publicKey.getEncoded());
         var tools = signed.resolve("version/tools"); Files.createDirectories(tools);
         var b64 = Base64.getEncoder();
         var modulus = key.getModulus().toByteArray(); if (modulus[0] == 0) modulus = Arrays.copyOfRange(modulus, 1, modulus.length);
         String manager = Files.readString(templates.resolve("Manage.ps1")).replace("@MODULUS@", b64.encodeToString(modulus))
-                .replace("@EXPONENT@", b64.encodeToString(key.getPublicExponent().toByteArray()));
+                .replace("@EXPONENT@", b64.encodeToString(key.getPublicExponent().toByteArray())).replace("@FLAVOR@", flavor);
         Files.writeString(tools.resolve("Manage.ps1"), "\ufeff" + manager);
         for (String name : List.of("Manage.cmd", "Launch.cmd")) Files.copy(templates.resolve(name), tools.resolve(name), StandardCopyOption.REPLACE_EXISTING);
         Files.copy(templates.resolve("Install.cmd"), signed.resolve("Install.cmd"), StandardCopyOption.REPLACE_EXISTING);
@@ -193,7 +272,7 @@ class ReleaseFiles {
         if (files.containsValue(keyHash) || files.containsValue(HEX.formatHex(digest().digest(key.getEncoded())))) {
             throw new IOException("版本文件中含有签名私钥的副本或硬链接");
         }
-        var manifest = ("SSOptimizer-Windows-x64-v1\n" + id + "\n" + entries(files)).getBytes(StandardCharsets.UTF_8);
+        var manifest = ("SSOptimizer-Windows-x64-v2\n" + id + "\n" + flavor + "\n" + entries(files)).getBytes(StandardCharsets.UTF_8);
         var sig = Signature.getInstance("SHA256withRSA"); sig.initSign(key); sig.update(manifest);
         Files.write(signed.resolve("version/release.manifest"), manifest); Files.write(signed.resolve("version/release.sig"), sig.sign());
     }
