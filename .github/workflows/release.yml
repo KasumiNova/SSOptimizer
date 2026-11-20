@@ -65,22 +65,44 @@ jobs:
 
           java packaging/standalone/ReleaseFiles.java verify "$archive" packaging/standalone/windows \
             "$version" obf "$temporary_dir/public.der"
-          python3 - "$archive" "$temporary_dir/extracted" <<'PY'
+          symbol_jar="$(python3 - "$archive" "$temporary_dir/audit" <<'PY'
+          import re
           from pathlib import Path
           from shutil import copyfileobj
           from sys import argv
           from zipfile import ZipFile
 
+          signing_files = {
+              "version/release.manifest",
+              "version/release.sig",
+              "version/tools/Launch.cmd",
+              "version/tools/Manage.cmd",
+              "version/tools/Manage.ps1",
+          }
+          symbol_jars = []
           with ZipFile(argv[1]) as archive:
               for entry in archive.infolist():
                   if entry.is_dir():
                       continue
+                  if entry.filename in signing_files:
+                      signing_files.remove(entry.filename)
+                      continue
+                  if entry.filename == "Install.cmd":
+                      continue
+                  match = re.fullmatch(r"version/lib/(sso-obf-[0-9A-Za-z._-]+\.jar)", entry.filename)
+                  if match:
+                      symbol_jars.append(match[1])
                   destination = Path(argv[2], entry.filename)
                   destination.parent.mkdir(parents=True, exist_ok=True)
                   with archive.open(entry) as source, destination.open("xb") as target:
                       copyfileobj(source, target)
+          if signing_files or len(symbol_jars) != 1:
+              raise SystemExit("Expected all signing files and exactly one sso-obf JAR")
+          print(symbol_jars[0])
           PY
-          java packaging/standalone/ReleaseFiles.java audit "$temporary_dir/extracted/version" windows obf
+          )"
+          java packaging/standalone/ReleaseFiles.java audit "$temporary_dir/audit/version" windows obf \
+            "$GITHUB_WORKSPACE" "$symbol_jar"
 
           gh api "$api/$release_id" | jq -e --arg tag "$tag" '.draft and .tag_name == $tag'
           [[ "$(draft_asset_id)" == "$asset_id" ]]
